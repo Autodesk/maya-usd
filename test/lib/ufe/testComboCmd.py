@@ -687,9 +687,6 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
         self.assertIsNone(capsuleT3d)
 
-    # Name test such that it runs last.  Otherwise, it runs before 
-    # testRotateScalePivotCompensation(), and causes it to fail.  To be 
-    # investigated --- MAYA-108067.
     @unittest.skipIf(mayaUtils.previewReleaseVersion() < 123, 'Fallback transform op handling only available in Maya Preview Release 123 or later.')
     def testFallback(self):
         '''Transformable not handled by standard Transform3d handlers must be
