@@ -345,5 +345,10 @@ finally:
         # This allows bypassing them by using the --label-exclude/-LE option to
         # ctest. This is useful when running tests in a headless configuration.
         set_property(TEST "${test_name}" APPEND PROPERTY LABELS interactive)
+
+        # When running via remote desktop this env var is needed for Maya
+        # to function correctly. Has no effect when not running remote.
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "MAYA_ALLOW_OPENGL_REMOTE_SESSION=1")
     endif()
 endfunction()
