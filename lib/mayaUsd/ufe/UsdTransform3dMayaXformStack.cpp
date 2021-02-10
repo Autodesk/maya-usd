@@ -300,7 +300,6 @@ public:
         {
             // Undo
             cmd->_undoableItem.undo();
-
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
         }
         void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
@@ -317,7 +316,6 @@ public:
         {
             // Redo
             cmd->_undoableItem.redo();
-
             cmd->_state = &UsdTRSUndoableCmdBase::_redoneState;
         }
     };
@@ -329,8 +327,18 @@ public:
         {
             // Undo
             cmd->_undoableItem.undo();
-
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
+        }
+        // The redone state should normally be reached only once manipulation
+        // is over, after undo, so setting new values in the redone state seems
+        // illogical.  However, during point snapping manipulation, within a
+        // single drag, the Maya move command repeatedly calls undo, then redo,
+        // setting new values after the redo.  Treat such events identically to
+        // the Execute state.
+        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
+        {
+            cmd->_newOpValue = v;
+            cmd->setValue(v);
         }
     };
 
