@@ -690,8 +690,8 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
     # Name test such that it runs last.  Otherwise, it runs before 
     # testRotateScalePivotCompensation(), and causes it to fail.  To be 
     # investigated --- MAYA-108067.
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121, 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
-    def testZFallback(self):
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 123, 'Fallback transform op handling only available in Maya Preview Release 123 or later.')
+    def testFallback(self):
         '''Transformable not handled by standard Transform3d handlers must be
     handled by fallback handler.'''
 
