@@ -829,9 +829,9 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
     }
 
     auto stage = usdItem->prim().GetStage();
-    if(stage) {
+    if (stage) {
         const SdfLayerHandle& editLayer = stage->GetEditTarget().GetLayer();
-        if(editLayer && stage->IsLayerMuted(editLayer->GetIdentifier())) {
+        if (editLayer && stage->IsLayerMuted(editLayer->GetIdentifier())) {
             MGlobal::displayError("Editing a muted layer is not allowed.");
             return nullptr;
         }
