@@ -225,14 +225,16 @@ class testUsdImportUVSets(unittest.TestCase):
         self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
             expectedNumValues=4)
 
-    def testImportCompressibleUVSets(self):
+    def testImportCompressedUVSets(self):
         """
         Tests that UV sets on a USD cube mesh that were compressed to constant,
         uniform, and vertex interpolations are imported correctly.
 
         Note that the actual values here don't really make sense as UV sets.
+        We also do not perform any compression when exporting from Maya, so UV
+        sets like this would have to come from some other source.
         """
-        mayaCubeMesh = self._GetMayaMesh('CompressibleUVSetsCubeShape')
+        mayaCubeMesh = self._GetMayaMesh('CompressedUVSetsCubeShape')
 
         # We should not see the default "map1" UV set:
         self.assertNotIn("map1", mayaCubeMesh.getUVSetNames())

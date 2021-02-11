@@ -84,7 +84,7 @@ def Xform "UsdImportUVSetsTest" (
                 uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:translate:pivot", "!invert!xformOp:translate:pivot"]
             }
 
-            def Mesh "CompressibleUVSetsCube"
+            def Mesh "CompressedUVSetsCube"
             {
                 float3[] extent = [(-5, -5, 0), (5, 5, 10)]
                 int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
