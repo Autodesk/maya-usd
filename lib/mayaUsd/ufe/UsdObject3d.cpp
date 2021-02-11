@@ -75,7 +75,9 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // as the time.
 
     auto bbox = UsdGeomImageable(fPrim).ComputeUntransformedBound(
-        getTime(sceneItem()->path()), UsdGeomTokens->default_);
+        getTime(sceneItem()->path()), UsdGeomTokens->default_,
+        UsdGeomTokens->guide, UsdGeomTokens->proxy, UsdGeomTokens->render
+    );
     auto range = bbox.ComputeAlignedRange();
     auto min = range.GetMin();
     auto max = range.GetMax();

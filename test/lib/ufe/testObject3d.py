@@ -22,7 +22,7 @@ from testUtils import assertVectorAlmostEqual
 from testUtils import assertVectorEqual
 import usdUtils
 
-import mayaUsd.ufe
+import mayaUsd
 
 from pxr import Usd
 from pxr import UsdGeom
@@ -169,6 +169,37 @@ class Object3dTestCase(unittest.TestCase):
         #######
         # Remove the test file.
         os.remove(usdFilePath)
+
+    def testPurposeBoundingBox(self):
+        '''Bounding box of prims with guide, proxy, and render purpose.'''
+        # Create a scene with prims of purposes other than default: guide,
+        # proxy, and render.  All must have a valid bounding box.
+        import mayaUsd_createStageWithNewLayer
+ 
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = '|stage1|stageShape1'
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapePath)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        usdPaths = ['/Cube1', '/Cube2', '/Cube3']
+        prims = [stage.DefinePrim(path, 'Cube') for path in usdPaths]
+        purposes = [UsdGeom.Tokens.proxy, UsdGeom.Tokens.guide, 
+                    UsdGeom.Tokens.render]
+        for (prim, purpose) in zip(prims, purposes):
+            imageable = UsdGeom.Imageable(prim)
+            imageable.CreatePurposeAttr(purpose)
+
+        # Create a UFE scene item for each prim, and get the bounding box using
+        # the Object3d interface.
+        for usdPath in usdPaths:
+            pathSegment = usdUtils.createUfePathSegment(usdPath)
+            path = ufe.Path([proxyShapePathSegment, pathSegment])
+            item = ufe.Hierarchy.createItem(path)
+            object3d = ufe.Object3d.object3d(item)
+
+            bbox = object3d.boundingBox()
+
+            assertVectorAlmostEqual(self, bbox.min.vector, [-1]*3)
+            assertVectorAlmostEqual(self, bbox.max.vector, [1]*3)
 
     def testAnimatedBoundingBox(self):
         '''Test the Object3d bounding box interface for animated geometry.'''
