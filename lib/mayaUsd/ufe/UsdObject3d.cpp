@@ -67,17 +67,19 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // UsdGeomBoundable::ComputeExtentFromPlugins() allows a plugin to register
     // an extent computation; this should be explored.
     //
-    // UsdGeomImageable::ComputeLocalBound() just calls UsdGeomBBoxCache, so do
-    // this here as well.
+    // UsdGeomImageable::ComputeUntransformedBound() just calls
+    // UsdGeomBBoxCache, so do this here as well.
     //
     // Would be nice to know if the object extents are animated or not, so
     // we can bypass time computation and simply use UsdTimeCode::Default()
     // as the time.
 
-    auto bbox = UsdGeomImageable(fPrim).ComputeUntransformedBound(
-        getTime(sceneItem()->path()), UsdGeomTokens->default_,
-        UsdGeomTokens->guide, UsdGeomTokens->proxy, UsdGeomTokens->render
-    );
+    auto path = sceneItem()->path();
+    auto purposes = getProxyShapePurposes(path);
+    // Add in the default purpose.
+    purposes.emplace_back(UsdGeomTokens->default_);
+
+    auto bbox = UsdGeomBBoxCache(getTime(path), purposes).ComputeUntransformedBound(fPrim);
     auto range = bbox.ComputeAlignedRange();
     auto min = range.GetMin();
     auto max = range.GetMax();

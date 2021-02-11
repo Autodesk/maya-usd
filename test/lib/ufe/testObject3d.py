@@ -173,7 +173,10 @@ class Object3dTestCase(unittest.TestCase):
     def testPurposeBoundingBox(self):
         '''Bounding box of prims with guide, proxy, and render purpose.'''
         # Create a scene with prims of purposes other than default: guide,
-        # proxy, and render.  All must have a valid bounding box.
+        # proxy, and render.  All must have a valid bounding box.  The bounding
+        # box is conditional to the proxy shape on the UFE path to the prim
+        # having that purpose enabled: if the purpose is disabled, the bounding
+        # box is invalid.
         import mayaUsd_createStageWithNewLayer
  
         mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
@@ -190,16 +193,40 @@ class Object3dTestCase(unittest.TestCase):
 
         # Create a UFE scene item for each prim, and get the bounding box using
         # the Object3d interface.
-        for usdPath in usdPaths:
+        for (prim, usdPath) in zip(prims, usdPaths):
             pathSegment = usdUtils.createUfePathSegment(usdPath)
             path = ufe.Path([proxyShapePathSegment, pathSegment])
             item = ufe.Hierarchy.createItem(path)
             object3d = ufe.Object3d.object3d(item)
 
+            # First turn off proxy, guide, render purposes on the proxy shape.
+            # The bounding box should be invalid.
+            purposeAttribs = ['drawProxyPurpose', 'drawGuidePurpose', 
+                              'drawRenderPurpose']
+            for purposeAttrib in purposeAttribs:
+                cmds.setAttr(proxyShapePath+'.'+purposeAttrib, 0)
+
             bbox = object3d.boundingBox()
 
-            assertVectorAlmostEqual(self, bbox.min.vector, [-1]*3)
-            assertVectorAlmostEqual(self, bbox.max.vector, [1]*3)
+            self.assertTrue(bbox.empty())
+
+            # Next, turn on each purpose in turn on the proxy shape.  The
+            # bounding box should be valid only if the prim's purpose matches
+            # the proxy shape purpose.
+            imageable = UsdGeom.Imageable(prim)
+            primPurpose = imageable.GetPurposeAttr().Get()
+            for (purpose, purposeAttrib) in zip(purposes, purposeAttribs):
+                cmds.setAttr(proxyShapePath+'.'+purposeAttrib, 1)
+
+                bbox = object3d.boundingBox()
+
+                if primPurpose == purpose:
+                    assertVectorAlmostEqual(self, bbox.min.vector, [-1]*3)
+                    assertVectorAlmostEqual(self, bbox.max.vector, [1]*3)
+                else:
+                    self.assertTrue(bbox.empty())
+
+                cmds.setAttr(proxyShapePath+'.'+purposeAttrib, 0)
 
     def testAnimatedBoundingBox(self):
         '''Test the Object3d bounding box interface for animated geometry.'''
