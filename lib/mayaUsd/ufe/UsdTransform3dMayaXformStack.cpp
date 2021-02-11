@@ -19,6 +19,7 @@
 
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
+#include <mayaUsd/ufe/UsdSetValueUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
@@ -234,148 +235,8 @@ private:
     Ufe::Vector3d   _newS;
 };
 
-// Helper class to factor out common code for translate, rotate, scale
-// undoable commands.
-class UsdTRSUndoableCmdBase : public Ufe::SetVector3dUndoableCommand
-{
-private:
-    const UsdTimeCode _readTime;
-    const UsdTimeCode _writeTime;
-    VtValue           _newOpValue;
-    UsdGeomXformOp    _op;
-    OpFunc            _opFunc;
-    UsdUndoableItem   _undoableItem;
 
-public:
-    struct State
-    {
-        virtual const char* name() const = 0;
-        virtual void        handleUndo(UsdTRSUndoableCmdBase*)
-        {
-            TF_CODING_ERROR(
-                "Illegal handleUndo() call in UsdTRSUndoableCmdBase for state '%s'.", name());
-        }
-        virtual void handleSet(UsdTRSUndoableCmdBase*, const VtValue&)
-        {
-            TF_CODING_ERROR(
-                "Illegal handleSet() call in UsdTRSUndoableCmdBase for state '%s'.", name());
-        }
-    };
-
-    struct InitialState : public State
-    {
-        const char* name() const override { return "initial"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
-        {
-            // Maya triggers an undo on command creation, ignore it.
-            cmd->_state = &UsdTRSUndoableCmdBase::_initialUndoCalledState;
-        }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
-        {
-            // Add undoblock to capture edits
-            UsdUndoBlock undoBlock(&cmd->_undoableItem);
-
-            // Going from initial to executing / executed state, save value.
-            cmd->_op = cmd->_opFunc(*cmd);
-            cmd->_newOpValue = v;
-            cmd->setValue(v);
-            cmd->_state = &UsdTRSUndoableCmdBase::_executeState;
-        }
-    };
-
-    struct InitialUndoCalledState : public State
-    {
-        const char* name() const override { return "initial undo called"; }
-        void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
-        {
-            // Maya triggers a redo on command creation, ignore it.
-            cmd->_state = &UsdTRSUndoableCmdBase::_initialState;
-        }
-    };
-
-    struct ExecuteState : public State
-    {
-        const char* name() const override { return "execute"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
-        {
-            // Undo
-            cmd->_undoableItem.undo();
-
-            cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
-        }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
-        {
-            cmd->_newOpValue = v;
-            cmd->setValue(v);
-        }
-    };
-
-    struct UndoneState : public State
-    {
-        const char* name() const override { return "undone"; }
-        void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
-        {
-            // Redo
-            cmd->_undoableItem.redo();
-
-            cmd->_state = &UsdTRSUndoableCmdBase::_redoneState;
-        }
-    };
-
-    struct RedoneState : public State
-    {
-        const char* name() const override { return "redone"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
-        {
-            // Undo
-            cmd->_undoableItem.undo();
-
-            cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
-        }
-    };
-
-    UsdTRSUndoableCmdBase(
-        const VtValue&     newOpValue,
-        const Ufe::Path&   path,
-        OpFunc             opFunc,
-        const UsdTimeCode& writeTime_)
-        : Ufe::SetVector3dUndoableCommand(path)
-        ,
-        // Always read from proxy shape time.
-        _readTime(getTime(path))
-        , _writeTime(writeTime_)
-        , _newOpValue(newOpValue)
-        , _op()
-        , _opFunc(std::move(opFunc))
-    {
-    }
-
-    // Ufe::UndoableCommand overrides.
-    void execute() override { handleSet(_newOpValue); }
-    void undo() override { _state->handleUndo(this); }
-    void redo() override { handleSet(_newOpValue); }
-
-    void handleSet(const VtValue& v) { _state->handleSet(this, v); }
-
-    void setValue(const VtValue& v) { _op.GetAttr().Set(v, _writeTime); }
-
-    UsdTimeCode readTime() const { return _readTime; }
-    UsdTimeCode writeTime() const { return _writeTime; }
-
-    static InitialState           _initialState;
-    static InitialUndoCalledState _initialUndoCalledState;
-    static ExecuteState           _executeState;
-    static UndoneState            _undoneState;
-    static RedoneState            _redoneState;
-
-    State* _state { &_initialState };
-};
-
-UsdTRSUndoableCmdBase::InitialState           UsdTRSUndoableCmdBase::_initialState;
-UsdTRSUndoableCmdBase::InitialUndoCalledState UsdTRSUndoableCmdBase::_initialUndoCalledState;
-UsdTRSUndoableCmdBase::ExecuteState           UsdTRSUndoableCmdBase::_executeState;
-UsdTRSUndoableCmdBase::UndoneState            UsdTRSUndoableCmdBase::_undoneState;
-UsdTRSUndoableCmdBase::RedoneState            UsdTRSUndoableCmdBase::_redoneState;
+using UsdTRSUndoableCmdBase = UsdSetValueUndoableCmdBase<Ufe::SetVector3dUndoableCommand>;
 
 // UsdRotatePivotTranslateUndoableCmd uses hard-coded USD common transform API
 // single pivot attribute name, not reusable.
