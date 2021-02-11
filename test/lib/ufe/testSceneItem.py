@@ -20,6 +20,8 @@ import fixturesUtils
 import mayaUtils
 import usdUtils
 
+from pxr import Usd
+
 from maya import cmds
 from maya import standalone
 
@@ -69,7 +71,11 @@ class SceneItemTestCase(unittest.TestCase):
         # This node type should be the first item on the ancestor node type list
         # and it should have other items.
         ball35AncestorNodeTypes = ball35Item.ancestorNodeTypes()
-        self.assertEqual(ball35NodeType, ball35AncestorNodeTypes[0])
+        if Usd.GetVersion() > (0, 20, 2):
+            self.assertEqual(ball35NodeType, ball35AncestorNodeTypes[0])
+        else:
+            self.assertEqual("UsdGeomXform", ball35AncestorNodeTypes[0])
+            
         self.assertTrue(len(ball35AncestorNodeTypes) > 1)
 
 
