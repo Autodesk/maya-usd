@@ -352,12 +352,10 @@ createNode mesh -n "SharedFacesCubeShape" -p "SharedFacesCube";
 	setAttr -s 3 ".uvst";
 	setAttr ".uvst[0].uvsn" -type "string" "map1";
 	setAttr ".uvst[1].uvsn" -type "string" "PairedFacesSet";
-	setAttr -s 23 ".uvst[1].uvsp[0:22]" -type "float2" 0 0 0.5 0 0.5 0.5
-		 0 0.5 0.5 0.5 1 0.5 1 1 0.5 1 0 0 0.5 0 0.5 0.5 0 0.5 0.5 0.5 1 0.5 1 1 0.5 1 0 0
-		 0.5 0 0.5 0.5 0 0.5 0.5 0.5 1 0.5 1 1;
+	setAttr -s 7 ".uvst[1].uvsp[0:6]" -type "float2" 0 0 0.5 0 0.5 0.5
+		 0 0.5 1 0.5 1 1 0.5 1;
 	setAttr ".uvst[2].uvsn" -type "string" "AllFacesSharedSet";
-	setAttr -s 24 ".uvst[2].uvsp[0:23]" -type "float2" 0 0 1 0 1 1 0 1 0
-		 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1;
+	setAttr -s 4 ".uvst[2].uvsp[0:3]" -type "float2" 0 0 1 0 1 1 0 1;
 	setAttr ".cuvs" -type "string" "PairedFacesSet";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".ds" no;
@@ -372,20 +370,20 @@ createNode mesh -n "SharedFacesCubeShape" -p "SharedFacesCube";
 		mu 1 4 0 1 2 3
 		mu 2 4 0 1 2 3
 		f 4 1 7 -3 -7
-		mu 1 4 4 5 6 7
-		mu 2 4 4 5 6 7
+		mu 1 4 2 4 5 6
+		mu 2 4 0 1 2 3
 		f 4 2 9 -4 -9
-		mu 1 4 8 9 10 11
-		mu 2 4 8 9 10 11
+		mu 1 4 0 1 2 3
+		mu 2 4 0 1 2 3
 		f 4 3 11 -1 -11
-		mu 1 4 12 13 14 15
-		mu 2 4 12 13 14 15
+		mu 1 4 2 4 5 6
+		mu 2 4 0 1 2 3
 		f 4 -12 -10 -8 -6
-		mu 1 4 16 17 18 19
-		mu 2 4 16 17 18 19
+		mu 1 4 0 1 2 3
+		mu 2 4 0 1 2 3
 		f 4 10 4 6 8
-		mu 1 4 20 21 22 7
-		mu 2 4 20 21 22 23;
+		mu 1 4 2 4 5 6
+		mu 2 4 0 1 2 3;
 	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
 	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
 	setAttr -s 3 ".pd";
