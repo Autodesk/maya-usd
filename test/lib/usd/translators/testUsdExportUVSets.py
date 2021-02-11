@@ -26,6 +26,7 @@ import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
+from maya.api import OpenMaya as OM
 
 import os
 import unittest
@@ -56,6 +57,13 @@ class testUsdExportUVSets(unittest.TestCase):
             expectedUnauthoredValuesIndex)
         self.assertEqual(primvar.GetInterpolation(), expectedInterpolation)
 
+    @staticmethod
+    def _GetMayaMesh(meshNodePath):
+        selectionList = OM.MSelectionList()
+        selectionList.add(meshNodePath)
+        mObj = selectionList.getDependNode(0)
+        return OM.MFnMesh(mObj)
+
     @classmethod
     def setUpClass(cls):
         asFloat2 = mayaUsdLib.WriteUtil.WriteUVAsFloat2()
@@ -78,6 +86,51 @@ class testUsdExportUVSets(unittest.TestCase):
         # testExportUvVersusUvIndexFromIterator test.
         cmds.select("box.map[0:299]", r=True)
         cmds.polyEditUV(u=1.0, v=1.0)
+
+        # XXX: Although the UV sets on the "SharedFacesCubeShape" are stored in
+        # the Maya scene with a minimal number of UV values and UV shells, they
+        # seem to be expanded when the file is opened such that we end up with
+        # a UV value per face vertex rather than these smaller arrays of UV
+        # values with only the indices being per face vertex. As a result, we
+        # have to reassign the UVs just before we export.
+        meshNodePath = 'SharedFacesCubeShape'
+        meshFn = testUsdExportUVSets._GetMayaMesh(meshNodePath)
+
+        uvSetName = 'AllFacesSharedSet'
+        (uArray, vArray) = meshFn.getUVs(uvSetName)
+        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+        # These values are incorrect, in that they are not what's stored in the
+        # Maya scene, and not what we expect to export. We also use raw asserts
+        # here since we don't have an instance of unittest.TestCase yet.
+        assert(len(uArray) == 24)
+        assert(numUVShells == 6)
+
+        # Fix up the "all shared" UV set.
+        meshFn.clearUVs(uvSetName)
+        meshFn.setUVs(
+            [0.0, 1.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0, 1.0],
+            uvSetName)
+        meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3] * 6, uvSetName)
+        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+        assert(numUVShells == 1)
+
+        uvSetName = 'PairedFacesSet'
+        (uArray, vArray) = meshFn.getUVs(uvSetName)
+        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+        # As above, these values are not what we expect.
+        assert(len(uArray) == 23)
+        assert(numUVShells == 5)
+
+        # Fix up the "paired" UV set.
+        meshFn.clearUVs(uvSetName)
+        meshFn.setUVs(
+            [0.0, 0.5, 0.5, 0.0, 1.0, 1.0, 0.5],
+            [0.0, 0.0, 0.5, 0.5, 0.5, 1.0, 1.0],
+            uvSetName)
+        meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3, 2, 4, 5, 6] * 3, uvSetName)
+        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+        assert(numUVShells == 2)
 
         usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
         cmds.usdExport(mergeTransformAndShape=True,
