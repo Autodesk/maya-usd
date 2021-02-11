@@ -115,6 +115,8 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoReorderCommand.h
         UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
+        UsdValueUndoableCommandBase.h
+        UsdXformOpUndoableCommandBase.h
         XformOpUtils.h
     )
     # Why no if for UsdUIInfoHandler.h ?

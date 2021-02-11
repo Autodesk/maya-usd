@@ -79,7 +79,7 @@ protected:
     // Actual implementation of the execution of the command,
     // executed "within" a UsdUndoBlock to capture undo data,
     // to be implemented by the sub-class.
-    virtual void executeImpl() = 0;
+    virtual void executeImpl(State prevState, State newState) = 0;
 
 private:
     UsdUndoableItem _undoableItem;
@@ -108,10 +108,11 @@ template <typename Cmd> inline void UsdUndoableCommandBase<Cmd>::execute()
 
     // Note: set new state before call in case setting the value causes feedback
     //       that end-up calling this again.
+    const State prevState = _state;
     _state = State::Done;
 
     UsdUndoBlock undoBlock(&_undoableItem);
-    executeImpl();
+    executeImpl(prevState, _state);
 }
 template <typename Cmd> inline void UsdUndoableCommandBase<Cmd>::undo()
 {

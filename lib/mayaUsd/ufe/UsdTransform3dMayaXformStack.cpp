@@ -19,7 +19,7 @@
 
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
-#include <mayaUsd/ufe/UsdUndoableCommandBase.h>
+#include <mayaUsd/ufe/UsdXformOpUndoableCommandBase.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <maya/MEulerRotation.h>
@@ -162,32 +162,20 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
 }
 
 // Class for setMatrixCmd() implementation.
-class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>
+class UsdSetMatrix4dUndoableCmd
+    : public UsdValueUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
-    UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>(path)
+    UsdSetMatrix4dUndoableCmd(
+        const Ufe::Matrix4d& newM,
+        const Ufe::Path&     path,
+        const UsdTimeCode&   writeTime)
+        : UsdValueUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>(
+            VtValue(toMTransformationMatrix(newM)),
+            path,
+            writeTime)
     {
-        // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
-        // nor GfTransform decomposition provide results that match Maya,
-        // so use MTransformationMatrix.
-        MMatrix m;
-        std::memcpy(m[0], &newM.matrix[0][0], sizeof(double) * 16);
-        MTransformationMatrix                xformM(m);
-        auto                                 t = xformM.getTranslation(MSpace::kTransform);
-        double                               r[3];
-        double                               s[3];
-        MTransformationMatrix::RotationOrder rotOrder;
-        xformM.getRotation(r, rotOrder);
-        xformM.getScale(s, MSpace::kTransform);
-        constexpr double radToDeg = 57.295779506;
-
-        _newT = Ufe::Vector3d(t[0], t[1], t[2]);
-        _newR = Ufe::Vector3d(r[0] * radToDeg, r[1] * radToDeg, r[2] * radToDeg);
-        _newS = Ufe::Vector3d(s[0], s[1], s[2]);
     }
-
-    ~UsdSetMatrix4dUndoableCmd() override { }
 
     bool set(const Ufe::Matrix4d&) override
     {
@@ -196,170 +184,39 @@ public:
         return true;
     }
 
-protected:
-    void executeImpl() override
+    void handleSet(State previousState, State newState, const VtValue& v) override
     {
+        const auto& xformM = v.Get<MTransformationMatrix>();
+
         auto t3d = Ufe::Transform3d::transform3d(sceneItem());
-        t3d->translate(_newT.x(), _newT.y(), _newT.z());
-        t3d->rotate(_newR.x(), _newR.y(), _newR.z());
-        t3d->scale(_newS.x(), _newS.y(), _newS.z());
+
+        auto t = xformM.getTranslation(MSpace::kTransform);
+        t3d->translate(t[0], t[1], t[2]);
+
+        double                               r[3];
+        MTransformationMatrix::RotationOrder rotOrder;
+        constexpr double                     radToDeg = 57.295779506;
+        xformM.getRotation(r, rotOrder);
+        t3d->rotate(r[0] * radToDeg, r[1] * radToDeg, r[2] * radToDeg);
+
+        double s[3];
+        xformM.getScale(s, MSpace::kTransform);
+        t3d->scale(s[0], s[1], s[2]);
     }
 
 private:
-    Ufe::Vector3d _newT;
-    Ufe::Vector3d _newR;
-    Ufe::Vector3d _newS;
+    static MTransformationMatrix toMTransformationMatrix(const Ufe::Matrix4d& newM)
+    {
+        // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
+        // nor GfTransform decomposition provide results that match Maya,
+        // so use MTransformationMatrix.
+        MMatrix m;
+        std::memcpy(m[0], &newM.matrix[0][0], sizeof(double) * 16);
+        return MTransformationMatrix(m);
+    }
 };
 
-// Helper class to factor out common code for translate, rotate, scale
-// undoable commands.
-class UsdTRSUndoableCmdBase : public UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>
-{
-private:
-    const UsdTimeCode _readTime;
-    const UsdTimeCode _writeTime;
-    UsdGeomXformOp    _op;
-    OpFunc            _opFunc;
-
-protected:
-    VtValue _newOpValue;
-
-public:
-    struct State
-    {
-        virtual const char* name() const = 0;
-        virtual void        handleUndo(UsdTRSUndoableCmdBase*)
-        {
-            TF_CODING_ERROR(
-                "Illegal handleUndo() call in UsdTRSUndoableCmdBase for state '%s'.", name());
-        }
-        virtual void handleSet(UsdTRSUndoableCmdBase*, const VtValue&)
-        {
-            TF_CODING_ERROR(
-                "Illegal handleSet() call in UsdTRSUndoableCmdBase for state '%s'.", name());
-        }
-    };
-
-    struct InitialState : public State
-    {
-        const char* name() const override { return "initial"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
-        {
-            // Maya triggers an undo on command creation, ignore it.
-            cmd->_state = &UsdTRSUndoableCmdBase::_initialUndoCalledState;
-        }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
-        {
-            // Going from initial to executing / executed state, save value.
-            cmd->_op = cmd->_opFunc(*cmd);
-            cmd->_newOpValue = v;
-            cmd->setValue(v);
-            cmd->_state = &UsdTRSUndoableCmdBase::_executeState;
-        }
-    };
-
-    struct InitialUndoCalledState : public State
-    {
-        const char* name() const override { return "initial undo called"; }
-        void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
-        {
-            // Maya triggers a redo on command creation, ignore it.
-            cmd->_state = &UsdTRSUndoableCmdBase::_initialState;
-        }
-    };
-
-    struct ExecuteState : public State
-    {
-        const char* name() const override { return "execute"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
-        {
-            cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
-        }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
-        {
-            cmd->_newOpValue = v;
-            cmd->setValue(v);
-        }
-    };
-
-    struct UndoneState : public State
-    {
-        const char* name() const override { return "undone"; }
-        void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
-        {
-            cmd->_state = &UsdTRSUndoableCmdBase::_redoneState;
-        }
-    };
-
-    struct RedoneState : public State
-    {
-        const char* name() const override { return "redone"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
-        {
-            cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
-        }
-        // The redone state should normally be reached only once manipulation
-        // is over, after undo, so setting new values in the redone state seems
-        // illogical.  However, during point snapping manipulation, within a
-        // single drag, the Maya move command repeatedly calls undo, then redo,
-        // setting new values after the redo.  Treat such events identically to
-        // the Execute state.
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
-        {
-            cmd->_newOpValue = v;
-            cmd->setValue(v);
-        }
-    };
-
-    UsdTRSUndoableCmdBase(
-        const VtValue&     newOpValue,
-        const Ufe::Path&   path,
-        OpFunc             opFunc,
-        const UsdTimeCode& writeTime_)
-        : UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>(path)
-        ,
-        // Always read from proxy shape time.
-        _readTime(getTime(path))
-        , _writeTime(writeTime_)
-        , _op()
-        , _opFunc(std::move(opFunc))
-        , _newOpValue(newOpValue)
-    {
-    }
-
-    // Ufe::UndoableCommand overrides.
-    void undo() override
-    {
-        UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>::undo();
-        _state->handleUndo(this);
-    }
-    void redo() override
-    {
-        UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>::redo();
-        _state->handleSet(this, _newOpValue);
-    }
-
-    void executeImpl() override { _state->handleSet(this, _newOpValue); }
-
-    void setValue(const VtValue& v) { _op.GetAttr().Set(v, _writeTime); }
-
-    UsdTimeCode readTime() const { return _readTime; }
-    UsdTimeCode writeTime() const { return _writeTime; }
-
-    static InitialState           _initialState;
-    static InitialUndoCalledState _initialUndoCalledState;
-    static ExecuteState           _executeState;
-    static UndoneState            _undoneState;
-    static RedoneState            _redoneState;
-
-    State* _state { &_initialState };
-};
-
-UsdTRSUndoableCmdBase::InitialState           UsdTRSUndoableCmdBase::_initialState;
-UsdTRSUndoableCmdBase::InitialUndoCalledState UsdTRSUndoableCmdBase::_initialUndoCalledState;
-UsdTRSUndoableCmdBase::ExecuteState           UsdTRSUndoableCmdBase::_executeState;
-UsdTRSUndoableCmdBase::UndoneState            UsdTRSUndoableCmdBase::_undoneState;
-UsdTRSUndoableCmdBase::RedoneState            UsdTRSUndoableCmdBase::_redoneState;
+using UsdTRSUndoableCmdBase = UsdXformOpUndoableCommandBase<Ufe::SetVector3dUndoableCommand>;
 
 // UsdRotatePivotTranslateUndoableCmd uses hard-coded USD common transform API
 // single pivot attribute name, not reusable.
@@ -378,7 +235,9 @@ public:
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
-        _newOpValue = V(x, y, z);
+        VtValue v;
+        v = V(x, y, z);
+        setNewValue(v);
         execute();
         return true;
     }
@@ -401,7 +260,9 @@ public:
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
-        _newOpValue = _cvtRotXYZToAttr(x, y, z);
+        VtValue v;
+        v = _cvtRotXYZToAttr(x, y, z);
+        setNewValue(v);
         execute();
         return true;
     }
@@ -481,13 +342,13 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
     // If there is no rotate transform op, we will create a RotXYZ.
     CvtRotXYZToAttrFn cvt = hasRotate ? getCvtRotXYZToAttrFn(op.GetOpName()) : toXYZ;
     OpFunc            f = hasRotate
-        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
+                   ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
-        : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
+                   : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
                      const BaseUndoableCommand& cmd) {
               // Use notification guard, otherwise will generate one notification
               // for the xform op add, and another for the reorder.
@@ -654,13 +515,13 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
     GfVec3f v(x, y, z);
     auto    attr = prim().GetAttribute(pvtAttrName);
     OpFunc  f = attr
-        ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
+         ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
               return UsdGeomXformOp(attr);
           })
-        : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
+         : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
                      const BaseUndoableCommand& cmd) {
               // Without a notification guard each operation (each transform op
               // addition, setting the attribute value, and setting the transform
@@ -689,7 +550,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 Ufe::SetMatrix4dUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    return std::make_shared<UsdSetMatrix4dUndoableCmd>(path(), m);
+    return std::make_shared<UsdSetMatrix4dUndoableCmd>(m, path(), UsdTimeCode::Default());
 }
 
 UsdTransform3dMayaXformStack::SetXformOpOrderFn
