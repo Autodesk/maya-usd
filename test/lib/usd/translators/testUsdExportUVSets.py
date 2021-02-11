@@ -56,11 +56,6 @@ class testUsdExportUVSets(unittest.TestCase):
             expectedUnauthoredValuesIndex)
         self.assertEqual(primvar.GetInterpolation(), expectedInterpolation)
 
-
-    @classmethod
-    def tearDownClass(cls):
-        standalone.uninitialize()
-
     @classmethod
     def setUpClass(cls):
         asFloat2 = mayaUsdLib.WriteUtil.WriteUVAsFloat2()
@@ -93,6 +88,10 @@ class testUsdExportUVSets(unittest.TestCase):
             exportUVs=True)
 
         cls._stage = Usd.Stage.Open(usdFilePath)
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def testStageOpens(self):
         self.assertTrue(self._stage)

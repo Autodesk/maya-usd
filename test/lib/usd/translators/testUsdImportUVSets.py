@@ -64,10 +64,6 @@ class testUsdImportUVSets(unittest.TestCase):
             fvi += 1
 
     @classmethod
-    def tearDownClass(cls):
-        standalone.uninitialize()
-
-    @classmethod
     def setUpClass(cls):
         cls.asFloat2 = mayaUsdLib.ReadUtil.ReadFloat2AsUV()
         cls.defaultUVName = "st"
@@ -82,6 +78,10 @@ class testUsdImportUVSets(unittest.TestCase):
             usdFile = os.path.join(cls.inputPath, "UsdImportUVSetsTest", "UsdImportUVSetsTest.usda")
 
         cmds.usdImport(file=usdFile, shadingMode=[["none", "default"], ])
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def _GetMayaMesh(self, meshName):
         selectionList = OM.MSelectionList()
