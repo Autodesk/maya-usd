@@ -129,8 +129,7 @@ class testUsdExportUVSets(unittest.TestCase):
         # These are the default UV values and indices that are exported for a
         # regular Maya polycube. If you just created a new cube and then
         # exported it to USD, these are the values and indices you would see
-        # for the default UV set 'map1'. The data here has already been
-        # merged/compressed.
+        # for the default UV set 'map1'.
         expectedValues = [
             Gf.Vec2f(0.375, 0),
             Gf.Vec2f(0.625, 0),
@@ -250,68 +249,6 @@ class testUsdExportUVSets(unittest.TestCase):
             expectedInterpolation=expectedInterpolation,
             expectedIndices=expectedIndices,
             expectedUnauthoredValuesIndex=expectedUnauthoredValuesIndex)
-
-    def testExportCompressibleUVSets(self):
-        """
-        Tests that UV sets on a cube mesh that can be compressed to constant,
-        uniform and vertex interpolations get exported correctly.
-
-        Note that the actual values here don't really make sense as UV sets.
-        """
-        usdCubeMesh = self._GetCubeUsdMesh('CompressibleUVSetsCube')
-
-        uvSetName = 'ConstantInterpSet'
-        expectedValues = [
-            Gf.Vec2f(0.25, 0.25)
-        ]
-        expectedIndices = [0]
-        expectedInterpolation = UsdGeom.Tokens.constant
-
-        primvar = usdCubeMesh.GetPrimvar(uvSetName)
-        self._AssertUVPrimvar(primvar,
-            expectedValues=expectedValues,
-            expectedInterpolation=expectedInterpolation,
-            expectedIndices=expectedIndices)
-
-        uvSetName = 'UniformInterpSet'
-        expectedValues = [
-            Gf.Vec2f(0.0, 0.0),
-            Gf.Vec2f(0.1, 0.1),
-            Gf.Vec2f(0.2, 0.2),
-            Gf.Vec2f(0.3, 0.3),
-            Gf.Vec2f(0.4, 0.4),
-            Gf.Vec2f(0.5, 0.5)
-        ]
-        expectedIndices = [0, 1, 2, 3, 4, 5]
-        expectedInterpolation = UsdGeom.Tokens.uniform
-
-        primvar = usdCubeMesh.GetPrimvar(uvSetName)
-        self._AssertUVPrimvar(primvar,
-            expectedValues=expectedValues,
-            expectedInterpolation=expectedInterpolation,
-            expectedIndices=expectedIndices)
-
-        # The values here end up in a somewhat odd order because of how
-        # MItMeshFaceVertex visits vertices.
-        uvSetName = 'VertexInterpSet'
-        expectedValues = [
-            Gf.Vec2f(0.0, 0.0),
-            Gf.Vec2f(0.1, 0.1),
-            Gf.Vec2f(0.3, 0.3),
-            Gf.Vec2f(0.2, 0.2),
-            Gf.Vec2f(0.5, 0.5),
-            Gf.Vec2f(0.4, 0.4),
-            Gf.Vec2f(0.7, 0.7),
-            Gf.Vec2f(0.6, 0.6)
-        ]
-        expectedIndices = [0, 1, 3, 2, 5, 4, 7, 6]
-        expectedInterpolation = UsdGeom.Tokens.vertex
-
-        primvar = usdCubeMesh.GetPrimvar(uvSetName)
-        self._AssertUVPrimvar(primvar,
-            expectedValues=expectedValues,
-            expectedInterpolation=expectedInterpolation,
-            expectedIndices=expectedIndices)
 
     def testExportSharedFacesUVSets(self):
         """
