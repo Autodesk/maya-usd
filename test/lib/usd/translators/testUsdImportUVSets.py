@@ -31,7 +31,8 @@ import fixturesUtils
 
 class testUsdImportUVSets(unittest.TestCase):
 
-    def _AssertUVSet(self, mesh, uvSetName, expectedValues, expectedNumValues=None):
+    def _AssertUVSet(self, mesh, uvSetName, expectedValues,
+            expectedNumValues=None, expectedNumUVShells=None):
         """
         Verifies that the UV values for the uv set named uvSetName on the
         MFnMesh mesh match the values in expectedValues. expectedValues should
@@ -62,6 +63,10 @@ class testUsdImportUVSets(unittest.TestCase):
 
             itMeshFV.next()
             fvi += 1
+
+        if expectedNumUVShells is not None:
+            (numUVShells, shellIndices) = mesh.getUvShellsIds(uvSetName)
+            self.assertEqual(expectedNumUVShells, numUVShells)
 
     @classmethod
     def setUpClass(cls):
@@ -135,7 +140,7 @@ class testUsdImportUVSets(unittest.TestCase):
         }
 
         self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
-            expectedNumValues=14)
+            expectedNumValues=14, expectedNumUVShells=1)
 
     def testImportMap1UVSet(self):
         """
@@ -173,7 +178,7 @@ class testUsdImportUVSets(unittest.TestCase):
         }
 
         self._AssertUVSet(mayaCubeMesh, "map1", expectedValues,
-            expectedNumValues=14)
+            expectedNumValues=14, expectedNumUVShells=1)
 
     def testImportOneMissingFaceUVSet(self):
         """
@@ -206,7 +211,7 @@ class testUsdImportUVSets(unittest.TestCase):
         }
 
         self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
-            expectedNumValues=14)
+            expectedNumValues=14, expectedNumUVShells=2)
 
     def testImportOneAssignedFaceUVSet(self):
         """
@@ -223,7 +228,7 @@ class testUsdImportUVSets(unittest.TestCase):
         }
 
         self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
-            expectedNumValues=4)
+            expectedNumValues=4, expectedNumUVShells=1)
 
     def testImportCompressedUVSets(self):
         """
@@ -245,7 +250,7 @@ class testUsdImportUVSets(unittest.TestCase):
         for i in range(24):
             expectedValues[i] = Gf.Vec2f(0.25, 0.25)
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
-            expectedNumValues=1)
+            expectedNumValues=1, expectedNumUVShells=1)
 
         # All face vertices within the same face should have the same value.
         uvSetName = 'UniformInterpSet'
@@ -263,7 +268,7 @@ class testUsdImportUVSets(unittest.TestCase):
         for i in range(20, 24):
             expectedValues[i] = Gf.Vec2f(0.5, 0.5)
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
-            expectedNumValues=6)
+            expectedNumValues=6, expectedNumUVShells=6)
 
         # All face vertices on the same mesh vertex (indices 0-7 for a cube)
         # should have the same value.
@@ -295,7 +300,7 @@ class testUsdImportUVSets(unittest.TestCase):
             23 : Gf.Vec2f(0.4, 0.4)
         }
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
-            expectedNumValues=8)
+            expectedNumValues=8, expectedNumUVShells=1)
 
     def testImportSharedFacesUVSets(self):
         """
@@ -316,7 +321,7 @@ class testUsdImportUVSets(unittest.TestCase):
         for i in range(3, 24, 4):
             expectedValues[i] = Gf.Vec2f(0.0, 1.0)
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
-            expectedNumValues=4)
+            expectedNumValues=4, expectedNumUVShells=1)
 
         # The faces alternate between ranges 0.0-0.5 and 0.5-1.0.
         uvSetName = 'PairedFacesSet'
@@ -338,7 +343,7 @@ class testUsdImportUVSets(unittest.TestCase):
         for i in range(7, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.5, 1.0)
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
-            expectedNumValues=7)
+            expectedNumValues=7, expectedNumUVShells=2)
     
     def testImportUVSetForMeshWithCreases(self):
         """
