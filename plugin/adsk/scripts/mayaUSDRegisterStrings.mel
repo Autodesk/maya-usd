@@ -32,8 +32,8 @@ global proc mayaUSDRegisterStrings() {
     register("kDefaultPrim", "Default Prim");
     register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file.");
     register("kExcludePrimPaths", "Exclude Prim Paths:");
-    register("kExcludePrimPathsAnn", "Excludes the specified prim paths from the loaded USD data. Multiple prim paths must be separated by a comma.");
-    register("kExcludePrimPathsSbm", "Excludes the specified prim paths from the loaded USD data");
+    register("kExcludePrimPathsAnn", "Specify the path of a prim to exclude it from the viewport display. Multiple prim paths must be separated by a comma.");
+    register("kExcludePrimPathsSbm", "Specify the path of a prim to exclude it from the viewport display.");
     register("kLabelStage", "Stage");
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
