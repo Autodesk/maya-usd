@@ -268,7 +268,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             return MStatus::kFailure;
         }
 
-        char importTexturesRootDirPath[FILENAME_MAX] = { 0 };
+        std::string importTexturesRootDirPath;
         if (this->mArgs.importUSDZTexturesFilePath.size() == 0) {
             MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
             MString currentMayaSceneFilePath = UsdMayaUtil::GetCurrentSceneFilePath();
@@ -289,15 +289,8 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             } else {
                 // NOTE: (yliangsiew) Textures are, by convention, supposed to be located in the
                 // `sourceimages` folder under a Maya project root folder.
-                // TODO: (yliangsiew) Need to find where the string library is here and have this be
-                // a custom strncpy.
-                memcpy(
-                    importTexturesRootDirPath,
-                    currentMayaWorkspacePath.asChar(),
-                    currentMayaWorkspacePath.length());
-                memset(importTexturesRootDirPath + currentMayaWorkspacePath.length(), 0, 1);
-                bool bStat = UsdMayaUtilFileSystem::pathAppendPath(
-                    importTexturesRootDirPath, "sourceimages");
+                importTexturesRootDirPath.assign(currentMayaWorkspacePath.asChar(), currentMayaWorkspacePath.length());
+                bool bStat = UsdMayaUtilFileSystem::pathAppendPath(importTexturesRootDirPath, "sourceimages");
                 if (!bStat) {
                     TF_RUNTIME_ERROR(
                         "Unable to determine the texture directory for the Maya project: %s.",
@@ -310,21 +303,16 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                     currentMayaWorkspacePath.asChar());
             }
         } else {
-            memcpy(
-                importTexturesRootDirPath,
-                this->mArgs.importUSDZTexturesFilePath.c_str(),
-                this->mArgs.importUSDZTexturesFilePath.size());
-            memset(
-                importTexturesRootDirPath + this->mArgs.importUSDZTexturesFilePath.length(), 0, 1);
+            importTexturesRootDirPath.assign(this->mArgs.importUSDZTexturesFilePath);
         }
 
         if (!UsdMayaUtilFileSystem::isDirectory(importTexturesRootDirPath)) {
             TF_RUNTIME_ERROR(
                 "The directory specified for USDZ texture imports: %s is not valid.",
-                importTexturesRootDirPath);
+                importTexturesRootDirPath.c_str());
             return MStatus::kFailure;
         }
-        this->mArgs.importUSDZTexturesFilePath = std::string(importTexturesRootDirPath);
+        this->mArgs.importUSDZTexturesFilePath.assign(importTexturesRootDirPath);
         this->mArgs.zipFile = UsdZipFile::Open(stage->GetRootLayer()->GetRealPath());
     }
 

@@ -65,35 +65,35 @@ std::string resolveRelativePathWithinMayaContext(
 /**
  * Checks if the given path is a valid directory on disk.
  *
- * @param dirPath   A null-terminated ANSI string directory path to check.
+ * @param dirPath   A string to a directory path to check.
  *
  * @return          ``true`` if the path refers to a valid directory on disk, ``false`` otherwise.
  */
 MAYAUSD_CORE_PUBLIC
-bool isDirectory(const char* dirPath);
+bool isDirectory(const std::string &dirPath);
 
 /**
  * Determines if the `filePath` provided is a valid file on disk.
  *
- * @param filePath      A null-terminated ANSI string file path to check.
+ * @param filePath      A string to a file path on disk to check.
  *
  * @return              ``true`` if the path refers to a valid file on disk, ``false`` otherwise.
  */
 MAYAUSD_CORE_PUBLIC
-bool isFile(const char* filePath);
+bool isFile(const std::string &filePath);
 
 /**
  * Appends `b` to the directory path `a` in-place and inserts directory separators as necessary.
  *
- * @param a         A valid path to a directory on disk. This should be a null-terminated string
+ * @param a         A valid path to a directory on disk. This should be a string
  *                  with a buffer large enough to hold the combined contents of itself and the
  *                  contents of `b`, including the null-terminator.
- * @param b         A null-terminated string to append as a directory component to `a`.
+ * @param b         A string to append as a directory component to `a`.
  *
  * @return          ``true`` if the operation succeeded, ``false`` if an error occurred.
  */
 MAYAUSD_CORE_PUBLIC
-bool pathAppendPath(char* a, const char* b);
+bool pathAppendPath(std::string &a, const std::string &b);
 
 /**
  * Writes data to a file path on disk.
@@ -114,7 +114,7 @@ size_t writeToFilePath(const char* filePath, const void* buffer, const size_t si
  * for.
  */
 MAYAUSD_CORE_PUBLIC
-void pathStripPath(char* filePath);
+void pathStripPath(std::string &filePath);
 
 } // namespace UsdMayaUtilFileSystem
 

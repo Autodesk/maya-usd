@@ -236,8 +236,6 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 // USD did not resolve the path to absolute because the file name was not an
                 // actual file on disk. We need to find the first tile to help Maya find the
                 // other ones.
-                // TODO: (yliangsiew) Why is this naming convention being hardcoded if right
-                // above "explicit tiling" option is being selected?
                 std::string udimPath(unresolvedFilePath.substr(0, udimPos));
                 udimPath += "1001";
                 udimPath
@@ -305,17 +303,9 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             }
 
             // NOTE: (yliangsiew) Write the file to disk now.
-            char filename[FILENAME_MAX] = { 0 };
-            memcpy(filename, unresolvedFilePath.c_str(), unresolvedFilePath.size());
-            memset(filename + unresolvedFilePath.size(), 0, 1);
+            std::string filename(unresolvedFilePath);
             UsdMayaUtilFileSystem::pathStripPath(filename);
-
-            char extractedFilePath[FILENAME_MAX] = { 0 };
-            memcpy(
-                extractedFilePath,
-                jobArgs.importUSDZTexturesFilePath.c_str(),
-                jobArgs.importUSDZTexturesFilePath.size());
-            memset(extractedFilePath + jobArgs.importUSDZTexturesFilePath.length(), 0, 1);
+            std::string extractedFilePath(jobArgs.importUSDZTexturesFilePath);
             bool bStat = UsdMayaUtilFileSystem::pathAppendPath(extractedFilePath, filename);
             TF_VERIFY(bStat);
 
@@ -324,16 +314,15 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 while (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
                     char newFileName[FILENAME_MAX] = { 0 };
                     int  numChars
-                        = snprintf(newFileName, FILENAME_MAX, "%s_%d", extractedFilePath, counter);
+                        = snprintf(newFileName, FILENAME_MAX, "%s_%d", extractedFilePath.c_str(), counter);
                     TF_VERIFY(numChars > 0);
-                    memcpy(extractedFilePath, newFileName, strlen(newFileName));
-                    memset(extractedFilePath + strlen(newFileName), 0, 1);
+                    extractedFilePath.assign(newFileName);
                     ++counter;
                 }
                 TF_WARN(
                     "A file was duplicated within the archive, but was unique in content. Writing "
                     "file with a suffix instead: %s",
-                    extractedFilePath);
+                    extractedFilePath.c_str());
             }
 
             // NOTE: (yliangsiew) Check if the texture already exists on disk and skip overwriting
@@ -343,7 +332,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             // skip overwriting it.
             bool needsWrite = true;
             if (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
-                FILE* pFile = fopen(extractedFilePath, "rb");
+                FILE* pFile = fopen(extractedFilePath.c_str(), "rb");
                 fseek(pFile, 0, SEEK_END);
                 long fileSize = ftell(pFile);
                 fseek(pFile, 0, SEEK_SET);
@@ -357,23 +346,25 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 if (memcmp(md5Digest, existingFileMD5Digest, 32) == 0) {
                     TF_WARN(
                         "The texture: %s already on disk is the same, skipping overwriting it.",
-                        extractedFilePath);
+                        extractedFilePath.c_str());
                     needsWrite = false;
                 } else {
                     int counter = 0;
                     while (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
                         char newFileName[FILENAME_MAX] = { 0 };
+                        // TODO: (yliangsiew) This is wrong; need to get the filename component instead,
+                        // and then append the suffix to it. Right now it'll write out texture.png_0 instead,
+                        // which is incorrect.
                         int  numChars = snprintf(
-                            newFileName, FILENAME_MAX, "%s_%d", extractedFilePath, counter);
+                            newFileName, FILENAME_MAX, "%s_%d", extractedFilePath.c_str(), counter);
                         TF_VERIFY(numChars > 0);
-                        memcpy(extractedFilePath, newFileName, strlen(newFileName));
-                        memset(extractedFilePath + strlen(newFileName), 0, 1);
+                        extractedFilePath.assign(newFileName);
                         ++counter;
                     }
                     TF_WARN(
                         "A duplicate file exists, but was unique in content. Writing a new"
                         "file with a suffix instead: %s",
-                        extractedFilePath);
+                        extractedFilePath.c_str());
                 }
             }
             if (needsWrite) {
@@ -381,19 +372,19 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 // be too risky compared to just having the end-user delete the textures manually
                 // when needed.
                 size_t bytesWritten = UsdMayaUtilFileSystem::writeToFilePath(
-                    extractedFilePath, fileData, fileInfo.size);
+                    extractedFilePath.c_str(), fileData, fileInfo.size);
                 if (bytesWritten != fileInfo.size) {
                     TF_WARN(
                         "Failed to write out texture: %s to disk. Check that there is enough disk "
                         "space available",
-                        extractedFilePath);
+                        extractedFilePath.c_str());
                     return false;
                 }
             }
 
             // NOTE: (yliangsiew) Continue setting the texture file node attribute to point to the
             // new file that was written to disk.
-            val = SdfAssetPath(std::string(extractedFilePath));
+            val = SdfAssetPath(extractedFilePath);
         }
         UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
 
