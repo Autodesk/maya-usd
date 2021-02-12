@@ -35,10 +35,16 @@ class HdVP2RenderDelegate;
 //! Primvar data and interpolation, from the scene delegate
 struct PrimvarSource
 {
-    PrimvarSource(VtValue d, HdInterpolation interp, bool comp)
+    enum DataSource {
+        Primvar,
+        CPUCompute,
+        GPUCompute
+    };
+
+    PrimvarSource(VtValue d, HdInterpolation interp, DataSource source)
         : data(d)
         , interpolation(interp)
-        , computed(comp)
+        , dataSource(source)
     {
     }
 
@@ -48,8 +54,8 @@ struct PrimvarSource
     //! the interpolation mode to be used.
     HdInterpolation interpolation;
 
-    //! data was computed instead of authored by the scene delegate
-    bool computed { false };
+    //! where the data came from, SceneDelegate, CPU calculation or GPU calculation
+    DataSource dataSource { Primvar };
 };
 
 //! Everything about a primvar
@@ -163,7 +169,7 @@ private:
     bool _PrimvarIsRequired(const TfToken&) const;
 
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
-    void _CreateViewportCompute(const HdVP2DrawItem& drawItem);
+    void _CreateViewportCompute();
 #endif
 #ifdef HDVP2_ENABLE_GPU_OSD
     void _CreateOSDTables();

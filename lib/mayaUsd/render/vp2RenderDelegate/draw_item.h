@@ -166,9 +166,6 @@ private:
     /*
         Data stored directly on the HdVP2DrawItem can be shared across all the MRenderItems
         *this represents.
-
-        2021-01-29 TODO: Share vertex buffers within a draw item so that geom subset items
-        no long duplicate data.
     */
 
     //! VP2 render delegate for which this draw item was created

@@ -354,7 +354,7 @@ void _getColorData(
         interpolation = HdInterpolationConstant;
 
         infoMap[HdTokens->displayColor] = std::make_unique<PrimvarInfo>(
-            PrimvarSource(VtValue(colorArray), interpolation, true), nullptr);
+            PrimvarSource(VtValue(colorArray), interpolation, PrimvarSource::CPUCompute), nullptr);
     }
 }
 
@@ -376,7 +376,8 @@ void _getOpacityData(
         interpolation = HdInterpolationConstant;
 
         infoMap[HdTokens->displayOpacity] = std::make_unique<PrimvarInfo>(
-            PrimvarSource(VtValue(opacityArray), interpolation, true), nullptr);
+            PrimvarSource(VtValue(opacityArray), interpolation, PrimvarSource::CPUCompute),
+            nullptr);
     }
 }
 
@@ -456,10 +457,14 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
     // normals. Compute the normal buffer if necessary.
     PrimvarInfo* normalsInfo = _getInfo(_meshSharedData->_primvarInfo, HdTokens->normals);
     bool         needNormals = _PrimvarIsRequired(HdTokens->normals);
-    bool         computeNormals = !normalsInfo || normalsInfo->_source.computed;
-    bool         hasCleanNormals
+    bool         computeCPUNormals = (!normalsInfo && !_gpuNormalsEnabled)
+        || (normalsInfo && PrimvarSource::CPUCompute == normalsInfo->_source.dataSource);
+    bool computeGPUNormals = (!normalsInfo && _gpuNormalsEnabled)
+        || (normalsInfo && PrimvarSource::GPUCompute == normalsInfo->_source.dataSource);
+    bool hasCleanNormals
         = normalsInfo && (0 == (rprimDirtyBits & (DirtySmoothNormals | DirtyFlatNormals)));
-    if (needNormals && computeNormals && !hasCleanNormals) {
+    //fprintf(stderr, "need normals: %d   computeCPUNormals: %d   computeGPUNormals: %d   hasCleanNormals: %d\n", needNormals, computeCPUNormals, computeGPUNormals, hasCleanNormals);
+    if (needNormals && (computeCPUNormals || computeGPUNormals) && !hasCleanNormals) {
         _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
         // Iterate through all reprdescs for the current repr to figure out if any
         // of them requires smooth normals or flat normals. If either (or both)
@@ -481,21 +486,15 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
         // If there are authored normals, prepare buffer only when it is dirty.
         // otherwise, compute smooth normals from points and adjacency and we
         // have a custom dirty bit to determine whether update is needed.
+        //fprintf(stderr, "requireSmoothNormals: %d   smooth normals dirty: %d\n", requireSmoothNormals, (rprimDirtyBits & DirtySmoothNormals));
         if (requireSmoothNormals && (rprimDirtyBits & DirtySmoothNormals)) {
-#ifdef HDVP2_ENABLE_GPU_COMPUTE
-            if (_gpuNormalsEnabled) {
-                if (!_meshSharedData->_viewportCompute) {
-                    _CreateViewportCompute(*drawItem);
-#ifdef HDVP2_ENABLE_GPU_OSD
-                    _CreateOSDTables();
-#endif
-                }
-                _meshSharedData->_viewportCompute->setNormalVertexBufferGPUDirty();
-                updateNormals
-                    = false; // mark rprimDirtyBits clean? Add something to the update code?
-            } else
-#endif
+            if (computeGPUNormals)
             {
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+                _meshSharedData->_viewportCompute->setNormalVertexBufferGPUDirty();
+#endif
+            }
+            if (computeCPUNormals) {
                 // note: normals gets dirty when points are marked as dirty,
                 // at change tracker.
                 Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
@@ -513,7 +512,9 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 if (!normalsInfo) {
                     _meshSharedData->_primvarInfo[HdTokens->normals]
                         = std::make_unique<PrimvarInfo>(
-                            PrimvarSource(normals, HdInterpolationVertex, true), nullptr);
+                            PrimvarSource(
+                                normals, HdInterpolationVertex, PrimvarSource::CPUCompute),
+                            nullptr);
                 } else {
                     normalsInfo->_source.data = normals;
                     normalsInfo->_source.interpolation = HdInterpolationVertex;
@@ -543,7 +544,8 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
         if (!colorAndOpacityInfo) {
             _meshSharedData->_primvarInfo[HdVP2Tokens->displayColorAndOpacity]
                 = std::make_unique<PrimvarInfo>(
-                    PrimvarSource(VtValue(), HdInterpolationConstant, true), nullptr);
+                    PrimvarSource(VtValue(), HdInterpolationConstant, PrimvarSource::CPUCompute),
+                    nullptr);
             colorAndOpacityInfo
                 = _getInfo(_meshSharedData->_primvarInfo, HdVP2Tokens->displayColorAndOpacity);
         }
@@ -784,6 +786,47 @@ void HdVP2Mesh::Sync(
         _rprimId.asChar(),
         "HdVP2Mesh::Sync");
 
+    // Geom subsets are accessed through the mesh topology. I need to know about
+    // the additional materialIds that get bound by geom subsets before we build the
+    // _primvaInfo. So the very first thing I need to do is grab the topology.
+    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
+        // unsubscribe from material updates from the old geom subset materials
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
+            if (!geomSubset.materialId.IsEmpty()) {
+                const SdfPath materialId
+                    = dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
+                        geomSubset.materialId);
+                const HdVP2Material* material = static_cast<const HdVP2Material*>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+
+                if (material) {
+                    material->UnsubscribeFromMaterialUpdates(id);
+                }
+            }
+        }
+#endif
+
+        _meshSharedData->_topology = GetMeshTopology(delegate);
+
+        // subscribe to material updates from the new geom subset materials
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
+            if (!geomSubset.materialId.IsEmpty()) {
+                const SdfPath materialId
+                    = dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
+                        geomSubset.materialId);
+                const HdVP2Material* material = static_cast<const HdVP2Material*>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+
+                if (material) {
+                    material->SubscribeForMaterialUpdates(id);
+                }
+            }
+        }
+#endif
+    }
+
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         const SdfPath materialId = delegate->GetMaterialId(id);
 
@@ -814,12 +857,6 @@ void HdVP2Mesh::Sync(
         SetMaterialId(materialId);
 #endif
     }
-
-    // Geom subsets are accessed through the meshes topology. I need to know about
-    // the additional materialIds that get bound by geom subsets before we build the
-    // _primvaInfo. So the very first thing I need to do is grab the topology.
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id))
-        _meshSharedData->_topology = GetMeshTopology(delegate);
 
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
@@ -869,15 +906,10 @@ void HdVP2Mesh::Sync(
         }
 
         // also, we always require points
-        _meshSharedData->_allRequiredPrimvars.push_back(HdTokens->points);
+        if (!_PrimvarIsRequired(HdTokens->points))
+            _meshSharedData->_allRequiredPrimvars.push_back(HdTokens->points);
 
         _UpdatePrimvarSources(delegate, *dirtyBits, _meshSharedData->_allRequiredPrimvars);
-
-#ifdef HDVP2_ENABLE_GPU_COMPUTE
-        _gpuNormalsEnabled = _gpuNormalsEnabled && numVertices >= _gpuNormalsComputeThreshold;
-#else
-        _gpuNormalsEnabled = false;
-#endif
     }
 
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
@@ -957,6 +989,21 @@ void HdVP2Mesh::Sync(
             &_meshSharedData->_trianglesFaceVertexIndices,
             &_meshSharedData->_primitiveParam,
             nullptr);
+
+        // Decide if we should use GPU compute, and set up compute objects for later user
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+        _gpuNormalsEnabled
+            = _gpuNormalsEnabled && _meshSharedData->_numVertices >= _gpuNormalsComputeThreshold;
+        if (_gpuNormalsEnabled)
+        {
+            _CreateViewportCompute();
+#ifdef HDVP2_ENABLE_GPU_OSD
+            _CreateOSDTables();
+#endif
+        }
+#else
+        _gpuNormalsEnabled = false;
+#endif
     }
 
     _PrepareSharedVertexBuffers(delegate, *dirtyBits, reprToken);
@@ -1512,16 +1559,6 @@ void HdVP2Mesh::_UpdateDrawItem(
                     trianglesFaceVertexIndices.data(),
                     numIndex * sizeof(int));
             }
-#ifdef HDVP2_ENABLE_GPU_COMPUTE
-            if (requireSmoothNormals && _gpuNormalsEnabled) {
-                // these function only do something if HDVP2_ENABLE_GPU_COMPUTE or
-                // HDVP2_ENABLE_GPU_OSD is defined
-                _CreateViewportCompute(*drawItem);
-#ifdef HDVP2_ENABLE_GPU_OSD
-                _CreateOSDTables();
-#endif
-            }
-#endif
         } else if (desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) {
             unsigned int numIndex = _GetNumOfEdgeIndices(topologyToUse);
 
@@ -1531,6 +1568,12 @@ void HdVP2Mesh::_UpdateDrawItem(
             _FillEdgeIndices(stateToCommit._indexBufferData, topologyToUse);
         }
     }
+
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+    if (_gpuNormalsEnabled) {
+        renderItem->addViewportComputeItem(_meshSharedData->_viewportCompute);
+    }
+#endif
 
     if (desc.geomStyle == HdMeshGeomStyleHull) {
         if ((itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0) {
@@ -1960,16 +2003,11 @@ void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
     This function pulls topology and UV data from the scene delegate and save that
     information to be used as an input to the normal calculation later.
 */
-void HdVP2Mesh::_CreateViewportCompute(const HdVP2DrawItem& drawItem)
+void HdVP2Mesh::_CreateViewportCompute()
 {
-    if (_meshSharedData->_viewportCompute) {
-        // I can't handle multiple draw items that require normals
-        TF_VERIFY(_meshSharedData->_viewportCompute->verifyDrawItem(drawItem));
-    } else {
+    if (!_meshSharedData->_viewportCompute) {
         _meshSharedData->_viewportCompute
-            = MSharedPtr<MeshViewportCompute>::make<>(_meshSharedData, &drawItem);
-        MHWRender::MRenderItem* renderItem = drawItem.GetRenderItem();
-        renderItem->addViewportComputeItem(_meshSharedData->_viewportCompute);
+            = MSharedPtr<MeshViewportCompute>::make<>(_meshSharedData);
     }
 }
 #endif
@@ -2117,8 +2155,14 @@ void HdVP2Mesh::_UpdatePrimvarSources(
             if (std::find(begin, end, pv.name) != end) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                     const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                    _meshSharedData->_primvarInfo[pv.name] = std::make_unique<PrimvarInfo>(
-                        PrimvarSource(value, interp, false), nullptr);
+                    PrimvarInfo* info = _getInfo(_meshSharedData->_primvarInfo, pv.name);
+                    if (info) {
+                        info->_source.data = value;
+                    }
+                    else {
+                        _meshSharedData->_primvarInfo[pv.name] = std::make_unique<PrimvarInfo>(
+                            PrimvarSource(value, interp, PrimvarSource::Primvar), nullptr);
+                    }
                 }
             } else {
                 _meshSharedData->_primvarInfo.erase(pv.name);

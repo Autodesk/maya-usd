@@ -75,11 +75,6 @@ template <typename F> void EnqueueLambdaTask(const F& f)
 std::once_flag      MeshViewportCompute::_compileProgramOnce;
 PxrMayaGLSLProgram* MeshViewportCompute::_computeNormalsProgram;
 
-bool MeshViewportCompute::verifyDrawItem(const HdVP2DrawItem& drawItem) const
-{
-    return &drawItem == _drawItem;
-}
-
 void MeshViewportCompute::openGLErrorCheck()
 {
 //#define DO_OPENGL_ERROR_CHECK
@@ -123,13 +118,17 @@ void MeshViewportCompute::reset()
     /*  don't clear _meshSharedData, it's either an input from the external HdVP2Mesh
         or it has been created explicitly for this consolidated viewport compute.
     */
-    _drawItem = nullptr;
     _executed = false;
     _sourcesExecuted = false;
 
     _consolidatedCompute.reset();
     _geometryIndexMapping.reset();
     _vertexCount = 0;
+    if (0 != _uboResourceHandle)
+    {
+        glDeleteBuffers(1, &_uboResourceHandle);
+        _uboResourceHandle = 0;
+    }
 
     _adjacencyBufferSize = 0;
     _adjacencyBufferCPU.reset();
@@ -337,7 +336,7 @@ void MeshViewportCompute::createConsolidatedTopology(TopologyAccessor getTopolog
         // Can't modify _meshSharedData if we are not consolidated!
     }
 
-    TF_VERIFY(vertexCount == 0 || vertexCount == _vertexCount);
+    TF_VERIFY(_vertexCount == 0 || vertexCount == _vertexCount);
     _vertexCount = vertexCount;
 }
 
@@ -1270,11 +1269,10 @@ bool MeshViewportCompute::execute(
     const MPxViewportComputeItem::Actions& availableActions,
     MRenderItem&                           renderItem)
 {
-    if (!_normalVertexBufferGPUDirty)
-        return true;
-
     if (_adjacencyTaskInProgress)
+    {
         return false;
+    }
 
     MProfilingScope mainProfilingScope(
         HdVP2RenderDelegate::sProfilerCategory,
@@ -1282,6 +1280,13 @@ bool MeshViewportCompute::execute(
         "MeshViewportCompute::execute");
 
     findConsolidationMapping(renderItem);
+
+    //fprintf(stderr, "Starting MeshViewportCompute %p\n", this);
+    if (!_normalVertexBufferGPUDirty)
+    {
+        //fprintf(stderr, "Found clean normals, early exit\n");
+        return true;
+    }
 
     if (_topologyDirty || _adjacencyBufferSize == 0) {
         TF_VERIFY(!_adjacencyTaskInProgress);
@@ -1311,6 +1316,8 @@ bool MeshViewportCompute::execute(
 
     setClean();
 
+    //fprintf(stderr, "finished\n");
+
     return true;
 }
 
@@ -1336,7 +1343,7 @@ bool MeshViewportCompute::canConsolidate(const MPxViewportComputeItem& other) co
 MSharedPtr<MPxViewportComputeItem> MeshViewportCompute::cloneForConsolidation() const
 {
     MSharedPtr<MeshViewportCompute> clone
-        = MSharedPtr<MeshViewportCompute>::make<>(std::make_shared<HdVP2MeshSharedData>(), nullptr);
+        = MSharedPtr<MeshViewportCompute>::make<>(std::make_shared<HdVP2MeshSharedData>());
     return clone;
 }
 
