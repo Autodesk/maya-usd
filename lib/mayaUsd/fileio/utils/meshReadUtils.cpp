@@ -190,7 +190,6 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
 {
     const TfToken& primvarName = primvar.GetPrimvarName();
 
-    // Get the raw data before applying any indexing.
     VtVec2fArray uvValues;
     if (!primvar.Get(&uvValues) || uvValues.empty()) {
         TF_WARN(
@@ -200,53 +199,7 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
         return false;
     }
 
-    // This is the number of UV values assuming the primvar is NOT indexed.
-    VtIntArray assignmentIndices;
-    if (primvar.GetIndices(&assignmentIndices)) {
-        // The primvar IS indexed, so the indices array is what determines the
-        // number of UV values.
-        int unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
-
-        // Replace any index equal to unauthoredValuesIndex with -1.
-        if (unauthoredValuesIndex != -1) {
-            for (int& index : assignmentIndices) {
-                if (index == unauthoredValuesIndex) {
-                    index = -1;
-                }
-            }
-        }
-
-        // Furthermore, if unauthoredValuesIndex is valid for uvValues, then
-        // remove it from uvValues and shift the indices (we don't want to
-        // import the unauthored value into Maya, where it has no meaning).
-        if (unauthoredValuesIndex >= 0
-            && static_cast<size_t>(unauthoredValuesIndex) < uvValues.size()) {
-            // This moves [unauthoredValuesIndex + 1, end) to
-            // [unauthoredValuesIndex, end - 1), erasing the
-            // unauthoredValuesIndex.
-            std::move(
-                uvValues.begin() + unauthoredValuesIndex + 1,
-                uvValues.end(),
-                uvValues.begin() + unauthoredValuesIndex);
-            uvValues.pop_back();
-
-            for (int& index : assignmentIndices) {
-                if (index > unauthoredValuesIndex) {
-                    index = index - 1;
-                }
-            }
-        }
-    }
-
-    // Go through the UV data and add the U and V values to separate
-    // MFloatArrays.
-    MFloatArray uCoords;
-    MFloatArray vCoords;
-    for (const GfVec2f& v : uvValues) {
-        uCoords.append(v[0]);
-        vCoords.append(v[1]);
-    }
-
+    // Determine the name to use for the Maya UV set.
     MStatus status { MS::kSuccess };
     MString uvSetName(primvarName.GetText());
     bool    createUVSet = true;
@@ -260,7 +213,7 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
         // If map1 still exists, we rename and re-use it:
         MStringArray uvSetNames;
         meshFn.getUVSetNames(uvSetNames);
-        if (uvSetNames[0] == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()) {
+        if (uvSetNames[0u] == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()) {
             meshFn.renameUVSet(
                 UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText(), uvSetName);
             createUVSet = false;
@@ -287,8 +240,23 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
     MString currentSet = meshFn.currentUVSetName();
     meshFn.setCurrentUVSetName(currentSet);
 
-    // Create UVs on the mesh from the values we collected out of the primvar.
-    // We'll assign mesh components to these values below.
+    // Set the UVs on the mesh from the values we collected out of the primvar.
+    // We'll check whether there is an unauthored value in the primvar and skip
+    // it if so to ensure that we don't import it into Maya where it has no
+    // meaning.
+    const int unauthoredValuesIndex = primvar.GetUnauthoredValuesIndex();
+
+    MFloatArray uCoords;
+    MFloatArray vCoords;
+
+    for (size_t uvId = 0u; uvId < uvValues.size(); ++uvId) {
+        if (unauthoredValuesIndex < 0 || uvId != static_cast<size_t>(unauthoredValuesIndex)) {
+            const GfVec2f& v = uvValues[uvId];
+            uCoords.append(v[0u]);
+            vCoords.append(v[1u]);
+        }
+    }
+
     status = meshFn.setUVs(uCoords, vCoords, &uvSetName);
     if (status != MS::kSuccess) {
         TF_WARN(
@@ -296,6 +264,23 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
             uvSetName.asChar(),
             meshFn.fullPathName().asChar());
         return false;
+    }
+
+    VtIntArray assignmentIndices;
+    if (primvar.GetIndices(&assignmentIndices)) {
+        if (unauthoredValuesIndex >= 0) {
+            // Since the unauthored value was removed above, we need to fix up
+            // the assignment indices to replace any index equal to the
+            // unauthored value index with -1, and decrement any index that was
+            // after the unauthored value index by 1.
+            for (int& index : assignmentIndices) {
+                if (index == unauthoredValuesIndex) {
+                    index = -1;
+                } else if (index > unauthoredValuesIndex) {
+                    index -= 1;
+                }
+            }
+        }
     }
 
     const TfToken& interpolation = primvar.GetInterpolation();
