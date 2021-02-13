@@ -70,7 +70,7 @@ std::string resolveRelativePathWithinMayaContext(
  * @return          ``true`` if the path refers to a valid directory on disk, ``false`` otherwise.
  */
 MAYAUSD_CORE_PUBLIC
-bool isDirectory(const std::string &dirPath);
+bool isDirectory(const std::string& dirPath);
 
 /**
  * Determines if the `filePath` provided is a valid file on disk.
@@ -80,7 +80,7 @@ bool isDirectory(const std::string &dirPath);
  * @return              ``true`` if the path refers to a valid file on disk, ``false`` otherwise.
  */
 MAYAUSD_CORE_PUBLIC
-bool isFile(const std::string &filePath);
+bool isFile(const std::string& filePath);
 
 /**
  * Appends `b` to the directory path `a` in-place and inserts directory separators as necessary.
@@ -93,7 +93,7 @@ bool isFile(const std::string &filePath);
  * @return          ``true`` if the operation succeeded, ``false`` if an error occurred.
  */
 MAYAUSD_CORE_PUBLIC
-bool pathAppendPath(std::string &a, const std::string &b);
+bool pathAppendPath(std::string& a, const std::string& b);
 
 /**
  * Writes data to a file path on disk.
@@ -114,7 +114,13 @@ size_t writeToFilePath(const char* filePath, const void* buffer, const size_t si
  * for.
  */
 MAYAUSD_CORE_PUBLIC
-void pathStripPath(std::string &filePath);
+void pathStripPath(std::string& filePath);
+
+MAYAUSD_CORE_PUBLIC
+void pathRemoveExtension(std::string& filePath);
+
+MAYAUSD_CORE_PUBLIC
+std::string pathFindExtension(std::string& filePath);
 
 } // namespace UsdMayaUtilFileSystem
 

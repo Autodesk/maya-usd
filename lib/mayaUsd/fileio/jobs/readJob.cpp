@@ -289,8 +289,10 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             } else {
                 // NOTE: (yliangsiew) Textures are, by convention, supposed to be located in the
                 // `sourceimages` folder under a Maya project root folder.
-                importTexturesRootDirPath.assign(currentMayaWorkspacePath.asChar(), currentMayaWorkspacePath.length());
-                bool bStat = UsdMayaUtilFileSystem::pathAppendPath(importTexturesRootDirPath, "sourceimages");
+                importTexturesRootDirPath.assign(
+                    currentMayaWorkspacePath.asChar(), currentMayaWorkspacePath.length());
+                bool bStat = UsdMayaUtilFileSystem::pathAppendPath(
+                    importTexturesRootDirPath, "sourceimages");
                 if (!bStat) {
                     TF_RUNTIME_ERROR(
                         "Unable to determine the texture directory for the Maya project: %s.",

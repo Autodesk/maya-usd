@@ -182,7 +182,7 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
     return pathModel.generic_string();
 }
 
-bool UsdMayaUtilFileSystem::isDirectory(const std::string &dirPath)
+bool UsdMayaUtilFileSystem::isDirectory(const std::string& dirPath)
 {
     // TODO: (yliangsiew) Is there a platform wrapper somewhere so I can implement the OS native
     // calls for something simple like this without having to add yet another dependency on Boost?
@@ -197,7 +197,7 @@ bool UsdMayaUtilFileSystem::isFile(const std::string& filePath)
     return bStat;
 }
 
-bool UsdMayaUtilFileSystem::pathAppendPath(std::string &a, const std::string &b)
+bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
 {
     // TODO: (yliangsiew) Is there a platform wrapper somewhere so I can implement the OS native
     // calls for something simple like this without having to add yet another dependency on Boost?
@@ -230,7 +230,7 @@ UsdMayaUtilFileSystem::writeToFilePath(const char* filePath, const void* buffer,
     return size;
 }
 
-void UsdMayaUtilFileSystem::pathStripPath(std::string &filePath)
+void UsdMayaUtilFileSystem::pathStripPath(std::string& filePath)
 {
     // TODO: (yliangsiew) Again, need a platform layer I can write simpler versions of these for to
     // avoid using boost.
@@ -238,4 +238,25 @@ void UsdMayaUtilFileSystem::pathStripPath(std::string &filePath)
     boost::filesystem::path filename = p.filename();
     filePath.assign(filename.c_str());
     return;
+}
+
+void UsdMayaUtilFileSystem::pathRemoveExtension(std::string& filePath)
+{
+    // TODO: (yliangsiew) Again, need a platform layer I can write simpler versions of these for to
+    // avoid using boost.
+    boost::filesystem::path p(filePath);
+    boost::filesystem::path dir = p.parent_path();
+    boost::filesystem::path finalPath = dir / p.stem();
+    filePath.assign(finalPath.c_str());
+    return;
+}
+
+std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
+{
+    boost::filesystem::path p(filePath);
+    if (!p.has_extension()) {
+        return std::string();
+    }
+    boost::filesystem::path ext = p.extension();
+    return std::string(ext.c_str());
 }

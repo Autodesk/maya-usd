@@ -306,19 +306,30 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             std::string filename(unresolvedFilePath);
             UsdMayaUtilFileSystem::pathStripPath(filename);
             std::string extractedFilePath(jobArgs.importUSDZTexturesFilePath);
-            bool bStat = UsdMayaUtilFileSystem::pathAppendPath(extractedFilePath, filename);
+            bool        bStat = UsdMayaUtilFileSystem::pathAppendPath(extractedFilePath, filename);
             TF_VERIFY(bStat);
 
             if (needsUniqueFilename) {
-                int counter = 0;
-                while (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
+                int         counter = 0;
+                std::string checkPath(extractedFilePath);
+                while (UsdMayaUtilFileSystem::isFile(checkPath)) {
+                    checkPath.assign(extractedFilePath);
+                    std::string filenameNoExt(checkPath);
+                    std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
+                    UsdMayaUtilFileSystem::pathRemoveExtension(checkPath);
                     char newFileName[FILENAME_MAX] = { 0 };
-                    int  numChars
-                        = snprintf(newFileName, FILENAME_MAX, "%s_%d", extractedFilePath.c_str(), counter);
+                    int  numChars = snprintf(
+                        newFileName,
+                        FILENAME_MAX,
+                        "%s_%d%s",
+                        checkPath.c_str(),
+                        counter,
+                        ext.c_str());
                     TF_VERIFY(numChars > 0);
-                    extractedFilePath.assign(newFileName);
+                    checkPath.assign(newFileName);
                     ++counter;
                 }
+                extractedFilePath.assign(checkPath);
                 TF_WARN(
                     "A file was duplicated within the archive, but was unique in content. Writing "
                     "file with a suffix instead: %s",
@@ -349,18 +360,26 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                         extractedFilePath.c_str());
                     needsWrite = false;
                 } else {
-                    int counter = 0;
-                    while (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
+                    int         counter = 0;
+                    std::string checkPath(extractedFilePath);
+                    while (UsdMayaUtilFileSystem::isFile(checkPath)) {
+                        checkPath.assign(extractedFilePath);
+                        std::string filenameNoExt(checkPath);
+                        std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
+                        UsdMayaUtilFileSystem::pathRemoveExtension(checkPath);
                         char newFileName[FILENAME_MAX] = { 0 };
-                        // TODO: (yliangsiew) This is wrong; need to get the filename component instead,
-                        // and then append the suffix to it. Right now it'll write out texture.png_0 instead,
-                        // which is incorrect.
                         int  numChars = snprintf(
-                            newFileName, FILENAME_MAX, "%s_%d", extractedFilePath.c_str(), counter);
+                            newFileName,
+                            FILENAME_MAX,
+                            "%s_%d%s",
+                            checkPath.c_str(),
+                            counter,
+                            ext.c_str());
                         TF_VERIFY(numChars > 0);
-                        extractedFilePath.assign(newFileName);
+                        checkPath.assign(newFileName);
                         ++counter;
                     }
+                    extractedFilePath.assign(checkPath);
                     TF_WARN(
                         "A duplicate file exists, but was unique in content. Writing a new"
                         "file with a suffix instead: %s",
