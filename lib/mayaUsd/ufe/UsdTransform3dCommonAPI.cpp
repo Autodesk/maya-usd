@@ -15,6 +15,7 @@
 //
 #include "UsdTransform3dCommonAPI.h"
 
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -24,167 +25,160 @@ namespace ufe {
 
 namespace {
 
-class UsdTranslateUndoableCmd : public Ufe::TranslateUndoableCommand
+// Extract translation, rotation, scale or pivot point from the common API transform.
+void extractXform(
+    const UsdSceneItem::Ptr& item,
+    const UsdTimeCode&       time,
+    GfVec3d&                 t,
+    GfVec3f&                 r,
+    GfVec3f&                 s,
+    GfVec3f&                 pvt)
+{
+    UsdGeomXformCommonAPI commonAPI(item->prim());
+
+    UsdGeomXformCommonAPI::RotationOrder rotOrder;
+    if (!commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, time)) {
+        TF_FATAL_ERROR(
+            "Cannot read common API transform values for prim %s",
+            item->prim().GetPath().GetText());
+    }
+}
+
+GfVec3d extractTranslation(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
+{
+    GfVec3d t;
+    GfVec3f r, s, pvt;
+    extractXform(item, time, t, r, s, pvt);
+
+    return t;
+}
+
+GfVec3d extractRotation(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
+{
+    GfVec3d t;
+    GfVec3f r, s, pvt;
+    extractXform(item, time, t, r, s, pvt);
+
+    return r;
+}
+
+GfVec3d extractScale(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
+{
+    GfVec3d t;
+    GfVec3f r, s, pvt;
+    extractXform(item, time, t, r, s, pvt);
+
+    return s;
+}
+
+GfVec3d extractPivot(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
+{
+    GfVec3d t;
+    GfVec3f r, s, pvt;
+    extractXform(item, time, t, r, s, pvt);
+
+    return pvt;
+}
+
+// Common base class for the translation, rotation, scale and pivot commands.
+//
+// Only the handleSet() function, which sets the correct part of the transform
+// is done in the sub-classes.
+class UsdTRSUndoableCmdBase : public UsdUndoableCmdBase<Ufe::SetVector3dUndoableCommand>
+{
+public:
+    UsdTRSUndoableCmdBase(
+        const GfVec3d&           value,
+        const UsdSceneItem::Ptr& item,
+        const UsdTimeCode&       time)
+        : UsdUndoableCmdBase<Ufe::SetVector3dUndoableCommand>(VtValue(value), item->path(), time)
+        , _commonAPI(item->prim())
+    {
+    }
+
+    UsdTRSUndoableCmdBase(
+        const GfVec3f&           value,
+        const UsdSceneItem::Ptr& item,
+        const UsdTimeCode&       time)
+        : UsdUndoableCmdBase<Ufe::SetVector3dUndoableCommand>(VtValue(value), item->path(), time)
+        , _commonAPI(item->prim())
+    {
+    }
+
+    // Executes the command by setting the translation/rotation/scale/pivot into the value
+    // that will be used when we execute the transform op.
+    bool set(double x, double y, double z) override
+    {
+        setNewValue(VtValue(GfVec3d(x, y, z)));
+        execute();
+        return true;
+    }
+
+protected:
+    UsdGeomXformCommonAPI _commonAPI;
+};
+
+class UsdTranslateUndoableCmd : public UsdTRSUndoableCmdBase
 {
 public:
     UsdTranslateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : Ufe::TranslateUndoableCommand(item->path())
-        , _time(time)
-        , _commonAPI(item->prim())
+        : UsdTRSUndoableCmdBase(extractTranslation(item, time), item, time)
     {
-        GfVec3d                              t;
-        GfVec3f                              r, s, pvt;
-        UsdGeomXformCommonAPI::RotationOrder rotOrder;
-
-        if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, time)) {
-            TF_FATAL_ERROR(
-                "Cannot read common API transform values for prim %s",
-                item->prim().GetPath().GetText());
-        }
-
-        _prevT = t;
-        _t = t;
     }
 
-    void undo() override { _commonAPI.SetTranslate(_prevT, _time); }
-    void redo() override { _commonAPI.SetTranslate(_t, _time); }
-
-    // Executes the command by setting the translation onto the transform op.
-    bool set(double x, double y, double z) override
+    void handleSet(State previousState, State newState, const VtValue& v) override
     {
-        _t = GfVec3d(x, y, z);
-        redo();
-        return true;
+        const GfVec3d t(v.Get<GfVec3d>());
+        _commonAPI.SetTranslate(t, writeTime());
     }
-
-private:
-    const UsdTimeCode     _time;
-    UsdGeomXformCommonAPI _commonAPI;
-    GfVec3d               _prevT, _t;
 };
 
-class UsdRotateUndoableCmd : public Ufe::RotateUndoableCommand
+class UsdRotateUndoableCmd : public UsdTRSUndoableCmdBase
 {
 public:
     UsdRotateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : Ufe::RotateUndoableCommand(item->path())
-        , _time(time)
-        , _commonAPI(item->prim())
+        : UsdTRSUndoableCmdBase(extractRotation(item, time), item, time)
     {
-        GfVec3d                              t;
-        GfVec3f                              r, s, pvt;
-        UsdGeomXformCommonAPI::RotationOrder rotOrder;
-
-        if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, time)) {
-            TF_FATAL_ERROR(
-                "Cannot read common API transform values for prim %s",
-                item->prim().GetPath().GetText());
-        }
-
-        _prevR = r;
-        _r = r;
     }
 
-    void undo() override
+    void handleSet(State previousState, State newState, const VtValue& v) override
     {
-        _commonAPI.SetRotate(_prevR, UsdGeomXformCommonAPI::RotationOrderXYZ, _time);
+        // Note: rotations are kept as float in common API.
+        const GfVec3f r(v.Get<GfVec3d>());
+        _commonAPI.SetRotate(r, UsdGeomXformCommonAPI::RotationOrderXYZ, writeTime());
     }
-    void redo() override
-    {
-        _commonAPI.SetRotate(_r, UsdGeomXformCommonAPI::RotationOrderXYZ, _time);
-    }
-
-    // Executes the command by setting the rotation onto the transform op.
-    bool set(double x, double y, double z) override
-    {
-        _r = GfVec3f(x, y, z);
-        redo();
-        return true;
-    }
-
-private:
-    const UsdTimeCode     _time;
-    UsdGeomXformCommonAPI _commonAPI;
-    GfVec3f               _prevR, _r;
 };
 
-class UsdScaleUndoableCmd : public Ufe::ScaleUndoableCommand
+class UsdScaleUndoableCmd : public UsdTRSUndoableCmdBase
 {
-
 public:
     UsdScaleUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : Ufe::ScaleUndoableCommand(item->path())
-        , _time(time)
-        , _commonAPI(item->prim())
+        : UsdTRSUndoableCmdBase(extractScale(item, time), item, time)
     {
-        GfVec3d                              t;
-        GfVec3f                              r, s, pvt;
-        UsdGeomXformCommonAPI::RotationOrder rotOrder;
-
-        if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, time)) {
-            TF_FATAL_ERROR(
-                "Cannot read common API transform values for prim %s",
-                item->prim().GetPath().GetText());
-        }
-
-        _prevS = s;
-        _s = s;
     }
 
-    void undo() override { _commonAPI.SetScale(_prevS, _time); }
-    void redo() override { _commonAPI.SetScale(_s, _time); }
-
-    // Executes the command by setting the rotation onto the transform op.
-    bool set(double x, double y, double z) override
+    void handleSet(State previousState, State newState, const VtValue& v) override
     {
-        _s = GfVec3f(x, y, z);
-        redo();
-        return true;
+        // Note: scales are kept as float in common API.
+        const GfVec3f s(v.Get<GfVec3d>());
+        _commonAPI.SetScale(s, writeTime());
     }
-
-private:
-    const UsdTimeCode     _time;
-    UsdGeomXformCommonAPI _commonAPI;
-    GfVec3f               _prevS, _s;
 };
 
-class UsdTranslatePivotUndoableCmd : public Ufe::TranslateUndoableCommand
+class UsdTranslatePivotUndoableCmd : public UsdTRSUndoableCmdBase
 {
 public:
     UsdTranslatePivotUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : Ufe::TranslateUndoableCommand(item->path())
-        , _time(time)
-        , _commonAPI(item->prim())
+        : UsdTRSUndoableCmdBase(extractPivot(item, time), item, time)
     {
-        GfVec3d                              t;
-        GfVec3f                              r, s, pvt;
-        UsdGeomXformCommonAPI::RotationOrder rotOrder;
-
-        if (!_commonAPI.GetXformVectorsByAccumulation(&t, &r, &s, &pvt, &rotOrder, time)) {
-            TF_FATAL_ERROR(
-                "Cannot read common API transform values for prim %s",
-                item->prim().GetPath().GetText());
-        }
-
-        _prevPvt = pvt;
-        _pvt = pvt;
     }
 
-    void undo() override { _commonAPI.SetPivot(_prevPvt, _time); }
-    void redo() override { _commonAPI.SetPivot(_pvt, _time); }
-
-    // Executes the command by setting the translation onto the transform op.
-    bool set(double x, double y, double z) override
+    void handleSet(State previousState, State newState, const VtValue& v) override
     {
-        _pvt = GfVec3f(x, y, z);
-        redo();
-        return true;
+        // Note: pivot are kept as float in common API.
+        const GfVec3f pvt(v.Get<GfVec3d>());
+        _commonAPI.SetPivot(pvt, writeTime());
     }
-
-private:
-    const UsdTimeCode     _time;
-    UsdGeomXformCommonAPI _commonAPI;
-    GfVec3f               _prevPvt, _pvt;
 };
 
 } // namespace
