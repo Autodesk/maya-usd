@@ -163,34 +163,20 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
 
-// Class for setMatrixCmd() implementation.  UsdUndoBlock data member and
-// undo() / redo() should be factored out into a future command base class.
-class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+// Class for setMatrixCmd() implementation.
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCmdBase<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
-    UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : Ufe::SetMatrix4dUndoableCommand(path)
+    UsdSetMatrix4dUndoableCmd(
+        const Ufe::Matrix4d& newM,
+        const Ufe::Path&     path,
+        const UsdTimeCode&   writeTime)
+        : UsdUndoableCmdBase<Ufe::SetMatrix4dUndoableCommand>(
+            VtValue(toMTransformationMatrix(newM)),
+            path,
+            writeTime)
     {
-        // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
-        // nor GfTransform decomposition provide results that match Maya,
-        // so use MTransformationMatrix.
-        MMatrix m;
-        std::memcpy(m[0], &newM.matrix[0][0], sizeof(double) * 16);
-        MTransformationMatrix                xformM(m);
-        auto                                 t = xformM.getTranslation(MSpace::kTransform);
-        double                               r[3];
-        double                               s[3];
-        MTransformationMatrix::RotationOrder rotOrder;
-        xformM.getRotation(r, rotOrder);
-        xformM.getScale(s, MSpace::kTransform);
-        constexpr double radToDeg = 57.295779506;
-
-        _newT = Ufe::Vector3d(t[0], t[1], t[2]);
-        _newR = Ufe::Vector3d(r[0] * radToDeg, r[1] * radToDeg, r[2] * radToDeg);
-        _newS = Ufe::Vector3d(s[0], s[1], s[2]);
     }
-
-    ~UsdSetMatrix4dUndoableCmd() override { }
 
     bool set(const Ufe::Matrix4d&) override
     {
@@ -199,42 +185,37 @@ public:
         return true;
     }
 
-    void execute() override
+    void handleSet(State previousState, State newState, const VtValue& v) override
     {
-        UsdUndoBlock undoBlock(&_undoableItem);
+        const auto& xformM = v.Get<MTransformationMatrix>();
 
         auto t3d = Ufe::Transform3d::transform3d(sceneItem());
-        t3d->translate(_newT.x(), _newT.y(), _newT.z());
-        t3d->rotate(_newR.x(), _newR.y(), _newR.z());
-        t3d->scale(_newS.x(), _newS.y(), _newS.z());
 
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-        _executeCalled = true;
-#endif
-    }
+        auto t = xformM.getTranslation(MSpace::kTransform);
+        t3d->translate(t[0], t[1], t[2]);
 
-    void undo() override { _undoableItem.undo(); }
-    void redo() override
-    {
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-        if (!_executeCalled) {
-            execute();
-            return;
-        }
-#endif
-        _undoableItem.redo();
+        double                               r[3];
+        MTransformationMatrix::RotationOrder rotOrder;
+        constexpr double                     radToDeg = 57.295779506;
+        xformM.getRotation(r, rotOrder);
+        t3d->rotate(r[0] * radToDeg, r[1] * radToDeg, r[2] * radToDeg);
+
+        double s[3];
+        xformM.getScale(s, MSpace::kTransform);
+        t3d->scale(s[0], s[1], s[2]);
     }
 
 private:
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-    bool _executeCalled { false };
-#endif
-    UsdUndoableItem _undoableItem;
-    Ufe::Vector3d   _newT;
-    Ufe::Vector3d   _newR;
-    Ufe::Vector3d   _newS;
+    static MTransformationMatrix toMTransformationMatrix(const Ufe::Matrix4d& newM)
+    {
+        // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
+        // nor GfTransform decomposition provide results that match Maya,
+        // so use MTransformationMatrix.
+        MMatrix m;
+        std::memcpy(m[0], &newM.matrix[0][0], sizeof(double) * 16);
+        return MTransformationMatrix(m);
+    }
 };
-
 
 using UsdTRSUndoableCmdBase = UsdSetValueUndoableCmdBase<Ufe::SetVector3dUndoableCommand>;
 
@@ -570,7 +551,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 Ufe::SetMatrix4dUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    return std::make_shared<UsdSetMatrix4dUndoableCmd>(path(), m);
+    return std::make_shared<UsdSetMatrix4dUndoableCmd>(m, path(), UsdTimeCode::Default());
 }
 
 UsdTransform3dMayaXformStack::SetXformOpOrderFn
