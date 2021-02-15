@@ -21,8 +21,6 @@
 #include <mayaUsd/ufe/RotationUtils.h>
 #include <mayaUsd/ufe/UsdSetValueUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>

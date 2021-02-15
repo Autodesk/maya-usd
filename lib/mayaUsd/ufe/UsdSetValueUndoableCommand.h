@@ -49,6 +49,12 @@ public:
         OpFunc             opFunc,
         const UsdTimeCode& writeTime);
 
+    UsdSetValueUndoableCmdBase(
+        const VtValue&        newOpValue,
+        const Ufe::Path&      path,
+        const UsdGeomXformOp& op,
+        const UsdTimeCode&    writeTime);
+
 protected:
     using State = typename UsdUndoableCmdBase<Cmd>::State;
 
@@ -61,6 +67,18 @@ private:
 };
 
 // Implementation of the set-value command base class.
+
+template <typename Cmd>
+inline UsdSetValueUndoableCmdBase<Cmd>::UsdSetValueUndoableCmdBase(
+    const VtValue&        newOpValue,
+    const Ufe::Path&      path,
+    const UsdGeomXformOp& op,
+    const UsdTimeCode&    writeTime)
+    : UsdUndoableCmdBase<Cmd>(newOpValue, path, writeTime)
+    , _op(op)
+    , _opFunc()
+{
+}
 
 template <typename Cmd>
 inline UsdSetValueUndoableCmdBase<Cmd>::UsdSetValueUndoableCmdBase(
@@ -79,7 +97,7 @@ inline void
 UsdSetValueUndoableCmdBase<Cmd>::handleSet(State previousState, State newState, const VtValue& v)
 {
     // Only need to initialize the transform operation on the first execution.
-    if (previousState == State::Initial)
+    if (previousState == State::Initial && _opFunc)
         _op = _opFunc(*this);
 
     _op.GetAttr().Set(v, writeTime());
