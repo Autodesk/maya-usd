@@ -86,7 +86,6 @@ class TestUsdExportBlendshapes(unittest.TestCase):
         self.assertEqual(len(inbetweens), 2)  # NOTE: (yliangsiew) This particular setup has two additional inbetweens.
 
         # NOTE: (yliangsiew) Test simple multiple targets setup.
-        om.MFileIO.open(self.scene_path, None, True)
         cmds.select("basic_cube_4_blendshapes_no_anim|base", r=True)
         cmds.mayaUSDExport(f=temp_file, v=True, sl=True, ebs=True, skl="auto", skn="auto")
         stage = Usd.Stage.Open(temp_file)
@@ -111,6 +110,17 @@ class TestUsdExportBlendshapes(unittest.TestCase):
             offsets = offsetsAttr.Get()
             self.assertEqual(len(normals), 0)
             self.assertEqual(len(offsets), 0)
+
+        # NOTE: (yliangsiew) Test duplicate shape names across multiple meshes.
+        cmds.select("basic_skinned_cube_duplicate_targets_names_across_meshes", r=True)
+        cmds.mayaUSDExport(f=temp_file, v=True, sl=True, ebs=True, skl="auto", skn="auto", ignoreWarnings=True)
+        stage = Usd.Stage.Open(temp_file)
+        prim = stage.GetPrimAtPath("/basic_skinned_cube_duplicate_targets_names_across_meshes/base0")
+        blendShapes = prim.GetChildren()
+        self.assertEqual(len(blendShapes), 2)
+        prim = stage.GetPrimAtPath("/basic_skinned_cube_duplicate_targets_names_across_meshes/base1")
+        blendShapes = prim.GetChildren()
+        self.assertEqual(len(blendShapes), 2)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

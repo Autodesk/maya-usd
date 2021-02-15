@@ -1,26 +1,27 @@
 //Maya ASCII 2020 scene
 //Name: blendShapesExport.ma
-//Last modified: Mon, Feb 08, 2021 11:09:12 AM
+//Last modified: Mon, Feb 15, 2021 01:37:56 PM
 //Codeset: UTF-8
 requires maya "2020";
+requires "stereoCamera" "10.0";
+requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2020";
 fileInfo "version" "2020";
 fileInfo "cutIdentifier" "202009141615-87c40af620";
 fileInfo "osv" "Mac OS X 10.16";
-fileInfo "UUID" "1824D090-6C48-96C0-4A43-DCAE977A8A2D";
-fileInfo "vrayBuild" "4.30.02 e646822";
+fileInfo "UUID" "8E542BEA-DB4C-36A7-0E39-C18FDE345F94";
 createNode transform -s -n "persp";
 	rename -uid "2077CAC5-BF47-33B8-4402-70A6511A185B";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 21.554419416131427 18.011175660575638 11.990618836469697 ;
-	setAttr ".r" -type "double3" -36.338352729700354 55.399999999998691 -8.4016634219489009e-15 ;
+	setAttr ".t" -type "double3" 14.995318627953059 10.475085339391134 6.8506033318564077 ;
+	setAttr ".r" -type "double3" -32.138352729700408 64.599999999998815 -3.7075007778321237e-15 ;
 createNode camera -s -n "perspShape" -p "persp";
 	rename -uid "8991EE25-C345-99C4-8B97-049999C7F7C3";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999986;
-	setAttr ".coi" 31.222709660303792;
+	setAttr ".coi" 19.112153617318107;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";
@@ -1468,14 +1469,23 @@ createNode joint -n "joint3" -p "joint2";
 	setAttr ".bps" -type "matrix" 1.0000000000000004 0 0 0 0 1 0 0 0 0 1.0000000000000004 0
 		 -6 0 -1 1;
 	setAttr ".radi" 0.55172413793103448;
-createNode transform -n "cube_empty_blendshape_targets";
-	rename -uid "B49A1E9F-D14C-F892-134C-969D6F8490E2";
-createNode transform -n "base" -p "cube_empty_blendshape_targets";
-	rename -uid "ADA42BDF-0742-6D10-3B19-5BBED695C63C";
-createNode mesh -n "baseShape" -p "|cube_empty_blendshape_targets|base";
-	rename -uid "0149BEB7-0042-A393-FDE9-40B11A23CB34";
+createNode transform -n "basic_skinned_cube_duplicate_targets_names_across_meshes";
+	rename -uid "17668D84-E74C-C2CF-FAAB-4F8B4ABA86C8";
+createNode transform -n "base0" -p "basic_skinned_cube_duplicate_targets_names_across_meshes";
+	rename -uid "8DB6B48F-0640-1AAC-DDFE-AE964366CF90";
+	setAttr -l on ".tx";
+	setAttr -l on ".ty";
+	setAttr -l on ".tz";
+	setAttr -l on ".rx";
+	setAttr -l on ".ry";
+	setAttr -l on ".rz";
+	setAttr -l on ".sx";
+	setAttr -l on ".sy";
+	setAttr -l on ".sz";
+createNode mesh -n "baseShape0" -p "base0";
+	rename -uid "69E9DFF5-344F-2E68-C89E-E083CE3D2510";
 	setAttr -k off ".v";
-	setAttr -s 4 ".iog[0].og";
+	setAttr -s 6 ".iog[0].og";
 	setAttr ".vir" yes;
 	setAttr ".vif" yes;
 	setAttr ".uvst[0].uvsn" -type "string" "map1";
@@ -1483,8 +1493,9 @@ createNode mesh -n "baseShape" -p "|cube_empty_blendshape_targets|base";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-createNode mesh -n "baseShapeOrig" -p "|cube_empty_blendshape_targets|base";
-	rename -uid "151867D8-7B41-5856-0AA6-ECBB31038A0D";
+	setAttr ".vcs" 2;
+createNode mesh -n "baseShape0Orig" -p "base0";
+	rename -uid "617BDBF2-6044-1186-A29E-F79CA3F5DAE4";
 	setAttr -k off ".v";
 	setAttr ".io" yes;
 	setAttr ".vir" yes;
@@ -1518,13 +1529,33 @@ createNode mesh -n "baseShapeOrig" -p "|cube_empty_blendshape_targets|base";
 	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
 	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
 	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
-createNode transform -n "tgt" -p "cube_empty_blendshape_targets";
-	rename -uid "CEE4DE5A-0842-78A1-FF69-CFBC25123116";
-	setAttr ".t" -type "double3" 0 0 -2.5388789843565038 ;
-createNode mesh -n "tgtShape" -p "|cube_empty_blendshape_targets|tgt";
-	rename -uid "8008E50A-EC4C-9453-8AE7-40BE92D9CF8B";
+createNode transform -n "base1" -p "basic_skinned_cube_duplicate_targets_names_across_meshes";
+	rename -uid "4FFBD543-284D-AF95-0D85-3CA037E1BED7";
+	setAttr -l on ".tx";
+	setAttr -l on ".ty";
+	setAttr -l on ".tz";
+	setAttr -l on ".rx";
+	setAttr -l on ".ry";
+	setAttr -l on ".rz";
+	setAttr -l on ".sx";
+	setAttr -l on ".sy";
+	setAttr -l on ".sz";
+createNode mesh -n "baseShape1" -p "base1";
+	rename -uid "64260196-6746-B5E5-33DF-9B972ED1E162";
 	setAttr -k off ".v";
-	setAttr -s 2 ".iog[0].og";
+	setAttr -s 6 ".iog[0].og";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr ".vcs" 2;
+createNode mesh -n "baseShape1Orig" -p "base1";
+	rename -uid "C0DD3771-5244-5191-CF6F-B294B1605098";
+	setAttr -k off ".v";
+	setAttr ".io" yes;
 	setAttr ".vir" yes;
 	setAttr ".vif" yes;
 	setAttr ".uvst[0].uvsn" -type "string" "map1";
@@ -1556,61 +1587,32 @@ createNode mesh -n "tgtShape" -p "|cube_empty_blendshape_targets|tgt";
 	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
 	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
 	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
-createNode transform -n "tgt2" -p "cube_empty_blendshape_targets";
-	rename -uid "25B7F089-4345-25B4-66BF-D7ACA40A41A4";
-	setAttr ".t" -type "double3" 0 0 -5.6279012708447969 ;
-createNode mesh -n "tgt2Shape" -p "|cube_empty_blendshape_targets|tgt2";
-	rename -uid "7EF09E84-424C-32DF-8D1D-E89A8DDC503E";
-	setAttr -k off ".v";
-	setAttr ".vir" yes;
-	setAttr ".vif" yes;
-	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
-		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
-		 0.875 0.25 0.125 0 0.125 0.25;
-	setAttr ".cuvs" -type "string" "map1";
-	setAttr ".dcc" -type "string" "Ambient+Diffuse";
-	setAttr ".covm[0]"  0 1 1;
-	setAttr ".cdvm[0]"  0 1 1;
-	setAttr -s 8 ".vt[0:7]"  -0.5 -0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 0.5 0.5 0.5
-		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
-	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
-		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
-		f 4 0 5 -2 -5
-		mu 0 4 0 1 3 2
-		f 4 1 7 -3 -7
-		mu 0 4 2 3 5 4
-		f 4 2 9 -4 -9
-		mu 0 4 4 5 7 6
-		f 4 3 11 -1 -11
-		mu 0 4 6 7 9 8
-		f 4 -12 -10 -8 -6
-		mu 0 4 1 10 11 3
-		f 4 10 4 6 8
-		mu 0 4 12 0 2 13;
-	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
-	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
-	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
-	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode joint -n "joint4" -p "basic_skinned_cube_duplicate_targets_names_across_meshes";
+	rename -uid "26B48907-4F47-FEA5-3F3D-0D9BAD0FAA59";
+	addAttr -ci true -sn "liw" -ln "lockInfluenceWeights" -min 0 -max 1 -at "bool";
+	setAttr ".uoc" 1;
+	setAttr ".mnrl" -type "double3" -360 -360 -360 ;
+	setAttr ".mxrl" -type "double3" 360 360 360 ;
+	setAttr ".bps" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
+	setAttr ".radi" 0.5;
 createNode lightLinker -s -n "lightLinker1";
-	rename -uid "9AD09FF2-F743-B7B3-3680-C4ABD8F7A5A4";
+	rename -uid "4AD5238A-2742-7155-AECA-7980F6FE023E";
 	setAttr -s 2 ".lnk";
 	setAttr -s 2 ".slnk";
 createNode shapeEditorManager -n "shapeEditorManager";
-	rename -uid "12E7987C-F743-2252-04C2-F8BD27CE8E5D";
-	setAttr ".bsdt[0].bscd" -type "Int32Array" 12 8 9 11 12 13
-		 15 16 17 18 21 22 0 ;
-	setAttr -s 12 ".bspr";
-	setAttr -s 12 ".obsv";
+	rename -uid "2D3766C3-684E-4141-E79B-39A4E9A0CFA0";
+	setAttr ".bsdt[0].bscd" -type "Int32Array" 13 8 9 11 12 13
+		 15 16 17 18 21 22 0 1 ;
+	setAttr -s 13 ".bspr";
+	setAttr -s 13 ".obsv";
 createNode poseInterpolatorManager -n "poseInterpolatorManager";
-	rename -uid "F5B62934-6046-C7BC-C512-17B8CBE4E52E";
+	rename -uid "F3930B13-E44A-278B-D6CD-6C9E36ED8ADF";
 createNode displayLayerManager -n "layerManager";
-	rename -uid "CEC7A86E-4C47-AE5F-B503-11B96539406F";
+	rename -uid "BD8BB501-F544-12AE-7A85-CDA5BB9F6A05";
 createNode displayLayer -n "defaultLayer";
 	rename -uid "66B28721-5A42-036C-3710-C7AE0952167E";
 createNode renderLayerManager -n "renderLayerManager";
-	rename -uid "3D63BD46-E74D-3770-F68D-33ADE7AF90E5";
+	rename -uid "E381521F-524A-727C-9B0B-5280E76BEC91";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "029602C9-1546-B736-B15A-E786C1A212A0";
 	setAttr ".g" yes;
@@ -2187,8 +2189,6 @@ createNode animCurveTU -n "joint3_scaleZ";
 createNode blendShape -n "blendShape23";
 	rename -uid "B5F3565D-CD4A-21C9-C047-A780108A8DE2";
 	addAttr -ci true -h true -sn "aal" -ln "attributeAliasList" -dt "attributeAlias";
-	setAttr ".w[0]"  0;
-	setAttr -av ".w[0]";
 	setAttr ".it[0].itg[0].iti[6000].ipt" -type "pointArray" 1 -0.70974814891815186
 		 0.56029319763183594 0.61569833755493164 1 ;
 	setAttr ".it[0].itg[0].iti[6000].ict" -type "componentList" 1 "vtx[2]";
@@ -2319,39 +2319,178 @@ createNode nodeGraphEditorInfo -n "MayaNodeEditorSavedTabsInfo";
 	setAttr ".tgi[0].ni[15].y" 124.28571319580078;
 	setAttr ".tgi[0].ni[15].nvs" 18304;
 createNode blendShape -n "blendShape24";
-	rename -uid "EBC6EDE5-1246-8D3B-A35A-3CAB1861A90C";
+	rename -uid "5B4A794C-1A43-3ACC-4634-A790FB499FE0";
 	addAttr -ci true -h true -sn "aal" -ln "attributeAliasList" -dt "attributeAlias";
-	setAttr -s 2 ".w[0:1]"  0 0;
+	setAttr -s 2 ".w";
+	setAttr -s 2 ".w";
 	setAttr -s 2 ".it[0].itg";
+	setAttr ".it[0].itg[0].iti[6000].ipt" -type "pointArray" 1 0.13640519976615906
+		 1.1596800088882446 -1.985774040222168 1 ;
+	setAttr ".it[0].itg[0].iti[6000].ict" -type "componentList" 1 "vtx[4]";
+	setAttr ".it[0].itg[1].iti[6000].ipt" -type "pointArray" 1 -1.1738661527633667
+		 0.54055333137512207 1.6804447174072266 1 ;
+	setAttr ".it[0].itg[1].iti[6000].ict" -type "componentList" 1 "vtx[2]";
 	setAttr ".mlid" 0;
 	setAttr ".mlpr" 0;
 	setAttr -s 2 ".pndr[0:1]"  0 0;
 	setAttr ".tgdt[0].cid" -type "Int32Array" 2 0 1 ;
-	setAttr ".aal" -type "attributeAlias" {"tgt2","weight[0]","tgt","weight[1]"} ;
+	setAttr ".aal" -type "attributeAlias" {"tgt1","weight[0]","tgt0","weight[1]"} ;
 createNode tweak -n "tweak24";
-	rename -uid "63A3A058-204D-ABFB-CED3-6EADB5CD6486";
+	rename -uid "94AAB2EB-B446-78AA-B4B6-87A3012CA9DB";
 createNode objectSet -n "blendShape24Set";
-	rename -uid "550DA42C-2B4B-702C-110F-45B1C858ACB5";
+	rename -uid "FED04EF1-CA4E-17F2-B401-D8A863520042";
 	setAttr ".ihi" 0;
 	setAttr ".vo" yes;
 createNode groupId -n "blendShape24GroupId";
-	rename -uid "9C361E36-E347-257A-70B8-E29E12CB73C7";
+	rename -uid "4F266B37-BD47-C585-5D35-D0B12F8863BB";
 	setAttr ".ihi" 0;
 createNode groupParts -n "blendShape24GroupParts";
-	rename -uid "AF772962-144B-E062-7EF3-2C84F895DD7F";
+	rename -uid "46C38D2B-6244-FAEB-8378-1FB0ABDB507E";
 	setAttr ".ihi" 0;
 	setAttr ".ic" -type "componentList" 1 "vtx[*]";
 createNode objectSet -n "tweakSet24";
-	rename -uid "F1C9A6A4-4E49-3D99-D36E-C7B0E798A751";
+	rename -uid "AEB8258A-0E40-49E6-9E11-71914626A4A6";
 	setAttr ".ihi" 0;
 	setAttr ".vo" yes;
 createNode groupId -n "groupId47";
-	rename -uid "9166DBD1-AF42-C1E1-ECF1-50862489D5AB";
+	rename -uid "803AF6A5-5042-106B-E947-31A31000CBFA";
 	setAttr ".ihi" 0;
 createNode groupParts -n "groupParts47";
-	rename -uid "13D28E11-814B-2310-5BBB-76AACB219837";
+	rename -uid "16FAD9FE-3F4C-9A15-AABD-45A44833A892";
 	setAttr ".ihi" 0;
 	setAttr ".ic" -type "componentList" 1 "vtx[*]";
+createNode blendShape -n "blendShape25";
+	rename -uid "88C0B466-A543-6DF4-9182-D2854FB732B7";
+	addAttr -ci true -h true -sn "aal" -ln "attributeAliasList" -dt "attributeAlias";
+	setAttr -s 2 ".w";
+	setAttr -s 2 ".w";
+	setAttr -s 2 ".it[0].itg";
+	setAttr ".it[0].itg[0].iti[6000].ipt" -type "pointArray" 1 0.13640519976615906
+		 1.1596800088882446 -1.985774040222168 1 ;
+	setAttr ".it[0].itg[0].iti[6000].ict" -type "componentList" 1 "vtx[4]";
+	setAttr ".it[0].itg[1].iti[6000].ipt" -type "pointArray" 1 -1.1738661527633667
+		 0.54055333137512207 1.6804447174072266 1 ;
+	setAttr ".it[0].itg[1].iti[6000].ict" -type "componentList" 1 "vtx[2]";
+	setAttr ".mlid" 1;
+	setAttr ".mlpr" 0;
+	setAttr -s 2 ".pndr[0:1]"  0 0;
+	setAttr ".tgdt[0].cid" -type "Int32Array" 2 0 1 ;
+	setAttr ".aal" -type "attributeAlias" {"tgt1","weight[0]","tgt0","weight[1]"} ;
+createNode tweak -n "tweak25";
+	rename -uid "EDAD3734-BD4F-1DE2-CA66-47A5A43110FE";
+createNode objectSet -n "blendShape25Set";
+	rename -uid "CB24D048-FB49-7A47-8C99-37A680863B0D";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
+createNode groupId -n "blendShape25GroupId";
+	rename -uid "341F1939-AD49-BB73-404A-348EB77D23FE";
+	setAttr ".ihi" 0;
+createNode groupParts -n "blendShape25GroupParts";
+	rename -uid "B8A3F135-D743-A4C8-3F2A-D68DF9F9EE92";
+	setAttr ".ihi" 0;
+	setAttr ".ic" -type "componentList" 1 "vtx[*]";
+createNode objectSet -n "tweakSet25";
+	rename -uid "4C298A2F-3440-1E7B-B1F8-EFA58BB0E7D5";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
+createNode groupId -n "groupId49";
+	rename -uid "23FE793C-5645-00A0-4AB9-C19990BC3AD7";
+	setAttr ".ihi" 0;
+createNode groupParts -n "groupParts49";
+	rename -uid "A8273316-E54D-A20E-FA38-0C82406EA04E";
+	setAttr ".ihi" 0;
+	setAttr ".ic" -type "componentList" 1 "vtx[*]";
+createNode skinCluster -n "skinCluster3";
+	rename -uid "B0E3D4BD-A649-53EF-654C-DEBA416657E6";
+	setAttr -s 8 ".wl";
+	setAttr ".wl[0:7].w"
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1;
+	setAttr ".pm[0]" -type "matrix" 1 -0 0 -0 -0 1 -0 0 0 -0 1 -0 -0 0 -0 1;
+	setAttr ".gm" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
+	setAttr ".dpf[0]"  4;
+	setAttr ".mmi" yes;
+	setAttr ".mi" 5;
+	setAttr ".ucm" yes;
+createNode objectSet -n "skinCluster3Set";
+	rename -uid "9A3C8853-924B-F8DF-8B99-8988F87605C7";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
+createNode groupId -n "skinCluster3GroupId";
+	rename -uid "4E510878-7B47-91E4-E667-16971137745D";
+	setAttr ".ihi" 0;
+createNode groupParts -n "skinCluster3GroupParts";
+	rename -uid "779F1BEA-F74A-1870-0A9C-239480FC2968";
+	setAttr ".ihi" 0;
+	setAttr ".ic" -type "componentList" 1 "vtx[*]";
+createNode dagPose -n "bindPose3";
+	rename -uid "5AA15A4A-3C48-71C4-AC5A-0AADB4AE8678";
+	setAttr -s 2 ".wm";
+	setAttr ".wm[0]" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
+	setAttr -s 2 ".xm";
+	setAttr ".xm[0]" -type "matrix" "xform" 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+		 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 1 1 yes;
+	setAttr ".xm[1]" -type "matrix" "xform" 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+		 0 0 0 0 0 0 0 0 0 0 1 0 0 0 1 1 1 1 yes;
+	setAttr -s 2 ".m";
+	setAttr -s 2 ".p";
+	setAttr -s 2 ".g[0:1]" yes no;
+	setAttr ".bp" yes;
+createNode skinCluster -n "skinCluster4";
+	rename -uid "669AE9C5-A344-D960-3FDA-AFBEAAE8D44D";
+	setAttr -s 8 ".wl";
+	setAttr ".wl[0:7].w"
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1
+		1 0 1;
+	setAttr ".pm[0]" -type "matrix" 1 -0 0 -0 -0 1 -0 0 0 -0 1 -0 -0 0 -0 1;
+	setAttr ".gm" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1;
+	setAttr ".dpf[0]"  4;
+	setAttr ".mmi" yes;
+	setAttr ".mi" 5;
+	setAttr ".ucm" yes;
+createNode objectSet -n "skinCluster4Set";
+	rename -uid "0B25E4AD-EC4F-29C4-02E2-AFBC82713CBF";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
+createNode groupId -n "skinCluster4GroupId";
+	rename -uid "CDD75243-FF4A-1DB9-8522-E18387DE24B2";
+	setAttr ".ihi" 0;
+createNode groupParts -n "skinCluster4GroupParts";
+	rename -uid "4735F1B8-8546-1F35-27A3-05839F5D1C96";
+	setAttr ".ihi" 0;
+	setAttr ".ic" -type "componentList" 1 "vtx[*]";
+createNode animCurveTU -n "blendShape24_tgt1";
+	rename -uid "B2D53DAD-DC43-AE46-CAFF-C3B7E53BAAB4";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 3 ".ktv[0:2]"  1 0 10 1 20 0;
+createNode animCurveTU -n "blendShape24_tgt0";
+	rename -uid "3D85332B-D54F-7CE5-746B-ADBF23BB435F";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 3 ".ktv[0:2]"  1 0 10 1 20 0;
+createNode animCurveTU -n "blendShape25_tgt1";
+	rename -uid "AD6D29F3-BA45-7803-FDE2-DBBE18FC3CF3";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  1 0 20 1;
+createNode animCurveTU -n "blendShape25_tgt0";
+	rename -uid "745406D4-A344-1A23-0FC1-42B67A07D4F9";
+	setAttr ".tan" 18;
+	setAttr ".wgt" no;
+	setAttr -s 2 ".ktv[0:1]"  1 0 20 1;
 select -ne :time1;
 	setAttr -av -k on ".cch";
 	setAttr -av -cb on ".ihi";
@@ -2421,7 +2560,7 @@ select -ne :initialShadingGroup;
 	setAttr -k on ".vwm";
 	setAttr -k on ".tpv";
 	setAttr -k on ".uit";
-	setAttr -s 34 ".dsm";
+	setAttr -s 33 ".dsm";
 	setAttr -cb on ".mwc";
 	setAttr -cb on ".an";
 	setAttr -cb on ".il";
@@ -2457,7 +2596,6 @@ select -ne :defaultRenderGlobals;
 	setAttr -k on ".clip";
 	setAttr -k on ".edm";
 	setAttr -k on ".edl";
-	setAttr -cb on ".ren" -type "string" "arnold";
 	setAttr -av -k on ".esr";
 	setAttr -k on ".ors";
 	setAttr -cb on ".sdf";
@@ -2560,9 +2698,6 @@ select -ne :defaultResolution;
 	setAttr -av -k on ".zsl";
 	setAttr -av -k on ".isu";
 	setAttr -av -k on ".pdu";
-select -ne :defaultColorMgtGlobals;
-	setAttr ".cme" no;
-	setAttr ".cfp" -type "string" "/usr/local/apps/opencolorio_configs/1.1.6-a7/aces_1.1_re_1.0.6/config.ocio";
 select -ne :hardwareRenderGlobals;
 	setAttr -av -k on ".cch";
 	setAttr -cb on ".ihi";
@@ -2601,6 +2736,8 @@ select -ne :hardwareRenderGlobals;
 	setAttr -k on ".bswa";
 	setAttr -k on ".shml";
 	setAttr -k on ".hwel";
+select -ne :ikSystem;
+	setAttr -s 4 ".sol";
 connectAttr "blendShape9GroupId.id" "|basic_cube_1_blendshape_no_anim|base|baseShape.iog.og[0].gid"
 		;
 connectAttr "blendShape9Set.mwc" "|basic_cube_1_blendshape_no_anim|base|baseShape.iog.og[0].gco"
@@ -2762,23 +2899,28 @@ connectAttr "joint3_rotateZ.o" "joint3.rz";
 connectAttr "joint3_scaleX.o" "joint3.sx";
 connectAttr "joint3_scaleY.o" "joint3.sy";
 connectAttr "joint3_scaleZ.o" "joint3.sz";
-connectAttr "blendShape24GroupId.id" "|cube_empty_blendshape_targets|base|baseShape.iog.og[0].gid"
-		;
-connectAttr "blendShape24Set.mwc" "|cube_empty_blendshape_targets|base|baseShape.iog.og[0].gco"
-		;
-connectAttr "groupId47.id" "|cube_empty_blendshape_targets|base|baseShape.iog.og[1].gid"
-		;
-connectAttr "tweakSet24.mwc" "|cube_empty_blendshape_targets|base|baseShape.iog.og[1].gco"
-		;
-connectAttr "blendShape24.og[0]" "|cube_empty_blendshape_targets|base|baseShape.i"
-		;
-connectAttr "tweak24.vl[0].vt[0]" "|cube_empty_blendshape_targets|base|baseShape.twl"
-		;
+connectAttr "blendShape24GroupId.id" "baseShape0.iog.og[0].gid";
+connectAttr "blendShape24Set.mwc" "baseShape0.iog.og[0].gco";
+connectAttr "groupId47.id" "baseShape0.iog.og[1].gid";
+connectAttr "tweakSet24.mwc" "baseShape0.iog.og[1].gco";
+connectAttr "skinCluster3GroupId.id" "baseShape0.iog.og[2].gid";
+connectAttr "skinCluster3Set.mwc" "baseShape0.iog.og[2].gco";
+connectAttr "skinCluster3.og[0]" "baseShape0.i";
+connectAttr "tweak24.vl[0].vt[0]" "baseShape0.twl";
+connectAttr "blendShape25GroupId.id" "baseShape1.iog.og[0].gid";
+connectAttr "blendShape25Set.mwc" "baseShape1.iog.og[0].gco";
+connectAttr "groupId49.id" "baseShape1.iog.og[1].gid";
+connectAttr "tweakSet25.mwc" "baseShape1.iog.og[1].gco";
+connectAttr "skinCluster4GroupId.id" "baseShape1.iog.og[2].gid";
+connectAttr "skinCluster4Set.mwc" "baseShape1.iog.og[2].gco";
+connectAttr "skinCluster4.og[0]" "baseShape1.i";
+connectAttr "tweak25.vl[0].vt[0]" "baseShape1.twl";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 connectAttr "blendShape24.mlpr" "shapeEditorManager.bspr[0]";
+connectAttr "blendShape25.mlpr" "shapeEditorManager.bspr[1]";
 connectAttr "blendShape9.mlpr" "shapeEditorManager.bspr[8]";
 connectAttr "blendShape10.mlpr" "shapeEditorManager.bspr[9]";
 connectAttr "blendShape12.mlpr" "shapeEditorManager.bspr[11]";
@@ -3090,25 +3232,66 @@ connectAttr "shapeEditorManager.msg" "MayaNodeEditorSavedTabsInfo.tgi[0].ni[15].
 connectAttr "blendShape24GroupParts.og" "blendShape24.ip[0].ig";
 connectAttr "blendShape24GroupId.id" "blendShape24.ip[0].gi";
 connectAttr "shapeEditorManager.obsv[0]" "blendShape24.tgdt[0].dpvs";
-connectAttr "|cube_empty_blendshape_targets|tgt2|tgt2Shape.w" "blendShape24.it[0].itg[0].iti[6000].igt"
-		;
-connectAttr "|cube_empty_blendshape_targets|tgt|tgtShape.w" "blendShape24.it[0].itg[1].iti[6000].igt"
-		;
+connectAttr "blendShape24_tgt1.o" "blendShape24.w[0]";
+connectAttr "blendShape24_tgt0.o" "blendShape24.w[1]";
 connectAttr "groupParts47.og" "tweak24.ip[0].ig";
 connectAttr "groupId47.id" "tweak24.ip[0].gi";
 connectAttr "blendShape24GroupId.msg" "blendShape24Set.gn" -na;
-connectAttr "|cube_empty_blendshape_targets|base|baseShape.iog.og[0]" "blendShape24Set.dsm"
-		 -na;
+connectAttr "baseShape0.iog.og[0]" "blendShape24Set.dsm" -na;
 connectAttr "blendShape24.msg" "blendShape24Set.ub[0]";
 connectAttr "tweak24.og[0]" "blendShape24GroupParts.ig";
 connectAttr "blendShape24GroupId.id" "blendShape24GroupParts.gi";
 connectAttr "groupId47.msg" "tweakSet24.gn" -na;
-connectAttr "|cube_empty_blendshape_targets|base|baseShape.iog.og[1]" "tweakSet24.dsm"
-		 -na;
+connectAttr "baseShape0.iog.og[1]" "tweakSet24.dsm" -na;
 connectAttr "tweak24.msg" "tweakSet24.ub[0]";
-connectAttr "|cube_empty_blendshape_targets|base|baseShapeOrig.w" "groupParts47.ig"
-		;
+connectAttr "baseShape0Orig.w" "groupParts47.ig";
 connectAttr "groupId47.id" "groupParts47.gi";
+connectAttr "blendShape25GroupParts.og" "blendShape25.ip[0].ig";
+connectAttr "blendShape25GroupId.id" "blendShape25.ip[0].gi";
+connectAttr "shapeEditorManager.obsv[1]" "blendShape25.tgdt[0].dpvs";
+connectAttr "blendShape25_tgt1.o" "blendShape25.w[0]";
+connectAttr "blendShape25_tgt0.o" "blendShape25.w[1]";
+connectAttr "groupParts49.og" "tweak25.ip[0].ig";
+connectAttr "groupId49.id" "tweak25.ip[0].gi";
+connectAttr "blendShape25GroupId.msg" "blendShape25Set.gn" -na;
+connectAttr "baseShape1.iog.og[0]" "blendShape25Set.dsm" -na;
+connectAttr "blendShape25.msg" "blendShape25Set.ub[0]";
+connectAttr "tweak25.og[0]" "blendShape25GroupParts.ig";
+connectAttr "blendShape25GroupId.id" "blendShape25GroupParts.gi";
+connectAttr "groupId49.msg" "tweakSet25.gn" -na;
+connectAttr "baseShape1.iog.og[1]" "tweakSet25.dsm" -na;
+connectAttr "tweak25.msg" "tweakSet25.ub[0]";
+connectAttr "|basic_skinned_cube_duplicate_targets_names_across_meshes|base1|baseShape1Orig.w" "groupParts49.ig"
+		;
+connectAttr "groupId49.id" "groupParts49.gi";
+connectAttr "skinCluster3GroupParts.og" "skinCluster3.ip[0].ig";
+connectAttr "skinCluster3GroupId.id" "skinCluster3.ip[0].gi";
+connectAttr "bindPose3.msg" "skinCluster3.bp";
+connectAttr "joint4.wm" "skinCluster3.ma[0]";
+connectAttr "joint4.liw" "skinCluster3.lw[0]";
+connectAttr "joint4.obcc" "skinCluster3.ifcl[0]";
+connectAttr "skinCluster3GroupId.msg" "skinCluster3Set.gn" -na;
+connectAttr "baseShape0.iog.og[2]" "skinCluster3Set.dsm" -na;
+connectAttr "skinCluster3.msg" "skinCluster3Set.ub[0]";
+connectAttr "blendShape24.og[0]" "skinCluster3GroupParts.ig";
+connectAttr "skinCluster3GroupId.id" "skinCluster3GroupParts.gi";
+connectAttr "basic_skinned_cube_duplicate_targets_names_across_meshes.msg" "bindPose3.m[0]"
+		;
+connectAttr "joint4.msg" "bindPose3.m[1]";
+connectAttr "bindPose3.w" "bindPose3.p[0]";
+connectAttr "bindPose3.m[0]" "bindPose3.p[1]";
+connectAttr "joint4.bps" "bindPose3.wm[1]";
+connectAttr "skinCluster4GroupParts.og" "skinCluster4.ip[0].ig";
+connectAttr "skinCluster4GroupId.id" "skinCluster4.ip[0].gi";
+connectAttr "joint4.wm" "skinCluster4.ma[0]";
+connectAttr "joint4.liw" "skinCluster4.lw[0]";
+connectAttr "joint4.obcc" "skinCluster4.ifcl[0]";
+connectAttr "bindPose3.msg" "skinCluster4.bp";
+connectAttr "skinCluster4GroupId.msg" "skinCluster4Set.gn" -na;
+connectAttr "baseShape1.iog.og[2]" "skinCluster4Set.dsm" -na;
+connectAttr "skinCluster4.msg" "skinCluster4Set.ub[0]";
+connectAttr "blendShape25.og[0]" "skinCluster4GroupParts.ig";
+connectAttr "skinCluster4GroupId.id" "skinCluster4GroupParts.gi";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
 connectAttr "|basic_cube_1_blendshape_no_anim|base|baseShape.iog" ":initialShadingGroup.dsm"
 		 -na;
@@ -3168,10 +3351,6 @@ connectAttr "|basic_cube_4_blendshape_baked_targets|tgts|tgt3|tgt3Shape.iog" ":i
 		 -na;
 connectAttr "|basic_skinned_cube_blendshape_baked_target_anim|base|baseShape.iog" ":initialShadingGroup.dsm"
 		 -na;
-connectAttr "|cube_empty_blendshape_targets|base|baseShape.iog" ":initialShadingGroup.dsm"
-		 -na;
-connectAttr "|cube_empty_blendshape_targets|tgt|tgtShape.iog" ":initialShadingGroup.dsm"
-		 -na;
-connectAttr "|cube_empty_blendshape_targets|tgt2|tgt2Shape.iog" ":initialShadingGroup.dsm"
-		 -na;
+connectAttr "baseShape0.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "baseShape1.iog" ":initialShadingGroup.dsm" -na;
 // End of blendShapesExport.ma
