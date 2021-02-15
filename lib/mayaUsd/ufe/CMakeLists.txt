@@ -41,7 +41,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdContextOpsHandler.cpp
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
-            UsdSetValueUndoableCommand.cpp
             UsdTransform3dBase.cpp
             UsdTransform3dCommonAPI.cpp
             UsdTransform3dFallbackMayaXformStack.cpp
@@ -110,6 +109,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdTransform3dMatrixOp.h
         UsdTransform3dMayaXformStack.h
         UsdUIInfoHandler.h
+        UsdUndoableCommand.h
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h

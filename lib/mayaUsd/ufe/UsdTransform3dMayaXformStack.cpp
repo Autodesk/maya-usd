@@ -257,7 +257,8 @@ public:
     {
         VtValue v;
         v = V(x, y, z);
-        handleSet(v);
+        setNewValue(v);
+        execute();
         return true;
     }
 };
@@ -281,7 +282,8 @@ public:
     {
         VtValue v;
         v = _cvtRotXYZToAttr(x, y, z);
-        handleSet(v);
+        setNewValue(v);
+        execute();
         return true;
     }
 
