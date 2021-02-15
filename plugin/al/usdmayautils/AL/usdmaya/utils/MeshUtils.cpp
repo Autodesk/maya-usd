@@ -1481,7 +1481,7 @@ void interleaveIndexedUvData(
 // RGB
 // @todo: needs refactoring to handle face/vert/faceVarying correctly, allow separate RGB/A to be
 // written etc.
-void MeshExportContext::copyColourSetData()
+void MeshExportContext::copyColourSetData(float defaultColour, float defaultAlpha)
 {
     UsdPrim                           prim = mesh.GetPrim();
     MStringArray                      colourSetNames;
@@ -1508,12 +1508,18 @@ void MeshExportContext::copyColourSetData()
         while (!it.isDone()) {
             MColorArray faceColours;
             it.getColors(faceColours, &colourSetNames[i]);
-            it.next();
             // Append face colours
             uint32_t offset = colours.length();
             colours.setLength(offset + faceColours.length());
-            for (uint32_t j = 0, n = faceColours.length(); j < n; ++j)
-                colours[offset + j] = faceColours[j];
+            for (uint32_t j = 0, n = faceColours.length(); j < n; ++j) {
+                if (it.hasColor()) {
+                    colours[offset + j] = faceColours[j];
+                } else {
+                    colours[offset + j]
+                        = MColor(defaultColour, defaultColour, defaultColour, defaultAlpha);
+                }
+            }
+            it.next();
         }
         TfToken interpolation = UsdGeomTokens->faceVarying;
         coloursLength = colours.length();

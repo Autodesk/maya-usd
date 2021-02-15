@@ -280,8 +280,10 @@ public:
     void copyBindPoseData(UsdTimeCode time);
 
     /// \brief  copies the colour set data from maya into the usd prim.
+    /// \param defaultColour the default colour if the polyFace has no colour.
+    /// \param defaultAlpha the default colour if the polyFace has no alpha.
     AL_USDMAYA_UTILS_PUBLIC
-    void copyColourSetData();
+    void copyColourSetData(float defaultColour = 0.18, float defaultAlpha = 1.0);
 
     /// \brief  copies invisible face information into the usd file from maya
     AL_USDMAYA_UTILS_PUBLIC

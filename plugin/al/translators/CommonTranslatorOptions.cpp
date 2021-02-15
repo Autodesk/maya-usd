@@ -45,6 +45,8 @@ void registerCommonTranslatorOptions()
         g_exportOptions->addBool(GeometryExportOptions::kMeshUvOnly, false);
         g_exportOptions->addBool(GeometryExportOptions::kMeshPointsAsPref, false);
         g_exportOptions->addBool(GeometryExportOptions::kMeshColours, true);
+        g_exportOptions->addFloat(GeometryExportOptions::kMeshDefaultColourRGB, 0.18);
+        g_exportOptions->addFloat(GeometryExportOptions::kMeshDefaultColourA, 1.0);
         g_exportOptions->addBool(GeometryExportOptions::kMeshHoles, true);
         g_exportOptions->addBool(GeometryExportOptions::kNormalsAsPrimvars, false);
         g_exportOptions->addBool(GeometryExportOptions::kReverseOppositeNormals, false);

@@ -169,6 +169,71 @@ TEST(DiffPrimVar, diffGeomExtent)
     }
 }
 
+TEST(DiffPrimVar, diffGeomRGBA)
+{
+  MFileIO::newFile(true);
+  MStringArray result;
+  ASSERT_TRUE(MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 4 -ch 1;;", result) == MS::kSuccess);
+  ASSERT_TRUE(MGlobal::executeCommand("setAttr \"pCubeShape1.displayColors\" 1;") == MS::kSuccess);
+
+  MSelectionList mSel;
+  EXPECT_TRUE(mSel.add("pCube1")  == MS::kSuccess);
+
+  MDagPath mDagPath;
+  mSel.getDagPath(0, mDagPath);
+  MFnMesh mFnMesh(mDagPath);
+  mFnMesh.createColorSetWithName("displayColor");
+
+  // Set one polyCube face color to blue and the alpha to 1
+  MColor blueColour(0.0f, 0.0f, 1.0f, 1.0f);
+  mFnMesh.setFaceColor(blueColour, 4);
+
+  // Run export comand
+  auto tempPath = buildTempPath("AL_USDMayaTests_diffRGBA.usda");
+  std::string exportCommand = R"(
+    file -force -options "Dynamic_Attributes=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=0;Frame_Max=1;Sub_Samples=1;Filter_Sample=0;Export_At_Which_Time=0;Export_In_World_Space=0;Activate_all_Plugin_Translators=1;Active_Translator_List=;Inactive_Translator_List=;Nurbs_Curves=1;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;Mesh_Extents=1;Mesh_Normals=1;Mesh_Vertex_Creases=1;Mesh_Edge_Creases=1;Mesh_UVs=1;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;Mesh_Colours=1;Default_RGB=0.2;Default_Alpha=1;Mesh_Holes=1;Write_Normals_as_Primvars=0;Reverse_Opposite_Normals=0;Subdivision_scheme=0;Compaction_Level=3;" -type "AL usdmaya export" -pr -ea
+  )";
+  exportCommand += "\"";
+  exportCommand += tempPath;
+  exportCommand += "\"";
+  ASSERT_TRUE(MGlobal::executeCommand(exportCommand.c_str()) == MS::kSuccess);
+
+  // Validate export
+  UsdStageRefPtr stage = UsdStage::Open(tempPath);
+
+  MString path = MString("/pCube1");
+  SdfPath primPath(path.asChar());
+  UsdPrim geomPrim = stage->GetPrimAtPath(primPath);
+  ASSERT_TRUE(geomPrim.IsValid());
+  UsdGeomMesh geom(geomPrim);
+
+  // Confirm displayOpacity is 1.0
+  const TfToken displayOpacityToken("primvars:displayOpacity");
+  UsdAttribute opacityAttribute = geomPrim.GetAttribute(displayOpacityToken);
+
+  VtFloatArray opacity;
+  opacityAttribute.Get(&opacity);
+  VtFloatArray expectedOpacity { 1.f, 1.f, 1.f, 1.f, 1.f, 1.f};
+  EXPECT_EQ(opacity, expectedOpacity);
+
+  // Confirm displayColor has been applied
+  const TfToken displayColorToken("primvars:displayColor");
+  UsdAttribute colorAttribute = geomPrim.GetAttribute(displayColorToken);
+
+  VtVec3fArray color;
+  colorAttribute.Get(&color);
+  VtVec3fArray expectedColor {
+    GfVec3f(0.2f),
+    GfVec3f(0.2f),
+    GfVec3f(0.2f),
+    GfVec3f(0.2f),
+    GfVec3f(0.f, 0.f, 1.f),
+    GfVec3f(0.2f),
+  };
+  EXPECT_EQ(color, expectedColor);
+
+}
+
 TEST(DiffPrimVar, diffGeomNormals)
 {
     MFileIO::newFile(true);
