@@ -272,11 +272,12 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             const char*          fileData = it.GetFile();
             UsdZipFile::FileInfo fileInfo = it.GetFileInfo();
 
-            bool             needsUniqueFilename = false;
-            std::string_view sFile(fileData, fileInfo.size);
-            char             md5Digest[32] = { 0 };
-            UsdMayaHashUtil::GenerateMD5DigestFromByteStream(
-                reinterpret_cast<const uint8_t*>(fileData), sFile.size(), md5Digest);
+            bool     needsUniqueFilename = false;
+            uint8_t* fileDataBuf = (uint8_t*)malloc(sizeof(uint8_t) * fileInfo.size);
+            memcpy(fileDataBuf, fileData, fileInfo.size);
+            char md5Digest[32] = { 0 };
+            UsdMayaHashUtil::GenerateMD5DigestFromByteStream(fileDataBuf, fileInfo.size, md5Digest);
+            free(fileDataBuf);
             std::unordered_map<std::string, std::string>::iterator itExistingHash
                 = UsdMayaReadUtil::mapFileHashes.find(unresolvedFilePath);
             if (itExistingHash
