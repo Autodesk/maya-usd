@@ -24,6 +24,7 @@
 #include <hdMaya/delegates/sceneDelegate.h>
 #include <hdMaya/utils.h>
 #include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/utils/hash.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -45,8 +46,6 @@
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
-
-#include <boost/functional/hash.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -168,10 +167,10 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
         const HdxPickHit& hit = inHits[i];
 
         size_t hash = 0;
-        boost::hash_combine(hash, hit.delegateId.GetHash());
-        boost::hash_combine(hash, hit.objectId.GetHash());
-        boost::hash_combine(hash, hit.instancerId.GetHash());
-        boost::hash_combine(hash, hit.instanceIndex);
+        MayaUsd::hash_combine(hash, hit.delegateId.GetHash());
+        MayaUsd::hash_combine(hash, hit.objectId.GetHash());
+        MayaUsd::hash_combine(hash, hit.instancerId.GetHash());
+        MayaUsd::hash_combine(hash, hit.instanceIndex);
 
         // As an optimization, keep track of the previous hash value and
         // reject indices that match it without performing a map lookup.
