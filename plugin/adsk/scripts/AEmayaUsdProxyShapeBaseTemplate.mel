@@ -26,6 +26,36 @@ global proc AEmayaUsdProxyShapeInfoReplace(string $input)
     textFieldGrp -edit -text $defaultPrim mayaUsdProxyShapeDefaultPrim;
 }
 
+global proc AEmayaUsdProxyShapePayloadsNew(string $loadPayloads)
+{
+    setUITemplate -pst attributeEditorTemplate;
+    rowLayout -nc 5 -cl5 "right" "center" "center" "center" "center";
+        text -label `getMayaUsdString("kPayloads")` -ann `getMayaUsdString("kPayloadsAnn")`;
+        button -label `getMayaUsdString("kLoadAll")` payloadsLoadAllBtn;
+        button -label `getMayaUsdString("kUnloadAll")` payloadsUnloadAllBtn;
+        text -label "";
+        text -label "";
+    setParent ..;
+    setUITemplate -ppt;
+    AEmayaUsdProxyShapePayloadsReplace($loadPayloads);
+}
+
+global proc AEMayaUsdProxyShapePayloadsCmd(string $fullNodeName, int $loadAll)
+{
+    python("import AETemplateHelpers; AETemplateHelpers.ProxyShapePayloads('" + $fullNodeName + "', " + $loadAll + ")");
+}
+
+global proc AEmayaUsdProxyShapePayloadsReplace(string $loadPayloads)
+{
+    // From the input attribute we simply want the node name.
+    string $nodeName = plugNode($loadPayloads);
+    string $res[] = `ls -l $nodeName`;
+    string $fullNodeName = $res[0];
+
+    button -e -c ("AEMayaUsdProxyShapePayloadsCmd(\"" + $fullNodeName + "\", 1)") payloadsLoadAllBtn;
+    button -e -c ("AEMayaUsdProxyShapePayloadsCmd(\"" + $fullNodeName + "\", 0)") payloadsUnloadAllBtn;
+}
+
 // Callback used from editorTemplate -callCustom
 global proc AEmayaUsdProxyShapePurposeNew(string $drawGuidePurposeAttr, string $drawProxyPurposeAttr, string $drawRenderPurposeAttr)
 {
@@ -92,7 +122,8 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
             // pass it in order to get the current nodename. Cannot use the input one here as it
             // changes based on which proxy shape the AE is viewing.
             editorTemplate -callCustom "AEmayaUsdProxyShapeInfoNew" "AEmayaUsdProxyShapeInfoReplace" inStageData;
-            //editorTemplate -addControl "loadPayloads";
+
+            editorTemplate -callCustom "AEmayaUsdProxyShapePayloadsNew" "AEmayaUsdProxyShapePayloadsReplace" loadPayloads;
         editorTemplate -endLayout;
 
         editorTemplate -beginLayout `getMayaUsdString("kLabelStageSource")` -collapse 0;
