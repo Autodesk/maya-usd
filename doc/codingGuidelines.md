@@ -222,9 +222,10 @@ Recent extensions to the C++ standard introduce many features previously only fo
 Our library currently has the following boost dependencies:
 * `boost::python`
 * `boost::hash_combine` (see  [this proposal](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0814r0.pdf) )
-* `boost::filesystem` (preferable to replace with Pixar USD arch/fileSystem)
-* `boost::system`
 * `boost::make_shared` (preferable to replace with `std::shared_ptr`)
+
+***Update:***
+* `boost::filesystem` and `boost::system` are removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the project.
 
 ## Modern C++
 Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) following modern C++ practices. We’ll follow the [C++ Core Guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and pay attention to:

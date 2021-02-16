@@ -171,6 +171,8 @@ target_compile_definitions(${LIBRARY_NAME}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
+        # Prevent link dependency on the Boost::System on MacOS
+        $<$<BOOL:${IS_MACOSX}>:BOOST_SYSTEM_NO_DEPRECATED>
 )
 
 target_include_directories(
@@ -212,8 +214,6 @@ target_link_libraries(${LIBRARY_NAME}
     $<IF:$<VERSION_GREATER_EQUAL:${Boost_VERSION},${boost_1_70_0_ver_string}>,Boost::thread,${Boost_THREAD_LIBRARY}>
     $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
     $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>
-    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::filesystem>
-    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::system>
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
@@ -221,6 +221,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaRender_LIBRARY}
     mayaUsd
     $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
+    ghc_filesystem
 )
 
 install(TARGETS ${LIBRARY_NAME}
