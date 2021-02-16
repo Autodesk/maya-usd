@@ -32,6 +32,8 @@
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
+#include <pxr/imaging/hdx/pickTask.h>
+
 #include <maya/M3dView.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFnDagNode.h>

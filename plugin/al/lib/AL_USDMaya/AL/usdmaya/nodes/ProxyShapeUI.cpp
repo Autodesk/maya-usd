@@ -56,6 +56,7 @@
 #include <pxr/base/arch/env.h>
 #endif
 
+#include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/usd/modelAPI.h>
 
