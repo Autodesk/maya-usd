@@ -1279,9 +1279,7 @@ bool MeshViewportCompute::execute(
 
     findConsolidationMapping(renderItem);
 
-    // fprintf(stderr, "Starting MeshViewportCompute %p\n", this);
     if (!_normalVertexBufferGPUDirty) {
-        // fprintf(stderr, "Found clean normals, early exit\n");
         return true;
     }
 
@@ -1312,8 +1310,6 @@ bool MeshViewportCompute::execute(
     computeOSD(); // disabled by preprocessor macros
 
     setClean();
-
-    // fprintf(stderr, "finished\n");
 
     return true;
 }
