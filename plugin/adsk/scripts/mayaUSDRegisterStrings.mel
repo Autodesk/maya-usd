@@ -26,14 +26,20 @@ global proc mayaUSDRegisterStrings() {
     register("kAllUsdFiles", "All USD Files");
     register("kButtonSave", "Save");
     register("kButtonCancel", "Cancel");
+    register("kButtonYes", "Yes");
+    register("kButtonNo", "No");
     register("kCreateUsdStageFromFile", "Create USD Stage from File");
     register("kCreateUsdStageFromFileOptions", "Create USD Stage from File Options");
     register("kCreateStageFromFile", "Create Stage from File");
     register("kDefaultPrim", "Default Prim");
     register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file.");
+    register("kDiscardStageEditsTitle", "Discard Edits on ^1s's Layers");
+    register("kDiscardStageEditsLoadMsg", "Are you sure you want to load in a new file as the stage source?\n\nAll edits on your layers in ^1s will be discarded.");
+    register("kDiscardStageEditsReloadMsg", "Are you sure you want to reload ^1s as the stage source?\n\nAll edits on your layers (except the session layer) in ^2s will be discarded.");
     register("kExcludePrimPaths", "Exclude Prim Paths:");
     register("kExcludePrimPathsAnn", "Specify the path of a prim to exclude it from the viewport display. Multiple prim paths must be separated by a comma.");
     register("kExcludePrimPathsSbm", "Specify the path of a prim to exclude it from the viewport display.");
+    register("kFileAnn", "Load in a file as the stage source.");
     register("kLabelStage", "Stage");
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
@@ -42,6 +48,7 @@ global proc mayaUSDRegisterStrings() {
     register("kLoadPayloads", "Load Payloads:");
     register("kLoadPayloadsAnn", "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded.");
     register("kLoadPayloadsSbm", "Loads prims marked as payloads");
+    register("kLoadUSDFile", "Load USD File");
     register("kMenuAddSublayer", "Add Sublayer");
     register("kMenuAddParentLayer", "Add Parent Layer");
     register("kMenuClear", "Clear");
