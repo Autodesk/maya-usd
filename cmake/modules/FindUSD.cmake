@@ -99,7 +99,7 @@ if(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
         string(REGEX MATCHALL "[0-9]+" USD_${_usd_comp}_VERSION ${_usd_tmp})
     endforeach()
     set(USD_VERSION ${USD_MAJOR_VERSION}.${USD_MINOR_VERSION}.${USD_PATCH_VERSION})
-    math(EXPR USD_VERSION_NUM "${USD_MAJOR_VERSION} * 10000 + ${USD_MINOR_VERSION} * 100 + ${USD_PATCH_VERSION}")
+    math(EXPR PXR_VERSION "${USD_MAJOR_VERSION} * 10000 + ${USD_MINOR_VERSION} * 100 + ${USD_PATCH_VERSION}")
 endif()
 
 message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
@@ -116,7 +116,7 @@ find_package_handle_standard_args(USD
         USD_GENSCHEMA
         USD_CONFIG_FILE
         USD_VERSION
-        USD_VERSION_NUM
+        PXR_VERSION
     VERSION_VAR
         USD_VERSION
 )
