@@ -1488,11 +1488,24 @@ void HdVP2Mesh::_UpdateDrawItem(
             // Assign with the index to the dormant wireframe color by default.
             colorIndices.resize(instanceCount, 0);
 
+            //
+            VtIntArray delegateToVp2Map
+                = static_cast<HdVP2Instancer*>(instancer)->ComputeInstanceIdToVp2InstanceIdArray(
+                    id);
+
+            bool visibleInstance = false;
+
             // Assign with the index to the active selection highlight color.
             if (const auto state = drawScene.GetActiveSelectionState(id)) {
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
-                        colorIndices[index] = 1;
+                        if (index < delegateToVp2Map.size()) {
+                            int vp2InstanceIndex = delegateToVp2Map[index];
+                            if (vp2InstanceIndex >= 0) {
+                                visibleInstance = true;
+                                colorIndices[vp2InstanceIndex] = 1;
+                            }
+                        }
                     }
                 }
             }
@@ -1501,25 +1514,35 @@ void HdVP2Mesh::_UpdateDrawItem(
             if (const auto state = drawScene.GetLeadSelectionState(id)) {
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
-                        colorIndices[index] = 2;
+                        if (index < delegateToVp2Map.size()) {
+                            int vp2InstanceIndex = delegateToVp2Map[index];
+                            if (vp2InstanceIndex >= 0) {
+                                visibleInstance = true;
+                                colorIndices[vp2InstanceIndex] = 2;
+                            }
+                        }
                     }
                 }
             }
 
-            // Fill per-instance colors. Skip unselected instances for the dedicated selection
-            // highlight item.
-            for (unsigned int i = 0; i < instanceCount; i++) {
-                unsigned char colorIndex = colorIndices[i];
-                if (isDedicatedSelectionHighlightItem && colorIndex == 0)
-                    continue;
+            if (visibleInstance) {
+                // Fill per-instance colors. Skip unselected instances for the dedicated selection
+                // highlight item.
+                for (unsigned int i = 0; i < instanceCount; i++) {
+                    unsigned char colorIndex = colorIndices[i];
+                    if (isDedicatedSelectionHighlightItem && colorIndex == 0)
+                        continue;
 
-                transforms[i].Get(instanceMatrix.matrix);
-                stateToCommit._instanceTransforms.append(worldMatrix * instanceMatrix);
+                    transforms[i].Get(instanceMatrix.matrix);
+                    stateToCommit._instanceTransforms.append(worldMatrix * instanceMatrix);
 
-                const MColor& color = colors[colorIndex];
-                for (unsigned int j = 0; j < kNumColorChannels; j++) {
-                    stateToCommit._instanceColors.append(color[j]);
+                    const MColor& color = colors[colorIndex];
+                    for (unsigned int j = 0; j < kNumColorChannels; j++) {
+                        stateToCommit._instanceColors.append(color[j]);
+                    }
                 }
+            } else {
+                instancerWithNoInstances = true;
             }
         }
     } else {

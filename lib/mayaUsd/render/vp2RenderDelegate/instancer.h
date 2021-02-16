@@ -47,6 +47,7 @@ public:
     ~HdVP2Instancer();
 
     VtMatrix4dArray ComputeInstanceTransforms(SdfPath const& prototypeId);
+    VtIntArray      ComputeInstanceIdToVp2InstanceIdArray(SdfPath const& prototypeId);
 
 private:
     void _SyncPrimvars();

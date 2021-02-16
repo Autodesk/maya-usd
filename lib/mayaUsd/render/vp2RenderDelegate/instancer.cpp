@@ -237,4 +237,37 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
     return final;
 }
 
+/*! \brief  Computes array to convert a scene delegate instance id into a Maya instance id
+
+    The scene delegate instance ids can be a sparse array when some instances are hidden.
+    The Maya instance array must be fully packed, so we have to remap the instance ids.
+    And hidden instance gets id -1.
+
+    The length of the mapping array is such that the last element in the array is the last
+    visible scene delegate index. If there are hidden scene delegate instances with a higher
+    index then those ids won't have an entry in the array.
+
+    \param prototypeId The prototype to compute the mapping for.
+
+    \return An array with an entry per scene delegate instance id.
+*/
+VtIntArray HdVP2Instancer::ComputeInstanceIdToVp2InstanceIdArray(SdfPath const& prototypeId)
+{
+    // GetInstanceIndices returns all the visible indices.
+    VtIntArray instanceIndices = GetDelegate()->GetInstanceIndices(GetId(), prototypeId);
+    VtIntArray delegateToVp2Map;
+    int        maxSceneDelegateIndex = -1;
+    for (const auto& sceneDelegateIndex : instanceIndices) {
+        maxSceneDelegateIndex = std::max(maxSceneDelegateIndex, sceneDelegateIndex);
+    }
+    delegateToVp2Map.resize(maxSceneDelegateIndex + 1);
+    for (auto& vp2Index : delegateToVp2Map) {
+        vp2Index = -1;
+    }
+    for (size_t i = 0; i < instanceIndices.size(); ++i) {
+        delegateToVp2Map[instanceIndices[i]] = i;
+    }
+    return delegateToVp2Map;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
