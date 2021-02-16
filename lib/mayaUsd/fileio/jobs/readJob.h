@@ -132,6 +132,9 @@ private:
     MDagModifier                    mDagModifierUndo;
     bool                            mDagModifierSeeded;
     double                          mTimeSampleMultiplier;
+
+    /// Cache of import chasers that were run. Currently used to aid in redo/undo operations
+    /// This cache is cleared for every new Read() operation.
     UsdMayaImportChaserRefPtrVector mImportChasers;
 };
 
