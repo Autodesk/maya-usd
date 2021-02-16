@@ -798,7 +798,7 @@ void HdVP2Mesh::Sync(
                 const SdfPath materialId
                     = dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
                         geomSubset.materialId);
-                const HdVP2Material* material = static_cast<const HdVP2Material*>(
+                HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
                 if (material) {
@@ -817,7 +817,7 @@ void HdVP2Mesh::Sync(
                 const SdfPath materialId
                     = dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
                         geomSubset.materialId);
-                const HdVP2Material* material = static_cast<const HdVP2Material*>(
+                HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
                 if (material) {
