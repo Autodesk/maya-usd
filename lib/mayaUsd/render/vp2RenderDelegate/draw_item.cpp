@@ -25,9 +25,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 Data holder for its corresponding render item to facilitate parallelized evaluation.
 */
-HdVP2DrawItem::HdVP2DrawItem(
-    HdVP2RenderDelegate*     delegate,
-    const HdRprimSharedData* sharedData)
+HdVP2DrawItem::HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedData* sharedData)
     : HdDrawItem(sharedData)
     , _delegate(delegate)
 {
@@ -53,17 +51,14 @@ HdVP2DrawItem::~HdVP2DrawItem()
     }
 }
 
-void HdVP2DrawItem::AddRenderItem(
-    MHWRender::MRenderItem* item,
-    const HdGeomSubset*     geomSubset)
+void HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
 {
     _renderItems.push_back(RenderItemData());
     RenderItemData& renderItemData = _renderItems.back();
 
     renderItemData._renderItem = item;
     renderItemData._renderItemName = _drawItemName;
-    if (geomSubset)
-    {
+    if (geomSubset) {
         renderItemData._geomSubset = *geomSubset;
         renderItemData._renderItemName += geomSubset->id.GetString().c_str();
     }

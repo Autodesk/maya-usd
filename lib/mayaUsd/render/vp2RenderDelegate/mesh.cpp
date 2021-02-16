@@ -463,7 +463,8 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
         || (normalsInfo && PrimvarSource::GPUCompute == normalsInfo->_source.dataSource);
     bool hasCleanNormals
         = normalsInfo && (0 == (rprimDirtyBits & (DirtySmoothNormals | DirtyFlatNormals)));
-    //fprintf(stderr, "need normals: %d   computeCPUNormals: %d   computeGPUNormals: %d   hasCleanNormals: %d\n", needNormals, computeCPUNormals, computeGPUNormals, hasCleanNormals);
+    // fprintf(stderr, "need normals: %d   computeCPUNormals: %d   computeGPUNormals: %d
+    // hasCleanNormals: %d\n", needNormals, computeCPUNormals, computeGPUNormals, hasCleanNormals);
     if (needNormals && (computeCPUNormals || computeGPUNormals) && !hasCleanNormals) {
         _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
         // Iterate through all reprdescs for the current repr to figure out if any
@@ -486,10 +487,10 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
         // If there are authored normals, prepare buffer only when it is dirty.
         // otherwise, compute smooth normals from points and adjacency and we
         // have a custom dirty bit to determine whether update is needed.
-        //fprintf(stderr, "requireSmoothNormals: %d   smooth normals dirty: %d\n", requireSmoothNormals, (rprimDirtyBits & DirtySmoothNormals));
+        // fprintf(stderr, "requireSmoothNormals: %d   smooth normals dirty: %d\n",
+        // requireSmoothNormals, (rprimDirtyBits & DirtySmoothNormals));
         if (requireSmoothNormals && (rprimDirtyBits & DirtySmoothNormals)) {
-            if (computeGPUNormals)
-            {
+            if (computeGPUNormals) {
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
                 _meshSharedData->_viewportCompute->setNormalVertexBufferGPUDirty();
 #endif
@@ -994,8 +995,7 @@ void HdVP2Mesh::Sync(
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
         _gpuNormalsEnabled
             = _gpuNormalsEnabled && _meshSharedData->_numVertices >= _gpuNormalsComputeThreshold;
-        if (_gpuNormalsEnabled)
-        {
+        if (_gpuNormalsEnabled) {
             _CreateViewportCompute();
 #ifdef HDVP2_ENABLE_GPU_OSD
             _CreateOSDTables();
@@ -2155,11 +2155,10 @@ void HdVP2Mesh::_UpdatePrimvarSources(
             if (std::find(begin, end, pv.name) != end) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                     const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                    PrimvarInfo* info = _getInfo(_meshSharedData->_primvarInfo, pv.name);
+                    PrimvarInfo*  info = _getInfo(_meshSharedData->_primvarInfo, pv.name);
                     if (info) {
                         info->_source.data = value;
-                    }
-                    else {
+                    } else {
                         _meshSharedData->_primvarInfo[pv.name] = std::make_unique<PrimvarInfo>(
                             PrimvarSource(value, interp, PrimvarSource::Primvar), nullptr);
                     }

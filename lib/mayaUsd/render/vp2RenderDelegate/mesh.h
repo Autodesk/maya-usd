@@ -35,7 +35,8 @@ class HdVP2RenderDelegate;
 //! Primvar data and interpolation, from the scene delegate
 struct PrimvarSource
 {
-    enum DataSource {
+    enum DataSource
+    {
         Primvar,
         CPUCompute,
         GPUCompute

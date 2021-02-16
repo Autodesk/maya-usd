@@ -19,8 +19,8 @@
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/imaging/hd/drawItem.h>
-#include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/geomSubset.h>
+#include <pxr/imaging/hd/mesh.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/timeCode.h>
 
@@ -47,7 +47,8 @@ public:
         //! Pointer of the render item for fast access. No ownership is held.
         MHWRender::MRenderItem* _renderItem { nullptr };
 
-        //! The geom subset this render item represents. _geomSubset.id is StdPath::EmptyPath() if there is no geom subset.
+        //! The geom subset this render item represents. _geomSubset.id is StdPath::EmptyPath() if
+        //! there is no geom subset.
         HdGeomSubset _geomSubset;
 
         //! Render item index buffer - use when updating data
@@ -67,7 +68,9 @@ public:
         bool _transparent { false };
 
         //! Primitive type of the render item
-        MHWRender::MGeometry::Primitive _primitiveType { MHWRender::MGeometry::kInvalidPrimitive }; // TODO: this is stored on the MRenderItem, do we need it here too?
+        MHWRender::MGeometry::Primitive _primitiveType {
+            MHWRender::MGeometry::kInvalidPrimitive
+        }; // TODO: this is stored on the MRenderItem, do we need it here too?
         //! Primitive stride of the render item (valid only if the primitive type is kPatch)
         int _primitiveStride { 0 };
 
@@ -106,7 +109,8 @@ public:
 
     /*! \brief Get acces to render item data.
      */
-    const RenderItemData& GetRenderItemData() const {
+    const RenderItemData& GetRenderItemData() const
+    {
         TF_VERIFY(_renderItems.size() == 1);
         return _renderItems[0];
     }
@@ -125,7 +129,8 @@ public:
 
     /*! \brief  Set pointer of the associated render item
      */
-    void SetRenderItem(MHWRender::MRenderItem* item) {
+    void SetRenderItem(MHWRender::MRenderItem* item)
+    {
         TF_VERIFY(_renderItems.size() == 0);
         AddRenderItem(item);
     }
@@ -140,15 +145,11 @@ public:
 
     /*! \brief  Is the render item created for this usage?
      */
-    bool ContainsUsage(RenderItemUsage usage) const {
-        return (_renderItemUsage & usage) != 0;
-    }
+    bool ContainsUsage(RenderItemUsage usage) const { return (_renderItemUsage & usage) != 0; }
 
     /*! \brief  Is the render item created for this usage only?
      */
-    bool MatchesUsage(RenderItemUsage usage) const {
-        return _renderItemUsage == usage;
-    }
+    bool MatchesUsage(RenderItemUsage usage) const { return _renderItemUsage == usage; }
 
     /*! \brief  Bitwise OR with the input dirty bits.
      */

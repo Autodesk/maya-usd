@@ -124,8 +124,7 @@ void MeshViewportCompute::reset()
     _consolidatedCompute.reset();
     _geometryIndexMapping.reset();
     _vertexCount = 0;
-    if (0 != _uboResourceHandle)
-    {
+    if (0 != _uboResourceHandle) {
         glDeleteBuffers(1, &_uboResourceHandle);
         _uboResourceHandle = 0;
     }
@@ -1269,8 +1268,7 @@ bool MeshViewportCompute::execute(
     const MPxViewportComputeItem::Actions& availableActions,
     MRenderItem&                           renderItem)
 {
-    if (_adjacencyTaskInProgress)
-    {
+    if (_adjacencyTaskInProgress) {
         return false;
     }
 
@@ -1281,10 +1279,9 @@ bool MeshViewportCompute::execute(
 
     findConsolidationMapping(renderItem);
 
-    //fprintf(stderr, "Starting MeshViewportCompute %p\n", this);
-    if (!_normalVertexBufferGPUDirty)
-    {
-        //fprintf(stderr, "Found clean normals, early exit\n");
+    // fprintf(stderr, "Starting MeshViewportCompute %p\n", this);
+    if (!_normalVertexBufferGPUDirty) {
+        // fprintf(stderr, "Found clean normals, early exit\n");
         return true;
     }
 
@@ -1316,7 +1313,7 @@ bool MeshViewportCompute::execute(
 
     setClean();
 
-    //fprintf(stderr, "finished\n");
+    // fprintf(stderr, "finished\n");
 
     return true;
 }
