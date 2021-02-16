@@ -89,7 +89,7 @@ MtohInitializeRenderPlugins()
 
             store.first.emplace_back(
                 renderer,
-                TfToken(TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())),
+                TfToken(TfStringPrintf("%s%s", MTOH_RENDER_OVERRIDE_PREFIX, renderer.GetText())),
                 TfToken(TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())));
             MtohRenderGlobals::BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
         }

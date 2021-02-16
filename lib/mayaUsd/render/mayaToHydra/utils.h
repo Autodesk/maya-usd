@@ -20,10 +20,15 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/pxr.h>
 
+#include <maya/MFrameContext.h>
+#include <maya/MString.h>
+
 #include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+constexpr auto MTOH_RENDER_OVERRIDE_PREFIX = "mtohRenderOverride_";
 
 struct MtohRendererDescription
 {
@@ -44,6 +49,31 @@ using MtohRendererDescriptionVector = std::vector<MtohRendererDescription>;
 // Map from MtohRendererDescription::rendererName to it's a HdRenderSettingDescriptorList
 using MtohRendererSettings
     = std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>;
+
+// Defining these in header so don't need to link to use... template is
+inline bool IsMtohRenderOverrideName(const MString& overrideName)
+{
+    // See if the override is an mtoh one - ie, it starts with the right prefix
+    constexpr auto prefixLen = strlen(MTOH_RENDER_OVERRIDE_PREFIX);
+
+    TF_WARN(
+        "%s: %s an mtoh renderer",
+        overrideName.asChar(),
+        overrideName.substring(0, prefixLen - 1) == MTOH_RENDER_OVERRIDE_PREFIX ? "is" : "is not");
+
+    if (overrideName.length() < prefixLen) {
+        return false;
+    }
+
+    return overrideName.substring(0, prefixLen - 1) == MTOH_RENDER_OVERRIDE_PREFIX;
+}
+
+inline bool IsMtohRenderOverride(const MHWRender::MFrameContext& frameContext)
+{
+    MHWRender::MFrameContext::RenderOverrideInformation overrideInfo;
+    frameContext.getRenderOverrideInformation(overrideInfo);
+    return IsMtohRenderOverrideName(overrideInfo.overrideName);
+}
 
 std::string                          MtohGetRendererPluginDisplayName(const TfToken& id);
 const MtohRendererDescriptionVector& MtohGetRendererDescriptions();

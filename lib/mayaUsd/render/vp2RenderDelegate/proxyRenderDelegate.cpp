@@ -60,6 +60,10 @@
 #include <ufe/selectionNotification.h>
 #endif
 
+#if defined(BUILD_HDMAYA)
+#include <mayaUsd/render/mayaToHydra/utils.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -348,11 +352,23 @@ bool ProxyRenderDelegate::enableUpdateForSelection() const { return true; }
 #endif
 
 //! \brief  Always requires update since changes are tracked by Hydraw change tracker and it will
-//! guarantee minimal update
+//! guarantee minimal update; only exception is if rendering through Maya-to-Hydra
 bool ProxyRenderDelegate::requiresUpdate(
     const MSubSceneContainer& container,
     const MFrameContext&      frameContext) const
 {
+#if defined(BUILD_HDMAYA)
+    std::cout << "ProxyRenderDelegate::update - BUILD_HDMAYA - checking if IsMtohRenderOverride"
+              << std::endl;
+
+    // If the current viewport renderer is an mtoh one, skip this update, as
+    // mtoh already has special handling for proxy shapes, and we don't want to
+    // build out a render index we don't need
+    if (IsMtohRenderOverride(frameContext)) {
+        return false;
+    }
+    std::cout << "ProxyRenderDelegate::requiresSpdate - was not mtoh" << std::endl;
+#endif
     return true;
 }
 
