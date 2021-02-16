@@ -16,6 +16,7 @@
 #include "delegateDebugCodes.h"
 
 #include <pxr/base/tf/registryManager.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -113,7 +114,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_SELECTION, "Print information about hdMaya delegate selection.");
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
@@ -124,7 +125,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print information about 'GetTextureResourceID' calls to the "
         "delegates.");
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

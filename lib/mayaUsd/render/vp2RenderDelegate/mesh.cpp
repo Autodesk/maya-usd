@@ -33,6 +33,7 @@
 #include <pxr/imaging/hd/smoothNormals.h>
 #include <pxr/imaging/hd/version.h>
 #include <pxr/imaging/hd/vertexAdjacency.h>
+#include <pxr/pxr.h>
 
 #include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
@@ -787,7 +788,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
         return;
     }
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
 #else
     _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());

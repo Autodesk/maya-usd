@@ -25,6 +25,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/material.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
@@ -32,9 +33,9 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 #include <pxr/imaging/hdSt/textureResourceHandle.h>
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -89,7 +90,7 @@ void HdMayaMaterialAdapter::Populate()
     _isPopulated = true;
 }
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
 HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(const TfToken& paramName)
 {
@@ -101,7 +102,7 @@ HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(const SdfPa
     return {};
 }
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
 VtValue HdMayaMaterialAdapter::GetMaterialResource()
 {
@@ -212,7 +213,7 @@ private:
         }
     }
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
     HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId) override
     {
@@ -234,7 +235,7 @@ private:
         return {};
     }
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
     void _CreateSurfaceMaterialCallback()
     {
@@ -250,7 +251,7 @@ private:
         }
     }
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
     inline HdTextureResource::ID
     _GetTextureResourceID(const MObject& fileObj, const TfToken& filePath)
@@ -263,7 +264,7 @@ private:
         return HdTextureResource::ID(hash);
     }
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
     VtValue GetMaterialResource() override
     {
@@ -319,12 +320,12 @@ private:
     TfToken _surfaceShaderType;
     // So they live long enough
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
     std::unordered_map<TfToken, HdStTextureResourceHandleSharedPtr, TfToken::HashFunctor>
         _textureResourceHandles;
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
     MCallbackId _surfaceShaderCallback;
 #ifdef HDMAYA_OIT_ENABLED

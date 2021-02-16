@@ -19,7 +19,7 @@
 // to recognize that "ProxyDrawOverride.h" is the related header.
 // clang-format off
 #include <pxr/pxr.h>
-#if USD_VERSION_NUM < 2102
+#if PXR_VERSION < 2102
 #include <pxr/imaging/glf/glew.h>
 #else
 #include <pxr/imaging/garch/glApi.h>
