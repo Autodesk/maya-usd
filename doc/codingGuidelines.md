@@ -213,7 +213,7 @@ Headers should be included in the following order, with each section separated b
 	* `WANT_UFE_BUILD` equals 1 if UFE is found and it should be used for conditional compilation on codes depending on UFE.
 
 **USD**
-	* `USD_VERSION_NUM` is the macro to test USD version (`USD_MAJOR_VERSION` * 10000 + `USD_MINOR_VERSION` * 100 + `USD_PATCH_VERSION`)
+	* `PXR_VERSION` is the macro to test USD version (`PXR_MAJOR_VERSION` * 10000 + `PXR_MINOR_VERSION` * 100 + `PXR_PATCH_VERSION`)
 
 Respect the minimum supported version for Maya and USD stated in [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) .
 
