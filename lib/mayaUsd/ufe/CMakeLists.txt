@@ -73,6 +73,7 @@ set(HEADERS
     StagesSubject.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
+    UsdPointInstanceModifierBase.h
     UsdRootChildHierarchy.h
     UsdRotatePivotTranslateUndoableCommand.h
     UsdRotateUndoableCommand.h
