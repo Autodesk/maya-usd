@@ -188,7 +188,7 @@ struct UsdMayaJobExportArgs
     const bool    verbose;
     const bool    staticSingleSample;
 
-    typedef std::map<std::string, std::string> ChaserArgs;
+    using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>             chaserNames;
     const std::map<std::string, ChaserArgs>    allChaserArgs;
 

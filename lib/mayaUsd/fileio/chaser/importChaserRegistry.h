@@ -82,7 +82,7 @@ public:
         const UsdMayaJobImportArgs& _jobArgs;
     };
 
-    typedef std::function<UsdMayaImportChaser*(const FactoryContext&)> FactoryFn;
+    using FactoryFn = std::function<UsdMayaImportChaser*(const FactoryContext&)>;
 
     /// \brief Register an import chaser factory.
     ///
@@ -105,8 +105,6 @@ public:
     static UsdMayaImportChaserRegistry& GetInstance();
 
 private:
-    UsdMayaImportChaserRegistry();
-    ~UsdMayaImportChaserRegistry();
     friend class TfSingleton<UsdMayaImportChaserRegistry>;
 };
 

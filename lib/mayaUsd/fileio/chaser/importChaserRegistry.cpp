@@ -63,9 +63,6 @@ TF_INSTANTIATE_SINGLETON(UsdMayaImportChaserRegistry);
 
 std::map<std::string, UsdMayaImportChaserRegistry::FactoryFn> _factoryImportRegistry;
 
-UsdMayaImportChaserRegistry::UsdMayaImportChaserRegistry() { }
-UsdMayaImportChaserRegistry::~UsdMayaImportChaserRegistry() { }
-
 bool UsdMayaImportChaserRegistry::RegisterFactory(const char* name, FactoryFn fn)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering import chaser '%s'.\n", name);
