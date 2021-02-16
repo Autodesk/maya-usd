@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME}
         StagesSubject.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
+        UsdPointInstancePositionModifier.cpp
         UsdRootChildHierarchy.cpp
         UsdRotatePivotTranslateUndoableCommand.cpp
         UsdRotateUndoableCommand.cpp
@@ -74,6 +75,7 @@ set(HEADERS
     UsdHierarchy.h
     UsdHierarchyHandler.h
     UsdPointInstanceModifierBase.h
+    UsdPointInstancePositionModifier.h
     UsdRootChildHierarchy.h
     UsdRotatePivotTranslateUndoableCommand.h
     UsdRotateUndoableCommand.h
