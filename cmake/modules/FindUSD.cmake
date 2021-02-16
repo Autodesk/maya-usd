@@ -75,6 +75,8 @@ find_file(USD_CONFIG_FILE
     DOC "USD cmake configuration file"
 )
 
+include(${USD_CONFIG_FILE})
+
 # ensure PXR_USD_LOCATION is defined
 if(NOT DEFINED PXR_USD_LOCATION)
     if(DEFINED ENV{PXR_USD_LOCATION})
