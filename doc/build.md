@@ -193,7 +193,7 @@ Currently the Animal Logic plugin has a dependency on some of the boost componen
 e.g 
 
 ```
-python build_usd.py ~/Desktop/BUILD --build-args boost,"--with-date_time --with-thread --with-system --with-filesystem" 
+python build_usd.py ~/Desktop/BUILD --build-args boost,"--with-thread --with-system --with-filesystem" 
 ```
 
 ***NOTE:*** ```--build-args``` needs to be passed at the very end of command, after build/install location.
