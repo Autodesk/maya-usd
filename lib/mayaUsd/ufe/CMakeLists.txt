@@ -12,6 +12,7 @@ target_sources(${PROJECT_NAME}
         UsdHierarchyHandler.cpp
         UsdPointInstanceOrientationModifier.cpp
         UsdPointInstancePositionModifier.cpp
+        UsdPointInstanceScaleModifier.cpp
         UsdRootChildHierarchy.cpp
         UsdRotatePivotTranslateUndoableCommand.cpp
         UsdRotateUndoableCommand.cpp
@@ -78,6 +79,7 @@ set(HEADERS
     UsdPointInstanceModifierBase.h
     UsdPointInstanceOrientationModifier.h
     UsdPointInstancePositionModifier.h
+    UsdPointInstanceScaleModifier.h
     UsdRootChildHierarchy.h
     UsdRotatePivotTranslateUndoableCommand.h
     UsdRotateUndoableCommand.h
