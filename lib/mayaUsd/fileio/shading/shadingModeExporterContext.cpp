@@ -506,7 +506,12 @@ public:
                     getAttrResult = TfToken(cmdResult.asChar());
                     break;
                 }
-                default: break;
+                default:
+                    TF_RUNTIME_ERROR(
+                        "The UV set name could not be determined; the result was of an "
+                        "unrecognized type! The command run was: %s",
+                        getAttrCmd.asChar());
+                    continue;
                 }
                 // Check if map1 should export as st:
                 if (getAttrResult == _tokens->map1 && UsdMayaWriteUtil::WriteMap1AsST()) {
