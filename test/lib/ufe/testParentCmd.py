@@ -24,7 +24,7 @@ import usdUtils
 
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Vt
+from pxr import UsdGeom, Vt, Gf
 
 from maya import cmds
 from maya import standalone
@@ -385,6 +385,277 @@ class ParentCmdTestCase(unittest.TestCase):
 
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
+
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
+    def testParentAbsoluteFallback(self):
+        """Test parent -absolute on prim with a fallback Maya transform stack."""
+        # Create a scene with an xform and a capsule.
+        import mayaUsd_createStageWithNewLayer
+ 
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        xformPrim = stage.DefinePrim('/Xform1', 'Xform')
+        capsulePrim = stage.DefinePrim('/Capsule1', 'Capsule')
+        xformXformable = UsdGeom.Xformable(xformPrim)
+        capsuleXformable = UsdGeom.Xformable(capsulePrim)
+
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapePathStr)
+        
+        # Translate and rotate the xform and capsule to set up their initial
+        # transform ops.
+        xformPath = ufe.Path([proxyShapePathSegment, 
+                              usdUtils.createUfePathSegment('/Xform1')])
+        xformItem = ufe.Hierarchy.createItem(xformPath)
+        capsulePath = ufe.Path([proxyShapePathSegment, 
+                                usdUtils.createUfePathSegment('/Capsule1')])
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(xformItem)
+
+        cmds.move(0, 5, 0, r=True, os=True, wd=True)
+        cmds.rotate(0, 90, 0, r=True, os=True, fo=True)
+
+        self.assertEqual(
+            xformXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:translate", "xformOp:rotateXYZ")))
+
+        sn.clear()
+        sn.append(capsuleItem)
+
+        cmds.move(-10, 0, 8, r=True, os=True, wd=True)
+        cmds.rotate(90, 0, 0, r=True, os=True, fo=True)
+
+        # Add an extra rotate transform op.  In so doing, the capsule prim no
+        # longer matches the Maya transform stack, so our parent -absolute
+        # operation will be forced to append Maya fallback transform stack ops
+        # to the capsule.
+        capsuleXformable.AddRotateXOp()
+        self.assertEqual(
+            capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:translate", "xformOp:rotateXYZ", "xformOp:rotateX")))
+
+        capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+        capsuleWorld = capsuleT3d.inclusiveMatrix()
+        capsuleWorldPre = matrixToList(capsuleWorld)
+
+        # The xform currently has no children.
+        xformHier = ufe.Hierarchy.hierarchy(xformItem)
+        xformChildren = xformHier.children()
+        self.assertEqual(len(xformChildren), 0)
+
+        # Parent the capsule to the xform.
+        cmds.parent(ufe.PathString.string(capsulePath), 
+                    ufe.PathString.string(xformPath))
+
+        def checkParentDone():
+            # The xform now has the capsule as its child.
+            xformChildren = xformHier.children()
+            self.assertEqual(len(xformChildren), 1)
+            self.assertIn('Capsule1', childrenNames(xformChildren))
+    
+            # Confirm that the capsule has not moved in world space.  Must
+            # re-create the prim and its scene item, as its path has changed.
+            capsulePath = ufe.Path(
+                [proxyShapePathSegment, 
+                 usdUtils.createUfePathSegment('/Xform1/Capsule1')])
+            capsulePrim = mayaUsd.ufe.ufePathToPrim(
+                ufe.PathString.string(capsulePath))
+            capsuleXformable = UsdGeom.Xformable(capsulePrim)
+            capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+            capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+            capsuleWorld = capsuleT3d.inclusiveMatrix()
+            assertVectorAlmostEqual(
+                self, capsuleWorldPre, matrixToList(capsuleWorld))
+    
+            # The capsule's transform ops now have Maya fallback stack ops.  A
+            # scale fallback op is added, even though it's uniform unit.
+            self.assertEqual(
+                capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                    "xformOp:translate", "xformOp:rotateXYZ", "xformOp:rotateX",
+                    "xformOp:translate:maya_fallback", 
+                    "xformOp:rotateXYZ:maya_fallback",
+                    "xformOp:scale:maya_fallback")))
+
+        checkParentDone()
+
+        # Undo: the xform no longer has a child, the capsule is still where it
+        # has always been, and the fallback transform ops are gone.
+        cmds.undo()
+
+        xformChildren = xformHier.children()
+        self.assertEqual(len(xformChildren), 0)
+
+        capsulePath = ufe.Path(
+            [proxyShapePathSegment, usdUtils.createUfePathSegment('/Capsule1')])
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(
+            ufe.PathString.string(capsulePath))
+        capsuleXformable = UsdGeom.Xformable(capsulePrim)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+        capsuleWorld = capsuleT3d.inclusiveMatrix()
+        assertVectorAlmostEqual(
+            self, capsuleWorldPre, matrixToList(capsuleWorld))
+        self.assertEqual(
+            capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:translate", "xformOp:rotateXYZ", "xformOp:rotateX")))
+
+        # Redo: capsule still hasn't moved, Maya fallback ops are back.
+        cmds.redo()
+
+        checkParentDone()
+
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
+    def testParentAbsoluteMultiMatrixOp(self):
+        """Test parent -absolute on prim with a transform stack with multiple matrix ops."""
+
+        cmds.file(new=True, force=True)
+
+        # Create a scene with an xform and a capsule.
+        import mayaUsd_createStageWithNewLayer
+ 
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        xformPrim = stage.DefinePrim('/Xform1', 'Xform')
+        capsulePrim = stage.DefinePrim('/Capsule1', 'Capsule')
+        xformXformable = UsdGeom.Xformable(xformPrim)
+        capsuleXformable = UsdGeom.Xformable(capsulePrim)
+
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapePathStr)
+        
+        # Translate and rotate the xform.
+        xformPath = ufe.Path([proxyShapePathSegment, 
+                              usdUtils.createUfePathSegment('/Xform1')])
+        xformItem = ufe.Hierarchy.createItem(xformPath)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(xformItem)
+
+        cmds.move(0, -5, 0, r=True, os=True, wd=True)
+        cmds.rotate(0, -90, 0, r=True, os=True, fo=True)
+
+        self.assertEqual(
+            xformXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:translate", "xformOp:rotateXYZ")))
+
+        sn.clear()
+
+        capsulePath = ufe.Path([proxyShapePathSegment, 
+                                usdUtils.createUfePathSegment('/Capsule1')])
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+
+        # Add 3 matrix transform ops to the capsule.
+        # matrix A: tx  5, ry 90
+        # matrix B: ty 10, rz 90
+        # matrix C: tz 15, rx 90
+        op = capsuleXformable.AddTransformOp(opSuffix='A')
+        matrixValA = Gf.Matrix4d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 5, 0, 0, 1)
+        op.Set(matrixValA)
+        op = capsuleXformable.AddTransformOp(opSuffix='B')
+        matrixValB = Gf.Matrix4d(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 10, 0, 1)
+        op.Set(matrixValB)
+        op = capsuleXformable.AddTransformOp(opSuffix='C')
+        matrixValC = Gf.Matrix4d(1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 15, 1)
+        op.Set(matrixValC)
+
+        matrixOps = [
+            "xformOp:transform:A", "xformOp:transform:B", "xformOp:transform:C"]
+        matrixValues = {
+            "xformOp:transform:A" : matrixValA,
+            "xformOp:transform:B" : matrixValB, 
+            "xformOp:transform:C" : matrixValC }
+
+        self.assertEqual(capsuleXformable.GetXformOpOrderAttr().Get(), 
+                         Vt.TokenArray(matrixOps))
+
+        # Capture the current world space transform of the capsule.
+        capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+        capsuleWorldPre = matrixToList(capsuleT3d.inclusiveMatrix())
+
+        # We will run the parenting test 3 times, targeting each matrix op in
+        # turn.
+        for matrixOp in matrixOps:
+            os.environ['MAYA_USD_MATRIX_XFORM_OP_NAME'] = matrixOp
+
+            # The xform currently has no children.
+            xformHier = ufe.Hierarchy.hierarchy(xformItem)
+            xformChildren = xformHier.children()
+            self.assertEqual(len(xformChildren), 0)
+
+            # Parent the capsule to the xform.
+            cmds.parent(ufe.PathString.string(capsulePath), 
+                        ufe.PathString.string(xformPath))
+
+            def checkParentDone():
+                # The xform now has the capsule as its child.
+                xformChildren = xformHier.children()
+                self.assertEqual(len(xformChildren), 1)
+                self.assertIn('Capsule1', childrenNames(xformChildren))
+            
+                # Confirm that the capsule has not moved in world space.  Must
+                # re-create the prim and its scene item after path change.
+                capsulePath = ufe.Path(
+                    [proxyShapePathSegment, 
+                     usdUtils.createUfePathSegment('/Xform1/Capsule1')])
+                capsulePrim = mayaUsd.ufe.ufePathToPrim(
+                    ufe.PathString.string(capsulePath))
+                capsuleXformable = UsdGeom.Xformable(capsulePrim)
+                capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+                capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+                capsuleWorld = capsuleT3d.inclusiveMatrix()
+                assertVectorAlmostEqual(
+                    self, capsuleWorldPre, matrixToList(capsuleWorld))
+            
+                # No change in the capsule's transform ops.
+                self.assertEqual(
+                    capsuleXformable.GetXformOpOrderAttr().Get(), 
+                    Vt.TokenArray(matrixOps))
+
+                # Matrix ops that were not targeted did not change.
+                for checkMatrixOp in matrixOps:
+                    if checkMatrixOp == matrixOp:
+                        continue
+                    op = UsdGeom.XformOp(
+                        capsulePrim.GetAttribute(checkMatrixOp))
+                    self.assertEqual(
+                        op.GetOpTransform(mayaUsd.ufe.getTime(
+                            ufe.PathString.string(capsulePath))),
+                        matrixValues[checkMatrixOp])
+
+            checkParentDone()
+
+            # Undo: the xform no longer has a child, the capsule is still where
+            # it has always been.
+            cmds.undo()
+
+            xformChildren = xformHier.children()
+            self.assertEqual(len(xformChildren), 0)
+
+            capsulePath = ufe.Path(
+                [proxyShapePathSegment, usdUtils.createUfePathSegment('/Capsule1')])
+            capsulePrim = mayaUsd.ufe.ufePathToPrim(
+                ufe.PathString.string(capsulePath))
+            capsuleXformable = UsdGeom.Xformable(capsulePrim)
+            capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+            capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+            capsuleWorld = capsuleT3d.inclusiveMatrix()
+            assertVectorAlmostEqual(
+                self, capsuleWorldPre, matrixToList(capsuleWorld))
+            self.assertEqual(
+                capsuleXformable.GetXformOpOrderAttr().Get(), 
+                Vt.TokenArray(matrixOps))
+
+            # Redo: capsule still hasn't moved.
+            cmds.redo()
+
+            checkParentDone()
+
+            # Go back to initial conditions for next iteration of loop.
+            cmds.undo()
 
     def testParentToProxyShape(self):
 
