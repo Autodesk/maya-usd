@@ -211,7 +211,6 @@ target_link_libraries(${LIBRARY_NAME}
     usdImagingGL
     vt
     ${Boost_PYTHON_LIBRARY}
-    $<IF:$<VERSION_GREATER_EQUAL:${Boost_VERSION},${boost_1_70_0_ver_string}>,Boost::thread,${Boost_THREAD_LIBRARY}>
     $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
     $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>
     ${MAYA_Foundation_LIBRARY}

@@ -23,9 +23,7 @@ option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
 # Adding specific components forces calls to _Boost_find_library, which
 # is the rationale for listing them here.
-set(Boost_FIND_COMPONENTS
-     thread
-)
+set(Boost_FIND_COMPONENTS "")
 if(WIN32)
     list(APPEND Boost_FIND_COMPONENTS
         chrono
