@@ -1488,7 +1488,9 @@ void HdVP2Mesh::_UpdateDrawItem(
             // Assign with the index to the dormant wireframe color by default.
             colorIndices.resize(instanceCount, 0);
 
-            //
+            // The active & lead selection information tells us the scene delegate instance
+            // Id. We need to convert that to the Vp2 instance id used in the colorIndices
+            // vector.
             VtIntArray delegateToVp2Map
                 = static_cast<HdVP2Instancer*>(instancer)->ComputeInstanceIdToVp2InstanceIdArray(
                     id);

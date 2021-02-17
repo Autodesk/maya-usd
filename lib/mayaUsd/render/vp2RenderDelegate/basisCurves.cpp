@@ -1130,11 +1130,22 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 // Assign with the index to the dormant wireframe color by default.
                 colorIndices.resize(instanceCount, 0);
 
+                // The active & lead selection information tells us the scene delegate instance
+                // Id. We need to convert that to the Vp2 instance id used in the colorIndices
+                // vector.
+                VtIntArray delegateToVp2Map = static_cast<HdVP2Instancer*>(instancer)
+                                                  ->ComputeInstanceIdToVp2InstanceIdArray(id);
+
                 // Assign with the index to the active selection highlight color.
                 if (auto state = drawScene.GetActiveSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
-                            colorIndices[index] = 1;
+                            if (index < delegateToVp2Map.size()) {
+                                int vp2InstanceIndex = delegateToVp2Map[index];
+                                if (vp2InstanceIndex >= 0) {
+                                    colorIndices[vp2InstanceIndex] = 1;
+                                }
+                            }
                         }
                     }
                 }
@@ -1143,7 +1154,12 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 if (auto state = drawScene.GetLeadSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
-                            colorIndices[index] = 2;
+                            if (index < delegateToVp2Map.size()) {
+                                int vp2InstanceIndex = delegateToVp2Map[index];
+                                if (vp2InstanceIndex >= 0) {
+                                    colorIndices[vp2InstanceIndex] = 2;
+                                }
+                            }
                         }
                     }
                 }
