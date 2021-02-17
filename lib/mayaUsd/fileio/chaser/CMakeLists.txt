@@ -3,16 +3,16 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME}
     PRIVATE
-        chaser.cpp
-        chaserRegistry.cpp
+        exportChaser.cpp
+        exportChaserRegistry.cpp
         importChaserRegistry.cpp
         importChaser.cpp
 
 )
 
 set(HEADERS
-    chaser.h
-    chaserRegistry.h
+    exportChaser.h
+    exportChaserRegistry.h
     importChaserRegistry.h
     importChaser.h
 )

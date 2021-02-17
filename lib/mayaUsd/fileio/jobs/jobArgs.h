@@ -189,8 +189,8 @@ struct UsdMayaJobExportArgs
     const bool    staticSingleSample;
 
     using ChaserArgs = std::map<std::string, std::string>;
-    const std::vector<std::string>             chaserNames;
-    const std::map<std::string, ChaserArgs>    allChaserArgs;
+    const std::vector<std::string>          chaserNames;
+    const std::map<std::string, ChaserArgs> allChaserArgs;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
@@ -284,9 +284,9 @@ struct UsdMayaJobImportArgs
     /// non-empty interval.
     const GfInterval timeInterval;
 
-    typedef std::map<std::string, std::string> ChaserArgs;
-    const std::vector<std::string>             chaserNames;
-    const std::map<std::string, ChaserArgs>    allChaserArgs;
+    using ChaserArgs = std::map<std::string, std::string>;
+    const std::vector<std::string>          chaserNames;
+    const std::map<std::string, ChaserArgs> allChaserArgs;
 
     /// Get the current material conversion.
     MAYAUSD_CORE_PUBLIC
