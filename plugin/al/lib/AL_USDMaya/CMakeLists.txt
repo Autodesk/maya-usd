@@ -171,8 +171,6 @@ target_compile_definitions(${LIBRARY_NAME}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
-        # Prevent link dependency on the Boost::System on MacOS
-        $<$<BOOL:${IS_MACOSX}>:BOOST_SYSTEM_NO_DEPRECATED>
 )
 
 target_include_directories(

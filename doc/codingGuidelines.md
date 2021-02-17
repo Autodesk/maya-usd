@@ -227,6 +227,8 @@ Our library currently has the following boost dependencies:
 ***Update:***
 * `boost::filesystem` and `boost::system` are removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the project.
 
+* Dependency on `boost::thread` is removed from Animal Logic plugin.
+
 ## Modern C++
 Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) following modern C++ practices. We’ll follow the [C++ Core Guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and pay attention to:
 * `using` (vs `typedef`) keyword

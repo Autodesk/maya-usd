@@ -189,11 +189,11 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 
 ##### Boost:
 
-Currently the Animal Logic plugin has a dependency on some of the boost components ( e.g thread ). When building Pixar USD, one needs to pass the following key,value paired arguments for boost to include those components: 
+Currently the Animal Logic plugin has a dependency on some of the boost components. When building Pixar USD, one needs to pass the following key,value paired arguments for boost to include those components: 
 e.g 
 
 ```
-python build_usd.py ~/Desktop/BUILD --build-args boost,"--with-date_time --with-thread" 
+python build_usd.py ~/Desktop/BUILD --build-args boost,"--with-date_time" 
 ```
 
 ***NOTE:*** ```--build-args``` needs to be passed at the very end of command, after build/install location.
