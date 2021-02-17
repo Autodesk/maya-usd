@@ -5,6 +5,6 @@ repos:
     - id: clang-format
       name: clang-format
       description: Format files with clang-format
-      entry: test/bin/run-clang-format.py
+      entry: .github/run-clang-format.py
       language: python
       stages: ['commit', 'manual']
