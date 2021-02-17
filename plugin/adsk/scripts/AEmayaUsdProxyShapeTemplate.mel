@@ -39,7 +39,7 @@ global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
         editorTemplate -suppress "outStageCacheId";
 
         // MAYA-109438 - temp suppress these non-functional attributes.
-        editorTemplate -suppress "primPath";
+        //editorTemplate -suppress "primPath";
         editorTemplate -suppress "loadPayloads";
 
         editorTemplate -beginLayout `getMayaUsdString("kLabelStage")` -collapse 0;
@@ -60,7 +60,8 @@ global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
             editorTemplate -addControl "drawGuidePurpose";
             editorTemplate -addControl "drawProxyPurpose";
             editorTemplate -addControl "drawRenderPurpose";
-            //editorTemplate -addControl "primPath";
+            editorTemplate -ann `getMayaUsdString("kPrimPathAnn")`
+                           -addControl "primPath";
             editorTemplate -addControl "excludePrimPaths";
         editorTemplate -endLayout;
 

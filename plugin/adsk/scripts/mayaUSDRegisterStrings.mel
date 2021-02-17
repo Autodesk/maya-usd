@@ -64,8 +64,8 @@ global proc mayaUSDRegisterStrings() {
     register("kMenuSaveEdits", "Save Edits");
     register("kMenuUnmute", "Unmute");
     register("kPrimPath", "Prim Path:");
-    register("kPrimPathAnn", "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded.");
-    register("kPrimPathSbm", "Loads the specified prim path");
+    register("kPrimPathAnn", "Specify the path of a prim to display it alone in the viewport. If a prim path is not specified or a matching prim path is not found, all prims in the stage are displayed.");
+    register("kPrimPathSbm", "Specify the path of a prim to display it alone in the viewport.");
     register("kRootLayer", "Root Layer");
     register("kRootLayerAnn", "Identifies the root layer of a stage. If a file path is shown in this field, the root layer is a file on disk. If a layerName is shown in this field, the root layer is an anonymous layer.");
     register("kSaveAndClose", "Save and Close");

@@ -576,8 +576,7 @@ bool ProxyRenderDelegate::_Populate()
             }
         }
         _proxyShapeData->ExcludePrimsUpdated();
-
-        _sceneDelegate->Populate(_proxyShapeData->UsdStage()->GetPseudoRoot(), excludePrimPaths);
+        _sceneDelegate->Populate(_proxyShapeData->ProxyShape()->usdPrim(), excludePrimPaths);
         _isPopulated = true;
     }
 
