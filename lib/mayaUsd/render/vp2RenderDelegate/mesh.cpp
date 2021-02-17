@@ -438,8 +438,8 @@ void HdVP2Mesh::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, voi
         MProfilingScope profilingScope(
             HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L2,
-            rprimId.asChar(),
-            "CommitBuffer"); // TODO: buffer usage so we know it is positions normals etc
+            "CommitBuffer",
+            rprimId.asChar()); // TODO: buffer usage so we know it is positions normals etc
 
         buffer->commit(bufferData);
     });
@@ -450,8 +450,6 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
     const HdDirtyBits& rprimDirtyBits,
     const TfToken&     reprToken)
 {
-    const SdfPath& id = GetId();
-
     // Normals have two possible sources. They could be authored by the scene delegate,
     // in which case we should find them in _primvarInfo, or they could be computed
     // normals. Compute the normal buffer if necessary.
@@ -472,7 +470,6 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
         // are required, we will calculate them once and clean the bits.
         bool requireSmoothNormals = false;
         bool requireFlatNormals = false;
-        int  drawItemIndex = 0;
         for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
             const HdMeshReprDesc& desc = reprDescs[descIdx];
             if (desc.geomStyle == HdMeshGeomStyleHull) {
@@ -884,26 +881,10 @@ void HdVP2Mesh::Sync(
         // materials.
         addRequiredPrimvars(GetMaterialId());
 
-        // If we are drawing GeomStyleHull there there could be geom subset material
-        // bindings. Add their additional required primvars to the overall list
-        _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
-
-        // For each relevant draw item, update dirty buffer sources.
-        bool hasHullGeomStyle = false;
-        for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
-            const HdMeshReprDesc& desc = reprDescs[descIdx];
-            if (desc.geomStyle == HdMeshGeomStyleHull) {
-                hasHullGeomStyle = true;
-                break;
-            }
-        }
-
-        if (hasHullGeomStyle) {
-            for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
-                addRequiredPrimvars(
-                    dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
-                        geomSubset.materialId));
-            }
+        for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
+            addRequiredPrimvars(
+                dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
+                    geomSubset.materialId));
         }
 
         // also, we always require points
@@ -1406,6 +1387,11 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
         return;
     }
 
+    auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    MSubSceneContainer* subSceneContainer = param->GetContainer();
+    if (ARCH_UNLIKELY(!subSceneContainer))
+        return;
+
     _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
 
     // For each relevant draw item, update dirty buffer sources.
@@ -1423,11 +1409,6 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
             // if there are no MRenderItems, create them.
             if (drawItem->GetRenderItems().size() == 0) {
                 _CreateSmoothHullRenderItems(*drawItem);
-
-                auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-                MSubSceneContainer* subSceneContainer = param->GetContainer();
-                if (ARCH_UNLIKELY(!subSceneContainer))
-                    return;
 
                 for (const auto& renderItemData : drawItem->GetRenderItems()) {
                     _delegate->GetVP2ResourceRegistry().EnqueueCommit(
@@ -1855,7 +1836,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-        [drawItem, stateToCommit, param, primvarInfo, indexBuffer, isBBoxItem, &sharedBBoxGeom]() {
+        [stateToCommit, param, primvarInfo, indexBuffer, isBBoxItem, &sharedBBoxGeom]() {
             const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
             MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
             if (ARCH_UNLIKELY(!renderItem))

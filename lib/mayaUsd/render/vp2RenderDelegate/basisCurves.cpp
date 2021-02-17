@@ -687,8 +687,8 @@ void HdVP2BasisCurves::_CommitMVertexBuffer(
         MProfilingScope profilingScope(
             HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L2,
-            rprimId.asChar(),
-            "CommitBuffer"); // TODO: buffer usage so we know it is positions normals etc
+            "CommitBuffer",
+            rprimId.asChar());
 
         buffer->commit(bufferData);
     });
@@ -1280,8 +1280,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             MProfiler::kColorC_L2,
             drawItem->GetDrawItemName().asChar(),
             "Commit");
-
-        const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {

@@ -17,6 +17,8 @@
 
 #include "render_delegate.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
 #include <pxr/imaging/hd/mesh.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -36,7 +38,8 @@ HdVP2DrawItem::HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedD
     //   "/Proxy/TreePatch/Tree_1.proto_leaves_id0"
     //
     _drawItemName = GetRprimID().GetText();
-    _drawItemName += TfStringPrintf("/DrawItem_%p", this).c_str();
+    _drawItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
+    _drawItemName += TfStringPrintf("DrawItem_%p", this).c_str();
 }
 
 //! \brief  Destructor.
@@ -46,21 +49,25 @@ HdVP2DrawItem::~HdVP2DrawItem()
         auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
-            subSceneContainer->remove(GetRenderItemName());
+            for (const auto& renderItemData : _renderItems) {
+                subSceneContainer->remove(renderItemData._renderItemName);
+            }
         }
     }
 }
 
 void HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
 {
-    _renderItems.push_back(RenderItemData());
+    _renderItems.emplace_back();
     RenderItemData& renderItemData = _renderItems.back();
 
     renderItemData._renderItem = item;
     renderItemData._renderItemName = _drawItemName;
     if (geomSubset) {
         renderItemData._geomSubset = *geomSubset;
+        renderItemData._renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
         renderItemData._renderItemName += geomSubset->id.GetString().c_str();
+        fprintf(stderr, "%s\n", renderItemData._renderItemName.asChar());
     }
 
     renderItemData._indexBuffer.reset(
