@@ -1140,7 +1140,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 if (auto state = drawScene.GetActiveSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
-                            if (index < delegateToVp2Map.size()) {
+                            TF_VERIFY(index >= 0);
+                            if (static_cast<size_t>(index) < delegateToVp2Map.size()) {
                                 int vp2InstanceIndex = delegateToVp2Map[index];
                                 if (vp2InstanceIndex >= 0) {
                                     colorIndices[vp2InstanceIndex] = 1;
@@ -1154,7 +1155,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 if (auto state = drawScene.GetLeadSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
-                            if (index < delegateToVp2Map.size()) {
+                            TF_VERIFY(index >= 0);
+                            if (static_cast<size_t>(index) < delegateToVp2Map.size()) {
                                 int vp2InstanceIndex = delegateToVp2Map[index];
                                 if (vp2InstanceIndex >= 0) {
                                     colorIndices[vp2InstanceIndex] = 2;
