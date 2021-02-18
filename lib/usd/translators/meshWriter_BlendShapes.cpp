@@ -45,6 +45,7 @@
 #include <maya/MObject.h>
 #include <maya/MPointArray.h>
 #include <maya/MStatus.h>
+#include <maya/MFnNumericAttribute.h>
 
 #include <algorithm>
 #include <complex>
@@ -759,7 +760,6 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         TF_VERIFY(weightsPlug.isArray());
                         MPlug weightPlug = weightsPlug.elementByLogicalIndex(weightIndex);
-                        // this->_animBlendShapeWeightPlugs.append(weightPlug);
                         this->_writeJobCtx.mBlendShapesAnimWeightPlugs.append(weightPlug);
                     }
                 }
@@ -952,7 +952,6 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                             TF_VERIFY(weightsPlug.isArray());
                             MPlug weightPlug = weightsPlug.elementByLogicalIndex(weightIndex);
-                            // this->_animBlendShapeWeightPlugs.append(weightPlug);
                             this->_writeJobCtx.mBlendShapesAnimWeightPlugs.append(weightPlug);
                         }
                     } else {
@@ -1092,6 +1091,43 @@ bool PxrUsdTranslators_MeshWriter::writeBlendShapeAnimation(const UsdTimeCode& u
                          "corresponding weight plugs.");
         return false;
     }
+
+    // NOTE: (yliangsiew) If we are at the default time, then we will have to check if the
+    // attribute has a default value and author it.
+    if (usdTime.IsDefault()) {
+        for (unsigned int i = 0; i < numWeightPlugs; ++i) {
+            MPlug weightPlug = this->_writeJobCtx.mBlendShapesAnimWeightPlugs[i];
+            // NOTE: (yliangsiew) We need to retrive the _real_ default value of the plug to store.
+            if (weightPlug.isDefaultValue()) {
+                usdWeights[i] = weightPlug.asFloat();
+            } else {
+                MObject weightAttr = weightPlug.attribute();
+                if (weightAttr.hasFn(MFn::kNumericData)) {
+                    MStatus stat;
+                    MFnNumericAttribute fnNumAttr(weightAttr, &stat);
+                    MFnNumericData::Type unit = fnNumAttr.unitType();
+                    switch(unit) {
+                    case MFnNumericData::Type::kFloat:
+                    {
+                        float val = 0.0f;
+                        stat = fnNumAttr.getDefault(val);
+                        if (stat != MStatus::kSuccess) {
+                            TF_WARN("Unable to retrieve default value for plug: %s", weightPlug.name().asChar());
+                            usdWeights[i] = 0.0f;
+                        }
+                        usdWeights[i] = val;
+                        break;
+                    }
+                    default:
+                        TF_WARN("Invalid weight attribute type was found for plug: %s", weightPlug.name().asChar());
+                        usdWeights[i] = 0.0f;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     for (unsigned int i = 0; i < numWeightPlugs; ++i) {
         MPlug weightPlug = this->_writeJobCtx.mBlendShapesAnimWeightPlugs[i];
         usdWeights[i] = weightPlug.asFloat();
