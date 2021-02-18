@@ -1477,6 +1477,14 @@ void interleaveIndexedUvData(
 
 //----------------------------------------------------------------------------------------------------------------------
 // Loops through each Colour Set in the mesh writing out a set of non-indexed Colour Values in RGBA
+// format, Writes out faceVarying values only Default RGB is 0.18 and alpha is 1.0 if there is no
+// RGBA assigned to the mesh. Have a special case for "displayColor" which write as RGB
+// @todo: needs refactoring to handle face/vert/faceVarying correctly, allow separate RGB/A to be
+// written etc.
+void MeshExportContext::copyColourSetData() { copyColourSetData(0.18f, 1.0f); }
+
+//----------------------------------------------------------------------------------------------------------------------
+// Loops through each Colour Set in the mesh writing out a set of non-indexed Colour Values in RGBA
 // format, Writes out faceVarying values only Have a special case for "displayColor" which write as
 // RGB
 // @todo: needs refactoring to handle face/vert/faceVarying correctly, allow separate RGB/A to be
