@@ -18,13 +18,16 @@
 #include "qtUtils.h"
 #include "stringResources.h"
 
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/common.h>
 
 #include <QtCore/QSignalBlocker>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 
-Q_DECLARE_METATYPE(PXR_NS::UsdStageRefPtr);
+PXR_NAMESPACE_USING_DIRECTIVE
+
+Q_DECLARE_METATYPE(UsdStageRefPtr);
 
 namespace UsdLayerEditor {
 
@@ -58,7 +61,6 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
         &SessionState::stageListChangedSignal,
         this,
         &StageSelectorWidget::updateFromSessionState);
-    updateFromSessionState();
     connect(
         _sessionState,
         &SessionState::currentStageChangedSignal,
@@ -66,20 +68,22 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
         &StageSelectorWidget::sessionStageChanged);
     connect(
         _sessionState, &SessionState::stageRenamedSignal, this, &StageSelectorWidget::stageRenamed);
+    connect(_sessionState, &SessionState::stageResetSignal, this, &StageSelectorWidget::stageReset);
+
     updateFromSessionState();
 }
 
-PXR_NS::UsdStageRefPtr StageSelectorWidget::selectedStage()
+UsdStageRefPtr StageSelectorWidget::selectedStage()
 {
     if (_dropDown->currentIndex() != -1) {
         auto const& data = _dropDown->currentData();
-        return data.value<PXR_NS::UsdStageRefPtr>();
+        return data.value<UsdStageRefPtr>();
     }
 
-    return PXR_NS::UsdStageRefPtr();
+    return UsdStageRefPtr();
 }
 // repopulates the combo based on the session stage list
-void StageSelectorWidget::updateFromSessionState(PXR_NS::UsdStageRefPtr const& stageToSelect)
+void StageSelectorWidget::updateFromSessionState(UsdStageRefPtr const& stageToSelect)
 {
     QSignalBlocker blocker(_dropDown);
     _dropDown->clear();
@@ -118,11 +122,40 @@ void StageSelectorWidget::sessionStageChanged()
     }
 }
 
-void StageSelectorWidget::stageRenamed(std::string const& name, PXR_NS::UsdStageRefPtr const& stage)
+void StageSelectorWidget::stageRenamed(std::string const& name, UsdStageRefPtr const& stage)
 {
     auto index = _dropDown->findData(QVariant::fromValue(stage));
     if (index != -1) {
         _dropDown->setItemText(index, name.c_str());
     }
 }
+
+void StageSelectorWidget::stageReset(const std::string& proxyPath, UsdStageRefPtr const& stage)
+{
+    // Individual combo box entries have a short display name and a reference to a stage,
+    // which is not a unique combination.  By construction the combo box indices do line
+    // up with the SessionState StageEntry vector though, so in the case of resetting
+    // a proxy we will find the matching full proxy path in that vector and use its index
+    // to update the combo box.
+    auto count = _dropDown->count();
+    if (count <= 0) {
+        return;
+    }
+
+    std::vector<SessionState::StageEntry> allStages = _sessionState->allStages();
+    auto                                  it = std::find_if(
+        allStages.begin(), allStages.end(), [proxyPath](SessionState::StageEntry entry) {
+            return (proxyPath == entry._proxyShapePath);
+        });
+
+    if (it != allStages.end()) {
+        auto index = (it - allStages.begin());
+        if (index < count) {
+            if (_dropDown->itemText(index) == QString::fromStdString((*it)._displayName)) {
+                _dropDown->setItemData(index, QVariant::fromValue(stage));
+            }
+        }
+    }
+}
+
 } // namespace UsdLayerEditor
