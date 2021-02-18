@@ -67,7 +67,6 @@ void HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubs
         renderItemData._geomSubset = *geomSubset;
         renderItemData._renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
         renderItemData._renderItemName += geomSubset->id.GetString().c_str();
-        fprintf(stderr, "%s\n", renderItemData._renderItemName.asChar());
     }
 
     renderItemData._indexBuffer.reset(
