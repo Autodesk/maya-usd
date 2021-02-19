@@ -63,6 +63,11 @@ global proc mayaUSDRegisterStrings() {
     register("kMenuSaveAs", "Save As...");
     register("kMenuSaveEdits", "Save Edits");
     register("kMenuUnmute", "Unmute");
+    register("kPurposeAnn", "Toggle purpose categories on and off to change their visibility in the viewport.");
+    register("kPurposeLabel", "Purpose");
+    register("kPurposeOption1", "Guide");
+    register("kPurposeOption2", "Proxy");
+    register("kPurposeOption3", "Render");
     register("kPrimPath", "Prim Path:");
     register("kPrimPathAnn", "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded.");
     register("kPrimPathSbm", "Loads the specified prim path");
