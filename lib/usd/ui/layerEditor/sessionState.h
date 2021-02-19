@@ -63,9 +63,8 @@ public:
     // ui that returns a list of paths to load
     virtual std::vector<std::string>
     loadLayersUI(const QString& title, const std::string& default_path) const = 0;
-    // ui to save a layer. returns the path 
-    virtual bool
-                 saveLayerUI(QWidget* in_parent, std::string* out_filePath) const = 0;
+    // ui to save a layer. returns the path
+    virtual bool saveLayerUI(QWidget* in_parent, std::string* out_filePath) const = 0;
     virtual void printLayer(const PXR_NS::SdfLayerRefPtr& layer) const = 0;
 
     // main API
