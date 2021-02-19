@@ -55,12 +55,6 @@ inline bool IsMtohRenderOverrideName(const MString& overrideName)
 {
     // See if the override is an mtoh one - ie, it starts with the right prefix
     constexpr auto prefixLen = strlen(MTOH_RENDER_OVERRIDE_PREFIX);
-
-    TF_WARN(
-        "%s: %s an mtoh renderer",
-        overrideName.asChar(),
-        overrideName.substring(0, prefixLen - 1) == MTOH_RENDER_OVERRIDE_PREFIX ? "is" : "is not");
-
     if (overrideName.length() < prefixLen) {
         return false;
     }

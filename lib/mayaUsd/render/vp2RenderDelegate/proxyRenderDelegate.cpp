@@ -358,16 +358,12 @@ bool ProxyRenderDelegate::requiresUpdate(
     const MFrameContext&      frameContext) const
 {
 #if defined(BUILD_HDMAYA)
-    std::cout << "ProxyRenderDelegate::update - BUILD_HDMAYA - checking if IsMtohRenderOverride"
-              << std::endl;
-
     // If the current viewport renderer is an mtoh one, skip this update, as
     // mtoh already has special handling for proxy shapes, and we don't want to
     // build out a render index we don't need
     if (IsMtohRenderOverride(frameContext)) {
         return false;
     }
-    std::cout << "ProxyRenderDelegate::requiresSpdate - was not mtoh" << std::endl;
 #endif
     return true;
 }
