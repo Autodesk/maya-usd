@@ -80,6 +80,14 @@ public:
         _shadowMatrices = light.GetShadowMatrices();
     }
 
+#if HDX_API_VERSION >= 8
+    std::vector<GfMatrix4d>
+    Compute(const CameraUtilFraming& framing, CameraUtilConformWindowPolicy policy) override
+    {
+        return _shadowMatrices;
+    }
+#endif
+
     std::vector<GfMatrix4d>
     Compute(const GfVec4f& viewport, CameraUtilConformWindowPolicy policy) override
     {
