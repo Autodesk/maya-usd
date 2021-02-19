@@ -80,6 +80,7 @@ Q_SIGNALS:
     void stageListChangedSignal(PXR_NS::UsdStageRefPtr const& toSelect = PXR_NS::UsdStageRefPtr());
     void stageRenamedSignal(std::string const& name, PXR_NS::UsdStageRefPtr const& stage);
     void autoHideSessionLayerSignal(bool hideIt);
+    void stageResetSignal(const std::string& proxyPath, PXR_NS::UsdStageRefPtr const& stage);
 
 protected:
     PXR_NS::UsdStageRefPtr _stage;
