@@ -46,7 +46,7 @@
 #include "ufe/globalSelection.h"
 #include "ufe/hierarchyHandler.h"
 #include "ufe/log.h"
-#if UFE_PREVIEW_VERSION_NUM >= 2027
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
 #endif
 #include "ufe/observableSelection.h"
@@ -525,7 +525,7 @@ bool ProxyShapeUI::select(
                 return false;
             }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
             auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
 #else
             Ufe::Selection dstSelection; // Only used for kReplaceList
@@ -540,7 +540,7 @@ bool ProxyShapeUI::select(
                     const Ufe::SceneItem::Ptr& si { handler->createItem(
                         proxyShape->ufePath() + ps_usd) };
 
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
                     ufeSel->append(si);
 #else
                     auto globalSelection = Ufe::GlobalSelection::get();
@@ -571,7 +571,7 @@ bool ProxyShapeUI::select(
 #endif
                 }
 
-#if UFE_PREVIEW_VERSION_NUM < 2027 // #ifndef UFE_V2_FEATURES_AVAILABLE
+#ifndef UFE_V2_FEATURES_AVAILABLE
                 if (mode == MGlobal::kReplaceList) {
                     // Add to Global selection
                     Ufe::GlobalSelection::get()->replaceWith(dstSelection);

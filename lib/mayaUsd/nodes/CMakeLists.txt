@@ -25,6 +25,16 @@ set(HEADERS
     usdPrimProvider.h
 )
 
+if (UFE_FOUND)
+    target_sources(${PROJECT_NAME} 
+        PRIVATE
+            layerManager.cpp
+    )
+    list(APPEND HEADERS
+        layerManager.h
+    )
+endif()
+
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------

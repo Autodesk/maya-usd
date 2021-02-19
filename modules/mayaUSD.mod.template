@@ -15,7 +15,7 @@ presets:
 scripts: 
 resources: 
 PYTHONPATH+:=lib/python
-PXR_PLUGINPATH_NAME+:=lib/usd
+${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd
 MAYAUSD_VERSION=${MAYAUSD_VERSION}
 ${MAYAUSD_GTEST_PATH}
 

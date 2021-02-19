@@ -16,18 +16,23 @@
 # limitations under the License.
 #
 
-import maya.api.OpenMaya as om
-import maya.cmds as cmds
-from math import radians
-
-import usdUtils, mayaUtils, ufeUtils
-from testUtils import assertVectorAlmostEqual
+import fixturesUtils
+import mayaUtils
 import testTRSBase
+from testUtils import assertVectorAlmostEqual
+import ufeUtils
+import usdUtils
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as om
+
 import ufe
 
+from functools import partial
+from math import radians
 import unittest
 
-from functools import partial
 
 def transform3dRotation(transform3d):
     matrix = om.MMatrix(transform3d.inclusiveMatrix().matrix)
@@ -69,8 +74,14 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
     
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -267,3 +278,6 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runMultiSelectTestRotate(ballItems, expected)
         
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

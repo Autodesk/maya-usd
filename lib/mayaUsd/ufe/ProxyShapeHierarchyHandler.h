@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 
 #include <ufe/hierarchyHandler.h>
 
@@ -56,9 +57,7 @@ public:
     // Ufe::HierarchyHandler overrides
     Ufe::Hierarchy::Ptr hierarchy(const Ufe::SceneItem::Ptr& item) const override;
     Ufe::SceneItem::Ptr createItem(const Ufe::Path& path) const override;
-#if UFE_PREVIEW_VERSION_NUM >= 2022
     UFE_V2(Ufe::Hierarchy::ChildFilter childFilter() const override;)
-#endif
 
 private:
     Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;

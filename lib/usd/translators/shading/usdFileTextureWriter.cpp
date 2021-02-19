@@ -98,6 +98,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (rotateUV)
     (wrapU)
     (wrapV)
+    (mirrorU)
+    (mirrorV)
 
     // UDIM handling:
     (uvTilingMode)
@@ -143,6 +145,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Values for wrapS and wrapT
     (black)
+    (mirror)
     (repeat)
 
     // UsdUVTexture Output Names
@@ -438,42 +441,48 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 
     shaderSchema.CreateInput(_tokens->fallback, SdfValueTypeNames->Float4).Set(fallback, usdTime);
 
-    // Wrap U
-    const MPlug wrapUPlug = depNodeFn.findPlug(
-        _tokens->wrapU.GetText(),
-        /* wantNetworkedPlug = */ true,
-        &status);
-    if (status != MS::kSuccess) {
-        return;
-    }
+    // Wrap U/V
+    const TfToken wrapMirrorTriples[2][3] { { _tokens->wrapU, _tokens->mirrorU, _tokens->wrapS },
+                                            { _tokens->wrapV, _tokens->mirrorV, _tokens->wrapT } };
+    for (auto wrapMirrorTriple : wrapMirrorTriples) {
+        auto wrapUVToken = wrapMirrorTriple[0];
+        auto mirrorUVToken = wrapMirrorTriple[1];
+        auto wrapSTToken = wrapMirrorTriple[2];
 
-    if (UsdMayaUtil::IsAuthored(wrapUPlug)) {
-        const bool wrapU = wrapUPlug.asBool(&status);
+        const MPlug wrapUVPlug = depNodeFn.findPlug(
+            wrapUVToken.GetText(),
+            /* wantNetworkedPlug = */ true,
+            &status);
         if (status != MS::kSuccess) {
             return;
         }
 
-        const TfToken wrapS = wrapU ? _tokens->repeat : _tokens->black;
-        shaderSchema.CreateInput(_tokens->wrapS, SdfValueTypeNames->Token).Set(wrapS, usdTime);
-    }
-
-    // Wrap V
-    const MPlug wrapVPlug = depNodeFn.findPlug(
-        _tokens->wrapV.GetText(),
-        /* wantNetworkedPlug = */ true,
-        &status);
-    if (status != MS::kSuccess) {
-        return;
-    }
-
-    if (UsdMayaUtil::IsAuthored(wrapVPlug)) {
-        const bool wrapV = wrapVPlug.asBool(&status);
+        // Don't check if authored, because maya's default is effectively wrapS/wrapT,
+        // while USD's fallback is "useMetadata", which might be different
+        const bool wrapVal = wrapUVPlug.asBool(&status);
         if (status != MS::kSuccess) {
             return;
         }
 
-        const TfToken wrapT = wrapV ? _tokens->repeat : _tokens->black;
-        shaderSchema.CreateInput(_tokens->wrapT, SdfValueTypeNames->Token).Set(wrapT, usdTime);
+        TfToken outputValue;
+        if (!wrapVal) {
+            outputValue = _tokens->black;
+        } else {
+            const MPlug mirrorUVPlug = depNodeFn.findPlug(
+                mirrorUVToken.GetText(),
+                /* wantNetworkedPlug = */ true,
+                &status);
+            if (status != MS::kSuccess) {
+                return;
+            }
+
+            const bool mirrorVal = mirrorUVPlug.asBool(&status);
+            if (status != MS::kSuccess) {
+                return;
+            }
+            outputValue = mirrorVal ? _tokens->mirror : _tokens->repeat;
+        }
+        shaderSchema.CreateInput(wrapSTToken, SdfValueTypeNames->Token).Set(outputValue, usdTime);
     }
 
     WriteTransform2dNode(usdTime, shaderSchema);
@@ -598,11 +607,11 @@ void PxrUsdTranslators_FileTextureWriter::WriteTransform2dNode(
 
     // Compute the Transform2d values, converting from Maya's coordinates to USD coordinates
 
-    // Maya's place2dtexture transform order seems to be `in * T * S * R`, where the rotation pivot
-    // is (0.5, 0.5) and scale pivot is (0,0). USD's Transform2d transform order is `in * S * R *
-    // T`, where the rotation and scale pivots are (0,0). This conversion translates from
-    // place2dtexture's UV space to Transform2d's UV space: `in * S * T * Rpivot_inverse * R *
-    // Rpivot`
+    // Maya's place2dtexture transform order seems to be `in * T * S * R`, where the rotation
+    // pivot is (0.5, 0.5) and scale pivot is (0,0). USD's Transform2d transform order is `in *
+    // S * R * T`, where the rotation and scale pivots are (0,0). This conversion translates
+    // from place2dtexture's UV space to Transform2d's UV space: `in * S * T * Rpivot_inverse *
+    // R * Rpivot`
     GfMatrix4f pivotXform = GfMatrix4f().SetTranslate(GfVec3f(0.5, 0.5, 0));
     GfMatrix4f translateXform
         = GfMatrix4f().SetTranslate(GfVec3f(translationValue[0], translationValue[1], 0));
@@ -613,8 +622,8 @@ void PxrUsdTranslators_FileTextureWriter::WriteTransform2dNode(
         || fabs(scaleValue[1]) <= std::numeric_limits<float>::epsilon()) {
         TF_WARN(
             "At least one of the components of RepeatUV for %s are set to zero.  To avoid divide "
-            "by zero "
-            "exceptions, these values are changed to the smallest finite float greater than zero.",
+            "by zero exceptions, these values are changed to the smallest finite float greater "
+            "than zero.",
             UsdMayaUtil::GetMayaNodeName(GetMayaObject()).c_str());
 
         scale = GfVec3f(

@@ -18,10 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
-
-#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoableItem.h>
-#endif
 
 #include <ufe/path.h>
 #include <ufe/undoableCommand.h>
@@ -41,9 +38,8 @@ public:
         const UsdSceneItem::Ptr& usdSceneItem,
         const std::string&       name,
         const std::string&       type);
-#if UFE_PREVIEW_VERSION_NUM >= 2029
+
     void execute() override;
-#endif
     void undo() override;
     void redo() override;
 
@@ -58,9 +54,7 @@ private:
     PXR_NS::SdfPath         _primPath;
     PXR_NS::TfToken         _primToken;
     Ufe::Path               _newUfePath;
-#if UFE_PREVIEW_VERSION_NUM >= 2029
-    UsdUndoableItem _undoableItem;
-#endif
+    UsdUndoableItem         _undoableItem;
 
 }; // UsdUndoAddNewPrimCommand
 

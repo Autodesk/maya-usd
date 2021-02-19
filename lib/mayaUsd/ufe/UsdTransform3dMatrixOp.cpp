@@ -17,6 +17,8 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
@@ -30,6 +32,7 @@
 
 namespace {
 
+using namespace MayaUsd;
 using namespace MayaUsd::ufe;
 
 VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
@@ -76,6 +79,42 @@ computeLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTi
 auto computeLocalInclusiveTransform = computeLocalTransform<true>;
 auto computeLocalExclusiveTransform = computeLocalTransform<false>;
 
+// Class for setMatrixCmd() implementation.  UsdUndoBlock data member and
+// undo() / redo() should be factored out into a future command base class.
+class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+{
+public:
+    UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
+        : Ufe::SetMatrix4dUndoableCommand(path)
+        , _newM(newM)
+    {
+    }
+
+    ~UsdSetMatrix4dUndoableCmd() override { }
+
+    bool set(const Ufe::Matrix4d&) override
+    {
+        // No-op: Maya does not set matrices through interactive manipulation.
+        TF_WARN("Illegal call to UsdSetMatrix4dUndoableCmd::set()");
+        return true;
+    }
+
+    void execute() override
+    {
+        UsdUndoBlock undoBlock(&_undoableItem);
+
+        auto t3d = Ufe::Transform3d::transform3d(sceneItem());
+        t3d->setMatrix(_newM);
+    }
+
+    void undo() override { _undoableItem.undo(); }
+    void redo() override { _undoableItem.redo(); }
+
+private:
+    UsdUndoableItem     _undoableItem;
+    const Ufe::Matrix4d _newM;
+};
+
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
 class UsdTRSUndoableCmdBase
@@ -118,20 +157,18 @@ class UsdTranslateUndoableCmd
     , public UsdTRSUndoableCmdBase
 {
 public:
+#ifdef UFE_V2_FEATURES_AVAILABLE
     UsdTranslateUndoableCmd(
-#if UFE_PREVIEW_VERSION_NUM >= 2021
-        const Ufe::Path& path,
-#else
-        const UsdSceneItem::Ptr& item,
-#endif
+        const Ufe::Path&      path,
         const UsdGeomXformOp& op,
-        const UsdTimeCode&    writeTime
-#if UFE_PREVIEW_VERSION_NUM >= 2021
-        )
+        const UsdTimeCode&    writeTime)
         : Ufe::TranslateUndoableCommand(path)
         , UsdTRSUndoableCmdBase(path, op, writeTime)
 #else
-        )
+    UsdTranslateUndoableCmd(
+        const UsdSceneItem::Ptr& item,
+        const UsdGeomXformOp&    op,
+        const UsdTimeCode&       writeTime)
         : Ufe::TranslateUndoableCommand(item)
         , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
 #endif
@@ -162,20 +199,18 @@ class UsdRotateUndoableCmd
 {
 
 public:
+#ifdef UFE_V2_FEATURES_AVAILABLE
     UsdRotateUndoableCmd(
-#if UFE_PREVIEW_VERSION_NUM >= 2021
-        const Ufe::Path& path,
-#else
-        const UsdSceneItem::Ptr& item,
-#endif
+        const Ufe::Path&      path,
         const UsdGeomXformOp& op,
-        const UsdTimeCode&    writeTime
-#if UFE_PREVIEW_VERSION_NUM >= 2021
-        )
+        const UsdTimeCode&    writeTime)
         : Ufe::RotateUndoableCommand(path)
         , UsdTRSUndoableCmdBase(path, op, writeTime)
 #else
-        )
+    UsdRotateUndoableCmd(
+        const UsdSceneItem::Ptr& item,
+        const UsdGeomXformOp&    op,
+        const UsdTimeCode&       writeTime)
         : Ufe::RotateUndoableCommand(item)
         , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
 #endif
@@ -225,20 +260,18 @@ class UsdScaleUndoableCmd
 {
 
 public:
+#ifdef UFE_V2_FEATURES_AVAILABLE
     UsdScaleUndoableCmd(
-#if UFE_PREVIEW_VERSION_NUM >= 2021
-        const Ufe::Path& path,
-#else
-        const UsdSceneItem::Ptr& item,
-#endif
+        const Ufe::Path&      path,
         const UsdGeomXformOp& op,
-        const UsdTimeCode&    writeTime
-#if UFE_PREVIEW_VERSION_NUM >= 2021
-        )
+        const UsdTimeCode&    writeTime)
         : Ufe::ScaleUndoableCommand(path)
         , UsdTRSUndoableCmdBase(path, op, writeTime)
 #else
-        )
+    UsdScaleUndoableCmd(
+        const UsdSceneItem::Ptr& item,
+        const UsdGeomXformOp&    op,
+        const UsdTimeCode&       writeTime)
         : Ufe::ScaleUndoableCommand(item)
         , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
 #endif
@@ -322,7 +355,7 @@ Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
     return std::make_shared<UsdTranslateUndoableCmd>(
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
 #else
         usdSceneItem(),
@@ -334,7 +367,7 @@ UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
     return std::make_shared<UsdRotateUndoableCmd>(
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
 #else
         usdSceneItem(),
@@ -346,7 +379,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, doub
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
     return std::make_shared<UsdScaleUndoableCmd>(
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
 #else
         usdSceneItem(),
@@ -357,7 +390,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double
 
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dMatrixOp::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    return nullptr;
+    return std::make_shared<UsdSetMatrix4dUndoableCmd>(path(), m);
 }
 
 void UsdTransform3dMatrixOp::setMatrix(const Ufe::Matrix4d& m) { _op.Set(toUsd(m)); }
@@ -408,25 +441,39 @@ UsdTransform3dMatrixOpHandler::create(const Ufe::Transform3dHandler::Ptr& nextHa
 Ufe::Transform3d::Ptr
 UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    // This method can be used to edit the 3D transform of the argument, but at
-    // time of writing this is not implemented in UsdTransform3dMatrixOp, and
-    // our UsdTransform3dBaseHandler base class does not know how to edit the
-    // argument either.  Simply delegate to the next handler in the list.
-    return _nextHandler->transform3d(item);
+    // Remove code duplication with editTransform3d().  PPT, 21-Jan-2021.
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    TF_AXIOM(usdItem);
+
+    auto             opName = getMatrixOp();
+    UsdGeomXformable xformable(usdItem->prim());
+    bool             unused;
+    auto             xformOps = xformable.GetOrderedXformOps(&unused);
+    auto i = std::find_if(xformOps.begin(), xformOps.end(), [opName](const UsdGeomXformOp& op) {
+        return (op.GetOpType() == UsdGeomXformOp::TypeTransform)
+            && (!opName || std::string(opName) == op.GetOpName());
+    });
+    bool foundMatrix = (i != xformOps.end());
+
+    bool moreLocalNonMatrix = foundMatrix
+        ? (std::find_if(
+               i,
+               xformOps.end(),
+               [](const UsdGeomXformOp& op) {
+                   return op.GetOpType() != UsdGeomXformOp::TypeTransform;
+               })
+           != xformOps.end())
+        : false;
+
+    return (foundMatrix && !moreLocalNonMatrix) ? UsdTransform3dMatrixOp::create(usdItem, *i)
+                                                : _nextHandler->transform3d(item);
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr& item
-#if UFE_PREVIEW_VERSION_NUM >= 2030
-    ,
-    const Ufe::EditTransform3dHint& hint
-#endif
-) const
+    const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-#if !defined(NDEBUG)
-    assert(usdItem);
-#endif
+    TF_AXIOM(usdItem);
 
     // Beware: the default UsdGeomXformOp constructor
     // https://github.com/PixarAnimationStudios/USD/blob/71b4baace2044ea4400ba802e91667f9ebe342f0/pxr/usd/usdGeom/xformOp.h#L148
@@ -464,19 +511,13 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
 
     // We can't handle pivot edits, so in that case pass on to the next handler.
     return (foundMatrix && !moreLocalNonMatrix
-#if UFE_PREVIEW_VERSION_NUM >= 2030
+#ifdef UFE_V2_FEATURES_AVAILABLE
             && (hint.type() != Ufe::EditTransform3dHint::RotatePivot)
             && (hint.type() != Ufe::EditTransform3dHint::ScalePivot)
 #endif
                 )
         ? UsdTransform3dMatrixOp::create(usdItem, *i)
-        : _nextHandler->editTransform3d(
-            item
-#if UFE_PREVIEW_VERSION_NUM >= 2030
-            ,
-            hint
-#endif
-        );
+        : _nextHandler->editTransform3d(item UFE_V2(, hint));
 }
 
 } // namespace ufe

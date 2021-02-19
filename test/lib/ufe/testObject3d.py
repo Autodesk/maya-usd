@@ -16,25 +16,51 @@
 # limitations under the License.
 #
 
-import mayaUtils, usdUtils
-from testUtils import assertVectorAlmostEqual, assertVectorEqual
-
-import ufe
-
-from pxr import Usd, UsdGeom
+import fixturesUtils
+import mayaUtils
+from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorEqual
+import usdUtils
 
 import mayaUsd.ufe
 
-import maya.cmds as cmds
-import maya.api.OpenMaya as OpenMaya
+from pxr import Usd
+from pxr import UsdGeom
 
-import unittest
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as OpenMaya
+
+import ufe
+
 import os
+import unittest
+
 
 def nameToPlug(nodeName):
     selection = OpenMaya.MSelectionList()
     selection.add(nodeName)
     return selection.getPlug(0)
+
+def almostEqualBBox(bbox1, bbox2):
+    """Checks that 2 bounding boxes are almost equal."""
+    for bound in (0, 1):
+        if isinstance(bbox1, ufe.PyUfe.BBox3d):
+            if bound == 0:
+                vec1 = bbox1.min.vector
+            else:
+                vec1 = bbox1.max.vector
+        elif isinstance(bbox1, OpenMaya.MBoundingBox):
+            if bound == 0:
+                vec1 = bbox1.min
+            else:
+                vec1 = bbox1.max
+        else:
+            vec1 = bbox1[bound]
+        for axis in (0, 1, 2):
+            if round(vec1[axis] - bbox2[bound][axis], 7) != 0:
+                return False
+    return True
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -56,8 +82,14 @@ class Object3dTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -402,3 +434,85 @@ class Object3dTestCase(unittest.TestCase):
         # visibility "token" must exists now in the USD data model
         self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
         self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+    def testMayaGeomExtentsRecomputation(self):
+        ''' Verify the automatic extents computation in when geom attributes change '''
+
+        cmds.file(new=True, force=True)
+
+        # create a Capsule via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        # capsule
+        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+
+        # get the height and extent "attributes"
+        capsuleHeightAttr = capsulePrim.GetAttribute('height')
+        capsuleExtentAttr = capsulePrim.GetAttribute('extent')
+
+        self.assertAlmostEqual(capsuleHeightAttr.Get(), 1.0)
+        capsuleExtent = capsuleExtentAttr.Get()
+        expectedExtent = ((-0.5, -0.5, -1.0), (0.5, 0.5, 1.0))
+        self.assertTrue(almostEqualBBox(capsuleExtent, expectedExtent))
+
+        capsuleHeightAttr.Set(10.0)
+
+        self.assertAlmostEqual(capsuleHeightAttr.Get(), 10.0)
+        # Extent will have been recomputed:
+        capsuleExtent = capsuleExtentAttr.Get()
+        expectedExtent = ((-0.5, -0.5, -5.5), (0.5, 0.5, 5.5))
+        self.assertTrue(almostEqualBBox(capsuleExtent, expectedExtent))
+
+    def testMayaShapeBBoxCacheClearing(self):
+        ''' Verify that the bounding box cache gets cleared'''
+
+        cmds.file(new=True, force=True)
+
+        # create a Capsule via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Xform'])
+        xformPath = ufe.PathString.path('|stage1|stageShape1,/Xform1')
+        xformItem = ufe.Hierarchy.createItem(xformPath)
+        xformObject3d = ufe.Object3d.object3d(xformItem)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(xformItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+        selectionList = OpenMaya.MSelectionList()
+        selectionList.add('|stage1|stageShape1')
+        shapeNode = OpenMaya.MFnDagNode(selectionList.getDependNode(0))
+
+        # Two spheres at origin, the bounding box is the unit cube:
+        expectedBBox = ((-1.0, -1.0, -1.0), (1.0, 1.0, 1.0))
+        self.assertTrue(almostEqualBBox(xformObject3d.boundingBox(), expectedBBox))
+        # Shape BBox should be the same (and will be cached):
+        self.assertTrue(almostEqualBBox(shapeNode.boundingBox, expectedBBox))
+
+        sphere1Path = ufe.PathString.path('|stage1|stageShape1,/Xform1/Sphere1')
+        sphere1Item = ufe.Hierarchy.createItem(sphere1Path)
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+        UsdGeom.XformCommonAPI(sphere1Prim).SetTranslate((-5, 0, 0))
+
+        sphere2Path = ufe.PathString.path('|stage1|stageShape1,/Xform1/Sphere2')
+        sphere2Item = ufe.Hierarchy.createItem(sphere2Path)
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+        UsdGeom.XformCommonAPI(sphere2Prim).SetTranslate((0, 5, 0))
+
+        expectedBBox = ((-6.0, -1.0, -1.0), (1.0, 6.0, 1.0))
+        self.assertTrue(almostEqualBBox(xformObject3d.boundingBox(), expectedBBox))
+        # The next test will only work if the cache was cleared when translating
+        # the spheres:
+        self.assertTrue(almostEqualBBox(shapeNode.boundingBox, expectedBBox))
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

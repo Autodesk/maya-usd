@@ -80,7 +80,12 @@ bool MatchingSubstack(const std::vector<UsdGeomXformOp>& ops)
     // current op's index, since each index can appear only once.
     int orderedNdx = UsdTransform3dMayaXformStack::NdxTranslate;
     for (const auto& op : ops) {
-        auto opNdx = gOpNameToNdx.at(op.GetOpName());
+        auto found = gOpNameToNdx.find(op.GetOpName());
+        if (found == gOpNameToNdx.end()) {
+            // Found an op that doesn't match a Maya fallback stack op.
+            return false;
+        }
+        auto opNdx = found->second;
         if (opNdx < orderedNdx) {
             return false;
         }
@@ -345,12 +350,7 @@ UsdTransform3dFallbackMayaXformStackHandler::transform3d(const Ufe::SceneItem::P
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dFallbackMayaXformStackHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr& item
-#if UFE_PREVIEW_VERSION_NUM >= 2030
-    ,
-    const Ufe::EditTransform3dHint& hint
-#endif
-) const
+    const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
 {
     return createTransform3d(item);
 }

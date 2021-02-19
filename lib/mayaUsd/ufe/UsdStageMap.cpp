@@ -70,7 +70,7 @@ void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
 {
     // We expect a path to the proxy shape node, therefore a single segment.
     auto nbSegments =
-#if UFE_PREVIEW_VERSION_NUM >= 2006
+#ifdef UFE_V2_FEATURES_AVAILABLE
         path.nbSegments();
 #else
         path.getSegments().size();
@@ -120,6 +120,17 @@ Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
     if (iter != std::end(fStageToObject))
         return firstPath(iter->second);
     return Ufe::Path();
+}
+
+UsdStageMap::StageSet UsdStageMap::allStages()
+{
+    rebuildIfDirty();
+
+    StageSet stages;
+    for (const auto& pair : fObjectToStage) {
+        stages.insert(pair.second);
+    }
+    return stages;
 }
 
 void UsdStageMap::setDirty()

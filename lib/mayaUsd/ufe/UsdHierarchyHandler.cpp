@@ -48,18 +48,17 @@ Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& it
 Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
 {
     const UsdPrim prim = ufePathToPrim(path);
-    return prim.IsValid() ? UsdSceneItem::create(path, prim) : nullptr;
+    const int     instanceIndex = ufePathToInstanceIndex(path);
+    return prim.IsValid() ? UsdSceneItem::create(path, prim, instanceIndex) : nullptr;
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2022
 Ufe::Hierarchy::ChildFilter UsdHierarchyHandler::childFilter() const
 {
     Ufe::Hierarchy::ChildFilter childFilters;
     childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
     return childFilters;
 }
-#endif
 #endif
 
 } // namespace ufe

@@ -13,64 +13,12 @@
 // limitations under the License.
 //
 
-global proc string UsdLayerEditor_SaveLayerFileDialogOptions_Create(string $parent) {
-    setParent $parent;
-
-    string $layout = `scrollLayout -childResizable true`;
-
-    frameLayout -label `getMayaUsdString("kUsdFileOptions")` -collapsable false;
-
-    radioButtonGrp -numberOfRadioButtons 2
-        // adding some space at the end of label, otherwise it's too tight
-        -label `getMayaUsdString("kUsdFileFormat")` -labelArray2 "Binary" "ASCII"
-        -vertical
-        -ann `getMayaUsdString("kSaveLayerUsdFileFormatAnn")` 
-        -sbm `getMayaUsdString("kSaveLayerUsdFileFormatSbm")` 
-        formatSelector;
-
-    return $layout;
-}
-
-global proc int UsdLayerEditor_SaveLayerFileDialog_binary() {
-    string $varName = "UsdLayerEditor_SaveLayerFileDialogOptions_binary";
-    if (!`optionVar -exists $varName`) {
-        optionVar -intValue $varName 1;
-    }
-
-    return `optionVar -q $varName`;
-}
-
-global proc UsdLayerEditor_SaveLayerFileDialogOptions_UIInit(string $parent, string $filterType) {
-    setParent $parent;
-
-    int $binary = UsdLayerEditor_SaveLayerFileDialog_binary();
-    if ($binary) {
-       radioButtonGrp -e -select 1 formatSelector;
-    } else {
-       radioButtonGrp -e -select 2 formatSelector;
-    }
-}
-
-global proc UsdLayerEditor_SaveLayerFileDialogOptions_UICommit(string $parent) {
-    setParent $parent;
-
-    string $varName = "UsdLayerEditor_SaveLayerFileDialogOptions_binary";
-    optionVar -intValue $varName  (`radioButtonGrp -q -select formatSelector` == 1);
-    
-    
-}
 global proc string UsdLayerEditor_SaveLayerFileDialog() {
-    
     string $fileFilter =  getMayaUsdString("kAllUsdFiles") + " (*.usd *.usda *.usdc );;*.usd;;*.usda;;*.usdc";
-    
-    
-    // force non-native style, because otherwise you can't chose between ascii and binary for .usd
+
     string $result[] = `fileDialog2 
             -fileMode 0
-            -fileFilter $fileFilter -dialogStyle 2
-            -optionsUICreate "UsdLayerEditor_SaveLayerFileDialogOptions_Create"
-            -optionsUIInit "UsdLayerEditor_SaveLayerFileDialogOptions_UIInit"
-            -optionsUICommit "UsdLayerEditor_SaveLayerFileDialogOptions_UICommit"
+            -fileFilter $fileFilter
             `;
 
     if (size($result) > 0) {

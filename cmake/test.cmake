@@ -180,7 +180,7 @@ finally:
         PYTHONPATH
         MAYA_PLUG_IN_PATH
         MAYA_SCRIPT_PATH
-        PXR_PLUGINPATH_NAME
+        ${PXR_OVERRIDE_PLUGINPATH_NAME}
     )
 
     if(IS_WINDOWS)
@@ -213,7 +213,7 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/lib")
     list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/lib/python")
-    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
          "${CMAKE_INSTALL_PREFIX}/lib/usd")
     list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
@@ -231,7 +231,7 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources")
     list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin")
-    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/usd")
 
     # al
@@ -241,9 +241,9 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
     list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
-    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd")
-    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
 
     if(IS_WINDOWS AND DEFINED ENV{PYTHONHOME})
@@ -316,6 +316,17 @@ finally:
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "${pathvar}=${MAYAUSD_VARNAME_${pathvar}}")
     endforeach()
+    
+    # Set a temporary folder path for the MAYA_APP_DIR in which the
+    # maya profile will be created.
+    # Note: replace bad chars in test_name with _.
+    string(REGEX REPLACE "[:<>\|]" "_" SANITIZED_TEST_NAME ${test_name})
+    set(MAYA_APP_TEMP_DIR "${CMAKE_BINARY_DIR}/test/Temporary/${SANITIZED_TEST_NAME}")
+    # Note: ${WORKING_DIR} can point to the source folder, so don't use it
+    #       in any env var that will write files (such as MAYA_APP_DIR).
+    set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+        "MAYA_APP_DIR=${MAYA_APP_TEMP_DIR}")
+    file(MAKE_DIRECTORY ${MAYA_APP_TEMP_DIR})
 
     # Set the Python major version in MAYA_PYTHON_VERSION. Maya 2020 and
     # earlier that are Python 2 only will simply ignore it.
@@ -334,5 +345,10 @@ finally:
         # This allows bypassing them by using the --label-exclude/-LE option to
         # ctest. This is useful when running tests in a headless configuration.
         set_property(TEST "${test_name}" APPEND PROPERTY LABELS interactive)
+
+        # When running via remote desktop this env var is needed for Maya
+        # to function correctly. Has no effect when not running remote.
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "MAYA_ALLOW_OPENGL_REMOTE_SESSION=1")
     endif()
 endfunction()

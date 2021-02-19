@@ -792,7 +792,6 @@ const HdxPickHitVector* UsdMayaGLBatchRenderer::TestIntersection(
         for (const HdxPickHit& hit : *hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION)
                 .Msg(
-#if USD_VERSION_NUM > 1911
                     "        HIT:\n"
                     "            delegateId      : %s\n"
                     "            objectId        : %s\n"
@@ -800,15 +799,6 @@ const HdxPickHitVector* UsdMayaGLBatchRenderer::TestIntersection(
                     hit.delegateId.GetText(),
                     hit.objectId.GetText(),
                     hit.normalizedDepth);
-#else
-                    "        HIT:\n"
-                    "            delegateId: %s\n"
-                    "            objectId  : %s\n"
-                    "            ndcDepth  : %f\n",
-                    hit.delegateId.GetText(),
-                    hit.objectId.GetText(),
-                    hit.ndcDepth);
-#endif
         }
     }
 
@@ -898,7 +888,6 @@ const HdxPickHitVector* UsdMayaGLBatchRenderer::TestIntersection(
         for (const HdxPickHit& hit : *hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION)
                 .Msg(
-#if USD_VERSION_NUM > 1911
                     "        HIT:\n"
                     "            delegateId      : %s\n"
                     "            objectId        : %s\n"
@@ -906,15 +895,6 @@ const HdxPickHitVector* UsdMayaGLBatchRenderer::TestIntersection(
                     hit.delegateId.GetText(),
                     hit.objectId.GetText(),
                     hit.normalizedDepth);
-#else
-                    "        HIT:\n"
-                    "            delegateId: %s\n"
-                    "            objectId  : %s\n"
-                    "            ndcDepth  : %f\n",
-                    hit.delegateId.GetText(),
-                    hit.objectId.GetText(),
-                    hit.ndcDepth);
-#endif
         }
     }
 
@@ -1145,7 +1125,6 @@ void UsdMayaGLBatchRenderer::_ComputeSelection(
         for (const HdxPickHit& hit : hitSet) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION)
                 .Msg(
-#if USD_VERSION_NUM > 1911
                     "    NEW HIT\n"
                     "        delegateId      : %s\n"
                     "        objectId        : %s\n"
@@ -1155,17 +1134,6 @@ void UsdMayaGLBatchRenderer::_ComputeSelection(
                     hit.objectId.GetText(),
                     hit.instanceIndex,
                     hit.normalizedDepth);
-#else
-                    "    NEW HIT\n"
-                    "        delegateId   : %s\n"
-                    "        objectId     : %s\n"
-                    "        instanceIndex: %d\n"
-                    "        ndcDepth     : %f\n",
-                    hit.delegateId.GetText(),
-                    hit.objectId.GetText(),
-                    hit.instanceIndex,
-                    hit.ndcDepth);
-#endif
 
             if (!hit.instancerId.IsEmpty()) {
                 const VtIntArray instanceIndices(1, hit.instanceIndex);

@@ -106,9 +106,6 @@
 #include <pxr/base/tf/diagnostic.h>
 
 #ifdef HDVP2_ENABLE_GPU_OSD
-#include <pxr/imaging/pxOsd/refinerFactory.h>
-#include <pxr/imaging/pxOsd/tokens.h>
-
 #include <opensubdiv/far/_patchTable.h>
 #include <opensubdiv/far/patchTableFactory.h>
 #include <opensubdiv/far/stencilTable.h>

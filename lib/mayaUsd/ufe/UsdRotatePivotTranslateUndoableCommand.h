@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/attribute.h>
@@ -67,8 +68,7 @@ public:
     // Ufe::TranslateUndoableCommand overrides
     void undo() override;
     void redo() override;
-#if UFE_PREVIEW_VERSION_NUM >= 2025
-    //#ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     bool set(double x, double y, double z) override;
 #else
     bool translate(double x, double y, double z) override;
@@ -81,12 +81,10 @@ public:
     }
 
 private:
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    UsdSceneItem::Ptr sceneItem() const;
-#endif
+    UFE_V2(UsdSceneItem::Ptr sceneItem() const;)
 
 private:
-#if UFE_PREVIEW_VERSION_NUM < 2021
+#ifndef UFE_V2_FEATURES_AVAILABLE
     UsdPrim fPrim;
 #endif
     Ufe::Path                 fPath;

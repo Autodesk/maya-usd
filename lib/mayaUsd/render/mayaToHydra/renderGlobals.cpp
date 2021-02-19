@@ -83,7 +83,7 @@ global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
     mtohRenderOverride_AddAttribute("mtoh", "Highlight outline (in pixels, 0 to disable)", "mtohSelectionOutline", $fromAE);
 )mel"
 #endif
-#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
+#if USD_VERSION_NUM <= 2005
                                           R"mel(
     mtohRenderOverride_AddAttribute("mtoh", "Enable color quantization", "mtohColorQuantization", $fromAE);
 )mel"
@@ -859,7 +859,7 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
             node, filter.mayaString(), defGlobals.outlineSelectionWidth, userDefaults);
     }
 #endif
-#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
+#if USD_VERSION_NUM <= 2005
     if (filter(_tokens->mtohColorQuantization)) {
         _CreateBoolAttribute(
             node, filter.mayaString(), defGlobals.enableColorQuantization, userDefaults);
@@ -1021,7 +1021,7 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
         }
     }
 #endif
-#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
+#if USD_VERSION_NUM <= 2005
     if (filter(_tokens->mtohColorQuantization)) {
         _GetAttribute(node, filter.mayaString(), globals.enableColorQuantization, storeUserSetting);
         if (filter.attributeFilter()) {

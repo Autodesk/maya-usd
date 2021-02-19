@@ -15,6 +15,7 @@
 //
 #pragma once
 
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 
 #include <pxr/usd/usdGeom/xformOp.h>
@@ -89,13 +90,9 @@ public:
 
     // Ufe::Transform3dHandler overrides
     Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
-    Ufe::Transform3d::Ptr editTransform3d(
-        const Ufe::SceneItem::Ptr& item
-#if UFE_PREVIEW_VERSION_NUM >= 2030
+    Ufe::Transform3d::Ptr editTransform3d(const Ufe::SceneItem::Ptr& item UFE_V2(
         ,
-        const Ufe::EditTransform3dHint& hint
-#endif
-    ) const override;
+        const Ufe::EditTransform3dHint& hint)) const override;
 
 private:
     Ufe::Transform3dHandler::Ptr _nextHandler;

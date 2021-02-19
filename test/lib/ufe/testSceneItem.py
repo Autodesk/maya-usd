@@ -16,13 +16,20 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
+import fixturesUtils
+import mayaUtils
+import usdUtils
 
-import usdUtils, mayaUtils
+from pxr import Usd
+
+from maya import cmds
+from maya import standalone
+
 import ufe
 
-import unittest
 import os
+import unittest
+
 
 class SceneItemTestCase(unittest.TestCase):
     '''Verify the SceneItem UFE interface.
@@ -32,8 +39,14 @@ class SceneItemTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -42,7 +55,6 @@ class SceneItemTestCase(unittest.TestCase):
         # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2020', 'testNodeTypes only available in UFE preview version 0.2.20 and greater')
     def testNodeTypes(self):
         '''Engine method to run scene item test.'''
 
@@ -59,5 +71,13 @@ class SceneItemTestCase(unittest.TestCase):
         # This node type should be the first item on the ancestor node type list
         # and it should have other items.
         ball35AncestorNodeTypes = ball35Item.ancestorNodeTypes()
-        self.assertEqual(ball35NodeType, ball35AncestorNodeTypes[0])
+        if Usd.GetVersion() > (0, 20, 2):
+            self.assertEqual(ball35NodeType, ball35AncestorNodeTypes[0])
+        else:
+            self.assertEqual("UsdGeomXform", ball35AncestorNodeTypes[0])
+            
         self.assertTrue(len(ball35AncestorNodeTypes) > 1)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

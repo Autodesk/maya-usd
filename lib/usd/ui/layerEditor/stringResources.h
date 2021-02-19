@@ -42,14 +42,16 @@ MStringResourceId create(const char* key, const char* value);
 
 // -------------------------------------------------------------
 
-// Same keys definied in MEL file will have priority over C++ keys/values.
+// Same keys defined in MEL file will have priority over C++ keys/values.
 // Those with higher priority will end up showing in the UI.
 
 // clang-format off
 
 const auto kAddNewLayer              { create("kAddNewLayer", "Add a New Layer") };
 const auto kAddSublayer              { create("kAddSublayer", "Add sublayer") };
+const auto kAscii                    { create("kAscii", "ASCII") };
 const auto kAutoHideSessionLayer     { create("kAutoHideSessionLayer", "Auto-Hide Session Layer") };
+const auto kBinary                   { create("kBinary", "Binary") };
 const auto kConvertToRelativePath    { create("kConvertToRelativePath", "Convert to Relative Path") };
 const auto kCancel                   { create("kCancel", "Cancel") };
 const auto kClearLayerTitle          { create("kclearLayerTitle", "Clear \"^1s\"") };
@@ -58,9 +60,9 @@ const auto kClearLayerConfirmMessage { create("kClearLayerConfirmMessage",
                                               " \"^1s\"  will remain in the Layer Editor"
                                               " but all contents will be cleared, including sublayer paths.") };
 const auto kCreate                   { create("kCreate", "Create") };
-const auto kDiscardEditsTitle        { create("kDiscardEditsTitle", "Discard Edits \"^1s\"") };
-const auto kDiscardEditsMsg          { create("kDiscardEditsMsg", "Are you sure you want to revert these edits?"
-                                                                  " \"^1s\" will revert to its state on disk") };
+const auto kRevertToFileTitle        { create("kRevertToFileTitle", "Revert to File \"^1s\"") };
+const auto kRevertToFileMsg          { create("kRevertToFileMsg", "Are you sure you want to revert \"^1s\" to its "
+                                               "state on disk? All edits will be discarded.") };
 const auto kHelp                     { create("kHelp", "Help") };
 const auto kHelpOnUSDLayerEditor     { create("kHelpOnUSDLayerEditor", "Help on USD Layer Editor") };
 const auto kLoadExistingLayer        { create("kLoadExistingLayer", "Load an Existing Layer") };
@@ -71,7 +73,7 @@ const auto kLayerPath                { create("kLayerPath", "Layer Path:") };
 const auto kMuteUnmuteLayer          { create("kMuteUnmuteLayer", "Mute/unmute the layer. Muted layers are ignored by the stage.")};
 const auto kNoLayers                 { create("kNoLayers", "No Layers") };
 const auto kNotUndoable              { create("kNotUndoable", "You can not undo this action.") };
-const auto kOption                   { create("kOption", "Option") };
+const auto kOptions                  { create("kOptions", "Options") };
 const auto kPathNotFound             { create("kPathNotFound", "Path not found: ") };
 const auto kRealPath                 { create("kRealPath", "Real Path: ^1s") };
 const auto kRemoveSublayer           { create("kRemoveSublayer", "Remove sublayer") };
@@ -79,26 +81,32 @@ const auto kSave                     { create("kSave", "Save") };
 const auto kSaveAll                  { create("kSaveAll", "Save All") };
 const auto kSaveAllEditsInLayerStack { create("kSaveAllEditsInLayerStack", "Save all edits in the Layer Stack")};
 const auto kSaveLayer                { create("kSaveLayer", "Save Layer") };
+const auto kSaveName                 { create("kSaveName", "Save ^1s") };
+const auto kSaveLayerSaveNestedAnonymLayer { create("kSaveLayerSaveNestedAnonymLayer",
+                                                    "To save ^1s, you must save your ^2s anonymous layer(s) that are nested under it.") };
+const auto kSaveLayerWarnTitle       { create("kSaveLayerWarnTitle", "Save ^1s") };
+const auto kSaveLayerWarnMsg         { create("kSaveLayerWarnMsg", "Saving edits to ^1s will overwrite your file.") };
 const auto kSaveStage                { create("kSaveStage", "Save Stage") };
-const auto kToSaveTheStageSaveAnonym { create("kToSaveTheStageSaveAnonym", "To save the stage, you must save your anonymous layer")};
-const auto kToSaveTheStageSaveAnonyms{ create("kToSaveTheStageSaveAnonyms", "To save the stage, you must save your ^1s anonymous layers")};
-const auto kToSaveTheStageFileWillBeSave  { create("kToSaveTheStageFileWillBeSave",
-                                                   "To save the stage, edits to the following file will be saved.") };
-const auto kToSaveTheStageFilesWillBeSave { create("kToSaveTheStageFilesWillBeSave",
-                                                   "To save the stage, edits to the following ^1s files will be saved.") };
+const auto kSaveStages               { create("kSaveStages", "Save Stage(s)") };
+const auto kSaveXStages              { create("kSaveXStages", "Save ^1s Stage(s)") };
+const auto kToSaveTheStageSaveAnonym { create("kToSaveTheStageSaveAnonym", "To save the ^1s stage(s), save the following ^2s anonymous layer(s).") };
+const auto kToSaveTheStageSaveFiles  { create("kToSaveTheStageSaveFiles", "To save the ^1s stage(s), the following existing file(s) will be overwritten.") };
+const auto kUsedInStagesTooltip      { create("kUsedInStagesTooltip", "<b>Used in Stages</b>: ") };
+
 const auto kSetLayerAsTargetLayerTooltip  { create("kSetLayerAsTargetLayerTooltip", "Set layer as target layer. Edits are added to the target layer.") };
+const auto kUsdSaveFileFormat        { create("kUsdSaveFileFormat", "Save .usd File Format") };
 const auto kUsdLayerIdentifier       { create("kUsdLayerIdentifier", "USD Layer identifier: ^1s") };
 const auto kUsdStage                 { create("kUsdStage", "USD Stage:") };
 
-const auto kToSaveTheStageAnonFileWillBeSaved  { create("kToSaveTheStageAnonFileWillBeSaved",
-                                                   "To save the stage, you must first save your anonymous layer.  All file-backed layers will also be saved.\n") };
-const auto kToSaveTheStageAnonFilesWillBeSaved { create("kToSaveTheStageAnonFilesWillBeSaved",
-                                                   "To save the stage, you must first save your ^1s anonymous layers.  All file-backed layers will also be saved.\n") };
 const auto kSaveAnonymousLayersErrorsTitle { create("kSaveAnonymousLayersErrorsTitle", "Save All Layers Error")};
 const auto kSaveAnonymousLayersErrorsMsg { create("kSaveAnonymousLayersErrorsMsg", "Errors were encountered while saving layers.  Check Script Editor for details.")};
 const auto kSaveAnonymousLayersErrors { create("kSaveAnonymousLayersErrors", "Layer ^1s could not be saved to: ^2s")};
 const auto kSaveAnonymousConfirmOverwriteTitle { create("kSaveAnonymousConfirmOverwriteTitle", "Confirm Overwrite")};
 const auto kSaveAnonymousConfirmOverwrite { create("kSaveAnonymousConfirmOverwrite", "^1s file(s) already exist and will be overwritten.  Do you want to continue?")};
+
+const auto kSaveLayerUsdFileFormatAnn{ create("kSaveLayerUsdFileFormatAnn", "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary) or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.") };
+const auto kSaveLayerUsdFileFormatSbm{ create("kSaveLayerUsdFileFormatSbm", "Select whether the .usd file is written out in binary or ASCII") };
+
 
 // -------------------------------------------------------------
 // Errors

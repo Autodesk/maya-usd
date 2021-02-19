@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <ufe/hierarchy.h>
@@ -58,9 +59,7 @@ public:
     Ufe::SceneItem::Ptr sceneItem() const override;
     bool                hasChildren() const override;
     Ufe::SceneItemList  children() const override;
-#if UFE_PREVIEW_VERSION_NUM >= 2022
     UFE_V2(Ufe::SceneItemList filteredChildren(const ChildFilter&) const override;)
-#endif
     Ufe::SceneItem::Ptr parent() const override;
 #ifndef UFE_V2_FEATURES_AVAILABLE
     Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
@@ -79,9 +78,7 @@ public:
     Ufe::InsertChildCommand::Ptr
     insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
 
-#if UFE_PREVIEW_VERSION_NUM >= 2026
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
-#endif
 #endif
 
 private:

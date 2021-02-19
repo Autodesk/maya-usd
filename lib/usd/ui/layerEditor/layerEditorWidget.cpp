@@ -25,8 +25,14 @@
 #include "stageSelectorWidget.h"
 #include "stringResources.h"
 
+#include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/util.h>
+
+#include <maya/MGlobal.h>
+
 #include <QtCore/QItemSelectionModel>
 #include <QtCore/QTimer>
+#include <QtWidgets/QActionGroup>
 #include <QtWidgets/QGraphicsOpacityEffect>
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QMainWindow>
@@ -36,6 +42,8 @@
 
 #include <cstddef>
 #include <type_traits>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -112,13 +120,47 @@ void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
         // the time to be created
         QObject::connect(createMenu, &QMenu::aboutToShow, in_parent, aboutToShowCallback);
 
-        auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
+        auto optionMenu
+            = menuBar->addMenu(StringResources::getAsQString(StringResources::kOptions));
         auto action = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
         QObject::connect(
             action, &QAction::toggled, in_sessionState, &SessionState::setAutoHideSessionLayer);
         action->setCheckable(true);
         action->setChecked(in_sessionState->autoHideSessionLayer());
+
+        auto usdSaveMenu = optionMenu->addMenu(
+            StringResources::getAsQString(StringResources::kUsdSaveFileFormat));
+        auto formatGroup = new QActionGroup(usdSaveMenu);
+        formatGroup->setExclusive(true);
+        auto formatBinary
+            = formatGroup->addAction(StringResources::getAsQString(StringResources::kBinary));
+        auto formatAscii
+            = formatGroup->addAction(StringResources::getAsQString(StringResources::kAscii));
+        auto grpAnn = StringResources::getAsQString(StringResources::kSaveLayerUsdFileFormatAnn);
+        auto grpSbm = StringResources::getAsQString(StringResources::kSaveLayerUsdFileFormatSbm);
+        formatBinary->setCheckable(true);
+        formatBinary->setData(1);
+        formatBinary->setToolTip(grpAnn);
+        formatBinary->setStatusTip(grpSbm);
+        formatAscii->setCheckable(true);
+        formatAscii->setData(0);
+        formatAscii->setToolTip(grpAnn);
+        formatAscii->setStatusTip(grpSbm);
+        usdSaveMenu->addAction(formatBinary);
+        usdSaveMenu->addAction(formatAscii);
+        bool isBinary = true;
+
+        static const MString kSaveLayerFormatBinaryOption(
+            MayaUsdOptionVars->SaveLayerFormatArgBinaryOption.GetText());
+        if (MGlobal::optionVarExists(kSaveLayerFormatBinaryOption)) {
+            isBinary = MGlobal::optionVarIntValue(kSaveLayerFormatBinaryOption) != 0;
+        }
+        isBinary ? formatBinary->setChecked(true) : formatAscii->setChecked(true);
+        auto onFileFormatChanged = [=](QAction* action) {
+            MGlobal::setOptionVarValue(kSaveLayerFormatBinaryOption, action->data().toInt());
+        };
+        QObject::connect(formatGroup, &QActionGroup::triggered, in_parent, onFileFormatChanged);
 
         auto helpMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kHelp));
         helpMenu->addAction(

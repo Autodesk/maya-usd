@@ -45,3 +45,21 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
         )
     endforeach()
 endif()
+
+set(LIB_ICONS
+    saveOption1
+    saveOption2
+    saveOption3
+)
+foreach(ICON_BASE ${LIB_ICONS})
+    # The _100.png files need to be installed without the _100. This is the
+    # base icon name that is used. Maya will automatically choose the _150/_200
+    # image if neeeded.
+    install(FILES "${ICON_BASE}_100.png"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/icons"
+        RENAME "${ICON_BASE}.png"
+    )
+    install(FILES "${ICON_BASE}_150.png" "${ICON_BASE}_200.png"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/icons"
+    )
+endforeach()

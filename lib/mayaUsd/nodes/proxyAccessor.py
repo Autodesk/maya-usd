@@ -312,12 +312,12 @@ def parentConstraintItems(ufeItem, ufeTarget):
     cmds.connectAttr('{}.{}'.format(targetDagPath,targetScalePlug), '{}.target[0].targetScale'.format(constraintNode), f=True)
 
     # Connect target parent and constraint parent inverse matrix
-    if not targetParentPath.IsAbsoluteRootPath():
+    if targetParentPath != Sdf.Path.absoluteRootPath:
         ufeTargetParent = createUfeSceneItem(targetDagPath,targetParentPath)
         targetParentPlug = getOrCreateAccessPlug(ufeTargetParent, '', Sdf.ValueTypeNames.Matrix4d )
         cmds.connectAttr('{}.{}[0]'.format(targetDagPath,targetParentPlug), '{}.target[0].targetParentMatrix'.format(constraintNode), f=True)
     
-    if not itemParentPath.IsAbsoluteRootPath():
+    if itemParentPath != Sdf.Path.absoluteRootPath:
         ufeItemParent = createUfeSceneItem(itemDagPath,itemParentPath)
         itemParentPlug = getOrCreateAccessPlug(ufeItemParent, '', Sdf.ValueTypeNames.Matrix4d )
         inverseNode = cmds.createNode('inverseMatrix')

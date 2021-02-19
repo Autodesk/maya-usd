@@ -15,17 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import maya.api.OpenMaya as om
-import maya.cmds as cmds
 
-import usdUtils, mayaUtils, ufeUtils
-from testUtils import assertVectorAlmostEqual
+import fixturesUtils
+import mayaUtils
 import testTRSBase
+from testUtils import assertVectorAlmostEqual
+import ufeUtils
+import usdUtils
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as om
+
 import ufe
 
+from functools import partial
 import unittest
 
-from functools import partial
 
 def transform3dScale(transform3d):
     matrix = om.MMatrix(transform3d.inclusiveMatrix().matrix)
@@ -65,9 +71,15 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
         # Load plugins
@@ -260,3 +272,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         expected = [usdSceneItemScale(ballItem) for ballItem in ballItems]
 
         self.runMultiSelectTestScale(ballItems, expected, places=6)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

@@ -258,7 +258,7 @@ void PluginTranslatorOptionsInstance::parse(MString key, const MString& value)
             if (opt->name == key) {
                 auto& optData = set.m_options[i];
                 switch (opt->type) {
-                case OptionType::kBool: optData.m_bool = value.asInt(); break;
+                case OptionType::kBool: optData.m_bool = (value.asInt() > 0); break;
                 case OptionType::kInt: optData.m_int = value.asInt(); break;
                 case OptionType::kEnum: optData.m_int = value.asInt(); break;
                 case OptionType::kFloat: optData.m_float = value.asFloat(); break;

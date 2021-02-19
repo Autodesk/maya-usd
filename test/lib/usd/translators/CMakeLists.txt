@@ -45,6 +45,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportStroke.py
     testUsdExportUserTaggedAttributes.py
     testUsdExportVisibilityDefault.py
+    testUsdImportAnonymousLayer.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
     testUsdImportDisplacement.py
@@ -68,6 +69,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportImportUDIM.py
     testUsdImportSkeleton.py
     testUsdImportXforms.py
+    testUsdImportXformAnim.py
     testUsdMayaAdaptor.py
     testUsdMayaAdaptorGeom.py
     testUsdMayaAdaptorMetadata.py
@@ -188,14 +190,22 @@ set_property(TEST testUsdImportUVSetsST APPEND PROPERTY LABELS translators)
 # Test using standardSurface, which was introduced in Maya 2020.
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
     set(CUSTOM_TEST_SCRIPT_FILES
-        testUsdExportCustomConverter.py
-        testUsdImportCustomConverter.py
+        testUsdExportCustomConverter.template.py
+        testUsdImportCustomConverter.template.py
     )
     set(PLUGIN_TYPES
         Maya
         USD
     )
-    foreach(script ${CUSTOM_TEST_SCRIPT_FILES})
+    foreach(template_script ${CUSTOM_TEST_SCRIPT_FILES})
+        string(REGEX REPLACE "\\.template.py" ".py" script
+              "${template_script}")
+        configure_file(
+            "${CMAKE_CURRENT_SOURCE_DIR}/${template_script}"
+            "${CMAKE_CURRENT_BINARY_DIR}/${script}"
+            @ONLY
+        )
+
         foreach(plugin_type ${PLUGIN_TYPES})
             mayaUsd_get_unittest_target(module ${script})
             set(target "${module}-${plugin_type}")
@@ -204,7 +214,7 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                 ENV
                     "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
-                    "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
+                    "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
             )
             set_property(TEST ${target} APPEND PROPERTY LABELS translators)
         endforeach()
