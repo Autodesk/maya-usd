@@ -163,8 +163,6 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         renderIndex->InsertTask<HdxShadowTask>(this, _shadowTaskId);
         _ValueCache&        cache = _valueCacheMap[_shadowTaskId];
         HdxShadowTaskParams taskParams;
-        taskParams.camera = _cameraId;
-        taskParams.viewport = _viewport;
         cache[HdTokens->params] = VtValue(taskParams);
         cache[HdTokens->renderTags] = VtValue(defaultShadowRenderTags);
     }
@@ -276,16 +274,6 @@ void PxrMayaHdSceneDelegate::SetCameraState(
 
         GetRenderIndex().GetChangeTracker().MarkTaskDirty(
             _simpleLightTaskId, HdChangeTracker::DirtyParams);
-
-        // Update the shadow task.
-        HdxShadowTaskParams shadowTaskParams
-            = _GetValue<HdxShadowTaskParams>(_shadowTaskId, HdTokens->params);
-
-        shadowTaskParams.viewport = _viewport;
-        _SetValue(_shadowTaskId, HdTokens->params, shadowTaskParams);
-
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-            _shadowTaskId, HdChangeTracker::DirtyParams);
 
         // Update all render setup tasks.
         for (const auto& it : _renderSetupTaskIdMap) {
