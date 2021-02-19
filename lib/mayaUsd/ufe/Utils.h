@@ -120,6 +120,12 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 MAYAUSD_CORE_PUBLIC
 UsdTimeCode getTime(const Ufe::Path& path);
 
+//! Return the non-default purposes of the gateway node (i.e. proxy shape)
+//! along the argument path.  Only those purposes that are true are returned.
+//! The default purpose is not returned, and is considered implicit.
+MAYAUSD_CORE_PUBLIC
+TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
+
 //! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)

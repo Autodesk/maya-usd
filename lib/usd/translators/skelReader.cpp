@@ -150,7 +150,7 @@ void UsdMayaPrimReaderSkelRoot::PostReadSubtree(UsdMayaPrimReaderContext* contex
 
     std::vector<UsdSkelBinding> bindings;
 
-#if USD_VERSION_NUM > 2008
+#if PXR_VERSION > 2008
     _cache.Populate(skelRoot, UsdTraverseInstanceProxies());
 
     if (!_cache.ComputeSkelBindings(skelRoot, &bindings, UsdTraverseInstanceProxies())) {

@@ -33,7 +33,6 @@ find_package(Boost COMPONENTS filesystem system REQUIRED)
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME}
     PUBLIC
-        USD_VERSION_NUM=${USD_VERSION_NUM}
         PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>

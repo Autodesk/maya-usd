@@ -26,6 +26,51 @@ global proc AEmayaUsdProxyShapeInfoReplace(string $input)
     textFieldGrp -edit -text $defaultPrim mayaUsdProxyShapeDefaultPrim;
 }
 
+// Callback used from editorTemplate -callCustom
+global proc AEmayaUsdProxyShapePurposeNew(string $drawGuidePurposeAttr, string $drawProxyPurposeAttr, string $drawRenderPurposeAttr)
+{
+    checkBoxGrp
+        -numberOfCheckBoxes 3
+        -label `getMayaUsdString("kPurposeLabel")`
+        -ann `getMayaUsdString("kPurposeAnn")`
+        -label1 `getMayaUsdString("kPurposeOption1")`
+        -label2 `getMayaUsdString("kPurposeOption2")`
+        -label3 `getMayaUsdString("kPurposeOption3")`
+        purposeCheckBoxGrp;
+    AEmayaUsdProxyShapePurposeReplace($drawGuidePurposeAttr, $drawProxyPurposeAttr, $drawRenderPurposeAttr);
+}
+
+// Callback used from editorTemplate -callCustom
+global proc AEmayaUsdProxyShapePurposeReplace(string $drawGuidePurposeAttr, string $drawProxyPurposeAttr, string $drawRenderPurposeAttr)
+{
+    checkBoxGrp -edit
+        -value1 `getAttr($drawGuidePurposeAttr)`
+        -value2 `getAttr($drawProxyPurposeAttr)`
+        -value3 `getAttr($drawRenderPurposeAttr)`
+        -changeCommand1 ("setAttr " + $drawGuidePurposeAttr + " #1")
+        -changeCommand2 ("setAttr " + $drawProxyPurposeAttr + " #1")
+        -changeCommand3 ("setAttr " + $drawRenderPurposeAttr + " #1")
+        purposeCheckBoxGrp;
+
+    // Add a script Job on each attribute so we can update the UI
+    // if the attributes change.
+    global int $purposeCheckBoxGrpValue1ScriptJobId = -1;
+    global int $purposeCheckBoxGrpValue2ScriptJobId = -1;
+    global int $purposeCheckBoxGrpValue3ScriptJobId = -1;
+    if(`scriptJob -exists $purposeCheckBoxGrpValue1ScriptJobId`)
+        scriptJob -kill $purposeCheckBoxGrpValue1ScriptJobId;
+    if(`scriptJob -exists $purposeCheckBoxGrpValue2ScriptJobId`)
+        scriptJob -kill $purposeCheckBoxGrpValue2ScriptJobId;
+    if(`scriptJob -exists $purposeCheckBoxGrpValue3ScriptJobId`)
+        scriptJob -kill $purposeCheckBoxGrpValue3ScriptJobId;
+    $cmd1 = "checkBoxGrp -edit -value1 `getAttr " + $drawGuidePurposeAttr + "` purposeCheckBoxGrp;";
+    $cmd2 = "checkBoxGrp -edit -value2 `getAttr " + $drawProxyPurposeAttr + "` purposeCheckBoxGrp;";
+    $cmd3 = "checkBoxGrp -edit -value3 `getAttr " + $drawRenderPurposeAttr + "` purposeCheckBoxGrp;";
+    $purposeCheckBoxGrpValue1ScriptJobId = `scriptJob -parent purposeCheckBoxGrp -attributeChange $drawGuidePurposeAttr  $cmd1`;
+    $purposeCheckBoxGrpValue2ScriptJobId = `scriptJob -parent purposeCheckBoxGrp -attributeChange $drawProxyPurposeAttr  $cmd2`;
+    $purposeCheckBoxGrpValue3ScriptJobId = `scriptJob -parent purposeCheckBoxGrp -attributeChange $drawRenderPurposeAttr $cmd3`;
+}
+
 global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
 {
     editorTemplate -beginScrollLayout;
@@ -57,11 +102,15 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
         editorTemplate -beginLayout `getMayaUsdString("kLabelStageDisplay")` -collapse 0;
             editorTemplate -ann `getMayaUsdString("kTimeAnn")`
                            -addControl "time";
-            editorTemplate -addControl "drawGuidePurpose";
-            editorTemplate -addControl "drawProxyPurpose";
-            editorTemplate -addControl "drawRenderPurpose";
+            editorTemplate -callCustom 
+                "AEmayaUsdProxyShapePurposeNew"
+                "AEmayaUsdProxyShapePurposeReplace"
+                "drawGuidePurpose"
+                "drawProxyPurpose"
+                "drawRenderPurpose";
             //editorTemplate -addControl "primPath";
-            editorTemplate -addControl "excludePrimPaths";
+            editorTemplate -ann `getMayaUsdString("kExcludePrimPathsAnn")`
+                           -addControl "excludePrimPaths";
         editorTemplate -endLayout;
 
 

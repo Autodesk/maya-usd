@@ -101,9 +101,8 @@ include(cmake/jinja.cmake)
 find_package(Maya 2018 REQUIRED)
 find_package(USD 0.20.02 REQUIRED)
 include(cmake/usd.cmake)
-include(${USD_CONFIG_FILE})
 
-if( MAYA_APP_VERSION LESS 2020 AND USD_VERSION_NUM GREATER 2005 AND USD_VERSION_NUM LESS 2102 )
+if( MAYA_APP_VERSION LESS 2020 AND PXR_VERSION GREATER 2005 AND PXR_VERSION LESS 2102 )
     # Default to OFF if maya==2019 AND USD==(20.08||20.11)
     #   Due to a problem with glew - if you force on with these versions, you
     #   will probably need to LD_PRELOAD your glew lib.

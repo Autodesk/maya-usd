@@ -26,6 +26,7 @@ import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
+from maya.api import OpenMaya as OM
 
 import os
 import unittest
@@ -56,10 +57,12 @@ class testUsdExportUVSets(unittest.TestCase):
             expectedUnauthoredValuesIndex)
         self.assertEqual(primvar.GetInterpolation(), expectedInterpolation)
 
-
-    @classmethod
-    def tearDownClass(cls):
-        standalone.uninitialize()
+    @staticmethod
+    def _GetMayaMesh(meshNodePath):
+        selectionList = OM.MSelectionList()
+        selectionList.add(meshNodePath)
+        mObj = selectionList.getDependNode(0)
+        return OM.MFnMesh(mObj)
 
     @classmethod
     def setUpClass(cls):
@@ -84,6 +87,51 @@ class testUsdExportUVSets(unittest.TestCase):
         cmds.select("box.map[0:299]", r=True)
         cmds.polyEditUV(u=1.0, v=1.0)
 
+        # XXX: Although the UV sets on the "SharedFacesCubeShape" are stored in
+        # the Maya scene with a minimal number of UV values and UV shells, they
+        # seem to be expanded when the file is opened such that we end up with
+        # a UV value per face vertex rather than these smaller arrays of UV
+        # values with only the indices being per face vertex. As a result, we
+        # have to reassign the UVs just before we export.
+        meshNodePath = 'SharedFacesCubeShape'
+        meshFn = testUsdExportUVSets._GetMayaMesh(meshNodePath)
+
+        uvSetName = 'AllFacesSharedSet'
+        (uArray, vArray) = meshFn.getUVs(uvSetName)
+        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+        # These values are incorrect, in that they are not what's stored in the
+        # Maya scene, and not what we expect to export. We also use raw asserts
+        # here since we don't have an instance of unittest.TestCase yet.
+        assert(len(uArray) == 24)
+        assert(numUVShells == 6)
+
+        # Fix up the "all shared" UV set.
+        meshFn.clearUVs(uvSetName)
+        meshFn.setUVs(
+            [0.0, 1.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0, 1.0],
+            uvSetName)
+        meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3] * 6, uvSetName)
+        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+        assert(numUVShells == 1)
+
+        uvSetName = 'PairedFacesSet'
+        (uArray, vArray) = meshFn.getUVs(uvSetName)
+        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+        # As above, these values are not what we expect.
+        assert(len(uArray) == 23)
+        assert(numUVShells == 5)
+
+        # Fix up the "paired" UV set.
+        meshFn.clearUVs(uvSetName)
+        meshFn.setUVs(
+            [0.0, 0.5, 0.5, 0.0, 1.0, 1.0, 0.5],
+            [0.0, 0.0, 0.5, 0.5, 0.5, 1.0, 1.0],
+            uvSetName)
+        meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3, 2, 4, 5, 6] * 3, uvSetName)
+        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+        assert(numUVShells == 2)
+
         usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
         cmds.usdExport(mergeTransformAndShape=True,
             file=usdFilePath,
@@ -93,6 +141,10 @@ class testUsdExportUVSets(unittest.TestCase):
             exportUVs=True)
 
         cls._stage = Usd.Stage.Open(usdFilePath)
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def testStageOpens(self):
         self.assertTrue(self._stage)
@@ -129,31 +181,30 @@ class testUsdExportUVSets(unittest.TestCase):
         # These are the default UV values and indices that are exported for a
         # regular Maya polycube. If you just created a new cube and then
         # exported it to USD, these are the values and indices you would see
-        # for the default UV set 'map1'. The data here has already been
-        # merged/compressed.
+        # for the default UV set 'map1'.
         expectedValues = [
             Gf.Vec2f(0.375, 0),
             Gf.Vec2f(0.625, 0),
-            Gf.Vec2f(0.625, 0.25),
             Gf.Vec2f(0.375, 0.25),
-            Gf.Vec2f(0.625, 0.5),
+            Gf.Vec2f(0.625, 0.25),
             Gf.Vec2f(0.375, 0.5),
-            Gf.Vec2f(0.625, 0.75),
+            Gf.Vec2f(0.625, 0.5),
             Gf.Vec2f(0.375, 0.75),
-            Gf.Vec2f(0.625, 1),
+            Gf.Vec2f(0.625, 0.75),
             Gf.Vec2f(0.375, 1),
+            Gf.Vec2f(0.625, 1),
             Gf.Vec2f(0.875, 0),
             Gf.Vec2f(0.875, 0.25),
             Gf.Vec2f(0.125, 0),
             Gf.Vec2f(0.125, 0.25)
         ]
         expectedIndices = [
-            0, 1, 2, 3,
-            3, 2, 4, 5,
-            5, 4, 6, 7,
-            7, 6, 8, 9,
-            1, 10, 11, 2,
-            12, 0, 3, 13]
+            0, 1, 3, 2,
+            2, 3, 5, 4,
+            4, 5, 7, 6,
+            6, 7, 9, 8,
+            1, 10, 11, 3,
+            12, 0, 2, 13]
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
@@ -175,29 +226,29 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = self._GetCubeUsdMesh('OneMissingFaceCube')
 
         expectedValues = [
-            Gf.Vec2f(0.0, 0.0),
+            Gf.Vec2f(0, 0),
             Gf.Vec2f(0.375, 0),
             Gf.Vec2f(0.625, 0),
-            Gf.Vec2f(0.625, 0.25),
             Gf.Vec2f(0.375, 0.25),
-            Gf.Vec2f(0.625, 0.5),
+            Gf.Vec2f(0.625, 0.25),
             Gf.Vec2f(0.375, 0.5),
+            Gf.Vec2f(0.625, 0.5),
             Gf.Vec2f(0.375, 0.75),
             Gf.Vec2f(0.625, 0.75),
-            Gf.Vec2f(0.625, 1),
             Gf.Vec2f(0.375, 1),
+            Gf.Vec2f(0.625, 1),
             Gf.Vec2f(0.875, 0),
             Gf.Vec2f(0.875, 0.25),
             Gf.Vec2f(0.125, 0),
             Gf.Vec2f(0.125, 0.25)
         ]
         expectedIndices = [
-            1, 2, 3, 4,
-            4, 3, 5, 6,
+            1, 2, 4, 3,
+            3, 4, 6, 5,
             0, 0, 0, 0,
-            7, 8, 9, 10,
-            2, 11, 12, 3,
-            13, 1, 4, 14
+            7, 8, 10, 9,
+            2, 11, 12, 4,
+            13, 1, 3, 14
         ]
         expectedUnauthoredValuesIndex = 0
 
@@ -222,16 +273,16 @@ class testUsdExportUVSets(unittest.TestCase):
         usdCubeMesh = self._GetCubeUsdMesh('OneAssignedFaceCube')
 
         expectedValues = [
-            Gf.Vec2f(0.0, 0.0),
+            Gf.Vec2f(0, 0),
             Gf.Vec2f(0.375, 0.5),
             Gf.Vec2f(0.625, 0.5),
-            Gf.Vec2f(0.625, 0.75),
-            Gf.Vec2f(0.375, 0.75)
+            Gf.Vec2f(0.375, 0.75),
+            Gf.Vec2f(0.625, 0.75)
         ]
         expectedIndices = [
             0, 0, 0, 0,
             0, 0, 0, 0,
-            1, 2, 3, 4,
+            1, 2, 4, 3,
             0, 0, 0, 0,
             0, 0, 0, 0,
             0, 0, 0, 0
@@ -250,68 +301,6 @@ class testUsdExportUVSets(unittest.TestCase):
             expectedInterpolation=expectedInterpolation,
             expectedIndices=expectedIndices,
             expectedUnauthoredValuesIndex=expectedUnauthoredValuesIndex)
-
-    def testExportCompressibleUVSets(self):
-        """
-        Tests that UV sets on a cube mesh that can be compressed to constant,
-        uniform and vertex interpolations get exported correctly.
-
-        Note that the actual values here don't really make sense as UV sets.
-        """
-        usdCubeMesh = self._GetCubeUsdMesh('CompressibleUVSetsCube')
-
-        uvSetName = 'ConstantInterpSet'
-        expectedValues = [
-            Gf.Vec2f(0.25, 0.25)
-        ]
-        expectedIndices = [0]
-        expectedInterpolation = UsdGeom.Tokens.constant
-
-        primvar = usdCubeMesh.GetPrimvar(uvSetName)
-        self._AssertUVPrimvar(primvar,
-            expectedValues=expectedValues,
-            expectedInterpolation=expectedInterpolation,
-            expectedIndices=expectedIndices)
-
-        uvSetName = 'UniformInterpSet'
-        expectedValues = [
-            Gf.Vec2f(0.0, 0.0),
-            Gf.Vec2f(0.1, 0.1),
-            Gf.Vec2f(0.2, 0.2),
-            Gf.Vec2f(0.3, 0.3),
-            Gf.Vec2f(0.4, 0.4),
-            Gf.Vec2f(0.5, 0.5)
-        ]
-        expectedIndices = [0, 1, 2, 3, 4, 5]
-        expectedInterpolation = UsdGeom.Tokens.uniform
-
-        primvar = usdCubeMesh.GetPrimvar(uvSetName)
-        self._AssertUVPrimvar(primvar,
-            expectedValues=expectedValues,
-            expectedInterpolation=expectedInterpolation,
-            expectedIndices=expectedIndices)
-
-        # The values here end up in a somewhat odd order because of how
-        # MItMeshFaceVertex visits vertices.
-        uvSetName = 'VertexInterpSet'
-        expectedValues = [
-            Gf.Vec2f(0.0, 0.0),
-            Gf.Vec2f(0.1, 0.1),
-            Gf.Vec2f(0.3, 0.3),
-            Gf.Vec2f(0.2, 0.2),
-            Gf.Vec2f(0.5, 0.5),
-            Gf.Vec2f(0.4, 0.4),
-            Gf.Vec2f(0.7, 0.7),
-            Gf.Vec2f(0.6, 0.6)
-        ]
-        expectedIndices = [0, 1, 3, 2, 5, 4, 7, 6]
-        expectedInterpolation = UsdGeom.Tokens.vertex
-
-        primvar = usdCubeMesh.GetPrimvar(uvSetName)
-        self._AssertUVPrimvar(primvar,
-            expectedValues=expectedValues,
-            expectedInterpolation=expectedInterpolation,
-            expectedIndices=expectedIndices)
 
     def testExportSharedFacesUVSets(self):
         """
@@ -374,7 +363,8 @@ class testUsdExportUVSets(unittest.TestCase):
         else:
             stPrimvar = brokenBoxMesh.GetPrimvar("map1").ComputeFlattened()
 
-        self.assertEqual(stPrimvar[0], Gf.Vec2f(1.0, 1.0))
+        self.assertEqual(stPrimvar[0], Gf.Vec2f(1.0, 2.0))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

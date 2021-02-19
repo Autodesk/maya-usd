@@ -20,6 +20,7 @@
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
@@ -286,7 +287,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
 Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() const
 {
     PXR_NS::TfToken tk(name());
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(tk);
 #else
     auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(fPrim.GetTypeName(), tk);
