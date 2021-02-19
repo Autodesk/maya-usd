@@ -93,6 +93,7 @@ protected:
 
     // Notice listener method for proxy stage set
     void mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice);
+    void mayaUsdStageResetCBOnIdle(const std::string& shapePath, UsdStageRefPtr const& stage);
 
     std::vector<MCallbackId> _callbackIds;
     TfNotice::Key            _stageResetNoticeKey;

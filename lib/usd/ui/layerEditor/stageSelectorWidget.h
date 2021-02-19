@@ -46,6 +46,7 @@ protected:
     void
          updateFromSessionState(PXR_NS::UsdStageRefPtr const& stageToSelect = PXR_NS::UsdStageRefPtr());
     void stageRenamed(std::string const& name, PXR_NS::UsdStageRefPtr const& stage);
+    void stageReset(const std::string& proxyPath, PXR_NS::UsdStageRefPtr const& stage);
     void sessionStageChanged();
     void selectedIndexChanged(int index);
 

@@ -18,6 +18,7 @@
 #include "qtUtils.h"
 #include "stringResources.h"
 
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/common.h>
 
 #include <QtCore/QSignalBlocker>
@@ -58,7 +59,6 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
         &SessionState::stageListChangedSignal,
         this,
         &StageSelectorWidget::updateFromSessionState);
-    updateFromSessionState();
     connect(
         _sessionState,
         &SessionState::currentStageChangedSignal,
@@ -66,6 +66,8 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
         &StageSelectorWidget::sessionStageChanged);
     connect(
         _sessionState, &SessionState::stageRenamedSignal, this, &StageSelectorWidget::stageRenamed);
+    connect(_sessionState, &SessionState::stageResetSignal, this, &StageSelectorWidget::stageReset);
+
     updateFromSessionState();
 }
 
@@ -125,4 +127,35 @@ void StageSelectorWidget::stageRenamed(std::string const& name, PXR_NS::UsdStage
         _dropDown->setItemText(index, name.c_str());
     }
 }
+
+void StageSelectorWidget::stageReset(
+    const std::string&            proxyPath,
+    PXR_NS::UsdStageRefPtr const& stage)
+{
+    // Individual combo box entries have a short display name and a reference to a stage,
+    // which is not a unique combination.  By construction the combo box indices do line
+    // up with the SessionState StageEntry vector though, so in the case of resetting
+    // a proxy we will find the matching full proxy path in that vector and use its index
+    // to update the combo box.
+    auto count = _dropDown->count();
+    if (count <= 0) {
+        return;
+    }
+
+    std::vector<SessionState::StageEntry> allStages = _sessionState->allStages();
+    auto                                  it = std::find_if(
+        allStages.begin(), allStages.end(), [proxyPath](SessionState::StageEntry entry) {
+            return (proxyPath == entry._proxyShapePath);
+        });
+
+    if (it != allStages.end()) {
+        auto index = (it - allStages.begin());
+        if (index < count) {
+            if (_dropDown->itemText(index) == QString::fromStdString((*it)._displayName)) {
+                _dropDown->setItemData(index, QVariant::fromValue(stage));
+            }
+        }
+    }
+}
+
 } // namespace UsdLayerEditor
