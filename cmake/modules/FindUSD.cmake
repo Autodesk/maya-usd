@@ -75,6 +75,8 @@ find_file(USD_CONFIG_FILE
     DOC "USD cmake configuration file"
 )
 
+include(${USD_CONFIG_FILE})
+
 # ensure PXR_USD_LOCATION is defined
 if(NOT DEFINED PXR_USD_LOCATION)
     if(DEFINED ENV{PXR_USD_LOCATION})
@@ -90,7 +92,14 @@ if(listlen GREATER 1)
     get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
 endif()
 
-if(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
+if(DEFINED PXR_VERSION)
+    # Starting in core USD 21.05, pxrConfig.cmake provides the various USD
+    # version numbers as CMake variables, in which case PXR_VERSION should have
+    # been defined, along with the major, minor, and patch version numbers, so
+    # there is no need to extract them from the pxr/pxr.h header file anymore.
+    # The only thing we need to do is assemble the USD_VERSION version string.
+    set(USD_VERSION ${PXR_MAJOR_VERSION}.${PXR_MINOR_VERSION}.${PXR_PATCH_VERSION})
+elseif(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
     foreach(_usd_comp MAJOR MINOR PATCH)
         file(STRINGS
             "${USD_INCLUDE_DIR}/pxr/pxr.h"
@@ -99,7 +108,7 @@ if(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
         string(REGEX MATCHALL "[0-9]+" USD_${_usd_comp}_VERSION ${_usd_tmp})
     endforeach()
     set(USD_VERSION ${USD_MAJOR_VERSION}.${USD_MINOR_VERSION}.${USD_PATCH_VERSION})
-    math(EXPR USD_VERSION_NUM "${USD_MAJOR_VERSION} * 10000 + ${USD_MINOR_VERSION} * 100 + ${USD_PATCH_VERSION}")
+    math(EXPR PXR_VERSION "${USD_MAJOR_VERSION} * 10000 + ${USD_MINOR_VERSION} * 100 + ${USD_PATCH_VERSION}")
 endif()
 
 message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
@@ -116,7 +125,7 @@ find_package_handle_standard_args(USD
         USD_GENSCHEMA
         USD_CONFIG_FILE
         USD_VERSION
-        USD_VERSION_NUM
+        PXR_VERSION
     VERSION_VAR
         USD_VERSION
 )

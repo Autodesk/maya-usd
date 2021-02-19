@@ -37,6 +37,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/trace/trace.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
@@ -1441,7 +1442,7 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
         }
 
         // If the attribute is not part of the primitive schema, it does not affect extents
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         auto attrDefn
             = changedPrim.GetPrimDefinition().GetSchemaAttributeSpec(changedPropertyToken);
 #else

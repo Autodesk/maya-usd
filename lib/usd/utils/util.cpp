@@ -16,6 +16,7 @@
 
 #include "util.h"
 
+#include <pxr/pxr.h>
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/inherits.h>
@@ -238,7 +239,7 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
 
 bool isInternalReference(const SdfReference& ref)
 {
-#if USD_VERSION_NUM >= 2008
+#if PXR_VERSION >= 2008
     return ref.IsInternal();
 #else
     return ref.GetAssetPath().empty();

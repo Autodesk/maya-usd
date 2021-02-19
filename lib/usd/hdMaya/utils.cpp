@@ -16,13 +16,14 @@
 #include "utils.h"
 
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 #include <pxr/base/tf/fileUtils.h>
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/image.h>
@@ -37,7 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
 namespace {
 
@@ -65,7 +66,7 @@ public:
 
 } // namespace
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
 MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName)
 {
@@ -111,7 +112,7 @@ TfToken GetFileTexturePath(const MFnDependencyNode& fileNode)
     }
 }
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
 std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj)
 {
@@ -175,6 +176,6 @@ GetFileTextureResource(const MObject& fileObj, const TfToken& filePath, int maxT
         maxTextureMemory));
 }
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
 PXR_NAMESPACE_CLOSE_SCOPE

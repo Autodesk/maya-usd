@@ -235,7 +235,7 @@ void PxrMayaHdSceneDelegate::SetCameraState(
 
     // Provide other keys so that pulling on those in HdCamera::Sync doesn't
     // trigger coding errors.
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     cache[HdCameraTokens->projection] = VtValue();
 #endif
     cache[HdCameraTokens->horizontalAperture] = VtValue();
@@ -249,7 +249,7 @@ void PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdCameraTokens->focusDistance] = VtValue();
     cache[HdCameraTokens->shutterOpen] = VtValue();
     cache[HdCameraTokens->shutterClose] = VtValue();
-#if USD_VERSION_NUM >= 2011
+#if PXR_VERSION >= 2011
     cache[HdCameraTokens->exposure] = VtValue();
 #endif
 

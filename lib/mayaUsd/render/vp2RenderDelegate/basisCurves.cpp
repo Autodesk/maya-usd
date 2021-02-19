@@ -31,6 +31,7 @@
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hd/version.h>
+#include <pxr/pxr.h>
 
 #include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
@@ -1535,7 +1536,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     }
 
     // add new repr
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
 #else
     _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
