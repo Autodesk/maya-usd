@@ -323,6 +323,7 @@ MStatus initializePlugin(MObject obj)
 #if defined(WANT_UFE_BUILD)
     MayaUsd::LayerManager::addSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
 #if defined(WANT_QT_BUILD)
+    UsdLayerEditor::initialize();
     MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
 #endif
 #endif

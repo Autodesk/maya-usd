@@ -96,7 +96,7 @@ class testVP2RenderDelegatePointInstancesPickMode(imageUtils.ImageDiffingTestCas
 
     def _ClickInViewCenter(self):
         view = OMUI.M3dView.active3dView()
-        viewWidget = wrapInstance(long(view.widget()), QWidget)
+        viewWidget = wrapInstance(int(view.widget()), QWidget)
 
         QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton,
             QtCore.Qt.NoModifier, viewWidget.rect().center())
