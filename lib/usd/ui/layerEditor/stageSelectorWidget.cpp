@@ -25,9 +25,7 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
-Q_DECLARE_METATYPE(UsdStageRefPtr);
+Q_DECLARE_METATYPE(PXR_NS::UsdStageRefPtr);
 
 namespace UsdLayerEditor {
 
@@ -73,17 +71,17 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
     updateFromSessionState();
 }
 
-UsdStageRefPtr StageSelectorWidget::selectedStage()
+PXR_NS::UsdStageRefPtr StageSelectorWidget::selectedStage()
 {
     if (_dropDown->currentIndex() != -1) {
         auto const& data = _dropDown->currentData();
-        return data.value<UsdStageRefPtr>();
+        return data.value<PXR_NS::UsdStageRefPtr>();
     }
 
-    return UsdStageRefPtr();
+    return PXR_NS::UsdStageRefPtr();
 }
 // repopulates the combo based on the session stage list
-void StageSelectorWidget::updateFromSessionState(UsdStageRefPtr const& stageToSelect)
+void StageSelectorWidget::updateFromSessionState(PXR_NS::UsdStageRefPtr const& stageToSelect)
 {
     QSignalBlocker blocker(_dropDown);
     _dropDown->clear();
@@ -122,7 +120,7 @@ void StageSelectorWidget::sessionStageChanged()
     }
 }
 
-void StageSelectorWidget::stageRenamed(std::string const& name, UsdStageRefPtr const& stage)
+void StageSelectorWidget::stageRenamed(std::string const& name, PXR_NS::UsdStageRefPtr const& stage)
 {
     auto index = _dropDown->findData(QVariant::fromValue(stage));
     if (index != -1) {
@@ -130,7 +128,9 @@ void StageSelectorWidget::stageRenamed(std::string const& name, UsdStageRefPtr c
     }
 }
 
-void StageSelectorWidget::stageReset(const std::string& proxyPath, UsdStageRefPtr const& stage)
+void StageSelectorWidget::stageReset(
+    const std::string&            proxyPath,
+    PXR_NS::UsdStageRefPtr const& stage)
 {
     // Individual combo box entries have a short display name and a reference to a stage,
     // which is not a unique combination.  By construction the combo box indices do line
