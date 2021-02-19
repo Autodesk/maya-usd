@@ -13,27 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef BATCH_SAVE_LAYERS_UI_H
-#define BATCH_SAVE_LAYERS_UI_H
 
-#include <mayaUsd/mayaUsd.h>
-#include <mayaUsdUI/ui/api.h>
+#ifndef MAYAQTUTILS_H
+#define MAYAQTUTILS_H
 
-#include <pxr/pxr.h>
-#include <pxr/usd/usd/common.h>
-
-#include <vector>
-
-PXR_NAMESPACE_USING_DIRECTIVE
+#include "qtUtils.h"
 
 namespace UsdLayerEditor {
 
-MAYAUSD_UI_PUBLIC
-void initialize();
-
-MAYAUSD_UI_PUBLIC
-bool batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>&);
+class MayaQtUtils : public QtUtils
+{
+public:
+    double  dpiScale() override;
+    QIcon   createIcon(const char* iconName) override;
+    QPixmap createPixmap(QString const& pixmapName, int width, int height) override;
+};
 
 } // namespace UsdLayerEditor
 
-#endif // BATCH_SAVE_LAYERS_UI_H
+#endif // MAYAQTUTILS_H
