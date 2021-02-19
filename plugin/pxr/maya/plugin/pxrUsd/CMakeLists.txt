@@ -19,7 +19,6 @@ pxr_plugin(${PXR_PACKAGE}
 
     CPPFILES
         alembicChaser.cpp
-        infoImportChaser.cpp
         plugin.cpp
         usdTranslator.cpp
 

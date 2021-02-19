@@ -28,10 +28,6 @@ class TestUsdImportChaser(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-
-        # TODO: (yliangsiew) Still need to figure out why `pxrUsd` _must_ be loaded in order for chasers to
-        # get registered.
-        cmds.loadPlugin('pxrUsd', quiet=True)
         cls.temp_dir = fixturesUtils.setUpClass(__file__)
 
     def setUp(self):
@@ -56,6 +52,7 @@ class TestUsdImportChaser(unittest.TestCase):
         mayastandalone.uninitialize()
 
     def testImportChaser(self):
+        cmds.loadPlugin('usdTestMayaPlugin')  # NOTE: (yliangsiew) We load this plugin since the chaser is compiled as part of it.
         rootPaths = cmds.mayaUSDImport(v=True, f=self.stagePath, chaser=['info'])
         self.assertEqual(len(rootPaths), 1)
         sl = om.MSelectionList()

@@ -24,6 +24,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
         mayaShaderTranslation.cpp
+        infoImportChaser.cpp
 )
 
 mayaUsd_compile_config(${TARGET_NAME})
@@ -79,6 +80,7 @@ add_library(${TARGET_NAME} SHARED)
 target_sources(${TARGET_NAME} 
     PRIVATE
         mayaShaderTranslation.cpp
+        infoImportChaser.cpp
 )
 
 # -----------------------------------------------------------------------------
