@@ -21,7 +21,7 @@ from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as OM
 
-from pxr import Gf, Sdf, Usd, UsdGeom, UsdSkel, Vt
+from pxr import Gf, Sdf, Tf, Usd, UsdGeom, UsdSkel, UsdUtils, Vt
 
 import fixturesUtils
 
@@ -144,17 +144,19 @@ class testUsdExportSkeleton(unittest.TestCase):
                 self.assertTrue(Gf.IsClose(mayaJointWorldXf,
                                            usdJointWorldXf, 1e-5))
 
-    def testSkelWithoutBindPose(self):
+    def testSkelWithIdentityBindPose(self):
         """
         Tests export of a Skeleton when a bindPose is not fully setup.
+
+        In this test, there is a maya dagPose node, but it is set to identity
         """
 
         mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest",
-            "UsdExportSkeletonWithoutBindPose.ma")
+            "UsdExportSkeletonWithIdentityBindPose.ma")
         cmds.file(mayaFile, force=True, open=True)
 
         frameRange = [1, 5]
-        usdFile = os.path.abspath('UsdExportSkeletonWithoutBindPose.usda')
+        usdFile = os.path.abspath('UsdExportSkeletonWithIdentityBindPose.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                        shadingMode='none', frameRange=frameRange,
                        exportSkels='auto')
@@ -205,6 +207,49 @@ class testUsdExportSkeleton(unittest.TestCase):
             animSource.GetTranslationsAttr().Get(5.0),
             Vt.Vec3fArray([Gf.Vec3f(5.0, 5.0, 0.0)]))
 
+    def testSkelRestXformsWithNoDagPose(self):
+        """
+        Tests export of rest xforms when there is no dagPose node at all.
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest",
+            "UsdExportSkeletonNoDagPose.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFile = os.path.abspath('UsdExportSkeletonRestXformsWithNoDagPose.usda')
+        cmds.select('skel_root')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile,
+                           shadingMode='none', exportSkels='auto', selection=True)
+
+        stage = Usd.Stage.Open(usdFile)
+
+        skeleton = UsdSkel.Skeleton.Get(stage, '/skel_root/joint1')
+
+        self.assertEqual(skeleton.GetJointsAttr().Get(),
+            Vt.TokenArray(['joint1',
+                           'joint1/joint2',
+                           'joint1/joint2/joint3',
+                           'joint1/joint2/joint3/joint4']))
+
+        self.assertEqual(
+            skeleton.GetBindTransformsAttr().Get(),
+            Vt.Matrix4dArray([
+                Gf.Matrix4d( (-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1) ),
+                Gf.Matrix4d( (0, -1, 0, 0), (-1, 0, 0, 0), (0, 0, -1, 0), (3, 0, 0, 1) ),
+                Gf.Matrix4d( (0, -1, 0, 0), (0, 0, -1, 0), (1, 0, 0, 0), (3, 0, -2, 1) ),
+                Gf.Matrix4d( (0, -1, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0), (3, 0, -4, 1) ),
+            ])
+        )
+
+        self.assertEqual(
+            skeleton.GetRestTransformsAttr().Get(),
+            Vt.Matrix4dArray([
+                Gf.Matrix4d( (-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1) ),
+                Gf.Matrix4d( (0, -1, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0), (-3, 0, 0, 1) ),
+                Gf.Matrix4d( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 2, 1) ),
+                Gf.Matrix4d( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 2, 0, 1) ),
+            ])
+        )        
+
     def testSkelWithJointsAtSceneRoot(self):
         """
         Tests that exporting joints at the scene root errors, since joints need
@@ -235,8 +280,60 @@ class testUsdExportSkeleton(unittest.TestCase):
         for _ in range(5):
             cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile,
                          shadingMode='none', exportSkels='auto', selection=True)
+            
+    def testSkelMissingJointFromDagPose(self):
+        """
+        Check that dagPoses that don't contain all desired joints issue an
+        appropriate warning
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonBindPoseMissingJoints.ma")
+        cmds.file(mayaFile, force=True, open=True)
 
+        usdFile = os.path.abspath('UsdExportBindPoseMissingJointsTest.usda')
 
+        joints = cmds.listRelatives('joint_grp', allDescendents=True, type='joint')
+        bindMembers = cmds.dagPose('dagPose1', q=1, members=1)
+        nonBindJoints = [j for j in joints if j not in bindMembers]
+        self.assertEqual(nonBindJoints, [u'joint4'])
+
+        delegate = UsdUtils.CoalescingDiagnosticDelegate()
+
+        cmds.select('joint_grp')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile, shadingMode='none',
+                           exportSkels='auto', selection=True)
+
+        messages = delegate.TakeUncoalescedDiagnostics()
+        warnings = [x.commentary for x in messages if x.diagnosticCode == Tf.TF_DIAGNOSTIC_WARNING_TYPE]
+        missingJointWarnings = [x for x in warnings if 'is not a member of dagPose' in x]
+        self.assertEqual(len(missingJointWarnings), 1)
+        self.assertIn("Node 'joint4' is not a member of dagPose 'dagPose1'",
+                      missingJointWarnings[0])
+
+    def testSkelBindPoseSparseIndices(self):
+        """
+        Check that if a dagPose has sparse indices on some of it's attributes,
+        with differing number of created indices, that things still work.
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonBindPoseSparseIndices.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFile = os.path.abspath('UsdExportBindPoseSparseIndicesTest.usda')
+
+        cmds.select('joint_grp')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile, shadingMode='none',
+                           exportSkels='auto', selection=True)
+
+        stage = Usd.Stage.Open(usdFile)
+
+        skeleton = UsdSkel.Skeleton.Get(stage, '/joint_grp/joint1')
+        self.assertEqual(skeleton.GetRestTransformsAttr().Get(),
+            Vt.Matrix4dArray(
+                # If we're not correlating using logical indices correctly, we may get this
+                # matrix in here somehwere (which we shouldn't):
+                # Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (777, 888, 999, 1) ),
+                [Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 2, 1) ),
+                 Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 3, 0, 1) ),
+                 Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 0, 0, 1) )]))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

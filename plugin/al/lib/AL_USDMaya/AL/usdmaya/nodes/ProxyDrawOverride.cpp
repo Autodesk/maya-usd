@@ -46,7 +46,7 @@
 #include "AL/usdmaya/TypeIDs.h"
 #include "ufe/globalSelection.h"
 #include "ufe/log.h"
-#if UFE_PREVIEW_VERSION_NUM >= 2027
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
 #endif
 #include "ufe/observableSelection.h"
@@ -705,7 +705,7 @@ bool ProxyDrawOverride::userSelect(
             }
 
             if (paths.size()) {
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
                 auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
 #else
                 auto globalSelection = Ufe::GlobalSelection::get();
@@ -719,7 +719,7 @@ bool ProxyDrawOverride::userSelect(
                     const Ufe::SceneItem::Ptr& si { handler->createItem(
                         proxyShape->ufePath() + ps_usd) };
 
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
                     ufeSel->append(si);
 #else
                     switch (listAdjustment) {

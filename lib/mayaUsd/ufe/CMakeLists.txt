@@ -46,18 +46,14 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dFallbackMayaXformStack.cpp
             UsdTransform3dMatrixOp.cpp
             UsdTransform3dMayaXformStack.cpp
+            UsdUIInfoHandler.cpp
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
             UsdUndoReorderCommand.cpp
+            UsdUndoSetKindCommand.cpp
             UsdUndoVisibleCommand.cpp
     )
-    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2022)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdUIInfoHandler.cpp
-        )
-    endif()
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
         target_sources(${PROJECT_NAME}
             PRIVATE
@@ -115,6 +111,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
         UsdUndoReorderCommand.h
+        UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
     )
     # Why no if for UsdUIInfoHandler.h ?

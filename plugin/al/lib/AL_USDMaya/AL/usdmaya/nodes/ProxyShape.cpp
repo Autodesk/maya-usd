@@ -1109,11 +1109,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 
     const SdfLayerHandleVector stack = m_stage->GetLayerStack();
 
-#if USD_VERSION_NUM > 1911
     TF_FOR_ALL(itr, notice.GetChangeListVec())
-#else
-    TF_FOR_ALL(itr, notice.GetChangeListMap())
-#endif
     {
         if (std::find(stack.begin(), stack.end(), itr->first) == stack.end())
             continue;

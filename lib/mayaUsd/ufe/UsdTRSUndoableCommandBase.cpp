@@ -64,12 +64,12 @@ template <class V> void UsdTRSUndoableCommandBase<V>::initialize()
 
     attribute().Get(&fPrevValue);
 
-#if UFE_PREVIEW_VERSION_NUM < 2021
+#ifndef UFE_V2_FEATURES_AVAILABLE
     Ufe::Scene::instance().addObjectPathChangeObserver(this->shared_from_this());
 #endif
 }
 
-#if UFE_PREVIEW_VERSION_NUM < 2021
+#ifndef UFE_V2_FEATURES_AVAILABLE
 template <class V> void UsdTRSUndoableCommandBase<V>::operator()(const Ufe::Notification& n)
 {
     if (auto renamed = dynamic_cast<const Ufe::ObjectRename*>(&n)) {
@@ -120,7 +120,7 @@ template <class V> void UsdTRSUndoableCommandBase<V>::redoImp()
     perform(fNewValue[0], fNewValue[1], fNewValue[2]);
 }
 
-#if UFE_PREVIEW_VERSION_NUM < 2021
+#ifndef UFE_V2_FEATURES_AVAILABLE
 template <class V>
 template <class N>
 void UsdTRSUndoableCommandBase<V>::checkNotification(const N* notification)

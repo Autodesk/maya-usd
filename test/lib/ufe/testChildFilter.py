@@ -16,16 +16,18 @@
 # limitations under the License.
 #
 
-import os
-
-import maya.cmds as cmds
-
+import fixturesUtils
 import mayaUtils
+
+from maya import cmds
+from maya import standalone
+
 import ufe
 
+import os
 import unittest
 
-@unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2022', 'ChildFilterTestCase is only available in Maya with UFE preview version 0.2.22 and greater')
+
 class ChildFilterTestCase(unittest.TestCase):
     '''Verify the ChildFilter USD implementation.
     '''
@@ -34,8 +36,14 @@ class ChildFilterTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -81,3 +89,7 @@ class ChildFilterTestCase(unittest.TestCase):
         children = propsHier.filteredChildren(cf)
         self.assertEqual(6, len(children))
         self.assertIn(ball3Hier, children)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

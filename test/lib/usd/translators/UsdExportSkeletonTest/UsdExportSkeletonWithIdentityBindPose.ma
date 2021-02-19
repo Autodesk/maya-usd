@@ -1,5 +1,5 @@
 //Maya ASCII 2018ff08 scene
-//Name: UsdExportSkeletonWithoutBindPose.ma
+//Name: UsdExportSkeletonWithIdentityBindPose.ma
 //Last modified: Wed, Dec 19, 2018 05:34:34 PM
 //Codeset: UTF-8
 requires maya "2018ff08";
@@ -366,4 +366,4 @@ connectAttr "bindPose1.m[1]" "bindPose1.p[2]";
 connectAttr "joint1.bps" "bindPose1.wm[2]";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
 connectAttr "pCubeShape1.iog" ":initialShadingGroup.dsm" -na;
-// End of UsdExportSkeletonWithoutBindPose.ma
+// End of UsdExportSkeletonWithIdentityBindPose.ma

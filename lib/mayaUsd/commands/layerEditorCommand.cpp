@@ -25,6 +25,14 @@
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/Utils.h>
+
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+#endif
+
 #include <cstddef>
 #include <string>
 
@@ -138,15 +146,64 @@ public:
             _subPath = layer->GetSubLayerPaths()[_index];
             holdOnPathIfDirty(layer, _subPath);
 
-            // if the layer to remove is the current edit target,
+            // if the current edit target is the layer to remove or
+            // a sublayer of the layer to remove,
             // set the root layer as the current edit target
-            auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _subPath);
+            auto layerToRemove = SdfLayer::FindRelativeToLayer(layer, _subPath);
             auto stage = getStage();
             auto currentTarget = stage->GetEditTarget().GetLayer();
-            if (currentTarget
-                && currentTarget->GetIdentifier() == subLayerHandle->GetIdentifier()) {
-                _isEditTarget = true;
-                stage->SetEditTarget(stage->GetRootLayer());
+
+            // Helper function to find if a layer is in the
+            // hierarchy of another layer
+            //
+            // rootLayer: The root layer of the hierarchy
+            // layer: The layer to find
+            // ignore : Optional layer used has the root of a hierarchy that
+            //          we don't want to check in.
+            // ignoreSubPath : Optional subpath used whith ignore layer.
+            auto isInHierarchy = [](const SdfLayerHandle& rootLayer,
+                                    const SdfLayerHandle& layer,
+                                    const SdfLayerHandle* ignore = nullptr,
+                                    const std::string*    ignoreSubPath = nullptr) {
+                // Impl used for recursive call
+                auto isInHierarchyImpl = [](const SdfLayerHandle& rootLayer,
+                                            const SdfLayerHandle& layer,
+                                            const SdfLayerHandle* ignore,
+                                            const std::string*    ignoreSubPath,
+                                            auto&                 implRef) {
+                    if (!rootLayer || !layer)
+                        return false;
+
+                    if (rootLayer->GetIdentifier() == layer->GetIdentifier())
+                        return true;
+
+                    const auto subLayerPaths = rootLayer->GetSubLayerPaths();
+                    for (const auto& subLayerPath : subLayerPaths) {
+
+                        if (ignore && ignoreSubPath
+                            && (*ignore)->GetIdentifier() == rootLayer->GetIdentifier()
+                            && *ignoreSubPath == subLayerPath)
+                            continue;
+
+                        const auto subLayer
+                            = SdfLayer::FindRelativeToLayer(rootLayer, subLayerPath);
+                        if (implRef(subLayer, layer, ignore, ignoreSubPath, implRef))
+                            return true;
+                    }
+                    return false;
+                };
+                return isInHierarchyImpl(
+                    rootLayer, layer, ignore, ignoreSubPath, isInHierarchyImpl);
+            };
+
+            if (isInHierarchy(layerToRemove, currentTarget)) {
+                // The current edit layer is in the hierarchy of the layer to remove,
+                // now we need to be sure the edit target layer is not also a sublayer
+                // of another layer in the stage.
+                if (!isInHierarchy(stage->GetRootLayer(), currentTarget, &layer, &_subPath)) {
+                    _editTargetPath = currentTarget->GetIdentifier();
+                    stage->SetEditTarget(stage->GetRootLayer());
+                }
             }
 
             layer->RemoveSubLayerPath(_index);
@@ -173,9 +230,9 @@ public:
 
                 // if the removed layer was the edit target,
                 // set it back to the current edit target
-                if (_isEditTarget) {
+                if (!_editTargetPath.empty()) {
                     auto stage = getStage();
-                    auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _subPath);
+                    auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _editTargetPath);
                     stage->SetEditTarget(subLayerHandle);
                 }
             } else {
@@ -202,7 +259,7 @@ public:
     }
 
 protected:
-    bool _isEditTarget = false;
+    std::string _editTargetPath;
 
     UsdStageWeakPtr getStage()
     {
@@ -368,9 +425,13 @@ public:
         if (!stage)
             return false;
         if (_muteIt) {
+            // Muting a layer will cause all scene items under the proxy shape
+            // to be stale.
+            saveSelection();
             stage->MuteLayer(layer->GetIdentifier());
         } else {
             stage->UnmuteLayer(layer->GetIdentifier());
+            restoreSelection();
         }
 
         // we perfer not holding to pointers needlessly, but we need to hold on to the layer if we
@@ -387,7 +448,11 @@ public:
             return false;
         if (_muteIt) {
             stage->UnmuteLayer(layer->GetIdentifier());
+            restoreSelection();
         } else {
+            // Muting a layer will cause all scene items under the proxy shape
+            // to be stale.
+            saveSelection();
             stage->MuteLayer(layer->GetIdentifier());
         }
         // we can release the pointer
@@ -398,13 +463,50 @@ public:
     std::string _proxyShapePath;
     bool        _muteIt = true;
 
-protected:
+private:
     UsdStageWeakPtr getStage()
     {
         auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
         auto stage = prim.GetStage();
         return stage;
     }
+
+    void saveSelection()
+    {
+#if defined(WANT_UFE_BUILD)
+        // Make a copy of the global selection, to restore it on unmute.
+        auto globalSn = Ufe::GlobalSelection::get();
+        _savedSn.replaceWith(*globalSn);
+        // Filter the global selection, removing items below our proxy shape.
+        // We know the path to the proxy shape has a single segment.  Not
+        // using Ufe::PathString::path() for UFE v1 compatibility, which
+        // unfortunately reveals leading "world" path component implementation
+        // detail.
+        Ufe::Path path(
+            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, path));
+#endif
+    }
+
+    void restoreSelection()
+    {
+#if defined(WANT_UFE_BUILD)
+        // Restore the saved selection to the global selection.  If a saved
+        // selection item started with the proxy shape path, re-create it.
+        // We know the path to the proxy shape has a single segment.  Not
+        // using Ufe::PathString::path() for UFE v1 compatibility, which
+        // unfortunately reveals leading "world" path component implementation
+        // detail.
+        Ufe::Path path(
+            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+        auto globalSn = Ufe::GlobalSelection::get();
+        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, path));
+#endif
+    }
+
+#if defined(WANT_UFE_BUILD)
+    Ufe::Selection _savedSn;
+#endif
     PXR_NS::SdfLayerRefPtr _mutedLayer;
 };
 

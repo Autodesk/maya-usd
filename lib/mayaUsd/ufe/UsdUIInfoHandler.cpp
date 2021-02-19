@@ -17,11 +17,9 @@
 
 #include "UsdSceneItem.h"
 
-#if UFE_PREVIEW_VERSION_NUM >= 2024
 #include <pxr/usd/sdf/listOp.h> // SdfReferenceListOp/SdfPayloadListOp/SdfPathListOp
 #include <pxr/usd/sdf/schema.h> // SdfFieldKeys
 #include <pxr/usd/usd/variantSets.h>
-#endif
 
 #include <maya/MDoubleArray.h>
 #include <maya/MGlobal.h>
@@ -29,7 +27,6 @@
 #include <map>
 #include <vector>
 
-#if UFE_PREVIEW_VERSION_NUM >= 2024
 namespace {
 // Simple helper to add the metadata strings to the end of the input tooltip string.
 // Depending on the count, will add singular string or plural (with count).
@@ -72,7 +69,6 @@ void addMetadataCount(
     }
 }
 } // namespace
-#endif
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -121,19 +117,11 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
     return changed;
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2024
 Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) const
-#else
-std::string UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) const
-#endif
 {
     // Special case for nullptr input.
     if (!item) {
-#if UFE_PREVIEW_VERSION_NUM >= 2024
         return Ufe::UIInfoHandler::Icon("out_USD_UsdTyped.png"); // Default USD icon
-#else
-        return "out_USD_UsdTyped.png"; // Default USD icon
-#endif
     }
 
     // We support these node types directly.
@@ -162,20 +150,12 @@ std::string UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) cons
         { "Volume", "out_USD_Volume.png" }
     };
 
-#if UFE_PREVIEW_VERSION_NUM >= 2024
     Ufe::UIInfoHandler::Icon icon; // Default is empty (no icon and no badge).
-#endif
-
-    const auto search = supportedTypes.find(item->nodeType());
+    const auto               search = supportedTypes.find(item->nodeType());
     if (search != supportedTypes.cend()) {
-#if UFE_PREVIEW_VERSION_NUM >= 2024
         icon.baseIcon = search->second;
-#else
-        return search->second;
-#endif
     }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2024
     // Check if we have any composition meta data - if yes we display a special badge.
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
     if (usdItem) {
@@ -200,13 +180,8 @@ std::string UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) cons
     }
 
     return icon;
-#else
-    // No specific node type icon was found.
-    return "";
-#endif
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2024
 std::string UsdUIInfoHandler::treeViewTooltip(const Ufe::SceneItem::Ptr& item) const
 {
     std::string tooltip;
@@ -247,7 +222,6 @@ std::string UsdUIInfoHandler::treeViewTooltip(const Ufe::SceneItem::Ptr& item) c
     }
     return tooltip;
 }
-#endif
 
 std::string UsdUIInfoHandler::getLongRunTimeLabel() const { return "Universal Scene Description"; }
 

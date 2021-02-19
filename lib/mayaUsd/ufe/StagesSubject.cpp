@@ -19,9 +19,10 @@
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2025
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoManager.h>
 #endif
 
@@ -119,7 +120,11 @@ StagesSubject::Ptr StagesSubject::create() { return TfCreateWeakPtr(new StagesSu
 
 bool StagesSubject::beforeNewCallback() const { return fBeforeNewCallback; }
 
-void StagesSubject::beforeNewCallback(bool b) { fBeforeNewCallback = b; }
+void StagesSubject::beforeNewCallback(bool b)
+{
+    fBeforeNewCallback = b;
+    fInvalidStages.clear();
+}
 
 /*static*/
 void StagesSubject::beforeNewCallback(void* clientData)
@@ -305,9 +310,7 @@ void StagesSubject::stageChanged(
             const TfToken nameToken = changedPath.GetNameToken();
             if (nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken)) {
                 Ufe::Transform3d::notify(ufePath);
-#ifdef UFE_V2_FEATURES_AVAILABLE
-                sendValueChangedFallback = false;
-#endif
+                UFE_V2(sendValueChangedFallback = false;)
             }
         }
 
@@ -341,7 +344,7 @@ void StagesSubject::stageChanged(
 #endif
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2025
+#ifdef UFE_V2_FEATURES_AVAILABLE
 void StagesSubject::stageEditTargetChanged(
     UsdNotice::StageEditTargetChanged const& notice,
     UsdStageWeakPtr const&                   sender)
@@ -353,7 +356,7 @@ void StagesSubject::stageEditTargetChanged(
 
 void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
-#if UFE_PREVIEW_VERSION_NUM >= 2025
+#ifdef UFE_V2_FEATURES_AVAILABLE
     auto noticeStage = notice.GetStage();
     // Check if stage received from notice is valid. We could have cases where a ProxyShape has an
     // invalid stage.
@@ -376,11 +379,22 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
             NoticeKeys noticeKeys;
 
             noticeKeys[0] = TfNotice::Register(me, &StagesSubject::stageChanged, stage);
-#if UFE_PREVIEW_VERSION_NUM >= 2025
-            noticeKeys[1] = TfNotice::Register(me, &StagesSubject::stageEditTargetChanged, stage);
-#endif
+            UFE_V2(noticeKeys[1]
+                   = TfNotice::Register(me, &StagesSubject::stageEditTargetChanged, stage);)
             fStageListeners[stage] = noticeKeys;
         }
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        // Now we can send the notifications about stage change.
+        for (auto& path : fInvalidStages) {
+            Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(path);
+            if (sceneItem) {
+                Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+            }
+        }
+#endif
+
+        fInvalidStages.clear();
 
         stageSetGuardCount = false;
     }
@@ -390,15 +404,12 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
 {
     afterOpen();
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     auto p = notice.GetProxyShape().ufePath();
     if (!p.empty()) {
-        Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(p);
-        if (sceneItem) {
-            Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-        }
+        // We can't send notification to clients from dirty propagation.
+        // Delay it till the new stage is actually set during compute.
+        fInvalidStages.insert(p);
     }
-#endif
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE

@@ -19,7 +19,20 @@
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 
+#include <maya/MSyntax.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+/* static */
+MSyntax PxrMayaUSDImportCommand::createSyntax()
+{
+    MSyntax syntax = MayaUsd::MayaUSDImportCommand::createSyntax();
+
+    syntax.addFlag(
+        kAssemblyRepFlag, UsdMayaJobImportArgsTokens->assemblyRep.GetText(), MSyntax::kString);
+
+    return syntax;
+}
 
 /* static */
 void* PxrMayaUSDImportCommand::creator() { return new PxrMayaUSDImportCommand(); }

@@ -16,16 +16,21 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
-import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
+import fixturesUtils
+import mayaUtils
+import usdUtils
 
 from pxr import UsdGeom
 
-import usdUtils, mayaUtils
+from maya import cmds
+from maya import standalone
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
+
 import ufe
 
-import unittest
 import os
+import unittest
+
 
 class TestAddPrimObserver(ufe.Observer):
     def __init__(self):
@@ -56,9 +61,15 @@ class ContextOpsTestCase(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
         # Load plugins
@@ -211,11 +222,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestAddPrimObserver()
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
+        ufe.Scene.addObserver(ufeObs)
 
         # Create a ContextOps interface for the proxy shape.
         proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|stage1|stageShape1")])
@@ -310,7 +317,6 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(ufeObs.nbAddNotif(), 2)
         self.assertEqual(ufeObs.nbDeleteNotif(), 2)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrimWithDelete only available in UFE preview version 0.2.15 and greater')
     def testAddNewPrimWithDelete(self):
         cmds.file(new=True, force=True)
 
@@ -466,3 +472,7 @@ class ContextOpsTestCase(unittest.TestCase):
         _validateLoadAndUnloadItems(propsItem, ['Load with Descendants'])
         _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
         _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

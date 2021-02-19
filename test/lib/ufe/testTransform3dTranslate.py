@@ -16,18 +16,23 @@
 # limitations under the License.
 #
 
-import maya.api.OpenMaya as om
-import maya.cmds as cmds
-
-import usdUtils, mayaUtils, ufeUtils
+import fixturesUtils
+import mayaUtils
 from testUtils import assertVectorAlmostEqual
-import ufe
-
-import unittest
-
-from functools import partial
+import ufeUtils
+import usdUtils
 
 from pxr import Gf
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as om
+
+import ufe
+
+from functools import partial
+import unittest
+
 
 def matrix4dTranslation(matrix4d):
     translation = matrix4d.matrix[-1]
@@ -80,9 +85,15 @@ class Transform3dTranslateTestCase(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
         # Load plugins
@@ -235,3 +246,7 @@ class Transform3dTranslateTestCase(unittest.TestCase):
 
         # Notified.
         self.assertEqual(t3dObs.notifications(), 1)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

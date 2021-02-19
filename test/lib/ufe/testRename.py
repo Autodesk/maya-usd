@@ -16,19 +16,24 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
+import fixturesUtils
+import mayaUtils
+import usdUtils
+
+import mayaUsd.ufe
 
 from pxr import Usd
 
-import collections
+from maya import cmds
+from maya import standalone
 
-import usdUtils, mayaUtils
 import ufe
-import mayaUsd.ufe
 
-import unittest
-import re
+import collections
 import os
+import re
+import unittest
+
 
 # This class is used for composition arcs query.
 class CompositionQuery(object):
@@ -77,12 +82,16 @@ class RenameTestCase(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
     
     @classmethod
     def tearDownClass(cls):
         cmds.file(new=True, force=True)
+
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -420,22 +429,11 @@ class RenameTestCase(unittest.TestCase):
         # Create our UFE notification observer
         ufeObs = TestObserver()
 
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
-            # We start off with no observers
-            self.assertFalse(ufe.Scene.hasObjectAddObserver(ufeObs))
-            self.assertFalse(ufe.Scene.hasObjectDeleteObserver(ufeObs))
-            self.assertFalse(ufe.Scene.hasObjectPathChangeObserver(ufeObs))
+        # We start off with no observers
+        self.assertFalse(ufe.Scene.hasObserver(ufeObs))
 
-            # Add the UFE observers we want to test
-            ufe.Scene.addObjectAddObserver(ufeObs)
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectPathChangeObserver(ufeObs)
-        else:
-            # We start off with no observers
-            self.assertFalse(ufe.Scene.hasObserver(ufeObs))
-
-            # Add the UFE observer we want to test
-            ufe.Scene.addObserver(ufeObs)
+        # Add the UFE observer we want to test
+        ufe.Scene.addObserver(ufeObs)
 
         # rename
         newName = 'pCylinder1_Renamed'
@@ -582,3 +580,7 @@ class RenameTestCase(unittest.TestCase):
 
         compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_C'))
         self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects_eggplant/geos_cucumber/cube_banana'])
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

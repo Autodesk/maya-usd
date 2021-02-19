@@ -1,0 +1,216 @@
+// Copyright 2021 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+proc setOptionVars(int $forceFactorySettings)
+{
+    if ($forceFactorySettings || !`optionVar -exists mayaUsd_SerializedUsdEditsLocation`)
+        optionVar -intValue mayaUsd_SerializedUsdEditsLocation 1;
+
+    if ($forceFactorySettings || !`optionVar -exists mayaUsd_SerializedUsdEditsLocationPrompt`)
+        optionVar -intValue mayaUsd_SerializedUsdEditsLocationPrompt 1;
+}
+
+global proc saveOptionsAndCloseUSDSaveOptionDialog(string $parent)
+{
+    setParent $parent;
+
+    int $option = `radioButtonGrp -q -select USDSaveOptionsRadioButtons`;
+    optionVar -intValue mayaUsd_SerializedUsdEditsLocation $option;
+
+    int $prompt = `checkBox -q -value USDSaveOptionsPromptCheckBox`;
+    optionVar -intValue mayaUsd_SerializedUsdEditsLocationPrompt (!$prompt);
+
+    layoutDialog -dismiss "Save";
+}
+
+proc string usdFileSaveOptions_AddRadioButtons(int $standaloneDialog)
+{
+    int $saveOption = `optionVar -q mayaUsd_SerializedUsdEditsLocation`;
+    if ($saveOption < 1 || 3 < $saveOption)
+    {
+        $saveOption = 1;
+    }
+
+    int $wCol1 = 142;
+    int $wCol2 = 310;
+
+    if ($standaloneDialog)
+    {
+        $wCol1 = 380;
+        $wCol2 = 118;
+    }
+
+    string $rowLayout = `rowLayout -nc 2 -cat 2 "left" 0 -cw2 $wCol1 $wCol2`;
+
+    if (! $standaloneDialog)
+    {
+        text -label "";
+    }
+
+    string $colLayout = `columnLayout -adjustableColumn 1`;
+
+    radioButtonGrp
+        -vertical
+        -numberOfRadioButtons 3
+        -select $saveOption
+
+        -label1      `getMayaUsdString("kSaveOption1")`
+        -annotation1 `getMayaUsdString("kSaveOptionAnn1")`
+        -onCommand1  ("USDSaveOptionsRadioButtonCB(" + $standaloneDialog + ", 1)")
+
+        -label2      `getMayaUsdString("kSaveOption2")`
+        -annotation2 `getMayaUsdString("kSaveOptionAnn2")`
+        -onCommand2  ("USDSaveOptionsRadioButtonCB(" + $standaloneDialog + ", 2)")
+
+        -label3      `getMayaUsdString("kSaveOption3")`
+        -annotation3 `getMayaUsdString("kSaveOptionAnn3")`
+        -onCommand3  ("USDSaveOptionsRadioButtonCB(" + $standaloneDialog + ", 3)")
+
+        USDSaveOptionsRadioButtons;
+
+    text -label "" USDSaveOptions2GBWarning;
+    if ($saveOption == 2) {
+        text -edit -label `getMayaUsdString("kSaveOption2GBWarning")` USDSaveOptions2GBWarning;
+    }
+
+    if ($standaloneDialog)
+    {
+        setParent ..;   // Back to rowlayout
+        image -image ("saveOption"+$saveOption+".png") usdSaveOptionImage;
+
+        setParent $colLayout;   // For "ask me" to align with radio buttons
+    }
+
+    return $rowLayout;
+}
+
+global proc showUSDSaveOptionsDialogUI()
+{
+    int $promptOption = `optionVar -q mayaUsd_SerializedUsdEditsLocationPrompt`;
+
+    string $form = `setParent -q`;
+    formLayout -e -width 200 $form;
+
+    string $unsavedText = getMayaUsdString("kSaveOptionUnsavedEdits");
+    string $tUnsaved = `text -l $unsavedText`;
+
+    string $options = usdFileSaveOptions_AddRadioButtons(1);
+
+    setParent $form;
+    string $noPromptText = getMayaUsdString("kSaveOptionNoPrompt");
+    string $noPromptAnn  = getMayaUsdString("kSaveOptionNoPromptAnn");
+    string $prompt = `checkBox -label $noPromptText
+                        -ann $noPromptAnn
+                        -value (!$promptOption)
+                        USDSaveOptionsPromptCheckBox`;
+
+    string $saveText = getMayaUsdString("kButtonSave");
+    string $cancelText = getMayaUsdString("kButtonCancel");
+    string $bSave   = `button -l $saveText -c ("saveOptionsAndCloseUSDSaveOptionDialog(\"" + $form + "\")")`;
+    string $bCancel = `button -l $cancelText -c "layoutDialog -dismiss \"Cancel\""`;
+
+    int $spacer = 10;
+    int $edge   = 20;
+
+    formLayout -edit
+        -attachForm            $tUnsaved "top"    $edge
+        -attachForm            $tUnsaved "left"   $edge
+        -attachNone            $tUnsaved "bottom"
+        -attachNone            $tUnsaved "right"
+
+        -attachControl         $options  "top"    $spacer $tUnsaved
+        -attachForm            $options  "left"   $edge
+        -attachNone            $options  "bottom"
+        -attachNone            $options  "right"
+
+        -attachNone            $prompt   "top"
+        -attachForm            $prompt   "left"   $edge
+        -attachForm            $prompt   "bottom" $edge
+        -attachNone            $prompt   "right"
+
+        -attachNone            $bCancel  "top"
+        -attachNone            $bCancel  "left"
+        -attachForm            $bCancel  "bottom" $edge
+        -attachForm            $bCancel  "right"  $edge
+
+        -attachNone            $bSave    "top"
+        -attachNone            $bSave    "left"
+        -attachForm            $bSave    "bottom"  $edge
+        -attachControl         $bSave    "right"   $spacer $bCancel
+    $form;
+}
+
+global proc USDSaveOptionsRadioButtonCB(int $standaloneDialog, int $opt)
+{
+    // Update the image with selected save option.
+    if (`image -exists usdSaveOptionImage`) {
+        image -e -image ("saveOption" + $opt + ".png") usdSaveOptionImage;
+    }
+
+    // Add or remove the warning text.
+    if ($opt == 2) {
+        text -edit -label `getMayaUsdString("kSaveOption2GBWarning")` USDSaveOptions2GBWarning;
+    } else {
+        text -edit -label "" USDSaveOptions2GBWarning;
+    }
+
+    // When we came from the non-standalone dialog, we immediately save the optionVar.
+    // Note: we have no choice but to do that now since we aren't notified from
+    //       the File|Save Options.
+    if (! $standaloneDialog) {
+        optionVar -intValue mayaUsd_SerializedUsdEditsLocation $opt;
+    }
+}
+
+global proc int usdFileSaveOptions(int $standaloneDialog)
+//
+// Description:
+//      Called to display the Usd File Save Options.
+//
+// Input Arguments:
+//      $standaloneDialog - When true, the options are displayed in a standalone dialog.
+//                          When false, then options are displayed within another dialog
+//                          (such as the File|Save Options).
+//
+{
+    // Make sure our optionvars are created.
+    setOptionVars(false);
+
+    if ($standaloneDialog)
+    {
+        int $prompt = `optionVar -q mayaUsd_SerializedUsdEditsLocationPrompt`;
+        if ($prompt)
+        {
+            string $dlgTitle = getMayaUsdString("kSaveOptionTitle");
+            string $dlgReturn = `layoutDialog -ui "showUSDSaveOptionsDialogUI" -title $dlgTitle`;
+            return ("Save" == $dlgReturn);
+        }
+
+        return true;
+    }
+    else
+    {
+            usdFileSaveOptions_AddRadioButtons($standaloneDialog);
+
+            int $promptOption = `optionVar -q mayaUsd_SerializedUsdEditsLocationPrompt`;
+
+            checkBox
+                -label `getMayaUsdString("kSaveOptionAsk")`
+                -value $promptOption
+                -ann `getMayaUsdString("kSaveOptionAskAnn")`
+                -changeCommand "optionVar -intValue mayaUsd_SerializedUsdEditsLocationPrompt #1"
+                USDSaveOptionsAskCheckBox;
+    }
+}

@@ -9,10 +9,12 @@ list(APPEND scripts_src
     mayaUsd_createStageWithNewLayer.py
     mayaUsd_createStageFromAsset.mel
     mayaUsd_layerEditorFileDialogs.mel
+    mayaUsd_fileOptions.mel
     mayaUsd_pluginUICreation.mel
     mayaUsd_pluginUIDeletion.mel
     mayaUsd_pluginBatchLoad.mel
     mayaUsd_pluginBatchUnload.mel
+    usdFileSaveOptions.mel
 )
 
 install(FILES ${scripts_src}

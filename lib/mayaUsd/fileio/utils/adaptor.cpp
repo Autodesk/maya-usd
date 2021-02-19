@@ -230,8 +230,6 @@ UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::GetSchemaByName(const TfToken& sch
     }
 #endif
 
-    // We shouldn't be able to reach this (everything is either typed or API).
-    TF_CODING_ERROR("'%s' isn't a known API or typed schema", schemaName.GetText());
     return SchemaAdaptor();
 }
 

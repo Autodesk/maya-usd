@@ -212,31 +212,6 @@ protected:
         SdfPathVector* instanceContext) override;
 #endif
 
-#if USD_VERSION_NUM <= 1911
-
-    HDMAYA_API
-    std::string GetSurfaceShaderSource(const SdfPath& id) override;
-
-    HDMAYA_API
-    std::string GetDisplacementShaderSource(const SdfPath& id) override;
-
-    HDMAYA_API
-    VtValue GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) override;
-
-    HDMAYA_API
-    HdMaterialParamVector GetMaterialParams(const SdfPath& id) override;
-
-    /// \brief Gets the metadata from a material.
-    ///
-    /// For now we are only returning the materialTag for translucency.
-    ///
-    /// \param materialId Path to the material.
-    /// \return Dictionary storing the metadata.
-    HDMAYA_API
-    VtDictionary GetMaterialMetadata(const SdfPath& materialId) override;
-
-#endif // USD_VERSION_NUM <= 1911
-
     HDMAYA_API
     SdfPath GetMaterialId(const SdfPath& id) override;
 

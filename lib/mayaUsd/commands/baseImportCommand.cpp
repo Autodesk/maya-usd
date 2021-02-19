@@ -52,8 +52,6 @@ MSyntax MayaUSDImportCommand::createSyntax()
         UsdMayaJobImportArgsTokens->preferredMaterial.GetText(),
         MSyntax::kString);
     syntax.addFlag(
-        kAssemblyRepFlag, UsdMayaJobImportArgsTokens->assemblyRep.GetText(), MSyntax::kString);
-    syntax.addFlag(
         kImportInstancesFlag,
         UsdMayaJobImportArgsTokens->importInstances.GetText(),
         MSyntax::kString);
@@ -124,7 +122,8 @@ MStatus MayaUSDImportCommand::doIt(const MArgList& args)
         mFileName = UsdMayaUtil::convert(tmpVal);
 
         // Use the usd resolver for validation (but save the unresolved)
-        if (ArGetResolver().Resolve(mFileName).empty()) {
+        if (ArGetResolver().Resolve(mFileName).empty()
+            && !SdfLayer::IsAnonymousLayerIdentifier(mFileName)) {
             TF_RUNTIME_ERROR(
                 "File '%s' does not exist, or could not be resolved. "
                 "Exiting.",

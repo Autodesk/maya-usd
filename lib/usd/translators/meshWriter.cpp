@@ -529,6 +529,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                                              // outputGeometry[x] plug that it's connected to.
             TF_VERIFY(curPlug.isElement());
             idxGeo = curPlug.logicalIndex();
+            break;
         }
 
         if (!upstreamBlendShape.hasFn(MFn::kBlendShape)) {

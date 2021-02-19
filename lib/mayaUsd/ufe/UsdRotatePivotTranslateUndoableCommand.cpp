@@ -115,21 +115,19 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 // Ufe::TranslateUndoableCommand overrides
 //------------------------------------------------------------------------------
 
-#if UFE_PREVIEW_VERSION_NUM >= 2025
-//#ifdef UFE_V2_FEATURES_AVAILABLE
-bool UsdRotatePivotTranslateUndoableCommand::set(double x, double y, double z)
-#else
-bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
-#endif
-{
 #ifdef UFE_V2_FEATURES_AVAILABLE
+bool UsdRotatePivotTranslateUndoableCommand::set(double x, double y, double z)
+{
     rotatePivotTranslateOp(prim(), fPath, x, y, z);
-#else
-    rotatePivotTranslateOp(fPrim, fPath, x, y, z);
-#endif
-
     return true;
 }
+#else
+bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
+{
+    rotatePivotTranslateOp(fPrim, fPath, x, y, z);
+    return true;
+}
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
