@@ -154,7 +154,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         cmds.showWindow(self._testWindow)
 
         self._m3dView = OMUI.M3dView.getM3dViewFromModelPanel(testModelPanel)
-        viewWidget = wrapInstance(long(self._m3dView.widget()), QWidget)
+        viewWidget = wrapInstance(int(self._m3dView.widget()), QWidget)
 
         return viewWidget
 
