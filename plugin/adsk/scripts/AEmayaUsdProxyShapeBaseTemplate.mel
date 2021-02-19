@@ -109,7 +109,8 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
                 "drawProxyPurpose"
                 "drawRenderPurpose";
             //editorTemplate -addControl "primPath";
-            editorTemplate -addControl "excludePrimPaths";
+            editorTemplate -ann `getMayaUsdString("kExcludePrimPathsAnn")`
+                           -addControl "excludePrimPaths";
         editorTemplate -endLayout;
 
 
