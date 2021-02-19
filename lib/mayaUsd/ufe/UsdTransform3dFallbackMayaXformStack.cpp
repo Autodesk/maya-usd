@@ -17,6 +17,7 @@
 
 #include <mayaUsd/ufe/RotationUtils.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/XformOpUtils.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
 
@@ -99,34 +100,6 @@ bool MatchingSubstack(const std::vector<UsdGeomXformOp>& ops)
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 namespace {
-
-// Adapted from UsdTransform3dMatrixOp.cpp.
-template <bool INCLUSIVE>
-GfMatrix4d computeLocalTransform(
-    const std::vector<UsdGeomXformOp>&          ops,
-    std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time)
-{
-    // If we want the op to be included, increment the end op iterator.
-    if (INCLUSIVE) {
-        TF_AXIOM(endOp != ops.end());
-        ++endOp;
-    }
-
-    // GetLocalTransformation() interface does not allow passing a begin and
-    // end iterator, so copy into an argument vector.
-    std::vector<UsdGeomXformOp> argOps(std::distance(ops.begin(), endOp));
-    argOps.assign(ops.begin(), endOp);
-
-    GfMatrix4d m(1);
-    if (!UsdGeomXformable::GetLocalTransformation(&m, argOps, time)) {
-        TF_FATAL_ERROR("Local transformation computation failed.");
-    }
-
-    return m;
-}
-
-auto computeLocalExclusiveTransform = computeLocalTransform<false>;
 
 std::vector<UsdGeomXformOp>::const_iterator
 findFirstFallbackOp(const std::vector<UsdGeomXformOp>& ops)

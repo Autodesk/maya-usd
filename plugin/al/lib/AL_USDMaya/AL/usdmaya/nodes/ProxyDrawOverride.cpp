@@ -32,6 +32,8 @@
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
+#include <pxr/imaging/hdx/pickTask.h>
+
 #include <maya/M3dView.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFnDagNode.h>
@@ -468,19 +470,6 @@ ProxyShape* ProxyDrawOverride::getShape(const MDagPath& objPath)
     return static_cast<ProxyShape*>(dnNode.userNode());
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-class ProxyDrawOverrideSelectionHelper
-{
-public:
-    static SdfPath path_ting(const SdfPath& a, const SdfPath& b, const int c)
-    {
-        m_paths.push_back(a);
-        return a;
-    }
-    static SdfPathVector m_paths;
-};
-SdfPathVector ProxyDrawOverrideSelectionHelper::m_paths;
-
 #if MAYA_API_VERSION >= 20180600
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyDrawOverride::userSelect(
@@ -567,14 +556,17 @@ bool ProxyDrawOverride::userSelect(
         resolution = 1024;
     }
 
+    TfToken resolveMode = selectInfo.singleSelection() ? HdxPickTokens->resolveNearestToCamera
+                                                       : HdxPickTokens->resolveUnique;
+
     bool hitSelected = engine->TestIntersectionBatch(
         GfMatrix4d(worldViewMatrix.matrix),
         GfMatrix4d(projectionMatrix.matrix),
         worldToLocalSpace,
         rootPath,
         params,
+        resolveMode,
         resolution,
-        ProxyDrawOverrideSelectionHelper::path_ting,
         &hitBatch);
 
     auto selected = false;
@@ -592,7 +584,7 @@ bool ProxyDrawOverride::userSelect(
                 MFnDagNode dagNode(obj);
                 MDagPath   dg;
                 dagNode.getPath(dg);
-                const double* p = it.second.worldSpaceHitPoint.GetArray();
+                const double* p = it.second.GetArray();
 
                 selectionList.add(dg);
                 worldSpaceHitPts.append(MPoint(p[0], p[1], p[2]));
@@ -632,9 +624,8 @@ bool ProxyDrawOverride::userSelect(
             }
 
             for (const auto& it : hitBatch) {
-                auto path = it.first;
                 command += " -pp \"";
-                command += path.GetText();
+                command += it.first.GetText();
                 command += "\"";
             }
 
@@ -653,44 +644,8 @@ bool ProxyDrawOverride::userSelect(
         SdfPathVector paths;
         if (!hitBatch.empty()) {
             paths.reserve(hitBatch.size());
-
-            auto addHit
-                = [&paths](Engine::HitBatch::const_reference& it) { paths.push_back(it.first); };
-
-            // Due to the inaccuracies in the selection method in gl engine
-            // we still need to find the closest selection.
-            // Around the edges it often selects two or more prims.
-            if (selectInfo.singleSelection()) {
-                auto closestHit = hitBatch.cbegin();
-
-                if (hitBatch.size() > 1) {
-                    MDagPath cameraPath;
-                    M3dView::active3dView().getCamera(cameraPath);
-                    const auto cameraPoint
-                        = cameraPath.inclusiveMatrix() * MPoint(0.0, 0.0, 0.0, 1.0);
-                    auto distanceToCameraSq
-                        = [&cameraPoint](Engine::HitBatch::const_reference& it) -> double {
-                        const auto dx = cameraPoint.x - it.second.worldSpaceHitPoint[0];
-                        const auto dy = cameraPoint.y - it.second.worldSpaceHitPoint[1];
-                        const auto dz = cameraPoint.z - it.second.worldSpaceHitPoint[2];
-                        return dx * dx + dy * dy + dz * dz;
-                    };
-
-                    auto closestDistance = distanceToCameraSq(*closestHit);
-                    for (auto it = ++hitBatch.cbegin(), itEnd = hitBatch.cend(); it != itEnd;
-                         ++it) {
-                        const auto currentDistance = distanceToCameraSq(*it);
-                        if (currentDistance < closestDistance) {
-                            closestDistance = currentDistance;
-                            closestHit = it;
-                        }
-                    }
-                }
-                addHit(*closestHit);
-            } else {
-                for (const auto& it : hitBatch) {
-                    addHit(it);
-                }
+            for (const auto& it : hitBatch) {
+                paths.push_back(it.first);
             }
         }
 
@@ -863,8 +818,6 @@ bool ProxyDrawOverride::userSelect(
         } // else MAYA_WANT_UFE_SELECTION
 #endif
     }
-
-    ProxyDrawOverrideSelectionHelper::m_paths.clear();
 
     // We are done executing commands that needed to handle our current
     // proxy as a special case.  Unset the ignore state on the proxy.

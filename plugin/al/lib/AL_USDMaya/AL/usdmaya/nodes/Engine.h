@@ -15,6 +15,7 @@
 //
 #pragma once
 
+#include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usdImaging/usdImagingGL/engine.h>
 #include <pxr/usdImaging/usdImagingGL/renderParams.h>
 
@@ -29,12 +30,7 @@ class Engine : public UsdImagingGLEngine
 public:
     Engine(const SdfPath& rootPath, const SdfPathVector& excludedPaths);
 
-    struct HitInfo
-    {
-        GfVec3d worldSpaceHitPoint;
-        int     hitInstanceIndex;
-    };
-    typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
+    typedef TfHashMap<SdfPath, GfVec3d, SdfPath::Hash> HitBatch;
 
     typedef std::function<SdfPath(const SdfPath&, const SdfPath&, const int)>
         PathTranslatorCallback;
@@ -45,8 +41,8 @@ public:
         const GfMatrix4d&        worldToLocalSpace,
         const SdfPathVector&     paths,
         UsdImagingGLRenderParams params,
+        const TfToken&           resolveMode,
         unsigned int             pickResolution,
-        PathTranslatorCallback   pathTranslator,
         HitBatch*                outHit);
 };
 
