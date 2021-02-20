@@ -52,7 +52,7 @@ class TestUsdImportChaser(unittest.TestCase):
         mayastandalone.uninitialize()
 
     def testImportChaser(self):
-        cmds.loadPlugin('usdTestMayaPlugin')  # NOTE: (yliangsiew) We load this plugin since the chaser is compiled as part of it.
+        cmds.loadPlugin('usdTestInfoImportChaser')  # NOTE: (yliangsiew) We load this plugin since the chaser is compiled as part of it.
         rootPaths = cmds.mayaUSDImport(v=True, f=self.stagePath, chaser=['info'])
         self.assertEqual(len(rootPaths), 1)
         sl = om.MSelectionList()

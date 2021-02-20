@@ -20,11 +20,10 @@ add_library(${TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
         mayaShaderTranslation.cpp
-        infoImportChaser.cpp
 )
 
 mayaUsd_compile_config(${TARGET_NAME})
@@ -53,7 +52,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfoMaya.json"
 # -----------------------------------------------------------------------------
 # run-time search paths
 # -----------------------------------------------------------------------------
-if(IS_MACOSX OR IS_LINUX) 
+if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "plugin")
     if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
@@ -77,16 +76,15 @@ add_library(${TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
         mayaShaderTranslation.cpp
-        infoImportChaser.cpp
 )
 
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
-target_compile_definitions(${TARGET_NAME} 
+target_compile_definitions(${TARGET_NAME}
     PRIVATE
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
@@ -112,7 +110,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfoUsd.json"
 # -----------------------------------------------------------------------------
 # run-time search paths
 # -----------------------------------------------------------------------------
-if(IS_MACOSX OR IS_LINUX) 
+if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "plugin")
     if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
@@ -129,12 +127,53 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
+
+set(TARGET_NAME usdTestInfoImportChaser)
+add_library(${TARGET_NAME} SHARED)
+
 # -----------------------------------------------------------------------------
-# Plug Plug-in files
+# sources
 # -----------------------------------------------------------------------------
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/mayaUsdPlugInfo.json"
-               "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/mayaUsdPlugInfo.json"
+target_sources(${TARGET_NAME}
+    PRIVATE
+        plugin.cpp
+        infoImportChaser.cpp
 )
+mayaUsd_compile_config(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${TARGET_NAME}
+    PRIVATE
+        mayaUsd
+)
+
+# -----------------------------------------------------------------------------
+# properties
+# -----------------------------------------------------------------------------
+maya_set_plugin_properties(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# run-time search paths
+# -----------------------------------------------------------------------------
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "plugin")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+    endif()
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${TARGET_NAME})
+endif()
+
 
 # -----------------------------------------------------------------------------
 # Plug Plug-ins
