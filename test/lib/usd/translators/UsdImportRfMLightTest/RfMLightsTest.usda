@@ -94,12 +94,12 @@ def Xform "RfMLightsTest" (
             float inputs:intensity = 1.2
             bool inputs:normalize = 1
             float inputs:specular = 1.2
-            float shaping:cone:angle = 92
-            float shaping:cone:softness = 0.2
-            float shaping:focus = 0.2
-            color3f shaping:focusTint = (0.2, 0.2, 0.2)
-            float shaping:ies:angleScale = 1.2
-            asset shaping:ies:file = @./DiskLight_profile.ies@
+            float inputs:shaping:cone:angle = 92
+            float inputs:shaping:cone:softness = 0.2
+            float inputs:shaping:focus = 0.2
+            color3f inputs:shaping:focusTint = (0.2, 0.2, 0.2)
+            float inputs:shaping:ies:angleScale = 1.2
+            asset inputs:shaping:ies:file = @./DiskLight_profile.ies@
             double3 xformOp:translate.timeSamples = {
                 1: (2, 1, 2),
                 2: (2, 2, 2),
@@ -172,11 +172,11 @@ def Xform "RfMLightsTest" (
             bool inputs:normalize = 1
             float inputs:specular = 1.6
             asset inputs:texture:file = @./RectLight_texture.tex@
-            color3f shadow:color = (0.6, 0.6, 0.6)
-            float shadow:distance = -0.6
-            bool shadow:enable = 1
-            float shadow:falloff = -0.6
-            float shadow:falloffGamma = 0.6
+            color3f inputs:shadow:color = (0.6, 0.6, 0.6)
+            float inputs:shadow:distance = -0.6
+            bool inputs:shadow:enable = 1
+            float inputs:shadow:falloff = -0.6
+            float inputs:shadow:falloffGamma = 0.6
             double3 xformOp:translate = (6, 6, 6)
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }
