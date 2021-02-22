@@ -47,9 +47,10 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include <regex>
+#include <system_error>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -288,11 +289,10 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     const std::string fileName = _GetExportArgs().GetResolvedFileName();
     TfToken           fileExt(TfGetExtension(fileName));
     if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-        boost::filesystem::path usdDir(fileName);
+        ghc::filesystem::path usdDir(fileName);
         usdDir = usdDir.parent_path();
-        boost::system::error_code ec;
-        boost::filesystem::path   relativePath
-            = boost::filesystem::relative(fileTextureName, usdDir, ec);
+        std::error_code       ec;
+        ghc::filesystem::path relativePath = ghc::filesystem::relative(fileTextureName, usdDir, ec);
         if (!ec && !relativePath.empty()) {
             fileTextureName = relativePath.generic_string();
         }

@@ -25,19 +25,7 @@
 
 #include <map>
 #include <set>
-
-// On Windows, against certain versions of Maya and with strict compiler
-// settings on, we are getting warning-as-error problems with a couple
-// boost includes.  Disabling those warnings for the specific includes
-// for now instead of disabling the strict settings at a higher level.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4002)
-#endif
-#include <boost/thread.hpp>
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+#include <shared_mutex>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -383,7 +371,7 @@ private:
     // it COULDN'T be. (I haven't really looked into the way maya's new multi-threaded node
     // evaluation works, for instance.) This is essentially a globally shared resource, so I figured
     // better be safe...
-    boost::shared_mutex m_layersMutex;
+    std::shared_timed_mutex m_layersMutex;
 
     //--------------------------------------------------------------------------------------------------------------------
     /// MPxNode overrides

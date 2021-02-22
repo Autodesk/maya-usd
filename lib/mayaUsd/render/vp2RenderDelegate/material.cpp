@@ -42,7 +42,7 @@
 #include <maya/MUintArray.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include <iostream>
 #include <string>
@@ -677,7 +677,7 @@ void HdVP2Material::Sync(
                               << _GenerateXMLString(dispNet) << "\n";
 
                     if (_surfaceShader) {
-                        auto tmpDir = boost::filesystem::temp_directory_path();
+                        auto tmpDir = ghc::filesystem::temp_directory_path();
                         tmpDir /= "HdVP2Material_";
                         tmpDir += id.GetName();
                         tmpDir += ".txt";
