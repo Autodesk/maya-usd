@@ -16,7 +16,7 @@
 
 // GL loading library needs to be included before any other OpenGL headers.
 #include <pxr/pxr.h>
-#if USD_VERSION_NUM < 2102
+#if PXR_VERSION < 2102
 #include <pxr/imaging/glf/glew.h>
 #else
 #include <pxr/imaging/garch/glApi.h>

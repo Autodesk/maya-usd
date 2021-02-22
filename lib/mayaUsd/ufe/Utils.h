@@ -18,6 +18,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
@@ -58,6 +59,10 @@ UsdStageWeakPtr getStage(const Ufe::Path& path);
 //! Return the ProxyShape node UFE path for the argument stage.
 MAYAUSD_CORE_PUBLIC
 Ufe::Path stagePath(UsdStageWeakPtr stage);
+
+//! Return all the USD stages.
+MAYAUSD_CORE_PUBLIC
+TfHashSet<UsdStageWeakPtr, TfHash> getAllStages();
 
 //! Get the UFE path segment corresponding to the argument USD path.
 //! If an instanceIndex is provided, the path segment for a point instance with
@@ -114,6 +119,12 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 //! along the path can transform Maya's time (e.g. with scale and offset).
 MAYAUSD_CORE_PUBLIC
 UsdTimeCode getTime(const Ufe::Path& path);
+
+//! Return the non-default purposes of the gateway node (i.e. proxy shape)
+//! along the argument path.  Only those purposes that are true are returned.
+//! The default purpose is not returned, and is considered implicit.
+MAYAUSD_CORE_PUBLIC
+TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
 
 //! Send notification for data model changes
 template <class T>

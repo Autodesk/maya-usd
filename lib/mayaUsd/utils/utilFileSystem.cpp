@@ -16,14 +16,39 @@
 #include "utilFileSystem.h"
 
 #include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/ar/resolver.h>
 
 #include <maya/MFileIO.h>
 #include <maya/MFnReference.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
+
+#include <random>
+#include <system_error>
+
+namespace {
+std::string generateUniqueName()
+{
+    const auto  len { 6 };
+    std::string uniqueName;
+    uniqueName.reserve(len);
+
+    const std::string alphaNum { "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" };
+
+    std::random_device              rd;
+    std::mt19937                    gen(rd());
+    std::uniform_int_distribution<> dis(0, alphaNum.size() - 1);
+
+    for (auto i = 0; i < len; ++i) {
+        uniqueName += (alphaNum[dis(gen)]);
+    }
+    return uniqueName;
+}
+} // namespace
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -35,7 +60,7 @@ std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
 
 std::string UsdMayaUtilFileSystem::getDir(const std::string& fullFilePath)
 {
-    return boost::filesystem::path(fullFilePath).parent_path().string();
+    return ghc::filesystem::path(fullFilePath).parent_path().string();
 }
 
 std::string UsdMayaUtilFileSystem::getMayaReferencedFileDir(const MObject& proxyShapeNode)
@@ -89,6 +114,30 @@ std::string UsdMayaUtilFileSystem::getMayaSceneFileDir()
     return std::string();
 }
 
+const char* getScenesFolderScript = R"(
+global proc string UsdMayaUtilFileSystem_GetScenesFolder()
+{
+    string $workspaceLocation = `workspace -q -fn`;
+    string $scenesFolder = `workspace -q -fileRuleEntry "scene"`;
+    $sceneFolder = $workspaceLocation + "/" + $scenesFolder;
+
+    return $sceneFolder;
+}
+UsdMayaUtilFileSystem_GetScenesFolder;
+)";
+
+std::string UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir()
+{
+    MString scenesFolder;
+    MGlobal::executeCommand(
+        getScenesFolderScript,
+        scenesFolder,
+        /*display*/ false,
+        /*undo*/ false);
+
+    return UsdMayaUtil::convert(scenesFolder);
+}
+
 std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     const MObject&     proxyShape,
     const std::string& relativeFilePath)
@@ -104,12 +153,27 @@ std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     if (currentFileDir.empty())
         return relativeFilePath;
 
-    boost::system::error_code errorCode;
-    auto path = boost::filesystem::canonical(relativeFilePath, currentFileDir, errorCode);
+    std::error_code errorCode;
+    auto            path = ghc::filesystem::canonical(
+        ghc::filesystem::path(currentFileDir).append(relativeFilePath), errorCode);
+
     if (errorCode) {
         // file does not exist
         return std::string();
     }
 
     return path.string();
+}
+
+std::string UsdMayaUtilFileSystem::getUniqueFileName(
+    const std::string& dir,
+    const std::string& basename,
+    const std::string& ext)
+{
+    const std::string fileNameModel = basename + '-' + generateUniqueName() + '.' + ext;
+
+    ghc::filesystem::path pathModel(dir);
+    pathModel.append(fileNameModel);
+
+    return pathModel.generic_string();
 }

@@ -49,17 +49,19 @@ const QPixmap& TreeItem::checkImage() const
     if (fsCheckBoxOn == nullptr) {
         const TreeModel* treeModel = qobject_cast<const TreeModel*>(model());
         if (treeModel != nullptr) {
-            fsCheckBoxOn = treeModel->mayaQtUtil().createPixmap("checkboxOn.png");
-            fsCheckBoxOnDisabled = treeModel->mayaQtUtil().createPixmap("checkboxOnDisabled.png");
-            fsCheckBoxOff = treeModel->mayaQtUtil().createPixmap("checkboxOff.png");
-            fsCheckBoxOffDisabled = treeModel->mayaQtUtil().createPixmap("checkboxOffDisabled.png");
+            fsCheckBoxOn = treeModel->mayaQtUtil().createPixmap(":/ImportDialog/checkboxOn.png");
+            fsCheckBoxOnDisabled
+                = treeModel->mayaQtUtil().createPixmap(":/ImportDialog/checkboxOnDisabled.png");
+            fsCheckBoxOff = treeModel->mayaQtUtil().createPixmap(":/ImportDialog/checkboxOff.png");
+            fsCheckBoxOffDisabled
+                = treeModel->mayaQtUtil().createPixmap(":/ImportDialog/checkboxOffDisabled.png");
         } else {
             // The tree model should never be null, but we can recover here if it is.
             TF_RUNTIME_ERROR("Unexpected null tree model");
-            fsCheckBoxOn = new QPixmap(":/checkboxOn.png");
-            fsCheckBoxOnDisabled = new QPixmap(":/checkboxOnDisabled.png");
-            fsCheckBoxOff = new QPixmap(":/checkboxOff.png");
-            fsCheckBoxOffDisabled = new QPixmap(":/checkboxOffDisabled.png");
+            fsCheckBoxOn = new QPixmap(":/ImportDialog/checkboxOn.png");
+            fsCheckBoxOnDisabled = new QPixmap(":/ImportDialog/checkboxOnDisabled.png");
+            fsCheckBoxOff = new QPixmap(":/ImportDialog/checkboxOff.png");
+            fsCheckBoxOffDisabled = new QPixmap(":/ImportDialog/checkboxOffDisabled.png");
         }
     }
 

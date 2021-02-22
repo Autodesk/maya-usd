@@ -26,6 +26,7 @@
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/usd/common.h>
@@ -354,7 +355,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
     std::vector<std::pair<const char* const, const char* const>> itemLabelPairs;
 
     const bool isInPrototype =
-#if USD_VERSION_NUM >= 2011
+#if PXR_VERSION >= 2011
         prim.IsInPrototype();
 #else
         prim.IsInMaster();

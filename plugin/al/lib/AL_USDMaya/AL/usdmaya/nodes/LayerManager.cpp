@@ -31,9 +31,6 @@
 #include <maya/MItDependencyNodes.h>
 #include <maya/MPlugArray.h>
 
-#include <boost/thread.hpp>
-#include <boost/thread/shared_lock_guard.hpp>
-
 #include <mutex>
 
 namespace {
@@ -354,7 +351,7 @@ bool LayerManager::addLayer(SdfLayerHandle layer, const std::string& identifier)
         MGlobal::displayError("LayerManager::addLayer - given layer is no longer valid");
         return false;
     }
-    boost::unique_lock<boost::shared_mutex> lock(m_layersMutex);
+    std::unique_lock<std::shared_timed_mutex> lock(m_layersMutex);
     return m_layerDatabase.addLayer(layerRef, identifier);
 }
 
@@ -366,14 +363,14 @@ bool LayerManager::removeLayer(SdfLayerHandle layer)
         MGlobal::displayError("LayerManager::removeLayer - given layer is no longer valid");
         return false;
     }
-    boost::unique_lock<boost::shared_mutex> lock(m_layersMutex);
+    std::unique_lock<std::shared_timed_mutex> lock(m_layersMutex);
     return m_layerDatabase.removeLayer(layerRef);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SdfLayerHandle LayerManager::findLayer(std::string identifier)
 {
-    boost::shared_lock_guard<boost::shared_mutex> lock(m_layersMutex);
+    std::shared_lock<std::shared_timed_mutex> lock(m_layersMutex);
     return m_layerDatabase.findLayer(identifier);
 }
 
@@ -404,7 +401,7 @@ MStatus LayerManager::populateSerialisationAttributes()
     MArrayDataHandle layersArrayHandle = dataBlock.outputArrayValue(m_layers, &status);
     AL_MAYA_CHECK_ERROR(status, errorString);
     {
-        boost::shared_lock_guard<boost::shared_mutex> lock(m_layersMutex);
+        std::shared_lock<std::shared_timed_mutex> lock(m_layersMutex);
         MArrayDataBuilder builder(&dataBlock, layers(), m_layerDatabase.max_size(), &status);
         AL_MAYA_CHECK_ERROR(status, errorString);
         std::string temp;

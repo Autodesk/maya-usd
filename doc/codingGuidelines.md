@@ -213,7 +213,7 @@ Headers should be included in the following order, with each section separated b
 	* `WANT_UFE_BUILD` equals 1 if UFE is found and it should be used for conditional compilation on codes depending on UFE.
 
 **USD**
-	* `USD_VERSION_NUM` is the macro to test USD version (`USD_MAJOR_VERSION` * 10000 + `USD_MINOR_VERSION` * 100 + `USD_PATCH_VERSION`)
+	* `PXR_VERSION` is the macro to test USD version (`PXR_MAJOR_VERSION` * 10000 + `PXR_MINOR_VERSION` * 100 + `PXR_PATCH_VERSION`)
 
 Respect the minimum supported version for Maya and USD stated in [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) .
 
@@ -222,9 +222,12 @@ Recent extensions to the C++ standard introduce many features previously only fo
 Our library currently has the following boost dependencies:
 * `boost::python`
 * `boost::hash_combine` (see  [this proposal](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0814r0.pdf) )
-* `boost::filesystem` (preferable to replace with Pixar USD arch/fileSystem)
-* `boost::system`
 * `boost::make_shared` (preferable to replace with `std::shared_ptr`)
+
+***Update:***
+* `boost::filesystem` and `boost::system` are removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the project.
+
+* Dependency on `boost::thread` is removed from Animal Logic plugin.
 
 ## Modern C++
 Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) following modern C++ practices. We’ll follow the [C++ Core Guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and pay attention to:

@@ -37,6 +37,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/trace/trace.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
@@ -86,7 +87,7 @@
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include <map>
 #include <string>
@@ -94,6 +95,8 @@
 #include <vector>
 
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/nodes/layerManager.h>
+
 #include <ufe/path.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/pathString.h>
@@ -135,6 +138,8 @@ MObject MayaUsdProxyShapeBase::stageCacheIdAttr;
 MObject MayaUsdProxyShapeBase::drawRenderPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawProxyPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
+MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
+MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 // Output attributes
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
@@ -353,6 +358,22 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    sessionLayerNameAttr = typedAttrFn.create(
+        "outStageSessionLayerId", "oslid", MFnData::kString, MObject::kNullObj, &retValue);
+    typedAttrFn.setInternal(true);
+    typedAttrFn.setHidden(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(sessionLayerNameAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    rootLayerNameAttr = typedAttrFn.create(
+        "outStageRootLayerId", "orlid", MFnData::kString, MObject::kNullObj, &retValue);
+    typedAttrFn.setInternal(true);
+    typedAttrFn.setHidden(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(rootLayerNameAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     //
     // add attribute dependencies
     //
@@ -485,8 +506,40 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     return MS::kUnknownParameter;
 }
 
+#if defined(WANT_UFE_BUILD)
+/* virtual */
+SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock& dataBlock, const std::string&)
+{
+    if (LayerManager::supportedNodeType(MPxNode::typeId())) {
+        auto rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
+        return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName));
+    } else {
+        return nullptr;
+    }
+}
+
+/* virtual */
+SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock& dataBlock)
+{
+    if (LayerManager::supportedNodeType(MPxNode::typeId())) {
+        auto sessionLayerName = dataBlock.inputValue(sessionLayerNameAttr).asString();
+        return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName));
+    } else {
+        return nullptr;
+    }
+}
+
+#else
+/* virtual */
+SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock&, const std::string&)
+{
+    return nullptr;
+}
+
 /* virtual */
 SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock&) { return nullptr; }
+
+#endif
 
 MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 {
@@ -572,7 +625,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     "ProxyShapeBase::reloadStage original USD file path is %s\n",
                     fileString.c_str());
 
-            boost::filesystem::path filestringPath(fileString);
+            ghc::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
                 fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
                 TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
@@ -613,11 +666,15 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 UsdStageCacheContext ctx(
                     UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
 
-                if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+                SdfLayerRefPtr rootLayer = computeRootLayer(dataBlock, fileString);
+                if (nullptr == rootLayer)
+                    rootLayer = SdfLayer::FindOrOpen(fileString);
+
+                if (rootLayer) {
+                    SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+
                     static const MString kSessionLayerOptionVarName(
                         MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen.GetText());
-
-                    SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
 
                     bool targetSession
                         = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
@@ -1385,7 +1442,7 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
         }
 
         // If the attribute is not part of the primitive schema, it does not affect extents
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         auto attrDefn
             = changedPrim.GetPrimDefinition().GetSchemaAttributeSpec(changedPropertyToken);
 #else

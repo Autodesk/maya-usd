@@ -71,7 +71,7 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         # Get the viewport widget.
         self._view = OMUI.M3dView()
         OMUI.M3dView.getM3dViewFromModelPanel(self._panel, self._view)
-        self._viewWidget = wrapInstance(long(self._view.widget()), QWidget)
+        self._viewWidget = wrapInstance(int(self._view.widget()), QWidget)
 
     def tearDown(self):
         self._viewWidget = None

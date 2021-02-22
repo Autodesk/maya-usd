@@ -42,7 +42,6 @@ public:
     // The list of short forms of flags defined as Arg Tokens:
     static constexpr auto kShadingModeFlag = "shd";
     static constexpr auto kPreferredMaterialFlag = "prm";
-    static constexpr auto kAssemblyRepFlag = "ar";
     static constexpr auto kImportInstancesFlag = "ii";
     static constexpr auto kMetadataFlag = "md";
     static constexpr auto kApiSchemaFlag = "api";

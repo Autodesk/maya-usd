@@ -26,3 +26,4 @@ Animal Logic forum is [here](https://groups.google.com/forum/#!forum/al_usdmaya-
 + [Coding guidelines](doc/codingGuidelines.md)
 + [License](doc/LICENSE.md)
 + [MayaToHydra](doc/MayaToHydra.md)
++ [Common Plug-in Base Commands](lib/mayaUsd/commands/Readme.md)

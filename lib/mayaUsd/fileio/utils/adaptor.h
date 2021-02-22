@@ -220,7 +220,7 @@ public:
     class SchemaAdaptor
     {
         MObjectHandle _handle;
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         const UsdPrimDefinition* _schemaDef;
 #else
         SdfPrimSpecHandle _schemaDef;
@@ -231,7 +231,7 @@ public:
         MAYAUSD_CORE_PUBLIC
         SchemaAdaptor();
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         MAYAUSD_CORE_PUBLIC
         SchemaAdaptor(
             const MObjectHandle&     object,
@@ -316,7 +316,7 @@ public:
         MAYAUSD_CORE_PUBLIC
         TfTokenVector GetAttributeNames() const;
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         /// Gets the prim definition for this schema from the schema registry.
         /// Returns a null pointer if this schema adaptor is invalid.
         MAYAUSD_CORE_PUBLIC

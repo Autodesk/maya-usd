@@ -50,7 +50,18 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* resolve to individual point instances, or to   */ \
     /* "Prototypes" which will resolve to the prim    */ \
     /* that is being instanced by the point instance. */ \
-    ((PointInstancesPickMode, "mayaUsd_PointInstancesPickMode"))
+    ((PointInstancesPickMode, "mayaUsd_PointInstancesPickMode")) \
+    /* When saving as .usd, should the internal format be binary    */ \
+    ((SaveLayerFormatArgBinaryOption, "mayaUsd_SaveLayerFormatArgBinaryOption")) \
+    /* Option for what to do with Usd edits when the current        */ \
+    /* Maya scene is about to be saved.  optionVar values are:      */ \
+    /*    1: save all edits back to usd files.                      */ \
+    /*    2: export the dirty usd layers to Maya string attributes  */ \
+    /*       to be serialized to the Maya file.                     */ \
+    /*    3: ignore all Usd edits.                                  */ \
+    ((SerializedUsdEditsLocation, "mayaUsd_SerializedUsdEditsLocation")) \
+    /* optionVar to force a prompt on every save                    */ \
+    ((SerializedUsdEditsLocationPrompt, "mayaUsd_SerializedUsdEditsLocationPrompt"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);

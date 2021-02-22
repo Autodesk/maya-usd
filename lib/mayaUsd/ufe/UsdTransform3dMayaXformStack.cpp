@@ -670,6 +670,15 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
         return nullptr;
     }
 
+    auto stage = usdItem->prim().GetStage();
+    if (stage) {
+        const SdfLayerHandle& editLayer = stage->GetEditTarget().GetLayer();
+        if (editLayer && stage->IsLayerMuted(editLayer->GetIdentifier())) {
+            MGlobal::displayError("Editing a muted layer is not allowed.");
+            return nullptr;
+        }
+    }
+
     return createTransform3d(
         item, [&]() { return _nextHandler->editTransform3d(item UFE_V2(, hint)); });
 }

@@ -5,6 +5,8 @@ global proc mayaUsd_pluginUICreation()
     source "mayaUsdMenu.mel";
     mayaUsdMenu_loadui;
 
+    source "mayaUsd_fileOptions.mel";
+
     int $mjv = `about -majorVersion`;
 
     if (((2021 <= $mjv)) && (!`pluginInfo -q -loaded "ufeSupport"`)) {

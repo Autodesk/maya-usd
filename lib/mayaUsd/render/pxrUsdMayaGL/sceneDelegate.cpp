@@ -80,6 +80,14 @@ public:
         _shadowMatrices = light.GetShadowMatrices();
     }
 
+#if HDX_API_VERSION >= 8
+    std::vector<GfMatrix4d>
+    Compute(const CameraUtilFraming& framing, CameraUtilConformWindowPolicy policy) override
+    {
+        return _shadowMatrices;
+    }
+#endif
+
     std::vector<GfMatrix4d>
     Compute(const GfVec4f& viewport, CameraUtilConformWindowPolicy policy) override
     {
@@ -155,8 +163,6 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         renderIndex->InsertTask<HdxShadowTask>(this, _shadowTaskId);
         _ValueCache&        cache = _valueCacheMap[_shadowTaskId];
         HdxShadowTaskParams taskParams;
-        taskParams.camera = _cameraId;
-        taskParams.viewport = _viewport;
         cache[HdTokens->params] = VtValue(taskParams);
         cache[HdTokens->renderTags] = VtValue(defaultShadowRenderTags);
     }
@@ -235,7 +241,7 @@ void PxrMayaHdSceneDelegate::SetCameraState(
 
     // Provide other keys so that pulling on those in HdCamera::Sync doesn't
     // trigger coding errors.
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     cache[HdCameraTokens->projection] = VtValue();
 #endif
     cache[HdCameraTokens->horizontalAperture] = VtValue();
@@ -249,7 +255,7 @@ void PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdCameraTokens->focusDistance] = VtValue();
     cache[HdCameraTokens->shutterOpen] = VtValue();
     cache[HdCameraTokens->shutterClose] = VtValue();
-#if USD_VERSION_NUM >= 2011
+#if PXR_VERSION >= 2011
     cache[HdCameraTokens->exposure] = VtValue();
 #endif
 
@@ -268,16 +274,6 @@ void PxrMayaHdSceneDelegate::SetCameraState(
 
         GetRenderIndex().GetChangeTracker().MarkTaskDirty(
             _simpleLightTaskId, HdChangeTracker::DirtyParams);
-
-        // Update the shadow task.
-        HdxShadowTaskParams shadowTaskParams
-            = _GetValue<HdxShadowTaskParams>(_shadowTaskId, HdTokens->params);
-
-        shadowTaskParams.viewport = _viewport;
-        _SetValue(_shadowTaskId, HdTokens->params, shadowTaskParams);
-
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-            _shadowTaskId, HdChangeTracker::DirtyParams);
 
         // Update all render setup tasks.
         for (const auto& it : _renderSetupTaskIdMap) {
