@@ -53,6 +53,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoReorderCommand.cpp
             UsdUndoSetKindCommand.cpp
             UsdUndoVisibleCommand.cpp
+            XformOpUtils.cpp
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
         target_sources(${PROJECT_NAME}
@@ -113,6 +114,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoReorderCommand.h
         UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
+        XformOpUtils.h
     )
     # Why no if for UsdUIInfoHandler.h ?
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)

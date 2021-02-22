@@ -37,6 +37,8 @@ target_sources(${PROJECT_NAME}
         mayaLayerEditorWindow.h
         mayaSessionState.cpp
         mayaSessionState.h
+        mayaQtUtils.cpp
+        mayaQtUtils.h
         pathChecker.cpp
         pathChecker.h
         qtUtils.cpp
