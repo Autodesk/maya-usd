@@ -218,7 +218,7 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
     GfMatrix4d ml { 1 };
     if (!UsdGeomXformable::GetLocalTransformation(&ml, mlOps, getTime(item->path()))) {
         TF_FATAL_ERROR(
-            "Local transformation computation for item %s failed.", item->path().string());
+            "Local transformation computation for item %s failed.", item->path().string().c_str());
     }
 
     // The Maya fallback transform stack is the last group of transform ops in

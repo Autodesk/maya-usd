@@ -508,7 +508,7 @@ class ParentCmdTestCase(unittest.TestCase):
         checkParentDone()
 
     @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
-    def testParentAbsoluteMultiMatrixOp(self):
+    def testZParentAbsoluteMultiMatrixOp(self):
         """Test parent -absolute on prim with a transform stack with multiple matrix ops."""
 
         cmds.file(new=True, force=True)
