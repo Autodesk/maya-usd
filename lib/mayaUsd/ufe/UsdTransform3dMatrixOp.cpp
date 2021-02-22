@@ -86,7 +86,7 @@ GfMatrix4d xformInv(
 
     GfMatrix4d m { 1 };
     if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path))) {
-        TF_FATAL_ERROR("Local transformation computation for item %s failed.", path.string());
+        TF_FATAL_ERROR("Local transformation computation for item %s failed.", path.string().c_str());
     }
 
     return m.GetInverse();
