@@ -16,7 +16,8 @@
 #include "UsdSceneItem.h"
 
 #include <pxr/base/tf/type.h>
-#if USD_VERSION_NUM < 2008
+#include <pxr/pxr.h>
+#if PXR_VERSION < 2008
 #include <pxr/usd/usd/schemaBase.h>
 #else
 #include <pxr/usd/usd/primTypeInfo.h>
@@ -51,7 +52,7 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
     std::vector<std::string> strAncestorTypes;
 
-#if USD_VERSION_NUM < 2008
+#if PXR_VERSION < 2008
     static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
     const TfType schemaType = schemaBaseType.FindDerivedByName(fPrim.GetTypeName().GetString());
 #else
@@ -76,7 +77,7 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
     for (const TfType& ty : tfAncestorTypes) {
         // If there is a concrete schema type name, we'll return that since it is what
         // is used/shown in the UI (ex: 'Xform' vs 'UsdGeomXform').
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
         strAncestorTypes.emplace_back(
             schemaReg.IsConcrete(ty) ? schemaReg.GetSchemaTypeName(ty) : ty.GetTypeName());
 #else

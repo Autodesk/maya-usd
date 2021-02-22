@@ -68,7 +68,14 @@ global proc string stageFromFile_UISetup(string $parent) {
     setParent $parent;
     string $layout = `scrollLayout -childResizable true`;
 
-    frameLayout -label `getMayaUsdString("kUsdFileOptions")` -collapsable false;
+    $title = `getMayaUsdString("kUsdFileOptions")`;
+    $frame = `frameLayout -label $title -collapsable false`;
+    checkBoxGrp -l `getMayaUsdString("kLoadPayloads")` 
+        -ann `getMayaUsdString("kLoadPayloadsAnn")`
+        -sbm `getMayaUsdString("kLoadPayloadsSbm")`
+        loadPayloadsCheckBox;
+
+    frameLayout -label `getMayaUsdString("kLabelStageDisplay")` -parent $frame -collapsable false;
     textFieldGrp -l `getMayaUsdString("kPrimPath")` 
         -ann `getMayaUsdString("kPrimPathAnn")`
         -sbm `getMayaUsdString("kPrimPathSbm")`
@@ -77,10 +84,6 @@ global proc string stageFromFile_UISetup(string $parent) {
         -ann `getMayaUsdString("kExcludePrimPathsAnn")`
         -sbm `getMayaUsdString("kExcludePrimPathsSbm")`
         excludePrimPathField;
-    checkBoxGrp -l `getMayaUsdString("kLoadPayloads")` 
-        -ann `getMayaUsdString("kLoadPayloadsAnn")`
-        -sbm `getMayaUsdString("kLoadPayloadsSbm")`
-        loadPayloadsCheckBox;
 
     return $layout;
 }

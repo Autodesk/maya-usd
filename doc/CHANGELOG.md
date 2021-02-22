@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.8.0] - 2021-02-18
+
+**Build:**
+* Fixed UFEv2 test failures with USD 20.02 [#1171](https://github.com/Autodesk/maya-usd/pull/1171)
+* Set MAYA_APP_DIR for each test, pointing to unique folders. [#1163](https://github.com/Autodesk/maya-usd/pull/1163)
+* Disabled OCIOv2 in mtoh tests [#1160](https://github.com/Autodesk/maya-usd/pull/1160)
+* Made tests in test/lib/ufe directly runnable and use fixturesUtils [#1144](https://github.com/Autodesk/maya-usd/pull/1144)
+* Moved minimum core usd version to v20.02 [#1138](https://github.com/Autodesk/maya-usd/pull/1138)
+* Made use of PXR_OVERRIDE_PLUGINPATH_NAME everywhere [#1108](https://github.com/Autodesk/maya-usd/pull/1108)
+* Updates for building with latest post-21.02 dev branch commit of core USD [#1099](https://github.com/Autodesk/maya-usd/pull/1099)
+
+**Translation Framework:**
+* Support empty blendshape targets [#1149](https://github.com/Autodesk/maya-usd/pull/1149)
+* Fixed load all prims in hierarchy view [#1140](https://github.com/Autodesk/maya-usd/pull/1140)
+* Improved support for USD leftHanded mesh [#1139](https://github.com/Autodesk/maya-usd/pull/1139)
+* Fixed export menu after expanding animation option [#1133](https://github.com/Autodesk/maya-usd/pull/1133)
+* Added support for UV mirroring on UsdUVTexture [#1132](https://github.com/Autodesk/maya-usd/pull/1132)
+* Imroved export of skeleton rest-xforms [#1130](https://github.com/Autodesk/maya-usd/pull/1130)
+* Use earliest time when exporting without animation [#1127](https://github.com/Autodesk/maya-usd/pull/1127)
+* Added error message if unrecognized shadingMode on export [#1110](https://github.com/Autodesk/maya-usd/pull/1110)
+* Fixed anonymous layer import [#1086](https://github.com/Autodesk/maya-usd/pull/1086)
+
+**Workflow:**
+* Fixed crash when editing prim on a muted layer [#1172](https://github.com/Autodesk/maya-usd/pull/1172)
+* Added workflows to save in-memory edits [#1152](https://github.com/Autodesk/maya-usd/pull/1152) [#1187](https://github.com/Autodesk/maya-usd/pull/1187)
+* Removed attributes from AE stage view [#1145](https://github.com/Autodesk/maya-usd/pull/1145)
+* Added support for duplicating a proxyShape. [#1142](https://github.com/Autodesk/maya-usd/pull/1142)
+* Adopted data model undo framework for attribute undo [#1134](https://github.com/Autodesk/maya-usd/pull/1134)
+* Prevent saving layers with anonymous sublayers [#1128](https://github.com/Autodesk/maya-usd/pull/1128)
+* Added warning when saving layers on disk [#1121](https://github.com/Autodesk/maya-usd/pull/1121)
+* Fixed crash caused by out of date stage map [#1116](https://github.com/Autodesk/maya-usd/pull/1116)
+* Fixed crash when fallback stack was having unsupported ops added [#1105](https://github.com/Autodesk/maya-usd/pull/1105)
+* Fixed parenting with single matrix xform op stacks [#1102](https://github.com/Autodesk/maya-usd/pull/1102)
+* Author kind=group on the UsdPrim created by the group command when its parent is in the model hierarchy [#1094](https://github.com/Autodesk/maya-usd/pull/1094)
+* Update edit target when layer removal made it no longer part of the stage [#1156](https://github.com/Autodesk/maya-usd/pull/1156)
+* Fixed bounding box cache invalidation when editing USD stage [#1153](https://github.com/Autodesk/maya-usd/pull/1153)
+* Handle selection changes during layer muting and variant switch [#1141](https://github.com/Autodesk/maya-usd/pull/1141)
+* Fixed crash when removing an invalid layer [#1122](https://github.com/Autodesk/maya-usd/pull/1122)
+* Added UFE path handling and utilities to support paths that identify point instances of a PointInstancer [#1027](https://github.com/Autodesk/maya-usd/pull/1027)
+
+**Render:**
+* Fixed crash after re-loading the mtoh plugin [#1159](https://github.com/Autodesk/maya-usd/pull/1159)
+* Added compute extents for modified primitives [#1112](https://github.com/Autodesk/maya-usd/pull/1112)
+* Fixed drawing of stale data when switching representations [#1100](https://github.com/Autodesk/maya-usd/pull/1100)
+* Added hilight dirty state propagation [#1091](https://github.com/Autodesk/maya-usd/pull/1091)
+* Implemented viewport selection highlighting of point instances and point instances pick modes [#1119](https://github.com/Autodesk/maya-usd/pull/1119)  [#1161](https://github.com/Autodesk/maya-usd/pull/1161)
+
+**Documentation:**
+* Added import/export cmd documentation [#1146](https://github.com/Autodesk/maya-usd/pull/1146)
+
 ## [0.7.0] - 2021-01-20
 
 This release changes to highlight:

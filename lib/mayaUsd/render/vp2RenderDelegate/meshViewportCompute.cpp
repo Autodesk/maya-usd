@@ -24,6 +24,7 @@
 #include <pxr/imaging/hd/vertexAdjacency.h>
 #include <pxr/imaging/pxOsd/refinerFactory.h>
 #include <pxr/imaging/pxOsd/tokens.h>
+#include <pxr/pxr.h>
 
 #include <maya/MProfiler.h>
 
@@ -769,7 +770,7 @@ bool MeshViewportCompute::hasOpenGL()
 
 void MeshViewportCompute::initializeOpenGL()
 {
-#if USD_VERSION_NUM < 2102
+#if PXR_VERSION < 2102
     GlfGlewInit();
 #else
     GarchGLApiLoad();

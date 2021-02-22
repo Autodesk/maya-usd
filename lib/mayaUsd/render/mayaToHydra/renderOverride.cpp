@@ -35,6 +35,7 @@
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/tokens.h>
+#include <pxr/pxr.h>
 
 #include <maya/M3dView.h>
 #include <maya/MConditionMessage.h>
@@ -52,7 +53,7 @@
 #include <exception>
 #include <limits>
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
 #include <pxr/imaging/hgi/hgi.h>
 #include <pxr/imaging/hgi/tokens.h>
 #endif
@@ -195,8 +196,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     , _rendererDesc(desc)
     , _globals(MtohRenderGlobals::GetInstance())
     ,
-#if USD_VERSION_NUM > 2002
-#if USD_VERSION_NUM > 2005
+#if PXR_VERSION > 2002
+#if PXR_VERSION > 2005
     _hgi(Hgi::CreatePlatformDefaultHgi())
     ,
 #else
@@ -493,7 +494,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         if (_playBlasting && !_isUsingHdSt && !tasks.empty()) {
             // XXX: Is this better as user-configurable ?
             constexpr auto msWait = std::chrono::duration<float, std::milli>(100);
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
             std::shared_ptr<HdxRenderTask> renderTask
                 = std::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
 #else
@@ -580,14 +581,14 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
     _taskController->SetEnableSelection(_globals.colorSelectionHighlight);
 
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
     if (_globals.outlineSelectionWidth != 0.f) {
         _taskController->SetSelectionOutlineRadius(_globals.outlineSelectionWidth);
         _taskController->SetSelectionEnableOutline(true);
     } else
         _taskController->SetSelectionEnableOutline(false);
 #endif
-#if USD_VERSION_NUM <= 2005
+#if PXR_VERSION <= 2005
     _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
 #endif
 
@@ -656,14 +657,14 @@ void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::_InitHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
-#if USD_VERSION_NUM < 2102
+#if PXR_VERSION < 2102
     GlfGlewInit();
 #endif
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     _renderIndex = HdRenderIndex::New(renderDelegate, { &_hgiDriver });
 #else
     _renderIndex = HdRenderIndex::New(renderDelegate);
@@ -796,11 +797,11 @@ void MtohRenderOverride::_SelectionChanged()
         return;
     }
     SdfPathVector selectedPaths;
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     auto selection = std::make_shared<HdSelection>();
 #else
     auto selection = boost::make_shared<HdSelection>();
-#endif // USD_VERSION_NUM > 2002
+#endif // PXR_VERSION > 2002
 
 #if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();

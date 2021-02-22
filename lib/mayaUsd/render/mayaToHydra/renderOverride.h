@@ -17,7 +17,7 @@
 #define MTOH_VIEW_OVERRIDE_H
 
 #include <pxr/pxr.h>
-#if USD_VERSION_NUM < 2102
+#if PXR_VERSION < 2102
 #include <pxr/imaging/glf/glew.h>
 #endif
 
@@ -33,7 +33,7 @@
 #include <memory>
 #include <mutex>
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
 #include <pxr/imaging/hd/driver.h>
 #endif
 #include <pxr/imaging/hd/engine.h>
@@ -162,7 +162,7 @@ private:
     std::atomic<bool>                     _isConverged = { false };
     std::atomic<bool>                     _needsClear = { false };
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     /// Hgi and HdDriver should be constructed before HdEngine to ensure they
     /// are destructed last. Hgi may be used during engine/delegate destruction.
     HgiUniquePtr _hgi;
