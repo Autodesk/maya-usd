@@ -16,6 +16,7 @@
 #include "UsdAttributes.h"
 
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
@@ -151,7 +152,7 @@ UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
             // Special case for TfToken -> Enum. If it doesn't have any allowed
             // tokens, then use String instead.
             if (iter->second == Ufe::Attribute::kEnumString) {
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
                 auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(usdAttr.GetName());
 #else
                 auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(

@@ -32,8 +32,8 @@ global proc mayaUSDRegisterStrings() {
     register("kDefaultPrim", "Default Prim");
     register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file.");
     register("kExcludePrimPaths", "Exclude Prim Paths:");
-    register("kExcludePrimPathsAnn", "Excludes the specified prim paths from the loaded USD data. Multiple prim paths must be separated by a comma.");
-    register("kExcludePrimPathsSbm", "Excludes the specified prim paths from the loaded USD data");
+    register("kExcludePrimPathsAnn", "Specify the path of a prim to exclude it from the viewport display. Multiple prim paths must be separated by a comma.");
+    register("kExcludePrimPathsSbm", "Specify the path of a prim to exclude it from the viewport display.");
     register("kLabelStage", "Stage");
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
@@ -63,6 +63,11 @@ global proc mayaUSDRegisterStrings() {
     register("kMenuSaveAs", "Save As...");
     register("kMenuSaveEdits", "Save Edits");
     register("kMenuUnmute", "Unmute");
+    register("kPurposeAnn", "Toggle purpose categories on and off to change their visibility in the viewport.");
+    register("kPurposeLabel", "Purpose");
+    register("kPurposeOption1", "Guide");
+    register("kPurposeOption2", "Proxy");
+    register("kPurposeOption3", "Render");
     register("kPrimPath", "Prim Path:");
     register("kPrimPathAnn", "Specify the path of a prim to display it alone in the viewport. If a prim path is not specified or a matching prim path is not found, all prims in the stage are displayed.");
     register("kPrimPathSbm", "Specify the path of a prim to display it alone in the viewport.");

@@ -156,9 +156,23 @@ void MayaSessionState::unregisterNotifications()
 void MayaSessionState::mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice)
 {
     auto shapePath = notice.GetShapePath();
+    auto stage = notice.GetStage();
     if (shapePath == _currentProxyShapePath) {
-        auto stage = notice.GetStage();
         QTimer::singleShot(0, this, [this, stage]() { setStage(stage); });
+    } else {
+        auto shapePath = notice.GetShapePath();
+        QTimer::singleShot(
+            0, this, [this, shapePath, stage]() { mayaUsdStageResetCBOnIdle(shapePath, stage); });
+    }
+}
+
+void MayaSessionState::mayaUsdStageResetCBOnIdle(
+    const std::string&            shapePath,
+    PXR_NS::UsdStageRefPtr const& stage)
+{
+    StageEntry entry;
+    if (getStageEntry(&entry, shapePath.c_str())) {
+        Q_EMIT stageResetSignal(entry._proxyShapePath, stage);
     }
 }
 
@@ -226,12 +240,9 @@ void MayaSessionState::sceneClosingCB(void* clientData)
     Q_EMIT THIS->clearUIOnSceneResetSignal();
 }
 
-bool MayaSessionState::saveLayerUI(
-    QWidget*     in_parent,
-    std::string* out_filePath,
-    std::string* out_pFormat) const
+bool MayaSessionState::saveLayerUI(QWidget* in_parent, std::string* out_filePath) const
 {
-    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath, *out_pFormat);
+    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath);
 }
 
 std::vector<std::string>

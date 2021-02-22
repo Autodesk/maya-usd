@@ -182,6 +182,18 @@ int ufePathToInstanceIndex(const std::string& ufePathString)
 #endif
 }
 
+TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
+{
+    auto path =
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        Ufe::PathString::path(
+#else
+        _UfeV1StringToUsdPath(
+#endif
+            ufePathString);
+    return ufe::getProxyShapePurposes(path);
+}
+
 void wrapUtils()
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -204,4 +216,5 @@ void wrapUtils()
     def("stripInstanceIndexFromUfePath", stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", ufePathToPrim);
     def("ufePathToInstanceIndex", ufePathToInstanceIndex);
+    def("getProxyShapePurposes", getProxyShapePurposes);
 }

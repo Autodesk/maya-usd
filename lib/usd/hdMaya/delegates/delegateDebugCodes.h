@@ -53,13 +53,13 @@ TF_DEBUG_CODES(
 // These are declared in a separate block to avoid using a preprocessor
 // directive inside the TF_DEBUG_CODES() macro invocation, which breaks
 // compilation on Windows.
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 // clang-format off
 TF_DEBUG_CODES(
     HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
     HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID);
 // clang-format on
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

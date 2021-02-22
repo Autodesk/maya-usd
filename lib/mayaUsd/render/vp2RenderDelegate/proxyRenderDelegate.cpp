@@ -37,6 +37,7 @@
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/taskController.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/modelAPI.h>
@@ -484,7 +485,7 @@ void ProxyRenderDelegate::_InitRenderDelegate()
     if (!_renderIndex) {
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 #else
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get()));
