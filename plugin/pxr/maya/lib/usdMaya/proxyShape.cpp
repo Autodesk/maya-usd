@@ -147,7 +147,7 @@ MStatus UsdMayaProxyShape::initialize()
     //
     retValue = attributeAffects(variantKeyAttr, inStageDataCachedAttr);
     retValue = attributeAffects(variantKeyAttr, outStageDataAttr);
-
+    retValue = attributeAffects(primPathAttr, inStageDataCachedAttr);
     return retValue;
 }
 
