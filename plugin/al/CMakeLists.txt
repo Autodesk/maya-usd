@@ -7,7 +7,6 @@ if (POLICY CMP0026)
     cmake_policy(SET CMP0026 OLD)
 endif()
 
-set(NEED_BOOST_FILESYSTEM ON)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 if(NOT DEFINED ENV{BOOST_ROOT})
@@ -24,15 +23,7 @@ option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
 # Adding specific components forces calls to _Boost_find_library, which
 # is the rationale for listing them here.
-set(Boost_FIND_COMPONENTS
-     thread
-)
-if(NEED_BOOST_FILESYSTEM)
-    list(APPEND Boost_FIND_COMPONENTS
-        filesystem
-        system
-    )
-endif()
+set(Boost_FIND_COMPONENTS "")
 if(WIN32)
     list(APPEND Boost_FIND_COMPONENTS
         chrono
