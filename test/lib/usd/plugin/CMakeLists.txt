@@ -127,6 +127,13 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
+# -----------------------------------------------------------------------------
+# Plug Plug-in files
+# -----------------------------------------------------------------------------
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/mayaUsdPlugInfo.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/mayaUsdPlugInfo.json"
+)
+
 
 set(TARGET_NAME usdTestInfoImportChaser)
 add_library(${TARGET_NAME} SHARED)
