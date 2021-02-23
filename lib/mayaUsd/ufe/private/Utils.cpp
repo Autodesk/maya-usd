@@ -26,6 +26,7 @@
 
 #include <memory>
 #include <string>
+#include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -195,13 +196,18 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
 {
     const PXR_NS::UsdPrim& prim = attr.GetPrim();
-    // const auto& propertySpec = MayaUsdUtils::getPropertySpecAtEditTarget(prim);
-    const auto& primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    const auto& propertyStack = attr.GetPropertyStack();
+    const UsdStageWeakPtr stage = prim.GetStage();
+
+    // get the property spec in the edit target's layer
+    const SdfPropertySpecHandle editTargetPropertySpec = stage->GetEditTarget().GetPropertySpecForScenePath(attr.GetPath());
+
+    // get a list of property specs that provide opinions for this property.
+    const SdfPropertySpecHandleVector& propertyStack = attr.GetPropertyStack();
 
     SdfLayerHandle defLayer;
     for (const SdfPropertySpecHandle& spec: propertyStack) {
-        if(spec && !primSpec) {
+
+        if(spec && spec != editTargetPropertySpec)  {
             defLayer = spec->GetLayer();
             break;
         }
