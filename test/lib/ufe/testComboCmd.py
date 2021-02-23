@@ -805,6 +805,55 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         checkPivotsAndCompensations(self, mayaObj, usdSphere3d)
         checkPivotsAndCompensations(self, mayaObj, usdFallbackSphere3d)
 
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 124, 'Center point command is only available in Maya Preview Release 124 or later.')
+    def testCenterPivotUndo(self):
+
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+        usdT3d = ufe.Transform3d.transform3d(capsuleItem)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(capsuleItem)
+
+        # center point is expected to be at [0.0, 0.0, 0.0]
+        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+
+        # move the pivot location
+        cmds.move(7, 2, 1, r=True, urp=True, usp=True)
+
+        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
+        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
+
+        # call center pivot command
+        cmds.xform(cp=True)
+
+        # center point is expected to be at [0.0, 0.0, 0.0]
+        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+
+        # undo
+        cmds.undo()
+
+        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [7.0, 2.0, 1.0])
+        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [7.0, 2.0, 1.0])
+
+        # redo
+        cmds.redo()
+
+        assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
+        assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
