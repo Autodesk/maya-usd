@@ -84,6 +84,21 @@ class ParentCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
+        # Save current 'MAYA_USD_MATRIX_XFORM_OP_NAME' env var, if present.
+        self.mayaUsdMatrixXformOpName = os.environ.get(
+            'MAYA_USD_MATRIX_XFORM_OP_NAME')
+
+    def tearDown(self):
+        # If there was no 'MAYA_USD_MATRIX_XFORM_OP_NAME' environment variable,
+        # make sure there is none at the end of the test.
+        if self.mayaUsdMatrixXformOpName is None:
+            if 'MAYA_USD_MATRIX_XFORM_OP_NAME' in os.environ:
+                del os.environ['MAYA_USD_MATRIX_XFORM_OP_NAME']
+        else:
+            # Restore previous value.
+            os.environ['MAYA_USD_MATRIX_XFORM_OP_NAME'] = \
+                self.mayaUsdMatrixXformOpName
+
     def testParentRelative(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
@@ -656,9 +671,6 @@ class ParentCmdTestCase(unittest.TestCase):
 
             # Go back to initial conditions for next iteration of loop.
             cmds.undo()
-
-        # Restore initial conditions.
-        del os.environ['MAYA_USD_MATRIX_XFORM_OP_NAME']
 
     def testParentToProxyShape(self):
 

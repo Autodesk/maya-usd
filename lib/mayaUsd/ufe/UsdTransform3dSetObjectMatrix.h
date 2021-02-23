@@ -58,6 +58,36 @@ namespace ufe {
 // matrices inv(Ml) and inv(Mr).  In the case of the Maya fallback transform
 // stack, Mr is the identity by definition, as the Maya fallback transform
 // stack must be the last group of transform ops in the transform stack.
+//
+// Here is an example given a Maya fallback transform stack:
+//
+// ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:rotateX",
+//  "xformOp:translate:maya_fallback", "xformOp:rotateXYZ:maya_fallback",
+//  "xformOp:scale:maya_fallback"]
+//
+// Note how there are two rotation transform ops in the original stack, which
+// does not match a standard Maya transform stack, and forces the use of a
+// fallback Maya transform stack.  For fallback Maya transform stacks, Mr is
+// always the identity, and Ml is the multiplication of all transform ops
+// before the fallback Maya transform stack, i.e. here
+// "xformOp:translate" "xformOp:rotateXYZ" "xformOp:rotateX"
+// .  Mw in this case is the entire fallback Maya transform stack, our target.
+//
+// Here are three examples given a transform stack with multiple matrix
+// transform ops:
+//
+// ["xformOp:transform:A", "xformOp:transform:B", "xformOp:transform:C"]
+//
+// If we are targeting matrix transform op Mw == "xformOp:transform:A", then
+// Ml is the identity matrix, and Mr is
+// "xformOp:transform:B" "xformOp:transform:C".
+//
+// If we are targeting matrix transform op Mw == "xformOp:transform:B", then
+// Ml is "xformOp:transform:A", and Mr is "xformOp:transform:C".
+//
+// If we are targeting matrix transform op Mw == "xformOp:transform:C", then
+// Ml is "xformOp:transform:A" "xformOp:transform:B", and Mr is the identity
+// matrix.
 
 class MAYAUSD_CORE_PUBLIC UsdTransform3dSetObjectMatrix : public UsdTransform3dBase
 {

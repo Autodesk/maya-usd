@@ -144,6 +144,12 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
     xformable.SetXformOpOrder(newOrder, resetsXformStack);
 }
 
+// Create a Ufe::Transform3d interface to edit the Maya fallback transform
+// stack.  This engine method is used in the implementation of
+// createTransform3d() and createEditTransform3d().  To avoid having the caller
+// repeat these calls for its own use, the prim's transform ops are returned in
+// xformOps, along with an iterator to the first Maya fallback transform op in
+// firstFallbackOp.
 Ufe::Transform3d::Ptr createEditTransform3dImp(
     const Ufe::SceneItem::Ptr&                   item,
     std::vector<UsdGeomXformOp>&                 xformOps,
