@@ -15,6 +15,7 @@
 //
 #include "UsdTransform3dCommonAPI.h"
 
+#include <mayaUsd/ufe/UsdUndoableCommandBase.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -24,11 +25,11 @@ namespace ufe {
 
 namespace {
 
-class UsdTranslateUndoableCmd : public Ufe::TranslateUndoableCommand
+class UsdTranslateUndoableCmd : public UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>
 {
 public:
     UsdTranslateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : Ufe::TranslateUndoableCommand(item->path())
+        : UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>(item->path())
         , _time(time)
         , _commonAPI(item->prim())
     {
@@ -42,32 +43,34 @@ public:
                 item->prim().GetPath().GetText());
         }
 
-        _prevT = t;
         _t = t;
     }
-
-    void undo() override { _commonAPI.SetTranslate(_prevT, _time); }
-    void redo() override { _commonAPI.SetTranslate(_t, _time); }
 
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
         _t = GfVec3d(x, y, z);
-        redo();
+        execute();
         return true;
+    }
+
+protected:
+    void executeImpl() override
+    {
+        _commonAPI.SetTranslate(_t, _time);
     }
 
 private:
     const UsdTimeCode     _time;
     UsdGeomXformCommonAPI _commonAPI;
-    GfVec3d               _prevT, _t;
+    GfVec3d               _t;
 };
 
-class UsdRotateUndoableCmd : public Ufe::RotateUndoableCommand
+class UsdRotateUndoableCmd : public UsdUndoableCommandBase<Ufe::RotateUndoableCommand>
 {
 public:
     UsdRotateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : Ufe::RotateUndoableCommand(item->path())
+        : UsdUndoableCommandBase<Ufe::RotateUndoableCommand>(item->path())
         , _time(time)
         , _commonAPI(item->prim())
     {
@@ -81,39 +84,35 @@ public:
                 item->prim().GetPath().GetText());
         }
 
-        _prevR = r;
         _r = r;
-    }
-
-    void undo() override
-    {
-        _commonAPI.SetRotate(_prevR, UsdGeomXformCommonAPI::RotationOrderXYZ, _time);
-    }
-    void redo() override
-    {
-        _commonAPI.SetRotate(_r, UsdGeomXformCommonAPI::RotationOrderXYZ, _time);
     }
 
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
         _r = GfVec3f(x, y, z);
-        redo();
+        execute();
         return true;
+    }
+
+protected:
+    void executeImpl() override
+    {
+        _commonAPI.SetRotate(_r, UsdGeomXformCommonAPI::RotationOrderXYZ, _time);
     }
 
 private:
     const UsdTimeCode     _time;
     UsdGeomXformCommonAPI _commonAPI;
-    GfVec3f               _prevR, _r;
+    GfVec3f               _r;
 };
 
-class UsdScaleUndoableCmd : public Ufe::ScaleUndoableCommand
+class UsdScaleUndoableCmd : public UsdUndoableCommandBase<Ufe::ScaleUndoableCommand>
 {
 
 public:
     UsdScaleUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : Ufe::ScaleUndoableCommand(item->path())
+        : UsdUndoableCommandBase<Ufe::ScaleUndoableCommand>(item->path())
         , _time(time)
         , _commonAPI(item->prim())
     {
@@ -127,32 +126,34 @@ public:
                 item->prim().GetPath().GetText());
         }
 
-        _prevS = s;
         _s = s;
     }
-
-    void undo() override { _commonAPI.SetScale(_prevS, _time); }
-    void redo() override { _commonAPI.SetScale(_s, _time); }
 
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
         _s = GfVec3f(x, y, z);
-        redo();
+        execute();
         return true;
+    }
+
+protected:
+    void executeImpl() override
+    {
+        _commonAPI.SetScale(_s, _time);
     }
 
 private:
     const UsdTimeCode     _time;
     UsdGeomXformCommonAPI _commonAPI;
-    GfVec3f               _prevS, _s;
+    GfVec3f               _s;
 };
 
-class UsdTranslatePivotUndoableCmd : public Ufe::TranslateUndoableCommand
+class UsdTranslatePivotUndoableCmd : public UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>
 {
 public:
     UsdTranslatePivotUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : Ufe::TranslateUndoableCommand(item->path())
+        : UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>(item->path())
         , _time(time)
         , _commonAPI(item->prim())
     {
@@ -166,25 +167,27 @@ public:
                 item->prim().GetPath().GetText());
         }
 
-        _prevPvt = pvt;
         _pvt = pvt;
     }
-
-    void undo() override { _commonAPI.SetPivot(_prevPvt, _time); }
-    void redo() override { _commonAPI.SetPivot(_pvt, _time); }
 
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
         _pvt = GfVec3f(x, y, z);
-        redo();
+        execute();
         return true;
+    }
+
+protected:
+    void executeImpl() override
+    {
+        _commonAPI.SetPivot(_pvt, _time);
     }
 
 private:
     const UsdTimeCode     _time;
     UsdGeomXformCommonAPI _commonAPI;
-    GfVec3f               _prevPvt, _pvt;
+    GfVec3f               _pvt;
 };
 
 } // namespace

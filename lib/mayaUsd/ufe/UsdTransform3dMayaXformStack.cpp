@@ -19,9 +19,8 @@
 
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
+#include <mayaUsd/ufe/UsdUndoableCommandBase.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>
@@ -162,13 +161,12 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
 
-// Class for setMatrixCmd() implementation.  UsdUndoBlock data member and
-// undo() / redo() should be factored out into a future command base class.
-class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+// Class for setMatrixCmd() implementation.
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : Ufe::SetMatrix4dUndoableCommand(path)
+        : UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>(path)
     {
         // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
         // nor GfTransform decomposition provide results that match Maya,
@@ -198,53 +196,33 @@ public:
         return true;
     }
 
-    void execute() override
+protected:
+    void executeImpl() override
     {
-        UsdUndoBlock undoBlock(&_undoableItem);
-
         auto t3d = Ufe::Transform3d::transform3d(sceneItem());
         t3d->translate(_newT.x(), _newT.y(), _newT.z());
         t3d->rotate(_newR.x(), _newR.y(), _newR.z());
         t3d->scale(_newS.x(), _newS.y(), _newS.z());
-
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-        _executeCalled = true;
-#endif
-    }
-
-    void undo() override { _undoableItem.undo(); }
-    void redo() override
-    {
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-        if (!_executeCalled) {
-            execute();
-            return;
-        }
-#endif
-        _undoableItem.redo();
     }
 
 private:
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-    bool _executeCalled { false };
-#endif
-    UsdUndoableItem _undoableItem;
-    Ufe::Vector3d   _newT;
-    Ufe::Vector3d   _newR;
-    Ufe::Vector3d   _newS;
+    Ufe::Vector3d _newT;
+    Ufe::Vector3d _newR;
+    Ufe::Vector3d _newS;
 };
 
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
-class UsdTRSUndoableCmdBase : public Ufe::SetVector3dUndoableCommand
+class UsdTRSUndoableCmdBase : public UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>
 {
 private:
     const UsdTimeCode _readTime;
     const UsdTimeCode _writeTime;
-    VtValue           _newOpValue;
     UsdGeomXformOp    _op;
     OpFunc            _opFunc;
-    UsdUndoableItem   _undoableItem;
+
+protected:
+    VtValue           _newOpValue;
 
 public:
     struct State
@@ -272,9 +250,6 @@ public:
         }
         void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
         {
-            // Add undoblock to capture edits
-            UsdUndoBlock undoBlock(&cmd->_undoableItem);
-
             // Going from initial to executing / executed state, save value.
             cmd->_op = cmd->_opFunc(*cmd);
             cmd->_newOpValue = v;
@@ -298,8 +273,6 @@ public:
         const char* name() const override { return "execute"; }
         void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
-            // Undo
-            cmd->_undoableItem.undo();
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
         }
         void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
@@ -314,8 +287,6 @@ public:
         const char* name() const override { return "undone"; }
         void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
         {
-            // Redo
-            cmd->_undoableItem.redo();
             cmd->_state = &UsdTRSUndoableCmdBase::_redoneState;
         }
     };
@@ -325,8 +296,6 @@ public:
         const char* name() const override { return "redone"; }
         void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
-            // Undo
-            cmd->_undoableItem.undo();
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
         }
         // The redone state should normally be reached only once manipulation
@@ -347,23 +316,30 @@ public:
         const Ufe::Path&   path,
         OpFunc             opFunc,
         const UsdTimeCode& writeTime_)
-        : Ufe::SetVector3dUndoableCommand(path)
+        : UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>(path)
         ,
         // Always read from proxy shape time.
         _readTime(getTime(path))
         , _writeTime(writeTime_)
-        , _newOpValue(newOpValue)
         , _op()
         , _opFunc(std::move(opFunc))
+        , _newOpValue(newOpValue)
     {
     }
 
     // Ufe::UndoableCommand overrides.
-    void execute() override { handleSet(_newOpValue); }
-    void undo() override { _state->handleUndo(this); }
-    void redo() override { handleSet(_newOpValue); }
+    void undo() override
+    {
+        UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>::undo();
+        _state->handleUndo(this);
+    }
+    void redo() override
+    {
+        UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>::redo();
+        _state->handleSet(this, _newOpValue);
+    }
 
-    void handleSet(const VtValue& v) { _state->handleSet(this, v); }
+    void executeImpl() override { _state->handleSet(this, _newOpValue); }
 
     void setValue(const VtValue& v) { _op.GetAttr().Set(v, _writeTime); }
 
@@ -402,9 +378,8 @@ public:
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
-        VtValue v;
-        v = V(x, y, z);
-        handleSet(v);
+        _newOpValue = V(x, y, z);
+        execute();
         return true;
     }
 };
@@ -426,9 +401,8 @@ public:
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
-        VtValue v;
-        v = _cvtRotXYZToAttr(x, y, z);
-        handleSet(v);
+        _newOpValue = _cvtRotXYZToAttr(x, y, z);
+        execute();
         return true;
     }
 
@@ -507,13 +481,13 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
     // If there is no rotate transform op, we will create a RotXYZ.
     CvtRotXYZToAttrFn cvt = hasRotate ? getCvtRotXYZToAttrFn(op.GetOpName()) : toXYZ;
     OpFunc            f = hasRotate
-        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
+                   ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
-        : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
+                   : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
                      const BaseUndoableCommand& cmd) {
               // Use notification guard, otherwise will generate one notification
               // for the xform op add, and another for the reorder.
@@ -680,13 +654,13 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
     GfVec3f v(x, y, z);
     auto    attr = prim().GetAttribute(pvtAttrName);
     OpFunc  f = attr
-        ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
+         ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
               return UsdGeomXformOp(attr);
           })
-        : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
+         : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
                      const BaseUndoableCommand& cmd) {
               // Without a notification guard each operation (each transform op
               // addition, setting the attribute value, and setting the transform
