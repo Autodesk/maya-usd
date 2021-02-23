@@ -21,6 +21,7 @@
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
+#include <maya/MGlobal.h>
 #include <ufe/log.h>
 
 #include <memory>
@@ -189,6 +190,34 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
             layerDisplayName.c_str());
         throw std::runtime_error(err.c_str());
     }
+}
+
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+{
+    const PXR_NS::UsdPrim& prim = attr.GetPrim();
+    // const auto& propertySpec = MayaUsdUtils::getPropertySpecAtEditTarget(prim);
+    const auto& primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    const auto& propertyStack = attr.GetPropertyStack();
+
+    SdfLayerHandle defLayer;
+    for (const SdfPropertySpecHandle& spec: propertyStack) {
+        if(spec && !primSpec) {
+            defLayer = spec->GetLayer();
+            break;
+        }
+    }
+
+    if (defLayer){
+        std::string err = TfStringPrintf( 
+            "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
+            attr.GetBaseName().GetText(),
+            defLayer->GetDisplayName().c_str());
+
+        MGlobal::displayError(err.c_str());
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------

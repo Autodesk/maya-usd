@@ -171,6 +171,12 @@ SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim)
     return stage->GetEditTarget().GetPrimSpecForScenePath(prim.GetPath());
 }
 
+SdfPropertySpecHandle getPropertySpecAtEditTarget(const UsdPrim& prim)
+{
+    auto stage = prim.GetStage();
+    return stage->GetEditTarget().GetPropertySpecForScenePath(prim.GetPath());
+}
+
 void printCompositionQuery(const UsdPrim& prim, std::ostream& os)
 {
     UsdPrimCompositionQuery query(prim);

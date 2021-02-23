@@ -38,6 +38,9 @@ UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim);
 //! Apply restriction rules on the given prim
 void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName);
 
+//! Apply restriction rules on the given property
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr);
+
 //------------------------------------------------------------------------------
 // Operations: translate, rotate, scale, pivot
 //------------------------------------------------------------------------------

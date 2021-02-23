@@ -16,6 +16,7 @@
 #include "UsdTransform3dMayaXformStack.h"
 
 #include "private/UfeNotifGuard.h"
+#include "private/Utils.h"
 
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
@@ -365,7 +366,13 @@ public:
 
     void handleSet(const VtValue& v) { _state->handleSet(this, v); }
 
-    void setValue(const VtValue& v) { _op.GetAttr().Set(v, _writeTime); }
+    void setValue(const VtValue& v) 
+    {
+        const PXR_NS::UsdAttribute& attr = _op.GetAttr();
+        auto isAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr);
+
+        if (isAllowed) { attr.Set(v, _writeTime); }
+    }
 
     UsdTimeCode readTime() const { return _readTime; }
     UsdTimeCode writeTime() const { return _writeTime; }

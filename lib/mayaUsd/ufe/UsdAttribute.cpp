@@ -15,6 +15,8 @@
 //
 #include "UsdAttribute.h"
 
+#include "private/Utils.h"
+
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
@@ -37,8 +39,8 @@
 #include <ufe/ufeAssert.h>
 
 // Note: normally we would use this using directive, but here we cannot because
-//		 our class is called UsdAttribute which is exactly the same as the one
-//		 in USD.
+//       our class is called UsdAttribute which is exactly the same as the one
+//       in USD.
 // PXR_NAMESPACE_USING_DIRECTIVE
 
 static constexpr char kErrorMsgFailedSet[] = "Failed to set USD attribute with new value";
@@ -81,7 +83,8 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
-    return attr.Set<T>(value);
+    bool isAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr);
+    return isAllowed ? attr.Set<T>(value) : false;
 }
 
 PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
@@ -140,12 +143,11 @@ void setUsdAttributeVectorFromUfe(
     T vec;
     UFE_ASSERT_MSG(attr.Get<T>(&vec, time), kErrorMsgInvalidType);
     vec.Set(value.x(), value.y(), value.z());
-    bool b = setUsdAttr<T>(attr, vec);
-    UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
+    setUsdAttr<T>(attr, vec);
 }
 
 template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
-class SetUndoableCommand : public Ufe::UndoableCommand
+class SetUndoableCommand : public Ufe::UndoableCommand, public UsdAttribute
 {
 public:
     SetUndoableCommand(const typename A::Ptr& attr, const T& newValue)
@@ -273,8 +275,7 @@ void UsdAttributeEnumString::set(const std::string& value)
     UFE_ASSERT_MSG(
         fUsdAttr.Get<PXR_NS::TfToken>(&dummy, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
     PXR_NS::TfToken tok(value);
-    bool            b = setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
-    UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
+    setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
 }
 
 Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& value)
@@ -355,8 +356,7 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
         std::string dummy;
         UFE_ASSERT_MSG(
             fUsdAttr.Get<std::string>(&dummy, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
-        bool b = setUsdAttr<std::string>(fUsdAttr, value);
-        UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
+        setUsdAttr<std::string>(fUsdAttr, value);
         return;
     } else if (typeName.GetHash() == SdfValueTypeNames->Token.GetHash()) {
         PXR_NS::TfToken dummy;
@@ -364,8 +364,7 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
             fUsdAttr.Get<PXR_NS::TfToken>(&dummy, getCurrentTime(sceneItem())),
             kErrorMsgInvalidType);
         PXR_NS::TfToken tok(value);
-        bool            b = setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
-        UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
+        setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
         return;
     }
 
@@ -384,8 +383,7 @@ template <> void TypedUsdAttribute<Ufe::Color3f>::set(const Ufe::Color3f& value)
     GfVec3f vec;
     UFE_ASSERT_MSG(fUsdAttr.Get<GfVec3f>(&vec, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
     vec.Set(value.r(), value.g(), value.b());
-    bool b = setUsdAttr<GfVec3f>(fUsdAttr, vec);
-    UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
+    setUsdAttr<GfVec3f>(fUsdAttr, vec);
 }
 
 template <> Ufe::Vector3i TypedUsdAttribute<Ufe::Vector3i>::get() const
@@ -443,8 +441,7 @@ template <typename T> void TypedUsdAttribute<T>::set(const T& value)
     T dummy;
     UFE_ASSERT_MSG(
         fUsdAttr.Get<T>(&dummy, getCurrentTime(Ufe::Attribute::sceneItem())), kErrorMsgInvalidType);
-    bool b = setUsdAttr<T>(fUsdAttr, value);
-    UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
+    setUsdAttr<T>(fUsdAttr, value);
 }
 
 //------------------------------------------------------------------------------
@@ -557,23 +554,23 @@ UsdAttributeDouble3::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttr
 
 #if 0
 // Note: if we were to implement generic attribute setting (via string) this
-//		 would be the way it could be done.
+//       would be the way it could be done.
 bool UsdAttribute::setValue(const std::string& value)
 {
-	// Put the input string into a VtValue so we can cast it to the proper type.
-	PXR_NS::VtValue val(value.c_str());
+    // Put the input string into a VtValue so we can cast it to the proper type.
+    PXR_NS::VtValue val(value.c_str());
 
-	// Attempt to cast the value to what we want.  Get a default value for this
-	// attribute's type name.
-	PXR_NS::VtValue defVal = fUsdAttr.GetTypeName().GetDefaultValue();
+    // Attempt to cast the value to what we want.  Get a default value for this
+    // attribute's type name.
+    PXR_NS::VtValue defVal = fUsdAttr.GetTypeName().GetDefaultValue();
 
-	// Attempt to cast the given string to the default value's type.
-	// If casting fails, attempt to continue with the given value.
-	PXR_NS::VtValue cast = PXR_NS::VtValue::CastToTypeOf(val, defVal);
-	if (!cast.IsEmpty())
-		cast.Swap(val);
+    // Attempt to cast the given string to the default value's type.
+    // If casting fails, attempt to continue with the given value.
+    PXR_NS::VtValue cast = PXR_NS::VtValue::CastToTypeOf(val, defVal);
+    if (!cast.IsEmpty())
+        cast.Swap(val);
 
-	return setUsdAttr<PXR_NS::VtValue>(fUsdAttr, val);
+    return setUsdAttr<PXR_NS::VtValue>(fUsdAttr, val);
 }
 #endif
 
