@@ -55,10 +55,7 @@ public:
     }
 
 protected:
-    void executeImpl() override
-    {
-        _commonAPI.SetTranslate(_t, _time);
-    }
+    void executeImpl() override { _commonAPI.SetTranslate(_t, _time); }
 
 private:
     const UsdTimeCode     _time;
@@ -138,10 +135,7 @@ public:
     }
 
 protected:
-    void executeImpl() override
-    {
-        _commonAPI.SetScale(_s, _time);
-    }
+    void executeImpl() override { _commonAPI.SetScale(_s, _time); }
 
 private:
     const UsdTimeCode     _time;
@@ -179,10 +173,7 @@ public:
     }
 
 protected:
-    void executeImpl() override
-    {
-        _commonAPI.SetPivot(_pvt, _time);
-    }
+    void executeImpl() override { _commonAPI.SetPivot(_pvt, _time); }
 
 private:
     const UsdTimeCode     _time;

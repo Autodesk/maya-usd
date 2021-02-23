@@ -222,7 +222,7 @@ private:
     OpFunc            _opFunc;
 
 protected:
-    VtValue           _newOpValue;
+    VtValue _newOpValue;
 
 public:
     struct State

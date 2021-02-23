@@ -135,10 +135,7 @@ public:
     UsdTimeCode writeTime() const { return fWriteTime; }
 
 protected:
-    void executeImpl()
-    {
-        fOp.GetAttr().Set(fNewOpValue, fWriteTime);
-    }
+    void executeImpl() { fOp.GetAttr().Set(fNewOpValue, fWriteTime); }
 
     VtValue fNewOpValue;
 };
@@ -180,10 +177,7 @@ public:
     }
 
 protected:
-    void executeImpl() override
-    {
-        UsdTRSUndoableCmdBase::executeImpl();
-    }
+    void executeImpl() override { UsdTRSUndoableCmdBase::executeImpl(); }
 
 private:
     GfMatrix4d fOpTransform;
@@ -243,10 +237,7 @@ public:
     }
 
 protected:
-    void executeImpl() override
-    {
-        UsdTRSUndoableCmdBase::executeImpl();
-    }
+    void executeImpl() override { UsdTRSUndoableCmdBase::executeImpl(); }
 
 private:
     GfVec3d    fT;
@@ -298,10 +289,7 @@ public:
     }
 
 protected:
-    void executeImpl() override
-    {
-        UsdTRSUndoableCmdBase::executeImpl();
-    }
+    void executeImpl() override { UsdTRSUndoableCmdBase::executeImpl(); }
 
 private:
     GfVec3d    fT;
