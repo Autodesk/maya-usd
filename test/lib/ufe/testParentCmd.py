@@ -508,7 +508,7 @@ class ParentCmdTestCase(unittest.TestCase):
         checkParentDone()
 
     @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
-    def testZParentAbsoluteMultiMatrixOp(self):
+    def testParentAbsoluteMultiMatrixOp(self):
         """Test parent -absolute on prim with a transform stack with multiple matrix ops."""
 
         cmds.file(new=True, force=True)
@@ -656,6 +656,9 @@ class ParentCmdTestCase(unittest.TestCase):
 
             # Go back to initial conditions for next iteration of loop.
             cmds.undo()
+
+        # Restore initial conditions.
+        del os.environ['MAYA_USD_MATRIX_XFORM_OP_NAME']
 
     def testParentToProxyShape(self):
 
