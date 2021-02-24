@@ -593,6 +593,8 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
 
     importWithProxyShapes(importWithProxyShapes)
     , timeInterval(timeInterval)
+    , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
+    , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobImportArgsTokens->chaserArgs))
 {
 }
 
@@ -633,6 +635,8 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
             = UsdMayaPreferredMaterialTokens->none.GetString();
         d[UsdMayaJobImportArgsTokens->importInstances] = true;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
+        d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
+        d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -658,6 +662,22 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl;
+
+    out << "chaserNames (" << importArgs.chaserNames.size() << ")" << std::endl;
+    for (const std::string& chaserName : importArgs.chaserNames) {
+        out << "    " << chaserName << std::endl;
+    }
+
+    out << "allChaserArgs (" << importArgs.allChaserArgs.size() << ")" << std::endl;
+    for (const auto& chaserIter : importArgs.allChaserArgs) {
+        // Chaser name.
+        out << "    " << chaserIter.first << std::endl;
+
+        for (const auto& argIter : chaserIter.second) {
+            out << "        Arg Name: " << argIter.first << ", Value: " << argIter.second
+                << std::endl;
+        }
+    }
 
     return out;
 }

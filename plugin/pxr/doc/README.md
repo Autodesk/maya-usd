@@ -32,6 +32,8 @@ The plugin creates two commands: `usdImport` and `usdExport`, and will also regi
 | ---------- | --------- | ---- | ------- | ----------- |
 | `-api` | `-apiSchema` | string (multi)| none | Imports the given API schemas' attributes as Maya custom attributes. This only recognizes API schemas that have been applied to prims on the stage. The attributes will properly round-trip if you re-export back to USD. |
 | `-ar` | `-assemblyRep` | string | `Collapsed` | If the import results in the creation of assembly nodes, this value specifies the assembly representation that will be activated after creation. If empty, no representation will be activated. Valid values are: `Collapsed`, `Expanded`, `Full`, `Import`, `(empty)`. `Import`: No USD reference assembly nodes will be created, and the geometry will be imported directly. `(empty)`: The assembly is created but is left unloaded after creation. See "Importing as Assemblies" below for more detail on assembly node creation. |
+|`-chr` | `-chaser` | string(multi) | none | Specify the import chasers to execute as part of the export. See "Import Chasers" below.
+|`-cha` | `-chaserArgs` | string[3](multi) | none | Pass argument names and values to import chasers. Each argument to `-chaserArgs` should be a triple of the form: (`<chaser name>`, `<argument name>`, `<argument value>`). See "Import Chasers" below.
 | `-epv` | `-excludePrimvar` | string (multi) | none | Excludes the named primvar(s) from being imported as color sets or UV sets. The primvar name should be the full name without the `primvars:` namespace prefix. |
 | `-f` | `-file` | string | none | Name of the USD being loaded |
 | `-ii` | `-importInstances` | bool | true | Import USD instanced geometries as Maya instanced shapes. Will flatten the scene otherwise. |
@@ -73,6 +75,24 @@ for assemblyNode in assemblyNodes:
 ```
 
 Currently, edits on reference models do not get imported into Maya as assembly edits.
+
+#### Import Chasers
+
+Import chasers are plugins that run after the initial import process and can implement post-processing on Maya nodes  that executes right after the main import operation is complete. This can be used, for example, to implement pipeline-specific operations and/or early prototyping of features that might otherwise not make sense to be part of the mainline codebase.
+
+Chasers are registered with a particular name and can be passed argument name/value pairs in an invocation of `mayaUSDImport`. There is no "plugin discovery" method here – the developer/user is responsible for making sure the chaser is registered via a call to the convenience macro `USDMAYA_DEFINE_IMPORT_CHASER_FACTORY(name, ctx)`, where `name` is the name of the chaser being created. Unlike export chasers, import chasers also have the ability to define `Undo` and `Redo` methods in order to allow the `mayaUSDImport` command to remain compliant with the Maya undo stack. It's not necessary to compile your chaser plugin together with `mayaUsdPlugin` in order to work; you can create a completely separate maya DLL that contains the business logic of your chaser code, and just call the aforementioned `USDMAYA_DEFINE_IMPORT_CHASER_FACTORY` to register it, as long as the `mayaUsdPlugin` DLL is loaded first.
+
+A sample import chaser, `infoImportChaser.cpp`, is provided to give an example of how to write an import chaser. All it does is read any custom layer data in the USD file on import, and create string attributes on the nodes created and populate them with said string attribute. Invoking it during import is as simple as calling:
+
+```python
+cmds.mayaUSDImport(
+    file='/tmp/test.usda',
+    chaser=['info'])
+```
+
+As mentioned, when writing an import chaser, you also have the chance to implement undo/redo functionality for it in a way that will remain compatible with the Maya undo stack. While you do not have to strictly do this, it is recommended that you keep a record of edits you have made in your chaser and implement the necessary undo/redo functionality where possible or risk experiencing issues (i.e. the main import created a node while your import chaser deleted it from the scene, and then invoking an undo causes a crash since the main plugin's `Undo` code will no longer work correctly.) It is also highly recommended that you be very mindful of the edits you are making to the scene graph, and how multiple import chasers might work together in unexpected ways or have inter-dependencies.
+
+Import chasers may also be written to parse an array of 3 string arguments for their own purposes, similar to the Alembic export chaser example.
 
 ---
 

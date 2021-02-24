@@ -25,7 +25,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_REF_PTRS(UsdMayaChaser);
+TF_DECLARE_REF_PTRS(UsdMayaExportChaser);
 
 /// \brief base class for plugin chasers which are plugins that run after the
 /// core usdExport out of maya.
@@ -42,10 +42,10 @@ TF_DECLARE_REF_PTRS(UsdMayaChaser);
 /// Chasers need to be very careful as to not modify the structure of the usd
 /// file.  This should ideally be used to make small changes or to add
 /// attributes in a non-destructive way.
-class UsdMayaChaser : public TfRefBase
+class UsdMayaExportChaser : public TfRefBase
 {
 public:
-    ~UsdMayaChaser() override { }
+    ~UsdMayaExportChaser() override { }
 
     /// Do custom processing after UsdMaya has exported data at the default
     /// time.

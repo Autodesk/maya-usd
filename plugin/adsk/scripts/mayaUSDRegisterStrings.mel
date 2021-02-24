@@ -38,6 +38,7 @@ global proc mayaUSDRegisterStrings() {
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
     register("kLoad", "Load");
+    register("kLoadAll", "Load All");
     register("kLoadPayloads", "Load Payloads:");
     register("kLoadPayloadsAnn", "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded.");
     register("kLoadPayloadsSbm", "Loads prims marked as payloads");
@@ -63,6 +64,8 @@ global proc mayaUSDRegisterStrings() {
     register("kMenuSaveAs", "Save As...");
     register("kMenuSaveEdits", "Save Edits");
     register("kMenuUnmute", "Unmute");
+    register("kPayloads", "Payloads");
+    register("kPayloadsAnn", "Select to load or unload all prims marked as payloads, including their descendants, into the stage.");
     register("kPurposeAnn", "Toggle purpose categories on and off to change their visibility in the viewport.");
     register("kPurposeLabel", "Purpose");
     register("kPurposeOption1", "Guide");
@@ -88,6 +91,7 @@ global proc mayaUSDRegisterStrings() {
     register("kSaveOptionUnsavedEdits", "You have unsaved USD edits. How would you like to proceed?");
     register("kTimeAnn", "Edits the current time value of a stage, which corresponds to the animation frame drawn in the viewport. By default, this value connects to Maya's global time node.");
     register("kTipYouCanChooseMultipleFiles", "<b>Tip:</b>  You can choose multiple files.");
+    register("kUnloadAll", "Unload All");
     register("kUsdFileOptions", "USD File Options");
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
     register("kSaveOption2GBWarning", "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.");

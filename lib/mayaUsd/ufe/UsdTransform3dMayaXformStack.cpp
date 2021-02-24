@@ -188,7 +188,10 @@ public:
     {
         const auto& xformM = v.Get<MTransformationMatrix>();
 
-        auto t3d = Ufe::Transform3d::transform3d(sceneItem());
+        // transform3d() and editTransform3d() are equivalent for a normal Maya
+        // transform stack, but not for a fallback Maya transform stack, and
+        // both can be edited by this command.
+        auto t3d = Ufe::Transform3d::editTransform3d(sceneItem());
 
         auto t = xformM.getTranslation(MSpace::kTransform);
         t3d->translate(t[0], t[1], t[2]);
@@ -301,6 +304,9 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::rotation() const
     }
     UsdGeomXformOp r = getOp(NdxRotate);
     TF_AXIOM(r);
+    if (!r.GetAttr().HasValue()) {
+        return Ufe::Vector3d(0, 0, 0);
+    }
 
     CvtRotXYZFromAttrFn cvt = getCvtRotXYZFromAttrFn(r.GetOpName());
     return cvt(getValue(r.GetAttr(), getTime(path())));
@@ -313,6 +319,9 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::scale() const
     }
     UsdGeomXformOp s = getOp(NdxScale);
     TF_AXIOM(s);
+    if (!s.GetAttr().HasValue()) {
+        return Ufe::Vector3d(1, 1, 1);
+    }
 
     GfVec3f v;
     s.Get(&v, getTime(path()));
@@ -456,9 +465,9 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::scalePivotTranslation() const
 template <class V>
 Ufe::Vector3d UsdTransform3dMayaXformStack::getVector3d(const TfToken& attrName) const
 {
-    // If the attribute doesn't exist yet, return a zero vector.
+    // If the attribute doesn't exist or have a value yet, return a zero vector.
     auto attr = prim().GetAttribute(attrName);
-    if (!attr) {
+    if (!attr || !attr.HasValue()) {
         return Ufe::Vector3d(0, 0, 0);
     }
 
