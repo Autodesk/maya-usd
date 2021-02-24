@@ -115,7 +115,7 @@ global proc stageFromFile_UICommit(string $parent) {
         (`checkBoxGrp -q -value1 loadPayloadsCheckBox`);
 }
 
-proc doCreateStage(string $fileName) {
+proc string doCreateStage(string $fileName) {
     // actually load the file
     string $baseName = capitalizeString(`basenameEx $fileName`);
     if( ! isValidObjectName($baseName) )
@@ -132,6 +132,8 @@ proc doCreateStage(string $fileName) {
     setAttr ($shapeNode+".loadPayloads") $loadp;
     connectAttr time1.outTime ($shapeNode+".time");
     select -r $shapeNode;
+    string $fullPath[] = `ls -l $shapeNode`;
+    return $fullPath[0];
 }
 
 global proc createStageFromExistingCallback(string $parent, int $doIt)
@@ -239,7 +241,7 @@ global proc mayaUsd_createStageFromFile() {
     }
 }
 
-global proc mayaUsd_createStageFromFilePath(string $usdFile)
+global proc string mayaUsd_createStageFromFilePath(string $usdFile)
 {
-    doCreateStage($usdFile);
+    return doCreateStage($usdFile);
 }

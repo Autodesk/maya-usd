@@ -218,14 +218,14 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Create a proxy shape with empty stage to start with.
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create our UFE notification observer
         ufeObs = TestAddPrimObserver()
         ufe.Scene.addObserver(ufeObs)
 
         # Create a ContextOps interface for the proxy shape.
-        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|stage1|stageShape1")])
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
 
@@ -322,10 +322,10 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Create a proxy shape with empty stage to start with.
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
-        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|stage1|stageShape1")])
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment(proxyShape)])
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
 

@@ -54,14 +54,14 @@ class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
 
-        spherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        spherePath = ufe.PathString.path('%s,/Sphere1' % proxyShape)
         sphereItem = ufe.Hierarchy.createItem(spherePath)
         sphereT3d = ufe.Transform3d.transform3d(sphereItem)
 
@@ -112,7 +112,7 @@ class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
         # trying to move the pivot, will NOT create rotate pivot translation
         # compensation, because that is unsupported by the common API.
         proxyShapeContextOps.doOp(['Add New Prim', 'Cube'])
-        cubePath = ufe.PathString.path('|stage1|stageShape1,/Cube1')
+        cubePath = ufe.PathString.path('%s,/Cube1' % proxyShape)
         cubeItem = ufe.Hierarchy.createItem(cubePath)
         cubePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(cubePath))
         cubeXformable = UsdGeom.Xformable(cubePrim)

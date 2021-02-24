@@ -36,8 +36,9 @@ def getMayaStage():
 def getCleanMayaStage():
     """ gets a stage that only has an anon layer """
     cmds.file(new=True, force=True)
-    mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-    return getMayaStage()
+    shapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+    stage = mayaUsd.lib.GetPrim(shapePath).GetStage()
+    return shapePath, stage
 
 class DirtySceneCheck:
     def __init__(self, test):
@@ -128,10 +129,7 @@ class MayaUsdDirtySceneTestCase(unittest.TestCase):
         shapePath, stage = getMayaStage()
 
         # Change default prim -> dirties scene
-        ufePath = ufe.PathString.path('|transform1|proxyShape1,/Room_set/Props/Ball_35')
-        item = ufe.Hierarchy.createItem(ufePath)
-        raw = item.getRawAddress()
-        prim = mayaUsd.ufe.getPrimFromRawItem(item.getRawAddress())
+        prim = mayaUsd.ufe.ufePathToPrim('|transform1|proxyShape1,/Room_set/Props/Ball_35')
         with DirtySceneCheck(self):
             stage.SetDefaultPrim(prim)
 

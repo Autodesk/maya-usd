@@ -575,14 +575,14 @@ class AttributeTestCase(unittest.TestCase):
 
         # Create a capsule, change one of its attributes.
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         cmd = proxyShapeContextOps.doOpCmd(['Add New Prim', 'Capsule'])
         ufeCmd.execute(cmd)
 
-        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
 
         # Create the attributes interface for the item.
