@@ -187,6 +187,15 @@ mayaUsd_add_test(testUsdImportUVSetsST
 )
 set_property(TEST testUsdImportUVSetsST APPEND PROPERTY LABELS translators)
 
+mayaUsd_add_test(testUsdImportChaser
+    PYTHON_MODULE testUsdImportChaser
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+)
+set_property(TEST testUsdImportChaser APPEND PROPERTY LABELS translators)
+
 # Test using standardSurface, which was introduced in Maya 2020.
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
     set(CUSTOM_TEST_SCRIPT_FILES

@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/fileio/chaser/chaserRegistry.h>
+#include <mayaUsd/fileio/chaser/exportChaserRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include <pxr/base/tf/staticTokens.h>
@@ -222,8 +222,8 @@ void _WritePrefixedAttrs(const UsdTimeCode& usdTime, const _PrimEntry& entry)
 // subdivision.  UsdExport makes meshes catmullClark by default.  Here, we
 // implement logic to get set the subdivision scheme so that it matches.
 static void _SetMeshesSubDivisionScheme(
-    UsdStagePtr                                               stage,
-    const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd)
+    UsdStagePtr                                                     stage,
+    const UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd)
 {
 
     for (const auto& p : dagToUsd) {
@@ -254,14 +254,14 @@ static void _SetMeshesSubDivisionScheme(
 // match what exporting a file from maya to alembic does.  For now, it just
 // supports attrprefix and primvarprefix to export custom attributes and
 // primvars.
-class AlembicChaser : public UsdMayaChaser
+class AlembicChaser : public UsdMayaExportChaser
 {
 public:
     AlembicChaser(
-        UsdStagePtr                                               stage,
-        const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd,
-        const std::map<std::string, std::string>&                 attrPrefixes,
-        const std::map<std::string, std::string>&                 primvarPrefixes)
+        UsdStagePtr                                                     stage,
+        const UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd,
+        const std::map<std::string, std::string>&                       attrPrefixes,
+        const std::map<std::string, std::string>&                       primvarPrefixes)
         : _stage(stage)
         , _dagToUsd(dagToUsd)
     {
@@ -298,9 +298,9 @@ public:
     }
 
 private:
-    std::vector<_PrimEntry>                                   _primEntries;
-    UsdStagePtr                                               _stage;
-    const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& _dagToUsd;
+    std::vector<_PrimEntry>                                         _primEntries;
+    UsdStagePtr                                                     _stage;
+    const UsdMayaExportChaserRegistry::FactoryContext::DagToUsdMap& _dagToUsd;
 };
 
 static void _ParseMapArgument(
@@ -334,7 +334,7 @@ static void _ParseMapArgument(
     }
 }
 
-PXRUSDMAYA_DEFINE_CHASER_FACTORY(alembic, ctx)
+PXRUSDMAYA_DEFINE_EXPORT_CHASER_FACTORY(alembic, ctx)
 {
     std::map<std::string, std::string> myArgs;
     TfMapLookup(ctx.GetJobArgs().allChaserArgs, "alembic", &myArgs);

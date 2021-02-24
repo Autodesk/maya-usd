@@ -17,7 +17,7 @@
 #define PXRUSDMAYA_CHASER_REGISTRY_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/chaser/chaser.h>
+#include <mayaUsd/fileio/chaser/exportChaser.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
 
@@ -31,9 +31,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_PTRS(UsdMayaChaserRegistry);
+TF_DECLARE_WEAK_PTRS(UsdMayaExportChaserRegistry);
 
-/// \class UsdMayaChaserRegistry
+/// \class UsdMayaExportChaserRegistry
 /// \brief Registry for chaser plugins.
 ///
 /// We allow sites to register new chaser scripts that can be enabled on export.
@@ -42,7 +42,7 @@ TF_DECLARE_WEAK_PTRS(UsdMayaChaserRegistry);
 ///
 /// Unfortunately, these are only available through the command/python interface
 /// and not yet exposed in the translator interface.
-class UsdMayaChaserRegistry : public TfWeakBase
+class UsdMayaExportChaserRegistry : public TfWeakBase
 {
 public:
     /// \brief Holds data that can be accessed when constructing a
@@ -89,7 +89,7 @@ public:
         const UsdMayaJobExportArgs& _jobArgs;
     };
 
-    typedef std::function<UsdMayaChaser*(const FactoryContext&)> FactoryFn;
+    typedef std::function<UsdMayaExportChaser*(const FactoryContext&)> FactoryFn;
 
     /// \brief Register a chaser factory.
     ///
@@ -100,33 +100,34 @@ public:
 
     /// \brief Creates a chaser using the factoring registered to \p name.
     MAYAUSD_CORE_PUBLIC
-    UsdMayaChaserRefPtr Create(const std::string& name, const FactoryContext& context) const;
+    UsdMayaExportChaserRefPtr Create(const std::string& name, const FactoryContext& context) const;
 
     /// \brief Returns the names of all registered chasers.
     MAYAUSD_CORE_PUBLIC
     std::vector<std::string> GetAllRegisteredChasers() const;
 
     MAYAUSD_CORE_PUBLIC
-    static UsdMayaChaserRegistry& GetInstance();
+    static UsdMayaExportChaserRegistry& GetInstance();
 
 private:
-    UsdMayaChaserRegistry();
-    ~UsdMayaChaserRegistry();
-    friend class TfSingleton<UsdMayaChaserRegistry>;
+    UsdMayaExportChaserRegistry();
+    ~UsdMayaExportChaserRegistry();
+    friend class TfSingleton<UsdMayaExportChaserRegistry>;
 };
 
 /// \brief define a factory for the chaser \p name.  the \p contextArgName will
-/// be type \p UsdMayaChaserRegistry::FactoryContext .  The following code
+/// be type \p UsdMayaExportChaserRegistry::FactoryContext .  The following code
 /// block should return a \p UsdMayaChaser*.  There are no guarantees about
 /// the lifetime of \p contextArgName.
-#define PXRUSDMAYA_DEFINE_CHASER_FACTORY(name, contextArgName)                                 \
-    static UsdMayaChaser* _ChaserFactory_##name(const UsdMayaChaserRegistry::FactoryContext&); \
-    TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaChaserRegistry, name)                                 \
-    {                                                                                          \
-        UsdMayaChaserRegistry::GetInstance().RegisterFactory(#name, &_ChaserFactory_##name);   \
-    }                                                                                          \
-    UsdMayaChaser* _ChaserFactory_##name(                                                      \
-        const UsdMayaChaserRegistry::FactoryContext& contextArgName)
+#define PXRUSDMAYA_DEFINE_EXPORT_CHASER_FACTORY(name, contextArgName)                              \
+    static UsdMayaExportChaser* _ChaserFactory_##name(                                             \
+        const UsdMayaExportChaserRegistry::FactoryContext&);                                       \
+    TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaExportChaserRegistry, name)                               \
+    {                                                                                              \
+        UsdMayaExportChaserRegistry::GetInstance().RegisterFactory(#name, &_ChaserFactory_##name); \
+    }                                                                                              \
+    UsdMayaExportChaser* _ChaserFactory_##name(                                                    \
+        const UsdMayaExportChaserRegistry::FactoryContext& contextArgName)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
