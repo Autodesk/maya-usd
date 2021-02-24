@@ -75,22 +75,12 @@ find_file(USD_CONFIG_FILE
     DOC "USD cmake configuration file"
 )
 
-# ensure PXR_USD_LOCATION is defined
-if(NOT DEFINED PXR_USD_LOCATION)
-    if(DEFINED ENV{PXR_USD_LOCATION})
-        set(PXR_USD_LOCATION "$ENV{PXR_USD_LOCATION}")
-    else()
-        get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
-    endif()
-endif()
+# PXR_USD_LOCATION might have come in as an environment variable, and
+# it could also have been a hint-list, so we'll make sure we set it to
+# wherever we found pxrConfig, which is always the correct location.
+get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
 
 include(${USD_CONFIG_FILE})
-
-# account for possibility that PXR_USD_LOCATION was passed in as a hint-list
-list(LENGTH PXR_USD_LOCATION listlen)
-if(listlen GREATER 1)
-    get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
-endif()
 
 if(DEFINED PXR_VERSION)
     # Starting in core USD 21.05, pxrConfig.cmake provides the various USD
