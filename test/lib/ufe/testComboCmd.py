@@ -706,8 +706,15 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         mayaSphereItem        = ufe.Hierarchy.createItem(mayaSpherePath)
         usdSphereItem         = ufe.Hierarchy.createItem(usdSpherePath)
         usdFallbackSphereItem = ufe.Hierarchy.createItem(usdFallbackSpherePath)
-        usdSphere3d         = ufe.Transform3d.transform3d(usdSphereItem)
-        usdFallbackSphere3d = ufe.Transform3d.transform3d(usdFallbackSphereItem)
+        # For scene items with fallback transform ops, the transform3d()
+        # interface considers the complete object (i.e. all transform ops in
+        # the stack), which is undesirable when setting and getting fallback
+        # pivot transform ops.  To consider only the fallback transform ops,
+        # use the editTransform3d() interface.  For scene items with only a
+        # Maya transform stack, editTransform3d() and transform3d() are
+        # equivalent, so arbitrarily choose editTransform3d().
+        usdSphere3d         = ufe.Transform3d.editTransform3d(usdSphereItem, ufe.EditTransform3dHint())
+        usdFallbackSphere3d = ufe.Transform3d.editTransform3d(usdFallbackSphereItem, ufe.EditTransform3dHint())
 
         sn = ufe.GlobalSelection.get()
         sn.clear()
