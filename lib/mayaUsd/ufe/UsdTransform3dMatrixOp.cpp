@@ -16,8 +16,8 @@
 #include "UsdTransform3dMatrixOp.h"
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/ufe/UsdUndoableCommandBase.h>
 #include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
+#include <mayaUsd/ufe/UsdUndoableCommandBase.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/XformOpUtils.h>
 
