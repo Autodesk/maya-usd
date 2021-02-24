@@ -30,6 +30,10 @@ def assertVectorAlmostEqual(testCase, a, b, places=7):
     for va, vb in zip(a, b):
         testCase.assertAlmostEqual(va, vb, places)
 
+def assertVectorNotAlmostEqual(testCase, a, b, places=7):
+    for va, vb in zip(a, b):
+        testCase.assertNotAlmostEqual(va, vb, places)
+
 def assertVectorEqual(testCase, a, b):
     for va, vb in zip(a, b):
         testCase.assertEqual(va, vb)

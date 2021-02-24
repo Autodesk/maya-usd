@@ -36,8 +36,8 @@ public:
     ~SaveLayersDialog();
 
     // UI to get a file path to save a layer.
-    // As output returns the path and the file format (ex: "usda").
-    static bool saveLayerFilePathUI(std::string& out_filePath, std::string& out_format);
+    // As output returns the path.
+    static bool saveLayerFilePathUI(std::string& out_filePath);
 
 protected:
     void onSaveAll();

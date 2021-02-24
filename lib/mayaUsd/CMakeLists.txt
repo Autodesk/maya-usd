@@ -26,14 +26,12 @@ endif()
 if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     set(Boost_USE_DEBUG_PYTHON ON)
 endif()
-find_package(Boost COMPONENTS filesystem system REQUIRED)
 
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME}
     PUBLIC
-        USD_VERSION_NUM=${USD_VERSION_NUM}
         PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
@@ -120,8 +118,7 @@ target_link_libraries(${PROJECT_NAME}
         ${MAYA_LIBRARIES}
         mayaUsdUtils
     PRIVATE
-        Boost::filesystem
-        Boost::system
+        ghc_filesystem
 )
 
 # -----------------------------------------------------------------------------

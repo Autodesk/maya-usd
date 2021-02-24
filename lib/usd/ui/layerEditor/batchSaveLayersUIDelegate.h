@@ -29,6 +29,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace UsdLayerEditor {
 
 MAYAUSD_UI_PUBLIC
+void initialize();
+
+MAYAUSD_UI_PUBLIC
 bool batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>&);
 
 } // namespace UsdLayerEditor

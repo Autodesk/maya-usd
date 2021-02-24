@@ -16,12 +16,20 @@
 
 #include "batchSaveLayersUIDelegate.h"
 
+#include "mayaQtUtils.h"
 #include "saveLayersDialog.h"
 
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <maya/MGlobal.h>
+
+void UsdLayerEditor::initialize()
+{
+    if (nullptr == UsdLayerEditor::utils) {
+        UsdLayerEditor::utils = new MayaQtUtils();
+    }
+}
 
 bool UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>& stages)
 {

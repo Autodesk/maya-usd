@@ -18,10 +18,10 @@
 
 /// \file pxrUsdMayaGL/renderParams.h
 
+#include <mayaUsd/utils/hash.h>
+
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/pxr.h>
-
-#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,8 +40,11 @@ struct PxrMayaHdRenderParams
     size_t Hash() const
     {
         size_t hash = size_t(enableLighting);
-        boost::hash_combine(hash, useWireframe);
-        boost::hash_combine(hash, wireframeColor);
+        MayaUsd::hash_combine(hash, useWireframe);
+        MayaUsd::hash_combine(hash, wireframeColor[0]);
+        MayaUsd::hash_combine(hash, wireframeColor[1]);
+        MayaUsd::hash_combine(hash, wireframeColor[2]);
+        MayaUsd::hash_combine(hash, wireframeColor[3]);
 
         return hash;
     }

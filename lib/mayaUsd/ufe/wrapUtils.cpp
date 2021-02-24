@@ -137,6 +137,18 @@ static Ufe::Path _UfeV1StringToUsdPath(const std::string& ufePathString)
 }
 #endif
 
+UsdTimeCode getTime(const std::string& pathStr)
+{
+    const Ufe::Path path =
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        Ufe::PathString::path(
+#else
+        _UfeV1StringToUsdPath(
+#endif
+            pathStr);
+    return ufe::getTime(path);
+}
+
 std::string stripInstanceIndexFromUfePath(const std::string& ufePathString)
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -182,6 +194,18 @@ int ufePathToInstanceIndex(const std::string& ufePathString)
 #endif
 }
 
+TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
+{
+    auto path =
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        Ufe::PathString::path(
+#else
+        _UfeV1StringToUsdPath(
+#endif
+            ufePathString);
+    return ufe::getProxyShapePurposes(path);
+}
+
 void wrapUtils()
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -201,7 +225,9 @@ void wrapUtils()
     def("usdPathToUfePathSegment",
         usdPathToUfePathSegment,
         (arg("usdPath"), arg("instanceIndex") = UsdImagingDelegate::ALL_INSTANCES));
+    def("getTime", getTime);
     def("stripInstanceIndexFromUfePath", stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", ufePathToPrim);
     def("ufePathToInstanceIndex", ufePathToInstanceIndex);
+    def("getProxyShapePurposes", getProxyShapePurposes);
 }

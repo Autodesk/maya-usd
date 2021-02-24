@@ -9,6 +9,8 @@
 #include "stringResources.h"
 #include "warningDialogs.h"
 
+#include <mayaUsd/utils/utilSerialization.h>
+
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
@@ -301,10 +303,11 @@ void LayerTreeItem::saveAnonymousLayer()
 {
     auto sessionState = parentModel()->sessionState();
 
-    std::string fileName, formatTag;
-    if (sessionState->saveLayerUI(nullptr, &fileName, &formatTag)) {
+    std::string fileName;
+    if (sessionState->saveLayerUI(nullptr, &fileName)) {
         // the path we has is an absolute path
         const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
+        std::string   formatTag = UsdMayaSerialization::usdFormatArgOption();
         if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
             printf("USD Layer written to %s\n", fileName.c_str());
 

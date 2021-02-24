@@ -123,7 +123,9 @@ TF_DECLARE_PUBLIC_TOKENS(
     (Collapsed) \
     (Full) \
     (Import) \
-    ((Unloaded, ""))
+    ((Unloaded, "")) \
+    (chaser) \
+    (chaserArgs)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -186,9 +188,9 @@ struct UsdMayaJobExportArgs
     const bool    verbose;
     const bool    staticSingleSample;
 
-    typedef std::map<std::string, std::string> ChaserArgs;
-    const std::vector<std::string>             chaserNames;
-    const std::map<std::string, ChaserArgs>    allChaserArgs;
+    using ChaserArgs = std::map<std::string, std::string>;
+    const std::vector<std::string>          chaserNames;
+    const std::map<std::string, ChaserArgs> allChaserArgs;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
@@ -281,6 +283,10 @@ struct UsdMayaJobImportArgs
     /// special-cased because USD will accept full intervals like any other
     /// non-empty interval.
     const GfInterval timeInterval;
+
+    using ChaserArgs = std::map<std::string, std::string>;
+    const std::vector<std::string>          chaserNames;
+    const std::map<std::string, ChaserArgs> allChaserArgs;
 
     /// Get the current material conversion.
     MAYAUSD_CORE_PUBLIC

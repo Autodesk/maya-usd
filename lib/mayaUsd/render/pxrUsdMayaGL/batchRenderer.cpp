@@ -16,7 +16,7 @@
 
 // GL loading library needs to be included before any other OpenGL headers.
 #include <pxr/pxr.h>
-#if USD_VERSION_NUM < 2102
+#if PXR_VERSION < 2102
 #include <pxr/imaging/glf/glew.h>
 #else
 #include <pxr/imaging/garch/glApi.h>
@@ -80,7 +80,7 @@
 #include <utility>
 #include <vector>
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
 #include <pxr/imaging/hgi/hgi.h>
 #include <pxr/imaging/hgi/tokens.h>
 #endif
@@ -112,7 +112,7 @@ const int UsdMayaGLBatchRenderer::ProfilerCategory = MProfiler::addCategory(
 /* static */
 void UsdMayaGLBatchRenderer::Init()
 {
-#if USD_VERSION_NUM < 2102
+#if PXR_VERSION < 2102
     GlfGlewInit();
 #endif
     GlfContextCaps::InitInstance();
@@ -399,8 +399,8 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     , _softSelectOptionsCallbackId(0)
     , _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false)
     ,
-#if USD_VERSION_NUM > 2002
-#if USD_VERSION_NUM > 2005
+#if PXR_VERSION > 2002
+#if PXR_VERSION > 2005
     _hgi(Hgi::CreatePlatformDefaultHgi())
     ,
 #else
@@ -417,7 +417,7 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer()
     _legacyViewportPrefix = _rootId.AppendChild(_tokens->LegacyViewport);
     _viewport2Prefix = _rootId.AppendChild(_tokens->Viewport2);
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     _renderIndex.reset(HdRenderIndex::New(&_renderDelegate, { &_hgiDriver }));
 #else
     _renderIndex.reset(HdRenderIndex::New(&_renderDelegate));

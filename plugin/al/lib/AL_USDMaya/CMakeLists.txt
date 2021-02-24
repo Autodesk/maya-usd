@@ -209,9 +209,6 @@ target_link_libraries(${LIBRARY_NAME}
     usdImagingGL
     vt
     ${Boost_PYTHON_LIBRARY}
-    $<IF:$<VERSION_GREATER_EQUAL:${Boost_VERSION},${boost_1_70_0_ver_string}>,Boost::thread,${Boost_THREAD_LIBRARY}>
-    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::filesystem>
-    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::system>
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
@@ -219,6 +216,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMayaRender_LIBRARY}
     mayaUsd
     $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
+    ghc_filesystem
 )
 
 install(TARGETS ${LIBRARY_NAME}

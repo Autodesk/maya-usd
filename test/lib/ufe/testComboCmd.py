@@ -687,11 +687,8 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
         self.assertIsNone(capsuleT3d)
 
-    # Name test such that it runs last.  Otherwise, it runs before 
-    # testRotateScalePivotCompensation(), and causes it to fail.  To be 
-    # investigated --- MAYA-108067.
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121, 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
-    def testZFallback(self):
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 123, 'Fallback transform op handling only available in Maya Preview Release 123 or later.')
+    def testFallback(self):
         '''Transformable not handled by standard Transform3d handlers must be
     handled by fallback handler.'''
 
@@ -709,8 +706,15 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         mayaSphereItem        = ufe.Hierarchy.createItem(mayaSpherePath)
         usdSphereItem         = ufe.Hierarchy.createItem(usdSpherePath)
         usdFallbackSphereItem = ufe.Hierarchy.createItem(usdFallbackSpherePath)
-        usdSphere3d         = ufe.Transform3d.transform3d(usdSphereItem)
-        usdFallbackSphere3d = ufe.Transform3d.transform3d(usdFallbackSphereItem)
+        # For scene items with fallback transform ops, the transform3d()
+        # interface considers the complete object (i.e. all transform ops in
+        # the stack), which is undesirable when setting and getting fallback
+        # pivot transform ops.  To consider only the fallback transform ops,
+        # use the editTransform3d() interface.  For scene items with only a
+        # Maya transform stack, editTransform3d() and transform3d() are
+        # equivalent, so arbitrarily choose editTransform3d().
+        usdSphere3d         = ufe.Transform3d.editTransform3d(usdSphereItem, ufe.EditTransform3dHint())
+        usdFallbackSphere3d = ufe.Transform3d.editTransform3d(usdFallbackSphereItem, ufe.EditTransform3dHint())
 
         sn = ufe.GlobalSelection.get()
         sn.clear()

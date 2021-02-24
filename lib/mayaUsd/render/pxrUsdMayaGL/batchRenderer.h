@@ -69,7 +69,7 @@
 #include <maya/MTypes.h>
 #include <maya/MUserData.h>
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
 #include <pxr/imaging/hd/driver.h>
 #endif
 
@@ -454,7 +454,7 @@ private:
     /// *after* the render index. We enforce that ordering by declaring the
     /// render delegate *before* the render index, since class members are
     /// destructed in reverse declaration order.
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     /// Hgi and HdDriver should be constructed before HdEngine to ensure they
     /// are destructed last. Hgi may be used during engine/delegate destruction.
     HgiUniquePtr _hgi;

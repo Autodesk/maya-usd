@@ -103,9 +103,8 @@ public:
 
     QString absolutePath() const;
     QString pathToSaveAs() const;
-    QString usdFormatTag() const;
 
-    void setAbsolutePath(const std::string& path, const std::string& tag);
+    void setAbsolutePath(const std::string& path);
 
 protected:
     void onOpenBrowser();
@@ -115,7 +114,6 @@ protected:
 public:
     QString                                   _initialStartFolder;
     QString                                   _absolutePath;
-    QString                                   _formatTag;
     SaveLayersDialog*                         _parent { nullptr };
     std::pair<SdfLayerRefPtr, SdfLayerRefPtr> _layerPair;
     QLabel*                                   _label { nullptr };
@@ -127,7 +125,6 @@ SaveLayerPathRow::SaveLayerPathRow(
     SaveLayersDialog*                                in_parent,
     const std::pair<SdfLayerRefPtr, SdfLayerRefPtr>& in_layerPair)
     : QWidget(in_parent)
-    , _formatTag(UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText())
     , _parent(in_parent)
     , _layerPair(in_layerPair)
 {
@@ -173,21 +170,18 @@ QString SaveLayerPathRow::absolutePath() const { return _absolutePath; }
 
 QString SaveLayerPathRow::pathToSaveAs() const { return _absolutePath; }
 
-QString SaveLayerPathRow::usdFormatTag() const { return _formatTag; }
-
-void SaveLayerPathRow::setAbsolutePath(const std::string& path, const std::string& tag)
+void SaveLayerPathRow::setAbsolutePath(const std::string& path)
 {
     _absolutePath = path.c_str();
     _pathEdit->setText(_absolutePath);
     _pathEdit->setEnabled(true);
-    _formatTag = tag.c_str();
 }
 
 void SaveLayerPathRow::onOpenBrowser()
 {
-    std::string fileName, formatTag;
-    if (SaveLayersDialog::saveLayerFilePathUI(fileName, formatTag)) {
-        setAbsolutePath(fileName, formatTag);
+    std::string fileName;
+    if (SaveLayersDialog::saveLayerFilePathUI(fileName)) {
+        setAbsolutePath(fileName);
     }
 }
 
@@ -501,8 +495,8 @@ void SaveLayersDialog::onSaveAll()
                 auto qFileName = row->absolutePath();
                 auto sFileName = qFileName.toStdString();
 
-                auto newLayer = UsdMayaSerialization::saveAnonymousLayer(
-                    sdfLayer, sFileName, parentLayer, row->usdFormatTag().toStdString());
+                auto newLayer
+                    = UsdMayaSerialization::saveAnonymousLayer(sdfLayer, sFileName, parentLayer);
 
                 if (!parentLayer) {
                     newRoot = sFileName;
@@ -575,7 +569,7 @@ bool SaveLayersDialog::okToSave()
 }
 
 /*static*/
-bool SaveLayersDialog::saveLayerFilePathUI(std::string& out_filePath, std::string& out_format)
+bool SaveLayersDialog::saveLayerFilePathUI(std::string& out_filePath)
 {
     MString fileSelected;
     MGlobal::executeCommand(
@@ -587,18 +581,6 @@ bool SaveLayersDialog::saveLayerFilePathUI(std::string& out_filePath, std::strin
         return false;
 
     out_filePath = fileSelected.asChar();
-
-    // figure out format
-    QFileInfo fileInfo(fileSelected.asChar());
-    QString   extension = fileInfo.suffix().toLower();
-
-    // unambiguous formats
-    if (extension == UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText()
-        || extension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
-        out_format = extension.toStdString();
-    } else {
-        out_format = UsdMayaSerialization::usdFormatArgOption();
-    }
 
     return true;
 }

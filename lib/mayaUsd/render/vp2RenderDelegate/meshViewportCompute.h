@@ -16,6 +16,8 @@
 #ifndef HD_VP2_MESHVIEWPORTCOMPUTE
 #define HD_VP2_MESHVIEWPORTCOMPUTE
 
+#include <pxr/pxr.h> // for PXR_VERSION
+
 #include <maya/MTypes.h> // for MAYA_API_VERSION
 
 /*
@@ -43,7 +45,7 @@
 // Maya 2020 is missing API necessary for compute support
 // OSX doesn't have OpenGL 4.3 support necessary for compute
 // USD before 20.08 doesn't include some OSD commits we rely on
-#if MAYA_API_VERSION >= 20210000 && !defined(OSMac_) && USD_VERSION_NUM > 2002
+#if MAYA_API_VERSION >= 20210000 && !defined(OSMac_) && PXR_VERSION > 2002
 #define HDVP2_ENABLE_GPU_COMPUTE
 #endif
 
@@ -58,7 +60,6 @@
 #endif
 
 #include <pxr/imaging/hd/mesh.h>
-#include <pxr/pxr.h>
 
 #include <maya/MHWGeometry.h>
 #include <maya/MSharedPtr.h>
@@ -85,7 +86,7 @@
 // clang-format wants to re-order these two includes but they must be done in this order or
 // the code will not compile.
 // clang-format off
-#if USD_VERSION_NUM < 2102
+#if PXR_VERSION < 2102
 #include <pxr/imaging/glf/glew.h> // needs to be included before anything else includes gl.h
 #else
 #include <pxr/imaging/garch/glApi.h>

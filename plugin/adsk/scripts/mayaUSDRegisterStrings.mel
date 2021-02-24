@@ -32,12 +32,13 @@ global proc mayaUSDRegisterStrings() {
     register("kDefaultPrim", "Default Prim");
     register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file.");
     register("kExcludePrimPaths", "Exclude Prim Paths:");
-    register("kExcludePrimPathsAnn", "Excludes the specified prim paths from the loaded USD data. Multiple prim paths must be separated by a comma.");
-    register("kExcludePrimPathsSbm", "Excludes the specified prim paths from the loaded USD data");
+    register("kExcludePrimPathsAnn", "Specify the path of a prim to exclude it from the viewport display. Multiple prim paths must be separated by a comma.");
+    register("kExcludePrimPathsSbm", "Specify the path of a prim to exclude it from the viewport display.");
     register("kLabelStage", "Stage");
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
     register("kLoad", "Load");
+    register("kLoadAll", "Load All");
     register("kLoadPayloads", "Load Payloads:");
     register("kLoadPayloadsAnn", "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded.");
     register("kLoadPayloadsSbm", "Loads prims marked as payloads");
@@ -63,6 +64,13 @@ global proc mayaUSDRegisterStrings() {
     register("kMenuSaveAs", "Save As...");
     register("kMenuSaveEdits", "Save Edits");
     register("kMenuUnmute", "Unmute");
+    register("kPayloads", "Payloads");
+    register("kPayloadsAnn", "Select to load or unload all prims marked as payloads, including their descendants, into the stage.");
+    register("kPurposeAnn", "Toggle purpose categories on and off to change their visibility in the viewport.");
+    register("kPurposeLabel", "Purpose");
+    register("kPurposeOption1", "Guide");
+    register("kPurposeOption2", "Proxy");
+    register("kPurposeOption3", "Render");
     register("kPrimPath", "Prim Path:");
     register("kPrimPathAnn", "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded.");
     register("kPrimPathSbm", "Loads the specified prim path");
@@ -83,6 +91,7 @@ global proc mayaUSDRegisterStrings() {
     register("kSaveOptionUnsavedEdits", "You have unsaved USD edits. How would you like to proceed?");
     register("kTimeAnn", "Edits the current time value of a stage, which corresponds to the animation frame drawn in the viewport. By default, this value connects to Maya's global time node.");
     register("kTipYouCanChooseMultipleFiles", "<b>Tip:</b>  You can choose multiple files.");
+    register("kUnloadAll", "Unload All");
     register("kUsdFileOptions", "USD File Options");
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
     register("kSaveOption2GBWarning", "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.");

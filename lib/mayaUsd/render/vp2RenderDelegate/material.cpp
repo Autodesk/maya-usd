@@ -25,6 +25,7 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/ar/packageUtils.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdHydra/tokens.h>
@@ -41,18 +42,18 @@
 #include <maya/MUintArray.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include <iostream>
 #include <string>
 
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
 #include <pxr/imaging/hdSt/udimTextureObject.h>
 #else
 #include <pxr/imaging/glf/udimTexture.h>
 #endif
 
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
 #include <pxr/imaging/hio/image.h>
 #else
 #include <pxr/imaging/glf/image.h>
@@ -275,7 +276,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     */
 
     // test for a UDIM texture
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     if (!HdStIsSupportedUdimTexture(path))
         return nullptr;
 #else
@@ -319,7 +320,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     // resolution, warn the user if Maya's tiled texture implementation is going to result in
     // a loss of texture data.
     {
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
         HioImageSharedPtr image = HioImage::OpenForReading(std::get<1>(tiles[0]).GetString());
 #else
         GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tiles[0]).GetString());
@@ -348,7 +349,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     for (auto& tile : tiles) {
         tilePaths.append(MString(std::get<1>(tile).GetText()));
 
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
         HioImageSharedPtr image = HioImage::OpenForReading(std::get<1>(tile).GetString());
 #else
         GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tile).GetString());
@@ -399,7 +400,7 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "LoadTexture", path.c_str());
 
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     if (HdStIsSupportedUdimTexture(path))
         return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
 #else
@@ -414,7 +415,7 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         return nullptr;
     }
 
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     HioImageSharedPtr image = HioImage::OpenForReading(path);
 #else
     GlfImageSharedPtr     image = GlfImage::OpenForReading(path);
@@ -426,7 +427,7 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     // This image is used for loading pixel data from usdz only and should
     // not trigger any OpenGL call. VP2RenderDelegate will transfer the
     // texels to GPU memory with VP2 API which is 3D API agnostic.
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     HioImage::StorageSpec spec;
 #else
     GlfImage::StorageSpec spec;
@@ -434,9 +435,9 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     spec.width = image->GetWidth();
     spec.height = image->GetHeight();
     spec.depth = 1;
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     spec.format = image->GetFormat();
-#elif USD_VERSION_NUM > 2008
+#elif PXR_VERSION > 2008
     spec.hioFormat = image->GetHioFormat();
 #else
     spec.format = image->GetFormat();
@@ -464,8 +465,8 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     desc.fBytesPerRow = bytesPerRow;
     desc.fBytesPerSlice = bytesPerSlice;
 
-#if USD_VERSION_NUM > 2008
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION > 2008
+#if PXR_VERSION >= 2102
     switch (spec.format) {
 #else
     switch (spec.hioFormat) {
@@ -676,7 +677,7 @@ void HdVP2Material::Sync(
                               << _GenerateXMLString(dispNet) << "\n";
 
                     if (_surfaceShader) {
-                        auto tmpDir = boost::filesystem::temp_directory_path();
+                        auto tmpDir = ghc::filesystem::temp_directory_path();
                         tmpDir /= "HdVP2Material_";
                         tmpDir += id.GetName();
                         tmpDir += ".txt";
