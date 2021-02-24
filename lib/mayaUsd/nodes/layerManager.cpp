@@ -504,7 +504,9 @@ bool LayerDatabase::saveUsdToUsdFiles()
 
             SdfLayerHandleVector allLayers = stage->GetLayerStack(false);
             for (auto layer : allLayers) {
-                layer->Save();
+                if (!layer->IsAnonymous()) {
+                    layer->Save();
+                }
             }
         }
     }
