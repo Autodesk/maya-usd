@@ -45,8 +45,8 @@
 // Needed for directly removing a UsdVariant via Sdf
 //   Remove when UsdVariantSet::RemoveVariant() is exposed
 //   XXX [bug 75864]
-#include <mayaUsd/fileio/chaser/chaser.h>
-#include <mayaUsd/fileio/chaser/chaserRegistry.h>
+#include <mayaUsd/fileio/chaser/exportChaser.h>
+#include <mayaUsd/fileio/chaser/exportChaserRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/modelKindProcessor.h>
 #include <mayaUsd/fileio/primWriter.h>
@@ -396,16 +396,18 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
     // now we populate the chasers and run export default
     mChasers.clear();
-    UsdMayaChaserRegistry::FactoryContext ctx(mJobCtx.mStage, mDagPathToUsdPathMap, mJobCtx.mArgs);
+    UsdMayaExportChaserRegistry::FactoryContext ctx(
+        mJobCtx.mStage, mDagPathToUsdPathMap, mJobCtx.mArgs);
     for (const std::string& chaserName : mJobCtx.mArgs.chaserNames) {
-        if (UsdMayaChaserRefPtr fn = UsdMayaChaserRegistry::GetInstance().Create(chaserName, ctx)) {
+        if (UsdMayaExportChaserRefPtr fn
+            = UsdMayaExportChaserRegistry::GetInstance().Create(chaserName, ctx)) {
             mChasers.push_back(fn);
         } else {
             TF_RUNTIME_ERROR("Failed to create chaser: %s", chaserName.c_str());
         }
     }
 
-    for (const UsdMayaChaserRefPtr& chaser : mChasers) {
+    for (const UsdMayaExportChaserRefPtr& chaser : mChasers) {
         if (!chaser->ExportDefault()) {
             return false;
         }
@@ -425,7 +427,7 @@ bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
         }
     }
 
-    for (UsdMayaChaserRefPtr& chaser : mChasers) {
+    for (UsdMayaExportChaserRefPtr& chaser : mChasers) {
         if (!chaser->ExportFrame(iFrame)) {
             return false;
         }
@@ -506,7 +508,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
     }
 
     // Run post export function on the chasers.
-    for (const UsdMayaChaserRefPtr& chaser : mChasers) {
+    for (const UsdMayaExportChaserRefPtr& chaser : mChasers) {
         if (!chaser->PostExport()) {
             return false;
         }
