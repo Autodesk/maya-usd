@@ -819,7 +819,6 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
-        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
         usdT3d = ufe.Transform3d.transform3d(capsuleItem)
 
         sn = ufe.GlobalSelection.get()
