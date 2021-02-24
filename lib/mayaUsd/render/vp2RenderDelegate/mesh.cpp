@@ -22,6 +22,7 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/utils/colorSpace.h>
 
@@ -461,8 +462,6 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
         || (normalsInfo && PrimvarSource::GPUCompute == normalsInfo->_source.dataSource);
     bool hasCleanNormals
         = normalsInfo && (0 == (rprimDirtyBits & (DirtySmoothNormals | DirtyFlatNormals)));
-    // fprintf(stderr, "need normals: %d   computeCPUNormals: %d   computeGPUNormals: %d
-    // hasCleanNormals: %d\n", needNormals, computeCPUNormals, computeGPUNormals, hasCleanNormals);
     if (needNormals && (computeCPUNormals || computeGPUNormals) && !hasCleanNormals) {
         _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
         // Iterate through all reprdescs for the current repr to figure out if any
@@ -484,8 +483,6 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
         // If there are authored normals, prepare buffer only when it is dirty.
         // otherwise, compute smooth normals from points and adjacency and we
         // have a custom dirty bit to determine whether update is needed.
-        // fprintf(stderr, "requireSmoothNormals: %d   smooth normals dirty: %d\n",
-        // requireSmoothNormals, (rprimDirtyBits & DirtySmoothNormals));
         if (requireSmoothNormals && (rprimDirtyBits & DirtySmoothNormals)) {
             if (computeGPUNormals) {
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
@@ -1334,7 +1331,8 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
             continue;
 
         MString renderItemName = drawItem.GetDrawItemName();
-        renderItemName += geomSubset.id.GetString().c_str(); // TODO: add a separator?
+        renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
+        renderItemName += geomSubset.id.GetString().c_str();
         MHWRender::MRenderItem* renderItem = _CreateSmoothHullRenderItem(renderItemName);
         drawItem.AddRenderItem(renderItem, &geomSubset);
 
