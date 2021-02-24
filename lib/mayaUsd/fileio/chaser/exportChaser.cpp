@@ -13,23 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "chaser.h"
+#include "exportChaser.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool UsdMayaChaser::ExportDefault()
+bool UsdMayaExportChaser::ExportDefault()
 {
     // Do nothing by default.
     return true;
 }
 
-bool UsdMayaChaser::ExportFrame(const UsdTimeCode& time)
+bool UsdMayaExportChaser::ExportFrame(const UsdTimeCode& time)
 {
     // Do nothing by default.
     return true;
 }
 
-bool UsdMayaChaser::PostExport()
+bool UsdMayaExportChaser::PostExport()
 {
     // Do nothing by default.
     return true;

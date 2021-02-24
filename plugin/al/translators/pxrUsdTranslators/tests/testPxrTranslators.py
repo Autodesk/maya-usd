@@ -38,9 +38,54 @@ class TestTranslator(unittest.TestCase):
         # force the stage to load
         stage = proxyShape.getUsdStage()
         self.assertTrue(stage)
-        mc.setAttr(proxyShapeNode + ".timeOffset", 40)
-        mc.setAttr(proxyShapeNode + ".timeScalar", 2)
-        
+
+        # check that, with no time offset or scalar, we get the rotateZ values set
+        # in the .usda
+        sphereShape1Prim = stage.GetPrimAtPath("/pSphere1/pSphereShape1")
+        sphereShape1Maya = proxyShape.makeUsdTransformChain(sphereShape1Prim)
+
+        rotateZUsd = sphereShape1Prim.GetAttribute("xformOp:rotateZ")
+        rotateZMaya = '{}.rotateZ'.format(sphereShape1Maya)
+        expected_unaltered_rotate_z = {
+            -1: 0,
+            0: 0,
+            2: 180,
+            4: 360,
+            5: 360,
+        }
+        for stage_time, expected_rotate in expected_unaltered_rotate_z.items():
+            self.assertAlmostEqual(expected_rotate, rotateZUsd.Get(stage_time))
+            mc.currentTime(stage_time)
+            self.assertAlmostEqual(expected_rotate, mc.getAttr(rotateZMaya))
+
+        timeOffset = 40
+        timeScalarAL = 2
+        mc.setAttr(proxyShapeNode + ".timeOffset", timeOffset)
+        mc.setAttr(proxyShapeNode + ".timeScalar", timeScalarAL)
+
+        # Now check that, with the time offset + scalar applied, we get
+        # values at different times - note that the proxy shape interprets
+        # a "timeScalar = 2" to mean the shape is fast-forwarded twice as fast,
+        # so:
+        #    layer_time = (maya_time - offset) * scalarAL
+        #    maya_time = layer_time / scalarAL + offset
+        expected_retimed_rotate_z = {
+            39: 0,
+            40: 0,
+            41: 180,
+            42: 360,
+            43: 360,
+        }
+        for stage_time, expected_rotate in expected_retimed_rotate_z.items():
+            mc.currentTime(stage_time)
+            self.assertAlmostEqual(expected_rotate, mc.getAttr(rotateZMaya))
+
+        # if we don't remove this, the reference gets made at:
+        #     /world/geo/AL_usdmaya_Proxy/AL_usdmaya_ProxyShape
+        # instead of the (collapsed):
+        #     /world/geo/AL_usdmaya_Proxy
+        proxyShape.removeUsdTransformChain(sphereShape1Prim)
+
         # create another proxyShape with a few session layer edits
         mc.select(clear=1)
         proxyShapeNode2 = mc.AL_usdmaya_ProxyShapeImport(
@@ -57,6 +102,7 @@ class TestTranslator(unittest.TestCase):
         session = stage2.GetSessionLayer()
         stage2.SetEditTarget(session)
         extraPrimPath = "/pExtraPrimPath"
+        firstSpherePath = "/pSphereShape1"
         secondSpherePath = "/pSphereShape2"
         stage2.DefinePrim("/pSphere1" + extraPrimPath)
         existingSpherePath = "/pSphere1" + secondSpherePath
@@ -83,8 +129,14 @@ class TestTranslator(unittest.TestCase):
         self.assertTrue(refSpec)
         self.assertTrue(refSpec.hasReferences)
         refs = refSpec.referenceList.GetAddedOrExplicitItems()
-        self.assertEqual(refs[0].layerOffset, Sdf.LayerOffset(40, 2))
-        
+        self.assertEqual(refs[0].layerOffset, Sdf.LayerOffset(timeOffset, 1.0/timeScalarAL))
+
+        # and check that the animated values are properly offset
+        resultSphereShape1Prim = resultStage.GetPrimAtPath(refPrimPath + firstSpherePath)
+        rotateZUsd = resultSphereShape1Prim.GetAttribute("xformOp:rotateZ")
+        for stage_time, expected_rotate in expected_retimed_rotate_z.items():
+            self.assertAlmostEqual(expected_rotate, rotateZUsd.Get(stage_time))
+
         # Check proxyShape2
         # make sure the session layer was properly grafted on
         refPrim2 = resultStage.GetPrimAtPath(refPrimPath2)
