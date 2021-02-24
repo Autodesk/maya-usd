@@ -139,7 +139,7 @@ GfMatrix4d xformInv(
 }
 
 // Class for setMatrixCmd() implementation.
-class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>
+class UsdSetMatrix4dUndoableCmd : public UsdValueUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(
@@ -168,7 +168,8 @@ public:
         // transform3d() returns a whole-object interface, which may include
         // other transform ops.
         auto t3d = Ufe::Transform3d::editTransform3d(sceneItem());
-        t3d->setMatrix(_newM);
+        const auto& matrix = v.Get<Ufe::Matrix4d>();
+        t3d->setMatrix(matrix);
     }
 };
 
