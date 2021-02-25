@@ -77,12 +77,18 @@ computeLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTi
     return m;
 }
 
-inline GfMatrix4d computeLocalInclusiveTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTimeCode& time)
+inline GfMatrix4d computeLocalInclusiveTransform(
+    const UsdPrim&        prim,
+    const UsdGeomXformOp& op,
+    const UsdTimeCode&    time)
 {
     return computeLocalTransform<true>(prim, op, time);
 }
 
-inline GfMatrix4d computeLocalExclusiveTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTimeCode& time)
+inline GfMatrix4d computeLocalExclusiveTransform(
+    const UsdPrim&        prim,
+    const UsdGeomXformOp& op,
+    const UsdTimeCode&    time)
 {
     return computeLocalTransform<false>(prim, op, time);
 }
