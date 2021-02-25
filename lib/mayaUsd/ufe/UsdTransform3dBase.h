@@ -23,8 +23,6 @@
 #include <ufe/transform3d.h>
 #include <ufe/transform3dHandler.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
