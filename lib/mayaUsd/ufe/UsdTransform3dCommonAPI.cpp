@@ -143,7 +143,8 @@ private:
     GfVec3f               _s;
 };
 
-class UsdTranslatePivotUndoableCmd : public UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>
+class UsdTranslatePivotUndoableCmd
+    : public UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>
 {
 public:
     UsdTranslatePivotUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)

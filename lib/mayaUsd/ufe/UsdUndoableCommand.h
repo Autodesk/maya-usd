@@ -58,16 +58,10 @@ public:
     }
 
     // Calls undo on the undoable item.
-    void undo() override
-    {
-        _undoableItem.undo();
-    }
+    void undo() override { _undoableItem.undo(); }
 
     // Calls redo on the undoable item.
-    void redo() override
-    {
-        _undoableItem.redo();
-    }
+    void redo() override { _undoableItem.redo(); }
 
 protected:
     // Actual implementation of the execution of the command,

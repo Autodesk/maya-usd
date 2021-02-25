@@ -89,7 +89,6 @@ protected:
         Undone
     };
 
-private:
     State _state = State::Initial;
 };
 
