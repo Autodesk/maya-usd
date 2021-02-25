@@ -22,8 +22,6 @@
 
 #include <ufe/undoableCommand.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -33,7 +31,7 @@ class MAYAUSD_CORE_PUBLIC UsdUndoVisibleCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoVisibleCommand> Ptr;
 
-    UsdUndoVisibleCommand(const UsdPrim& prim, bool vis);
+    UsdUndoVisibleCommand(const PXR_NS::UsdPrim& prim, bool vis);
     ~UsdUndoVisibleCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -43,14 +41,14 @@ public:
     UsdUndoVisibleCommand& operator=(UsdUndoVisibleCommand&&) = delete;
 
     //! Create a UsdUndoVisibleCommand object
-    static UsdUndoVisibleCommand::Ptr create(const UsdPrim& prim, bool vis);
+    static UsdUndoVisibleCommand::Ptr create(const PXR_NS::UsdPrim& prim, bool vis);
 
 private:
     void execute() override;
     void undo() override;
     void redo() override;
 
-    UsdPrim _prim;
+    PXR_NS::UsdPrim _prim;
 
     bool _visible;
 

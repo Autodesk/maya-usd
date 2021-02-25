@@ -22,8 +22,6 @@
 
 #include <ufe/undoableCommand.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -33,7 +31,7 @@ class MAYAUSD_CORE_PUBLIC UsdUndoReorderCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoReorderCommand> Ptr;
 
-    UsdUndoReorderCommand(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
+    UsdUndoReorderCommand(const PXR_NS::UsdPrim& parentPrim, const std::vector<PXR_NS::TfToken>& orderedTokens);
     ~UsdUndoReorderCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -44,16 +42,16 @@ public:
 
     //! Create a UsdUndoReorderCommand
     static UsdUndoReorderCommand::Ptr
-    create(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
+    create(const PXR_NS::UsdPrim& parentPrim, const std::vector<PXR_NS::TfToken>& orderedTokens);
 
 private:
     void execute() override;
     void undo() override;
     void redo() override;
 
-    UsdPrim              _parentPrim;
-    std::vector<TfToken> _orderedTokens;
-    UsdUndoableItem      _undoableItem;
+    PXR_NS::UsdPrim              _parentPrim;
+    std::vector<PXR_NS::TfToken> _orderedTokens;
+    UsdUndoableItem              _undoableItem;
 
 }; // UsdUndoReorderCommand
 
