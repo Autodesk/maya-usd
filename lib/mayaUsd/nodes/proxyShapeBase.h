@@ -50,7 +50,6 @@ constexpr int  MAYA_UFE_RUNTIME_ID = 1;
 constexpr char MAYA_UFE_SEPARATOR = '|';
 constexpr int  USD_UFE_RUNTIME_ID = 2;
 constexpr char USD_UFE_SEPARATOR = '/';
-constexpr char VP2_RENDER_DELEGATE_SEPARATOR = ';';
 #endif
 
 #include <mayaUsd/base/api.h>

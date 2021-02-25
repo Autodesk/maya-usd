@@ -17,8 +17,6 @@
 
 #include "render_delegate.h"
 
-#include <mayaUsd/nodes/proxyShapeBase.h>
-
 #include <pxr/imaging/hd/mesh.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
