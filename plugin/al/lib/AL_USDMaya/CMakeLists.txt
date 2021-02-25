@@ -209,8 +209,6 @@ target_link_libraries(${LIBRARY_NAME}
     usdImagingGL
     vt
     ${Boost_PYTHON_LIBRARY}
-    $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
-    $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
