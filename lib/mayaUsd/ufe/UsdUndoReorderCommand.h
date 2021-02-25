@@ -31,7 +31,9 @@ class MAYAUSD_CORE_PUBLIC UsdUndoReorderCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoReorderCommand> Ptr;
 
-    UsdUndoReorderCommand(const PXR_NS::UsdPrim& parentPrim, const std::vector<PXR_NS::TfToken>& orderedTokens);
+    UsdUndoReorderCommand(
+        const PXR_NS::UsdPrim&              parentPrim,
+        const std::vector<PXR_NS::TfToken>& orderedTokens);
     ~UsdUndoReorderCommand() override;
 
     // Delete the copy/move constructors assignment operators.
