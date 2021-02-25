@@ -11,6 +11,7 @@ set(TEST_SCRIPT_FILES
 
 if (UFE_FOUND AND MAYA_APP_VERSION VERSION_GREATER 2020)
     list(APPEND TEST_SCRIPT_FILES
+        testMayaUsdDirtyScene.py
         testMayaUsdProxyAccessor.py
     )
 endif()

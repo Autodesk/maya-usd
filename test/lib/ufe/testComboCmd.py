@@ -454,14 +454,14 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         mayaSphereItem = ufe.Hierarchy.createItem(mayaSpherePath)
 
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
 
-        usdSpherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        usdSpherePath = ufe.PathString.path('%s,/Sphere1' % proxyShape)
         usdSphereItem = ufe.Hierarchy.createItem(usdSpherePath)
         usdSphereT3d = ufe.Transform3d.transform3d(usdSphereItem)
 
@@ -579,14 +579,14 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         cmds.file(new=True, force=True)
 
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
 
-        spherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        spherePath = ufe.PathString.path('%s,/Sphere1' % proxyShape)
         sphereItem = ufe.Hierarchy.createItem(spherePath)
         sphereT3d = ufe.Transform3d.transform3d(sphereItem)
 
@@ -639,13 +639,13 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         cmds.file(new=True, force=True)
 
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
 
-        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
         capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
         capsuleXformable = UsdGeom.Xformable(capsulePrim)
