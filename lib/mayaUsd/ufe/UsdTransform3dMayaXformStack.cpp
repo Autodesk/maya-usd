@@ -19,7 +19,7 @@
 
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
-#include <mayaUsd/ufe/UsdUndoableCommandBase.h>
+#include <mayaUsd/ufe/UsdUndoableInteractiveCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <maya/MEulerRotation.h>
@@ -162,11 +162,11 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
 }
 
 // Class for setMatrixCmd() implementation.
-class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>(path)
+        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
     {
         // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
         // nor GfTransform decomposition provide results that match Maya,
@@ -197,7 +197,7 @@ public:
     }
 
 protected:
-    void executeImpl() override
+    void executeUndoBlock() override
     {
         // transform3d() and editTransform3d() are equivalent for a normal Maya
         // transform stack, but not for a fallback Maya transform stack, and
@@ -216,7 +216,7 @@ private:
 
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
-class UsdTRSUndoableCmdBase : public UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>
+class UsdTRSUndoableCmdBase : public UsdUndoableInteractiveCommand<Ufe::SetVector3dUndoableCommand>
 {
 private:
     const UsdTimeCode _readTime;
@@ -319,7 +319,7 @@ public:
         const Ufe::Path&   path,
         OpFunc             opFunc,
         const UsdTimeCode& writeTime_)
-        : UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>(path)
+        : UsdUndoableInteractiveCommand<Ufe::SetVector3dUndoableCommand>(path)
         ,
         // Always read from proxy shape time.
         _readTime(getTime(path))
@@ -333,16 +333,16 @@ public:
     // Ufe::UndoableCommand overrides.
     void undo() override
     {
-        UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>::undo();
+        UsdUndoableInteractiveCommand<Ufe::SetVector3dUndoableCommand>::undo();
         _state->handleUndo(this);
     }
     void redo() override
     {
-        UsdUndoableCommandBase<Ufe::SetVector3dUndoableCommand>::redo();
+        UsdUndoableInteractiveCommand<Ufe::SetVector3dUndoableCommand>::redo();
         _state->handleSet(this, _newOpValue);
     }
 
-    void executeImpl() override { _state->handleSet(this, _newOpValue); }
+    void executeUndoBlock() override { _state->handleSet(this, _newOpValue); }
 
     void setValue(const VtValue& v) { _op.GetAttr().Set(v, _writeTime); }
 

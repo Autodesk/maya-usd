@@ -17,7 +17,7 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
-#include <mayaUsd/ufe/UsdUndoableCommandBase.h>
+#include <mayaUsd/ufe/UsdUndoableInteractiveCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/XformOpUtils.h>
 
@@ -129,11 +129,11 @@ GfMatrix4d xformInv(
 }
 
 // Class for setMatrixCmd() implementation.
-class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : UsdUndoableCommandBase<Ufe::SetMatrix4dUndoableCommand>(path)
+        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
         , _newM(newM)
     {
     }
@@ -147,7 +147,7 @@ public:
         return true;
     }
 
-    void executeImpl() override
+    void executeUndoBlock() override
     {
         // Use editTransform3d() to set a single matrix transform op.
         // transform3d() returns a whole-object interface, which may include
@@ -187,7 +187,7 @@ public:
     UsdTimeCode writeTime() const { return fWriteTime; }
 
 protected:
-    void executeImpl() { fOp.GetAttr().Set(fNewOpValue, fWriteTime); }
+    void executeUndoBlock() { fOp.GetAttr().Set(fNewOpValue, fWriteTime); }
 
     VtValue fNewOpValue;
 };
@@ -195,7 +195,7 @@ protected:
 // Command to set the translation on a scene item by setting a matrix transform
 // op at an arbitrary position in the transform op stack.
 class UsdTranslateUndoableCmd
-    : public UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>
+    : public UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>
     , public UsdTRSUndoableCmdBase
 {
 public:
@@ -204,14 +204,14 @@ public:
         const Ufe::Path&      path,
         const UsdGeomXformOp& op,
         const UsdTimeCode&    writeTime)
-        : UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>(path)
+        : UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>(path)
         , UsdTRSUndoableCmdBase(path, op, writeTime)
 #else
     UsdTranslateUndoableCmd(
         const UsdSceneItem::Ptr& item,
         const UsdGeomXformOp&    op,
         const UsdTimeCode&       writeTime)
-        : UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>(item)
+        : UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>(item)
         , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
 #endif
     {
@@ -229,14 +229,14 @@ public:
     }
 
 protected:
-    void executeImpl() override { UsdTRSUndoableCmdBase::executeImpl(); }
+    void executeUndoBlock() override { UsdTRSUndoableCmdBase::executeUndoBlock(); }
 
 private:
     GfMatrix4d fOpTransform;
 };
 
 class UsdRotateUndoableCmd
-    : public UsdUndoableCommandBase<Ufe::RotateUndoableCommand>
+    : public UsdUndoableInteractiveCommand<Ufe::RotateUndoableCommand>
     , public UsdTRSUndoableCmdBase
 {
 
@@ -246,14 +246,14 @@ public:
         const Ufe::Path&      path,
         const UsdGeomXformOp& op,
         const UsdTimeCode&    writeTime)
-        : UsdUndoableCommandBase<Ufe::RotateUndoableCommand>(path)
+        : UsdUndoableInteractiveCommand<Ufe::RotateUndoableCommand>(path)
         , UsdTRSUndoableCmdBase(path, op, writeTime)
 #else
     UsdRotateUndoableCmd(
         const UsdSceneItem::Ptr& item,
         const UsdGeomXformOp&    op,
         const UsdTimeCode&       writeTime)
-        : UsdUndoableCommandBase<Ufe::RotateUndoableCommand>(item)
+        : UsdUndoableInteractiveCommand<Ufe::RotateUndoableCommand>(item)
         , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
 #endif
     {
@@ -289,7 +289,7 @@ public:
     }
 
 protected:
-    void executeImpl() override { UsdTRSUndoableCmdBase::executeImpl(); }
+    void executeUndoBlock() override { UsdTRSUndoableCmdBase::executeUndoBlock(); }
 
 private:
     GfVec3d    fT;
@@ -297,7 +297,7 @@ private:
 };
 
 class UsdScaleUndoableCmd
-    : public UsdUndoableCommandBase<Ufe::ScaleUndoableCommand>
+    : public UsdUndoableInteractiveCommand<Ufe::ScaleUndoableCommand>
     , public UsdTRSUndoableCmdBase
 {
 
@@ -307,14 +307,14 @@ public:
         const Ufe::Path&      path,
         const UsdGeomXformOp& op,
         const UsdTimeCode&    writeTime)
-        : UsdUndoableCommandBase<Ufe::ScaleUndoableCommand>(path)
+        : UsdUndoableInteractiveCommand<Ufe::ScaleUndoableCommand>(path)
         , UsdTRSUndoableCmdBase(path, op, writeTime)
 #else
     UsdScaleUndoableCmd(
         const UsdSceneItem::Ptr& item,
         const UsdGeomXformOp&    op,
         const UsdTimeCode&       writeTime)
-        : UsdUndoableCommandBase<Ufe::ScaleUndoableCommand>(item)
+        : UsdUndoableInteractiveCommand<Ufe::ScaleUndoableCommand>(item)
         , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
 #endif
     {
@@ -341,7 +341,7 @@ public:
     }
 
 protected:
-    void executeImpl() override { UsdTRSUndoableCmdBase::executeImpl(); }
+    void executeUndoBlock() override { UsdTRSUndoableCmdBase::executeUndoBlock(); }
 
 private:
     GfVec3d    fT;

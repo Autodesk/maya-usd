@@ -15,7 +15,7 @@
 //
 #include "UsdTransform3dCommonAPI.h"
 
-#include <mayaUsd/ufe/UsdUndoableCommandBase.h>
+#include <mayaUsd/ufe/UsdUndoableInteractiveCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -25,11 +25,11 @@ namespace ufe {
 
 namespace {
 
-class UsdTranslateUndoableCmd : public UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>
+class UsdTranslateUndoableCmd : public UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>
 {
 public:
     UsdTranslateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>(item->path())
+        : UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>(item->path())
         , _time(time)
         , _commonAPI(item->prim())
     {
@@ -55,7 +55,7 @@ public:
     }
 
 protected:
-    void executeImpl() override { _commonAPI.SetTranslate(_t, _time); }
+    void executeUndoBlock() override { _commonAPI.SetTranslate(_t, _time); }
 
 private:
     const UsdTimeCode     _time;
@@ -63,11 +63,11 @@ private:
     GfVec3d               _t;
 };
 
-class UsdRotateUndoableCmd : public UsdUndoableCommandBase<Ufe::RotateUndoableCommand>
+class UsdRotateUndoableCmd : public UsdUndoableInteractiveCommand<Ufe::RotateUndoableCommand>
 {
 public:
     UsdRotateUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : UsdUndoableCommandBase<Ufe::RotateUndoableCommand>(item->path())
+        : UsdUndoableInteractiveCommand<Ufe::RotateUndoableCommand>(item->path())
         , _time(time)
         , _commonAPI(item->prim())
     {
@@ -93,7 +93,7 @@ public:
     }
 
 protected:
-    void executeImpl() override
+    void executeUndoBlock() override
     {
         _commonAPI.SetRotate(_r, UsdGeomXformCommonAPI::RotationOrderXYZ, _time);
     }
@@ -104,12 +104,12 @@ private:
     GfVec3f               _r;
 };
 
-class UsdScaleUndoableCmd : public UsdUndoableCommandBase<Ufe::ScaleUndoableCommand>
+class UsdScaleUndoableCmd : public UsdUndoableInteractiveCommand<Ufe::ScaleUndoableCommand>
 {
 
 public:
     UsdScaleUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : UsdUndoableCommandBase<Ufe::ScaleUndoableCommand>(item->path())
+        : UsdUndoableInteractiveCommand<Ufe::ScaleUndoableCommand>(item->path())
         , _time(time)
         , _commonAPI(item->prim())
     {
@@ -135,7 +135,7 @@ public:
     }
 
 protected:
-    void executeImpl() override { _commonAPI.SetScale(_s, _time); }
+    void executeUndoBlock() override { _commonAPI.SetScale(_s, _time); }
 
 private:
     const UsdTimeCode     _time;
@@ -143,11 +143,11 @@ private:
     GfVec3f               _s;
 };
 
-class UsdTranslatePivotUndoableCmd : public UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>
+class UsdTranslatePivotUndoableCmd : public UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>
 {
 public:
     UsdTranslatePivotUndoableCmd(const UsdSceneItem::Ptr& item, const UsdTimeCode& time)
-        : UsdUndoableCommandBase<Ufe::TranslateUndoableCommand>(item->path())
+        : UsdUndoableInteractiveCommand<Ufe::TranslateUndoableCommand>(item->path())
         , _time(time)
         , _commonAPI(item->prim())
     {
@@ -173,7 +173,7 @@ public:
     }
 
 protected:
-    void executeImpl() override { _commonAPI.SetPivot(_pvt, _time); }
+    void executeUndoBlock() override { _commonAPI.SetPivot(_pvt, _time); }
 
 private:
     const UsdTimeCode     _time;
