@@ -790,7 +790,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // "/TreePatch/Tree_1.proto_leaves_id0/DrawItem_xxxxxxxx". Thus std::string
     // is used instead to extract Rprim id.
     const std::string renderItemName = renderItem.name().asChar();
-    const auto        pos = renderItemName.find_last_of(USD_UFE_SEPARATOR);
+    const auto        pos = renderItemName.find_first_of(VP2_RENDER_DELEGATE_SEPARATOR);
     const SdfPath     rprimId(renderItemName.substr(0, pos));
 
     // If drawInstID is positive, it means the selection hit comes from one instanced render item,

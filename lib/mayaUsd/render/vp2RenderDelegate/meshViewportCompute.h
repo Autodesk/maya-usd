@@ -148,7 +148,6 @@ class MeshViewportCompute : public MPxViewportComputeItem
 {
 private:
     std::shared_ptr<HdVP2MeshSharedData> _meshSharedData;
-    const void* _drawItem { nullptr }; // only set for a consolidation source, never dereferenced
     bool        _executed { false };   // Has this compute been executed
     bool        _sourcesExecuted {
         false
@@ -226,10 +225,9 @@ private:
     void        setClean();
 
 public:
-    MeshViewportCompute(std::shared_ptr<HdVP2MeshSharedData> meshSharedData, const void* drawItem)
+    MeshViewportCompute(std::shared_ptr<HdVP2MeshSharedData> meshSharedData)
         : MPxViewportComputeItem(false)
         , _meshSharedData(meshSharedData)
-        , _drawItem(drawItem)
     {
         setRequiredAction(MPxViewportComputeItem::kAccessVirtualDevice, true);
         setRequiredAction(MPxViewportComputeItem::kAccessConsolidation, true);
@@ -250,7 +248,6 @@ public:
         override;
     bool canConsolidate(const MPxViewportComputeItem& other) const override;
     MSharedPtr<MPxViewportComputeItem> cloneForConsolidation() const override;
-    bool                               verifyDrawItem(const HdVP2DrawItem& drawItem) const;
 
     void setTopologyDirty();
     void setAdjacencyBufferGPUDirty();

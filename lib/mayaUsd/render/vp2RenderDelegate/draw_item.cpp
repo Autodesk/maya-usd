@@ -30,16 +30,14 @@ HdVP2DrawItem::HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedD
     , _delegate(delegate)
 {
     // In the case of instancing, the ID of a proto has an attribute at the end,
-    // we keep this info in _renderItemName so if needed we can extract proto ID
+    // we keep this info in _drawItemName so if needed we can extract proto ID
     // and use it to figure out Rprim path for each instance. For example:
     //
     //   "/Proxy/TreePatch/Tree_1.proto_leaves_id0"
     //
-    _renderItemName = GetRprimID().GetText();
-    _renderItemName += TfStringPrintf("/DrawItem_%p", this).c_str();
-
-    _renderItemData._indexBuffer.reset(
-        new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
+    _drawItemName = GetRprimID().GetText();
+    _drawItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
+    _drawItemName += TfStringPrintf("DrawItem_%p", this).c_str();
 }
 
 //! \brief  Destructor.
@@ -49,9 +47,28 @@ HdVP2DrawItem::~HdVP2DrawItem()
         auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
-            subSceneContainer->remove(GetRenderItemName());
+            for (const auto& renderItemData : _renderItems) {
+                subSceneContainer->remove(renderItemData._renderItemName);
+            }
         }
     }
+}
+
+void HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
+{
+    _renderItems.emplace_back();
+    RenderItemData& renderItemData = _renderItems.back();
+
+    renderItemData._renderItem = item;
+    renderItemData._renderItemName = _drawItemName;
+    if (geomSubset) {
+        renderItemData._geomSubset = *geomSubset;
+        renderItemData._renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
+        renderItemData._renderItemName += geomSubset->id.GetString().c_str();
+    }
+
+    renderItemData._indexBuffer.reset(
+        new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
