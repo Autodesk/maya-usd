@@ -195,25 +195,23 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
 
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
 {
-    const PXR_NS::UsdPrim& prim = attr.GetPrim();
-    const UsdStageWeakPtr stage = prim.GetStage();
-
     // get the property spec in the edit target's layer
-    const SdfPropertySpecHandle editTargetPropertySpec = stage->GetEditTarget().GetPropertySpecForScenePath(attr.GetPath());
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& editTargetPropertySpec = stage->GetEditTarget().GetPropertySpecForScenePath(attr.GetPath());
 
     // get a list of property specs that provide opinions for this property.
-    const SdfPropertySpecHandleVector& propertyStack = attr.GetPropertyStack();
+    const auto& propertyStack = attr.GetPropertyStack();
 
     SdfLayerHandle defLayer;
-    for (const SdfPropertySpecHandle& spec: propertyStack) {
-
+    for (const auto& spec : propertyStack) {
         if(spec && spec != editTargetPropertySpec)  {
             defLayer = spec->GetLayer();
             break;
         }
     }
 
-    if (defLayer){
+    if (defLayer) {
         std::string err = TfStringPrintf( 
             "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
             attr.GetBaseName().GetText(),
