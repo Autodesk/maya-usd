@@ -32,3 +32,5 @@ def createStageWithNewLayer():
     shapeNode = cmds.createNode('mayaUsdProxyShape', skipSelect=True, name='stageShape1')
     cmds.connectAttr('time1.outTime', shapeNode+'.time')
     cmds.select(shapeNode, replace=True)
+    fullPath = cmds.ls(shapeNode, long=True)
+    return fullPath[0]
