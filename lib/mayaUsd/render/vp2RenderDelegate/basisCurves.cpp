@@ -1727,7 +1727,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateWireRenderItem(const MString& n
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-    renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
+    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
@@ -1749,7 +1749,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateBBoxRenderItem(const MString& n
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-    renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
+    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
@@ -1772,7 +1772,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-    renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
+    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
@@ -1796,7 +1796,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString&
     renderItem->setShader(_delegate->Get3dFatPointShader());
 
     MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
-    selectionMask.addMask(MSelectionMask::kSelectCurves);
+    selectionMask.addMask(MSelectionMask::kSelectNurbsCurves);
     renderItem->setSelectionMask(selectionMask);
 
 #if MAYA_API_VERSION >= 20220000
