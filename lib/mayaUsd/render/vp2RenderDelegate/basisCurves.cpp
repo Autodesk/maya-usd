@@ -72,10 +72,6 @@ struct CommitState
 
     //! If valid, new index buffer data to commit
     int* _indexBufferData { nullptr };
-    //! If valid, new color buffer data to commit
-    void* _colorBufferData { nullptr };
-    //! If valid, new normals buffer data to commit
-    void* _normalsBufferData { nullptr };
     //! If valid, new primvar buffer data to commit
     PrimvarBufferDataMap _primvarBufferDataMap;
 
@@ -111,8 +107,8 @@ struct CommitState
     bool _geometryDirty { false };
 
     //! Construct valid commit state
-    CommitState(HdVP2DrawItem& item)
-        : _drawItemData(item.GetRenderItemData())
+    CommitState(HdVP2DrawItem::RenderItemData& renderItemData)
+        : _drawItemData(renderItemData)
     {
     }
 
@@ -681,6 +677,23 @@ void HdVP2BasisCurves::Sync(
     _UpdateRepr(delegate, reprToken);
 }
 
+void HdVP2BasisCurves::_CommitMVertexBuffer(
+    MHWRender::MVertexBuffer* const buffer,
+    void*                           bufferData) const
+{
+    const MString& rprimId = _rprimId;
+
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit([buffer, bufferData, rprimId]() {
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "CommitBuffer",
+            rprimId.asChar());
+
+        buffer->commit(bufferData);
+    });
+}
+
 /*! \brief  Update the draw item
 
     This call happens on worker threads and results of the change are collected
@@ -698,7 +711,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
-    CommitState                    stateToCommit(*drawItem);
+    CommitState                    stateToCommit(drawItem->GetRenderItemData());
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
 
     const SdfPath& id = GetId();
@@ -788,23 +801,19 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             normals = _BuildInterpolatedArray(topology, normals);
 
-            if (!drawItemData._normalsBuffer) {
+            if (!_curvesSharedData._normalsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
                     "", MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
 
-                drawItemData._normalsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+                _curvesSharedData._normalsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
             }
 
             unsigned int numNormals = normals.size();
-            if (drawItemData._normalsBuffer && numNormals > 0) {
-                stateToCommit._normalsBufferData
-                    = drawItemData._normalsBuffer->acquire(numNormals, true);
-
-                if (stateToCommit._normalsBufferData != nullptr) {
-                    memcpy(
-                        stateToCommit._normalsBufferData,
-                        normals.cdata(),
-                        numNormals * sizeof(GfVec3f));
+            if (_curvesSharedData._normalsBuffer && numNormals > 0) {
+                void* bufferData = _curvesSharedData._normalsBuffer->acquire(numNormals, true);
+                if (bufferData) {
+                    memcpy(bufferData, normals.cdata(), numNormals * sizeof(GfVec3f));
+                    _CommitMVertexBuffer(_curvesSharedData._normalsBuffer.get(), bufferData);
                 }
             }
         }
@@ -830,14 +839,14 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             widths = _BuildInterpolatedArray(topology, widths);
 
             MHWRender::MVertexBuffer* widthsBuffer
-                = drawItemData._primvarBuffers[HdTokens->widths].get();
+                = _curvesSharedData._primvarBuffers[HdTokens->widths].get();
 
             if (!widthsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
                     "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 1);
 
                 widthsBuffer = new MHWRender::MVertexBuffer(vbDesc);
-                drawItemData._primvarBuffers[HdTokens->widths].reset(widthsBuffer);
+                _curvesSharedData._primvarBuffers[HdTokens->widths].reset(widthsBuffer);
             }
 
             unsigned int numWidths = widths.size();
@@ -983,15 +992,15 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 }
 
                 // Fill color and opacity into the float4 color stream.
-                if (!drawItemData._colorBuffer) {
+                if (!_curvesSharedData._colorBuffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
                         "", MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
 
-                    drawItemData._colorBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+                    _curvesSharedData._colorBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
                 }
 
-                float* bufferData
-                    = static_cast<float*>(drawItemData._colorBuffer->acquire(numVertices, true));
+                float* bufferData = static_cast<float*>(
+                    _curvesSharedData._colorBuffer->acquire(numVertices, true));
 
                 if (bufferData) {
                     unsigned int offset = 0;
@@ -1004,7 +1013,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                         bufferData[offset++] = alphaArray[v];
                     }
 
-                    stateToCommit._colorBufferData = bufferData;
+                    _CommitMVertexBuffer(_curvesSharedData._colorBuffer.get(), bufferData);
                 }
             }
         }
@@ -1243,6 +1252,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     // Capture the valid position buffer and index buffer
     MHWRender::MVertexBuffer* positionsBuffer = _curvesSharedData._positionsBuffer.get();
+    MHWRender::MVertexBuffer* colorBuffer = _curvesSharedData._colorBuffer.get();
+    MHWRender::MVertexBuffer* normalsBuffer = _curvesSharedData._normalsBuffer.get();
+    const PrimvarBufferMap*   primvarBuffers = &_curvesSharedData._primvarBuffers;
     MHWRender::MIndexBuffer*  indexBuffer = drawItemData._indexBuffer.get();
 
     if (isBoundingBoxItem) {
@@ -1255,6 +1267,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                                                        stateToCommit,
                                                        param,
                                                        positionsBuffer,
+                                                       normalsBuffer,
+                                                       colorBuffer,
+                                                       primvarBuffers,
                                                        indexBuffer]() {
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
         if (ARCH_UNLIKELY(!renderItem))
@@ -1263,31 +1278,16 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         MProfilingScope profilingScope(
             HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L2,
-            drawItem->GetRenderItemName().asChar(),
+            drawItem->GetDrawItemName().asChar(),
             "Commit");
-
-        const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
-
-        MHWRender::MVertexBuffer* colorBuffer = drawItemData._colorBuffer.get();
-        MHWRender::MVertexBuffer* normalsBuffer = drawItemData._normalsBuffer.get();
-
-        const HdVP2DrawItem::PrimvarBufferMap& primvarBuffers = drawItemData._primvarBuffers;
-
-        // If available, something changed
-        if (stateToCommit._colorBufferData)
-            colorBuffer->commit(stateToCommit._colorBufferData);
-
-        // If available, something changed
-        if (stateToCommit._normalsBufferData)
-            normalsBuffer->commit(stateToCommit._normalsBufferData);
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {
             const TfToken& primvarName = entry.first;
             void*          primvarBufferData = entry.second;
             if (primvarBufferData) {
-                const auto it = primvarBuffers.find(primvarName);
-                if (it != primvarBuffers.end()) {
+                const auto it = primvarBuffers->find(primvarName);
+                if (it != primvarBuffers->end()) {
                     MHWRender::MVertexBuffer* primvarBuffer = it->second.get();
                     if (primvarBuffer) {
                         primvarBuffer->commit(primvarBufferData);
@@ -1336,7 +1336,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             if (normalsBuffer)
                 vertexBuffers.addBuffer(kNormalsStr, normalsBuffer);
 
-            for (auto& entry : primvarBuffers) {
+            for (auto& entry : *primvarBuffers) {
                 const TfToken&            primvarName = entry.first;
                 MHWRender::MVertexBuffer* primvarBuffer = entry.second.get();
                 if (primvarBuffer) {
@@ -1561,7 +1561,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             = std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
 #endif
 
-        const MString& renderItemName = drawItem->GetRenderItemName();
+        const MString& renderItemName = drawItem->GetDrawItemName();
 
         MHWRender::MRenderItem* renderItem = nullptr;
 
@@ -1670,14 +1670,12 @@ void HdVP2BasisCurves::_HideAllDrawItems(const TfToken& reprToken)
         auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
         if (!drawItem)
             continue;
-        MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-        if (!renderItem)
-            continue;
 
-        drawItem->GetRenderItemData()._enabled = false;
-
-        _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-            [renderItem]() { renderItem->enable(false); });
+        for (auto& renderItemData : drawItem->GetRenderItems()) {
+            renderItemData._enabled = false;
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                [&]() { renderItemData._renderItem->enable(false); });
+        }
     }
 }
 

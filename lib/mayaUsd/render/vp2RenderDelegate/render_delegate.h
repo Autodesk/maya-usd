@@ -30,6 +30,8 @@
 #include <atomic>
 #include <mutex>
 
+constexpr char VP2_RENDER_DELEGATE_SEPARATOR = ';';
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdVP2BBoxGeom;
