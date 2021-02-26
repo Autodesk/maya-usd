@@ -45,6 +45,12 @@ public:
         if (State::Undone == _state)
             return redo();
 
+        // Note: if the command already has been executed, only execute the
+        //       inner implementation, do not declare a new UsdUndoBlock,
+        //       do not re-fill the UsdUndoableItem.
+        if (State::Done == _state)
+            return executeUndoBlock();
+
         UsdUndoableCommand<Cmd>::execute();
         _state = State::Done;
     }
