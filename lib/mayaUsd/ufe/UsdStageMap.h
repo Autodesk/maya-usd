@@ -18,6 +18,8 @@
 #include <mayaUsd/base/api.h>
 
 #include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/hashmap.h>
+#include <pxr/base/tf/hashset.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MObjectHandle.h>
@@ -58,6 +60,8 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdStageMap
 {
 public:
+    typedef TfHashSet<UsdStageWeakPtr, TfHash> StageSet;
+
     UsdStageMap() = default;
     ~UsdStageMap() = default;
 
@@ -72,6 +76,9 @@ public:
 
     //! Return the ProxyShape node UFE path for the argument stage.
     Ufe::Path path(UsdStageWeakPtr stage);
+
+    //! Return all the USD stages.
+    StageSet allStages();
 
     //! Set the stage map as dirty. It will be cleared immediately, but
     //! only repopulated when stage info is requested.

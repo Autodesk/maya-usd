@@ -199,30 +199,6 @@ createNode mesh -n "OneMissingFaceCubeShape" -p "OneMissingFaceCube";
 	setAttr ".vir" yes;
 	setAttr ".vif" yes;
 	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr ".cuvs" -type "string" "map1";
-	setAttr ".dcc" -type "string" "Ambient+Diffuse";
-	setAttr ".ds" no;
-	setAttr ".covm[0]"  0 1 1;
-	setAttr ".cdvm[0]"  0 1 1;
-	setAttr ".mgi" -type "string" "ID_00dcb39c-ae2c-4239-b0d8-945f9db8e612";
-	setAttr ".allowPerFaceDisplayColors" yes;
-createNode mesh -n "polySurfaceShape1" -p "OneMissingFaceCube";
-	rename -uid "415B68C0-0000-16E9-57B7-9C390000027F";
-	addAttr -ci true -sn "mgi" -ln "mayaGprimID" -dt "string";
-	addAttr -ci true -sn "allowPerFaceDisplayColors" -ln "allowPerFaceDisplayColors" 
-		-min 0 -max 1 -at "bool";
-	setAttr -k off ".v";
-	setAttr ".io" yes;
-	setAttr -s 6 ".iog[0].og";
-	setAttr ".iog[0].og[0].gcl" -type "componentList" 1 "f[2]";
-	setAttr ".iog[0].og[1].gcl" -type "componentList" 1 "f[3]";
-	setAttr ".iog[0].og[2].gcl" -type "componentList" 1 "f[4]";
-	setAttr ".iog[0].og[3].gcl" -type "componentList" 1 "f[1]";
-	setAttr ".iog[0].og[4].gcl" -type "componentList" 1 "f[5]";
-	setAttr ".iog[0].og[5].gcl" -type "componentList" 1 "f[0]";
-	setAttr ".vir" yes;
-	setAttr ".vif" yes;
-	setAttr ".uvst[0].uvsn" -type "string" "map1";
 	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
 		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
 		 0.875 0.25 0.125 0 0.125 0.25;
@@ -241,7 +217,6 @@ createNode mesh -n "polySurfaceShape1" -p "OneMissingFaceCube";
 		f 4 1 7 -3 -7
 		mu 0 4 2 3 5 4
 		f 4 2 9 -4 -9
-		mu 0 4 4 5 7 6
 		f 4 3 11 -1 -11
 		mu 0 4 6 7 9 8
 		f 4 -12 -10 -8 -6
@@ -271,33 +246,8 @@ createNode mesh -n "OneAssignedFaceCubeShape" -p "OneAssignedFaceCube";
 	setAttr ".vir" yes;
 	setAttr ".vif" yes;
 	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr ".cuvs" -type "string" "map1";
-	setAttr ".dcc" -type "string" "Ambient+Diffuse";
-	setAttr ".ds" no;
-	setAttr ".covm[0]"  0 1 1;
-	setAttr ".cdvm[0]"  0 1 1;
-	setAttr ".mgi" -type "string" "ID_f8c2d19a-0a4f-48e1-b29c-dc491b67c152";
-	setAttr ".allowPerFaceDisplayColors" yes;
-createNode mesh -n "polySurfaceShape2" -p "OneAssignedFaceCube";
-	rename -uid "415B68C0-0000-16E9-57B7-9CCB00000286";
-	addAttr -ci true -sn "mgi" -ln "mayaGprimID" -dt "string";
-	addAttr -ci true -sn "allowPerFaceDisplayColors" -ln "allowPerFaceDisplayColors" 
-		-min 0 -max 1 -at "bool";
-	setAttr -k off ".v";
-	setAttr ".io" yes;
-	setAttr -s 6 ".iog[0].og";
-	setAttr ".iog[0].og[0].gcl" -type "componentList" 1 "f[2]";
-	setAttr ".iog[0].og[1].gcl" -type "componentList" 1 "f[3]";
-	setAttr ".iog[0].og[2].gcl" -type "componentList" 1 "f[4]";
-	setAttr ".iog[0].og[3].gcl" -type "componentList" 1 "f[1]";
-	setAttr ".iog[0].og[4].gcl" -type "componentList" 1 "f[5]";
-	setAttr ".iog[0].og[5].gcl" -type "componentList" 1 "f[0]";
-	setAttr ".vir" yes;
-	setAttr ".vif" yes;
-	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
-		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
-		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr -s 4 ".uvst[0].uvsp[0:3]" -type "float2" 0.375 0.5 0.625 0.5
+		 0.375 0.75 0.625 0.75;
 	setAttr ".cuvs" -type "string" "map1";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".ds" no;
@@ -309,106 +259,17 @@ createNode mesh -n "polySurfaceShape2" -p "OneAssignedFaceCube";
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
 	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
 		f 4 0 5 -2 -5
-		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
-		mu 0 4 2 3 5 4
 		f 4 2 9 -4 -9
-		mu 0 4 4 5 7 6
+		mu 0 4 0 1 3 2
 		f 4 3 11 -1 -11
-		mu 0 4 6 7 9 8
 		f 4 -12 -10 -8 -6
-		mu 0 4 1 10 11 3
-		f 4 10 4 6 8
-		mu 0 4 12 0 2 13;
+		f 4 10 4 6 8;
 	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
 	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
 	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
 	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
 	setAttr ".mgi" -type "string" "ID_41632452-941c-445a-8955-d85daaf8813f";
-	setAttr ".allowPerFaceDisplayColors" yes;
-createNode transform -n "CompressibleUVSetsCube" -p "CubeMeshes";
-	rename -uid "6BB5D8C0-0000-562B-57BB-88050000027F";
-	addAttr -ci true -sn "allowPerFaceDisplayColors" -ln "allowPerFaceDisplayColors" 
-		-min 0 -max 1 -at "bool";
-	setAttr ".t" -type "double3" -20 0 0 ;
-	setAttr ".rp" -type "double3" 0 0 5 ;
-	setAttr ".sp" -type "double3" 0 0 5 ;
-	setAttr ".allowPerFaceDisplayColors" yes;
-createNode mesh -n "CompressibleUVSetsCubeShape" -p "CompressibleUVSetsCube";
-	rename -uid "6BB5D8C0-0000-562B-57BB-880500000280";
-	addAttr -ci true -sn "mgi" -ln "mayaGprimID" -dt "string";
-	addAttr -ci true -sn "allowPerFaceDisplayColors" -ln "allowPerFaceDisplayColors" 
-		-min 0 -max 1 -at "bool";
-	setAttr -k off ".v";
-	setAttr -s 6 ".iog[0].og";
-	setAttr ".iog[0].og[0].gcl" -type "componentList" 1 "f[2]";
-	setAttr ".iog[0].og[1].gcl" -type "componentList" 1 "f[3]";
-	setAttr ".iog[0].og[2].gcl" -type "componentList" 1 "f[4]";
-	setAttr ".iog[0].og[3].gcl" -type "componentList" 1 "f[1]";
-	setAttr ".iog[0].og[4].gcl" -type "componentList" 1 "f[5]";
-	setAttr ".iog[0].og[5].gcl" -type "componentList" 1 "f[0]";
-	setAttr ".vir" yes;
-	setAttr ".vif" yes;
-	setAttr -s 4 ".uvst";
-	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr ".uvst[1].uvsn" -type "string" "ConstantInterpSet";
-	setAttr -s 22 ".uvst[1].uvsp[0:21]" -type "float2" 0.25 0.25 0.25 0.25
-		 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25
-		 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25 0.25
-		 0.25 0.25 0.25 0.25 0.25 0.25;
-	setAttr ".uvst[2].uvsn" -type "string" "UniformInterpSet";
-	setAttr -s 24 ".uvst[2].uvsp[0:23]" -type "float2" 0 0 0.1 0.1 0.2 0.2
-		 0.30000001 0.30000001 0.40000001 0.40000001 0.5 0.5 0 0 0 0 0 0 0.1 0.1 0.1 0.1 0.1
-		 0.1 0.2 0.2 0.2 0.2 0.2 0.2 0.30000001 0.30000001 0.30000001 0.30000001 0.30000001
-		 0.30000001 0.40000001 0.40000001 0.40000001 0.40000001 0.40000001 0.40000001 0.5
-		 0.5 0.5 0.5 0.5 0.5;
-	setAttr ".uvst[3].uvsn" -type "string" "VertexInterpSet";
-	setAttr -s 8 ".uvst[3].uvsp[0:7]" -type "float2" 0 0 0.1 0.1 0.2 0.2
-		 0.30000001 0.30000001 0.40000001 0.40000001 0.5 0.5 0.60000002 0.60000002 0.69999999
-		 0.69999999;
-	setAttr ".cuvs" -type "string" "VertexInterpSet";
-	setAttr ".dcc" -type "string" "Ambient+Diffuse";
-	setAttr ".ds" no;
-	setAttr ".covm[0]"  0 1 1;
-	setAttr ".cdvm[0]"  0 1 1;
-	setAttr -s 8 ".vt[0:7]"  -5 -5 10 5 -5 10 -5 5 10 5 5 10 -5 5 0 5 5 0
-		 -5 -5 0 5 -5 0;
-	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
-		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
-		f 4 0 5 -2 -5
-		mu 1 4 0 1 2 3
-		mu 2 4 0 6 7 8
-		mu 3 4 0 1 3 2
-		f 4 1 7 -3 -7
-		mu 1 4 4 5 6 7
-		mu 2 4 1 9 10 11
-		mu 3 4 2 3 5 4
-		f 4 2 9 -4 -9
-		mu 1 4 8 9 10 11
-		mu 2 4 2 12 13 14
-		mu 3 4 4 5 7 6
-		f 4 3 11 -1 -11
-		mu 1 4 12 13 14 0
-		mu 2 4 3 15 16 17
-		mu 3 4 6 7 1 0
-		f 4 -12 -10 -8 -6
-		mu 1 4 15 16 17 18
-		mu 2 4 4 18 19 20
-		mu 3 4 1 7 5 3
-		f 4 10 4 6 8
-		mu 1 4 19 0 20 21
-		mu 2 4 5 21 22 23
-		mu 3 4 6 0 2 4;
-	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
-	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
-	setAttr -s 4 ".pd";
-	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
-	setAttr ".pd[1]" -type "dataPolyComponent" Index_Data UV 0 ;
-	setAttr ".pd[2]" -type "dataPolyComponent" Index_Data UV 0 ;
-	setAttr ".pd[3]" -type "dataPolyComponent" Index_Data UV 0 ;
-	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
-	setAttr ".mgi" -type "string" "ID_a46bf4f0-e7ae-46d4-8a18-42305fb119fe";
 	setAttr ".allowPerFaceDisplayColors" yes;
 createNode transform -n "SharedFacesCube" -p "CubeMeshes";
 	rename -uid "6BB5D8C0-0000-562B-57BB-96820000028B";
@@ -436,12 +297,10 @@ createNode mesh -n "SharedFacesCubeShape" -p "SharedFacesCube";
 	setAttr -s 3 ".uvst";
 	setAttr ".uvst[0].uvsn" -type "string" "map1";
 	setAttr ".uvst[1].uvsn" -type "string" "PairedFacesSet";
-	setAttr -s 23 ".uvst[1].uvsp[0:22]" -type "float2" 0 0 0.5 0 0.5 0.5
-		 0 0.5 0.5 0.5 1 0.5 1 1 0.5 1 0 0 0.5 0 0.5 0.5 0 0.5 0.5 0.5 1 0.5 1 1 0.5 1 0 0
-		 0.5 0 0.5 0.5 0 0.5 0.5 0.5 1 0.5 1 1;
+	setAttr -s 7 ".uvst[1].uvsp[0:6]" -type "float2" 0 0 0.5 0 0.5 0.5
+		 0 0.5 1 0.5 1 1 0.5 1;
 	setAttr ".uvst[2].uvsn" -type "string" "AllFacesSharedSet";
-	setAttr -s 24 ".uvst[2].uvsp[0:23]" -type "float2" 0 0 1 0 1 1 0 1 0
-		 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1 0 0 1 0 1 1 0 1;
+	setAttr -s 4 ".uvst[2].uvsp[0:3]" -type "float2" 0 0 1 0 1 1 0 1;
 	setAttr ".cuvs" -type "string" "PairedFacesSet";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".ds" no;
@@ -456,20 +315,20 @@ createNode mesh -n "SharedFacesCubeShape" -p "SharedFacesCube";
 		mu 1 4 0 1 2 3
 		mu 2 4 0 1 2 3
 		f 4 1 7 -3 -7
-		mu 1 4 4 5 6 7
-		mu 2 4 4 5 6 7
+		mu 1 4 2 4 5 6
+		mu 2 4 0 1 2 3
 		f 4 2 9 -4 -9
-		mu 1 4 8 9 10 11
-		mu 2 4 8 9 10 11
+		mu 1 4 0 1 2 3
+		mu 2 4 0 1 2 3
 		f 4 3 11 -1 -11
-		mu 1 4 12 13 14 15
-		mu 2 4 12 13 14 15
+		mu 1 4 2 4 5 6
+		mu 2 4 0 1 2 3
 		f 4 -12 -10 -8 -6
-		mu 1 4 16 17 18 19
-		mu 2 4 16 17 18 19
+		mu 1 4 0 1 2 3
+		mu 2 4 0 1 2 3
 		f 4 10 4 6 8
-		mu 1 4 20 21 22 7
-		mu 2 4 20 21 22 23;
+		mu 1 4 2 4 5 6
+		mu 2 4 0 1 2 3;
 	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
 	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
 	setAttr -s 3 ".pd";
@@ -1398,7 +1257,7 @@ createNode lambert -n "Red";
 createNode shadingEngine -n "lambert2SG";
 	rename -uid "109AE860-0000-148A-5708-3FF300000264";
 	setAttr ".ihi" 0;
-	setAttr -s 6 ".dsm";
+	setAttr -s 5 ".dsm";
 	setAttr ".ro" yes;
 createNode materialInfo -n "materialInfo1";
 	rename -uid "109AE860-0000-148A-5708-3FF300000265";
@@ -1466,14 +1325,6 @@ createNode nodeGraphEditorInfo -n "hyperShadePrimaryNodeEditorSavedTabsInfo";
 	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
 	setAttr ".tgi[0].vl" -type "double2" -113.09523360123723 -455.97199742362869 ;
 	setAttr ".tgi[0].vh" -type "double2" 571.428548722041 205.97200735773578 ;
-createNode polyMapDel -n "polyMapDel1";
-	rename -uid "415B68C0-0000-16E9-57B7-9C390000027E";
-	setAttr ".uopa" yes;
-	setAttr ".ics" -type "componentList" 1 "f[2]";
-createNode polyMapDel -n "polyMapDel2";
-	rename -uid "415B68C0-0000-16E9-57B7-9CCB00000285";
-	setAttr ".uopa" yes;
-	setAttr ".ics" -type "componentList" 2 "f[0:1]" "f[3:5]";
 createNode expression -n "BrokenUVs_C3d__HiddenInfoNode";
 	rename -uid "0D9708C0-0000-66E1-59DF-C01C0000028F";
 	addAttr -ci true -h true -sn "__pxSimNodeEmulate" -ln "__pxSimNodeEmulate" -min 
@@ -1718,8 +1569,6 @@ select -ne :defaultColorMgtGlobals;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
-connectAttr "polyMapDel1.out" "OneMissingFaceCubeShape.i";
-connectAttr "polyMapDel2.out" "OneAssignedFaceCubeShape.i";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" "lambert2SG.message" ":defaultLightSet.message";
@@ -1747,7 +1596,6 @@ connectAttr "DefaultUVSetCubeShape.iog" "lambert2SG.dsm" -na;
 connectAttr "EmptyDefaultUVSetCubeShape.iog" "lambert2SG.dsm" -na;
 connectAttr "OneMissingFaceCubeShape.iog" "lambert2SG.dsm" -na;
 connectAttr "OneAssignedFaceCubeShape.iog" "lambert2SG.dsm" -na;
-connectAttr "CompressibleUVSetsCubeShape.iog" "lambert2SG.dsm" -na;
 connectAttr "SharedFacesCubeShape.iog" "lambert2SG.dsm" -na;
 connectAttr "lambert2SG.msg" "materialInfo1.sg";
 connectAttr "Red.msg" "materialInfo1.m";
@@ -1766,8 +1614,6 @@ connectAttr "Magenta.msg" "materialInfo5.m";
 connectAttr "Cyan.oc" "lambert7SG.ss";
 connectAttr "lambert7SG.msg" "materialInfo6.sg";
 connectAttr "Cyan.msg" "materialInfo6.m";
-connectAttr "polySurfaceShape1.o" "polyMapDel1.ip";
-connectAttr "polySurfaceShape2.o" "polyMapDel2.ip";
 connectAttr ":time1.o" "BrokenUVs_C3d__HiddenInfoNode.tim";
 connectAttr "layerManager.dli[4]" "BrokenUVs_Decimated.id";
 connectAttr "layerManager.dli[5]" "BrokenUVs_Simulation.id";

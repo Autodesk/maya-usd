@@ -11,6 +11,7 @@ set(TEST_SCRIPT_FILES
 
 if (UFE_FOUND AND MAYA_APP_VERSION VERSION_GREATER 2020)
     list(APPEND TEST_SCRIPT_FILES
+        testMayaUsdDirtyScene.py
         testMayaUsdProxyAccessor.py
     )
 endif()
@@ -64,10 +65,9 @@ foreach(script ${TEST_PLUG_FILES})
 endforeach()
 
 # -----------------------------------------------------------------------------
-add_subdirectory(mayaUsd)
-
 if (UFE_FOUND)
     add_subdirectory(ufe)
+    add_subdirectory(mayaUsd)
 endif()
 
 add_subdirectory(usd)

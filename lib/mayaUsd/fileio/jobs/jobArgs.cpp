@@ -32,6 +32,7 @@
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MFileObject.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeClass.h>
 #include <maya/MTypeId.h>
@@ -320,7 +321,10 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaJobExportArgsTokens->exportSkin,
           UsdMayaJobExportArgsTokens->none,
           { UsdMayaJobExportArgsTokens->auto_, UsdMayaJobExportArgsTokens->explicit_ }))
+    , exportBlendShapes(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportBlendShapes))
     , exportVisibility(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportVisibility))
+    , file(_String(userArgs, UsdMayaJobExportArgsTokens->file))
+    , ignoreWarnings(_Boolean(userArgs, UsdMayaJobExportArgsTokens->ignoreWarnings))
     , materialCollectionsPath(
           _AbsolutePath(userArgs, UsdMayaJobExportArgsTokens->materialCollectionsPath))
     , materialsScopeName(
@@ -386,7 +390,10 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << std::endl
         << "exportSkels: " << TfStringify(exportArgs.exportSkels) << std::endl
         << "exportSkin: " << TfStringify(exportArgs.exportSkin) << std::endl
+        << "exportBlendShapes: " << TfStringify(exportArgs.exportBlendShapes) << std::endl
         << "exportVisibility: " << TfStringify(exportArgs.exportVisibility) << std::endl
+        << "file: " << exportArgs.file << std::endl
+        << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl
         << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
         << "materialsScopeName: " << exportArgs.materialsScopeName << std::endl
         << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl
@@ -468,8 +475,11 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
         d[UsdMayaJobExportArgsTokens->exportSkin] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportSkels] = UsdMayaJobExportArgsTokens->none.GetString();
+        d[UsdMayaJobExportArgsTokens->exportBlendShapes] = false;
         d[UsdMayaJobExportArgsTokens->exportUVs] = true;
         d[UsdMayaJobExportArgsTokens->exportVisibility] = true;
+        d[UsdMayaJobExportArgsTokens->file] = std::string();
+        d[UsdMayaJobExportArgsTokens->ignoreWarnings] = false;
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
         d[UsdMayaJobExportArgsTokens->materialsScopeName]
@@ -541,6 +551,22 @@ void UsdMayaJobExportArgs::AddFilteredTypeName(const MString& typeName)
     }
 }
 
+std::string UsdMayaJobExportArgs::GetResolvedFileName() const
+{
+    MFileObject fileObj;
+    fileObj.setRawFullName(file.c_str());
+
+    // Make sure it's an absolute path
+    fileObj.setRawFullName(fileObj.resolvedFullName());
+    const std::string resolvedFileName = fileObj.resolvedFullName().asChar();
+
+    if (!resolvedFileName.empty()) {
+        return resolvedFileName;
+    }
+
+    return file;
+}
+
 UsdMayaJobImportArgs::UsdMayaJobImportArgs(
     const VtDictionary& userArgs,
     const bool          importWithProxyShapes,
@@ -567,6 +593,8 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
 
     importWithProxyShapes(importWithProxyShapes)
     , timeInterval(timeInterval)
+    , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
+    , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobImportArgsTokens->chaserArgs))
 {
 }
 
@@ -607,6 +635,8 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
             = UsdMayaPreferredMaterialTokens->none.GetString();
         d[UsdMayaJobImportArgsTokens->importInstances] = true;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
+        d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
+        d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
@@ -632,6 +662,22 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl;
+
+    out << "chaserNames (" << importArgs.chaserNames.size() << ")" << std::endl;
+    for (const std::string& chaserName : importArgs.chaserNames) {
+        out << "    " << chaserName << std::endl;
+    }
+
+    out << "allChaserArgs (" << importArgs.allChaserArgs.size() << ")" << std::endl;
+    for (const auto& chaserIter : importArgs.allChaserArgs) {
+        // Chaser name.
+        out << "    " << chaserIter.first << std::endl;
+
+        for (const auto& argIter : chaserIter.second) {
+            out << "        Arg Name: " << argIter.first << ", Value: " << argIter.second
+                << std::endl;
+        }
+    }
 
     return out;
 }

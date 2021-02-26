@@ -23,13 +23,10 @@
 from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
 
-from pxr import Usd
-from pxr import UsdGeom
-
 from maya import cmds
 
 import ufe
-import ufeUtils
+import ufeUtils, testUtils
 
 import os
 import re
@@ -124,11 +121,8 @@ def getMayaSelectionList():
     else:
         return [x for x in cmds.ls(sl=True)]
 
-def getTestScene(*args):
-    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)
-
 def openTestScene(*args):
-    filePath = getTestScene(*args)
+    filePath = testUtils.getTestScene(*args)
     cmds.file(filePath, force=True, open=True)
 
 def openTopLayerScene():
@@ -173,6 +167,21 @@ def openGroupBallsScene():
 def openPrimitivesScene():
     return openTestScene("reorderCmd", "primitives.ma" )
 
+def openPointInstancesGrid14Scene():
+    return openTestScene("pointInstances", "PointInstancer_Grid_14.ma" )
+
+def openPointInstancesGrid7kScene():
+    return openTestScene("pointInstances", "PointInstancer_Grid_7k.ma" )
+
+def openPointInstancesGrid70kScene():
+    return openTestScene("pointInstances", "PointInstancer_Grid_70k.ma" )
+
+def openVariantSetScene():
+    return openTestScene("variantSet", "Variant.ma" )
+
+def openCompositionArcsScene():
+    return openTestScene("compositionArcs", "compositionArcs.ma" )
+
 def createProxyAndStage():
     """
     Create in-memory stage
@@ -202,39 +211,6 @@ def createProxyFromFile(filePath):
     cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
 
     return shapeNode,shapeStage
-
-def createAnimatedHierarchy(stage):
-    """
-    Create simple hierarchy in the stage:
-    /ParentA
-        /Sphere
-        /Cube
-    /ParenB
-    
-    Entire ParentA hierarchy will receive time samples on translate for time 1 and 100
-    """
-    parentA = "/ParentA"
-    parentB = "/ParentB"
-    childSphere = "/ParentA/Sphere"
-    childCube = "/ParentA/Cube"
-    
-    parentPrimA = stage.DefinePrim(parentA, 'Xform')
-    parentPrimB = stage.DefinePrim(parentB, 'Xform')
-    childPrimSphere = stage.DefinePrim(childSphere, 'Sphere')
-    childPrimCube = stage.DefinePrim(childCube, 'Cube')
-    
-    UsdGeom.XformCommonAPI(parentPrimA).SetRotate((0,0,0))
-    UsdGeom.XformCommonAPI(parentPrimB).SetTranslate((1,10,0))
-    
-    time1 = Usd.TimeCode(1.)
-    UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,0,0),time1)
-    UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((5,0,0),time1)
-    UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,5),time1)
-    
-    time2 = Usd.TimeCode(100.)
-    UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,5,0),time2)
-    UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((-5,0,0),time2)
-    UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,-5),time2)
 
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.

@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME}
         undoHelperCommand
         util.cpp
         utilFileSystem.cpp
+        utilSerialization.cpp
 )
 
 set(HEADERS
@@ -26,6 +27,8 @@ set(HEADERS
     undoHelperCommand.h
     util.h
     utilFileSystem.h
+    utilSerialization.h
+    hash.h
 )
 
 # -----------------------------------------------------------------------------

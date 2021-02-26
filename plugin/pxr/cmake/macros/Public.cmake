@@ -167,8 +167,8 @@ macro(pxr_plugin NAME)
 endmacro(pxr_plugin)
 
 function(pxr_setup_python)
-    # Install a pxr __init__.py in order to have Python 
-    # see UsdMaya module inside pxr subdirectory 
+    # Install a pxr __init__.py in order to have Python
+    # see UsdMaya module inside pxr subdirectory
     _get_install_dir(lib/python/pxr installPrefix)
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/__init__.py"
     "try:\n  __import__('pkg_resources').declare_namespace(__name__)\nexcept:\n  from pkgutil import extend_path\n  __path__ = extend_path(__path__, __name__)\n")
@@ -205,7 +205,7 @@ endfunction() # pxr_test_scripts
 function(pxr_install_test_dir)
     if (BUILD_TESTS)
         cmake_parse_arguments(bt
-            "" 
+            ""
             "SRC;DEST"
             ""
             ${ARGN}
@@ -222,7 +222,7 @@ endfunction() # pxr_install_test_dir
 function(pxr_register_test TEST_NAME)
     if (BUILD_TESTS)
         cmake_parse_arguments(bt
-            "RUN_SERIAL;PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
+            "RUN_SERIAL;PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES"
             "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
             "ENV;PRE_PATH;POST_PATH"
             ${ARGN}
@@ -252,7 +252,7 @@ function(pxr_register_test TEST_NAME)
             endif()
         endif()
 
-        # This harness is a filter which allows us to manipulate the test run, 
+        # This harness is a filter which allows us to manipulate the test run,
         # e.g. by changing the environment, changing the expected return code, etc.
         set(testWrapperCmd ${PROJECT_SOURCE_DIR}/${INSTALL_DIR_SUFFIX}/cmake/macros/testWrapper.py --verbose)
 
@@ -343,17 +343,13 @@ function(pxr_register_test TEST_NAME)
                 set(testWrapperCmd ${testWrapperCmd} --post-path=${path})
             endforeach()
         endif()
-        
+
         # Look for resource files in the "usd" subdirectory relative to the
         # "lib" directory where the libraries are installed.
         #
         # We don't want to copy these resource files for each test, so instead
         # we set the PXR_PLUGINPATH_NAME env var to point to the "lib/usd"
         # directory where these files are installed.
-        set(_plugSearchPathEnvName "PXR_PLUGINPATH_NAME")
-        if (PXR_OVERRIDE_PLUGINPATH_NAME)
-            set(_plugSearchPathEnvName ${PXR_OVERRIDE_PLUGINPATH_NAME})
-        endif()
 
         set(_testPluginPath "${PXR_INSTALL_PREFIX}/maya/plugin;${CMAKE_INSTALL_PREFIX}/lib/usd")
         set(_testPrePath "$ENV{PATH};${PXR_INSTALL_PREFIX}/maya/lib;${CMAKE_INSTALL_PREFIX}/lib")
@@ -384,8 +380,8 @@ function(pxr_register_test TEST_NAME)
         add_test(
             NAME ${TEST_NAME}
             COMMAND ${Python_EXECUTABLE} ${testWrapperCmd}
-                    "--env-var=PYTHONPATH=${_testPythonPath}" 
-                    "--env-var=${_plugSearchPathEnvName}=${_testPluginPath}" 
+                    "--env-var=PYTHONPATH=${_testPythonPath}"
+                    "--env-var=${PXR_OVERRIDE_PLUGINPATH_NAME}=${_testPluginPath}"
                     "--pre-path=${_testPrePath}" ${testCmd}
         )
 
@@ -398,7 +394,7 @@ function(pxr_register_test TEST_NAME)
 endfunction() # pxr_register_test
 
 function(pxr_setup_plugins)
-    # Install a top-level plugInfo.json in the shared area and into the 
+    # Install a top-level plugInfo.json in the shared area and into the
     # top-level plugin area
     _get_resources_dir_name(resourcesDir)
 

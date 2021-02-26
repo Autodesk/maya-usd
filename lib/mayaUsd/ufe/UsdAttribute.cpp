@@ -15,8 +15,12 @@
 //
 #include "UsdAttribute.h"
 
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
@@ -140,6 +144,31 @@ void setUsdAttributeVectorFromUfe(
     UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 }
 
+template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
+class SetUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    SetUndoableCommand(const typename A::Ptr& attr, const T& newValue)
+        : _attr(attr)
+        , _newValue(newValue)
+    {
+    }
+
+    void execute() override
+    {
+        MayaUsd::UsdUndoBlock undoBlock(&_undoableItem);
+        _attr->set(_newValue);
+    }
+
+    void undo() override { _undoableItem.undo(); }
+    void redo() override { _undoableItem.redo(); }
+
+private:
+    const typename A::Ptr    _attr;
+    const T                  _newValue;
+    MayaUsd::UsdUndoableItem _undoableItem;
+};
+
 } // end namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -248,10 +277,17 @@ void UsdAttributeEnumString::set(const std::string& value)
     UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 }
 
+Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& value)
+{
+    auto self = std::dynamic_pointer_cast<UsdAttributeEnumString>(shared_from_this());
+    UFE_ASSERT_MSG(self, kErrorMsgInvalidType);
+    return std::make_shared<SetUndoableCommand<std::string, UsdAttributeEnumString>>(self, value);
+}
+
 Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() const
 {
     PXR_NS::TfToken tk(name());
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(tk);
 #else
     auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(fPrim.GetTypeName(), tk);
@@ -277,6 +313,14 @@ TypedUsdAttribute<T>::TypedUsdAttribute(
     : Ufe::TypedAttribute<T>(item)
     , UsdAttribute(item, usdAttr)
 {
+}
+
+template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(const T& value)
+{
+    // See
+    // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
+    // for explanation of this->shared_from_this() in templated class.
+    return std::make_shared<SetUndoableCommand<T>>(this->shared_from_this(), value);
 }
 
 //------------------------------------------------------------------------------

@@ -75,15 +75,9 @@ pxr_test_scripts(
         testenv/testUsdExportPointInstancer.py
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportNestedAssemblyAnimation.py
-        testenv/testUsdMayaBlockSceneModificationContext.py
-        testenv/testUsdMayaDiagnosticDelegate.py
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindProcessor.py
-        testenv/testUsdMayaProxyShape.py
-        testenv/testUsdMayaReadWriteUtils.py
         testenv/testUsdMayaReferenceAssemblyEdits.py
-        testenv/testUsdMayaUserExportedAttributes.py
-        testenv/testUsdMayaXformStack.py
         testenv/testUsdReferenceAssemblyChangeRepresentations.py
         testenv/testUsdReferenceAssemblySelection.py
 )
@@ -203,28 +197,6 @@ pxr_register_test(testUsdImportNestedAssemblyAnimation
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
 )
 
-pxr_register_test(testUsdMayaBlockSceneModificationContext
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaBlockSceneModificationContext"
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_register_test(testUsdMayaDiagnosticDelegate
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaDiagnosticDelegate"
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
 pxr_install_test_dir(
     SRC testenv/UsdMayaGetVariantSetSelectionsTest
     DEST testUsdMayaGetVariantSetSelections
@@ -258,34 +230,6 @@ pxr_register_test(testUsdMayaModelKindProcessor
 )
 
 pxr_install_test_dir(
-    SRC testenv/UsdMayaProxyShape
-    DEST testUsdMayaProxyShape
-)
-pxr_register_test(testUsdMayaProxyShape
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaProxyShape"
-    TESTENV testUsdMayaProxyShape
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_register_test(testUsdMayaReadWriteUtils
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaReadWriteUtils"
-    TESTENV testUsdMayaReadWriteUtils
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_install_test_dir(
     SRC testenv/UsdMayaReferenceAssemblyEdits
     DEST testUsdMayaReferenceAssemblyEdits
 )
@@ -299,23 +243,6 @@ pxr_register_test(testUsdMayaReferenceAssemblyEdits
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_install_test_dir(
-    SRC testenv/UsdMayaUserExportedAttributesTest
-    DEST testUsdMayaUserExportedAttributes
-)
-pxr_register_test(testUsdMayaUserExportedAttributes
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaUserExportedAttributes"
-    TESTENV testUsdMayaUserExportedAttributes
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-        MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET=1
 )
 
 pxr_install_test_dir(
@@ -342,18 +269,6 @@ pxr_register_test(testUsdReferenceAssemblySelection
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdReferenceAssemblySelection"
     TESTENV testUsdReferenceAssemblySelection
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_register_test(testUsdMayaXformStack
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaXformStack"
-    TESTENV testUsdMayaXformStack
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources

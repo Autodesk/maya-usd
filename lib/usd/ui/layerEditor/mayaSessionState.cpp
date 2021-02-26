@@ -16,6 +16,7 @@
 
 #include "mayaSessionState.h"
 
+#include "saveLayersDialog.h"
 #include "stringResources.h"
 
 #include <mayaUsd/utils/query.h>
@@ -28,7 +29,6 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MSceneMessage.h>
 
-#include <QtCore/QFileInfo>
 #include <QtCore/QTimer>
 #include <QtWidgets/QMenu>
 
@@ -156,9 +156,23 @@ void MayaSessionState::unregisterNotifications()
 void MayaSessionState::mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice)
 {
     auto shapePath = notice.GetShapePath();
+    auto stage = notice.GetStage();
     if (shapePath == _currentProxyShapePath) {
-        auto stage = notice.GetStage();
         QTimer::singleShot(0, this, [this, stage]() { setStage(stage); });
+    } else {
+        auto shapePath = notice.GetShapePath();
+        QTimer::singleShot(
+            0, this, [this, shapePath, stage]() { mayaUsdStageResetCBOnIdle(shapePath, stage); });
+    }
+}
+
+void MayaSessionState::mayaUsdStageResetCBOnIdle(
+    const std::string&            shapePath,
+    PXR_NS::UsdStageRefPtr const& stage)
+{
+    StageEntry entry;
+    if (getStageEntry(&entry, shapePath.c_str())) {
+        Q_EMIT stageResetSignal(entry._proxyShapePath, stage);
     }
 }
 
@@ -197,19 +211,24 @@ void MayaSessionState::nodeRenamedCB(MObject& obj, const MString& oldName, void*
 {
     if (oldName.length() != 0) {
         auto THIS = static_cast<MayaSessionState*>(clientData);
-        // this does not work:
-        //        if OpenMaya.MFnDependencyNode(obj).typeName == PROXY_NODE_TYPE
-        if (obj.hasFn(MFn::kShape)) {
-            MDagPath dagPath;
-            MFnDagNode(obj).getPath(dagPath);
-            auto shapePath = dagPath.fullPathName();
 
-            StageEntry entry;
-            if (getStageEntry(&entry, shapePath)) {
-                QTimer::singleShot(0, [THIS, entry]() {
-                    Q_EMIT THIS->stageRenamedSignal(entry._displayName, entry._stage);
-                });
-            }
+        // doing it on idle give time to the Load Stage to set a file name
+        QTimer::singleShot(0, [THIS, obj]() { THIS->nodeRenamedCBOnIdle(obj); });
+    }
+}
+
+void MayaSessionState::nodeRenamedCBOnIdle(const MObject& obj)
+{
+    // this does not work:
+    //        if OpenMaya.MFnDependencyNode(obj).typeName == PROXY_NODE_TYPE
+    if (obj.hasFn(MFn::kShape)) {
+        MDagPath dagPath;
+        MFnDagNode(obj).getPath(dagPath);
+        auto shapePath = dagPath.fullPathName();
+
+        StageEntry entry;
+        if (getStageEntry(&entry, shapePath)) {
+            Q_EMIT stageRenamedSignal(entry._displayName, entry._stage);
         }
     }
 }
@@ -221,40 +240,9 @@ void MayaSessionState::sceneClosingCB(void* clientData)
     Q_EMIT THIS->clearUIOnSceneResetSignal();
 }
 
-bool MayaSessionState::saveLayerUI(
-    QWidget*     in_parent,
-    std::string* out_filePath,
-    std::string* out_pFormat) const
+bool MayaSessionState::saveLayerUI(QWidget* in_parent, std::string* out_filePath) const
 {
-    MString fileSelected;
-    MGlobal::executeCommand(
-        MString("UsdLayerEditor_SaveLayerFileDialog"),
-        fileSelected,
-        /*display*/ true,
-        /*undo*/ false);
-    if (fileSelected.length() == 0)
-        return false;
-
-    int binary = 0;
-    MGlobal::executeCommand(
-        MString("UsdLayerEditor_SaveLayerFileDialog_binary"),
-        binary,
-        /*display*/ false,
-        /*undo*/ false);
-    *out_filePath = fileSelected.asChar();
-
-    // figure out format
-    QFileInfo fileInfo(fileSelected.asChar());
-    QString   extension = fileInfo.suffix().toLower();
-
-    // unambiguous formats
-    if (extension == "usda" || extension == "usdc") {
-        *out_pFormat = extension.toStdString();
-    } else {
-        *out_pFormat = binary ? "usdc" : "usda";
-    }
-
-    return true;
+    return SaveLayersDialog::saveLayerFilePathUI(*out_filePath);
 }
 
 std::vector<std::string>
@@ -282,7 +270,8 @@ MayaSessionState::loadLayersUI(const QString& in_title, const std::string& in_de
         return std::vector<std::string>();
     else {
         std::vector<std::string> results;
-        for (const auto& file : files) {
+        for (uint32_t i = 0; i < files.length(); i++) {
+            const auto& file = files[i];
             results.push_back(file.asChar());
         }
         return results;

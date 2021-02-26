@@ -362,7 +362,7 @@ bool UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
         } else {
             SdfLayer::FileFormatArguments args;
             args[UsdUsdFileFormatTokens->FormatArg] = mArgs.defaultUSDFormat.GetString();
-#if USD_VERSION_NUM > 2008
+#if PXR_VERSION > 2008
             layer = SdfLayer::CreateNew(filename, args);
 #else
             layer = SdfLayer::CreateNew(filename, "", args);
@@ -588,6 +588,14 @@ void UsdMayaWriteJobContext::MarkSkelBindings(
     const TfToken& config)
 {
     _skelBindingsProcessor->MarkBindings(path, skelPath, config);
+}
+
+bool UsdMayaWriteJobContext::UpdateSkelBindingsWithExtent(
+    const UsdStagePtr&  stage,
+    const VtVec3fArray& bbox,
+    const UsdTimeCode&  timeSample)
+{
+    return _skelBindingsProcessor->UpdateSkelRootsWithExtent(stage, bbox, timeSample);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

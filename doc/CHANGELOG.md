@@ -1,5 +1,100 @@
 # Changelog
 
+## [0.8.0] - 2021-02-18
+
+**Build:**
+* Fixed UFEv2 test failures with USD 20.02 [#1171](https://github.com/Autodesk/maya-usd/pull/1171)
+* Set MAYA_APP_DIR for each test, pointing to unique folders. [#1163](https://github.com/Autodesk/maya-usd/pull/1163)
+* Disabled OCIOv2 in mtoh tests [#1160](https://github.com/Autodesk/maya-usd/pull/1160)
+* Made tests in test/lib/ufe directly runnable and use fixturesUtils [#1144](https://github.com/Autodesk/maya-usd/pull/1144)
+* Moved minimum core usd version to v20.02 [#1138](https://github.com/Autodesk/maya-usd/pull/1138)
+* Made use of PXR_OVERRIDE_PLUGINPATH_NAME everywhere [#1108](https://github.com/Autodesk/maya-usd/pull/1108)
+* Updates for building with latest post-21.02 dev branch commit of core USD [#1099](https://github.com/Autodesk/maya-usd/pull/1099)
+
+**Translation Framework:**
+* Support empty blendshape targets [#1149](https://github.com/Autodesk/maya-usd/pull/1149)
+* Fixed load all prims in hierarchy view [#1140](https://github.com/Autodesk/maya-usd/pull/1140)
+* Improved support for USD leftHanded mesh [#1139](https://github.com/Autodesk/maya-usd/pull/1139)
+* Fixed export menu after expanding animation option [#1133](https://github.com/Autodesk/maya-usd/pull/1133)
+* Added support for UV mirroring on UsdUVTexture [#1132](https://github.com/Autodesk/maya-usd/pull/1132)
+* Imroved export of skeleton rest-xforms [#1130](https://github.com/Autodesk/maya-usd/pull/1130)
+* Use earliest time when exporting without animation [#1127](https://github.com/Autodesk/maya-usd/pull/1127)
+* Added error message if unrecognized shadingMode on export [#1110](https://github.com/Autodesk/maya-usd/pull/1110)
+* Fixed anonymous layer import [#1086](https://github.com/Autodesk/maya-usd/pull/1086)
+
+**Workflow:**
+* Fixed crash when editing prim on a muted layer [#1172](https://github.com/Autodesk/maya-usd/pull/1172)
+* Added workflows to save in-memory edits [#1152](https://github.com/Autodesk/maya-usd/pull/1152) [#1187](https://github.com/Autodesk/maya-usd/pull/1187)
+* Removed attributes from AE stage view [#1145](https://github.com/Autodesk/maya-usd/pull/1145)
+* Added support for duplicating a proxyShape. [#1142](https://github.com/Autodesk/maya-usd/pull/1142)
+* Adopted data model undo framework for attribute undo [#1134](https://github.com/Autodesk/maya-usd/pull/1134)
+* Prevent saving layers with anonymous sublayers [#1128](https://github.com/Autodesk/maya-usd/pull/1128)
+* Added warning when saving layers on disk [#1121](https://github.com/Autodesk/maya-usd/pull/1121)
+* Fixed crash caused by out of date stage map [#1116](https://github.com/Autodesk/maya-usd/pull/1116)
+* Fixed crash when fallback stack was having unsupported ops added [#1105](https://github.com/Autodesk/maya-usd/pull/1105)
+* Fixed parenting with single matrix xform op stacks [#1102](https://github.com/Autodesk/maya-usd/pull/1102)
+* Author kind=group on the UsdPrim created by the group command when its parent is in the model hierarchy [#1094](https://github.com/Autodesk/maya-usd/pull/1094)
+* Update edit target when layer removal made it no longer part of the stage [#1156](https://github.com/Autodesk/maya-usd/pull/1156)
+* Fixed bounding box cache invalidation when editing USD stage [#1153](https://github.com/Autodesk/maya-usd/pull/1153)
+* Handle selection changes during layer muting and variant switch [#1141](https://github.com/Autodesk/maya-usd/pull/1141)
+* Fixed crash when removing an invalid layer [#1122](https://github.com/Autodesk/maya-usd/pull/1122)
+* Added UFE path handling and utilities to support paths that identify point instances of a PointInstancer [#1027](https://github.com/Autodesk/maya-usd/pull/1027)
+
+**Render:**
+* Fixed crash after re-loading the mtoh plugin [#1159](https://github.com/Autodesk/maya-usd/pull/1159)
+* Added compute extents for modified primitives [#1112](https://github.com/Autodesk/maya-usd/pull/1112)
+* Fixed drawing of stale data when switching representations [#1100](https://github.com/Autodesk/maya-usd/pull/1100)
+* Added hilight dirty state propagation [#1091](https://github.com/Autodesk/maya-usd/pull/1091)
+* Implemented viewport selection highlighting of point instances and point instances pick modes [#1119](https://github.com/Autodesk/maya-usd/pull/1119)  [#1161](https://github.com/Autodesk/maya-usd/pull/1161)
+
+**Documentation:**
+* Added import/export cmd documentation [#1146](https://github.com/Autodesk/maya-usd/pull/1146)
+
+## [0.7.0] - 2021-01-20
+
+This release changes to highlight:
+* Ufe cameras
+* Blendshape export support
+* Maya's scene will get modified by changes to USD data model 
+* VP2RenderDelegate is enabled by default and doesn't require env variable flag anymore
+* Maya-To-Hydra compilation is disabled for Maya 2019 with USD 20.08 or 20.11 
+
+**Build:**
+* Migrated more tests from plugin/pxr to core mayaUsd [#1042](https://github.com/Autodesk/maya-usd/pull/1042)
+* Cleaned up UI folder [#1037](https://github.com/Autodesk/maya-usd/pull/1037)
+* Cleaned up test utils [#1034](https://github.com/Autodesk/maya-usd/pull/1034)
+* Updates for building with latest post-20.11 dev branch of core USD [#1025](https://github.com/Autodesk/maya-usd/pull/1025)
+* Fixed  a build issue on Linux with maya < 2020 [#1013](https://github.com/Autodesk/maya-usd/pull/1013)
+* Fixed interactive tests to ensure output streams are flushed before quitting [#1009](https://github.com/Autodesk/maya-usd/pull/1009)
+* Added UsdMayaDiagnosticDelegate to adsk plugin to enable Tf errors reporting using Maya's routines [#1003](https://github.com/Autodesk/maya-usd/pull/1003)
+* Added basic tests for HdMaya / mtoh [#915](https://github.com/Autodesk/maya-usd/pull/915) [#1006](https://github.com/Autodesk/maya-usd/pull/1006)
+
+**Translation Framework:**
+* Fixed issue where referenced scenes have incorrect UV set attribute name written out. [#1062](https://github.com/Autodesk/maya-usd/pull/1062)
+* Fixed texture writer path resolver to work relative to final export path [#1028](https://github.com/Autodesk/maya-usd/pull/1028)
+* Fixed incorrect `bindTransforms` being determined during export [#1024](https://github.com/Autodesk/maya-usd/pull/1024)
+* Added Blendshape export functionality [#1016](https://github.com/Autodesk/maya-usd/pull/1016) 
+* Added staticSingleSample flag, and optimize mesh attributes by default [#989](https://github.com/Autodesk/maya-usd/pull/989) [#1012](https://github.com/Autodesk/maya-usd/pull/1012)
+* Added convert for USD timeSamples to Maya FPS [#970](https://github.com/Autodesk/maya-usd/pull/970) [#1010](https://github.com/Autodesk/maya-usd/pull/1010)
+
+**Workflow:**
+* Fixed camera frame for instance proxies. [#1082](https://github.com/Autodesk/maya-usd/pull/1082)
+* Removed dependency between LayerEditor and HIK image resources [#1072](https://github.com/Autodesk/maya-usd/pull/1072)
+* Fixed rename for inherits and specializes update [#1071](https://github.com/Autodesk/maya-usd/pull/1071)
+* Added support for Ufe cameras [#1066](https://github.com/Autodesk/maya-usd/pull/1066)
+* Editing USD should mark scene as dirty [#1061](https://github.com/Autodesk/maya-usd/pull/1061)
+* Fixed crash when manipulating certain assets on Linux [#1060](https://github.com/Autodesk/maya-usd/pull/1060)
+* Made visibility Undo/Redo correct [#1056](https://github.com/Autodesk/maya-usd/pull/1056)
+* Fixed crash in LayerEditor when removing layer used as edit target [#1015](https://github.com/Autodesk/maya-usd/pull/1015)
+* Fixed disappearing layer when moved under last layer in LayerEditor [#994](https://github.com/Autodesk/maya-usd/pull/994)
+
+**Render:**
+* Fixed false positive transparency [#1080](https://github.com/Autodesk/maya-usd/pull/1080)
+* Made VP2RenderDelegate enabled by default [#1065](https://github.com/Autodesk/maya-usd/pull/1065)
+* Fixed mtoh crash with DirectX [#1059](https://github.com/Autodesk/maya-usd/pull/1059)
+* Optimized VP2RenderDelegate for many materials [#1043](https://github.com/Autodesk/maya-usd/pull/1043)  [#1048](https://github.com/Autodesk/maya-usd/pull/1048) [#1052](https://github.com/Autodesk/maya-usd/pull/1052)
+* Disabled building of mtoh for Maya 2019 with USD 20.08 and 20.11 [#1023](https://github.com/Autodesk/maya-usd/pull/1023)
+
 ## [0.6.0] - 2020-12-14
 
 This release includes many changes, like:

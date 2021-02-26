@@ -32,9 +32,12 @@
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdSkel/animation.h>
 
+#include <maya/MBoundingBox.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
+#include <maya/MPlugArray.h>
 #include <maya/MString.h>
 
 #include <set>
@@ -68,8 +71,20 @@ private:
     /// skinCluster is applied but we don't support that right now.
     bool isMeshAnimated() const;
 
+    MObject writeBlendShapeData(UsdGeomMesh& primSchema);
+    bool    writeBlendShapeAnimation(const UsdTimeCode& usdTime);
+    bool    writeAnimatedMeshExtents(const MObject& deformedMesh, const UsdTimeCode& usdTime);
+
     /// Input mesh before any skeletal deformations, cached between iterations.
     MObject _skelInputMesh;
+
+    /// The animated plugs of any blendshape nodes involved in mesh deformation.
+    MPlugArray _animBlendShapeWeightPlugs;
+
+    /// The previous sample for the mesh extents. Cached between iterations.
+    VtVec3fArray _prevMeshExtentsSample;
+
+    UsdSkelAnimation _skelAnim;
 
     /// Set of color sets that should be excluded.
     /// Intermediate processes may alter this set prior to writeMeshAttrs().

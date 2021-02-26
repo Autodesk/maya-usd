@@ -17,12 +17,16 @@
 
 #include "private/UfeNotifGuard.h"
 
+#if UFE_PREVIEW_VERSION_NUM >= 2034
+#include <mayaUsd/ufe/UsdObject3d.h>
+#endif
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/usd/common.h>
@@ -35,6 +39,11 @@
 #include <maya/MGlobal.h>
 #include <ufe/attribute.h>
 #include <ufe/attributes.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2034
+#include <ufe/object3d.h>
+#endif
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
 #include <ufe/path.h>
 
 #include <algorithm>
@@ -50,8 +59,10 @@ namespace {
 // - the "Image" is used for icon in the context menu. Directly used std::string
 //   for these so the emplace_back() will choose the right constructor. With char[]
 //   it would convert that param to a bool and choose the wrong constructor.
-static constexpr char    kUSDLayerEditorItem[] = "USD Layer Editor";
-static constexpr char    kUSDLayerEditorLabel[] = "USD Layer Editor...";
+#ifdef WANT_QT_BUILD
+static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
+static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor...";
+#endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 static constexpr char    kUSDLoadItem[] = "Load";
 static constexpr char    kUSDLoadLabel[] = "Load";
@@ -171,22 +182,41 @@ class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     SetVariantSelectionUndoableCommand(
+        const Ufe::Path&                 path,
         const UsdPrim&                   prim,
         const Ufe::ContextOps::ItemPath& itemPath)
-        : fVarSet(prim.GetVariantSets().GetVariantSet(itemPath[1]))
-        , fOldSelection(fVarSet.GetVariantSelection())
-        , fNewSelection(itemPath[2])
+        : _path(path)
+        , _varSet(prim.GetVariantSets().GetVariantSet(itemPath[1]))
+        , _oldSelection(_varSet.GetVariantSelection())
+        , _newSelection(itemPath[2])
     {
     }
 
-    void undo() override { fVarSet.SetVariantSelection(fOldSelection); }
+    void undo() override
+    {
+        _varSet.SetVariantSelection(_oldSelection);
+        // Restore the saved selection to the global selection.  If a saved
+        // selection item started with the prim's path, re-create it.
+        auto globalSn = Ufe::GlobalSelection::get();
+        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, _path));
+    }
 
-    void redo() override { fVarSet.SetVariantSelection(fNewSelection); }
+    void redo() override
+    {
+        // Make a copy of the global selection, to restore it on unmute.
+        auto globalSn = Ufe::GlobalSelection::get();
+        _savedSn.replaceWith(*globalSn);
+        // Filter the global selection, removing items below our prim.
+        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, _path));
+        _varSet.SetVariantSelection(_newSelection);
+    }
 
 private:
-    UsdVariantSet     fVarSet;
-    const std::string fOldSelection;
-    const std::string fNewSelection;
+    const Ufe::Path   _path;
+    UsdVariantSet     _varSet;
+    const std::string _oldSelection;
+    const std::string _newSelection;
+    Ufe::Selection    _savedSn; // For global selection save and restore.
 };
 
 //! \brief Undoable command for prim active state change
@@ -325,7 +355,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
     std::vector<std::pair<const char* const, const char* const>> itemLabelPairs;
 
     const bool isInPrototype =
-#if USD_VERSION_NUM >= 2011
+#if PXR_VERSION >= 2011
         prim.IsInPrototype();
 #else
         prim.IsInMaster();
@@ -425,13 +455,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 {
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
+#ifdef WANT_QT_BUILD
         // Top-level item - USD Layer editor (for all context op types).
-#if UFE_PREVIEW_VERSION_NUM >= 2023
+        // Only available when building with Qt enabled.
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
-#else
-        items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
-#endif
         items.emplace_back(Ufe::ContextItem::kSeparator);
+#endif
 
         // Top-level items (do not add for gateway type node):
         if (!fIsAGatewayType) {
@@ -510,7 +539,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             } // Variants of a variant set
         }     // Variant sets
         else if (itemPath[0] == kUSDAddNewPrimItem) {
-#if UFE_PREVIEW_VERSION_NUM >= 2023
             items.emplace_back(
                 kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
             items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
@@ -521,17 +549,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
             items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
             items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
-#else
-            items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel); // typeless prim
-            items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel);
-            items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel);
-            items.emplace_back(Ufe::ContextItem::kSeparator);
-            items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel);
-            items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel);
-            items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel);
-            items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel);
-            items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel);
-#endif
         }
     } // Top-level items
 
@@ -564,18 +581,26 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 
         // At this point we know we have enough arguments to execute the
         // operation.
-        return std::make_shared<SetVariantSelectionUndoableCommand>(prim(), itemPath);
+        return std::make_shared<SetVariantSelectionUndoableCommand>(path(), prim(), itemPath);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
+#if UFE_PREVIEW_VERSION_NUM < 2034
         auto attributes = Ufe::Attributes::attributes(sceneItem());
-        assert(attributes);
+        TF_AXIOM(attributes);
         auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
             attributes->attribute(UsdGeomTokens->visibility));
-        assert(visibility);
+        TF_AXIOM(visibility);
         auto current = visibility->get();
         return visibility->setCmd(
             current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited
                                                 : UsdGeomTokens->invisible);
+#else
+        auto object3d = UsdObject3d::create(fItem);
+        TF_AXIOM(object3d);
+        auto current = object3d->visibility();
+        return object3d->setVisibleCmd(!current);
+#endif
+
     } // Visibility
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
         return std::make_shared<ToggleActiveStateCommand>(prim());
@@ -590,6 +615,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // At this point we know we have 2 arguments to execute the operation.
         // itemPath[1] contains the new prim type to create.
         return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
+#ifdef WANT_QT_BUILD
+        // When building without Qt there is no LayerEditor
     } else if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.
         auto ufePath = ufe::stagePath(prim().GetStage());
@@ -601,6 +628,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
         MGlobal::executeCommand(script);
         return nullptr;
+#endif
     } else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
         MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);
 

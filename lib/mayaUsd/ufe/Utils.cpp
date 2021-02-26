@@ -18,19 +18,31 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/hashset.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/pointInstancer.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
+#include <ufe/hierarchy.h>
 #include <ufe/pathSegment.h>
+#include <ufe/rtid.h>
+#include <ufe/selection.h>
 
 #include <cassert>
+#include <cctype>
 #include <memory>
 #include <regex>
 #include <stdexcept>
@@ -49,6 +61,26 @@ template <> struct iterator_traits<MStringArray::Iterator>
 };
 } // namespace std
 #endif
+
+namespace {
+
+constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
+
+bool stringBeginsWithDigit(const std::string& inputString)
+{
+    if (inputString.empty()) {
+        return false;
+    }
+
+    const char& firstChar = inputString.front();
+    if (std::isdigit(static_cast<unsigned char>(firstChar))) {
+        return true;
+    }
+
+    return false;
+}
+
+} // anonymous namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -72,25 +104,102 @@ UsdStageWeakPtr getStage(const Ufe::Path& path) { return g_StageMap.stage(path);
 
 Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
 
+TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return g_StageMap.allStages(); }
+
+Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
+{
+    const Ufe::Rtid   usdRuntimeId = getUsdRunTimeId();
+    static const char separator = SdfPathTokens->childDelimiter.GetText()[0u];
+
+    if (usdPath.IsEmpty()) {
+        // Return an empty segment.
+        return Ufe::PathSegment(Ufe::PathSegment::Components(), usdRuntimeId, separator);
+    }
+
+    std::string pathString = usdPath.GetString();
+
+    if (instanceIndex >= 0) {
+        // Note here that we're taking advantage of the fact that identifiers
+        // in SdfPaths must be C/Python identifiers; that is, they must *not*
+        // begin with a digit. This means that when we see a path component at
+        // the end of a USD path segment that does begin with a digit, we can
+        // be sure that it represents an instance index and not a prim or other
+        // USD entity.
+        pathString += TfStringPrintf("%c%d", separator, instanceIndex);
+    }
+
+    return Ufe::PathSegment(pathString, usdRuntimeId, separator);
+}
+
+Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)
+{
+    if (path.empty()) {
+        return path;
+    }
+
+    // As with usdPathToUfePathSegment() above, we're taking advantage of the
+    // fact that identifiers in SdfPaths must be C/Python identifiers; that is,
+    // they must *not* begin with a digit. This means that when we see a path
+    // component at the end of a USD path segment that does begin with a digit,
+    // we can be sure that it represents an instance index and not a prim or
+    // other USD entity.
+    if (stringBeginsWithDigit(path.back().string())) {
+        return path.pop();
+    }
+
+    return path;
+}
+
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
+    const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
+
     // Assume that there are only two segments in the path, the first a Maya
     // Dag path segment to the proxy shape, which identifies the stage, and
     // the second the USD segment.
-    const Ufe::Path::Segments& segments = path.getSegments();
-    TEST_USD_PATH(segments, path);
+    // When called we do not make any assumption on whether or not the
+    // input path is valid.
+    const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
+    if (!TF_VERIFY(segments.size() == 2u, kIllegalUSDPath, path.string().c_str())) {
+        return UsdPrim();
+    }
 
     UsdPrim prim;
     if (auto stage = getStage(Ufe::Path(segments[0]))) {
-        prim = stage->GetPrimAtPath(SdfPath(segments[1].string()));
+        const SdfPath usdPath = SdfPath(segments[1].string());
+        prim = stage->GetPrimAtPath(usdPath.GetPrimPath());
     }
     return prim;
 }
 
+int ufePathToInstanceIndex(const Ufe::Path& path)
+{
+    int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+
+    const UsdPrim usdPrim = ufePathToPrim(path);
+    if (!usdPrim || !usdPrim.IsA<UsdGeomPointInstancer>()) {
+        return instanceIndex;
+    }
+
+    // Once more as above in usdPathToUfePathSegment() and
+    // stripInstanceIndexFromUfePath(), a path component at the tail of the
+    // path that begins with a digit is assumed to represent an instance index.
+    const std::string& tailComponentString = path.back().string();
+    if (stringBeginsWithDigit(path.back().string())) {
+        instanceIndex = std::stoi(tailComponentString);
+    }
+
+    return instanceIndex;
+}
+
 bool isRootChild(const Ufe::Path& path)
 {
+    // When called we make the assumption that we are given a valid
+    // path and we are only testing whether or not we are a root child.
     auto segments = path.getSegments();
-    TEST_USD_PATH(segments, path);
+    if (segments.size() != 2) {
+        TF_RUNTIME_ERROR(kIllegalUSDPath, path.string().c_str());
+    }
     return (segments[1].size() == 1);
 }
 
@@ -225,6 +334,86 @@ UsdTimeCode getTime(const Ufe::Path& path)
     TF_VERIFY(proxyShape);
 
     return proxyShape->getTime();
+}
+
+TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
+{
+    // Path should not be empty.
+    if (!TF_VERIFY(!path.empty())) {
+        return TfTokenVector();
+    }
+
+    // The proxy shape is the tail component of the first path segment.
+    auto proxyShapePath = Ufe::Path(path.getSegments()[0]);
+
+    // Keep a single-element path to MObject cache, as all USD prims in a stage
+    // share the same proxy shape.
+    static std::pair<Ufe::Path, MObjectHandle> cache;
+
+    MObject proxyShapeObj;
+
+    if (cache.first == proxyShapePath && cache.second.isValid()) {
+        proxyShapeObj = cache.second.object();
+    } else {
+        // Not found in the cache, or no longer valid.  Get the proxy shape
+        // MObject from its path, and put it in the cache.  Pop the head of the
+        // UFE path to get rid of "|world", which is implicit in Maya.
+        auto proxyShapeDagPath = UsdMayaUtil::nameToDagPath(proxyShapePath.popHead().string());
+        TF_VERIFY(proxyShapeDagPath.isValid());
+        proxyShapeObj = proxyShapeDagPath.node();
+        cache = std::pair<Ufe::Path, MObjectHandle>(proxyShapePath, MObjectHandle(proxyShapeObj));
+    }
+
+    // Get purposes from the proxy shape.
+    bool              renderPurpose, proxyPurpose, guidePurpose;
+    MFnDependencyNode fn(proxyShapeObj);
+    auto              proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+    TF_VERIFY(proxyShape);
+    proxyShape->getDrawPurposeToggles(&renderPurpose, &proxyPurpose, &guidePurpose);
+    TfTokenVector purposes;
+    if (renderPurpose) {
+        purposes.emplace_back(UsdGeomTokens->render);
+    }
+    if (proxyPurpose) {
+        purposes.emplace_back(UsdGeomTokens->proxy);
+    }
+    if (guidePurpose) {
+        purposes.emplace_back(UsdGeomTokens->guide);
+    }
+
+    return purposes;
+}
+
+Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+{
+    // Filter the src selection, removing items below the filterPath
+    Ufe::Selection dst;
+    for (const auto& item : src) {
+        const auto& itemPath = item->path();
+        // The filterPath itself is still valid.
+        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
+            dst.append(item);
+        }
+    }
+    return dst;
+}
+
+Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+{
+    // If a src selection item starts with the filterPath, re-create it.
+    Ufe::Selection dst;
+    for (const auto& item : src) {
+        const auto& itemPath = item->path();
+        // The filterPath itself is still valid.
+        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
+            dst.append(item);
+        } else {
+            auto recreatedItem = Ufe::Hierarchy::createItem(item->path());
+            TF_AXIOM(recreatedItem);
+            dst.append(recreatedItem);
+        }
+    }
+    return dst;
 }
 
 } // namespace ufe

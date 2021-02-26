@@ -81,7 +81,7 @@ function(mayaUsd_compile_config TARGET)
     # required compiler feature
     # Require C++14 if we're either building for Maya 2019 or later, or if we're building against 
     # USD 20.05 or later. Otherwise require C++11.
-    if ((MAYA_APP_VERSION VERSION_GREATER_EQUAL 2019) OR (USD_VERSION_NUM VERSION_GREATER_EQUAL 2005))
+    if ((MAYA_APP_VERSION VERSION_GREATER_EQUAL 2019) OR (PXR_VERSION VERSION_GREATER_EQUAL 2005))
         target_compile_features(${TARGET} 
             PRIVATE
                 cxx_std_14
@@ -107,4 +107,10 @@ function(mayaUsd_compile_config TARGET)
                 ${MSVC_DEFINITIONS}
         )
     endif()
+
+    # Remove annoying TBB warnings.
+    target_compile_definitions(${TARGET}
+        PRIVATE
+            TBB_SUPPRESS_DEPRECATED_MESSAGES
+    )
 endfunction()

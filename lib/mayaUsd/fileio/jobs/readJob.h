@@ -16,6 +16,7 @@
 #ifndef PXRUSDMAYA_READ_JOB_H
 #define PXRUSDMAYA_READ_JOB_H
 
+#include <mayaUsd/fileio/chaser/importChaser.h>
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primReader.h>
@@ -131,6 +132,10 @@ private:
     MDagModifier mDagModifierUndo;
     bool         mDagModifierSeeded;
     double       mTimeSampleMultiplier;
+
+    /// Cache of import chasers that were run. Currently used to aid in redo/undo operations
+    /// This cache is cleared for every new Read() operation.
+    UsdMayaImportChaserRefPtrVector mImportChasers;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

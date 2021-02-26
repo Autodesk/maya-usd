@@ -65,7 +65,7 @@ public:
             return VtValue(light.findPlug("aiExposure", true).asFloat());
         } else if (paramName == HdLightTokens->normalize) {
             return VtValue(light.findPlug("aiNormalize", true).asBool());
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
         } else if (paramName == HdLightTokens->textureFormat) {
 #else
         } else if (paramName == UsdLuxTokens->textureFormat) {
@@ -97,7 +97,7 @@ public:
                 file.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar()));
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
-#if USD_VERSION_NUM >= 1910 && USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
         } else if (paramName == HdLightTokens->textureResource) {
             auto fileObj = GetConnectedFileNode(GetNode(), HdMayaAdapterTokens->color);
             // TODO: Return a default, white texture?
@@ -110,7 +110,7 @@ public:
                 fileObj,
                 GetFileTexturePath(MFnDependencyNode(fileObj)),
                 GetDelegate()->GetParams().textureMemoryPerTexture) };
-#endif // USD_VERSION_NUM >= 1910 && USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
         }
         return {};
     }

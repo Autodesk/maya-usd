@@ -19,6 +19,9 @@
 import os
 import platform
 import unittest
+
+import testUtils
+
 from maya import cmds
 import maya.mel as mel
 
@@ -35,18 +38,14 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         else:
             return os.path.samefile(path1, path2)
 
-    def getTestScene(self, *args):
-        return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)
-
     def testCreateStageWithNewLayer(self):
         # Create a proxy shape with empty stage to start with.
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        shapeNode = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Verify that we got a proxy shape object.
         mayaSel = cmds.ls(sl=True)
         self.assertEqual(1, len(mayaSel))
-        shapeNode = mayaSel[0]
         nt = cmds.nodeType(shapeNode)
         self.assertEqual('mayaUsdProxyShape', nt)
 
@@ -59,12 +58,11 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         # we can call what it does once the file is choose.
         # Note: on ballFilePath we replace \ with / to stop the \ as
         #       being interpreted.
-        ballFilePath = os.path.normpath(self.getTestScene('ballset', 'StandaloneScene', 'top_layer.usda')).replace('\\', '/')
+        ballFilePath = os.path.normpath(testUtils.getTestScene('ballset', 'StandaloneScene', 'top_layer.usda')).replace('\\', '/')
         mel.eval('source \"mayaUsd_createStageFromFile.mel\"')
-        mel.eval('mayaUsd_createStageFromFilePath(\"'+ballFilePath+'\")')
+        shapeNode = mel.eval('mayaUsd_createStageFromFilePath(\"'+ballFilePath+'\")')
         mayaSel = cmds.ls(sl=True)
         self.assertEqual(1, len(mayaSel))
-        shapeNode = mayaSel[0]
         nt = cmds.nodeType(shapeNode)
         self.assertEqual('mayaUsdProxyShape', nt)
 

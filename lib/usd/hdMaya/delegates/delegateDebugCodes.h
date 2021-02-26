@@ -53,28 +53,13 @@ TF_DEBUG_CODES(
 // These are declared in a separate block to avoid using a preprocessor
 // directive inside the TF_DEBUG_CODES() macro invocation, which breaks
 // compilation on Windows.
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 // clang-format off
 TF_DEBUG_CODES(
     HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
     HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID);
 // clang-format on
-#endif // USD_VERSION_NUM < 2011
-
-// Debug codes for Hydra API that was deprecated after USD 19.11.
-// These are declared in a separate block to avoid using a preprocessor
-// directive inside the TF_DEBUG_CODES() macro invocation, which breaks
-// compilation on Windows.
-#if USD_VERSION_NUM <= 1911
-// clang-format off
-TF_DEBUG_CODES(
-    HDMAYA_DELEGATE_GET_DISPLACEMENT_SHADER_SOURCE,
-    HDMAYA_DELEGATE_GET_MATERIAL_METADATA,
-    HDMAYA_DELEGATE_GET_MATERIAL_PARAM_VALUE,
-    HDMAYA_DELEGATE_GET_MATERIAL_PARAMS,
-    HDMAYA_DELEGATE_GET_SURFACE_SHADER_SOURCE);
-// clang-format on
-#endif // USD_VERSION_NUM <= 1911
+#endif // PXR_VERSION < 2011
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -9,78 +9,66 @@
 #include "stringResources.h"
 #include "warningDialogs.h"
 
-#include <pxr/usd/sdf/fileFormat.h>
-#include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/usd/usdFileFormat.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
+#include <pxr/usd/sdf/layer.h>
+
+#include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
 #include <QtCore/QString>
-#include <QtCore/QTemporaryFile>
 #include <QtGui/QFontMetrics>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QBoxLayout>
 
-#include <cassert>
 #include <string>
+
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Utils.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
+template <typename T> void moveAppendVector(std::vector<T>& src, std::vector<T>& dst)
+{
+    if (dst.empty()) {
+        dst = std::move(src);
+    } else {
+        dst.reserve(dst.size() + src.size());
+        std::move(std::begin(src), std::end(src), std::back_inserter(dst));
+        src.clear();
+    }
+}
+
 using namespace UsdLayerEditor;
 
-// Starting at the given tree item, walk up the layer hierarchy looking for
-// the first file backed layer.
-// If we find a file backed layer then this will be the folder to save in.
-// If we don't find a folder then we will ask the session layer for the
-// current Maya scene and use that location.
-//
-QString suggestedStartFolder(const LayerTreeItem* treeItem)
+void getDialogMessages(const int nbStages, const int nbAnonLayers, QString& msg1, QString& msg2)
 {
-    QString startPath;
+    MString msg, strNbStages, strNbAnonLayers;
+    strNbStages = nbStages;
+    strNbAnonLayers = nbAnonLayers;
+    msg.format(
+        StringResources::getAsMString(StringResources::kToSaveTheStageSaveAnonym),
+        strNbStages,
+        strNbAnonLayers);
+    msg1 = MQtUtil::toQString(msg);
 
-    auto item = treeItem;
-    while (item != nullptr) {
-        if (!item->isAnonymous()) {
-            startPath = QFileInfo(item->layer()->GetRealPath().c_str()).dir().absolutePath();
-            break;
-        }
-        item = item->parentLayerItem();
-    }
-
-    if (startPath.isEmpty()) {
-        startPath = treeItem->parentModel()->sessionState()->defaultLoadPath().c_str();
-    }
-
-    if (!startPath.isEmpty() && startPath.at(startPath.size() - 1) != QDir::separator()) {
-        startPath += QDir::separator();
-    }
-
-    return QDir::fromNativeSeparators(startPath);
+    msg.format(
+        StringResources::getAsMString(StringResources::kToSaveTheStageSaveFiles), strNbStages);
+    msg2 = MQtUtil::toQString(msg);
 }
 
-QString suggestedFileName(const LayerTreeItem* treeItem, const QString& startFolder)
-{
-    QString templateName = startFolder + QString::fromStdString(treeItem->displayName())
-        + QString("_XXXXXX.") + QString(UsdUsdFileFormatTokens->Id.GetText());
-    QTemporaryFile tFile(templateName);
-    if (tFile.open()) {
-        return tFile.fileName();
-    } else {
-        return startFolder + QString::fromStdString(treeItem->displayName()) + QString(".")
-            + QString(UsdUsdFileFormatTokens->Id.GetText());
-    }
-}
-
-// TODO: helper class copied from Load Layers Dialog.
-class MyLineEdit : public QLineEdit
+class AnonLayerPathEdit : public QLineEdit
 {
 public:
-    MyLineEdit(QWidget* in_parent)
+    AnonLayerPathEdit(QWidget* in_parent)
         : QLineEdit(in_parent)
     {
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Maximum);
@@ -91,8 +79,8 @@ public:
         auto hint = QLineEdit::sizeHint();
         if (!text().isEmpty()) {
             QFontMetrics appFont = QApplication::fontMetrics();
-            int          pathWidth = appFont.boundingRect(text()).width() + 100;
-            hint.setWidth(DPIScale(pathWidth));
+            int          pathWidth = appFont.boundingRect(text()).width();
+            hint.setWidth(pathWidth + DPIScale(100));
         }
         return hint;
     }
@@ -107,15 +95,16 @@ class SaveLayersDialog;
 class SaveLayerPathRow : public QWidget
 {
 public:
-    SaveLayerPathRow(SaveLayersDialog* in_parent, LayerTreeItem* in_treeItem);
+    SaveLayerPathRow(
+        SaveLayersDialog*                                in_parent,
+        const std::pair<SdfLayerRefPtr, SdfLayerRefPtr>& in_layerPair);
 
     QString layerDisplayName() const;
 
     QString absolutePath() const;
     QString pathToSaveAs() const;
-    QString usdFormatTag() const;
 
-    void setAbsolutePath(const std::string& path, const std::string& tag);
+    void setAbsolutePath(const std::string& path);
 
 protected:
     void onOpenBrowser();
@@ -123,35 +112,44 @@ protected:
     void onRelativeButtonChecked(bool checked);
 
 public:
-    QString           _initialStartFolder;
-    QString           _absolutePath;
-    QString           _formatTag;
-    SaveLayersDialog* _parent;
-    LayerTreeItem*    _treeItem;
-    QLabel*           _label;
-    QLineEdit*        _pathEdit;
-    QAbstractButton*  _openBrowser;
+    QString                                   _initialStartFolder;
+    QString                                   _absolutePath;
+    SaveLayersDialog*                         _parent { nullptr };
+    std::pair<SdfLayerRefPtr, SdfLayerRefPtr> _layerPair;
+    QLabel*                                   _label { nullptr };
+    QLineEdit*                                _pathEdit { nullptr };
+    QAbstractButton*                          _openBrowser { nullptr };
 };
 
-SaveLayerPathRow::SaveLayerPathRow(SaveLayersDialog* in_parent, LayerTreeItem* in_treeItem)
+SaveLayerPathRow::SaveLayerPathRow(
+    SaveLayersDialog*                                in_parent,
+    const std::pair<SdfLayerRefPtr, SdfLayerRefPtr>& in_layerPair)
     : QWidget(in_parent)
-    , _formatTag("usdc")
     , _parent(in_parent)
-    , _treeItem(in_treeItem)
+    , _layerPair(in_layerPair)
 {
     auto gridLayout = new QGridLayout();
     QtUtils::initLayoutMargins(gridLayout);
 
-    QString displayName = _treeItem->displayName().c_str();
+    // Since this is an anonymous layer, it should only be associated with a single stage.
+    std::string stageName;
+    const auto& stageLayers = in_parent->stageLayers();
+    if (TF_VERIFY(1 == stageLayers.count(_layerPair.first))) {
+        auto search = stageLayers.find(_layerPair.first);
+        stageName = search->second;
+    }
+
+    QString displayName = _layerPair.first->GetDisplayName().c_str();
     _label = new QLabel(displayName);
+    _label->setToolTip(in_parent->buildTooltipForLayer(_layerPair.first));
     gridLayout->addWidget(_label, 0, 0);
 
-    _initialStartFolder = suggestedStartFolder(_treeItem);
-    _absolutePath = suggestedFileName(_treeItem, _initialStartFolder);
+    _initialStartFolder = UsdMayaSerialization::getSceneFolder().c_str();
+    _absolutePath = UsdMayaSerialization::generateUniqueFileName(stageName).c_str();
 
     QFileInfo fileInfo(_absolutePath);
     QString   suggestedFullPath = fileInfo.absoluteFilePath();
-    _pathEdit = new MyLineEdit(this);
+    _pathEdit = new AnonLayerPathEdit(this);
     _pathEdit->setText(suggestedFullPath);
     connect(_pathEdit, &QLineEdit::textChanged, this, &SaveLayerPathRow::onTextChanged);
     gridLayout->addWidget(_pathEdit, 0, 1);
@@ -172,22 +170,18 @@ QString SaveLayerPathRow::absolutePath() const { return _absolutePath; }
 
 QString SaveLayerPathRow::pathToSaveAs() const { return _absolutePath; }
 
-QString SaveLayerPathRow::usdFormatTag() const { return _formatTag; }
-
-void SaveLayerPathRow::setAbsolutePath(const std::string& path, const std::string& tag)
+void SaveLayerPathRow::setAbsolutePath(const std::string& path)
 {
     _absolutePath = path.c_str();
     _pathEdit->setText(_absolutePath);
     _pathEdit->setEnabled(true);
-    _formatTag = tag.c_str();
 }
 
 void SaveLayerPathRow::onOpenBrowser()
 {
-    auto        sessionState = _treeItem->parentModel()->sessionState();
-    std::string fileName, formatTag;
-    if (sessionState->saveLayerUI(nullptr, &fileName, &formatTag)) {
-        setAbsolutePath(fileName, formatTag);
+    std::string fileName;
+    if (SaveLayersDialog::saveLayerFilePathUI(fileName)) {
+        setAbsolutePath(fileName);
     }
 }
 
@@ -232,8 +226,11 @@ public:
                 if (0 < rowHint.height())
                     hint.rheight() += rowHint.height();
             }
-            hint.rheight() += 100;
+
+            // Extra padding (enough for 3.5 lines).
             hint.rwidth() += 100;
+            if (hint.height() < DPIScale(120))
+                hint.setHeight(DPIScale(120));
         }
         return hint;
     }
@@ -244,62 +241,200 @@ public:
 //
 namespace UsdLayerEditor {
 
-SaveLayersDialog::SaveLayersDialog(
-    const QString&                     title,
-    const QString&                     message,
-    const std::vector<LayerTreeItem*>& layerItems,
-    QWidget*                           in_parent)
-    : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
-    , _layerItems(layerItems)
+#if defined(WANT_UFE_BUILD)
+SaveLayersDialog::SaveLayersDialog(QWidget* in_parent, const std::vector<UsdStageRefPtr>& stages)
+    : QDialog(in_parent)
+    , _sessionState(nullptr)
 {
-    setWindowTitle(title);
+    MString msg, nbStages;
 
-    _rowsLayout = new QVBoxLayout();
-    int margin = DPIScale(5) + DPIScale(20);
-    _rowsLayout->setContentsMargins(margin, margin, margin, 0);
-    _rowsLayout->setSpacing(DPIScale(8));
-    _rowsLayout->setAlignment(Qt::AlignTop);
+    nbStages = stages.size();
+    msg.format(StringResources::getAsMString(StringResources::kSaveXStages), nbStages);
+    setWindowTitle(MQtUtil::toQString(msg));
 
-    if (!message.isEmpty()) {
-        auto dialogMessage = new QLabel(message);
-        _rowsLayout->addWidget(dialogMessage);
+    // For each stage collect the layers to save.
+    for (const auto& stage : stages) {
+        // Get the name of this stage.
+        auto        stagePath = MayaUsd::ufe::stagePath(stage);
+        std::string stageName = !stagePath.empty() ? stagePath.back().string() : "Unknown";
+
+        getLayersToSave(stage, stageName);
     }
 
-    for (auto iter = _layerItems.crbegin(); iter != _layerItems.crend(); ++iter) {
-        auto row = new SaveLayerPathRow(this, (*iter));
-        _rowsLayout->addWidget(row);
+    QString msg1, msg2;
+    getDialogMessages(
+        static_cast<int>(stages.size()), static_cast<int>(_anonLayerPairs.size()), msg1, msg2);
+    buildDialog(msg1, msg2);
+}
+#endif
+
+SaveLayersDialog::SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent)
+    : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
+    , _sessionState(in_sessionState)
+{
+    MString msg;
+    QString dialogTitle = StringResources::getAsQString(StringResources::kSaveStage);
+    if (TF_VERIFY(nullptr != _sessionState)) {
+        auto stage = _sessionState->stage();
+
+        auto stageList = _sessionState->allStages();
+        for (auto const& entry : stageList) {
+            if (entry._stage == stage) {
+                std::string stageName = entry._displayName;
+                msg.format(
+                    StringResources::getAsMString(StringResources::kSaveName), stageName.c_str());
+                dialogTitle = MQtUtil::toQString(msg);
+                getLayersToSave(stage, stageName);
+                break;
+            }
+        }
     }
+    setWindowTitle(dialogTitle);
+
+    QString msg1, msg2;
+    getDialogMessages(1, static_cast<int>(_anonLayerPairs.size()), msg1, msg2);
+    buildDialog(msg1, msg2);
+}
+
+SaveLayersDialog ::~SaveLayersDialog() { QApplication::restoreOverrideCursor(); }
+
+void SaveLayersDialog::getLayersToSave(UsdStageRefPtr stage, const std::string& stageName)
+{
+    // Get the layers to save for this stage.
+    UsdMayaSerialization::stageLayersToSave stageLayersToSave;
+    UsdMayaSerialization::getLayersToSaveFromProxy(stage, stageLayersToSave);
+
+    // Keep track of all the layers for this particular stage.
+    for (const auto& layerPairs : stageLayersToSave.anonLayers) {
+        _stageLayerMap.emplace(std::make_pair(layerPairs.first, stageName));
+    }
+    for (const auto& dirtyLayer : stageLayersToSave.dirtyFileBackedLayers) {
+        _stageLayerMap.emplace(std::make_pair(dirtyLayer, stageName));
+    }
+
+    // Add these layers to save to our member var for reference later.
+    // Note: we use a set for the dirty file back layers because they
+    //       can come from multiple stages, but we only want them to
+    //       appear once in the dialog.
+    moveAppendVector(stageLayersToSave.anonLayers, _anonLayerPairs);
+    _dirtyFileBackedLayers.insert(
+        std::begin(stageLayersToSave.dirtyFileBackedLayers),
+        std::end(stageLayersToSave.dirtyFileBackedLayers));
+}
+
+void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
+{
+    const int mainMargin = DPIScale(20);
 
     // Ok/Cancel button area
     auto buttonsLayout = new QHBoxLayout();
-    QtUtils::initLayoutMargins(buttonsLayout, DPIScale(20));
+    QtUtils::initLayoutMargins(buttonsLayout, 0);
     buttonsLayout->addStretch();
-    auto okButton = new QPushButton("Save Stage", this);
+    auto okButton
+        = new QPushButton(StringResources::getAsQString(StringResources::kSaveStages), this);
     connect(okButton, &QPushButton::clicked, this, &SaveLayersDialog::onSaveAll);
     okButton->setDefault(true);
-    auto cancelButton = new QPushButton("Cancel", this);
+    auto cancelButton
+        = new QPushButton(StringResources::getAsQString(StringResources::kCancel), this);
     connect(cancelButton, &QPushButton::clicked, this, &SaveLayersDialog::onCancel);
     buttonsLayout->addWidget(okButton);
     buttonsLayout->addWidget(cancelButton);
 
-    // setup a scroll area
-    auto dialogContentParent = new QWidget();
-    dialogContentParent->setLayout(_rowsLayout);
+    const bool            haveAnonLayers { !_anonLayerPairs.empty() };
+    const bool            haveFileBackedLayers { !_dirtyFileBackedLayers.empty() };
+    SaveLayerPathRowArea* anonScrollArea { nullptr };
+    SaveLayerPathRowArea* fileScrollArea { nullptr };
+    const int             margin { DPIScale(10) };
 
-    auto scrollArea = new SaveLayerPathRowArea();
-    scrollArea->setFrameShape(QFrame::NoFrame);
-    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    scrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    scrollArea->setWidget(dialogContentParent);
-    scrollArea->setWidgetResizable(true);
+    // Anonymous layers.
+    if (haveAnonLayers) {
+        auto anonLayout = new QVBoxLayout();
+        anonLayout->setContentsMargins(margin, margin, margin, 0);
+        anonLayout->setSpacing(DPIScale(8));
+        anonLayout->setAlignment(Qt::AlignTop);
+        for (auto iter = _anonLayerPairs.cbegin(); iter != _anonLayerPairs.cend(); ++iter) {
+            auto row = new SaveLayerPathRow(this, (*iter));
+            anonLayout->addWidget(row);
+        }
 
-    // add that scroll area as our single child
+        _anonLayersWidget = new QWidget();
+        _anonLayersWidget->setLayout(anonLayout);
+
+        // Setup the scroll area for anonymous layers.
+        anonScrollArea = new SaveLayerPathRowArea();
+        anonScrollArea->setFrameShape(QFrame::NoFrame);
+        anonScrollArea->setBackgroundRole(QPalette::Midlight);
+        anonScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        anonScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        anonScrollArea->setWidget(_anonLayersWidget);
+        anonScrollArea->setWidgetResizable(true);
+    }
+
+    // File backed layers
+    if (haveFileBackedLayers) {
+        auto fileLayout = new QVBoxLayout();
+        fileLayout->setContentsMargins(margin, margin, margin, 0);
+        fileLayout->setSpacing(DPIScale(8));
+        fileLayout->setAlignment(Qt::AlignTop);
+        for (const auto& dirtyLayer : _dirtyFileBackedLayers) {
+            auto row = new QLabel(dirtyLayer->GetRealPath().c_str(), this);
+            row->setToolTip(buildTooltipForLayer(dirtyLayer));
+            fileLayout->addWidget(row);
+        }
+
+        _fileLayersWidget = new QWidget();
+        _fileLayersWidget->setLayout(fileLayout);
+
+        // Setup the scroll area for dirty file backed layers.
+        fileScrollArea = new SaveLayerPathRowArea();
+        fileScrollArea->setFrameShape(QFrame::NoFrame);
+        fileScrollArea->setBackgroundRole(QPalette::Midlight);
+        fileScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+        fileScrollArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        fileScrollArea->setWidget(_fileLayersWidget);
+        fileScrollArea->setWidgetResizable(true);
+    }
+
+    // Create the main layout for the dialog.
     auto topLayout = new QVBoxLayout();
-    QtUtils::initLayoutMargins(topLayout);
-    topLayout->setSpacing(0);
-    topLayout->addWidget(scrollArea);
+    QtUtils::initLayoutMargins(topLayout, mainMargin);
+    topLayout->setSpacing(DPIScale(8));
 
-    // then add the buttons
+    if (nullptr != anonScrollArea) {
+        // Add the first message.
+        if (!msg1.isEmpty()) {
+            auto dialogMessage = new QLabel(msg1);
+            topLayout->addWidget(dialogMessage);
+        }
+
+        // Then add the first scroll area (containing the anonymous layers)
+        topLayout->addWidget(anonScrollArea);
+
+        // If we also have dirty file backed layers, add a separator.
+        if (haveFileBackedLayers) {
+            auto lineSep = new QFrame();
+            lineSep->setFrameShape(QFrame::HLine);
+            lineSep->setLineWidth(DPIScale(1));
+            QPalette pal(lineSep->palette());
+            pal.setColor(QPalette::Base, QColor("#575757"));
+            lineSep->setPalette(pal);
+            lineSep->setBackgroundRole(QPalette::Base);
+            topLayout->addWidget(lineSep);
+        }
+    }
+
+    if (nullptr != fileScrollArea) {
+        // Add the second message.
+        if (!msg2.isEmpty()) {
+            auto dialogMessage = new QLabel(msg2);
+            topLayout->addWidget(dialogMessage);
+        }
+
+        // Add the second scroll area (containing the file backed layers).
+        topLayout->addWidget(fileScrollArea);
+    }
+
+    // Finally add the buttons.
     auto buttonArea = new QWidget(this);
     buttonArea->setLayout(buttonsLayout);
     buttonArea->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -309,6 +444,26 @@ SaveLayersDialog::SaveLayersDialog(
     setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
     setSizeGripEnabled(true);
+    QApplication::setOverrideCursor(QCursor(Qt::ArrowCursor));
+}
+
+QString SaveLayersDialog::buildTooltipForLayer(SdfLayerRefPtr layer)
+{
+    if (nullptr == layer)
+        return "";
+
+    // Disable word wrapping on tooltip.
+    QString tooltip = "<p style='white-space:pre'>";
+    tooltip += StringResources::getAsQString(StringResources::kUsedInStagesTooltip);
+    auto range = _stageLayerMap.equal_range(layer);
+    bool needComma = false;
+    for (auto it = range.first; it != range.second; ++it) {
+        if (needComma)
+            tooltip.append(", ");
+        tooltip.append(it->second.c_str());
+        needComma = true;
+    }
+    return tooltip;
 }
 
 void SaveLayersDialog::onSaveAll()
@@ -325,57 +480,52 @@ void SaveLayersDialog::onSaveAll()
     _problemLayers.clear();
     _emptyLayers.clear();
 
-    for (i = 0, count = _rowsLayout->count(); i < count; ++i) {
-        auto row = dynamic_cast<SaveLayerPathRow*>(_rowsLayout->itemAt(i)->widget());
-        auto item = row ? row->_treeItem : nullptr;
-        if (nullptr == item)
-            continue;
+    // The anonymous layer section in the dialog can be empty.
+    if (nullptr != _anonLayersWidget) {
+        QLayout* anonLayout = _anonLayersWidget->layout();
+        for (i = 0, count = anonLayout->count(); i < count; ++i) {
+            auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
+            if (!row || !row->_layerPair.first)
+                continue;
 
-        QString path = row->pathToSaveAs();
-        if (!path.isEmpty()) {
-            PXR_NS::SdfFileFormat::FileFormatArguments formatArgs;
-            formatArgs["format"] = row->usdFormatTag().toStdString();
+            QString path = row->pathToSaveAs();
+            if (!path.isEmpty()) {
+                auto sdfLayer = row->_layerPair.first;
+                auto parentLayer = row->_layerPair.second;
+                auto qFileName = row->absolutePath();
+                auto sFileName = qFileName.toStdString();
 
-            auto sessionState = item->parentModel()->sessionState();
-            auto sdfLayer = item->layer();
-            auto qFileName = row->absolutePath();
-            auto sFileName = qFileName.toStdString();
+                auto newLayer
+                    = UsdMayaSerialization::saveAnonymousLayer(sdfLayer, sFileName, parentLayer);
 
-            sdfLayer->Export(sFileName, "", formatArgs);
-
-            if (item->isRootLayer()) {
-                newRoot = sFileName;
-                rootSessionState = sessionState;
-            } else {
-                // now replace the layer in the parent
-                auto parentItem = item->parentLayerItem();
-                auto newLayer = SdfLayer::FindOrOpen(sFileName);
-                if (newLayer) {
-                    bool setTarget = item->isTargetLayer();
-                    parentItem->layer()->GetSubLayerPaths().Replace(
-                        sdfLayer->GetIdentifier(), newLayer->GetIdentifier());
-                    if (setTarget) {
-                        sessionState->stage()->SetEditTarget(newLayer);
-                    }
-
-                    _newPaths.append(QString::fromStdString(sdfLayer->GetDisplayName()));
-                    _newPaths.append(qFileName);
+                if (!parentLayer) {
+                    newRoot = sFileName;
+                    rootSessionState = _sessionState;
                 } else {
-                    _problemLayers.append(QString::fromStdString(sdfLayer->GetDisplayName()));
-                    _problemLayers.append(qFileName);
+                    if (newLayer) {
+                        // if (item->isTargetLayer()) {
+                        //     sessionState->stage()->SetEditTarget(newLayer);
+                        // }
+
+                        _newPaths.append(QString::fromStdString(sdfLayer->GetDisplayName()));
+                        _newPaths.append(qFileName);
+                    } else {
+                        _problemLayers.append(QString::fromStdString(sdfLayer->GetDisplayName()));
+                        _problemLayers.append(qFileName);
+                    }
                 }
+            } else {
+                _emptyLayers.append(row->layerDisplayName());
             }
-        } else {
-            _emptyLayers.append(row->layerDisplayName());
+        }
+
+        if (rootSessionState) {
+            rootSessionState->rootLayerPathChanged(newRoot);
         }
     }
 
-    if (rootSessionState) {
-        rootSessionState->rootLayerPathChanged(newRoot);
-    }
-
     accept();
-}
+} // namespace UsdLayerEditor
 
 void SaveLayersDialog::onCancel() { reject(); }
 
@@ -384,17 +534,20 @@ bool SaveLayersDialog::okToSave()
     int         i, count;
     QStringList existingFiles;
 
-    for (i = 0, count = _rowsLayout->count(); i < count; ++i) {
-        auto row = dynamic_cast<SaveLayerPathRow*>(_rowsLayout->itemAt(i)->widget());
-        auto item = row ? row->_treeItem : nullptr;
-        if (nullptr == item)
-            continue;
+    // The anonymous layer section in the dialog can be empty.
+    if (nullptr != _anonLayersWidget) {
+        QLayout* anonLayout = _anonLayersWidget->layout();
+        for (i = 0, count = anonLayout->count(); i < count; ++i) {
+            auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
+            if (nullptr == row)
+                continue;
 
-        QString path = row->pathToSaveAs();
-        if (!path.isEmpty()) {
-            QFileInfo fInfo(path);
-            if (fInfo.exists()) {
-                existingFiles.append(path);
+            QString path = row->pathToSaveAs();
+            if (!path.isEmpty()) {
+                QFileInfo fInfo(path);
+                if (fInfo.exists()) {
+                    existingFiles.append(path);
+                }
             }
         }
     }
@@ -411,6 +564,23 @@ bool SaveLayersDialog::okToSave()
             MQtUtil::toQString(confirmMsg),
             &existingFiles));
     }
+
+    return true;
+}
+
+/*static*/
+bool SaveLayersDialog::saveLayerFilePathUI(std::string& out_filePath)
+{
+    MString fileSelected;
+    MGlobal::executeCommand(
+        MString("UsdLayerEditor_SaveLayerFileDialog"),
+        fileSelected,
+        /*display*/ true,
+        /*undo*/ false);
+    if (fileSelected.length() == 0)
+        return false;
+
+    out_filePath = fileSelected.asChar();
 
     return true;
 }

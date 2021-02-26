@@ -23,6 +23,7 @@ set(CMAKE_AUTOUIC ON)
 add_library(${PROJECT_NAME} SHARED)
 
 add_subdirectory(layerEditor)
+add_subdirectory(importDialog)
 
 # -----------------------------------------------------------------------------
 # sources
@@ -30,16 +31,6 @@ add_subdirectory(layerEditor)
 target_sources(${PROJECT_NAME} 
     PRIVATE
         initStringResources.cpp
-        ItemDelegate.cpp
-        TreeItem.cpp
-        TreeModel.cpp
-        TreeModelFactory.cpp
-        USDImportDialog.cpp
-        USDImportDialogCmd.cpp
-        USDQtUtil.cpp
-
-        USDImportDialog.ui
-        images/ui.qrc
 )
 
 # -----------------------------------------------------------------------------
@@ -97,16 +88,7 @@ endif()
 # -----------------------------------------------------------------------------
 set(HEADERS
     api.h
-    IMayaMQtUtil.h
     initStringResources.h
-    ItemDelegate.h
-    IUSDImportView.h
-    TreeItem.h
-    TreeModel.h
-    TreeModelFactory.h
-    USDImportDialog.h
-    USDImportDialogCmd.h
-    USDQtUtil.h
 )
 
 mayaUsd_promoteHeaderList( 
@@ -143,5 +125,5 @@ install(FILES ${HEADERS}
 # -----------------------------------------------------------------------------
 if (BUILD_TESTS)
     # A simple executable used to test the import dialog.
-    add_subdirectory(demo)
+    add_subdirectory(importDialogDemo)
 endif()

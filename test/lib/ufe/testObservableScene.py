@@ -16,12 +16,16 @@
 # limitations under the License.
 #
 
+import fixturesUtils
+
+from maya import standalone
+
+import ufe
 
 import os
 import sys
 import unittest
 
-import ufe
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -47,8 +51,15 @@ class TestObserver(ufe.Observer):
     def notifications(self):
         return [self.add, self.delete, self.pathChange, self.subtreeInvalidate, self.composite]
 
-@unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021', 'testObservableScene is only available in Maya with UFE preview version 0.2.21 and greater')
 class UFEObservableSceneTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def checkNotifications(self, testObserver, listNotifications):
         self.assertTrue(testObserver.add == listNotifications[0])
@@ -101,3 +112,7 @@ class UFEObservableSceneTest(unittest.TestCase):
         # with ufe.NotificationGuard(ufe.Scene):
         #     ufe.Scene.notify(ufe.ObjectAdd(itemB))
         #     ufe.Scene.notify(ufe.ObjectAdd(itemC))
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

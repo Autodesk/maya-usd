@@ -16,16 +16,21 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
+import fixturesUtils
+import mayaUtils
 
 import mayaUsd.ufe
 
-import mayaUtils
+from pxr import UsdGeom
+from pxr import Vt
+
+from maya import cmds
+from maya import standalone
+
 import ufe
 
-from pxr import UsdGeom, Vt
-
 import unittest
+
 
 class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
     '''Verify the Transform3d chain of responsibility for USD.'''
@@ -34,23 +39,29 @@ class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def testXformCommonAPI(self):
         '''The Maya transform API is preferred to the USD common API.'''
 
         cmds.file(new=True, force=True)
 
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
 
-        spherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        spherePath = ufe.PathString.path('%s,/Sphere1' % proxyShape)
         sphereItem = ufe.Hierarchy.createItem(spherePath)
         sphereT3d = ufe.Transform3d.transform3d(sphereItem)
 
@@ -101,7 +112,7 @@ class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
         # trying to move the pivot, will NOT create rotate pivot translation
         # compensation, because that is unsupported by the common API.
         proxyShapeContextOps.doOp(['Add New Prim', 'Cube'])
-        cubePath = ufe.PathString.path('|stage1|stageShape1,/Cube1')
+        cubePath = ufe.PathString.path('%s,/Cube1' % proxyShape)
         cubeItem = ufe.Hierarchy.createItem(cubePath)
         cubePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(cubePath))
         cubeXformable = UsdGeom.Xformable(cubePrim)
@@ -144,3 +155,7 @@ class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
             Vt.TokenArray(("xformOp:translate:pivot", "xformOp:rotateXYZ",
                            "!invert!xformOp:translate:pivot")))
         self.assertTrue(UsdGeom.XformCommonAPI(cubeXformable))
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

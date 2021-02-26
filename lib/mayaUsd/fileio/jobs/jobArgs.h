@@ -59,6 +59,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (defaultMeshScheme) \
     (defaultUSDFormat) \
     (eulerFilter) \
+    (exportBlendShapes) \
     (exportCollectionBasedBindings) \
     (exportColorSets) \
     (exportDisplayColor) \
@@ -70,6 +71,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportSkin) \
     (exportUVs) \
     (exportVisibility) \
+    (file) \
+    (ignoreWarnings) \
     (kind) \
     (materialCollectionsPath) \
     (materialsScopeName) \
@@ -120,7 +123,9 @@ TF_DECLARE_PUBLIC_TOKENS(
     (Collapsed) \
     (Full) \
     (Import) \
-    ((Unloaded, ""))
+    ((Unloaded, "")) \
+    (chaser) \
+    (chaserArgs)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -141,19 +146,22 @@ struct UsdMayaJobExportArgs
     /// material-collections are created and bindings are made to the
     /// collections at \p materialCollectionsPath, instead of direct
     /// per-gprim bindings.
-    const bool    exportCollectionBasedBindings;
-    const bool    exportColorSets;
-    const bool    exportDefaultCameras;
-    const bool    exportDisplayColor;
-    const bool    exportInstances;
-    const bool    exportMaterialCollections;
-    const bool    exportMeshUVs;
-    const bool    exportNurbsExplicitUV;
-    const bool    exportReferenceObjects;
-    const bool    exportRefsAsInstanceable;
-    const TfToken exportSkels;
-    const TfToken exportSkin;
-    const bool    exportVisibility;
+    const bool        exportCollectionBasedBindings;
+    const bool        exportColorSets;
+    const bool        exportDefaultCameras;
+    const bool        exportDisplayColor;
+    const bool        exportInstances;
+    const bool        exportMaterialCollections;
+    const bool        exportMeshUVs;
+    const bool        exportNurbsExplicitUV;
+    const bool        exportReferenceObjects;
+    const bool        exportRefsAsInstanceable;
+    const TfToken     exportSkels;
+    const TfToken     exportSkin;
+    const bool        exportBlendShapes;
+    const bool        exportVisibility;
+    const std::string file;
+    const bool        ignoreWarnings;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of
@@ -180,9 +188,9 @@ struct UsdMayaJobExportArgs
     const bool    verbose;
     const bool    staticSingleSample;
 
-    typedef std::map<std::string, std::string> ChaserArgs;
-    const std::vector<std::string>             chaserNames;
-    const std::map<std::string, ChaserArgs>    allChaserArgs;
+    using ChaserArgs = std::map<std::string, std::string>;
+    const std::vector<std::string>          chaserNames;
+    const std::map<std::string, ChaserArgs> allChaserArgs;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
@@ -222,6 +230,10 @@ struct UsdMayaJobExportArgs
     /// "parentConstraint")
     MAYAUSD_CORE_PUBLIC
     void AddFilteredTypeName(const MString& typeName);
+
+    /// Returns the resolved file name of the final export location
+    MAYAUSD_CORE_PUBLIC
+    std::string GetResolvedFileName() const;
 
     const std::set<unsigned int>& GetFilteredTypeIds() const { return _filteredTypeIds; }
 
@@ -271,6 +283,10 @@ struct UsdMayaJobImportArgs
     /// special-cased because USD will accept full intervals like any other
     /// non-empty interval.
     const GfInterval timeInterval;
+
+    using ChaserArgs = std::map<std::string, std::string>;
+    const std::vector<std::string>          chaserNames;
+    const std::map<std::string, ChaserArgs> allChaserArgs;
 
     /// Get the current material conversion.
     MAYAUSD_CORE_PUBLIC

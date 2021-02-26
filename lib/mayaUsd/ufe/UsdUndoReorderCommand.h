@@ -16,16 +16,11 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-
-#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoableItem.h>
-#endif
 
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/undoableCommand.h>
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -36,7 +31,9 @@ class MAYAUSD_CORE_PUBLIC UsdUndoReorderCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoReorderCommand> Ptr;
 
-    UsdUndoReorderCommand(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
+    UsdUndoReorderCommand(
+        const PXR_NS::UsdPrim&              parentPrim,
+        const std::vector<PXR_NS::TfToken>& orderedTokens);
     ~UsdUndoReorderCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -47,25 +44,16 @@ public:
 
     //! Create a UsdUndoReorderCommand
     static UsdUndoReorderCommand::Ptr
-    create(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
+    create(const PXR_NS::UsdPrim& parentPrim, const std::vector<PXR_NS::TfToken>& orderedTokens);
 
 private:
-#if UFE_PREVIEW_VERSION_NUM >= 2029
     void execute() override;
-#else
-    bool reorder();
-#endif
-
     void undo() override;
     void redo() override;
 
-    UsdPrim _parentPrim;
-
-    std::vector<TfToken> _orderedTokens;
-
-#if UFE_PREVIEW_VERSION_NUM >= 2029
-    UsdUndoableItem _undoableItem;
-#endif
+    PXR_NS::UsdPrim              _parentPrim;
+    std::vector<PXR_NS::TfToken> _orderedTokens;
+    UsdUndoableItem              _undoableItem;
 
 }; // UsdUndoReorderCommand
 

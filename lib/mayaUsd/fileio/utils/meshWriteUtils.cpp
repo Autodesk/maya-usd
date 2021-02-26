@@ -30,20 +30,29 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdGeom/primvar.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MBoundingBox.h>
+#include <maya/MFnAttribute.h>
+#include <maya/MFnMesh.h>
 #include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
+#include <maya/MItDependencyGraph.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
 #include <maya/MStatus.h>
 #include <maya/MUintArray.h>
+#include <maya/MVector.h>
+
+static constexpr char kMayaAttrNameInMesh[] = "inMesh";
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -335,6 +344,105 @@ GfVec3f LinearColorFromColorSet(const MColor& mayaColor, bool shouldConvertToLin
 }
 
 } // anonymous namespace
+
+MStatus
+UsdMayaMeshWriteUtils::getSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinCluster)
+{
+    // TODO: (yliangsiew) Do we care about multiple skinCluster layers? How do we even want
+    //        to deal with that, if at all?
+    MStatus stat;
+    if (!mesh.hasFn(MFn::kMesh)) {
+        return MStatus::kInvalidParameter;
+    }
+
+    MFnDependencyNode fnNode(mesh, &stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+
+    MPlug inMeshPlug = fnNode.findPlug(kMayaAttrNameInMesh, false, &stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+
+    bool isDest = inMeshPlug.isDestination(&stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+    if (!isDest) {
+        return MStatus::kFailure;
+    }
+    MPlug srcPlug = inMeshPlug.source(&stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+    if (srcPlug.isNull()) {
+        return MStatus::kFailure;
+    }
+
+    skinCluster = srcPlug.node(&stat);
+
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+    if (!skinCluster.hasFn(MFn::kSkinClusterFilter)) {
+        return MStatus::kFailure;
+    }
+
+    return stat;
+}
+
+MStatus UsdMayaMeshWriteUtils::getSkinClustersUpstreamOfMesh(
+    const MObject& mesh,
+    MObjectArray&  skinClusters)
+{
+    MStatus stat;
+    if (mesh.isNull() || !mesh.hasFn(MFn::kMesh)) {
+        return MStatus::kInvalidParameter;
+    }
+
+    skinClusters.clear();
+    MObject            searchObj = MObject(mesh);
+    MItDependencyGraph itDg(
+        searchObj,
+        MFn::kInvalid,
+        MItDependencyGraph::kUpstream,
+        MItDependencyGraph::kDepthFirst,
+        MItDependencyGraph::kNodeLevel,
+        &stat);
+    while (!itDg.isDone()) {
+        MObject curNode = itDg.currentItem();
+        if (curNode.hasFn(MFn::kSkinClusterFilter)) {
+            skinClusters.append(curNode);
+        }
+        itDg.next();
+    }
+
+    return stat;
+}
+
+MBoundingBox UsdMayaMeshWriteUtils::calcBBoxOfMeshes(const MObjectArray& meshes)
+{
+    unsigned int numMeshes = meshes.length();
+    MFnMesh      fnMesh;
+    MStatus      stat;
+    MVector      a;
+    MVector      b;
+    for (unsigned int i = 0; i < numMeshes; ++i) {
+        MObject curMesh = meshes[i];
+        TF_VERIFY(curMesh.hasFn(MFn::kMesh));
+        fnMesh.setObject(curMesh);
+        unsigned int numVertices = fnMesh.numVertices();
+        const float* meshPts = fnMesh.getRawPoints(&stat);
+        for (unsigned int j = 0; j < numVertices; ++j) {
+            float x = meshPts[j * 3];
+            float y = meshPts[(j * 3) + 1];
+            float z = meshPts[(j * 3) + 2];
+
+            a.x = x < a.x ? x : a.x;
+            b.x = x > b.x ? x : b.x;
+
+            a.y = y < a.y ? y : a.y;
+            b.y = y > b.y ? y : b.y;
+
+            a.z = z < a.z ? z : a.z;
+            b.z = z > b.z ? z : b.z;
+        }
+    }
+
+    MBoundingBox result = MBoundingBox(MPoint(a), MPoint(b));
+    return result;
+}
 
 bool UsdMayaMeshWriteUtils::getMeshNormals(
     const MFnMesh& mesh,
@@ -739,39 +847,51 @@ bool UsdMayaMeshWriteUtils::getMeshUVSetData(
     TfToken*       interpolation,
     VtIntArray*    assignmentIndices)
 {
-    MStatus status { MS::kSuccess };
-
-    // Sanity check first to make sure this UV set even has assigned values
-    // before we attempt to do anything with the data.
+    // Check first to make sure this UV set even has assigned values before we
+    // attempt to do anything with the data. We cannot directly use this data
+    // otherwise though since we need a uvId for every face vertex, and the
+    // returned uvIds MIntArray may be shorter than that if there are unmapped
+    // faces.
     MIntArray uvCounts, uvIds;
-    status = mesh.getAssignedUVs(uvCounts, uvIds, &uvSetName);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-    if (uvCounts.length() == 0 || uvIds.length() == 0) {
+    MStatus   status = mesh.getAssignedUVs(uvCounts, uvIds, &uvSetName);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    if (uvCounts.length() == 0u || uvIds.length() == 0u) {
         return false;
     }
 
-    // using itFV.getUV() does not always give us the right answer, so
-    // instead, we have to use itFV.getUVIndex() and use that to index into the
-    // UV set.
+    // Transfer the UV values directly to USD, in the same order as they are in
+    // the Maya mesh.
     MFloatArray uArray;
     MFloatArray vArray;
-    mesh.getUVs(uArray, vArray, &uvSetName);
+    status = mesh.getUVs(uArray, vArray, &uvSetName);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
     if (uArray.length() != vArray.length()) {
         return false;
     }
 
-    // We'll populate the assignment indices for every face vertex, but we'll
-    // only push values into the data if the face vertex has a value. All face
-    // vertices are initially unassigned/unauthored.
-    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
     uvArray->clear();
-    assignmentIndices->assign((size_t)numFaceVertices, -1);
+    uvArray->reserve(static_cast<size_t>(uArray.length()));
+    for (unsigned int uvId = 0u; uvId < uArray.length(); ++uvId) {
+#if PXR_VERSION >= 2011
+        uvArray->emplace_back(uArray[uvId], vArray[uvId]);
+#else
+        GfVec2f value(uArray[uvId], vArray[uvId]);
+        uvArray->push_back(value);
+#endif
+    }
+
+    // Now iterate through all the face vertices and fill in the faceVarying
+    // assignmentIndices array, again in the same order as in the Maya mesh.
+    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    assignmentIndices->assign(static_cast<size_t>(numFaceVertices), -1);
     *interpolation = UsdGeomTokens->faceVarying;
 
     MItMeshFaceVertex itFV(mesh.object());
-    unsigned int      fvi = 0;
+    unsigned int      fvi = 0u;
     for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
         if (!itFV.hasUVs(uvSetName)) {
             // No UVs for this faceVertex, so leave it unassigned.
@@ -780,17 +900,16 @@ bool UsdMayaMeshWriteUtils::getMeshUVSetData(
 
         int uvIndex;
         itFV.getUVIndex(uvIndex, &uvSetName);
-        if (uvIndex < 0 || static_cast<size_t>(uvIndex) >= uArray.length()) {
+        if (uvIndex < 0 || static_cast<unsigned int>(uvIndex) >= uArray.length()) {
             return false;
         }
 
-        GfVec2f value(uArray[uvIndex], vArray[uvIndex]);
-        uvArray->push_back(value);
-        (*assignmentIndices)[fvi] = uvArray->size() - 1;
+        (*assignmentIndices)[fvi] = uvIndex;
     }
 
-    UsdMayaUtil::MergeEquivalentIndexedValues(uvArray, assignmentIndices);
-    UsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh, interpolation, assignmentIndices);
+    // We do not merge indexed values or compress indices here in an effort to
+    // maintain the same UV shells and connectivity across export/import
+    // round-trips.
 
     return true;
 }

@@ -10,18 +10,10 @@ set(LIBRARY_INSTALL_PATH
 
 add_library(${TARGET_NAME} SHARED)
 
-#------------------------------------------------------------------------------
-# modules and definitions
-#------------------------------------------------------------------------------
-if(NOT DEFINED ENV{BOOST_ROOT})
-    set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
-endif()
-find_package(Boost COMPONENTS filesystem system REQUIRED)
-
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
         cameraReader.cpp
         cameraWriter.cpp
@@ -35,6 +27,7 @@ target_sources(${TARGET_NAME}
         mayaReferenceUpdater.cpp
         meshReader.cpp
         meshWriter.cpp
+        meshWriter_BlendShapes.cpp
         nurbsCurvesReader.cpp
         nurbsCurveWriter.cpp
         nurbsPatchReader.cpp
@@ -51,7 +44,7 @@ add_subdirectory(shading)
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
-target_compile_definitions(${TARGET_NAME} 
+target_compile_definitions(${TARGET_NAME}
     PRIVATE
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
@@ -70,8 +63,8 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
-target_link_libraries(${TARGET_NAME} 
-    PRIVATE 
+target_link_libraries(${TARGET_NAME}
+    PRIVATE
         arch
         gf
         kind
@@ -89,8 +82,7 @@ target_link_libraries(${TARGET_NAME}
         mayaUsd
         mayaUsd_Schemas
         basePxrUsdPreviewSurface
-        Boost::filesystem
-        Boost::system
+        ghc_filesystem
 )
 
 # -----------------------------------------------------------------------------
@@ -135,11 +127,11 @@ install(
 )
 
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
+    install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}>
         DESTINATION ${LIBRARY_INSTALL_PATH} OPTIONAL
     )
 endif()
- 
+
 install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${TARGET_NAME}
 )

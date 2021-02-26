@@ -18,22 +18,28 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/basisCurves.h>
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/primGather.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/taskController.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -47,12 +53,15 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/globalSelection.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
 #endif
 #include <ufe/observableSelection.h>
+#include <ufe/path.h>
+#include <ufe/pathSegment.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/scene.h>
 #include <ufe/sceneItem.h>
@@ -111,13 +120,72 @@ MGlobal::ListAdjustment GetListAdjustment()
 //!         in the viewport will be selected.
 TfToken GetSelectionKind()
 {
-    static const MString kOptionVarName("UsdSelectionKind");
+    static const MString kOptionVarName(MayaUsdOptionVars->SelectionKind.GetText());
 
     if (MGlobal::optionVarExists(kOptionVarName)) {
         MString optionVarValue = MGlobal::optionVarStringValue(kOptionVarName);
         return TfToken(optionVarValue.asChar());
     }
     return TfToken();
+}
+
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _pointInstancesPickModeTokens,
+
+    (PointInstancer)
+    (Instances)
+    (Prototypes)
+);
+// clang-format on
+
+//! \brief  Query the pick mode to use when picking point instances in the viewport.
+//! \return A UsdPointInstancesPickMode enum value indicating the pick mode behavior
+//!         to employ when the picked object is a point instance.
+//!
+//! This function retrieves the value for the point instances pick mode optionVar
+//! and converts it into a UsdPointInstancesPickMode enum value. If the optionVar
+//! has not been set or otherwise has an invalid value, the default pick mode of
+//! PointInstancer is returned.
+UsdPointInstancesPickMode GetPointInstancesPickMode()
+{
+    static const MString kOptionVarName(MayaUsdOptionVars->PointInstancesPickMode.GetText());
+
+    UsdPointInstancesPickMode pickMode = UsdPointInstancesPickMode::PointInstancer;
+
+    if (MGlobal::optionVarExists(kOptionVarName)) {
+        const MString optionVarValue = MGlobal::optionVarStringValue(kOptionVarName);
+        const TfToken pickModeToken(UsdMayaUtil::convert(optionVarValue));
+
+        if (pickModeToken == _pointInstancesPickModeTokens->Instances) {
+            pickMode = UsdPointInstancesPickMode::Instances;
+        } else if (pickModeToken == _pointInstancesPickModeTokens->Prototypes) {
+            pickMode = UsdPointInstancesPickMode::Prototypes;
+        }
+    }
+
+    return pickMode;
+}
+
+//! \brief  Returns the prim or an ancestor of it that is of the given kind.
+//
+// If neither the prim itself nor any of its ancestors above it in the
+// namespace hierarchy have an authored kind that matches, an invalid null
+// prim is returned.
+UsdPrim GetPrimOrAncestorWithKind(const UsdPrim& prim, const TfToken& kind)
+{
+    UsdPrim iterPrim = prim;
+    TfToken primKind;
+
+    while (iterPrim) {
+        if (UsdModelAPI(iterPrim).GetKind(&primKind) && KindRegistry::IsA(primKind, kind)) {
+            break;
+        }
+
+        iterPrim = iterPrim.GetParent();
+    }
+
+    return iterPrim;
 }
 
 //! \brief  Populate Rprims into the Hydra selection from the UFE scene item.
@@ -138,14 +206,15 @@ void PopulateSelection(
         return;
     }
 
-    SdfPath usdPath = usdItem->prim().GetPath();
+    SdfPath   usdPath = usdItem->prim().GetPath();
+    const int instanceIndex = usdItem->instanceIndex();
 
 #if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 11
     usdPath = sceneDelegate.ConvertCachePathToIndexPath(usdPath);
 #endif
 
     sceneDelegate.PopulateSelection(
-        HdSelection::HighlightModeSelect, usdPath, UsdImagingDelegate::ALL_INSTANCES, result);
+        HdSelection::HighlightModeSelect, usdPath, instanceIndex, result);
 }
 #endif // defined(WANT_UFE_BUILD)
 
@@ -416,7 +485,7 @@ void ProxyRenderDelegate::_InitRenderDelegate()
     if (!_renderIndex) {
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 #else
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get()));
@@ -589,9 +658,11 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     if (inSelectionPass && !inPointSnapping) {
         _globalListAdjustment = GetListAdjustment();
         _selectionKind = GetSelectionKind();
+        _pointInstancesPickMode = GetPointInstancesPickMode();
     } else {
         _globalListAdjustment = MGlobal::kReplaceList;
         _selectionKind = TfToken();
+        _pointInstancesPickMode = UsdPointInstancesPickMode::PointInstancer;
     }
 #endif // defined(WANT_UFE_BUILD)
 
@@ -719,25 +790,38 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // "/TreePatch/Tree_1.proto_leaves_id0/DrawItem_xxxxxxxx". Thus std::string
     // is used instead to extract Rprim id.
     const std::string renderItemName = renderItem.name().asChar();
-    const auto        pos = renderItemName.find_last_of(USD_UFE_SEPARATOR);
+    const auto        pos = renderItemName.find_first_of(VP2_RENDER_DELEGATE_SEPARATOR);
     const SdfPath     rprimId(renderItemName.substr(0, pos));
 
     // If drawInstID is positive, it means the selection hit comes from one instanced render item,
-    // in this case its instance transform matrices have been sorted w.r.t. USD instance ID, thus
-    // usdInstID is drawInstID minus 1 because VP2 instance IDs start from 1.  Otherwise the
+    // in this case its instance transform matrices have been sorted w.r.t. USD instance index, thus
+    // instanceIndex is drawInstID minus 1 because VP2 instance IDs start from 1.  Otherwise the
     // selection hit is from one regular render item, but the Rprim can be either plain or single
     // instance, because we don't use instanced draw for single instance render items in order to
     // improve draw performance in Maya 2020 and before.
     const int drawInstID = intersection.instanceID();
+    int       instanceIndex = (drawInstID > 0) ? drawInstID - 1 : UsdImagingDelegate::ALL_INSTANCES;
 
-#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
-    const int usdInstID = drawInstID > 0 ? drawInstID - 1 : 0;
-    SdfPath   usdPath = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
+    SdfPath topLevelPath;
+    int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+    HdInstancerContext instancerContext;
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+
+    if (!instancerContext.empty()) {
+        // Store the top-level instancer and instance index if the Rprim is the
+        // result of point instancing. These will be used for the "Instances"
+        // point instances pick mode.
+        topLevelPath = instancerContext.front().first;
+        topLevelInstanceIndex = instancerContext.front().second;
+    }
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
 #else
     SdfPath indexPath;
     if (drawInstID > 0) {
-        const int usdInstID = drawInstID - 1;
-        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
+        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, instanceIndex, nullptr);
     } else {
         indexPath = rprimId;
     }
@@ -751,36 +835,92 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, 0, nullptr);
         usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
     }
+
+    // The "Instances" point instances pick mode is not supported for
+    // USD_IMAGING_API_VERSION < 14 (core USD versions earlier than 20.08), so
+    // no setting of topLevelPath or topLevelInstanceIndex here.
 #endif
 
-    // If update for selection is enabled, we can query Maya selection list adjustment and USD kind
-    // once per selection update to avoid cost of executing MEL command or searching optionVar for
-    // each intersection.
+    // If update for selection is enabled, we can query the Maya selection list
+    // adjustment, USD selection kind, and USD point instances pick mode once
+    // per selection update to avoid the cost of executing MEL commands or
+    // searching optionVars for each intersection.
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    const TfToken& selectionKind = _selectionKind;
-#if UFE_PREVIEW_VERSION_NUM < 2027 // #ifndef UFE_V2_FEATURES_AVAILABLE
+    const TfToken&                   selectionKind = _selectionKind;
+    const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
+#ifndef UFE_V2_FEATURES_AVAILABLE
     const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
 #endif
 #else
     const TfToken selectionKind = GetSelectionKind();
+    const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
     const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
 #endif
 
-    // If selection kind is empty, the exact prim that gets picked from viewport should be selected
-    // thus no need to walk the scene hierarchy.
-    if (!selectionKind.IsEmpty()) {
-        UsdPrim prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
-        while (prim) {
-            TfToken kind;
-            if (UsdModelAPI(prim).GetKind(&kind) && KindRegistry::IsA(kind, selectionKind)) {
-                usdPath = prim.GetPath();
-                break;
+    UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
+    const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
+
+    // Resolve the selection based on the point instances pick mode.
+    // Note that in all cases except for "Instances" when the picked
+    // PointInstancer is *not* an instance proxy, we reset the instanceIndex to
+    // ALL_INSTANCES. As a result, the behavior of Viewport 2.0 may differ
+    // slightly for "Prototypes" from that of usdview. Though the pick should
+    // resolve to the same prim as it would in usdview, the selection
+    // highlighting in Viewport 2.0 will highlight all instances rather than
+    // only a single point instancer prototype as it does in usdview. We do
+    // this to ensure that only when in "Instances" point instances pick mode
+    // will we ever construct UFE scene items that represent point instances
+    // and have an instance index component at the end of their Ufe::Path.
+    switch (pointInstancesPickMode) {
+    case UsdPointInstancesPickMode::Instances: {
+        if (topLevelPrim) {
+            prim = topLevelPrim;
+            instanceIndex = topLevelInstanceIndex;
+        }
+        if (prim.IsInstanceProxy()) {
+            while (prim.IsInstanceProxy()) {
+                prim = prim.GetParent();
             }
+            instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+        }
+        usdPath = prim.GetPath();
+        break;
+    }
+    case UsdPointInstancesPickMode::Prototypes: {
+        // The scene prim path returned by Hydra *is* the prototype prim's
+        // path. We still reset instanceIndex since we're not picking a point
+        // instance.
+        instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+        break;
+    }
+    case UsdPointInstancesPickMode::PointInstancer:
+    default: {
+        if (topLevelPrim) {
+            prim = topLevelPrim;
+        }
+        while (prim.IsInstanceProxy()) {
             prim = prim.GetParent();
+        }
+        usdPath = prim.GetPath();
+        instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+        break;
+    }
+    }
+
+    // If we didn't pick a point instance above, then search up from the picked
+    // prim to satisfy the requested USD selection kind, if specified. If no
+    // selection kind is specified, the exact prim that was picked from the
+    // viewport should be selected, so there is no need to walk the scene
+    // hierarchy.
+    if (instanceIndex == UsdImagingDelegate::ALL_INSTANCES && !selectionKind.IsEmpty()) {
+        prim = GetPrimOrAncestorWithKind(prim, selectionKind);
+        if (prim) {
+            usdPath = prim.GetPath();
         }
     }
 
-    const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+    const Ufe::PathSegment pathSegment
+        = MayaUsd::ufe::usdPathToUfePathSegment(usdPath, instanceIndex);
     const Ufe::SceneItem::Ptr& si
         = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
@@ -788,7 +928,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         return false;
     }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else

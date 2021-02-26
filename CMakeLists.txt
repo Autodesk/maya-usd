@@ -35,6 +35,9 @@ option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
 option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
+set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
+    CACHE STRING "Name of env var USD searches to find plugins")
+
 #------------------------------------------------------------------------------
 # internal flags to control build
 #------------------------------------------------------------------------------
@@ -96,11 +99,10 @@ include(cmake/utils.cmake)
 include(cmake/jinja.cmake)
 
 find_package(Maya 2018 REQUIRED)
-find_package(USD REQUIRED)
+find_package(USD 0.20.02 REQUIRED)
 include(cmake/usd.cmake)
-include(${USD_CONFIG_FILE})
 
-if( MAYA_APP_VERSION LESS 2020 AND USD_VERSION_NUM GREATER 2005 AND USD_VERSION_NUM LESS 2102 )
+if( MAYA_APP_VERSION LESS 2020 AND PXR_VERSION GREATER 2005 AND PXR_VERSION LESS 2102 )
     # Default to OFF if maya==2019 AND USD==(20.08||20.11)
     #   Due to a problem with glew - if you force on with these versions, you
     #   will probably need to LD_PRELOAD your glew lib.
@@ -148,6 +150,11 @@ endif()
 # compiler configuration
 #------------------------------------------------------------------------------
 include(cmake/compiler_config.cmake)
+
+#------------------------------------------------------------------------------
+# gulark filesystem
+#------------------------------------------------------------------------------
+include(cmake/gulark.cmake)
 
 #------------------------------------------------------------------------------
 # test

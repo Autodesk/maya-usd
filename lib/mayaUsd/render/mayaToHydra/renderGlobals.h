@@ -47,6 +47,14 @@ public:
         // If creating the attribute for the first time, immediately set to a user default
         const bool fallbackToUserDefaults = true;
         // TODO: Extend this and mtoh with a setting to ignore scene settings
+
+        GlobalParams() = default;
+        GlobalParams(const TfToken f, bool fir, bool ftud)
+            : filter(f)
+            , filterIsRenderer(fir)
+            , fallbackToUserDefaults(ftud)
+        {
+        }
     };
 
     // Creating render globals attributes on "defaultRenderGlobals"
@@ -89,10 +97,10 @@ public:
     GfVec4f      colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
     bool         colorSelectionHighlight = true;
     bool         wireframeSelectionHighlight = true;
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
     float outlineSelectionWidth = 4.f;
 #endif
-#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
+#if PXR_VERSION <= 2005
     float enableColorQuantization = false;
 #endif
 };

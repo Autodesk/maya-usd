@@ -18,10 +18,13 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
@@ -36,7 +39,11 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-UFE_NS_DEF { class PathSegment; }
+UFE_NS_DEF
+{
+    class PathSegment;
+    class Selection;
+}
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -53,9 +60,34 @@ UsdStageWeakPtr getStage(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 Ufe::Path stagePath(UsdStageWeakPtr stage);
 
+//! Return all the USD stages.
+MAYAUSD_CORE_PUBLIC
+TfHashSet<UsdStageWeakPtr, TfHash> getAllStages();
+
+//! Get the UFE path segment corresponding to the argument USD path.
+//! If an instanceIndex is provided, the path segment for a point instance with
+//! that USD path and index is returned.
+MAYAUSD_CORE_PUBLIC
+Ufe::PathSegment usdPathToUfePathSegment(
+    const SdfPath& usdPath,
+    int            instanceIndex = UsdImagingDelegate::ALL_INSTANCES);
+
+//! Get the UFE path representing just the USD prim for the argument UFE path.
+//! Any instance index component at the tail of the given path is removed from
+//! the returned path.
+MAYAUSD_CORE_PUBLIC
+Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path);
+
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
 UsdPrim ufePathToPrim(const Ufe::Path& path);
+
+//! Return the instance index corresponding to the argument UFE path if it
+//! represents a point instance.
+//! If the given path does not represent a point instance,
+//! UsdImagingDelegate::ALL_INSTANCES (-1) will be returned.
+MAYAUSD_CORE_PUBLIC
+int ufePathToInstanceIndex(const Ufe::Path& path);
 
 MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);
@@ -88,6 +120,12 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 MAYAUSD_CORE_PUBLIC
 UsdTimeCode getTime(const Ufe::Path& path);
 
+//! Return the non-default purposes of the gateway node (i.e. proxy shape)
+//! along the argument path.  Only those purposes that are true are returned.
+//! The default purpose is not returned, and is considered implicit.
+MAYAUSD_CORE_PUBLIC
+TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
+
 //! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
@@ -114,8 +152,24 @@ inline Ufe::Matrix4d toUfe(const GfMatrix4d& src)
     return dst;
 }
 
+//! Copy the argument matrix into the return matrix.
+inline GfMatrix4d toUsd(const Ufe::Matrix4d& src)
+{
+    GfMatrix4d dst;
+    std::memcpy(dst.GetArray(), &src.matrix[0][0], sizeof(double) * 16);
+    return dst;
+}
+
 //! Copy the argument vector into the return vector.
 inline Ufe::Vector3d toUfe(const GfVec3d& src) { return Ufe::Vector3d(src[0], src[1], src[2]); }
+
+//! Filter a source selection by removing descendants of filterPath.
+Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
+
+//! Re-build a source selection by copying scene items that are not descendants
+//! of filterPath to the destination, and re-creating the others into the
+//! destination using the source scene item path.
+Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

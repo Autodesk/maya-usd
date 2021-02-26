@@ -1,0 +1,101 @@
+#usda 1.0
+(
+    defaultPrim = "PointInstancerGrid"
+    metersPerUnit = 0.01
+    upAxis = "Z"
+)
+
+def Xform "PointInstancerGrid" (
+    assetInfo = {
+        asset identifier = @./PointInstancerGrid_14.usda@
+        string name = "PointInstancerGrid_14"
+    }
+    kind = "component"
+)
+{
+    def PointInstancer "PointInstancer" (
+        kind = "subcomponent"
+    )
+    {
+        float3[] extent = [(-5, -0.5, -0.5), (5, 2, 0.5)]
+        point3f[] positions = [(-4.5, 0, 0), (-3, 0, 0), (-1.5, 0, 0), (0, 0, 0), (1.5, 0, 0), (3, 0, 0), (4.5, 0, 0), (-4.5, 1.5, 0), (-3, 1.5, 0), (-1.5, 1.5, 0), (0, 1.5, 0), (1.5, 1.5, 0), (3, 1.5, 0), (4.5, 1.5, 0)]
+        int[] protoIndices = [0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6]
+        rel prototypes = [
+            </PointInstancerGrid/PointInstancer/prototypes/RedCube>,
+            </PointInstancerGrid/PointInstancer/prototypes/OrangeCube>,
+            </PointInstancerGrid/PointInstancer/prototypes/YellowCube>,
+            </PointInstancerGrid/PointInstancer/prototypes/GreenCube>,
+            </PointInstancerGrid/PointInstancer/prototypes/BlueCube>,
+            </PointInstancerGrid/PointInstancer/prototypes/IndigoCube>,
+            </PointInstancerGrid/PointInstancer/prototypes/VioletCube>
+        ]
+
+        def "prototypes" (
+            kind = "subcomponent"
+        )
+        {
+            def "BlueCube" (
+                prepend references = @./CubeModel.usda@
+                variants = {
+                    string shadingVariant = "Blue"
+                }
+            )
+            {
+            }
+
+            def "GreenCube" (
+                prepend references = @./CubeModel.usda@
+                variants = {
+                    string shadingVariant = "Green"
+                }
+            )
+            {
+            }
+
+            def "IndigoCube" (
+                prepend references = @./CubeModel.usda@
+                variants = {
+                    string shadingVariant = "Indigo"
+                }
+            )
+            {
+            }
+
+            def "OrangeCube" (
+                prepend references = @./CubeModel.usda@
+                variants = {
+                    string shadingVariant = "Orange"
+                }
+            )
+            {
+            }
+
+            def "RedCube" (
+                prepend references = @./CubeModel.usda@
+                variants = {
+                    string shadingVariant = "Red"
+                }
+            )
+            {
+            }
+
+            def "VioletCube" (
+                prepend references = @./CubeModel.usda@
+                variants = {
+                    string shadingVariant = "Violet"
+                }
+            )
+            {
+            }
+
+            def "YellowCube" (
+                prepend references = @./CubeModel.usda@
+                variants = {
+                    string shadingVariant = "Yellow"
+                }
+            )
+            {
+            }
+        }
+    }
+}

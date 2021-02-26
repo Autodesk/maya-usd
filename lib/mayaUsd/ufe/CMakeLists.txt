@@ -46,15 +46,21 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dFallbackMayaXformStack.cpp
             UsdTransform3dMatrixOp.cpp
             UsdTransform3dMayaXformStack.cpp
+            UsdTransform3dSetObjectMatrix.cpp
+            UsdUIInfoHandler.cpp
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
             UsdUndoReorderCommand.cpp
+            UsdUndoSetKindCommand.cpp
+            UsdUndoVisibleCommand.cpp
+            XformOpUtils.cpp
     )
-    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2022)
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
         target_sources(${PROJECT_NAME}
             PRIVATE
-                UsdUIInfoHandler.cpp
+                UsdCamera.cpp
+                UsdCameraHandler.cpp
         )
     endif()
 endif()
@@ -102,12 +108,23 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdTransform3dFallbackMayaXformStack.h
         UsdTransform3dMatrixOp.h
         UsdTransform3dMayaXformStack.h
+        UsdTransform3dSetObjectMatrix.h
         UsdUIInfoHandler.h
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
         UsdUndoReorderCommand.h
+        UsdUndoSetKindCommand.h
+        UsdUndoVisibleCommand.h
+        XformOpUtils.h
     )
+    # Why no if for UsdUIInfoHandler.h ?
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
+        list(APPEND HEADERS
+            UsdCamera.h
+            UsdCameraHandler.h
+        )
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------

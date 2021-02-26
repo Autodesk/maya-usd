@@ -114,6 +114,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject drawGuidePurposeAttr;
 
+    MAYAUSD_CORE_PUBLIC
+    static MObject sessionLayerNameAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject rootLayerNameAttr;
+
     // Output attributes
     MAYAUSD_CORE_PUBLIC
     static MObject outTimeAttr;
@@ -283,6 +288,10 @@ protected:
     MAYAUSD_CORE_PUBLIC
     virtual SdfLayerRefPtr computeSessionLayer(MDataBlock&);
 
+    // Hook method for derived classes.  This class returns a nullptr.
+    MAYAUSD_CORE_PUBLIC
+    virtual SdfLayerRefPtr computeRootLayer(MDataBlock&, const std::string&);
+
     // Hook method for derived classes: can this object be soft selected?
     // This class returns false.
     MAYAUSD_CORE_PUBLIC
@@ -311,6 +320,9 @@ protected:
 
     MAYAUSD_CORE_PUBLIC
     void _IncreaseUsdStageVersion() { _UsdStageVersion++; }
+
+    MAYAUSD_CORE_PUBLIC
+    void copyInternalData(MPxNode* srcNode) override;
 
 private:
     MayaUsdProxyShapeBase(const MayaUsdProxyShapeBase&);

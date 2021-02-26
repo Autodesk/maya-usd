@@ -20,29 +20,30 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
 #include <mayaUsd/ufe/StagesSubject.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
-
-#include <ufe/hierarchyHandler.h>
-#include <ufe/runTimeMgr.h>
-
-#include <cassert>
-#include <string>
-
 #ifdef UFE_V2_FEATURES_AVAILABLE
-// Note: must come after include of ufe files so we have the define.
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdObject3dHandler.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2022
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #endif
-#include <ufe/pathString.h>
-#else
-#include <mayaUsd/ufe/UfeVersionCompat.h>
+
+#if UFE_PREVIEW_VERSION_NUM >= 2031
+#include <mayaUsd/ufe/UsdCameraHandler.h>
 #endif
+
+#include <ufe/hierarchyHandler.h>
+#include <ufe/runTimeMgr.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
+
+#include <cassert>
+#include <string>
 
 namespace {
 int gRegistrationCount = 0;
@@ -112,7 +113,7 @@ MStatus initialize()
     Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, proxyShapeContextOpsHandler);
 #endif
 
-#if UFE_PREVIEW_VERSION_NUM >= 2028
+#ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::RunTimeMgr::Handlers handlers;
     handlers.hierarchyHandler = UsdHierarchyHandler::create();
     handlers.transform3dHandler = UsdTransform3dHandler::create();
@@ -121,27 +122,16 @@ MStatus initialize()
     handlers.object3dHandler = UsdObject3dHandler::create();
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
+#if UFE_PREVIEW_VERSION_NUM >= 2031
+    handlers.cameraHandler = UsdCameraHandler::create();
+#endif
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
 #else
     auto usdHierHandler = UsdHierarchyHandler::create();
     auto usdTrans3dHandler = UsdTransform3dHandler::create();
     auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
-    UFE_V2(auto usdAttributesHandler = UsdAttributesHandler::create();)
-    UFE_V2(auto usdObject3dHandler = UsdObject3dHandler::create();)
-    UFE_V2(auto usdContextOpsHandler = UsdContextOpsHandler::create();)
-#if UFE_PREVIEW_VERSION_NUM >= 2022
-    UFE_V2(auto usdUIInfoHandler = UsdUIInfoHandler::create();)
-#endif
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-        kUSDRunTimeName,
-        usdHierHandler,
-        usdTrans3dHandler,
-        usdSceneItemOpsHandler UFE_V2(, usdAttributesHandler, usdObject3dHandler)
-            UFE_V2(, usdContextOpsHandler)
-#if UFE_PREVIEW_VERSION_NUM >= 2022
-                UFE_V2(, usdUIInfoHandler)
-#endif
-    );
+        kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler);
 #endif
 
 #if !defined(NDEBUG)

@@ -16,6 +16,10 @@
 # limitations under the License.
 #
 
+import fixturesUtils
+
+from maya import standalone
+
 import unittest
 
 
@@ -24,15 +28,29 @@ class UfePythonImportTestCase(unittest.TestCase):
     Verify that the ufe Python module imports correctly.
     """
 
+    @classmethod
+    def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def testImportModule(self):
         from mayaUsd import ufe as mayaUsdUfe
+        import ufe
 
         # Test calling a function that depends on USD. This exercises the
         # script module loader registry function and ensures that loading the
         # ufe library also loaded its dependencies (i.e. the core USD
         # libraries). We test the type name as a string to ensure that we're
         # not causing USD libraries to be loaded any other way.
-        invalidPrim = mayaUsdUfe.getPrimFromRawItem(0)
+        if ufe.VersionInfo.getMajorVersion() == 1:
+            # In UFE v1 if the Nb segments == 1, returns invalid prim
+            invalidPrim = mayaUsdUfe.ufePathToPrim('a')
+        else:
+            # raw item only introduced in UFE v2
+            invalidPrim = mayaUsdUfe.getPrimFromRawItem(0)
 
         # Prior to USD version 20.05, a default constructed UsdPrim() in C++
         # would be returned to Python as a Usd.Object rather than a Usd.Prim.
@@ -40,3 +58,7 @@ class UfePythonImportTestCase(unittest.TestCase):
         # of the two.
         typeName = type(invalidPrim).__name__
         self.assertIn(typeName, ['Prim', 'Object'])
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

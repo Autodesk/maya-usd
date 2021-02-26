@@ -31,7 +31,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | release: [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) or [v20.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.11) <br> dev: [5904885](https://github.com/PixarAnimationStudios/USD/commit/590488516d285de4352c96bd5a542f5c6a5829be) |
+|  CommitID/Tags | release: [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) or [v20.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.11) or [v21.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.02)<br> dev: [09ff5b7](https://github.com/PixarAnimationStudios/USD/commit/09ff5b7d6d0ae9e92142781322daf6d79e058e2e) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -189,11 +189,11 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 
 ##### Boost:
 
-Currently the Animal Logic plugin has a dependency on some of the boost components ( e.g thread, filesystem ). When building Pixar USD, one needs to pass the following key,value paired arguments for boost to include those components: 
+Currently the Animal Logic plugin has a dependency on some of the boost components. When building Pixar USD, one needs to pass the following key,value paired arguments for boost to include those components: 
 e.g 
 
 ```
-python build_usd.py ~/Desktop/BUILD --build-args boost,"--with-date_time --with-thread --with-system --with-filesystem" 
+python build_usd.py ~/Desktop/BUILD --build-args boost,"--with-date_time" 
 ```
 
 ***NOTE:*** ```--build-args``` needs to be passed at the very end of command, after build/install location.

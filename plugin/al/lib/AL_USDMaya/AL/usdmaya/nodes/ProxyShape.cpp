@@ -63,7 +63,7 @@
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #if defined(WANT_UFE_BUILD)
 #include "ufe/path.h"
@@ -1109,11 +1109,7 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 
     const SdfLayerHandleVector stack = m_stage->GetLayerStack();
 
-#if USD_VERSION_NUM > 1911
     TF_FOR_ALL(itr, notice.GetChangeListVec())
-#else
-    TF_FOR_ALL(itr, notice.GetChangeListMap())
-#endif
     {
         if (std::find(stack.begin(), stack.end(), itr->first) == stack.end())
             continue;
@@ -1250,7 +1246,7 @@ void ProxyShape::loadStage()
                 }
             }
         } else {
-            boost::filesystem::path filestringPath(fileString);
+            ghc::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
                 fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
                 TF_DEBUG(ALUSDMAYA_TRANSLATORS)

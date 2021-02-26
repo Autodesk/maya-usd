@@ -16,12 +16,16 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
-
-import usdUtils
+import fixturesUtils
 import mayaUtils
-import ufe
+import testUtils
 import ufeUtils
+import usdUtils
+
+from maya import cmds
+from maya import standalone
+
+import ufe
 
 import unittest
 
@@ -46,8 +50,14 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -192,7 +202,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
     @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Requires Maya fixes only available in Maya Preview Release 121 or later.')
     def testSmartTransformDuplicate(self):
         '''Test smart transform option of duplicate command.'''
-        torusFile = mayaUtils.getTestScene("groupCmd", "torus.usda")
+        torusFile = testUtils.getTestScene("groupCmd", "torus.usda")
         torusDagPath, torusStage = mayaUtils.createProxyFromFile(torusFile)
         usdTorusPathString = torusDagPath + ",/pTorus1"
 
@@ -207,3 +217,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         correctResult = [20, 0, 0, 1]
 
         self.assertEqual(correctResult, transVector)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

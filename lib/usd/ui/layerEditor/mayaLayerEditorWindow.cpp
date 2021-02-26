@@ -21,8 +21,8 @@
 #include "layerEditorWidget.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
+#include "mayaQtUtils.h"
 #include "mayaSessionState.h"
-#include "qtUtils.h"
 #include "sessionState.h"
 
 #include <mayaUsd/utils/query.h>
@@ -86,30 +86,6 @@ AbstractLayerEditorCreator::PanelNamesList LayerEditorWindowCreator::getAllPanel
     return result;
 }
 
-class MayaQtUtils : public QtUtils
-{
-
-    double dpiScale() override { return MQtUtil::dpiScale(1.0f); }
-    QIcon  createIcon(const char* iconName) override
-    {
-        QIcon* icon = MQtUtil::createIcon(iconName);
-        QIcon  copy(*icon);
-        delete icon;
-        return copy;
-    }
-
-    QPixmap createPixmap(QString const& pixmapName, int width, int height) override
-    {
-        QPixmap* pixmap = MQtUtil::createPixmap(pixmapName.toStdString().c_str());
-        if (pixmap != nullptr) {
-            QPixmap copy(*pixmap);
-            delete pixmap;
-            return copy;
-        }
-        return QPixmap();
-    }
-} g_mayaQtUtils;
-
 } // namespace
 
 namespace UsdLayerEditor {
@@ -119,10 +95,11 @@ MayaLayerEditorWindow::MayaLayerEditorWindow(const char* panelName, QWidget* par
     , AbstractLayerEditorWindow(panelName)
     , _panelName(panelName)
 {
+    // Normally this will be set from the MayaUsd plugin, but only
+    // when building with UFE (for the batch save case).
     if (!UsdLayerEditor::utils) {
-        UsdLayerEditor::utils = &g_mayaQtUtils;
+        UsdLayerEditor::utils = new MayaQtUtils();
     }
-
     onCreateUI();
 
     connect(

@@ -17,6 +17,7 @@
 #include "baseExportCommand.h"
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include <pxr/pxr.h>
@@ -107,6 +108,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportVisibility.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kIgnoreWarningsFlag,
+        UsdMayaJobExportArgsTokens->ignoreWarnings.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kExportReferenceObjectsFlag,
         UsdMayaJobExportArgsTokens->exportReferenceObjects.GetText(),
         MSyntax::kBoolean);
@@ -114,6 +119,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kExportSkelsFlag, UsdMayaJobExportArgsTokens->exportSkels.GetText(), MSyntax::kString);
     syntax.addFlag(
         kExportSkinFlag, UsdMayaJobExportArgsTokens->exportSkin.GetText(), MSyntax::kString);
+    syntax.addFlag(
+        kExportBlendShapesFlag,
+        UsdMayaJobExportArgsTokens->exportBlendShapes.GetText(),
+        MSyntax::kBoolean);
     syntax.addFlag(
         kParentScopeFlag, UsdMayaJobExportArgsTokens->parentScope.GetText(), MSyntax::kString);
     syntax.addFlag(
@@ -142,11 +151,11 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kMelPerFrameCallbackFlag,
         UsdMayaJobExportArgsTokens->melPerFrameCallback.GetText(),
-        MSyntax::kNoArg);
+        MSyntax::kString);
     syntax.addFlag(
         kMelPostCallbackFlag,
         UsdMayaJobExportArgsTokens->melPostCallback.GetText(),
-        MSyntax::kNoArg);
+        MSyntax::kString);
     syntax.addFlag(
         kPythonPerFrameCallbackFlag,
         UsdMayaJobExportArgsTokens->pythonPerFrameCallback.GetText(),
@@ -202,6 +211,20 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         // Check that all flags were valid
         if (status != MS::kSuccess) {
             return status;
+        }
+
+        if (argData.isFlagSet("shadingMode")) {
+            MString stringVal;
+            argData.getFlagArgument("shadingMode", 0, stringVal);
+            TfToken shadingMode(stringVal.asChar());
+
+            if (!shadingMode.IsEmpty()
+                && UsdMayaShadingModeRegistry::GetInstance().GetExporter(shadingMode) == nullptr
+                && shadingMode != UsdMayaShadingModeTokens->none) {
+                MGlobal::displayError(
+                    TfStringPrintf("No shadingMode '%s' found.", shadingMode.GetText()).c_str());
+                return MS::kFailure;
+            }
         }
 
         // Read all of the dictionary args first.

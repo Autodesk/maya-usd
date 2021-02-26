@@ -15,11 +15,10 @@
 //
 #pragma once
 
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 
 #include <pxr/usd/usdGeom/xformOp.h>
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -62,6 +61,10 @@ public:
     Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;
     Ufe::ScaleUndoableCommand::Ptr     scaleCmd(double x, double y, double z) override;
 
+    Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
+    void                                 setMatrix(const Ufe::Matrix4d& m) override;
+    Ufe::Matrix4d                        matrix() const override;
+
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
@@ -85,13 +88,9 @@ public:
 
     // Ufe::Transform3dHandler overrides
     Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
-    Ufe::Transform3d::Ptr editTransform3d(
-        const Ufe::SceneItem::Ptr& item
-#if UFE_PREVIEW_VERSION_NUM >= 2030
+    Ufe::Transform3d::Ptr editTransform3d(const Ufe::SceneItem::Ptr& item UFE_V2(
         ,
-        const Ufe::EditTransform3dHint& hint
-#endif
-    ) const override;
+        const Ufe::EditTransform3dHint& hint)) const override;
 
 private:
     Ufe::Transform3dHandler::Ptr _nextHandler;

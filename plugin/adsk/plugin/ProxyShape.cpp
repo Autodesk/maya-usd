@@ -17,6 +17,7 @@
 
 #include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/utils/util.h>
 
 namespace MAYAUSD_NS_DEF {
 

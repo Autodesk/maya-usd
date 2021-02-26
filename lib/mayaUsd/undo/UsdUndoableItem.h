@@ -14,15 +14,13 @@
 // limitations under the License.
 //
 
-#ifndef MAYAUSD_UNDO_UNDOABLE_BLOCK_H
-#define MAYAUSD_UNDO_UNDOABLE_BLOCK_H
+#ifndef MAYAUSD_UNDO_UNDOABLE_ITEM_H
+#define MAYAUSD_UNDO_UNDOABLE_ITEM_H
 
 #include <mayaUsd/base/api.h>
 
 #include <functional>
 #include <vector>
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
@@ -62,4 +60,4 @@ private:
 
 } // namespace MAYAUSD_NS_DEF
 
-#endif // MAYAUSD_UNDO_UNDOABLE_BLOCK_H
+#endif // MAYAUSD_UNDO_UNDOABLE_ITEM_H

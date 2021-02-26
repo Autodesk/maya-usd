@@ -134,17 +134,46 @@ bool UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(const UsdStagePtr& st
         const _Entry& entry = pair.second;
         SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
         success = success && !skelRootPath.IsEmpty();
+        if (!success) {
+            return success;
+        }
     }
+    return success;
+}
+
+bool UsdMaya_SkelBindingsProcessor::UpdateSkelRootsWithExtent(
+    const UsdStagePtr&  stage,
+    const VtVec3fArray& bbox,
+    const UsdTimeCode&  timeSample)
+{
+    bool success = true;
+    for (const auto& pair : _bindingToSkelMap) {
+        const _Entry& entry = pair.second;
+        SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
+        success = success && !skelRootPath.IsEmpty();
+        if (success) {
+            UsdSkelRoot skelRoot = UsdSkelRoot::Get(stage, skelRootPath);
+            if (skelRoot) {
+                UsdAttribute extentsAttr = skelRoot.CreateExtentAttr();
+                if (!extentsAttr) {
+                    TF_RUNTIME_ERROR(
+                        "Could not find/create the extents attribute on the SkelRoot!");
+                    return false;
+                }
+                success = extentsAttr.Set(bbox, timeSample);
+                if (!success) {
+                    return false;
+                }
+            }
+        }
+    }
+
     return success;
 }
 
 bool UsdMaya_SkelBindingsProcessor::PostProcessSkelBindings(const UsdStagePtr& stage) const
 {
     bool success = _VerifyOrMakeSkelRoots(stage);
-
-    // TODO: Write extent on all SkelRoot prims with marked bindings.
-    // Would like UsdSkel to provide some helper functionality in order
-    // to simplify this.
     return success;
 }
 

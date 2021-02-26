@@ -21,15 +21,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if USD_VERSION_NUM >= 1910
-#define HD_STORM_PLUGIN_NAME "HdStormRendererPlugin"
-#else
-#define HD_STORM_PLUGIN_NAME "HdStreamRendererPlugin"
-#endif
-
 // clang-format off
 #define MTOH_TOKENS \
-    ((HdStormRendererPlugin, HD_STORM_PLUGIN_NAME)) \
+    (HdStormRendererPlugin) \
     (mtohMaximumShadowMapResolution)
 // clang-format on
 

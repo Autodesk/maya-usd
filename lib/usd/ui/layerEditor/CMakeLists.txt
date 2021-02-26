@@ -37,6 +37,8 @@ target_sources(${PROJECT_NAME}
         mayaLayerEditorWindow.h
         mayaSessionState.cpp
         mayaSessionState.h
+        mayaQtUtils.cpp
+        mayaQtUtils.h
         pathChecker.cpp
         pathChecker.h
         qtUtils.cpp
@@ -54,3 +56,30 @@ target_sources(${PROJECT_NAME}
         warningDialogs.h
 )
 
+if (UFE_FOUND)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            batchSaveLayersUIDelegate.cpp
+    )
+
+    # -----------------------------------------------------------------------------
+    # promoted headers
+    # -----------------------------------------------------------------------------
+    set(HEADERS
+        batchSaveLayersUIDelegate.h
+    )
+
+    mayaUsd_promoteHeaderList( 
+        HEADERS
+            ${HEADERS}
+        BASEDIR
+            ${PROJECT_NAME}/ui
+    )
+
+    # -----------------------------------------------------------------------------
+    # install
+    # -----------------------------------------------------------------------------
+    install(FILES ${HEADERS}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui
+    )
+endif()

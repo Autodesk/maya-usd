@@ -23,8 +23,6 @@
 #include <ufe/transform3d.h>
 #include <ufe/transform3dHandler.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -74,7 +72,7 @@ public:
                   translateScalePivotCmd(double x, double y, double z) override;
     Ufe::Vector3d scalePivotTranslation() const override;
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
     Ufe::Matrix4d                        matrix() const override;
 #endif

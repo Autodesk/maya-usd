@@ -1,0 +1,18 @@
+<!DOCTYPE RCC><RCC version="1.0">
+	<qresource prefix="/ImportDialog">
+    <file alias="checkboxOff.png">checkboxOff_100.png</file>
+    <file alias="checkboxOffDisabled.png">checkboxOffDisabled_100.png</file>
+    <file alias="checkboxOn.png">checkboxOn_100.png</file>
+    <file alias="checkboxOnDisabled.png">checkboxOnDisabled_100.png</file>
+
+    <file>checkboxOff_150.png</file>
+    <file>checkboxOff_200.png</file>
+    <file>checkboxOffDisabled_150.png</file>
+    <file>checkboxOffDisabled_200.png</file>
+    <file>checkboxOn_150.png</file>
+    <file>checkboxOn_200.png</file>
+    <file>checkboxOnDisabled_150.png</file>
+    <file>checkboxOnDisabled_200.png</file>
+  </qresource>
+</RCC>
+

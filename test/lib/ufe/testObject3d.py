@@ -16,23 +16,51 @@
 # limitations under the License.
 #
 
-import mayaUtils, usdUtils
-from testUtils import assertVectorAlmostEqual, assertVectorEqual
+import fixturesUtils
+import mayaUtils
+from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorEqual
+import usdUtils
+
+import mayaUsd
+
+from pxr import Usd
+from pxr import UsdGeom
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as OpenMaya
 
 import ufe
 
-from pxr import Usd, UsdGeom
-
-import maya.cmds as cmds
-import maya.api.OpenMaya as OpenMaya
-
-import unittest
 import os
+import unittest
+
 
 def nameToPlug(nodeName):
     selection = OpenMaya.MSelectionList()
     selection.add(nodeName)
     return selection.getPlug(0)
+
+def almostEqualBBox(bbox1, bbox2):
+    """Checks that 2 bounding boxes are almost equal."""
+    for bound in (0, 1):
+        if isinstance(bbox1, ufe.PyUfe.BBox3d):
+            if bound == 0:
+                vec1 = bbox1.min.vector
+            else:
+                vec1 = bbox1.max.vector
+        elif isinstance(bbox1, OpenMaya.MBoundingBox):
+            if bound == 0:
+                vec1 = bbox1.min
+            else:
+                vec1 = bbox1.max
+        else:
+            vec1 = bbox1[bound]
+        for axis in (0, 1, 2):
+            if round(vec1[axis] - bbox2[bound][axis], 7) != 0:
+                return False
+    return True
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -54,8 +82,14 @@ class Object3dTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -135,6 +169,63 @@ class Object3dTestCase(unittest.TestCase):
         #######
         # Remove the test file.
         os.remove(usdFilePath)
+
+    def testPurposeBoundingBox(self):
+        '''Bounding box of prims with guide, proxy, and render purpose.'''
+        # Create a scene with prims of purposes other than default: guide,
+        # proxy, and render.  All must have a valid bounding box.  The bounding
+        # box is conditional to the proxy shape on the UFE path to the prim
+        # having that purpose enabled: if the purpose is disabled, the bounding
+        # box is invalid.
+        import mayaUsd_createStageWithNewLayer
+ 
+        proxyShapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapePath)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        usdPaths = ['/Cube1', '/Cube2', '/Cube3']
+        prims = [stage.DefinePrim(path, 'Cube') for path in usdPaths]
+        purposes = [UsdGeom.Tokens.proxy, UsdGeom.Tokens.guide, 
+                    UsdGeom.Tokens.render]
+        for (prim, purpose) in zip(prims, purposes):
+            imageable = UsdGeom.Imageable(prim)
+            imageable.CreatePurposeAttr(purpose)
+
+        # Create a UFE scene item for each prim, and get the bounding box using
+        # the Object3d interface.
+        for (prim, usdPath) in zip(prims, usdPaths):
+            pathSegment = usdUtils.createUfePathSegment(usdPath)
+            path = ufe.Path([proxyShapePathSegment, pathSegment])
+            item = ufe.Hierarchy.createItem(path)
+            object3d = ufe.Object3d.object3d(item)
+
+            # First turn off proxy, guide, render purposes on the proxy shape.
+            # The bounding box should be invalid.
+            purposeAttribs = ['drawProxyPurpose', 'drawGuidePurpose', 
+                              'drawRenderPurpose']
+            for purposeAttrib in purposeAttribs:
+                cmds.setAttr(proxyShapePath+'.'+purposeAttrib, 0)
+
+            bbox = object3d.boundingBox()
+
+            self.assertTrue(bbox.empty())
+
+            # Next, turn on each purpose in turn on the proxy shape.  The
+            # bounding box should be valid only if the prim's purpose matches
+            # the proxy shape purpose.
+            imageable = UsdGeom.Imageable(prim)
+            primPurpose = imageable.GetPurposeAttr().Get()
+            for (purpose, purposeAttrib) in zip(purposes, purposeAttribs):
+                cmds.setAttr(proxyShapePath+'.'+purposeAttrib, 1)
+
+                bbox = object3d.boundingBox()
+
+                if primPurpose == purpose:
+                    assertVectorAlmostEqual(self, bbox.min.vector, [-1]*3)
+                    assertVectorAlmostEqual(self, bbox.max.vector, [1]*3)
+                else:
+                    self.assertTrue(bbox.empty())
+
+                cmds.setAttr(proxyShapePath+'.'+purposeAttrib, 0)
 
     def testAnimatedBoundingBox(self):
         '''Test the Object3d bounding box interface for animated geometry.'''
@@ -228,3 +319,257 @@ class Object3dTestCase(unittest.TestCase):
         ufe.Object3d.removeObserver(visObs)
         self.assertFalse(ufe.Object3d.hasObserver(visObs))
         self.assertEqual(ufe.Object3d.nbObservers(), 0)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testUndoVisibleCmd is only available in UFE preview version 0.2.34 and greater')
+    def testUndoVisibleCmd(self):
+
+        ''' Verify the token / attribute values for visibility after performing undo/redo '''
+
+        cmds.file(new=True, force=True)
+
+        # create a Capsule via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        # create an Object3d interface.
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+        object3d = ufe.Object3d.object3d(capsuleItem)
+
+        # stage / primSpec
+        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        primSpec = stage.GetEditTarget().GetPrimSpecForScenePath('/Capsule1');
+
+        # initially capsuleItem should be visible.
+        self.assertTrue(object3d.visibility())
+
+        # make it invisible.
+        visibleCmd = object3d.setVisibleCmd(False)
+        visibleCmd.execute()
+
+        # get the visibility "attribute"
+        visibleAttr = capsulePrim.GetAttribute('visibility')
+
+        # expect the visibility attribute to be 'invisible'
+        self.assertEqual(visibleAttr.Get(), 'invisible')
+
+        # visibility "token" must exists now in the USD data model
+        self.assertTrue(bool(primSpec and UsdGeom.Tokens.visibility in primSpec.attributes))
+
+        # undo
+        visibleCmd.undo()
+
+        # expect the visibility attribute to be 'inherited'
+        self.assertEqual(visibleAttr.Get(), 'inherited')
+
+        # visibility token must not exists now in the USD data model after undo
+        self.assertFalse(bool(primSpec and UsdGeom.Tokens.visibility in primSpec.attributes))
+
+        # capsuleItem must be visible now
+        self.assertTrue(object3d.visibility())
+
+        # redo
+        visibleCmd.redo()
+
+        # expect the visibility attribute to be 'invisible'
+        self.assertEqual(visibleAttr.Get(), 'invisible')
+
+        # visibility token must exists now in the USD data model after redo
+        self.assertTrue(bool(primSpec and UsdGeom.Tokens.visibility in primSpec.attributes))
+
+        # capsuleItem must be invisible now
+        self.assertFalse(object3d.visibility())
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testMayaHideAndShowHiddenUndoCommands is only available in UFE preview version 0.2.34 and greater')
+    def testMayaHideAndShowHiddenUndoCommands(self):
+        ''' Verify the token / attribute values for visibility via "hide", "showHidden" commands + Undo/Redo '''
+
+        cmds.file(new=True, force=True)
+
+        # create a Capsule and Cylinder via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+        proxyShapeContextOps.doOp(['Add New Prim', 'Cylinder'])
+
+        # capsule
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+
+        # cylinder
+        cylinderPath = ufe.PathString.path('%s,/Cylinder1' % proxyShape)
+        cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
+        cylinderPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(cylinderPath))
+
+        # stage / primSpec
+        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        primSpecCapsule = stage.GetEditTarget().GetPrimSpecForScenePath('/Capsule1');
+        primSpecCylinder = stage.GetEditTarget().GetPrimSpecForScenePath('/Cylinder1');
+
+        # select capsule and cylinder prims
+        ufe.GlobalSelection.get().append(capsuleItem)
+        ufe.GlobalSelection.get().append(cylinderItem)
+
+        # hide selected items
+        cmds.hide(cs=True)
+
+        # get the visibility "attribute"
+        capsuleVisibleAttr = capsulePrim.GetAttribute('visibility')
+        cylinderVisibleAttr = cylinderPrim.GetAttribute('visibility')
+
+        # expect the visibility attribute to be 'invisible'
+        self.assertEqual(capsuleVisibleAttr.Get(), 'invisible')
+        self.assertEqual(cylinderVisibleAttr.Get(), 'invisible')
+
+        # visibility "token" must exists now in the USD data model
+        self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
+        self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+        # undo
+        cmds.undo()
+
+        # expect the visibility attribute to be 'inherited'
+        self.assertEqual(capsuleVisibleAttr.Get(), 'inherited')
+        self.assertEqual(cylinderVisibleAttr.Get(), 'inherited')
+
+        # visibility token must not exists now in the USD data model after undo
+        self.assertFalse(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
+        self.assertFalse(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+        # undo
+        cmds.redo()
+
+        # expect the visibility attribute to be 'invisible'
+        self.assertEqual(capsuleVisibleAttr.Get(), 'invisible')
+        self.assertEqual(cylinderVisibleAttr.Get(), 'invisible')
+
+        # visibility "token" must exists now in the USD data model
+        self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
+        self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+        # hide selected items again
+        cmds.hide(cs=True)
+
+        # right after, call showHidden -all to make everything visible again
+        cmds.showHidden( all=True )
+
+        # expect the visibility attribute to be 'inherited'
+        self.assertEqual(capsuleVisibleAttr.Get(), 'inherited')
+        self.assertEqual(cylinderVisibleAttr.Get(), 'inherited')
+
+        # This time, expect the visibility token to exists in the USD data model
+        self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
+        self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+        # undo the showHidden command
+        cmds.undo()
+
+        # expect the visibility attribute to be 'invisible'
+        self.assertEqual(capsuleVisibleAttr.Get(), 'invisible')
+        self.assertEqual(cylinderVisibleAttr.Get(), 'invisible')
+
+        # visibility "token" must exists now in the USD data model
+        self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
+        self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+        # redo 
+        cmds.redo()
+
+        # expect the visibility attribute to be 'inherited'
+        self.assertEqual(capsuleVisibleAttr.Get(), 'inherited')
+        self.assertEqual(cylinderVisibleAttr.Get(), 'inherited')
+
+        # visibility "token" must exists now in the USD data model
+        self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
+        self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+    def testMayaGeomExtentsRecomputation(self):
+        ''' Verify the automatic extents computation in when geom attributes change '''
+
+        cmds.file(new=True, force=True)
+
+        # create a Capsule via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        # capsule
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+
+        # get the height and extent "attributes"
+        capsuleHeightAttr = capsulePrim.GetAttribute('height')
+        capsuleExtentAttr = capsulePrim.GetAttribute('extent')
+
+        self.assertAlmostEqual(capsuleHeightAttr.Get(), 1.0)
+        capsuleExtent = capsuleExtentAttr.Get()
+        expectedExtent = ((-0.5, -0.5, -1.0), (0.5, 0.5, 1.0))
+        self.assertTrue(almostEqualBBox(capsuleExtent, expectedExtent))
+
+        capsuleHeightAttr.Set(10.0)
+
+        self.assertAlmostEqual(capsuleHeightAttr.Get(), 10.0)
+        # Extent will have been recomputed:
+        capsuleExtent = capsuleExtentAttr.Get()
+        expectedExtent = ((-0.5, -0.5, -5.5), (0.5, 0.5, 5.5))
+        self.assertTrue(almostEqualBBox(capsuleExtent, expectedExtent))
+
+    def testMayaShapeBBoxCacheClearing(self):
+        ''' Verify that the bounding box cache gets cleared'''
+
+        cmds.file(new=True, force=True)
+
+        # create a Capsule via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Xform'])
+        xformPath = ufe.PathString.path('%s,/Xform1' % proxyShape)
+        xformItem = ufe.Hierarchy.createItem(xformPath)
+        xformObject3d = ufe.Object3d.object3d(xformItem)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(xformItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+        selectionList = OpenMaya.MSelectionList()
+        selectionList.add(proxyShape)
+        shapeNode = OpenMaya.MFnDagNode(selectionList.getDependNode(0))
+
+        # Two spheres at origin, the bounding box is the unit cube:
+        expectedBBox = ((-1.0, -1.0, -1.0), (1.0, 1.0, 1.0))
+        self.assertTrue(almostEqualBBox(xformObject3d.boundingBox(), expectedBBox))
+        # Shape BBox should be the same (and will be cached):
+        self.assertTrue(almostEqualBBox(shapeNode.boundingBox, expectedBBox))
+
+        sphere1Path = ufe.PathString.path('%s,/Xform1/Sphere1' % proxyShape)
+        sphere1Item = ufe.Hierarchy.createItem(sphere1Path)
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+        UsdGeom.XformCommonAPI(sphere1Prim).SetTranslate((-5, 0, 0))
+
+        sphere2Path = ufe.PathString.path('%s,/Xform1/Sphere2' % proxyShape)
+        sphere2Item = ufe.Hierarchy.createItem(sphere2Path)
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+        UsdGeom.XformCommonAPI(sphere2Prim).SetTranslate((0, 5, 0))
+
+        expectedBBox = ((-6.0, -1.0, -1.0), (1.0, 6.0, 1.0))
+        self.assertTrue(almostEqualBBox(xformObject3d.boundingBox(), expectedBBox))
+        # The next test will only work if the cache was cleared when translating
+        # the spheres:
+        self.assertTrue(almostEqualBBox(shapeNode.boundingBox, expectedBBox))
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

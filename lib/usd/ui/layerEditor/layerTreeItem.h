@@ -124,6 +124,7 @@ public:
     // menu callbacks
     void removeSubLayer();
     void saveEdits();
+    void saveEditsNoPrompt();
     void discardEdits();
 
     // there are two addAnonymousSubLayer , because the menu needs all method to be void

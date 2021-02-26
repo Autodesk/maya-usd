@@ -9,6 +9,8 @@
 #include "stringResources.h"
 #include "warningDialogs.h"
 
+#include <mayaUsd/utils/utilSerialization.h>
+
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
@@ -231,6 +233,63 @@ void LayerTreeItem::removeSubLayer()
 
 void LayerTreeItem::saveEdits()
 {
+    bool shouldSaveEdits = true;
+
+    // if the current layer contains anonymous layer(s),
+    // display a warning and abort the saving operation.
+    LayerItemVector anonymLayerItems = parentModel()->getAllAnonymousLayers(this);
+    if (!anonymLayerItems.empty()) {
+        const MString titleFormat
+            = StringResources::getAsMString(StringResources::kSaveLayerWarnTitle);
+        const MString msgFormat
+            = StringResources::getAsMString(StringResources::kSaveLayerSaveNestedAnonymLayer);
+
+        MString title;
+        title.format(titleFormat, displayName().c_str());
+
+        MString nbAnonymLayer;
+        nbAnonymLayer += static_cast<unsigned int>(anonymLayerItems.size());
+
+        MString msg;
+        msg.format(msgFormat, displayName().c_str(), nbAnonymLayer);
+
+        QStringList anonymLayerNames;
+        for (auto item : anonymLayerItems) {
+            anonymLayerNames.append(item->displayName().c_str());
+        }
+
+        warningDialog(MQtUtil::toQString(title), MQtUtil::toQString(msg), &anonymLayerNames);
+        return;
+    }
+
+    // the layer is already saved on disk.
+    // ask the user a confirmation before overwrite it.
+    if (!isAnonymous()) {
+        const MString titleFormat
+            = StringResources::getAsMString(StringResources::kSaveLayerWarnTitle);
+        const MString msgFormat = StringResources::getAsMString(StringResources::kSaveLayerWarnMsg);
+
+        MString title;
+        title.format(titleFormat, displayName().c_str());
+
+        MString msg;
+        msg.format(msgFormat, layer()->GetRealPath().c_str());
+
+        QString okButtonText = StringResources::getAsQString(StringResources::kSave);
+        shouldSaveEdits = confirmDialog(
+            MQtUtil::toQString(title),
+            MQtUtil::toQString(msg),
+            nullptr /*bulletList*/,
+            &okButtonText);
+    }
+
+    if (shouldSaveEdits) {
+        saveEditsNoPrompt();
+    }
+}
+
+void LayerTreeItem::saveEditsNoPrompt()
+{
     if (isAnonymous()) {
         if (!isSessionLayer())
             saveAnonymousLayer();
@@ -244,10 +303,11 @@ void LayerTreeItem::saveAnonymousLayer()
 {
     auto sessionState = parentModel()->sessionState();
 
-    std::string fileName, formatTag;
-    if (sessionState->saveLayerUI(nullptr, &fileName, &formatTag)) {
+    std::string fileName;
+    if (sessionState->saveLayerUI(nullptr, &fileName)) {
         // the path we has is an absolute path
         const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
+        std::string   formatTag = UsdMayaSerialization::usdFormatArgOption();
         if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
             printf("USD Layer written to %s\n", fileName.c_str());
 
@@ -285,12 +345,12 @@ void LayerTreeItem::discardEdits()
     } else {
         MString title;
         title.format(
-            StringResources::getAsMString(StringResources::kDiscardEditsTitle),
+            StringResources::getAsMString(StringResources::kRevertToFileTitle),
             MQtUtil::toMString(text()));
 
         MString desc;
         desc.format(
-            StringResources::getAsMString(StringResources::kDiscardEditsMsg),
+            StringResources::getAsMString(StringResources::kRevertToFileMsg),
             MQtUtil::toMString(text()));
 
         if (confirmDialog(MQtUtil::toQString(title), MQtUtil::toQString(desc))) {

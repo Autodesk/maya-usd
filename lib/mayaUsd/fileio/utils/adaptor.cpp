@@ -21,6 +21,7 @@
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/usd/apiSchemaBase.h>
 #include <pxr/usd/usd/schemaBase.h>
@@ -90,7 +91,7 @@ TfToken UsdMayaAdaptor::GetUsdTypeName() const
     }
 
     const TfType ty = GetUsdType();
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     return UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
 #else
     const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance().GetPrimDefinition(ty);
@@ -143,7 +144,7 @@ TfTokenVector UsdMayaAdaptor::GetAppliedSchemas() const
 
 UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::GetSchema(const TfType& ty) const
 {
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     const TfToken usdTypeName = UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
 #else
     const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance().GetPrimDefinition(ty);
@@ -163,7 +164,7 @@ UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::GetSchemaByName(const TfToken& sch
         return SchemaAdaptor();
     }
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     // Is this an API schema?
     const UsdSchemaRegistry& schemaReg = UsdSchemaRegistry::GetInstance();
     if (const UsdPrimDefinition* primDef = schemaReg.FindAppliedAPIPrimDefinition(schemaName)) {
@@ -230,8 +231,6 @@ UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::GetSchemaByName(const TfToken& sch
     }
 #endif
 
-    // We shouldn't be able to reach this (everything is either typed or API).
-    TF_CODING_ERROR("'%s' isn't a known API or typed schema", schemaName.GetText());
     return SchemaAdaptor();
 }
 
@@ -263,7 +262,7 @@ UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::ApplySchema(const TfType& ty)
 
 UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifier& modifier)
 {
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     const TfToken usdTypeName = UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
 #else
     const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance().GetPrimDefinition(ty);
@@ -292,7 +291,7 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
         return SchemaAdaptor();
     }
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     // Get the "apply" schema definition. If it's registered, there should be a
     // def.
     const UsdPrimDefinition* primDef
@@ -355,7 +354,7 @@ void UsdMayaAdaptor::UnapplySchema(const TfType& ty)
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
 {
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     const TfToken usdTypeName = UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
 #else
     const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance().GetPrimDefinition(ty);
@@ -539,7 +538,7 @@ template <typename T> static TfToken::Set _GetRegisteredSchemas()
 
     const UsdSchemaRegistry& registry = UsdSchemaRegistry::GetInstance();
     for (const TfType& ty : derivedTypes) {
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         const TfToken usdTypeName = registry.GetSchemaTypeName(ty);
 #else
         const SdfPrimSpecHandle primDef = registry.GetPrimDefinition(ty);
@@ -626,7 +625,7 @@ UsdMayaAdaptor::SchemaAdaptor::SchemaAdaptor()
 {
 }
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
 UsdMayaAdaptor::SchemaAdaptor::SchemaAdaptor(
     const MObjectHandle&     handle,
     const TfToken&           schemaName,
@@ -710,7 +709,7 @@ TfToken UsdMayaAdaptor::SchemaAdaptor::GetName() const
     return _schemaName;
 }
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
 static SdfAttributeSpecHandle
 _GetAttributeSpec(const UsdPrimDefinition* primDef, const TfToken& attrName)
 {
@@ -840,7 +839,7 @@ TfTokenVector UsdMayaAdaptor::SchemaAdaptor::GetAuthoredAttributeNames() const
 
     MFnDependencyNode node(_handle.object());
     TfTokenVector     result;
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     for (const TfToken& propName : _schemaDef->GetPropertyNames()) {
         if (_schemaDef->GetSpecType(propName) == SdfSpecTypeAttribute) {
             std::string mayaAttrName = _GetMayaAttrNameOrAlias(propName);
@@ -868,7 +867,7 @@ TfTokenVector UsdMayaAdaptor::SchemaAdaptor::GetAttributeNames() const
     }
 
     TfTokenVector attrNames;
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     for (const TfToken& propName : _schemaDef->GetPropertyNames()) {
         if (_schemaDef->GetSpecType(propName) == SdfSpecTypeAttribute) {
             attrNames.push_back(propName);
@@ -883,7 +882,7 @@ TfTokenVector UsdMayaAdaptor::SchemaAdaptor::GetAttributeNames() const
     return attrNames;
 }
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
 const UsdPrimDefinition* UsdMayaAdaptor::SchemaAdaptor::GetSchemaDefinition() const
 {
     return _schemaDef;

@@ -16,17 +16,22 @@
 # limitations under the License.
 #
 
-import usdUtils, mayaUtils
+import fixturesUtils
+import mayaUtils
+import usdUtils
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as om
 
 import ufe
 
-import maya.api.OpenMaya as om
-import maya.cmds as cmds
-
-from math import radians, sin, cos
+from math import cos
+from math import radians
+from math import sin
 import os
-
 import unittest
+
 
 # AX = |  1    0    0    0 |
 #      |  0    cx   sx   0 |
@@ -54,8 +59,14 @@ class Transform3dMatricesTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -149,3 +160,7 @@ class Transform3dMatricesTestCase(unittest.TestCase):
         self.assertMatrixAlmostEqual(
             cylInclMat.matrix, [[1, 0, 0, 0], [0, cx60, sx60, 0],
                                 [0, -sx60, cx60, 0], [0, 10, 0, 1]])
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

@@ -23,6 +23,7 @@
 #include "render_pass.h"
 
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
+#include <mayaUsd/utils/hash.h>
 
 #include <pxr/imaging/hd/bprim.h>
 #include <pxr/imaging/hd/camera.h>
@@ -33,7 +34,6 @@
 
 #include <maya/MProfiler.h>
 
-#include <boost/functional/hash.hpp>
 #include <tbb/reader_writer_lock.h>
 #include <tbb/spin_rw_mutex.h>
 
@@ -63,7 +63,7 @@ inline const TfTokenVector& _SupportedSprimTypes()
  */
 inline const TfTokenVector& _SupportedBprimTypes()
 {
-    static const TfTokenVector r { HdPrimTypeTokens->texture };
+    static const TfTokenVector r {};
     return r;
 }
 
@@ -134,10 +134,10 @@ struct MColorHash
     std::size_t operator()(const MColor& color) const
     {
         std::size_t seed = 0;
-        boost::hash_combine(seed, color.r);
-        boost::hash_combine(seed, color.g);
-        boost::hash_combine(seed, color.b);
-        boost::hash_combine(seed, color.a);
+        MayaUsd::hash_combine(seed, color.r);
+        MayaUsd::hash_combine(seed, color.g);
+        MayaUsd::hash_combine(seed, color.b);
+        MayaUsd::hash_combine(seed, color.a);
         return seed;
     }
 };
@@ -358,21 +358,21 @@ struct MSamplerStateDescHash
     std::size_t operator()(const MHWRender::MSamplerStateDesc& desc) const
     {
         std::size_t seed = 0;
-        boost::hash_combine(seed, desc.filter);
-        boost::hash_combine(seed, desc.comparisonFn);
-        boost::hash_combine(seed, desc.addressU);
-        boost::hash_combine(seed, desc.addressV);
-        boost::hash_combine(seed, desc.addressW);
-        boost::hash_combine(seed, desc.borderColor[0]);
-        boost::hash_combine(seed, desc.borderColor[1]);
-        boost::hash_combine(seed, desc.borderColor[2]);
-        boost::hash_combine(seed, desc.borderColor[3]);
-        boost::hash_combine(seed, desc.mipLODBias);
-        boost::hash_combine(seed, desc.minLOD);
-        boost::hash_combine(seed, desc.maxLOD);
-        boost::hash_combine(seed, desc.maxAnisotropy);
-        boost::hash_combine(seed, desc.coordCount);
-        boost::hash_combine(seed, desc.elementIndex);
+        MayaUsd::hash_combine(seed, desc.filter);
+        MayaUsd::hash_combine(seed, desc.comparisonFn);
+        MayaUsd::hash_combine(seed, desc.addressU);
+        MayaUsd::hash_combine(seed, desc.addressV);
+        MayaUsd::hash_combine(seed, desc.addressW);
+        MayaUsd::hash_combine(seed, desc.borderColor[0]);
+        MayaUsd::hash_combine(seed, desc.borderColor[1]);
+        MayaUsd::hash_combine(seed, desc.borderColor[2]);
+        MayaUsd::hash_combine(seed, desc.borderColor[3]);
+        MayaUsd::hash_combine(seed, desc.mipLODBias);
+        MayaUsd::hash_combine(seed, desc.minLOD);
+        MayaUsd::hash_combine(seed, desc.maxLOD);
+        MayaUsd::hash_combine(seed, desc.maxAnisotropy);
+        MayaUsd::hash_combine(seed, desc.coordCount);
+        MayaUsd::hash_combine(seed, desc.elementIndex);
         return seed;
     }
 };
@@ -710,9 +710,6 @@ void HdVP2RenderDelegate::DestroySprim(HdSprim* sPrim) { delete sPrim; }
 HdBprim* HdVP2RenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath& bprimId)
 {
     /*
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new HdVP2Texture(this, bprimId);
-    }
     if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdVP2RenderBuffer(bprimId);
     }
@@ -736,9 +733,6 @@ HdBprim* HdVP2RenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath& 
 HdBprim* HdVP2RenderDelegate::CreateFallbackBprim(const TfToken& typeId)
 {
     /*
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new HdVP2Texture(this, SdfPath::EmptyPath());
-    }
     if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdVP2RenderBuffer(SdfPath::EmptyPath());
     }

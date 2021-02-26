@@ -38,7 +38,7 @@
 
 #if WANT_UFE_BUILD
 #include <ufe/globalSelection.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2027
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
 #endif
 #include <ufe/observableSelection.h>
@@ -142,7 +142,8 @@ void SetupPluginCallbacks()
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
 }
 
-#if (MAYA_API_VERSION >= 20210000) && WANT_UFE_BUILD && (UFE_PREVIEW_VERSION_NUM < 2027)
+#ifndef UFE_V2_FEATURES_AVAILABLE
+#if (MAYA_API_VERSION >= 20210000) && WANT_UFE_BUILD
 MGlobal::ListAdjustment GetListAdjustment()
 {
     // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
@@ -167,6 +168,7 @@ MGlobal::ListAdjustment GetListAdjustment()
 
     return listAdjustment;
 }
+#endif
 #endif
 
 } // namespace
@@ -376,7 +378,7 @@ void HdMayaProxyDelegate::PopulateSelectionList(
     if (handler == nullptr)
         return;
 
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
 #else
     const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
@@ -417,7 +419,7 @@ void HdMayaProxyDelegate::PopulateSelectionList(
                 break;
             }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
             ufeSel->append(si);
 #else
             auto globalSelection = Ufe::GlobalSelection::get();

@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from mayaUsd import lib as mayaUsdLib
+
 from pxr import Gf
 from pxr import Tf
 from pxr import Trace
@@ -96,7 +98,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         # Store the previous USD selection kind (or None if there wasn't one)
         # so we can restore the state later.
-        cls._selKindOptionVarName = 'UsdSelectionKind'
+        cls._selKindOptionVarName = mayaUsdLib.OptionVarTokens.SelectionKind
         cls._prevSelKind = cmds.optionVar(query=cls._selKindOptionVarName) or None
 
         # Set the USD selection kind to "assembly" so that we select entire
@@ -152,7 +154,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         cmds.showWindow(self._testWindow)
 
         self._m3dView = OMUI.M3dView.getM3dViewFromModelPanel(testModelPanel)
-        viewWidget = wrapInstance(long(self._m3dView.widget()), QWidget)
+        viewWidget = wrapInstance(int(self._m3dView.widget()), QWidget)
 
         return viewWidget
 
@@ -332,7 +334,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         self._WriteViewportImage(self._testName, 'selection_append_4')
 
     def _ValidateSelection(self, expectedSelectionSet):
-        if Tf.GetEnvSetting('VP2_RENDER_DELEGATE_PROXY'):
+        if not Tf.GetEnvSetting('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'):
             # When the Viewport 2.0 render delegate is being used, we will have
             # selected USD prims rather than proxy shape nodes or their
             # transform nodes, so we query UFE for the selection and manipulate
