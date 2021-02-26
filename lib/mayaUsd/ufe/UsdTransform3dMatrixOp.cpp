@@ -45,54 +45,6 @@ VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
 
 const char* getMatrixOp() { return std::getenv("MAYA_USD_MATRIX_XFORM_OP_NAME"); }
 
-template <bool INCLUSIVE>
-GfMatrix4d
-computeLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTimeCode& time)
-{
-    UsdGeomXformable xformable(prim);
-    bool             unused;
-    auto             ops = xformable.GetOrderedXformOps(&unused);
-
-    // FIXME  Searching for transform op in vector is awkward, as we've likely
-    // already done this to create the UsdTransform3dMatrixOp object itself.
-    // PPT, 10-Aug-2020.
-    auto i = std::find(ops.begin(), ops.end(), op);
-
-    if (i == ops.end()) {
-        TF_FATAL_ERROR("Matrix op %s not found in transform ops.", op.GetOpName().GetText());
-    }
-    // If we want the op to be included, increment i.
-    if (INCLUSIVE) {
-        ++i;
-    }
-    std::vector<UsdGeomXformOp> cfOps(std::distance(ops.begin(), i));
-    cfOps.assign(ops.begin(), i);
-
-    GfMatrix4d m(1);
-    if (!UsdGeomXformable::GetLocalTransformation(&m, cfOps, time)) {
-        TF_FATAL_ERROR(
-            "Local transformation computation for prim %s failed.", prim.GetPath().GetText());
-    }
-
-    return m;
-}
-
-inline GfMatrix4d computeLocalInclusiveTransform(
-    const UsdPrim&        prim,
-    const UsdGeomXformOp& op,
-    const UsdTimeCode&    time)
-{
-    return computeLocalTransform<true>(prim, op, time);
-}
-
-inline GfMatrix4d computeLocalExclusiveTransform(
-    const UsdPrim&        prim,
-    const UsdGeomXformOp& op,
-    const UsdTimeCode&    time)
-{
-    return computeLocalTransform<false>(prim, op, time);
-}
-
 // Class for setMatrixCmd() implementation.
 std::vector<UsdGeomXformOp>::const_iterator
 findMatrixOp(const std::vector<UsdGeomXformOp>& xformOps)
