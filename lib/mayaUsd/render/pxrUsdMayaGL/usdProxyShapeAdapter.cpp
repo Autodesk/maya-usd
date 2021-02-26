@@ -172,10 +172,10 @@ bool PxrMayaHdUsdProxyShapeAdapter::_Sync(
     }
 
     // Update the root transform used to render by the delagate.
-    // USD considare that the root prim transform is always the Identity matrix so that means
+    // USD considers that the root prim transform is always the Identity matrix so that means
     // the root transform define the root prim transform. When the real stage root is used to
     // render this is not a issue because the root transform will be the maya transform.
-    // The problem is when using a primPath as the root prim, we are losesing
+    // The problem is when using a primPath as the root prim, we are losing
     // the prim path world transform. So we need to set the root transform as the world
     // transform of the prim used for rendering.
     MStatus       status;
@@ -183,10 +183,12 @@ bool PxrMayaHdUsdProxyShapeAdapter::_Sync(
     if (status == MS::kSuccess) {
         _rootXform = GfMatrix4d(transform.matrix);
 
-        const UsdTimeCode timeCode = usdProxyShape->getTime();
-        UsdGeomXformCache xformCache(timeCode);
-        GfMatrix4d primTransform = xformCache.GetLocalToWorldTransform(usdProxyShape->usdPrim());
-        _rootXform = primTransform * _rootXform;
+        if(!usdProxyShape->usdPrim().GetPath().IsAbsoluteRootPath()) {
+            const UsdTimeCode timeCode = usdProxyShape->getTime();
+            UsdGeomXformCache xformCache(timeCode);
+            GfMatrix4d primTransform = xformCache.GetLocalToWorldTransform(usdProxyShape->usdPrim());
+            _rootXform = primTransform * _rootXform;
+        }
 
         _delegate->SetRootTransform(_rootXform);
     }

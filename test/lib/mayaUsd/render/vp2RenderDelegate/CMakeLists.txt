@@ -9,6 +9,7 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePointInstanceSelection.py
         testVP2RenderDelegatePointInstancesPickMode.py
+        testVP2RenderDelegatePrimPath.py
     )
 endif()
 

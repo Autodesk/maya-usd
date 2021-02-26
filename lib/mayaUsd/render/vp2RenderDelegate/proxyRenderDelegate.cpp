@@ -604,19 +604,21 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     }
 
     // Update the root transform used to render by the delagate.
-    // USD considare that the root prim transform is always the Identity matrix so that means
+    // USD considers that the root prim transform is always the Identity matrix so that means
     // the root transform define the root prim transform. When the real stage root is used to
     // render this is not a issue because the root transform will be the maya transform.
-    // The problem is when using a primPath as the root prim, we are losesing
+    // The problem is when using a primPath as the root prim, we are losing
     // the prim path world transform. So we need to set the root transform as the world
     // transform of the prim used for rendering.
     const MMatrix inclusiveMatrix = _proxyShapeData->ProxyDagPath().inclusiveMatrix();
     GfMatrix4d    transform(inclusiveMatrix.matrix);
 
-    const UsdTimeCode timeCode = _proxyShapeData->ProxyShape()->getTime();
-    UsdGeomXformCache xformCache(timeCode);
-    GfMatrix4d m = xformCache.GetLocalToWorldTransform(_proxyShapeData->ProxyShape()->usdPrim());
-    transform = m * transform;
+    if(!_proxyShapeData->ProxyShape()->usdPrim().GetPath().IsAbsoluteRootPath()) {
+        const UsdTimeCode timeCode = _proxyShapeData->ProxyShape()->getTime();
+        UsdGeomXformCache xformCache(timeCode);
+        GfMatrix4d m = xformCache.GetLocalToWorldTransform(_proxyShapeData->ProxyShape()->usdPrim());
+        transform = m * transform;
+    }
 
     constexpr double tolerance = 1e-9;
     if (!GfIsClose(transform, _sceneDelegate->GetRootTransform(), tolerance)) {

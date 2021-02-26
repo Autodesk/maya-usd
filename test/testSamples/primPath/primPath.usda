@@ -1,0 +1,32 @@
+#usda 1.0
+
+def Cube "Cube1"
+{
+    double3 xformOp:translate = (0, 10, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Cube "Cube2"
+    {
+        double3 xformOp:translate = (0, -5, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Cube "Cube3"
+        {
+            double3 xformOp:translate = (0, -5, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}
+
+def Capsule "Capsule1"
+{
+    double3 xformOp:translate = (0, 0, 10)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Capsule "Capsule2"
+{
+    double3 xformOp:translate = (10, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
