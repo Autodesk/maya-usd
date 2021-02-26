@@ -494,10 +494,10 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         desc.fBytesPerRow = spec.width * bpp_8;
         desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
 
-        GfHalf                opaqueAlpha(1.0f);
+        GfHalf               opaqueAlpha(1.0f);
         const unsigned short alphaBits = opaqueAlpha.bits();
-        const unsigned char   lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
-        const unsigned char   highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
+        const unsigned char  lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
+        const unsigned char  highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
