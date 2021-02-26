@@ -486,6 +486,43 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         desc.fFormat = MHWRender::kR32G32B32_FLOAT;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
+    case HioFormatFloat16Vec3: {
+        // R16G16B16 is not supported by VP2. Converted to R16G16B16A16.
+        constexpr int bpp_8 = 8;
+
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_8;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        GfHalf                opaqueAlpha(1.0f);
+        const unsigned short alphaBits = opaqueAlpha.bits();
+        const unsigned char   lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
+        const unsigned char   highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 2] = storage[t * bpp + 2];
+                texels[t * bpp_8 + 3] = storage[t * bpp + 3];
+                texels[t * bpp_8 + 4] = storage[t * bpp + 4];
+                texels[t * bpp_8 + 5] = storage[t * bpp + 5];
+                texels[t * bpp_8 + 6] = lowAlpha;
+                texels[t * bpp_8 + 7] = highAlpha;
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+        break;
+    }
+    case HioFormatFloat16Vec4:
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
     case HioFormatUNorm8Vec3:
     case HioFormatUNorm8Vec3srgb: {
         // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
@@ -523,7 +560,9 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         isColorSpaceSRGB = image->IsColorSpaceSRGB();
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
-    default: break;
+    default:
+        TF_WARN("VP2 renderer delegate: unsuported pixel format: %d.", (int)spec.format);
+        break;
     }
 #else
     switch (spec.format) {
