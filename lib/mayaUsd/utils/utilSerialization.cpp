@@ -212,7 +212,7 @@ SdfLayerRefPtr UsdMayaSerialization::saveAnonymousLayer(
 
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(path);
 
-    if (parentLayer) {
+    if (newLayer && parentLayer) {
         parentLayer->GetSubLayerPaths().Replace(
             anonLayer->GetIdentifier(), newLayer->GetIdentifier());
     }
