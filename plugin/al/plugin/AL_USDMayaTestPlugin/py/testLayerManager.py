@@ -23,7 +23,7 @@ import unittest
 from maya import cmds
 from AL.usdmaya import ProxyShape
 
-import fixturesUtils
+from pxr import Sdf, Usd
 
 class TestLayerManagerSerialisation(unittest.TestCase):
     """Test cases for layer manager serialisation and deserialisation"""
@@ -213,5 +213,9 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         _reloadAndAssert(rootLayerPath, proxyName)
 
 
-if __name__ == '__main__':
-    fixturesUtils.runTests(globals())
+if __name__ == "__main__":
+
+    tests = [unittest.TestLoader().loadTestsFromTestCase(TestLayerManagerSerialisation),]
+    results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
+    exitCode = int(not all([result.wasSuccessful() for result in results]))
+    cmds.quit(exitCode=(exitCode))
