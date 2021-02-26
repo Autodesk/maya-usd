@@ -613,10 +613,11 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     const MMatrix inclusiveMatrix = _proxyShapeData->ProxyDagPath().inclusiveMatrix();
     GfMatrix4d    transform(inclusiveMatrix.matrix);
 
-    if(!_proxyShapeData->ProxyShape()->usdPrim().GetPath().IsAbsoluteRootPath()) {
+    if (!_proxyShapeData->ProxyShape()->usdPrim().GetPath().IsAbsoluteRootPath()) {
         const UsdTimeCode timeCode = _proxyShapeData->ProxyShape()->getTime();
         UsdGeomXformCache xformCache(timeCode);
-        GfMatrix4d m = xformCache.GetLocalToWorldTransform(_proxyShapeData->ProxyShape()->usdPrim());
+        GfMatrix4d        m
+            = xformCache.GetLocalToWorldTransform(_proxyShapeData->ProxyShape()->usdPrim());
         transform = m * transform;
     }
 
