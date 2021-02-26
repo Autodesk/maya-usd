@@ -544,42 +544,77 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 = _getInfo(_meshSharedData->_primvarInfo, HdVP2Tokens->displayColorAndOpacity);
         }
 
-        if (!colorAndOpacityInfo->_buffer) {
-            const MHWRender::MVertexBufferDescriptor vbDesc(
-                "", MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
+        if (colorInterp == HdInterpolationInstance || alphaInterp == HdInterpolationInstance) {
+            TF_VERIFY(!GetInstancerId().IsEmpty());
+            VtIntArray instanceIndices = delegate->GetInstanceIndices(GetInstancerId(), GetId());
+            size_t     numInstances = instanceIndices.size();
+            colorAndOpacityInfo->_extraInstanceData.setLength(
+                numInstances * kNumColorChannels); // the data is a vec4
+            void* bufferData = &colorAndOpacityInfo->_extraInstanceData[0];
 
-            colorAndOpacityInfo->_buffer.reset(new MHWRender::MVertexBuffer(vbDesc));
-        }
+            size_t alphaChannelOffset = 3;
+            for (size_t instance = 0; instance < numInstances; instance++) {
+                int      index = instanceIndices[instance];
+                GfVec3f* color = reinterpret_cast<GfVec3f*>(
+                    reinterpret_cast<float*>(&static_cast<GfVec4f*>(bufferData)[instance]));
+                float* alpha
+                    = reinterpret_cast<float*>(&static_cast<GfVec4f*>(bufferData)[instance])
+                    + alphaChannelOffset;
 
-        void* bufferData = _meshSharedData->_numVertices > 0
-            ? colorAndOpacityInfo->_buffer->acquire(_meshSharedData->_numVertices, true)
-            : nullptr;
+                if (colorInterp == HdInterpolationInstance) {
+                    *color = colorArray[index];
+                } else if (colorInterp == HdInterpolationConstant) {
+                    *color = colorArray[0];
+                } else {
+                    // can't handle instanced color sets
+                }
 
-        // Fill color and opacity into the float4 color stream.
-        if (bufferData) {
-            _FillPrimvarData(
-                static_cast<GfVec4f*>(bufferData),
-                _meshSharedData->_numVertices,
-                0,
-                _meshSharedData->_renderingToSceneFaceVtxIds,
-                _rprimId,
-                _meshSharedData->_topology,
-                HdTokens->displayColor,
-                colorArray,
-                colorInterp);
+                if (alphaInterp == HdInterpolationInstance) {
+                    *alpha = alphaArray[index];
+                } else if (alphaInterp == HdInterpolationConstant) {
+                    *alpha = alphaArray[0];
+                } else {
+                    // can't handle instanced color sets with alpha
+                }
+            }
+        } else {
+            if (!colorAndOpacityInfo->_buffer) {
+                const MHWRender::MVertexBufferDescriptor vbDesc(
+                    "", MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
 
-            _FillPrimvarData(
-                static_cast<GfVec4f*>(bufferData),
-                _meshSharedData->_numVertices,
-                3,
-                _meshSharedData->_renderingToSceneFaceVtxIds,
-                _rprimId,
-                _meshSharedData->_topology,
-                HdTokens->displayOpacity,
-                alphaArray,
-                alphaInterp);
+                colorAndOpacityInfo->_buffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+            }
 
-            _CommitMVertexBuffer(colorAndOpacityInfo->_buffer.get(), bufferData);
+            void* bufferData = _meshSharedData->_numVertices > 0
+                ? colorAndOpacityInfo->_buffer->acquire(_meshSharedData->_numVertices, true)
+                : nullptr;
+
+            // Fill color and opacity into the float4 color stream.
+            if (bufferData) {
+                _FillPrimvarData(
+                    static_cast<GfVec4f*>(bufferData),
+                    _meshSharedData->_numVertices,
+                    0,
+                    _meshSharedData->_renderingToSceneFaceVtxIds,
+                    _rprimId,
+                    _meshSharedData->_topology,
+                    HdTokens->displayColor,
+                    colorArray,
+                    colorInterp);
+
+                _FillPrimvarData(
+                    static_cast<GfVec4f*>(bufferData),
+                    _meshSharedData->_numVertices,
+                    3,
+                    _meshSharedData->_renderingToSceneFaceVtxIds,
+                    _rprimId,
+                    _meshSharedData->_topology,
+                    HdTokens->displayOpacity,
+                    alphaArray,
+                    alphaInterp);
+
+                _CommitMVertexBuffer(colorAndOpacityInfo->_buffer.get(), bufferData);
+            }
         }
     }
 
@@ -851,6 +886,11 @@ void HdVP2Mesh::Sync(
         SetMaterialId(materialId);
 #endif
     }
+
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    // Update our instance topology if necessary.
+    _UpdateInstancer(delegate, dirtyBits);
+#endif
 
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
@@ -1591,11 +1631,15 @@ void HdVP2Mesh::_UpdateDrawItem(
                 _getColorData(_meshSharedData->_primvarInfo, colorArray, colorInterp);
                 _getOpacityData(_meshSharedData->_primvarInfo, alphaArray, alphaInterp);
 
-                if (colorInterp == HdInterpolationConstant
-                    && alphaInterp == HdInterpolationConstant) {
+                if ((colorInterp == HdInterpolationConstant
+                     || colorInterp == HdInterpolationInstance)
+                    && (alphaInterp == HdInterpolationConstant
+                        || alphaInterp == HdInterpolationInstance)) {
                     const GfVec3f& clr3f = UsdMayaColorSpace::ConvertLinearToMaya(colorArray[0]);
                     const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
-                    shader = _delegate->GetFallbackShader(color);
+                    shader = _delegate->GetFallbackShader(
+                        color); // The color of the fallback shader is ignored when the
+                                // interpolation is instance
                 } else {
                     shader = _delegate->GetFallbackCPVShader();
                 }
@@ -1690,11 +1734,6 @@ void HdVP2Mesh::_UpdateDrawItem(
     // pulls them every time something changes.
     // If the mesh is instanced but has 0 instance transforms remember that
     // so the render item can be hidden.
-
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-    // Update our instance topology if necessary.
-    _UpdateInstancer(sceneDelegate, &itemDirtyBits);
-#endif
 
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
@@ -1832,118 +1871,145 @@ void HdVP2Mesh::_UpdateDrawItem(
         indexBuffer = const_cast<MHWRender::MIndexBuffer*>(sharedBBoxGeom.GetIndexBuffer());
     }
 
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-        [stateToCommit, param, primvarInfo, indexBuffer, isBBoxItem, &sharedBBoxGeom]() {
-            const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
-            MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
-            if (ARCH_UNLIKELY(!renderItem))
-                return;
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit([stateToCommit,
+                                                       param,
+                                                       primvarInfo,
+                                                       indexBuffer,
+                                                       isBBoxItem,
+                                                       &sharedBBoxGeom]() {
+        const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
+        MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
+        if (ARCH_UNLIKELY(!renderItem))
+            return;
 
-            MProfilingScope profilingScope(
-                HdVP2RenderDelegate::sProfilerCategory,
-                MProfiler::kColorC_L2,
-                renderItem->name().asChar(),
-                "Commit");
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            renderItem->name().asChar(),
+            "Commit");
 
-            // If available, something changed
-            if (stateToCommit._indexBufferData)
-                indexBuffer->commit(stateToCommit._indexBufferData);
+        // If available, something changed
+        if (stateToCommit._indexBufferData)
+            indexBuffer->commit(stateToCommit._indexBufferData);
 
-            // If available, something changed
-            if (stateToCommit._shader != nullptr) {
-                renderItem->setShader(stateToCommit._shader);
-                renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
-            }
+        // If available, something changed
+        if (stateToCommit._shader != nullptr) {
+            renderItem->setShader(stateToCommit._shader);
+            renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
+        }
 
-            // If the enable state is changed, then update it.
-            if (stateToCommit._enabled != nullptr) {
-                renderItem->enable(*stateToCommit._enabled);
-            }
+        // If the enable state is changed, then update it.
+        if (stateToCommit._enabled != nullptr) {
+            renderItem->enable(*stateToCommit._enabled);
+        }
 
-            ProxyRenderDelegate& drawScene = param->GetDrawScene();
+        ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
-            // TODO: this is now including all buffers for the requirements of all
-            // the render items on this rprim. We could filter it down based on the
-            // requirements of the shader.
-            if (stateToCommit._geometryDirty || stateToCommit._boundingBox) {
-                MHWRender::MVertexBufferArray vertexBuffers;
+        // TODO: this is now including all buffers for the requirements of all
+        // the render items on this rprim. We could filter it down based on the
+        // requirements of the shader.
+        if (stateToCommit._geometryDirty || stateToCommit._boundingBox) {
+            MHWRender::MVertexBufferArray vertexBuffers;
 
-                for (auto& entry : *primvarInfo) {
-                    const TfToken&            primvarName = entry.first;
-                    MHWRender::MVertexBuffer* primvarBuffer = nullptr;
-                    if (isBBoxItem && primvarName == HdTokens->points) {
-                        primvarBuffer = const_cast<MHWRender::MVertexBuffer*>(
-                            sharedBBoxGeom.GetPositionBuffer());
-                    } else {
-                        primvarBuffer = entry.second->_buffer.get();
-                    }
-                    if (primvarBuffer) { // this filters out the separate color & alpha entries
-                        vertexBuffers.addBuffer(primvarName.GetText(), primvarBuffer);
-                    }
-                }
-
-                // The API call does three things:
-                // - Associate geometric buffers with the render item.
-                // - Update bounding box.
-                // - Trigger consolidation/instancing update.
-                drawScene.setGeometryForRenderItem(
-                    *renderItem, vertexBuffers, *indexBuffer, stateToCommit._boundingBox);
-            }
-
-            // Important, update instance transforms after setting geometry on render items!
-            auto& oldInstanceCount = stateToCommit._renderItemData._instanceCount;
-            auto  newInstanceCount = stateToCommit._instanceTransforms.length();
-
-            // GPU instancing has been enabled. We cannot switch to consolidation
-            // without recreating render item, so we keep using GPU instancing.
-            if (stateToCommit._renderItemData._usingInstancedDraw) {
-                if (oldInstanceCount == newInstanceCount) {
-                    for (unsigned int i = 0; i < newInstanceCount; i++) {
-                        // VP2 defines instance ID of the first instance to be 1.
-                        drawScene.updateInstanceTransform(
-                            *renderItem, i + 1, stateToCommit._instanceTransforms[i]);
-                    }
+            for (auto& entry : *primvarInfo) {
+                const TfToken&            primvarName = entry.first;
+                MHWRender::MVertexBuffer* primvarBuffer = nullptr;
+                if (isBBoxItem && primvarName == HdTokens->points) {
+                    primvarBuffer
+                        = const_cast<MHWRender::MVertexBuffer*>(sharedBBoxGeom.GetPositionBuffer());
                 } else {
-                    drawScene.setInstanceTransformArray(
-                        *renderItem, stateToCommit._instanceTransforms);
+                    primvarBuffer = entry.second->_buffer.get();
                 }
-
-                if (stateToCommit._instanceColors.length()
-                    == newInstanceCount * kNumColorChannels) {
-                    drawScene.setExtraInstanceData(
-                        *renderItem, kSolidColorStr, stateToCommit._instanceColors);
+                if (primvarBuffer) { // this filters out the separate color & alpha entries
+                    vertexBuffers.addBuffer(primvarName.GetText(), primvarBuffer);
                 }
             }
-#if MAYA_API_VERSION >= 20210000
-            else if (newInstanceCount >= 1) {
-#else
-            // In Maya 2020 and before, GPU instancing and consolidation are two separate systems
-            // that cannot be used by a render item at the same time. In case of single instance, we
-            // keep the original render item to allow consolidation with other prims. In case of
-            // multiple instances, we need to disable consolidation to allow GPU instancing to be
-            // used.
-            else if (newInstanceCount == 1) {
-                renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
-            } else if (newInstanceCount > 1) {
-                setWantConsolidation(*renderItem, false);
-#endif
+
+            // The API call does three things:
+            // - Associate geometric buffers with the render item.
+            // - Update bounding box.
+            // - Trigger consolidation/instancing update.
+            drawScene.setGeometryForRenderItem(
+                *renderItem, vertexBuffers, *indexBuffer, stateToCommit._boundingBox);
+        }
+
+        // Important, update instance transforms after setting geometry on render items!
+        auto& oldInstanceCount = stateToCommit._renderItemData._instanceCount;
+        auto  newInstanceCount = stateToCommit._instanceTransforms.length();
+
+        // GPU instancing has been enabled. We cannot switch to consolidation
+        // without recreating render item, so we keep using GPU instancing.
+        if (stateToCommit._renderItemData._usingInstancedDraw) {
+            if (oldInstanceCount == newInstanceCount) {
+                for (unsigned int i = 0; i < newInstanceCount; i++) {
+                    // VP2 defines instance ID of the first instance to be 1.
+                    drawScene.updateInstanceTransform(
+                        *renderItem, i + 1, stateToCommit._instanceTransforms[i]);
+                }
+            } else {
                 drawScene.setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
-
-                if (stateToCommit._instanceColors.length()
-                    == newInstanceCount * kNumColorChannels) {
-                    drawScene.setExtraInstanceData(
-                        *renderItem, kSolidColorStr, stateToCommit._instanceColors);
-                }
-
-                stateToCommit._renderItemData._usingInstancedDraw = true;
-            } else if (stateToCommit._worldMatrix != nullptr) {
-                // Regular non-instanced prims. Consolidation has been turned on by
-                // default and will be kept enabled on this case.
-                renderItem->setMatrix(stateToCommit._worldMatrix);
             }
 
-            oldInstanceCount = newInstanceCount;
-        });
+            // upload any extra instance data
+            for (auto& entry : *primvarInfo) {
+                const MFloatArray& extraInstanceData = entry.second->_extraInstanceData;
+                if (extraInstanceData.length() == 0)
+                    continue;
+
+                const TfToken& primvarName = entry.first;
+                if (primvarName == HdVP2Tokens->displayColorAndOpacity) {
+                    drawScene.setExtraInstanceData(
+                        *renderItem, kDiffuseColorStr, extraInstanceData);
+                }
+            }
+
+            if (stateToCommit._instanceColors.length() == newInstanceCount * kNumColorChannels) {
+                drawScene.setExtraInstanceData(
+                    *renderItem, kSolidColorStr, stateToCommit._instanceColors);
+            }
+        }
+#if MAYA_API_VERSION >= 20210000
+        else if (newInstanceCount >= 1) {
+#else
+        // In Maya 2020 and before, GPU instancing and consolidation are two separate systems
+        // that cannot be used by a render item at the same time. In case of single instance, we
+        // keep the original render item to allow consolidation with other prims. In case of
+        // multiple instances, we need to disable consolidation to allow GPU instancing to be
+        // used.
+        else if (newInstanceCount == 1) {
+            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
+        } else if (newInstanceCount > 1) {
+            setWantConsolidation(*renderItem, false);
+#endif
+            drawScene.setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
+
+            if (stateToCommit._instanceColors.length() == newInstanceCount * kNumColorChannels) {
+                drawScene.setExtraInstanceData(
+                    *renderItem, kSolidColorStr, stateToCommit._instanceColors);
+            }
+
+            // upload any extra instance data
+            for (auto& entry : *primvarInfo) {
+                const MFloatArray& extraInstanceData = entry.second->_extraInstanceData;
+                if (extraInstanceData.length() == 0)
+                    continue;
+
+                const TfToken& primvarName = entry.first;
+                if (primvarName == HdVP2Tokens->displayColorAndOpacity) {
+                    drawScene.setExtraInstanceData(
+                        *renderItem, kDiffuseColorStr, extraInstanceData);
+                }
+            }
+
+            stateToCommit._renderItemData._usingInstancedDraw = true;
+        } else if (stateToCommit._worldMatrix != nullptr) {
+            // Regular non-instanced prims. Consolidation has been turned on by
+            // default and will be kept enabled on this case.
+            renderItem->setMatrix(stateToCommit._worldMatrix);
+        }
+
+        oldInstanceCount = newInstanceCount;
+    });
 }
 
 void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
@@ -2122,8 +2188,42 @@ void HdVP2Mesh::_UpdatePrimvarSources(
 {
     const SdfPath& id = GetId();
 
+    auto updatePrimvarInfo
+        = [&](const TfToken& name, const VtValue& value, const HdInterpolation interpolation) {
+              PrimvarInfo* info = _getInfo(_meshSharedData->_primvarInfo, name);
+              if (info) {
+                  info->_source.data = value;
+                  info->_source.interpolation = interpolation;
+                  info->_source.dataSource = PrimvarSource::Primvar;
+              } else {
+                  _meshSharedData->_primvarInfo[name] = std::make_unique<PrimvarInfo>(
+                      PrimvarSource(value, interpolation, PrimvarSource::Primvar), nullptr);
+              }
+          };
+
     TfTokenVector::const_iterator begin = requiredPrimvars.cbegin();
     TfTokenVector::const_iterator end = requiredPrimvars.cend();
+
+    // inspired by HdStInstancer::_SyncPrimvars
+    // Get any required instanced primvars from the instancer. Get these before we get
+    // any rprims from the rprim itself. If both are present, the rprim's values override
+    // the instancer's value.
+    const SdfPath& instancerId = GetInstancerId();
+    if (!instancerId.IsEmpty()) {
+        HdPrimvarDescriptorVector instancerPrimvars
+            = sceneDelegate->GetPrimvarDescriptors(instancerId, HdInterpolationInstance);
+        for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
+            if (std::find(begin, end, pv.name) != end) {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)) {
+                    const VtValue value = sceneDelegate->Get(instancerId, pv.name);
+                    updatePrimvarInfo(pv.name, value, HdInterpolationInstance);
+                }
+            } else {
+                // erase the unused primvar so we don't hold onto stale data
+                _meshSharedData->_primvarInfo.erase(pv.name);
+            }
+        }
+    }
 
     for (size_t i = 0; i < HdInterpolationCount; i++) {
         const HdInterpolation           interp = static_cast<HdInterpolation>(i);
@@ -2133,15 +2233,10 @@ void HdVP2Mesh::_UpdatePrimvarSources(
             if (std::find(begin, end, pv.name) != end) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                     const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                    PrimvarInfo*  info = _getInfo(_meshSharedData->_primvarInfo, pv.name);
-                    if (info) {
-                        info->_source.data = value;
-                    } else {
-                        _meshSharedData->_primvarInfo[pv.name] = std::make_unique<PrimvarInfo>(
-                            PrimvarSource(value, interp, PrimvarSource::Primvar), nullptr);
-                    }
+                    updatePrimvarInfo(pv.name, value, interp);
                 }
             } else {
+                // erase the unused primvar so we don't hold onto stale data
                 _meshSharedData->_primvarInfo.erase(pv.name);
             }
         }

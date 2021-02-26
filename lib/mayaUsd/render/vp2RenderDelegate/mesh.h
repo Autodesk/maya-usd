@@ -70,6 +70,7 @@ struct PrimvarInfo
 
     PrimvarSource                             _source;
     std::unique_ptr<MHWRender::MVertexBuffer> _buffer;
+    MFloatArray                               _extraInstanceData;
 };
 
 using PrimvarInfoMap
