@@ -83,8 +83,8 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
-    bool isAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr);
-    return isAllowed ? attr.Set<T>(value) : false;
+    bool isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr);
+    return isSetAttrAllowed ? attr.Set<T>(value) : false;
 }
 
 PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
@@ -147,7 +147,7 @@ void setUsdAttributeVectorFromUfe(
 }
 
 template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
-class SetUndoableCommand : public Ufe::UndoableCommand, public UsdAttribute
+class SetUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     SetUndoableCommand(const typename A::Ptr& attr, const T& newValue)

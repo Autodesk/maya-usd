@@ -200,7 +200,7 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     const auto& stage = prim.GetStage();
     const auto& editTargetPropertySpec = stage->GetEditTarget().GetPropertySpecForScenePath(attr.GetPath());
 
-    // get a list of property specs that provide opinions for this property.
+    // get the strength-ordered list of property specs that provide opinions for this property.
     const auto& propertyStack = attr.GetPropertyStack();
 
     SdfLayerHandle defLayer;

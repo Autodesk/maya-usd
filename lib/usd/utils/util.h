@@ -32,9 +32,6 @@ SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim);
 MAYA_USD_UTILS_PUBLIC
 SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim);
 
-MAYA_USD_UTILS_PUBLIC
-SdfPropertySpecHandle getPropertySpecAtEditTarget(const UsdPrim& prim);
-
 //! Convenience function for printing the list of queried composition arcs in order.
 MAYA_USD_UTILS_PUBLIC
 void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
