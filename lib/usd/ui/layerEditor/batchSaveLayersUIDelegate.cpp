@@ -34,8 +34,8 @@ void UsdLayerEditor::initialize()
 bool UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>& stages)
 {
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
-        auto opt = UsdMayaSerialization::serializeUsdEditsLocationOption();
-        if (UsdMayaSerialization::kSaveToUSDFiles == opt) {
+        auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
+        if (MayaUsd::utils::kSaveToUSDFiles == opt) {
             UsdLayerEditor::SaveLayersDialog dlg(nullptr, stages);
             if (QDialog::Accepted != dlg.exec()) {
                 return false;
