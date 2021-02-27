@@ -71,12 +71,22 @@ class testUsdExportRfMShaders(unittest.TestCase):
         materialPath = material.GetPath().pathString
         self.assertEqual(materialPath, '/MarbleCube/Materials/MarbleCubeSG')
 
-        # We expect four outputs on the material, the three built-in terminals
-        # for the universal renderContext, and a fourth for the "surface"
-        # terminal in the "ri" renderContext that the export should have
-        # authored.
+        if Usd.GetVersion() >= (0, 21, 5):
+            # For USD 21.05 and later, GetInputs() and GetOutputs() take an
+            # "onlyAuthored" argument that is True by default, so in that case
+            # we expect only one output on the material for the "surface"
+            # terminal in the "ri" renderContext that the export should have
+            # authored.
+            expectedNumOutputs = 1
+        else:
+            # Otherwise prior to USD 21.05, GetInputs() and GetOutputs() did
+            # not take any arguments and always included the built-in
+            # terminals for the universal renderContext as well as any other
+            # authored terminals.
+            expectedNumOutputs = 4
+
         materialOutputs = material.GetOutputs()
-        self.assertEqual(len(materialOutputs), 4)
+        self.assertEqual(len(materialOutputs), expectedNumOutputs)
 
         # Validate the lambert surface shader that is connected to the material.
         materialOutput = material.GetOutput('ri:surface')
