@@ -43,7 +43,6 @@
 #include <maya/MViewport2Renderer.h>
 
 #include <ghc/filesystem.hpp>
-
 #include <tbb/parallel_for.h>
 
 #include <iostream>
@@ -566,7 +565,11 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         isColorSpaceSRGB = image->IsColorSpaceSRGB();
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
-    default: TF_WARN("VP2 renderer delegate: unsuported pixel format (%d) in texture file %s.", (int)specFormat, path.c_str());
+    default:
+        TF_WARN(
+            "VP2 renderer delegate: unsupported pixel format (%d) in texture file %s.",
+            (int)specFormat,
+            path.c_str());
         break;
     }
 #else
