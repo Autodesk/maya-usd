@@ -1,7 +1,9 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${PROJECT_NAME} 
+target_sources(${PROJECT_NAME}
+    PUBLIC
+        md5.c
     PRIVATE
         adaptor.cpp
         hashUtil.cpp
@@ -17,6 +19,7 @@ target_sources(${PROJECT_NAME}
 )
 
 set(HEADERS
+    md5.h
     adaptor.h
     hashUtil.h
     jointWriteUtils.h
@@ -34,9 +37,9 @@ set(HEADERS
 # promoted headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList(
-    HEADERS 
-        ${HEADERS} 
-    BASEDIR 
+    HEADERS
+        ${HEADERS}
+    BASEDIR
         ${PROJECT_NAME}/fileio/utils
 )
 

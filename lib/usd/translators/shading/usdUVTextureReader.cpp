@@ -275,7 +275,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             bool     needsUniqueFilename = false;
             uint8_t* fileDataBuf = (uint8_t*)malloc(sizeof(uint8_t) * fileInfo.size);
             memcpy(fileDataBuf, fileData, fileInfo.size);
-            char md5Digest[32] = { 0 };
+            unsigned char md5Digest[16] = { 0 };
             UsdMayaHashUtil::GenerateMD5DigestFromByteStream(fileDataBuf, fileInfo.size, md5Digest);
             free(fileDataBuf);
             std::unordered_map<std::string, std::string>::iterator itExistingHash
@@ -285,11 +285,11 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                                                            // texture hasn't been extracted before.
                 UsdMayaReadUtil::mapFileHashes.insert(
                     { unresolvedFilePath,
-                      std::string(
-                          md5Digest) }); // NOTE: (yliangsiew) This _should_ be the common case.
+                      std::string(reinterpret_cast<char*>(
+                          md5Digest)) }); // NOTE: (yliangsiew) This _should_ be the common case.
             } else {
                 std::string existingHash = itExistingHash->second;
-                if (memcmp(md5Digest, existingHash.c_str(), 32 * sizeof(char)) == 0) {
+                if (memcmp(md5Digest, existingHash.c_str(), 16 * sizeof(char)) == 0) {
                     TF_WARN(
                         "A duplicate texture: %s was found, skipping extraction of it and re-using "
                         "the existing one.",
@@ -350,12 +350,12 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 fseek(pFile, 0, SEEK_SET);
                 uint8_t* buf = (uint8_t*)malloc(sizeof(uint8_t) * fileSize);
                 fread(buf, fileSize, 1, pFile);
-                char existingFileMD5Digest[32] = { 0 };
+                unsigned char existingFileMD5Digest[16] = { 0 };
                 UsdMayaHashUtil::GenerateMD5DigestFromByteStream(
                     buf, fileSize, existingFileMD5Digest);
                 fclose(pFile);
                 free(buf);
-                if (memcmp(md5Digest, existingFileMD5Digest, 32) == 0) {
+                if (memcmp(md5Digest, existingFileMD5Digest, 16) == 0) {
                     TF_WARN(
                         "The texture: %s already on disk is the same, skipping overwriting it.",
                         extractedFilePath.c_str());

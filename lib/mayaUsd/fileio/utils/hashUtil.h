@@ -27,7 +27,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace UsdMayaHashUtil {
 MAYAUSD_CORE_PUBLIC
-bool GenerateMD5DigestFromByteStream(const uint8_t* data, const size_t len, char digest[32]);
+bool GenerateMD5DigestFromByteStream(
+    const uint8_t* data,
+    const size_t   len,
+    unsigned char  digest[16]);
 }; // namespace UsdMayaHashUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
