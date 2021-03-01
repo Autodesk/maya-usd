@@ -44,6 +44,8 @@
 
 #include <ghc/filesystem.hpp>
 
+#include <tbb/parallel_for.h>
+
 #include <iostream>
 #include <string>
 
@@ -467,10 +469,11 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 
 #if PXR_VERSION > 2008
 #if PXR_VERSION >= 2102
-    switch (spec.format) {
+    auto specFormat = spec.format;
 #else
-    switch (spec.hioFormat) {
+    auto specFormat = spec.hioFormat;
 #endif
+    switch (specFormat) {
     // Single Channel
     case HioFormatFloat32:
         desc.fFormat = MHWRender::kR32_FLOAT;
@@ -501,22 +504,23 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                texels[t * bpp_8 + 2] = storage[t * bpp + 2];
-                texels[t * bpp_8 + 3] = storage[t * bpp + 3];
-                texels[t * bpp_8 + 4] = storage[t * bpp + 4];
-                texels[t * bpp_8 + 5] = storage[t * bpp + 5];
-                texels[t * bpp_8 + 6] = lowAlpha;
-                texels[t * bpp_8 + 7] = highAlpha;
+        tbb::parallel_for(tbb::blocked_range<int>(0, spec.height), [&](tbb::blocked_range<int> r) {
+            for (int y = r.begin(); y < r.end(); y++) {
+                for (int x = 0; x < spec.width; x++) {
+                    const int t = spec.width * y + x;
+                    texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                    texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                    texels[t * bpp_8 + 2] = storage[t * bpp + 2];
+                    texels[t * bpp_8 + 3] = storage[t * bpp + 3];
+                    texels[t * bpp_8 + 4] = storage[t * bpp + 4];
+                    texels[t * bpp_8 + 5] = storage[t * bpp + 5];
+                    texels[t * bpp_8 + 6] = lowAlpha;
+                    texels[t * bpp_8 + 7] = highAlpha;
+                }
             }
-        }
+        });
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
-        isColorSpaceSRGB = image->IsColorSpaceSRGB();
         break;
     }
     case HioFormatFloat16Vec4:
@@ -534,15 +538,17 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        for (int y = 0; y < spec.height; y++) {
-            for (int x = 0; x < spec.width; x++) {
-                const int t = spec.width * y + x;
-                texels[t * bpp_4] = storage[t * bpp];
-                texels[t * bpp_4 + 1] = storage[t * bpp + 1];
-                texels[t * bpp_4 + 2] = storage[t * bpp + 2];
-                texels[t * bpp_4 + 3] = 255;
+        tbb::parallel_for(tbb::blocked_range<int>(0, spec.height), [&](tbb::blocked_range<int> r) {
+            for (int y = r.begin(); y < r.end(); y++) {
+                for (int x = 0; x < spec.width; x++) {
+                    const int t = spec.width * y + x;
+                    texels[t * bpp_4] = storage[t * bpp];
+                    texels[t * bpp_4 + 1] = storage[t * bpp + 1];
+                    texels[t * bpp_4 + 2] = storage[t * bpp + 2];
+                    texels[t * bpp_4 + 3] = 255;
+                }
             }
-        }
+        });
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
         isColorSpaceSRGB = image->IsColorSpaceSRGB();
@@ -560,8 +566,7 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         isColorSpaceSRGB = image->IsColorSpaceSRGB();
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
-    default:
-        TF_WARN("VP2 renderer delegate: unsuported pixel format: %d.", (int)spec.format);
+    default: TF_WARN("VP2 renderer delegate: unsuported pixel format (%d) in texture file %s.", (int)specFormat, path.c_str());
         break;
     }
 #else
