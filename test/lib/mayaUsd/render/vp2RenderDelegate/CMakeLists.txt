@@ -12,6 +12,10 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
     )
 endif()
 
+list(APPEND TEST_SCRIPT_FILES
+    testVP2RenderDelegatePerInstanceInheritedData.py
+)
+
 add_custom_target(${TARGET_NAME} ALL)
 
 # Copy all the resources and Python scripts to build directory
