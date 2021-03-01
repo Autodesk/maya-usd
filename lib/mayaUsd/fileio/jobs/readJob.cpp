@@ -272,8 +272,9 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         if (this->mArgs.importUSDZTexturesFilePath.size() == 0) {
             MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
             MString currentMayaSceneFilePath = UsdMayaUtil::GetCurrentSceneFilePath();
-            if (strstr(currentMayaSceneFilePath.asChar(), currentMayaWorkspacePath.asChar())
-                == NULL) {
+            if (currentMayaSceneFilePath.length() != 0
+                && strstr(currentMayaSceneFilePath.asChar(), currentMayaWorkspacePath.asChar())
+                    == NULL) {
                 TF_RUNTIME_ERROR(
                     "The current scene does not seem to be part of the current Maya project set. "
                     "Could not automatically determine a path to write out USDZ texture imports.");

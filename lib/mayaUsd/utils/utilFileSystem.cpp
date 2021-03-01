@@ -49,10 +49,6 @@ std::string generateUniqueName()
     return uniqueName;
 }
 } // namespace
-#include <boost/filesystem.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/system/error_code.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -184,28 +180,23 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
 
 bool UsdMayaUtilFileSystem::isDirectory(const std::string& dirPath)
 {
-    // TODO: (yliangsiew) Is there a platform wrapper somewhere so I can implement the OS native
-    // calls for something simple like this without having to add yet another dependency on Boost?
-    boost::filesystem::path p(dirPath);
-    return boost::filesystem::is_directory(p);
+    ghc::filesystem::path p(dirPath);
+    return ghc::filesystem::is_directory(p);
 }
 
 bool UsdMayaUtilFileSystem::isFile(const std::string& filePath)
 {
-    boost::system::error_code ec;
-    bool                      bStat = boost::filesystem::is_regular_file(filePath, ec);
+    bool bStat = ghc::filesystem::is_regular_file(filePath);
     return bStat;
 }
 
 bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
 {
-    // TODO: (yliangsiew) Is there a platform wrapper somewhere so I can implement the OS native
-    // calls for something simple like this without having to add yet another dependency on Boost?
-    if (!boost::filesystem::is_directory(a)) {
+    if (!ghc::filesystem::is_directory(a)) {
         return false;
     }
-    boost::filesystem::path aPath(a);
-    boost::filesystem::path bPath(b);
+    ghc::filesystem::path aPath(a);
+    ghc::filesystem::path bPath(b);
     aPath /= b;
     a.assign(aPath.c_str());
     return true;
@@ -232,31 +223,27 @@ UsdMayaUtilFileSystem::writeToFilePath(const char* filePath, const void* buffer,
 
 void UsdMayaUtilFileSystem::pathStripPath(std::string& filePath)
 {
-    // TODO: (yliangsiew) Again, need a platform layer I can write simpler versions of these for to
-    // avoid using boost.
-    boost::filesystem::path p(filePath);
-    boost::filesystem::path filename = p.filename();
+    ghc::filesystem::path p(filePath);
+    ghc::filesystem::path filename = p.filename();
     filePath.assign(filename.c_str());
     return;
 }
 
 void UsdMayaUtilFileSystem::pathRemoveExtension(std::string& filePath)
 {
-    // TODO: (yliangsiew) Again, need a platform layer I can write simpler versions of these for to
-    // avoid using boost.
-    boost::filesystem::path p(filePath);
-    boost::filesystem::path dir = p.parent_path();
-    boost::filesystem::path finalPath = dir / p.stem();
+    ghc::filesystem::path p(filePath);
+    ghc::filesystem::path dir = p.parent_path();
+    ghc::filesystem::path finalPath = dir / p.stem();
     filePath.assign(finalPath.c_str());
     return;
 }
 
 std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
 {
-    boost::filesystem::path p(filePath);
+    ghc::filesystem::path p(filePath);
     if (!p.has_extension()) {
         return std::string();
     }
-    boost::filesystem::path ext = p.extension();
+    ghc::filesystem::path ext = p.extension();
     return std::string(ext.c_str());
 }
