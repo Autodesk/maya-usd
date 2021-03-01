@@ -19,9 +19,6 @@
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
-#include <ufe/baseUndoableCommands.h>
-#include <ufe/path.h>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
@@ -33,13 +30,9 @@ namespace ufe {
 // declaring the UsdUndoBlock during the execution.
 //
 // Sub-classes only need to implement the executeUndoBlock() function.
-//
-// Sub-classes can override set() if the command support interactive
-// manipulations. Since each set() in specific to the specific Cmd base
-// class, we cannot provide a generic implementation in this template.
-//
-// A typical set() implementation should preserve the value to be set
-// and then call execute() to actually set the value.
+// This function does the real work of modifying values, and these changes
+// will be captured in the UsdUndoableItem via the UsdUndoBlock declared
+// in execute().
 template <typename Cmd> class UsdUndoableCommand : public Cmd
 {
 public:
