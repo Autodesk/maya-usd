@@ -62,12 +62,23 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         globalSelection.clear()
         self.assertSnapshotClose('%s_unselected.png' % self._testName)
 
-    def testPerInstanceInheritedData(self):
+    def _PrepareTest(self, testName):
+        cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
-        self._testName = 'perInstanceInheritedData'
-        testFileName = self._testName + ".usda"
-        testFile = testUtils.getTestScene("instances", testFileName)
+        self._testName = testName
+        testFile = testUtils.getTestScene("instances", self._testName + ".usda")
         mayaUtils.createProxyFromFile(testFile)
+
+    def testPerInstanceInheritedData(self):
+        self._PrepareTest('perInstanceInheritedData')
+        self._RunTest()
+    
+    def testPerInstanceInheritedDataPartialOverridePxrMtls(self):
+        self._PrepareTest('inheritedDisplayColor_noPxrMtls')
+        self._RunTest()
+
+    def testPerInstanceInheritedDataPartialOverride(self):
+        self._PrepareTest('inheritedDisplayColor_pxrSurface')
         self._RunTest()
 
 
