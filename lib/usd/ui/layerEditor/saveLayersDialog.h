@@ -1,6 +1,8 @@
 #ifndef SAVELAYERSDIALOG_H
 #define SAVELAYERSDIALOG_H
 
+#include <mayaUsd/utils/utilSerialization.h>
+
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -58,8 +60,8 @@ private:
     void getLayersToSave(UsdStageRefPtr stage, const std::string& stageName);
 
 private:
-    typedef std::vector<std::pair<SdfLayerRefPtr, SdfLayerRefPtr>> layerPairs;
-    typedef std::unordered_set<SdfLayerRefPtr, TfHash>             layerSet;
+    typedef std::vector<std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>> layerPairs;
+    typedef std::unordered_set<SdfLayerRefPtr, TfHash>                          layerSet;
 
     QStringList   _newPaths;
     QStringList   _problemLayers;

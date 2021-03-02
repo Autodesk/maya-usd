@@ -37,7 +37,16 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
-typedef std::function<bool(const std::vector<UsdStageRefPtr>&)> BatchSaveDelegate;
+enum BatchSaveResult
+{
+    kAbort,             // User has chosen to abort the file operation.
+    kNotHandled,        // Callback did not handle any of the stages passed to it.
+    kCompleted,         // Callback handled all stages.  Layer Manager should not continue
+                        // to process anything.
+    kPartiallyCompleted // Callback has handled the saving of some stages, but not all. Layer
+                        // Manager should continue to look for unsaved stages.
+};
+typedef std::function<BatchSaveResult(const std::vector<UsdStageRefPtr>&)> BatchSaveDelegate;
 
 /*! \brief Maya dependency node responsible for serializing unsaved Usd edits.
 

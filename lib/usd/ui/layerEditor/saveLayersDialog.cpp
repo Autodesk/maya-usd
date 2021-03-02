@@ -11,7 +11,6 @@
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/listeners/notice.h>
-#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/sdf/layer.h>
 
@@ -96,8 +95,8 @@ class SaveLayerPathRow : public QWidget
 {
 public:
     SaveLayerPathRow(
-        SaveLayersDialog*                                in_parent,
-        const std::pair<SdfLayerRefPtr, SdfLayerRefPtr>& in_layerPair);
+        SaveLayersDialog*                                             in_parent,
+        const std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>& in_layerPair);
 
     QString layerDisplayName() const;
 
@@ -112,18 +111,18 @@ protected:
     void onRelativeButtonChecked(bool checked);
 
 public:
-    QString                                   _initialStartFolder;
-    QString                                   _absolutePath;
-    SaveLayersDialog*                         _parent { nullptr };
-    std::pair<SdfLayerRefPtr, SdfLayerRefPtr> _layerPair;
-    QLabel*                                   _label { nullptr };
-    QLineEdit*                                _pathEdit { nullptr };
-    QAbstractButton*                          _openBrowser { nullptr };
+    QString                                                _initialStartFolder;
+    QString                                                _absolutePath;
+    SaveLayersDialog*                                      _parent { nullptr };
+    std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent> _layerPair;
+    QLabel*                                                _label { nullptr };
+    QLineEdit*                                             _pathEdit { nullptr };
+    QAbstractButton*                                       _openBrowser { nullptr };
 };
 
 SaveLayerPathRow::SaveLayerPathRow(
-    SaveLayersDialog*                                in_parent,
-    const std::pair<SdfLayerRefPtr, SdfLayerRefPtr>& in_layerPair)
+    SaveLayersDialog*                                             in_parent,
+    const std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>& in_layerPair)
     : QWidget(in_parent)
     , _parent(in_parent)
     , _layerPair(in_layerPair)
@@ -297,10 +296,10 @@ void SaveLayersDialog::getLayersToSave(UsdStageRefPtr stage, const std::string& 
     MayaUsd::utils::getLayersToSaveFromProxy(stage, stageLayersToSave);
 
     // Keep track of all the layers for this particular stage.
-    for (const auto& layerPairs : stageLayersToSave.anonLayers) {
+    for (const auto& layerPairs : stageLayersToSave._anonLayers) {
         _stageLayerMap.emplace(std::make_pair(layerPairs.first, stageName));
     }
-    for (const auto& dirtyLayer : stageLayersToSave.dirtyFileBackedLayers) {
+    for (const auto& dirtyLayer : stageLayersToSave._dirtyFileBackedLayers) {
         _stageLayerMap.emplace(std::make_pair(dirtyLayer, stageName));
     }
 
@@ -308,10 +307,10 @@ void SaveLayersDialog::getLayersToSave(UsdStageRefPtr stage, const std::string& 
     // Note: we use a set for the dirty file back layers because they
     //       can come from multiple stages, but we only want them to
     //       appear once in the dialog.
-    moveAppendVector(stageLayersToSave.anonLayers, _anonLayerPairs);
+    moveAppendVector(stageLayersToSave._anonLayers, _anonLayerPairs);
     _dirtyFileBackedLayers.insert(
-        std::begin(stageLayersToSave.dirtyFileBackedLayers),
-        std::end(stageLayersToSave.dirtyFileBackedLayers));
+        std::begin(stageLayersToSave._dirtyFileBackedLayers),
+        std::end(stageLayersToSave._dirtyFileBackedLayers));
 }
 
 void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
@@ -464,9 +463,8 @@ void SaveLayersDialog::onSaveAll()
         return;
     }
 
-    int           i, count;
-    std::string   newRoot;
-    SessionState* rootSessionState = nullptr;
+    int         i, count;
+    std::string newRoot;
 
     _newPaths.clear();
     _problemLayers.clear();
@@ -483,41 +481,26 @@ void SaveLayersDialog::onSaveAll()
             QString path = row->pathToSaveAs();
             if (!path.isEmpty()) {
                 auto sdfLayer = row->_layerPair.first;
-                auto parentLayer = row->_layerPair.second;
+                auto parent = row->_layerPair.second;
                 auto qFileName = row->absolutePath();
                 auto sFileName = qFileName.toStdString();
 
-                auto newLayer
-                    = MayaUsd::utils::saveAnonymousLayer(sdfLayer, sFileName, parentLayer);
-
-                if (!parentLayer) {
-                    newRoot = sFileName;
-                    rootSessionState = _sessionState;
+                auto newLayer = MayaUsd::utils::saveAnonymousLayer(sdfLayer, sFileName, parent);
+                if (newLayer) {
+                    _newPaths.append(QString::fromStdString(sdfLayer->GetDisplayName()));
+                    _newPaths.append(qFileName);
                 } else {
-                    if (newLayer) {
-                        // if (item->isTargetLayer()) {
-                        //     sessionState->stage()->SetEditTarget(newLayer);
-                        // }
-
-                        _newPaths.append(QString::fromStdString(sdfLayer->GetDisplayName()));
-                        _newPaths.append(qFileName);
-                    } else {
-                        _problemLayers.append(QString::fromStdString(sdfLayer->GetDisplayName()));
-                        _problemLayers.append(qFileName);
-                    }
+                    _problemLayers.append(QString::fromStdString(sdfLayer->GetDisplayName()));
+                    _problemLayers.append(qFileName);
                 }
             } else {
                 _emptyLayers.append(row->layerDisplayName());
             }
         }
-
-        if (rootSessionState) {
-            rootSessionState->rootLayerPathChanged(newRoot);
-        }
     }
 
     accept();
-} // namespace UsdLayerEditor
+}
 
 void SaveLayersDialog::onCancel() { reject(); }
 

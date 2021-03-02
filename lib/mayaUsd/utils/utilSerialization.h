@@ -56,10 +56,31 @@ enum USDUnsavedEditsOption
     kIgnoreUSDEdits
 };
 /*! \brief Queries the Maya optionVar that decides which saving option Maya
-    shoudl use for Usd edits.
+    should use for Usd edits.
  */
 MAYAUSD_CORE_PUBLIC
 USDUnsavedEditsOption serializeUsdEditsLocationOption();
+
+/*! \brief Utility function to update the file path attribute on the proxy shape
+    when an anonymous root layer gets exported to disk.
+ */
+MAYAUSD_CORE_PUBLIC
+void setNewProxyPath(const MString& proxyNodeName, const MString& newValue);
+
+struct LayerParent
+{
+    // Every layer that we are saving should have either a parent layer that
+    // we will need to remap to point to the new path, or the stage if it is an
+    // anonymous root layer.
+    SdfLayerRefPtr _layerParent;
+    UsdStageRefPtr _stageParent;
+};
+
+struct stageLayersToSave
+{
+    std::vector<std::pair<SdfLayerRefPtr, LayerParent>> _anonLayers;
+    std::vector<SdfLayerRefPtr>                         _dirtyFileBackedLayers;
+};
 
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.
@@ -67,7 +88,7 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption();
 MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::SdfLayerRefPtr anonLayer,
-    PXR_NS::SdfLayerRefPtr parentLayer,
+    LayerParent            parent,
     const std::string&     basename,
     std::string            formatArg = "");
 
@@ -78,14 +99,8 @@ MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     PXR_NS::SdfLayerRefPtr anonLayer,
     const std::string&     path,
-    PXR_NS::SdfLayerRefPtr parentLayer,
+    LayerParent            parent,
     std::string            formatArg = "");
-
-struct stageLayersToSave
-{
-    std::vector<std::pair<PXR_NS::SdfLayerRefPtr, PXR_NS::SdfLayerRefPtr>> anonLayers;
-    std::vector<PXR_NS::SdfLayerRefPtr>                                    dirtyFileBackedLayers;
-};
 
 /*! \brief Check the sublayer stack of the stage looking for any anonymnous
     layers that will need to be saved.

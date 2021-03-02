@@ -17,6 +17,7 @@
 #define BATCH_SAVE_LAYERS_UI_H
 
 #include <mayaUsd/mayaUsd.h>
+#include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsdUI/ui/api.h>
 
 #include <pxr/pxr.h>
@@ -32,7 +33,7 @@ MAYAUSD_UI_PUBLIC
 void initialize();
 
 MAYAUSD_UI_PUBLIC
-bool batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>&);
+MayaUsd::BatchSaveResult batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>&);
 
 } // namespace UsdLayerEditor
 
