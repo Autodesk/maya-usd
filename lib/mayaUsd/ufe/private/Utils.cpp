@@ -30,6 +30,28 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace
+{
+    // Find the Layer Index in the LayerStack ( strong-to-weak order )
+    uint32_t findIndexOfLayer(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
+    {
+        const auto& prim = attr.GetPrim();
+        const auto& stage = prim.GetStage();
+        const auto& layerStack = prim.GetStage()->GetLayerStack();
+
+        uint32_t foundIndex{0};
+
+        for (int index=0; index < layerStack.size(); ++index) {
+            if (layer == layerStack[index]) {
+                foundIndex = index;
+                break;
+            }
+        }
+
+        return foundIndex;
+    }
+}
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -198,24 +220,35 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     // get the property spec in the edit target's layer
     const auto& prim = attr.GetPrim();
     const auto& stage = prim.GetStage();
-    const auto& editTargetPropertySpec = stage->GetEditTarget().GetPropertySpecForScenePath(attr.GetPath());
+    const auto& editTarget = stage->GetEditTarget();
+    const auto& editTargetPropertySpec = editTarget.GetPropertySpecForScenePath(attr.GetPath());
 
-    // get the strength-ordered list of property specs that provide opinions for this property.
+    // get the index to edit target layer
+    const auto targetLayerIndex = findIndexOfLayer(attr, editTarget.GetLayer());
+
+    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide opinions for this property.
     const auto& propertyStack = attr.GetPropertyStack();
 
-    SdfLayerHandle defLayer;
+    SdfLayerHandle strongLayer;
     for (const auto& spec : propertyStack) {
-        if(spec && spec != editTargetPropertySpec)  {
-            defLayer = spec->GetLayer();
+
+        // Skip if the edit target layer is stronger than the propSpec layer
+        const auto propSpecLayerIndex = findIndexOfLayer(attr, spec->GetLayer());
+        if (targetLayerIndex <= propSpecLayerIndex) {
+            continue;
+        }
+
+        if (spec) {
+            strongLayer = spec->GetLayer();
             break;
         }
     }
 
-    if (defLayer) {
+    if (strongLayer) {
         std::string err = TfStringPrintf( 
             "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
             attr.GetBaseName().GetText(),
-            defLayer->GetDisplayName().c_str());
+            strongLayer->GetDisplayName().c_str());
 
         MGlobal::displayError(err.c_str());
         return false;
