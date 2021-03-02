@@ -99,7 +99,7 @@ private:
 
     // Map of per-stage listeners, indexed by stage.
     typedef PXR_NS::TfHashMap<PXR_NS::UsdStageWeakPtr, NoticeKeys, PXR_NS::TfHash> StageListenerMap;
-    StageListenerMap                                       fStageListeners;
+    StageListenerMap                                                               fStageListeners;
 
     /*! \brief  Store invalidated ufe paths during dirty propagation.
 

@@ -49,8 +49,8 @@ public:
     void setItem(const UsdSceneItem::Ptr& item);
 
     // Ufe::Transform3d overrides
-    const Ufe::Path&    path() const override;
-    Ufe::SceneItem::Ptr sceneItem() const override;
+    const Ufe::Path&       path() const override;
+    Ufe::SceneItem::Ptr    sceneItem() const override;
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE

@@ -85,16 +85,16 @@ protected:
     };
 #else
     inline PXR_NS::UsdPrim prim() const { return fItem->prim(); }
-    inline Ufe::Path path() const { return fItem->path(); }
+    inline Ufe::Path       path() const { return fItem->path(); }
 #endif
 
     // Hooks to be implemented by the derived class: name of the attribute set
     // by the command, implementation of perform(), and add empty attribute.
     // Implementation of cannotInit() in this class returns false.
     virtual PXR_NS::TfToken attributeName() const = 0;
-    virtual void    performImp(double x, double y, double z) = 0;
-    virtual void    addEmptyAttribute() = 0;
-    virtual bool    cannotInit() const;
+    virtual void            performImp(double x, double y, double z) = 0;
+    virtual void            addEmptyAttribute() = 0;
+    virtual bool            cannotInit() const;
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
     // Conditionally create a UsdSceneItem::Ptr from the Ufe::Path, if null.
