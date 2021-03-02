@@ -82,9 +82,9 @@ private:
     static PXR_NS::TfToken rotXYZ;
 
     PXR_NS::TfToken attributeName() const override { return rotXYZ; }
-    void    performImp(double x, double y, double z) override;
-    void    addEmptyAttribute() override;
-    bool    cannotInit() const override { return bool(fFailedInit); }
+    void            performImp(double x, double y, double z) override;
+    void            addEmptyAttribute() override;
+    bool            cannotInit() const override { return bool(fFailedInit); }
 
     std::exception_ptr fFailedInit;
 

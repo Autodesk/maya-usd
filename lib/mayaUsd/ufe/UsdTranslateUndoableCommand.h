@@ -81,8 +81,8 @@ private:
     static PXR_NS::TfToken xlate;
 
     PXR_NS::TfToken attributeName() const override { return xlate; }
-    void    performImp(double x, double y, double z) override;
-    void    addEmptyAttribute() override;
+    void            performImp(double x, double y, double z) override;
+    void            addEmptyAttribute() override;
 
 }; // UsdTranslateUndoableCommand
 

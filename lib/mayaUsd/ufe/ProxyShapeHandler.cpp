@@ -71,7 +71,7 @@ std::vector<PXR_NS::UsdStageRefPtr> ProxyShapeHandler::getAllStages()
     // Maya, so it requires the AL proxy shape inheritance from
     // MayaUsdProxyShapeBase.  PPT, 12-Apr-2019.
     std::vector<PXR_NS::UsdStageRefPtr> stages;
-    auto                        allNames = getAllNames();
+    auto                                allNames = getAllNames();
     stages.reserve(allNames.size());
     for (const auto& name : allNames) {
         PXR_NS::UsdStageWeakPtr stage = dagPathToStage(name);

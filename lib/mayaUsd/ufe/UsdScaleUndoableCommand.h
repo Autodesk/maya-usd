@@ -79,8 +79,8 @@ private:
     static PXR_NS::TfToken scaleTok;
 
     PXR_NS::TfToken attributeName() const override { return scaleTok; }
-    void    performImp(double x, double y, double z) override;
-    void    addEmptyAttribute() override;
+    void            performImp(double x, double y, double z) override;
+    void            addEmptyAttribute() override;
 
 }; // UsdScaleUndoableCommand
 

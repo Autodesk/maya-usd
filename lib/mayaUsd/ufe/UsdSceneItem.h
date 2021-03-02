@@ -124,7 +124,7 @@ public:
 
 private:
     PXR_NS::UsdPrim fPrim;
-    const int _instanceIndex;
+    const int       _instanceIndex;
 }; // UsdSceneItem
 
 } // namespace ufe

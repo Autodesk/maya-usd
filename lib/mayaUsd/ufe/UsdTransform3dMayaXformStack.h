@@ -91,11 +91,11 @@ public:
     Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
 
 protected:
-    bool                                    hasOp(OpNdx ndx) const;
-    PXR_NS::UsdGeomXformOp                  getOp(OpNdx ndx) const;
-    virtual SetXformOpOrderFn               getXformOpOrderFn() const;
-    virtual PXR_NS::TfToken                 getOpSuffix(OpNdx ndx) const;
-    virtual PXR_NS::TfToken                 getTRSOpSuffix() const;
+    bool                        hasOp(OpNdx ndx) const;
+    PXR_NS::UsdGeomXformOp      getOp(OpNdx ndx) const;
+    virtual SetXformOpOrderFn   getXformOpOrderFn() const;
+    virtual PXR_NS::TfToken     getOpSuffix(OpNdx ndx) const;
+    virtual PXR_NS::TfToken     getTRSOpSuffix() const;
     virtual CvtRotXYZFromAttrFn getCvtRotXYZFromAttrFn(const PXR_NS::TfToken& opName) const;
     virtual CvtRotXYZToAttrFn   getCvtRotXYZToAttrFn(const PXR_NS::TfToken& opName) const;
     virtual std::map<OpNdx, PXR_NS::UsdGeomXformOp> getOrderedOps() const;

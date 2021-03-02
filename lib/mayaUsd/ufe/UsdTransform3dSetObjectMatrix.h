@@ -115,7 +115,7 @@ public:
 private:
     Ufe::Matrix4d mw(const Ufe::Matrix4d& m) const;
 
-    Ufe::Transform3d::Ptr _wrapped;
+    Ufe::Transform3d::Ptr    _wrapped;
     const PXR_NS::GfMatrix4d _mlInv { 1 };
     const PXR_NS::GfMatrix4d _mrInv { 1 };
 

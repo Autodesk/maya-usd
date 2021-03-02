@@ -52,8 +52,8 @@ public:
     //! Create a UsdContextOps.
     static UsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
 
-    void             setItem(const UsdSceneItem::Ptr& item);
-    const Ufe::Path& path() const;
+    void                   setItem(const UsdSceneItem::Ptr& item);
+    const Ufe::Path&       path() const;
     inline PXR_NS::UsdPrim prim() const
     {
         PXR_NAMESPACE_USING_DIRECTIVE
