@@ -94,13 +94,15 @@ public:
 
     UsdTransform3dSetObjectMatrix(
         const Ufe::Transform3d::Ptr& wrapped,
-        const GfMatrix4d&            mlInv,
-        const GfMatrix4d&            mrInv);
+        const PXR_NS::GfMatrix4d&    mlInv,
+        const PXR_NS::GfMatrix4d&    mrInv);
     ~UsdTransform3dSetObjectMatrix() override = default;
 
     //! Create a UsdTransform3dSetObjectMatrix.
-    static UsdTransform3dSetObjectMatrix::Ptr
-    create(const Ufe::Transform3d::Ptr& wrapped, const GfMatrix4d& mlInv, const GfMatrix4d& mrInv);
+    static UsdTransform3dSetObjectMatrix::Ptr create(
+        const Ufe::Transform3d::Ptr& wrapped,
+        const PXR_NS::GfMatrix4d&    mlInv,
+        const PXR_NS::GfMatrix4d&    mrInv);
 
     // Implementation for base class pure virtuals (illegal calls).
     Ufe::Vector3d translation() const override;
@@ -114,8 +116,8 @@ private:
     Ufe::Matrix4d mw(const Ufe::Matrix4d& m) const;
 
     Ufe::Transform3d::Ptr _wrapped;
-    const GfMatrix4d      _mlInv { 1 };
-    const GfMatrix4d      _mrInv { 1 };
+    const PXR_NS::GfMatrix4d _mlInv { 1 };
+    const PXR_NS::GfMatrix4d _mrInv { 1 };
 
 }; // UsdTransform3dSetObjectMatrix
 

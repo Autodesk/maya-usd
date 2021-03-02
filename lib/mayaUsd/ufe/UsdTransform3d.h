@@ -51,8 +51,9 @@ public:
     // Ufe::Transform3d overrides
     const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
-    inline UsdPrim      prim() const
+    inline PXR_NS::UsdPrim prim() const
     {
+        PXR_NAMESPACE_USING_DIRECTIVE
         TF_AXIOM(fItem != nullptr);
         return fItem->prim();
     }

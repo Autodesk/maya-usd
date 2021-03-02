@@ -64,7 +64,7 @@ private:
 #endif
 
     Ufe::Path _ufeSrcPath;
-    SdfPath   _usdDstPath;
+    PXR_NS::SdfPath _usdDstPath;
 
 }; // UsdUndoDuplicateCommand
 

@@ -30,8 +30,6 @@
 
 #include <unordered_set>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -41,10 +39,10 @@ namespace ufe {
         stage the Maya scene contains.  This USD observer translates USD
         notifications into UFE notifications.
  */
-class MAYAUSD_CORE_PUBLIC StagesSubject : public TfWeakBase
+class MAYAUSD_CORE_PUBLIC StagesSubject : public PXR_NS::TfWeakBase
 {
 public:
-    typedef TfWeakPtr<StagesSubject> Ptr;
+    typedef PXR_NS::TfWeakPtr<StagesSubject> Ptr;
 
     //! Constructor
     StagesSubject();
@@ -74,31 +72,33 @@ private:
     static void afterOpenCallback(void* clientData);
 
     //! Call the stageChanged() methods on stage observers.
-    void stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender);
+    void stageChanged(
+        PXR_NS::UsdNotice::ObjectsChanged const& notice,
+        PXR_NS::UsdStageWeakPtr const&           sender);
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
     //! Call the stageEditTargetChanged() methods on stage observers.
     void stageEditTargetChanged(
-        UsdNotice::StageEditTargetChanged const& notice,
-        UsdStageWeakPtr const&                   sender);
+        PXR_NS::UsdNotice::StageEditTargetChanged const& notice,
+        PXR_NS::UsdStageWeakPtr const&                   sender);
 #endif
 
 private:
     // Notice listener method for proxy stage set
-    void onStageSet(const MayaUsdProxyStageSetNotice& notice);
+    void onStageSet(const PXR_NS::MayaUsdProxyStageSetNotice& notice);
 
     // Notice listener method for proxy stage invalidate.
-    void onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice);
+    void onStageInvalidate(const PXR_NS::MayaUsdProxyStageInvalidateNotice& notice);
 
     // Array of Notice::Key for registered listener
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    using NoticeKeys = std::array<TfNotice::Key, 2>;
+    using NoticeKeys = std::array<PXR_NS::TfNotice::Key, 2>;
 #else
-    using NoticeKeys = std::array<TfNotice::Key, 1>;
+    using NoticeKeys = std::array<PXR_NS::TfNotice::Key, 1>;
 #endif
 
     // Map of per-stage listeners, indexed by stage.
-    typedef TfHashMap<UsdStageWeakPtr, NoticeKeys, TfHash> StageListenerMap;
+    typedef PXR_NS::TfHashMap<PXR_NS::UsdStageWeakPtr, NoticeKeys, PXR_NS::TfHash> StageListenerMap;
     StageListenerMap                                       fStageListeners;
 
     /*! \brief  Store invalidated ufe paths during dirty propagation.

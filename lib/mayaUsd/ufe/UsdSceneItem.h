@@ -24,8 +24,6 @@
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -85,9 +83,9 @@ public:
     typedef std::shared_ptr<UsdSceneItem> Ptr;
 
     UsdSceneItem(
-        const Ufe::Path& path,
-        const UsdPrim&   prim,
-        int              instanceIndex = UsdImagingDelegate::ALL_INSTANCES);
+        const Ufe::Path&       path,
+        const PXR_NS::UsdPrim& prim,
+        int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
     ~UsdSceneItem() override = default;
 
     // Delete the copy/move constructors assignment operators.
@@ -101,11 +99,11 @@ public:
     // A non-negative instanceIndex should be provided if the scene item is
     // intended to represent an individual instance of a PointInstancer.
     static UsdSceneItem::Ptr create(
-        const Ufe::Path& path,
-        const UsdPrim&   prim,
-        int              instanceIndex = UsdImagingDelegate::ALL_INSTANCES);
+        const Ufe::Path&       path,
+        const PXR_NS::UsdPrim& prim,
+        int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
 
-    const UsdPrim& prim() const { return fPrim; }
+    const PXR_NS::UsdPrim& prim() const { return fPrim; }
 
     int instanceIndex() const { return _instanceIndex; }
 
@@ -115,7 +113,7 @@ public:
     // PointInstancer and its instanceIndex is non-negative.
     bool isPointInstance() const
     {
-        return (fPrim && fPrim.IsA<UsdGeomPointInstancer>() && _instanceIndex >= 0);
+        return (fPrim && fPrim.IsA<PXR_NS::UsdGeomPointInstancer>() && _instanceIndex >= 0);
     }
 
     // Ufe::SceneItem overrides
@@ -125,7 +123,7 @@ public:
 #endif
 
 private:
-    UsdPrim   fPrim;
+    PXR_NS::UsdPrim fPrim;
     const int _instanceIndex;
 }; // UsdSceneItem
 

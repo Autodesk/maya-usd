@@ -54,9 +54,9 @@ public:
     };
 
     typedef std::shared_ptr<UsdTransform3dMayaXformStack> Ptr;
-    typedef Ufe::Vector3d (*CvtRotXYZFromAttrFn)(const VtValue& value);
-    typedef VtValue (*CvtRotXYZToAttrFn)(double x, double y, double z);
-    typedef void (*SetXformOpOrderFn)(const UsdGeomXformable&);
+    typedef Ufe::Vector3d (*CvtRotXYZFromAttrFn)(const PXR_NS::VtValue& value);
+    typedef PXR_NS::VtValue (*CvtRotXYZToAttrFn)(double x, double y, double z);
+    typedef void (*SetXformOpOrderFn)(const PXR_NS::UsdGeomXformable&);
 
     UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item);
     ~UsdTransform3dMayaXformStack() override = default;
@@ -92,25 +92,27 @@ public:
 
 protected:
     bool                                    hasOp(OpNdx ndx) const;
-    UsdGeomXformOp                          getOp(OpNdx ndx) const;
+    PXR_NS::UsdGeomXformOp                  getOp(OpNdx ndx) const;
     virtual SetXformOpOrderFn               getXformOpOrderFn() const;
-    virtual TfToken                         getOpSuffix(OpNdx ndx) const;
-    virtual TfToken                         getTRSOpSuffix() const;
-    virtual CvtRotXYZFromAttrFn             getCvtRotXYZFromAttrFn(const TfToken& opName) const;
-    virtual CvtRotXYZToAttrFn               getCvtRotXYZToAttrFn(const TfToken& opName) const;
-    virtual std::map<OpNdx, UsdGeomXformOp> getOrderedOps() const;
+    virtual PXR_NS::TfToken                 getOpSuffix(OpNdx ndx) const;
+    virtual PXR_NS::TfToken                 getTRSOpSuffix() const;
+    virtual CvtRotXYZFromAttrFn getCvtRotXYZFromAttrFn(const PXR_NS::TfToken& opName) const;
+    virtual CvtRotXYZToAttrFn   getCvtRotXYZToAttrFn(const PXR_NS::TfToken& opName) const;
+    virtual std::map<OpNdx, PXR_NS::UsdGeomXformOp> getOrderedOps() const;
 
-    template <class V> Ufe::Vector3d getVector3d(const TfToken& attrName) const;
+    template <class V> Ufe::Vector3d getVector3d(const PXR_NS::TfToken& attrName) const;
 
     template <class V>
-    Ufe::SetVector3dUndoableCommand::Ptr
-    setVector3dCmd(const V& v, const TfToken& attrName, const TfToken& opSuffix = TfToken());
+    Ufe::SetVector3dUndoableCommand::Ptr setVector3dCmd(
+        const V&               v,
+        const PXR_NS::TfToken& attrName,
+        const PXR_NS::TfToken& opSuffix = PXR_NS::TfToken());
 
-    UsdGeomXformable _xformable;
+    PXR_NS::UsdGeomXformable _xformable;
 
 private:
     Ufe::TranslateUndoableCommand::Ptr
-    pivotCmd(const TfToken& pvtOpSuffix, double x, double y, double z);
+    pivotCmd(const PXR_NS::TfToken& pvtOpSuffix, double x, double y, double z);
 }; // UsdTransform3dMayaXformStack
 
 //! \brief Factory to create a UsdTransform3dMayaXformStack interface object.

@@ -48,6 +48,8 @@
 #include <unordered_map>
 #endif
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
 
 // Prevent re-entrant stage set.

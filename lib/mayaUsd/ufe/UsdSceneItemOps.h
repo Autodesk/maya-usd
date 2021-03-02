@@ -23,8 +23,6 @@
 #include <ufe/path.h>
 #include <ufe/sceneItemOps.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -48,8 +46,9 @@ public:
 
     void             setItem(const UsdSceneItem::Ptr& item);
     const Ufe::Path& path() const;
-    inline UsdPrim   prim() const
+    inline PXR_NS::UsdPrim prim() const
     {
+        PXR_NAMESPACE_USING_DIRECTIVE
         TF_AXIOM(fItem != nullptr);
         return fItem->prim();
     }

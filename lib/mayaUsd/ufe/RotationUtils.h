@@ -23,8 +23,6 @@
 #include <maya/MEulerRotation.h>
 #include <ufe/types.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -32,16 +30,17 @@ namespace ufe {
 // Conversion functions from RotXYZ to all supported rotation attributes.
 //----------------------------------------------------------------------
 
-inline VtValue toXYZ(double x, double y, double z)
+inline PXR_NS::VtValue toXYZ(double x, double y, double z)
 {
     // No rotation order conversion
-    VtValue v;
-    v = GfVec3f(x, y, z);
+    PXR_NS::VtValue v;
+    v = PXR_NS::GfVec3f(x, y, z);
     return v;
 }
 
 // Reorder argument RotXYZ rotation.
-template <MEulerRotation::RotationOrder DST_ROT_ORDER> VtValue toRot(double x, double y, double z);
+template <MEulerRotation::RotationOrder DST_ROT_ORDER>
+PXR_NS::VtValue toRot(double x, double y, double z);
 
 constexpr auto toXZY = toRot<MEulerRotation::kXZY>;
 constexpr auto toYXZ = toRot<MEulerRotation::kYXZ>;
@@ -50,23 +49,23 @@ constexpr auto toZXY = toRot<MEulerRotation::kZXY>;
 constexpr auto toZYX = toRot<MEulerRotation::kZYX>;
 
 // Scalar float is the proper type for single-axis rotations.
-inline VtValue toX(double x, double, double)
+inline PXR_NS::VtValue toX(double x, double, double)
 {
-    VtValue v;
+    PXR_NS::VtValue v;
     v = float(x);
     return v;
 }
 
-inline VtValue toY(double, double y, double)
+inline PXR_NS::VtValue toY(double, double y, double)
 {
-    VtValue v;
+    PXR_NS::VtValue v;
     v = float(y);
     return v;
 }
 
-inline VtValue toZ(double, double, double z)
+inline PXR_NS::VtValue toZ(double, double, double z)
 {
-    VtValue v;
+    PXR_NS::VtValue v;
     v = float(z);
     return v;
 }
@@ -75,14 +74,15 @@ inline VtValue toZ(double, double, double z)
 // Conversion functions from all supported rotation attributes to RotXYZ.
 //----------------------------------------------------------------------
 
-inline Ufe::Vector3d fromXYZ(const VtValue& value)
+inline Ufe::Vector3d fromXYZ(const PXR_NS::VtValue& value)
 {
     // No rotation order conversion
-    auto v = value.Get<GfVec3f>();
+    auto v = value.Get<PXR_NS::GfVec3f>();
     return Ufe::Vector3d(v[0], v[1], v[2]);
 }
 
-template <MEulerRotation::RotationOrder SRC_ROT_ORDER> Ufe::Vector3d fromRot(const VtValue& value);
+template <MEulerRotation::RotationOrder SRC_ROT_ORDER>
+Ufe::Vector3d fromRot(const PXR_NS::VtValue& value);
 
 constexpr auto fromXZY = fromRot<MEulerRotation::kXZY>;
 constexpr auto fromYXZ = fromRot<MEulerRotation::kYXZ>;
@@ -90,11 +90,20 @@ constexpr auto fromYZX = fromRot<MEulerRotation::kYZX>;
 constexpr auto fromZXY = fromRot<MEulerRotation::kZXY>;
 constexpr auto fromZYX = fromRot<MEulerRotation::kZYX>;
 
-inline Ufe::Vector3d fromX(const VtValue& value) { return Ufe::Vector3d(value.Get<float>(), 0, 0); }
+inline Ufe::Vector3d fromX(const PXR_NS::VtValue& value)
+{
+    return Ufe::Vector3d(value.Get<float>(), 0, 0);
+}
 
-inline Ufe::Vector3d fromY(const VtValue& value) { return Ufe::Vector3d(0, value.Get<float>(), 0); }
+inline Ufe::Vector3d fromY(const PXR_NS::VtValue& value)
+{
+    return Ufe::Vector3d(0, value.Get<float>(), 0);
+}
 
-inline Ufe::Vector3d fromZ(const VtValue& value) { return Ufe::Vector3d(0, 0, value.Get<float>()); }
+inline Ufe::Vector3d fromZ(const PXR_NS::VtValue& value)
+{
+    return Ufe::Vector3d(0, 0, value.Get<float>());
+}
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

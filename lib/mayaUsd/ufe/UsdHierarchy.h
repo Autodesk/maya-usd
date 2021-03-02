@@ -50,8 +50,9 @@ public:
 
     void             setItem(const UsdSceneItem::Ptr& item);
     const Ufe::Path& path() const;
-    inline UsdPrim   prim() const
+    inline PXR_NS::UsdPrim prim() const
     {
+        PXR_NAMESPACE_USING_DIRECTIVE
         TF_AXIOM(fItem != nullptr);
         return fItem->prim();
     }
@@ -85,7 +86,7 @@ public:
 #endif
 
 private:
-    Ufe::SceneItemList createUFEChildList(const UsdPrimSiblingRange& range) const;
+    Ufe::SceneItemList createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range) const;
 
 private:
     UsdSceneItem::Ptr fItem;

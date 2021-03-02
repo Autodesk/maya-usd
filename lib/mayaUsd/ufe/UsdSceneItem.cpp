@@ -24,6 +24,8 @@
 #endif
 #include <pxr/usd/usd/schemaRegistry.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 

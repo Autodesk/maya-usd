@@ -23,8 +23,6 @@
 #include <ufe/observer.h>
 #include <ufe/transform3dUndoableCommands.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -80,20 +78,20 @@ protected:
     // stack), so always return current data.
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    inline UsdPrim prim() const
+    inline PXR_NS::UsdPrim prim() const
     {
         updateItem();
         return fItem->prim();
     };
 #else
-    inline UsdPrim   prim() const { return fItem->prim(); }
+    inline PXR_NS::UsdPrim prim() const { return fItem->prim(); }
     inline Ufe::Path path() const { return fItem->path(); }
 #endif
 
     // Hooks to be implemented by the derived class: name of the attribute set
     // by the command, implementation of perform(), and add empty attribute.
     // Implementation of cannotInit() in this class returns false.
-    virtual TfToken attributeName() const = 0;
+    virtual PXR_NS::TfToken attributeName() const = 0;
     virtual void    performImp(double x, double y, double z) = 0;
     virtual void    addEmptyAttribute() = 0;
     virtual bool    cannotInit() const;
@@ -114,7 +112,7 @@ private:
     template <class N> void checkNotification(const N* notification);
 #endif
 
-    inline UsdAttribute attribute() const { return prim().GetAttribute(attributeName()); }
+    inline PXR_NS::UsdAttribute attribute() const { return prim().GetAttribute(attributeName()); }
 
     mutable UsdSceneItem::Ptr fItem { nullptr };
     V                         fPrevValue;

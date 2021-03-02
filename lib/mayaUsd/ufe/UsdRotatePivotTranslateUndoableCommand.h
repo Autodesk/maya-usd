@@ -23,8 +23,6 @@
 
 #include <ufe/transform3dUndoableCommands.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -42,7 +40,7 @@ public:
     UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path);
 #else
     UsdRotatePivotTranslateUndoableCommand(
-        const UsdPrim&             prim,
+        const PXR_NS::UsdPrim&     prim,
         const Ufe::Path&           ufePath,
         const Ufe::SceneItem::Ptr& item);
 #endif
@@ -74,8 +72,9 @@ public:
     bool translate(double x, double y, double z) override;
 #endif
 
-    inline UsdPrim prim() const
+    inline PXR_NS::UsdPrim prim() const
     {
+        PXR_NAMESPACE_USING_DIRECTIVE
         TF_AXIOM(fItem != nullptr);
         return fItem->prim();
     }
@@ -85,12 +84,12 @@ private:
 
 private:
 #ifndef UFE_V2_FEATURES_AVAILABLE
-    UsdPrim fPrim;
+    PXR_NS::UsdPrim fPrim;
 #endif
     Ufe::Path                 fPath;
     mutable UsdSceneItem::Ptr fItem { nullptr };
-    UsdAttribute              fPivotAttrib;
-    GfVec3f                   fPrevPivotValue;
+    PXR_NS::UsdAttribute      fPivotAttrib;
+    PXR_NS::GfVec3f           fPrevPivotValue;
     bool                      fNoPivotOp;
 
 }; // UsdRotatePivotTranslateUndoableCommand
