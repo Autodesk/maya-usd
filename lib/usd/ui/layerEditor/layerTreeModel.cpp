@@ -233,7 +233,7 @@ void LayerTreeModel::setSessionState(SessionState* in_sessionState)
         in_sessionState,
         &SessionState::autoHideSessionLayerSignal,
         this,
-        &LayerTreeModel::sessionStageChanged);
+        &LayerTreeModel::autoHideSessionLayerChanged);
 }
 
 void LayerTreeModel::rebuildModelOnIdle()

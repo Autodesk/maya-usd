@@ -41,21 +41,70 @@ class SessionState : public QObject
 {
     Q_OBJECT
 public:
-    virtual ~SessionState() { }
+    virtual ~SessionState() {}
 
     struct StageEntry
     {
         PXR_NS::UsdStageRefPtr _stage;
         std::string            _displayName;
         std::string            _proxyShapePath;
+
+        StageEntry()
+        {
+            _stage = PXR_NS::UsdStageRefPtr();
+            _displayName = "";
+            _proxyShapePath = "";
+        }
+
+        StageEntry(
+            PXR_NS::UsdStageRefPtr const& stage,
+            std::string const&            displayName,
+            std::string const&            proxyShapePath)
+        {
+            _stage = stage;
+            _displayName = displayName;
+            _proxyShapePath = proxyShapePath;
+        }
+
+        StageEntry(const StageEntry& entry)
+        {
+            _stage = entry._stage;
+            _displayName = entry._displayName;
+            _proxyShapePath = entry._proxyShapePath;
+        }
+
+        bool operator==(const StageEntry& entry) const
+        {
+            return (
+                _stage == entry._stage && _displayName == entry._displayName
+                && _proxyShapePath == entry._proxyShapePath);
+        }
+
+        bool operator!=(const StageEntry& entry) const { return !(*this == entry); }
+
+        StageEntry& operator=(const StageEntry& entry)
+        {
+            _stage = entry._stage;
+            _displayName = entry._displayName;
+            _proxyShapePath = entry._proxyShapePath;
+            return *this;
+        }
+
+        void clear()
+        {
+            _stage = PXR_NS::UsdStageRefPtr();
+            _displayName = "";
+            _proxyShapePath = "";
+        }
     };
 
     // properties
     virtual bool                    autoHideSessionLayer() const { return _autoHideSessionLayer; }
     virtual void                    setAutoHideSessionLayer(bool hide);
-    PXR_NS::UsdStageRefPtr const&   stage() const { return _stage; }
+    PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
+    StageEntry const&               stageEntry() const { return _currentStageEntry; }
     PXR_NS::SdfLayerRefPtr          targetLayer() const;
-    virtual void                    setStage(PXR_NS::UsdStageRefPtr const& in_stage);
+    virtual void                    setStageEntry(StageEntry const& in_entry);
     virtual AbstractCommandHook*    commandHook() = 0;
     virtual std::vector<StageEntry> allStages() const = 0;
     // path to default load layer dialogs to
@@ -73,18 +122,21 @@ public:
     // in this case, the stage needs to be re-created on the new file
     virtual void rootLayerPathChanged(std::string const& in_path) = 0;
 
-    bool isValid() { return _stage && _stage->GetRootLayer(); }
+    bool isValid()
+    {
+        return _currentStageEntry._stage && _currentStageEntry._stage->GetRootLayer();
+    }
 
 Q_SIGNALS:
     void currentStageChangedSignal();
-    void stageListChangedSignal(PXR_NS::UsdStageRefPtr const& toSelect = PXR_NS::UsdStageRefPtr());
-    void stageRenamedSignal(std::string const& name, PXR_NS::UsdStageRefPtr const& stage);
+    void stageListChangedSignal(StageEntry const& toSelect = StageEntry());
+    void stageRenamedSignal(std::string const& oldName, StageEntry const& renamedEntry);
     void autoHideSessionLayerSignal(bool hideIt);
-    void stageResetSignal(const std::string& proxyPath, PXR_NS::UsdStageRefPtr const& stage);
+    void stageResetSignal(StageEntry const& entry);
 
 protected:
-    PXR_NS::UsdStageRefPtr _stage;
-    bool                   _autoHideSessionLayer = true;
+    StageEntry _currentStageEntry;
+    bool       _autoHideSessionLayer = true;
 };
 
 } // namespace UsdLayerEditor

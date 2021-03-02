@@ -16,6 +16,7 @@
 #include "stageSelectorWidget.h"
 
 #include "qtUtils.h"
+#include "sessionState.h"
 #include "stringResources.h"
 
 #include <pxr/pxr.h>
@@ -25,7 +26,7 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 
-Q_DECLARE_METATYPE(PXR_NS::UsdStageRefPtr);
+Q_DECLARE_METATYPE(UsdLayerEditor::SessionState::StageEntry);
 
 namespace UsdLayerEditor {
 
@@ -71,31 +72,30 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
     updateFromSessionState();
 }
 
-PXR_NS::UsdStageRefPtr StageSelectorWidget::selectedStage()
+SessionState::StageEntry const StageSelectorWidget::selectedStage()
 {
     if (_dropDown->currentIndex() != -1) {
         auto const& data = _dropDown->currentData();
-        return data.value<PXR_NS::UsdStageRefPtr>();
+        return data.value<SessionState::StageEntry>();
     }
 
-    return PXR_NS::UsdStageRefPtr();
+    return SessionState::StageEntry();
 }
 // repopulates the combo based on the session stage list
-void StageSelectorWidget::updateFromSessionState(PXR_NS::UsdStageRefPtr const& stageToSelect)
+void StageSelectorWidget::updateFromSessionState(SessionState::StageEntry const& entryToSelect)
 {
     QSignalBlocker blocker(_dropDown);
     _dropDown->clear();
     auto allStages = _sessionState->allStages();
-    for (auto const& stage : allStages) {
-        _dropDown->addItem(QString(stage._displayName.c_str()), QVariant::fromValue(stage._stage));
+    for (auto const& stageEntry : allStages) {
+        _dropDown->addItem(
+            QString(stageEntry._displayName.c_str()), QVariant::fromValue(stageEntry));
     }
-    if (!stageToSelect) {
-        const auto& newStage = selectedStage();
-        if (newStage != _sessionState->stage()) {
-            _sessionState->setStage(newStage);
-        }
+    if (!entryToSelect._stage) {
+        const auto& newEntry = selectedStage();
+        _sessionState->setStageEntry(newEntry);
     } else {
-        _sessionState->setStage(stageToSelect);
+        _sessionState->setStageEntry(entryToSelect);
     }
 }
 
@@ -103,7 +103,7 @@ void StageSelectorWidget::updateFromSessionState(PXR_NS::UsdStageRefPtr const& s
 void StageSelectorWidget::selectedIndexChanged(int index)
 {
     _internalChange = true;
-    _sessionState->setStage(selectedStage());
+    _sessionState->setStageEntry(selectedStage());
     _internalChange = false;
 }
 
@@ -112,7 +112,14 @@ void StageSelectorWidget::selectedIndexChanged(int index)
 void StageSelectorWidget::sessionStageChanged()
 {
     if (!_internalChange) {
-        auto index = _dropDown->findData(QVariant::fromValue(_sessionState->stage()));
+        size_t index = -1;
+        for (size_t i = 0; i < _dropDown->count(); i++) {
+            auto const& data = _dropDown->itemData(i);
+            auto        entry = data.value<SessionState::StageEntry>();
+            if (entry == _sessionState->stageEntry()) {
+                index = i;
+            }
+        }
         if (index != -1) {
             QSignalBlocker blocker(_dropDown);
             _dropDown->setCurrentIndex(index);
@@ -120,17 +127,25 @@ void StageSelectorWidget::sessionStageChanged()
     }
 }
 
-void StageSelectorWidget::stageRenamed(std::string const& name, PXR_NS::UsdStageRefPtr const& stage)
+void StageSelectorWidget::stageRenamed(
+    std::string const&              oldName,
+    SessionState::StageEntry const& renamedEntry)
 {
-    auto index = _dropDown->findData(QVariant::fromValue(stage));
+    size_t index = -1;
+    for (size_t i = 0; i < _dropDown->count(); i++) {
+        auto const& data = _dropDown->itemData(i);
+        auto        entry = data.value<SessionState::StageEntry>();
+        if (entry._displayName == oldName && entry._stage == renamedEntry._stage) {
+            index = i;
+        }
+    }
     if (index != -1) {
-        _dropDown->setItemText(index, name.c_str());
+        _dropDown->setItemText(index, renamedEntry._displayName.c_str());
+        _dropDown->setItemData(index, QVariant::fromValue(renamedEntry));
     }
 }
 
-void StageSelectorWidget::stageReset(
-    const std::string&            proxyPath,
-    PXR_NS::UsdStageRefPtr const& stage)
+void StageSelectorWidget::stageReset(SessionState::StageEntry const& entry)
 {
     // Individual combo box entries have a short display name and a reference to a stage,
     // which is not a unique combination.  By construction the combo box indices do line
@@ -144,15 +159,15 @@ void StageSelectorWidget::stageReset(
 
     std::vector<SessionState::StageEntry> allStages = _sessionState->allStages();
     auto                                  it = std::find_if(
-        allStages.begin(), allStages.end(), [proxyPath](SessionState::StageEntry entry) {
-            return (proxyPath == entry._proxyShapePath);
+        allStages.begin(), allStages.end(), [entry](SessionState::StageEntry stageEntry) {
+            return (entry._proxyShapePath == stageEntry._proxyShapePath);
         });
 
     if (it != allStages.end()) {
-        auto index = (it - allStages.begin());
+        auto index = std::distance(allStages.begin(), it);
         if (index < count) {
             if (_dropDown->itemText(index) == QString::fromStdString((*it)._displayName)) {
-                _dropDown->setItemData(index, QVariant::fromValue(stage));
+                _dropDown->setItemData(index, QVariant::fromValue(entry));
             }
         }
     }

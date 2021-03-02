@@ -50,7 +50,7 @@ public:
     ~MayaSessionState();
 
     // API implementation
-    void                    setStage(PXR_NS::UsdStageRefPtr const& in_stage) override;
+    void                    setStageEntry(StageEntry const& in_entry) override;
     void                    setAutoHideSessionLayer(bool hide) override;
     AbstractCommandHook*    commandHook() override;
     std::vector<StageEntry> allStages() const override;
@@ -69,7 +69,7 @@ public:
     // in this case, the stage needs to be re-created on the new file
     void rootLayerPathChanged(std::string const& in_path) override;
 
-    std::string proxyShapePath() { return _currentProxyShapePath; }
+    std::string proxyShapePath() { return _currentStageEntry._proxyShapePath; }
 
 Q_SIGNALS:
     void clearUIOnSceneResetSignal();
@@ -78,10 +78,10 @@ public:
     void registerNotifications();
     void unregisterNotifications();
 
-protected:
     // get the stage and proxy name for a path
     static bool getStageEntry(StageEntry* out_stageEntry, const MString& shapePath);
 
+protected:
     // maya callback handers
     static void proxyShapeAddedCB(MObject& node, void* clientData);
     static void proxyShapeRemovedCB(MObject& node, void* clientData);
@@ -89,15 +89,14 @@ protected:
     static void sceneClosingCB(void* clientData);
 
     void proxyShapeAddedCBOnIdle(const MObject& node);
-    void nodeRenamedCBOnIdle(const MObject& obj);
+    void nodeRenamedCBOnIdle(std::string const& oldName, const MObject& obj);
 
     // Notice listener method for proxy stage set
     void mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice);
-    void mayaUsdStageResetCBOnIdle(const std::string& shapePath, UsdStageRefPtr const& stage);
+    void mayaUsdStageResetCBOnIdle(StageEntry const& entry);
 
     std::vector<MCallbackId> _callbackIds;
     TfNotice::Key            _stageResetNoticeKey;
-    std::string              _currentProxyShapePath;
     MayaCommandHook          _mayaCommandHook;
 };
 

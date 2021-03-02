@@ -26,8 +26,6 @@
 
 namespace UsdLayerEditor {
 
-class SessionState;
-
 /**
  * @brief Drop down list that allows selecting a stage. Owned by the LayerEditorWidget
  *
@@ -39,14 +37,14 @@ public:
     StageSelectorWidget(SessionState* in_sessionState, QWidget* in_parent);
 
 protected:
-    void                   setSessionState(SessionState* in_sessionState);
-    PXR_NS::UsdStageRefPtr selectedStage();
+    void                           setSessionState(SessionState* in_sessionState);
+    SessionState::StageEntry const selectedStage();
 
     // slot:
-    void
-         updateFromSessionState(PXR_NS::UsdStageRefPtr const& stageToSelect = PXR_NS::UsdStageRefPtr());
-    void stageRenamed(std::string const& name, PXR_NS::UsdStageRefPtr const& stage);
-    void stageReset(const std::string& proxyPath, PXR_NS::UsdStageRefPtr const& stage);
+    void updateFromSessionState(
+        SessionState::StageEntry const& entryToSelect = SessionState::StageEntry());
+    void stageRenamed(std::string const& oldName, SessionState::StageEntry const& renamedEntry);
+    void stageReset(SessionState::StageEntry const& entry);
     void sessionStageChanged();
     void selectedIndexChanged(int index);
 
