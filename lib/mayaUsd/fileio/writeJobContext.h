@@ -138,7 +138,6 @@ public:
     /// Used to cache the animated blend shape weight plugs that need to be sampled per-frame.
     /// This is cached at the writeJob-level because the state needs to persist across instances of
     /// the meshWriter->Write() function.
-    MAYAUSD_CORE_PUBLIC
     MPlugArray mBlendShapesAnimWeightPlugs;
 
 protected:
