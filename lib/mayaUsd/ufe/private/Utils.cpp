@@ -24,33 +24,34 @@
 #include <maya/MGlobal.h>
 #include <ufe/log.h>
 
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace
+namespace {
+// find the Layer Index in the LayerStack ( strong-to-weak order )
+uint32_t findIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
 {
-    // Find the Layer Index in the LayerStack ( strong-to-weak order )
-    uint32_t findIndexOfLayer(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
-    {
-        const auto& prim = attr.GetPrim();
-        const auto& stage = prim.GetStage();
-        const auto& layerStack = prim.GetStage()->GetLayerStack();
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& layerStack = prim.GetStage()->GetLayerStack();
 
-        uint32_t foundIndex{0};
+    uint32_t position { 0 };
 
-        for (int index=0; index < layerStack.size(); ++index) {
-            if (layer == layerStack[index]) {
-                foundIndex = index;
-                break;
-            }
-        }
+    auto iter = std::find_if(
+        std::begin(layerStack),
+        std::end(layerStack),
+        [&](const PXR_NS::SdfLayerHandle& l) -> bool { return layer == l; });
 
-        return foundIndex;
+    if (iter != layerStack.end()) {
+        return std::distance(layerStack.begin(), iter);
     }
+
+    return position;
 }
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -224,16 +225,17 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     const auto& editTargetPropertySpec = editTarget.GetPropertySpecForScenePath(attr.GetPath());
 
     // get the index to edit target layer
-    const auto targetLayerIndex = findIndexOfLayer(attr, editTarget.GetLayer());
+    const auto targetLayerIndex = findIndex(attr, editTarget.GetLayer());
 
-    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide opinions for this property.
+    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
+    // opinions for this property.
     const auto& propertyStack = attr.GetPropertyStack();
 
     SdfLayerHandle strongLayer;
     for (const auto& spec : propertyStack) {
 
         // Skip if the edit target layer is stronger than the propSpec layer
-        const auto propSpecLayerIndex = findIndexOfLayer(attr, spec->GetLayer());
+        const auto propSpecLayerIndex = findIndex(attr, spec->GetLayer());
         if (targetLayerIndex <= propSpecLayerIndex) {
             continue;
         }
@@ -245,7 +247,7 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     }
 
     if (strongLayer) {
-        std::string err = TfStringPrintf( 
+        std::string err = TfStringPrintf(
             "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
             attr.GetBaseName().GetText(),
             strongLayer->GetDisplayName().c_str());
