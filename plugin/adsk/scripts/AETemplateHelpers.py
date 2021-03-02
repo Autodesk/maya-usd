@@ -3,7 +3,7 @@ import maya.cmds as cmds
 import ufe
 import mayaUsd.ufe
 import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
-import maya.mel as mel
+from mayaUSDRegisterStrings import getMayaUsdString
 
 def debugMessage(msg):
     DEBUG = False
@@ -54,7 +54,7 @@ def IsProxyShapeLayerStackDirty(proxyStage):
     if proxyStage:
         # Is any layer in the layerstack dirty?
         for layer in proxyStage.GetLayerStack(includeSessionLayers=False):
-            debugMessage('  Proessing layer: %s' % layer.GetDisplayName())
+            debugMessage('  Processing layer: %s' % layer.GetDisplayName())
             if layer.dirty:
                 debugMessage('    Found dirty layer')
                 return True
@@ -65,7 +65,7 @@ def GetStageFromProxyShapeAttr(attr):
     # from the input attribute on the proxy shape.
 
     # First get the stage name from the input attribute.
-    stageName = mel.eval('plugNode("%s")' % attr)
+    stageName = attr.split('.')[0]
 
     # Convert that into a long Maya path so we can get the USD stage.
     res = cmds.ls(stageName, l=True)
@@ -114,10 +114,10 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
 
         # If we have a dirty layer stack, display dialog to confirm new loading.
         if dirtyStack:
-            kTitleFormat = mel.eval('getMayaUsdString("kDiscardStageEditsTitle")')
-            kMsgFormat = mel.eval('getMayaUsdString("kDiscardStageEditsLoadMsg")')
-            kYes = mel.eval('getMayaUsdString("kButtonYes")')
-            kNo = mel.eval('getMayaUsdString("kButtonNo")')
+            kTitleFormat = getMayaUsdString("kDiscardStageEditsTitle")
+            kMsgFormat = getMayaUsdString("kDiscardStageEditsLoadMsg")
+            kYes = getMayaUsdString("kButtonYes")
+            kNo = getMayaUsdString("kButtonNo")
             kTitle = cmds.format(kTitleFormat, stringArg=stageName)
             # Our title is a little long, and the confirmDialog command is not making the
             # dialog wide enough to show it all. So by telling the message string to not
@@ -136,9 +136,9 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
 
         if openFileDialog and newFilePath is None:
             # Pop the file open dialog for user to load new usd file.
-            title = mel.eval('getMayaUsdString("kLoadUSDFile")')
-            okCaption = mel.eval('getMayaUsdString("kLoad")')
-            fileFilter = mel.eval('getMayaUsdString("kAllUsdFiles")') + ' (*.usd *.usda *.usdc *.usdz );;*.usd;;*.usda;;*.usdc;;*.usdz';
+            title = getMayaUsdString("kLoadUSDFile")
+            okCaption = getMayaUsdString("kLoad")
+            fileFilter = getMayaUsdString("kAllUsdFiles") + ' (*.usd *.usda *.usdc *.usdz );;*.usd;;*.usda;;*.usdc;;*.usdz';
             res = cmds.fileDialog2(caption=title, fileMode=1, ff=fileFilter, okc=okCaption)
             if res and len(res) == 1:
                 debugMessage('    User picked USD file, setting file path attribute')
@@ -182,10 +182,10 @@ def ProxyShapeFilePathRefresh(filePathAttr):
             debugMessage('  No dirty layers, calling UsdStage.Reload()')
             proxyStage.Reload()
         else:
-            kTitleFormat = mel.eval('getMayaUsdString("kDiscardStageEditsTitle")')
-            kMsgFormat = mel.eval('getMayaUsdString("kDiscardStageEditsReloadMsg")')
-            kYes = mel.eval('getMayaUsdString("kButtonYes")')
-            kNo = mel.eval('getMayaUsdString("kButtonNo")')
+            kTitleFormat = getMayaUsdString("kDiscardStageEditsTitle")
+            kMsgFormat = getMayaUsdString("kDiscardStageEditsReloadMsg")
+            kYes = getMayaUsdString("kButtonYes")
+            kNo = getMayaUsdString("kButtonNo")
             kTitle = cmds.format(kTitleFormat, stringArg=stageName)
             # Our title is a little long, and the confirmDialog command is not making the
             # dialog wide enough to show it all. So by telling the message string to not
