@@ -1,6 +1,13 @@
 This document outlines coding guidelines for contributions to the  [maya-usd](https://github.com/autodesk/maya-usd) project.
 
 # C++ Coding Guidelines
+
+Many of the C++ coding guidelines below are validated and enforced through the use of `clang-format` which is provided by the [LLVM project](https://github.com/llvm/llvm-project). Since the adjustments made by `clang-format` can vary from version to version, we standardize this project on a single `clang-format` version to ensure consistent results for all contributions made to maya-usd.
+
+|                      | Version | Source Code | Release |
+|:--------------------:|:-------:|:-----------:|:-------:|
+|  `clang-format`/LLVM |  10.0.0 | [llvmorg-10.0.0 Tag](https://github.com/llvm/llvm-project/tree/llvmorg-10.0.0) | [LLVM 10.0.0](https://github.com/llvm/llvm-project/releases/tag/llvmorg-10.0.0) |
+
 ## Foundation/Critical
 ### License notice
 Every file should start with the Apache 2.0 licensing statement:

@@ -144,8 +144,8 @@ SaveLayerPathRow::SaveLayerPathRow(
     _label->setToolTip(in_parent->buildTooltipForLayer(_layerPair.first));
     gridLayout->addWidget(_label, 0, 0);
 
-    _initialStartFolder = UsdMayaSerialization::getSceneFolder().c_str();
-    _absolutePath = UsdMayaSerialization::generateUniqueFileName(stageName).c_str();
+    _initialStartFolder = MayaUsd::utils::getSceneFolder().c_str();
+    _absolutePath = MayaUsd::utils::generateUniqueFileName(stageName).c_str();
 
     QFileInfo fileInfo(_absolutePath);
     QString   suggestedFullPath = fileInfo.absoluteFilePath();
@@ -301,8 +301,8 @@ SaveLayersDialog ::~SaveLayersDialog() { QApplication::restoreOverrideCursor(); 
 void SaveLayersDialog::getLayersToSave(UsdStageRefPtr stage, const std::string& stageName)
 {
     // Get the layers to save for this stage.
-    UsdMayaSerialization::stageLayersToSave stageLayersToSave;
-    UsdMayaSerialization::getLayersToSaveFromProxy(stage, stageLayersToSave);
+    MayaUsd::utils::stageLayersToSave stageLayersToSave;
+    MayaUsd::utils::getLayersToSaveFromProxy(stage, stageLayersToSave);
 
     // Keep track of all the layers for this particular stage.
     for (const auto& layerPairs : stageLayersToSave.anonLayers) {
@@ -496,7 +496,7 @@ void SaveLayersDialog::onSaveAll()
                 auto sFileName = qFileName.toStdString();
 
                 auto newLayer
-                    = UsdMayaSerialization::saveAnonymousLayer(sdfLayer, sFileName, parentLayer);
+                    = MayaUsd::utils::saveAnonymousLayer(sdfLayer, sFileName, parentLayer);
 
                 if (!parentLayer) {
                     newRoot = sFileName;

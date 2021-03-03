@@ -307,7 +307,7 @@ void LayerTreeItem::saveAnonymousLayer()
     if (sessionState->saveLayerUI(nullptr, &fileName)) {
         // the path we has is an absolute path
         const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
-        std::string   formatTag = UsdMayaSerialization::usdFormatArgOption();
+        std::string   formatTag = MayaUsd::utils::usdFormatArgOption();
         if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
             printf("USD Layer written to %s\n", fileName.c_str());
 
