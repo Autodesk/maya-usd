@@ -42,7 +42,12 @@
 #include <maya/MUintArray.h>
 #include <maya/MViewport2Renderer.h>
 
+#if PXR_VERSION > 2008
+#else
+// Needed for GL_HALF_FLOAT.
 #include <GL/glew.h>
+#endif
+
 #include <ghc/filesystem.hpp>
 #include <tbb/parallel_for.h>
 
