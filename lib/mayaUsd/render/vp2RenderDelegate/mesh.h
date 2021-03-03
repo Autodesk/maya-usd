@@ -18,6 +18,7 @@
 
 #include "draw_item.h"
 #include "meshViewportCompute.h"
+#include "primvarInfo.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
@@ -31,50 +32,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdSceneDelegate;
 class HdVP2DrawItem;
 class HdVP2RenderDelegate;
-
-//! Primvar data and interpolation, from the scene delegate
-struct PrimvarSource
-{
-    enum DataSource
-    {
-        Primvar,
-        CPUCompute,
-        GPUCompute
-    };
-
-    PrimvarSource(VtValue d, HdInterpolation interp, DataSource source)
-        : data(d)
-        , interpolation(interp)
-        , dataSource(source)
-    {
-    }
-
-    //! a copy-on-write handle to the actual primvar buffer
-    VtValue data;
-
-    //! the interpolation mode to be used.
-    HdInterpolation interpolation;
-
-    //! where the data came from, SceneDelegate, CPU calculation or GPU calculation
-    DataSource dataSource { Primvar };
-};
-
-//! Everything about a primvar
-struct PrimvarInfo
-{
-    PrimvarInfo(const PrimvarSource& source, MHWRender::MVertexBuffer* buffer)
-        : _source(source)
-        , _buffer(buffer)
-    {
-    }
-
-    PrimvarSource                             _source;
-    std::unique_ptr<MHWRender::MVertexBuffer> _buffer;
-    MFloatArray                               _extraInstanceData;
-};
-
-using PrimvarInfoMap
-    = std::unordered_map<TfToken, std::unique_ptr<PrimvarInfo>, TfToken::HashFunctor>;
 
 /*! \brief  HdVP2Mesh-specific data shared among all its draw items.
     \class  HdVP2MeshSharedData

@@ -57,29 +57,30 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         imageUtils.snapshot(snapshotImage, width=960, height=540)
         return self.assertImagesClose(baselineImage, snapshotImage)
 
-    def _RunTest(self):
-        globalSelection = ufe.GlobalSelection.get()
-        globalSelection.clear()
-        self.assertSnapshotClose('%s_unselected.png' % self._testName)
-
-    def _PrepareTest(self, testName):
+    def _StartTest(self, testName):
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
         self._testName = testName
         testFile = testUtils.getTestScene("instances", self._testName + ".usda")
         mayaUtils.createProxyFromFile(testFile)
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.clear()
+        self.assertSnapshotClose('%s_unselected.png' % self._testName)
 
     def testPerInstanceInheritedData(self):
-        self._PrepareTest('perInstanceInheritedData')
-        self._RunTest()
+        self._StartTest('perInstanceInheritedData')
     
     def testPerInstanceInheritedDataPartialOverridePxrMtls(self):
-        self._PrepareTest('inheritedDisplayColor_noPxrMtls')
-        self._RunTest()
+        self._StartTest('inheritedDisplayColor_noPxrMtls')
 
     def testPerInstanceInheritedDataPartialOverride(self):
-        self._PrepareTest('inheritedDisplayColor_pxrSurface')
-        self._RunTest()
+        self._StartTest('inheritedDisplayColor_pxrSurface')
+
+    def testPerInstanceInheriedDataBasisCurves(self):
+        self._StartTest('basisCurveInstance')
+        cmds.select("|stage|stageShape,/instanced_2")
+        self.assertSnapshotClose('%s_selected.png' % self._testName)
+
 
 
 if __name__ == '__main__':

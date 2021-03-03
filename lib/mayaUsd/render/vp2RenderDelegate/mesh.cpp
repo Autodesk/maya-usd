@@ -2214,14 +2214,14 @@ void HdVP2Mesh::_UpdatePrimvarSources(
         HdPrimvarDescriptorVector instancerPrimvars
             = sceneDelegate->GetPrimvarDescriptors(instancerId, HdInterpolationInstance);
         for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
-            if (std::find(begin, end, pv.name) != end) {
+            if (std::find(begin, end, pv.name) == end) {
+                // erase the unused primvar so we don't hold onto stale data
+                _meshSharedData->_primvarInfo.erase(pv.name);
+            } else {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)) {
                     const VtValue value = sceneDelegate->Get(instancerId, pv.name);
                     updatePrimvarInfo(pv.name, value, HdInterpolationInstance);
                 }
-            } else {
-                // erase the unused primvar so we don't hold onto stale data
-                _meshSharedData->_primvarInfo.erase(pv.name);
             }
         }
     }
@@ -2231,14 +2231,14 @@ void HdVP2Mesh::_UpdatePrimvarSources(
         const HdPrimvarDescriptorVector primvars = GetPrimvarDescriptors(sceneDelegate, interp);
 
         for (const HdPrimvarDescriptor& pv : primvars) {
-            if (std::find(begin, end, pv.name) != end) {
+            if (std::find(begin, end, pv.name) == end) {
+                // erase the unused primvar so we don't hold onto stale data
+                _meshSharedData->_primvarInfo.erase(pv.name);
+            } else {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                     const VtValue value = GetPrimvar(sceneDelegate, pv.name);
                     updatePrimvarInfo(pv.name, value, interp);
                 }
-            } else {
-                // erase the unused primvar so we don't hold onto stale data
-                _meshSharedData->_primvarInfo.erase(pv.name);
             }
         }
     }
