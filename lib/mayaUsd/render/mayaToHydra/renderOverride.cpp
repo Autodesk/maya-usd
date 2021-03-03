@@ -348,7 +348,7 @@ std::vector<MString> MtohRenderOverride::AllActiveRendererNames()
 
     std::lock_guard<std::mutex> lock(_allInstancesMutex);
     for (auto* instance : _allInstances) {
-        if (instance->_initializedViewport) {
+        if (instance->_initializationSucceeded) {
             renderers.push_back(instance->_rendererDesc.rendererName.GetText());
         }
     }
@@ -525,7 +525,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
             _lastRenderTime = std::chrono::system_clock::now();
         }
     };
-    if (_initializedViewport && !_taskController) {
+    if (_initializationAttempted && !_initializationSucceeded) {
         // Initialization must have failed already, stop trying.
         return MStatus::kFailure;
     }
@@ -535,13 +535,10 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         ClearHydraResources();
     }
 
-    if (!_initializedViewport) {
+    if (!_initializationAttempted) {
         _InitHydraResources();
 
-        if (!_taskController) {
-            // No task controller means something has gone wrong, use this as a signal so we
-            // aren't endlessly failing to initialize.
-            _initializedViewport = true;
+        if (!_initializationSucceeded) {
             return MStatus::kFailure;
         }
     }
@@ -668,6 +665,9 @@ void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::_InitHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
+
+    _initializationAttempted = true;
+
 #if PXR_VERSION < 2102
     GlfGlewInit();
 #endif
@@ -741,7 +741,6 @@ void MtohRenderOverride::_InitHydraResources()
     _renderIndex->GetChangeTracker().AddCollection(_selectionCollection.GetName());
     _SelectionChanged();
 
-    _initializedViewport = true;
     if (auto* renderDelegate = _GetRenderDelegate()) {
         // Pull in any options that may have changed due file-open.
         // If the currentScene has defaultRenderGlobals we'll absorb those new settings,
@@ -752,11 +751,13 @@ void MtohRenderOverride::_InitHydraResources()
             { _rendererDesc.rendererName, filterRenderer, fallbackToUserDefaults });
         _globals.ApplySettings(renderDelegate, _rendererDesc.rendererName);
     }
+
+    _initializationSucceeded = true;
 }
 
 void MtohRenderOverride::ClearHydraResources()
 {
-    if (!_initializedViewport) {
+    if (!_initializationAttempted) {
         return;
     }
 
@@ -786,7 +787,8 @@ void MtohRenderOverride::ClearHydraResources()
         _rendererPlugin = nullptr;
     }
 
-    _initializedViewport = false;
+    _initializationSucceeded = false;
+    _initializationAttempted = false;
     SelectionChanged();
 }
 

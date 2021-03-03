@@ -206,7 +206,8 @@ private:
     int _currentOperation = -1;
 
     const bool _isUsingHdSt = false;
-    bool       _initializedViewport = false;
+    bool       _initializationAttempted = false;
+    bool       _initializationSucceeded = false;
     bool       _hasDefaultLighting = false;
     bool       _selectionChanged = true;
 
