@@ -16,13 +16,13 @@
 #include "blockSceneModificationContext.h"
 
 #include <pxr/base/tf/stringUtils.h>
-#include <pxr/pxr.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAUSD_NS_DEF {
+namespace utils {
 
 UsdMayaBlockSceneModificationContext::UsdMayaBlockSceneModificationContext()
 {
@@ -38,10 +38,11 @@ UsdMayaBlockSceneModificationContext::UsdMayaBlockSceneModificationContext()
 UsdMayaBlockSceneModificationContext::~UsdMayaBlockSceneModificationContext()
 {
     const MString setFileModifiedCmd(
-        TfStringPrintf("file -modified %d", _sceneWasModified ? 1 : 0).c_str());
+        PXR_NS::TfStringPrintf("file -modified %d", _sceneWasModified ? 1 : 0).c_str());
 
     MStatus status = MGlobal::executeCommand(setFileModifiedCmd);
     CHECK_MSTATUS(status);
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF

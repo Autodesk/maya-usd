@@ -15,15 +15,11 @@
 //
 #include <mayaUsd/utils/blockSceneModificationContext.h>
 
-#include <pxr/pxr.h>
-
 #include <boost/python.hpp>
 
 #include <memory>
 
 using namespace boost::python;
-
-PXR_NAMESPACE_USING_DIRECTIVE;
 
 namespace {
 
@@ -32,12 +28,12 @@ namespace {
 class _PyBlockSceneModificationContext
 {
 public:
-    void __enter__() { _context.reset(new UsdMayaBlockSceneModificationContext()); }
+    void __enter__() { _context.reset(new MayaUsd::utils::UsdMayaBlockSceneModificationContext()); }
 
     void __exit__(object, object, object) { _context.reset(); }
 
 private:
-    std::shared_ptr<UsdMayaBlockSceneModificationContext> _context;
+    std::shared_ptr<MayaUsd::utils::UsdMayaBlockSceneModificationContext> _context;
 };
 
 } // anonymous namespace

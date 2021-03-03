@@ -207,7 +207,7 @@ MObject PxrMayaHdImagingShape::GetOrCreateInstance()
     // We never intend for the imaging shape to get saved out to the Maya scene
     // file, so make sure that we preserve the scene modification status from
     // before we create the shape.
-    const UsdMayaBlockSceneModificationContext blockModContext;
+    const MayaUsd::utils::UsdMayaBlockSceneModificationContext blockModContext;
 
     // Create a transform node for the shape.
     MObject hdImagingTransformObj;
