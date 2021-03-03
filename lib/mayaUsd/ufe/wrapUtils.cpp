@@ -187,7 +187,7 @@ int ufePathToInstanceIndex(const std::string& ufePathString)
     // If there are fewer than two segments, there cannot be a USD segment, so
     // return ALL_INSTANCES.
     if (path.getSegments().size() < 2u) {
-        return UsdImagingDelegate::ALL_INSTANCES;
+        return PXR_NS::UsdImagingDelegate::ALL_INSTANCES;
     }
 
     return ufe::ufePathToInstanceIndex(path);
