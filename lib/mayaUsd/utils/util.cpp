@@ -784,7 +784,7 @@ bool _GetColorAndTransparencyFromLambert(const MObject& shaderObj, GfVec3f* rgb,
                 displayColor[j] = color[j];
             }
             displayColor *= lambertFn.diffuseCoeff();
-            *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+            *rgb = MayaUsd::utils::ConvertMayaToLinear(displayColor);
         }
         if (alpha) {
             MColor trn = lambertFn.transparency();
@@ -814,7 +814,7 @@ bool _GetColorAndTransparencyFromStandardSurface(
                 displayColor[j] = color[j];
             }
             displayColor *= surfaceFn.base();
-            *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+            *rgb = MayaUsd::utils::ConvertMayaToLinear(displayColor);
         }
         if (alpha) {
             *alpha = 1.0f - surfaceFn.transmission();
@@ -842,7 +842,7 @@ bool _GetColorAndTransparencyFromDepNode(const MObject& shaderObj, GfVec3f* rgb,
         for (int j = 0; j < 3; j++) {
             colorPlug.child(j).getValue(displayColor[j]);
         }
-        *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+        *rgb = MayaUsd::utils::ConvertMayaToLinear(displayColor);
     }
 
     if (alpha) {
@@ -1310,7 +1310,7 @@ template <typename T> static T _GetVec(const UsdAttribute& attr, const VtValue& 
     const T ret = val.UncheckedGet<T>();
 
     if (attr.GetRoleName() == SdfValueRoleNames->Color) {
-        return UsdMayaColorSpace::ConvertMayaToLinear(ret);
+        return MayaUsd::utils::ConvertMayaToLinear(ret);
     }
 
     return ret;
@@ -1584,7 +1584,7 @@ bool UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, const UsdTimeCode ti
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec3d vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = MayaUsd::utils::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(static_cast<unsigned int>(i), &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1602,7 +1602,7 @@ bool UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, const UsdTimeCode ti
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec3f vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = MayaUsd::utils::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(static_cast<unsigned int>(i), &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1620,7 +1620,7 @@ bool UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, const UsdTimeCode ti
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec4d vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = MayaUsd::utils::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(static_cast<unsigned int>(i), &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1638,7 +1638,7 @@ bool UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, const UsdTimeCode ti
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec4f vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = MayaUsd::utils::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(static_cast<unsigned int>(i), &status);
             CHECK_MSTATUS_AND_RETURN(status, false);

@@ -460,7 +460,7 @@ MObject UsdMayaReadUtil::FindOrCreateMayaAttr(
 template <typename T> T _ConvertVec(const MPlug& plug, const T& val)
 {
     if (MFnAttribute(plug.attribute()).isUsedAsColor()) {
-        return UsdMayaColorSpace::ConvertLinearToMaya(val);
+        return MayaUsd::utils::ConvertLinearToMaya(val);
     } else {
         return val;
     }
