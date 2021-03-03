@@ -21,8 +21,8 @@ import time
 
 THIS_FILE = os.path.normpath(os.path.abspath(inspect.getsourcefile(lambda: None)))
 THIS_DIR = os.path.dirname(THIS_FILE)
-# THIS_DIR = REPO_ROOT/tests/bin
-REPO_ROOT = os.path.dirname(os.path.dirname(THIS_DIR))
+# THIS_DIR = REPO_ROOT/.github
+REPO_ROOT = os.path.dirname(THIS_DIR)
 
 UPDATE_INTERVAL = .2
 
