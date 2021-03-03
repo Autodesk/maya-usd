@@ -60,7 +60,7 @@ public:
     static UsdRotatePivotTranslateUndoableCommand::Ptr create(const Ufe::Path& path);
 #else
     static UsdRotatePivotTranslateUndoableCommand::Ptr
-         create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+         create(const PXR_NS::UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
 #endif
 
     // Ufe::TranslateUndoableCommand overrides
