@@ -56,23 +56,6 @@ public:
             _proxyShapePath = "";
         }
 
-        StageEntry(
-            PXR_NS::UsdStageRefPtr const& stage,
-            std::string const&            displayName,
-            std::string const&            proxyShapePath)
-        {
-            _stage = stage;
-            _displayName = displayName;
-            _proxyShapePath = proxyShapePath;
-        }
-
-        StageEntry(const StageEntry& entry)
-        {
-            _stage = entry._stage;
-            _displayName = entry._displayName;
-            _proxyShapePath = entry._proxyShapePath;
-        }
-
         bool operator==(const StageEntry& entry) const
         {
             return (
@@ -130,7 +113,7 @@ public:
 Q_SIGNALS:
     void currentStageChangedSignal();
     void stageListChangedSignal(StageEntry const& toSelect = StageEntry());
-    void stageRenamedSignal(std::string const& oldName, StageEntry const& renamedEntry);
+    void stageRenamedSignal(StageEntry const& renamedEntry);
     void autoHideSessionLayerSignal(bool hideIt);
     void stageResetSignal(StageEntry const& entry);
 

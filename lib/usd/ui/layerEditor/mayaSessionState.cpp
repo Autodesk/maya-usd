@@ -32,7 +32,6 @@
 #include <QtCore/QTimer>
 #include <QtWidgets/QMenu>
 
-
 #ifdef THIS
 #undef THIS
 #endif
@@ -226,7 +225,7 @@ void MayaSessionState::nodeRenamedCBOnIdle(std::string const& oldName, const MOb
                 _currentStageEntry = entry;
             }
 
-            Q_EMIT stageRenamedSignal(oldName, entry);
+            Q_EMIT stageRenamedSignal(entry);
         }
     }
 }

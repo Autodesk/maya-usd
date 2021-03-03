@@ -28,6 +28,24 @@
 
 Q_DECLARE_METATYPE(UsdLayerEditor::SessionState::StageEntry);
 
+namespace {
+int getEntryIndexByProxyPath(
+    UsdLayerEditor::SessionState::StageEntry const&              entry,
+    std::vector<UsdLayerEditor::SessionState::StageEntry> const& stages)
+{
+    auto it = std::find_if(
+        stages.begin(), stages.end(), [entry](UsdLayerEditor::SessionState::StageEntry stageEntry) {
+            return (entry._proxyShapePath == stageEntry._proxyShapePath);
+        });
+
+    if (it != stages.end()) {
+        return std::distance(stages.begin(), it);
+    }
+
+    return -1;
+}
+} // namespace
+
 namespace UsdLayerEditor {
 
 StageSelectorWidget::StageSelectorWidget(SessionState* in_sessionState, QWidget* in_parent)
@@ -112,14 +130,8 @@ void StageSelectorWidget::selectedIndexChanged(int index)
 void StageSelectorWidget::sessionStageChanged()
 {
     if (!_internalChange) {
-        size_t index = -1;
-        for (size_t i = 0; i < _dropDown->count(); i++) {
-            auto const& data = _dropDown->itemData(i);
-            auto        entry = data.value<SessionState::StageEntry>();
-            if (entry == _sessionState->stageEntry()) {
-                index = i;
-            }
-        }
+        auto index
+            = getEntryIndexByProxyPath(_sessionState->stageEntry(), _sessionState->allStages());
         if (index != -1) {
             QSignalBlocker blocker(_dropDown);
             _dropDown->setCurrentIndex(index);
@@ -127,18 +139,9 @@ void StageSelectorWidget::sessionStageChanged()
     }
 }
 
-void StageSelectorWidget::stageRenamed(
-    std::string const&              oldName,
-    SessionState::StageEntry const& renamedEntry)
+void StageSelectorWidget::stageRenamed(SessionState::StageEntry const& renamedEntry)
 {
-    size_t index = -1;
-    for (size_t i = 0; i < _dropDown->count(); i++) {
-        auto const& data = _dropDown->itemData(i);
-        auto        entry = data.value<SessionState::StageEntry>();
-        if (entry._displayName == oldName && entry._stage == renamedEntry._stage) {
-            index = i;
-        }
-    }
+    auto index = getEntryIndexByProxyPath(renamedEntry, _sessionState->allStages());
     if (index != -1) {
         _dropDown->setItemText(index, renamedEntry._displayName.c_str());
         _dropDown->setItemData(index, QVariant::fromValue(renamedEntry));
@@ -157,19 +160,9 @@ void StageSelectorWidget::stageReset(SessionState::StageEntry const& entry)
         return;
     }
 
-    std::vector<SessionState::StageEntry> allStages = _sessionState->allStages();
-    auto                                  it = std::find_if(
-        allStages.begin(), allStages.end(), [entry](SessionState::StageEntry stageEntry) {
-            return (entry._proxyShapePath == stageEntry._proxyShapePath);
-        });
-
-    if (it != allStages.end()) {
-        auto index = std::distance(allStages.begin(), it);
-        if (index < count) {
-            if (_dropDown->itemText(index) == QString::fromStdString((*it)._displayName)) {
-                _dropDown->setItemData(index, QVariant::fromValue(entry));
-            }
-        }
+    auto index = getEntryIndexByProxyPath(entry, _sessionState->allStages());
+    if (index >= 0 && index < count) {
+        _dropDown->setItemData(index, QVariant::fromValue(entry));
     }
 }
 

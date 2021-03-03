@@ -43,7 +43,7 @@ protected:
     // slot:
     void updateFromSessionState(
         SessionState::StageEntry const& entryToSelect = SessionState::StageEntry());
-    void stageRenamed(std::string const& oldName, SessionState::StageEntry const& renamedEntry);
+    void stageRenamed(SessionState::StageEntry const& renamedEntry);
     void stageReset(SessionState::StageEntry const& entry);
     void sessionStageChanged();
     void selectedIndexChanged(int index);
