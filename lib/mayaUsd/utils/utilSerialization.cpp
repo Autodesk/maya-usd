@@ -28,7 +28,7 @@
 
 #include <string>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+namespace {
 
 class RecursionDetector
 {
@@ -45,8 +45,6 @@ public:
 
     std::vector<std::string> _paths;
 };
-
-namespace {
 
 std::string toForwardSlashes(const std::string& in_path)
 {
@@ -79,13 +77,13 @@ std::string computePathToLoadSublayer(
 }
 
 void populateChildren(
-    SdfLayerRefPtr                                          layer,
-    RecursionDetector*                                      recursionDetector,
-    std::vector<std::pair<SdfLayerRefPtr, SdfLayerRefPtr>>& anonLayersToSave,
-    std::vector<SdfLayerRefPtr>&                            dirtyLayersToSave)
+    PXR_NS::SdfLayerRefPtr                                                  layer,
+    RecursionDetector*                                                      recursionDetector,
+    std::vector<std::pair<PXR_NS::SdfLayerRefPtr, PXR_NS::SdfLayerRefPtr>>& anonLayersToSave,
+    std::vector<PXR_NS::SdfLayerRefPtr>&                                    dirtyLayersToSave)
 {
     auto  subPaths = layer->GetSubLayerPaths();
-    auto& resolver = ArGetResolver();
+    auto& resolver = PXR_NS::ArGetResolver();
     auto  anchor = toForwardSlashes(layer->GetRealPath());
 
     RecursionDetector defaultDetector;
@@ -96,7 +94,7 @@ void populateChildren(
 
     for (auto const path : subPaths) {
         std::string actualPath = computePathToLoadSublayer(path, anchor, resolver);
-        auto        subLayer = SdfLayer::FindOrOpen(actualPath);
+        auto        subLayer = PXR_NS::SdfLayer::FindOrOpen(actualPath);
         if (subLayer && !recursionDetector->contains(subLayer->GetRealPath())) {
             populateChildren(subLayer, recursionDetector, anonLayersToSave, dirtyLayersToSave);
 
@@ -113,17 +111,20 @@ void populateChildren(
 
 } // namespace
 
-std::string UsdMayaSerialization::suggestedStartFolder(UsdStageRefPtr stage)
+namespace MAYAUSD_NS_DEF {
+namespace utils {
+
+std::string suggestedStartFolder(PXR_NS::UsdStageRefPtr stage)
 {
-    SdfLayerRefPtr root = stage ? stage->GetRootLayer() : nullptr;
+    PXR_NS::SdfLayerRefPtr root = stage ? stage->GetRootLayer() : nullptr;
     if (!root && !root->IsAnonymous()) {
         return root->GetRealPath();
     }
 
-    return UsdMayaSerialization::getSceneFolder();
+    return getSceneFolder();
 }
 
-std::string UsdMayaSerialization::getSceneFolder()
+std::string getSceneFolder()
 {
     std::string fileDir = UsdMayaUtilFileSystem::getMayaSceneFileDir();
     if (fileDir.empty()) {
@@ -133,16 +134,16 @@ std::string UsdMayaSerialization::getSceneFolder()
     return fileDir;
 }
 
-std::string UsdMayaSerialization::generateUniqueFileName(const std::string& basename)
+std::string generateUniqueFileName(const std::string& basename)
 {
     std::string newFileName = UsdMayaUtilFileSystem::getUniqueFileName(
         getSceneFolder(),
         !basename.empty() ? basename : "anonymous",
-        UsdUsdFileFormatTokens->Id.GetText());
+        PXR_NS::UsdUsdFileFormatTokens->Id.GetText());
     return newFileName;
 }
 
-std::string UsdMayaSerialization::usdFormatArgOption()
+std::string usdFormatArgOption()
 {
     static const MString kSaveLayerFormatBinaryOption(
         MayaUsdOptionVars->SaveLayerFormatArgBinaryOption.GetText());
@@ -152,11 +153,12 @@ std::string UsdMayaSerialization::usdFormatArgOption()
     } else {
         MGlobal::setOptionVarValue(kSaveLayerFormatBinaryOption, 1);
     }
-    return binary ? UsdUsdcFileFormatTokens->Id.GetText() : UsdUsdaFileFormatTokens->Id.GetText();
+    return binary ? PXR_NS::UsdUsdcFileFormatTokens->Id.GetText()
+                  : PXR_NS::UsdUsdaFileFormatTokens->Id.GetText();
 }
 
 /* static */
-UsdMayaSerialization::USDUnsavedEditsOption UsdMayaSerialization::serializeUsdEditsLocationOption()
+USDUnsavedEditsOption serializeUsdEditsLocationOption()
 {
     static const MString kSerializedUsdEditsLocation(
         MayaUsdOptionVars->SerializedUsdEditsLocation.GetText());
@@ -181,21 +183,21 @@ UsdMayaSerialization::USDUnsavedEditsOption UsdMayaSerialization::serializeUsdEd
     }
 } // namespace MAYAUSD_NS_DEF
 
-SdfLayerRefPtr UsdMayaSerialization::saveAnonymousLayer(
-    SdfLayerRefPtr     anonLayer,
-    SdfLayerRefPtr     parentLayer,
-    const std::string& basename,
-    std::string        formatArg)
+PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+    PXR_NS::SdfLayerRefPtr anonLayer,
+    PXR_NS::SdfLayerRefPtr parentLayer,
+    const std::string&     basename,
+    std::string            formatArg)
 {
-    std::string newFileName = UsdMayaSerialization::generateUniqueFileName(basename);
+    std::string newFileName = generateUniqueFileName(basename);
     return saveAnonymousLayer(anonLayer, newFileName, parentLayer, formatArg);
 }
 
-SdfLayerRefPtr UsdMayaSerialization::saveAnonymousLayer(
-    SdfLayerRefPtr     anonLayer,
-    const std::string& path,
-    SdfLayerRefPtr     parentLayer,
-    std::string        formatArg)
+PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+    PXR_NS::SdfLayerRefPtr anonLayer,
+    const std::string&     path,
+    PXR_NS::SdfLayerRefPtr parentLayer,
+    std::string            formatArg)
 {
     if (!anonLayer || !anonLayer->IsAnonymous()) {
         return nullptr;
@@ -210,7 +212,7 @@ SdfLayerRefPtr UsdMayaSerialization::saveAnonymousLayer(
 
     anonLayer->Export(path, "", args);
 
-    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(path);
+    PXR_NS::SdfLayerRefPtr newLayer = PXR_NS::SdfLayer::FindOrOpen(path);
 
     if (newLayer && parentLayer) {
         parentLayer->GetSubLayerPaths().Replace(
@@ -220,9 +222,7 @@ SdfLayerRefPtr UsdMayaSerialization::saveAnonymousLayer(
     return newLayer;
 }
 
-void UsdMayaSerialization::getLayersToSaveFromProxy(
-    UsdStageRefPtr     stage,
-    stageLayersToSave& layersInfo)
+void getLayersToSaveFromProxy(PXR_NS::UsdStageRefPtr stage, stageLayersToSave& layersInfo)
 {
     auto root = stage->GetRootLayer();
 
@@ -236,3 +236,6 @@ void UsdMayaSerialization::getLayersToSaveFromProxy(
     auto session = stage->GetSessionLayer();
     populateChildren(session, nullptr, layersInfo.anonLayers, layersInfo.dirtyFileBackedLayers);
 }
+
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF

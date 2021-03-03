@@ -171,7 +171,7 @@ void convertAnonymousLayersRecursive(
             convertAnonymousLayersRecursive(subL, basename, stage);
 
             if (subL->IsAnonymous()) {
-                auto newLayer = UsdMayaSerialization::saveAnonymousLayer(subL, layer, basename);
+                auto newLayer = MayaUsd::utils::saveAnonymousLayer(subL, layer, basename);
                 if (subL == currentTarget) {
                     stage->SetEditTarget(newLayer);
                 }
@@ -377,15 +377,15 @@ bool LayerDatabase::saveUsd()
 {
     bool result = true;
 
-    auto opt = UsdMayaSerialization::serializeUsdEditsLocationOption();
+    auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
 
-    if (UsdMayaSerialization::kIgnoreUSDEdits != opt) {
+    if (MayaUsd::utils::kIgnoreUSDEdits != opt) {
         if (_batchSaveDelegate) {
             result = _batchSaveDelegate(_stagesToSave);
         }
 
         if (result) {
-            if (UsdMayaSerialization::kSaveToUSDFiles == opt) {
+            if (MayaUsd::utils::kSaveToUSDFiles == opt) {
                 result = saveUsdToUsdFiles();
             } else {
                 result = saveUsdToMayaFile();
@@ -523,8 +523,8 @@ void LayerDatabase::convertAnonymousLayers(MayaUsdProxyShapeBase* pShape, UsdSta
 
     if (root->IsAnonymous()) {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
-        args["format"] = UsdMayaSerialization::usdFormatArgOption();
-        std::string newFileName = UsdMayaSerialization::generateUniqueFileName(proxyName);
+        args["format"] = MayaUsd::utils::usdFormatArgOption();
+        std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
         root->Export(newFileName, "", args);
 
         setNewProxyPath(pShape->name(), UsdMayaUtil::convert(newFileName));
