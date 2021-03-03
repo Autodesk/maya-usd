@@ -183,7 +183,7 @@ bool PxrMayaHdUsdProxyShapeAdapter::_Sync(
     if (status == MS::kSuccess) {
         _rootXform = GfMatrix4d(transform.matrix);
 
-        if (!usdProxyShape->usdPrim().GetPath().IsAbsoluteRootPath()) {
+        if (usdProxyShape->usdPrim().GetPath() != SdfPath::AbsoluteRootPath()) {
             const UsdTimeCode timeCode = usdProxyShape->getTime();
             UsdGeomXformCache xformCache(timeCode);
             GfMatrix4d        primTransform
