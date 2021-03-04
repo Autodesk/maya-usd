@@ -14,9 +14,17 @@ import io
 import os
 import re
 import stat
-import subprocess
 import sys
 import time
+
+from subprocess import check_call, check_output
+
+if sys.version_info[0] < 3:
+    # Python-2 check_output doesn't have encoding
+    def check_output(*args, **kwargs):
+        import subprocess
+        kwargs.pop('encoding')
+        return subprocess.check_output(*args, **kwargs)
 
 
 THIS_FILE = os.path.normpath(os.path.abspath(inspect.getsourcefile(lambda: None)))
@@ -81,10 +89,10 @@ def run_clang_format(paths=(), verbose=False, commit=None):
         paths = [REPO_ROOT]
 
     if commit:
-        subprocess.check_call(['git', 'checkout', commit], cwd=REPO_ROOT)
-        text = subprocess.check_output(
+        check_call(['git', 'checkout', commit], cwd=REPO_ROOT)
+        text = check_output(
             ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r',
-             commit], cwd=REPO_ROOT)
+             commit], cwd=REPO_ROOT, encoding=sys.stdout.encoding)
         commit_paths = text.splitlines()
         paths.extend(os.path.join(REPO_ROOT, p) for p in commit_paths)
     
@@ -100,7 +108,8 @@ def run_clang_format(paths=(), verbose=False, commit=None):
     # tried to parse .gitignore with regex_from_file, but it has
     # too much special git syntax. Instead just using `git ls-files`
     # as a filter...
-    git_files = subprocess.check_output(['git', 'ls-files'], cwd=REPO_ROOT)
+    git_files = check_output(['git', 'ls-files'], cwd=REPO_ROOT,
+        encoding=sys.stdout.encoding)
     git_files = set(canonicalpath(x.strip()) for x in git_files.splitlines())
 
     def print_path(p):
@@ -170,7 +179,7 @@ def run_clang_format(paths=(), verbose=False, commit=None):
         # Checking mtime is not foolproof, but is faster than reading file
         # and comparing, and probably good enough
         mtime_orig = os.path.getmtime(path)
-        subprocess.check_call([clang_format_executable, '-i', path])
+        check_call([clang_format_executable, '-i', path])
         mtime_new = os.path.getmtime(path)
         if mtime_new != mtime_orig:
             post_update_print("File altered: {}".format(print_path(path)))
