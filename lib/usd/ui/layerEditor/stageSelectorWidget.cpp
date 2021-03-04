@@ -26,16 +26,17 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 
+
 Q_DECLARE_METATYPE(UsdLayerEditor::SessionState::StageEntry);
 
 namespace {
-int getEntryIndexByProxyPath(
+int getEntryIndexById(
     UsdLayerEditor::SessionState::StageEntry const&              entry,
     std::vector<UsdLayerEditor::SessionState::StageEntry> const& stages)
 {
     auto it = std::find_if(
         stages.begin(), stages.end(), [entry](UsdLayerEditor::SessionState::StageEntry stageEntry) {
-            return (entry._proxyShapePath == stageEntry._proxyShapePath);
+            return (entry._id == stageEntry._id);
         });
 
     if (it != stages.end()) {
@@ -130,8 +131,7 @@ void StageSelectorWidget::selectedIndexChanged(int index)
 void StageSelectorWidget::sessionStageChanged()
 {
     if (!_internalChange) {
-        auto index
-            = getEntryIndexByProxyPath(_sessionState->stageEntry(), _sessionState->allStages());
+        auto index = getEntryIndexById(_sessionState->stageEntry(), _sessionState->allStages());
         if (index != -1) {
             QSignalBlocker blocker(_dropDown);
             _dropDown->setCurrentIndex(index);
@@ -141,7 +141,7 @@ void StageSelectorWidget::sessionStageChanged()
 
 void StageSelectorWidget::stageRenamed(SessionState::StageEntry const& renamedEntry)
 {
-    auto index = getEntryIndexByProxyPath(renamedEntry, _sessionState->allStages());
+    auto index = getEntryIndexById(renamedEntry, _sessionState->allStages());
     if (index != -1) {
         _dropDown->setItemText(index, renamedEntry._displayName.c_str());
         _dropDown->setItemData(index, QVariant::fromValue(renamedEntry));
@@ -160,7 +160,7 @@ void StageSelectorWidget::stageReset(SessionState::StageEntry const& entry)
         return;
     }
 
-    auto index = getEntryIndexByProxyPath(entry, _sessionState->allStages());
+    auto index = getEntryIndexById(entry, _sessionState->allStages());
     if (index >= 0 && index < count) {
         _dropDown->setItemData(index, QVariant::fromValue(entry));
     }

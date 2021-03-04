@@ -45,12 +45,14 @@ public:
 
     struct StageEntry
     {
+        std::string            _id;
         PXR_NS::UsdStageRefPtr _stage;
         std::string            _displayName;
         std::string            _proxyShapePath;
 
         StageEntry()
         {
+            _id = "";
             _stage = PXR_NS::UsdStageRefPtr();
             _displayName = "";
             _proxyShapePath = "";
@@ -59,19 +61,11 @@ public:
         bool operator==(const StageEntry& entry) const
         {
             return (
-                _stage == entry._stage && _displayName == entry._displayName
+                _id == entry._id && _stage == entry._stage && _displayName == entry._displayName
                 && _proxyShapePath == entry._proxyShapePath);
         }
 
         bool operator!=(const StageEntry& entry) const { return !(*this == entry); }
-
-        StageEntry& operator=(const StageEntry& entry)
-        {
-            _stage = entry._stage;
-            _displayName = entry._displayName;
-            _proxyShapePath = entry._proxyShapePath;
-            return *this;
-        }
 
         void clear()
         {

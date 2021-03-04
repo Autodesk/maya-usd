@@ -19,7 +19,7 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 
-#include <mayaUsd/utils/query.h>
+#include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MDGMessage.h>
@@ -27,7 +27,9 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
+#include <maya/MPxNode.h>
 #include <maya/MSceneMessage.h>
+#include <maya/MUuid.h>
 
 #include <QtCore/QTimer>
 #include <QtWidgets/QMenu>
@@ -69,7 +71,19 @@ void MayaSessionState::setStageEntry(StageEntry const& inEntry)
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
 {
-    auto prim = UsdMayaQuery::GetPrim(shapePath.asChar());
+    pxr::UsdPrim prim;
+
+    MObject shapeObj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(shapePath.asChar(), shapeObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    MFnDagNode dagNode(shapeObj, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    if (const UsdMayaUsdPrimProvider* usdPrimProvider
+        = dynamic_cast<const UsdMayaUsdPrimProvider*>(dagNode.userNode())) {
+        prim = usdPrimProvider->usdPrim();
+    }
+
     if (prim) {
         auto stage = prim.GetStage();
         // debatable, but we remove the path|to|shape
@@ -81,6 +95,7 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
         } else {
             niceName = tokenList[0];
         }
+        out_stageEntry->_id = dagNode.uuid().asString().asChar();
         out_stageEntry->_stage = stage;
         out_stageEntry->_displayName = niceName.toStdString();
         out_stageEntry->_proxyShapePath = shapePath.asChar();
@@ -220,8 +235,7 @@ void MayaSessionState::nodeRenamedCBOnIdle(std::string const& oldName, const MOb
         StageEntry entry;
         if (getStageEntry(&entry, shapePath)) {
             // Need to update the current Entry also
-            if (_currentStageEntry._displayName == oldName
-                && _currentStageEntry._stage == entry._stage) {
+            if (_currentStageEntry._id == entry._id) {
                 _currentStageEntry = entry;
             }
 
