@@ -43,6 +43,10 @@ foreach(script ${TEST_SCRIPT_FILES})
             # All of the pxrUsdMayaGL tests exercise Pixar's batch renderer, so
             # we turn the Viewport 2.0 render delegate off.
             "MAYAUSD_DISABLE_VP2_RENDER_DELEGATE=1"
+
+            # Fallback to old color management. We will have to investigate
+            # and introduce OCIOv2 compatible version of these tests.
+            "MAYA_COLOR_MANAGEMENT_SYNCOLOR=1"
     )
 
     # Assign a CTest label to these tests for easy filtering.
