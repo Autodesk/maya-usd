@@ -18,6 +18,8 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -43,21 +45,18 @@ UsdTransform3dSetObjectMatrix::Ptr UsdTransform3dSetObjectMatrix::create(
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::translation() const
 {
-    PXR_NAMESPACE_USING_DIRECTIVE
     TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::translation()");
     return Ufe::Vector3d(0, 0, 0);
 }
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::rotation() const
 {
-    PXR_NAMESPACE_USING_DIRECTIVE
     TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::rotation()");
     return Ufe::Vector3d(0, 0, 0);
 }
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::scale() const
 {
-    PXR_NAMESPACE_USING_DIRECTIVE
     TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::scale()");
     return Ufe::Vector3d(1, 1, 1);
 }
