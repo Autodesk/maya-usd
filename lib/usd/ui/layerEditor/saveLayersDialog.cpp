@@ -562,7 +562,9 @@ bool SaveLayersDialog::okToSave()
         return (confirmDialog(
             StringResources::getAsQString(StringResources::kSaveAnonymousConfirmOverwriteTitle),
             MQtUtil::toQString(confirmMsg),
-            &existingFiles));
+            &existingFiles,
+            nullptr,
+            QMessageBox::Icon::Warning));
     }
 
     return true;
