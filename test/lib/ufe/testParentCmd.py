@@ -189,6 +189,7 @@ class ParentCmdTestCase(unittest.TestCase):
         self.assertEqual(len(cylChildren), 1)
 
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 124, 'Requires Maya fixes only available in Maya Preview Release 124 or later.') 
     def testParentAbsolute(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
@@ -672,6 +673,7 @@ class ParentCmdTestCase(unittest.TestCase):
             # Go back to initial conditions for next iteration of loop.
             cmds.undo()
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 124, 'Requires Maya fixes only available in Maya Preview Release 124 or later.') 
     def testParentToProxyShape(self):
 
         # Load a file with a USD hierarchy at least 2-levels deep.
