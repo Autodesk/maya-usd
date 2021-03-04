@@ -508,21 +508,19 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        tbb::parallel_for(tbb::blocked_range<int>(0, spec.height), [&](tbb::blocked_range<int> r) {
-            for (int y = r.begin(); y < r.end(); y++) {
-                for (int x = 0; x < spec.width; x++) {
-                    const int t = spec.width * y + x;
-                    texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                    texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                    texels[t * bpp_8 + 2] = storage[t * bpp + 2];
-                    texels[t * bpp_8 + 3] = storage[t * bpp + 3];
-                    texels[t * bpp_8 + 4] = storage[t * bpp + 4];
-                    texels[t * bpp_8 + 5] = storage[t * bpp + 5];
-                    texels[t * bpp_8 + 6] = lowAlpha;
-                    texels[t * bpp_8 + 7] = highAlpha;
-                }
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 2] = storage[t * bpp + 2];
+                texels[t * bpp_8 + 3] = storage[t * bpp + 3];
+                texels[t * bpp_8 + 4] = storage[t * bpp + 4];
+                texels[t * bpp_8 + 5] = storage[t * bpp + 5];
+                texels[t * bpp_8 + 6] = lowAlpha;
+                texels[t * bpp_8 + 7] = highAlpha;
             }
-        });
+        }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
         break;
@@ -542,17 +540,15 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 
         std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-        tbb::parallel_for(tbb::blocked_range<int>(0, spec.height), [&](tbb::blocked_range<int> r) {
-            for (int y = r.begin(); y < r.end(); y++) {
-                for (int x = 0; x < spec.width; x++) {
-                    const int t = spec.width * y + x;
-                    texels[t * bpp_4] = storage[t * bpp];
-                    texels[t * bpp_4 + 1] = storage[t * bpp + 1];
-                    texels[t * bpp_4 + 2] = storage[t * bpp + 2];
-                    texels[t * bpp_4 + 3] = 255;
-                }
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_4] = storage[t * bpp];
+                texels[t * bpp_4 + 1] = storage[t * bpp + 1];
+                texels[t * bpp_4 + 2] = storage[t * bpp + 2];
+                texels[t * bpp_4 + 3] = 255;
             }
-        });
+        }
 
         texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
         isColorSpaceSRGB = image->IsColorSpaceSRGB();
@@ -606,22 +602,19 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 
             std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-            tbb::parallel_for(
-                tbb::blocked_range<int>(0, spec.height), [&](tbb::blocked_range<int> r) {
-                    for (int y = r.begin(); y < r.end(); y++) {
-                        for (int x = 0; x < spec.width; x++) {
-                            const int t = spec.width * y + x;
-                            texels[t * bpp_8 + 0] = storage[t * bpp + 0];
-                            texels[t * bpp_8 + 1] = storage[t * bpp + 1];
-                            texels[t * bpp_8 + 2] = storage[t * bpp + 2];
-                            texels[t * bpp_8 + 3] = storage[t * bpp + 3];
-                            texels[t * bpp_8 + 4] = storage[t * bpp + 4];
-                            texels[t * bpp_8 + 5] = storage[t * bpp + 5];
-                            texels[t * bpp_8 + 6] = lowAlpha;
-                            texels[t * bpp_8 + 7] = highAlpha;
-                        }
-                    }
-                });
+            for (int y = 0; y < spec.height; y++) {
+                for (int x = 0; x < spec.width; x++) {
+                    const int t = spec.width * y + x;
+                    texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                    texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                    texels[t * bpp_8 + 2] = storage[t * bpp + 2];
+                    texels[t * bpp_8 + 3] = storage[t * bpp + 3];
+                    texels[t * bpp_8 + 4] = storage[t * bpp + 4];
+                    texels[t * bpp_8 + 5] = storage[t * bpp + 5];
+                    texels[t * bpp_8 + 6] = lowAlpha;
+                    texels[t * bpp_8 + 7] = highAlpha;
+                }
+            }
 
             texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
         } else {
