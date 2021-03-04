@@ -41,7 +41,7 @@ class SessionState : public QObject
 {
     Q_OBJECT
 public:
-    virtual ~SessionState() {}
+    virtual ~SessionState() { }
 
     struct StageEntry
     {

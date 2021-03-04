@@ -44,7 +44,7 @@ class LayerEditorWindowCreator : public AbstractLayerEditorCreator
 {
 public:
     LayerEditorWindowCreator() { ; };
-    virtual ~LayerEditorWindowCreator() {}
+    virtual ~LayerEditorWindowCreator() { }
 
     AbstractLayerEditorWindow* createWindow(const char* panelName) override;
     AbstractLayerEditorWindow* getWindow(const char* panelName) const override;

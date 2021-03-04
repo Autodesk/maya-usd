@@ -26,7 +26,6 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 
-
 Q_DECLARE_METATYPE(UsdLayerEditor::SessionState::StageEntry);
 
 namespace {
