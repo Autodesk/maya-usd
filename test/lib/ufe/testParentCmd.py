@@ -38,11 +38,13 @@ import unittest
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
 
+
 def matrixToList(m):
     mList = []
     for i in m.matrix:
         mList = mList + i
     return mList
+
 
 class OpenFileCtx(object):
     def __init__(self, fileName):
@@ -54,6 +56,7 @@ class OpenFileCtx(object):
     def __exit__(self, type, value, traceback):
         # Close the file.
         cmds.file(force=True, new=True)
+
 
 class ParentCmdTestCase(unittest.TestCase):
     '''Verify the Maya parent command on a USD scene.'''
@@ -79,7 +82,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         # Load a file that has the same scene in both the Maya Dag
         # hierarchy and the USD hierarchy.
-        mayaUtils.openTestScene("parentCmd", "simpleSceneMayaPlusUSD_TRS.ma" )
+        mayaUtils.openTestScene("parentCmd", "simpleSceneMayaPlusUSD_TRS.ma")
 
         # Clear selection to start off
         cmds.select(clear=True)
@@ -114,7 +117,8 @@ class ParentCmdTestCase(unittest.TestCase):
         stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
         # check GetLayerStack behavior
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(),
+                         stage.GetRootLayer())
 
         # The cube is not a child of the cylinder.
         cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
@@ -178,7 +182,7 @@ class ParentCmdTestCase(unittest.TestCase):
         mayaCubeWorld = cmds.xform(
             "|pCylinder1|pCube1", q=True, ws=True, m=True)
 
-        # Equivalent Maya and USD objects must have the same world transform. 
+        # Equivalent Maya and USD objects must have the same world transform.
         assertVectorAlmostEqual(self, cubeWorldList, mayaCubeWorld)
 
         # Undo to bring scene to its original state.
@@ -188,8 +192,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
-
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 124, 'Requires Maya fixes only available in Maya Preview Release 124 or later.') 
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() == 122, 'Test broken in Maya Preview Release 122.')
     def testParentAbsolute(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
@@ -205,7 +208,8 @@ class ParentCmdTestCase(unittest.TestCase):
         stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
         # check GetLayerStack behavior
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(),
+                         stage.GetRootLayer())
 
         # The cube is not a child of the cylinder.
         cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
@@ -271,7 +275,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
     def testParentAbsoluteSingleMatrixOp(self):
         """Test parent -absolute on prim with a single matrix op."""
 
@@ -298,7 +302,8 @@ class ParentCmdTestCase(unittest.TestCase):
         stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
         # check GetLayerStack behavior
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(),
+                         stage.GetRootLayer())
 
         # Create a capsule prim directly under the proxy shape
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
@@ -316,14 +321,15 @@ class ParentCmdTestCase(unittest.TestCase):
         self.assertEqual(len(cylChildren), 1)
 
         # Add a single matrix transform op to the capsule.
-        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(
+            ufe.PathString.string(capsulePath))
         capsuleXformable = UsdGeom.Xformable(capsulePrim)
         capsuleXformable.AddTransformOp()
 
         self.assertEqual(
             capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray([
                 "xformOp:transform"]))
-        
+
         # Delay creating the Transform3d interface until after we've added our
         # single matrix transform op, so that we get a UsdTransform3dMatrixOp.
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
@@ -402,12 +408,12 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
     def testParentAbsoluteFallback(self):
         """Test parent -absolute on prim with a fallback Maya transform stack."""
         # Create a scene with an xform and a capsule.
         import mayaUsd_createStageWithNewLayer
- 
+
         mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePathStr = '|stage1|stageShape1'
         stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
@@ -416,14 +422,15 @@ class ParentCmdTestCase(unittest.TestCase):
         xformXformable = UsdGeom.Xformable(xformPrim)
         capsuleXformable = UsdGeom.Xformable(capsulePrim)
 
-        proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapePathStr)
-        
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(
+            proxyShapePathStr)
+
         # Translate and rotate the xform and capsule to set up their initial
         # transform ops.
-        xformPath = ufe.Path([proxyShapePathSegment, 
+        xformPath = ufe.Path([proxyShapePathSegment,
                               usdUtils.createUfePathSegment('/Xform1')])
         xformItem = ufe.Hierarchy.createItem(xformPath)
-        capsulePath = ufe.Path([proxyShapePathSegment, 
+        capsulePath = ufe.Path([proxyShapePathSegment,
                                 usdUtils.createUfePathSegment('/Capsule1')])
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
 
@@ -463,7 +470,7 @@ class ParentCmdTestCase(unittest.TestCase):
         self.assertEqual(len(xformChildren), 0)
 
         # Parent the capsule to the xform.
-        cmds.parent(ufe.PathString.string(capsulePath), 
+        cmds.parent(ufe.PathString.string(capsulePath),
                     ufe.PathString.string(xformPath))
 
         def checkParentDone():
@@ -471,11 +478,11 @@ class ParentCmdTestCase(unittest.TestCase):
             xformChildren = xformHier.children()
             self.assertEqual(len(xformChildren), 1)
             self.assertIn('Capsule1', childrenNames(xformChildren))
-    
+
             # Confirm that the capsule has not moved in world space.  Must
             # re-create the prim and its scene item, as its path has changed.
             capsulePath = ufe.Path(
-                [proxyShapePathSegment, 
+                [proxyShapePathSegment,
                  usdUtils.createUfePathSegment('/Xform1/Capsule1')])
             capsulePrim = mayaUsd.ufe.ufePathToPrim(
                 ufe.PathString.string(capsulePath))
@@ -485,13 +492,13 @@ class ParentCmdTestCase(unittest.TestCase):
             capsuleWorld = capsuleT3d.inclusiveMatrix()
             assertVectorAlmostEqual(
                 self, capsuleWorldPre, matrixToList(capsuleWorld))
-    
+
             # The capsule's transform ops now have Maya fallback stack ops.  A
             # scale fallback op is added, even though it's uniform unit.
             self.assertEqual(
                 capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
                     "xformOp:translate", "xformOp:rotateXYZ", "xformOp:rotateX",
-                    "xformOp:translate:maya_fallback", 
+                    "xformOp:translate:maya_fallback",
                     "xformOp:rotateXYZ:maya_fallback",
                     "xformOp:scale:maya_fallback")))
 
@@ -523,7 +530,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         checkParentDone()
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
     def testParentAbsoluteMultiMatrixOp(self):
         """Test parent -absolute on prim with a transform stack with multiple matrix ops."""
 
@@ -531,7 +538,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         # Create a scene with an xform and a capsule.
         import mayaUsd_createStageWithNewLayer
- 
+
         mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePathStr = '|stage1|stageShape1'
         stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
@@ -540,10 +547,11 @@ class ParentCmdTestCase(unittest.TestCase):
         xformXformable = UsdGeom.Xformable(xformPrim)
         capsuleXformable = UsdGeom.Xformable(capsulePrim)
 
-        proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapePathStr)
-        
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(
+            proxyShapePathStr)
+
         # Translate and rotate the xform.
-        xformPath = ufe.Path([proxyShapePathSegment, 
+        xformPath = ufe.Path([proxyShapePathSegment,
                               usdUtils.createUfePathSegment('/Xform1')])
         xformItem = ufe.Hierarchy.createItem(xformPath)
 
@@ -560,7 +568,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         sn.clear()
 
-        capsulePath = ufe.Path([proxyShapePathSegment, 
+        capsulePath = ufe.Path([proxyShapePathSegment,
                                 usdUtils.createUfePathSegment('/Capsule1')])
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
 
@@ -569,23 +577,26 @@ class ParentCmdTestCase(unittest.TestCase):
         # matrix B: ty 10, rz 90
         # matrix C: tz 15, rx 90
         op = capsuleXformable.AddTransformOp(opSuffix='A')
-        matrixValA = Gf.Matrix4d(0, 0, -1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 5, 0, 0, 1)
+        matrixValA = Gf.Matrix4d(0, 0, -1, 0, 0, 1, 0,
+                                 0, 1, 0, 0, 0, 5, 0, 0, 1)
         op.Set(matrixValA)
         op = capsuleXformable.AddTransformOp(opSuffix='B')
-        matrixValB = Gf.Matrix4d(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 0, 10, 0, 1)
+        matrixValB = Gf.Matrix4d(0, 1, 0, 0, -1, 0, 0,
+                                 0, 0, 0, 1, 0, 0, 10, 0, 1)
         op.Set(matrixValB)
         op = capsuleXformable.AddTransformOp(opSuffix='C')
-        matrixValC = Gf.Matrix4d(1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 15, 1)
+        matrixValC = Gf.Matrix4d(
+            1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0, 0, 0, 15, 1)
         op.Set(matrixValC)
 
         matrixOps = [
             "xformOp:transform:A", "xformOp:transform:B", "xformOp:transform:C"]
         matrixValues = {
-            "xformOp:transform:A" : matrixValA,
-            "xformOp:transform:B" : matrixValB, 
-            "xformOp:transform:C" : matrixValC }
+            "xformOp:transform:A": matrixValA,
+            "xformOp:transform:B": matrixValB,
+            "xformOp:transform:C": matrixValC}
 
-        self.assertEqual(capsuleXformable.GetXformOpOrderAttr().Get(), 
+        self.assertEqual(capsuleXformable.GetXformOpOrderAttr().Get(),
                          Vt.TokenArray(matrixOps))
 
         # Capture the current world space transform of the capsule.
@@ -603,7 +614,7 @@ class ParentCmdTestCase(unittest.TestCase):
             self.assertEqual(len(xformChildren), 0)
 
             # Parent the capsule to the xform.
-            cmds.parent(ufe.PathString.string(capsulePath), 
+            cmds.parent(ufe.PathString.string(capsulePath),
                         ufe.PathString.string(xformPath))
 
             def checkParentDone():
@@ -611,11 +622,11 @@ class ParentCmdTestCase(unittest.TestCase):
                 xformChildren = xformHier.children()
                 self.assertEqual(len(xformChildren), 1)
                 self.assertIn('Capsule1', childrenNames(xformChildren))
-            
+
                 # Confirm that the capsule has not moved in world space.  Must
                 # re-create the prim and its scene item after path change.
                 capsulePath = ufe.Path(
-                    [proxyShapePathSegment, 
+                    [proxyShapePathSegment,
                      usdUtils.createUfePathSegment('/Xform1/Capsule1')])
                 capsulePrim = mayaUsd.ufe.ufePathToPrim(
                     ufe.PathString.string(capsulePath))
@@ -625,10 +636,10 @@ class ParentCmdTestCase(unittest.TestCase):
                 capsuleWorld = capsuleT3d.inclusiveMatrix()
                 assertVectorAlmostEqual(
                     self, capsuleWorldPre, matrixToList(capsuleWorld))
-            
+
                 # No change in the capsule's transform ops.
                 self.assertEqual(
-                    capsuleXformable.GetXformOpOrderAttr().Get(), 
+                    capsuleXformable.GetXformOpOrderAttr().Get(),
                     Vt.TokenArray(matrixOps))
 
                 # Matrix ops that were not targeted did not change.
@@ -662,7 +673,7 @@ class ParentCmdTestCase(unittest.TestCase):
             assertVectorAlmostEqual(
                 self, capsuleWorldPre, matrixToList(capsuleWorld))
             self.assertEqual(
-                capsuleXformable.GetXformOpOrderAttr().Get(), 
+                capsuleXformable.GetXformOpOrderAttr().Get(),
                 Vt.TokenArray(matrixOps))
 
             # Redo: capsule still hasn't moved.
@@ -673,7 +684,7 @@ class ParentCmdTestCase(unittest.TestCase):
             # Go back to initial conditions for next iteration of loop.
             cmds.undo()
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 124, 'Requires Maya fixes only available in Maya Preview Release 124 or later.') 
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() == 122, 'Test broken in Maya Preview Release 122.')
     def testParentToProxyShape(self):
 
         # Load a file with a USD hierarchy at least 2-levels deep.
@@ -693,7 +704,8 @@ class ParentCmdTestCase(unittest.TestCase):
             stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
             # check GetLayerStack behavior
-            self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+            self.assertEqual(stage.GetEditTarget().GetLayer(),
+                             stage.GetRootLayer())
 
             # The sphere is not a child of the proxy shape.
             shapeHier = ufe.Hierarchy.hierarchy(shapeItem)
@@ -707,7 +719,8 @@ class ParentCmdTestCase(unittest.TestCase):
 
             # Parent sphere to proxy shape in absolute mode (default), using UFE
             # path strings.Expect the exception happens
-            cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1/pSphere1", "|mayaUsdProxy1|mayaUsdProxyShape1")
+            cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1/pSphere1",
+                        "|mayaUsdProxy1|mayaUsdProxyShape1")
 
             # Confirm that the sphere is now a child of the proxy shape.
             shapeChildren = shapeHier.children()
@@ -776,7 +789,8 @@ class ParentCmdTestCase(unittest.TestCase):
             stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
             # check GetLayerStack behavior
-            self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+            self.assertEqual(stage.GetEditTarget().GetLayer(),
+                             stage.GetRootLayer())
 
             # The sphere is not a child of the cylinder
             self.assertNotIn("pSphere1", childrenNames(childrenPre))
@@ -816,7 +830,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         with OpenFileCtx("simpleHierarchy.ma"):
             # Unparent a USD node
-            cubePathStr =  '|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1'
+            cubePathStr = '|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1'
             cubePath = ufe.PathString.path(cubePathStr)
             cylinderItem = ufe.Hierarchy.createItem(ufe.PathString.path(
                 '|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1'))
@@ -837,7 +851,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
             cmds.parent(cubePathStr, world=True)
             checkUnparent(done=True)
-            
+
             cmds.undo()
             checkUnparent(done=False)
 
@@ -852,7 +866,8 @@ class ParentCmdTestCase(unittest.TestCase):
             # opened file.  Layers are then shared between the stages, because
             # they come from the same USD file, causing changes done below one
             # proxy shape to be seen in the other.  Import from another file.
-            filePath = testUtils.getTestScene("parentCmd", "simpleSceneUSD_TRS.ma")
+            filePath = testUtils.getTestScene(
+                "parentCmd", "simpleSceneUSD_TRS.ma")
             cmds.file(filePath, i=True)
 
             # Unparent a USD node in each stage.  Unparenting Lambert node is
@@ -874,9 +889,9 @@ class ParentCmdTestCase(unittest.TestCase):
             proxyShape2 = ufe.Hierarchy.hierarchy(proxyShapeItem2)
 
             def checkUnparent(done):
-                proxyShape1Children   = proxyShape1.children()
-                proxyShape2Children   = proxyShape2.children()
-                cylinder1Children     = cylinder1.children()
+                proxyShape1Children = proxyShape1.children()
+                proxyShape2Children = proxyShape2.children()
+                cylinder1Children = cylinder1.children()
                 shadingGroup2Children = shadingGroup2.children()
                 self.assertEqual(
                     'pCube1' in childrenNames(proxyShape1Children), done)
@@ -893,7 +908,7 @@ class ParentCmdTestCase(unittest.TestCase):
             # position of Lambert node fails (of course).
             cmds.parent(cubePathStr1, lambertPathStr2, w=True, r=True)
             checkUnparent(done=True)
-            
+
             cmds.undo()
             checkUnparent(done=False)
 
@@ -909,6 +924,7 @@ class ParentCmdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.parent("|Tree_usd|Tree_usdShape,/TreeBase/trunk",
                         "|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
