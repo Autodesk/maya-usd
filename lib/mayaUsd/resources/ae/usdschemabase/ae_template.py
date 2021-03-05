@@ -1,11 +1,38 @@
 import fnmatch
 import ufe
+import maya.mel as mel
+import maya.cmds as cmds
 import mayaUsd.ufe
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
 from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol
+
+
+# Custom control, but does not have any UI. Instead we use
+# this control to be notified from UFE when any attribute has changed
+# so we can update the AE. This is to fix refresh issue
+# when transform is added to a prim.
+class UfeAttributesObserver(ufe.Observer):
+    def __init__(self, item):
+        super(UfeAttributesObserver, self).__init__()
+        self._item = item
+
+    def __del__(self):
+        ufe.Attributes.removeObserver(self)
+
+    def __call__(self, notification):
+        if isinstance(notification, ufe.AttributeValueChanged):
+            if notification.name() == "xformOpOrder":
+                mel.eval("evalDeferred(\"AEbuildControls\");")
+
+    def onCreate(self, *args):
+        ufe.Attributes.addObserver(self._item, self)
+
+    def onReplace(self, *args):
+        pass
+
 
 # SchemaBase template class for categorization of the attributes.
 class AETemplate(ufeAeTemplate.Template):
@@ -104,6 +131,7 @@ class AETemplate(ufeAeTemplate.Template):
 
             # Then add any reamining Xformable attributes
             self.addControls(attrsToAdd)
+            self.addUfeTransform3dObserver()
 
     def buildUI(self, ufeSceneItem):
         usdSch = Usd.SchemaRegistry()
@@ -122,3 +150,9 @@ class AETemplate(ufeAeTemplate.Template):
                     self.createTransformAttributesSection(ufeSceneItem, sectionName, attrsToAdd)
                 else:
                     self.createSection(sectionName, attrsToAdd)
+
+    def addUfeTransform3dObserver(self):
+        t3dObs = UfeAttributesObserver(self.item)
+        create = lambda *args : t3dObs.onCreate(args)
+        replace = lambda *args : t3dObs.onReplace(args)
+        cmds.editorTemplate([], callCustom=[create, replace])
