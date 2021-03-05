@@ -110,6 +110,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdTransform3dMayaXformStack.h
         UsdTransform3dSetObjectMatrix.h
         UsdUIInfoHandler.h
+        UsdUndoableCommand.h
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h

@@ -17,6 +17,7 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/XformOpUtils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -93,13 +94,12 @@ GfMatrix4d xformInv(
     return m.GetInverse();
 }
 
-// Class for setMatrixCmd() implementation.  UsdUndoBlock data member and
-// undo() / redo() should be factored out into a future command base class.
-class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+// Class for setMatrixCmd() implementation.
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : Ufe::SetMatrix4dUndoableCommand(path)
+        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
         , _newM(newM)
     {
     }
@@ -113,10 +113,8 @@ public:
         return true;
     }
 
-    void execute() override
+    void executeUndoBlock() override
     {
-        UsdUndoBlock undoBlock(&_undoableItem);
-
         // Use editTransform3d() to set a single matrix transform op.
         // transform3d() returns a whole-object interface, which may include
         // other transform ops.
@@ -124,11 +122,7 @@ public:
         t3d->setMatrix(_newM);
     }
 
-    void undo() override { _undoableItem.undo(); }
-    void redo() override { _undoableItem.redo(); }
-
 private:
-    UsdUndoableItem     _undoableItem;
     const Ufe::Matrix4d _newM;
 };
 
