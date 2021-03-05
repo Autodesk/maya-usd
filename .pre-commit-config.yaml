@@ -1,0 +1,10 @@
+repos:
+-   repo: local
+    hooks:
+
+    - id: clang-format
+      name: clang-format
+      description: Format files with clang-format
+      entry: .github/run-clang-format.py
+      language: python
+      stages: ['commit', 'manual']
