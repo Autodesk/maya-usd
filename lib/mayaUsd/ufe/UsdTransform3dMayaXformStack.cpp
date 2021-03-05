@@ -19,6 +19,7 @@
 
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
@@ -32,6 +33,8 @@
 #include <cstring>
 #include <functional>
 #include <map>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -162,13 +165,12 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
 
-// Class for setMatrixCmd() implementation.  UsdUndoBlock data member and
-// undo() / redo() should be factored out into a future command base class.
-class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+// Class for setMatrixCmd() implementation.
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : Ufe::SetMatrix4dUndoableCommand(path)
+        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
     {
         // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
         // nor GfTransform decomposition provide results that match Maya,
@@ -198,10 +200,9 @@ public:
         return true;
     }
 
-    void execute() override
+protected:
+    void executeUndoBlock() override
     {
-        UsdUndoBlock undoBlock(&_undoableItem);
-
         // transform3d() and editTransform3d() are equivalent for a normal Maya
         // transform stack, but not for a fallback Maya transform stack, and
         // both can be edited by this command.
@@ -209,32 +210,12 @@ public:
         t3d->translate(_newT.x(), _newT.y(), _newT.z());
         t3d->rotate(_newR.x(), _newR.y(), _newR.z());
         t3d->scale(_newS.x(), _newS.y(), _newS.z());
-
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-        _executeCalled = true;
-#endif
-    }
-
-    void undo() override { _undoableItem.undo(); }
-    void redo() override
-    {
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-        if (!_executeCalled) {
-            execute();
-            return;
-        }
-#endif
-        _undoableItem.redo();
     }
 
 private:
-#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
-    bool _executeCalled { false };
-#endif
-    UsdUndoableItem _undoableItem;
-    Ufe::Vector3d   _newT;
-    Ufe::Vector3d   _newR;
-    Ufe::Vector3d   _newS;
+    Ufe::Vector3d _newT;
+    Ufe::Vector3d _newR;
+    Ufe::Vector3d _newS;
 };
 
 // Helper class to factor out common code for translate, rotate, scale

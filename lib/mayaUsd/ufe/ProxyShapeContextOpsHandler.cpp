@@ -49,7 +49,7 @@ Ufe::ContextOps::Ptr ProxyShapeContextOpsHandler::contextOps(const Ufe::SceneIte
     if (isAGatewayType(item->nodeType())) {
         // UsdContextOps expects a UsdSceneItem which wraps a prim, so
         // create one using the pseudo-root and our own path.
-        UsdStageWeakPtr stage = getStage(item->path());
+        PXR_NS::UsdStageWeakPtr stage = getStage(item->path());
         if (stage) {
             auto               usdItem = UsdSceneItem::create(item->path(), stage->GetPseudoRoot());
             auto               usdContextOpsHandler = UsdContextOpsHandler::create();

@@ -23,32 +23,30 @@
 
 #include <vector>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-GfMatrix4d computeLocalInclusiveTransform(
-    const std::vector<UsdGeomXformOp>&          ops,
-    std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time);
+PXR_NS::GfMatrix4d computeLocalInclusiveTransform(
+    const std::vector<PXR_NS::UsdGeomXformOp>&          ops,
+    std::vector<PXR_NS::UsdGeomXformOp>::const_iterator endOp,
+    const PXR_NS::UsdTimeCode&                          time);
 
-GfMatrix4d computeLocalInclusiveTransform(
-    const UsdPrim&        prim,
-    const UsdGeomXformOp& op,
-    const UsdTimeCode&    time);
+PXR_NS::GfMatrix4d computeLocalInclusiveTransform(
+    const PXR_NS::UsdPrim&        prim,
+    const PXR_NS::UsdGeomXformOp& op,
+    const PXR_NS::UsdTimeCode&    time);
 
-GfMatrix4d computeLocalExclusiveTransform(
-    const std::vector<UsdGeomXformOp>&          ops,
-    std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time);
+PXR_NS::GfMatrix4d computeLocalExclusiveTransform(
+    const std::vector<PXR_NS::UsdGeomXformOp>&          ops,
+    std::vector<PXR_NS::UsdGeomXformOp>::const_iterator endOp,
+    const PXR_NS::UsdTimeCode&                          time);
 
-GfMatrix4d computeLocalExclusiveTransform(
-    const UsdPrim&        prim,
-    const UsdGeomXformOp& op,
-    const UsdTimeCode&    time);
+PXR_NS::GfMatrix4d computeLocalExclusiveTransform(
+    const PXR_NS::UsdPrim&        prim,
+    const PXR_NS::UsdGeomXformOp& op,
+    const PXR_NS::UsdTimeCode&    time);
 
-std::vector<UsdGeomXformOp> getOrderedXformOps(const UsdPrim& prim);
+std::vector<PXR_NS::UsdGeomXformOp> getOrderedXformOps(const PXR_NS::UsdPrim& prim);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

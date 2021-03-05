@@ -20,7 +20,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
+PXR_NS::TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 UsdRotateUndoableCommand::UsdRotateUndoableCommand(

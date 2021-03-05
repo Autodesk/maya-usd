@@ -24,7 +24,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoDeleteCommand::UsdUndoDeleteCommand(const UsdPrim& prim)
+UsdUndoDeleteCommand::UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim)
     : Ufe::UndoableCommand()
     , _prim(prim)
 {
@@ -32,7 +32,7 @@ UsdUndoDeleteCommand::UsdUndoDeleteCommand(const UsdPrim& prim)
 
 UsdUndoDeleteCommand::~UsdUndoDeleteCommand() { }
 
-UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const UsdPrim& prim)
+UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const PXR_NS::UsdPrim& prim)
 {
     return std::make_shared<UsdUndoDeleteCommand>(prim);
 }

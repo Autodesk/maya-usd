@@ -27,7 +27,7 @@ namespace {
 static constexpr char kWarningCannotDeactivePrim[]
     = "Cannot deactivate \"^1s\" because it is already inactive.";
 
-void displayWarning(const UsdPrim& prim, const MString& fmt)
+void displayWarning(const PXR_NS::UsdPrim& prim, const MString& fmt)
 {
     MString msg, primArg(prim.GetName().GetText());
     msg.format(fmt, primArg);

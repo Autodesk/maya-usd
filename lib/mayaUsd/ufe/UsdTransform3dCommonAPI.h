@@ -63,7 +63,7 @@ public:
     Ufe::Vector3d                      rotatePivot() const override;
 
 private:
-    UsdGeomXformCommonAPI _commonAPI;
+    PXR_NS::UsdGeomXformCommonAPI _commonAPI;
 
 }; // UsdTransform3dCommonAPI
 
