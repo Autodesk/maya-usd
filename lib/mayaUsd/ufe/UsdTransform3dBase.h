@@ -53,7 +53,7 @@ public:
     Ufe::SceneItem::Ptr sceneItem() const override;
 
     inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
-    inline UsdPrim           prim() const { return fPrim; }
+    inline PXR_NS::UsdPrim   prim() const { return fPrim; }
 
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
     Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;
@@ -82,7 +82,7 @@ public:
 
 private:
     UsdSceneItem::Ptr fItem;
-    UsdPrim           fPrim;
+    PXR_NS::UsdPrim   fPrim;
 
 }; // UsdTransform3dBase
 

@@ -71,7 +71,7 @@ void UsdUndoDuplicateCommand::execute()
 
     auto prim = ufePathToPrim(_ufeSrcPath);
     auto layer = prim.GetStage()->GetEditTarget().GetLayer();
-    SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
+    PXR_NS::SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
 }
 
 void UsdUndoDuplicateCommand::undo()

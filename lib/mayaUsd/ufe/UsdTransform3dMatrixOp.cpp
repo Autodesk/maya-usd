@@ -33,6 +33,8 @@
 
 #include <algorithm>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
 
 using namespace MayaUsd;

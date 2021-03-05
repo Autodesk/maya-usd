@@ -34,6 +34,8 @@
 #include <functional>
 #include <map>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
 
 #if UFE_PREVIEW_VERSION_NUM >= 2031

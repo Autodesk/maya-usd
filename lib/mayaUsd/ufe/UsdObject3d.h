@@ -48,7 +48,7 @@ public:
 
 private:
     UsdSceneItem::Ptr fItem;
-    UsdPrim           fPrim;
+    PXR_NS::UsdPrim   fPrim;
 
 }; // UsdObject3d
 

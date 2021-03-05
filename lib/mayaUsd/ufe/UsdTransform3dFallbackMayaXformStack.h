@@ -78,12 +78,12 @@ public:
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
-    SetXformOpOrderFn               getXformOpOrderFn() const override;
-    TfToken                         getOpSuffix(OpNdx ndx) const override;
-    TfToken                         getTRSOpSuffix() const override;
-    CvtRotXYZFromAttrFn             getCvtRotXYZFromAttrFn(const TfToken& opName) const override;
-    CvtRotXYZToAttrFn               getCvtRotXYZToAttrFn(const TfToken& opName) const override;
-    std::map<OpNdx, UsdGeomXformOp> getOrderedOps() const override;
+    SetXformOpOrderFn   getXformOpOrderFn() const override;
+    PXR_NS::TfToken     getOpSuffix(OpNdx ndx) const override;
+    PXR_NS::TfToken     getTRSOpSuffix() const override;
+    CvtRotXYZFromAttrFn getCvtRotXYZFromAttrFn(const PXR_NS::TfToken& opName) const override;
+    CvtRotXYZToAttrFn   getCvtRotXYZToAttrFn(const PXR_NS::TfToken& opName) const override;
+    std::map<OpNdx, PXR_NS::UsdGeomXformOp> getOrderedOps() const override;
 
 }; // UsdTransform3dFallbackMayaXformStack
 

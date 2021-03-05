@@ -38,8 +38,6 @@ template <> struct hash<MObjectHandle>
 };
 } // namespace std
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -60,7 +58,7 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdStageMap
 {
 public:
-    typedef TfHashSet<UsdStageWeakPtr, TfHash> StageSet;
+    typedef PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> StageSet;
 
     UsdStageMap() = default;
     ~UsdStageMap() = default;
@@ -72,10 +70,10 @@ public:
     UsdStageMap& operator=(UsdStageMap&&) = delete;
 
     //! Get USD stage corresponding to argument Maya Dag path.
-    UsdStageWeakPtr stage(const Ufe::Path& path);
+    PXR_NS::UsdStageWeakPtr stage(const Ufe::Path& path);
 
     //! Return the ProxyShape node UFE path for the argument stage.
-    Ufe::Path path(UsdStageWeakPtr stage);
+    Ufe::Path path(PXR_NS::UsdStageWeakPtr stage);
 
     //! Return all the USD stages.
     StageSet allStages();
@@ -88,13 +86,13 @@ public:
     bool isDirty() const { return fDirty; }
 
 private:
-    void addItem(const Ufe::Path& path, UsdStageWeakPtr stage);
+    void addItem(const Ufe::Path& path, PXR_NS::UsdStageWeakPtr stage);
     void rebuildIfDirty();
 
 private:
     // We keep two maps for fast lookup when there are many proxy shapes.
-    using ObjectToStage = std::unordered_map<MObjectHandle, UsdStageWeakPtr>;
-    using StageToObject = TfHashMap<UsdStageWeakPtr, MObjectHandle, TfHash>;
+    using ObjectToStage = std::unordered_map<MObjectHandle, PXR_NS::UsdStageWeakPtr>;
+    using StageToObject = PXR_NS::TfHashMap<PXR_NS::UsdStageWeakPtr, MObjectHandle, PXR_NS::TfHash>;
     ObjectToStage fObjectToStage;
     StageToObject fStageToObject;
     bool          fDirty { true };

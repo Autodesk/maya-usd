@@ -30,6 +30,8 @@
 
 #include <stdexcept>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
 Ufe::Vector3d toVector3d(const GfVec3d& v) { return Ufe::Vector3d(v[0], v[1], v[2]); }
 } // namespace

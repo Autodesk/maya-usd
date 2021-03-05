@@ -18,13 +18,15 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdTransform3dSetObjectMatrix::UsdTransform3dSetObjectMatrix(
     const Ufe::Transform3d::Ptr& wrapped,
-    const GfMatrix4d&            mlInv,
-    const GfMatrix4d&            mrInv)
+    const PXR_NS::GfMatrix4d&    mlInv,
+    const PXR_NS::GfMatrix4d&    mrInv)
     : UsdTransform3dBase(std::dynamic_pointer_cast<UsdSceneItem>(wrapped->sceneItem()))
     , _wrapped(wrapped)
     , _mlInv(mlInv)
@@ -35,8 +37,8 @@ UsdTransform3dSetObjectMatrix::UsdTransform3dSetObjectMatrix(
 /* static */
 UsdTransform3dSetObjectMatrix::Ptr UsdTransform3dSetObjectMatrix::create(
     const Ufe::Transform3d::Ptr& wrapped,
-    const GfMatrix4d&            mlInv,
-    const GfMatrix4d&            mrInv)
+    const PXR_NS::GfMatrix4d&    mlInv,
+    const PXR_NS::GfMatrix4d&    mrInv)
 {
     return std::make_shared<UsdTransform3dSetObjectMatrix>(wrapped, mlInv, mrInv);
 }

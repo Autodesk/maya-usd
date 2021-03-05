@@ -20,7 +20,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
+PXR_NS::TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(

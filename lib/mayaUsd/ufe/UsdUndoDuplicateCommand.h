@@ -63,8 +63,8 @@ private:
     bool duplicateRedo();
 #endif
 
-    Ufe::Path _ufeSrcPath;
-    SdfPath   _usdDstPath;
+    Ufe::Path       _ufeSrcPath;
+    PXR_NS::SdfPath _usdDstPath;
 
 }; // UsdUndoDuplicateCommand
 
