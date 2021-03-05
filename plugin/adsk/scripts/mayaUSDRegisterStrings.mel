@@ -34,6 +34,7 @@ global proc mayaUSDRegisterStrings() {
     register("kExcludePrimPaths", "Exclude Prim Paths:");
     register("kExcludePrimPathsAnn", "Specify the path of a prim to exclude it from the viewport display. Multiple prim paths must be separated by a comma.");
     register("kExcludePrimPathsSbm", "Specify the path of a prim to exclude it from the viewport display.");
+    register("kFileAnn", "Load in a file as the stage source.");
     register("kLabelStage", "Stage");
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
@@ -95,6 +96,12 @@ global proc mayaUSDRegisterStrings() {
     register("kUsdFileOptions", "USD File Options");
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
     register("kSaveOption2GBWarning", "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.");
+
+    // Register the strings from the python equivalent register function.
+    // Note: the strings from both the MEL and python register can be loaded
+    //       by either MEL or python. They all get registered together under
+    //       the 'mayaUsdPlugin' plugin.
+    python("import mayaUSDRegisterStrings; mayaUSDRegisterStrings.mayaUSDRegisterStrings()");
 
     // load any localized resources
     loadPluginLanguageResources("mayaUsdPlugin", "mayaUsdPlugin.pres.mel");
