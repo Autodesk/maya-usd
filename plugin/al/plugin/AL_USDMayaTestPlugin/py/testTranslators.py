@@ -74,7 +74,7 @@ class CubeGenerator(usdmaya.TranslatorBase):
         return True
 
     def canExport(self, mayaObjectName):
-        return False
+        return usdmaya.ExportFlag.kNotSupported
 
     def needsTransformParent(self):
         return True
@@ -176,7 +176,7 @@ class DeleteParentNodeOnPostImport(usdmaya.TranslatorBase):
         return True
 
     def canExport(self, mayaObjectName):
-        return False
+        return usdmaya.ExportFlag.kNotSupported
 
     def exportObject(self, stage, path, usdPath, params):
         return
@@ -221,7 +221,7 @@ class UpdateableTranslator(usdmaya.TranslatorBase):
         return True
 
     def canExport(self, mayaObjectName):
-        return False
+        return usdmaya.ExportFlag.kNotSupported
 
     def exportObject(self, stage, path, usdPath, params):
         return
@@ -536,7 +536,7 @@ class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
         return True
 
     def canExport(self, mayaObjectName):
-        return False
+        return usdmaya.ExportFlag.kNotSupported
 
     def needsTransformParent(self):
         return True
