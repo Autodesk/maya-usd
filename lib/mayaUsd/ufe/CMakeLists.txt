@@ -110,6 +110,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdContextOpsHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
+        UsdPointInstanceUndoableCommands.h
         UsdTransform3dBase.h
         UsdTransform3dCommonAPI.h
         UsdTransform3dFallbackMayaXformStack.h
