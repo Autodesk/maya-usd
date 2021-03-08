@@ -216,7 +216,7 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     }
 }
 
-bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, bool showErrorMessage)
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
 {
     // get the property spec in the edit target's layer
     const auto& prim = attr.GetPrim();
@@ -247,16 +247,12 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, bool showErrorMess
     }
 
     if (strongLayer) {
+        std::string err = TfStringPrintf(
+            "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
+            attr.GetBaseName().GetText(),
+            strongLayer->GetDisplayName().c_str());
 
-        if(showErrorMessage) {
-            std::string err = TfStringPrintf(
-                "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
-                attr.GetBaseName().GetText(),
-                strongLayer->GetDisplayName().c_str());
-
-            MGlobal::displayError(err.c_str());
-        }
-
+        MGlobal::displayError(err.c_str());
         return false;
     }
 

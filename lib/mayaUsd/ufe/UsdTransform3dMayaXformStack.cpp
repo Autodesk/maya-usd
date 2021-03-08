@@ -279,13 +279,7 @@ public:
             // Going from initial to executing / executed state, save value.
             cmd->_op = cmd->_opFunc(*cmd);
             cmd->_newOpValue = v;
-
-            const PXR_NS::UsdAttribute& attr = cmd->_op.GetAttr();
-            auto isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr);
-            if (isSetAttrAllowed) { 
-                cmd->setValue(v);
-            }
-
+            cmd->setValue(v);
             cmd->_state = &UsdTRSUndoableCmdBase::_executeState;
         }
     };
@@ -312,12 +306,7 @@ public:
         void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
         {
             cmd->_newOpValue = v;
-
-            const PXR_NS::UsdAttribute& attr = cmd->_op.GetAttr();
-            auto isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, false);
-            if (isSetAttrAllowed) { 
-                cmd->setValue(v);
-            }
+            cmd->setValue(v);
         }
     };
 
@@ -350,12 +339,7 @@ public:
         void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
         {
             cmd->_newOpValue = v;
-
-            const PXR_NS::UsdAttribute& attr = cmd->_op.GetAttr();
-            auto isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, false);
-            if (isSetAttrAllowed) { 
-                cmd->setValue(v);
-            }
+            cmd->setValue(v);
         }
     };
 
