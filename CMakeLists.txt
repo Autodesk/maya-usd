@@ -111,10 +111,6 @@ else()
     option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
 endif()
 
-if (BUILD_HDMAYA)
-    add_definitions(-DBUILD_HDMAYA)
-endif()
-
 if(${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
     set(CMAKE_WANT_UFE_BUILD OFF)
     message(AUTHOR_WARNING "========================================================================================= \
