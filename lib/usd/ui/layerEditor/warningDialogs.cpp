@@ -44,7 +44,7 @@ bool confirmDialog_internal(
     const QString&     message,
     const QStringList* bulletList,
     const QString*     okButtonText,
-    QMessageBox::Icon   icon)
+    QMessageBox::Icon  icon)
 {
     QMessageBox msgBox;
     // there is no title bar text on mac, instead it's bold text
@@ -58,10 +58,9 @@ bool confirmDialog_internal(
 
     QString text(message);
     text += getLayerBulletList(bulletList);
-    if(showIcon && !IS_MAC_OS) {
+    if (showIcon && !IS_MAC_OS) {
         msgBox.setText(text);
-    }
-    else {
+    } else {
         msgBox.setInformativeText(text);
     }
 
@@ -78,7 +77,7 @@ bool confirmDialog_internal(
         msgBox.setStandardButtons(QMessageBox::Ok);
     }
 
-    if(!showIcon)
+    if (!showIcon)
         msgBox.setStyleSheet(QString("QLabel{min-width: %1px;}").arg(DPIScale(400)));
 
     if (okButtonText != nullptr)
