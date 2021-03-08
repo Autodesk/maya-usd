@@ -50,7 +50,7 @@ using MtohRendererDescriptionVector = std::vector<MtohRendererDescription>;
 using MtohRendererSettings
     = std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>;
 
-// Defining these in header so don't need to link to use... template is
+// Defining these in header so don't need to link to use
 inline bool IsMtohRenderOverrideName(const MString& overrideName)
 {
     // See if the override is an mtoh one - ie, it starts with the right prefix
