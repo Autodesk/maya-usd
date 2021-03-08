@@ -71,7 +71,7 @@ void MayaSessionState::setStageEntry(StageEntry const& inEntry)
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
 {
-    pxr::UsdPrim prim;
+    UsdPrim prim;
 
     MObject shapeObj;
     MStatus status = UsdMayaUtil::GetMObjectByName(shapePath.asChar(), shapeObj);
