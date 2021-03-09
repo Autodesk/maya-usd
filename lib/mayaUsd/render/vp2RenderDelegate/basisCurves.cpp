@@ -960,7 +960,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
                 if (!usingCPV) {
                     prepareCPVBuffer = false;
-                    prepareInstanceColorBuffer = colorInterpolation == HdInterpolationInstance || alphaInterpolation == HdInterpolationInstance;
+                    prepareInstanceColorBuffer = colorInterpolation == HdInterpolationInstance
+                        || alphaInterpolation == HdInterpolationInstance;
 
                     const GfVec3f& clr3f = colorArray[0];
                     // When the interpolation is instance the color of the material is ignored
@@ -1033,20 +1034,19 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
                     _CommitMVertexBuffer(_curvesSharedData._colorBuffer.get(), bufferData);
                 }
-            }
-            else if (prepareInstanceColorBuffer) {
-                TF_VERIFY(colorInterpolation == HdInterpolationInstance || alphaInterpolation == HdInterpolationInstance);
-                
-                if (alphaInterpolation == HdInterpolationConstant)
-                {
+            } else if (prepareInstanceColorBuffer) {
+                TF_VERIFY(
+                    colorInterpolation == HdInterpolationInstance
+                    || alphaInterpolation == HdInterpolationInstance);
+
+                if (alphaInterpolation == HdInterpolationConstant) {
                     float alpha = alphaArray[0];
-                    for( int i=1; i<colorArray.size(); i++)
+                    for (int i = 1; i < colorArray.size(); i++)
                         alphaArray.push_back(alpha);
                 }
-                if (colorInterpolation == HdInterpolationConstant)
-                {
+                if (colorInterpolation == HdInterpolationConstant) {
                     GfVec3f color = colorArray[0];
-                    for(int i=1; i<alphaArray.size(); i++)
+                    for (int i = 1; i < alphaArray.size(); i++)
                         colorArray.push_back(color);
                 }
 
@@ -1183,7 +1183,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 std::vector<unsigned char> colorIndices;
 
                 // Assign with the index to the dormant wireframe color by default.
-                bool      hasAuthoredColor = stateToCommit._instanceColors.length() > 0;
+                bool         hasAuthoredColor = stateToCommit._instanceColors.length() > 0;
                 const size_t authoredColorIndex = sizeof(colors) / sizeof(MColor);
                 colorIndices.resize(instanceCount, hasAuthoredColor ? authoredColorIndex : 0);
 
@@ -1211,8 +1211,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
                 for (unsigned int i = 0; i < instanceCount; ++i) {
                     unsigned char colorIndex = colorIndices[i];
-                    if (colorIndex == authoredColorIndex)
-                    {
+                    if (colorIndex == authoredColorIndex) {
                         offset += kNumColorChannels;
                         continue;
                     }
