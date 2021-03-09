@@ -2,7 +2,6 @@
 //Name: primPath.ma
 //Last modified: Fri, Feb 26, 2021 12:48:34 PM
 //Codeset: 1252
-requires maya "2023ff01";
 requires -nodeType "mayaUsdProxyShape" -dataType "pxrUsdStageData" "mayaUsdPlugin" "0.9.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
@@ -81,7 +80,7 @@ createNode mayaUsdProxyShape -n "stageShape1" -p "stage1";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr ".fp" -type "string" "F:/workspace/maya-usd/ecg-maya-usd/maya-usd/test/testSamples/primPath/primPath.usda";
+	setAttr ".fp" -type "string" "primPath.usda";
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "F88695BD-4318-37C8-EBE8-6B9A6EECF192";
 	setAttr -s 2 ".lnk";
