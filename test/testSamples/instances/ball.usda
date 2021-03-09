@@ -5,7 +5,7 @@
 
 def Xform "GEO"
 {
-  def Sphere "mesh"
+  def Cube "mesh"
   {
   }
 }
