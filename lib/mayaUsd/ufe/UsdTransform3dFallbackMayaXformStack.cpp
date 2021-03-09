@@ -109,7 +109,7 @@ findFirstFallbackOp(const std::vector<UsdGeomXformOp>& ops)
     });
 }
 
-void setXformOpOrder(const UsdGeomXformable& xformable)
+bool setXformOpOrder(const UsdGeomXformable& xformable)
 {
     // As this method is called after appending a transform op to the fallback
     // transform op sub-stack, we copy transform ops up to but excluding the
@@ -140,7 +140,8 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
         newOrder.emplace_back(op);
     }
 
-    xformable.SetXformOpOrder(newOrder, resetsXformStack);
+    auto result = xformable.SetXformOpOrder(newOrder, resetsXformStack);
+    return result;
 }
 
 Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)

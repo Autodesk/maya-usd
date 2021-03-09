@@ -58,7 +58,7 @@ public:
     typedef std::shared_ptr<UsdTransform3dMayaXformStack> Ptr;
     typedef Ufe::Vector3d (*CvtRotXYZFromAttrFn)(const VtValue& value);
     typedef VtValue (*CvtRotXYZToAttrFn)(double x, double y, double z);
-    typedef void (*SetXformOpOrderFn)(const UsdGeomXformable&);
+    typedef bool (*SetXformOpOrderFn)(const UsdGeomXformable&);
 
     UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item);
     ~UsdTransform3dMayaXformStack() override = default;
