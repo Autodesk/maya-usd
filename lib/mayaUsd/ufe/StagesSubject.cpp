@@ -289,12 +289,8 @@ void StagesSubject::stageChanged(
             if (inAttributeChangedNotificationGuard()) {
                 pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
             } else {
-#if UFE_PREVIEW_VERSION_NUM >= 2036
                 Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
                 Ufe::Attributes::notify(vc);
-#else
-                Ufe::Attributes::notify(ufePath, changedPath.GetName());
-#endif
             }
             sendValueChangedFallback = false;
         }
@@ -323,26 +319,20 @@ void StagesSubject::stageChanged(
             if (inAttributeChangedNotificationGuard()) {
                 pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
             } else {
-#if UFE_PREVIEW_VERSION_NUM >= 2036
                 Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
                 Ufe::Attributes::notify(vc);
-#else
-                Ufe::Attributes::notify(ufePath, changedPath.GetName());
-#endif
             }
         }
 #endif
     }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2036
     // Special case when we are notified, but no paths given.
     if (notice.GetResyncedPaths().empty() && notice.GetChangedInfoOnlyPaths().empty()) {
         auto                       ufePath = stagePath(sender);
         Ufe::AttributeValueChanged vc(ufePath, "/");
         Ufe::Attributes::notify(vc);
     }
-#endif
 #endif
 }
 
@@ -440,12 +430,8 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-#if UFE_PREVIEW_VERSION_NUM >= 2036
         Ufe::AttributeValueChanged vc(notificationInfo.first, notificationInfo.second);
         Ufe::Attributes::notify(vc);
-#else
-        Ufe::Attributes::notify(notificationInfo.first, notificationInfo.second);
-#endif
     }
 
     pendingAttributeChangedNotifications.clear();

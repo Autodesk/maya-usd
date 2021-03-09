@@ -37,6 +37,8 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdAttribute.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
+            UsdCamera.cpp
+            UsdCameraHandler.cpp
             UsdContextOps.cpp
             UsdContextOpsHandler.cpp
             UsdObject3d.cpp
@@ -56,13 +58,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoVisibleCommand.cpp
             XformOpUtils.cpp
     )
-    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdCamera.cpp
-                UsdCameraHandler.cpp
-        )
-    endif()
 endif()
 
 set(HEADERS
@@ -99,6 +94,8 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h
+        UsdCamera.h
+        UsdCameraHandler.h
         UsdContextOps.h
         UsdContextOpsHandler.h
         UsdObject3d.h
@@ -119,13 +116,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoVisibleCommand.h
         XformOpUtils.h
     )
-    # Why no if for UsdUIInfoHandler.h ?
-    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
-        list(APPEND HEADERS
-            UsdCamera.h
-            UsdCameraHandler.h
-        )
-    endif()
 endif()
 
 # -----------------------------------------------------------------------------

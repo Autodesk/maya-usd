@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import ufeUtils
 from testUtils import assertVectorAlmostEqual
 from testUtils import assertVectorEqual
 import usdUtils
@@ -320,7 +321,7 @@ class Object3dTestCase(unittest.TestCase):
         self.assertFalse(ufe.Object3d.hasObserver(visObs))
         self.assertEqual(ufe.Object3d.nbObservers(), 0)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testUndoVisibleCmd is only available in UFE preview version 0.2.34 and greater')
+    @unittest.skipIf(ufeUtils.ufeFeatureSetVersion() >= 2, 'testUndoVisibleCmd only available in UFE v2 or greater.')
     def testUndoVisibleCmd(self):
 
         ''' Verify the token / attribute values for visibility after performing undo/redo '''
@@ -385,7 +386,7 @@ class Object3dTestCase(unittest.TestCase):
         # capsuleItem must be invisible now
         self.assertFalse(object3d.visibility())
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testMayaHideAndShowHiddenUndoCommands is only available in UFE preview version 0.2.34 and greater')
+    @unittest.skipIf(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaHideAndShowHiddenUndoCommands only available in UFE v2 or greater.')
     def testMayaHideAndShowHiddenUndoCommands(self):
         ''' Verify the token / attribute values for visibility via "hide", "showHidden" commands + Undo/Redo '''
 

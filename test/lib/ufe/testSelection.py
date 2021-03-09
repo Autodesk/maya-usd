@@ -137,14 +137,14 @@ class SelectTestCase(unittest.TestCase):
             ufeSelectCmd.replaceWith(sn)
         self.runTestSelection(selectCmd)
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 121)), 'testMayaSelect only available in UFE v2 or greater and Maya Preview Release 121 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelect only available in UFE v2 or greater.')
     def testMayaSelect(self):
         # Maya PR 121 now has support for UFE path string in select command.
         def selectCmd(item):
             cmds.select(ufe.PathString.string(item.path()))
         self.runTestSelection(selectCmd)
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 121)), 'testMayaSelectFlags only available in UFE v2 or greater and Maya Preview Release 121 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelectFlags only available in UFE v2 or greater.')
     def testMayaSelectFlags(self):
         # Maya PR 121 now has support for UFE path string in select command.
 
@@ -275,7 +275,7 @@ class SelectTestCase(unittest.TestCase):
         self.assertTrue(globalSn.contains(first.path()))
         self.assertEqual(globalSn.back(), first)
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 123)), 'testMayaSelectMuteLayer only available in UFE v2 or greater and Maya Preview Release 123 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelectMuteLayer only available in UFE v2 or greater.')
     def testMayaSelectMuteLayer(self):
         '''Stale selection items must be removed on mute layer.'''
         
@@ -350,7 +350,7 @@ class SelectTestCase(unittest.TestCase):
 
         self.assertTrue(sn.empty())
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 123)), 'testMayaSelectSwitchVariant only available in UFE v2 or greater and Maya Preview Release 123 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelectSwitchVariant only available in UFE v2 or greater.')
     def testMayaSelectSwitchVariant(self):
         '''Stale selection items must be removed on variant switch.'''
 
