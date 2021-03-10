@@ -17,6 +17,7 @@
 #include "adskExportCommand.h"
 #include "adskImportCommand.h"
 #include "adskListShadingModesCommand.h"
+#include "adskStageLoadUnloadCommands.h"
 #include "base/api.h"
 #include "exportTranslator.h"
 #include "importTranslator.h"
@@ -209,6 +210,8 @@ MStatus initializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to register export translator.");
     }
 
+    registerCommandCheck<MayaUsd::ADSKMayaUsdStageLoadAllCommand>(plugin);
+    registerCommandCheck<MayaUsd::ADSKMayaUsdStageUnloadAllCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDExportCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
@@ -373,6 +376,8 @@ MStatus uninitializePlugin(MObject obj)
     if (!status) {
         status.perror("mayaUsdPlugin: unable to deregister export translator.");
     }
+    deregisterCommandCheck<MayaUsd::ADSKMayaUsdStageLoadAllCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ADSKMayaUsdStageUnloadAllCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDExportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);
