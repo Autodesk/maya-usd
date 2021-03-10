@@ -625,7 +625,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
                 "xformOp:rotateZ", "!invert!xformOp:translate:pivot",
                 "xformOp:rotateXYZ:maya_fallback")))
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Requires Maya fixes only available in Maya 2022 or greater.')
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
     def testBrokenFallback(self):
         '''Maya fallback transform stack must be final on prim transform op stack.'''
         # Create a prim and add transform ops to it that don't match the Maya
@@ -687,7 +687,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
         self.assertIsNone(capsuleT3d)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Fallback transform op handling only available in Maya 2022 or greater.')
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 123, 'Fallback transform op handling only available in Maya Preview Release 123 or later.')
     def testFallback(self):
         '''Transformable not handled by standard Transform3d handlers must be
     handled by fallback handler.'''

@@ -275,7 +275,7 @@ class SelectTestCase(unittest.TestCase):
         self.assertTrue(globalSn.contains(first.path()))
         self.assertEqual(globalSn.back(), first)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelectMuteLayer only available in UFE v2 or greater.')
+    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 123)), 'testMayaSelectMuteLayer only available in UFE v2 or greater and Maya Preview Release 123 or later.')
     def testMayaSelectMuteLayer(self):
         '''Stale selection items must be removed on mute layer.'''
         
@@ -350,7 +350,7 @@ class SelectTestCase(unittest.TestCase):
 
         self.assertTrue(sn.empty())
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelectSwitchVariant only available in UFE v2 or greater.')
+    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 123)), 'testMayaSelectSwitchVariant only available in UFE v2 or greater and Maya Preview Release 123 or later.')
     def testMayaSelectSwitchVariant(self):
         '''Stale selection items must be removed on variant switch.'''
 

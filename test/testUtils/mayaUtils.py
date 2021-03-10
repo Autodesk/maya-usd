@@ -232,8 +232,6 @@ def previewReleaseVersion():
         return 98
     elif majorVersion == 2020:
         return 110
-    elif majorVersion == 2022:
-        return 122
 
     match = prRe.match(cmds.about(v=True))
 
