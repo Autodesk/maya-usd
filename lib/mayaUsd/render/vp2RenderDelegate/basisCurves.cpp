@@ -897,9 +897,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle
                | DirtySelectionHighlight)) {
             VtVec3fArray    colorArray;
-            HdInterpolation colorInterpolation;
+            HdInterpolation colorInterpolation = HdInterpolationConstant;
             VtFloatArray    alphaArray;
-            HdInterpolation alphaInterpolation;
+            HdInterpolation alphaInterpolation = HdInterpolationConstant;
 
             auto itColor = primvarSourceMap.find(HdTokens->displayColor);
             if (itColor != primvarSourceMap.end()) {
