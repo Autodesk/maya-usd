@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 
+#ifndef MAYAUSD_COMMANDS_LAYER_EDITOR_COMMAND_H
+#define MAYAUSD_COMMANDS_LAYER_EDITOR_COMMAND_H
+
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/mayaUsd.h>
 
@@ -64,3 +67,5 @@ private:
 };
 
 } // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_COMMANDS_LAYER_EDITOR_COMMAND_H
