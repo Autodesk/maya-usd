@@ -148,7 +148,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(ball5Path not in childPathsRedo)
         self.assertTrue(ball3Path not in childPathsRedo)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Requires Maya fixes only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Requires Maya fixes only available in Maya 2022 or greater.')
     def testGroupAcrossProxies(self):
         sphereFile = testUtils.getTestScene("groupCmd", "sphere.usda")
         sphereDagPath, sphereStage = mayaUtils.createProxyFromFile(sphereFile)

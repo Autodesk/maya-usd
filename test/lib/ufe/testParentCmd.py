@@ -275,7 +275,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Requires Maya fixes only available in Maya 2022 or greater.')
     def testParentAbsoluteSingleMatrixOp(self):
         """Test parent -absolute on prim with a single matrix op."""
 
@@ -408,7 +408,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Requires Maya fixes only available in Maya 2022 or greater.')
     def testParentAbsoluteFallback(self):
         """Test parent -absolute on prim with a fallback Maya transform stack."""
         # Create a scene with an xform and a capsule.
@@ -530,7 +530,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         checkParentDone()
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Requires Maya fixes only available in Maya 2022 or greater.')
     def testParentAbsoluteMultiMatrixOp(self):
         """Test parent -absolute on prim with a transform stack with multiple matrix ops."""
 
