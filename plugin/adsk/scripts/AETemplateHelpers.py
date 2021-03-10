@@ -2,7 +2,6 @@ import os.path
 import maya.cmds as cmds
 import ufe
 import mayaUsd.ufe
-import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
 from mayaUSDRegisterStrings import getMayaUsdString
 
 def debugMessage(msg):
@@ -33,20 +32,6 @@ def GetRootLayerName(proxyShape):
         debugMessage('GetRootLayerName() - Error: %s' % str(e))
         pass
     return ''
-
-def ProxyShapePayloads(proxyShape, loadAll):
-    try:
-        proxyPath = ufe.PathString.path(proxyShape)
-        ufeItem = ufe.Hierarchy.createItem(proxyPath) if proxyPath else None
-        if ufeItem:
-            contextOps = ufe.ContextOps.contextOps(ufeItem)
-            if contextOps:
-                cmdStr = 'Load with Descendants' if loadAll else 'Unload'
-                cmd = contextOps.doOpCmd([cmdStr])
-                ufeCmd.execute(cmd)
-    except:
-        debugMessage('ProxyShapePayloads() - error during function')
-        pass
 
 def IsProxyShapeLayerStackDirty(proxyStage):
     # Helper method which returns True if any layer (skipping SessionLayer)
