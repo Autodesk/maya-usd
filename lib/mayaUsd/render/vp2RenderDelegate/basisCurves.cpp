@@ -1041,16 +1041,16 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
                 if (alphaInterpolation == HdInterpolationConstant) {
                     float alpha = alphaArray[0];
-                    for (int i = 1; i < colorArray.size(); i++)
+                    for (unsigned int i = 1; i < colorArray.size(); i++)
                         alphaArray.push_back(alpha);
                 }
                 if (colorInterpolation == HdInterpolationConstant) {
                     GfVec3f color = colorArray[0];
-                    for (int i = 1; i < alphaArray.size(); i++)
+                    for (unsigned int i = 1; i < alphaArray.size(); i++)
                         colorArray.push_back(color);
                 }
 
-                int numInstances = colorArray.size();
+                unsigned int numInstances = colorArray.size();
                 stateToCommit._instanceColors.setLength(numInstances * kNumColorChannels);
                 float* bufferData = &stateToCommit._instanceColors[0];
 
