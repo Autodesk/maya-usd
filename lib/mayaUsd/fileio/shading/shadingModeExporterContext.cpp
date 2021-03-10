@@ -545,7 +545,7 @@ public:
         if (largestSize) {
             TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
             TfTokenVector::const_iterator itName = largestSet.cbegin();
-            for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
+            for (; itNode != _nodesWithUVInput.cend() && itName != largestSet.cend(); ++itNode, ++itName) {
                 TfToken inputName(
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
                 UsdShadeInput materialInput = material.GetInput(inputName);
