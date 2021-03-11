@@ -38,7 +38,8 @@ UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim);
 //! Apply restriction rules on the given prim
 void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName);
 
-//! Apply restriction rules on the given property
+//! Check if an attribute value is allowed to be changed.
+//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr);
 
 //------------------------------------------------------------------------------

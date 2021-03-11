@@ -37,6 +37,29 @@
 using namespace MayaUsd;
 using namespace boost::python;
 
+namespace {
+// find the Layer Index in the LayerStack ( strong-to-weak order )
+uint32_t findIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
+{
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& layerStack = prim.GetStage()->GetLayerStack();
+
+    uint32_t position { 0 };
+
+    auto iter = std::find_if(
+        std::begin(layerStack),
+        std::end(layerStack),
+        [&](const PXR_NS::SdfLayerHandle& l) -> bool { return layer == l; });
+
+    if (iter != layerStack.end()) {
+        return std::distance(layerStack.begin(), iter);
+    }
+
+    return position;
+}
+} // namespace
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {
@@ -182,6 +205,44 @@ int ufePathToInstanceIndex(const std::string& ufePathString)
 #endif
 }
 
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+{
+    // get the property spec in the edit target's layer
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& editTarget = stage->GetEditTarget();
+    const auto& editTargetPropertySpec = editTarget.GetPropertySpecForScenePath(attr.GetPath());
+
+    // get the index to edit target layer
+    const auto targetLayerIndex = findIndex(attr, editTarget.GetLayer());
+
+    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
+    // opinions for this property.
+    const auto& propertyStack = attr.GetPropertyStack();
+
+    SdfLayerHandle strongLayer;
+    for (const auto& spec : propertyStack) {
+
+        // Skip if the edit target layer is stronger than the propSpec layer
+        const auto propSpecLayerIndex = findIndex(attr, spec->GetLayer());
+        if (targetLayerIndex <= propSpecLayerIndex) {
+            continue;
+        }
+
+        if (spec) {
+            strongLayer = spec->GetLayer();
+            break;
+        }
+    }
+
+    if (strongLayer) {
+        return false;
+    }
+
+    return true;
+}
+
+
 TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
 {
     auto path =
@@ -217,4 +278,5 @@ void wrapUtils()
     def("ufePathToPrim", ufePathToPrim);
     def("ufePathToInstanceIndex", ufePathToInstanceIndex);
     def("getProxyShapePurposes", getProxyShapePurposes);
+    def("isAttributeEditAllowed", isAttributeEditAllowed);
 }

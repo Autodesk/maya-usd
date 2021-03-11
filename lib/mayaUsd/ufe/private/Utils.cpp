@@ -31,8 +31,8 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-// find the Layer Index in the LayerStack ( strong-to-weak order )
-uint32_t findIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
+// find positon index for a given layer in the local LayerStack ( strong-to-weak order )
+uint32_t findLayerIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
 {
     const auto& prim = attr.GetPrim();
     const auto& stage = prim.GetStage();
@@ -223,20 +223,23 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     const auto& prim = attr.GetPrim();
     const auto& stage = prim.GetStage();
     const auto& editTarget = stage->GetEditTarget();
-    const auto& editTargetPropertySpec = editTarget.GetPropertySpecForScenePath(attr.GetPath());
 
     // get the index to edit target layer
-    const auto targetLayerIndex = findIndex(attr, editTarget.GetLayer());
+    const auto targetLayerIndex = findLayerIndex(attr, editTarget.GetLayer());
 
     // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
     // opinions for this property.
     const auto& propertyStack = attr.GetPropertyStack();
 
+    // HS March 15th,2021
+    // TODO: This code works as long as existing opinions are in the stage’s local LayerStack. 
+    // Relying on the "expanded primIndex" would be the way to detect the opinions accross composition arc(s).
+    // Some more details can be found: https://groups.google.com/g/usd-interest/c/xTxFYQA_bRs/m/lX_WqNLoBAAJ
     SdfLayerHandle strongLayer;
     for (const auto& spec : propertyStack) {
 
-        // Skip if the edit target layer is stronger than the propSpec layer
-        const auto propSpecLayerIndex = findIndex(attr, spec->GetLayer());
+        // skip if the edit target layer is stronger than the propSpec layer
+        const auto propSpecLayerIndex = findLayerIndex(attr, spec->GetLayer());
         if (targetLayerIndex <= propSpecLayerIndex) {
             continue;
         }
