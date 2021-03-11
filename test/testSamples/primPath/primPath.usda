@@ -4,6 +4,7 @@ def Cube "Cube1"
 {
     double3 xformOp:translate = (0, 10, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
+    color3f[] primvars:displayColor = [(0, 1, 0)]
 
     def Cube "Cube2"
     {
@@ -22,11 +23,12 @@ def Capsule "Capsule1"
 {
     double3 xformOp:translate = (0, 0, 10)
     uniform token[] xformOpOrder = ["xformOp:translate"]
+    color3f[] primvars:displayColor = [(1, 0, 0)]
 }
 
 def Capsule "Capsule2"
 {
     double3 xformOp:translate = (10, 0, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
+    color3f[] primvars:displayColor = [(0, 0, 1)]
 }
-
