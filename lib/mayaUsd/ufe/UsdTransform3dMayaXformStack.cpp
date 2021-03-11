@@ -38,11 +38,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-#if UFE_PREVIEW_VERSION_NUM >= 2031
 using BaseUndoableCommand = Ufe::BaseUndoableCommand;
-#else
-using BaseUndoableCommand = Ufe::BaseTransformUndoableCommand;
-#endif
 using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&)>;
 
 using namespace MayaUsd::ufe;

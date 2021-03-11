@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import ufeUtils
 import testUtils
 import usdUtils
 
@@ -40,7 +41,7 @@ class TestObserver(ufe.Observer):
         self._notifications = 0
 
     def __call__(self, notification):
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '2036'):
+        if (ufeUtils.ufeFeatureSetVersion() >= 2):
             if isinstance(notification, ufe.AttributeValueChanged):
                 self._notifications += 1
         else:
