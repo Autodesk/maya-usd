@@ -236,3 +236,6 @@ def previewReleaseVersion():
     match = prRe.match(cmds.about(v=True))
 
     return int(match.group(1)) if match else sys.maxsize
+
+def mayaMajorVersion():
+    return int(cmds.about(majorVersion=True))

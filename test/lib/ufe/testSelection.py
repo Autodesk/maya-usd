@@ -137,14 +137,14 @@ class SelectTestCase(unittest.TestCase):
             ufeSelectCmd.replaceWith(sn)
         self.runTestSelection(selectCmd)
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 121)), 'testMayaSelect only available in UFE v2 or greater and Maya Preview Release 121 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelect only available in UFE v2 or greater.')
     def testMayaSelect(self):
         # Maya PR 121 now has support for UFE path string in select command.
         def selectCmd(item):
             cmds.select(ufe.PathString.string(item.path()))
         self.runTestSelection(selectCmd)
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 121)), 'testMayaSelectFlags only available in UFE v2 or greater and Maya Preview Release 121 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelectFlags only available in UFE v2 or greater.')
     def testMayaSelectFlags(self):
         # Maya PR 121 now has support for UFE path string in select command.
 

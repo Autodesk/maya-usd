@@ -444,7 +444,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestCombo(expectedTRS)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Rotate and scale pivot compensation only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Rotate and scale pivot compensation only available in Maya 2022 or greater.')
     def testRotateScalePivotCompensation(self):
         '''Test that rotate and scale pivot compensation match Maya object.'''
 
@@ -513,7 +513,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Rotate and scale pivot compensation only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Rotate and scale pivot compensation only available in Maya 2022 or greater.')
     def testRotateScalePivotCompensationAfterExport(self):
         '''Rotate and scale pivots must match after export.'''
 
@@ -572,7 +572,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121, 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Fallback transform op handling only available in Maya 2022 or greater.')
     def testFallbackCases(self):
         '''Fallback handler test cases.'''
 
@@ -625,7 +625,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
                 "xformOp:rotateZ", "!invert!xformOp:translate:pivot",
                 "xformOp:rotateXYZ:maya_fallback")))
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
     def testBrokenFallback(self):
         '''Maya fallback transform stack must be final on prim transform op stack.'''
         # Create a prim and add transform ops to it that don't match the Maya
