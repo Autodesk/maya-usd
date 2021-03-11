@@ -135,11 +135,6 @@ public:
         const VtVec3fArray& bbox,
         const UsdTimeCode&  timeSample);
 
-    /// Used to cache the animated blend shape weight plugs that need to be sampled per-frame.
-    /// This is cached at the writeJob-level because the state needs to persist across instances of
-    /// the meshWriter->Write() function.
-    MPlugArray mBlendShapesAnimWeightPlugs;
-
 protected:
     /// Opens the stage with the given \p filename for writing.
     /// If \p append is \c true, the file must already exist.

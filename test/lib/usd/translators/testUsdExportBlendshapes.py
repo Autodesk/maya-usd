@@ -118,9 +118,13 @@ class TestUsdExportBlendshapes(unittest.TestCase):
         prim = stage.GetPrimAtPath("/basic_skinned_cube_duplicate_targets_names_across_meshes/base0")
         blendShapes = prim.GetChildren()
         self.assertEqual(len(blendShapes), 2)
+        self.assertEqual(blendShapes[0].GetName(), "tgt1")
+        self.assertEqual(blendShapes[1].GetName(), "tgt0")
         prim = stage.GetPrimAtPath("/basic_skinned_cube_duplicate_targets_names_across_meshes/base1")
         blendShapes = prim.GetChildren()
         self.assertEqual(len(blendShapes), 2)
+        self.assertEqual(blendShapes[0].GetName(), "tgt1")
+        self.assertEqual(blendShapes[1].GetName(), "tgt0")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

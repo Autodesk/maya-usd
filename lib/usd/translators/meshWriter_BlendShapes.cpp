@@ -760,7 +760,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         TF_VERIFY(weightsPlug.isArray());
                         MPlug weightPlug = weightsPlug.elementByLogicalIndex(weightIndex);
-                        this->_writeJobCtx.mBlendShapesAnimWeightPlugs.append(weightPlug);
+                        this->mBlendShapesAnimWeightPlugs.append(weightPlug);
                     }
                 }
                 break;
@@ -952,7 +952,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                             TF_VERIFY(weightsPlug.isArray());
                             MPlug weightPlug = weightsPlug.elementByLogicalIndex(weightIndex);
-                            this->_writeJobCtx.mBlendShapesAnimWeightPlugs.append(weightPlug);
+                            this->mBlendShapesAnimWeightPlugs.append(weightPlug);
                         }
                     } else {
                         float weightValue
@@ -1085,7 +1085,7 @@ bool PxrUsdTranslators_MeshWriter::writeBlendShapeAnimation(const UsdTimeCode& u
 
     // NOTE: (yliangsiew) This should be the combined array of _all_ animated blendshape weight
     // plugs that line up with the array and indices of the blendshape names above.
-    unsigned int numWeightPlugs = this->_writeJobCtx.mBlendShapesAnimWeightPlugs.length();
+    unsigned int numWeightPlugs = this->mBlendShapesAnimWeightPlugs.length();
     if (numExistingBlendShapes != numWeightPlugs) {
         TF_RUNTIME_ERROR("There was a mismatch in the blendshapes determined and their "
                          "corresponding weight plugs.");
@@ -1096,7 +1096,7 @@ bool PxrUsdTranslators_MeshWriter::writeBlendShapeAnimation(const UsdTimeCode& u
     // attribute has a default value and author it.
     if (usdTime.IsDefault()) {
         for (unsigned int i = 0; i < numWeightPlugs; ++i) {
-            MPlug weightPlug = this->_writeJobCtx.mBlendShapesAnimWeightPlugs[i];
+            MPlug weightPlug = this->mBlendShapesAnimWeightPlugs[i];
             // NOTE: (yliangsiew) We need to retrive the _real_ default value of the plug to store.
             if (weightPlug.isDefaultValue()) {
                 usdWeights[i] = weightPlug.asFloat();
@@ -1129,7 +1129,7 @@ bool PxrUsdTranslators_MeshWriter::writeBlendShapeAnimation(const UsdTimeCode& u
     }
 
     for (unsigned int i = 0; i < numWeightPlugs; ++i) {
-        MPlug weightPlug = this->_writeJobCtx.mBlendShapesAnimWeightPlugs[i];
+        MPlug weightPlug = this->mBlendShapesAnimWeightPlugs[i];
         usdWeights[i] = weightPlug.asFloat();
     }
     bool result = blendShapeWeightsAttr.Set(VtValue(usdWeights), usdTime);

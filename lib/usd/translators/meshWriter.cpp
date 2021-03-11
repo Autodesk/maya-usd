@@ -275,6 +275,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+MPlugArray PxrUsdTranslators_MeshWriter::mBlendShapesAnimWeightPlugs;
+
+
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
@@ -291,7 +294,10 @@ PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     }
 }
 
-void PxrUsdTranslators_MeshWriter::PostExport() { cleanupPrimvars(); }
+void PxrUsdTranslators_MeshWriter::PostExport() {
+    cleanupPrimvars();
+    this->mBlendShapesAnimWeightPlugs.clear();
+}
 
 bool PxrUsdTranslators_MeshWriter::writeAnimatedMeshExtents(
     const MObject&     deformedMesh,

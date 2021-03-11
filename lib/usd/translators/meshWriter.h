@@ -74,6 +74,9 @@ private:
     bool    writeBlendShapeAnimation(const UsdTimeCode& usdTime);
     bool    writeAnimatedMeshExtents(const MObject& deformedMesh, const UsdTimeCode& usdTime);
 
+    /// Used to cache the animated blend shape weight plugs that need to be sampled per-frame.
+    static MPlugArray mBlendShapesAnimWeightPlugs;
+
     /// Input mesh before any skeletal deformations, cached between iterations.
     MObject _skelInputMesh;
 

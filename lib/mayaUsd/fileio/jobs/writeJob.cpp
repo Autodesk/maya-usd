@@ -325,8 +325,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-    this->mJobCtx.mBlendShapesAnimWeightPlugs.clear();
-
     // Now do a depth-first traversal of the Maya DAG from the world root.
     // We keep a reference to arg dagPaths as we encounter them.
     MDagPath curLeafDagPath;
