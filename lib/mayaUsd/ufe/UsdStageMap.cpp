@@ -190,8 +190,7 @@ void UsdStageMap::rebuildIfDirty()
         return;
 
     for (const auto& psn : ProxyShapeHandler::getAllNames()) {
-        addItem(
-            Ufe::Path(Ufe::PathSegment("|world" + psn, getMayaRunTimeId(), '|')));
+        addItem(Ufe::Path(Ufe::PathSegment("|world" + psn, getMayaRunTimeId(), '|')));
     }
     fDirty = false;
 }
