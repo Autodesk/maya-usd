@@ -112,16 +112,22 @@ void UsdStageMap::addItem(const Ufe::Path& path)
         return;
     }
 
-    // We've just done a name-based lookup of the proxy shape, so the stage
-    // cannot be null.
-    auto stage = objToStage(proxyShape.object());
+    // Non-const MObject& requires an lvalue.  We've just done a name-based
+    // lookup of the proxy shape, so the stage cannot be null.
+    auto obj = proxyShape.object();
+    auto stage = objToStage(obj);
     TF_AXIOM(stage);
 
     fPathToObject[path] = proxyShape;
     fStageToObject[stage] = proxyShape;
 }
 
-UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) { return objToStage(proxyShape(path)); }
+UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path)
+{
+    // Non-const MObject& requires an lvalue.
+    auto obj = proxyShape(path);
+    return objToStage(obj);
+}
 
 MObject UsdStageMap::proxyShape(const Ufe::Path& path)
 {
