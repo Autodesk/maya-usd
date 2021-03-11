@@ -23,10 +23,6 @@
 
 #include <maya/MFnDagNode.h>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/pathString.h>
-#endif
-
 #include <cassert>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -195,11 +191,7 @@ void UsdStageMap::rebuildIfDirty()
 
     for (const auto& psn : ProxyShapeHandler::getAllNames()) {
         addItem(
-#ifdef UFE_V2_FEATURES_AVAILABLE
-            Ufe::PathString::path(psn));
-#else
             Ufe::Path(Ufe::PathSegment("|world" + psn, getMayaRunTimeId(), '|')));
-#endif
     }
     fDirty = false;
 }
