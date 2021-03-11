@@ -277,7 +277,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 MPlugArray PxrUsdTranslators_MeshWriter::mBlendShapesAnimWeightPlugs;
 
-
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
@@ -294,9 +293,15 @@ PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     }
 }
 
-void PxrUsdTranslators_MeshWriter::PostExport() {
+void PxrUsdTranslators_MeshWriter::PostExport()
+{
     cleanupPrimvars();
-    this->mBlendShapesAnimWeightPlugs.clear();
+    if (this->mBlendShapesAnimWeightPlugs.length() != 0) {
+        // NOTE: (yliangsiew) Really, clearing it once is enough, but due to the constraints on what
+        // should go in the WriteJobContext, there's not really a better place to put this cache for
+        // now.
+        this->mBlendShapesAnimWeightPlugs.clear();
+    }
 }
 
 bool PxrUsdTranslators_MeshWriter::writeAnimatedMeshExtents(

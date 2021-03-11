@@ -74,7 +74,13 @@ private:
     bool    writeBlendShapeAnimation(const UsdTimeCode& usdTime);
     bool    writeAnimatedMeshExtents(const MObject& deformedMesh, const UsdTimeCode& usdTime);
 
-    /// Used to cache the animated blend shape weight plugs that need to be sampled per-frame.
+    /// Used to cache the animated blend shape weight plugs that need to be
+    /// sampled per-frame.  Becuase UsdSkelBlendShape stores animation in an
+    /// array that encompasses _all_ targets at the SkelRoot level, we cache out
+    /// blendshape weight plugs across repeated invocations of the meshWriter,
+    /// so that we know which plugs to sample when we start writing out the
+    /// animation. This shared cache is eventually cleared in PostExport() of
+    /// each meshWriter.
     static MPlugArray mBlendShapesAnimWeightPlugs;
 
     /// Input mesh before any skeletal deformations, cached between iterations.

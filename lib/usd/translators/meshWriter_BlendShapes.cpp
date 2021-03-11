@@ -38,6 +38,7 @@
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnComponentListData.h>
 #include <maya/MFnGeometryFilter.h>
+#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPointArrayData.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MGlobal.h>
@@ -45,7 +46,6 @@
 #include <maya/MObject.h>
 #include <maya/MPointArray.h>
 #include <maya/MStatus.h>
-#include <maya/MFnNumericAttribute.h>
 
 #include <algorithm>
 #include <complex>
@@ -1103,23 +1103,26 @@ bool PxrUsdTranslators_MeshWriter::writeBlendShapeAnimation(const UsdTimeCode& u
             } else {
                 MObject weightAttr = weightPlug.attribute();
                 if (weightAttr.hasFn(MFn::kNumericData)) {
-                    MStatus stat;
-                    MFnNumericAttribute fnNumAttr(weightAttr, &stat);
+                    MStatus              stat;
+                    MFnNumericAttribute  fnNumAttr(weightAttr, &stat);
                     MFnNumericData::Type unit = fnNumAttr.unitType();
-                    switch(unit) {
-                    case MFnNumericData::Type::kFloat:
-                    {
+                    switch (unit) {
+                    case MFnNumericData::Type::kFloat: {
                         float val = 0.0f;
                         stat = fnNumAttr.getDefault(val);
                         if (stat != MStatus::kSuccess) {
-                            TF_WARN("Unable to retrieve default value for plug: %s", weightPlug.name().asChar());
+                            TF_WARN(
+                                "Unable to retrieve default value for plug: %s",
+                                weightPlug.name().asChar());
                             usdWeights[i] = 0.0f;
                         }
                         usdWeights[i] = val;
                         break;
                     }
                     default:
-                        TF_WARN("Invalid weight attribute type was found for plug: %s", weightPlug.name().asChar());
+                        TF_WARN(
+                            "Invalid weight attribute type was found for plug: %s",
+                            weightPlug.name().asChar());
                         usdWeights[i] = 0.0f;
                         break;
                     }
