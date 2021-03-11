@@ -155,7 +155,11 @@ In general, macros should be avoided (see [Modern C++](https://docs.google.com/d
 * Comments for users of classes and functions must be written in headers files. Comments in definition files are meant for contributors and maintainers.
 
 ### Namespaces
-* In header files, it is required to use fully qualified namespace names.  Global scope using directives are not allowed.  Inline code can use using directives in implementations, within a scope, when there is no other choice (e.g. when using macros, which are not namespaced).
+
+#### In header files (e.g. .h)
+
+* **Required:** to use fully qualified namespace names. Global scope using directives are not allowed.  Inline code can use using directives in implementations, within a scope, when there is no other choice (e.g. when using macros, which are not namespaced).
+
 ```cpp
 // In aFile.h
 inline PXR_NS::UsdPrim prim() const
@@ -165,8 +169,11 @@ inline PXR_NS::UsdPrim prim() const
     return fItem->prim();
 }
 ```
-* In implementation files (e.g. .cpp), it is recommended to use fully qualified namespace names, unless clarity or readability is degraded by use of explicit namespaces, in which case a using directive is acceptable.
-* In an implementation file, it is recommended to use the existing namespace style, and not make gratuitous changes: if the file is using explicit namespaces, new code should follow this style, unless the changes are so significant that clarity or readability is degraded.  If the file has one or more using directives, new code should follow this style.
+
+#### In implementation files (e.g. .cpp)
+
+* **Recommended:** to use fully qualified namespace names, unless clarity or readability is degraded by use of explicit namespaces, in which case a using directive is acceptable.
+* **Recommended:** to use the existing namespace style, and not make gratuitous changes. If the file is using explicit namespaces, new code should follow this style, unless the changes are so significant that clarity or readability is degraded.  If the file has one or more using directives, new code should follow this style.
 
 ### Include directive
 For source files (.cpp) with an associated header file (.h) that resides in the same directory, it should be `#include`'d with double quotes and no path.  This formatting should be followed regardless of with whether the associated header is public or private. For example:
