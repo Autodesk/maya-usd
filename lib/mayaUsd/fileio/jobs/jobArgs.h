@@ -274,10 +274,7 @@ struct UsdMayaJobImportArgs
     using ShadingModes = std::vector<ShadingMode>;
     ShadingModes  shadingModes; // XXX can we make this const?
     const TfToken preferredMaterial;
-    std::string   importUSDZTexturesFilePath; // TODO: (yliangsiew) Is it ok to mutate this during
-                                              // import based on determining the best directory to
-                                              // write to? If not, can make a second buffer instead
-                                              // for the determined directory.
+    const std::string   importUSDZTexturesFilePath;
     const bool importUSDZTextures;
     UsdZipFile zipFile; // TODO: (yliangsiew) If the import is a USDZ, this will be a valid object.
     const bool importInstances;
@@ -316,6 +313,9 @@ struct UsdMayaJobImportArgs
     /// Gets the default arguments dictionary for UsdMayaJobImportArgs.
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();
+
+    MAYAUSD_CORE_PUBLIC
+    static const std::string GetImportUSDZTexturesFilePath(const std::string &userArg);
 
 private:
     MAYAUSD_CORE_PUBLIC

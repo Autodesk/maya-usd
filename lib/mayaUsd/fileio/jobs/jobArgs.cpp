@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
@@ -36,6 +37,8 @@
 #include <maya/MGlobal.h>
 #include <maya/MNodeClass.h>
 #include <maya/MTypeId.h>
+
+#include <ghc/filesystem.hpp>
 
 #include <ostream>
 #include <string>
@@ -587,8 +590,9 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaJobImportArgsTokens->preferredMaterial,
           UsdMayaPreferredMaterialTokens->none,
           UsdMayaPreferredMaterialTokens->allTokens))
-    , importUSDZTexturesFilePath(
-          _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath))
+    // , importUSDZTexturesFilePath(
+    //       _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath))
+    , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(_String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath)))
     , importUSDZTextures(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
     , importInstances(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(_Boolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
@@ -650,6 +654,58 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
     });
 
     return d;
+}
+
+const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std::string &userArg)
+{
+    std::string importTexturesRootDirPath;
+    if (userArg.size() == 0) {  // NOTE: (yliangsiew) If the user gives an empty argument, we'll try to determine the best directory to write to instead.
+        MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
+        MString currentMayaSceneFilePath = UsdMayaUtil::GetCurrentSceneFilePath();
+        if (currentMayaSceneFilePath.length() != 0
+            && strstr(currentMayaSceneFilePath.asChar(), currentMayaWorkspacePath.asChar())
+            == NULL) {
+            TF_RUNTIME_ERROR(
+                "The current scene does not seem to be part of the current Maya project set. "
+                "Could not automatically determine a path to write out USDZ texture imports.");
+            return "";
+        }
+        if (currentMayaWorkspacePath.length() == 0
+            || !ghc::filesystem::is_directory(currentMayaWorkspacePath.asChar())) {
+            TF_RUNTIME_ERROR(
+                "Could not automatically determine a path to write out USDZ texture imports. "
+                "Please specify a location using the -importUSDZTexturesFilePath argument, or "
+                "set the Maya project appropriately.");
+            return "";
+        } else {
+            // NOTE: (yliangsiew) Textures are, by convention, supposed to be located in the
+            // `sourceimages` folder under a Maya project root folder.
+            importTexturesRootDirPath.assign(
+                currentMayaWorkspacePath.asChar(), currentMayaWorkspacePath.length());
+            bool bStat = UsdMayaUtilFileSystem::pathAppendPath(importTexturesRootDirPath, "sourceimages");
+            if (!bStat) {
+                TF_RUNTIME_ERROR(
+                    "Unable to determine the texture directory for the Maya project: %s.",
+                    currentMayaWorkspacePath.asChar());
+                return "";
+            }
+            TF_WARN(
+                "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
+                "will be imported to the workspace folder: %s.",
+                currentMayaWorkspacePath.asChar());
+        }
+    } else {
+        importTexturesRootDirPath.assign(userArg);
+    }
+
+    if (!ghc::filesystem::is_directory(importTexturesRootDirPath)) {
+        TF_RUNTIME_ERROR(
+            "The directory specified for USDZ texture imports: %s is not valid.",
+            importTexturesRootDirPath.c_str());
+        return "";
+    }
+
+    return importTexturesRootDirPath;
 }
 
 std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importArgs)

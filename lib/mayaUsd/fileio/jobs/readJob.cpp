@@ -268,55 +268,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 stage->GetRootLayer()->GetRealPath().c_str());
             return MStatus::kFailure;
         }
-
-        std::string importTexturesRootDirPath;
-        if (this->mArgs.importUSDZTexturesFilePath.size() == 0) {
-            MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
-            MString currentMayaSceneFilePath = UsdMayaUtil::GetCurrentSceneFilePath();
-            if (currentMayaSceneFilePath.length() != 0
-                && strstr(currentMayaSceneFilePath.asChar(), currentMayaWorkspacePath.asChar())
-                    == NULL) {
-                TF_RUNTIME_ERROR(
-                    "The current scene does not seem to be part of the current Maya project set. "
-                    "Could not automatically determine a path to write out USDZ texture imports.");
-                return MStatus::kFailure;
-            }
-            if (currentMayaWorkspacePath.length() == 0
-                || !ghc::filesystem::is_directory(currentMayaWorkspacePath.asChar())) {
-                TF_RUNTIME_ERROR(
-                    "Could not automatically determine a path to write out USDZ texture imports. "
-                    "Please specify a location using the -importUSDZTexturesFilePath argument, or "
-                    "set the Maya project appropriately.");
-                return MStatus::kFailure;
-            } else {
-                // NOTE: (yliangsiew) Textures are, by convention, supposed to be located in the
-                // `sourceimages` folder under a Maya project root folder.
-                importTexturesRootDirPath.assign(
-                    currentMayaWorkspacePath.asChar(), currentMayaWorkspacePath.length());
-                bool bStat = UsdMayaUtilFileSystem::pathAppendPath(
-                    importTexturesRootDirPath, "sourceimages");
-                if (!bStat) {
-                    TF_RUNTIME_ERROR(
-                        "Unable to determine the texture directory for the Maya project: %s.",
-                        currentMayaWorkspacePath.asChar());
-                    return MStatus::kFailure;
-                }
-                TF_WARN(
-                    "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
-                    "will be imported to the workspace folder: %s.",
-                    currentMayaWorkspacePath.asChar());
-            }
-        } else {
-            importTexturesRootDirPath.assign(this->mArgs.importUSDZTexturesFilePath);
-        }
-
-        if (!ghc::filesystem::is_directory(importTexturesRootDirPath)) {
-            TF_RUNTIME_ERROR(
-                "The directory specified for USDZ texture imports: %s is not valid.",
-                importTexturesRootDirPath.c_str());
-            return MStatus::kFailure;
-        }
-        this->mArgs.importUSDZTexturesFilePath.assign(importTexturesRootDirPath);
         this->mArgs.zipFile = UsdZipFile::Open(stage->GetRootLayer()->GetRealPath());
     }
 
