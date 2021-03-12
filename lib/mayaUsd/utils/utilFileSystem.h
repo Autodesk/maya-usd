@@ -63,26 +63,6 @@ std::string resolveRelativePathWithinMayaContext(
     const std::string& relativeFilePath);
 
 /**
- * Checks if the given path is a valid directory on disk.
- *
- * @param dirPath   A string to a directory path to check.
- *
- * @return          ``true`` if the path refers to a valid directory on disk, ``false`` otherwise.
- */
-MAYAUSD_CORE_PUBLIC
-bool isDirectory(const std::string& dirPath);
-
-/**
- * Determines if the `filePath` provided is a valid file on disk.
- *
- * @param filePath      A string to a file path on disk to check.
- *
- * @return              ``true`` if the path refers to a valid file on disk, ``false`` otherwise.
- */
-MAYAUSD_CORE_PUBLIC
-bool isFile(const std::string& filePath);
-
-/**
  * Appends `b` to the directory path `a` in-place and inserts directory separators as necessary.
  *
  * @param a         A valid path to a directory on disk. This should be a string

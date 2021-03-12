@@ -16,11 +16,11 @@
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/utils/hashUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <pxr/base/arch/hash.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -43,6 +43,8 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
+
+#include <ghc/filesystem.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -273,23 +275,19 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             UsdZipFile::FileInfo fileInfo = it.GetFileInfo();
 
             bool     needsUniqueFilename = false;
-            uint8_t* fileDataBuf = (uint8_t*)malloc(sizeof(uint8_t) * fileInfo.size);
+            char* fileDataBuf = (char*)malloc(sizeof(char) * fileInfo.size);
             memcpy(fileDataBuf, fileData, fileInfo.size);
-            unsigned char md5Digest[16] = { 0 };
-            UsdMayaHashUtil::GenerateMD5DigestFromByteStream(fileDataBuf, fileInfo.size, md5Digest);
+            uint64_t spookyHash = ArchHash64(fileDataBuf, fileInfo.size);
             free(fileDataBuf);
-            std::unordered_map<std::string, std::string>::iterator itExistingHash
+            std::unordered_map<std::string, uint64_t>::iterator itExistingHash
                 = UsdMayaReadUtil::mapFileHashes.find(unresolvedFilePath);
             if (itExistingHash
                 == UsdMayaReadUtil::mapFileHashes.end()) { // NOTE: (yliangsiew) Means that the
                                                            // texture hasn't been extracted before.
-                UsdMayaReadUtil::mapFileHashes.insert(
-                    { unresolvedFilePath,
-                      std::string(reinterpret_cast<char*>(
-                          md5Digest)) }); // NOTE: (yliangsiew) This _should_ be the common case.
+                UsdMayaReadUtil::mapFileHashes.insert({ unresolvedFilePath, spookyHash }); // NOTE: (yliangsiew) This _should_ be the common case.
             } else {
-                std::string existingHash = itExistingHash->second;
-                if (memcmp(md5Digest, existingHash.c_str(), 16 * sizeof(char)) == 0) {
+                uint64_t existingHash = itExistingHash->second;
+                if (spookyHash == existingHash) {
                     TF_WARN(
                         "A duplicate texture: %s was found, skipping extraction of it and re-using "
                         "the existing one.",
@@ -313,7 +311,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             if (needsUniqueFilename) {
                 int         counter = 0;
                 std::string checkPath(extractedFilePath);
-                while (UsdMayaUtilFileSystem::isFile(checkPath)) {
+                while (ghc::filesystem::is_regular_file(checkPath)) {
                     checkPath.assign(extractedFilePath);
                     std::string filenameNoExt(checkPath);
                     std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
@@ -343,19 +341,17 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             // If the texture exists on disk already and it is has the same contents, however, we
             // skip overwriting it.
             bool needsWrite = true;
-            if (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
+            if (ghc::filesystem::is_regular_file(extractedFilePath)) {
                 FILE* pFile = fopen(extractedFilePath.c_str(), "rb");
                 fseek(pFile, 0, SEEK_END);
                 long fileSize = ftell(pFile);
                 fseek(pFile, 0, SEEK_SET);
-                uint8_t* buf = (uint8_t*)malloc(sizeof(uint8_t) * fileSize);
+                char* buf = (char *)malloc(sizeof(char) * fileSize);
                 fread(buf, fileSize, 1, pFile);
-                unsigned char existingFileMD5Digest[16] = { 0 };
-                UsdMayaHashUtil::GenerateMD5DigestFromByteStream(
-                    buf, fileSize, existingFileMD5Digest);
+                uint64_t existingSpookyHash = ArchHash64(buf, fileSize);
                 fclose(pFile);
                 free(buf);
-                if (memcmp(md5Digest, existingFileMD5Digest, 16) == 0) {
+                if (spookyHash == existingSpookyHash) {
                     TF_WARN(
                         "The texture: %s already on disk is the same, skipping overwriting it.",
                         extractedFilePath.c_str());
@@ -363,7 +359,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 } else {
                     int         counter = 0;
                     std::string checkPath(extractedFilePath);
-                    while (UsdMayaUtilFileSystem::isFile(checkPath)) {
+                    while (ghc::filesystem::is_regular_file(checkPath)) {
                         checkPath.assign(extractedFilePath);
                         std::string filenameNoExt(checkPath);
                         std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);

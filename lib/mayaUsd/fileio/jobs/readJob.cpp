@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "readJob.h"
+#include <ghc/filesystem.hpp>
 
 #include <mayaUsd/fileio/chaser/importChaserRegistry.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
@@ -281,7 +282,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 return MStatus::kFailure;
             }
             if (currentMayaWorkspacePath.length() == 0
-                || !UsdMayaUtilFileSystem::isDirectory(currentMayaWorkspacePath.asChar())) {
+                || !ghc::filesystem::is_directory(currentMayaWorkspacePath.asChar())) {
                 TF_RUNTIME_ERROR(
                     "Could not automatically determine a path to write out USDZ texture imports. "
                     "Please specify a location using the -importUSDZTexturesFilePath argument, or "
@@ -309,7 +310,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             importTexturesRootDirPath.assign(this->mArgs.importUSDZTexturesFilePath);
         }
 
-        if (!UsdMayaUtilFileSystem::isDirectory(importTexturesRootDirPath)) {
+        if (!ghc::filesystem::is_directory(importTexturesRootDirPath)) {
             TF_RUNTIME_ERROR(
                 "The directory specified for USDZ texture imports: %s is not valid.",
                 importTexturesRootDirPath.c_str());

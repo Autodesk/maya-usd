@@ -2,11 +2,8 @@
 # sources
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME}
-    PUBLIC
-        md5.c
     PRIVATE
         adaptor.cpp
-        hashUtil.cpp
         jointWriteUtils.cpp
         meshReadUtils.cpp
         meshWriteUtils.cpp
@@ -19,9 +16,7 @@ target_sources(${PROJECT_NAME}
 )
 
 set(HEADERS
-    md5.h
     adaptor.h
-    hashUtil.h
     jointWriteUtils.h
     meshReadUtils.h
     meshWriteUtils.h

@@ -178,18 +178,6 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
     return pathModel.generic_string();
 }
 
-bool UsdMayaUtilFileSystem::isDirectory(const std::string& dirPath)
-{
-    ghc::filesystem::path p(dirPath);
-    return ghc::filesystem::is_directory(p);
-}
-
-bool UsdMayaUtilFileSystem::isFile(const std::string& filePath)
-{
-    bool bStat = ghc::filesystem::is_regular_file(filePath);
-    return bStat;
-}
-
 bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
 {
     if (!ghc::filesystem::is_directory(a)) {

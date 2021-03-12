@@ -58,7 +58,7 @@ TF_DEFINE_ENV_SETTING(
     true,
     "Set to false to disable ability to read Float2 type as a UV set");
 
-std::unordered_map<std::string, std::string> UsdMayaReadUtil::mapFileHashes;
+std::unordered_map<std::string, uint64_t> UsdMayaReadUtil::mapFileHashes;
 
 bool UsdMayaReadUtil::ReadFloat2AsUV()
 {

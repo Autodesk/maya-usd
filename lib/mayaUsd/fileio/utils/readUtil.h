@@ -192,10 +192,8 @@ struct UsdMayaReadUtil
 
     /// \}
 
-    // TODO: (yliangsiew) Need to find a better home for this cache...but it's hard!
-    /// A cache to store pre-computed file texture hashes on import. Each hash is a MD5 hash; 16
-    /// char digest of hexadecimal characters.
-    static std::unordered_map<std::string, std::string> mapFileHashes;
+    /// A cache to store pre-computed file texture hashes on import.
+    static std::unordered_map<std::string, uint64_t> mapFileHashes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
