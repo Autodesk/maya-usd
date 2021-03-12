@@ -187,7 +187,7 @@ std::string UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
     return nodeName.asChar();
 }
 
-MString UsdMayaUtil::GetUniqueNameOfDAGNode(const MObject& node)
+MString UsdMayaUtil::GetUniqueNameOfDagNode(const MObject& node)
 {
     if (!TF_VERIFY(!node.isNull() && node.hasFn(MFn::kDagNode))) {
         return MString();

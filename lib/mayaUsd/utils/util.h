@@ -174,7 +174,7 @@ std::string GetMayaNodeName(const MObject& mayaNode);
  * @return      The name as a Maya string.
  */
 MAYAUSD_CORE_PUBLIC
-MString GetUniqueNameOfDAGNode(const MObject& node);
+MString GetUniqueNameOfDagNode(const MObject& node);
 
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
