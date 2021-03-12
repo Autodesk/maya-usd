@@ -275,6 +275,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+MPlugArray PxrUsdTranslators_MeshWriter::mBlendShapesAnimWeightPlugs;
+
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
@@ -291,7 +293,16 @@ PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     }
 }
 
-void PxrUsdTranslators_MeshWriter::PostExport() { cleanupPrimvars(); }
+void PxrUsdTranslators_MeshWriter::PostExport()
+{
+    cleanupPrimvars();
+    if (this->mBlendShapesAnimWeightPlugs.length() != 0) {
+        // NOTE: (yliangsiew) Really, clearing it once is enough, but due to the constraints on what
+        // should go in the WriteJobContext, there's not really a better place to put this cache for
+        // now.
+        this->mBlendShapesAnimWeightPlugs.clear();
+    }
+}
 
 bool PxrUsdTranslators_MeshWriter::writeAnimatedMeshExtents(
     const MObject&     deformedMesh,
@@ -463,6 +474,13 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             }
         } else {
             // NOTE: (yliangsiew) This is going to get called once for each time sampled.
+            // Why do we do this later? Currently, it's because the block above needs to
+            // run across _all_ meshes first, so that we build the entire array of
+            // blendshapes being exported ahead of time (the above block is run for each
+            // prim at the default time sample before running it on each anim. time
+            // sample) and the plugs that they're associated with. Then here, now knowing
+            // the entirety of the shapes that are meant to be exported, we can go ahead
+            // and write the animation for each of them.
             if (!_skelInputMesh.isNull()) {
                 bStat = this->writeBlendShapeAnimation(usdTime);
                 if (!bStat) {
@@ -473,6 +491,9 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                         return bStat;
                     }
                 }
+                // NOTE: (yliangsiew) Also write out the "default" weights for the blendshapes,
+                // to cover static blendshapes (i.e. non-animated targets.)
+                bStat = this->writeBlendShapeAnimation(UsdTimeCode::Default());
             }
         }
     }
