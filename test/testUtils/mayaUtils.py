@@ -182,6 +182,9 @@ def openVariantSetScene():
 def openCompositionArcsScene():
     return openTestScene("compositionArcs", "compositionArcs.ma" )
 
+def openPrimPathScene():
+    return openTestScene("primPath", "primPath.ma" )
+
 def createProxyAndStage():
     """
     Create in-memory stage
