@@ -27,6 +27,26 @@ from maya.common.ui import LayoutManager
 # method so we have access to it and the 'pythonClass' method.
 from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf
 
+def getPrettyName(name):
+    # Put a space in the name when preceded by a capital letter.
+    # Exceptions: Number followed by capital
+    #             Multiple capital letters together
+    prettyName = str(name[0])
+    nbChars = len(name)
+    for i in range(1, nbChars):
+        if name[i].isupper() and not name[i-1].isdigit():
+            if (i < (nbChars-1)) and not name[i+1].isupper():
+                prettyName += ' '
+            prettyName += name[i]
+        elif name[i] == '_':
+            continue
+        else:
+            prettyName += name[i]
+        print('prettyName: "%s"' % prettyName)
+
+    # Make each word start with an uppercase.
+    return prettyName.title()
+
 # Custom control, but does not have any UI. Instead we use
 # this control to be notified from UFE when any attribute has changed
 # so we can update the AE. This is to fix refresh issue
@@ -56,7 +76,16 @@ class MetaDataCustomControl(aecustom.CustomControl):
         self.prim = prim
         super(MetaDataCustomControl, self).__init__(args, kwargs)
 
+        # There are four metadata that we always show: primPath, kind, active, instanceable
+        # We use a dictionary to store the various other metadata that this prim contains.
+        self.extraMetadata = dict()
+
     def buildControlUI(self):
+        # Should we display nice names in AE?
+        useNiceName = True
+        if cmds.optionVar(exists='attrEditorIsLongName'):
+            useNiceName = (cmds.optionVar(q='attrEditorIsLongName') ==1)
+
         # Metadata: PrimPath
         # The prim path is for display purposes only - it is not editable, but we
         # allow keyboard focus so you copy the value.
@@ -101,6 +130,21 @@ class MetaDataCustomControl(aecustom.CustomControl):
                                        cc1=self._onInstanceableChanged,
                                        ann='If selected, instanceable is set to true for the prim and the prim is considered a candidate for instancing. If deselected, instanceable is set to false.')
 
+        # Get all the other Metadata and remove the ones above, as well as a few
+        # we don't ever want to show.
+        allMetadata = self.prim.GetAllMetadata()
+        keysToDelete = ['kind', 'active', 'instanceable', 'typeName', 'documentation']
+        for key in keysToDelete:
+            allMetadata.pop(key, None)
+        if allMetadata:
+            cmds.separator(h=10, style='single', hr=True)
+
+            for k in allMetadata:
+                # All extra metadata is for display purposes only - it is not editable, but we
+                # allow keyboard focus so you copy the value.
+                mdLabel = getPrettyName(k) if useNiceName else k
+                self.extraMetadata[k] = cmds.textFieldGrp(label=mdLabel, editable=False, enableKeyboardFocus=True)
+
         # Update all metadata values.
         self.refresh()
 
@@ -122,6 +166,11 @@ class MetaDataCustomControl(aecustom.CustomControl):
 
         # Instanceable
         cmds.checkBoxGrp(self.instan, edit=True, value1=self.prim.IsInstanceable())
+
+        # All other metadata types
+        for k in self.extraMetadata:
+            v = self.prim.GetMetadata(k) if k != 'customData' else self.prim.GetCustomData()
+            cmds.textFieldGrp(self.extraMetadata[k], edit=True, text=str(v))
 
     def _onKindChanged(self, value):
         with mayaUsdLib.UsdUndoBlock():
@@ -239,26 +288,7 @@ class AETemplate(object):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        # Put a space in the name when preceded by a capital letter.
-        # Exceptions: Number followed by capital
-        #             Multiple capital letters together
-        catName = str(schemaTypeName[0])
-        nbChars = len(schemaTypeName)
-        for i in range(1, nbChars):
-            if schemaTypeName[i].isupper() and not schemaTypeName[i-1].isdigit():
-                if (i < (nbChars-1)) and not schemaTypeName[i+1].isupper():
-                    catName = catName + str(' ') + str(schemaTypeName[i])
-                else:
-                    catName = catName + str(schemaTypeName[i])
-            elif schemaTypeName[i] == '_':
-                continue
-            else:
-                catName = catName + str(schemaTypeName[i])
-
-        # Make each word start with an uppercase.
-        catName = catName.title()
-
-        return catName
+        return getPrettyName(schemaTypeName)
 
     def createTransformAttributesSection(self, sectionName, attrsToAdd):
         # Get the xformOp order and add those attributes (in order)
