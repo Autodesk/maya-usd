@@ -251,7 +251,7 @@ class PointInstancesTestCase(unittest.TestCase):
             Gf.IsClose(orientation.imaginary, Gf.Vec3h(0.01828, 0.2854, 0.335205), self.EPSILON))
 
         # The non-rotated items should all have identity orientations.
-        for i in (range(instanceIndex) + range(instanceIndex + 1, 14)):
+        for i in [idx for idx in range(14) if idx != instanceIndex]:
             orientation = orientations[i]
             self.assertTrue(
                 Gf.IsClose(orientation.real, Gf.Quath.GetIdentity().real, self.EPSILON))
@@ -326,7 +326,7 @@ class PointInstancesTestCase(unittest.TestCase):
             Gf.IsClose(scale, Gf.Vec3f(1.0, 2.0, 3.0), self.EPSILON))
 
         # The non-scaled items should all have identity scales.
-        for i in (range(instanceIndex) + range(instanceIndex + 1, 14)):
+        for i in [idx for idx in range(14) if idx != instanceIndex]:
             scale = scales[i]
             self.assertTrue(
                 Gf.IsClose(scale, Gf.Vec3f(1.0, 1.0, 1.0), self.EPSILON))
