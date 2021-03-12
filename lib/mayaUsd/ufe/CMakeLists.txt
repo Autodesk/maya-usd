@@ -10,6 +10,9 @@ target_sources(${PROJECT_NAME}
         StagesSubject.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
+        UsdPointInstanceOrientationModifier.cpp
+        UsdPointInstancePositionModifier.cpp
+        UsdPointInstanceScaleModifier.cpp
         UsdRootChildHierarchy.cpp
         UsdRotatePivotTranslateUndoableCommand.cpp
         UsdRotateUndoableCommand.cpp
@@ -48,6 +51,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dFallbackMayaXformStack.cpp
             UsdTransform3dMatrixOp.cpp
             UsdTransform3dMayaXformStack.cpp
+            UsdTransform3dPointInstance.cpp
             UsdTransform3dSetObjectMatrix.cpp
             UsdUIInfoHandler.cpp
             UsdUndoAddNewPrimCommand.cpp
@@ -68,6 +72,10 @@ set(HEADERS
     StagesSubject.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
+    UsdPointInstanceModifierBase.h
+    UsdPointInstanceOrientationModifier.h
+    UsdPointInstancePositionModifier.h
+    UsdPointInstanceScaleModifier.h
     UsdRootChildHierarchy.h
     UsdRotatePivotTranslateUndoableCommand.h
     UsdRotateUndoableCommand.h
@@ -100,11 +108,13 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdContextOpsHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
+        UsdPointInstanceUndoableCommands.h
         UsdTransform3dBase.h
         UsdTransform3dCommonAPI.h
         UsdTransform3dFallbackMayaXformStack.h
         UsdTransform3dMatrixOp.h
         UsdTransform3dMayaXformStack.h
+        UsdTransform3dPointInstance.h
         UsdTransform3dSetObjectMatrix.h
         UsdUIInfoHandler.h
         UsdUndoableCommand.h
