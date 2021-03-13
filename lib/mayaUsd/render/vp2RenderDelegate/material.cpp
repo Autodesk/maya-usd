@@ -483,6 +483,10 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         desc.fFormat = MHWRender::kR32_FLOAT;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
+    case HioFormatFloat16:
+        desc.fFormat = MHWRender::kR16_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
     case HioFormatUNorm8:
         desc.fFormat = MHWRender::kR8_UNORM;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
