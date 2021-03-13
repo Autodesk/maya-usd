@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "readJob.h"
-#include <ghc/filesystem.hpp>
 
 #include <mayaUsd/fileio/chaser/importChaserRegistry.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
@@ -56,6 +55,8 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MTime.h>
+
+#include <ghc/filesystem.hpp>
 
 #include <map>
 #include <string>
@@ -268,7 +269,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 stage->GetRootLayer()->GetRealPath().c_str());
             return MStatus::kFailure;
         }
-        this->mArgs.zipFile = UsdZipFile::Open(stage->GetRootLayer()->GetRealPath());
     }
 
     DoImport(range, usdRootPrim);

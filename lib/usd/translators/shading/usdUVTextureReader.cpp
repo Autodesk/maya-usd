@@ -27,7 +27,9 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/ar/asset.h>
 #include <pxr/usd/ar/packageUtils.h>
+#include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
@@ -262,29 +264,35 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         if (jobArgs.importUSDZTextures && !jobArgs.importUSDZTexturesFilePath.empty()
             && !filePath.empty() && ArIsPackageRelativePath(filePath)) {
             // NOTE: (yliangsiew) Package-relatve path means that we are inside of a USDZ file for
-            // sure...right? NOTE: (yliangsiew) We use the unresolved file path here that is just
+            // sure...right?
+            // NOTE: (yliangsiew) We use the unresolved file path here that is just
             // "0/clouds_128_128.png" since that is what `Find()` expects.
-            UsdZipFile::Iterator it = jobArgs.zipFile.Find(unresolvedFilePath);
-            if (it == jobArgs.zipFile.end()) {
+            ArResolver& arResolver = ArGetResolver(); // NOTE: (yliangsiew) This is cached.
+            std::shared_ptr<ArAsset> assetPtr = arResolver.OpenAsset(filePath);
+            if (assetPtr == nullptr) {
                 TF_WARN(
                     "The file: %s could not be found within the USDZ archive for extraction.",
                     filePath.c_str());
                 return false;
             }
-            const char*          fileData = it.GetFile();
-            UsdZipFile::FileInfo fileInfo = it.GetFileInfo();
 
-            bool     needsUniqueFilename = false;
-            char* fileDataBuf = (char*)malloc(sizeof(char) * fileInfo.size);
-            memcpy(fileDataBuf, fileData, fileInfo.size);
-            uint64_t spookyHash = ArchHash64(fileDataBuf, fileInfo.size);
+            ArAsset*                    asset = assetPtr.get();
+            std::shared_ptr<const char> fileData = asset->GetBuffer();
+            const size_t                fileSize = asset->GetSize();
+
+            bool  needsUniqueFilename = false;
+            char* fileDataBuf = (char*)malloc(sizeof(char) * fileSize);
+            memcpy(fileDataBuf, fileData.get(), fileSize);
+            uint64_t spookyHash = ArchHash64(fileDataBuf, fileSize);
             free(fileDataBuf);
             std::unordered_map<std::string, uint64_t>::iterator itExistingHash
                 = UsdMayaReadUtil::mapFileHashes.find(unresolvedFilePath);
             if (itExistingHash
                 == UsdMayaReadUtil::mapFileHashes.end()) { // NOTE: (yliangsiew) Means that the
                                                            // texture hasn't been extracted before.
-                UsdMayaReadUtil::mapFileHashes.insert({ unresolvedFilePath, spookyHash }); // NOTE: (yliangsiew) This _should_ be the common case.
+                UsdMayaReadUtil::mapFileHashes.insert(
+                    { unresolvedFilePath,
+                      spookyHash }); // NOTE: (yliangsiew) This _should_ be the common case.
             } else {
                 uint64_t existingHash = itExistingHash->second;
                 if (spookyHash == existingHash) {
@@ -346,7 +354,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 fseek(pFile, 0, SEEK_END);
                 long fileSize = ftell(pFile);
                 fseek(pFile, 0, SEEK_SET);
-                char* buf = (char *)malloc(sizeof(char) * fileSize);
+                char* buf = (char*)malloc(sizeof(char) * fileSize);
                 fread(buf, fileSize, 1, pFile);
                 uint64_t existingSpookyHash = ArchHash64(buf, fileSize);
                 fclose(pFile);
@@ -388,8 +396,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 // be too risky compared to just having the end-user delete the textures manually
                 // when needed.
                 size_t bytesWritten = UsdMayaUtilFileSystem::writeToFilePath(
-                    extractedFilePath.c_str(), fileData, fileInfo.size);
-                if (bytesWritten != fileInfo.size) {
+                    extractedFilePath.c_str(), fileData.get(), fileSize);
+                if (bytesWritten != fileSize) {
                     TF_WARN(
                         "Failed to write out texture: %s to disk. Check that there is enough disk "
                         "space available",

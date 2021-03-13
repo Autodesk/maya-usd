@@ -23,7 +23,6 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/zipFile.h>
 
 #include <maya/MString.h>
 
@@ -272,15 +271,13 @@ struct UsdMayaJobImportArgs
         TfToken materialConversion;
     };
     using ShadingModes = std::vector<ShadingMode>;
-    ShadingModes  shadingModes; // XXX can we make this const?
-    const TfToken preferredMaterial;
-    const std::string   importUSDZTexturesFilePath;
-    const bool importUSDZTextures;
-    UsdZipFile zipFile; // TODO: (yliangsiew) If the import is a USDZ, this will be a valid object.
-    const bool importInstances;
-    const bool useAsAnimationCache;
-
-    const bool importWithProxyShapes;
+    ShadingModes      shadingModes; // XXX can we make this const?
+    const TfToken     preferredMaterial;
+    const std::string importUSDZTexturesFilePath;
+    const bool        importUSDZTextures;
+    const bool        importInstances;
+    const bool        useAsAnimationCache;
+    const bool        importWithProxyShapes;
     /// The interval over which to import animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
     /// animated (time-sampled) data should be imported.
@@ -315,7 +312,7 @@ struct UsdMayaJobImportArgs
     static const VtDictionary& GetDefaultDictionary();
 
     MAYAUSD_CORE_PUBLIC
-    static const std::string GetImportUSDZTexturesFilePath(const std::string &userArg);
+    static const std::string GetImportUSDZTexturesFilePath(const std::string& userArg);
 
 private:
     MAYAUSD_CORE_PUBLIC

@@ -592,7 +592,8 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaPreferredMaterialTokens->allTokens))
     // , importUSDZTexturesFilePath(
     //       _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath))
-    , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(_String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath)))
+    , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(
+          _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath)))
     , importUSDZTextures(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
     , importInstances(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(_Boolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
@@ -656,15 +657,16 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
     return d;
 }
 
-const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std::string &userArg)
+const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std::string& userArg)
 {
     std::string importTexturesRootDirPath;
-    if (userArg.size() == 0) {  // NOTE: (yliangsiew) If the user gives an empty argument, we'll try to determine the best directory to write to instead.
+    if (userArg.size() == 0) { // NOTE: (yliangsiew) If the user gives an empty argument, we'll try
+                               // to determine the best directory to write to instead.
         MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
         MString currentMayaSceneFilePath = UsdMayaUtil::GetCurrentSceneFilePath();
         if (currentMayaSceneFilePath.length() != 0
             && strstr(currentMayaSceneFilePath.asChar(), currentMayaWorkspacePath.asChar())
-            == NULL) {
+                == NULL) {
             TF_RUNTIME_ERROR(
                 "The current scene does not seem to be part of the current Maya project set. "
                 "Could not automatically determine a path to write out USDZ texture imports.");
@@ -682,7 +684,8 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std:
             // `sourceimages` folder under a Maya project root folder.
             importTexturesRootDirPath.assign(
                 currentMayaWorkspacePath.asChar(), currentMayaWorkspacePath.length());
-            bool bStat = UsdMayaUtilFileSystem::pathAppendPath(importTexturesRootDirPath, "sourceimages");
+            bool bStat
+                = UsdMayaUtilFileSystem::pathAppendPath(importTexturesRootDirPath, "sourceimages");
             if (!bStat) {
                 TF_RUNTIME_ERROR(
                     "Unable to determine the texture directory for the Maya project: %s.",
