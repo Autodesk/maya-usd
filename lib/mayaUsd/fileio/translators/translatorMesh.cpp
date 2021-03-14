@@ -120,6 +120,7 @@ TranslatorMeshRead::TranslatorMeshRead(
     // timeInterval or default.
     VtVec3fArray        points;
     VtVec3fArray        normals;
+    TfToken             normals_interpolation;
     UsdTimeCode         pointsTimeSample = UsdTimeCode::EarliestTime();
     UsdTimeCode         normalsTimeSample = UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
@@ -139,7 +140,18 @@ TranslatorMeshRead::TranslatorMeshRead(
     }
 
     mesh.GetPointsAttr().Get(&points, pointsTimeSample);
-    mesh.GetNormalsAttr().Get(&normals, normalsTimeSample);
+    
+    /* If 'normals' and 'primvars:normals' are both specified, the latter has precedence. */
+    UsdGeomPrimvar primvar = mesh.GetPrimvar(UsdGeomTokens->normals);
+    
+    if (primvar.HasValue()) {
+      primvar.ComputeFlattened(&normals, normalsTimeSample);
+      normals_interpolation = primvar.GetInterpolation();
+    }
+    else {
+      mesh.GetNormalsAttr().Get(&normals, normalsTimeSample);
+      normals_interpolation = mesh.GetNormalsInterpolation();
+    }
 
     if (points.empty()) {
         TF_RUNTIME_ERROR(
@@ -221,7 +233,7 @@ TranslatorMeshRead::TranslatorMeshRead(
     TfToken subdScheme;
     if (mesh.GetSubdivisionSchemeAttr().Get(&subdScheme) && subdScheme == UsdGeomTokens->none) {
         if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices())
-            && mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying) {
+            && normals_interpolation == UsdGeomTokens->faceVarying) {
             UsdMayaMeshReadUtils::setEmitNormalsTag(meshFn, true);
         }
     } else {
