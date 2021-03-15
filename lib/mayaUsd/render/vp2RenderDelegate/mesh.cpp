@@ -1618,11 +1618,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             }
 
-            // TODO: this used to get called when there was something in the color or opacity
-            // primvar map, but it seems to rely on the material being dirtied at the same time? Use
-            // fallback shader if there is no material binding or we failed to create a shader
+            // Use fallback shader if there is no material binding or we failed to create a shader
             // instance for the material.
-            if (!stateToCommit._shader && _PrimvarIsRequired(HdTokens->displayColor)) {
+            if (!drawItemData._shader && _PrimvarIsRequired(HdTokens->displayColor)) {
                 MHWRender::MShaderInstance* shader = nullptr;
 
                 HdInterpolation colorInterp = HdInterpolationConstant;
