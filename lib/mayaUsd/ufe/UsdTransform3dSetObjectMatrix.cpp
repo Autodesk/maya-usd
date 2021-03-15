@@ -17,6 +17,7 @@
 #include "UsdTransform3dSetObjectMatrix.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/XformOpUtils.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -45,20 +46,22 @@ UsdTransform3dSetObjectMatrix::Ptr UsdTransform3dSetObjectMatrix::create(
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::translation() const
 {
-    TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::translation()");
-    return Ufe::Vector3d(0, 0, 0);
+    // Must extract whole-object translation from the whole object's local
+    // matrix.  Base class matrix() considers all the prim's transform ops,
+    // which is exactly what we want.
+    return getTranslation(UsdTransform3dBase::matrix());
 }
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::rotation() const
 {
-    TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::rotation()");
-    return Ufe::Vector3d(0, 0, 0);
+    // See translation() comments.
+    return getRotation(UsdTransform3dBase::matrix());
 }
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::scale() const
 {
-    TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::scale()");
-    return Ufe::Vector3d(1, 1, 1);
+    // See translation() comments.
+    return getScale(UsdTransform3dBase::matrix());
 }
 
 Ufe::SetMatrix4dUndoableCommand::Ptr
