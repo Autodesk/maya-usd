@@ -347,7 +347,7 @@ void _getColorData(
             interpolation = info->_source.interpolation;
         }
     }
-    
+
     if (colorArray.empty()) {
         // If color/opacity is not found, the 18% gray color will be used
         // to match the default color of Hydra Storm.
@@ -372,7 +372,7 @@ void _getOpacityData(
             interpolation = info->_source.interpolation;
         }
     }
-    
+
     if (opacityArray.empty()) {
         opacityArray.push_back(1.0f);
         interpolation = HdInterpolationConstant;
