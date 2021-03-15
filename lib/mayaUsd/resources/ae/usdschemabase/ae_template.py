@@ -42,7 +42,6 @@ def getPrettyName(name):
             continue
         else:
             prettyName += name[i]
-        print('prettyName: "%s"' % prettyName)
 
     # Make each word start with an uppercase.
     return prettyName.title()
