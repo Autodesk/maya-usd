@@ -54,7 +54,7 @@ using MtohRendererSettings
 inline bool IsMtohRenderOverrideName(const MString& overrideName)
 {
     // See if the override is an mtoh one - ie, it starts with the right prefix
-    
+
     // VS2017 msvc didn't accept this as a constexpr
     const auto prefixLen = strlen(MTOH_RENDER_OVERRIDE_PREFIX);
     if (overrideName.length() < prefixLen) {
