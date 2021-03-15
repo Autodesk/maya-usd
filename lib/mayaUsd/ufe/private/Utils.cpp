@@ -30,7 +30,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-// find positon index for a given layer in the local LayerStack ( strong-to-weak order )
+// find position index for a given layer in the local LayerStack ( strong-to-weak order )
 uint32_t findLayerIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
 {
     const auto& prim = attr.GetPrim();
