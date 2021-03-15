@@ -12,9 +12,11 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
     )
 endif()
 
-list(APPEND TEST_SCRIPT_FILES
-    testVP2RenderDelegatePerInstanceInheritedData.py
-)
+if (MAYA_APP_VERSION VERSION_GREATER 2020)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegatePerInstanceInheritedData.py
+    )
+endif()
 
 add_custom_target(${TARGET_NAME} ALL)
 
