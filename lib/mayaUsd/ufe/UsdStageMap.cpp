@@ -131,6 +131,8 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path)
 
 MObject UsdStageMap::proxyShape(const Ufe::Path& path)
 {
+    rebuildIfDirty();
+
     const auto& singleSegmentPath
         = nbPathSegments(path) == 1 ? path : Ufe::Path(path.getSegments()[0]);
 
@@ -139,10 +141,26 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
         return iter->second.object();
     }
 
-    // Did not find object in cache, either because the cache is stale, or
-    // because the object does not exist.  Rebuild the cache and try again.
-    setDirty();
-    rebuildIfDirty();
+    // Caches are invalidated by DG dirtying, but not by renaming or
+    // reparenting.  We have not found the object in the PathToObject cache,
+    // either because the cache is stale, or because the object does not exist.
+    // MObjectHandle values in the caches are stable against rename or
+    // reparent, so StageToObject is unchanged.  We can iterate on the
+    // MObjectHandle values and refresh the stale Ufe::Path in PathToObject.
+    // Iterate on a copy of the map, as we may be updating some entries.
+    auto pathToObject = fPathToObject;
+    for (const auto& entry : pathToObject) {
+        const auto& cachedPath = entry.first;
+        const auto& cachedObject = entry.second;
+        // Get the UFE path from the map value.
+        auto newPath = firstPath(cachedObject);
+        if (newPath != cachedPath) {
+            // Key is stale.  Remove it from our cache, and add the new entry.
+            auto count = fPathToObject.erase(cachedPath);
+            TF_AXIOM(count);
+            fPathToObject[newPath] = cachedObject;
+        }
+    }
 
     // At this point the cache is rebuilt, so lookup failure means the object
     // doesn't exist.
