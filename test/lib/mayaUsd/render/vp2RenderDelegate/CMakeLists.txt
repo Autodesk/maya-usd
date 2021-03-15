@@ -3,6 +3,10 @@ set(TARGET_NAME VP2_RENDER_DELEGATE_TEST)
 # Unit test scripts.
 set(TEST_SCRIPT_FILES "")
 
+list(APPEND TEST_SCRIPT_FILES
+	testVP2RenderDelegateGeomSubset.py
+)
+
 if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
     # The point instance selection tests requires UsdImaging API version 14 or
     # later, which is only provided by core USD 20.08 or later.
