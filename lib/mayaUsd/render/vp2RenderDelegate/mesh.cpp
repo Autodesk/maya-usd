@@ -346,10 +346,11 @@ void _getColorData(
             colorArray = value.UncheckedGet<VtVec3fArray>();
             interpolation = info->_source.interpolation;
         }
-    } else {
+    }
+    
+    if (colorArray.empty()) {
         // If color/opacity is not found, the 18% gray color will be used
         // to match the default color of Hydra Storm.
-        TF_VERIFY(colorArray.empty());
         colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
         interpolation = HdInterpolationConstant;
 
@@ -370,8 +371,9 @@ void _getOpacityData(
             opacityArray = value.UncheckedGet<VtFloatArray>();
             interpolation = info->_source.interpolation;
         }
-    } else {
-        TF_VERIFY(opacityArray.empty());
+    }
+    
+    if (opacityArray.empty()) {
         opacityArray.push_back(1.0f);
         interpolation = HdInterpolationConstant;
 
