@@ -213,7 +213,7 @@ void UsdMayaUtilFileSystem::pathStripPath(std::string& filePath)
 {
     ghc::filesystem::path p(filePath);
     ghc::filesystem::path filename = p.filename();
-    filePath.assign(filename.c_str());
+    filePath.assign(filename.string());
     return;
 }
 
@@ -222,7 +222,7 @@ void UsdMayaUtilFileSystem::pathRemoveExtension(std::string& filePath)
     ghc::filesystem::path p(filePath);
     ghc::filesystem::path dir = p.parent_path();
     ghc::filesystem::path finalPath = dir / p.stem();
-    filePath.assign(finalPath.c_str());
+    filePath.assign(finalPath.string());
     return;
 }
 
@@ -233,5 +233,5 @@ std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
         return std::string();
     }
     ghc::filesystem::path ext = p.extension();
-    return std::string(ext.c_str());
+    return ext.string();
 }
