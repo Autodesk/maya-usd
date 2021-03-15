@@ -24,6 +24,7 @@
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
@@ -263,10 +264,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         const UsdMayaJobImportArgs& jobArgs = this->_GetArgs().GetJobArguments();
         if (jobArgs.importUSDZTextures && !jobArgs.importUSDZTexturesFilePath.empty()
             && !filePath.empty() && ArIsPackageRelativePath(filePath)) {
-            // NOTE: (yliangsiew) Package-relatve path means that we are inside of a USDZ file for
-            // sure...right?
-            // NOTE: (yliangsiew) We use the unresolved file path here that is just
-            // "0/clouds_128_128.png" since that is what `Find()` expects.
+            // NOTE: (yliangsiew) Package-relatve path means that we are inside of a USDZ file.
             ArResolver& arResolver = ArGetResolver(); // NOTE: (yliangsiew) This is cached.
             std::shared_ptr<ArAsset> assetPtr = arResolver.OpenAsset(filePath);
             if (assetPtr == nullptr) {
@@ -280,11 +278,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             std::shared_ptr<const char> fileData = asset->GetBuffer();
             const size_t                fileSize = asset->GetSize();
 
-            bool  needsUniqueFilename = false;
-            char* fileDataBuf = (char*)malloc(sizeof(char) * fileSize);
-            memcpy(fileDataBuf, fileData.get(), fileSize);
-            uint64_t spookyHash = ArchHash64(fileDataBuf, fileSize);
-            free(fileDataBuf);
+            bool     needsUniqueFilename = false;
+            uint64_t spookyHash = ArchHash64(fileData.get(), fileSize);
             std::unordered_map<std::string, uint64_t>::iterator itExistingHash
                 = UsdMayaReadUtil::mapFileHashes.find(unresolvedFilePath);
             if (itExistingHash
@@ -324,16 +319,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                     std::string filenameNoExt(checkPath);
                     std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
                     UsdMayaUtilFileSystem::pathRemoveExtension(checkPath);
-                    char newFileName[FILENAME_MAX] = { 0 };
-                    int  numChars = snprintf(
-                        newFileName,
-                        FILENAME_MAX,
-                        "%s_%d%s",
-                        checkPath.c_str(),
-                        counter,
-                        ext.c_str());
-                    TF_VERIFY(numChars > 0);
-                    checkPath.assign(newFileName);
+                    checkPath = TfStringPrintf("%s_%d%s", checkPath.c_str(), counter, ext.c_str());
                     ++counter;
                 }
                 extractedFilePath.assign(checkPath);
@@ -372,16 +358,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                         std::string filenameNoExt(checkPath);
                         std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
                         UsdMayaUtilFileSystem::pathRemoveExtension(checkPath);
-                        char newFileName[FILENAME_MAX] = { 0 };
-                        int  numChars = snprintf(
-                            newFileName,
-                            FILENAME_MAX,
-                            "%s_%d%s",
-                            checkPath.c_str(),
-                            counter,
-                            ext.c_str());
-                        TF_VERIFY(numChars > 0);
-                        checkPath.assign(newFileName);
+                        checkPath
+                            = TfStringPrintf("%s_%d%s", checkPath.c_str(), counter, ext.c_str());
                         ++counter;
                     }
                     extractedFilePath.assign(checkPath);

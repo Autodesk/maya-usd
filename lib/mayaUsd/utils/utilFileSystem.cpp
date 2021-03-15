@@ -186,7 +186,7 @@ bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
     ghc::filesystem::path aPath(a);
     ghc::filesystem::path bPath(b);
     aPath /= b;
-    a.assign(aPath.c_str());
+    a.assign(aPath.string());
     return true;
 }
 

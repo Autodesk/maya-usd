@@ -590,8 +590,6 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaJobImportArgsTokens->preferredMaterial,
           UsdMayaPreferredMaterialTokens->none,
           UsdMayaPreferredMaterialTokens->allTokens))
-    // , importUSDZTexturesFilePath(
-    //       _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath))
     , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(
           _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath)))
     , importUSDZTextures(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
