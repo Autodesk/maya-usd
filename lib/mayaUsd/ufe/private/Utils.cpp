@@ -21,12 +21,36 @@
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
+#include <maya/MGlobal.h>
 #include <ufe/log.h>
 
 #include <memory>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+// find positon index for a given layer in the local LayerStack ( strong-to-weak order )
+uint32_t findLayerIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
+{
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& layerStack = prim.GetStage()->GetLayerStack();
+
+    uint32_t position { 0 };
+
+    auto iter = std::find_if(
+        std::begin(layerStack), std::end(layerStack), [&](const PXR_NS::SdfLayerHandle& l) -> bool {
+            return layer == l;
+        });
+
+    if (iter != layerStack.end()) {
+        return std::distance(layerStack.begin(), iter);
+    }
+
+    return position;
+}
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -108,7 +132,8 @@ UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim)
         // Not compatible
         else {
             // Restore old
-            xformable.SetXformOpOrder(xformOps);
+            auto result = xformable.SetXformOpOrder(xformOps);
+            TF_AXIOM(result);
             std::string err
                 = TfStringPrintf("Incompatible xform op %s:", op.GetOpName().GetString().c_str());
             throw std::runtime_error(err.c_str());
@@ -189,6 +214,53 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
             layerDisplayName.c_str());
         throw std::runtime_error(err.c_str());
     }
+}
+
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+{
+    // get the property spec in the edit target's layer
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& editTarget = stage->GetEditTarget();
+
+    // get the index to edit target layer
+    const auto targetLayerIndex = findLayerIndex(attr, editTarget.GetLayer());
+
+    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
+    // opinions for this property.
+    const auto& propertyStack = attr.GetPropertyStack();
+
+    // HS March 15th,2021
+    // TODO: This code works as long as existing opinions are in the stage’s local LayerStack.
+    // Relying on the "expanded primIndex" would be a better way to detect the opinions across
+    // composition arc(s). Some more details can be found:
+    // https://groups.google.com/g/usd-interest/c/xTxFYQA_bRs/m/lX_WqNLoBAAJ
+    SdfLayerHandle strongLayer;
+    for (const auto& spec : propertyStack) {
+
+        // skip if the edit target layer is stronger than the propSpec layer
+        const auto propSpecLayerIndex = findLayerIndex(attr, spec->GetLayer());
+        if (targetLayerIndex <= propSpecLayerIndex) {
+            continue;
+        }
+
+        if (spec) {
+            strongLayer = spec->GetLayer();
+            break;
+        }
+    }
+
+    if (strongLayer) {
+        std::string err = TfStringPrintf(
+            "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
+            attr.GetBaseName().GetText(),
+            strongLayer->GetDisplayName().c_str());
+
+        MGlobal::displayError(err.c_str());
+        return false;
+    }
+
+    return true;
 }
 
 //------------------------------------------------------------------------------

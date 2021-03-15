@@ -22,11 +22,14 @@ import ufeUtils
 import testUtils
 import usdUtils
 
-from pxr import UsdGeom
+from pxr import UsdGeom, Vt, Gf
 
 from maya import cmds
 from maya import standalone
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
+
+import mayaUsd
+from mayaUsd import ufe as mayaUsdUfe
 
 import ufe
 
@@ -217,13 +220,17 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Set the attribute in UFE with the opposite boolean value.
-        ufeAttr.set(not ufeAttr.get())
+        # check to see if the attribute edit is allowed
+        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
+        self.assertFalse(isAttrEditAllowed, False)
+        if isAttrEditAllowed:
+            # Set the attribute in UFE with the opposite boolean value.
+            ufeAttr.set(not ufeAttr.get())
 
-        # Then make sure that new UFE value matches what it in USD.
-        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+            # Then make sure that new UFE value matches what it in USD.
+            self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        self.runUndoRedo(ufeAttr, not ufeAttr.get())
+            self.runUndoRedo(ufeAttr, not ufeAttr.get())
 
     def testAttributeInt(self):
         '''Test the Int attribute type.'''
@@ -242,13 +249,17 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Set the attribute in UFE with a different int value.
-        ufeAttr.set(ufeAttr.get() + random.randint(1,5))
+        # check to see if the attribute edit is allowed
+        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
+        self.assertFalse(isAttrEditAllowed, False)
+        if isAttrEditAllowed:
+            # Set the attribute in UFE with a different int value.
+            ufeAttr.set(ufeAttr.get() + random.randint(1,5))
 
-        # Then make sure that new UFE value matches what it in USD.
-        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+            # Then make sure that new UFE value matches what it in USD.
+            self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
+            self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
 
     def testAttributeFloat(self):
         '''Test the Float attribute type.'''
@@ -267,16 +278,20 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Set the attribute in UFE with a different float value.
-        ufeAttr.set(random.random())
+        # check to see if the attribute edit is allowed
+        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
+        self.assertFalse(isAttrEditAllowed, False)
+        if isAttrEditAllowed:
+            # Set the attribute in UFE with a different float value.
+            ufeAttr.set(random.random())
 
-        # Then make sure that new UFE value matches what it in USD.
-        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+            # Then make sure that new UFE value matches what it in USD.
+            self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Python floating-point numbers are doubles.  If stored in a float
-        # attribute, the resulting precision will be less than the original
-        # Python value.
-        self.runUndoRedo(ufeAttr, ufeAttr.get() + 1.0, decimalPlaces=6)
+            # Python floating-point numbers are doubles.  If stored in a float
+            # attribute, the resulting precision will be less than the original
+            # Python value.
+            self.runUndoRedo(ufeAttr, ufeAttr.get() + 1.0, decimalPlaces=6)
 
     def _testAttributeDouble(self):
         '''Test the Double attribute type.'''
@@ -301,14 +316,18 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Set the attribute in UFE with a different string value.
-        # Note: this ball uses the ball8.tex
-        ufeAttr.set('./tex/ball7.tex')
+        # check to see if the attribute edit is allowed
+        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
+        self.assertFalse(isAttrEditAllowed, False)
+        if isAttrEditAllowed:
+            # Set the attribute in UFE with a different string value.
+            # Note: this ball uses the ball8.tex
+            ufeAttr.set('./tex/ball7.tex')
 
-        # Then make sure that new UFE value matches what it in USD.
-        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+            # Then make sure that new UFE value matches what it in USD.
+            self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        self.runUndoRedo(ufeAttr, 'potato')
+            self.runUndoRedo(ufeAttr, 'potato')
 
     def testAttributeStringToken(self):
         '''Test the String (Token) attribute type.'''
@@ -327,14 +346,18 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Set the attribute in UFE with a different string value.
-        # Note: this attribute is initially set to token 'Box'
-        ufeAttr.set('Sphere')
+        # check to see if the attribute edit is allowed
+        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
+        self.assertFalse(isAttrEditAllowed, False)
+        if isAttrEditAllowed:
+            # Set the attribute in UFE with a different string value.
+            # Note: this attribute is initially set to token 'Box'
+            ufeAttr.set('Sphere')
 
-        # Then make sure that new UFE value matches what it in USD.
-        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+            # Then make sure that new UFE value matches what it in USD.
+            self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        self.runUndoRedo(ufeAttr, 'Box')
+            self.runUndoRedo(ufeAttr, 'Box')
 
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
@@ -353,19 +376,23 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Set the attribute in UFE with some random color values.
-        vec = ufe.Color3f(random.random(), random.random(), random.random())
-        ufeAttr.set(vec)
+        # check to see if the attribute edit is allowed
+        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
+        self.assertFalse(isAttrEditAllowed, False)
+        if isAttrEditAllowed:
+            # Set the attribute in UFE with some random color values.
+            vec = ufe.Color3f(random.random(), random.random(), random.random())
+            ufeAttr.set(vec)
 
-        # Then make sure that new UFE value matches what it in USD.
-        self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+            # Then make sure that new UFE value matches what it in USD.
+            self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-        # The following causes a segmentation fault on CentOS 7.
-        # self.runUndoRedo(ufeAttr,
-        #                  ufe.Color3f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0))
-        # Entered as MAYA-102168.
-        newVec = ufe.Color3f(vec.color[0]+1.0, vec.color[1]+2.0, vec.color[2]+3.0)
-        self.runUndoRedo(ufeAttr, newVec)
+            # The following causes a segmentation fault on CentOS 7.
+            # self.runUndoRedo(ufeAttr,
+            #                  ufe.Color3f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0))
+            # Entered as MAYA-102168.
+            newVec = ufe.Color3f(vec.color[0]+1.0, vec.color[1]+2.0, vec.color[2]+3.0)
+            self.runUndoRedo(ufeAttr, newVec)
 
     def _testAttributeInt3(self):
         '''Test the Int3 attribute type.'''
@@ -390,15 +417,19 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-        # Set the attribute in UFE with some random values.
-        vec = ufe.Vector3f(random.random(), random.random(), random.random())
-        ufeAttr.set(vec)
+        # check to see if the attribute edit is allowed
+        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
+        self.assertFalse(isAttrEditAllowed, False)
+        if isAttrEditAllowed:
+            # Set the attribute in UFE with some random values.
+            vec = ufe.Vector3f(random.random(), random.random(), random.random())
+            ufeAttr.set(vec)
 
-        # Then make sure that new UFE value matches what it in USD.
-        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+            # Then make sure that new UFE value matches what it in USD.
+            self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-        self.runUndoRedo(ufeAttr,
-                         ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
+            self.runUndoRedo(ufeAttr,
+                             ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
 
     def testAttributeDouble3(self):
         '''Test the Double3 attribute type.'''
@@ -613,9 +644,139 @@ class AttributeTestCase(unittest.TestCase):
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
         attrs = ufe.Attributes.attributes(capsuleItem)
         radiusAttr = attrs.attribute('radius')
-        
+
         self.assertEqual(radiusAttr.get(), newRadius)
 
+    def testSingleAttributeBlocking(self):
+        ''' Authoring attribute(s) in weaker layer(s) are not permitted if there exist opinion(s) in stronger layer(s).'''
+
+        # create new stage
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        proxyShapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(proxyShapePath))
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # create a prim. This creates the primSpec in the root layer.
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        # create a USD prim
+        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+
+        # author a new radius value
+        self.assertTrue(capsulePrim.HasAttribute('radius'))
+        radiusAttrUsd = capsulePrim.GetAttribute('radius')
+
+        # authoring new attribute edit is expected to be allowed.
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(radiusAttrUsd), True)
+        radiusAttrUsd.Set(10)
+
+        # author a new axis value
+        self.assertTrue(capsulePrim.HasAttribute('axis'))
+        axisAttrUsd = capsulePrim.GetAttribute('axis')
+
+        # authoring new attribute edit is expected to be allowed.
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(axisAttrUsd), True)
+        axisAttrUsd.Set('Y')
+
+        # create a sub-layer.
+        rootLayer = stage.GetRootLayer()
+        subLayerA = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="LayerA")[0]
+
+        # check to see the if the sublayers was added
+        addedLayers = [subLayerA]
+        self.assertEqual(rootLayer.subLayerPaths, addedLayers)
+
+        # set the edit target to LayerA.
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerA)
+
+        # radiusAttrUsd is not allowed to change since there is an opinion in a stronger layer
+        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(radiusAttrUsd), False)
+
+        # axisAttrUsd is not allowed to change since there is an opinion in a stronger layer
+        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(axisAttrUsd), False)
+
+    def testTransformationAttributeBlocking(self):
+        '''Authoring transformation attribute(s) in weaker layer(s) are not permitted if there exist opinion(s) in stronger layer(s).'''
+
+        # create new stage
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        proxyShapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(proxyShapePath))
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # create 3 sub-layers ( LayerA, LayerB, LayerC ) and set the edit target to LayerB.
+        rootLayer = stage.GetRootLayer()
+        subLayerC = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="SubLayerC")[0]
+        subLayerB = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="SubLayerB")[0]
+        subLayerA = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="SubLayerA")[0]
+
+        # check to see the sublayers added
+        addedLayers = [subLayerA, subLayerB, subLayerC]
+        self.assertEqual(rootLayer.subLayerPaths, addedLayers)
+
+        # set the edit target to LayerB
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerB)
+
+        # create a prim. This creates the primSpec in the SubLayerB.
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+
+        spherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        sphereItem = ufe.Hierarchy.createItem(spherePath)
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(spherePath))
+
+        # create a transform3d
+        sphereT3d = ufe.Transform3d.transform3d(sphereItem)
+
+        # create a xformable
+        sphereXformable = UsdGeom.Xformable(spherePrim)
+
+        # writing to "transform op order" is expected to be allowed.
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(sphereXformable.GetXformOpOrderAttr()), True)
+
+        # do any transform editing.
+        sphereT3d = ufe.Transform3d.transform3d(sphereItem)
+        sphereT3d.scale(2.5, 2.5, 2.5)
+        sphereT3d.translate(4.0, 2.0, 3.0)
+
+        # check the "transform op order" stack.
+        self.assertEqual(sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray(('xformOp:translate', 'xformOp:scale')))
+
+        # check if translate attribute is editable
+        translateAttr = spherePrim.GetAttribute('xformOp:translate')
+        self.assertIsNotNone(translateAttr)
+
+        # authoring new transformation edit is expected to be allowed.
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr), True)
+        sphereT3d.translate(5.0, 6.0, 7.0)
+        self.assertEqual(translateAttr.Get(), Gf.Vec3d(5.0, 6.0, 7.0))
+
+        # set the edit target to a weaker layer (LayerC)
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerC)
+
+        # authoring new transformation edit is not allowed.
+        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(translateAttr), False)
+
+        # set the edit target to a stronger layer (LayerA)
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerA)
+
+        # authoring new transformation edit is allowed.
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr), True)
+        sphereT3d.rotate(0.0, 90.0, 0.0)
+
+        # check the "transform op order" stack.
+        self.assertEqual(sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray(('xformOp:translate','xformOp:rotateXYZ', 'xformOp:scale')))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
