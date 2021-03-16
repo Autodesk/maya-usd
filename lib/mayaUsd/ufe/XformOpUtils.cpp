@@ -18,6 +18,12 @@
 
 #include <pxr/usd/usdGeom/xformable.h>
 
+#include <maya/MMatrix.h>
+#include <maya/MTransformationMatrix.h>
+#include <maya/MVector.h>
+
+#include <cstring>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
@@ -104,6 +110,55 @@ std::vector<UsdGeomXformOp> getOrderedXformOps(const UsdPrim& prim)
     UsdGeomXformable xformable(prim);
     bool             unused;
     return xformable.GetOrderedXformOps(&unused);
+}
+
+Ufe::Vector3d getTranslation(const Ufe::Matrix4d& m)
+{
+    Ufe::Vector3d t;
+    getTRS(m, &t, nullptr, nullptr);
+    return t;
+}
+
+Ufe::Vector3d getRotation(const Ufe::Matrix4d& m)
+{
+    Ufe::Vector3d r;
+    getTRS(m, nullptr, &r, nullptr);
+    return r;
+}
+
+Ufe::Vector3d getScale(const Ufe::Matrix4d& m)
+{
+    Ufe::Vector3d s;
+    getTRS(m, nullptr, nullptr, &s);
+    return s;
+}
+
+void getTRS(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s)
+{
+    // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
+    // nor GfTransform decomposition provide results that match Maya,
+    // so use MTransformationMatrix.
+    MMatrix mm;
+    std::memcpy(mm[0], &m.matrix[0][0], sizeof(double) * 16);
+    MTransformationMatrix xformM(mm);
+    if (t) {
+        auto tv = xformM.getTranslation(MSpace::kTransform);
+        *t = Ufe::Vector3d(tv[0], tv[1], tv[2]);
+    }
+    if (r) {
+        double rv[3];
+        // We created the MTransformationMatrix with the default XYZ rotation
+        // order, so rotOrder parameter is unused.
+        MTransformationMatrix::RotationOrder rotOrder;
+        xformM.getRotation(rv, rotOrder);
+        constexpr double radToDeg = 57.295779506;
+        *r = Ufe::Vector3d(rv[0] * radToDeg, rv[1] * radToDeg, rv[2] * radToDeg);
+    }
+    if (s) {
+        double sv[3];
+        xformM.getScale(sv, MSpace::kTransform);
+        *s = Ufe::Vector3d(sv[0], sv[1], sv[2]);
+    }
 }
 
 } // namespace ufe
