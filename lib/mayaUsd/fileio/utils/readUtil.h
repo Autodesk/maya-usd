@@ -193,6 +193,7 @@ struct UsdMayaReadUtil
     /// \}
 
     /// A cache to store pre-computed file texture hashes on import.
+    MAYAUSD_CORE_PUBLIC
     static std::unordered_map<std::string, uint64_t> mapFileHashes;
 };
 
