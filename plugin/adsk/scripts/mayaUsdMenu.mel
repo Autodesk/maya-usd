@@ -346,7 +346,7 @@ global proc mayaUsdMenu_selectMenuCallback() {
 
     // Now that we have injected our custom menu item, we can
     // remove our callback from the select menu. The menu items
-    // will stay in the menu until th eplugin is unloaded.
+    // will stay in the menu until the plugin is unloaded.
     global string $gMainSelectMenu; // maya's select menu
     removeMenuCallback($gMainSelectMenu, "mayaUsdMenu_selectMenuCallback");
 }
