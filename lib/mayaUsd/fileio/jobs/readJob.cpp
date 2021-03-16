@@ -19,11 +19,15 @@
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
+#include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -33,6 +37,7 @@
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usd/zipFile.h>
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
@@ -45,10 +50,13 @@
 #include <maya/MDagPathArray.h>
 #include <maya/MDistance.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MItDependencyGraph.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MTime.h>
+
+#include <ghc/filesystem.hpp>
 
 #include <map>
 #include <string>
@@ -253,6 +261,16 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
+    if (this->mArgs.importUSDZTextures == true) {
+        // NOTE: (yliangsiew) First we check if the archive in question _is_ even a USDZ archive...
+        if (!stage->GetRootLayer()->GetFileFormat()->IsPackage()) {
+            TF_WARN(
+                "The layer being imported: %s is not a USDZ file.",
+                stage->GetRootLayer()->GetRealPath().c_str());
+            return MStatus::kFailure;
+        }
+    }
+
     DoImport(range, usdRootPrim);
 
     // NOTE: (yliangsiew) Storage to later pass on to `PostImport` for import chasers.
@@ -305,6 +323,8 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             return false;
         }
     }
+
+    UsdMayaReadUtil::mapFileHashes.clear();
 
     return (status == MS::kSuccess);
 }
