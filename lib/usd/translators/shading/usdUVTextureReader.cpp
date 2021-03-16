@@ -266,7 +266,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             && !filePath.empty() && ArIsPackageRelativePath(filePath)) {
             // NOTE: (yliangsiew) Package-relatve path means that we are inside of a USDZ file.
             ArResolver& arResolver = ArGetResolver(); // NOTE: (yliangsiew) This is cached.
-            std::shared_ptr<ArAsset> assetPtr = arResolver.OpenAsset(filePath);
+            std::shared_ptr<ArAsset> assetPtr = arResolver.OpenAsset(
+                ArResolvedPath(filePath));
             if (assetPtr == nullptr) {
                 TF_WARN(
                     "The file: %s could not be found within the USDZ archive for extraction.",
