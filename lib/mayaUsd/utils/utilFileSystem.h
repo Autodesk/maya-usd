@@ -62,6 +62,46 @@ std::string resolveRelativePathWithinMayaContext(
     const MObject&     proxyShape,
     const std::string& relativeFilePath);
 
+/**
+ * Appends `b` to the directory path `a` in-place and inserts directory separators as necessary.
+ *
+ * @param a         A valid path to a directory on disk. This should be a string
+ *                  with a buffer large enough to hold the combined contents of itself and the
+ *                  contents of `b`, including the null-terminator.
+ * @param b         A string to append as a directory component to `a`.
+ *
+ * @return          ``true`` if the operation succeeded, ``false`` if an error occurred.
+ */
+MAYAUSD_CORE_PUBLIC
+bool pathAppendPath(std::string& a, const std::string& b);
+
+/**
+ * Writes data to a file path on disk.
+ *
+ * @param filePath      A pointer to the file path to write to on disk.
+ * @param buffer        A pointer to the buffer containing the data to write to the file.
+ * @param size          The number of bytes to write.
+ *
+ * @return              The number of bytes written to disk.
+ */
+MAYAUSD_CORE_PUBLIC
+size_t writeToFilePath(const char* filePath, const void* buffer, const size_t size);
+
+/**
+ * Removes the path portion of a fully-qualified path and file, in-place.
+ *
+ * @param filePath      A pointer to the null-terminated ANSI file path to remove the path component
+ * for.
+ */
+MAYAUSD_CORE_PUBLIC
+void pathStripPath(std::string& filePath);
+
+MAYAUSD_CORE_PUBLIC
+void pathRemoveExtension(std::string& filePath);
+
+MAYAUSD_CORE_PUBLIC
+std::string pathFindExtension(std::string& filePath);
+
 } // namespace UsdMayaUtilFileSystem
 
 PXR_NAMESPACE_CLOSE_SCOPE

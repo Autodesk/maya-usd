@@ -21,6 +21,9 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 
+// Ufe::Vector3d is a typedef.
+#include <ufe/types.h>
+
 #include <vector>
 
 namespace MAYAUSD_NS_DEF {
@@ -47,6 +50,22 @@ PXR_NS::GfMatrix4d computeLocalExclusiveTransform(
     const PXR_NS::UsdTimeCode&    time);
 
 std::vector<PXR_NS::UsdGeomXformOp> getOrderedXformOps(const PXR_NS::UsdPrim& prim);
+
+Ufe::Vector3d getTranslation(const Ufe::Matrix4d& m);
+
+// Rotation order is XYZ, as per UFE convention.
+Ufe::Vector3d getRotation(const Ufe::Matrix4d& m);
+
+Ufe::Vector3d getScale(const Ufe::Matrix4d& m);
+
+/*! Decompose the argument matrix m into translation, rotation and scale
+    components.
+    \param m Input matrix.
+    \param[out] t Output translation.  If null, will be ignored.
+    \param[out] r Output rotation, in XYZ order.  If null, will be ignored.
+    \param[out] s Output scale.  If null, will be ignored.
+*/
+void getTRS(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
