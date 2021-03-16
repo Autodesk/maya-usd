@@ -35,7 +35,7 @@ uint32_t findLayerIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayer
 {
     const auto& prim = attr.GetPrim();
     const auto& stage = prim.GetStage();
-    const auto& layerStack = prim.GetStage()->GetLayerStack();
+    const auto& layerStack = stage->GetLayerStack();
 
     uint32_t position { 0 };
 

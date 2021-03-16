@@ -43,7 +43,6 @@
 //       in USD.
 // PXR_NAMESPACE_USING_DIRECTIVE
 
-static constexpr char kErrorMsgFailedSet[] = "Failed to set USD attribute with new value";
 static constexpr char kErrorMsgFailedConvertToString[]
     = "Could not convert the attribute to a string";
 static constexpr char kErrorMsgInvalidType[]
