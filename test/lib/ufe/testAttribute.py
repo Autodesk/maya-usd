@@ -222,7 +222,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # check to see if the attribute edit is allowed
         isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed, False)
+        self.assertFalse(isAttrEditAllowed)
         if isAttrEditAllowed:
             # Set the attribute in UFE with the opposite boolean value.
             ufeAttr.set(not ufeAttr.get())
@@ -251,7 +251,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # check to see if the attribute edit is allowed
         isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed, False)
+        self.assertFalse(isAttrEditAllowed)
         if isAttrEditAllowed:
             # Set the attribute in UFE with a different int value.
             ufeAttr.set(ufeAttr.get() + random.randint(1,5))
@@ -280,7 +280,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # check to see if the attribute edit is allowed
         isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed, False)
+        self.assertFalse(isAttrEditAllowed)
         if isAttrEditAllowed:
             # Set the attribute in UFE with a different float value.
             ufeAttr.set(random.random())
@@ -318,7 +318,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # check to see if the attribute edit is allowed
         isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed, False)
+        self.assertFalse(isAttrEditAllowed)
         if isAttrEditAllowed:
             # Set the attribute in UFE with a different string value.
             # Note: this ball uses the ball8.tex
@@ -348,7 +348,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # check to see if the attribute edit is allowed
         isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed, False)
+        self.assertFalse(isAttrEditAllowed)
         if isAttrEditAllowed:
             # Set the attribute in UFE with a different string value.
             # Note: this attribute is initially set to token 'Box'
@@ -378,7 +378,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # check to see if the attribute edit is allowed
         isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed, False)
+        self.assertFalse(isAttrEditAllowed)
         if isAttrEditAllowed:
             # Set the attribute in UFE with some random color values.
             vec = ufe.Color3f(random.random(), random.random(), random.random())
@@ -419,7 +419,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # check to see if the attribute edit is allowed
         isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed, False)
+        self.assertFalse(isAttrEditAllowed)
         if isAttrEditAllowed:
             # Set the attribute in UFE with some random values.
             vec = ufe.Vector3f(random.random(), random.random(), random.random())
@@ -674,7 +674,7 @@ class AttributeTestCase(unittest.TestCase):
         radiusAttrUsd = capsulePrim.GetAttribute('radius')
 
         # authoring new attribute edit is expected to be allowed.
-        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(radiusAttrUsd), True)
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(radiusAttrUsd))
         radiusAttrUsd.Set(10)
 
         # author a new axis value
@@ -682,7 +682,7 @@ class AttributeTestCase(unittest.TestCase):
         axisAttrUsd = capsulePrim.GetAttribute('axis')
 
         # authoring new attribute edit is expected to be allowed.
-        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(axisAttrUsd), True)
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(axisAttrUsd))
         axisAttrUsd.Set('Y')
 
         # create a sub-layer.
@@ -697,10 +697,10 @@ class AttributeTestCase(unittest.TestCase):
         cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerA)
 
         # radiusAttrUsd is not allowed to change since there is an opinion in a stronger layer
-        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(radiusAttrUsd), False)
+        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(radiusAttrUsd))
 
         # axisAttrUsd is not allowed to change since there is an opinion in a stronger layer
-        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(axisAttrUsd), False)
+        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(axisAttrUsd))
 
     def testTransformationAttributeBlocking(self):
         '''Authoring transformation attribute(s) in weaker layer(s) are not permitted if there exist opinion(s) in stronger layer(s).'''
@@ -743,7 +743,7 @@ class AttributeTestCase(unittest.TestCase):
         sphereXformable = UsdGeom.Xformable(spherePrim)
 
         # writing to "transform op order" is expected to be allowed.
-        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(sphereXformable.GetXformOpOrderAttr()), True)
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(sphereXformable.GetXformOpOrderAttr()))
 
         # do any transform editing.
         sphereT3d = ufe.Transform3d.transform3d(sphereItem)
@@ -758,7 +758,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertIsNotNone(translateAttr)
 
         # authoring new transformation edit is expected to be allowed.
-        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr), True)
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr))
         sphereT3d.translate(5.0, 6.0, 7.0)
         self.assertEqual(translateAttr.Get(), Gf.Vec3d(5.0, 6.0, 7.0))
 
@@ -766,13 +766,13 @@ class AttributeTestCase(unittest.TestCase):
         cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerC)
 
         # authoring new transformation edit is not allowed.
-        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(translateAttr), False)
+        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(translateAttr))
 
         # set the edit target to a stronger layer (LayerA)
         cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerA)
 
         # authoring new transformation edit is allowed.
-        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr), True)
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(translateAttr))
         sphereT3d.rotate(0.0, 90.0, 0.0)
 
         # check the "transform op order" stack.
