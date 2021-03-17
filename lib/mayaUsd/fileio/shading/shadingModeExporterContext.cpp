@@ -545,11 +545,20 @@ public:
         if (largestSize) {
             TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
             TfTokenVector::const_iterator itName = largestSet.cbegin();
-            for (; itNode != _nodesWithUVInput.cend() && itName != largestSet.cend(); ++itNode, ++itName) {
+            for (; itNode != _nodesWithUVInput.cend(); ++itNode) {
                 TfToken inputName(
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
                 UsdShadeInput materialInput = material.GetInput(inputName);
-                materialInput.Set(*itName);
+                // NOTE: (yliangsiew) If we have a mismatch in array sizes, we default to assigning
+                // the most common mapping to the materials that don't have inputs.
+                if (itName != largestSet.cend()) {
+                    materialInput.Set(*itName);
+                    ++itName;
+                } else {
+                    --itName;
+                    materialInput.Set(*itName);
+                    ++itName;
+                }
             }
             _uvNamesToMaterial[largestSet] = material;
         }
