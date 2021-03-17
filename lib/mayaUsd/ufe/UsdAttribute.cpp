@@ -82,9 +82,9 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
-    std::string errMsg;
+    std::string                                     errMsg;
     bool isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
-    if (!isSetAttrAllowed){
+    if (!isSetAttrAllowed) {
         MGlobal::displayError(errMsg.c_str());
         return false;
     }

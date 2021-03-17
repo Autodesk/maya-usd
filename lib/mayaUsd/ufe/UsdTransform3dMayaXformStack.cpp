@@ -707,7 +707,8 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
                 // to succeed but we do not know if writing to "transform op order" succeed
                 // since we could be a weaker layer.
                 std::string errMsg;
-                if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+                if (!MayaUsd::ufe::isAttributeEditAllowed(
+                        xformable.GetXformOpOrderAttr(), &errMsg)) {
                     MGlobal::displayError(errMsg.c_str());
                     return UsdGeomXformOp();
                 }

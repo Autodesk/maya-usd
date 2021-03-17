@@ -199,7 +199,6 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     return ufe::isAttributeEditAllowed(attr, &std::string());
 }
 
-
 PXR_NS::TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
 {
     auto path =
