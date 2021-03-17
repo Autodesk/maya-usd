@@ -506,7 +506,9 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
 
               // return an invalid XformOp if the attribute edit is not allowed.
-              if (!MayaUsd::ufe::isAttributeEditAllowed(attr)) {
+              std::string errMsg;
+              if (!MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+                  MGlobal::displayError(errMsg.c_str());
                   return UsdGeomXformOp();
               }
 
@@ -524,7 +526,9 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
               // At this point we already know that writing to attribute is going
               // to succeed but we do not know if writing to "transform op order" succeed since
               // we could be a weaker layer.
-              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr())) {
+              std::string errMsg;
+              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+                  MGlobal::displayError(errMsg.c_str());
                   return UsdGeomXformOp();
               }
 
@@ -558,7 +562,9 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
 
               // return an invalid XformOp if the attribute edit is not allowed.
-              if (!MayaUsd::ufe::isAttributeEditAllowed(attr)) {
+              std::string errMsg;
+              if (!MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+                  MGlobal::displayError(errMsg.c_str());
                   return UsdGeomXformOp();
               }
 
@@ -574,7 +580,9 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
               // At this point we already know that writing to attribute is going
               // to succeed but we do not know if writing to "transform op order" succeed since
               // we could be a weaker layer.
-              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr())) {
+              std::string errMsg;
+              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+                  MGlobal::displayError(errMsg.c_str());
                   return UsdGeomXformOp();
               }
 
@@ -675,7 +683,9 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
 
               // return an invalid XformOp if the attribute edit is not allowed.
-              if (!MayaUsd::ufe::isAttributeEditAllowed(attr)) {
+              std::string errMsg;
+              if (!MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+                  MGlobal::displayError(errMsg.c_str());
                   return UsdGeomXformOp();
               }
 
@@ -696,7 +706,9 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
                 // At this point we already know that writing to attribute is going
                 // to succeed but we do not know if writing to "transform op order" succeed
                 // since we could be a weaker layer.
-                if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr())) {
+                std::string errMsg;
+                if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+                    MGlobal::displayError(errMsg.c_str());
                     return UsdGeomXformOp();
                 }
 
@@ -727,7 +739,9 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
               auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
 
               // return an invalid XformOp if the attribute edit is not allowed.
-              if (!MayaUsd::ufe::isAttributeEditAllowed(attr)) {
+              std::string errMsg;
+              if (!MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+                  MGlobal::displayError(errMsg.c_str());
                   return UsdGeomXformOp();
               }
 
@@ -751,7 +765,9 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
               // At this point we already know that writing to attribute is going
               // to succeed but we do not know if writing to "transform op order" succeed since
               // we could be a weaker layer.
-              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr())) {
+              std::string errMsg;
+              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+                  MGlobal::displayError(errMsg.c_str());
                   return UsdGeomXformOp();
               }
 

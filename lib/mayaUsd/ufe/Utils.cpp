@@ -80,6 +80,24 @@ bool stringBeginsWithDigit(const std::string& inputString)
     return false;
 }
 
+// find position index for a given layer in the local LayerStack ( strong-to-weak order )
+uint32_t findLayerIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
+{
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& layerStack = stage->GetLayerStack();
+
+    uint32_t position { 0 };
+
+    auto iter = std::find(std::begin(layerStack), std::end(layerStack), layer);
+
+    if (iter != layerStack.end()) {
+        return std::distance(layerStack.begin(), iter);
+    }
+
+    return position;
+}
+
 } // anonymous namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -382,6 +400,54 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
     }
 
     return purposes;
+}
+
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
+{
+    // get the property spec in the edit target's layer
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& editTarget = stage->GetEditTarget();
+
+    // get the index to edit target layer
+    const auto targetLayerIndex = findLayerIndex(attr, editTarget.GetLayer());
+
+    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
+    // opinions for this property.
+    const auto& propertyStack = attr.GetPropertyStack();
+
+    // HS March 15th,2021
+    // TODO: This code works as long as existing opinions are in the stage’s local LayerStack.
+    // Relying on the "expanded primIndex" would be a better way to detect the opinions across
+    // composition arc(s). Some more details can be found:
+    // https://groups.google.com/g/usd-interest/c/xTxFYQA_bRs/m/lX_WqNLoBAAJ
+    SdfLayerHandle strongLayer;
+    for (const auto& spec : propertyStack) {
+
+        // skip if the edit target layer is stronger than the propSpec layer
+        const auto propSpecLayerIndex = findLayerIndex(attr, spec->GetLayer());
+        if (targetLayerIndex <= propSpecLayerIndex) {
+            continue;
+        }
+
+        if (spec) {
+            strongLayer = spec->GetLayer();
+            break;
+        }
+    }
+
+    if (strongLayer) {
+        std::string err = TfStringPrintf(
+            "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
+            attr.GetBaseName().GetText(),
+            strongLayer->GetDisplayName().c_str());
+
+        *errMsg = err;
+
+        return false;
+    }
+
+    return true;
 }
 
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
