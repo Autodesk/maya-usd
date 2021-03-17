@@ -23,6 +23,8 @@ set(MSVC_FLAGS
     # we want to be as strict as possible
     /W3
     $<$<BOOL:${BUILD_STRICT_MODE}>:/WX>
+    # enable two-phase name lookup and other strict checks (binding a non-const reference to a temporary, etc..)
+    /permissive-
     # enable pdb generation.
     /Zi
     # standards compliant.
