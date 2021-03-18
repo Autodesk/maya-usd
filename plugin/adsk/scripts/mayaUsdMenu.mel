@@ -74,8 +74,8 @@ proc removeMenuCallback(string $menuName, string $cmd) {
 ///////////////////////////////////////////////////////////////////////////////
 // mayaUSD_setSelectionKind
 // Helper function to set the selection kind mode
-global proc mayaUSD_setSelectionKind(string $king) {
-    optionVar -stringValue "mayaUsd_SelectionKind" $king;
+global proc mayaUSD_setSelectionKind(string $kind) {
+    optionVar -stringValue "mayaUsd_SelectionKind" $kind;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,10 +93,9 @@ proc string mayaUSD_getSelectionKind() {
 // mayaUSD_isSelectionKindValid
 // return true if the current selection kind is valid
 proc int mayaUSD_isSelectionKindValid() {
-    python "from pxr import Kind";
-    $allKinds = `python "Kind.Registry.GetAllKinds()"`;
+    string $allKinds[] = `python "from pxr import Kind; Kind.Registry.GetAllKinds()"`;
 
-    $currentKind = mayaUSD_getSelectionKind();
+    string $currentKind = mayaUSD_getSelectionKind();
     if($currentKind != "") {
         $index = stringArrayFind($currentKind, 0, $allKinds);
         return $index != -1;
@@ -161,7 +160,7 @@ proc initRuntimeCommands() {
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindModel`) {
         runTimeCommand -default true
-            -label      `getMayaUsdString("kUSDSelectionModeModel")`
+            -label      `python "from pxr import Kind; Kind.Tokens.model"`
             -annotation `getMayaUsdString("kUSDSelectionModeModelAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"model\")")
@@ -169,7 +168,7 @@ proc initRuntimeCommands() {
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindGroup`) {
         runTimeCommand -default true
-            -label      `getMayaUsdString("kUSDSelectionModeGroup")`
+            -label      `python "from pxr import Kind; Kind.Tokens.group"`
             -annotation `getMayaUsdString("kUSDSelectionModeGroupAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"group\")")
@@ -177,7 +176,7 @@ proc initRuntimeCommands() {
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindAssembly`) {
         runTimeCommand -default true
-            -label      `getMayaUsdString("kUSDSelectionModeAssembly")`
+            -label      `python "from pxr import Kind; Kind.Tokens.assembly"`
             -annotation `getMayaUsdString("kUSDSelectionModeAssemblyAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"assembly\")")
@@ -185,7 +184,7 @@ proc initRuntimeCommands() {
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindComponent`) {
         runTimeCommand -default true
-            -label      `getMayaUsdString("kUSDSelectionModeComponent")`
+            -label      `python "from pxr import Kind; Kind.Tokens.component"`
             -annotation `getMayaUsdString("kUSDSelectionModeComponentAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"component\")")
@@ -193,7 +192,7 @@ proc initRuntimeCommands() {
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindSubComponent`) {
         runTimeCommand -default true
-            -label      `getMayaUsdString("kUSDSelectionModeSubComponent")`
+            -label      `python "from pxr import Kind; Kind.Tokens.subcomponent"`
             -annotation `getMayaUsdString("kUSDSelectionModeSubComponentAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"subcomponent\")")
@@ -250,24 +249,8 @@ global proc mayaUsd_updateSelectionKindMenuItem() {
         case "":
             menuItem -e -radioButton on selectKindNone;
             break;
-        case "model":
-            menuItem -e -radioButton on selectKindModel;
-            break;
-        case "group":
-            menuItem -e -radioButton on selectKindGroup;
-            break;
-        case "assembly":
-            menuItem -e -radioButton on selectKindAssembly;
-            break;
-        case "component":
-            menuItem -e -radioButton on selectKindComponent;
-            break;
-        case "subcomponent":
-            menuItem -e -radioButton on selectKindSubcomponent;
-            break;
         default:
-            // check for custom kind, the menuItem's label
-            // must match the kind
+            // enable the right menuItem based on it's label
             global string $gMayaUsdSelectModeSubMenu;
             $menuItems = `menu -q -itemArray $gMayaUsdSelectModeSubMenu`;
             for($i = 0; $i < size($menuItems); $i++) {
@@ -310,11 +293,9 @@ global proc mayaUsdMenu_selectMenuCallback() {
         menuItem -radioButton off -runTimeCommand ("mayaUsdSelectKindAssembly") selectKindAssembly;
         menuItem -radioButton off -runTimeCommand ("mayaUsdSelectKindComponent") selectKindComponent;
         menuItem -radioButton off -runTimeCommand ("mayaUsdSelectKindSubComponent") selectKindSubcomponent;
-      
-        // add the custom select kind menu items
-        python "from pxr import Kind";
-        string $builtInKinds[] = `python "[Kind.Tokens.model, Kind.Tokens.group, Kind.Tokens.assembly, Kind.Tokens.component, Kind.Tokens.subcomponent]"`;
-        $allKinds = `python "Kind.Registry.GetAllKinds()"`;
+
+        string $builtInKinds[] = `python "from pxr import Kind; [Kind.Tokens.model, Kind.Tokens.group, Kind.Tokens.assembly, Kind.Tokens.component, Kind.Tokens.subcomponent]"`;
+        string $allKinds[] = `python "Kind.Registry.GetAllKinds()"`;
 
         // sort the kinds in alphabetic order
         $allKinds = `sort $allKinds`;
