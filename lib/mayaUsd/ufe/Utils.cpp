@@ -81,15 +81,15 @@ bool stringBeginsWithDigit(const std::string& inputString)
 }
 
 // find position index for a given layer in the local LayerStack ( strong-to-weak order )
-uint32_t findLayerIndex(const PXR_NS::UsdAttribute& attr, const PXR_NS::SdfLayerHandle& layer)
+uint32_t findLayerIndex(const UsdStageWeakPtr& stage, const PXR_NS::SdfLayerHandle& layer)
 {
-    const auto& prim = attr.GetPrim();
-    const auto& stage = prim.GetStage();
     const auto& layerStack = stage->GetLayerStack();
 
     uint32_t position { 0 };
 
     auto iter = std::find(std::begin(layerStack), std::end(layerStack), layer);
+
+    assert(iter != layerStack.end());
 
     if (iter != layerStack.end()) {
         return std::distance(layerStack.begin(), iter);
@@ -410,41 +410,31 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
     const auto& editTarget = stage->GetEditTarget();
 
     // get the index to edit target layer
-    const auto targetLayerIndex = findLayerIndex(attr, editTarget.GetLayer());
-
-    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
-    // opinions for this property.
-    const auto& propertyStack = attr.GetPropertyStack();
+    const auto targetLayerIndex = findLayerIndex(stage, editTarget.GetLayer());
 
     // HS March 15th,2021
     // TODO: This code works as long as existing opinions are in the stage’s local LayerStack.
     // Relying on the "expanded primIndex" would be a better way to detect the opinions across
     // composition arc(s). Some more details can be found:
     // https://groups.google.com/g/usd-interest/c/xTxFYQA_bRs/m/lX_WqNLoBAAJ
-    SdfLayerHandle strongLayer;
-    for (const auto& spec : propertyStack) {
 
-        // skip if the edit target layer is stronger than the propSpec layer
-        const auto propSpecLayerIndex = findLayerIndex(attr, spec->GetLayer());
-        if (targetLayerIndex <= propSpecLayerIndex) {
-            continue;
+    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
+    // opinions for this property.
+    const auto& propertyStack = attr.GetPropertyStack();
+
+    if (!propertyStack.empty()) {
+
+        auto topLayer = attr.GetPropertyStack().front()->GetLayer();
+
+        if (findLayerIndex(stage, topLayer) < targetLayerIndex) {
+            std::string err = TfStringPrintf(
+                "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
+                attr.GetBaseName().GetText(),
+                topLayer->GetDisplayName().c_str());
+
+            *errMsg = err;
+            return false;
         }
-
-        if (spec) {
-            strongLayer = spec->GetLayer();
-            break;
-        }
-    }
-
-    if (strongLayer) {
-        std::string err = TfStringPrintf(
-            "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
-            attr.GetBaseName().GetText(),
-            strongLayer->GetDisplayName().c_str());
-
-        *errMsg = err;
-
-        return false;
     }
 
     return true;
