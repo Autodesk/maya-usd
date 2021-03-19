@@ -93,6 +93,35 @@ def checkWorldSpaceXform(testCase, objects):
         usdWorld = [y for x in t3d.inclusiveMatrix().matrix for y in x]
         assertVectorAlmostEqual(testCase, mayaWorld, usdWorld)
 
+class TestObserver(ufe.Observer):
+    def __init__(self):
+        super(TestObserver, self).__init__()
+        self._transform3d = 0
+        self._valueChanged = 0
+
+    def __call__(self, notification):
+        if (ufeUtils.ufeFeatureSetVersion() >= 2):
+            if isinstance(notification, ufe.AttributeValueChanged):
+                self._valueChanged += 1
+        if isinstance(notification, ufe.Transform3dChanged):
+            self._transform3d += 1
+
+    @property
+    def nbValueChanged(self):
+        return self._valueChanged
+
+    @property
+    def nbTransform3d(self):
+        return self._transform3d
+
+    @property
+    def notifications(self):
+        return self._valueChanged + self._transform3d
+
+    def reset(self):
+        self._transform3d = 0
+        self._valueChanged = 0
+
 class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
     '''Verify the Transform3d UFE interface, for multiple runtimes.
 
@@ -811,6 +840,67 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         checkPivotsAndCompensations(self, mayaObj, usdSphere3d)
         checkPivotsAndCompensations(self, mayaObj, usdFallbackSphere3d)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testPrimPropertyPathNotifs only available in UFE v2 or greater.')
+    def testPrimPropertyPathNotifs(self):
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        # Select the capsule
+        capPath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capItem = ufe.Hierarchy.createItem(capPath)
+        ufe.GlobalSelection.get().clear()
+        ufe.GlobalSelection.get().append(capItem)
+
+        # No notifications yet.
+        obs = TestObserver()
+        ufe.Attributes.addObserver(capItem, obs)
+        ufe.Transform3d.addObserver(capItem, obs)
+        self.assertEqual(obs.notifications, 0)
+
+        # Move the capsule
+        cmds.move(0, 10, 10)
+
+        # Verify that we got both ValueChanged and Transform3d notifs.
+        # Note: we should get notifs on both the "xformOp:translate" and
+        #       "xformOpOrder" attributes. We don't care how many, just that
+        #       we are getting both of these notifs kinds on both the move
+        #       and undo.
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+
+        # Reset observer and then undo and again verify notifs.
+        obs.reset()
+        self.assertEqual(obs.notifications, 0)
+        cmds.undo()
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+
+        # Reset and test same thing with Rotate.
+        obs.reset()
+        cmds.rotate(10, 0, 0)
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+        obs.reset()
+        self.assertEqual(obs.notifications, 0)
+        cmds.undo()
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+
+        # Reset and test same thing with Scale.
+        obs.reset()
+        cmds.scale(2, 2, 2)
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+        obs.reset()
+        self.assertEqual(obs.notifications, 0)
+        cmds.undo()
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
 
 
 if __name__ == '__main__':
