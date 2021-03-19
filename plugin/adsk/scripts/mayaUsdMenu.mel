@@ -70,6 +70,26 @@ proc removeMenuCallback(string $menuName, string $cmd) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// findAEMenu
+// Helper function to find attribute editor menu.
+proc string findAEMenu(string $menuLabel)
+{
+    global string $gAEMenuBarLayoutName;
+
+    string $fp = `menuBarLayout -q -fullPathName $gAEMenuBarLayoutName`;
+    string $kids[] = `menuBarLayout -q -ma $gAEMenuBarLayoutName`;
+    for ($menu in $kids)
+    {
+        string $fpMenu = $fp + "|" + $menu;
+        if ($menuLabel == `menu -q -label $fpMenu`) {
+            string $existingCallbacks = `menu -q -pmc $fpMenu`;
+            return $fpMenu;
+        }
+    }
+    return "";
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // initRuntimeCommands
 // create all the runtime commands we'll use and the user can map to hotkeys
 proc initRuntimeCommands() {
@@ -184,6 +204,26 @@ global proc mayaUsdMenu_generalEditorsMenuCallback() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// mayaUsdMenu_aeShowMenuCallback
+// Maya USD Attribute Editor Show menu callback.
+// Note: Maya is using a post callback to build it's menu.
+//       The maya's callback delete all menu item each time
+//       the menu is display, so we also need to create all
+//       our menu item each time.
+global proc mayaUsdMenu_aeShowMenuCallback(string $aeShowMenu)
+{
+    string $mayaVersion = getMayaMajorVersion();
+    int $isEnable = `optionVar -q "mayaUSD_AEShowArrayAttributes"`;
+
+    setParent -menu $aeShowMenu;
+    menuItem -divider true -dividerLabel `getMayaUsdString("kUniversalSceneDescription")`;
+    menuItem -label `getMayaUsdString("kShowArrayAttributes")`
+             -checkBox $isEnable
+             -version $mayaVersion
+             -command "optionVar -intValue \"mayaUSD_AEShowArrayAttributes\" #1; AEbuildControls;";
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // initCreateMenu
 // setup the items in Maya's "Create" menu
 proc initCreateMenu() {
@@ -210,6 +250,18 @@ proc termCreateMenu() {
 }
 
 
+proc initAEShowMenu()
+{
+    string $aeShowMenu = findAEMenu(uiRes("m_showEditor.kShow"));
+    addMenuCallback($aeShowMenu, "mayaUsdMenu_aeShowMenuCallback " + $aeShowMenu);
+}
+
+proc termAEShowMenu()
+{
+    string $aeShowMenu = findAEMenu(uiRes("m_showEditor.kShow"));
+    removeMenuCallback($aeShowMenu, "mayaUsdMenu_aeShowMenuCallback");
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // mayaUsdMenu_loadui
 // main entry point on plugin load
@@ -217,6 +269,7 @@ global proc mayaUsdMenu_loadui() {
     
     initRuntimeCommands();
     initCreateMenu();
+    initAEShowMenu();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -224,6 +277,7 @@ global proc mayaUsdMenu_loadui() {
 // main entry point on plugin unload
 global proc mayaUsdMenu_unloadui() {
     termCreateMenu();
+    termAEShowMenu();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

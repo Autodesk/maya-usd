@@ -60,7 +60,7 @@ class UfeAttributesObserver(ufe.Observer):
 
     def __call__(self, notification):
         if isinstance(notification, ufe.AttributeValueChanged):
-            if notification.name() == "xformOpOrder":
+            if notification.name() == UsdGeom.Tokens.xformOpOrder:
                 mel.eval("evalDeferred(\"AEbuildControls\");")
 
     def onCreate(self, *args):
@@ -230,16 +230,29 @@ class AETemplate(object):
         # Get the UFE Attributes interface for this scene item.
         self.attrS = ufe.Attributes.attributes(self.item)
 
+        self.showArrayAttributes = cmds.optionVar(query="mayaUSD_AEShowArrayAttributes")
+
         cmds.editorTemplate(beginScrollLayout=True)
         self.buildUI()
         cmds.editorTemplate(addExtraControls=True)
         self.createMetadataSection()
         cmds.editorTemplate(endScrollLayout=True)
 
+        # Suppress all array attributes not used
+        if not self.showArrayAttributes:
+            for attrName in self.attrS.attributeNames:
+                if self.isArrayAttribute(attrName):
+                    self.suppress(attrName)
+
+
     @staticmethod
     def addControls(controls):
         for c in controls:
             cmds.editorTemplate(addControl=[c])
+
+    @staticmethod
+    def suppress(control):
+        cmds.editorTemplate(suppress=control)
 
     @staticmethod
     def defineCustom(customObj, attrs=[]):
@@ -296,11 +309,16 @@ class AETemplate(object):
         geomX = UsdGeom.Xformable(self.prim)
         xformOps = geomX.GetOrderedXformOps()
         xformOpOrderNames = [op.GetOpName() for op in xformOps]
-        xformOpOrderNames.append(UsdGeom.Tokens.xformOpOrder)
+
+        if self.showArrayAttributes:
+            xformOpOrderNames.append(UsdGeom.Tokens.xformOpOrder)
+
         # Don't use createSection because we want a sub-sections.
         with ufeAeTemplate.Layout(self, sectionName):
             with ufeAeTemplate.Layout(self, 'Transform Attributes'):
-                attrsToAdd.remove(UsdGeom.Tokens.xformOpOrder)
+                if UsdGeom.Tokens.xformOpOrder in attrsToAdd:
+                    attrsToAdd.remove(UsdGeom.Tokens.xformOpOrder)
+
                 self.addControls(xformOpOrderNames)
 
                 # Get the remainder of the xformOps and add them in an Unused section.
@@ -335,8 +353,19 @@ class AETemplate(object):
             if schemaType.pythonClass:
                 attrsToAdd = schemaType.pythonClass.GetSchemaAttributeNames(False)
 
+                # remove all array attriutes from the attrsToAdd list
+                if not self.showArrayAttributes:
+                    attrsToAdd = [x for x in attrsToAdd if not self.isArrayAttribute(x)]
+
                 # We have a special case when building the Xformable section.
                 if schemaTypeName == 'UsdGeomXformable':
                     self.createTransformAttributesSection(sectionName, attrsToAdd)
                 else:
                     self.createSection(sectionName, attrsToAdd)
+
+    def isArrayAttribute(self, attrName):
+        if self.attrS.attributeType(attrName) == ufe.Attribute.kGeneric:
+            attr = self.prim.GetAttribute(attrName)
+            typeName = attr.GetTypeName()
+            return typeName.isArray
+        return False

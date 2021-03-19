@@ -90,8 +90,10 @@ global proc mayaUSDRegisterStrings() {
     register("kSaveOptionNoPromptAnn", "You can re-enable this prompt under File|Save Scene Options.");
     register("kSaveOptionTitle", "Save USD Options");
     register("kSaveOptionUnsavedEdits", "You have unsaved USD edits. How would you like to proceed?");
+    register("kShowArrayAttributes", "Show Array Attributes");
     register("kTimeAnn", "Edits the current time value of a stage, which corresponds to the animation frame drawn in the viewport. By default, this value connects to Maya's global time node.");
     register("kTipYouCanChooseMultipleFiles", "<b>Tip:</b>  You can choose multiple files.");
+    register("kUniversalSceneDescription", "Universal Scene Description");
     register("kUnloadAll", "Unload All");
     register("kUsdFileOptions", "USD File Options");
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
