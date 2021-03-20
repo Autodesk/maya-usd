@@ -805,7 +805,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         checkPivotsAndCompensations(self, mayaObj, usdSphere3d)
         checkPivotsAndCompensations(self, mayaObj, usdFallbackSphere3d)
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 124, 'Center pivot command is only available in Maya Preview Release 124 or later.')
+    @unittest.skipIf(int(cmds.about(majorVersion=True)) > 2022, 'Center pivot command is only available in Maya Preview Release 124 or later.')
     def testCenterPivotUndo(self):
 
         cmds.file(new=True, force=True)
