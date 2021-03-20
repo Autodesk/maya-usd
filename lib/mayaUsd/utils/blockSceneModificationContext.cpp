@@ -24,7 +24,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace utils {
 
-UsdMayaBlockSceneModificationContext::UsdMayaBlockSceneModificationContext()
+BlockSceneModificationContext::BlockSceneModificationContext()
 {
     const MString fileModifiedCmd("file -query -modified");
     int           cmdResult = 0;
@@ -35,7 +35,7 @@ UsdMayaBlockSceneModificationContext::UsdMayaBlockSceneModificationContext()
 }
 
 /* virtual */
-UsdMayaBlockSceneModificationContext::~UsdMayaBlockSceneModificationContext()
+BlockSceneModificationContext::~BlockSceneModificationContext()
 {
     const MString setFileModifiedCmd(
         PXR_NS::TfStringPrintf("file -modified %d", _sceneWasModified ? 1 : 0).c_str());

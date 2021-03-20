@@ -23,21 +23,21 @@ namespace utils {
 
 /// Utility class for wrapping a scope of Maya operations such that the
 /// modification status of the Maya scene is preserved.
-class UsdMayaBlockSceneModificationContext
+class BlockSceneModificationContext
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaBlockSceneModificationContext();
+    BlockSceneModificationContext();
 
     MAYAUSD_CORE_PUBLIC
-    virtual ~UsdMayaBlockSceneModificationContext();
+    virtual ~BlockSceneModificationContext();
 
 private:
     /// Modification status of the scene when the context was created.
     bool _sceneWasModified;
 
-    UsdMayaBlockSceneModificationContext(const UsdMayaBlockSceneModificationContext&) = delete;
-    UsdMayaBlockSceneModificationContext& operator=(const UsdMayaBlockSceneModificationContext&)
+    BlockSceneModificationContext(const BlockSceneModificationContext&) = delete;
+    BlockSceneModificationContext& operator=(const BlockSceneModificationContext&)
         = delete;
 };
 
