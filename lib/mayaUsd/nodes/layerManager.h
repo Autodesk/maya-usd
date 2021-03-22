@@ -24,9 +24,9 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 
+#include <maya/MDagPathArray.h>
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
-#include <maya/MDagPathArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
