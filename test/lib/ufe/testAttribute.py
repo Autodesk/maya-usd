@@ -220,17 +220,13 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # check to see if the attribute edit is allowed
-        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed)
-        if isAttrEditAllowed:
-            # Set the attribute in UFE with the opposite boolean value.
-            ufeAttr.set(not ufeAttr.get())
+        # Set the attribute in UFE with the opposite boolean value.
+        ufeAttr.set(not ufeAttr.get())
 
-            # Then make sure that new UFE value matches what it in USD.
-            self.assertEqual(ufeAttr.get(), usdAttr.Get())
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-            self.runUndoRedo(ufeAttr, not ufeAttr.get())
+        self.runUndoRedo(ufeAttr, not ufeAttr.get())
 
     def testAttributeInt(self):
         '''Test the Int attribute type.'''
@@ -249,17 +245,13 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # check to see if the attribute edit is allowed
-        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed)
-        if isAttrEditAllowed:
-            # Set the attribute in UFE with a different int value.
-            ufeAttr.set(ufeAttr.get() + random.randint(1,5))
+        # Set the attribute in UFE with a different int value.
+        ufeAttr.set(ufeAttr.get() + random.randint(1,5))
 
-            # Then make sure that new UFE value matches what it in USD.
-            self.assertEqual(ufeAttr.get(), usdAttr.Get())
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-            self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
+        self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
 
     def testAttributeFloat(self):
         '''Test the Float attribute type.'''
@@ -278,20 +270,16 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # check to see if the attribute edit is allowed
-        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed)
-        if isAttrEditAllowed:
-            # Set the attribute in UFE with a different float value.
-            ufeAttr.set(random.random())
+        # Set the attribute in UFE with a different float value.
+        ufeAttr.set(random.random())
 
-            # Then make sure that new UFE value matches what it in USD.
-            self.assertEqual(ufeAttr.get(), usdAttr.Get())
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-            # Python floating-point numbers are doubles.  If stored in a float
-            # attribute, the resulting precision will be less than the original
-            # Python value.
-            self.runUndoRedo(ufeAttr, ufeAttr.get() + 1.0, decimalPlaces=6)
+        # Python floating-point numbers are doubles.  If stored in a float
+        # attribute, the resulting precision will be less than the original
+        # Python value.
+        self.runUndoRedo(ufeAttr, ufeAttr.get() + 1.0, decimalPlaces=6)
 
     def _testAttributeDouble(self):
         '''Test the Double attribute type.'''
@@ -317,17 +305,15 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
         # check to see if the attribute edit is allowed
-        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed)
-        if isAttrEditAllowed:
-            # Set the attribute in UFE with a different string value.
-            # Note: this ball uses the ball8.tex
-            ufeAttr.set('./tex/ball7.tex')
 
-            # Then make sure that new UFE value matches what it in USD.
-            self.assertEqual(ufeAttr.get(), usdAttr.Get())
+        # Set the attribute in UFE with a different string value.
+        # Note: this ball uses the ball8.tex
+        ufeAttr.set('./tex/ball7.tex')
 
-            self.runUndoRedo(ufeAttr, 'potato')
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        self.runUndoRedo(ufeAttr, 'potato')
 
     def testAttributeStringToken(self):
         '''Test the String (Token) attribute type.'''
@@ -346,18 +332,14 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-        # check to see if the attribute edit is allowed
-        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed)
-        if isAttrEditAllowed:
-            # Set the attribute in UFE with a different string value.
-            # Note: this attribute is initially set to token 'Box'
-            ufeAttr.set('Sphere')
+        # Set the attribute in UFE with a different string value.
+        # Note: this attribute is initially set to token 'Box'
+        ufeAttr.set('Sphere')
 
-            # Then make sure that new UFE value matches what it in USD.
-            self.assertEqual(ufeAttr.get(), usdAttr.Get())
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
 
-            self.runUndoRedo(ufeAttr, 'Box')
+        self.runUndoRedo(ufeAttr, 'Box')
 
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
@@ -376,23 +358,19 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-        # check to see if the attribute edit is allowed
-        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed)
-        if isAttrEditAllowed:
-            # Set the attribute in UFE with some random color values.
-            vec = ufe.Color3f(random.random(), random.random(), random.random())
-            ufeAttr.set(vec)
+        # Set the attribute in UFE with some random color values.
+        vec = ufe.Color3f(random.random(), random.random(), random.random())
+        ufeAttr.set(vec)
 
-            # Then make sure that new UFE value matches what it in USD.
-            self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-            # The following causes a segmentation fault on CentOS 7.
-            # self.runUndoRedo(ufeAttr,
-            #                  ufe.Color3f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0))
-            # Entered as MAYA-102168.
-            newVec = ufe.Color3f(vec.color[0]+1.0, vec.color[1]+2.0, vec.color[2]+3.0)
-            self.runUndoRedo(ufeAttr, newVec)
+        # The following causes a segmentation fault on CentOS 7.
+        # self.runUndoRedo(ufeAttr,
+        #                  ufe.Color3f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0))
+        # Entered as MAYA-102168.
+        newVec = ufe.Color3f(vec.color[0]+1.0, vec.color[1]+2.0, vec.color[2]+3.0)
+        self.runUndoRedo(ufeAttr, newVec)
 
     def _testAttributeInt3(self):
         '''Test the Int3 attribute type.'''
@@ -417,19 +395,15 @@ class AttributeTestCase(unittest.TestCase):
         # Compare the initial UFE value to that directly from USD.
         self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-        # check to see if the attribute edit is allowed
-        isAttrEditAllowed = mayaUsdUfe.isAttributeEditAllowed(usdAttr)
-        self.assertFalse(isAttrEditAllowed)
-        if isAttrEditAllowed:
-            # Set the attribute in UFE with some random values.
-            vec = ufe.Vector3f(random.random(), random.random(), random.random())
-            ufeAttr.set(vec)
+        # Set the attribute in UFE with some random values.
+        vec = ufe.Vector3f(random.random(), random.random(), random.random())
+        ufeAttr.set(vec)
 
-            # Then make sure that new UFE value matches what it in USD.
-            self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
-            self.runUndoRedo(ufeAttr,
-                             ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
+        self.runUndoRedo(ufeAttr,
+                         ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
 
     def testAttributeDouble3(self):
         '''Test the Double3 attribute type.'''

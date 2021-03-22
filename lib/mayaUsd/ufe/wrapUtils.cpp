@@ -196,8 +196,7 @@ int ufePathToInstanceIndex(const std::string& ufePathString)
 
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
 {
-    std::string dummyStr;
-    return ufe::isAttributeEditAllowed(attr, &dummyStr);
+    return ufe::isAttributeEditAllowed(attr);
 }
 
 PXR_NS::TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
