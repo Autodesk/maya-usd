@@ -60,7 +60,7 @@ class UfeAttributesObserver(ufe.Observer):
 
     def __call__(self, notification):
         if isinstance(notification, ufe.AttributeValueChanged):
-            if notification.name() == "xformOpOrder":
+            if notification.name() == UsdGeom.Tokens.xformOpOrder:
                 mel.eval("evalDeferred(\"AEbuildControls\");")
 
     def onCreate(self, *args):
@@ -229,6 +229,11 @@ class AETemplate(object):
 
         # Get the UFE Attributes interface for this scene item.
         self.attrS = ufe.Attributes.attributes(self.item)
+        self.suppressedAttrs = []
+
+        self.showArrayAttributes = False
+        if cmds.optionVar(exists="mayaUSD_AEShowArrayAttributes"):
+            self.showArrayAttributes = cmds.optionVar(query="mayaUSD_AEShowArrayAttributes")
 
         cmds.editorTemplate(beginScrollLayout=True)
         self.buildUI()
@@ -236,10 +241,15 @@ class AETemplate(object):
         self.createMetadataSection()
         cmds.editorTemplate(endScrollLayout=True)
 
-    @staticmethod
-    def addControls(controls):
+
+    def addControls(self, controls):
         for c in controls:
-            cmds.editorTemplate(addControl=[c])
+            if c not in self.suppressedAttrs:
+                cmds.editorTemplate(addControl=[c])
+
+    def suppress(self, control):
+        cmds.editorTemplate(suppress=control)
+        self.suppressedAttrs.append(control)
 
     @staticmethod
     def defineCustom(customObj, attrs=[]):
@@ -297,6 +307,7 @@ class AETemplate(object):
         xformOps = geomX.GetOrderedXformOps()
         xformOpOrderNames = [op.GetOpName() for op in xformOps]
         xformOpOrderNames.append(UsdGeom.Tokens.xformOpOrder)
+
         # Don't use createSection because we want a sub-sections.
         with ufeAeTemplate.Layout(self, sectionName):
             with ufeAeTemplate.Layout(self, 'Transform Attributes'):
@@ -326,6 +337,8 @@ class AETemplate(object):
     def buildUI(self):
         usdSch = Usd.SchemaRegistry()
 
+        self.suppressArrayAttribute()
+
         # We use UFE for the ancestor node types since it caches the
         # results by node type.
         for schemaType in self.item.ancestorNodeTypes():
@@ -340,3 +353,17 @@ class AETemplate(object):
                     self.createTransformAttributesSection(sectionName, attrsToAdd)
                 else:
                     self.createSection(sectionName, attrsToAdd)
+
+    def suppressArrayAttribute(self):
+        # Suppress all array attributes except UsdGeom.Tokens.xformOpOrder
+        if not self.showArrayAttributes:
+            for attrName in self.attrS.attributeNames:
+                if attrName != UsdGeom.Tokens.xformOpOrder and self.isArrayAttribute(attrName):
+                    self.suppress(attrName)
+
+    def isArrayAttribute(self, attrName):
+        if self.attrS.attributeType(attrName) == ufe.Attribute.kGeneric:
+            attr = self.prim.GetAttribute(attrName)
+            typeName = attr.GetTypeName()
+            return typeName.isArray
+        return False
