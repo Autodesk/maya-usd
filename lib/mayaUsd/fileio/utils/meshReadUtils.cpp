@@ -455,7 +455,7 @@ bool assignColorSetPrimvarToMesh(
         }
 
         if (isDisplayColor) {
-            colorValue = UsdMayaColorSpace::ConvertLinearToMaya(colorValue);
+            colorValue = MayaUsd::utils::ConvertLinearToMaya(colorValue);
         }
 
         MColor mColor(colorValue[0], colorValue[1], colorValue[2], colorValue[3]);

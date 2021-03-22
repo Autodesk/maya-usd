@@ -13,35 +13,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
-#define PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
+#ifndef MAYAUSD_UTILS_BLOCK_SCENE_MODIFICATION_CONTEXT_H
+#define MAYAUSD_UTILS_BLOCK_SCENE_MODIFICATION_CONTEXT_H
 
 #include <mayaUsd/base/api.h>
 
-#include <pxr/pxr.h>
-
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAUSD_NS_DEF {
+namespace utils {
 
 /// Utility class for wrapping a scope of Maya operations such that the
 /// modification status of the Maya scene is preserved.
-class UsdMayaBlockSceneModificationContext
+class BlockSceneModificationContext
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaBlockSceneModificationContext();
+    BlockSceneModificationContext();
 
     MAYAUSD_CORE_PUBLIC
-    virtual ~UsdMayaBlockSceneModificationContext();
+    virtual ~BlockSceneModificationContext();
 
 private:
     /// Modification status of the scene when the context was created.
     bool _sceneWasModified;
 
-    UsdMayaBlockSceneModificationContext(const UsdMayaBlockSceneModificationContext&) = delete;
-    UsdMayaBlockSceneModificationContext& operator=(const UsdMayaBlockSceneModificationContext&)
-        = delete;
+    BlockSceneModificationContext(const BlockSceneModificationContext&) = delete;
+    BlockSceneModificationContext& operator=(const BlockSceneModificationContext&) = delete;
 };
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF
 
-#endif
+#endif // MAYAUSD_UTILS_BLOCK_SCENE_MODIFICATION_CONTEXT_H

@@ -274,7 +274,7 @@ static VtValue _ConvertVec(const T& val, const TfToken& role, const bool lineari
 {
     return VtValue(
         ((role == SdfValueRoleNames->Color) && linearizeColors)
-            ? UsdMayaColorSpace::ConvertMayaToLinear(val)
+            ? MayaUsd::utils::ConvertMayaToLinear(val)
             : val);
 }
 
