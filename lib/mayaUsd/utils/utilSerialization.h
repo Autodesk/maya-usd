@@ -73,7 +73,7 @@ struct LayerParent
     // we will need to remap to point to the new path, or the stage if it is an
     // anonymous root layer.
     SdfLayerRefPtr _layerParent;
-    UsdStageRefPtr _stageParent;
+    std::string    _proxyPath;
 };
 
 struct stageLayersToSave
@@ -106,7 +106,7 @@ PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
     layers that will need to be saved.
  */
 MAYAUSD_CORE_PUBLIC
-void getLayersToSaveFromProxy(PXR_NS::UsdStageRefPtr stage, stageLayersToSave& layersInfo);
+void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& layersInfo);
 
 } // namespace utils
 } // namespace MAYAUSD_NS_DEF

@@ -15,6 +15,8 @@
 //
 #include "util.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
 #include <maya/MArgDatabase.h>
@@ -224,6 +226,20 @@ MStatus UsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dag
     status = selectionList.getDagPath(0, dagPath);
 
     return status;
+}
+
+UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
+{
+    MObject mobj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(proxyPath, mobj);
+    if (status == MStatus::kSuccess) {
+        MFnDependencyNode fn;
+        fn.setObject(mobj);
+        MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+        return pShape ? pShape->getUsdStage() : nullptr;
+    }
+
+    return nullptr;
 }
 
 MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)

@@ -30,6 +30,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MArgDatabase.h>
@@ -179,6 +180,10 @@ MString GetUniqueNameOfDagNode(const MObject& node);
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
+
+/// Gets the UsdStage for the proxy shape  node named \p nodeName.
+MAYAUSD_CORE_PUBLIC
+UsdStageRefPtr GetStageByProxyName(const std::string& nodeName);
 
 /// Gets the Maya MDagPath for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC

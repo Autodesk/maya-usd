@@ -26,6 +26,7 @@
 
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
@@ -46,7 +47,7 @@ enum BatchSaveResult
     kPartiallyCompleted // Callback has handled the saving of some stages, but not all. Layer
                         // Manager should continue to look for unsaved stages.
 };
-typedef std::function<BatchSaveResult(const std::vector<UsdStageRefPtr>&)> BatchSaveDelegate;
+typedef std::function<BatchSaveResult(const MDagPathArray&)> BatchSaveDelegate;
 
 /*! \brief Maya dependency node responsible for serializing unsaved Usd edits.
 

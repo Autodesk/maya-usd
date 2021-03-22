@@ -35,6 +35,7 @@
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MArrayDataHandle.h>
 #include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFileIO.h>
@@ -157,13 +158,13 @@ void convertAnonymousLayersRecursive(
     MayaUsd::utils::LayerParent parentPtr;
     if (stage->GetRootLayer() == layer) {
         parentPtr._layerParent = nullptr;
-        parentPtr._stageParent = stage;
+        parentPtr._proxyPath = basename;
     } else if (stage->GetSessionLayer() == layer) {
         parentPtr._layerParent = nullptr;
-        parentPtr._stageParent = nullptr;
+        parentPtr._proxyPath.clear();
     } else {
         parentPtr._layerParent = layer;
-        parentPtr._stageParent = nullptr;
+        parentPtr._proxyPath.clear();
     }
 
     std::vector<std::string> sublayers = layer->GetSubLayerPaths();
@@ -230,7 +231,7 @@ private:
     std::map<std::string, SdfLayerRefPtr> _idToLayer;
     TfNotice::Key                         _onStageSetKey;
     std::set<unsigned int>                _supportedTypes;
-    std::vector<UsdStageRefPtr>           _stagesToSave;
+    MDagPathArray                         _proxiesToSave;
     static MCallbackId                    preSaveCallbackId;
     static MCallbackId                    preExportCallbackId;
     static MCallbackId                    postNewCallbackId;
@@ -363,7 +364,7 @@ bool LayerDatabase::getStagesToSave(bool isExport)
     bool checkSelection = isExport && (MFileIO::kExportTypeSelected == MFileIO::exportType());
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
 
-    _stagesToSave.clear();
+    _proxiesToSave.clear();
     for (const auto& stage : allStages) {
         auto stagePath = MayaUsd::ufe::stagePath(stage);
         if (!checkSelection
@@ -376,7 +377,7 @@ bool LayerDatabase::getStagesToSave(bool isExport)
                 SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
                 for (auto layer : allLayers) {
                     if (layer->IsDirty()) {
-                        _stagesToSave.push_back(stage);
+                        _proxiesToSave.append(proxyDagPath);
                         break;
                     }
                 }
@@ -384,7 +385,7 @@ bool LayerDatabase::getStagesToSave(bool isExport)
         }
     }
 
-    return !_stagesToSave.empty();
+    return (0 != _proxiesToSave.length());
 }
 
 bool LayerDatabase::saveUsd(bool isExport)
@@ -395,7 +396,7 @@ bool LayerDatabase::saveUsd(bool isExport)
 
     if (MayaUsd::utils::kIgnoreUSDEdits != opt) {
         if (_batchSaveDelegate) {
-            result = _batchSaveDelegate(_stagesToSave);
+            result = _batchSaveDelegate(_proxiesToSave);
         }
 
         // kAbort: we should abort and return false, which Maya will take as
@@ -429,7 +430,7 @@ bool LayerDatabase::saveUsd(bool isExport)
         result = MayaUsd::kCompleted;
     }
 
-    _stagesToSave.clear();
+    _proxiesToSave.clear();
     return (MayaUsd::kCompleted == result);
 }
 

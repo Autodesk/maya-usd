@@ -14,6 +14,7 @@
 
 #include <pxr/usd/sdf/layer.h>
 
+#include <maya/MDagPathArray.h>
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 #include <maya/MString.h>
@@ -241,28 +242,28 @@ public:
 namespace UsdLayerEditor {
 
 #if defined(WANT_UFE_BUILD)
-SaveLayersDialog::SaveLayersDialog(QWidget* in_parent, const std::vector<UsdStageRefPtr>& stages)
+SaveLayersDialog::SaveLayersDialog(QWidget* in_parent, const MDagPathArray& proxyShapes)
     : QDialog(in_parent)
     , _sessionState(nullptr)
 {
     MString msg, nbStages;
 
-    nbStages = stages.size();
+    nbStages = proxyShapes.length();
     msg.format(StringResources::getAsMString(StringResources::kSaveXStages), nbStages);
     setWindowTitle(MQtUtil::toQString(msg));
 
     // For each stage collect the layers to save.
-    for (const auto& stage : stages) {
-        // Get the name of this stage.
-        auto        stagePath = MayaUsd::ufe::stagePath(stage);
-        std::string stageName = !stagePath.empty() ? stagePath.back().string() : "Unknown";
+    for (const auto& shape : proxyShapes) {
 
-        getLayersToSave(stage, stageName);
+        getLayersToSave(shape.fullPathName().asChar(), shape.partialPathName().asChar());
     }
 
     QString msg1, msg2;
     getDialogMessages(
-        static_cast<int>(stages.size()), static_cast<int>(_anonLayerPairs.size()), msg1, msg2);
+        static_cast<int>(proxyShapes.length()),
+        static_cast<int>(_anonLayerPairs.size()),
+        msg1,
+        msg2);
     buildDialog(msg1, msg2);
 }
 #endif
@@ -278,7 +279,7 @@ SaveLayersDialog::SaveLayersDialog(SessionState* in_sessionState, QWidget* in_pa
         std::string stageName = stageEntry._displayName;
         msg.format(StringResources::getAsMString(StringResources::kSaveName), stageName.c_str());
         dialogTitle = MQtUtil::toQString(msg);
-        getLayersToSave(stageEntry._stage, stageName);
+        getLayersToSave(stageEntry._proxyShapePath, stageName);
     }
     setWindowTitle(dialogTitle);
 
@@ -289,11 +290,11 @@ SaveLayersDialog::SaveLayersDialog(SessionState* in_sessionState, QWidget* in_pa
 
 SaveLayersDialog ::~SaveLayersDialog() { QApplication::restoreOverrideCursor(); }
 
-void SaveLayersDialog::getLayersToSave(UsdStageRefPtr stage, const std::string& stageName)
+void SaveLayersDialog::getLayersToSave(const std::string& proxyPath, const std::string& stageName)
 {
     // Get the layers to save for this stage.
     MayaUsd::utils::stageLayersToSave stageLayersToSave;
-    MayaUsd::utils::getLayersToSaveFromProxy(stage, stageLayersToSave);
+    MayaUsd::utils::getLayersToSaveFromProxy(proxyPath, stageLayersToSave);
 
     // Keep track of all the layers for this particular stage.
     for (const auto& layerPairs : stageLayersToSave._anonLayers) {

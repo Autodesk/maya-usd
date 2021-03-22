@@ -16,7 +16,6 @@
 #include "utilSerialization.h"
 
 #include <mayaUsd/base/tokens.h>
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -103,7 +102,7 @@ void populateChildren(
 
             if (subLayer->IsAnonymous()) {
                 MayaUsd::utils::LayerParent p;
-                p._stageParent = nullptr;
+                p._proxyPath.clear();
                 p._layerParent = layer;
                 anonLayersToSave.push_back(std::make_pair(subLayer, p));
             } else if (subLayer->IsDirty()) {
@@ -115,14 +114,11 @@ void populateChildren(
     recursionDetector->pop();
 }
 
-bool saveRootLayer(SdfLayerRefPtr layer, UsdStageRefPtr stage)
+bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
 {
-    if (!layer || !stage || layer->IsAnonymous()) {
+    if (!layer || proxy.empty() || layer->IsAnonymous()) {
         return false;
     }
-
-    auto        stagePath = MayaUsd::ufe::stagePath(stage);
-    std::string strStagePath = stagePath.popHead().string();
 
     std::string fp = layer->GetRealPath();
 #ifdef _WIN32
@@ -131,7 +127,7 @@ bool saveRootLayer(SdfLayerRefPtr layer, UsdStageRefPtr stage)
     fp = TfStringReplace(fp, "\\", "/");
 #endif
 
-    MayaUsd::utils::setNewProxyPath(MString(strStagePath.c_str()), MString(fp.c_str()));
+    MayaUsd::utils::setNewProxyPath(MString(proxy.c_str()), MString(fp.c_str()));
 
     return true;
 }
@@ -254,21 +250,25 @@ SdfLayerRefPtr saveAnonymousLayer(
         if (parent._layerParent) {
             parent._layerParent->GetSubLayerPaths().Replace(
                 anonLayer->GetIdentifier(), newLayer->GetIdentifier());
-        } else if (parent._stageParent) {
-            saveRootLayer(newLayer, parent._stageParent);
+        } else if (!parent._proxyPath.empty()) {
+            saveRootLayer(newLayer, parent._proxyPath);
         }
     }
     return newLayer;
 }
 
-void getLayersToSaveFromProxy(PXR_NS::UsdStageRefPtr stage, stageLayersToSave& layersInfo)
+void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& layersInfo)
 {
-    auto root = stage->GetRootLayer();
+    auto stage = UsdMayaUtil::GetStageByProxyName(proxyPath);
+    if (!stage) {
+        return;
+    }
 
+    auto root = stage->GetRootLayer();
     populateChildren(root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
     if (root->IsAnonymous()) {
         LayerParent p;
-        p._stageParent = stage;
+        p._proxyPath = proxyPath;
         p._layerParent = nullptr;
         layersInfo._anonLayers.push_back(std::make_pair(root, p));
     } else if (root->IsDirty()) {

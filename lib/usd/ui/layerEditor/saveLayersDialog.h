@@ -31,8 +31,8 @@ public:
     SaveLayersDialog(SessionState* in_sessionState, QWidget* in_parent);
 
 #if defined(WANT_UFE_BUILD)
-    // Create dialog for bulk save using all stages.
-    SaveLayersDialog(QWidget* in_parent, const std::vector<UsdStageRefPtr>& stages);
+    // Create dialog for bulk save using all provided proxy shapes and their owned stages.
+    SaveLayersDialog(QWidget* in_parent, const MDagPathArray& proxyShapes);
 #endif
 
     ~SaveLayersDialog();
@@ -57,7 +57,7 @@ public:
 
 private:
     void buildDialog(const QString& msg1, const QString& msg2);
-    void getLayersToSave(UsdStageRefPtr stage, const std::string& stageName);
+    void getLayersToSave(const std::string& proxyPath, const std::string& stageName);
 
 private:
     typedef std::vector<std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>> layerPairs;
