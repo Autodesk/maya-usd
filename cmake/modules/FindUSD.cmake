@@ -101,9 +101,29 @@ elseif(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
     math(EXPR PXR_VERSION "${USD_MAJOR_VERSION} * 10000 + ${USD_MINOR_VERSION} * 100 + ${USD_PATCH_VERSION}")
 endif()
 
+# Get the boost version from the one built with USD
+if(USD_INCLUDE_DIR)
+    file(GLOB _USD_VERSION_HPP_FILE "${USD_INCLUDE_DIR}/boost-*/boost/version.hpp")
+    list(LENGTH _USD_VERSION_HPP_FILE found_one)
+    if(${found_one} STREQUAL "1")
+        list(GET _USD_VERSION_HPP_FILE 0 USD_VERSION_HPP)
+        file(STRINGS
+            "${USD_VERSION_HPP}"
+            _usd_tmp
+            REGEX "#define BOOST_VERSION .*$")
+        string(REGEX MATCH "[0-9]+" USD_BOOST_VERSION ${_usd_tmp})
+        unset(_usd_tmp)
+        unset(_USD_VERSION_HPP_FILE)
+        unset(USD_VERSION_HPP)
+    endif()
+endif()
+
 message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
 message(STATUS "USD library dir: ${USD_LIBRARY_DIR}")
 message(STATUS "USD version: ${USD_VERSION}")
+if(DEFINED USD_BOOST_VERSION)
+    message(STATUS "USD Boost::boost version: ${USD_BOOST_VERSION}")
+endif()
 
 include(FindPackageHandleStandardArgs)
 

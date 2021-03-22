@@ -15,6 +15,8 @@
 //
 #include "UsdStageMap.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
@@ -27,9 +29,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-MObjectHandle proxyShapeHandle(const Ufe::Path& path)
+MObjectHandle nameLookup(const Ufe::Path& path)
 {
-    // Get the MObjectHandle from the tail of the MDagPath.	 Remove the leading
+    // Get the MObjectHandle from the tail of the MDagPath.  Remove the leading
     // '|world' component.
     auto          noWorld = path.popHead().string();
     auto          dagPath = UsdMayaUtil::nameToDagPath(noWorld);
@@ -53,6 +55,30 @@ Ufe::Path firstPath(const MObjectHandle& handle)
     return MayaUsd::ufe::dagPathToUfe(dagPath);
 }
 
+UsdStageWeakPtr objToStage(MObject& obj)
+{
+    if (obj.isNull()) {
+        return nullptr;
+    }
+
+    // Get the stage from the proxy shape.
+    MFnDependencyNode fn(obj);
+    auto              ps = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+    TF_VERIFY(ps);
+
+    return ps->getUsdStage();
+}
+
+inline Ufe::Path::Segments::size_type nbPathSegments(const Ufe::Path& path)
+{
+    return
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        path.nbSegments();
+#else
+        path.getSegments().size();
+#endif
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -68,15 +94,10 @@ UsdStageMap g_StageMap;
 // UsdStageMap
 //------------------------------------------------------------------------------
 
-void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
+void UsdStageMap::addItem(const Ufe::Path& path)
 {
     // We expect a path to the proxy shape node, therefore a single segment.
-    auto nbSegments =
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        path.nbSegments();
-#else
-        path.getSegments().size();
-#endif
+    auto nbSegments = nbPathSegments(path);
     if (nbSegments != 1) {
         TF_CODING_ERROR(
             "A proxy shape node path can have only one segment, path '%s' has %lu",
@@ -85,32 +106,77 @@ void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
         return;
     }
 
-    // Convert the tail of the UFE path to an MObjectHandle.
-    auto proxyShape = proxyShapeHandle(path);
+    // Convert the UFE path to an MObjectHandle.
+    auto proxyShape = nameLookup(path);
     if (!proxyShape.isValid()) {
         return;
     }
 
-    // Could get the stage from the proxy shape object in the stage() method,
-    // but since it's given here, simply store it.
-    fObjectToStage[proxyShape] = stage;
+    // Non-const MObject& requires an lvalue.  We've just done a name-based
+    // lookup of the proxy shape, so the stage cannot be null.
+    auto obj = proxyShape.object();
+    auto stage = objToStage(obj);
+    TF_AXIOM(stage);
+
+    fPathToObject[path] = proxyShape;
     fStageToObject[stage] = proxyShape;
 }
 
 UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path)
 {
+    // Non-const MObject& requires an lvalue.
+    auto obj = proxyShape(path);
+    return objToStage(obj);
+}
+
+MObject UsdStageMap::proxyShape(const Ufe::Path& path)
+{
     rebuildIfDirty();
 
-    auto proxyShape = proxyShapeHandle(path);
-    if (!proxyShape.isValid()) {
+    const auto& singleSegmentPath
+        = nbPathSegments(path) == 1 ? path : Ufe::Path(path.getSegments()[0]);
+
+    auto iter = fPathToObject.find(singleSegmentPath);
+    if (iter != std::end(fPathToObject)) {
+        return iter->second.object();
+    }
+
+    // Caches are invalidated by DG dirtying, but not by renaming or
+    // reparenting.  We have not found the object in the PathToObject cache,
+    // either because the cache is stale, or because the object does not exist.
+    // MObjectHandle values in the caches are stable against rename or
+    // reparent, so StageToObject is unchanged.  We can iterate on the
+    // MObjectHandle values and refresh the stale Ufe::Path in PathToObject.
+    // Iterate on a copy of the map, as we may be updating some entries.
+    auto pathToObject = fPathToObject;
+    for (const auto& entry : pathToObject) {
+        const auto& cachedPath = entry.first;
+        const auto& cachedObject = entry.second;
+        // Get the UFE path from the map value.
+        auto newPath = firstPath(cachedObject);
+        if (newPath != cachedPath) {
+            // Key is stale.  Remove it from our cache, and add the new entry.
+            auto count = fPathToObject.erase(cachedPath);
+            TF_AXIOM(count);
+            fPathToObject[newPath] = cachedObject;
+        }
+    }
+
+    // At this point the cache is rebuilt, so lookup failure means the object
+    // doesn't exist.
+    iter = fPathToObject.find(singleSegmentPath);
+    return iter == std::end(fPathToObject) ? MObject() : iter->second.object();
+}
+
+MayaUsdProxyShapeBase* UsdStageMap::proxyShapeNode(const Ufe::Path& path)
+{
+    auto obj = proxyShape(path);
+    if (obj.isNull()) {
         return nullptr;
     }
 
-    // A stage is bound to a single Dag proxy shape.
-    auto iter = fObjectToStage.find(proxyShape);
-    if (iter != std::end(fObjectToStage))
-        return iter->second;
-    return nullptr;
+    MFnDependencyNode fn(obj);
+    return dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
 }
 
 Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
@@ -129,15 +195,15 @@ UsdStageMap::StageSet UsdStageMap::allStages()
     rebuildIfDirty();
 
     StageSet stages;
-    for (const auto& pair : fObjectToStage) {
-        stages.insert(pair.second);
+    for (const auto& pair : fPathToObject) {
+        stages.insert(stage(pair.first));
     }
     return stages;
 }
 
 void UsdStageMap::setDirty()
 {
-    fObjectToStage.clear();
+    fPathToObject.clear();
     fStageToObject.clear();
     fDirty = true;
 }
@@ -147,12 +213,8 @@ void UsdStageMap::rebuildIfDirty()
     if (!fDirty)
         return;
 
-    auto proxyShapeNames = ProxyShapeHandler::getAllNames();
-    for (const auto& psn : proxyShapeNames) {
-        MDagPath  dag = UsdMayaUtil::nameToDagPath(psn);
-        Ufe::Path ufePath = dagPathToUfe(dag);
-        auto      stage = ProxyShapeHandler::dagPathToStage(psn);
-        addItem(ufePath, stage);
+    for (const auto& psn : ProxyShapeHandler::getAllNames()) {
+        addItem(Ufe::Path(Ufe::PathSegment("|world" + psn, getMayaRunTimeId(), '|')));
     }
     fDirty = false;
 }

@@ -306,32 +306,11 @@ UsdTimeCode getTime(const Ufe::Path& path)
         return UsdTimeCode::Default();
     }
 
-    // Get the time from the proxy shape.  This will be the tail component of
-    // the first path segment.
-    auto proxyShapePath = Ufe::Path(path.getSegments()[0]);
-
-    // Keep a single-element path to MObject cache, as all USD prims in a stage
-    // share the same proxy shape.
-    static std::pair<Ufe::Path, MObjectHandle> cache;
-
-    MObject proxyShapeObj;
-
-    if (cache.first == proxyShapePath && cache.second.isValid()) {
-        proxyShapeObj = cache.second.object();
-    } else {
-        // Not found in the cache, or no longer valid.  Get the proxy shape
-        // MObject from its path, and put it in the cache.  Pop the head of the
-        // UFE path to get rid of "|world", which is implicit in Maya.
-        auto proxyShapeDagPath = UsdMayaUtil::nameToDagPath(proxyShapePath.popHead().string());
-        TF_VERIFY(proxyShapeDagPath.isValid());
-        proxyShapeObj = proxyShapeDagPath.node();
-        cache = std::pair<Ufe::Path, MObjectHandle>(proxyShapePath, MObjectHandle(proxyShapeObj));
+    // Proxy shape node should not be null.
+    auto proxyShape = g_StageMap.proxyShapeNode(path);
+    if (!TF_VERIFY(proxyShape)) {
+        return UsdTimeCode::Default();
     }
-
-    // Get time from the proxy shape.
-    MFnDependencyNode fn(proxyShapeObj);
-    auto              proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
-    TF_VERIFY(proxyShape);
 
     return proxyShape->getTime();
 }
@@ -343,32 +322,13 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
         return TfTokenVector();
     }
 
-    // The proxy shape is the tail component of the first path segment.
-    auto proxyShapePath = Ufe::Path(path.getSegments()[0]);
-
-    // Keep a single-element path to MObject cache, as all USD prims in a stage
-    // share the same proxy shape.
-    static std::pair<Ufe::Path, MObjectHandle> cache;
-
-    MObject proxyShapeObj;
-
-    if (cache.first == proxyShapePath && cache.second.isValid()) {
-        proxyShapeObj = cache.second.object();
-    } else {
-        // Not found in the cache, or no longer valid.  Get the proxy shape
-        // MObject from its path, and put it in the cache.  Pop the head of the
-        // UFE path to get rid of "|world", which is implicit in Maya.
-        auto proxyShapeDagPath = UsdMayaUtil::nameToDagPath(proxyShapePath.popHead().string());
-        TF_VERIFY(proxyShapeDagPath.isValid());
-        proxyShapeObj = proxyShapeDagPath.node();
-        cache = std::pair<Ufe::Path, MObjectHandle>(proxyShapePath, MObjectHandle(proxyShapeObj));
+    // Proxy shape node should not be null.
+    auto proxyShape = g_StageMap.proxyShapeNode(path);
+    if (!TF_VERIFY(proxyShape)) {
+        return TfTokenVector();
     }
 
-    // Get purposes from the proxy shape.
-    bool              renderPurpose, proxyPurpose, guidePurpose;
-    MFnDependencyNode fn(proxyShapeObj);
-    auto              proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
-    TF_VERIFY(proxyShape);
+    bool renderPurpose, proxyPurpose, guidePurpose;
     proxyShape->getDrawPurposeToggles(&renderPurpose, &proxyPurpose, &guidePurpose);
     TfTokenVector purposes;
     if (renderPurpose) {
