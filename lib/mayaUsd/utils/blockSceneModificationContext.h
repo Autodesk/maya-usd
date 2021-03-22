@@ -37,8 +37,7 @@ private:
     bool _sceneWasModified;
 
     BlockSceneModificationContext(const BlockSceneModificationContext&) = delete;
-    BlockSceneModificationContext& operator=(const BlockSceneModificationContext&)
-        = delete;
+    BlockSceneModificationContext& operator=(const BlockSceneModificationContext&) = delete;
 };
 
 } // namespace utils
