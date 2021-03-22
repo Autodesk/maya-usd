@@ -15,29 +15,25 @@
 //
 #include <mayaUsd/utils/blockSceneModificationContext.h>
 
-#include <pxr/pxr.h>
-
 #include <boost/python.hpp>
 
 #include <memory>
 
 using namespace boost::python;
 
-PXR_NAMESPACE_USING_DIRECTIVE;
-
 namespace {
 
-// This exposes UsdMayaBlockSceneModificationContext as a Python "context
+// This exposes BlockSceneModificationContext as a Python "context
 // manager" object that can be used with the "with" statement.
 class _PyBlockSceneModificationContext
 {
 public:
-    void __enter__() { _context.reset(new UsdMayaBlockSceneModificationContext()); }
+    void __enter__() { _context.reset(new MayaUsd::utils::BlockSceneModificationContext()); }
 
     void __exit__(object, object, object) { _context.reset(); }
 
 private:
-    std::shared_ptr<UsdMayaBlockSceneModificationContext> _context;
+    std::shared_ptr<MayaUsd::utils::BlockSceneModificationContext> _context;
 };
 
 } // anonymous namespace

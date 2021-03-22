@@ -1637,7 +1637,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                      || colorInterp == HdInterpolationInstance)
                     && (alphaInterp == HdInterpolationConstant
                         || alphaInterp == HdInterpolationInstance)) {
-                    const GfVec3f& clr3f = UsdMayaColorSpace::ConvertLinearToMaya(colorArray[0]);
+                    const GfVec3f& clr3f = MayaUsd::utils::ConvertLinearToMaya(colorArray[0]);
                     const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
                     shader = _delegate->GetFallbackShader(color);
                     // The color of the fallback shader is ignored when the interpolation is

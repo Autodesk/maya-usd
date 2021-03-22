@@ -338,7 +338,7 @@ GfVec3f LinearColorFromColorSet(const MColor& mayaColor, bool shouldConvertToLin
     // need to convert it to linear.
     GfVec3f c(mayaColor[0], mayaColor[1], mayaColor[2]);
     if (shouldConvertToLinear) {
-        return UsdMayaColorSpace::ConvertMayaToLinear(c);
+        return MayaUsd::utils::ConvertMayaToLinear(c);
     }
     return c;
 }

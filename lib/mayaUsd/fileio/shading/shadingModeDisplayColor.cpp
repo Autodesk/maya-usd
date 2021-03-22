@@ -103,7 +103,7 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
         return MObject();
     }
 
-    const GfVec3f displayColor = UsdMayaColorSpace::ConvertLinearToMaya(linearDisplayColor);
+    const GfVec3f displayColor = MayaUsd::utils::ConvertLinearToMaya(linearDisplayColor);
 
     // We default to lambert if no conversion was requested:
     const TfToken& preferredMaterial
