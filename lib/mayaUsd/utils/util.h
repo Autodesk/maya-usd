@@ -174,7 +174,7 @@ std::string GetMayaNodeName(const MObject& mayaNode);
  * @return      The name as a Maya string.
  */
 MAYAUSD_CORE_PUBLIC
-MString GetUniqueNameOfDAGNode(const MObject& node);
+MString GetUniqueNameOfDagNode(const MObject& node);
 
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
@@ -635,6 +635,18 @@ MStatus GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MIntArray& indi
  */
 MAYAUSD_CORE_PUBLIC
 bool CheckMeshUpstreamForBlendShapes(const MObject& mesh);
+
+/**
+ * Returns the current Maya project path, also known as the workspace.
+ *
+ * @return     The current Maya project path. If no project is set or an error occurred, returns an
+ * empty string.
+ */
+MAYAUSD_CORE_PUBLIC
+MString GetCurrentMayaWorkspacePath();
+
+MAYAUSD_CORE_PUBLIC
+MString GetCurrentSceneFilePath();
 
 } // namespace UsdMayaUtil
 

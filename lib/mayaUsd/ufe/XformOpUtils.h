@@ -21,34 +21,51 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 
-#include <vector>
+// Ufe::Vector3d is a typedef.
+#include <ufe/types.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include <vector>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-GfMatrix4d computeLocalInclusiveTransform(
-    const std::vector<UsdGeomXformOp>&          ops,
-    std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time);
+PXR_NS::GfMatrix4d computeLocalInclusiveTransform(
+    const std::vector<PXR_NS::UsdGeomXformOp>&          ops,
+    std::vector<PXR_NS::UsdGeomXformOp>::const_iterator endOp,
+    const PXR_NS::UsdTimeCode&                          time);
 
-GfMatrix4d computeLocalInclusiveTransform(
-    const UsdPrim&        prim,
-    const UsdGeomXformOp& op,
-    const UsdTimeCode&    time);
+PXR_NS::GfMatrix4d computeLocalInclusiveTransform(
+    const PXR_NS::UsdPrim&        prim,
+    const PXR_NS::UsdGeomXformOp& op,
+    const PXR_NS::UsdTimeCode&    time);
 
-GfMatrix4d computeLocalExclusiveTransform(
-    const std::vector<UsdGeomXformOp>&          ops,
-    std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time);
+PXR_NS::GfMatrix4d computeLocalExclusiveTransform(
+    const std::vector<PXR_NS::UsdGeomXformOp>&          ops,
+    std::vector<PXR_NS::UsdGeomXformOp>::const_iterator endOp,
+    const PXR_NS::UsdTimeCode&                          time);
 
-GfMatrix4d computeLocalExclusiveTransform(
-    const UsdPrim&        prim,
-    const UsdGeomXformOp& op,
-    const UsdTimeCode&    time);
+PXR_NS::GfMatrix4d computeLocalExclusiveTransform(
+    const PXR_NS::UsdPrim&        prim,
+    const PXR_NS::UsdGeomXformOp& op,
+    const PXR_NS::UsdTimeCode&    time);
 
-std::vector<UsdGeomXformOp> getOrderedXformOps(const UsdPrim& prim);
+std::vector<PXR_NS::UsdGeomXformOp> getOrderedXformOps(const PXR_NS::UsdPrim& prim);
+
+Ufe::Vector3d getTranslation(const Ufe::Matrix4d& m);
+
+// Rotation order is XYZ, as per UFE convention.
+Ufe::Vector3d getRotation(const Ufe::Matrix4d& m);
+
+Ufe::Vector3d getScale(const Ufe::Matrix4d& m);
+
+/*! Decompose the argument matrix m into translation, rotation and scale
+    components.
+    \param m Input matrix.
+    \param[out] t Output translation.  If null, will be ignored.
+    \param[out] r Output rotation, in XYZ order.  If null, will be ignored.
+    \param[out] s Output scale.  If null, will be ignored.
+*/
+void getTRS(const Ufe::Matrix4d& m, Ufe::Vector3d* t, Ufe::Vector3d* r, Ufe::Vector3d* s);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

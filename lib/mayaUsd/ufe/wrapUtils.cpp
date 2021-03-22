@@ -38,14 +38,14 @@ using namespace MayaUsd;
 using namespace boost::python;
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-UsdPrim getPrimFromRawItem(uint64_t rawItem)
+PXR_NS::UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {
     Ufe::SceneItem*    item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
     ufe::UsdSceneItem* usdItem = dynamic_cast<ufe::UsdSceneItem*>(item);
     if (nullptr != usdItem) {
         return usdItem->prim();
     }
-    return UsdPrim();
+    return PXR_NS::UsdPrim();
 }
 
 std::string getNodeNameFromRawItem(uint64_t rawItem)
@@ -69,7 +69,7 @@ std::string getNodeTypeFromRawItem(uint64_t rawItem)
 }
 #endif
 
-UsdStageWeakPtr getStage(const std::string& ufePathString)
+PXR_NS::UsdStageWeakPtr getStage(const std::string& ufePathString)
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
     return ufe::getStage(Ufe::PathString::path(ufePathString));
@@ -90,7 +90,7 @@ UsdStageWeakPtr getStage(const std::string& ufePathString)
 #endif
 }
 
-std::string stagePath(UsdStageWeakPtr stage)
+std::string stagePath(PXR_NS::UsdStageWeakPtr stage)
 {
     // Proxy shape node's UFE path is a single segment, so no need to separate
     // segments with commas.
@@ -98,8 +98,8 @@ std::string stagePath(UsdStageWeakPtr stage)
 }
 
 std::string usdPathToUfePathSegment(
-    const SdfPath& usdPath,
-    int            instanceIndex = UsdImagingDelegate::ALL_INSTANCES)
+    const PXR_NS::SdfPath& usdPath,
+    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES)
 {
     return ufe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
 }
@@ -113,7 +113,7 @@ static Ufe::Path _UfeV1StringToUsdPath(const std::string& ufePathString)
 
     // The path string is a list of segment strings separated by ',' comma
     // separator.
-    auto segmentStrings = TfStringTokenize(ufePathString, ",");
+    auto segmentStrings = PXR_NS::TfStringTokenize(ufePathString, ",");
 
     // If there are fewer than two segments, there cannot be a USD segment, so
     // return an invalid path.
@@ -137,7 +137,7 @@ static Ufe::Path _UfeV1StringToUsdPath(const std::string& ufePathString)
 }
 #endif
 
-UsdTimeCode getTime(const std::string& pathStr)
+PXR_NS::UsdTimeCode getTime(const std::string& pathStr)
 {
     const Ufe::Path path =
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -160,7 +160,7 @@ std::string stripInstanceIndexFromUfePath(const std::string& ufePathString)
 #endif
 }
 
-UsdPrim ufePathToPrim(const std::string& ufePathString)
+PXR_NS::UsdPrim ufePathToPrim(const std::string& ufePathString)
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
     return ufe::ufePathToPrim(Ufe::PathString::path(ufePathString));
@@ -170,7 +170,7 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
     // If there are fewer than two segments, there cannot be a USD segment, so
     // return an invalid UsdPrim.
     if (path.getSegments().size() < 2u) {
-        return UsdPrim();
+        return PXR_NS::UsdPrim();
     }
 
     return ufe::ufePathToPrim(path);
@@ -187,14 +187,14 @@ int ufePathToInstanceIndex(const std::string& ufePathString)
     // If there are fewer than two segments, there cannot be a USD segment, so
     // return ALL_INSTANCES.
     if (path.getSegments().size() < 2u) {
-        return UsdImagingDelegate::ALL_INSTANCES;
+        return PXR_NS::UsdImagingDelegate::ALL_INSTANCES;
     }
 
     return ufe::ufePathToInstanceIndex(path);
 #endif
 }
 
-TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
+PXR_NS::TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
 {
     auto path =
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -224,7 +224,7 @@ void wrapUtils()
     def("stagePath", stagePath);
     def("usdPathToUfePathSegment",
         usdPathToUfePathSegment,
-        (arg("usdPath"), arg("instanceIndex") = UsdImagingDelegate::ALL_INSTANCES));
+        (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
     def("getTime", getTime);
     def("stripInstanceIndexFromUfePath", stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", ufePathToPrim);

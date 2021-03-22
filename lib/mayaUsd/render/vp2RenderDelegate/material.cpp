@@ -42,7 +42,13 @@
 #include <maya/MUintArray.h>
 #include <maya/MViewport2Renderer.h>
 
+#if PXR_VERSION <= 2008
+// Needed for GL_HALF_FLOAT.
+#include <GL/glew.h>
+#endif
+
 #include <ghc/filesystem.hpp>
+#include <tbb/parallel_for.h>
 
 #include <iostream>
 #include <string>
@@ -467,13 +473,18 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 
 #if PXR_VERSION > 2008
 #if PXR_VERSION >= 2102
-    switch (spec.format) {
+    auto specFormat = spec.format;
 #else
-    switch (spec.hioFormat) {
+    auto specFormat = spec.hioFormat;
 #endif
+    switch (specFormat) {
     // Single Channel
     case HioFormatFloat32:
         desc.fFormat = MHWRender::kR32_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case HioFormatFloat16:
+        desc.fFormat = MHWRender::kR16_FLOAT;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
     case HioFormatUNorm8:
@@ -484,6 +495,42 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     // 3-Channel
     case HioFormatFloat32Vec3:
         desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case HioFormatFloat16Vec3: {
+        // R16G16B16 is not supported by VP2. Converted to R16G16B16A16.
+        constexpr int bpp_8 = 8;
+
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_8;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        GfHalf               opaqueAlpha(1.0f);
+        const unsigned short alphaBits = opaqueAlpha.bits();
+        const unsigned char  lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
+        const unsigned char  highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 2] = storage[t * bpp + 2];
+                texels[t * bpp_8 + 3] = storage[t * bpp + 3];
+                texels[t * bpp_8 + 4] = storage[t * bpp + 4];
+                texels[t * bpp_8 + 5] = storage[t * bpp + 5];
+                texels[t * bpp_8 + 6] = lowAlpha;
+                texels[t * bpp_8 + 7] = highAlpha;
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        break;
+    }
+    case HioFormatFloat16Vec4:
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
     case HioFormatUNorm8Vec3:
@@ -523,18 +570,57 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         isColorSpaceSRGB = image->IsColorSpaceSRGB();
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
-    default: break;
+    default:
+        TF_WARN(
+            "VP2 renderer delegate: unsupported pixel format (%d) in texture file %s.",
+            (int)specFormat,
+            path.c_str());
+        break;
     }
 #else
     switch (spec.format) {
     case GL_RED:
-        desc.fFormat = (spec.type == GL_FLOAT ? MHWRender::kR32_FLOAT : MHWRender::kR8_UNORM);
+        desc.fFormat = MHWRender::kR8_UNORM;
+        if (spec.type == GL_FLOAT)
+            desc.fFormat = MHWRender::kR32_FLOAT;
+        else if (spec.type == GL_HALF_FLOAT)
+            desc.fFormat = MHWRender::kR16_FLOAT;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
     case GL_RGB:
         if (spec.type == GL_FLOAT) {
             desc.fFormat = MHWRender::kR32G32B32_FLOAT;
             texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        } else if (spec.type == GL_HALF_FLOAT) {
+            // R16G16B16 is not supported by VP2. Converted to R16G16B16A16.
+            constexpr int bpp_8 = 8;
+
+            desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+            desc.fBytesPerRow = spec.width * bpp_8;
+            desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+            GfHalf               opaqueAlpha(1.0f);
+            const unsigned short alphaBits = opaqueAlpha.bits();
+            const unsigned char  lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
+            const unsigned char  highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
+
+            std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+            for (int y = 0; y < spec.height; y++) {
+                for (int x = 0; x < spec.width; x++) {
+                    const int t = spec.width * y + x;
+                    texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                    texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                    texels[t * bpp_8 + 2] = storage[t * bpp + 2];
+                    texels[t * bpp_8 + 3] = storage[t * bpp + 3];
+                    texels[t * bpp_8 + 4] = storage[t * bpp + 4];
+                    texels[t * bpp_8 + 5] = storage[t * bpp + 5];
+                    texels[t * bpp_8 + 6] = lowAlpha;
+                    texels[t * bpp_8 + 7] = highAlpha;
+                }
+            }
+
+            texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
         } else {
             // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
             constexpr int bpp_4 = 4;
@@ -562,6 +648,8 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     case GL_RGBA:
         if (spec.type == GL_FLOAT) {
             desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+        } else if (spec.type == GL_HALF_FLOAT) {
+            desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
         } else {
             desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
             isColorSpaceSRGB = image->IsColorSpaceSRGB();

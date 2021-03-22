@@ -44,6 +44,10 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
+#if defined(BUILD_HDMAYA)
+#include <mayaUsd/render/mayaToHydra/utils.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 const MString UsdMayaProxyDrawOverride::drawDbClassification(
@@ -186,6 +190,15 @@ MUserData* UsdMayaProxyDrawOverride::prepareForDraw(
     if (objPath.apiType() == MFn::kInstancer) {
         return nullptr;
     }
+
+#if defined(BUILD_HDMAYA)
+    // If the current viewport renderer is an mtoh one, skip this update, as
+    // mtoh already has special handling for proxy shapes, and we don't want to
+    // build out a render index we don't need
+    if (IsMtohRenderOverride(frameContext)) {
+        return nullptr;
+    }
+#endif
 
     MayaUsdProxyShapeBase* shape = MayaUsdProxyShapeBase::GetShapeAtDagPath(objPath);
     if (!shape) {

@@ -232,11 +232,10 @@ void MayaLayerEditorWindow::selectPrimsWithSpec()
 
 void MayaLayerEditorWindow::selectProxyShape(const char* shapePath)
 {
-    auto prim = UsdMayaQuery::GetPrim(shapePath);
-    if (prim) {
-        auto stage = prim.GetStage();
-        if (stage != nullptr) {
-            _sessionState.setStage(stage);
+    SessionState::StageEntry entry;
+    if (_sessionState.getStageEntry(&entry, shapePath)) {
+        if (entry._stage != nullptr) {
+            _sessionState.setStageEntry(entry);
         }
     }
 }

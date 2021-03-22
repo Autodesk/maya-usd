@@ -41,7 +41,7 @@ Ufe::Object3d::Ptr UsdObject3dHandler::object3d(const Ufe::SceneItem::Ptr& item)
 
     // Test if this item is imageable. If not, then we cannot create an object3d
     // interface for it, which is a valid case (such as for a material node type).
-    UsdGeomImageable primSchema(usdItem->prim());
+    PXR_NS::UsdGeomImageable primSchema(usdItem->prim());
     if (!primSchema)
         return nullptr;
 

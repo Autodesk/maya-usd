@@ -17,14 +17,17 @@
 #include "UsdTransform3dSetObjectMatrix.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/XformOpUtils.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdTransform3dSetObjectMatrix::UsdTransform3dSetObjectMatrix(
     const Ufe::Transform3d::Ptr& wrapped,
-    const GfMatrix4d&            mlInv,
-    const GfMatrix4d&            mrInv)
+    const PXR_NS::GfMatrix4d&    mlInv,
+    const PXR_NS::GfMatrix4d&    mrInv)
     : UsdTransform3dBase(std::dynamic_pointer_cast<UsdSceneItem>(wrapped->sceneItem()))
     , _wrapped(wrapped)
     , _mlInv(mlInv)
@@ -35,28 +38,30 @@ UsdTransform3dSetObjectMatrix::UsdTransform3dSetObjectMatrix(
 /* static */
 UsdTransform3dSetObjectMatrix::Ptr UsdTransform3dSetObjectMatrix::create(
     const Ufe::Transform3d::Ptr& wrapped,
-    const GfMatrix4d&            mlInv,
-    const GfMatrix4d&            mrInv)
+    const PXR_NS::GfMatrix4d&    mlInv,
+    const PXR_NS::GfMatrix4d&    mrInv)
 {
     return std::make_shared<UsdTransform3dSetObjectMatrix>(wrapped, mlInv, mrInv);
 }
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::translation() const
 {
-    TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::translation()");
-    return Ufe::Vector3d(0, 0, 0);
+    // Must extract whole-object translation from the whole object's local
+    // matrix.  Base class matrix() considers all the prim's transform ops,
+    // which is exactly what we want.
+    return getTranslation(UsdTransform3dBase::matrix());
 }
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::rotation() const
 {
-    TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::rotation()");
-    return Ufe::Vector3d(0, 0, 0);
+    // See translation() comments.
+    return getRotation(UsdTransform3dBase::matrix());
 }
 
 Ufe::Vector3d UsdTransform3dSetObjectMatrix::scale() const
 {
-    TF_CODING_ERROR("Illegal call to unimplemented UsdTransform3dSetObjectMatrix::scale()");
-    return Ufe::Vector3d(1, 1, 1);
+    // See translation() comments.
+    return getScale(UsdTransform3dBase::matrix());
 }
 
 Ufe::SetMatrix4dUndoableCommand::Ptr

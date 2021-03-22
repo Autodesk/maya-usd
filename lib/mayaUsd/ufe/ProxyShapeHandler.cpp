@@ -53,14 +53,14 @@ std::vector<std::string> ProxyShapeHandler::getAllNames()
 }
 
 /*static*/
-UsdStageWeakPtr ProxyShapeHandler::dagPathToStage(const std::string& dagPath)
+PXR_NS::UsdStageWeakPtr ProxyShapeHandler::dagPathToStage(const std::string& dagPath)
 {
-    auto prim = UsdMayaQuery::GetPrim(dagPath);
+    auto prim = PXR_NS::UsdMayaQuery::GetPrim(dagPath);
     return prim ? prim.GetStage() : nullptr;
 }
 
 /*static*/
-std::vector<UsdStageRefPtr> ProxyShapeHandler::getAllStages()
+std::vector<PXR_NS::UsdStageRefPtr> ProxyShapeHandler::getAllStages()
 {
     // According to Pixar, the following should work:
     //   return UsdMayaStageCache::Get().GetAllStages();
@@ -70,11 +70,11 @@ std::vector<UsdStageRefPtr> ProxyShapeHandler::getAllStages()
     // When using an unmodified AL plugin, the following line crashes
     // Maya, so it requires the AL proxy shape inheritance from
     // MayaUsdProxyShapeBase.  PPT, 12-Apr-2019.
-    std::vector<UsdStageRefPtr> stages;
-    auto                        allNames = getAllNames();
+    std::vector<PXR_NS::UsdStageRefPtr> stages;
+    auto                                allNames = getAllNames();
     stages.reserve(allNames.size());
     for (const auto& name : allNames) {
-        UsdStageWeakPtr stage = dagPathToStage(name);
+        PXR_NS::UsdStageWeakPtr stage = dagPathToStage(name);
         if (stage) {
             stages.push_back(stage);
         }

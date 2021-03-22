@@ -346,10 +346,11 @@ void _getColorData(
             colorArray = value.UncheckedGet<VtVec3fArray>();
             interpolation = info->_source.interpolation;
         }
-    } else {
+    }
+
+    if (colorArray.empty()) {
         // If color/opacity is not found, the 18% gray color will be used
         // to match the default color of Hydra Storm.
-        TF_VERIFY(colorArray.empty());
         colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
         interpolation = HdInterpolationConstant;
 
@@ -370,8 +371,9 @@ void _getOpacityData(
             opacityArray = value.UncheckedGet<VtFloatArray>();
             interpolation = info->_source.interpolation;
         }
-    } else {
-        TF_VERIFY(opacityArray.empty());
+    }
+
+    if (opacityArray.empty()) {
         opacityArray.push_back(1.0f);
         interpolation = HdInterpolationConstant;
 
@@ -544,42 +546,79 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 = _getInfo(_meshSharedData->_primvarInfo, HdVP2Tokens->displayColorAndOpacity);
         }
 
-        if (!colorAndOpacityInfo->_buffer) {
-            const MHWRender::MVertexBufferDescriptor vbDesc(
-                "", MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
+        if (colorInterp == HdInterpolationInstance || alphaInterp == HdInterpolationInstance) {
+            TF_VERIFY(!GetInstancerId().IsEmpty());
+            VtIntArray instanceIndices = delegate->GetInstanceIndices(GetInstancerId(), GetId());
+            size_t     numInstances = instanceIndices.size();
+            colorAndOpacityInfo->_extraInstanceData.setLength(
+                numInstances * kNumColorChannels); // the data is a vec4
+            void* bufferData = &colorAndOpacityInfo->_extraInstanceData[0];
 
-            colorAndOpacityInfo->_buffer.reset(new MHWRender::MVertexBuffer(vbDesc));
-        }
+            size_t alphaChannelOffset = 3;
+            for (size_t instance = 0; instance < numInstances; instance++) {
+                int      index = instanceIndices[instance];
+                GfVec3f* color = reinterpret_cast<GfVec3f*>(
+                    reinterpret_cast<float*>(&static_cast<GfVec4f*>(bufferData)[instance]));
+                float* alpha
+                    = reinterpret_cast<float*>(&static_cast<GfVec4f*>(bufferData)[instance])
+                    + alphaChannelOffset;
 
-        void* bufferData = _meshSharedData->_numVertices > 0
-            ? colorAndOpacityInfo->_buffer->acquire(_meshSharedData->_numVertices, true)
-            : nullptr;
+                if (colorInterp == HdInterpolationInstance) {
+                    *color = colorArray[index];
+                } else if (colorInterp == HdInterpolationConstant) {
+                    *color = colorArray[0];
+                } else {
+                    TF_WARN("Unsupported combination of display color interpolation and display "
+                            "opacity interpolation instance.");
+                }
 
-        // Fill color and opacity into the float4 color stream.
-        if (bufferData) {
-            _FillPrimvarData(
-                static_cast<GfVec4f*>(bufferData),
-                _meshSharedData->_numVertices,
-                0,
-                _meshSharedData->_renderingToSceneFaceVtxIds,
-                _rprimId,
-                _meshSharedData->_topology,
-                HdTokens->displayColor,
-                colorArray,
-                colorInterp);
+                if (alphaInterp == HdInterpolationInstance) {
+                    *alpha = alphaArray[index];
+                } else if (alphaInterp == HdInterpolationConstant) {
+                    *alpha = alphaArray[0];
+                } else {
+                    TF_WARN("Unsupported combination of display color interpolation instance and "
+                            "display opacity interpolation.");
+                }
+            }
+        } else {
+            if (!colorAndOpacityInfo->_buffer) {
+                const MHWRender::MVertexBufferDescriptor vbDesc(
+                    "", MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
 
-            _FillPrimvarData(
-                static_cast<GfVec4f*>(bufferData),
-                _meshSharedData->_numVertices,
-                3,
-                _meshSharedData->_renderingToSceneFaceVtxIds,
-                _rprimId,
-                _meshSharedData->_topology,
-                HdTokens->displayOpacity,
-                alphaArray,
-                alphaInterp);
+                colorAndOpacityInfo->_buffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+            }
 
-            _CommitMVertexBuffer(colorAndOpacityInfo->_buffer.get(), bufferData);
+            void* bufferData = _meshSharedData->_numVertices > 0
+                ? colorAndOpacityInfo->_buffer->acquire(_meshSharedData->_numVertices, true)
+                : nullptr;
+
+            // Fill color and opacity into the float4 color stream.
+            if (bufferData) {
+                _FillPrimvarData(
+                    static_cast<GfVec4f*>(bufferData),
+                    _meshSharedData->_numVertices,
+                    0,
+                    _meshSharedData->_renderingToSceneFaceVtxIds,
+                    _rprimId,
+                    _meshSharedData->_topology,
+                    HdTokens->displayColor,
+                    colorArray,
+                    colorInterp);
+
+                _FillPrimvarData(
+                    static_cast<GfVec4f*>(bufferData),
+                    _meshSharedData->_numVertices,
+                    3,
+                    _meshSharedData->_renderingToSceneFaceVtxIds,
+                    _rprimId,
+                    _meshSharedData->_topology,
+                    HdTokens->displayOpacity,
+                    alphaArray,
+                    alphaInterp);
+
+                _CommitMVertexBuffer(colorAndOpacityInfo->_buffer.get(), bufferData);
+            }
         }
     }
 
@@ -851,6 +890,11 @@ void HdVP2Mesh::Sync(
         SetMaterialId(materialId);
 #endif
     }
+
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    // Update our instance topology if necessary.
+    _UpdateInstancer(delegate, dirtyBits);
+#endif
 
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
@@ -1576,11 +1620,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             }
 
-            // TODO: this used to get called when there was something in the color or opacity
-            // primvar map, but it seems to rely on the material being dirtied at the same time? Use
-            // fallback shader if there is no material binding or we failed to create a shader
+            // Use fallback shader if there is no material binding or we failed to create a shader
             // instance for the material.
-            if (!stateToCommit._shader && _PrimvarIsRequired(HdTokens->displayColor)) {
+            if (!drawItemData._shader && _PrimvarIsRequired(HdTokens->displayColor)) {
                 MHWRender::MShaderInstance* shader = nullptr;
 
                 HdInterpolation colorInterp = HdInterpolationConstant;
@@ -1591,11 +1633,15 @@ void HdVP2Mesh::_UpdateDrawItem(
                 _getColorData(_meshSharedData->_primvarInfo, colorArray, colorInterp);
                 _getOpacityData(_meshSharedData->_primvarInfo, alphaArray, alphaInterp);
 
-                if (colorInterp == HdInterpolationConstant
-                    && alphaInterp == HdInterpolationConstant) {
+                if ((colorInterp == HdInterpolationConstant
+                     || colorInterp == HdInterpolationInstance)
+                    && (alphaInterp == HdInterpolationConstant
+                        || alphaInterp == HdInterpolationInstance)) {
                     const GfVec3f& clr3f = MayaUsd::utils::ConvertLinearToMaya(colorArray[0]);
                     const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
                     shader = _delegate->GetFallbackShader(color);
+                    // The color of the fallback shader is ignored when the interpolation is
+                    // instance
                 } else {
                     shader = _delegate->GetFallbackCPVShader();
                 }
@@ -1690,11 +1736,6 @@ void HdVP2Mesh::_UpdateDrawItem(
     // pulls them every time something changes.
     // If the mesh is instanced but has 0 instance transforms remember that
     // so the render item can be hidden.
-
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-    // Update our instance topology if necessary.
-    _UpdateInstancer(sceneDelegate, &itemDirtyBits);
-#endif
 
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
@@ -1908,6 +1949,19 @@ void HdVP2Mesh::_UpdateDrawItem(
                         *renderItem, stateToCommit._instanceTransforms);
                 }
 
+                // upload any extra instance data
+                for (auto& entry : *primvarInfo) {
+                    const MFloatArray& extraInstanceData = entry.second->_extraInstanceData;
+                    if (extraInstanceData.length() == 0)
+                        continue;
+
+                    const TfToken& primvarName = entry.first;
+                    if (primvarName == HdVP2Tokens->displayColorAndOpacity) {
+                        drawScene.setExtraInstanceData(
+                            *renderItem, kDiffuseColorStr, extraInstanceData);
+                    }
+                }
+
                 if (stateToCommit._instanceColors.length()
                     == newInstanceCount * kNumColorChannels) {
                     drawScene.setExtraInstanceData(
@@ -1933,6 +1987,19 @@ void HdVP2Mesh::_UpdateDrawItem(
                     == newInstanceCount * kNumColorChannels) {
                     drawScene.setExtraInstanceData(
                         *renderItem, kSolidColorStr, stateToCommit._instanceColors);
+                }
+
+                // upload any extra instance data
+                for (auto& entry : *primvarInfo) {
+                    const MFloatArray& extraInstanceData = entry.second->_extraInstanceData;
+                    if (extraInstanceData.length() == 0)
+                        continue;
+
+                    const TfToken& primvarName = entry.first;
+                    if (primvarName == HdVP2Tokens->displayColorAndOpacity) {
+                        drawScene.setExtraInstanceData(
+                            *renderItem, kDiffuseColorStr, extraInstanceData);
+                    }
                 }
 
                 stateToCommit._renderItemData._usingInstancedDraw = true;
@@ -2122,27 +2189,56 @@ void HdVP2Mesh::_UpdatePrimvarSources(
 {
     const SdfPath& id = GetId();
 
+    auto updatePrimvarInfo
+        = [&](const TfToken& name, const VtValue& value, const HdInterpolation interpolation) {
+              PrimvarInfo* info = _getInfo(_meshSharedData->_primvarInfo, name);
+              if (info) {
+                  info->_source.data = value;
+                  info->_source.interpolation = interpolation;
+                  info->_source.dataSource = PrimvarSource::Primvar;
+              } else {
+                  _meshSharedData->_primvarInfo[name] = std::make_unique<PrimvarInfo>(
+                      PrimvarSource(value, interpolation, PrimvarSource::Primvar), nullptr);
+              }
+          };
+
     TfTokenVector::const_iterator begin = requiredPrimvars.cbegin();
     TfTokenVector::const_iterator end = requiredPrimvars.cend();
+
+    // inspired by HdStInstancer::_SyncPrimvars
+    // Get any required instanced primvars from the instancer. Get these before we get
+    // any rprims from the rprim itself. If both are present, the rprim's values override
+    // the instancer's value.
+    const SdfPath& instancerId = GetInstancerId();
+    if (!instancerId.IsEmpty()) {
+        HdPrimvarDescriptorVector instancerPrimvars
+            = sceneDelegate->GetPrimvarDescriptors(instancerId, HdInterpolationInstance);
+        for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
+            if (std::find(begin, end, pv.name) == end) {
+                // erase the unused primvar so we don't hold onto stale data
+                _meshSharedData->_primvarInfo.erase(pv.name);
+            } else {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)) {
+                    const VtValue value = sceneDelegate->Get(instancerId, pv.name);
+                    updatePrimvarInfo(pv.name, value, HdInterpolationInstance);
+                }
+            }
+        }
+    }
 
     for (size_t i = 0; i < HdInterpolationCount; i++) {
         const HdInterpolation           interp = static_cast<HdInterpolation>(i);
         const HdPrimvarDescriptorVector primvars = GetPrimvarDescriptors(sceneDelegate, interp);
 
         for (const HdPrimvarDescriptor& pv : primvars) {
-            if (std::find(begin, end, pv.name) != end) {
+            if (std::find(begin, end, pv.name) == end) {
+                // erase the unused primvar so we don't hold onto stale data
+                _meshSharedData->_primvarInfo.erase(pv.name);
+            } else {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                     const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                    PrimvarInfo*  info = _getInfo(_meshSharedData->_primvarInfo, pv.name);
-                    if (info) {
-                        info->_source.data = value;
-                    } else {
-                        _meshSharedData->_primvarInfo[pv.name] = std::make_unique<PrimvarInfo>(
-                            PrimvarSource(value, interp, PrimvarSource::Primvar), nullptr);
-                    }
+                    updatePrimvarInfo(pv.name, value, interp);
                 }
-            } else {
-                _meshSharedData->_primvarInfo.erase(pv.name);
             }
         }
     }

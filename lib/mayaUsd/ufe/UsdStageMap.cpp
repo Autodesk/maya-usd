@@ -23,6 +23,8 @@
 
 #include <cassert>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
 
 MObjectHandle proxyShapeHandle(const Ufe::Path& path)

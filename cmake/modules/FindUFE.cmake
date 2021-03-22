@@ -46,10 +46,6 @@ if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
 
     if("${UFE_MAJOR_VERSION}" STREQUAL "0")
         math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
-    elseif("${UFE_VERSION}" STREQUAL "2.0.0")
-        # Temporary. Once next Maya PR is released with UFE v2.0.0 this should
-        # be removed (along with all the UFE_PREVIEW_VERSION_NUM checks).
-        set(UFE_PREVIEW_VERSION_NUM 2036)
     endif()
 
     file(STRINGS

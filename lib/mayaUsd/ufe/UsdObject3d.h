@@ -37,18 +37,15 @@ public:
     static UsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
 
     // Ufe::Object3d overrides
-    Ufe::SceneItem::Ptr sceneItem() const override;
-    Ufe::BBox3d         boundingBox() const override;
-    bool                visibility() const override;
-    void                setVisibility(bool vis) override;
-
-#if UFE_PREVIEW_VERSION_NUM >= 2034
+    Ufe::SceneItem::Ptr       sceneItem() const override;
+    Ufe::BBox3d               boundingBox() const override;
+    bool                      visibility() const override;
+    void                      setVisibility(bool vis) override;
     Ufe::UndoableCommand::Ptr setVisibleCmd(bool vis) override;
-#endif
 
 private:
     UsdSceneItem::Ptr fItem;
-    UsdPrim           fPrim;
+    PXR_NS::UsdPrim   fPrim;
 
 }; // UsdObject3d
 

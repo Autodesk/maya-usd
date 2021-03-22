@@ -1,25 +1,251 @@
+# Copyright 2021 Autodesk
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import fnmatch
 import ufe
-import mayaUsd.ufe
+import maya.mel as mel
+import maya.cmds as cmds
+import mayaUsd.ufe as mayaUsdUfe
+import mayaUsd.lib as mayaUsdLib
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
+import maya.internal.common.ae.custom as aecustom
+from maya.common.ui import LayoutManager
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
-from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol
+from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf
+
+def getPrettyName(name):
+    # Put a space in the name when preceded by a capital letter.
+    # Exceptions: Number followed by capital
+    #             Multiple capital letters together
+    prettyName = str(name[0])
+    nbChars = len(name)
+    for i in range(1, nbChars):
+        if name[i].isupper() and not name[i-1].isdigit():
+            if (i < (nbChars-1)) and not name[i+1].isupper():
+                prettyName += ' '
+            prettyName += name[i]
+        elif name[i] == '_':
+            continue
+        else:
+            prettyName += name[i]
+
+    # Make each word start with an uppercase.
+    return prettyName.title()
+
+# Custom control, but does not have any UI. Instead we use
+# this control to be notified from UFE when any attribute has changed
+# so we can update the AE. This is to fix refresh issue
+# when transform is added to a prim.
+class UfeAttributesObserver(ufe.Observer):
+    def __init__(self, item):
+        super(UfeAttributesObserver, self).__init__()
+        self._item = item
+
+    def __del__(self):
+        ufe.Attributes.removeObserver(self)
+
+    def __call__(self, notification):
+        if isinstance(notification, ufe.AttributeValueChanged):
+            if notification.name() == "xformOpOrder":
+                mel.eval("evalDeferred(\"AEbuildControls\");")
+
+    def onCreate(self, *args):
+        ufe.Attributes.addObserver(self._item, self)
+
+    def onReplace(self, *args):
+        pass
+
+class MetaDataCustomControl(aecustom.CustomControl):
+    # Custom control for all prim metadata we want to display.
+    def __init__(self, prim, *args, **kwargs):
+        self.prim = prim
+        super(MetaDataCustomControl, self).__init__(args, kwargs)
+
+        # There are four metadata that we always show: primPath, kind, active, instanceable
+        # We use a dictionary to store the various other metadata that this prim contains.
+        self.extraMetadata = dict()
+
+    def buildControlUI(self):
+        # Should we display nice names in AE?
+        useNiceName = True
+        if cmds.optionVar(exists='attrEditorIsLongName'):
+            useNiceName = (cmds.optionVar(q='attrEditorIsLongName') ==1)
+
+        # Metadata: PrimPath
+        # The prim path is for display purposes only - it is not editable, but we
+        # allow keyboard focus so you copy the value.
+        self.primPath = cmds.textFieldGrp(label='Prim Path', editable=False, enableKeyboardFocus=True)
+
+        # Metadata: Kind
+        # We add the known Kind types, in a certain order ("model hierarchy") and then any
+        # extra ones that were added by extending the kind registry.
+        # Note: we remove the "model" kind because in the USD docs it states, 
+        #       "No prim should have the exact kind "model".
+        allKinds = Kind.Registry.GetAllKinds()
+        allKinds.remove(Kind.Tokens.model)
+        knownKinds = [Kind.Tokens.group, Kind.Tokens.assembly, Kind.Tokens.component, Kind.Tokens.subcomponent]
+        temp1 = [ele for ele in allKinds if ele not in knownKinds]
+        knownKinds.extend(temp1)
+
+        # If this prim's kind is not registered, we need to manually
+        # add it to the list.
+        model = Usd.ModelAPI(self.prim)
+        primKind = model.GetKind()
+        if primKind not in knownKinds:
+            knownKinds.insert(0, primKind)
+        if '' not in knownKinds:
+            knownKinds.insert(0, '')    # Set metadata value to "" (or empty).
+
+        self.kind = cmds.optionMenuGrp(label='Kind',
+                                       cc=self._onKindChanged,
+                                       ann='Kind is a type of metadata (a pre-loaded string value) used to classify prims in USD. Set the classification value from the dropdown to assign a kind category to a prim. Set a kind value to activate selection by kind.')
+
+        for ele in knownKinds:
+            cmds.menuItem(label=ele)
+
+        # Metadata: Active
+        self.active = cmds.checkBoxGrp(label='Active',
+                                       ncb=1,
+                                       cc1=self._onActiveChanged,
+                                       ann='If selected, the prim is set to active and contributes to the composition of a stage. If a prim is set to inactive, it doesn’t contribute to the composition of a stage (it gets striked out in the Outliner and is deactivated from the Viewport).')
+
+        # Metadata: Instanceable
+        self.instan = cmds.checkBoxGrp(label='Instanceable',
+                                       ncb=1,
+                                       cc1=self._onInstanceableChanged,
+                                       ann='If selected, instanceable is set to true for the prim and the prim is considered a candidate for instancing. If deselected, instanceable is set to false.')
+
+        # Get all the other Metadata and remove the ones above, as well as a few
+        # we don't ever want to show.
+        allMetadata = self.prim.GetAllMetadata()
+        keysToDelete = ['kind', 'active', 'instanceable', 'typeName', 'documentation']
+        for key in keysToDelete:
+            allMetadata.pop(key, None)
+        if allMetadata:
+            cmds.separator(h=10, style='single', hr=True)
+
+            for k in allMetadata:
+                # All extra metadata is for display purposes only - it is not editable, but we
+                # allow keyboard focus so you copy the value.
+                mdLabel = getPrettyName(k) if useNiceName else k
+                self.extraMetadata[k] = cmds.textFieldGrp(label=mdLabel, editable=False, enableKeyboardFocus=True)
+
+        # Update all metadata values.
+        self.refresh()
+
+    def refresh(self):
+        # PrimPath
+        cmds.textFieldGrp(self.primPath, edit=True, text=str(self.prim.GetPath()))
+
+        # Kind
+        model = Usd.ModelAPI(self.prim)
+        primKind = model.GetKind()
+        if not primKind:
+            # Special case to handle the empty string (for meta data value empty).
+            cmds.optionMenuGrp(self.kind, edit=True, select=1)
+        else:
+            cmds.optionMenuGrp(self.kind, edit=True, value=primKind)
+
+        # Active
+        cmds.checkBoxGrp(self.active, edit=True, value1=self.prim.IsActive())
+
+        # Instanceable
+        cmds.checkBoxGrp(self.instan, edit=True, value1=self.prim.IsInstanceable())
+
+        # All other metadata types
+        for k in self.extraMetadata:
+            v = self.prim.GetMetadata(k) if k != 'customData' else self.prim.GetCustomData()
+            cmds.textFieldGrp(self.extraMetadata[k], edit=True, text=str(v))
+
+    def _onKindChanged(self, value):
+        with mayaUsdLib.UsdUndoBlock():
+            model = Usd.ModelAPI(self.prim)
+            model.SetKind(value)
+
+    def _onActiveChanged(self, value):
+        with mayaUsdLib.UsdUndoBlock():
+            self.prim.SetActive(value)
+
+    def _onInstanceableChanged(self, value):
+        with mayaUsdLib.UsdUndoBlock():
+            self.prim.SetInstanceable(value)
+
+class NoticeListener(object):
+    # Inserted as a custom control, but does not have any UI. Instead we use
+    # this control to be notified from USD when any metadata has changed
+    # so we can update the AE fields.
+    def __init__(self, prim, metadataControls):
+        self.prim = prim
+        self.metadataControls = metadataControls
+
+    def onCreate(self, *args):
+        self.listener = Tf.Notice.Register(Usd.Notice.ObjectsChanged,
+                                           self.__OnPrimsChanged, self.prim.GetStage())
+        pname = cmds.setParent(q=True)
+        cmds.scriptJob(uiDeleted=[pname, self.onClose], runOnce=True)
+
+    def onReplace(self, *args):
+        pass
+
+    def onClose(self):
+        if self.listener:
+            self.listener.Revoke()
+            self.listener = None
+
+    def __OnPrimsChanged(self, notice, sender):
+        if notice.HasChangedFields(self.prim):
+            # Iterate thru all the metadata controls (we were given when created) and
+            # call the refresh method (if it exists).
+            for ctrl in self.metadataControls:
+                if hasattr(ctrl, 'refresh'):
+                    ctrl.refresh()
+
 
 # SchemaBase template class for categorization of the attributes.
-class AETemplate(ufeAeTemplate.Template):
+# We no longer use the base class ufeAeTemplate.Template as we want to control
+# the placement of the metadata at the bottom (after extra attributes).
+class AETemplate(object):
     '''
     This system of schema inherits groups attributes per schema helping the user
     learn how attributes are stored.
     '''
     def __init__(self, ufeSceneItem):
-        # Get the UFE Attributes interface for this scene item.
-        self.attrS = ufe.Attributes.attributes(ufeSceneItem)
+        self.item = ufeSceneItem
+        self.prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(self.item.path()))
 
-        # And finally call our base class init which will in turn
-        # build the UI.
-        super(AETemplate, self).__init__(ufeSceneItem)
+        # Get the UFE Attributes interface for this scene item.
+        self.attrS = ufe.Attributes.attributes(self.item)
+
+        cmds.editorTemplate(beginScrollLayout=True)
+        self.buildUI()
+        cmds.editorTemplate(addExtraControls=True)
+        self.createMetadataSection()
+        cmds.editorTemplate(endScrollLayout=True)
+
+    @staticmethod
+    def addControls(controls):
+        for c in controls:
+            cmds.editorTemplate(addControl=[c])
+
+    @staticmethod
+    def defineCustom(customObj, attrs=[]):
+        create = lambda *args : customObj.onCreate(args)
+        replace = lambda *args : customObj.onReplace(args)
+        cmds.editorTemplate(attrs, callCustom=[create, replace])
 
     def createSection(self, layoutName, attrList, collapse=False):
         # We create the section named "layoutName" if at least one
@@ -61,33 +287,13 @@ class AETemplate(ufeAeTemplate.Template):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        # Put a space in the name when preceded by a capital letter.
-        # Exceptions: Number followed by capital
-        #             Multiple capital letters together
-        catName = str(schemaTypeName[0])
-        nbChars = len(schemaTypeName)
-        for i in range(1, nbChars):
-            if schemaTypeName[i].isupper() and not schemaTypeName[i-1].isdigit():
-                if (i < (nbChars-1)) and not schemaTypeName[i+1].isupper():
-                    catName = catName + str(' ') + str(schemaTypeName[i])
-                else:
-                    catName = catName + str(schemaTypeName[i])
-            elif schemaTypeName[i] == '_':
-                continue
-            else:
-                catName = catName + str(schemaTypeName[i])
+        return getPrettyName(schemaTypeName)
 
-        # Make each word start with an uppercase.
-        catName = catName.title()
-
-        return catName
-
-    def createTransformAttributesSection(self, ufeSceneItem, sectionName, attrsToAdd):
+    def createTransformAttributesSection(self, sectionName, attrsToAdd):
         # Get the xformOp order and add those attributes (in order)
         # followed by the xformOp order attribute.
         allAttrs = self.attrS.attributeNames
-        prim = mayaUsd.ufe.getPrimFromRawItem(ufeSceneItem.getRawAddress())
-        geomX = UsdGeom.Xformable(prim)
+        geomX = UsdGeom.Xformable(self.prim)
         xformOps = geomX.GetOrderedXformOps()
         xformOpOrderNames = [op.GetOpName() for op in xformOps]
         xformOpOrderNames.append(UsdGeom.Tokens.xformOpOrder)
@@ -105,12 +311,24 @@ class AETemplate(ufeAeTemplate.Template):
             # Then add any reamining Xformable attributes
             self.addControls(attrsToAdd)
 
-    def buildUI(self, ufeSceneItem):
+            # Add a custom control for UFE attribute changed.
+            t3dObs = UfeAttributesObserver(self.item)
+            self.defineCustom(t3dObs)
+
+    def createMetadataSection(self):
+        # We don't use createSection() because these are metadata (not attributes).
+        with ufeAeTemplate.Layout(self, 'Metadata', collapse=True):
+            metaDataControl = MetaDataCustomControl(self.prim)
+            usdNoticeControl = NoticeListener(self.prim, [metaDataControl])
+            self.defineCustom(metaDataControl)
+            self.defineCustom(usdNoticeControl)
+
+    def buildUI(self):
         usdSch = Usd.SchemaRegistry()
 
         # We use UFE for the ancestor node types since it caches the
         # results by node type.
-        for schemaType in ufeSceneItem.ancestorNodeTypes():
+        for schemaType in self.item.ancestorNodeTypes():
             schemaType = usdSch.GetTypeFromName(schemaType)
             schemaTypeName = schemaType.typeName
             sectionName = self.sectionNameFromSchema(schemaTypeName)
@@ -119,6 +337,6 @@ class AETemplate(ufeAeTemplate.Template):
 
                 # We have a special case when building the Xformable section.
                 if schemaTypeName == 'UsdGeomXformable':
-                    self.createTransformAttributesSection(ufeSceneItem, sectionName, attrsToAdd)
+                    self.createTransformAttributesSection(sectionName, attrsToAdd)
                 else:
                     self.createSection(sectionName, attrsToAdd)

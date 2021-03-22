@@ -387,8 +387,6 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(filePathAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    retValue = attributeAffects(primPathAttr, inStageDataCachedAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(primPathAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(primPathAttr, outStageCacheIdAttr);

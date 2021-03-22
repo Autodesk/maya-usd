@@ -23,8 +23,6 @@
 #include <string>
 #include <vector>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -49,9 +47,9 @@ public:
 
     static std::vector<std::string> getAllNames();
 
-    static UsdStageWeakPtr dagPathToStage(const std::string& dagPath);
+    static PXR_NS::UsdStageWeakPtr dagPathToStage(const std::string& dagPath);
 
-    static std::vector<UsdStageRefPtr> getAllStages();
+    static std::vector<PXR_NS::UsdStageRefPtr> getAllStages();
 
 private:
     static const std::string fMayaUsdGatewayNodeType;

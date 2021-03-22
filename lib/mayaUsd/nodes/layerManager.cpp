@@ -194,12 +194,14 @@ public:
 
     static LayerDatabase& instance();
     static void           setBatchSaveDelegate(BatchSaveDelegate delegate);
-    static void           prepareForWriteCheck(bool*, void*);
+    static void           prepareForSaveCheck(bool*, void*);
+    static void           prepareForExportCheck(bool*, void*);
+    static void           prepareForWriteCheck(bool*, bool);
     static void           loadLayersPostRead(void*);
     static void           cleanUpNewScene(void*);
     static void           removeManagerNode(MayaUsd::LayerManager* lm = nullptr);
 
-    bool getStagesToSave();
+    bool getStagesToSave(bool isExport);
     bool supportedNodeType(MTypeId type);
     void addSupportForNodeType(MTypeId type);
     void removeSupportForNodeType(MTypeId type);
@@ -269,9 +271,9 @@ void LayerDatabase::registerCallbacks()
 {
     if (0 == preSaveCallbackId) {
         preSaveCallbackId = MSceneMessage::addCallback(
-            MSceneMessage::kBeforeSaveCheck, LayerDatabase::prepareForWriteCheck);
+            MSceneMessage::kBeforeSaveCheck, LayerDatabase::prepareForSaveCheck);
         preExportCallbackId = MSceneMessage::addCallback(
-            MSceneMessage::kBeforeExportCheck, LayerDatabase::prepareForWriteCheck);
+            MSceneMessage::kBeforeExportCheck, LayerDatabase::prepareForExportCheck);
         postNewCallbackId
             = MSceneMessage::addCallback(MSceneMessage::kAfterNew, LayerDatabase::cleanUpNewScene);
         preOpenCallbackId = MSceneMessage::addCallback(
@@ -321,11 +323,21 @@ void LayerDatabase::setBatchSaveDelegate(BatchSaveDelegate delegate)
     _batchSaveDelegate = delegate;
 }
 
-void LayerDatabase::prepareForWriteCheck(bool* retCode, void*)
+void LayerDatabase::prepareForSaveCheck(bool* retCode, void*)
+{
+    prepareForWriteCheck(retCode, false);
+}
+
+void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
+{
+    prepareForWriteCheck(retCode, true);
+}
+
+void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
 {
     cleanUpNewScene(nullptr);
 
-    if (LayerDatabase::instance().getStagesToSave()) {
+    if (LayerDatabase::instance().getStagesToSave(isExport)) {
 
         int dialogResult = true;
 
@@ -343,10 +355,10 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, void*)
     }
 }
 
-bool LayerDatabase::getStagesToSave()
+bool LayerDatabase::getStagesToSave(bool isExport)
 {
     auto allStages = MayaUsd::ufe::getAllStages();
-    bool checkSelection = (MFileIO::kExportTypeSelected == MFileIO::exportType());
+    bool checkSelection = isExport && (MFileIO::kExportTypeSelected == MFileIO::exportType());
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
 
     _stagesToSave.clear();

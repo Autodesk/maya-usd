@@ -17,8 +17,6 @@
 
 #include "qtUtils.h"
 
-#include <QtWidgets/QMessageBox>
-
 namespace {
 
 // returns a bullet-ed html text for a list of layers tree items
@@ -45,7 +43,8 @@ bool confirmDialog_internal(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList,
-    const QString*     okButtonText)
+    const QString*     okButtonText,
+    QMessageBox::Icon  icon)
 {
     QMessageBox msgBox;
     // there is no title bar text on mac, instead it's bold text
@@ -54,11 +53,18 @@ bool confirmDialog_internal(
     else
         msgBox.setWindowTitle(title);
 
+    const bool showIcon = icon != QMessageBox::Icon::NoIcon;
+    msgBox.setIcon(icon);
+
     QString text(message);
     text += getLayerBulletList(bulletList);
-    msgBox.setInformativeText(text);
+    if (showIcon && !IS_MAC_OS) {
+        msgBox.setText(text);
+    } else {
+        msgBox.setInformativeText(text);
+    }
 
-    if (!IS_MAC_OS) {
+    if (!IS_MAC_OS && !showIcon) {
         auto margins = msgBox.layout()->contentsMargins();
         margins.setTop(0);
         msgBox.layout()->setContentsMargins(margins);
@@ -70,7 +76,9 @@ bool confirmDialog_internal(
     } else {
         msgBox.setStandardButtons(QMessageBox::Ok);
     }
-    msgBox.setStyleSheet(QString("QLabel{min-width: %1px;}").arg(DPIScale(400)));
+
+    if (!showIcon)
+        msgBox.setStyleSheet(QString("QLabel{min-width: %1px;}").arg(DPIScale(400)));
 
     if (okButtonText != nullptr)
         msgBox.button(QMessageBox::Ok)->setText(*okButtonText);
@@ -82,15 +90,20 @@ bool confirmDialog(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList,
-    const QString*     okButtonText)
+    const QString*     okButtonText,
+    QMessageBox::Icon  icon)
 {
-    return confirmDialog_internal(true, title, message, bulletList, okButtonText);
+    return confirmDialog_internal(true, title, message, bulletList, okButtonText, icon);
 }
 
 // create a warning dialog, with an optional bullet list
-void warningDialog(const QString& title, const QString& message, const QStringList* bulletList)
+void warningDialog(
+    const QString&     title,
+    const QString&     message,
+    const QStringList* bulletList,
+    QMessageBox::Icon  icon)
 {
-    confirmDialog_internal(false, title, message, bulletList, nullptr);
+    confirmDialog_internal(false, title, message, bulletList, nullptr, icon);
 }
 
 } // namespace UsdLayerEditor

@@ -22,6 +22,8 @@
 
 #include <pxr/usd/usdGeom/xformCache.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
 
 using namespace MayaUsd::ufe;

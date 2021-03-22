@@ -275,19 +275,11 @@ SaveLayersDialog::SaveLayersDialog(SessionState* in_sessionState, QWidget* in_pa
     MString msg;
     QString dialogTitle = StringResources::getAsQString(StringResources::kSaveStage);
     if (TF_VERIFY(nullptr != _sessionState)) {
-        auto stage = _sessionState->stage();
-
-        auto stageList = _sessionState->allStages();
-        for (auto const& entry : stageList) {
-            if (entry._stage == stage) {
-                std::string stageName = entry._displayName;
-                msg.format(
-                    StringResources::getAsMString(StringResources::kSaveName), stageName.c_str());
-                dialogTitle = MQtUtil::toQString(msg);
-                getLayersToSave(stage, stageName);
-                break;
-            }
-        }
+        auto        stageEntry = _sessionState->stageEntry();
+        std::string stageName = stageEntry._displayName;
+        msg.format(StringResources::getAsMString(StringResources::kSaveName), stageName.c_str());
+        dialogTitle = MQtUtil::toQString(msg);
+        getLayersToSave(stageEntry._stage, stageName);
     }
     setWindowTitle(dialogTitle);
 
@@ -562,7 +554,9 @@ bool SaveLayersDialog::okToSave()
         return (confirmDialog(
             StringResources::getAsQString(StringResources::kSaveAnonymousConfirmOverwriteTitle),
             MQtUtil::toQString(confirmMsg),
-            &existingFiles));
+            &existingFiles,
+            nullptr,
+            QMessageBox::Icon::Warning));
     }
 
     return true;

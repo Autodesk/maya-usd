@@ -42,7 +42,7 @@ public:
     void redo() override;
 
     const Ufe::Path& newUfePath() const;
-    UsdPrim          newPrim() const;
+    PXR_NS::UsdPrim  newPrim() const;
 
     static UsdUndoAddNewPrimCommand::Ptr
     create(const UsdSceneItem::Ptr& usdSceneItem, const std::string& name, const std::string& type);

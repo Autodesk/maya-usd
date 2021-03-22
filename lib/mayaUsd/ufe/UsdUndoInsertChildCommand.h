@@ -68,11 +68,11 @@ private:
     Ufe::Path _ufeSrcPath;
     Ufe::Path _ufeDstPath;
 
-    SdfPath _usdSrcPath;
-    SdfPath _usdDstPath;
+    PXR_NS::SdfPath _usdSrcPath;
+    PXR_NS::SdfPath _usdDstPath;
 
-    SdfLayerHandle _childLayer;
-    SdfLayerHandle _parentLayer;
+    PXR_NS::SdfLayerHandle _childLayer;
+    PXR_NS::SdfLayerHandle _parentLayer;
 
 }; // UsdUndoInsertChildCommand
 

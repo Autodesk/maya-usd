@@ -34,6 +34,7 @@ global proc mayaUSDRegisterStrings() {
     register("kExcludePrimPaths", "Exclude Prim Paths:");
     register("kExcludePrimPathsAnn", "Specify the path of a prim to exclude it from the viewport display. Multiple prim paths must be separated by a comma.");
     register("kExcludePrimPathsSbm", "Specify the path of a prim to exclude it from the viewport display.");
+    register("kFileAnn", "Load in a file as the stage source.");
     register("kLabelStage", "Stage");
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
@@ -72,8 +73,8 @@ global proc mayaUSDRegisterStrings() {
     register("kPurposeOption2", "Proxy");
     register("kPurposeOption3", "Render");
     register("kPrimPath", "Prim Path:");
-    register("kPrimPathAnn", "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded.");
-    register("kPrimPathSbm", "Loads the specified prim path");
+    register("kPrimPathAnn", "Specify the path of a prim to display it alone in the viewport. If a prim path is not specified or a matching prim path is not found, all prims in the stage are displayed.");
+    register("kPrimPathSbm", "Specify the path of a prim to display it alone in the viewport.");
     register("kRootLayer", "Root Layer");
     register("kRootLayerAnn", "Identifies the root layer of a stage. If a file path is shown in this field, the root layer is a file on disk. If a layerName is shown in this field, the root layer is an anonymous layer.");
     register("kSaveAndClose", "Save and Close");
@@ -95,6 +96,12 @@ global proc mayaUSDRegisterStrings() {
     register("kUsdFileOptions", "USD File Options");
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
     register("kSaveOption2GBWarning", "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.");
+
+    // Register the strings from the python equivalent register function.
+    // Note: the strings from both the MEL and python register can be loaded
+    //       by either MEL or python. They all get registered together under
+    //       the 'mayaUsdPlugin' plugin.
+    python("import mayaUSDRegisterStrings; mayaUSDRegisterStrings.mayaUSDRegisterStrings()");
 
     // load any localized resources
     loadPluginLanguageResources("mayaUsdPlugin", "mayaUsdPlugin.pres.mel");

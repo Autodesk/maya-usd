@@ -1,0 +1,67 @@
+#usda 1.0
+(
+    defaultPrim = "pCube1"
+    metersPerUnit = 0.01
+    upAxis = "Z"
+)
+
+def Mesh "pCube1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+    texCoord2f[] primvars:map1 = [(0.375, 0), (0.625, 0), (0.625, 0.25), (0.375, 0.25), (0.625, 0.5), (0.375, 0.5), (0.625, 0.75), (0.375, 0.75), (0.625, 1), (0.375, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)] (
+        interpolation = "faceVarying"
+    )
+    int[] primvars:map1:indices = [0, 1, 2, 3, 3, 2, 4, 5, 5, 4, 6, 7, 7, 6, 8, 9, 1, 10, 11, 2, 12, 0, 3, 13]
+    uniform token subsetFamily:materialBind:familyType = "partition"
+
+    def Scope "Looks"
+    {
+        def Material "initialShadingGroup"
+        {
+        }
+
+        def Material "lambert2SG"
+        {
+            token outputs:surface.connect = </pCube1/Looks/lambert2SG/lambert2.outputs:surface>
+
+            def Shader "lambert2"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.8, 0, 0)
+                normal3f inputs:normal = (1, 1, 1)
+                float inputs:roughness = 1
+                int inputs:useSpecularWorkflow = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+        }
+    }
+
+    def GeomSubset "initialShadingGroup" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [1, 2, 3, 4, 5]
+        rel material:binding = </pCube1/Looks/initialShadingGroup>
+    }
+
+    def GeomSubset "lambert2SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [0]
+        rel material:binding = </pCube1/Looks/lambert2SG>
+    }
+}
+

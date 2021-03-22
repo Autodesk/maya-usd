@@ -2,6 +2,7 @@ list(APPEND scripts_src
     mayaUsdTranslatorImport.mel
     mayaUsdTranslatorExport.mel
     mayaUSDRegisterStrings.mel
+    mayaUSDRegisterStrings.py
     AEmayaUsdProxyShapeBaseTemplate.mel
     AEmayaUsdProxyShapeTemplate.mel
     AETemplateHelpers.py

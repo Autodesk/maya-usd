@@ -177,3 +177,61 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
 
     return pathModel.generic_string();
 }
+
+bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
+{
+    if (!ghc::filesystem::is_directory(a)) {
+        return false;
+    }
+    ghc::filesystem::path aPath(a);
+    ghc::filesystem::path bPath(b);
+    aPath /= b;
+    a.assign(aPath.string());
+    return true;
+}
+
+size_t
+UsdMayaUtilFileSystem::writeToFilePath(const char* filePath, const void* buffer, const size_t size)
+{
+    std::FILE* stream = std::fopen(filePath, "w");
+    if (stream == nullptr) {
+        return 0;
+    }
+    size_t numObjectsWritten = std::fwrite(buffer, size, 1, stream);
+    if (numObjectsWritten != 1) {
+        return 0;
+    }
+    int stat = std::fclose(stream);
+    if (stat != 0) {
+        return 0;
+    }
+
+    return size;
+}
+
+void UsdMayaUtilFileSystem::pathStripPath(std::string& filePath)
+{
+    ghc::filesystem::path p(filePath);
+    ghc::filesystem::path filename = p.filename();
+    filePath.assign(filename.string());
+    return;
+}
+
+void UsdMayaUtilFileSystem::pathRemoveExtension(std::string& filePath)
+{
+    ghc::filesystem::path p(filePath);
+    ghc::filesystem::path dir = p.parent_path();
+    ghc::filesystem::path finalPath = dir / p.stem();
+    filePath.assign(finalPath.string());
+    return;
+}
+
+std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
+{
+    ghc::filesystem::path p(filePath);
+    if (!p.has_extension()) {
+        return std::string();
+    }
+    ghc::filesystem::path ext = p.extension();
+    return ext.string();
+}

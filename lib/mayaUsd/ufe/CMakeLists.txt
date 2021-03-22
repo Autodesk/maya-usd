@@ -10,6 +10,9 @@ target_sources(${PROJECT_NAME}
         StagesSubject.cpp
         UsdHierarchy.cpp
         UsdHierarchyHandler.cpp
+        UsdPointInstanceOrientationModifier.cpp
+        UsdPointInstancePositionModifier.cpp
+        UsdPointInstanceScaleModifier.cpp
         UsdRootChildHierarchy.cpp
         UsdRotatePivotTranslateUndoableCommand.cpp
         UsdRotateUndoableCommand.cpp
@@ -37,6 +40,8 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdAttribute.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
+            UsdCamera.cpp
+            UsdCameraHandler.cpp
             UsdContextOps.cpp
             UsdContextOpsHandler.cpp
             UsdObject3d.cpp
@@ -46,6 +51,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dFallbackMayaXformStack.cpp
             UsdTransform3dMatrixOp.cpp
             UsdTransform3dMayaXformStack.cpp
+            UsdTransform3dPointInstance.cpp
             UsdTransform3dSetObjectMatrix.cpp
             UsdUIInfoHandler.cpp
             UsdUndoAddNewPrimCommand.cpp
@@ -56,13 +62,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoVisibleCommand.cpp
             XformOpUtils.cpp
     )
-    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdCamera.cpp
-                UsdCameraHandler.cpp
-        )
-    endif()
 endif()
 
 set(HEADERS
@@ -73,6 +72,10 @@ set(HEADERS
     StagesSubject.h
     UsdHierarchy.h
     UsdHierarchyHandler.h
+    UsdPointInstanceModifierBase.h
+    UsdPointInstanceOrientationModifier.h
+    UsdPointInstancePositionModifier.h
+    UsdPointInstanceScaleModifier.h
     UsdRootChildHierarchy.h
     UsdRotatePivotTranslateUndoableCommand.h
     UsdRotateUndoableCommand.h
@@ -99,17 +102,22 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h
+        UsdCamera.h
+        UsdCameraHandler.h
         UsdContextOps.h
         UsdContextOpsHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
+        UsdPointInstanceUndoableCommands.h
         UsdTransform3dBase.h
         UsdTransform3dCommonAPI.h
         UsdTransform3dFallbackMayaXformStack.h
         UsdTransform3dMatrixOp.h
         UsdTransform3dMayaXformStack.h
+        UsdTransform3dPointInstance.h
         UsdTransform3dSetObjectMatrix.h
         UsdUIInfoHandler.h
+        UsdUndoableCommand.h
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
@@ -118,13 +126,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoVisibleCommand.h
         XformOpUtils.h
     )
-    # Why no if for UsdUIInfoHandler.h ?
-    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
-        list(APPEND HEADERS
-            UsdCamera.h
-            UsdCameraHandler.h
-        )
-    endif()
 endif()
 
 # -----------------------------------------------------------------------------

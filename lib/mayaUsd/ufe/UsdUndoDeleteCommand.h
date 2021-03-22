@@ -36,7 +36,7 @@ class MAYAUSD_CORE_PUBLIC UsdUndoDeleteCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoDeleteCommand> Ptr;
 
-    UsdUndoDeleteCommand(const UsdPrim& prim);
+    UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim);
     ~UsdUndoDeleteCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -46,14 +46,14 @@ public:
     UsdUndoDeleteCommand& operator=(UsdUndoDeleteCommand&&) = delete;
 
     //! Create a UsdUndoDeleteCommand from a USD prim.
-    static UsdUndoDeleteCommand::Ptr create(const UsdPrim& prim);
+    static UsdUndoDeleteCommand::Ptr create(const PXR_NS::UsdPrim& prim);
 
     UFE_V2(void execute() override;)
     void undo() override;
     void redo() override;
 
 private:
-    UsdPrim _prim;
+    PXR_NS::UsdPrim _prim;
     UFE_V2(UsdUndoableItem _undoableItem;)
 
 #ifndef UFE_V2_FEATURES_AVAILABLE
