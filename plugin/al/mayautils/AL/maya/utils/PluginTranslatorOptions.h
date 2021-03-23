@@ -309,6 +309,29 @@ public:
     AL_MAYA_UTILS_PUBLIC
     bool addFloat(const char* optionName, float defaultValue = 0.0f);
 
+    /// \brief  Add a float value with precision to the translator options
+    /// \param  optionName the name of the option
+    /// \param  value the default value for the option
+    /// \param  precision the default precision for the option
+    /// \return true if the option was successfully added. False if the option is a duplicate
+    AL_MAYA_UTILS_PUBLIC
+    bool addFloat(const char* optionName, float value, int precision);
+
+    /// \brief  Add a float value with precision and controller state to the translator options
+    /// \param  optionName the name of the option
+    /// \param  value the default value for the option
+    /// \param  precision the default precision for the option
+    /// \param  controller the controller UI name that triggers enabling
+    /// \param  state the state for enabling this field
+    /// \return true if the option was successfully added. False if the option is a duplicate
+    AL_MAYA_UTILS_PUBLIC
+    bool addFloat(
+        const char* optionName,
+        float       value,
+        int         precision,
+        const char* controller,
+        bool        state);
+
     /// \brief  Add a string value to the translator options
     /// \param  optionName the name of the option
     /// \param  defaultValue the default value for the option
@@ -387,6 +410,9 @@ public:
         MString              defString;   ///< default string value
         std::vector<MString> enumStrings; ///< the text values for the enums
         OptionType           type;        ///< the type of the option
+        int                  precision { 1 };
+        std::string          controller {};
+        bool                 enableState { true };
 
         /// \brief  ctor
         /// \param  name the name of the option
@@ -411,9 +437,17 @@ public:
         /// \brief  ctor
         /// \param  name the name of the option
         /// \param  defVal the default value
-        Option(const char* const name, const float& defVal)
+        Option(
+            const char* const name,
+            const float&      defVal,
+            int               defPre,
+            const char*       defController,
+            bool              defState)
             : name(name)
             , type(OptionType::kFloat)
+            , precision(defPre)
+            , controller(defController ? defController : "")
+            , enableState(defState)
         {
             defFloat = defVal;
         }
@@ -480,7 +514,10 @@ private:
         const MString&    niceName,
         const MString&    optionName,
         MString&          code,
-        float);
+        float,
+        int,
+        const std::string&,
+        bool);
     static void generateStringGlobals(
         const char* const prefix,
         const MString&    niceName,

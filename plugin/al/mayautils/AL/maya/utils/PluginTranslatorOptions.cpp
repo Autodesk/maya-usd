@@ -143,9 +143,25 @@ bool PluginTranslatorOptions::addInt(const char* optionName, int defaultValue)
 AL_MAYA_UTILS_PUBLIC
 bool PluginTranslatorOptions::addFloat(const char* optionName, float defaultValue)
 {
+    return addFloat(optionName, defaultValue, 1, "", true);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool PluginTranslatorOptions::addFloat(const char* optionName, float value, int precision)
+{
+    return addFloat(optionName, value, precision, "", true);
+}
+
+bool PluginTranslatorOptions::addFloat(
+    const char* optionName,
+    float       value,
+    int         precision,
+    const char* controller,
+    bool        state)
+{
     if (isOption(optionName))
         return false;
-    m_options.emplace_back(optionName, defaultValue);
+    m_options.emplace_back(optionName, value, precision, controller, state);
     return true;
 }
 
@@ -544,21 +560,54 @@ void PluginTranslatorOptions::generateIntGlobals(
 
 //----------------------------------------------------------------------------------------------------------------------
 void PluginTranslatorOptions::generateFloatGlobals(
-    const char* const prefix,
-    const MString&    niceName,
-    const MString&    optionName,
-    MString&          code,
-    float             value)
+    const char* const  prefix,
+    const MString&     niceName,
+    const MString&     optionName,
+    MString&           code,
+    float              value,
+    int                precision,
+    const std::string& controller,
+    bool               enableState)
 {
     MString valueStr;
     valueStr = value;
     MString controlName = MString(prefix) + "_" + makeName(optionName);
+    // Check and add on/off command if any
+    MString onOffCmd;
+    MString postUpdateCmd;
+    MString deferredPostUpdateCmd;
+    if (!controller.empty()) {
+        MString prefixedCtrl(MString(prefix) + "_" + makeName(controller.c_str()));
+        if (enableState) {
+            onOffCmd = "checkBox -e "
+                       "-onCommand \"floatFieldGrp -e -en 1 "
+                + controlName
+                + "\" "
+                  "-offCommand \"floatFieldGrp -e -en 0 "
+                + controlName + "\" " + prefixedCtrl + "; ";
+            // And update the default state according to the checkbox
+            postUpdateCmd = "floatFieldGrp -e -en `checkBox -q -v " + prefixedCtrl + "` "
+                + controlName + "; ";
+        } else {
+            onOffCmd = "checkBox -e "
+                       "-onCommand \"floatFieldGrp -e -en 0 "
+                + controlName
+                + "\" "
+                  "-offCommand \"floatFieldGrp -e -en 1 "
+                + controlName + "\" " + prefixedCtrl + "; ";
+            postUpdateCmd = "floatFieldGrp -e -en (`checkBox -q -v " + prefixedCtrl + "` ? 0: 1) "
+                + controlName + "; ";
+        }
+        onOffCmd += postUpdateCmd;
+        deferredPostUpdateCmd = MString() + "eval(\"" + postUpdateCmd + "\");";
+    }
+
     MString createCommand = MString("global proc create_") + controlName + "() {"
-        + MString("floatFieldGrp -l \"") + niceName + "\" -v1 " + valueStr + " " + controlName
-        + ";}\n";
+        + MString("floatFieldGrp -l \"") + niceName + "\" -v1 " + valueStr + " -pre " + precision
+        + " " + controlName + ";" + onOffCmd + "}\n";
     MString postCommand = MString("global proc post_") + controlName
-        + "(string $value){ eval (\"floatFieldGrp -e -v1 \" + $value + \" " + controlName
-        + "\");}\n";
+        + "(string $value){ eval (\"floatFieldGrp -e -v1 \" + $value + \" " + controlName + "\");"
+        + deferredPostUpdateCmd + "}\n";
     MString buildCommand = MString("global proc string build_") + controlName
         + "(){ string $str = \"" + makeName(optionName) + "=\" + `floatFieldGrp -q -v1 "
         + controlName + "` + \";\"; return $str;}\n";
@@ -644,7 +693,15 @@ MString PluginTranslatorOptions::generateGUI(const char* const prefix, MString& 
             generateIntGlobals(prefix, opt->name, opt->name, guiCode, opt->defInt);
             break;
         case OptionType::kFloat:
-            generateFloatGlobals(prefix, opt->name, opt->name, guiCode, opt->defFloat);
+            generateFloatGlobals(
+                prefix,
+                opt->name,
+                opt->name,
+                guiCode,
+                opt->defFloat,
+                opt->precision,
+                opt->controller,
+                opt->enableState);
             break;
         case OptionType::kString:
             generateStringGlobals(prefix, opt->name, opt->name, guiCode, opt->defString.asChar());

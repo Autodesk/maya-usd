@@ -24,6 +24,10 @@ static constexpr const char* const kMeshPointsAsPref
 static constexpr const char* const kMeshColours = "Mesh Colours"; ///< export mesh Colour Sets
 static constexpr const char* const kMeshDefaultColourRGB = "Default RGB"; ///< default rgb values
 static constexpr const char* const kMeshDefaultColourA = "Default Alpha"; ///< default alpha values
+static constexpr const char* const kCustomColourThreshold
+    = "Custom Colour Threshold"; ///< default alpha values
+static constexpr const char* const kColourThresholdValue
+    = "Colour Threshold Value";                               ///< default alpha values
 static constexpr const char* const kMeshHoles = "Mesh Holes"; ///< export mesh face holes
 static constexpr const char* const kNormalsAsPrimvars
     = "Write Normals as Primvars"; ///< if true, allow indexed normals to be written as primvars
