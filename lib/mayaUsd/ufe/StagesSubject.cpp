@@ -205,11 +205,31 @@ void StagesSubject::stageChanged(
 
     auto stage = notice.GetStage();
     for (const auto& changedPath : notice.GetResyncedPaths()) {
-        // When visibility is toggled for the first time or you add a xformop we enter
-        // here with a resync path. However the changedPath is not a prim path, so we
-        // don't care about it. In those cases, the changePath will contain something like:
-        //   "/<prim>.visibility"
-        //   "/<prim>.xformOp:translate"
+        if (changedPath.IsPrimPropertyPath()) {
+            // Special case to detect when an xformop is added or removed from a prim.
+            // We need to send some notifs so Maya can update (such as on undo
+            // to move the transform manipulator back to original position).
+            const TfToken nameToken = changedPath.GetNameToken();
+            if (nameToken == UsdGeomTokens->xformOpOrder) {
+                auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
+                auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+                if (!InTransform3dChange::inTransform3dChange()) {
+                    Ufe::Transform3d::notify(ufePath);
+                }
+#ifdef UFE_V2_FEATURES_AVAILABLE
+                if (!inAttributeChangedNotificationGuard()) {
+                    Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
+                    Ufe::Attributes::notify(vc);
+                }
+#endif
+            }
+
+            // No further processing for this prim property path is required.
+            continue;
+        }
+
+        // Relational attributes will not be caught by the IsPrimPropertyPath()
+        // and we don't care about them.
         if (changedPath.IsPropertyPath())
             continue;
 
