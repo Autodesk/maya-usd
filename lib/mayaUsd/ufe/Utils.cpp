@@ -83,7 +83,7 @@ bool stringBeginsWithDigit(const std::string& inputString)
 }
 
 // This function calculates the position index for a given layer across all
-// the site's local LayerStack.
+// the site's local LayerStacks
 uint32_t findLayerIndex(const UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer)
 {
     uint32_t position { 0 };
