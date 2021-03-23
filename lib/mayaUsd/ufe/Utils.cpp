@@ -91,7 +91,7 @@ uint32_t findLayerIndex(const UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
 
     // iterate through the expanded primIndex
-    for (const PcpNodeRef& node : primIndex.GetNodeRange()) {
+    for (PcpNodeRef node : primIndex.GetNodeRange()) {
 
         TF_AXIOM(node);
 
