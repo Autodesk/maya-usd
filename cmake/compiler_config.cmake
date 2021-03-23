@@ -13,12 +13,6 @@ set(GNU_CLANG_FLAGS
     -Wno-unused-local-typedefs
 )
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    list(APPEND GNU_CLANG_FLAGS
-            -Wrange-loop-analysis
-        )
-endif()
-
 set(MSVC_FLAGS
     # we want to be as strict as possible
     /W3
