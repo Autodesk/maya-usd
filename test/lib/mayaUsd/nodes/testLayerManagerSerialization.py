@@ -18,6 +18,7 @@
 from sys import prefix
 from maya import cmds
 from maya import standalone
+from mayaUsd import lib as mayaUsdLib
 
 import fixturesUtils
 
@@ -272,13 +273,19 @@ class testLayerManagerSerialization(unittest.TestCase):
 
         cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', 1))
 
+        msg = ("Session Layer before: " + stage.GetSessionLayer().identifier)
+        stage = None
+
         cmds.file(save=True, force=True, type='mayaAscii')
         cmds.file(new=True, force=True)
         cmds.file(self._tempMayaFile, open=True)
 
-        stage = mayaUsd.ufe.getStage('|stage1|stageShape1')
+        stage = mayaUsdLib.GetPrim('|stage1|stageShape1').GetStage()
+        msg += ("    Session Layer after: " +
+                stage.GetSessionLayer().identifier)
         self.assertTrue(stage.GetPrimAtPath(newPrimPath).IsValid())
-        self.assertFalse(stage.GetPrimAtPath(newSessionsPrimPath).IsValid())
+        self.assertFalse(stage.GetPrimAtPath(
+            newSessionsPrimPath).IsValid(), msg)
 
         cmds.file(new=True, force=True)
         shutil.rmtree(self._currentTestDir)
