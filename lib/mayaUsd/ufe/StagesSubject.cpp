@@ -210,7 +210,7 @@ void StagesSubject::stageChanged(
             // We need to send some notifs so Maya can update (such as on undo
             // to move the transform manipulator back to original position).
             const TfToken nameToken = changedPath.GetNameToken();
-            if (nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken)) {
+            if (nameToken == UsdGeomTokens->xformOpOrder) {
                 auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
                 auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
                 if (!InTransform3dChange::inTransform3dChange()) {
