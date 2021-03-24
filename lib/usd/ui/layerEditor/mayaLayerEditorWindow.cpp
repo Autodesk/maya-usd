@@ -218,8 +218,21 @@ void MayaLayerEditorWindow::printLayer()
 
 void MayaLayerEditorWindow::clearLayer()
 {
+    // Suspend usd notification while clearing and force a refresh after
+    // all layers are cleared. This is required because callMethodOnSelection()
+    // will loop on all selected layers and clear them one by one, If a refresh
+    // happen before callMethodOnSelection() finish to loop over the selected item,
+    // maya will crash because of a dangling pointer (All layer item are deleted
+    // during the refresh).
+    LayerTreeModel::suspendUsdNotices(true);
+
     QString name = "Clear";
     treeView()->callMethodOnSelection(name, &LayerTreeItem::clearLayer);
+
+    LayerTreeModel::suspendUsdNotices(false);
+
+    LayerTreeModel* model = treeView()->layerTreeModel();
+    model->forceRefresh();
 }
 
 void MayaLayerEditorWindow::selectPrimsWithSpec()
