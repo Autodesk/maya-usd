@@ -54,11 +54,6 @@ const auto kAutoHideSessionLayer     { create("kAutoHideSessionLayer", "Auto-Hid
 const auto kBinary                   { create("kBinary", "Binary") };
 const auto kConvertToRelativePath    { create("kConvertToRelativePath", "Convert to Relative Path") };
 const auto kCancel                   { create("kCancel", "Cancel") };
-const auto kClearLayerTitle          { create("kclearLayerTitle", "Clear \"^1s\"") };
-const auto kClearLayerConfirmMessage { create("kClearLayerConfirmMessage",
-                                              "Are you sure you want to clear this layer?"
-                                              " \"^1s\"  will remain in the Layer Editor"
-                                              " but all contents will be cleared, including sublayer paths.") };
 const auto kCreate                   { create("kCreate", "Create") };
 const auto kRevertToFileTitle        { create("kRevertToFileTitle", "Revert to File \"^1s\"") };
 const auto kRevertToFileMsg          { create("kRevertToFileMsg", "Are you sure you want to revert \"^1s\" to its "
