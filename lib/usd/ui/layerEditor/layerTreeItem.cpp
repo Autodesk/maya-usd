@@ -394,9 +394,6 @@ void LayerTreeItem::printLayer()
     }
 }
 
-void LayerTreeItem::clearLayer()
-{
-    commandHook()->clearLayer(layer());
-}
+void LayerTreeItem::clearLayer() { commandHook()->clearLayer(layer()); }
 
 } // namespace UsdLayerEditor
