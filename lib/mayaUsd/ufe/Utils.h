@@ -124,6 +124,11 @@ PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
 
+//! Check if an attribute value is allowed to be changed.
+//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
+MAYAUSD_CORE_PUBLIC
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
+
 //! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)

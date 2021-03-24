@@ -25,6 +25,8 @@
 
 #include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/pcp/site.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/tokens.h>
 #include <pxr/usd/usd/prim.h>
@@ -78,6 +80,35 @@ bool stringBeginsWithDigit(const std::string& inputString)
     }
 
     return false;
+}
+
+// This function calculates the position index for a given layer across all
+// the site's local LayerStacks
+uint32_t findLayerIndex(const UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer)
+{
+    uint32_t position { 0 };
+
+    const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
+
+    // iterate through the expanded primIndex
+    for (PcpNodeRef node : primIndex.GetNodeRange()) {
+
+        TF_AXIOM(node);
+
+        const PcpLayerStackSite&   site = node.GetSite();
+        const PcpLayerStackRefPtr& layerStack = site.layerStack;
+
+        // iterate through the "local" Layer stack for each site
+        // to find the layer
+        for (SdfLayerRefPtr const& l : layerStack->GetLayers()) {
+            if (l == layer) {
+                return position;
+            }
+            ++position;
+        }
+    }
+
+    return position;
 }
 
 } // anonymous namespace
@@ -342,6 +373,51 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
     }
 
     return purposes;
+}
+
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
+{
+    // get the property spec in the edit target's layer
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& editTarget = stage->GetEditTarget();
+
+    // get the index to edit target layer
+    const auto targetLayerIndex = findLayerIndex(prim, editTarget.GetLayer());
+
+    // HS March 22th,2021
+    // TODO: "Value Clips" are UsdStage-level feature, unknown to Pcp.So if the attribute in
+    // question is affected by Value Clips, we would will likely get the wrong answer. See Spiff
+    // comment for more information :
+    // https://groups.google.com/g/usd-interest/c/xTxFYQA_bRs/m/lX_WqNLoBAAJ
+
+    // Read on Value Clips here:
+    // https://graphics.pixar.com/usd/docs/api/_usd__page__value_clips.html
+
+    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
+    // opinions for this property.
+    const auto& propertyStack = attr.GetPropertyStack();
+
+    if (!propertyStack.empty()) {
+        // get the strongest layer that has the attr.
+        auto strongestLayer = attr.GetPropertyStack().front()->GetLayer();
+
+        // compare the calculated index between the "attr" and "edit target" layers.
+        if (findLayerIndex(prim, strongestLayer) < targetLayerIndex) {
+            if (errMsg) {
+                std::string err = TfStringPrintf(
+                    "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
+                    attr.GetBaseName().GetText(),
+                    strongestLayer->GetDisplayName().c_str());
+
+                *errMsg = err;
+            }
+
+            return false;
+        }
+    }
+
+    return true;
 }
 
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)

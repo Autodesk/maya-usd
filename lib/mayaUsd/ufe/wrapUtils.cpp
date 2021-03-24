@@ -194,6 +194,11 @@ int ufePathToInstanceIndex(const std::string& ufePathString)
 #endif
 }
 
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
+{
+    return ufe::isAttributeEditAllowed(attr);
+}
+
 PXR_NS::TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
 {
     auto path =
@@ -230,4 +235,5 @@ void wrapUtils()
     def("ufePathToPrim", ufePathToPrim);
     def("ufePathToInstanceIndex", ufePathToInstanceIndex);
     def("getProxyShapePurposes", getProxyShapePurposes);
+    def("isAttributeEditAllowed", isAttributeEditAllowed);
 }
