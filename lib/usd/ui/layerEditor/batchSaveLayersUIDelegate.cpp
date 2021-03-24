@@ -31,17 +31,24 @@ void UsdLayerEditor::initialize()
     }
 }
 
-bool UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>& stages)
+MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(const MDagPathArray& proxyShapes)
 {
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
         auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
         if (MayaUsd::utils::kSaveToUSDFiles == opt) {
-            UsdLayerEditor::SaveLayersDialog dlg(nullptr, stages);
-            if (QDialog::Accepted != dlg.exec()) {
-                return false;
+            UsdLayerEditor::SaveLayersDialog dlg(nullptr, proxyShapes);
+
+            if (QDialog::Rejected == dlg.exec()) {
+                return MayaUsd::kAbort;
+            }
+
+            if (!dlg.layersNotSaved().isEmpty() || !dlg.layersWithErrorPairs().isEmpty()) {
+                return MayaUsd::kPartiallyCompleted;
+            } else {
+                return MayaUsd::kCompleted;
             }
         }
     }
 
-    return true;
+    return MayaUsd::kNotHandled;
 }

@@ -19,12 +19,14 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
 
 #include <maya/MGlobal.h>
+#include <maya/MString.h>
 
 #include <string>
 
@@ -77,10 +79,10 @@ std::string computePathToLoadSublayer(
 }
 
 void populateChildren(
-    PXR_NS::SdfLayerRefPtr                                                  layer,
-    RecursionDetector*                                                      recursionDetector,
-    std::vector<std::pair<PXR_NS::SdfLayerRefPtr, PXR_NS::SdfLayerRefPtr>>& anonLayersToSave,
-    std::vector<PXR_NS::SdfLayerRefPtr>&                                    dirtyLayersToSave)
+    SdfLayerRefPtr                                                       layer,
+    RecursionDetector*                                                   recursionDetector,
+    std::vector<std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>>& anonLayersToSave,
+    std::vector<SdfLayerRefPtr>&                                         dirtyLayersToSave)
 {
     auto  subPaths = layer->GetSubLayerPaths();
     auto& resolver = PXR_NS::ArGetResolver();
@@ -99,7 +101,10 @@ void populateChildren(
             populateChildren(subLayer, recursionDetector, anonLayersToSave, dirtyLayersToSave);
 
             if (subLayer->IsAnonymous()) {
-                anonLayersToSave.push_back(std::make_pair(subLayer, layer));
+                MayaUsd::utils::LayerParent p;
+                p._proxyPath.clear();
+                p._layerParent = layer;
+                anonLayersToSave.push_back(std::make_pair(subLayer, p));
             } else if (subLayer->IsDirty()) {
                 dirtyLayersToSave.push_back(subLayer);
             }
@@ -107,6 +112,24 @@ void populateChildren(
     }
 
     recursionDetector->pop();
+}
+
+bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
+{
+    if (!layer || proxy.empty() || layer->IsAnonymous()) {
+        return false;
+    }
+
+    std::string fp = layer->GetRealPath();
+#ifdef _WIN32
+    // Building a string that includes a file path for an executeCommand call
+    // can be problematic, easier to just switch the path separator.
+    fp = TfStringReplace(fp, "\\", "/");
+#endif
+
+    MayaUsd::utils::setNewProxyPath(MString(proxy.c_str()), MString(fp.c_str()));
+
+    return true;
 }
 
 } // namespace
@@ -183,21 +206,31 @@ USDUnsavedEditsOption serializeUsdEditsLocationOption()
     }
 } // namespace MAYAUSD_NS_DEF
 
-PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
-    PXR_NS::SdfLayerRefPtr anonLayer,
-    PXR_NS::SdfLayerRefPtr parentLayer,
-    const std::string&     basename,
-    std::string            formatArg)
+void setNewProxyPath(const MString& proxyNodeName, const MString& newValue)
 {
-    std::string newFileName = generateUniqueFileName(basename);
-    return saveAnonymousLayer(anonLayer, newFileName, parentLayer, formatArg);
+    MString script;
+    script.format("setAttr -type \"string\" ^1s.filePath \"^2s\"", proxyNodeName, newValue);
+    MGlobal::executeCommand(
+        script,
+        /*display*/ true,
+        /*undo*/ false);
 }
 
-PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
-    PXR_NS::SdfLayerRefPtr anonLayer,
-    const std::string&     path,
-    PXR_NS::SdfLayerRefPtr parentLayer,
-    std::string            formatArg)
+SdfLayerRefPtr saveAnonymousLayer(
+    SdfLayerRefPtr     anonLayer,
+    LayerParent        parent,
+    const std::string& basename,
+    std::string        formatArg)
+{
+    std::string newFileName = generateUniqueFileName(basename);
+    return saveAnonymousLayer(anonLayer, newFileName, parent, formatArg);
+}
+
+SdfLayerRefPtr saveAnonymousLayer(
+    SdfLayerRefPtr     anonLayer,
+    const std::string& path,
+    LayerParent        parent,
+    std::string        formatArg)
 {
     if (!anonLayer || !anonLayer->IsAnonymous()) {
         return nullptr;
@@ -212,29 +245,38 @@ PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
 
     anonLayer->Export(path, "", args);
 
-    PXR_NS::SdfLayerRefPtr newLayer = PXR_NS::SdfLayer::FindOrOpen(path);
-
-    if (newLayer && parentLayer) {
-        parentLayer->GetSubLayerPaths().Replace(
-            anonLayer->GetIdentifier(), newLayer->GetIdentifier());
+    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(path);
+    if (newLayer) {
+        if (parent._layerParent) {
+            parent._layerParent->GetSubLayerPaths().Replace(
+                anonLayer->GetIdentifier(), newLayer->GetIdentifier());
+        } else if (!parent._proxyPath.empty()) {
+            saveRootLayer(newLayer, parent._proxyPath);
+        }
     }
-
     return newLayer;
 }
 
-void getLayersToSaveFromProxy(PXR_NS::UsdStageRefPtr stage, stageLayersToSave& layersInfo)
+void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& layersInfo)
 {
-    auto root = stage->GetRootLayer();
+    auto stage = UsdMayaUtil::GetStageByProxyName(proxyPath);
+    if (!stage) {
+        return;
+    }
 
-    populateChildren(root, nullptr, layersInfo.anonLayers, layersInfo.dirtyFileBackedLayers);
+    auto root = stage->GetRootLayer();
+    populateChildren(root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
     if (root->IsAnonymous()) {
-        layersInfo.anonLayers.push_back(std::make_pair(root, nullptr));
+        LayerParent p;
+        p._proxyPath = proxyPath;
+        p._layerParent = nullptr;
+        layersInfo._anonLayers.push_back(std::make_pair(root, p));
     } else if (root->IsDirty()) {
-        layersInfo.dirtyFileBackedLayers.push_back(root);
+        layersInfo._dirtyFileBackedLayers.push_back(root);
     }
 
     auto session = stage->GetSessionLayer();
-    populateChildren(session, nullptr, layersInfo.anonLayers, layersInfo.dirtyFileBackedLayers);
+    populateChildren(session, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
 }
 
 } // namespace utils

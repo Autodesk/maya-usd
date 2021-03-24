@@ -1,6 +1,7 @@
 set(TARGET_NAME MAYAUSD_NODES_TEST)
 
 set(TEST_SCRIPT_FILES
+    testLayerManagerSerialization.py
     testPointBasedDeformerNode.py
     testProxyShapeBase.py
 )
