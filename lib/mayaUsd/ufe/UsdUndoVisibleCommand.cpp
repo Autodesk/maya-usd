@@ -42,17 +42,17 @@ UsdUndoVisibleCommand::Ptr UsdUndoVisibleCommand::create(const UsdPrim& prim, bo
 
 void UsdUndoVisibleCommand::execute()
 {
-    UsdUndoBlock undoBlock(&_undoableItem);
-
-    UsdGeomImageable primImageAble(_prim);
+    UsdGeomImageable primImageable(_prim);
 
     std::string errMsg;
-    if (!MayaUsd::ufe::isAttributeEditAllowed(primImageAble.GetVisibilityAttr(), &errMsg)) {
+    if (!MayaUsd::ufe::isAttributeEditAllowed(primImageable.GetVisibilityAttr(), &errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return;
     }
 
-    _visible ? primImageAble.MakeVisible() : primImageAble.MakeInvisible();
+    UsdUndoBlock undoBlock(&_undoableItem);
+
+    _visible ? primImageable.MakeVisible() : primImageable.MakeInvisible();
 }
 
 void UsdUndoVisibleCommand::redo() { _undoableItem.redo(); }
