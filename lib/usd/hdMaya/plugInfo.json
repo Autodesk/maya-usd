@@ -13,6 +13,12 @@
                         ],
                         "displayName": "Maya Shapes in Hydra for Maya."
                     },
+                    "HdMayaScene2Delegate": {
+                        "bases": [
+                            "HdMayaDelegate"
+                        ],
+                        "displayName": "Maya Shapes in Hydra for Maya 2."
+                    },
                     "HdMayaProxyDelegate": {
                         "bases": [
                             "HdMayaDelegate"
@@ -76,6 +82,12 @@
                             "HdMayaShapeAdapter"
                         ],
                         "displayName": "Meshes in Hydra for Maya."
+                    },
+                    "HdMayaMesh2Adapter": {
+                        "bases": [
+                            "HdMayaShapeAdapter"
+                        ],
+                        "displayName": "Meshes in Hydra for Maya 2."
                     },
                     "HdMayaNurbsCurveAdapter": {
                         "bases": [

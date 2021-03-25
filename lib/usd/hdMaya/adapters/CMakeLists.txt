@@ -17,6 +17,7 @@ target_sources(${TARGET_NAME}
         materialNetworkConverter.cpp
         mayaAttrs.cpp
         meshAdapter.cpp
+        meshAdapter2.cpp
         nurbsCurveAdapter.cpp
         pointLightAdapter.cpp
         shapeAdapter.cpp

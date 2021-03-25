@@ -80,7 +80,7 @@ public:
     /// Intended mostly for use in debugging and testing.
     static SdfPath RendererSceneDelegateId(TfToken rendererName, TfToken sceneDelegateName);
 
-    MStatus Render(const MHWRender::MDrawContext& drawContext);
+    virtual MStatus Render(const MHWRender::MDrawContext& drawContext);
 
     void ClearHydraResources();
     void SelectionChanged();
@@ -89,12 +89,12 @@ public:
 
     MHWRender::DrawAPI supportedDrawAPIs() const override;
 
-    MStatus setup(const MString& destination) override;
-    MStatus cleanup() override;
+    virtual MStatus setup(const MString& destination) override;
+    virtual MStatus cleanup() override;
 
-    bool                         startOperationIterator() override;
-    MHWRender::MRenderOperation* renderOperation() override;
-    bool                         nextRenderOperation() override;
+    virtual bool                         startOperationIterator() override;
+    virtual MHWRender::MRenderOperation* renderOperation() override;
+    virtual bool                         nextRenderOperation() override;
 
 #if MAYA_API_VERSION >= 20210000
     bool select(
@@ -105,17 +105,17 @@ public:
         MPointArray&                     worldSpaceHitPts) override;
 #endif
 
-private:
+protected:
     typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
     typedef std::vector<PanelCallbacks>          PanelCallbacksList;
 
     static MtohRenderOverride* _GetByName(TfToken rendererName);
 
-    void              _InitHydraResources();
-    void              _RemovePanel(MString panelName);
-    void              _SelectionChanged();
-    void              _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
-    HdRenderDelegate* _GetRenderDelegate();
+    virtual void              _InitHydraResources();
+    virtual void              _RemovePanel(MString panelName);
+    virtual void              _SelectionChanged();
+    virtual void              _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
+    virtual HdRenderDelegate* _GetRenderDelegate();
 
     inline PanelCallbacksList::iterator _FindPanelCallbacks(MString panelName)
     {
