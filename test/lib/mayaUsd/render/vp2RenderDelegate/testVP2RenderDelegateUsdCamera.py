@@ -69,6 +69,12 @@ class testVP2RenderDelegateUsdCamera(imageUtils.ImageDiffingTestCase):
 
     def testPerInstanceInheritedData(self):
         self._StartTest('camera_xformOp_transform_rotateX')
+        # at time 2 the near clip plane increases and the cube is not drawn
+        cmds.currentTime(2)
+        self.assertSnapshotClose('%s_insideNearClipPlane.png' % self._testName)
+        # at time 3 the near clip plane is restored so the cube is drawn, and the camera moves
+        cmds.currentTime(3)
+        self.assertSnapshotClose('%s_cameraMoved.png' % self._testName)
 
 
 
