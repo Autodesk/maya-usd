@@ -21,6 +21,7 @@
 
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/utilSerialization.h>
+#include <mayaUsd/base/tokens.h>
 
 #include <maya/MGlobal.h>
 
@@ -36,9 +37,30 @@ bool UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
         auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
         if (MayaUsd::utils::kSaveToUSDFiles == opt) {
-            UsdLayerEditor::SaveLayersDialog dlg(nullptr, stages);
-            if (QDialog::Accepted != dlg.exec()) {
-                return false;
+
+            static const MString kConfirmExistingFileSave
+                = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
+            bool showComfirmDgl = MGlobal::optionVarExists(kConfirmExistingFileSave)
+                && MGlobal::optionVarIntValue(kConfirmExistingFileSave) != 0;
+
+            // if at least one stage contains anonymous layers, you need to show the comfirm dialog
+            // so the user can choose where to save the anonymous layers.
+            if (showComfirmDgl) {
+                for (auto& stage : stages) {
+                    MayaUsd::utils::stageLayersToSave stageLayersToSave;
+                    MayaUsd::utils::getLayersToSaveFromProxy(stage, stageLayersToSave);
+                    if (!stageLayersToSave.anonLayers.empty()) {
+                        showComfirmDgl = true;
+                        break;
+                    }
+                }
+            }
+
+            if (showComfirmDgl) {
+                UsdLayerEditor::SaveLayersDialog dlg(nullptr, stages);
+                if (QDialog::Accepted != dlg.exec()) {
+                    return false;
+                }
             }
         }
     }
