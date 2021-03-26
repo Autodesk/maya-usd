@@ -48,7 +48,8 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(const MDagPat
             if (!showConfirmDgl) {
                 for (auto& shape : proxyShapes) {
                     MayaUsd::utils::stageLayersToSave stageLayersToSave;
-                    MayaUsd::utils::getLayersToSaveFromProxy(shape.fullPathName().asChar(), stageLayersToSave);
+                    MayaUsd::utils::getLayersToSaveFromProxy(
+                        shape.fullPathName().asChar(), stageLayersToSave);
                     if (!stageLayersToSave._anonLayers.empty()) {
                         showConfirmDgl = true;
                         break;

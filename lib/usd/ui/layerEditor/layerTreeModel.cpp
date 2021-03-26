@@ -21,10 +21,10 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 #include "warningDialogs.h"
-#include <mayaUsd/utils/utilSerialization.h>
 
-#include <mayaUsd/utils/util.h>
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
 
