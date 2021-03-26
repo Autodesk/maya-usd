@@ -49,7 +49,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (mtohWireframeSelectionHighlight)
     (mtohColorQuantization)
     (mtohSelectionOutline)
-    (mtohEnableMotionSamples)
+    (mtohMotionSampleStart)
+    (mtohMotionSampleEnd)
 );
 // clang-format on
 
@@ -73,7 +74,8 @@ global proc mtohRenderOverride_AddAttribute(string $renderer, string $label, str
     }
 }
 global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
-    mtohRenderOverride_AddAttribute("mtoh", "Enable Motion Samples", "mtohEnableMotionSamples", $fromAE);
+    mtohRenderOverride_AddAttribute("mtoh", "Motion Sample Start", "mtohMotionSampleStart", $fromAE);
+    mtohRenderOverride_AddAttribute("mtoh", "Motion Samples End", "mtohMotionSampleEnd", $fromAE);
     mtohRenderOverride_AddAttribute("mtoh", "Texture Memory Per Texture (KB)", "mtohTextureMemoryPerTexture", $fromAE);
     mtohRenderOverride_AddAttribute("mtoh", "Show Wireframe on Selected Objects", "mtohWireframeSelectionHighlight", $fromAE);
     mtohRenderOverride_AddAttribute("mtoh", "Highlight Selected Objects", "mtohColorSelectionHighlight", $fromAE);
@@ -796,9 +798,16 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
     MtohSettingFilter filter(params);
     const bool        userDefaults = params.fallbackToUserDefaults;
 
-    if (filter(_tokens->mtohEnableMotionSamples)) {
-        _CreateBoolAttribute(
-            node, filter.mayaString(), defGlobals.delegateParams.enableMotionSamples, userDefaults);
+    if (filter(_tokens->mtohMotionSampleStart)) {
+        _CreateFloatAttribute(
+            node, filter.mayaString(), defGlobals.delegateParams.motionSampleStart, userDefaults);
+        if (filter.attributeFilter()) {
+            return mayaObject;
+        }
+    }
+    if (filter(_tokens->mtohMotionSampleEnd)) {
+        _CreateFloatAttribute(
+            node, filter.mayaString(), defGlobals.delegateParams.motionSampleEnd, userDefaults);
         if (filter.attributeFilter()) {
             return mayaObject;
         }
@@ -974,12 +983,16 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             return globals;
         }
     }
-    if (filter(_tokens->mtohEnableMotionSamples)) {
+    if (filter(_tokens->mtohMotionSampleStart)) {
         _GetAttribute(
-            node,
-            filter.mayaString(),
-            globals.delegateParams.enableMotionSamples,
-            storeUserSetting);
+            node, filter.mayaString(), globals.delegateParams.motionSampleStart, storeUserSetting);
+        if (filter.attributeFilter()) {
+            return globals;
+        }
+    }
+    if (filter(_tokens->mtohMotionSampleEnd)) {
+        _GetAttribute(
+            node, filter.mayaString(), globals.delegateParams.motionSampleEnd, storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }

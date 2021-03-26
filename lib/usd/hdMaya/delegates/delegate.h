@@ -19,6 +19,8 @@
 #include <hdMaya/api.h>
 #include <hdMaya/delegates/params.h>
 
+#include <pxr/base/arch/hints.h>
+#include <pxr/base/gf/interval.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
@@ -28,6 +30,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <maya/MAnimControl.h>
+#include <maya/MDGContextGuard.h>
 #include <maya/MDrawContext.h>
 #include <maya/MPointArray.h>
 #include <maya/MSelectionContext.h>
@@ -84,7 +88,7 @@ public:
 
     HDMAYA_API
     virtual void        SetParams(const HdMayaParams& params);
-    const HdMayaParams& GetParams() { return _params; }
+    const HdMayaParams& GetParams() const { return _params; }
 
     const SdfPath& GetMayaDelegateID() { return _mayaDelegateID; }
     TfToken        GetName() { return _name; }
@@ -124,6 +128,59 @@ public:
     inline HdEngine&          GetEngine() { return _engine; }
     inline HdxTaskController* GetTaskController() { return _taskController; }
 
+    /// Calls that mirror UsdImagingDelegate
+
+    /// Setup for the shutter open and close to be used for motion sampling.
+    HDMAYA_API
+    void SetCameraForSampling(SdfPath const& id);
+
+    /// Returns the current interval that will be used when using the
+    /// sample* API in the scene delegate.
+    HDMAYA_API
+    GfInterval GetCurrentTimeSamplingInterval() const;
+
+    /// Common function to return templated sample types
+    template <typename T, typename Getter>
+    HDMAYA_API size_t SampleValues(size_t maxSampleCount, float* times, T* samples, Getter getValue)
+    {
+        if (ARCH_UNLIKELY(maxSampleCount == 0)) {
+            return 0;
+        }
+        // Fast path 1 sample at current-frame
+        if (maxSampleCount == 1
+            || (!GetParams().motionSamplesEnabled() && GetParams().motionSampleStart == 0)) {
+            times[0] = 0.0f;
+            samples[0] = getValue();
+            return 1;
+        }
+
+        const GfInterval shutter = GetCurrentTimeSamplingInterval();
+        // Shutter for [-1, 1] (size 2) should have a step of 2 for 2 samples, and 1 for 3 samples
+        // For sample size of 1 tStep is unused and we match USD and to provide t=shutterOpen
+        // sample.
+        const double tStep = maxSampleCount > 1 ? (shutter.GetSize() / (maxSampleCount - 1)) : 0;
+        const MTime  mayaTime = MAnimControl::currentTime();
+        size_t       nSamples = 0;
+        double       relTime = shutter.GetMin();
+
+        for (size_t i = 0; i < maxSampleCount; ++i) {
+            T sample;
+            {
+                MDGContextGuard guard(mayaTime + relTime);
+                sample = getValue();
+            }
+            // We compare the sample to the previous in order to reduce sample count on output.
+            // Goal is to reduce the amount of samples/keyframes the Hydra delegate has to absorb.
+            if (!nSamples || sample != samples[nSamples - 1]) {
+                samples[nSamples] = std::move(sample);
+                times[nSamples] = relTime;
+                ++nSamples;
+            }
+            relTime += tStep;
+        }
+        return nSamples;
+    }
+
 private:
     HdMayaParams _params;
 
@@ -135,6 +192,7 @@ private:
     // for each HdMayaDelegate, the _mayaDelegateID is different from each
     // HdSceneDelegate's id.
     const SdfPath      _mayaDelegateID;
+    SdfPath            _cameraPathForSampling;
     TfToken            _name;
     HdEngine&          _engine;
     HdxTaskController* _taskController;

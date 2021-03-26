@@ -65,6 +65,12 @@
                         ],
                         "displayName": "Shapes in Hydra for Maya."
                     },
+                    "HdMayaCameraAdapter": {
+                        "bases": [
+                            "HdMayaShapeAdapter"
+                        ],
+                        "displayName": "Cameras in Hydra for Maya."
+                    },
                     "HdMayaMeshAdapter": {
                         "bases": [
                             "HdMayaShapeAdapter"

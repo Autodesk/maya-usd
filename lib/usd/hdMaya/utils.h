@@ -28,6 +28,7 @@
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MFloatMatrix.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MItDag.h>
 #include <maya/MItSelectionList.h>
@@ -52,6 +53,19 @@ inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat)
 {
     GfMatrix4d mat;
     memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
+    return mat;
+}
+
+/// \brief Converts a Maya float matrix to a double precision GfMatrix.
+/// \param mayaMat Maya `MFloatMatrix` to be converted.
+/// \return `GfMatrix4d` equal to \p mayaMat.
+inline GfMatrix4d GetGfMatrixFromMaya(const MFloatMatrix& mayaMat)
+{
+    GfMatrix4d mat;
+    for (unsigned i = 0; i < 4; ++i) {
+        for (unsigned j = 0; j < 4; ++j)
+            mat[i][j] = mayaMat(i, j);
+    }
     return mat;
 }
 
