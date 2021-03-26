@@ -413,20 +413,20 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
     static const MString kConfirmExistingFileSave
         = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
-    bool showComfirmDgl = MGlobal::optionVarExists(kConfirmExistingFileSave)
+    bool showConfirmDgl = MGlobal::optionVarExists(kConfirmExistingFileSave)
         && MGlobal::optionVarIntValue(kConfirmExistingFileSave) != 0;
 
     // if the stage contains anonymous layers, you need to show the comfirm dialog
     // so the user can choose where to save the anonymous layers.
-    if (!showComfirmDgl) {
+    if (!showConfirmDgl) {
         // Get the layers to save for this stage.
         MayaUsd::utils::stageLayersToSave stageLayersToSave;
         auto&                             stageEntry = _sessionState->stageEntry();
         MayaUsd::utils::getLayersToSaveFromProxy(stageEntry._stage, stageLayersToSave);
-        showComfirmDgl = !stageLayersToSave.anonLayers.empty();
+        showConfirmDgl = !stageLayersToSave.anonLayers.empty();
     }
 
-    if (showComfirmDgl) {
+    if (showConfirmDgl) {
         SaveLayersDialog dlg(_sessionState, in_parent);
         if (QDialog::Accepted == dlg.exec()) {
 

@@ -9,15 +9,15 @@
 #include "stringResources.h"
 #include "warningDialogs.h"
 
-#include <mayaUsd/utils/utilSerialization.h>
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 
-#include <maya/MQtUtil.h>
 #include <maya/MGlobal.h>
+#include <maya/MQtUtil.h>
 
 #include <algorithm>
 
@@ -268,9 +268,9 @@ void LayerTreeItem::saveEdits()
     // ask the user a confirmation before overwrite it.
     static const MString kConfirmExistingFileSave
         = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
-    const bool showComfirmDgl = MGlobal::optionVarExists(kConfirmExistingFileSave)
+    const bool showConfirmDgl = MGlobal::optionVarExists(kConfirmExistingFileSave)
         && MGlobal::optionVarIntValue(kConfirmExistingFileSave) != 0;
-    if (showComfirmDgl && !isAnonymous()) {
+    if (showConfirmDgl && !isAnonymous()) {
         const MString titleFormat
             = StringResources::getAsMString(StringResources::kSaveLayerWarnTitle);
         const MString msgFormat = StringResources::getAsMString(StringResources::kSaveLayerWarnMsg);
