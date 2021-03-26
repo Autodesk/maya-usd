@@ -120,8 +120,7 @@ void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
         // the time to be created
         QObject::connect(createMenu, &QMenu::aboutToShow, in_parent, aboutToShowCallback);
 
-        auto optionMenu
-            = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
+        auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
         auto action = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
         QObject::connect(
