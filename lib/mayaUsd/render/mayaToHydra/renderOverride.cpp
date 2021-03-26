@@ -454,7 +454,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
     }
 }
 
-MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, MHWRender::MViewportScene& scene)
+MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, const MHWRender::MViewportScene& scene)
 {
     // It would be good to clear the resources of the overrides that are
     // not in active use, but I'm not sure if we have a better way than
@@ -552,12 +552,15 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, M
 
 	// TODO: Change management
 	// Every frame update everything
-	for (auto& it : _delegates) {
-		auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
-		if (sceneDelegate)
-		{
-			sceneDelegate->HandleCompleteViewportScene(scene);
-		}		
+	if (scene.mCount > 0)
+	{
+		for (auto& it : _delegates) {
+			auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
+			if (sceneDelegate)
+			{
+				sceneDelegate->HandleCompleteViewportScene(scene);
+			}
+		}
 	}
 
     GLUniformBufferBindingsSaver bindingsSaver;

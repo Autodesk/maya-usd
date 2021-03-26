@@ -222,7 +222,7 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
 }
 
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
-void HdMayaSceneDelegate::HandleCompleteViewportScene(MViewportScene& scene)
+void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
 {
 	for (int i = 0; i < scene.mCount; i++)
 	{
@@ -230,11 +230,6 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(MViewportScene& scene)
 		CreateOrGetRenderItem(*scene.mItems[i], adapter);
 		adapter->UpdateGeometry(*scene.mItems[i]);
 		adapter->UpdateTransform(*scene.mItems[i]);
-	}
-
-	for (auto& pair : _renderItemsAdapters)
-	{
-		auto& adapter = pair.second;
 	}
 }
 
@@ -995,7 +990,7 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key)
     // TF_DEBUG(HDMAYA_DELEGATE_GET)
     //     .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
     if (id.IsPropertyPath()) {
-        return _GetValue<HdMayaDagAdapter, VtValue>(
+        return _GetValue<HdMayaRenderItemAdapter, VtValue>(
             id.GetPrimPath(),
             [&key](HdMayaRenderItemAdapter* a) -> VtValue { return a->GetInstancePrimvar(key); },
             _renderItemsAdapters);

@@ -132,7 +132,7 @@ public:
 
 	// TODO: change management
 	HDMAYA_API
-	void HandleCompleteViewportScene(MViewportScene& scene);
+	void HandleCompleteViewportScene(const MViewportScene& scene);
 
 
 #if MAYA_API_VERSION >= 20210000

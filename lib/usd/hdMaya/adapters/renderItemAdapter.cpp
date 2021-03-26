@@ -15,10 +15,12 @@
 //
 #include "renderItemAdapter.h"
 
+#include <hdMaya/adapters/adapterRegistry.h>
 #include <hdMaya/adapters/adapterDebugCodes.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/base/tf/registryManager.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
@@ -55,10 +57,8 @@ namespace {
 
 HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
     const SdfPath&     id,
-    HdMayaDelegateCtx* delegate,
-    const MDagPath&    dagPath)
-    : HdMayaAdapter(dagPath.node(), id, delegate)
-    , _dagPath(dagPath)
+    HdMayaDelegateCtx* del)
+    : HdMayaAdapter(MObject(), id, del)
 {
     // We shouldn't call virtual functions in constructors.
     _isVisible = GetDagPath().isVisible();
@@ -349,5 +349,31 @@ VtValue HdMayaRenderItemAdapter::GetInstancePrimvar(const TfToken& key)
     }
     return {};
 }
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+	TfType::Define<HdMayaRenderItemAdapter, TfType::Bases<HdMayaAdapter>>();
+}
+
+TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, renderItem)
+{	
+	HdMayaAdapterRegistry::RegisterRenderItemAdapter(
+		TfToken(gsRenderItemTypeSuffix),
+		[](HdMayaDelegateCtx* del, const MRenderItem& ri) -> HdMayaRenderItemAdapterPtr
+	{
+		return HdMayaRenderItemAdapterPtr(new HdMayaRenderItemAdapter(del->GetPrimPath(ri, false), del));
+	});
+	// TODO: multiple render item type
+	//for (int i = 0; i < MRenderItem::RenderItemType::OverrideNonMaterialItem+1; i++)	
+	//{
+	//	HdMayaAdapterRegistry::RegisterRenderItemAdapter(
+	//		TfToken(gsRenderItemTypeSuffix+std::to_string(i)),
+	//		[](HdMayaDelegateCtx* del, const MRenderItem& ri) -> HdMayaRenderItemAdapterPtr 
+	//	{
+	//		return HdMayaRenderItemAdapterPtr(new HdMayaRenderItemAdapter(del->GetPrimPath(ri, false), del));
+	//	});
+	//}
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

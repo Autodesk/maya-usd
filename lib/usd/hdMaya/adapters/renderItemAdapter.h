@@ -39,23 +39,39 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace
+{
+	std::string gsRenderItemTypeSuffix = "renderItem";
+}
+
 class HdMayaRenderItemAdapter : public HdMayaAdapter
 {
-protected:
-    HDMAYA_API
-    HdMayaRenderItemAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
-
 public:
+	HDMAYA_API
+		HdMayaRenderItemAdapter(const SdfPath& id, HdMayaDelegateCtx* del);
+
+	// override
+	HDMAYA_API
+	virtual bool IsSupported() const override { return true; };
+
+
+	HDMAYA_API
+	virtual void Populate() override {}
+
+	HDMAYA_API
+		virtual void CreateCallbacks() override;
+	HDMAYA_API
+		virtual void MarkDirty(HdDirtyBits dirtyBits) override;
+	HDMAYA_API
+		virtual void RemovePrim() override;
+	HDMAYA_API
+		VtValue Get(const TfToken& key) override;
+
+	// this
     HDMAYA_API
     virtual ~HdMayaRenderItemAdapter() = default;
     HDMAYA_API
     virtual bool GetVisible() { return IsVisible(); }
-    HDMAYA_API
-    virtual void CreateCallbacks() override;
-    HDMAYA_API
-    virtual void MarkDirty(HdDirtyBits dirtyBits) override;
-    HDMAYA_API
-    virtual void RemovePrim() override;
     HDMAYA_API
     const GfMatrix4d& GetTransform();
     HDMAYA_API
@@ -88,16 +104,11 @@ public:
 		HdDisplayStyle GetDisplayStyle();
 
 	HDMAYA_API
-	VtValue Get(const TfToken& key) override;
-
-	HDMAYA_API
 		virtual TfToken GetRenderTag() const;
 
 protected:
     HDMAYA_API
     void _CalculateTransform();
-    HDMAYA_API
-    void _AddHierarchyChangedCallbacks(MDagPath& dag);
     HDMAYA_API
     virtual bool _GetVisibility() const;
 

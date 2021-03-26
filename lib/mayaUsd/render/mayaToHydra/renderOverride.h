@@ -80,7 +80,7 @@ public:
     /// Intended mostly for use in debugging and testing.
     static SdfPath RendererSceneDelegateId(TfToken rendererName, TfToken sceneDelegateName);
 
-	MStatus Render(const MHWRender::MDrawContext& drawContext, MHWRender::MViewportScene& scene);
+	MStatus Render(const MHWRender::MDrawContext& drawContext, const MHWRender::MViewportScene& scene);
 
     void ClearHydraResources();
     void SelectionChanged();
