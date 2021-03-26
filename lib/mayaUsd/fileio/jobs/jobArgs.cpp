@@ -682,8 +682,16 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std:
             // `sourceimages` folder under a Maya project root folder.
             importTexturesRootDirPath.assign(
                 currentMayaWorkspacePath.asChar(), currentMayaWorkspacePath.length());
-            bool bStat
-                = UsdMayaUtilFileSystem::pathAppendPath(importTexturesRootDirPath, "sourceimages");
+            MString sourceImagesDirBaseName
+                = MGlobal::executeCommandStringResult("workspace -fre \"sourceImages\"");
+            if (sourceImagesDirBaseName.length() == 0) {
+                TF_RUNTIME_ERROR(
+                    "Unable to determine the sourceImages fileRule for the Maya project: %s.",
+                    currentMayaWorkspacePath.asChar());
+                return "";
+            }
+            bool bStat = UsdMayaUtilFileSystem::pathAppendPath(
+                importTexturesRootDirPath, sourceImagesDirBaseName.asChar());
             if (!bStat) {
                 TF_RUNTIME_ERROR(
                     "Unable to determine the texture directory for the Maya project: %s.",
