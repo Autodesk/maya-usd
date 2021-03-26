@@ -271,6 +271,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         }
 
         if (this->mArgs.importUSDZTexturesFilePath.length() == 0) {
+            MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
             TF_WARN(
                 "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
                 "will be imported to the workspace folder: %s.",
