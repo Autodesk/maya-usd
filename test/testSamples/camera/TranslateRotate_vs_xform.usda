@@ -1,0 +1,67 @@
+#usda 1.0
+(
+    doc = """Generated from Composed Stage of root layer
+"""
+    endTimeCode = 24
+    framesPerSecond = 24
+    metersPerUnit = 0.01
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+def Xform "cameras"
+{
+    def Xform "cam1"
+	{
+		matrix4d xformOp:transform = ( (-0.57139380484327007, 0.81603492345170858, 0.087155742747658208, 0.0000000000000000), (-0.36628299622896521, -0.34861706684262317, 0.86272991566282109, 0.0000000000000000), (0.73440172008258775, 0.46103486247051939, 0.49809734904587277, 0.0000000000000000), (5.0000000000000000, 5.0000000000000000, 5.0000000000000000, 1.0000000000000000) )
+		uniform token[] xformOpOrder = ["xformOp:transform"]
+
+		def Camera "camera1"
+		{
+			float2 clippingRange = (0.17281759, 5335.3647)
+			float focalLength = 2.5
+			float focusDistance = 5
+			float fStop = 5.6
+			float horizontalAperture = 0.414214
+			float horizontalApertureOffset = 0
+			token projection = "perspective"
+			double shutter:close = 1
+			double shutter:open = -1
+			float verticalAperture = 0.23299536
+			float verticalApertureOffset = 0
+		}
+	}
+	
+	def Xform "cam2"
+	{
+		double3 xformOp:translate = (5, 5, 5)
+		float3 xformOp:rotateXYZ = (60, -5, 125)
+		uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+		
+		def Camera "camera2"
+		{
+			float2 clippingRange = (0.17281759, 5335.3647)
+			float focalLength = 2.5
+			float focusDistance = 5
+			float fStop = 5.6
+			float horizontalAperture = 0.414214
+			float horizontalApertureOffset = 0
+			token projection = "perspective"
+			double shutter:close = 1
+			double shutter:open = -1
+			float verticalAperture = 0.23299536
+			float verticalApertureOffset = 0
+		}
+	}
+	
+}
+
+def Xform "GEO"
+{
+    def Cube "mesh"
+    {
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
