@@ -51,19 +51,19 @@ SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
 
 SdfPath _GetPrimPath(const SdfPath& base, const MRenderItem& ri)
 {
-	//const auto mayaPath = UsdMayaUtil::MDagPathToUsdPath(dg, false, false);
-	//if (mayaPath.IsEmpty()) {
-	//	return {};
-	//}
-	//const auto* chr = mayaPath.GetText();
-	//if (chr == nullptr) {
-	//	return {};
-	//};
-	//std::string s(chr + 1);
-	//if (s.empty()) {
-	//	return {};
-	//}
-	//return base.AppendPath(SdfPath(s));
+	if (ri.InternalObjectID() == -1) return {};
+	const auto mayaPath = UsdMayaUtil::MRenderItemToUsdPath(ri, false, false);
+	if (mayaPath.IsEmpty()) return {};
+		
+	const auto* chr = mayaPath.GetText();
+	if (chr == nullptr) {
+		return {};
+	};
+	std::string s(chr + 1);
+	if (s.empty()) {
+		return {};
+	}
+	return base.AppendPath(SdfPath(s));
 	return SdfPath();
 }
 
@@ -138,13 +138,13 @@ SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
     }
 }
 
-SdfPath HdMayaDelegateCtx::GetPrimPath(const MRenderItem& dg, bool isLight)
+SdfPath HdMayaDelegateCtx::GetPrimPath(const MRenderItem& ri, bool isLight)
 {
 	if (isLight) {
-		return _GetPrimPath(_sprimPath, dg);
+		return _GetPrimPath(_sprimPath, ri);
 	}
 	else {
-		return _GetPrimPath(_rprimPath, dg);
+		return _GetPrimPath(_rprimPath, ri);
 	}
 }
 

@@ -42,7 +42,7 @@ HdMayaAdapterRegistry::GetRenderItemAdapterCreator(const MRenderItem& ri)
 	RenderItemAdapterCreator ret = nullptr;
     // TODO multiple ri type
 	// TfMapLookup(GetInstance()._renderItemAdapters, TfToken(gsRenderItemTypeSuffix + std::to_string(ri.type())), &ret);
-    TfMapLookup(GetInstance()._renderItemAdapters, TfToken(gsRenderItemTypeSuffix), &ret);
+    TfMapLookup(GetInstance()._renderItemAdapters, TfToken(gsRenderItemTypeName), &ret);
 	return ret;
 }
 

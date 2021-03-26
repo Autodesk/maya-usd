@@ -53,6 +53,7 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MTime.h>
+#include <maya/MHWGeometry.h>
 
 #include <boost/functional/hash.hpp>
 
@@ -1358,6 +1359,17 @@ SdfPath UsdMayaUtil::MDagPathToUsdPath(
 
     return usdPath;
 }
+
+SdfPath UsdMayaUtil::MRenderItemToUsdPath(
+	const MRenderItem& ri,
+	const bool      mergeTransformAndShape,
+	const bool      stripNamespaces)
+{	
+	return UsdMayaUtil::MayaNodeNameToSdfPath(		
+		(ri.name() + std::to_string(ri.InternalObjectID()).c_str()).asChar(),
+		stripNamespaces);
+}
+
 
 bool UsdMayaUtil::GetBoolCustomData(
     const UsdAttribute& obj,

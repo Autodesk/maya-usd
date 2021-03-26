@@ -56,14 +56,16 @@ namespace {
 } // namespace
 
 HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
-    const SdfPath&     id,
-    HdMayaDelegateCtx* del)
+    const SdfPath& id,
+    HdMayaDelegateCtx* del,
+	MGeometry::Primitive primitiveType
+	)
     : HdMayaAdapter(MObject(), id, del)
 {
     // We shouldn't call virtual functions in constructors.
-    _isVisible = GetDagPath().isVisible();
+ /*   _isVisible = GetDagPath().isVisible();
     _visibilityDirty = false;
-    _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
+    _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;*/
 }
 
 HDMAYA_API
@@ -358,21 +360,15 @@ TF_REGISTRY_FUNCTION(TfType)
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, renderItem)
 {	
 	HdMayaAdapterRegistry::RegisterRenderItemAdapter(
-		TfToken(gsRenderItemTypeSuffix),
+		TfToken(gsRenderItemTypeName),
 		[](HdMayaDelegateCtx* del, const MRenderItem& ri) -> HdMayaRenderItemAdapterPtr
 	{
-		return HdMayaRenderItemAdapterPtr(new HdMayaRenderItemAdapter(del->GetPrimPath(ri, false), del));
+		return HdMayaRenderItemAdapterPtr(
+			new HdMayaRenderItemAdapter(
+				del->GetPrimPath(ri, false),
+				del,
+				ri.primitive()));
 	});
-	// TODO: multiple render item type
-	//for (int i = 0; i < MRenderItem::RenderItemType::OverrideNonMaterialItem+1; i++)	
-	//{
-	//	HdMayaAdapterRegistry::RegisterRenderItemAdapter(
-	//		TfToken(gsRenderItemTypeSuffix+std::to_string(i)),
-	//		[](HdMayaDelegateCtx* del, const MRenderItem& ri) -> HdMayaRenderItemAdapterPtr 
-	//	{
-	//		return HdMayaRenderItemAdapterPtr(new HdMayaRenderItemAdapter(del->GetPrimPath(ri, false), del));
-	//	});
-	//}
 }
 
 

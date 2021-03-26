@@ -41,14 +41,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-	std::string gsRenderItemTypeSuffix = "renderItem";
+	std::string gsRenderItemTypeName = "renderItem";
 }
 
 class HdMayaRenderItemAdapter : public HdMayaAdapter
 {
 public:
 	HDMAYA_API
-		HdMayaRenderItemAdapter(const SdfPath& id, HdMayaDelegateCtx* del);
+		HdMayaRenderItemAdapter(
+			const SdfPath& id, 
+			HdMayaDelegateCtx* del,
+			MGeometry::Primitive primitiveType);
 
 	// override
 	HDMAYA_API
@@ -117,6 +120,7 @@ private:
 	HdMeshTopology _meshTopology = {};
 	VtVec3fArray _vertexPositions = {};
 
+	MGeometry::Primitive _primitive;
     MDagPath   _dagPath;
     GfMatrix4d _transform[2];
     bool       _isVisible = true;
