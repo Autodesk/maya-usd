@@ -30,7 +30,6 @@
 
 #include <string>
 
-
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Utils.h>
 #endif
