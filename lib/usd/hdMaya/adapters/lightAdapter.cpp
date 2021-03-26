@@ -117,7 +117,7 @@ void HdMayaLightAdapter::Populate()
 
 void HdMayaLightAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
-    if (dirtyBits != 0) {
+    if (_isPopulated && dirtyBits != 0) {
         GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
     }
 }
