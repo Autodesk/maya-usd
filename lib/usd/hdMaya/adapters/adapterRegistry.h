@@ -20,6 +20,7 @@
 #include <hdMaya/adapters/lightAdapter.h>
 #include <hdMaya/adapters/materialAdapter.h>
 #include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/adapters/renderItemAdapter.h>
 #include <hdMaya/delegates/delegateCtx.h>
 
 #include <pxr/base/tf/singleton.h>
@@ -38,7 +39,21 @@ class HdMayaAdapterRegistry : public TfSingleton<HdMayaAdapterRegistry>
     HdMayaAdapterRegistry() = default;
 
 public:
-    using ShapeAdapterCreator
+
+	// Render Item Adapter
+	 
+	using RenderItemAdapterCreator
+		= std::function<HdMayaRenderItemAdapterPtr(HdMayaDelegateCtx*, const MRenderItem&)>;
+
+	HDMAYA_API
+		static void RegisterRenderItemAdapter(const TfToken& type, RenderItemAdapterCreator creator);
+
+	HDMAYA_API
+		static RenderItemAdapterCreator GetRenderItemAdapterCreator(const MRenderItem& ri);
+
+	// Shape Adapter
+	
+	using ShapeAdapterCreator
         = std::function<HdMayaShapeAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
     HDMAYA_API
     static void RegisterShapeAdapter(const TfToken& type, ShapeAdapterCreator creator);
@@ -77,6 +92,7 @@ public:
     static void LoadAllPlugin();
 
 private:
+	std::unordered_map<TfToken, RenderItemAdapterCreator, TfToken::HashFunctor> _renderItemAdapters;
     std::unordered_map<TfToken, ShapeAdapterCreator, TfToken::HashFunctor>    _dagAdapters;
     std::unordered_map<TfToken, LightAdapterCreator, TfToken::HashFunctor>    _lightAdapters;
     std::unordered_map<TfToken, MaterialAdapterCreator, TfToken::HashFunctor> _materialAdapters;

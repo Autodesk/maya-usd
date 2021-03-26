@@ -65,6 +65,8 @@ public:
     virtual void MaterialTagChanged(const SdfPath& id) { }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg, bool isSprim);
+	HDMAYA_API
+	SdfPath GetPrimPath(const MRenderItem& ri, bool isLight);
     HDMAYA_API
     SdfPath GetMaterialPath(const MObject& obj);
 

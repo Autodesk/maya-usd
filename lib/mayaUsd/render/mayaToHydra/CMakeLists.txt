@@ -12,7 +12,6 @@ target_sources(${TARGET_NAME}
         pluginDebugCodes.cpp
         renderGlobals.cpp
         renderOverride.cpp
-		renderOverride2.cpp
         shadingModeExporter.cpp
         tokens.cpp
         utils.cpp

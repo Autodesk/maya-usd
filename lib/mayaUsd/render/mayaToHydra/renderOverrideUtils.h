@@ -18,6 +18,8 @@
 
 #include <pxr/pxr.h>
 
+#include <hdMaya/utils.h>
+
 #include <maya/MViewport2Renderer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -77,14 +79,24 @@ class HdMayaRender : public MHWRender::MUserRenderOperation
 {
 public:
     HdMayaRender(const MString& name, MtohRenderOverride* override)
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+        : MHWRender::MUserRenderOperation(name, MHWRender::MUserRenderOperation::DataServerTag())
+#else
         : MHWRender::MUserRenderOperation(name)
+#endif
         , _override(override)
     {
     }
 
     MStatus execute(const MHWRender::MDrawContext& drawContext) override
     {
-        return _override->Render(drawContext);
+		static MHWRender::MViewportScene sEmptyScene;
+        return _override->Render(drawContext, sEmptyScene);
+    }
+    
+    MStatus execute2(const MDrawContext & drawContext, const MHWRender::MViewportScene& scene) override
+    {
+        return _override->Render(drawContext, scene);
     }
 
 private:

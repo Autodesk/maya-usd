@@ -10,7 +10,6 @@ target_sources(${TARGET_NAME}
         proxyDelegate.cpp
         proxyUsdImagingDelegate.cpp
         sceneDelegate.cpp
-        sceneDelegate2.cpp
         testDelegate.cpp
 )
 
@@ -23,7 +22,6 @@ set(HEADERS
     proxyDelegate.h
     proxyUsdImagingDelegate.h
     sceneDelegate.h
-    sceneDelegate2.h
     testDelegate.h
 )
 

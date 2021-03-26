@@ -49,6 +49,24 @@ SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
     return base.AppendPath(SdfPath(s));
 }
 
+SdfPath _GetPrimPath(const SdfPath& base, const MRenderItem& ri)
+{
+	//const auto mayaPath = UsdMayaUtil::MDagPathToUsdPath(dg, false, false);
+	//if (mayaPath.IsEmpty()) {
+	//	return {};
+	//}
+	//const auto* chr = mayaPath.GetText();
+	//if (chr == nullptr) {
+	//	return {};
+	//};
+	//std::string s(chr + 1);
+	//if (s.empty()) {
+	//	return {};
+	//}
+	//return base.AppendPath(SdfPath(s));
+	return SdfPath();
+}
+
 SdfPath _GetMaterialPath(const SdfPath& base, const MObject& obj)
 {
     MStatus           status;
@@ -118,6 +136,16 @@ SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
     } else {
         return _GetPrimPath(_rprimPath, dg);
     }
+}
+
+SdfPath HdMayaDelegateCtx::GetPrimPath(const MRenderItem& dg, bool isLight)
+{
+	if (isLight) {
+		return _GetPrimPath(_sprimPath, dg);
+	}
+	else {
+		return _GetPrimPath(_rprimPath, dg);
+	}
 }
 
 SdfPath HdMayaDelegateCtx::GetMaterialPath(const MObject& obj)

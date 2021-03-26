@@ -20,6 +20,7 @@
 #include <hdMaya/adapters/lightAdapter.h>
 #include <hdMaya/adapters/materialAdapter.h>
 #include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/adapters/renderItemAdapter.h>
 #include <hdMaya/delegates/delegateCtx.h>
 
 #include <pxr/base/gf/vec4d.h>
@@ -87,6 +88,9 @@ public:
     HDMAYA_API
     void MaterialTagChanged(const SdfPath& id) override;
 
+	HDMAYA_API
+	HdMayaRenderItemAdapterPtr GetRenderItemAdapter(const SdfPath& id);
+
     HDMAYA_API
     HdMayaShapeAdapterPtr GetShapeAdapter(const SdfPath& id);
 
@@ -100,6 +104,9 @@ public:
     void InsertDag(const MDagPath& dag);
 
     HDMAYA_API
+    void CreateOrGetRenderItem(const MRenderItem& ri, HdMayaRenderItemAdapterPtr& adapter);
+
+    HDMAYA_API
     void NodeAdded(const MObject& obj);
 
     HDMAYA_API
@@ -107,6 +114,9 @@ public:
 
     HDMAYA_API
     void AddNewInstance(const MDagPath& dag);
+
+	HDMAYA_API
+	void AddNewInstance(const MRenderItem& ri);
 
     HDMAYA_API
     void SetParams(const HdMayaParams& params) override;
@@ -119,6 +129,11 @@ public:
         const MSelectionList&       mayaSelection,
         SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
+
+	// TODO: change management
+	HDMAYA_API
+	void HandleCompleteViewportScene(MViewportScene& scene);
+
 
 #if MAYA_API_VERSION >= 20210000
     HDMAYA_API
@@ -251,6 +266,8 @@ private:
     template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
+	/// \brief Unordered Map storing the shape adapters.
+	AdapterMap<HdMayaRenderItemAdapterPtr> _renderItemsAdapters;
     /// \brief Unordered Map storing the light adapters.
     AdapterMap<HdMayaLightAdapterPtr> _lightAdapters;
     /// \brief Unordered Map storing the camera adapters.

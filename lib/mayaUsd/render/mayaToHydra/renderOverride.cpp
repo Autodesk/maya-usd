@@ -454,7 +454,7 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContex
     }
 }
 
-MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
+MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, MHWRender::MViewportScene& scene)
 {
     // It would be good to clear the resources of the overrides that are
     // not in active use, but I'm not sure if we have a better way than
@@ -541,12 +541,24 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     }
 
     if (!_initializationAttempted) {
-        _InitHydraResources();
+		// TODO: First time viewport scene update here
+        // Anything special ? Dag items populate called here before
+       _InitHydraResources();
 
         if (!_initializationSucceeded) {
             return MStatus::kFailure;
         }
     }
+
+	// TODO: Change management
+	// Every frame update everything
+	for (auto& it : _delegates) {
+		auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
+		if (sceneDelegate)
+		{
+			sceneDelegate->HandleCompleteViewportScene(scene);
+		}		
+	}
 
     GLUniformBufferBindingsSaver bindingsSaver;
 
@@ -722,6 +734,7 @@ MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName)
     return nullptr;
 }
 
+// TODO: Pass MViewportScene
 void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)

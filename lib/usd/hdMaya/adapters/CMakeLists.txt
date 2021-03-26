@@ -10,6 +10,7 @@ target_sources(${TARGET_NAME}
         areaLightAdapter.cpp
         cameraAdapter.cpp
         dagAdapter.cpp
+        renderItemAdapter.cpp
         directionalLightAdapter.cpp
         lightAdapter.cpp
         proxyAdapter.cpp
@@ -17,7 +18,6 @@ target_sources(${TARGET_NAME}
         materialNetworkConverter.cpp
         mayaAttrs.cpp
         meshAdapter.cpp
-        meshAdapter2.cpp
         nurbsCurveAdapter.cpp
         pointLightAdapter.cpp
         shapeAdapter.cpp
@@ -32,6 +32,7 @@ set(HEADERS
     cameraAdapter.h
     constantShadowMatrix.h
     dagAdapter.h
+    renderItemAdapter.h
     lightAdapter.h
     proxyAdapter.h
     materialAdapter.h

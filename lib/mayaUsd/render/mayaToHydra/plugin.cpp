@@ -15,7 +15,6 @@
 //
 #include "renderGlobals.h"
 #include "renderOverride.h"
-#include "renderOverride2.h"
 #include "viewCommand.h"
 
 #include <hdMaya/adapters/adapter.h>
@@ -27,7 +26,6 @@
 
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
-#include <maya/MViewport2Renderer.h>
 
 #include <memory>
 #include <vector>
@@ -35,8 +33,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-using MRenderOverridePtr = std::unique_ptr<MHWRender::MRenderOverride>;
-static std::vector<MRenderOverridePtr> gsRenderOverrides;
+using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
+static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
 
 #if defined(MAYAUSD_VERSION)
 #define STRINGIFY(x) #x
@@ -82,21 +80,12 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (const auto& desc : MtohGetRendererDescriptions()) {
-			MStatus status;
-			MRenderOverridePtr mtohRenderer = nullptr;
-            mtohRenderer.reset(new MtohRenderOverride(desc));
-            status = renderer->registerOverride(mtohRenderer.get());
+            MtohRenderOverridePtr mtohRenderer(new MtohRenderOverride(desc));
+            MStatus               status = renderer->registerOverride(mtohRenderer.get());
             if (status == MS::kSuccess) {
                 gsRenderOverrides.push_back(std::move(mtohRenderer));
             } else
                 mtohRenderer = nullptr;
-			mtohRenderer.reset(new MtohRenderOverride2(desc));
-			status = renderer->registerOverride(mtohRenderer.get());
-			if (status == MS::kSuccess) {
-				gsRenderOverrides.push_back(std::move(mtohRenderer));
-			}
-			else
-				mtohRenderer = nullptr;
         }
     }
 
