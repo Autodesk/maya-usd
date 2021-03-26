@@ -690,10 +690,6 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std:
                     currentMayaWorkspacePath.asChar());
                 return "";
             }
-            TF_WARN(
-                "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
-                "will be imported to the workspace folder: %s.",
-                currentMayaWorkspacePath.asChar());
         }
     } else {
         importTexturesRootDirPath.assign(userArg);

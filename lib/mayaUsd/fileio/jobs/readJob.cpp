@@ -269,6 +269,13 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                 stage->GetRootLayer()->GetRealPath().c_str());
             return MStatus::kFailure;
         }
+
+        if (this->mArgs.importUSDZTexturesFilePath.length() == 0) {
+            TF_WARN(
+                "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
+                "will be imported to the workspace folder: %s.",
+                currentMayaWorkspacePath.asChar());
+        }
     }
 
     DoImport(range, usdRootPrim);
