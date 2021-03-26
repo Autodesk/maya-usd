@@ -14,7 +14,6 @@
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
-
 #include <pxr/usd/sdf/layer.h>
 
 #include <maya/MDagPathArray.h>
@@ -30,6 +29,7 @@
 #include <QtWidgets/QBoxLayout>
 
 #include <string>
+
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Utils.h>
