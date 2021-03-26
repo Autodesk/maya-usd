@@ -32,7 +32,7 @@ void UsdLayerEditor::initialize()
     }
 }
 
-bool UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>& stages)
+MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(const MDagPathArray& proxyShapes)
 {
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
         auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
@@ -46,10 +46,10 @@ bool UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>
             // if at least one stage contains anonymous layers, you need to show the comfirm dialog
             // so the user can choose where to save the anonymous layers.
             if (!showConfirmDgl) {
-                for (auto& stage : stages) {
+                for (auto& shape : proxyShapes) {
                     MayaUsd::utils::stageLayersToSave stageLayersToSave;
-                    MayaUsd::utils::getLayersToSaveFromProxy(stage, stageLayersToSave);
-                    if (!stageLayersToSave.anonLayers.empty()) {
+                    MayaUsd::utils::getLayersToSaveFromProxy(shape.fullPathName().asChar(), stageLayersToSave);
+                    if (!stageLayersToSave._anonLayers.empty()) {
                         showConfirmDgl = true;
                         break;
                     }
@@ -57,13 +57,20 @@ bool UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<UsdStageRefPtr>
             }
 
             if (showConfirmDgl) {
-                UsdLayerEditor::SaveLayersDialog dlg(nullptr, stages);
-                if (QDialog::Accepted != dlg.exec()) {
-                    return false;
+                UsdLayerEditor::SaveLayersDialog dlg(nullptr, proxyShapes);
+
+                if (QDialog::Rejected == dlg.exec()) {
+                    return MayaUsd::kAbort;
+                }
+
+                if (!dlg.layersNotSaved().isEmpty() || !dlg.layersWithErrorPairs().isEmpty()) {
+                    return MayaUsd::kPartiallyCompleted;
+                } else {
+                    return MayaUsd::kCompleted;
                 }
             }
         }
     }
 
-    return true;
+    return MayaUsd::kNotHandled;
 }

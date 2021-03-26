@@ -400,21 +400,6 @@ void LayerTreeItem::printLayer()
     }
 }
 
-void LayerTreeItem::clearLayer()
-{
-    MString title;
-    title.format(
-        StringResources::getAsMString(StringResources::kClearLayerTitle),
-        MQtUtil::toMString(text()));
-
-    MString desc;
-    desc.format(
-        StringResources::getAsMString(StringResources::kClearLayerConfirmMessage),
-        MQtUtil::toMString(text()));
-
-    if (confirmDialog(MQtUtil::toQString(title), MQtUtil::toQString(desc))) {
-        commandHook()->clearLayer(layer());
-    }
-}
+void LayerTreeItem::clearLayer() { commandHook()->clearLayer(layer()); }
 
 } // namespace UsdLayerEditor

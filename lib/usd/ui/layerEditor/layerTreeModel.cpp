@@ -422,8 +422,8 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
         // Get the layers to save for this stage.
         MayaUsd::utils::stageLayersToSave stageLayersToSave;
         auto&                             stageEntry = _sessionState->stageEntry();
-        MayaUsd::utils::getLayersToSaveFromProxy(stageEntry._stage, stageLayersToSave);
-        showConfirmDgl = !stageLayersToSave.anonLayers.empty();
+        MayaUsd::utils::getLayersToSaveFromProxy(stageEntry._proxyShapePath, stageLayersToSave);
+        showConfirmDgl = !stageLayersToSave._anonLayers.empty();
     }
 
     if (showConfirmDgl) {
