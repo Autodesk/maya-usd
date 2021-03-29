@@ -323,7 +323,6 @@ HdMayaRenderItemAdapter::GetInstancePrimvarDescriptors(HdInterpolation interpola
 HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
 {
 	if (
-		interpolation == HdInterpolationConstant ||
 		interpolation == HdInterpolationVertex
 		) 
 	{
@@ -333,21 +332,9 @@ HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInter
 		desc.role = HdPrimvarRoleTokens->point;
 		return { desc };
 	}
-	//else if (interpolation == HdInterpolationFaceVarying) {
-	//	// UVs are face varying in maya.
-	//	MFnMesh mesh(GetDagPath());
-	//	if (mesh.numUVs() > 0) {
-	//		HdPrimvarDescriptor desc;
-	//		desc.name = HdMayaAdapterTokens->st;
-	//		desc.interpolation = interpolation;
-	//		desc.role = HdPrimvarRoleTokens->textureCoordinate;
-	//		return { desc };
-	//	}
-	//}
+
 	return {};
 }
-
-bool HdMayaRenderItemAdapter::_GetVisibility() const { return true; }
 
 VtValue HdMayaRenderItemAdapter::GetInstancePrimvar(const TfToken& key)
 {

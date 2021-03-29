@@ -138,7 +138,7 @@ public:
 
 protected:
     HDMAYA_API
-    virtual bool _GetVisibility() const;
+	virtual bool _GetVisibility() const { return true; }
 
 private:
 
