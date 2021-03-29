@@ -671,6 +671,14 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag)
             }
         }
     }
+
+    //auto material = adapter->GetMaterial();
+    //if (material != MObject::kNullObj) {
+    //    const auto materialId = GetMaterialPath(material);
+    //    if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
+    //        _CreateMaterial(materialId, material);
+    //    }
+    //}
 }
 
 void HdMayaSceneDelegate::NodeAdded(const MObject& obj) { _addedNodes.push_back(obj); }
@@ -1278,42 +1286,52 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
 	return _fallbackMaterial;
 #else
-    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
-        .Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
-    if (!_enableMaterials)
-        return {};
-    auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
-    if (shapeAdapter == nullptr) {
-        return _fallbackMaterial;
-    }
-    auto material = shapeAdapter->get()->GetMaterial();
-    if (material == MObject::kNullObj) {
-        return _fallbackMaterial;
-    }
-    auto materialId = GetMaterialPath(material);
-    if (TfMapLookupPtr(_materialAdapters, materialId) != nullptr) {
-        return materialId;
-    }
+	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
+		.Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
+	if (!_enableMaterials)
+		return {};
+	auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
+	if (shapeAdapter == nullptr) {
+		return _fallbackMaterial;
+	}
+	auto material = shapeAdapter->get()->GetMaterial();
+	if (material == MObject::kNullObj) {
+		return _fallbackMaterial;
+	}
+	auto materialId = GetMaterialPath(material);
+	if (TfMapLookupPtr(_materialAdapters, materialId) != nullptr) {
+		return materialId;
+	}
 
-    return _CreateMaterial(materialId, material) ? materialId : _fallbackMaterial;
+	return _CreateMaterial(materialId, material) ? materialId : _fallbackMaterial;
 #endif
 }
 
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 {
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	return HdMayaMaterialAdapter::GetPreviewMaterialResource(_fallbackMaterial);
+	//TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
+	//	.Msg("HdMayaSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
+	//if (id == _fallbackMaterial) 
+	{
+		return HdMayaMaterialAdapter::GetPreviewMaterialResource(_fallbackMaterial);
+	}
+	//auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
+	//	id,
+	//	[](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
+	//	_materialAdapters);
+	//return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 #else
-    TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
-        .Msg("HdMayaSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
-    if (id == _fallbackMaterial) {
-        return HdMayaMaterialAdapter::GetPreviewMaterialResource(id);
-    }
-    auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
-        id,
-        [](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
-        _materialAdapters);
-    return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
+	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
+		.Msg("HdMayaSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
+	if (id == _fallbackMaterial) {
+		return HdMayaMaterialAdapter::GetPreviewMaterialResource(id);
+	}
+	auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
+		id,
+		[](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
+		_materialAdapters);
+	return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 #endif
 }
 

@@ -58,9 +58,12 @@ namespace {
 HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
     const SdfPath& id,
     HdMayaDelegateCtx* del,
-	MGeometry::Primitive primitiveType
+	MGeometry::Primitive primitiveType,
+	MString name
 	)
     : HdMayaAdapter(MObject(), id, del)
+	, _primitive(primitiveType)
+	, _name(name)
 {
     // We shouldn't call virtual functions in constructors.
  /*   _isVisible = GetDagPath().isVisible();
@@ -122,49 +125,66 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 	// TODO : Multiple streams
 	// for now assume first is position
 	if (geom && geom->vertexBufferCount() > 0) {		
-		if (MVertexBuffer* verts = geom->vertexBuffer(0)) {
+		MVertexBuffer* verts = nullptr;
+		if (verts = geom->vertexBuffer(0)) {
 			int vertCount = verts->vertexCount();
 			_vertexPositions.clear();
-			_vertexPositions.reserve(vertCount);
+			_vertexPositions.resize(vertCount);
 			float* vertexPositions = (float*)verts->map();
 			_vertexPositions.assign(vertexPositions, vertexPositions + vertCount);			
 			verts->unmap();
 		}
-		if (MIndexBuffer* indices = geom->indexBuffer(0))
+		MIndexBuffer* indices = nullptr;
+		if (indices = geom->indexBuffer(0))
 		{
 			int indexCount = indices->size();
-			faceVertexIndices.reserve(indexCount);
-			faceVertexCounts.reserve(indexCount/3);
-			std::memcpy(faceVertexIndices.data(), indices->map(), indexCount *sizeof(int));
+			faceVertexIndices.resize(indexCount);
+			int* indicesData = (int*)indices->map();
+			//std::memcpy(faceVertexIndices.data(), indices->map(), indexCount *sizeof(int));
+			for (int i = 0; i < indexCount; i++) faceVertexIndices[i] = indicesData[i];
+
+			faceVertexCounts.resize(indexCount / 3);
 			for (int i = 0; i < indexCount / 3; i++) faceVertexCounts[i] = 3;
 			indices->unmap();
-		}		
-	}
+		}	
 
-	// TODO: Maybe we could use the flat shading of the display style?
-	_meshTopology = HdMeshTopology(
+		if (indices && verts)
+		{
+			// TODO: Maybe we could use the flat shading of the display style?
+			_meshTopology = HdMeshTopology(
 #if MAYA_APP_VERSION >= 2019
-		(GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
-		? PxOsdOpenSubdivTokens->catmullClark
-		: PxOsdOpenSubdivTokens->none,
+				(GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
+				? PxOsdOpenSubdivTokens->catmullClark
+				: PxOsdOpenSubdivTokens->none,
 #else
-		GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
-		: PxOsdOpenSubdivTokens->none,
+				GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
+				: PxOsdOpenSubdivTokens->none,
 #endif
 
-		UsdGeomTokens->rightHanded,
-		faceVertexCounts,
-		faceVertexIndices);
+				UsdGeomTokens->rightHanded,
+				faceVertexCounts,
+				faceVertexIndices);
 
-	MarkDirty(
-		//HdChangeTracker::AllDirty |
-		//HdChangeTracker::NewRepr |
-		HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar
-		| HdChangeTracker::DirtyPoints);
+			MarkDirty(
+				//HdChangeTracker::AllDirty |
+				//HdChangeTracker::NewRepr |
+				HdChangeTracker::DirtyTransform |
+				HdChangeTracker::DirtyMaterialId |
+				HdChangeTracker::DirtyTopology |
+				HdChangeTracker::DirtyPrimvar |
+				HdChangeTracker::DirtyPoints
+			);
+		}
+	}
 }
 
 HdMeshTopology HdMayaRenderItemAdapter::GetMeshTopology()
 {
+	int deb = 0;
+	if (_meshTopology.GetNumPoints() == 0)
+	{
+		deb = 1;
+	}
 	return _meshTopology;
 }
 
@@ -234,12 +254,6 @@ void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (dirtyBits != 0) {
         GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
-        if (IsInstanced()) {
-            GetDelegate()->GetChangeTracker().MarkInstancerDirty(GetInstancerID(), dirtyBits);
-        }
-        if (dirtyBits & HdChangeTracker::DirtyVisibility) {
-            _visibilityDirty = true;
-        }
     }
 }
 
@@ -266,16 +280,7 @@ void HdMayaRenderItemAdapter::RemovePrim()
 
 bool HdMayaRenderItemAdapter::UpdateVisibility()
 {
-    if (ARCH_UNLIKELY(!GetDagPath().isValid())) {
-        return false;
-    }
-    const auto visible = _GetVisibility();
-    _visibilityDirty = false;
-    if (visible != _isVisible) {
-        _isVisible = visible;
-        return true;
-    }
-    return false;
+	return true;
 }
 
 VtIntArray HdMayaRenderItemAdapter::GetInstanceIndices(const SdfPath& prototypeId)
@@ -379,7 +384,9 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, renderItem)
 			new HdMayaRenderItemAdapter(
 				del->GetPrimPath(ri, false),
 				del,
-				ri.primitive()));
+				ri.primitive(),
+				ri.name()
+				));
 	});
 }
 

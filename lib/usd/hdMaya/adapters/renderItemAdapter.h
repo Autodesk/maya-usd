@@ -51,7 +51,8 @@ public:
 	HdMayaRenderItemAdapter(
 		const SdfPath& id, 
 		HdMayaDelegateCtx* del,
-		MGeometry::Primitive primitiveType);
+		MGeometry::Primitive primitiveType,
+		MString name);
 
 	// override
 	HDMAYA_API
@@ -101,7 +102,7 @@ public:
     
 	const MDagPath& GetDagPath() const { return _dagPath; }
 
-    void InvalidateTransform() { _invalidTransform = true; }
+    void InvalidateTransform() { }
 
 	bool IsInstanced() const { return false; }		
     
@@ -144,13 +145,14 @@ private:
 	HdMeshTopology _meshTopology = {};
 	VtVec3fArray _vertexPositions = {};
 	MGeometry::Primitive _primitive;
-    MDagPath   _dagPath;
+	MString _name;
+    MDagPath _dagPath;
     GfMatrix4d _transform[2];
-    bool       _isVisible = true;
-    bool       _visibilityDirty = true;
-    bool       _invalidTransform = true;
+    bool _isVisible = true;
+    //bool _visibilityDirty = true;
+    //bool _invalidTransform = true;
 	GfRange3d _extent;
-	bool      _extentDirty;
+	bool _extentDirty;
 };
 
 using HdMayaRenderItemAdapterPtr = std::shared_ptr<HdMayaRenderItemAdapter>;
