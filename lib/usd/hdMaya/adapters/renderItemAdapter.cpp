@@ -100,7 +100,18 @@ HdDisplayStyle HdMayaRenderItemAdapter::GetDisplayStyle()
 
 void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
 {
-
+	MMatrix matrix;
+	if (ri.getMatrix(matrix) == MStatus::kSuccess)
+	{
+		_transform[0] = GetGfMatrixFromMaya(matrix);
+		if (GetDelegate()->GetParams().enableMotionSamples) {
+			MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
+			_transform[1] = GetGfMatrixFromMaya(matrix);
+		}
+		else {
+			_transform[1] = _transform[0];
+		}
+	}
 }
 
 void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
@@ -125,7 +136,7 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 			faceVertexIndices.reserve(indexCount);
 			faceVertexCounts.reserve(indexCount/3);
 			std::memcpy(faceVertexIndices.data(), indices->map(), indexCount *sizeof(int));
-			for (int i = 0; i < 0; i++) faceVertexCounts[i] = 3;
+			for (int i = 0; i < indexCount / 3; i++) faceVertexCounts[i] = 3;
 			indices->unmap();
 		}		
 	}
@@ -144,6 +155,12 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 		UsdGeomTokens->rightHanded,
 		faceVertexCounts,
 		faceVertexIndices);
+
+	MarkDirty(
+		//HdChangeTracker::AllDirty |
+		//HdChangeTracker::NewRepr |
+		HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar
+		| HdChangeTracker::DirtyPoints);
 }
 
 HdMeshTopology HdMayaRenderItemAdapter::GetMeshTopology()
@@ -164,82 +181,53 @@ VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
 	return {};
 }
 
-void HdMayaRenderItemAdapter::_CalculateTransform()
+const GfMatrix4d& HdMayaRenderItemAdapter::GetTransform()
+{    
+    return _transform[0];
+}
+
+void HdMayaRenderItemAdapter::_CalculateExtent()
 {
-    if (_invalidTransform) {
-        if (IsInstanced()) {
-            _transform[0].SetIdentity();
-            _transform[1].SetIdentity();
-        } else {
-            _transform[0] = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
-            if (GetDelegate()->GetParams().enableMotionSamples) {
-                MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
-                _transform[1] = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
-            } else {
-                _transform[1] = _transform[0];
-            }
-        }
-        _invalidTransform = false;
-    }
+	MStatus    status;
+	MFnDagNode dagNode(GetDagPath(), &status);
+	if (ARCH_LIKELY(status)) {
+		const auto bb = dagNode.boundingBox();
+		const auto mn = bb.min();
+		const auto mx = bb.max();
+		_extent.SetMin({ mn.x, mn.y, mn.z });
+		_extent.SetMax({ mx.x, mx.y, mx.z });
+		_extentDirty = false;
+	}
 };
 
-const GfMatrix4d& HdMayaRenderItemAdapter::GetTransform()
+const GfRange3d& HdMayaRenderItemAdapter::GetExtent()
 {
-    TF_DEBUG(HDMAYA_ADAPTER_GET)
-        .Msg("Called HdMayaRenderItemAdapter::GetTransform() - %s\n", _dagPath.partialPathName().asChar());
-    _CalculateTransform();
-    return _transform[0];
+	if (_extentDirty) {
+		_CalculateExtent();
+	}
+	return _extent;
 }
 
 size_t HdMayaRenderItemAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
 {
-    _CalculateTransform();
-    if (maxSampleCount < 1) {
-        return 0;
-    }
-    times[0] = 0.0f;
-    samples[0] = _transform[0];
-    if (maxSampleCount == 1 || !GetDelegate()->GetParams().enableMotionSamples) {
-        return 1;
-    } else {
-        times[1] = 1.0f;
-        samples[1] = _transform[1];
-        return 2;
-    }
+	return 0;
+    //_CalculateTransform();
+    //if (maxSampleCount < 1) {
+    //    return 0;
+    //}
+    //times[0] = 0.0f;
+    //samples[0] = _transform[0];
+    //if (maxSampleCount == 1 || !GetDelegate()->GetParams().enableMotionSamples) {
+    //    return 1;
+    //} else {
+    //    times[1] = 1.0f;
+    //    samples[1] = _transform[1];
+    //    return 2;
+    //}
 }
 
 void HdMayaRenderItemAdapter::CreateCallbacks()
 {
-    //MStatus status;
-
-    //TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
-    //    .Msg("Creating dag adapter callbacks for prim (%s).\n", GetID().GetText());
-
-    //MDagPathArray dags;
-    //if (MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
-    //    const auto numDags = dags.length();
-    //    auto       dagNodeDirtyCallback = numDags > 1 ? _InstancerNodeDirty : _TransformNodeDirty;
-    //    for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
-    //        auto dag = dags[i];
-    //        for (; dag.length() > 0; dag.pop()) {
-    //            MObject obj = dag.node();
-    //            if (obj != MObject::kNullObj) {
-    //                auto id = MNodeMessage::addNodeDirtyPlugCallback(
-    //                    obj, dagNodeDirtyCallback, this, &status);
-    //                if (status) {
-    //                    AddCallback(id);
-    //                }
-    //                TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
-    //                    .Msg(
-    //                        "- Added _InstancerNodeDirty callback for "
-    //                        "dagPath (%s).\n",
-    //                        dag.partialPathName().asChar());
-    //                _AddHierarchyChangedCallbacks(dag);
-    //            }
-    //        }
-    //    }
-    //}
-    //HdMayaAdapter::CreateCallbacks();
 }
 
 void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
@@ -255,15 +243,24 @@ void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
     }
 }
 
+void HdMayaRenderItemAdapter::Populate()
+{
+	if (_isPopulated) {
+		return;
+	}
+	 
+	// TODO insert more prims than mesh for given render item
+	GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), GetInstancerID());
+	_isPopulated = true;
+}
+
 void HdMayaRenderItemAdapter::RemovePrim()
 {
     if (!_isPopulated) {
         return;
     }
     GetDelegate()->RemoveRprim(GetID());
-    if (_isInstanced) {
-        GetDelegate()->RemoveInstancer(GetID().AppendProperty(_tokens->instancer));
-    }
+
     _isPopulated = false;
 }
 
@@ -279,14 +276,6 @@ bool HdMayaRenderItemAdapter::UpdateVisibility()
         return true;
     }
     return false;
-}
-
-bool HdMayaRenderItemAdapter::IsVisible(bool checkDirty)
-{
-    if (checkDirty && _visibilityDirty) {
-        UpdateVisibility();
-    }
-    return _isVisible;
 }
 
 VtIntArray HdMayaRenderItemAdapter::GetInstanceIndices(const SdfPath& prototypeId)
@@ -312,10 +301,6 @@ VtIntArray HdMayaRenderItemAdapter::GetInstanceIndices(const SdfPath& prototypeI
 
 SdfPath HdMayaRenderItemAdapter::GetInstancerID() const
 {
-    if (!_isInstanced) {
-        return {};
-    }
-
     return GetID().AppendProperty(_tokens->instancer);
 }
 
@@ -330,7 +315,34 @@ HdMayaRenderItemAdapter::GetInstancePrimvarDescriptors(HdInterpolation interpola
     //}
 }
 
-bool HdMayaRenderItemAdapter::_GetVisibility() const { return GetDagPath().isVisible(); }
+HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
+{
+	if (
+		interpolation == HdInterpolationConstant ||
+		interpolation == HdInterpolationVertex
+		) 
+	{
+		HdPrimvarDescriptor desc;
+		desc.name = UsdGeomTokens->points;
+		desc.interpolation = interpolation;
+		desc.role = HdPrimvarRoleTokens->point;
+		return { desc };
+	}
+	//else if (interpolation == HdInterpolationFaceVarying) {
+	//	// UVs are face varying in maya.
+	//	MFnMesh mesh(GetDagPath());
+	//	if (mesh.numUVs() > 0) {
+	//		HdPrimvarDescriptor desc;
+	//		desc.name = HdMayaAdapterTokens->st;
+	//		desc.interpolation = interpolation;
+	//		desc.role = HdPrimvarRoleTokens->textureCoordinate;
+	//		return { desc };
+	//	}
+	//}
+	return {};
+}
+
+bool HdMayaRenderItemAdapter::_GetVisibility() const { return true; }
 
 VtValue HdMayaRenderItemAdapter::GetInstancePrimvar(const TfToken& key)
 {

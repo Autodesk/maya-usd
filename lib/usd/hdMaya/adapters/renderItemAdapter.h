@@ -48,70 +48,94 @@ class HdMayaRenderItemAdapter : public HdMayaAdapter
 {
 public:
 	HDMAYA_API
-		HdMayaRenderItemAdapter(
-			const SdfPath& id, 
-			HdMayaDelegateCtx* del,
-			MGeometry::Primitive primitiveType);
+	HdMayaRenderItemAdapter(
+		const SdfPath& id, 
+		HdMayaDelegateCtx* del,
+		MGeometry::Primitive primitiveType);
 
 	// override
 	HDMAYA_API
 	virtual bool IsSupported() const override { return true; };
 
+	HDMAYA_API
+	virtual bool GetDoubleSided() const { return true; };
 
 	HDMAYA_API
-	virtual void Populate() override {}
+	virtual void Populate() override;
 
 	HDMAYA_API
-		virtual void CreateCallbacks() override;
+	virtual void CreateCallbacks() override;
+	
 	HDMAYA_API
-		virtual void MarkDirty(HdDirtyBits dirtyBits) override;
+	virtual void MarkDirty(HdDirtyBits dirtyBits) override;
+	
 	HDMAYA_API
-		virtual void RemovePrim() override;
+	virtual void RemovePrim() override;
+
 	HDMAYA_API
-		VtValue Get(const TfToken& key) override;
+	VtValue Get(const TfToken& key) override;
 
 	// this
     HDMAYA_API
     virtual ~HdMayaRenderItemAdapter() = default;
-    HDMAYA_API
+    
+	HDMAYA_API
     virtual bool GetVisible() { return IsVisible(); }
-    HDMAYA_API
+    
+	HDMAYA_API
     const GfMatrix4d& GetTransform();
+	
+	HDMAYA_API
+	void _CalculateExtent();
+	
+	HDMAYA_API
+	const GfRange3d& GetExtent();	
+
     HDMAYA_API
     size_t SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples);
-    HDMAYA_API
-    bool            UpdateVisibility();
-    bool            IsVisible(bool checkDirty = true);
-    const MDagPath& GetDagPath() const { return _dagPath; }
-    void            InvalidateTransform() { _invalidTransform = true; }
-    bool            IsInstanced() const { return _isInstanced; }
-    HDMAYA_API
+    
+	HDMAYA_API
+    bool UpdateVisibility();
+	
+	bool IsVisible(bool checkDirty = true) { return true; }
+    
+	const MDagPath& GetDagPath() const { return _dagPath; }
+
+    void InvalidateTransform() { _invalidTransform = true; }
+
+	bool IsInstanced() const { return false; }		
+    
+	HDMAYA_API
     SdfPath GetInstancerID() const;
-    HDMAYA_API
+    
+	HDMAYA_API
     virtual VtIntArray GetInstanceIndices(const SdfPath& prototypeId);
-    HDMAYA_API
+    
+	HDMAYA_API
     HdPrimvarDescriptorVector GetInstancePrimvarDescriptors(HdInterpolation interpolation) const;
-    HDMAYA_API
+	
+	HDMAYA_API
+	HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation);
+    
+	HDMAYA_API
     VtValue GetInstancePrimvar(const TfToken& key);
 
 	HDMAYA_API
-		void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri);
+	void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri);
 
 	HDMAYA_API
-		void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri);
+	void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri);
 
 	HDMAYA_API
-		virtual HdMeshTopology GetMeshTopology();
+	virtual HdMeshTopology GetMeshTopology();
 
 	HDMAYA_API
-		HdDisplayStyle GetDisplayStyle();
+	HdDisplayStyle GetDisplayStyle();
 
 	HDMAYA_API
-		virtual TfToken GetRenderTag() const;
+	virtual TfToken GetRenderTag() const;
 
 protected:
-    HDMAYA_API
-    void _CalculateTransform();
     HDMAYA_API
     virtual bool _GetVisibility() const;
 
@@ -119,15 +143,14 @@ private:
 
 	HdMeshTopology _meshTopology = {};
 	VtVec3fArray _vertexPositions = {};
-
 	MGeometry::Primitive _primitive;
     MDagPath   _dagPath;
     GfMatrix4d _transform[2];
     bool       _isVisible = true;
     bool       _visibilityDirty = true;
     bool       _invalidTransform = true;
-    bool       _isInstanced = false;
-
+	GfRange3d _extent;
+	bool      _extentDirty;
 };
 
 using HdMayaRenderItemAdapterPtr = std::shared_ptr<HdMayaRenderItemAdapter>;

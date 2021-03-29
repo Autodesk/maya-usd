@@ -737,7 +737,7 @@ MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName)
     return nullptr;
 }
 
-// TODO: Pass MViewportScene
+// TODO: Pass MViewportScene inside here
 void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
