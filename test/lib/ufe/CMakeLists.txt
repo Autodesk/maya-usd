@@ -9,6 +9,7 @@ set(TEST_SCRIPT_FILES
     testPythonWrappers.py
     testSelection.py
     testUfePythonImport.py
+    testAttributeBlock.py
 )
 
 set(TEST_SUPPORT_FILES
