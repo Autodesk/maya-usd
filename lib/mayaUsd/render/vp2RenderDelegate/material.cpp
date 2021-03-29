@@ -721,7 +721,7 @@ void HdVP2Material::Sync(
             // Skip creating a new shader instance if the token is unchanged. There is no plan to
             // implement fine-grain dirty bit in Hydra for the same purpose:
             // https://groups.google.com/g/usd-interest/c/xytT2azlJec/m/22Tnw4yXAAAJ
-            if (_surfaceNetworkToken != token) {
+            if (_surfaceNetworkToken != token && !vp2BxdfNet.nodes.empty()) {
                 MProfilingScope subProfilingScope(
                     HdVP2RenderDelegate::sProfilerCategory,
                     MProfiler::kColorD_L2,
