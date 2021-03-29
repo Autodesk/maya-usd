@@ -37,8 +37,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaRenderItemAdapter, TfType::Bases<HdMayaAdapter>>(); }
-
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -124,9 +122,11 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 	VtIntArray faceVertexCounts;
 	// TODO : Multiple streams
 	// for now assume first is position
-	if (geom && geom->vertexBufferCount() > 0) {		
+	if (geom && geom->vertexBufferCount() > 0) 
+	{		
 		MVertexBuffer* verts = nullptr;
-		if (verts = geom->vertexBuffer(0)) {
+		if (verts = geom->vertexBuffer(0)) 
+		{
 			int vertCount = verts->vertexCount();
 			_vertexPositions.clear();
 			_vertexPositions.resize(vertCount);
