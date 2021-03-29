@@ -1211,7 +1211,7 @@ bool UsdMayaUtil::IsPlugDefaultValue(const MPlug& plug)
     // the source of a connection or is not connected at all, it's
     // authored-ness only depends on its own value, which is checked below.
     if (plug.isDestination(&status)) {
-        return true;
+        return false;
     }
 
     if (plug.isDefaultValue(true, &status)) {
