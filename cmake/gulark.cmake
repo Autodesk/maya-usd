@@ -14,21 +14,20 @@
 # limitations under the License.
 #
 
-set(CONTENT_NAME gulark)
-
 include(FetchContent)
+
+set(CONTENT_NAME gulark)
 
 set(FETCHCONTENT_QUIET OFF)
 
 # GULARK_SOURCE_DIR : Set this to the directory where you have cloned gulark filesystem repo, 
 #                     if you would like to bypass pulling from Github repository via Internet.
 if(DEFINED GULARK_SOURCE_DIR)
-    message(STATUS "**** Building Gulark From " ${GULARK_SOURCE_DIR} )
-
+    message(STATUS "**** Building Gulark From " ${GULARK_SOURCE_DIR})
     FetchContent_Declare(
         ${CONTENT_NAME}
         URL ${GULARK_SOURCE_DIR}
-    ) 
+    )
 
     string(TOUPPER ${CONTENT_NAME} UPPERGULARK)
     mark_as_advanced(FETCHCONTENT_SOURCE_DIR_${UPPERGULARK})
