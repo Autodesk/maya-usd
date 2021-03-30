@@ -1,18 +1,15 @@
+//-
+// ==========================================================================
+// Copyright 2021 Autodesk, Inc. All rights reserved.
 //
-// Copyright 2019 Luma Pictures
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// This computer source code and related instructions and comments are the
+// unpublished confidential and proprietary information of Autodesk, Inc.
+// and are protected under applicable copyright and trade secret law.
+// They may not be disclosed to, copied or used by any third party without
+// the prior written consent of Autodesk, Inc.
+// ==========================================================================
+//+
+
 #include "renderItemAdapter.h"
 
 #include <hdMaya/adapters/adapterRegistry.h>
@@ -29,12 +26,7 @@
 #include <maya/MAnimControl.h>
 #include <maya/MDGContext.h>
 #include <maya/MDGContextGuard.h>
-#include <maya/MDagMessage.h>
-#include <maya/MDagPathArray.h>
-#include <maya/MFnDagNode.h>
-#include <maya/MNodeMessage.h>
-#include <maya/MPlug.h>
-#include <maya/MTransformationMatrix.h>
+#include <maya/MHWGeometry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,36 +62,6 @@ HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
     _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;*/
 }
 
-HDMAYA_API
-TfToken HdMayaRenderItemAdapter::GetRenderTag() const
-{
-	return HdTokens->geometry;
-}
-
-HdDisplayStyle HdMayaRenderItemAdapter::GetDisplayStyle()
-{
-	return { 0, false, false };
-//#if MAYA_APP_VERSION >= 2019
-//	MStatus           status;
-//	MFnDependencyNode node(GetNode(), &status);
-//	if (ARCH_UNLIKELY(!status)) {
-//		return { 0, false, false };
-//	}
-//	const auto displaySmoothMesh
-//		= node.findPlug(MayaAttrs::mesh::displaySmoothMesh, true).asShort();
-//	if (displaySmoothMesh == 0) {
-//		return { 0, false, false };
-//	}
-//	const auto smoothLevel
-//		= std::max(0, node.findPlug(MayaAttrs::mesh::smoothLevel, true).asInt());
-//	return { smoothLevel, false, false };
-//#else
-//	return { 0, false, false };
-//#endif
-}
-
-
-
 void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
 {
 	MMatrix matrix;
@@ -133,10 +95,11 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 			_vertexPositions.clear();
 			_vertexPositions.resize(vertCount);
 			const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(verts->map());
-			// NOTE: This code is NOT consistent with HdMayaMeshAdapter::GetPoints. There we are using
-			// assign(vertexPositions, vertexPositions + vertCount) without multiplication with sizeof(GfVec3f)
-			// I believe this is an error over there.
-			_vertexPositions.assign(vertexPositions, vertexPositions + vertCount*sizeof(GfVec3f));
+			// NOTE: Looking at HdMayaMeshAdapter::GetPoints notice assign(vertexPositions, vertexPositions + vertCount)
+			// Why are we not multiplying with sizeof(GfVec3f) to calculate the offset ? 
+			// The following happens when I try to do it :
+			// Invalid Hydra prim - Vertex primvar points has 288 elements, while its topology references only upto element index 24.
+			_vertexPositions.assign(vertexPositions, vertexPositions + vertCount);
 			verts->unmap();
 		}
 		// Indices
@@ -220,50 +183,6 @@ const GfMatrix4d& HdMayaRenderItemAdapter::GetTransform()
     return _transform[0];
 }
 
-void HdMayaRenderItemAdapter::_CalculateExtent()
-{
-	MStatus    status;
-	MFnDagNode dagNode(GetDagPath(), &status);
-	if (ARCH_LIKELY(status)) {
-		const auto bb = dagNode.boundingBox();
-		const auto mn = bb.min();
-		const auto mx = bb.max();
-		_extent.SetMin({ mn.x, mn.y, mn.z });
-		_extent.SetMax({ mx.x, mx.y, mx.z });
-		_extentDirty = false;
-	}
-};
-
-const GfRange3d& HdMayaRenderItemAdapter::GetExtent()
-{
-	if (_extentDirty) {
-		_CalculateExtent();
-	}
-	return _extent;
-}
-
-size_t HdMayaRenderItemAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
-{
-	return 0;
-    //_CalculateTransform();
-    //if (maxSampleCount < 1) {
-    //    return 0;
-    //}
-    //times[0] = 0.0f;
-    //samples[0] = _transform[0];
-    //if (maxSampleCount == 1 || !GetDelegate()->GetParams().enableMotionSamples) {
-    //    return 1;
-    //} else {
-    //    times[1] = 1.0f;
-    //    samples[1] = _transform[1];
-    //    return 2;
-    //}
-}
-
-void HdMayaRenderItemAdapter::CreateCallbacks()
-{
-}
-
 void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (dirtyBits != 0) {
@@ -276,9 +195,8 @@ void HdMayaRenderItemAdapter::Populate()
 	if (_isPopulated) {
 		return;
 	}
-	 
-	// TODO insert more prims than mesh for given render item
-	GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), GetInstancerID());
+	// TODO : GetInstancerID() instead of just {}
+	GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
 	_isPopulated = true;
 }
 
@@ -297,45 +215,10 @@ bool HdMayaRenderItemAdapter::UpdateVisibility()
 	return true;
 }
 
-VtIntArray HdMayaRenderItemAdapter::GetInstanceIndices(const SdfPath& prototypeId)
-{
-    if (!IsInstanced()) {
-        return {};
-    }
-    MDagPathArray dags;
-    if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
-        return {};
-    }
-    const auto numDags = dags.length();
-    VtIntArray ret;
-    ret.reserve(numDags);
-    for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
-        if (dags[i].isValid() && dags[i].isVisible()) {
-            ret.push_back(static_cast<int>(ret.size()));
-        }
-    }
-    return ret;
-}
-
-
-SdfPath HdMayaRenderItemAdapter::GetInstancerID() const
-{
-    return GetID().AppendProperty(_tokens->instancer);
-}
-
-HdPrimvarDescriptorVector
-HdMayaRenderItemAdapter::GetInstancePrimvarDescriptors(HdInterpolation interpolation) const
-{
-	return {};
-    //if (interpolation == HdInterpolationInstance) {
-    //    return _instancePrimvarDescriptors;
-    //} else {
-    //    return {};
-    //}
-}
 
 HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
 {
+	// Vertices
 	if (interpolation == HdInterpolationVertex) 
 	{
 		HdPrimvarDescriptor desc;
@@ -344,36 +227,17 @@ HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInter
 		desc.role = HdPrimvarRoleTokens->point;
 		return { desc };
 	}
-	else if (interpolation == HdInterpolationFaceVarying) 
-	{
-		HdPrimvarDescriptor desc;
-		desc.name = HdMayaAdapterTokens->st;
-		desc.interpolation = interpolation;
-		desc.role = HdPrimvarRoleTokens->textureCoordinate;
-		return { desc };
-	}
+	// UVs
+	//else if (interpolation == HdInterpolationFaceVarying) 
+	//{
+	//	HdPrimvarDescriptor desc;
+	//	desc.name = HdMayaAdapterTokens->st;
+	//	desc.interpolation = interpolation;
+	//	desc.role = HdPrimvarRoleTokens->textureCoordinate;
+	//	return { desc };
+	//}
 
 	return {};
-}
-
-VtValue HdMayaRenderItemAdapter::GetInstancePrimvar(const TfToken& key)
-{
-    if (key == _tokens->instanceTransform) {
-        MDagPathArray dags;
-        if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
-            return {};
-        }
-        const auto          numDags = dags.length();
-        VtArray<GfMatrix4d> ret;
-        ret.reserve(numDags);
-        for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
-            if (dags[i].isValid() && dags[i].isVisible()) {
-                ret.push_back(GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
-            }
-        }
-        return VtValue(ret);
-    }
-    return {};
 }
 
 TF_REGISTRY_FUNCTION(TfType)

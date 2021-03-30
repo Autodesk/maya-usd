@@ -946,15 +946,10 @@ PxOsdSubdivTags HdMayaSceneDelegate::GetSubdivTags(const SdfPath& id)
 
 GfRange3d HdMayaSceneDelegate::GetExtent(const SdfPath& id)
 {
-#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+	// TODO HDMAYA_SCENE_RENDER_DATASERVER GetExtent, _CalculateExtent
 	TF_DEBUG(HDMAYA_DELEGATE_GET_EXTENT).Msg("HdMayaSceneDelegate::GetExtent(%s)\n", id.GetText());
-	return _GetValue<HdMayaRenderItemAdapter, GfRange3d>(
-		id, [](HdMayaRenderItemAdapter* a) -> GfRange3d { return a->GetExtent(); }, _renderItemsAdapters);
-#else
-    TF_DEBUG(HDMAYA_DELEGATE_GET_EXTENT).Msg("HdMayaSceneDelegate::GetExtent(%s)\n", id.GetText());
-    return _GetValue<HdMayaShapeAdapter, GfRange3d>(
-        id, [](HdMayaShapeAdapter* a) -> GfRange3d { return a->GetExtent(); }, _shapeAdapters);
-#endif
+	return _GetValue<HdMayaShapeAdapter, GfRange3d>(
+		id, [](HdMayaShapeAdapter* a) -> GfRange3d { return a->GetExtent(); }, _shapeAdapters);
 }
 
 GfMatrix4d HdMayaSceneDelegate::GetTransform(const SdfPath& id)
@@ -1021,19 +1016,12 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key)
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
     // TF_DEBUG(HDMAYA_DELEGATE_GET)
     //     .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
-    if (id.IsPropertyPath()) {
-        return _GetValue<HdMayaRenderItemAdapter, VtValue>(
-            id.GetPrimPath(),
-            [&key](HdMayaRenderItemAdapter* a) -> VtValue { return a->GetInstancePrimvar(key); },
-            _renderItemsAdapters);
-    } else {
-        return _GetValue<HdMayaAdapter, VtValue>(
-            id,
-            [&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
-            _renderItemsAdapters,
-            _lightAdapters,
-            _materialAdapters);
-    }
+	return _GetValue<HdMayaAdapter, VtValue>(
+		id,
+		[&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
+		_renderItemsAdapters,
+		_lightAdapters,
+		_materialAdapters);
 #else
     TF_DEBUG(HDMAYA_DELEGATE_GET)
         .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
@@ -1112,22 +1100,12 @@ HdMayaSceneDelegate::GetPrimvarDescriptors(const SdfPath& id, HdInterpolation in
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
 	TF_DEBUG(HDMAYA_DELEGATE_GET_PRIMVAR_DESCRIPTORS)
 		.Msg("HdMayaSceneDelegate::GetPrimvarDescriptors(%s, %i)\n", id.GetText(), interpolation);
-	if (id.IsPropertyPath()) {
-		return _GetValue<HdMayaRenderItemAdapter, HdPrimvarDescriptorVector>(
-			id.GetPrimPath(),
-			[&interpolation](HdMayaRenderItemAdapter* a) -> HdPrimvarDescriptorVector {
-			return a->GetInstancePrimvarDescriptors(interpolation);
+	return _GetValue<HdMayaRenderItemAdapter, HdPrimvarDescriptorVector>(
+		id,
+		[&interpolation](HdMayaRenderItemAdapter* a) -> HdPrimvarDescriptorVector {
+		return a->GetPrimvarDescriptors(interpolation);
 		},
-			_renderItemsAdapters);
-	}
-	else {
-		return _GetValue<HdMayaRenderItemAdapter, HdPrimvarDescriptorVector>(
-			id,
-			[&interpolation](HdMayaRenderItemAdapter* a) -> HdPrimvarDescriptorVector {
-			return a->GetPrimvarDescriptors(interpolation);
-		},
-			_renderItemsAdapters);
-	}
+		_renderItemsAdapters);
 #else
     TF_DEBUG(HDMAYA_DELEGATE_GET_PRIMVAR_DESCRIPTORS)
         .Msg("HdMayaSceneDelegate::GetPrimvarDescriptors(%s, %i)\n", id.GetText(), interpolation);

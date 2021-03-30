@@ -1,18 +1,15 @@
+//-
+// ==========================================================================
+// Copyright 2021 Autodesk, Inc. All rights reserved.
 //
-// Copyright 2019 Luma Pictures
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
+// This computer source code and related instructions and comments are the
+// unpublished confidential and proprietary information of Autodesk, Inc.
+// and are protected under applicable copyright and trade secret law.
+// They may not be disclosed to, copied or used by any third party without
+// the prior written consent of Autodesk, Inc.
+// ==========================================================================
+//+
+
 #ifndef HDMAYA_RENDER_ITEM_ADAPTER_H
 #define HDMAYA_RENDER_ITEM_ADAPTER_H
 
@@ -21,19 +18,13 @@
 #include <hdMaya/utils.h>
 
 #include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/range3d.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/meshTopology.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/pxr.h>
 
-#include <maya/MBoundingBox.h>
-#include <maya/MDagPath.h>
-#include <maya/MFn.h>
-#include <maya/MFnDagNode.h>
 #include <maya/MMatrix.h>
-#include <maya/MMessage.h>
 
 #include <functional>
 
@@ -41,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-	std::string gsRenderItemTypeName = "mesh";
+	std::string gsRenderItemTypeName = "renderItem";
 }
 
 class HdMayaRenderItemAdapter : public HdMayaAdapter
@@ -53,6 +44,9 @@ public:
 		HdMayaDelegateCtx* del,
 		MGeometry::Primitive primitiveType,
 		MString name);
+
+	HDMAYA_API
+	virtual ~HdMayaRenderItemAdapter() = default;
 
 	// override
 
@@ -69,9 +63,6 @@ public:
 	virtual void Populate() override;
 
 	HDMAYA_API
-	virtual void CreateCallbacks() override;
-	
-	HDMAYA_API
 	virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 	
 	HDMAYA_API
@@ -80,69 +71,39 @@ public:
 	HDMAYA_API
 	VtValue Get(const TfToken& key) override;
 
-	// this
-    HDMAYA_API
-    virtual ~HdMayaRenderItemAdapter() = default;
-    
 	HDMAYA_API
     virtual bool GetVisible() { return IsVisible(); }
     
 	HDMAYA_API
     const GfMatrix4d& GetTransform();
-	
-	HDMAYA_API
-	void _CalculateExtent();
-	
-	HDMAYA_API
-	const GfRange3d& GetExtent();	
-
-    HDMAYA_API
-    size_t SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples);
     
 	HDMAYA_API
     bool UpdateVisibility();
 	
-	bool IsVisible(bool checkDirty = true) { return true; }
-    
-	const MDagPath& GetDagPath() const { return _dagPath; }
+	bool IsVisible(bool checkDirty = true) { return true; }   	
 
     void InvalidateTransform() { }
 
-	bool IsInstanced() const { return false; }		
-    
-	HDMAYA_API
-    SdfPath GetInstancerID() const;
-    
-	HDMAYA_API
-    virtual VtIntArray GetInstanceIndices(const SdfPath& prototypeId);
-    
-	HDMAYA_API
-    HdPrimvarDescriptorVector GetInstancePrimvarDescriptors(HdInterpolation interpolation) const;
+	bool IsInstanced() const { return false; }
 	
 	HDMAYA_API
 	HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation);
-    
-	HDMAYA_API
-    VtValue GetInstancePrimvar(const TfToken& key);
 
 	HDMAYA_API
-	void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri);
+	void UpdateTransform(MRenderItem& ri);
 
 	HDMAYA_API
-	void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri);
+	void UpdateGeometry(MRenderItem& ri);
 
 	HDMAYA_API
 	virtual HdMeshTopology GetMeshTopology();
 
+	// TODO : Different smooth levels
 	HDMAYA_API
-	HdDisplayStyle GetDisplayStyle();
+	HdDisplayStyle GetDisplayStyle() { return { 0, false, false }; }
 
 	HDMAYA_API
-	virtual TfToken GetRenderTag() const;
-
-protected:
-    HDMAYA_API
-	virtual bool _GetVisibility() const { return true; }
+	virtual TfToken GetRenderTag() const { return HdTokens->geometry; }
 
 private:
 
@@ -151,11 +112,8 @@ private:
 	//VtArray<GfVec2f> _uvs = {};
 	MGeometry::Primitive _primitive;
 	MString _name;
-    MDagPath _dagPath;
     GfMatrix4d _transform[2];
     bool _isVisible = true;
-	GfRange3d _extent;
-	bool _extentDirty;
 };
 
 using HdMayaRenderItemAdapterPtr = std::shared_ptr<HdMayaRenderItemAdapter>;
