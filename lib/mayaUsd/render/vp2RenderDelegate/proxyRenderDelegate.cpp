@@ -777,13 +777,21 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     param->EndUpdate();
 }
 
-//! \brief  Switch to component-level selection for point snapping.
+//! \brief  Update selection granularity for point snapping.
 void ProxyRenderDelegate::updateSelectionGranularity(
     const MDagPath&               path,
     MHWRender::MSelectionContext& selectionContext)
 {
+    // The component level is coarse-grain, causing Maya to produce selection hits with undesired
+    // selection levels, i.e. face/edge selection hits, as well as vertex selection hits that are
+    // required by point snapping. Switch to the new vertex selection level if available in order
+    // to produce vertex selection hits only.
     if (pointSnappingActive()) {
+#if MAYA_API_VERSION >= 20230000 // HDC_TODO: 20230000 -> 20220100
+        selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kVertex);
+#else
         selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kComponent);
+#endif
     }
 }
 
