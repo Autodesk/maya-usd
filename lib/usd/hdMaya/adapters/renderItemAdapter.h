@@ -41,7 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-	std::string gsRenderItemTypeName = "renderItem";
+	std::string gsRenderItemTypeName = "mesh";
 }
 
 class HdMayaRenderItemAdapter : public HdMayaAdapter
@@ -55,6 +55,10 @@ public:
 		MString name);
 
 	// override
+
+	HDMAYA_API
+	bool HasType(const TfToken& typeId) const override { return typeId == HdPrimTypeTokens->mesh; }
+
 	HDMAYA_API
 	virtual bool IsSupported() const override { return true; };
 
@@ -144,13 +148,12 @@ private:
 
 	HdMeshTopology _meshTopology = {};
 	VtVec3fArray _vertexPositions = {};
+	//VtArray<GfVec2f> _uvs = {};
 	MGeometry::Primitive _primitive;
 	MString _name;
     MDagPath _dagPath;
     GfMatrix4d _transform[2];
     bool _isVisible = true;
-    //bool _visibilityDirty = true;
-    //bool _invalidTransform = true;
 	GfRange3d _extent;
 	bool _extentDirty;
 };

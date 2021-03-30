@@ -18,6 +18,7 @@
 #include <hdMaya/adapters/adapterRegistry.h>
 #include <hdMaya/adapters/adapterDebugCodes.h>
 #include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/base/tf/registryManager.h>
@@ -119,34 +120,48 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 {
 	MGeometry* geom = ri.geometry();
 	VtIntArray faceVertexIndices;
-	VtIntArray faceVertexCounts;
+	VtIntArray faceVertexCounts;	
 	// TODO : Multiple streams
 	// for now assume first is position
 	if (geom && geom->vertexBufferCount() > 0) 
 	{		
+		// Vertices
 		MVertexBuffer* verts = nullptr;
 		if (verts = geom->vertexBuffer(0)) 
 		{
 			int vertCount = verts->vertexCount();
 			_vertexPositions.clear();
 			_vertexPositions.resize(vertCount);
-			float* vertexPositions = (float*)verts->map();
-			_vertexPositions.assign(vertexPositions, vertexPositions + vertCount);			
+			const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(verts->map());
+			// NOTE: This code is NOT consistent with HdMayaMeshAdapter::GetPoints. There we are using
+			// assign(vertexPositions, vertexPositions + vertCount) without multiplication with sizeof(GfVec3f)
+			// I believe this is an error over there.
+			_vertexPositions.assign(vertexPositions, vertexPositions + vertCount*sizeof(GfVec3f));
 			verts->unmap();
 		}
-		MIndexBuffer* indices = nullptr;
+		// Indices
+		MIndexBuffer* indices = nullptr;		
 		if (indices = geom->indexBuffer(0))
 		{
 			int indexCount = indices->size();
 			faceVertexIndices.resize(indexCount);
-			int* indicesData = (int*)indices->map();
-			//std::memcpy(faceVertexIndices.data(), indices->map(), indexCount *sizeof(int));
+			int* indicesData = (int*)indices->map();			
 			for (int i = 0; i < indexCount; i++) faceVertexIndices[i] = indicesData[i];
 
 			faceVertexCounts.resize(indexCount / 3);
 			for (int i = 0; i < indexCount / 3; i++) faceVertexCounts[i] = 3;
 			indices->unmap();
 		}	
+		// UVs
+		//if(indices)
+		//{
+		//	_uvs.clear();
+		//	int indexCount = indices->size();
+		//	_uvs.resize(indexCount);
+		//	// TODO : Fix this. these are bogus UVs but need to be there
+		//	// to display anything at all
+		//	for (int i = 0; i < indexCount; i++) _uvs[i] = (GfVec2f(0, 0));
+		//}
 
 		if (indices && verts)
 		{
@@ -166,8 +181,6 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 				faceVertexIndices);
 
 			MarkDirty(
-				//HdChangeTracker::AllDirty |
-				//HdChangeTracker::NewRepr |
 				HdChangeTracker::DirtyTransform |
 				HdChangeTracker::DirtyMaterialId |
 				HdChangeTracker::DirtyTopology |
@@ -190,14 +203,15 @@ HdMeshTopology HdMayaRenderItemAdapter::GetMeshTopology()
 
 VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
 {
-	if (key == HdTokens->points) {
-
+	if (key == HdTokens->points) 
+	{
 		return VtValue(_vertexPositions);
-	}
-	// TODO
-	//else if (key == HdMayaAdapterTokens->st) {
-	//	return GetUVs();
-	//}
+	}	 
+	/*else if (key == HdMayaAdapterTokens->st) 
+	{
+		return VtValue(_uvs);
+	}*/
+
 	return {};
 }
 
@@ -322,14 +336,20 @@ HdMayaRenderItemAdapter::GetInstancePrimvarDescriptors(HdInterpolation interpola
 
 HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
 {
-	if (
-		interpolation == HdInterpolationVertex
-		) 
+	if (interpolation == HdInterpolationVertex) 
 	{
 		HdPrimvarDescriptor desc;
 		desc.name = UsdGeomTokens->points;
 		desc.interpolation = interpolation;
 		desc.role = HdPrimvarRoleTokens->point;
+		return { desc };
+	}
+	else if (interpolation == HdInterpolationFaceVarying) 
+	{
+		HdPrimvarDescriptor desc;
+		desc.name = HdMayaAdapterTokens->st;
+		desc.interpolation = interpolation;
+		desc.role = HdPrimvarRoleTokens->textureCoordinate;
 		return { desc };
 	}
 
@@ -366,15 +386,15 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, renderItem)
 	HdMayaAdapterRegistry::RegisterRenderItemAdapter(
 		TfToken(gsRenderItemTypeName),
 		[](HdMayaDelegateCtx* del, const MRenderItem& ri) -> HdMayaRenderItemAdapterPtr
-	{
-		return HdMayaRenderItemAdapterPtr(
-			new HdMayaRenderItemAdapter(
-				del->GetPrimPath(ri, false),
-				del,
-				ri.primitive(),
-				ri.name()
-				));
-	});
+		{
+			return HdMayaRenderItemAdapterPtr(
+				new HdMayaRenderItemAdapter(
+					del->GetPrimPath(ri, false),
+					del,
+					ri.primitive(),
+					ri.name()
+					));
+		});
 }
 
 

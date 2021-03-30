@@ -758,12 +758,21 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
 {
     const auto& oldParams = GetParams();
     if (oldParams.displaySmoothMeshes != params.displaySmoothMeshes) {
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
         // I couldn't find any other way to turn this on / off.
         // I can't convert HdRprim to HdMesh easily and no simple way
         // to get the type of the HdRprim from the render index.
         // If we want to allow creating multiple rprims and returning an id
         // to a subtree, we need to use the HasType function and the mark dirty
         // from each adapter.
+		_MapAdapter<HdMayaRenderItemAdapter>(
+			[](HdMayaRenderItemAdapter* a) {
+				if (a->HasType(HdPrimTypeTokens->mesh)) {
+					a->MarkDirty(HdChangeTracker::DirtyTopology);
+				}
+			},
+			_renderItemsAdapters);
+#else
         _MapAdapter<HdMayaDagAdapter>(
             [](HdMayaDagAdapter* a) {
                 if (a->HasType(HdPrimTypeTokens->mesh)) {
@@ -771,9 +780,20 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
                 }
             },
             _shapeAdapters);
+#endif
     }
     if (oldParams.motionSampleStart != params.motionSampleStart
         || oldParams.motionSampleEnd != params.motionSampleEnd) {
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+		_MapAdapter<HdMayaRenderItemAdapter>(
+			[](HdMayaRenderItemAdapter* a) {
+			if (a->HasType(HdPrimTypeTokens->mesh)) {
+				a->InvalidateTransform();
+				a->MarkDirty(HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyTransform);
+			}
+			},
+			_renderItemsAdapters);
+#else
         _MapAdapter<HdMayaDagAdapter>(
             [](HdMayaDagAdapter* a) {
                 if (a->HasType(HdPrimTypeTokens->mesh)) {
@@ -787,6 +807,7 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
             _shapeAdapters,
             _lightAdapters,
             _cameraAdapters);
+#endif
     }
     // We need to trigger rebuilding shaders.
     if (oldParams.textureMemoryPerTexture != params.textureMemoryPerTexture) {
