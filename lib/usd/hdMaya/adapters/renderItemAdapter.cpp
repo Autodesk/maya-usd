@@ -63,11 +63,12 @@ TfToken HdMayaRenderItemAdapter::GetRenderTag() const
 	switch (_primitive)
 	{		
 		case MHWRender::MGeometry::Primitive::kLineStrip:
+		case MHWRender::MGeometry::Primitive::kLines:
+			return HdTokens->points;
 		case MHWRender::MGeometry::Primitive::kTriangleStrip:
 		case MHWRender::MGeometry::Primitive::kTriangles:
-		case MHWRender::MGeometry::Primitive::kLines:
 		default:
-			return HdTokens->geometry;
+			return HdTokens->geometry;			
 	}
 }
 
@@ -77,11 +78,13 @@ void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
 	if (ri.getMatrix(matrix) == MStatus::kSuccess)
 	{
 		_transform[0] = GetGfMatrixFromMaya(matrix);
-		if (GetDelegate()->GetParams().enableMotionSamples) {
+		if (GetDelegate()->GetParams().enableMotionSamples) 
+		{
 			MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
 			_transform[1] = GetGfMatrixFromMaya(matrix);
 		}
-		else {
+		else 
+		{
 			_transform[1] = _transform[0];
 		}
 	}
@@ -120,8 +123,17 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 			int* indicesData = (int*)indices->map();			
 			for (int i = 0; i < indexCount; i++) faceVertexIndices[i] = indicesData[i];
 
-			faceVertexCounts.resize(indexCount / 3);
-			for (int i = 0; i < indexCount / 3; i++) faceVertexCounts[i] = 3;
+			switch (_primitive)
+			{
+				case MHWRender::MGeometry::Primitive::kTriangles:
+					faceVertexCounts.resize(indexCount / 3);
+					for (int i = 0; i < indexCount / 3; i++) faceVertexCounts[i] = 3;					
+					break;
+				case MHWRender::MGeometry::Primitive::kLines:
+					faceVertexCounts.resize(indexCount);
+					for (int i = 0; i < indexCount; i++) faceVertexCounts[i] = 1;
+					break;					
+			}
 			indices->unmap();
 		}	
 		// UVs
@@ -165,11 +177,6 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 
 HdMeshTopology HdMayaRenderItemAdapter::GetMeshTopology()
 {
-	int deb = 0;
-	if (_meshTopology.GetNumPoints() == 0)
-	{
-		deb = 1;
-	}
 	return _meshTopology;
 }
 
@@ -194,24 +201,35 @@ const GfMatrix4d& HdMayaRenderItemAdapter::GetTransform()
 
 void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
-    if (dirtyBits != 0) {
+    if (dirtyBits != 0) 
+	{
 		GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
     }
 }
 
 void HdMayaRenderItemAdapter::Populate()
 {
-	if (_isPopulated) {
+	if (_isPopulated) 
+	{
 		return;
 	}
-	// TODO : GetInstancerID() instead of just {}
-	GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
+	
+	switch (_primitive)
+	{
+		case MHWRender::MGeometry::Primitive::kTriangles:
+			GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {}/* TODO : GetInstancerID() */);
+			break;
+		case MHWRender::MGeometry::Primitive::kLines:
+			GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {}/* TODO : GetInstancerID() */);
+			break;
+	}
 	_isPopulated = true;
 }
 
 void HdMayaRenderItemAdapter::RemovePrim()
 {
-    if (!_isPopulated) {
+    if (!_isPopulated) 
+	{
         return;
     }
     GetDelegate()->RemoveRprim(GetID());
@@ -227,7 +245,7 @@ HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInter
 		HdPrimvarDescriptor desc;
 		desc.name = UsdGeomTokens->points;
 		desc.interpolation = interpolation;
-		desc.role = HdPrimvarRoleTokens->point;
+		desc.role = HdPrimvarRoleTokens->point;		
 		return { desc };
 	}
 	// UVs
