@@ -49,6 +49,7 @@ public:
 	virtual ~HdMayaRenderItemAdapter() = default;
 
 	// override
+	/////////////
 
 	HDMAYA_API
 	bool HasType(const TfToken& typeId) const override { return typeId == HdPrimTypeTokens->mesh; }
@@ -71,6 +72,9 @@ public:
 	HDMAYA_API
 	VtValue Get(const TfToken& key) override;
 
+	// this
+	///////////
+
 	HDMAYA_API
     virtual bool GetVisible() { return IsVisible(); }
     
@@ -78,12 +82,15 @@ public:
     const GfMatrix4d& GetTransform();
     
 	HDMAYA_API
-    bool UpdateVisibility();
+	bool UpdateVisibility() { return true; }
 	
+	HDMAYA_API	
 	bool IsVisible(bool checkDirty = true) { return true; }   	
 
+	HDMAYA_API
     void InvalidateTransform() { }
 
+	HDMAYA_API
 	bool IsInstanced() const { return false; }
 	
 	HDMAYA_API
@@ -103,13 +110,13 @@ public:
 	HdDisplayStyle GetDisplayStyle() { return { 0, false, false }; }
 
 	HDMAYA_API
-	virtual TfToken GetRenderTag() const { return HdTokens->geometry; }
+	virtual TfToken GetRenderTag() const;
 
 private:
 
+	//VtArray<GfVec2f> _uvs = {};
 	HdMeshTopology _meshTopology = {};
 	VtVec3fArray _vertexPositions = {};
-	//VtArray<GfVec2f> _uvs = {};
 	MGeometry::Primitive _primitive;
 	MString _name;
     GfMatrix4d _transform[2];
@@ -120,4 +127,4 @@ using HdMayaRenderItemAdapterPtr = std::shared_ptr<HdMayaRenderItemAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDMAYA_DG_ADAPTER_H
+#endif // HDMAYA_RENDER_ITEM_ADAPTER_H

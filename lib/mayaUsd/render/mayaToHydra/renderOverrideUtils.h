@@ -44,15 +44,7 @@ public:
     }
 
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	MUint64 getObjectTypeExclusions() override
-	{
-		// FIXME:
-		//   1. kExcludePluginShapes is here so as to not re-draw UsdProxy shapes
-		//      ...but that means no plugin shapes would be drawn.
-		//   2. Curves as controls and curves as a renderitem need to be delineated
-		//
-		return MFrameContext::kExcludeMeshes;
-	}
+	MUint64 getObjectTypeExclusions() override { return MFrameContext::kExcludeMeshes; }
 #endif
 
     MSceneFilterOption renderFilterOverride() override { return kRenderPreSceneUIItems; }

@@ -134,7 +134,7 @@ public:
         for (auto i = decltype(numIndices) { 0 }; i < numIndices / 2; i++) {
             curveIndices[i * 2] = i;
             curveIndices[i * 2 + 1] = i + 1;
-        }
+        }		
 
         return HdBasisCurvesTopology(
             HdTokens->linear,

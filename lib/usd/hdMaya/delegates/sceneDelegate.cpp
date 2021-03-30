@@ -672,13 +672,13 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag)
         }
     }
 
-    //auto material = adapter->GetMaterial();
-    //if (material != MObject::kNullObj) {
-    //    const auto materialId = GetMaterialPath(material);
-    //    if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
-    //        _CreateMaterial(materialId, material);
-    //    }
-    //}
+    auto material = adapter->GetMaterial();
+    if (material != MObject::kNullObj) {
+        const auto materialId = GetMaterialPath(material);
+        if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
+            _CreateMaterial(materialId, material);
+        }
+    }
 }
 
 void HdMayaSceneDelegate::NodeAdded(const MObject& obj) { _addedNodes.push_back(obj); }

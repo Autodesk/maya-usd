@@ -56,10 +56,19 @@ HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
 	, _primitive(primitiveType)
 	, _name(name)
 {
-    // We shouldn't call virtual functions in constructors.
- /*   _isVisible = GetDagPath().isVisible();
-    _visibilityDirty = false;
-    _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;*/
+}
+
+TfToken HdMayaRenderItemAdapter::GetRenderTag() const
+{
+	switch (_primitive)
+	{		
+		case MHWRender::MGeometry::Primitive::kLineStrip:
+		case MHWRender::MGeometry::Primitive::kTriangleStrip:
+		case MHWRender::MGeometry::Primitive::kTriangles:
+		case MHWRender::MGeometry::Primitive::kLines:
+		default:
+			return HdTokens->geometry;
+	}
 }
 
 void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
@@ -186,7 +195,7 @@ const GfMatrix4d& HdMayaRenderItemAdapter::GetTransform()
 void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (dirtyBits != 0) {
-        GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
+		GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
     }
 }
 
@@ -209,12 +218,6 @@ void HdMayaRenderItemAdapter::RemovePrim()
 
     _isPopulated = false;
 }
-
-bool HdMayaRenderItemAdapter::UpdateVisibility()
-{
-	return true;
-}
-
 
 HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
 {
