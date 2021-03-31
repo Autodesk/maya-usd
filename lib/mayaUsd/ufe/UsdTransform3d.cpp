@@ -63,7 +63,7 @@ Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim, const UsdTimeCode& ti
     return xform;
 }
 
-std::string isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const std::string& tokenName)
+bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const std::string& tokenName)
 {
     std::string errMsg;
 
@@ -71,15 +71,17 @@ std::string isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const std::strin
     UsdGeomXformable xformable(prim);
     if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
         MGlobal::displayError(errMsg.c_str());
+        return false;
     } else {
         // check for xformOp:tokenName
         const TfToken xlate(tokenName);
         if (!MayaUsd::ufe::isAttributeEditAllowed(prim.GetAttribute(xlate), &errMsg)) {
             MGlobal::displayError(errMsg.c_str());
+            return false;
         }
     }
 
-    return errMsg;
+    return true;
 }
 
 } // namespace
@@ -117,7 +119,7 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const { return fItem; }
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:translate").empty()) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:translate")) {
         return nullptr;
     }
 
@@ -181,7 +183,7 @@ Ufe::Vector3d UsdTransform3d::scale() const
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:rotateXYZ").empty()) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:rotateXYZ")) {
         return nullptr;
     }
 
@@ -197,7 +199,7 @@ void UsdTransform3d::rotate(double x, double y, double z)
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:scale").empty()) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:scale")) {
         return nullptr;
     }
 
@@ -207,7 +209,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, doub
 #else
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:translate").empty()) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:translate")) {
         return nullptr;
     }
 
@@ -216,7 +218,7 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:rotateXYZ").empty()) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:rotateXYZ")) {
         return nullptr;
     }
 
@@ -225,7 +227,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:scale").empty()) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:scale")) {
         return nullptr;
     }
 
@@ -272,7 +274,7 @@ UsdTransform3d::rotatePivotCmd(double, double, double)
 UsdTransform3d::rotatePivotTranslateCmd()
 #endif
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:translate:pivot").empty()) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:translate:pivot")) {
         return nullptr;
     }
 
