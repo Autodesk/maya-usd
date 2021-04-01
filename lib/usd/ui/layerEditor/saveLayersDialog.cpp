@@ -409,7 +409,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
         topLayout->addWidget(anonScrollArea);
 
         // If we also have dirty file backed layers, add a separator.
-        if (haveFileBackedLayers) {
+        if (showFileOverrideSection && haveFileBackedLayers) {
             auto lineSep = new QFrame();
             lineSep->setFrameShape(QFrame::HLine);
             lineSep->setLineWidth(DPIScale(1));

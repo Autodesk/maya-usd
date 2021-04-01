@@ -52,7 +52,7 @@ const auto kAddSublayer              { create("kAddSublayer", "Add sublayer") };
 const auto kAscii                    { create("kAscii", "ASCII") };
 const auto kAutoHideSessionLayer     { create("kAutoHideSessionLayer", "Auto-Hide Session Layer") };
 const auto kBinary                   { create("kBinary", "Binary") };
-const auto kConfirmExistFileSave     { create("kConfirmExistFileSave", "Confirm Existing File Save") };
+const auto kConfirmExistFileSave     { create("kConfirmExistFileSave", "Confirm Save of Existing Files") };
 const auto kConvertToRelativePath    { create("kConvertToRelativePath", "Convert to Relative Path") };
 const auto kCancel                   { create("kCancel", "Cancel") };
 const auto kCreate                   { create("kCreate", "Create") };
