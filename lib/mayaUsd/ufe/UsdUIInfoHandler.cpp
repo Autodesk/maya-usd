@@ -165,10 +165,11 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
             icon.pos = Ufe::UIInfoHandler::LowerRight;
         } else {
             // Composition related metadata.
-            static const std::vector<PXR_NS::TfToken> compKeys = { PXR_NS::SdfFieldKeys->References,
-                                                                   SdfFieldKeys->Payload,
-                                                                   SdfFieldKeys->InheritPaths,
-                                                                   SdfFieldKeys->Specializes };
+            static const std::vector<PXR_NS::TfToken> compKeys
+                = { PXR_NS::SdfFieldKeys->References,
+                    PXR_NS::SdfFieldKeys->Payload,
+                    PXR_NS::SdfFieldKeys->InheritPaths,
+                    PXR_NS::SdfFieldKeys->Specializes };
             for (const auto& k : compKeys) {
                 if (usdItem->prim().HasMetadata(k)) {
                     icon.badgeIcon = "out_USD_CompArcBadge.png";

@@ -16,6 +16,7 @@
 #include "UsdAttributes.h"
 
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
@@ -118,7 +119,7 @@ std::vector<std::string> UsdAttributes::attributeNames() const
 
 bool UsdAttributes::hasAttribute(const std::string& name) const
 {
-    TfToken tkName(name);
+    PXR_NS::TfToken tkName(name);
     return fPrim.HasAttribute(tkName);
 }
 
@@ -127,17 +128,17 @@ UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
 {
     // Map the USD type into UFE type.
     static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe {
-        { SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },           // bool
-        { SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },             // int32_t
-        { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },         // float
-        { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },       // double
-        { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },       // std::string
-        { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kEnumString },    // TfToken
-        { SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },           // GfVec3i
-        { SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },       // GfVec3f
-        { SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },     // GfVec3d
-        { SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
-        { SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
+        { PXR_NS::SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },        // bool
+        { PXR_NS::SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },          // int32_t
+        { PXR_NS::SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },      // float
+        { PXR_NS::SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },    // double
+        { PXR_NS::SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },    // std::string
+        { PXR_NS::SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kEnumString }, // TfToken
+        { PXR_NS::SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },        // GfVec3i
+        { PXR_NS::SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },    // GfVec3f
+        { PXR_NS::SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },  // GfVec3d
+        { PXR_NS::SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
+        { PXR_NS::SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
     };
 
     if (usdAttr.IsValid()) {
@@ -151,7 +152,7 @@ UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
             // Special case for TfToken -> Enum. If it doesn't have any allowed
             // tokens, then use String instead.
             if (iter->second == Ufe::Attribute::kEnumString) {
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
                 auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(usdAttr.GetName());
 #else
                 auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(

@@ -25,9 +25,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDVP2_REPR_TOKENS \
     (bbox) \
     (selection)
+
+#define HDVP2_TOKENS \
+    (displayColorAndOpacity)
+
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(HdVP2ReprTokens, , HDVP2_REPR_TOKENS);
+
+TF_DECLARE_PUBLIC_TOKENS(HdVP2Tokens, , HDVP2_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

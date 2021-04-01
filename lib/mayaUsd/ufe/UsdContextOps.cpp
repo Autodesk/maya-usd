@@ -17,15 +17,14 @@
 
 #include "private/UfeNotifGuard.h"
 
-#if UFE_PREVIEW_VERSION_NUM >= 2034
 #include <mayaUsd/ufe/UsdObject3d.h>
-#endif
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/usd/common.h>
@@ -38,10 +37,8 @@
 #include <maya/MGlobal.h>
 #include <ufe/attribute.h>
 #include <ufe/attributes.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2034
-#include <ufe/object3d.h>
-#endif
 #include <ufe/globalSelection.h>
+#include <ufe/object3d.h>
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
 
@@ -49,6 +46,8 @@
 #include <cassert>
 #include <utility>
 #include <vector>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -354,7 +353,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
     std::vector<std::pair<const char* const, const char* const>> itemLabelPairs;
 
     const bool isInPrototype =
-#if USD_VERSION_NUM >= 2011
+#if PXR_VERSION >= 2011
         prim.IsInPrototype();
 #else
         prim.IsInMaster();
@@ -583,23 +582,10 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return std::make_shared<SetVariantSelectionUndoableCommand>(path(), prim(), itemPath);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
-#if UFE_PREVIEW_VERSION_NUM < 2034
-        auto attributes = Ufe::Attributes::attributes(sceneItem());
-        TF_AXIOM(attributes);
-        auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-            attributes->attribute(UsdGeomTokens->visibility));
-        TF_AXIOM(visibility);
-        auto current = visibility->get();
-        return visibility->setCmd(
-            current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited
-                                                : UsdGeomTokens->invisible);
-#else
         auto object3d = UsdObject3d::create(fItem);
         TF_AXIOM(object3d);
         auto current = object3d->visibility();
         return object3d->setVisibleCmd(!current);
-#endif
-
     } // Visibility
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
         return std::make_shared<ToggleActiveStateCommand>(prim());

@@ -134,7 +134,7 @@ class testVP2RenderDelegatePointInstanceSelection(imageUtils.ImageDiffingTestCas
         newSelection.clear()
 
         # Select the back half of the instances.
-        for instanceIndex in range(self._numInstances / 2, self._numInstances):
+        for instanceIndex in range(self._numInstances // 2, self._numInstances):
             sceneItem = self._GetSceneItem(instanceIndex)
             newSelection.append(sceneItem)
         globalSelection.replaceWith(newSelection)

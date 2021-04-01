@@ -18,6 +18,7 @@
 
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+#include <QtWidgets/QMessageBox>
 
 /**
  * @brief Helpers to easily pop a properly formatted and sized message box
@@ -30,13 +31,15 @@ bool confirmDialog(
     const QString&     title,
     const QString&     message,
     const QStringList* bulletList = nullptr,
-    const QString*     okButtonText = nullptr);
+    const QString*     okButtonText = nullptr,
+    QMessageBox::Icon  icon = QMessageBox::Icon::NoIcon);
 
 // create a dialog with a single OK button, with an optional bullet list
 void warningDialog(
     const QString&     title,
     const QString&     message,
-    const QStringList* bulletList = nullptr);
+    const QStringList* bulletList = nullptr,
+    QMessageBox::Icon  icon = QMessageBox::Icon::NoIcon);
 
 } // namespace UsdLayerEditor
 

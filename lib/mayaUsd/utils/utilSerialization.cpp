@@ -19,16 +19,18 @@
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
 
 #include <maya/MGlobal.h>
+#include <maya/MString.h>
 
 #include <string>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+namespace {
 
 class RecursionDetector
 {
@@ -45,8 +47,6 @@ public:
 
     std::vector<std::string> _paths;
 };
-
-namespace {
 
 std::string toForwardSlashes(const std::string& in_path)
 {
@@ -79,13 +79,13 @@ std::string computePathToLoadSublayer(
 }
 
 void populateChildren(
-    SdfLayerRefPtr                                          layer,
-    RecursionDetector*                                      recursionDetector,
-    std::vector<std::pair<SdfLayerRefPtr, SdfLayerRefPtr>>& anonLayersToSave,
-    std::vector<SdfLayerRefPtr>&                            dirtyLayersToSave)
+    SdfLayerRefPtr                                                       layer,
+    RecursionDetector*                                                   recursionDetector,
+    std::vector<std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>>& anonLayersToSave,
+    std::vector<SdfLayerRefPtr>&                                         dirtyLayersToSave)
 {
     auto  subPaths = layer->GetSubLayerPaths();
-    auto& resolver = ArGetResolver();
+    auto& resolver = PXR_NS::ArGetResolver();
     auto  anchor = toForwardSlashes(layer->GetRealPath());
 
     RecursionDetector defaultDetector;
@@ -96,12 +96,15 @@ void populateChildren(
 
     for (auto const path : subPaths) {
         std::string actualPath = computePathToLoadSublayer(path, anchor, resolver);
-        auto        subLayer = SdfLayer::FindOrOpen(actualPath);
+        auto        subLayer = PXR_NS::SdfLayer::FindOrOpen(actualPath);
         if (subLayer && !recursionDetector->contains(subLayer->GetRealPath())) {
             populateChildren(subLayer, recursionDetector, anonLayersToSave, dirtyLayersToSave);
 
             if (subLayer->IsAnonymous()) {
-                anonLayersToSave.push_back(std::make_pair(subLayer, layer));
+                MayaUsd::utils::LayerParent p;
+                p._proxyPath.clear();
+                p._layerParent = layer;
+                anonLayersToSave.push_back(std::make_pair(subLayer, p));
             } else if (subLayer->IsDirty()) {
                 dirtyLayersToSave.push_back(subLayer);
             }
@@ -111,19 +114,40 @@ void populateChildren(
     recursionDetector->pop();
 }
 
+bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
+{
+    if (!layer || proxy.empty() || layer->IsAnonymous()) {
+        return false;
+    }
+
+    std::string fp = layer->GetRealPath();
+#ifdef _WIN32
+    // Building a string that includes a file path for an executeCommand call
+    // can be problematic, easier to just switch the path separator.
+    fp = TfStringReplace(fp, "\\", "/");
+#endif
+
+    MayaUsd::utils::setNewProxyPath(MString(proxy.c_str()), MString(fp.c_str()));
+
+    return true;
+}
+
 } // namespace
 
-std::string UsdMayaSerialization::suggestedStartFolder(UsdStageRefPtr stage)
+namespace MAYAUSD_NS_DEF {
+namespace utils {
+
+std::string suggestedStartFolder(PXR_NS::UsdStageRefPtr stage)
 {
-    SdfLayerRefPtr root = stage ? stage->GetRootLayer() : nullptr;
+    PXR_NS::SdfLayerRefPtr root = stage ? stage->GetRootLayer() : nullptr;
     if (!root && !root->IsAnonymous()) {
         return root->GetRealPath();
     }
 
-    return UsdMayaSerialization::getSceneFolder();
+    return getSceneFolder();
 }
 
-std::string UsdMayaSerialization::getSceneFolder()
+std::string getSceneFolder()
 {
     std::string fileDir = UsdMayaUtilFileSystem::getMayaSceneFileDir();
     if (fileDir.empty()) {
@@ -133,16 +157,16 @@ std::string UsdMayaSerialization::getSceneFolder()
     return fileDir;
 }
 
-std::string UsdMayaSerialization::generateUniqueFileName(const std::string& basename)
+std::string generateUniqueFileName(const std::string& basename)
 {
     std::string newFileName = UsdMayaUtilFileSystem::getUniqueFileName(
         getSceneFolder(),
         !basename.empty() ? basename : "anonymous",
-        UsdUsdFileFormatTokens->Id.GetText());
+        PXR_NS::UsdUsdFileFormatTokens->Id.GetText());
     return newFileName;
 }
 
-std::string UsdMayaSerialization::usdFormatArgOption()
+std::string usdFormatArgOption()
 {
     static const MString kSaveLayerFormatBinaryOption(
         MayaUsdOptionVars->SaveLayerFormatArgBinaryOption.GetText());
@@ -152,11 +176,12 @@ std::string UsdMayaSerialization::usdFormatArgOption()
     } else {
         MGlobal::setOptionVarValue(kSaveLayerFormatBinaryOption, 1);
     }
-    return binary ? UsdUsdcFileFormatTokens->Id.GetText() : UsdUsdaFileFormatTokens->Id.GetText();
+    return binary ? PXR_NS::UsdUsdcFileFormatTokens->Id.GetText()
+                  : PXR_NS::UsdUsdaFileFormatTokens->Id.GetText();
 }
 
 /* static */
-UsdMayaSerialization::USDUnsavedEditsOption UsdMayaSerialization::serializeUsdEditsLocationOption()
+USDUnsavedEditsOption serializeUsdEditsLocationOption()
 {
     static const MString kSerializedUsdEditsLocation(
         MayaUsdOptionVars->SerializedUsdEditsLocation.GetText());
@@ -181,20 +206,30 @@ UsdMayaSerialization::USDUnsavedEditsOption UsdMayaSerialization::serializeUsdEd
     }
 } // namespace MAYAUSD_NS_DEF
 
-SdfLayerRefPtr UsdMayaSerialization::saveAnonymousLayer(
+void setNewProxyPath(const MString& proxyNodeName, const MString& newValue)
+{
+    MString script;
+    script.format("setAttr -type \"string\" ^1s.filePath \"^2s\"", proxyNodeName, newValue);
+    MGlobal::executeCommand(
+        script,
+        /*display*/ true,
+        /*undo*/ false);
+}
+
+SdfLayerRefPtr saveAnonymousLayer(
     SdfLayerRefPtr     anonLayer,
-    SdfLayerRefPtr     parentLayer,
+    LayerParent        parent,
     const std::string& basename,
     std::string        formatArg)
 {
-    std::string newFileName = UsdMayaSerialization::generateUniqueFileName(basename);
-    return saveAnonymousLayer(anonLayer, newFileName, parentLayer, formatArg);
+    std::string newFileName = generateUniqueFileName(basename);
+    return saveAnonymousLayer(anonLayer, newFileName, parent, formatArg);
 }
 
-SdfLayerRefPtr UsdMayaSerialization::saveAnonymousLayer(
+SdfLayerRefPtr saveAnonymousLayer(
     SdfLayerRefPtr     anonLayer,
     const std::string& path,
-    SdfLayerRefPtr     parentLayer,
+    LayerParent        parent,
     std::string        formatArg)
 {
     if (!anonLayer || !anonLayer->IsAnonymous()) {
@@ -211,28 +246,38 @@ SdfLayerRefPtr UsdMayaSerialization::saveAnonymousLayer(
     anonLayer->Export(path, "", args);
 
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(path);
-
-    if (parentLayer) {
-        parentLayer->GetSubLayerPaths().Replace(
-            anonLayer->GetIdentifier(), newLayer->GetIdentifier());
+    if (newLayer) {
+        if (parent._layerParent) {
+            parent._layerParent->GetSubLayerPaths().Replace(
+                anonLayer->GetIdentifier(), newLayer->GetIdentifier());
+        } else if (!parent._proxyPath.empty()) {
+            saveRootLayer(newLayer, parent._proxyPath);
+        }
     }
-
     return newLayer;
 }
 
-void UsdMayaSerialization::getLayersToSaveFromProxy(
-    UsdStageRefPtr     stage,
-    stageLayersToSave& layersInfo)
+void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& layersInfo)
 {
-    auto root = stage->GetRootLayer();
+    auto stage = UsdMayaUtil::GetStageByProxyName(proxyPath);
+    if (!stage) {
+        return;
+    }
 
-    populateChildren(root, nullptr, layersInfo.anonLayers, layersInfo.dirtyFileBackedLayers);
+    auto root = stage->GetRootLayer();
+    populateChildren(root, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
     if (root->IsAnonymous()) {
-        layersInfo.anonLayers.push_back(std::make_pair(root, nullptr));
+        LayerParent p;
+        p._proxyPath = proxyPath;
+        p._layerParent = nullptr;
+        layersInfo._anonLayers.push_back(std::make_pair(root, p));
     } else if (root->IsDirty()) {
-        layersInfo.dirtyFileBackedLayers.push_back(root);
+        layersInfo._dirtyFileBackedLayers.push_back(root);
     }
 
     auto session = stage->GetSessionLayer();
-    populateChildren(session, nullptr, layersInfo.anonLayers, layersInfo.dirtyFileBackedLayers);
+    populateChildren(session, nullptr, layersInfo._anonLayers, layersInfo._dirtyFileBackedLayers);
 }
+
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF

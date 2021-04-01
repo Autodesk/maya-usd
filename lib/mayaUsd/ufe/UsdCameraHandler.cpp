@@ -45,7 +45,7 @@ Ufe::Camera::Ptr UsdCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
 
     // Test if this item is a camera. If not, then we cannot create a camera
     // interface for it, which is a valid case (such as for a mesh node type).
-    UsdGeomCamera primSchema(usdItem->prim());
+    PXR_NS::UsdGeomCamera primSchema(usdItem->prim());
     if (!primSchema)
         return nullptr;
 

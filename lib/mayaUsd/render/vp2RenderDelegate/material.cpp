@@ -25,6 +25,7 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/ar/packageUtils.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdHydra/tokens.h>
@@ -41,18 +42,24 @@
 #include <maya/MUintArray.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <boost/filesystem.hpp>
+#if PXR_VERSION <= 2008
+// Needed for GL_HALF_FLOAT.
+#include <GL/glew.h>
+#endif
+
+#include <ghc/filesystem.hpp>
+#include <tbb/parallel_for.h>
 
 #include <iostream>
 #include <string>
 
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
 #include <pxr/imaging/hdSt/udimTextureObject.h>
 #else
 #include <pxr/imaging/glf/udimTexture.h>
 #endif
 
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
 #include <pxr/imaging/hio/image.h>
 #else
 #include <pxr/imaging/glf/image.h>
@@ -275,7 +282,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     */
 
     // test for a UDIM texture
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     if (!HdStIsSupportedUdimTexture(path))
         return nullptr;
 #else
@@ -319,7 +326,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     // resolution, warn the user if Maya's tiled texture implementation is going to result in
     // a loss of texture data.
     {
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
         HioImageSharedPtr image = HioImage::OpenForReading(std::get<1>(tiles[0]).GetString());
 #else
         GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tiles[0]).GetString());
@@ -348,7 +355,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     for (auto& tile : tiles) {
         tilePaths.append(MString(std::get<1>(tile).GetText()));
 
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
         HioImageSharedPtr image = HioImage::OpenForReading(std::get<1>(tile).GetString());
 #else
         GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tile).GetString());
@@ -399,7 +406,7 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "LoadTexture", path.c_str());
 
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     if (HdStIsSupportedUdimTexture(path))
         return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
 #else
@@ -414,7 +421,7 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         return nullptr;
     }
 
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     HioImageSharedPtr image = HioImage::OpenForReading(path);
 #else
     GlfImageSharedPtr     image = GlfImage::OpenForReading(path);
@@ -426,7 +433,7 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     // This image is used for loading pixel data from usdz only and should
     // not trigger any OpenGL call. VP2RenderDelegate will transfer the
     // texels to GPU memory with VP2 API which is 3D API agnostic.
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     HioImage::StorageSpec spec;
 #else
     GlfImage::StorageSpec spec;
@@ -434,9 +441,9 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     spec.width = image->GetWidth();
     spec.height = image->GetHeight();
     spec.depth = 1;
-#if USD_VERSION_NUM >= 2102
+#if PXR_VERSION >= 2102
     spec.format = image->GetFormat();
-#elif USD_VERSION_NUM > 2008
+#elif PXR_VERSION > 2008
     spec.hioFormat = image->GetHioFormat();
 #else
     spec.format = image->GetFormat();
@@ -464,15 +471,20 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     desc.fBytesPerRow = bytesPerRow;
     desc.fBytesPerSlice = bytesPerSlice;
 
-#if USD_VERSION_NUM > 2008
-#if USD_VERSION_NUM >= 2102
-    switch (spec.format) {
+#if PXR_VERSION > 2008
+#if PXR_VERSION >= 2102
+    auto specFormat = spec.format;
 #else
-    switch (spec.hioFormat) {
+    auto specFormat = spec.hioFormat;
 #endif
+    switch (specFormat) {
     // Single Channel
     case HioFormatFloat32:
         desc.fFormat = MHWRender::kR32_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case HioFormatFloat16:
+        desc.fFormat = MHWRender::kR16_FLOAT;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
     case HioFormatUNorm8:
@@ -483,6 +495,42 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     // 3-Channel
     case HioFormatFloat32Vec3:
         desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case HioFormatFloat16Vec3: {
+        // R16G16B16 is not supported by VP2. Converted to R16G16B16A16.
+        constexpr int bpp_8 = 8;
+
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_8;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        GfHalf               opaqueAlpha(1.0f);
+        const unsigned short alphaBits = opaqueAlpha.bits();
+        const unsigned char  lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
+        const unsigned char  highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 2] = storage[t * bpp + 2];
+                texels[t * bpp_8 + 3] = storage[t * bpp + 3];
+                texels[t * bpp_8 + 4] = storage[t * bpp + 4];
+                texels[t * bpp_8 + 5] = storage[t * bpp + 5];
+                texels[t * bpp_8 + 6] = lowAlpha;
+                texels[t * bpp_8 + 7] = highAlpha;
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        break;
+    }
+    case HioFormatFloat16Vec4:
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
     case HioFormatUNorm8Vec3:
@@ -522,18 +570,57 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         isColorSpaceSRGB = image->IsColorSpaceSRGB();
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
-    default: break;
+    default:
+        TF_WARN(
+            "VP2 renderer delegate: unsupported pixel format (%d) in texture file %s.",
+            (int)specFormat,
+            path.c_str());
+        break;
     }
 #else
     switch (spec.format) {
     case GL_RED:
-        desc.fFormat = (spec.type == GL_FLOAT ? MHWRender::kR32_FLOAT : MHWRender::kR8_UNORM);
+        desc.fFormat = MHWRender::kR8_UNORM;
+        if (spec.type == GL_FLOAT)
+            desc.fFormat = MHWRender::kR32_FLOAT;
+        else if (spec.type == GL_HALF_FLOAT)
+            desc.fFormat = MHWRender::kR16_FLOAT;
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
     case GL_RGB:
         if (spec.type == GL_FLOAT) {
             desc.fFormat = MHWRender::kR32G32B32_FLOAT;
             texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        } else if (spec.type == GL_HALF_FLOAT) {
+            // R16G16B16 is not supported by VP2. Converted to R16G16B16A16.
+            constexpr int bpp_8 = 8;
+
+            desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+            desc.fBytesPerRow = spec.width * bpp_8;
+            desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+            GfHalf               opaqueAlpha(1.0f);
+            const unsigned short alphaBits = opaqueAlpha.bits();
+            const unsigned char  lowAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[0];
+            const unsigned char  highAlpha = reinterpret_cast<const unsigned char*>(&alphaBits)[1];
+
+            std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+            for (int y = 0; y < spec.height; y++) {
+                for (int x = 0; x < spec.width; x++) {
+                    const int t = spec.width * y + x;
+                    texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                    texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                    texels[t * bpp_8 + 2] = storage[t * bpp + 2];
+                    texels[t * bpp_8 + 3] = storage[t * bpp + 3];
+                    texels[t * bpp_8 + 4] = storage[t * bpp + 4];
+                    texels[t * bpp_8 + 5] = storage[t * bpp + 5];
+                    texels[t * bpp_8 + 6] = lowAlpha;
+                    texels[t * bpp_8 + 7] = highAlpha;
+                }
+            }
+
+            texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
         } else {
             // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
             constexpr int bpp_4 = 4;
@@ -561,6 +648,8 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     case GL_RGBA:
         if (spec.type == GL_FLOAT) {
             desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+        } else if (spec.type == GL_HALF_FLOAT) {
+            desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
         } else {
             desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
             isColorSpaceSRGB = image->IsColorSpaceSRGB();
@@ -676,7 +765,7 @@ void HdVP2Material::Sync(
                               << _GenerateXMLString(dispNet) << "\n";
 
                     if (_surfaceShader) {
-                        auto tmpDir = boost::filesystem::temp_directory_path();
+                        auto tmpDir = ghc::filesystem::temp_directory_path();
                         tmpDir /= "HdVP2Material_";
                         tmpDir += id.GetName();
                         tmpDir += ".txt";

@@ -1,6 +1,13 @@
 This document outlines coding guidelines for contributions to the  [maya-usd](https://github.com/autodesk/maya-usd) project.
 
 # C++ Coding Guidelines
+
+Many of the C++ coding guidelines below are validated and enforced through the use of `clang-format` which is provided by the [LLVM project](https://github.com/llvm/llvm-project). Since the adjustments made by `clang-format` can vary from version to version, we standardize this project on a single `clang-format` version to ensure consistent results for all contributions made to maya-usd.
+
+|                      | Version | Source Code | Release |
+|:--------------------:|:-------:|:-----------:|:-------:|
+|  `clang-format`/LLVM |  10.0.0 | [llvmorg-10.0.0 Tag](https://github.com/llvm/llvm-project/tree/llvmorg-10.0.0) | [LLVM 10.0.0](https://github.com/llvm/llvm-project/releases/tag/llvmorg-10.0.0) |
+
 ## Foundation/Critical
 ### License notice
 Every file should start with the Apache 2.0 licensing statement:
@@ -147,6 +154,27 @@ In general, macros should be avoided (see [Modern C++](https://docs.google.com/d
 * The mayaUsd project does require the use of any Doxygen formatting style ( [Doxygen built-in formatting](http://www.doxygen.nl/manual/commands.html) )
 * Comments for users of classes and functions must be written in headers files. Comments in definition files are meant for contributors and maintainers.
 
+### Namespaces
+
+#### In header files (e.g. .h)
+
+* **Required:** to use fully qualified namespace names. Global scope using directives are not allowed.  Inline code can use using directives in implementations, within a scope, when there is no other choice (e.g. when using macros, which are not namespaced).
+
+```cpp
+// In aFile.h
+inline PXR_NS::UsdPrim prim() const
+{
+    PXR_NAMESPACE_USING_DIRECTIVE
+    TF_AXIOM(fItem != nullptr);
+    return fItem->prim();
+}
+```
+
+#### In implementation files (e.g. .cpp)
+
+* **Recommended:** to use fully qualified namespace names, unless clarity or readability is degraded by use of explicit namespaces, in which case a using directive is acceptable.
+* **Recommended:** to use the existing namespace style, and not make gratuitous changes. If the file is using explicit namespaces, new code should follow this style, unless the changes are so significant that clarity or readability is degraded.  If the file has one or more using directives, new code should follow this style.
+
 ### Include directive
 For source files (.cpp) with an associated header file (.h) that resides in the same directory, it should be `#include`'d with double quotes and no path.  This formatting should be followed regardless of with whether the associated header is public or private. For example:
 ```cpp
@@ -213,7 +241,7 @@ Headers should be included in the following order, with each section separated b
 	* `WANT_UFE_BUILD` equals 1 if UFE is found and it should be used for conditional compilation on codes depending on UFE.
 
 **USD**
-	* `USD_VERSION_NUM` is the macro to test USD version (`USD_MAJOR_VERSION` * 10000 + `USD_MINOR_VERSION` * 100 + `USD_PATCH_VERSION`)
+	* `PXR_VERSION` is the macro to test USD version (`PXR_MAJOR_VERSION` * 10000 + `PXR_MINOR_VERSION` * 100 + `PXR_PATCH_VERSION`)
 
 Respect the minimum supported version for Maya and USD stated in [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) .
 
@@ -221,10 +249,14 @@ Respect the minimum supported version for Maya and USD stated in [build.md](http
 Recent extensions to the C++ standard introduce many features previously only found in [boost](http://boost.org). To avoid introducing additional dependencies, developers should strive to use functionality in the C++ std over boost. If you encounter usage of boost in the code, consider converting this to the equivalent std mechanism. 
 Our library currently has the following boost dependencies:
 * `boost::python`
-* `boost::hash_combine` (see  [this proposal](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/p0814r0.pdf) )
-* `boost::filesystem` (preferable to replace with Pixar USD arch/fileSystem)
-* `boost::system`
 * `boost::make_shared` (preferable to replace with `std::shared_ptr`)
+
+***Update:***
+* `boost::filesystem` and `boost::system` are removed. Until the transition to C++17 std::filesystem, [ghc::filesystem](https://github.com/gulrak/filesystem) must be used as an alternative across the project.
+
+* Dependency on `boost::thread` is removed from Animal Logic plugin.
+
+* `boost::hash_combine` is replaced with `MayaUsd::hash_combine` and should be used instead across the project.
 
 ## Modern C++
 Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) following modern C++ practices. We’ll follow the [C++ Core Guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and pay attention to:

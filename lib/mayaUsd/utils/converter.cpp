@@ -628,8 +628,7 @@ struct MDataHandleConvert
     convert(const USD_Type& src, MDataHandle& dst, const ConverterArgs& args)
     {
         MAYA_Type tmpDst;
-        USD_Type  tmpSrc
-            = args._doGammaCorrection ? UsdMayaColorSpace::ConvertLinearToMaya(src) : src;
+        USD_Type  tmpSrc = args._doGammaCorrection ? MayaUsd::utils::ConvertLinearToMaya(src) : src;
         TypedConverter<MAYA_Type, USD_Type>::convert(tmpSrc, tmpDst);
         MDataHandleUtils<MAYA_Type>::set(dst, tmpDst);
     }
@@ -642,7 +641,7 @@ struct MDataHandleConvert
         TypedConverter<MAYA_Type, USD_Type>::convert(tmpSrc, dst);
 
         if (args._doGammaCorrection)
-            dst = UsdMayaColorSpace::ConvertMayaToLinear(dst);
+            dst = MayaUsd::utils::ConvertMayaToLinear(dst);
     }
 
     // MDataHandle <--> UsdAttribute
@@ -707,8 +706,7 @@ template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection>
     convert(const USD_Type& src, MPlug& dst, const ConverterArgs& args)
     {
         MAYA_Type tmpDst;
-        USD_Type  tmpSrc
-            = args._doGammaCorrection ? UsdMayaColorSpace::ConvertLinearToMaya(src) : src;
+        USD_Type  tmpSrc = args._doGammaCorrection ? MayaUsd::utils::ConvertLinearToMaya(src) : src;
         TypedConverter<MAYA_Type, USD_Type>::convert(tmpSrc, tmpDst);
 
         MPlugUtils<MAYA_Type>::set(dst, tmpDst);
@@ -722,15 +720,14 @@ template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection>
         TypedConverter<MAYA_Type, USD_Type>::convert(tmpSrc, dst);
 
         if (args._doGammaCorrection)
-            dst = UsdMayaColorSpace::ConvertMayaToLinear(dst);
+            dst = MayaUsd::utils::ConvertMayaToLinear(dst);
     }
     template <NeedsGammaCorrection C = ColorCorrection>
     static typename std::enable_if<C == NeedsGammaCorrection::kYes, void>::type
     convert(const USD_Type& src, const MPlug& plug, MDGModifier& dst, const ConverterArgs& args)
     {
         MAYA_Type tmpDst;
-        USD_Type  tmpSrc
-            = args._doGammaCorrection ? UsdMayaColorSpace::ConvertLinearToMaya(src) : src;
+        USD_Type  tmpSrc = args._doGammaCorrection ? MayaUsd::utils::ConvertLinearToMaya(src) : src;
         TypedConverter<MAYA_Type, USD_Type>::convert(tmpSrc, tmpDst);
 
         MDGModifierUtils<MAYA_Type>::set(plug, dst, tmpDst);

@@ -30,6 +30,7 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdGeom/primvar.h>
@@ -337,7 +338,7 @@ GfVec3f LinearColorFromColorSet(const MColor& mayaColor, bool shouldConvertToLin
     // need to convert it to linear.
     GfVec3f c(mayaColor[0], mayaColor[1], mayaColor[2]);
     if (shouldConvertToLinear) {
-        return UsdMayaColorSpace::ConvertMayaToLinear(c);
+        return MayaUsd::utils::ConvertMayaToLinear(c);
     }
     return c;
 }
@@ -846,39 +847,51 @@ bool UsdMayaMeshWriteUtils::getMeshUVSetData(
     TfToken*       interpolation,
     VtIntArray*    assignmentIndices)
 {
-    MStatus status { MS::kSuccess };
-
-    // Sanity check first to make sure this UV set even has assigned values
-    // before we attempt to do anything with the data.
+    // Check first to make sure this UV set even has assigned values before we
+    // attempt to do anything with the data. We cannot directly use this data
+    // otherwise though since we need a uvId for every face vertex, and the
+    // returned uvIds MIntArray may be shorter than that if there are unmapped
+    // faces.
     MIntArray uvCounts, uvIds;
-    status = mesh.getAssignedUVs(uvCounts, uvIds, &uvSetName);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-    if (uvCounts.length() == 0 || uvIds.length() == 0) {
+    MStatus   status = mesh.getAssignedUVs(uvCounts, uvIds, &uvSetName);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    if (uvCounts.length() == 0u || uvIds.length() == 0u) {
         return false;
     }
 
-    // using itFV.getUV() does not always give us the right answer, so
-    // instead, we have to use itFV.getUVIndex() and use that to index into the
-    // UV set.
+    // Transfer the UV values directly to USD, in the same order as they are in
+    // the Maya mesh.
     MFloatArray uArray;
     MFloatArray vArray;
-    mesh.getUVs(uArray, vArray, &uvSetName);
+    status = mesh.getUVs(uArray, vArray, &uvSetName);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
     if (uArray.length() != vArray.length()) {
         return false;
     }
 
-    // We'll populate the assignment indices for every face vertex, but we'll
-    // only push values into the data if the face vertex has a value. All face
-    // vertices are initially unassigned/unauthored.
-    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
     uvArray->clear();
-    assignmentIndices->assign((size_t)numFaceVertices, -1);
+    uvArray->reserve(static_cast<size_t>(uArray.length()));
+    for (unsigned int uvId = 0u; uvId < uArray.length(); ++uvId) {
+#if PXR_VERSION >= 2011
+        uvArray->emplace_back(uArray[uvId], vArray[uvId]);
+#else
+        GfVec2f value(uArray[uvId], vArray[uvId]);
+        uvArray->push_back(value);
+#endif
+    }
+
+    // Now iterate through all the face vertices and fill in the faceVarying
+    // assignmentIndices array, again in the same order as in the Maya mesh.
+    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    assignmentIndices->assign(static_cast<size_t>(numFaceVertices), -1);
     *interpolation = UsdGeomTokens->faceVarying;
 
     MItMeshFaceVertex itFV(mesh.object());
-    unsigned int      fvi = 0;
+    unsigned int      fvi = 0u;
     for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
         if (!itFV.hasUVs(uvSetName)) {
             // No UVs for this faceVertex, so leave it unassigned.
@@ -887,17 +900,16 @@ bool UsdMayaMeshWriteUtils::getMeshUVSetData(
 
         int uvIndex;
         itFV.getUVIndex(uvIndex, &uvSetName);
-        if (uvIndex < 0 || static_cast<size_t>(uvIndex) >= uArray.length()) {
+        if (uvIndex < 0 || static_cast<unsigned int>(uvIndex) >= uArray.length()) {
             return false;
         }
 
-        GfVec2f value(uArray[uvIndex], vArray[uvIndex]);
-        uvArray->push_back(value);
-        (*assignmentIndices)[fvi] = uvArray->size() - 1;
+        (*assignmentIndices)[fvi] = uvIndex;
     }
 
-    UsdMayaUtil::MergeEquivalentIndexedValues(uvArray, assignmentIndices);
-    UsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh, interpolation, assignmentIndices);
+    // We do not merge indexed values or compress indices here in an effort to
+    // maintain the same UV shells and connectivity across export/import
+    // round-trips.
 
     return true;
 }

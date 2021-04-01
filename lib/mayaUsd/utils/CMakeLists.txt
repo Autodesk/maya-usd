@@ -28,6 +28,7 @@ set(HEADERS
     util.h
     utilFileSystem.h
     utilSerialization.h
+    hash.h
 )
 
 # -----------------------------------------------------------------------------

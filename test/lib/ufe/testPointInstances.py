@@ -21,6 +21,7 @@ import usdUtils
 
 from mayaUsd import ufe as mayaUsdUfe
 
+from pxr import Gf
 from pxr import UsdGeom
 
 from maya import cmds
@@ -38,6 +39,8 @@ class PointInstancesTestCase(unittest.TestCase):
     '''
 
     _pluginsLoaded = False
+
+    EPSILON = 1e-3
 
     @classmethod
     def setUpClass(cls):
@@ -146,6 +149,211 @@ class PointInstancesTestCase(unittest.TestCase):
         self.assertEqual(
             ufePathString,
             '|UsdProxy|UsdProxyShape,/PointInstancerGrid/PointInstancer')
+
+    def testManipulatePointInstancePosition(self):
+        # Create a UFE path to a PointInstancer prim with an instanceIndex on
+        # the end. This path uniquely identifies a specific point instance.
+        # We also pick one with a non-zero initial position.
+        instanceIndex = 7
+
+        ufePath = ufe.Path([
+            mayaUtils.createUfePathSegment('|UsdProxy|UsdProxyShape'),
+            usdUtils.createUfePathSegment(
+                '/PointInstancerGrid/PointInstancer/%d' % instanceIndex)])
+        ufeItem = ufe.Hierarchy.createItem(ufePath)
+
+        # Select the point instance scene item.
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.append(ufeItem)
+
+        # Get the PointInstancer prim for validating the values in USD.
+        ufePathString = ufe.PathString.string(ufePath)
+        prim = mayaUsdUfe.ufePathToPrim(ufePathString)
+        pointInstancer = UsdGeom.PointInstancer(prim)
+        self.assertTrue(pointInstancer)
+
+        # The PointInstancer should have 14 authored positions initially.
+        positionsAttr = pointInstancer.GetPositionsAttr()
+        positions = positionsAttr.Get()
+        self.assertEqual(len(positions), 14)
+
+        # Validate the initial position before manipulating
+        position = positions[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(position, Gf.Vec3f(-4.5, 1.5, 0.0), self.EPSILON))
+
+        # Perfom a translate manipulation via the move command.
+        cmds.move(1.0, 2.0, 3.0, objectSpace=True, relative=True)
+
+        # Re-fetch the USD positions and check for the update.
+        position = positionsAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(position, Gf.Vec3f(-3.5, 3.5, 3.0), self.EPSILON))
+
+        # Try another move.
+        cmds.move(6.0, 5.0, 4.0, objectSpace=True, relative=True)
+
+        # Re-fetch the USD positions and check for the update.
+        position = positionsAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(position, Gf.Vec3f(2.5, 8.5, 7.0), self.EPSILON))
+
+        # Now undo, and re-check.
+        cmds.undo()
+        position = positionsAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(position, Gf.Vec3f(-3.5, 3.5, 3.0), self.EPSILON))
+
+        # And once more.
+        cmds.undo()
+        position = positionsAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(position, Gf.Vec3f(-4.5, 1.5, 0.0), self.EPSILON))
+
+    def testManipulatePointInstanceOrientation(self):
+        # Create a UFE path to a PointInstancer prim with an instanceIndex on
+        # the end. This path uniquely identifies a specific point instance.
+        instanceIndex = 7
+
+        ufePath = ufe.Path([
+            mayaUtils.createUfePathSegment('|UsdProxy|UsdProxyShape'),
+            usdUtils.createUfePathSegment(
+                '/PointInstancerGrid/PointInstancer/%d' % instanceIndex)])
+        ufeItem = ufe.Hierarchy.createItem(ufePath)
+
+        # Select the point instance scene item.
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.append(ufeItem)
+
+        # Get the PointInstancer prim for validating the values in USD.
+        ufePathString = ufe.PathString.string(ufePath)
+        prim = mayaUsdUfe.ufePathToPrim(ufePathString)
+        pointInstancer = UsdGeom.PointInstancer(prim)
+        self.assertTrue(pointInstancer)
+
+        # The PointInstancer should not have any authored orientations
+        # initially.
+        orientationsAttr = pointInstancer.GetOrientationsAttr()
+        self.assertFalse(orientationsAttr.HasAuthoredValue())
+
+        # Perfom an orientation manipulation via the rotate command.
+        cmds.rotate(15.0, 30.0, 45.0, objectSpace=True, relative=True)
+
+        # The initial rotate should have filled out the orientations attribute.
+        orientations = orientationsAttr.Get()
+        self.assertEqual(len(orientations), 14)
+
+        # Validate the rotated item.
+        orientation = orientations[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(orientation.real, 0.897461, self.EPSILON))
+        self.assertTrue(
+            Gf.IsClose(orientation.imaginary, Gf.Vec3h(0.01828, 0.2854, 0.335205), self.EPSILON))
+
+        # The non-rotated items should all have identity orientations.
+        for i in [idx for idx in range(14) if idx != instanceIndex]:
+            orientation = orientations[i]
+            self.assertTrue(
+                Gf.IsClose(orientation.real, Gf.Quath.GetIdentity().real, self.EPSILON))
+            self.assertTrue(
+                Gf.IsClose(orientation.imaginary, Gf.Quath.GetIdentity().imaginary, self.EPSILON))
+
+        # Perfom another rotate.
+        cmds.rotate(25.0, 50.0, 75.0, objectSpace=True, relative=True)
+
+        # Re-fetch the USD orientation and check for the update.
+        orientation = orientationsAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(orientation.real, 0.397949, self.EPSILON))
+        self.assertTrue(
+            Gf.IsClose(orientation.imaginary, Gf.Vec3h(-0.0886841, 0.57666, 0.708008), self.EPSILON))
+
+        # Now undo, and re-check.
+        cmds.undo()
+        orientation = orientationsAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(orientation.real, 0.897461, self.EPSILON))
+        self.assertTrue(
+            Gf.IsClose(orientation.imaginary, Gf.Vec3h(0.01828, 0.2854, 0.335205), self.EPSILON))
+
+        # And once more.
+        # Note that with more complete undo support, this would ideally clear
+        # the authored orientations attribute, returning it to its true
+        # original state. For now, we just validate that the orientation value
+        # is back to its default of identity.
+        cmds.undo()
+        orientation = orientationsAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(orientation.real, Gf.Quath.GetIdentity().real, self.EPSILON))
+        self.assertTrue(
+            Gf.IsClose(orientation.imaginary, Gf.Quath.GetIdentity().imaginary, self.EPSILON))
+
+    def testManipulatePointInstanceScale(self):
+        # Create a UFE path to a PointInstancer prim with an instanceIndex on
+        # the end. This path uniquely identifies a specific point instance.
+        instanceIndex = 7
+
+        ufePath = ufe.Path([
+            mayaUtils.createUfePathSegment('|UsdProxy|UsdProxyShape'),
+            usdUtils.createUfePathSegment(
+                '/PointInstancerGrid/PointInstancer/%d' % instanceIndex)])
+        ufeItem = ufe.Hierarchy.createItem(ufePath)
+
+        # Select the point instance scene item.
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.append(ufeItem)
+
+        # Get the PointInstancer prim for validating the values in USD.
+        ufePathString = ufe.PathString.string(ufePath)
+        prim = mayaUsdUfe.ufePathToPrim(ufePathString)
+        pointInstancer = UsdGeom.PointInstancer(prim)
+        self.assertTrue(pointInstancer)
+
+        # The PointInstancer should not have any authored scales initially.
+        scalesAttr = pointInstancer.GetScalesAttr()
+        self.assertFalse(scalesAttr.HasAuthoredValue())
+
+        # Perfom a scale manipulation via the scale command.
+        cmds.scale(1.0, 2.0, 3.0, objectSpace=True, relative=True)
+
+        # The initial scale should have filled out the scales attribute.
+        scales = scalesAttr.Get()
+        self.assertEqual(len(scales), 14)
+
+        # Validate the scaled item.
+        scale = scales[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(scale, Gf.Vec3f(1.0, 2.0, 3.0), self.EPSILON))
+
+        # The non-scaled items should all have identity scales.
+        for i in [idx for idx in range(14) if idx != instanceIndex]:
+            scale = scales[i]
+            self.assertTrue(
+                Gf.IsClose(scale, Gf.Vec3f(1.0, 1.0, 1.0), self.EPSILON))
+
+        # Perfom another scale.
+        cmds.scale(4.0, 5.0, 6.0, objectSpace=True, relative=True)
+
+        # Re-fetch the USD scale and check for the update.
+        scale = scalesAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(scale, Gf.Vec3f(4.0, 10.0, 18.0), self.EPSILON))
+
+        # Now undo, and re-check.
+        cmds.undo()
+        scale = scalesAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(scale, Gf.Vec3f(1.0, 2.0, 3.0), self.EPSILON))
+
+        # And once more.
+        # Note that with more complete undo support, this would ideally clear
+        # the authored scales attribute, returning it to its true original
+        # state. For now, we just validate that the scale value is back to its
+        # default of identity.
+        cmds.undo()
+        scale = scalesAttr.Get()[instanceIndex]
+        self.assertTrue(
+            Gf.IsClose(scale, Gf.Vec3f(1.0, 1.0, 1.0), self.EPSILON))
 
 
 if __name__ == '__main__':

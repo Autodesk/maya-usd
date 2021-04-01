@@ -55,6 +55,14 @@ MSyntax MayaUSDImportCommand::createSyntax()
         kImportInstancesFlag,
         UsdMayaJobImportArgsTokens->importInstances.GetText(),
         MSyntax::kString);
+    syntax.addFlag(
+        kImportUSDZTexturesFlag,
+        UsdMayaJobImportArgsTokens->importUSDZTextures.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
+        kImportUSDZTexturesFilePathFlag,
+        UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath.GetText(),
+        MSyntax::kString);
     syntax.addFlag(kMetadataFlag, UsdMayaJobImportArgsTokens->metadata.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kMetadataFlag);
     syntax.addFlag(
@@ -69,6 +77,19 @@ MSyntax MayaUSDImportCommand::createSyntax()
         kUseAsAnimationCacheFlag,
         UsdMayaJobImportArgsTokens->useAsAnimationCache.GetText(),
         MSyntax::kBoolean);
+
+    // Import chasers
+    syntax.addFlag(
+        kImportChaserFlag, UsdMayaJobImportArgsTokens->chaser.GetText(), MSyntax::kString);
+    syntax.makeFlagMultiUse(UsdMayaJobImportArgsTokens->chaser.GetText());
+
+    syntax.addFlag(
+        kImportChaserArgsFlag,
+        UsdMayaJobImportArgsTokens->chaserArgs.GetText(),
+        MSyntax::kString,
+        MSyntax::kString,
+        MSyntax::kString);
+    syntax.makeFlagMultiUse(UsdMayaJobImportArgsTokens->chaserArgs.GetText());
 
     // These are additional flags under our control.
     syntax.addFlag(kFileFlag, kFileFlagLong, MSyntax::kString);

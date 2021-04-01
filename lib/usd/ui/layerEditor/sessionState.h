@@ -45,17 +45,43 @@ public:
 
     struct StageEntry
     {
+        std::string            _id;
         PXR_NS::UsdStageRefPtr _stage;
         std::string            _displayName;
         std::string            _proxyShapePath;
+
+        StageEntry()
+        {
+            _id = "";
+            _stage = PXR_NS::UsdStageRefPtr();
+            _displayName = "";
+            _proxyShapePath = "";
+        }
+
+        bool operator==(const StageEntry& entry) const
+        {
+            return (
+                _id == entry._id && _stage == entry._stage && _displayName == entry._displayName
+                && _proxyShapePath == entry._proxyShapePath);
+        }
+
+        bool operator!=(const StageEntry& entry) const { return !(*this == entry); }
+
+        void clear()
+        {
+            _stage = PXR_NS::UsdStageRefPtr();
+            _displayName = "";
+            _proxyShapePath = "";
+        }
     };
 
     // properties
     virtual bool                    autoHideSessionLayer() const { return _autoHideSessionLayer; }
     virtual void                    setAutoHideSessionLayer(bool hide);
-    PXR_NS::UsdStageRefPtr const&   stage() const { return _stage; }
+    PXR_NS::UsdStageRefPtr const&   stage() const { return _currentStageEntry._stage; }
+    StageEntry const&               stageEntry() const { return _currentStageEntry; }
     PXR_NS::SdfLayerRefPtr          targetLayer() const;
-    virtual void                    setStage(PXR_NS::UsdStageRefPtr const& in_stage);
+    virtual void                    setStageEntry(StageEntry const& in_entry);
     virtual AbstractCommandHook*    commandHook() = 0;
     virtual std::vector<StageEntry> allStages() const = 0;
     // path to default load layer dialogs to
@@ -63,9 +89,8 @@ public:
     // ui that returns a list of paths to load
     virtual std::vector<std::string>
     loadLayersUI(const QString& title, const std::string& default_path) const = 0;
-    // ui to save a layer. returns the path and the file format (ex: "usda")
-    virtual bool
-                 saveLayerUI(QWidget* in_parent, std::string* out_filePath, std::string* out_pFormat) const = 0;
+    // ui to save a layer. returns the path
+    virtual bool saveLayerUI(QWidget* in_parent, std::string* out_filePath) const = 0;
     virtual void printLayer(const PXR_NS::SdfLayerRefPtr& layer) const = 0;
 
     // main API
@@ -74,17 +99,21 @@ public:
     // in this case, the stage needs to be re-created on the new file
     virtual void rootLayerPathChanged(std::string const& in_path) = 0;
 
-    bool isValid() { return _stage && _stage->GetRootLayer(); }
+    bool isValid()
+    {
+        return _currentStageEntry._stage && _currentStageEntry._stage->GetRootLayer();
+    }
 
 Q_SIGNALS:
     void currentStageChangedSignal();
-    void stageListChangedSignal(PXR_NS::UsdStageRefPtr const& toSelect = PXR_NS::UsdStageRefPtr());
-    void stageRenamedSignal(std::string const& name, PXR_NS::UsdStageRefPtr const& stage);
+    void stageListChangedSignal(StageEntry const& toSelect = StageEntry());
+    void stageRenamedSignal(StageEntry const& renamedEntry);
     void autoHideSessionLayerSignal(bool hideIt);
+    void stageResetSignal(StageEntry const& entry);
 
 protected:
-    PXR_NS::UsdStageRefPtr _stage;
-    bool                   _autoHideSessionLayer = true;
+    StageEntry _currentStageEntry;
+    bool       _autoHideSessionLayer = true;
 };
 
 } // namespace UsdLayerEditor

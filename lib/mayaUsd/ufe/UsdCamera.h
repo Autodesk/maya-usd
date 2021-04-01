@@ -23,8 +23,6 @@
 #include <ufe/camera.h>
 #include <ufe/path.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -47,8 +45,9 @@ public:
     //! Create a UsdCamera.
     static UsdCamera::Ptr create(const UsdSceneItem::Ptr& item);
 
-    inline UsdPrim prim() const
+    inline PXR_NS::UsdPrim prim() const
     {
+        PXR_NAMESPACE_USING_DIRECTIVE
         TF_AXIOM(fItem != nullptr);
         return fItem->prim();
     }

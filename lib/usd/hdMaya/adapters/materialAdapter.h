@@ -43,14 +43,14 @@ public:
     HDMAYA_API
     void Populate() override;
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
     HDMAYA_API
     virtual HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId);
     HDMAYA_API
     virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
     HDMAYA_API
     virtual VtValue GetMaterialResource();

@@ -93,6 +93,35 @@ def checkWorldSpaceXform(testCase, objects):
         usdWorld = [y for x in t3d.inclusiveMatrix().matrix for y in x]
         assertVectorAlmostEqual(testCase, mayaWorld, usdWorld)
 
+class TestObserver(ufe.Observer):
+    def __init__(self):
+        super(TestObserver, self).__init__()
+        self._transform3d = 0
+        self._valueChanged = 0
+
+    def __call__(self, notification):
+        if (ufeUtils.ufeFeatureSetVersion() >= 2):
+            if isinstance(notification, ufe.AttributeValueChanged):
+                self._valueChanged += 1
+        if isinstance(notification, ufe.Transform3dChanged):
+            self._transform3d += 1
+
+    @property
+    def nbValueChanged(self):
+        return self._valueChanged
+
+    @property
+    def nbTransform3d(self):
+        return self._transform3d
+
+    @property
+    def notifications(self):
+        return self._valueChanged + self._transform3d
+
+    def reset(self):
+        self._transform3d = 0
+        self._valueChanged = 0
+
 class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
     '''Verify the Transform3d UFE interface, for multiple runtimes.
 
@@ -444,7 +473,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestCombo(expectedTRS)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Rotate and scale pivot compensation only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Rotate and scale pivot compensation only available in Maya 2022 or greater.')
     def testRotateScalePivotCompensation(self):
         '''Test that rotate and scale pivot compensation match Maya object.'''
 
@@ -454,14 +483,14 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         mayaSphereItem = ufe.Hierarchy.createItem(mayaSpherePath)
 
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
 
-        usdSpherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        usdSpherePath = ufe.PathString.path('%s,/Sphere1' % proxyShape)
         usdSphereItem = ufe.Hierarchy.createItem(usdSpherePath)
         usdSphereT3d = ufe.Transform3d.transform3d(usdSphereItem)
 
@@ -513,7 +542,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Rotate and scale pivot compensation only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Rotate and scale pivot compensation only available in Maya 2022 or greater.')
     def testRotateScalePivotCompensationAfterExport(self):
         '''Rotate and scale pivots must match after export.'''
 
@@ -572,21 +601,21 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121, 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Fallback transform op handling only available in Maya 2022 or greater.')
     def testFallbackCases(self):
         '''Fallback handler test cases.'''
 
         cmds.file(new=True, force=True)
 
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
 
-        spherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        spherePath = ufe.PathString.path('%s,/Sphere1' % proxyShape)
         sphereItem = ufe.Hierarchy.createItem(spherePath)
         sphereT3d = ufe.Transform3d.transform3d(sphereItem)
 
@@ -625,7 +654,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
                 "xformOp:rotateZ", "!invert!xformOp:translate:pivot",
                 "xformOp:rotateXYZ:maya_fallback")))
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
     def testBrokenFallback(self):
         '''Maya fallback transform stack must be final on prim transform op stack.'''
         # Create a prim and add transform ops to it that don't match the Maya
@@ -639,13 +668,13 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         cmds.file(new=True, force=True)
 
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
 
-        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
         capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
         capsuleXformable = UsdGeom.Xformable(capsulePrim)
@@ -687,11 +716,8 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
         self.assertIsNone(capsuleT3d)
 
-    # Name test such that it runs last.  Otherwise, it runs before 
-    # testRotateScalePivotCompensation(), and causes it to fail.  To be 
-    # investigated --- MAYA-108067.
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121, 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
-    def testZFallback(self):
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 123, 'Fallback transform op handling only available in Maya Preview Release 123 or later.')
+    def testFallback(self):
         '''Transformable not handled by standard Transform3d handlers must be
     handled by fallback handler.'''
 
@@ -709,8 +735,15 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         mayaSphereItem        = ufe.Hierarchy.createItem(mayaSpherePath)
         usdSphereItem         = ufe.Hierarchy.createItem(usdSpherePath)
         usdFallbackSphereItem = ufe.Hierarchy.createItem(usdFallbackSpherePath)
-        usdSphere3d         = ufe.Transform3d.transform3d(usdSphereItem)
-        usdFallbackSphere3d = ufe.Transform3d.transform3d(usdFallbackSphereItem)
+        # For scene items with fallback transform ops, the transform3d()
+        # interface considers the complete object (i.e. all transform ops in
+        # the stack), which is undesirable when setting and getting fallback
+        # pivot transform ops.  To consider only the fallback transform ops,
+        # use the editTransform3d() interface.  For scene items with only a
+        # Maya transform stack, editTransform3d() and transform3d() are
+        # equivalent, so arbitrarily choose editTransform3d().
+        usdSphere3d         = ufe.Transform3d.editTransform3d(usdSphereItem, ufe.EditTransform3dHint())
+        usdFallbackSphere3d = ufe.Transform3d.editTransform3d(usdFallbackSphereItem, ufe.EditTransform3dHint())
 
         sn = ufe.GlobalSelection.get()
         sn.clear()
@@ -807,6 +840,67 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         checkPivotsAndCompensations(self, mayaObj, usdSphere3d)
         checkPivotsAndCompensations(self, mayaObj, usdFallbackSphere3d)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testPrimPropertyPathNotifs only available in UFE v2 or greater.')
+    def testPrimPropertyPathNotifs(self):
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        # Select the capsule
+        capPath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capItem = ufe.Hierarchy.createItem(capPath)
+        ufe.GlobalSelection.get().clear()
+        ufe.GlobalSelection.get().append(capItem)
+
+        # No notifications yet.
+        obs = TestObserver()
+        ufe.Attributes.addObserver(capItem, obs)
+        ufe.Transform3d.addObserver(capItem, obs)
+        self.assertEqual(obs.notifications, 0)
+
+        # Move the capsule
+        cmds.move(0, 10, 10)
+
+        # Verify that we got both ValueChanged and Transform3d notifs.
+        # Note: we should get notifs on both the "xformOp:translate" and
+        #       "xformOpOrder" attributes. We don't care how many, just that
+        #       we are getting both of these notifs kinds on both the move
+        #       and undo.
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+
+        # Reset observer and then undo and again verify notifs.
+        obs.reset()
+        self.assertEqual(obs.notifications, 0)
+        cmds.undo()
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+
+        # Reset and test same thing with Rotate.
+        obs.reset()
+        cmds.rotate(10, 0, 0)
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+        obs.reset()
+        self.assertEqual(obs.notifications, 0)
+        cmds.undo()
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+
+        # Reset and test same thing with Scale.
+        obs.reset()
+        cmds.scale(2, 2, 2)
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
+        obs.reset()
+        self.assertEqual(obs.notifications, 0)
+        cmds.undo()
+        self.assertTrue(obs.nbValueChanged > 0)
+        self.assertTrue(obs.nbTransform3d > 0)
 
 
 if __name__ == '__main__':

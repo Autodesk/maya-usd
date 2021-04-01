@@ -48,7 +48,7 @@ class testProxyShapeBase(unittest.TestCase):
         bboxSize = cmds.getAttr('Cube_usd.boundingBoxSize')[0]
         self.assertEqual(bboxSize, (1.0, 1.0, 1.0))
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2)), 'testDuplicateProxyStageAnonymous is available only in Ufe 2.0 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDuplicateProxyStageAnonymous only available in UFE v2 or greater.')
     def testDuplicateProxyStageAnonymous(self):
         '''
         Verify stage with new anonymous layer is duplicated properly.
@@ -57,8 +57,8 @@ class testProxyShapeBase(unittest.TestCase):
 
         # create a proxy shape and add a Capsule prim
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
@@ -114,7 +114,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(proxyShapeItem).children()))
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2)), 'testDuplicateProxyStageFileBacked is available only in Ufe 2.0 or later.')  
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDuplicateProxyStageFileBacked only available in UFE v2 or greater.')
     def testDuplicateProxyStageFileBacked(self):
         '''
         Verify stage from file is duplicated properly.

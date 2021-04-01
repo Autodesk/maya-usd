@@ -25,11 +25,14 @@
 
 #include <pxr/base/tf/hashset.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/pcp/site.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/tokens.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
+#include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MFnDependencyNode.h>
@@ -77,6 +80,35 @@ bool stringBeginsWithDigit(const std::string& inputString)
     }
 
     return false;
+}
+
+// This function calculates the position index for a given layer across all
+// the site's local LayerStacks
+uint32_t findLayerIndex(const UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer)
+{
+    uint32_t position { 0 };
+
+    const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
+
+    // iterate through the expanded primIndex
+    for (PcpNodeRef node : primIndex.GetNodeRange()) {
+
+        TF_AXIOM(node);
+
+        const PcpLayerStackSite&   site = node.GetSite();
+        const PcpLayerStackRefPtr& layerStack = site.layerStack;
+
+        // iterate through the "local" Layer stack for each site
+        // to find the layer
+        for (SdfLayerRefPtr const& l : layerStack->GetLayers()) {
+            if (l == layer) {
+                return position;
+            }
+            ++position;
+        }
+    }
+
+    return position;
 }
 
 } // anonymous namespace
@@ -305,34 +337,87 @@ UsdTimeCode getTime(const Ufe::Path& path)
         return UsdTimeCode::Default();
     }
 
-    // Get the time from the proxy shape.  This will be the tail component of
-    // the first path segment.
-    auto proxyShapePath = Ufe::Path(path.getSegments()[0]);
-
-    // Keep a single-element path to MObject cache, as all USD prims in a stage
-    // share the same proxy shape.
-    static std::pair<Ufe::Path, MObjectHandle> cache;
-
-    MObject proxyShapeObj;
-
-    if (cache.first == proxyShapePath && cache.second.isValid()) {
-        proxyShapeObj = cache.second.object();
-    } else {
-        // Not found in the cache, or no longer valid.  Get the proxy shape
-        // MObject from its path, and put it in the cache.  Pop the head of the
-        // UFE path to get rid of "|world", which is implicit in Maya.
-        auto proxyShapeDagPath = UsdMayaUtil::nameToDagPath(proxyShapePath.popHead().string());
-        TF_VERIFY(proxyShapeDagPath.isValid());
-        proxyShapeObj = proxyShapeDagPath.node();
-        cache = std::pair<Ufe::Path, MObjectHandle>(proxyShapePath, MObjectHandle(proxyShapeObj));
+    // Proxy shape node should not be null.
+    auto proxyShape = g_StageMap.proxyShapeNode(path);
+    if (!TF_VERIFY(proxyShape)) {
+        return UsdTimeCode::Default();
     }
 
-    // Get time from the proxy shape.
-    MFnDependencyNode fn(proxyShapeObj);
-    auto              proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
-    TF_VERIFY(proxyShape);
-
     return proxyShape->getTime();
+}
+
+TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
+{
+    // Path should not be empty.
+    if (!TF_VERIFY(!path.empty())) {
+        return TfTokenVector();
+    }
+
+    // Proxy shape node should not be null.
+    auto proxyShape = g_StageMap.proxyShapeNode(path);
+    if (!TF_VERIFY(proxyShape)) {
+        return TfTokenVector();
+    }
+
+    bool renderPurpose, proxyPurpose, guidePurpose;
+    proxyShape->getDrawPurposeToggles(&renderPurpose, &proxyPurpose, &guidePurpose);
+    TfTokenVector purposes;
+    if (renderPurpose) {
+        purposes.emplace_back(UsdGeomTokens->render);
+    }
+    if (proxyPurpose) {
+        purposes.emplace_back(UsdGeomTokens->proxy);
+    }
+    if (guidePurpose) {
+        purposes.emplace_back(UsdGeomTokens->guide);
+    }
+
+    return purposes;
+}
+
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
+{
+    // get the property spec in the edit target's layer
+    const auto& prim = attr.GetPrim();
+    const auto& stage = prim.GetStage();
+    const auto& editTarget = stage->GetEditTarget();
+
+    // get the index to edit target layer
+    const auto targetLayerIndex = findLayerIndex(prim, editTarget.GetLayer());
+
+    // HS March 22th,2021
+    // TODO: "Value Clips" are UsdStage-level feature, unknown to Pcp.So if the attribute in
+    // question is affected by Value Clips, we would will likely get the wrong answer. See Spiff
+    // comment for more information :
+    // https://groups.google.com/g/usd-interest/c/xTxFYQA_bRs/m/lX_WqNLoBAAJ
+
+    // Read on Value Clips here:
+    // https://graphics.pixar.com/usd/docs/api/_usd__page__value_clips.html
+
+    // get the strength-ordered ( strong-to-weak order ) list of property specs that provide
+    // opinions for this property.
+    const auto& propertyStack = attr.GetPropertyStack();
+
+    if (!propertyStack.empty()) {
+        // get the strongest layer that has the attr.
+        auto strongestLayer = attr.GetPropertyStack().front()->GetLayer();
+
+        // compare the calculated index between the "attr" and "edit target" layers.
+        if (findLayerIndex(prim, strongestLayer) < targetLayerIndex) {
+            if (errMsg) {
+                std::string err = TfStringPrintf(
+                    "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
+                    attr.GetBaseName().GetText(),
+                    strongestLayer->GetDisplayName().c_str());
+
+                *errMsg = err;
+            }
+
+            return false;
+        }
+    }
+
+    return true;
 }
 
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)

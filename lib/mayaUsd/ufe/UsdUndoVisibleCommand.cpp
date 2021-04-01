@@ -15,6 +15,7 @@
 //
 #include "UsdUndoVisibleCommand.h"
 
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/usdGeom/imageable.h>
@@ -41,9 +42,17 @@ UsdUndoVisibleCommand::Ptr UsdUndoVisibleCommand::create(const UsdPrim& prim, bo
 
 void UsdUndoVisibleCommand::execute()
 {
+    UsdGeomImageable primImageable(_prim);
+
+    std::string errMsg;
+    if (!MayaUsd::ufe::isAttributeEditAllowed(primImageable.GetVisibilityAttr(), &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return;
+    }
+
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    _visible ? UsdGeomImageable(_prim).MakeVisible() : UsdGeomImageable(_prim).MakeInvisible();
+    _visible ? primImageable.MakeVisible() : primImageable.MakeInvisible();
 }
 
 void UsdUndoVisibleCommand::redo() { _undoableItem.redo(); }

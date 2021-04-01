@@ -23,8 +23,6 @@
 #include <ufe/hierarchyHandler.h>
 #include <ufe/selection.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -82,8 +80,8 @@ public:
 #endif
 
 private:
-    const UsdPrim&     getUsdRootPrim() const;
-    Ufe::SceneItemList createUFEChildList(const UsdPrimSiblingRange& range) const;
+    const PXR_NS::UsdPrim& getUsdRootPrim() const;
+    Ufe::SceneItemList     createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range) const;
 
 private:
     Ufe::SceneItem::Ptr        fItem;
@@ -91,7 +89,7 @@ private:
     Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
 
     // The root prim is initialized on first use and therefore mutable.
-    mutable UsdPrim fUsdRootPrim;
+    mutable PXR_NS::UsdPrim fUsdRootPrim;
 }; // ProxyShapeHierarchy
 
 } // namespace ufe

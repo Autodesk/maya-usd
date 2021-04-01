@@ -18,6 +18,15 @@ target_sources(${TARGET_NAME}
         viewCommand.cpp
 )
 
+set(HEADERS
+    utils.h
+)
+
+# -----------------------------------------------------------------------------
+# promoted headers
+# -----------------------------------------------------------------------------
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR render/mayaToHydra)
+
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
@@ -78,6 +87,10 @@ endif()
 # -----------------------------------------------------------------------------
 install(TARGETS ${TARGET_NAME}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/maya)
+
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/mayaToHydra
+)
 
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 

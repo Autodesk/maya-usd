@@ -119,11 +119,15 @@ TF_DECLARE_PUBLIC_TOKENS(
     (preferredMaterial) \
     (useAsAnimationCache) \
     (importInstances) \
+    (importUSDZTextures) \
+    (importUSDZTexturesFilePath) \
     /* assemblyRep values */ \
     (Collapsed) \
     (Full) \
     (Import) \
-    ((Unloaded, ""))
+    ((Unloaded, "")) \
+    (chaser) \
+    (chaserArgs)
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -186,9 +190,9 @@ struct UsdMayaJobExportArgs
     const bool    verbose;
     const bool    staticSingleSample;
 
-    typedef std::map<std::string, std::string> ChaserArgs;
-    const std::vector<std::string>             chaserNames;
-    const std::map<std::string, ChaserArgs>    allChaserArgs;
+    using ChaserArgs = std::map<std::string, std::string>;
+    const std::vector<std::string>          chaserNames;
+    const std::map<std::string, ChaserArgs> allChaserArgs;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
@@ -267,12 +271,13 @@ struct UsdMayaJobImportArgs
         TfToken materialConversion;
     };
     using ShadingModes = std::vector<ShadingMode>;
-    ShadingModes  shadingModes; // XXX can we make this const?
-    const TfToken preferredMaterial;
-    const bool    importInstances;
-    const bool    useAsAnimationCache;
-
-    const bool importWithProxyShapes;
+    ShadingModes      shadingModes; // XXX can we make this const?
+    const TfToken     preferredMaterial;
+    const std::string importUSDZTexturesFilePath;
+    const bool        importUSDZTextures;
+    const bool        importInstances;
+    const bool        useAsAnimationCache;
+    const bool        importWithProxyShapes;
     /// The interval over which to import animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
     /// animated (time-sampled) data should be imported.
@@ -281,6 +286,10 @@ struct UsdMayaJobImportArgs
     /// special-cased because USD will accept full intervals like any other
     /// non-empty interval.
     const GfInterval timeInterval;
+
+    using ChaserArgs = std::map<std::string, std::string>;
+    const std::vector<std::string>          chaserNames;
+    const std::map<std::string, ChaserArgs> allChaserArgs;
 
     /// Get the current material conversion.
     MAYAUSD_CORE_PUBLIC
@@ -301,6 +310,9 @@ struct UsdMayaJobImportArgs
     /// Gets the default arguments dictionary for UsdMayaJobImportArgs.
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();
+
+    MAYAUSD_CORE_PUBLIC
+    static const std::string GetImportUSDZTexturesFilePath(const std::string& userArg);
 
 private:
     MAYAUSD_CORE_PUBLIC

@@ -15,6 +15,11 @@ def Xform "pSphere1" (
         texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
             interpolation = "vertex"
         )
+        float xformOp:rotateZ.timeSamples = {
+            0: 0,
+            4: 360,
+        }
+        uniform token[] xformOpOrder = ["xformOp:rotateZ"]
     }
 
     def Mesh "pSphereShape2"

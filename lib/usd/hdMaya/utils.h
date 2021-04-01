@@ -36,12 +36,12 @@
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 #include <pxr/imaging/hd/textureResource.h>
 #include <pxr/imaging/hd/types.h>
 
 #include <tuple>
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -82,7 +82,7 @@ MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& param
 HDMAYA_API
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
 
-#if USD_VERSION_NUM < 2011
+#if PXR_VERSION < 2011
 
 /// \brief Returns the texture resource from a "file" shader node.
 /// \param fileObj "file" shader object.
@@ -105,7 +105,7 @@ HdTextureResourceSharedPtr GetFileTextureResource(
 HDMAYA_API
 std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj);
 
-#endif // USD_VERSION_NUM < 2011
+#endif // PXR_VERSION < 2011
 
 /// \brief Runs a function on all recursive descendents of a selection list
 ///  May optionally filter by node type. The items in the list are also included

@@ -20,6 +20,8 @@
 #include <pxr/usd/usdGeom/xformCache.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 

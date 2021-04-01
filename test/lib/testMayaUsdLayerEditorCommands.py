@@ -26,7 +26,6 @@ from pxr import Sdf, Usd
 
 CLEAR = "-clear"
 DISCARD = "-discardEdits"
-PROXY_NODE_TYPE = "mayaUsdProxyShapeBase"
 
 DUMMY_FILE_TEXT = \
     """#usda 1.0
@@ -41,10 +40,7 @@ def getCleanMayaStage():
     """ gets a stage that only has an anon layer """
 
     cmds.file(new=True, force=True)
-    mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-
-    proxyShapes = cmds.ls(type=PROXY_NODE_TYPE, long=True)
-    shapePath = proxyShapes[0]
+    shapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
     stage = mayaUsd.lib.GetPrim(shapePath).GetStage()
     return shapePath, stage
 
