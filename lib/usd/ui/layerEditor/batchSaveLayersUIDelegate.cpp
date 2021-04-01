@@ -60,15 +60,15 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(const MDagPat
             if (showConfirmDgl) {
                 UsdLayerEditor::SaveLayersDialog dlg(nullptr, proxyShapes);
 
-                // The SaveLayers dialog only handles choosing new names for anonymous layers and making
-                // sure that they are remapped correctly in either their parent layer or by the owning
-                // proxy shape. The SaveLayers dialog itself does not currently handle the saving of
-                // file-backed layers, so for now we will return that we only partiall completed saving.
-                // This will trigger the LayerManager to double check what needs to be saved and to
-                // complete the saving of all file-backed layers.
+                // The SaveLayers dialog only handles choosing new names for anonymous layers and
+                // making sure that they are remapped correctly in either their parent layer or by
+                // the owning proxy shape. The SaveLayers dialog itself does not currently handle
+                // the saving of file-backed layers, so for now we will return that we only partiall
+                // completed saving. This will trigger the LayerManager to double check what needs
+                // to be saved and to complete the saving of all file-backed layers.
                 //
                 return (QDialog::Rejected == dlg.exec()) ? MayaUsd::kAbort
-                                                        : MayaUsd::kPartiallyCompleted;
+                                                         : MayaUsd::kPartiallyCompleted;
             }
         }
     }
