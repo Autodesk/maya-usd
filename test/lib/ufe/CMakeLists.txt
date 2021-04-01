@@ -21,6 +21,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testAttribute.py
         testAttributes.py
         testChildFilter.py
+        testCamera.py
         testComboCmd.py
         testContextOps.py
         testDuplicateCmd.py

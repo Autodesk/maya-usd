@@ -82,7 +82,6 @@ class testVP2RenderDelegateUsdCamera(imageUtils.ImageDiffingTestCase):
         self._StartTest('TranslateRotate_vs_xform')
         
         mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
-        print(dir(mayaPathSegment), file=sys.stderr)
         #camera1 doesn't work correctly right now because of an xformOp:transform issue MAYA-110515
         #cam1UsdPathSegment = usdUtils.createUfePathSegment('cameras/cam1/camera1')
         #cmds.lookThru('|stage|stageShape,/cameras/cam1/camera1')
@@ -96,7 +95,6 @@ class testVP2RenderDelegateUsdCamera(imageUtils.ImageDiffingTestCase):
         cam2Path = ufe.Path([mayaPathSegment, cam2UsdPathSegment])
         cam2Item = ufe.Hierarchy.createItem(cam2Path)
         cam2Transform3d = ufe.Transform3d.transform3d(cam2Item)
-        print(dir(cam2Transform3d))
         cam2Transform3d.translate(-1, 0, 0)
         self.assertSnapshotClose('%s_cam2_translated.png' % self._testName)
         
