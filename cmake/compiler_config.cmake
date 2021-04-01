@@ -23,6 +23,8 @@ set(MSVC_FLAGS
     # we want to be as strict as possible
     /W3
     $<$<BOOL:${BUILD_STRICT_MODE}>:/WX>
+    # enable two-phase name lookup and other strict checks (binding a non-const reference to a temporary, etc..)
+    $<$<BOOL:$<VERSION_GREATER:${USD_BOOST_VERSION},106600>>:/permissive->
     # enable pdb generation.
     /Zi
     # standards compliant.
@@ -81,7 +83,7 @@ function(mayaUsd_compile_config TARGET)
     # required compiler feature
     # Require C++14 if we're either building for Maya 2019 or later, or if we're building against 
     # USD 20.05 or later. Otherwise require C++11.
-    if ((MAYA_APP_VERSION VERSION_GREATER_EQUAL 2019) OR (USD_VERSION_NUM VERSION_GREATER_EQUAL 2005))
+    if ((MAYA_APP_VERSION VERSION_GREATER_EQUAL 2019) OR (PXR_VERSION VERSION_GREATER_EQUAL 2005))
         target_compile_features(${TARGET} 
             PRIVATE
                 cxx_std_14

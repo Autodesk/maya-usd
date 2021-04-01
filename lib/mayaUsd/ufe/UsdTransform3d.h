@@ -23,8 +23,6 @@
 #include <ufe/path.h>
 #include <ufe/transform3d.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -51,10 +49,11 @@ public:
     void setItem(const UsdSceneItem::Ptr& item);
 
     // Ufe::Transform3d overrides
-    const Ufe::Path&    path() const override;
-    Ufe::SceneItem::Ptr sceneItem() const override;
-    inline UsdPrim      prim() const
+    const Ufe::Path&       path() const override;
+    Ufe::SceneItem::Ptr    sceneItem() const override;
+    inline PXR_NS::UsdPrim prim() const
     {
+        PXR_NAMESPACE_USING_DIRECTIVE
         TF_AXIOM(fItem != nullptr);
         return fItem->prim();
     }

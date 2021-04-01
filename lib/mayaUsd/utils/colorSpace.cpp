@@ -19,16 +19,22 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace MAYAUSD_NS_DEF {
+namespace utils {
+
 TF_DEFINE_ENV_SETTING(
     PIXMAYA_LINEAR_COLORS,
     false,
     "If colors from maya should be treated as linear.  "
     "When false, colors are assumed to be gamma-corrected.");
 
-bool UsdMayaColorSpace::IsColorManaged()
+bool IsColorManaged()
 {
     // in theory this could vary per scene, but we think mixing that within any
     // given pipeline is likely confusing.  Also, we want to avoid this function
     // calling out to mel.
     return TfGetEnvSetting(PIXMAYA_LINEAR_COLORS);
 }
+
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF

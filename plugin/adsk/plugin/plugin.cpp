@@ -17,6 +17,7 @@
 #include "adskExportCommand.h"
 #include "adskImportCommand.h"
 #include "adskListShadingModesCommand.h"
+#include "adskStageLoadUnloadCommands.h"
 #include "base/api.h"
 #include "exportTranslator.h"
 #include "importTranslator.h"
@@ -63,6 +64,7 @@
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
+#include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 
 #include <ufe/runTimeMgr.h>
 
@@ -209,6 +211,8 @@ MStatus initializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to register export translator.");
     }
 
+    registerCommandCheck<MayaUsd::ADSKMayaUsdStageLoadAllCommand>(plugin);
+    registerCommandCheck<MayaUsd::ADSKMayaUsdStageUnloadAllCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDExportCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
@@ -246,8 +250,10 @@ MStatus initializePlugin(MObject obj)
     auto commonAPIHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(matrixHandler);
     auto mayaStackHandler
         = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(commonAPIHandler);
-    g_NewTransform3dHandler = mayaStackHandler;
-    runTimeMgr.setTransform3dHandler(usdRtid, mayaStackHandler);
+    auto pointInstanceHandler
+        = MayaUsd::ufe::UsdTransform3dPointInstanceHandler::create(mayaStackHandler);
+    g_NewTransform3dHandler = pointInstanceHandler;
+    runTimeMgr.setTransform3dHandler(usdRtid, pointInstanceHandler);
 
     status = plugin.registerCommand(ToggleTransform3d::commandName, ToggleTransform3d::creator);
     if (!status) {
@@ -373,6 +379,8 @@ MStatus uninitializePlugin(MObject obj)
     if (!status) {
         status.perror("mayaUsdPlugin: unable to deregister export translator.");
     }
+    deregisterCommandCheck<MayaUsd::ADSKMayaUsdStageLoadAllCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ADSKMayaUsdStageUnloadAllCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDExportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);

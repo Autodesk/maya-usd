@@ -182,6 +182,9 @@ def openVariantSetScene():
 def openCompositionArcsScene():
     return openTestScene("compositionArcs", "compositionArcs.ma" )
 
+def openPrimPathScene():
+    return openTestScene("primPath", "primPath.ma" )
+
 def createProxyAndStage():
     """
     Create in-memory stage
@@ -236,3 +239,6 @@ def previewReleaseVersion():
     match = prRe.match(cmds.about(v=True))
 
     return int(match.group(1)) if match else sys.maxsize
+
+def mayaMajorVersion():
+    return int(cmds.about(majorVersion=True))

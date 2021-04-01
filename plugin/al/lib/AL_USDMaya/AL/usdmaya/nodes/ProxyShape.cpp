@@ -63,7 +63,7 @@
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #if defined(WANT_UFE_BUILD)
 #include "ufe/path.h"
@@ -1246,7 +1246,7 @@ void ProxyShape::loadStage()
                 }
             }
         } else {
-            boost::filesystem::path filestringPath(fileString);
+            ghc::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
                 fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
                 TF_DEBUG(ALUSDMAYA_TRANSLATORS)

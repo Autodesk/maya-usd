@@ -27,6 +27,7 @@
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MPlugArray.h>
 
 #include <memory>
 #include <vector>

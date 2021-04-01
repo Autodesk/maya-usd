@@ -37,6 +37,7 @@
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/taskController.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/modelAPI.h>
@@ -66,6 +67,10 @@
 #include <ufe/sceneItem.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/selectionNotification.h>
+#endif
+
+#if defined(BUILD_HDMAYA)
+#include <mayaUsd/render/mayaToHydra/utils.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -416,11 +421,19 @@ bool ProxyRenderDelegate::enableUpdateForSelection() const { return true; }
 #endif
 
 //! \brief  Always requires update since changes are tracked by Hydraw change tracker and it will
-//! guarantee minimal update
+//! guarantee minimal update; only exception is if rendering through Maya-to-Hydra
 bool ProxyRenderDelegate::requiresUpdate(
     const MSubSceneContainer& container,
     const MFrameContext&      frameContext) const
 {
+#if defined(BUILD_HDMAYA)
+    // If the current viewport renderer is an mtoh one, skip this update, as
+    // mtoh already has special handling for proxy shapes, and we don't want to
+    // build out a render index we don't need
+    if (IsMtohRenderOverride(frameContext)) {
+        return false;
+    }
+#endif
     return true;
 }
 
@@ -484,7 +497,7 @@ void ProxyRenderDelegate::_InitRenderDelegate()
     if (!_renderIndex) {
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 #else
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get()));
@@ -576,8 +589,7 @@ bool ProxyRenderDelegate::_Populate()
             }
         }
         _proxyShapeData->ExcludePrimsUpdated();
-
-        _sceneDelegate->Populate(_proxyShapeData->UsdStage()->GetPseudoRoot(), excludePrimPaths);
+        _sceneDelegate->Populate(_proxyShapeData->ProxyShape()->usdPrim(), excludePrimPaths);
         _isPopulated = true;
     }
 
@@ -603,8 +615,24 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         _sceneDelegate->SetTime(timeCode);
     }
 
-    const MMatrix    inclusiveMatrix = _proxyShapeData->ProxyDagPath().inclusiveMatrix();
-    const GfMatrix4d transform(inclusiveMatrix.matrix);
+    // Update the root transform used to render by the delagate.
+    // USD considers that the root prim transform is always the Identity matrix so that means
+    // the root transform define the root prim transform. When the real stage root is used to
+    // render this is not a issue because the root transform will be the maya transform.
+    // The problem is when using a primPath as the root prim, we are losing
+    // the prim path world transform. So we need to set the root transform as the world
+    // transform of the prim used for rendering.
+    const MMatrix inclusiveMatrix = _proxyShapeData->ProxyDagPath().inclusiveMatrix();
+    GfMatrix4d    transform(inclusiveMatrix.matrix);
+
+    if (_proxyShapeData->ProxyShape()->usdPrim().GetPath() != SdfPath::AbsoluteRootPath()) {
+        const UsdTimeCode timeCode = _proxyShapeData->ProxyShape()->getTime();
+        UsdGeomXformCache xformCache(timeCode);
+        GfMatrix4d        m
+            = xformCache.GetLocalToWorldTransform(_proxyShapeData->ProxyShape()->usdPrim());
+        transform = m * transform;
+    }
+
     constexpr double tolerance = 1e-9;
     if (!GfIsClose(transform, _sceneDelegate->GetRootTransform(), tolerance)) {
         MProfilingScope subProfilingScope(
@@ -789,7 +817,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // "/TreePatch/Tree_1.proto_leaves_id0/DrawItem_xxxxxxxx". Thus std::string
     // is used instead to extract Rprim id.
     const std::string renderItemName = renderItem.name().asChar();
-    const auto        pos = renderItemName.find_last_of(USD_UFE_SEPARATOR);
+    const auto        pos = renderItemName.find_first_of(VP2_RENDER_DELEGATE_SEPARATOR);
     const SdfPath     rprimId(renderItemName.substr(0, pos));
 
     // If drawInstID is positive, it means the selection hit comes from one instanced render item,

@@ -58,8 +58,8 @@ class PythonWrappersTestCase(unittest.TestCase):
 
         # Create empty stage and add a prim.
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.Path(mayaUtils.createUfePathSegment('|stage1|stageShape1'))
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.Path(mayaUtils.createUfePathSegment(proxyShape))
 
         # Test maya-usd getStage() wrapper.
         mayaUsdStage = mayaUsd.ufe.getStage(str(proxyShapePath))
@@ -83,9 +83,9 @@ class PythonWrappersTestCase(unittest.TestCase):
         # Test the maya-usd ufePathToPrim() wrapper.
         mayaUsdStage.DefinePrim("/Capsule1", "Capsule")
         if ufeUtils.ufeFeatureSetVersion() >= 2:
-            capsulePrim = mayaUsd.ufe.ufePathToPrim('|stage1|stageShape1,/Capsule1')
+            capsulePrim = mayaUsd.ufe.ufePathToPrim('%s,/Capsule1' % proxyShape)
         else:
-            capsulePrim = mayaUsd.ufe.ufePathToPrim('|world|stage1|stageShape1,/Capsule1')
+            capsulePrim = mayaUsd.ufe.ufePathToPrim('|world%s,/Capsule1' % proxyShape)
         self.assertIsNotNone(capsulePrim)
 
         if ufeUtils.ufeFeatureSetVersion() >= 2:

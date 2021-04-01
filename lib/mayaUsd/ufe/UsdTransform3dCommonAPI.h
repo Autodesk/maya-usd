@@ -20,8 +20,6 @@
 
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -65,7 +63,7 @@ public:
     Ufe::Vector3d                      rotatePivot() const override;
 
 private:
-    UsdGeomXformCommonAPI _commonAPI;
+    PXR_NS::UsdGeomXformCommonAPI _commonAPI;
 
 }; // UsdTransform3dCommonAPI
 

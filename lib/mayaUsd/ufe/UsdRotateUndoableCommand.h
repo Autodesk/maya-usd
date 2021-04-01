@@ -24,8 +24,6 @@
 
 #include <exception>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -35,7 +33,7 @@ namespace ufe {
  */
 class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand
     : public Ufe::RotateUndoableCommand
-    , public UsdTRSUndoableCommandBase<GfVec3f>
+    , public UsdTRSUndoableCommandBase<PXR_NS::GfVec3f>
 {
 public:
     typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
@@ -81,12 +79,12 @@ protected:
     ~UsdRotateUndoableCommand() override;
 
 private:
-    static TfToken rotXYZ;
+    static PXR_NS::TfToken rotXYZ;
 
-    TfToken attributeName() const override { return rotXYZ; }
-    void    performImp(double x, double y, double z) override;
-    void    addEmptyAttribute() override;
-    bool    cannotInit() const override { return bool(fFailedInit); }
+    PXR_NS::TfToken attributeName() const override { return rotXYZ; }
+    void            performImp(double x, double y, double z) override;
+    void            addEmptyAttribute() override;
+    bool            cannotInit() const override { return bool(fFailedInit); }
 
     std::exception_ptr fFailedInit;
 

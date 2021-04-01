@@ -18,6 +18,8 @@
 // variable used to keep track of created menus
 global string $gMayaUsdCreateSubMenu = "";
 global string $gMayaUsdOpenUsdLayerEditorMenuItem = "";
+global string $gMayaUsdSelectMenuDivider = "";
+global string $gMayaUsdSelectModeSubMenu = "";
 
 ///////////////////////////////////////////////////////////////////////////////
 // findDividerByLabel
@@ -70,6 +72,58 @@ proc removeMenuCallback(string $menuName, string $cmd) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// findAEMenu
+// Helper function to find attribute editor menu.
+proc string findAEMenu(string $menuLabel)
+{
+    global string $gAEMenuBarLayoutName;
+
+    string $fp = `menuBarLayout -q -fullPathName $gAEMenuBarLayoutName`;
+    string $kids[] = `menuBarLayout -q -ma $gAEMenuBarLayoutName`;
+    for ($menu in $kids)
+    {
+        string $fpMenu = $fp + "|" + $menu;
+        if ($menuLabel == `menu -q -label $fpMenu`) {
+            string $existingCallbacks = `menu -q -pmc $fpMenu`;
+            return $fpMenu;
+        }
+    }
+    return "";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUSD_setSelectionKind
+// Helper function to set the selection kind mode
+global proc mayaUSD_setSelectionKind(string $kind) {
+    optionVar -stringValue "mayaUsd_SelectionKind" $kind;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUSD_getSelectionKind
+// Helper function to get the selection kind mode
+proc string mayaUSD_getSelectionKind() {
+    string $selectionKind = "";
+    if(`optionVar -exists "mayaUsd_SelectionKind"`) {
+        $selectionKind = `optionVar -q "mayaUsd_SelectionKind"`;
+    }
+    return $selectionKind;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUSD_isSelectionKindValid
+// return true if the current selection kind is valid
+proc int mayaUSD_isSelectionKindValid() {
+    string $allKinds[] = `python "from pxr import Kind; Kind.Registry.GetAllKinds()"`;
+
+    string $currentKind = mayaUSD_getSelectionKind();
+    if($currentKind != "") {
+        $index = stringArrayFind($currentKind, 0, $allKinds);
+        return $index != -1;
+    }
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // initRuntimeCommands
 // create all the runtime commands we'll use and the user can map to hotkeys
 proc initRuntimeCommands() {
@@ -111,6 +165,58 @@ proc initRuntimeCommands() {
                 -image		"USD_generic.png"
                 mayaUsdOpenUsdLayerEditor;
         }
+    }
+
+    //
+    // runTimeCommand for selection kind mode
+    //
+    if (!`runTimeCommand -exists mayaUsdSelectKindNone`) {
+        runTimeCommand -default true
+            -label      `getMayaUsdString("kUSDSelectionModeNone")`
+            -annotation `getMayaUsdString("kUSDSelectionModeNoneAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setSelectionKind(\"\")")
+            mayaUsdSelectKindNone;
+    }
+    if (!`runTimeCommand -exists mayaUsdSelectKindModel`) {
+        runTimeCommand -default true
+            -label      `python "from pxr import Kind; Kind.Tokens.model"`
+            -annotation `getMayaUsdString("kUSDSelectionModeModelAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setSelectionKind(\"model\")")
+            mayaUsdSelectKindModel; 
+    }
+    if (!`runTimeCommand -exists mayaUsdSelectKindGroup`) {
+        runTimeCommand -default true
+            -label      `python "from pxr import Kind; Kind.Tokens.group"`
+            -annotation `getMayaUsdString("kUSDSelectionModeGroupAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setSelectionKind(\"group\")")
+            mayaUsdSelectKindGroup; 
+    }
+    if (!`runTimeCommand -exists mayaUsdSelectKindAssembly`) {
+        runTimeCommand -default true
+            -label      `python "from pxr import Kind; Kind.Tokens.assembly"`
+            -annotation `getMayaUsdString("kUSDSelectionModeAssemblyAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setSelectionKind(\"assembly\")")
+            mayaUsdSelectKindAssembly;
+    }
+    if (!`runTimeCommand -exists mayaUsdSelectKindComponent`) {
+        runTimeCommand -default true
+            -label      `python "from pxr import Kind; Kind.Tokens.component"`
+            -annotation `getMayaUsdString("kUSDSelectionModeComponentAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setSelectionKind(\"component\")")
+            mayaUsdSelectKindComponent; 
+    }
+    if (!`runTimeCommand -exists mayaUsdSelectKindSubComponent`) {
+        runTimeCommand -default true
+            -label      `python "from pxr import Kind; Kind.Tokens.subcomponent"`
+            -annotation `getMayaUsdString("kUSDSelectionModeSubComponentAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setSelectionKind(\"subcomponent\")")
+            mayaUsdSelectKindSubComponent; 
     }
 
     source "mayaUsd_createStageFromFile.mel";
@@ -155,6 +261,98 @@ global proc mayaUsdMenu_createMenuCallback() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// mayaUsd_updateSelectionKindMenuItem
+// Update the menuItem radio button in the Selection Mode menu
+global proc mayaUsd_updateSelectionKindMenuItem() {
+    string $selectionKind = mayaUSD_getSelectionKind();
+    switch($selectionKind) {
+        case "":
+            menuItem -e -radioButton on selectKindNone;
+            break;
+        default:
+            // enable the right menuItem based on it's label
+            global string $gMayaUsdSelectModeSubMenu;
+            $menuItems = `menu -q -itemArray $gMayaUsdSelectModeSubMenu`;
+            for($i = 0; $i < size($menuItems); $i++) {
+                $label = `menuItem -q -label $menuItems[$i]`;
+                if($label == $selectionKind) {
+                    menuItem -e -radioButton on $menuItems[$i];
+                    break;
+                }
+            }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUsdMenu_selectMenuCallback
+// setup the items in Maya's "Select" menu
+global proc mayaUsdMenu_selectMenuCallback() {
+
+    global string $gMayaUsdSelectMenuDivider;
+    if(!`menuItem -q -exists $gMayaUsdSelectMenuDivider`) {
+        string $label = `getMayaUsdString("kUniversalSceneDescription")`;
+        $gMayaUsdSelectMenuDivider = `menuItem -divider true -dividerLabel $label`;
+    }
+
+    global string $gMayaUsdSelectModeSubMenu;
+    if(!`menuItem -q -exists $gMayaUsdSelectModeSubMenu`) {
+        string $mayaVersion = getMayaMajorVersion();
+      
+        string $label = `getMayaUsdString("kUSDSelectionMode")`;
+        string $ann = `getMayaUsdString("kUSDSelectionModeAnn")`;
+        $gMayaUsdSelectModeSubMenu = `menuItem -label $label -annotation $ann -subMenu true -tearOff true -version $mayaVersion`;
+
+        $label = `getMayaUsdString("kKind")`;
+        menuItem -divider true -dividerLabel $label;
+        radioMenuItemCollection;
+
+        // add the default (built-in) select kind menu items
+        menuItem -radioButton on  -runTimeCommand ("mayaUsdSelectKindNone") selectKindNone;
+        menuItem -radioButton off -runTimeCommand ("mayaUsdSelectKindModel") selectKindModel;
+        menuItem -radioButton off -runTimeCommand ("mayaUsdSelectKindGroup") selectKindGroup;
+        menuItem -radioButton off -runTimeCommand ("mayaUsdSelectKindAssembly") selectKindAssembly;
+        menuItem -radioButton off -runTimeCommand ("mayaUsdSelectKindComponent") selectKindComponent;
+        menuItem -radioButton off -runTimeCommand ("mayaUsdSelectKindSubComponent") selectKindSubcomponent;
+
+        string $builtInKinds[] = `python "from pxr import Kind; [Kind.Tokens.model, Kind.Tokens.group, Kind.Tokens.assembly, Kind.Tokens.component, Kind.Tokens.subcomponent]"`;
+        string $allKinds[] = `python "Kind.Registry.GetAllKinds()"`;
+
+        // sort the kinds in alphabetic order
+        $allKinds = `sort $allKinds`;
+
+        for($i = 0; $i < size($allKinds); $i++) {
+            $currentKind = $allKinds[$i];
+            $index = stringArrayFind($currentKind, 0, $builtInKinds);
+            if($index == -1) {
+                $strFormat = `getMayaUsdString("kUSDSelectionModeCustom")`;
+                $ann = `format -stringArg $currentKind $strFormat`;
+                menuItem
+                    -label $currentKind
+                    -command ("mayaUSD_setSelectionKind " + $currentKind)
+                    -annotation $ann
+                    -radioButton off;
+            }
+        }
+
+        // make sure the radio button are sync with the option var.
+        mayaUsd_updateSelectionKindMenuItem();
+
+        // Attach a script job to the mayaUsd_SelectionKind optionVar to update the menu item menuItem radio button state.
+        // This is required because the menu is tearable. So, if the user tear off the menu (menu always visible) we need to
+        // update the menu item if the option var change for any reason.
+        // The script job will be delete when the menu is deleted.
+        scriptJob -parent $gMayaUsdSelectModeSubMenu
+            -optionVarChanged "mayaUsd_SelectionKind" "mayaUsd_updateSelectionKindMenuItem";
+    }
+
+    // Now that we have injected our custom menu item, we can
+    // remove our callback from the select menu. The menu items
+    // will stay in the menu until the plugin is unloaded.
+    global string $gMainSelectMenu; // maya's select menu
+    removeMenuCallback($gMainSelectMenu, "mayaUsdMenu_selectMenuCallback");
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // mayaUsdMenu_windowMenuCallback
 // setup the items in Maya's "Window" menu
 global proc mayaUsdMenu_windowMenuCallback() {
@@ -184,6 +382,26 @@ global proc mayaUsdMenu_generalEditorsMenuCallback() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// mayaUsdMenu_aeShowMenuCallback
+// Maya USD Attribute Editor Show menu callback.
+// Note: Maya is using a post callback to build it's menu.
+//       The maya's callback delete all menu item each time
+//       the menu is display, so we also need to create all
+//       our menu item each time.
+global proc mayaUsdMenu_aeShowMenuCallback(string $aeShowMenu)
+{
+    string $mayaVersion = getMayaMajorVersion();
+    int $isEnable = `optionVar -q "mayaUSD_AEShowArrayAttributes"`;
+
+    setParent -menu $aeShowMenu;
+    menuItem -divider true -dividerLabel `getMayaUsdString("kUniversalSceneDescription")`;
+    menuItem -label `getMayaUsdString("kShowArrayAttributes")`
+             -checkBox $isEnable
+             -version $mayaVersion
+             -command "optionVar -intValue \"mayaUSD_AEShowArrayAttributes\" #1; AEbuildControls;";
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // initCreateMenu
 // setup the items in Maya's "Create" menu
 proc initCreateMenu() {
@@ -209,14 +427,61 @@ proc termCreateMenu() {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// initSelectMenu
+// setup the items in Maya's "Select" menu
+proc initSelectMenu() {
+    global string $gMainSelectMenu; // maya's select menu
+    addMenuCallback($gMainSelectMenu, "mayaUsdMenu_selectMenuCallback");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// termSelectMenu
+// destroys the items in Maya's "Select" menu
+proc termSelectMenu() {
+
+    // remove our divider menu item
+    global string $gMayaUsdSelectMenuDivider;
+    if (`menuItem -q -exists $gMayaUsdSelectMenuDivider`) {
+        deleteUI -mi $gMayaUsdSelectMenuDivider;
+    }
+
+    // remove our selection mode sub menu
+    global string $gMayaUsdSelectModeSubMenu;
+    if (`menuItem -q -exists $gMayaUsdSelectModeSubMenu`) {
+        deleteUI -mi $gMayaUsdSelectModeSubMenu;
+    }
+}
+
+proc initAEShowMenu()
+{
+    string $aeShowMenu = findAEMenu(uiRes("m_showEditor.kShow"));
+    addMenuCallback($aeShowMenu, "mayaUsdMenu_aeShowMenuCallback " + $aeShowMenu);
+}
+
+proc termAEShowMenu()
+{
+    string $aeShowMenu = findAEMenu(uiRes("m_showEditor.kShow"));
+    removeMenuCallback($aeShowMenu, "mayaUsdMenu_aeShowMenuCallback");
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // mayaUsdMenu_loadui
 // main entry point on plugin load
 global proc mayaUsdMenu_loadui() {
-    
+
     initRuntimeCommands();
     initCreateMenu();
+    initSelectMenu();
+    initAEShowMenu();
+
+    // if the current selection kind is not valid,
+    // reset the current selection kind to none.
+    // This can happen if user previouly used plugin with
+    // custom kind that does not exist anymore.
+    if(!mayaUSD_isSelectionKindValid()) {
+        mayaUsdSelectKindNone();
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -224,6 +489,8 @@ global proc mayaUsdMenu_loadui() {
 // main entry point on plugin unload
 global proc mayaUsdMenu_unloadui() {
     termCreateMenu();
+    termSelectMenu();
+    termAEShowMenu();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -30,6 +30,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MArgDatabase.h>
@@ -174,11 +175,15 @@ std::string GetMayaNodeName(const MObject& mayaNode);
  * @return      The name as a Maya string.
  */
 MAYAUSD_CORE_PUBLIC
-MString GetUniqueNameOfDAGNode(const MObject& node);
+MString GetUniqueNameOfDagNode(const MObject& node);
 
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
+
+/// Gets the UsdStage for the proxy shape  node named \p nodeName.
+MAYAUSD_CORE_PUBLIC
+UsdStageRefPtr GetStageByProxyName(const std::string& nodeName);
 
 /// Gets the Maya MDagPath for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
@@ -635,6 +640,18 @@ MStatus GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MIntArray& indi
  */
 MAYAUSD_CORE_PUBLIC
 bool CheckMeshUpstreamForBlendShapes(const MObject& mesh);
+
+/**
+ * Returns the current Maya project path, also known as the workspace.
+ *
+ * @return     The current Maya project path. If no project is set or an error occurred, returns an
+ * empty string.
+ */
+MAYAUSD_CORE_PUBLIC
+MString GetCurrentMayaWorkspacePath();
+
+MAYAUSD_CORE_PUBLIC
+MString GetCurrentSceneFilePath();
 
 } // namespace UsdMayaUtil
 

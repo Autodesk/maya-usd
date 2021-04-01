@@ -44,6 +44,8 @@
 #include <mayaUsd/ufe/UsdUndoReorderCommand.h>
 #endif
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
 UsdPrimSiblingRange getUSDFilteredChildren(
     const MayaUsd::ufe::UsdSceneItem::Ptr usdSceneItem,

@@ -17,7 +17,7 @@
 #define PXRUSDMAYA_WRITE_JOB_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/chaser/chaser.h>
+#include <mayaUsd/fileio/chaser/exportChaser.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -92,7 +92,7 @@ private:
     // Currently only used if stripNamespaces is on, to ensure we don't have clashes
     TfHashMap<SdfPath, MDagPath, SdfPath::Hash> mUsdPathToDagPathMap;
 
-    UsdMayaChaserRefPtrVector mChasers;
+    UsdMayaExportChaserRefPtrVector mChasers;
 
     UsdMayaWriteJobContext mJobCtx;
 

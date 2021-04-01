@@ -21,6 +21,7 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
+#include <pxr/pxr.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -78,12 +79,12 @@ global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
     mtohRenderOverride_AddAttribute("mtoh", "Highlight Selected Objects", "mtohColorSelectionHighlight", $fromAE);
     mtohRenderOverride_AddAttribute("mtoh", "Highlight Color for Selected Objects", "mtohColorSelectionHighlightColor", $fromAE);
 )mel"
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
                                           R"mel(
     mtohRenderOverride_AddAttribute("mtoh", "Highlight outline (in pixels, 0 to disable)", "mtohSelectionOutline", $fromAE);
 )mel"
 #endif
-#if USD_VERSION_NUM <= 2005
+#if PXR_VERSION <= 2005
                                           R"mel(
     mtohRenderOverride_AddAttribute("mtoh", "Enable color quantization", "mtohColorQuantization", $fromAE);
 )mel"
@@ -853,13 +854,13 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
             return mayaObject;
         }
     }
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
     if (filter(_tokens->mtohSelectionOutline)) {
         _CreateFloatAttribute(
             node, filter.mayaString(), defGlobals.outlineSelectionWidth, userDefaults);
     }
 #endif
-#if USD_VERSION_NUM <= 2005
+#if PXR_VERSION <= 2005
     if (filter(_tokens->mtohColorQuantization)) {
         _CreateBoolAttribute(
             node, filter.mayaString(), defGlobals.enableColorQuantization, userDefaults);
@@ -1013,7 +1014,7 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
             return globals;
         }
     }
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
     if (filter(_tokens->mtohSelectionOutline)) {
         _GetAttribute(node, filter.mayaString(), globals.outlineSelectionWidth, storeUserSetting);
         if (filter.attributeFilter()) {
@@ -1021,7 +1022,7 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
         }
     }
 #endif
-#if USD_VERSION_NUM <= 2005
+#if PXR_VERSION <= 2005
     if (filter(_tokens->mtohColorQuantization)) {
         _GetAttribute(node, filter.mayaString(), globals.enableColorQuantization, storeUserSetting);
         if (filter.attributeFilter()) {

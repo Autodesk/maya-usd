@@ -19,6 +19,10 @@
 
 #include <maya/MGlobal.h>
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
+#endif
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -45,6 +49,17 @@ Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::P
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif
+
+    if (usdItem->isPointInstance()) {
+        // Point instance manipulation using this handler is only supported
+        // with UFE v2. Otherwise, we disallow any manipulation for point
+        // instance scene items.
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        return UsdTransform3dPointInstance::create(usdItem);
+#else
+        return nullptr;
+#endif
+    }
 
     // According to USD docs, editing scene description via instance proxies and their properties is
     // not allowed.

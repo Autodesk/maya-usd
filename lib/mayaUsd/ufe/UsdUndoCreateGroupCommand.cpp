@@ -68,7 +68,7 @@ void UsdUndoCreateGroupCommand::execute()
     // newly created group prim to make sure that the model hierarchy remains
     // contiguous.
     const PXR_NS::UsdPrim& parentPrim = _parentItem->prim();
-    if (UsdModelAPI(parentPrim).IsModel()) {
+    if (PXR_NS::UsdModelAPI(parentPrim).IsModel()) {
         const PXR_NS::UsdPrim& groupPrim = _group->prim();
         auto setKindCmd = UsdUndoSetKindCommand::create(groupPrim, PXR_NS::KindTokens->group);
         append(setKindCmd);

@@ -15,6 +15,8 @@
 //
 #include "util.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
 #include <maya/MArgDatabase.h>
@@ -23,6 +25,7 @@
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
+#include <maya/MFileIO.h>
 #include <maya/MFnComponentListData.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
@@ -187,7 +190,7 @@ std::string UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
     return nodeName.asChar();
 }
 
-MString UsdMayaUtil::GetUniqueNameOfDAGNode(const MObject& node)
+MString UsdMayaUtil::GetUniqueNameOfDagNode(const MObject& node)
 {
     if (!TF_VERIFY(!node.isNull() && node.hasFn(MFn::kDagNode))) {
         return MString();
@@ -223,6 +226,20 @@ MStatus UsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dag
     status = selectionList.getDagPath(0, dagPath);
 
     return status;
+}
+
+UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
+{
+    MObject mobj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(proxyPath, mobj);
+    if (status == MStatus::kSuccess) {
+        MFnDependencyNode fn;
+        fn.setObject(mobj);
+        MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+        return pShape ? pShape->getUsdStage() : nullptr;
+    }
+
+    return nullptr;
 }
 
 MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
@@ -784,7 +801,7 @@ bool _GetColorAndTransparencyFromLambert(const MObject& shaderObj, GfVec3f* rgb,
                 displayColor[j] = color[j];
             }
             displayColor *= lambertFn.diffuseCoeff();
-            *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+            *rgb = MayaUsd::utils::ConvertMayaToLinear(displayColor);
         }
         if (alpha) {
             MColor trn = lambertFn.transparency();
@@ -814,7 +831,7 @@ bool _GetColorAndTransparencyFromStandardSurface(
                 displayColor[j] = color[j];
             }
             displayColor *= surfaceFn.base();
-            *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+            *rgb = MayaUsd::utils::ConvertMayaToLinear(displayColor);
         }
         if (alpha) {
             *alpha = 1.0f - surfaceFn.transmission();
@@ -842,7 +859,7 @@ bool _GetColorAndTransparencyFromDepNode(const MObject& shaderObj, GfVec3f* rgb,
         for (int j = 0; j < 3; j++) {
             colorPlug.child(j).getValue(displayColor[j]);
         }
-        *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+        *rgb = MayaUsd::utils::ConvertMayaToLinear(displayColor);
     }
 
     if (alpha) {
@@ -1310,7 +1327,7 @@ template <typename T> static T _GetVec(const UsdAttribute& attr, const VtValue& 
     const T ret = val.UncheckedGet<T>();
 
     if (attr.GetRoleName() == SdfValueRoleNames->Color) {
-        return UsdMayaColorSpace::ConvertMayaToLinear(ret);
+        return MayaUsd::utils::ConvertMayaToLinear(ret);
     }
 
     return ret;
@@ -1584,7 +1601,7 @@ bool UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, const UsdTimeCode ti
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec3d vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = MayaUsd::utils::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(static_cast<unsigned int>(i), &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1602,7 +1619,7 @@ bool UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, const UsdTimeCode ti
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec3f vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = MayaUsd::utils::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(static_cast<unsigned int>(i), &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1620,7 +1637,7 @@ bool UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, const UsdTimeCode ti
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec4d vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = MayaUsd::utils::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(static_cast<unsigned int>(i), &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1638,7 +1655,7 @@ bool UsdMayaUtil::setPlugValue(const UsdAttribute& usdAttr, const UsdTimeCode ti
         for (size_t i = 0u; i < valArray.size(); ++i) {
             GfVec4f vecVal = valArray[i];
             if (usdAttr.GetRoleName() == SdfValueRoleNames->Color) {
-                vecVal = UsdMayaColorSpace::ConvertMayaToLinear(vecVal);
+                vecVal = MayaUsd::utils::ConvertMayaToLinear(vecVal);
             }
             MPlug elemPlug = attrPlug.elementByPhysicalIndex(static_cast<unsigned int>(i), &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -2365,4 +2382,32 @@ bool UsdMayaUtil::CheckMeshUpstreamForBlendShapes(const MObject& mesh)
     }
 
     return false;
+}
+
+MString UsdMayaUtil::GetCurrentMayaWorkspacePath()
+{
+    // NOTE: (yliangsiew) Not thread-safe.
+    MStatus stat;
+    MString result
+        = MGlobal::executeCommandStringResult("workspace -q -rootDirectory", false, false, &stat);
+
+    return result;
+}
+
+MString UsdMayaUtil::GetCurrentSceneFilePath()
+{
+    static const char untitledKey[] = "/untitled";
+    size_t            lenUntitledKey = strlen(untitledKey);
+    MString           currentSceneFilePath = MFileIO::currentFile();
+    if (currentSceneFilePath.length() < lenUntitledKey) {
+        return currentSceneFilePath;
+    }
+    unsigned int lenCurrentSceneFilePath = currentSceneFilePath.length();
+    if (currentSceneFilePath.substring(
+            lenCurrentSceneFilePath - lenUntitledKey, lenCurrentSceneFilePath)
+        == untitledKey) {
+        return MString("");
+    }
+
+    return currentSceneFilePath;
 }

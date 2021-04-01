@@ -27,22 +27,26 @@ Each base command class is documented in the following sections.
 
 ### Command Flags
 
-| Long flag              | Short flag | Type           | Default                           | Description |
-| ---------------------- | ---------- | -------------- | --------------------------------- | ----------- |
-| `-apiSchema`           | `-api`     | string (multi) | none                              | Imports the given API schemas' attributes as Maya custom attributes. This only recognizes API schemas that have been applied to prims on the stage. The attributes will properly round-trip if you re-export back to USD. |
-| `-excludePrimvar`      | `-epv`     | string (multi) | none                              | Excludes the named primvar(s) from being imported as color sets or UV sets. The primvar name should be the full name without the `primvars:` namespace prefix. |
-| `-file`                | `-f`       | string         | none                              | Name of the USD being loaded |
-| `-frameRange`          | `-fr`      | float float    | none                              | The frame range of animations to import |
-| `-importInstances`     | `-ii`      | bool           | true                              | Import USD instanced geometries as Maya instanced shapes. Will flatten the scene otherwise. |
-| `-metadata`            | `-md`      | string (multi) | `hidden`, `instanceable`, `kind`  | Imports the given USD metadata fields as Maya custom attributes (e.g. `USD_hidden`, `USD_kind`, etc.) if they're authored on the USD prim. The metadata will properly round-trip if you re-export back to USD. |
-| `-parent`              | `-p`       | string         | none                              | Name of the Maya scope that will be the parent of the imported data. |
-| `-primPath`            | `-pp`      | string         | none (defaultPrim)                | Name of the USD scope where traversing will being. The prim at the specified primPath (including the prim) will be imported. Specifying the pseudo-root (`/`) means you want to import everything in the file. If the passed prim path is empty, it will first try to import the defaultPrim for the rootLayer if it exists. Otherwise, it will behave as if the pseudo-root was passed in. |
-| `-preferredMaterial`   | `-prm`     | string         | `lambert`                         | Indicate a preference towards a Maya native surface material for importers that can resolve to multiple Maya materials. Allowed values are `none` (prefer plugin nodes like pxrUsdPreviewSurface and aiStandardSurface) or one of `lambert`, `standardSurface`, `blinn`, `phong`. In displayColor shading mode, a value of `none` will default to `lambert`.
-| `-readAnimData`        | `-ani`     | bool           | false                             | Read animation data from prims while importing the specified USD file. If the USD file being imported specifies `startTimeCode` and/or `endTimeCode`, Maya's MinTime and/or MaxTime will be expanded if necessary to include that frame range. **Note**: Only some types of animation are currently supported, for example: animated visibility, animated transforms, animated cameras, mesh and NURBS surface animation via blend shape deformers. Other types are not yet supported, for example: time-varying curve points, time-varying mesh points/normals, time-varying NURBS surface points |
-| `-shadingMode`         | `-shd`     | string[2] multi| `useRegistry` `UsdPreviewSurface` | Ordered list of shading mode importers to try when importing materials. The search stops as soon as one valid material is found. Allowed values for the first parameter are: `none` (stop search immediately, must be used to signal no material import), `displayColor` (if there are bound materials in the USD, create corresponding Lambertian shaders and bind them to the appropriate Maya geometry nodes), `pxrRis` (attempt to reconstruct a Maya shading network from (presumed) Renderman RIS shading networks in the USD), `useRegistry` (attempt to reconstruct a Maya shading network from (presumed) UsdShade shading networks in the USD) the second item in the parameter pair is a convertMaterialFrom flag which allows specifying which one of the registered USD material sources to explore. The full list of registered USD material sources can be found via the `mayaUSDListShadingModesCommand` command. |
-| `-useAsAnimationCache` | `-uac`     | bool           | false                             | Imports geometry prims with time-sampled point data using a point-based deformer node that references the imported USD file. When this parameter is enabled, `MayaUSDImportCommand` will create a `pxrUsdStageNode` for the USD file that is being imported. Then for each geometry prim being imported that has time-sampled points, a `pxrUsdPointBasedDeformerNode` will be created that reads the points for that prim from USD and uses them to deform the imported Maya geometry. This provides better import and playback performance when importing time-sampled geometry from USD, and it should reduce the weight of the resulting Maya scene since it will bypass creating blend shape deformers with per-object, per-time sample geometry. Only point data from the geometry prim will be computed by the deformer from the referenced USD. Transform data from the geometry prim will still be imported into native Maya form on the Maya shape's transform node. **Note**: This means that a link is created between the resulting Maya scene and the USD file that was imported. With this parameter off (as is the default), the USD file that was imported can be freely changed or deleted post-import. With the parameter on, however, the Maya scene will have a dependency on that USD file, as well as other layers that it may reference. Currently, this functionality is only implemented for Mesh prims/Maya mesh nodes. |
-| `-verbose`             | `-v`       | noarg          | false                             | Make the command output more verbose. |
-| `-variant`             | `-var`     | string[2]      | none                              | Set variant key value pairs |
+| Long flag                     | Short flag | Type           | Default                           | Description |
+| ----------------------        | ---------- | -------------- | --------------------------------- | ----------- |
+| `-apiSchema`                  | `-api`     | string (multi) | none                              | Imports the given API schemas' attributes as Maya custom attributes. This only recognizes API schemas that have been applied to prims on the stage. The attributes will properly round-trip if you re-export back to USD. |
+| `-chaser`                     | `-chr`     | string(multi)  | none                              | Specify the import chasers to execute as part of the export. See "Import Chasers" below. |
+| `-chaserArgs`                 | `-cha`     | string[3] multi| none                              | Pass argument names and values to import chasers. Each argument to `-chaserArgs` should be a triple of the form: (`<chaser name>`, `<argument name>`, `<argument value>`). See "Import Chasers" below. |
+| `-excludePrimvar`             | `-epv`     | string (multi) | none                              | Excludes the named primvar(s) from being imported as color sets or UV sets. The primvar name should be the full name without the `primvars:` namespace prefix. |
+| `-file`                       | `-f`       | string         | none                              | Name of the USD being loaded |
+| `-frameRange`                 | `-fr`      | float float    | none                              | The frame range of animations to import |
+| `-importInstances`            | `-ii`      | bool           | true                              | Import USD instanced geometries as Maya instanced shapes. Will flatten the scene otherwise. |
+| `-metadata`                   | `-md`      | string (multi) | `hidden`, `instanceable`, `kind`  | Imports the given USD metadata fields as Maya custom attributes (e.g. `USD_hidden`, `USD_kind`, etc.) if they're authored on the USD prim. The metadata will properly round-trip if you re-export back to USD. |
+| `-parent`                     | `-p`       | string         | none                              | Name of the Maya scope that will be the parent of the imported data. |
+| `-primPath`                   | `-pp`      | string         | none (defaultPrim)                | Name of the USD scope where traversing will being. The prim at the specified primPath (including the prim) will be imported. Specifying the pseudo-root (`/`) means you want to import everything in the file. If the passed prim path is empty, it will first try to import the defaultPrim for the rootLayer if it exists. Otherwise, it will behave as if the pseudo-root was passed in. |
+| `-preferredMaterial`          | `-prm`     | string         | `lambert`                         | Indicate a preference towards a Maya native surface material for importers that can resolve to multiple Maya materials. Allowed values are `none` (prefer plugin nodes like pxrUsdPreviewSurface and aiStandardSurface) or one of `lambert`, `standardSurface`, `blinn`, `phong`. In displayColor shading mode, a value of `none` will default to `lambert`.
+| `-readAnimData`               | `-ani`     | bool           | false                             | Read animation data from prims while importing the specified USD file. If the USD file being imported specifies `startTimeCode` and/or `endTimeCode`, Maya's MinTime and/or MaxTime will be expanded if necessary to include that frame range. **Note**: Only some types of animation are currently supported, for example: animated visibility, animated transforms, animated cameras, mesh and NURBS surface animation via blend shape deformers. Other types are not yet supported, for example: time-varying curve points, time-varying mesh points/normals, time-varying NURBS surface points |
+| `-shadingMode`                | `-shd`     | string[2] multi| `useRegistry` `UsdPreviewSurface` | Ordered list of shading mode importers to try when importing materials. The search stops as soon as one valid material is found. Allowed values for the first parameter are: `none` (stop search immediately, must be used to signal no material import), `displayColor` (if there are bound materials in the USD, create corresponding Lambertian shaders and bind them to the appropriate Maya geometry nodes), `pxrRis` (attempt to reconstruct a Maya shading network from (presumed) Renderman RIS shading networks in the USD), `useRegistry` (attempt to reconstruct a Maya shading network from (presumed) UsdShade shading networks in the USD) the second item in the parameter pair is a convertMaterialFrom flag which allows specifying which one of the registered USD material sources to explore. The full list of registered USD material sources can be found via the `mayaUSDListShadingModesCommand` command. |
+| `-useAsAnimationCache`        | `-uac`     | bool           | false                             | Imports geometry prims with time-sampled point data using a point-based deformer node that references the imported USD file. When this parameter is enabled, `MayaUSDImportCommand` will create a `pxrUsdStageNode` for the USD file that is being imported. Then for each geometry prim being imported that has time-sampled points, a `pxrUsdPointBasedDeformerNode` will be created that reads the points for that prim from USD and uses them to deform the imported Maya geometry. This provides better import and playback performance when importing time-sampled geometry from USD, and it should reduce the weight of the resulting Maya scene since it will bypass creating blend shape deformers with per-object, per-time sample geometry. Only point data from the geometry prim will be computed by the deformer from the referenced USD. Transform data from the geometry prim will still be imported into native Maya form on the Maya shape's transform node. **Note**: This means that a link is created between the resulting Maya scene and the USD file that was imported. With this parameter off (as is the default), the USD file that was imported can be freely changed or deleted post-import. With the parameter on, however, the Maya scene will have a dependency on that USD file, as well as other layers that it may reference. Currently, this functionality is only implemented for Mesh prims/Maya mesh nodes. |
+| `-verbose`                    | `-v`       | noarg          | false                             | Make the command output more verbose. |
+| `-variant`                    | `-var`     | string[2]      | none                              | Set variant key value pairs |
+| `-importUSDZTextures`         | `-itx`     | bool           | false                             | Imports textures from USDZ archives during import to disk. Can be used in conjuction with `-importUSDZTexturesFilePath` to specify an explicit directory to write imported textures to. If not specified, requires a Maya project to be set in the current context.  |
+| `-importUSDZTexturesFilePath` | `-itf`     | string         | none                              | Specifies an explicit directory to write imported textures to from a USDZ archive. Has no effect if `-importUSDZTextures` is not specified.
 
 ### Return Value
 
@@ -50,6 +54,57 @@ Each base command class is documented in the following sections.
 of the highest prim(s) imported. This is generally the fullDagPath
 that corresponds to the imported primPath but could be multiple
 paths if primPath="/".
+
+#### Import behaviours
+
+#### Import Chasers
+
+Import chasers are plugins that run after the initial import process and can
+implement post-processing on Maya nodes that executes right after the main
+import operation is complete. This can be used, for example, to implement
+pipeline-specific operations and/or early prototyping of features that might
+otherwise not make sense to be part of the mainline codebase.
+
+Chasers are registered with a particular name and can be passed argument
+name/value pairs in an invocation of `mayaUSDImport`. There is no "plugin
+discovery" method here – the developer/user is responsible for making sure the
+chaser is registered via a call to the convenience macro
+`USDMAYA_DEFINE_IMPORT_CHASER_FACTORY(name, ctx)`, where `name` is the name of
+the chaser being created. Unlike export chasers, import chasers also have the
+ability to define `Undo` and `Redo` methods in order to allow the
+`mayaUSDImport` command to remain compliant with the Maya undo stack. It's not
+necessary to compile your chaser plugin together with `mayaUsdPlugin` in order
+to work; you can create a completely separate maya DLL that contains the
+business logic of your chaser code, and just call the aforementioned
+`USDMAYA_DEFINE_IMPORT_CHASER_FACTORY` to register it, as long as the
+`mayaUsdPlugin` DLL is loaded first.
+
+A sample import chaser, `infoImportChaser.cpp`, is provided to give an example
+of how to write an import chaser. All it does is read any custom layer data in
+the USD file on import, and create string attributes on the nodes created and
+populate them with said string attribute. Invoking it during import is as simple
+as calling:
+
+```python
+cmds.mayaUSDImport(
+    file='/tmp/test.usda',
+    chaser=['info'])
+```
+
+As mentioned, when writing an import chaser, you also have the chance to
+implement undo/redo functionality for it in a way that will remain compatible
+with the Maya undo stack. While you do not have to strictly do this, it is
+recommended that you keep a record of edits you have made in your chaser and
+implement the necessary undo/redo functionality where possible or risk
+experiencing issues (i.e. the main import created a node while your import
+chaser deleted it from the scene, and then invoking an undo causes a crash since
+the main plugin's `Undo` code will no longer work correctly.) It is also highly
+recommended that you be very mindful of the edits you are making to the scene
+graph, and how multiple import chasers might work together in unexpected ways or
+have inter-dependencies.
+
+Import chasers may also be written to parse an array of 3 string arguments for
+their own purposes, similar to the Alembic export chaser example.
 
 
 ## `MayaUSDExportCommand`
@@ -451,4 +506,3 @@ The purpose of this command is to control the layer editor window.
 | `-isSessionLayer`       | `-sl`      | Query if the layer is a session layer         |
 | `-selectPrimsWithSpec`  | `-sp`      | Select the prims with spec in a layer         |
 | `-saveEdits`            | `-sv`      | Save the modifications                        |
-

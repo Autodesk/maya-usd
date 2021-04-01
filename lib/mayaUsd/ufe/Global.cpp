@@ -27,13 +27,10 @@
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
+#include <mayaUsd/ufe/UsdCameraHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdObject3dHandler.h>
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
-#endif
-
-#if UFE_PREVIEW_VERSION_NUM >= 2031
-#include <mayaUsd/ufe/UsdCameraHandler.h>
 #endif
 
 #include <ufe/hierarchyHandler.h>
@@ -122,9 +119,7 @@ MStatus initialize()
     handlers.object3dHandler = UsdObject3dHandler::create();
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
-#if UFE_PREVIEW_VERSION_NUM >= 2031
     handlers.cameraHandler = UsdCameraHandler::create();
-#endif
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
 #else
     auto usdHierHandler = UsdHierarchyHandler::create();

@@ -28,8 +28,6 @@
 #include <ufe/path.h>
 #include <ufe/undoableCommand.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -65,8 +63,8 @@ private:
     bool duplicateRedo();
 #endif
 
-    Ufe::Path _ufeSrcPath;
-    SdfPath   _usdDstPath;
+    Ufe::Path       _ufeSrcPath;
+    PXR_NS::SdfPath _usdDstPath;
 
 }; // UsdUndoDuplicateCommand
 

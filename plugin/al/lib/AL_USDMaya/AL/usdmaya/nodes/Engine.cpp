@@ -32,7 +32,6 @@
 
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hdx/pickTask.h>
-#include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <vector>
@@ -52,14 +51,13 @@ bool Engine::TestIntersectionBatch(
     const GfMatrix4d&        worldToLocalSpace,
     const SdfPathVector&     paths,
     UsdImagingGLRenderParams params,
+    const TfToken&           resolveMode,
     unsigned int             pickResolution,
-    PathTranslatorCallback   pathTranslator,
     HitBatch*                outHit)
 {
     if (ARCH_UNLIKELY(_legacyImpl)) {
         return false;
     }
-
     _UpdateHydraCollection(&_intersectCollection, paths, params);
 
     TfTokenVector renderTags;
@@ -73,7 +71,7 @@ bool Engine::TestIntersectionBatch(
 
     HdxPickTaskContextParams pickParams;
     pickParams.resolution = GfVec2i(pickResolution, pickResolution);
-    pickParams.resolveMode = HdxPickTokens->resolveUnique;
+    pickParams.resolveMode = resolveMode;
     pickParams.viewMatrix = worldToLocalSpace * viewMatrix;
     pickParams.projectionMatrix = projectionMatrix;
     pickParams.clipPlanes = params.clipPlanes;
@@ -101,20 +99,14 @@ bool Engine::TestIntersectionBatch(
 
     for (const auto& hit : allHits) {
         SdfPath primPath = hit.objectId;
-        SdfPath instancerPath = hit.instancerId;
         int     instanceIndex = hit.instanceIndex;
 
 #if defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 5
         // See similar code in usdImagingGL/engine.cpp...
         primPath = _GetSceneDelegate()->GetScenePrimPath(primPath, instanceIndex);
-        instancerPath = _GetSceneDelegate()
-                            ->ConvertIndexPathToCachePath(instancerPath)
-                            .GetAbsoluteRootOrPrimPath();
 #elif defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 3
         // See similar code in usdImagingGL/engine.cpp...
         primPath = _delegate->GetScenePrimPath(primPath, instanceIndex);
-        instancerPath
-            = _delegate->ConvertIndexPathToCachePath(instancerPath).GetAbsoluteRootOrPrimPath();
 #else
         SdfPath resolvedPath = GetPrimPathFromInstanceIndex(primPath, instanceIndex);
         if (!resolvedPath.IsEmpty()) {
@@ -124,11 +116,7 @@ bool Engine::TestIntersectionBatch(
         }
 #endif
 
-        HitInfo& info = (*outHit)[pathTranslator(primPath, instancerPath, instanceIndex)];
-
-        info.worldSpaceHitPoint = GfVec3d(
-            hit.worldSpaceHitPoint[0], hit.worldSpaceHitPoint[1], hit.worldSpaceHitPoint[2]);
-        info.hitInstanceIndex = instanceIndex;
+        (*outHit)[primPath] = hit.worldSpaceHitPoint;
     }
 
     return true;

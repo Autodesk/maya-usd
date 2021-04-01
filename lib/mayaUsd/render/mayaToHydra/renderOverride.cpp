@@ -24,6 +24,7 @@
 #include <hdMaya/delegates/sceneDelegate.h>
 #include <hdMaya/utils.h>
 #include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/utils/hash.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -34,6 +35,7 @@
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/tokens.h>
+#include <pxr/pxr.h>
 
 #include <maya/M3dView.h>
 #include <maya/MConditionMessage.h>
@@ -46,14 +48,12 @@
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
 
-#include <boost/functional/hash.hpp>
-
 #include <atomic>
 #include <chrono>
 #include <exception>
 #include <limits>
 
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
 #include <pxr/imaging/hgi/hgi.h>
 #include <pxr/imaging/hgi/tokens.h>
 #endif
@@ -168,10 +168,10 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
         const HdxPickHit& hit = inHits[i];
 
         size_t hash = 0;
-        boost::hash_combine(hash, hit.delegateId.GetHash());
-        boost::hash_combine(hash, hit.objectId.GetHash());
-        boost::hash_combine(hash, hit.instancerId.GetHash());
-        boost::hash_combine(hash, hit.instanceIndex);
+        MayaUsd::hash_combine(hash, hit.delegateId.GetHash());
+        MayaUsd::hash_combine(hash, hit.objectId.GetHash());
+        MayaUsd::hash_combine(hash, hit.instancerId.GetHash());
+        MayaUsd::hash_combine(hash, hit.instanceIndex);
 
         // As an optimization, keep track of the previous hash value and
         // reject indices that match it without performing a map lookup.
@@ -196,8 +196,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     , _rendererDesc(desc)
     , _globals(MtohRenderGlobals::GetInstance())
     ,
-#if USD_VERSION_NUM > 2002
-#if USD_VERSION_NUM > 2005
+#if PXR_VERSION > 2002
+#if PXR_VERSION > 2005
     _hgi(Hgi::CreatePlatformDefaultHgi())
     ,
 #else
@@ -348,7 +348,7 @@ std::vector<MString> MtohRenderOverride::AllActiveRendererNames()
 
     std::lock_guard<std::mutex> lock(_allInstancesMutex);
     for (auto* instance : _allInstances) {
-        if (instance->_initializedViewport) {
+        if (instance->_initializationSucceeded) {
             renderers.push_back(instance->_rendererDesc.rendererName.GetText());
         }
     }
@@ -494,7 +494,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         if (_playBlasting && !_isUsingHdSt && !tasks.empty()) {
             // XXX: Is this better as user-configurable ?
             constexpr auto msWait = std::chrono::duration<float, std::milli>(100);
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
             std::shared_ptr<HdxRenderTask> renderTask
                 = std::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
 #else
@@ -525,14 +525,22 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
             _lastRenderTime = std::chrono::system_clock::now();
         }
     };
+    if (_initializationAttempted && !_initializationSucceeded) {
+        // Initialization must have failed already, stop trying.
+        return MStatus::kFailure;
+    }
 
     _DetectMayaDefaultLighting(drawContext);
     if (_needsClear.exchange(false)) {
         ClearHydraResources();
     }
 
-    if (!_initializedViewport) {
+    if (!_initializationAttempted) {
         _InitHydraResources();
+
+        if (!_initializationSucceeded) {
+            return MStatus::kFailure;
+        }
     }
 
     GLUniformBufferBindingsSaver bindingsSaver;
@@ -581,14 +589,14 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
     _taskController->SetEnableSelection(_globals.colorSelectionHighlight);
 
-#if USD_VERSION_NUM >= 2005
+#if PXR_VERSION >= 2005
     if (_globals.outlineSelectionWidth != 0.f) {
         _taskController->SetSelectionOutlineRadius(_globals.outlineSelectionWidth);
         _taskController->SetSelectionEnableOutline(true);
     } else
         _taskController->SetSelectionEnableOutline(false);
 #endif
-#if USD_VERSION_NUM <= 2005
+#if PXR_VERSION <= 2005
     _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
 #endif
 
@@ -657,18 +665,29 @@ void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::_InitHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
-#if USD_VERSION_NUM < 2102
+
+    _initializationAttempted = true;
+
+#if PXR_VERSION < 2102
     GlfGlewInit();
 #endif
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
+    if (!_rendererPlugin)
+        return;
+
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
-#if USD_VERSION_NUM > 2002
+    if (!renderDelegate)
+        return;
+
+#if PXR_VERSION > 2002
     _renderIndex = HdRenderIndex::New(renderDelegate, { &_hgiDriver });
 #else
     _renderIndex = HdRenderIndex::New(renderDelegate);
 #endif
+    if (!_renderIndex)
+        return;
 
     _taskController = new HdxTaskController(
         _renderIndex,
@@ -722,7 +741,6 @@ void MtohRenderOverride::_InitHydraResources()
     _renderIndex->GetChangeTracker().AddCollection(_selectionCollection.GetName());
     _SelectionChanged();
 
-    _initializedViewport = true;
     if (auto* renderDelegate = _GetRenderDelegate()) {
         // Pull in any options that may have changed due file-open.
         // If the currentScene has defaultRenderGlobals we'll absorb those new settings,
@@ -733,11 +751,13 @@ void MtohRenderOverride::_InitHydraResources()
             { _rendererDesc.rendererName, filterRenderer, fallbackToUserDefaults });
         _globals.ApplySettings(renderDelegate, _rendererDesc.rendererName);
     }
+
+    _initializationSucceeded = true;
 }
 
 void MtohRenderOverride::ClearHydraResources()
 {
-    if (!_initializedViewport) {
+    if (!_initializationAttempted) {
         return;
     }
 
@@ -767,7 +787,8 @@ void MtohRenderOverride::ClearHydraResources()
         _rendererPlugin = nullptr;
     }
 
-    _initializedViewport = false;
+    _initializationSucceeded = false;
+    _initializationAttempted = false;
     SelectionChanged();
 }
 
@@ -797,11 +818,11 @@ void MtohRenderOverride::_SelectionChanged()
         return;
     }
     SdfPathVector selectedPaths;
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     auto selection = std::make_shared<HdSelection>();
 #else
     auto selection = boost::make_shared<HdSelection>();
-#endif // USD_VERSION_NUM > 2002
+#endif // PXR_VERSION > 2002
 
 #if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();

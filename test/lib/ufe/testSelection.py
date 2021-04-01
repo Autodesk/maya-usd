@@ -137,14 +137,14 @@ class SelectTestCase(unittest.TestCase):
             ufeSelectCmd.replaceWith(sn)
         self.runTestSelection(selectCmd)
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 121)), 'testMayaSelect only available in UFE v2 or greater and Maya Preview Release 121 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelect only available in UFE v2 or greater.')
     def testMayaSelect(self):
         # Maya PR 121 now has support for UFE path string in select command.
         def selectCmd(item):
             cmds.select(ufe.PathString.string(item.path()))
         self.runTestSelection(selectCmd)
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 121)), 'testMayaSelectFlags only available in UFE v2 or greater and Maya Preview Release 121 or later.')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelectFlags only available in UFE v2 or greater.')
     def testMayaSelectFlags(self):
         # Maya PR 121 now has support for UFE path string in select command.
 
@@ -281,8 +281,7 @@ class SelectTestCase(unittest.TestCase):
         
         # Create new stage
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePathStr    = '|stage1|stageShape1'
+        proxyShapePathStr    = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath       = ufe.PathString.path(proxyShapePathStr)
         proxyShapeItem       = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
@@ -299,7 +298,7 @@ class SelectTestCase(unittest.TestCase):
         # Create a prim.  This will create the primSpec in the new sub-layer.
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
 
-        capsulePathStr = '|stage1|stageShape1,/Capsule1'
+        capsulePathStr = '%s,/Capsule1' % proxyShapePathStr
         capsulePath    = ufe.PathString.path(capsulePathStr)
         capsuleItem    = ufe.Hierarchy.createItem(capsulePath)
         
@@ -359,8 +358,8 @@ class SelectTestCase(unittest.TestCase):
         import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
 
         # Create a scene with two variants.
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShape).GetStage()
         top = stage.DefinePrim('/Xform1', 'Xform')
         vset = top.GetVariantSets().AddVariantSet('modelingVariant')
         vset.AddVariant('cube')
@@ -374,8 +373,8 @@ class SelectTestCase(unittest.TestCase):
 
         # The sphere is the sole child of Xform1.  Get an attribute from it,
         # select it.
-        xformPath  = ufe.PathString.path('|stage1|stageShape1,/Xform1')
-        spherePath = ufe.PathString.path('|stage1|stageShape1,/Xform1/Sphere')
+        xformPath  = ufe.PathString.path('%s,/Xform1' % proxyShape)
+        spherePath = ufe.PathString.path('%s,/Xform1/Sphere' % proxyShape)
         xformItem  = ufe.Hierarchy.createItem(xformPath)
         sphereItem = ufe.Hierarchy.createItem(spherePath)
 
@@ -400,7 +399,7 @@ class SelectTestCase(unittest.TestCase):
         cmd = xformCtxOps.doOpCmd(['Variant Sets', 'modelingVariant', 'cube'])
         ufeCmd.execute(cmd)
 
-        cubePath = ufe.PathString.path('|stage1|stageShape1,/Xform1/Cube')
+        cubePath = ufe.PathString.path('%s,/Xform1/Cube' % proxyShape)
         cubeItem = ufe.Hierarchy.createItem(cubePath)
 
         xformChildren = xformHier.children()

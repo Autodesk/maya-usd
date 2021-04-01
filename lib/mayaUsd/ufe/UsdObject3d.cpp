@@ -15,10 +15,7 @@
 //
 #include "UsdObject3d.h"
 
-#if UFE_PREVIEW_VERSION_NUM >= 2034
 #include <mayaUsd/ufe/UsdUndoVisibleCommand.h>
-#endif
-
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/usd/timeCode.h>
@@ -29,6 +26,8 @@
 #include <ufe/types.h>
 
 #include <stdexcept>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 Ufe::Vector3d toVector3d(const GfVec3d& v) { return Ufe::Vector3d(v[0], v[1], v[2]); }
@@ -67,15 +66,19 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // UsdGeomBoundable::ComputeExtentFromPlugins() allows a plugin to register
     // an extent computation; this should be explored.
     //
-    // UsdGeomImageable::ComputeLocalBound() just calls UsdGeomBBoxCache, so do
-    // this here as well.
+    // UsdGeomImageable::ComputeUntransformedBound() just calls
+    // UsdGeomBBoxCache, so do this here as well.
     //
     // Would be nice to know if the object extents are animated or not, so
     // we can bypass time computation and simply use UsdTimeCode::Default()
     // as the time.
 
-    auto bbox = UsdGeomImageable(fPrim).ComputeUntransformedBound(
-        getTime(sceneItem()->path()), UsdGeomTokens->default_);
+    auto path = sceneItem()->path();
+    auto purposes = getProxyShapePurposes(path);
+    // Add in the default purpose.
+    purposes.emplace_back(UsdGeomTokens->default_);
+
+    auto bbox = UsdGeomBBoxCache(getTime(path), purposes).ComputeUntransformedBound(fPrim);
     auto range = bbox.ComputeAlignedRange();
     auto min = range.GetMin();
     auto max = range.GetMax();
@@ -96,12 +99,10 @@ void UsdObject3d::setVisibility(bool vis)
     vis ? UsdGeomImageable(fPrim).MakeVisible() : UsdGeomImageable(fPrim).MakeInvisible();
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2034
 Ufe::UndoableCommand::Ptr UsdObject3d::setVisibleCmd(bool vis)
 {
     return UsdUndoVisibleCommand::create(fPrim, vis);
 }
-#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

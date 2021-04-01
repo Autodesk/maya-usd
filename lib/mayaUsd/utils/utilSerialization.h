@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef MAYAUSD_UTILS_UTILSERIALIZATION_H
+#define MAYAUSD_UTILS_UTILSERIALIZATION_H
+
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
@@ -20,10 +23,9 @@
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 /// General utility functions used when serializing Usd edits during a save operation
-namespace UsdMayaSerialization {
+namespace MAYAUSD_NS_DEF {
+namespace utils {
 
 /*! \brief Helps suggest a folder to export anonymous layers to.  Checks in order:
     1. File-backed root layer folder.
@@ -31,7 +33,7 @@ namespace UsdMayaSerialization {
     3. Current Maya workspace scenes folder.
  */
 MAYAUSD_CORE_PUBLIC
-std::string suggestedStartFolder(UsdStageRefPtr stage);
+std::string suggestedStartFolder(PXR_NS::UsdStageRefPtr stage);
 
 /*! \brief Queries Maya for the current workspace "scenes" folder.
  */
@@ -54,41 +56,59 @@ enum USDUnsavedEditsOption
     kIgnoreUSDEdits
 };
 /*! \brief Queries the Maya optionVar that decides which saving option Maya
-    shoudl use for Usd edits.
+    should use for Usd edits.
  */
 MAYAUSD_CORE_PUBLIC
 USDUnsavedEditsOption serializeUsdEditsLocationOption();
 
-/*! \brief Save an anonymous layer to disk and update the sublayer path array
-    in the parent layer.
+/*! \brief Utility function to update the file path attribute on the proxy shape
+    when an anonymous root layer gets exported to disk.
  */
 MAYAUSD_CORE_PUBLIC
-SdfLayerRefPtr saveAnonymousLayer(
-    SdfLayerRefPtr     anonLayer,
-    SdfLayerRefPtr     parentLayer,
-    const std::string& basename,
-    std::string        formatArg = "");
+void setNewProxyPath(const MString& proxyNodeName, const MString& newValue);
 
-/*! \brief Save an anonymous layer to disk and update the sublayer path array
-    in the parent layer.
- */
-MAYAUSD_CORE_PUBLIC
-SdfLayerRefPtr saveAnonymousLayer(
-    SdfLayerRefPtr     anonLayer,
-    const std::string& path,
-    SdfLayerRefPtr     parentLayer,
-    std::string        formatArg = "");
+struct LayerParent
+{
+    // Every layer that we are saving should have either a parent layer that
+    // we will need to remap to point to the new path, or the stage if it is an
+    // anonymous root layer.
+    SdfLayerRefPtr _layerParent;
+    std::string    _proxyPath;
+};
 
 struct stageLayersToSave
 {
-    std::vector<std::pair<SdfLayerRefPtr, SdfLayerRefPtr>> anonLayers;
-    std::vector<SdfLayerRefPtr>                            dirtyFileBackedLayers;
+    std::vector<std::pair<SdfLayerRefPtr, LayerParent>> _anonLayers;
+    std::vector<SdfLayerRefPtr>                         _dirtyFileBackedLayers;
 };
+
+/*! \brief Save an anonymous layer to disk and update the sublayer path array
+    in the parent layer.
+ */
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+    PXR_NS::SdfLayerRefPtr anonLayer,
+    LayerParent            parent,
+    const std::string&     basename,
+    std::string            formatArg = "");
+
+/*! \brief Save an anonymous layer to disk and update the sublayer path array
+    in the parent layer.
+ */
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfLayerRefPtr saveAnonymousLayer(
+    PXR_NS::SdfLayerRefPtr anonLayer,
+    const std::string&     path,
+    LayerParent            parent,
+    std::string            formatArg = "");
 
 /*! \brief Check the sublayer stack of the stage looking for any anonymnous
     layers that will need to be saved.
  */
 MAYAUSD_CORE_PUBLIC
-void getLayersToSaveFromProxy(UsdStageRefPtr stage, stageLayersToSave& layersInfo);
+void getLayersToSaveFromProxy(const std::string& proxyPath, stageLayersToSave& layersInfo);
 
-} // namespace UsdMayaSerialization
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF
+
+#endif // MAYAUSD_UTILS_UTILSERIALIZATION_H

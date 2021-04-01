@@ -16,9 +16,13 @@
 #include "UsdTransform3dFallbackMayaXformStack.h"
 
 #include <mayaUsd/ufe/RotationUtils.h>
+#include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/XformOpUtils.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -100,34 +104,6 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 namespace {
 
-// Adapted from UsdTransform3dMatrixOp.cpp.
-template <bool INCLUSIVE>
-GfMatrix4d computeLocalTransform(
-    const std::vector<UsdGeomXformOp>&          ops,
-    std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time)
-{
-    // If we want the op to be included, increment the end op iterator.
-    if (INCLUSIVE) {
-        TF_AXIOM(endOp != ops.end());
-        ++endOp;
-    }
-
-    // GetLocalTransformation() interface does not allow passing a begin and
-    // end iterator, so copy into an argument vector.
-    std::vector<UsdGeomXformOp> argOps(std::distance(ops.begin(), endOp));
-    argOps.assign(ops.begin(), endOp);
-
-    GfMatrix4d m(1);
-    if (!UsdGeomXformable::GetLocalTransformation(&m, argOps, time)) {
-        TF_FATAL_ERROR("Local transformation computation failed.");
-    }
-
-    return m;
-}
-
-auto computeLocalExclusiveTransform = computeLocalTransform<false>;
-
 std::vector<UsdGeomXformOp>::const_iterator
 findFirstFallbackOp(const std::vector<UsdGeomXformOp>& ops)
 {
@@ -136,7 +112,7 @@ findFirstFallbackOp(const std::vector<UsdGeomXformOp>& ops)
     });
 }
 
-void setXformOpOrder(const UsdGeomXformable& xformable)
+bool setXformOpOrder(const UsdGeomXformable& xformable)
 {
     // As this method is called after appending a transform op to the fallback
     // transform op sub-stack, we copy transform ops up to but excluding the
@@ -167,10 +143,20 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
         newOrder.emplace_back(op);
     }
 
-    xformable.SetXformOpOrder(newOrder, resetsXformStack);
+    auto result = xformable.SetXformOpOrder(newOrder, resetsXformStack);
+    return result;
 }
 
-Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
+// Create a Ufe::Transform3d interface to edit the Maya fallback transform
+// stack.  This engine method is used in the implementation of
+// createTransform3d() and createEditTransform3d().  To avoid having the caller
+// repeat these calls for its own use, the prim's transform ops are returned in
+// xformOps, along with an iterator to the first Maya fallback transform op in
+// firstFallbackOp.
+Ufe::Transform3d::Ptr createEditTransform3dImp(
+    const Ufe::SceneItem::Ptr&                   item,
+    std::vector<UsdGeomXformOp>&                 xformOps,
+    std::vector<UsdGeomXformOp>::const_iterator& firstFallbackOp)
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
@@ -187,7 +173,7 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
         return nullptr;
     }
     bool resetsXformStack = false;
-    auto xformOps = xformSchema.GetOrderedXformOps(&resetsXformStack);
+    xformOps = xformSchema.GetOrderedXformOps(&resetsXformStack);
 
     // We are the fallback Transform3d handler: there must be transform ops to
     // match.
@@ -199,10 +185,10 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
     // fallback component token.  If no transform op matches the fallback
     // component token, we start a new Maya transform stack at the end of the
     // existing stack.
-    auto i = findFirstFallbackOp(xformOps);
+    firstFallbackOp = findFirstFallbackOp(xformOps);
 
     // No transform op matched: start a new Maya transform stack at the end.
-    if (i == xformOps.end()) {
+    if (firstFallbackOp == xformOps.end()) {
         return UsdTransform3dFallbackMayaXformStack::create(usdItem);
     }
 
@@ -210,14 +196,50 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
     // is well, from the first fallback op onwards, we have a sub-stack that
     // matches the fallback Maya transform stack.
     std::vector<UsdGeomXformOp> candidateOps;
-    candidateOps.reserve(std::distance(i, xformOps.cend()));
-    std::copy(i, xformOps.cend(), std::back_inserter(candidateOps));
+    candidateOps.reserve(std::distance(firstFallbackOp, xformOps.cend()));
+    std::copy(firstFallbackOp, xformOps.cend(), std::back_inserter(candidateOps));
 
     // We're the last handler in the chain of responsibility: if the candidate
     // ops support the Maya transform stack, create a Maya transform stack
     // interface for it, otherwise no further handlers to delegate to, so fail.
     return MatchingSubstack(candidateOps) ? UsdTransform3dFallbackMayaXformStack::create(usdItem)
                                           : nullptr;
+}
+
+Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
+{
+    // This Transform3d interface is for editing the whole object, e.g. setting
+    // the local transformation matrix for the complete object.  We do this
+    // by wrapping an edit transform 3d interface into a
+    // UsdTransform3dSetObjectMatrix object.
+    std::vector<UsdGeomXformOp>                 xformOps;
+    std::vector<UsdGeomXformOp>::const_iterator firstFallbackOp;
+
+    auto editTransform3d = createEditTransform3dImp(item, xformOps, firstFallbackOp);
+    if (!editTransform3d) {
+        return nullptr;
+    }
+
+    // Ml is the transformation before the Maya fallback transform stack.
+    std::vector<UsdGeomXformOp> mlOps(std::distance(xformOps.cbegin(), firstFallbackOp));
+    mlOps.assign(xformOps.cbegin(), firstFallbackOp);
+
+    GfMatrix4d ml { 1 };
+    if (!UsdGeomXformable::GetLocalTransformation(&ml, mlOps, getTime(item->path()))) {
+        TF_FATAL_ERROR(
+            "Local transformation computation for item %s failed.", item->path().string().c_str());
+    }
+
+    // The Maya fallback transform stack is the last group of transform ops in
+    // the complete transform stack, so Mr and thus inv(Mr), are the identity.
+    return UsdTransform3dSetObjectMatrix::create(editTransform3d, ml.GetInverse(), GfMatrix4d(1));
+}
+
+Ufe::Transform3d::Ptr createEditTransform3d(const Ufe::SceneItem::Ptr& item)
+{
+    std::vector<UsdGeomXformOp>                 xformOps;
+    std::vector<UsdGeomXformOp>::const_iterator firstFallbackOp;
+    return createEditTransform3dImp(item, xformOps, firstFallbackOp);
 }
 
 } // namespace
@@ -352,7 +374,7 @@ UsdTransform3dFallbackMayaXformStackHandler::transform3d(const Ufe::SceneItem::P
 Ufe::Transform3d::Ptr UsdTransform3dFallbackMayaXformStackHandler::editTransform3d(
     const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
 {
-    return createTransform3d(item);
+    return createEditTransform3d(item);
 }
 
 } // namespace ufe
