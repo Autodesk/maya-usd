@@ -24,6 +24,8 @@ import testUtils
 from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
 
+from pxr import Gf
+
 from maya import cmds
 
 import ufe
@@ -100,9 +102,12 @@ class testVP2RenderDelegateUsdCamera(imageUtils.ImageDiffingTestCase):
         
         # create a Ufe Camera and modify the near clip plane and do a snapshot
         # ufe.Camera is not in Ufe 2.0.0 MAYA-110675
-        #cam2Camera = ufe.Camera.camera(cam2Item)
-        #cam2Camera.nearClipPlane(10)
-        #self.assertSnapshotClose('%s_cam2_insideNearClipPlane.png' % self._testName)
+        # set the clipping range using the USD API instead
+        usdCamera = usdUtils.getPrimFromSceneItem(cam2Item)
+        clippingAttr = usdCamera.GetAttribute('clippingRange')
+        clippingRange = clippingAttr.Get()
+        clippingAttr.Set(Gf.Vec2f(10, 5000))
+        self.assertSnapshotClose('%s_cam2_insideNearClipPlane.png' % self._testName)
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
