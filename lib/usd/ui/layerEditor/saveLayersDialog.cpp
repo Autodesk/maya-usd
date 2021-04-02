@@ -9,8 +9,10 @@
 #include "stringResources.h"
 #include "warningDialogs.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/sdf/layer.h>
 
@@ -363,7 +365,11 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
     }
 
     // File backed layers
-    if (haveFileBackedLayers) {
+    static const MString kConfirmExistingFileSave
+        = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
+    const bool showFileOverrideSection = MGlobal::optionVarExists(kConfirmExistingFileSave)
+        && MGlobal::optionVarIntValue(kConfirmExistingFileSave) != 0;
+    if (showFileOverrideSection && haveFileBackedLayers) {
         auto fileLayout = new QVBoxLayout();
         fileLayout->setContentsMargins(margin, margin, margin, 0);
         fileLayout->setSpacing(DPIScale(8));
@@ -403,7 +409,7 @@ void SaveLayersDialog::buildDialog(const QString& msg1, const QString& msg2)
         topLayout->addWidget(anonScrollArea);
 
         // If we also have dirty file backed layers, add a separator.
-        if (haveFileBackedLayers) {
+        if (showFileOverrideSection && haveFileBackedLayers) {
             auto lineSep = new QFrame();
             lineSep->setFrameShape(QFrame::HLine);
             lineSep->setLineWidth(DPIScale(1));
