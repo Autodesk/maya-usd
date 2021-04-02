@@ -374,6 +374,9 @@ MAYAUSD_CORE_PUBLIC
 bool IsAuthored(const MPlug& plug);
 
 MAYAUSD_CORE_PUBLIC
+bool IsPlugDefaultValue(const MPlug& plug);
+
+MAYAUSD_CORE_PUBLIC
 MPlug GetConnected(const MPlug& plug);
 
 MAYAUSD_CORE_PUBLIC
