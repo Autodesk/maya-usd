@@ -1198,6 +1198,29 @@ bool UsdMayaUtil::IsAuthored(const MPlug& plug)
     return false;
 }
 
+bool UsdMayaUtil::IsPlugDefaultValue(const MPlug& plug)
+{
+    MStatus status;
+
+    if (plug.isNull(&status) || status != MS::kSuccess) {
+        return false;
+    }
+
+    // Plugs that are the destination of a connection are considered authored,
+    // since their value comes from an upstream dependency. If the plug is only
+    // the source of a connection or is not connected at all, it's
+    // authored-ness only depends on its own value, which is checked below.
+    if (plug.isDestination(&status)) {
+        return false;
+    }
+
+    if (plug.isDefaultValue(true, &status)) {
+        return true;
+    }
+    CHECK_MSTATUS(status);
+    return false;
+}
+
 MPlug UsdMayaUtil::GetConnected(const MPlug& plug)
 {
     MStatus    status = MS::kFailure;
