@@ -73,13 +73,13 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
         return iter->second;
     }
 
-    const auto&         schemaReg = UsdSchemaRegistry::GetInstance();
     std::vector<TfType> tfAncestorTypes;
     schemaType.GetAllAncestorTypes(&tfAncestorTypes);
     for (const TfType& ty : tfAncestorTypes) {
         // If there is a concrete schema type name, we'll return that since it is what
         // is used/shown in the UI (ex: 'Xform' vs 'UsdGeomXform').
 #if PXR_VERSION >= 2005
+        const auto& schemaReg = UsdSchemaRegistry::GetInstance();
         strAncestorTypes.emplace_back(
             schemaReg.IsConcrete(ty) ? schemaReg.GetSchemaTypeName(ty) : ty.GetTypeName());
 #else
