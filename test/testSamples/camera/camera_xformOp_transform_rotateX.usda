@@ -18,7 +18,7 @@ def Camera "cam" (
     }
 	float focalLength = 9.5
 	float focusDistance = 330
-	float fStop = 2.8
+	float fStop = 0
 	float horizontalAperture = 12
 	float lensSqueezeRatio = 1
 	token projection = "perspective"

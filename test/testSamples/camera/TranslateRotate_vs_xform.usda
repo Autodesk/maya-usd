@@ -21,7 +21,7 @@ def Xform "cameras"
 			float2 clippingRange = (0.17281759, 5335.3647)
 			float focalLength = 2.5
 			float focusDistance = 5
-			float fStop = 5.6
+			float fStop = 0
 			float horizontalAperture = 0.414214
 			float horizontalApertureOffset = 0
 			token projection = "perspective"
@@ -43,7 +43,7 @@ def Xform "cameras"
 			float2 clippingRange = (0.17281759, 5335.3647)
 			float focalLength = 2.5
 			float focusDistance = 5
-			float fStop = 5.6
+			float fStop = 0
 			float horizontalAperture = 0.414214
 			float horizontalApertureOffset = 0
 			token projection = "perspective"

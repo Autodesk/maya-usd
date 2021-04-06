@@ -202,7 +202,13 @@ float UsdCamera::fStop() const
         stageUnits = UsdGeomGetStageMetersPerUnit(stage);
     }
 
+    
+#if MAYA_API_VERSION <= 20220000
+    float retVal = UsdMayaUtil::ConvertUnit(fStop, stageUnits, UsdGeomLinearUnits::millimeters);
+    return retVal < FLT_EPSILON ? FLT_EPSILON : retVal;
+#else
     return UsdMayaUtil::ConvertUnit(fStop, stageUnits, UsdGeomLinearUnits::millimeters);
+#endif
 }
 
 Ufe::FocalLengthUndoableCommand::Ptr UsdCamera::focalLengthCmd(float) { return nullptr; }
