@@ -393,7 +393,7 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             return ret;
         }
         MString seName = seDepNode.name();
-        materialName = MNamespace::stripNamespaceFromName(seName).asChar();
+        materialName = seName.asChar();
     }
 
     materialName = UsdMayaUtil::SanitizeName(materialName);
@@ -545,20 +545,12 @@ public:
         if (largestSize) {
             TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
             TfTokenVector::const_iterator itName = largestSet.cbegin();
-            for (; itNode != _nodesWithUVInput.cend(); ++itNode) {
+            for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
                 TfToken inputName(
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
                 UsdShadeInput materialInput = material.GetInput(inputName);
-                // NOTE: (yliangsiew) If we have a mismatch in array sizes, we default to assigning
-                // the most common mapping to the materials that don't have inputs.
-                if (itName != largestSet.cend()) {
-                    materialInput.Set(*itName);
-                    ++itName;
-                } else {
-                    --itName;
-                    materialInput.Set(*itName);
-                    ++itName;
-                }
+                TF_VERIFY(itName != largestSet.cend());
+                materialInput.Set(*itName);
             }
             _uvNamesToMaterial[largestSet] = material;
         }

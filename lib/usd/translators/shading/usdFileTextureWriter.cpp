@@ -213,11 +213,8 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
     }
 
     if (materialSchema) {
-        MString       absoluteName = depNodeFn.absoluteName();
-        TfToken       inputName(TfStringPrintf(
-            "%s:%s",
-            absoluteName.substring(1, absoluteName.length() - 1).asChar(),
-            _tokens->varname.GetText()));
+        TfToken inputName(
+            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), _tokens->varname.GetText()));
         UsdShadeInput materialInput
             = materialSchema.CreateInput(inputName, SdfValueTypeNames->Token);
         materialInput.Set(UsdUtilsGetPrimaryUVSetName());
