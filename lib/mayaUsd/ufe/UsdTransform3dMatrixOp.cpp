@@ -29,6 +29,7 @@
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
+#include <maya/MGlobal.h>
 #include <ufe/transform3dUndoableCommands.h>
 
 #include <algorithm>
@@ -367,6 +368,10 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
+    if (!::isAttributeEditAllowed(prim(), "xformOp:translate")) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdTranslateUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
@@ -379,6 +384,10 @@ UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
+    if (!::isAttributeEditAllowed(prim(), "xformOp:rotateXYZ")) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdRotateUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
@@ -391,6 +400,10 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, doub
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
+    if (!::isAttributeEditAllowed(prim(), "xformOp:scale")) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdScaleUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),

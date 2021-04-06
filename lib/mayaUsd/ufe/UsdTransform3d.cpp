@@ -63,27 +63,6 @@ Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim, const UsdTimeCode& ti
     return xform;
 }
 
-bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const std::string& tokenName)
-{
-    std::string errMsg;
-
-    // check for xformOp:tokenName in XformOpOrderAttr first
-    UsdGeomXformable xformable(prim);
-    if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-        MGlobal::displayError(errMsg.c_str());
-        return false;
-    } else {
-        // check for xformOp:tokenName
-        const TfToken xlate(tokenName);
-        if (!MayaUsd::ufe::isAttributeEditAllowed(prim.GetAttribute(xlate), &errMsg)) {
-            MGlobal::displayError(errMsg.c_str());
-            return false;
-        }
-    }
-
-    return true;
-}
-
 } // namespace
 
 UsdTransform3d::UsdTransform3d()

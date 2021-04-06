@@ -174,5 +174,92 @@ class AttributeBlockTestCase(unittest.TestCase):
         # check the "transform op order" stack.
         self.assertEqual(cylinderXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray(('xformOp:translate','xformOp:rotateXYZ', 'xformOp:scale')))
 
+    def testAttributeBlocking3dCommonApi(self):
+        '''
+        Verify authoring transformation attribute(s) in weaker layer(s) are not permitted if there exist opinion(s) 
+        in stronger layer(s) when using UsdGeomXformCommonAPI.
+        '''
+
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # cylinder prim
+        cylinderPrim = stage.GetPrimAtPath('/pCylinder1')
+        self.assertIsNotNone(cylinderPrim)
+
+         # create 3 sub-layers ( LayerA, LayerB, LayerC ) and set the edit target to LayerB.
+        rootLayer = stage.GetRootLayer()
+        subLayerC = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="SubLayerC")[0]
+        subLayerB = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="SubLayerB")[0]
+        subLayerA = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="SubLayerA")[0]
+
+        # check to see the sublayers added
+        addedLayers = [subLayerA, subLayerB, subLayerC]
+        self.assertEqual(rootLayer.subLayerPaths, addedLayers)
+
+        # set the edit target to LayerB
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerB)
+
+        # create a xformable and give it a common API single "pivot".
+        # This will match the common API, but not the Maya API.
+        cylinderXformable = UsdGeom.Xformable(cylinderPrim)
+
+        cylinderXformable.AddTranslateOp(UsdGeom.XformOp.PrecisionFloat, "pivot")
+        cylinderXformable.AddTranslateOp(
+            UsdGeom.XformOp.PrecisionFloat, "pivot", True)
+
+        self.assertEqual(
+            cylinderXformable.GetXformOpOrderAttr().Get(), 
+            Vt.TokenArray(("xformOp:translate:pivot",
+                           "!invert!xformOp:translate:pivot")))
+        self.assertTrue(UsdGeom.XformCommonAPI(cylinderXformable))
+
+        # Now that we have set up the transform stack to be common API-compatible,
+        # create the Transform3d interface.
+        cylinderPath = ufe.Path([
+                     mayaUtils.createUfePathSegment("|mayaUsdTransform|shape"), 
+                     usdUtils.createUfePathSegment("/pCylinder1")])
+        cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
+
+        cylinderT3d = ufe.Transform3d.transform3d(cylinderItem)
+
+        # select the cylinderItem
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(cylinderItem)
+
+        # rotate the cylinder
+        cmds.rotate(0, 90, 0, relative=True, objectSpace=True, forceOrderXYZ=True)
+
+        self.assertEqual(
+            cylinderXformable.GetXformOpOrderAttr().Get(), 
+            Vt.TokenArray(("xformOp:translate:pivot", "xformOp:rotateXYZ",
+                           "!invert!xformOp:translate:pivot")))
+        self.assertTrue(UsdGeom.XformCommonAPI(cylinderXformable))
+
+        # set the edit target to a weaker layer (LayerC)
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerC)
+
+        # check if rotate attribute is editable
+        rotateAttr = cylinderPrim.GetAttribute('xformOp:rotateXYZ')
+        self.assertIsNotNone(rotateAttr)
+
+        # authoring new transformation edit is not allowed.
+        self.assertFalse(mayaUsdUfe.isAttributeEditAllowed(rotateAttr))
+
+        # set the edit target to a stronger layer (LayerA)
+        cmds.mayaUsdEditTarget(proxyShapePath, edit=True, editTarget=subLayerA)
+
+        # authoring new transformation edit is allowed.
+        self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(rotateAttr))
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
