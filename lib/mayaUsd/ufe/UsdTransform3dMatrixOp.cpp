@@ -368,7 +368,7 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
-    if (!::isAttributeEditAllowed(prim(), "xformOp:translate")) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:translate")) {
         return nullptr;
     }
 
@@ -384,7 +384,7 @@ UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
-    if (!::isAttributeEditAllowed(prim(), "xformOp:rotateXYZ")) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:rotateXYZ")) {
         return nullptr;
     }
 
@@ -400,7 +400,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, doub
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
-    if (!::isAttributeEditAllowed(prim(), "xformOp:scale")) {
+    if (!isAttributeEditAllowed(prim(), "xformOp:scale")) {
         return nullptr;
     }
 
