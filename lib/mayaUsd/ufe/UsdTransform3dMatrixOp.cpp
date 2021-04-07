@@ -29,7 +29,6 @@
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
-#include <maya/MGlobal.h>
 #include <ufe/transform3dUndoableCommands.h>
 
 #include <algorithm>
