@@ -393,7 +393,7 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             return ret;
         }
         MString seName = seDepNode.name();
-        materialName = MNamespace::stripNamespaceFromName(seName).asChar();
+        materialName = seName.asChar();
     }
 
     materialName = UsdMayaUtil::SanitizeName(materialName);
@@ -549,6 +549,7 @@ public:
                 TfToken inputName(
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
                 UsdShadeInput materialInput = material.GetInput(inputName);
+                TF_VERIFY(itName != largestSet.cend());
                 materialInput.Set(*itName);
             }
             _uvNamesToMaterial[largestSet] = material;
