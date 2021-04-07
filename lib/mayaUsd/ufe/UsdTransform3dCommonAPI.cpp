@@ -266,7 +266,7 @@ void UsdTransform3dCommonAPI::scale(double x, double y, double z)
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:translate")) {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
         return nullptr;
     }
 
@@ -275,7 +275,7 @@ UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:rotateXYZ")) {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
         return nullptr;
     }
 
@@ -284,7 +284,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, dou
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:scale")) {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
         return nullptr;
     }
 
@@ -294,7 +294,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, doubl
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::rotatePivotCmd(double x, double y, double z)
 {
-    if (!isAttributeEditAllowed(prim(), "xformOp:translate:pivot")) {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
         return nullptr;
     }
 

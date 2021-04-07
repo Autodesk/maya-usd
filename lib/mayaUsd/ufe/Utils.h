@@ -130,7 +130,7 @@ MAYAUSD_CORE_PUBLIC
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
 
 MAYAUSD_CORE_PUBLIC
-bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const std::string& tokenName);
+bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
 
 //! Send notification for data model changes
 template <class T>
