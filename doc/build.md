@@ -10,13 +10,13 @@ Before building the project, consult the following table to ensure you use the r
 
 |        Required       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
-|    Operating System   |         Windows 10        | High Sierra (10.13)<br>Mojave (10.14)<br>Catalina (10.15)    |       CentOS 7              |
-|   Compiler Requirement| Maya 2019 (VS 2017)<br>Maya 2020 (VS 2017)<br>Maya 2022 (VS 2017) | Maya 2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode 10.2.1)<br>Maya 2022 (Xcode 10.2.1) | Maya 2019 (gcc 6.3.1)<br>Maya 2020 (gcc 6.3.1)<br>Maya 2022 (gcc 6.3.1/9.3.1) |
+|    Operating System   |         Windows 10        | High Sierra (10.13)<br>Mojave (10.14)<br>Catalina (10.15)<br>Big Sur (11.2.x)    |       CentOS 7/8              |
+|   Compiler Requirement| Maya 2019 (VS 2017)<br>Maya 2020 (VS 2017)<br>Maya 2022 (VS 2017/2019) | Maya 2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode 10.2.1)<br>Maya 2022 (Xcode 10.2.1) | Maya 2019 (gcc 6.3.1)<br>Maya 2020 (gcc 6.3.1)<br>Maya 2022 (gcc 6.3.1/9.3.1) |
 | CMake Version (min/max) |        3.13 - 3.17      |                              3.13 - 3.17                     |           3.13 - 3.17       |
 |         Python        |       2.7.15 or 3.7.7     |                            2.7.15 or 3.7.7                   |        2.7.15 or 3.7.7      |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              | PyYAML, PySide, PyOpenGL, Jinja2 |
 |    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
-|    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
+|    Command processor  | Visual Studio X64 2017 or 2019 command prompt  |                     bash                |             bash            |
 | Supported Maya Version|     2019, 2020, 2022      |                      2019, 2020, 2022                        |      2019, 2020, 2022       |
 
 |        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
