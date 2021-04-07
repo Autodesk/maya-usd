@@ -261,6 +261,7 @@ class AttributeBlockTestCase(unittest.TestCase):
         # authoring new transformation edit is allowed.
         self.assertTrue(mayaUsdUfe.isAttributeEditAllowed(rotateAttr))
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testAttributeBlocking3dMatrixOps only available in UFE v2 or greater.')
     def testAttributeBlocking3dMatrixOps(self):
         '''
         Verify authoring transformation attribute(s) in weaker layer(s) are not permitted if there exist opinion(s) 

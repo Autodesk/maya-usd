@@ -422,24 +422,22 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
 
 bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
 {
-    if (prim.IsA<UsdGeomXformable>()) {
+    std::string errMsg;
 
-        std::string errMsg;
-
-        // check for xformOp:tokenName in XformOpOrderAttr first
-        UsdGeomXformable xformable(prim);
-        if (!isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-            MGlobal::displayError(errMsg.c_str());
-            return false;
-        } else {
-            // check for xformOp:tokenName
-            if (UsdGeomXformOp::IsXformOp(attrName)) {
-                if (!isAttributeEditAllowed(prim.GetAttribute(attrName), &errMsg)) {
-                    MGlobal::displayError(errMsg.c_str());
-                    return false;
-                }
+    UsdGeomXformable xformable(prim);
+    if (xformable) {
+        if (UsdGeomXformOp::IsXformOp(attrName)) {
+            // check for the attribute in XformOpOrderAttr first
+            if (!isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+                MGlobal::displayError(errMsg.c_str());
+                return false;
             }
         }
+    }
+    // check the attribute itself
+    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return false;
     }
 
     return true;
