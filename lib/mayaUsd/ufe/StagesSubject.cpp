@@ -31,9 +31,11 @@
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
+#include <pxr/imaging/hd/camera.h>
 
 #include <maya/MMessage.h>
 #include <maya/MSceneMessage.h>
+#include <ufe/camera.h>
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
@@ -69,7 +71,36 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
+std::unordered_map<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
+
+void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+{
+    Ufe::AttributeValueChanged vc(ufePath, changedToken.GetString());
+    Ufe::Attributes::notify(vc);
+
+    if (changedToken == HdCameraTokens->horizontalAperture
+        || changedToken == HdCameraTokens->verticalAperture
+        || changedToken == HdCameraTokens->horizontalApertureOffset
+        || changedToken == HdCameraTokens->verticalApertureOffset
+        || changedToken == HdCameraTokens->focalLength
+        || changedToken == HdCameraTokens->clippingRange
+        || changedToken == HdCameraTokens->fStop)
+    // There are more HdCameraTokens that Maya ignores:
+    // worldToViewMatrix, projectionMatrix, clipPlanes, windowPolicy, shutterOpen,
+    // shutterClose
+    {
+        Ufe::Camera::notify(ufePath);
+    }
+}
+
+void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+{
+    if (inAttributeChangedNotificationGuard()) {
+        pendingAttributeChangedNotifications[ufePath] = changedToken;
+    } else {
+        sendValueChanged(ufePath, changedToken);
+    }
+}
 
 #endif
 } // namespace
@@ -218,8 +249,7 @@ void StagesSubject::stageChanged(
                 }
 #ifdef UFE_V2_FEATURES_AVAILABLE
                 if (!inAttributeChangedNotificationGuard()) {
-                    Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                    Ufe::Attributes::notify(vc);
+                    sendValueChanged(ufePath, changedPath.GetNameToken());
                 }
 #endif
             }
@@ -310,12 +340,7 @@ void StagesSubject::stageChanged(
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
         if (changedPath.IsPrimPropertyPath()) {
-            if (inAttributeChangedNotificationGuard()) {
-                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
-            } else {
-                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                Ufe::Attributes::notify(vc);
-            }
+            valueChanged(ufePath, changedPath.GetNameToken());
             sendValueChangedFallback = false;
         }
 
@@ -387,14 +412,7 @@ void StagesSubject::stageChanged(
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         if (sendValueChangedFallback) {
-            // We didn't send any other UFE notif above, so send a UFE
-            // attribute value changed as a fallback notification.
-            if (inAttributeChangedNotificationGuard()) {
-                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
-            } else {
-                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                Ufe::Attributes::notify(vc);
-            }
+            valueChanged(ufePath, changedPath.GetNameToken());
         }
 #endif
     }
@@ -503,8 +521,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-        Ufe::AttributeValueChanged vc(notificationInfo.first, notificationInfo.second);
-        Ufe::Attributes::notify(vc);
+        sendValueChanged(notificationInfo.first, notificationInfo.second);
     }
 
     pendingAttributeChangedNotifications.clear();
