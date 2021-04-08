@@ -714,91 +714,93 @@ void HdVP2Material::Sync(
 
             _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
 
-            // Generate a XML string from the material network and convert it to a token for faster
-            // hashing and comparison.
-            const TfToken token(_GenerateXMLString(vp2BxdfNet, false));
+            if (!vp2BxdfNet.nodes.empty()) {
+                // Generate a XML string from the material network and convert it to a token for
+                // faster hashing and comparison.
+                const TfToken token(_GenerateXMLString(vp2BxdfNet, false));
 
-            // Skip creating a new shader instance if the token is unchanged. There is no plan to
-            // implement fine-grain dirty bit in Hydra for the same purpose:
-            // https://groups.google.com/g/usd-interest/c/xytT2azlJec/m/22Tnw4yXAAAJ
-            if (_surfaceNetworkToken != token) {
-                MProfilingScope subProfilingScope(
-                    HdVP2RenderDelegate::sProfilerCategory,
-                    MProfiler::kColorD_L2,
-                    "CreateShaderInstance");
+                // Skip creating a new shader instance if the token is unchanged. There is no plan
+                // to implement fine-grain dirty bit in Hydra for the same purpose:
+                // https://groups.google.com/g/usd-interest/c/xytT2azlJec/m/22Tnw4yXAAAJ
+                if (_surfaceNetworkToken != token) {
+                    MProfilingScope subProfilingScope(
+                        HdVP2RenderDelegate::sProfilerCategory,
+                        MProfiler::kColorD_L2,
+                        "CreateShaderInstance");
 
-                // Remember the path of the surface shader for special handling: unlike other
-                // fragments, the parameters of the surface shader fragment can't be renamed.
-                _surfaceShaderId = vp2BxdfNet.nodes.back().path;
+                    // Remember the path of the surface shader for special handling: unlike other
+                    // fragments, the parameters of the surface shader fragment can't be renamed.
+                    _surfaceShaderId = vp2BxdfNet.nodes.back().path;
 
-                MHWRender::MShaderInstance* shader;
+                    MHWRender::MShaderInstance* shader;
 
 #ifndef HDVP2_DISABLE_SHADER_CACHE
-                // Acquire a shader instance from the shader cache. If a shader instance has
-                // been cached with the same token, a clone of the shader instance will be
-                // returned. Multiple clones of a shader instance will share the same shader
-                // effect, thus reduce compilation overhead and enable material consolidation.
-                shader = _renderDelegate->GetShaderFromCache(token);
+                    // Acquire a shader instance from the shader cache. If a shader instance has
+                    // been cached with the same token, a clone of the shader instance will be
+                    // returned. Multiple clones of a shader instance will share the same shader
+                    // effect, thus reduce compilation overhead and enable material consolidation.
+                    shader = _renderDelegate->GetShaderFromCache(token);
 
-                // If the shader instance is not found in the cache, create one from the material
-                // network and add a clone to the cache for reuse.
-                if (!shader) {
-                    shader = _CreateShaderInstance(vp2BxdfNet);
+                    // If the shader instance is not found in the cache, create one from the
+                    // material network and add a clone to the cache for reuse.
+                    if (!shader) {
+                        shader = _CreateShaderInstance(vp2BxdfNet);
 
-                    if (shader) {
-                        _renderDelegate->AddShaderToCache(token, *shader);
+                        if (shader) {
+                            _renderDelegate->AddShaderToCache(token, *shader);
+                        }
                     }
-                }
 #else
-                shader = _CreateShaderInstance(vp2BxdfNet);
+                    shader = _CreateShaderInstance(vp2BxdfNet);
 #endif
 
-                // The shader instance is owned by the material solely.
-                _surfaceShader.reset(shader);
+                    // The shader instance is owned by the material solely.
+                    _surfaceShader.reset(shader);
 
-                if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
-                    std::cout << "BXDF material network for " << id << ":\n"
-                              << _GenerateXMLString(bxdfNet) << "\n"
-                              << "BXDF (with VP2 fixes) material network for " << id << ":\n"
-                              << _GenerateXMLString(vp2BxdfNet) << "\n"
-                              << "Displacement material network for " << id << ":\n"
-                              << _GenerateXMLString(dispNet) << "\n";
+                    if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
+                        std::cout << "BXDF material network for " << id << ":\n"
+                                  << _GenerateXMLString(bxdfNet) << "\n"
+                                  << "BXDF (with VP2 fixes) material network for " << id << ":\n"
+                                  << _GenerateXMLString(vp2BxdfNet) << "\n"
+                                  << "Displacement material network for " << id << ":\n"
+                                  << _GenerateXMLString(dispNet) << "\n";
 
-                    if (_surfaceShader) {
-                        auto tmpDir = ghc::filesystem::temp_directory_path();
-                        tmpDir /= "HdVP2Material_";
-                        tmpDir += id.GetName();
-                        tmpDir += ".txt";
-                        _surfaceShader->writeEffectSourceToFile(tmpDir.c_str());
+                        if (_surfaceShader) {
+                            auto tmpDir = ghc::filesystem::temp_directory_path();
+                            tmpDir /= "HdVP2Material_";
+                            tmpDir += id.GetName();
+                            tmpDir += ".txt";
+                            _surfaceShader->writeEffectSourceToFile(tmpDir.c_str());
 
-                        std::cout << "BXDF generated shader code for " << id << ":\n";
-                        std::cout << "  " << tmpDir << "\n";
+                            std::cout << "BXDF generated shader code for " << id << ":\n";
+                            std::cout << "  " << tmpDir << "\n";
+                        }
+                    }
+
+                    // Store primvar requirements.
+                    _requiredPrimvars = std::move(vp2BxdfNet.primvars);
+
+                    // The token is saved and will be used to determine whether a new shader
+                    // instance is needed during the next sync.
+                    _surfaceNetworkToken = token;
+
+                    // If the surface shader has its opacity attribute connected to a node which
+                    // isn't a primvar reader, it is set as transparent. If the opacity attr is
+                    // connected to a primvar reader, the Rprim side will determine the transparency
+                    // state according to the primvars:displayOpacity data. If the opacity attr
+                    // isn't connected, the transparency state will be set in
+                    // _UpdateShaderInstance() according to the opacity value.
+                    if (shader) {
+                        shader->setIsTransparent(_IsTransparent(bxdfNet));
                     }
                 }
 
-                // Store primvar requirements.
-                _requiredPrimvars = std::move(vp2BxdfNet.primvars);
-
-                // The token is saved and will be used to determine whether a new shader instance
-                // is needed during the next sync.
-                _surfaceNetworkToken = token;
-
-                // If the surface shader has its opacity attribute connected to a node which isn't
-                // a primvar reader, it is set as transparent. If the opacity attr is connected to
-                // a primvar reader, the Rprim side will determine the transparency state
-                // according to the primvars:displayOpacity data. If the opacity attr isn't
-                // connected, the transparency state will be set in _UpdateShaderInstance()
-                // according to the opacity value.
-                if (shader) {
-                    shader->setIsTransparent(_IsTransparent(bxdfNet));
-                }
-            }
-
-            _UpdateShaderInstance(bxdfNet);
+                _UpdateShaderInstance(bxdfNet);
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-            _MaterialChanged(sceneDelegate);
+                _MaterialChanged(sceneDelegate);
 #endif
+            }
         } else {
             TF_WARN(
                 "Expected material resource for <%s> to hold HdMaterialNetworkMap,"
