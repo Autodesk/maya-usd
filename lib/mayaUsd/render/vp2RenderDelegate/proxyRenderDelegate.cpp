@@ -794,19 +794,16 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     MDagPath&                       dagPath) const
 {
 #if defined(WANT_UFE_BUILD)
-    if (_proxyShapeData->ProxyShape() == nullptr) {
-        return false;
+    // When point snapping, only the point position matters, so return the DAG path and avoid the
+    // UFE global selection list to be updated.
+    if (pointSnappingActive()) {
+        dagPath = _proxyShapeData->ProxyDagPath();
+        return true;
     }
 
-    if (!_proxyShapeData->ProxyShape()->isUfeSelectionEnabled()) {
+    if (!_proxyShapeData->ProxyShape() || !_proxyShapeData->ProxyShape()->isUfeSelectionEnabled()) {
         return false;
     }
-
-    // When point snapping, only the point position matters, so return false
-    // to use the DAG path from the default implementation and avoid the UFE
-    // global selection list to be updated.
-    if (pointSnappingActive())
-        return false;
 
     auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
     if (handler == nullptr)
