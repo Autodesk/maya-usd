@@ -712,10 +712,9 @@ void HdVP2Material::Sync(
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
 
+            _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
+
             if (!vp2BxdfNet.nodes.empty()) {
-
-                _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
-
                 // Generate a XML string from the material network and convert it to a token for
                 // faster hashing and comparison.
                 const TfToken token(_GenerateXMLString(vp2BxdfNet, false));
