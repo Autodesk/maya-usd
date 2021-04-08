@@ -1167,3 +1167,45 @@ TEST(translators_MeshTranslator, reverseNormalsFlag)
         EXPECT_EQ(UsdGeomTokens->rightHanded, value);
     }
 }
+
+TEST(translators_MeshTranslator, vertexNormalsExport)
+{
+    MFileIO::newFile(true);
+
+    // create a cube, then for each face: apply a planar projection, and squish to the origin.
+    // This should result in a single UV assignment to each face
+    MString command = "polySphere -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 0 -ch 1;";
+    MGlobal::executeCommand(command);
+
+    MSelectionList sl;
+    sl.add("pSphereShape1");
+    MObject obj;
+    sl.getDependNode(0, obj);
+    MFnMesh fn(obj);
+
+    const MString temp_path = buildTempPath("AL_USDMayaTests_vertexNormalsExport.usda");
+
+    // select the sphere and export
+    MGlobal::executeCommand(
+        MString("select -r pSphere1;"
+                "file -force -options "
+                "\"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances="
+                "1;Compaction_Level=3;"
+                "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;"
+                "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"")
+        + temp_path + "\";");
+
+    {
+        UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
+        ASSERT_TRUE(stage);
+
+        UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pSphere1"));
+        ASSERT_TRUE(prim);
+
+        UsdGeomMesh mesh(prim);
+        EXPECT_EQ(UsdGeomTokens->vertex, mesh.GetNormalsInterpolation());
+        VtVec3fArray normals;
+        mesh.GetNormalsAttr().Get(&normals);
+        EXPECT_EQ(normals.size(), fn.numNormals());
+    }
+}

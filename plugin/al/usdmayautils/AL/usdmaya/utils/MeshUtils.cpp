@@ -1909,7 +1909,8 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
                             &normalIndices[0],
                             &faceConnects[0],
                             normalIndices.length(),
-                            faceConnects.length())) {
+                            faceConnects.length())
+                        || numNormals == (size_t)fnMesh.numVertices()) {
                         if (copyAsPrimvar) {
                             primvar.SetInterpolation(UsdGeomTokens->vertex);
                         } else {
