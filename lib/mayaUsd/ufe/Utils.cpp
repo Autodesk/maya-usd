@@ -420,6 +420,29 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
     return true;
 }
 
+bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
+{
+    std::string errMsg;
+
+    UsdGeomXformable xformable(prim);
+    if (xformable) {
+        if (UsdGeomXformOp::IsXformOp(attrName)) {
+            // check for the attribute in XformOpOrderAttr first
+            if (!isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+                MGlobal::displayError(errMsg.c_str());
+                return false;
+            }
+        }
+    }
+    // check the attribute itself
+    if (!isAttributeEditAllowed(prim.GetAttribute(attrName), &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return false;
+    }
+
+    return true;
+}
+
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
 {
     // Filter the src selection, removing items below the filterPath

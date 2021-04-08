@@ -264,22 +264,38 @@ void UsdTransform3dCommonAPI::scale(double x, double y, double z)
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::translateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdTranslateUndoableCmd>(usdSceneItem(), UsdTimeCode::Default());
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dCommonAPI::rotateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdRotateUndoableCmd>(usdSceneItem(), UsdTimeCode::Default());
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dCommonAPI::scaleCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdScaleUndoableCmd>(usdSceneItem(), UsdTimeCode::Default());
 }
 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dCommonAPI::rotatePivotCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate:pivot"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdTranslatePivotUndoableCmd>(usdSceneItem(), UsdTimeCode::Default());
 }
 
