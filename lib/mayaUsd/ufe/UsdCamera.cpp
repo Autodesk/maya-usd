@@ -23,6 +23,8 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/imaging/hd/camera.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -41,6 +43,25 @@ UsdCamera::UsdCamera(const UsdSceneItem::Ptr& item)
 UsdCamera::Ptr UsdCamera::create(const UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdCamera>(item);
+}
+
+/* static */
+bool UsdCamera::isCameraToken(const PXR_NS::TfToken& token)
+{
+    static std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor> cameraTokens {
+        HdCameraTokens->horizontalAperture,
+        HdCameraTokens->verticalAperture,
+        HdCameraTokens->horizontalApertureOffset,
+        HdCameraTokens->verticalApertureOffset,
+        HdCameraTokens->focalLength,
+        HdCameraTokens->clippingRange,
+        HdCameraTokens->fStop
+    };
+    // There are more HdCameraTokens that Maya ignores:
+    // worldToViewMatrix, projectionMatrix, clipPlanes, windowPolicy, shutterOpen,
+    // shutterClose
+
+    return cameraTokens.count(token) > 0;
 }
 
 //------------------------------------------------------------------------------

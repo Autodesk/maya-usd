@@ -20,6 +20,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UfeVersionCompat.h>
+#include <mayaUsd/ufe/UsdCamera.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -31,11 +32,9 @@
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
-#include <pxr/imaging/hd/camera.h>
 
 #include <maya/MMessage.h>
 #include <maya/MSceneMessage.h>
-#include <ufe/camera.h>
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
@@ -71,24 +70,14 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-std::unordered_map<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
+std::unordered_multimap<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
 
 void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     Ufe::AttributeValueChanged vc(ufePath, changedToken.GetString());
     Ufe::Attributes::notify(vc);
 
-    if (changedToken == HdCameraTokens->horizontalAperture
-        || changedToken == HdCameraTokens->verticalAperture
-        || changedToken == HdCameraTokens->horizontalApertureOffset
-        || changedToken == HdCameraTokens->verticalApertureOffset
-        || changedToken == HdCameraTokens->focalLength
-        || changedToken == HdCameraTokens->clippingRange
-        || changedToken == HdCameraTokens->fStop)
-    // There are more HdCameraTokens that Maya ignores:
-    // worldToViewMatrix, projectionMatrix, clipPlanes, windowPolicy, shutterOpen,
-    // shutterClose
-    {
+    if (MAYAUSD_NS_DEF::ufe::UsdCamera::isCameraToken(changedToken)) {
         Ufe::Camera::notify(ufePath);
     }
 }
@@ -96,7 +85,7 @@ void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     if (inAttributeChangedNotificationGuard()) {
-        pendingAttributeChangedNotifications[ufePath] = changedToken;
+        pendingAttributeChangedNotifications.emplace(ufePath, changedToken);
     } else {
         sendValueChanged(ufePath, changedToken);
     }
