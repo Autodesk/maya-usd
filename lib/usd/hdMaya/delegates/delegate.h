@@ -141,7 +141,7 @@ public:
 
     /// Common function to return templated sample types
     template <typename T, typename Getter>
-    HDMAYA_API size_t SampleValues(size_t maxSampleCount, float* times, T* samples, Getter getValue)
+    size_t SampleValues(size_t maxSampleCount, float* times, T* samples, Getter getValue)
     {
         if (ARCH_UNLIKELY(maxSampleCount == 0)) {
             return 0;

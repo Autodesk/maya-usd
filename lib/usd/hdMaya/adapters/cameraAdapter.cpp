@@ -178,8 +178,9 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
 
     auto projectionMatrix
         = [&](const MFnCamera& camera, bool isOrtho, const GfVec4d* viewport) -> GfMatrix4d {
-        double left, right, bottom, top, near = camera.nearClippingPlane(),
-                                         far = camera.farClippingPlane(), farMinusNear = far - near,
+        double left, right, bottom, top, cameraNear = camera.nearClippingPlane(),
+                                         cameraFar = camera.farClippingPlane(),
+                                         cameraFarMinusNear = cameraFar - cameraNear,
                                          aspectRatio = viewport
             ? (((*viewport)[2] - (*viewport)[0]) / ((*viewport)[3] - (*viewport)[1]))
             : camera.aspectRatio();
@@ -200,11 +201,11 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
                     0,
                     0,
                     0,
-                    -2.0 / farMinusNear,
+                    -2.0 / cameraFarMinusNear,
                     0,
                     0,
                     0,
-                    -(far + near) / farMinusNear,
+                    -(cameraFar + cameraNear) / cameraFarMinusNear,
                     1);
 
             return GfMatrix4d(
@@ -218,50 +219,50 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
                 0,
                 0,
                 0,
-                -2.0 / farMinusNear,
+                -2.0 / cameraFarMinusNear,
                 0,
                 -(right + left) / (right - left),
                 -(top + bottom) / (top - bottom),
-                -(far + near) / farMinusNear,
+                -(cameraFar + cameraNear) / cameraFarMinusNear,
                 1);
         }
 
         // Skip over extraneous double-precision math in the common symmetric case
         if (right == -left && top == -bottom)
             return GfMatrix4d(
-                near / right,
+                cameraNear / right,
                 0,
                 0,
                 0,
                 0,
-                near / top,
+                cameraNear / top,
                 0,
                 0,
                 0,
                 0,
-                -(far + near) / farMinusNear,
+                -(cameraFar + cameraNear) / cameraFarMinusNear,
                 -1,
                 0,
                 0,
-                (-2.0 * far * near) / farMinusNear,
+                (-2.0 * cameraFar * cameraNear) / cameraFarMinusNear,
                 0);
 
         return GfMatrix4d(
-            (2.0 * near) / (right - left),
+            (2.0 * cameraNear) / (right - left),
             0,
             0,
             0,
             0,
-            (2.0 * near) / (top - bottom),
+            (2.0 * cameraNear) / (top - bottom),
             0,
             0,
             (right + left) / (right - left),
             (top + bottom) / (top - bottom),
-            -(far + near) / farMinusNear,
+            -(cameraFar + cameraNear) / cameraFarMinusNear,
             -1,
             0,
             0,
-            (2.0 * near * -far) / farMinusNear,
+            (2.0 * cameraNear * -cameraFar) / cameraFarMinusNear,
             0);
     };
 
