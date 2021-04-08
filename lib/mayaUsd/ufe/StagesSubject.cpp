@@ -20,7 +20,9 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UfeVersionCompat.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdCamera.h>
+#endif
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -70,14 +72,17 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-std::unordered_multimap<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
+// TODO: This should be an unordered_multimap to prevent notifications from
+// overwriting earlier recorded notifications for the same attribute. See
+// MAYA-110878 for more information on why this change isn't already made.
+std::unordered_map<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
 
 void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     Ufe::AttributeValueChanged vc(ufePath, changedToken.GetString());
     Ufe::Attributes::notify(vc);
 
-    if (MAYAUSD_NS_DEF::ufe::UsdCamera::isCameraToken(changedToken)) {
+    if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
         Ufe::Camera::notify(ufePath);
     }
 }
@@ -85,7 +90,7 @@ void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     if (inAttributeChangedNotificationGuard()) {
-        pendingAttributeChangedNotifications.emplace(ufePath, changedToken);
+        pendingAttributeChangedNotifications[ufePath] = changedToken;
     } else {
         sendValueChanged(ufePath, changedToken);
     }
