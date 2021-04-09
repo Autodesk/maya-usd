@@ -40,8 +40,13 @@
 #include <ufe/observer.h>
 #endif
 
+// The new Maya point snapping support doesn't require point snapping items any more.
+#if MAYA_API_VERSION >= 20230000 // HDC_TODO: 20230000 -> 20220200
+#define MAYA_NEW_POINT_SNAPPING_SUPPORT
+#endif
+
 // Conditional compilation due to Maya API gap.
-#if MAYA_API_VERSION >= 20200000
+#if MAYA_API_VERSION >= 20200000 && !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
 #define MAYA_ENABLE_UPDATE_FOR_SELECTION
 #endif
 

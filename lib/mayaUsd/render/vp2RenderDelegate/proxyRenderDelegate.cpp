@@ -694,7 +694,12 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif // defined(WANT_UFE_BUILD)
 
 #else  // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    HdReprSelector reprSelector;
+#else
     HdReprSelector reprSelector = kPointsReprSelector;
+#endif
 
     constexpr bool inSelectionPass = false;
     constexpr bool inPointSnapping = false;
