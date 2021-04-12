@@ -957,7 +957,7 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
 
         // create UV PrimVar
         createUVPrimVar(
-            primSchema, i, setName, usdTime, uvValues, interpolation, assignmentIndices, valueWriter);
+            primSchema, setName, i, usdTime, uvValues, interpolation, assignmentIndices, valueWriter);
     }
 
     return true;
