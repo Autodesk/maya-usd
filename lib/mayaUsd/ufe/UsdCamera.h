@@ -18,6 +18,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/camera.h>
@@ -44,6 +45,8 @@ public:
 
     //! Create a UsdCamera.
     static UsdCamera::Ptr create(const UsdSceneItem::Ptr& item);
+
+    static bool isCameraToken(const PXR_NS::TfToken&);
 
     inline PXR_NS::UsdPrim prim() const
     {

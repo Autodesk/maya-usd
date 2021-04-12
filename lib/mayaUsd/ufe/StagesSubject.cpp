@@ -20,6 +20,9 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UfeVersionCompat.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdCamera.h>
+#endif
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -69,7 +72,29 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
+// TODO: This should be an unordered_multimap to prevent notifications from
+// overwriting earlier recorded notifications for the same attribute. See
+// MAYA-110878 for more information on why this change isn't already made.
+std::unordered_map<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
+
+void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+{
+    Ufe::AttributeValueChanged vc(ufePath, changedToken.GetString());
+    Ufe::Attributes::notify(vc);
+
+    if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+        Ufe::Camera::notify(ufePath);
+    }
+}
+
+void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+{
+    if (inAttributeChangedNotificationGuard()) {
+        pendingAttributeChangedNotifications[ufePath] = changedToken;
+    } else {
+        sendValueChanged(ufePath, changedToken);
+    }
+}
 
 #endif
 } // namespace
@@ -218,8 +243,7 @@ void StagesSubject::stageChanged(
                 }
 #ifdef UFE_V2_FEATURES_AVAILABLE
                 if (!inAttributeChangedNotificationGuard()) {
-                    Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                    Ufe::Attributes::notify(vc);
+                    sendValueChanged(ufePath, changedPath.GetNameToken());
                 }
 #endif
             }
@@ -310,12 +334,7 @@ void StagesSubject::stageChanged(
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
         if (changedPath.IsPrimPropertyPath()) {
-            if (inAttributeChangedNotificationGuard()) {
-                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
-            } else {
-                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                Ufe::Attributes::notify(vc);
-            }
+            valueChanged(ufePath, changedPath.GetNameToken());
             sendValueChangedFallback = false;
         }
 
@@ -387,14 +406,7 @@ void StagesSubject::stageChanged(
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         if (sendValueChangedFallback) {
-            // We didn't send any other UFE notif above, so send a UFE
-            // attribute value changed as a fallback notification.
-            if (inAttributeChangedNotificationGuard()) {
-                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
-            } else {
-                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                Ufe::Attributes::notify(vc);
-            }
+            valueChanged(ufePath, changedPath.GetNameToken());
         }
 #endif
     }
@@ -503,8 +515,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-        Ufe::AttributeValueChanged vc(notificationInfo.first, notificationInfo.second);
-        Ufe::Attributes::notify(vc);
+        sendValueChanged(notificationInfo.first, notificationInfo.second);
     }
 
     pendingAttributeChangedNotifications.clear();
