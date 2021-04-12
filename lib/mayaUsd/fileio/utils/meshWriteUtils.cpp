@@ -95,6 +95,10 @@ const GfVec4f UnauthoredColorSetRGBA = GfVec4f(
     UnauthoredColorSetRGB[2],
     UnauthoredColorAlpha);
 
+/// The key in the custom data dict we use to store the index of the uv
+/// attributes in maya
+const TfToken UvIndexCustomKey("Maya:index");
+
 // XXX: Note that this function is not exposed publicly since the USD schema
 // has been updated to conform to OpenSubdiv 3. We still look for this attribute
 // on Maya nodes specifying this value from OpenSubdiv 2, but we translate the
@@ -246,6 +250,7 @@ void setPrimvar(
 void createUVPrimVar(
     UsdGeomGprim&              primSchema,
     const TfToken&             name,
+    const int&                 index,
     const UsdTimeCode&         usdTime,
     const VtArray<GfVec2f>&    data,
     const TfToken&             interpolation,
@@ -268,6 +273,9 @@ void createUVPrimVar(
 
     UsdGeomPrimvar primVar = primSchema.CreatePrimvar(name, uvValueType, interp);
 
+    // Store the uv set index so we can reconstruct the order the sets had in maya
+    primVar.GetAttr().SetCustomDataByKey(UvIndexCustomKey, VtValue(index));
+    
     setPrimvar(
         primVar, assignmentIndices, VtValue(data), VtValue(UnauthoredUV), usdTime, valueWriter);
 }
@@ -949,7 +957,7 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
 
         // create UV PrimVar
         createUVPrimVar(
-            primSchema, setName, usdTime, uvValues, interpolation, assignmentIndices, valueWriter);
+            primSchema, i, setName, usdTime, uvValues, interpolation, assignmentIndices, valueWriter);
     }
 
     return true;
