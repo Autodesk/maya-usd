@@ -40,6 +40,30 @@ global proc AEmayaUsdProxyShapePayloadsNew(string $loadPayloads)
     AEmayaUsdProxyShapePayloadsReplace($loadPayloads);
 }
 
+global proc AEMayaUsdProxyShapeStageLoadAll(string $fullNodeName)
+{
+    mayaUsdStageLoadAll $fullNodeName;
+
+    // Maya 2022 and above will automatically refresh the viewport, but
+    // for earlier versions of Maya we need to do it manually.
+    int $mjv = `about -majorVersion`;
+    if ($mjv < 2022) {
+        refresh;
+    }
+}
+
+global proc AEMayaUsdProxyShapeStageUnloadAll(string $fullNodeName)
+{
+    mayaUsdStageUnloadAll $fullNodeName;
+
+    // Maya 2022 and above will automatically refresh the viewport, but
+    // for earlier versions of Maya we need to do it manually.
+    int $mjv = `about -majorVersion`;
+    if ($mjv < 2022) {
+        refresh;
+    }
+}
+
 global proc AEmayaUsdProxyShapePayloadsReplace(string $loadPayloads)
 {
     // From the input attribute we simply want the node name.
@@ -47,8 +71,8 @@ global proc AEmayaUsdProxyShapePayloadsReplace(string $loadPayloads)
     string $res[] = `ls -l $nodeName`;
     string $fullNodeName = $res[0];
 
-    button -e -c ("mayaUsdStageLoadAll(\"" + $fullNodeName + "\")") payloadsLoadAllBtn;
-    button -e -c ("mayaUsdStageUnloadAll(\"" + $fullNodeName + "\")") payloadsUnloadAllBtn;
+    button -e -c ("evalEcho AEMayaUsdProxyShapeStageLoadAll(\"" + $fullNodeName + "\")") payloadsLoadAllBtn;
+    button -e -c ("evalEcho AEMayaUsdProxyShapeStageUnloadAll(\"" + $fullNodeName + "\")") payloadsUnloadAllBtn;
 }
 
 global proc AEmayaUsdProxyShapeFilePathNew(string $filePathAttr)
