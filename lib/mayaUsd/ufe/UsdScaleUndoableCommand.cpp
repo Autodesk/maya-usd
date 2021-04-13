@@ -20,7 +20,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
+PXR_NS::TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(

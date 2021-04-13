@@ -24,11 +24,13 @@
 #include <hdMaya/delegates/sceneDelegate.h>
 #include <hdMaya/utils.h>
 #include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/utils/hash.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/hd/camera.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hdx/pickTask.h>
@@ -46,8 +48,6 @@
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
-
-#include <boost/functional/hash.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -169,10 +169,10 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
         const HdxPickHit& hit = inHits[i];
 
         size_t hash = 0;
-        boost::hash_combine(hash, hit.delegateId.GetHash());
-        boost::hash_combine(hash, hit.objectId.GetHash());
-        boost::hash_combine(hash, hit.instancerId.GetHash());
-        boost::hash_combine(hash, hit.instanceIndex);
+        MayaUsd::hash_combine(hash, hit.delegateId.GetHash());
+        MayaUsd::hash_combine(hash, hit.objectId.GetHash());
+        MayaUsd::hash_combine(hash, hit.instancerId.GetHash());
+        MayaUsd::hash_combine(hash, hit.instanceIndex);
 
         // As an optimization, keep track of the previous hash value and
         // reject indices that match it without performing a map lookup.
@@ -349,7 +349,7 @@ std::vector<MString> MtohRenderOverride::AllActiveRendererNames()
 
     std::lock_guard<std::mutex> lock(_allInstancesMutex);
     for (auto* instance : _allInstances) {
-        if (instance->_initializedViewport) {
+        if (instance->_initializationSucceeded) {
             renderers.push_back(instance->_rendererDesc.rendererName.GetText());
         }
     }
@@ -469,18 +469,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     // }
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RENDER).Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&](bool markTime = false) {
-        const auto originX = 0;
-        const auto originY = 0;
-        int        width = 0;
-        int        height = 0;
-        drawContext.getRenderTargetSize(width, height);
-
-        GfVec4d viewport(originX, originY, width, height);
-        _taskController->SetFreeCameraMatrices(
-            GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
-            GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
-        _taskController->SetRenderViewport(viewport);
-
         HdTaskSharedPtrVector tasks = _taskController->GetRenderingTasks();
 
         // For playblasting, a glReadPixels is going to occur sometime after we return.
@@ -526,14 +514,22 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
             _lastRenderTime = std::chrono::system_clock::now();
         }
     };
+    if (_initializationAttempted && !_initializationSucceeded) {
+        // Initialization must have failed already, stop trying.
+        return MStatus::kFailure;
+    }
 
     _DetectMayaDefaultLighting(drawContext);
     if (_needsClear.exchange(false)) {
         ClearHydraResources();
     }
 
-    if (!_initializedViewport) {
+    if (!_initializationAttempted) {
         _InitHydraResources();
+
+        if (!_initializationSucceeded) {
+            return MStatus::kFailure;
+        }
     }
 
     GLUniformBufferBindingsSaver bindingsSaver;
@@ -576,7 +572,52 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
 
     params.cullStyle = HdCullStyleBackUnlessDoubleSided;
 
+    int width = 0;
+    int height = 0;
+    drawContext.getRenderTargetSize(width, height);
+
+    bool vpDirty;
+    if ((vpDirty = (width != _viewport[2] || height != _viewport[3]))) {
+        _viewport = GfVec4d(0, 0, width, height);
+        _taskController->SetRenderViewport(_viewport);
+    }
+
+    _taskController->SetFreeCameraMatrices(
+        GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
+        GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
+
+    if (delegateParams.motionSamplesEnabled()) {
+        MStatus  status;
+        MDagPath camPath = getFrameContext()->getCurrentCameraPath(&status);
+        if (status == MStatus::kSuccess) {
+            // FIXME: This is what a USD camera selected in the viewport returns.
+            static const MString defaultUfeProxyCameraShape(
+                "|defaultUfeProxyCameraTransformParent|defaultUfeProxyCameraTransform|"
+                "defaultUfeProxyCameraShape");
+            if (defaultUfeProxyCameraShape != camPath.fullPathName()) {
+                for (auto& delegate : _delegates) {
+                    if (HdMayaSceneDelegate* mayaScene
+                        = dynamic_cast<HdMayaSceneDelegate*>(delegate.get())) {
+                        params.camera = mayaScene->SetCameraViewport(camPath, _viewport);
+                        if (vpDirty)
+                            mayaScene->GetChangeTracker().MarkSprimDirty(
+                                params.camera, HdCamera::DirtyParams | HdCamera::DirtyProjMatrix);
+                        break;
+                    }
+                }
+            }
+        } else {
+            TF_WARN(
+                "MFrameContext::getCurrentCameraPath failure (%d): '%s'"
+                "\nUsing viewport matrices.",
+                int(status.statusCode()),
+                status.errorString().asChar());
+        }
+    }
+
     _taskController->SetRenderParams(params);
+    if (!params.camera.IsEmpty())
+        _taskController->SetCameraPath(params.camera);
 
     // Default color in usdview.
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
@@ -658,18 +699,29 @@ void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::_InitHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
+
+    _initializationAttempted = true;
+
 #if PXR_VERSION < 2102
     GlfGlewInit();
 #endif
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
+    if (!_rendererPlugin)
+        return;
+
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
+    if (!renderDelegate)
+        return;
+
 #if PXR_VERSION > 2002
     _renderIndex = HdRenderIndex::New(renderDelegate, { &_hgiDriver });
 #else
     _renderIndex = HdRenderIndex::New(renderDelegate);
 #endif
+    if (!_renderIndex)
+        return;
 
     _taskController = new HdxTaskController(
         _renderIndex,
@@ -723,7 +775,6 @@ void MtohRenderOverride::_InitHydraResources()
     _renderIndex->GetChangeTracker().AddCollection(_selectionCollection.GetName());
     _SelectionChanged();
 
-    _initializedViewport = true;
     if (auto* renderDelegate = _GetRenderDelegate()) {
         // Pull in any options that may have changed due file-open.
         // If the currentScene has defaultRenderGlobals we'll absorb those new settings,
@@ -734,11 +785,13 @@ void MtohRenderOverride::_InitHydraResources()
             { _rendererDesc.rendererName, filterRenderer, fallbackToUserDefaults });
         _globals.ApplySettings(renderDelegate, _rendererDesc.rendererName);
     }
+
+    _initializationSucceeded = true;
 }
 
 void MtohRenderOverride::ClearHydraResources()
 {
-    if (!_initializedViewport) {
+    if (!_initializationAttempted) {
         return;
     }
 
@@ -768,7 +821,9 @@ void MtohRenderOverride::ClearHydraResources()
         _rendererPlugin = nullptr;
     }
 
-    _initializedViewport = false;
+    _viewport = GfVec4d(0, 0, 0, 0);
+    _initializationSucceeded = false;
+    _initializationAttempted = false;
     SelectionChanged();
 }
 

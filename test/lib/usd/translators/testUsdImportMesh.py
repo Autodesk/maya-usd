@@ -62,6 +62,9 @@ class testUsdImportMesh(unittest.TestCase):
     def testImportPoly(self):
         self.verifyPolyMeshCommonAttributes('PolyMeshShape')
 
+    def testImportIndexedNormals(self):
+        self.verifyPolyMeshCommonAttributes('IndexedNormalsMeshShape')
+
     def testImportLeftHandedPoly(self):
         self.verifyPolyMeshCommonAttributes('LeftHandedPolyMeshShape')
 

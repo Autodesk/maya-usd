@@ -13,20 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_COLORSPACE_H
-#define PXRUSDMAYA_COLORSPACE_H
+#ifndef MAYAUSD_UTILS_COLORSPACE_H
+#define MAYAUSD_UTILS_COLORSPACE_H
 
 #include <mayaUsd/base/api.h>
 
 #include <pxr/base/gf/gamma.h>
-#include <pxr/pxr.h>
-
-PXR_NAMESPACE_OPEN_SCOPE
 
 /// Helper functions for dealing with colors stored in Maya.
 ///
 /// Technically, this doesn't need to be tied to Usd.
-namespace UsdMayaColorSpace {
+namespace MAYAUSD_NS_DEF {
+namespace utils {
 
 /// Returns true if we treat colors from Maya as linear colors.
 ///
@@ -62,8 +60,7 @@ template <typename T> T ConvertMayaToLinear(const T& mayaColor)
     return IsColorManaged() ? mayaColor : GfConvertDisplayToLinear(mayaColor);
 }
 
-}; // namespace UsdMayaColorSpace
+} // namespace utils
+} // namespace MAYAUSD_NS_DEF
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif
+#endif // MAYAUSD_UTILS_COLORSPACE_H

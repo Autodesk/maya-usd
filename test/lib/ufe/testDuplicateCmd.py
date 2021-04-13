@@ -199,7 +199,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         cmds.undo()  # undo duplication
         cmds.undo()  # undo deletion
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Requires Maya fixes only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Requires Maya fixes only available in Maya 2022 or greater.')
     def testSmartTransformDuplicate(self):
         '''Test smart transform option of duplicate command.'''
         torusFile = testUtils.getTestScene("groupCmd", "torus.usda")

@@ -41,12 +41,11 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
     def testCreateStageWithNewLayer(self):
         # Create a proxy shape with empty stage to start with.
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        shapeNode = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Verify that we got a proxy shape object.
         mayaSel = cmds.ls(sl=True)
         self.assertEqual(1, len(mayaSel))
-        shapeNode = mayaSel[0]
         nt = cmds.nodeType(shapeNode)
         self.assertEqual('mayaUsdProxyShape', nt)
 
@@ -61,10 +60,9 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         #       being interpreted.
         ballFilePath = os.path.normpath(testUtils.getTestScene('ballset', 'StandaloneScene', 'top_layer.usda')).replace('\\', '/')
         mel.eval('source \"mayaUsd_createStageFromFile.mel\"')
-        mel.eval('mayaUsd_createStageFromFilePath(\"'+ballFilePath+'\")')
+        shapeNode = mel.eval('mayaUsd_createStageFromFilePath(\"'+ballFilePath+'\")')
         mayaSel = cmds.ls(sl=True)
         self.assertEqual(1, len(mayaSel))
-        shapeNode = mayaSel[0]
         nt = cmds.nodeType(shapeNode)
         self.assertEqual('mayaUsdProxyShape', nt)
 

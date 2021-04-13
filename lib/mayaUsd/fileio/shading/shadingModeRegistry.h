@@ -205,7 +205,7 @@ public:
     /// The \p renderContext will be used to specialize the binding point. See UsdShadeMaterial
     /// documentation for details. A value of "UsdShadeTokens->universalRenderContext" should be
     /// used if the resulting UsdShade nodes are written using an API shared by multiple renderers,
-    /// like UsdPreviewSurface or MaterialX. For UsdShade nodes targetting a specific rendering
+    /// like UsdPreviewSurface. For UsdShade nodes targetting a specific rendering
     /// engine, please define a custom render context understood by the renderer.
     ///
     /// The \p niceName is the name displayed in the render options dialog.

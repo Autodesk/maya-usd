@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${PROJECT_NAME} 
+target_sources(${PROJECT_NAME}
     PRIVATE
         adaptor.cpp
         jointWriteUtils.cpp
@@ -32,9 +32,9 @@ set(HEADERS
 # promoted headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList(
-    HEADERS 
-        ${HEADERS} 
-    BASEDIR 
+    HEADERS
+        ${HEADERS}
+    BASEDIR
         ${PROJECT_NAME}/fileio/utils
 )
 

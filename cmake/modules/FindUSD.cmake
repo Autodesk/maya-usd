@@ -75,22 +75,12 @@ find_file(USD_CONFIG_FILE
     DOC "USD cmake configuration file"
 )
 
+# PXR_USD_LOCATION might have come in as an environment variable, and
+# it could also have been a hint-list, so we'll make sure we set it to
+# wherever we found pxrConfig, which is always the correct location.
+get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
+
 include(${USD_CONFIG_FILE})
-
-# ensure PXR_USD_LOCATION is defined
-if(NOT DEFINED PXR_USD_LOCATION)
-    if(DEFINED ENV{PXR_USD_LOCATION})
-        set(PXR_USD_LOCATION "$ENV{PXR_USD_LOCATION}")
-    else()
-        get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
-    endif()
-endif()
-
-# account for possibility that PXR_USD_LOCATION was passed in as a hint-list
-list(LENGTH PXR_USD_LOCATION listlen)
-if(listlen GREATER 1)
-    get_filename_component(PXR_USD_LOCATION "${USD_CONFIG_FILE}" DIRECTORY)
-endif()
 
 if(DEFINED PXR_VERSION)
     # Starting in core USD 21.05, pxrConfig.cmake provides the various USD
@@ -111,9 +101,29 @@ elseif(USD_INCLUDE_DIR AND EXISTS "${USD_INCLUDE_DIR}/pxr/pxr.h")
     math(EXPR PXR_VERSION "${USD_MAJOR_VERSION} * 10000 + ${USD_MINOR_VERSION} * 100 + ${USD_PATCH_VERSION}")
 endif()
 
+# Get the boost version from the one built with USD
+if(USD_INCLUDE_DIR)
+    file(GLOB _USD_VERSION_HPP_FILE "${USD_INCLUDE_DIR}/boost-*/boost/version.hpp")
+    list(LENGTH _USD_VERSION_HPP_FILE found_one)
+    if(${found_one} STREQUAL "1")
+        list(GET _USD_VERSION_HPP_FILE 0 USD_VERSION_HPP)
+        file(STRINGS
+            "${USD_VERSION_HPP}"
+            _usd_tmp
+            REGEX "#define BOOST_VERSION .*$")
+        string(REGEX MATCH "[0-9]+" USD_BOOST_VERSION ${_usd_tmp})
+        unset(_usd_tmp)
+        unset(_USD_VERSION_HPP_FILE)
+        unset(USD_VERSION_HPP)
+    endif()
+endif()
+
 message(STATUS "USD include dir: ${USD_INCLUDE_DIR}")
 message(STATUS "USD library dir: ${USD_LIBRARY_DIR}")
 message(STATUS "USD version: ${USD_VERSION}")
+if(DEFINED USD_BOOST_VERSION)
+    message(STATUS "USD Boost::boost version: ${USD_BOOST_VERSION}")
+endif()
 
 include(FindPackageHandleStandardArgs)
 

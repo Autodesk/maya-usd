@@ -152,7 +152,7 @@ class RotatePivotTestCase(unittest.TestCase):
         # calling the translate() method.  This is fragile,
         # implementation-specific, and should be changed.  PPT, 3-Sep-2020.
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 119, 'Requires Maya fixes only available in Maya Preview Release 119 or later.') 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Requires Maya fixes only available in Maya 2022 or greater.')
     def testRotatePivotCmd(self):
         rotZ = radians(45)
         rot = om.MEulerRotation(0, 0, rotZ)

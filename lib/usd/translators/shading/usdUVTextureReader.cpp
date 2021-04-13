@@ -18,13 +18,19 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
+#include <pxr/base/arch/hash.h>
+#include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/ar/asset.h>
 #include <pxr/usd/ar/packageUtils.h>
+#include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
@@ -40,6 +46,8 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
+
+#include <ghc/filesystem.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -199,10 +207,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         UsdMayaUtil::Connect(uvPlug, filePlug, false);
     }
 
-    VtValue val;
-    MPlug   mayaAttr;
-
-    // File
+    VtValue       val;
+    MPlug         mayaAttr;
     UsdShadeInput usdInput = shaderSchema.GetInput(_tokens->file);
     if (usdInput && usdInput.Get(&val) && val.IsHolding<SdfAssetPath>()) {
         std::string filePath = val.UncheckedGet<SdfAssetPath>().GetResolvedPath();
@@ -215,42 +221,179 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             // as a relationship like texture paths inside USDZ assets.
             val = SdfAssetPath(filePath);
         }
-
         // Re-fetch the file name in case it is UDIM-tagged
-        filePath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
+        std::string unresolvedFilePath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
-        if (status == MS::kSuccess) {
+        if (status != MS::kSuccess) {
+            TF_RUNTIME_ERROR(
+                "Could not find the built-in attribute fileTextureName on a Maya file node: %s! "
+                "Something is seriously wrong with your current Maya session.",
+                depFn.name().asChar());
+            return false;
+        }
+        // Handle UDIM texture files:
+        std::string::size_type udimPos = unresolvedFilePath.rfind(_tokens->UDIMTag.GetString());
+        if (udimPos != std::string::npos) {
+            MPlug tilingAttr = depFn.findPlug(_tokens->uvTilingMode.GetText(), true, &status);
+            if (status == MS::kSuccess) {
+                tilingAttr.setInt(3);
 
-            // Handle UDIM dexture files:
-            std::string::size_type udimPos = filePath.rfind(_tokens->UDIMTag.GetString());
-            if (udimPos != std::string::npos) {
-                MPlug tilingAttr = depFn.findPlug(_tokens->uvTilingMode.GetText(), true, &status);
-                if (status == MS::kSuccess) {
-                    tilingAttr.setInt(3);
+                // USD did not resolve the path to absolute because the file name was not an
+                // actual file on disk. We need to find the first tile to help Maya find the
+                // other ones.
+                std::string udimPath(unresolvedFilePath.substr(0, udimPos));
+                udimPath += "1001";
+                udimPath
+                    += unresolvedFilePath.substr(udimPos + _tokens->UDIMTag.GetString().size());
 
-                    // USD did not resolve the path to absolute because the file name was not an
-                    // actual file on disk. We need to find the first tile to help Maya find the
-                    // other ones.
-                    std::string udimPath(filePath.substr(0, udimPos));
-                    udimPath += "1001";
-                    udimPath += filePath.substr(udimPos + _tokens->UDIMTag.GetString().size());
+                Usd_Resolver res(&prim.GetPrimIndex());
+                for (; res.IsValid(); res.NextLayer()) {
+                    std::string resolvedName
+                        = SdfComputeAssetPathRelativeToLayer(res.GetLayer(), udimPath);
 
-                    Usd_Resolver res(&prim.GetPrimIndex());
-                    for (; res.IsValid(); res.NextLayer()) {
-                        std::string resolvedName
-                            = SdfComputeAssetPathRelativeToLayer(res.GetLayer(), udimPath);
-
-                        if (!resolvedName.empty() && !ArIsPackageRelativePath(resolvedName)
-                            && resolvedName != udimPath) {
-                            udimPath = resolvedName;
-                            break;
-                        }
+                    if (!resolvedName.empty() && !ArIsPackageRelativePath(resolvedName)
+                        && resolvedName != udimPath) {
+                        udimPath = resolvedName;
+                        break;
                     }
-                    val = SdfAssetPath(udimPath);
+                }
+                val = SdfAssetPath(udimPath);
+            }
+        }
+
+        const UsdMayaJobImportArgs& jobArgs = this->_GetArgs().GetJobArguments();
+        if (jobArgs.importUSDZTextures && !jobArgs.importUSDZTexturesFilePath.empty()
+            && !filePath.empty() && ArIsPackageRelativePath(filePath)) {
+            // NOTE: (yliangsiew) Package-relatve path means that we are inside of a USDZ file.
+            ArResolver& arResolver = ArGetResolver(); // NOTE: (yliangsiew) This is cached.
+#if PXR_VERSION > 2011
+            std::shared_ptr<ArAsset> assetPtr = arResolver.OpenAsset(ArResolvedPath(filePath));
+#else
+            std::shared_ptr<ArAsset> assetPtr = arResolver.OpenAsset(filePath);
+#endif
+
+            if (assetPtr == nullptr) {
+                TF_WARN(
+                    "The file: %s could not be found within the USDZ archive for extraction.",
+                    filePath.c_str());
+                return false;
+            }
+
+            ArAsset*                    asset = assetPtr.get();
+            std::shared_ptr<const char> fileData = asset->GetBuffer();
+            const size_t                fileSize = asset->GetSize();
+
+            bool     needsUniqueFilename = false;
+            uint64_t spookyHash = ArchHash64(fileData.get(), fileSize);
+            std::unordered_map<std::string, uint64_t>::iterator itExistingHash
+                = UsdMayaReadUtil::mapFileHashes.find(unresolvedFilePath);
+            if (itExistingHash
+                == UsdMayaReadUtil::mapFileHashes.end()) { // NOTE: (yliangsiew) Means that the
+                                                           // texture hasn't been extracted before.
+                UsdMayaReadUtil::mapFileHashes.insert(
+                    { unresolvedFilePath,
+                      spookyHash }); // NOTE: (yliangsiew) This _should_ be the common case.
+            } else {
+                uint64_t existingHash = itExistingHash->second;
+                if (spookyHash == existingHash) {
+                    TF_WARN(
+                        "A duplicate texture: %s was found, skipping extraction of it and re-using "
+                        "the existing one.",
+                        unresolvedFilePath.c_str());
+                    unresolvedFilePath = itExistingHash->first;
+                } else {
+                    // NOTE: (yliangsiew) Means that a duplicate texture with the same name but with
+                    // different contents was found. Instead of failing, continue extraction with a
+                    // different filename instead and point to that one.
+                    needsUniqueFilename = true;
                 }
             }
-            UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
+
+            // NOTE: (yliangsiew) Write the file to disk now.
+            std::string filename(unresolvedFilePath);
+            UsdMayaUtilFileSystem::pathStripPath(filename);
+            std::string extractedFilePath(jobArgs.importUSDZTexturesFilePath);
+            bool        bStat = UsdMayaUtilFileSystem::pathAppendPath(extractedFilePath, filename);
+            TF_VERIFY(bStat);
+
+            if (needsUniqueFilename) {
+                int         counter = 0;
+                std::string checkPath(extractedFilePath);
+                while (ghc::filesystem::is_regular_file(checkPath)) {
+                    checkPath.assign(extractedFilePath);
+                    std::string filenameNoExt(checkPath);
+                    std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
+                    UsdMayaUtilFileSystem::pathRemoveExtension(checkPath);
+                    checkPath = TfStringPrintf("%s_%d%s", checkPath.c_str(), counter, ext.c_str());
+                    ++counter;
+                }
+                extractedFilePath.assign(checkPath);
+                TF_WARN(
+                    "A file was duplicated within the archive, but was unique in content. Writing "
+                    "file with a suffix instead: %s",
+                    extractedFilePath.c_str());
+            }
+
+            // NOTE: (yliangsiew) Check if the texture already exists on disk and skip overwriting
+            // it if necessary. This is because what happens if two USDZ files are imported, but
+            // they have textures with the same names in them? We can't overwrite them....
+            // If the texture exists on disk already and it is has the same contents, however, we
+            // skip overwriting it.
+            bool needsWrite = true;
+            if (ghc::filesystem::is_regular_file(extractedFilePath)) {
+                FILE* pFile = fopen(extractedFilePath.c_str(), "rb");
+                fseek(pFile, 0, SEEK_END);
+                long fileSize = ftell(pFile);
+                fseek(pFile, 0, SEEK_SET);
+                char* buf = (char*)malloc(sizeof(char) * fileSize);
+                fread(buf, fileSize, 1, pFile);
+                uint64_t existingSpookyHash = ArchHash64(buf, fileSize);
+                fclose(pFile);
+                free(buf);
+                if (spookyHash == existingSpookyHash) {
+                    TF_WARN(
+                        "The texture: %s already on disk is the same, skipping overwriting it.",
+                        extractedFilePath.c_str());
+                    needsWrite = false;
+                } else {
+                    int         counter = 0;
+                    std::string checkPath(extractedFilePath);
+                    while (ghc::filesystem::is_regular_file(checkPath)) {
+                        checkPath.assign(extractedFilePath);
+                        std::string filenameNoExt(checkPath);
+                        std::string ext = UsdMayaUtilFileSystem::pathFindExtension(checkPath);
+                        UsdMayaUtilFileSystem::pathRemoveExtension(checkPath);
+                        checkPath
+                            = TfStringPrintf("%s_%d%s", checkPath.c_str(), counter, ext.c_str());
+                        ++counter;
+                    }
+                    extractedFilePath.assign(checkPath);
+                    TF_WARN(
+                        "A duplicate file exists, but was unique in content. Writing a new"
+                        "file with a suffix instead: %s",
+                        extractedFilePath.c_str());
+                }
+            }
+            if (needsWrite) {
+                // TODO: (yliangsiew) Support undo/redo of mayaUSDImport command...though this might
+                // be too risky compared to just having the end-user delete the textures manually
+                // when needed.
+                size_t bytesWritten = UsdMayaUtilFileSystem::writeToFilePath(
+                    extractedFilePath.c_str(), fileData.get(), fileSize);
+                if (bytesWritten != fileSize) {
+                    TF_WARN(
+                        "Failed to write out texture: %s to disk. Check that there is enough disk "
+                        "space available",
+                        extractedFilePath.c_str());
+                    return false;
+                }
+            }
+
+            // NOTE: (yliangsiew) Continue setting the texture file node attribute to point to the
+            // new file that was written to disk.
+            val = SdfAssetPath(extractedFilePath);
         }
+        UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
 
         // colorSpace:
         if (usdInput.GetAttr().HasColorSpace()) {

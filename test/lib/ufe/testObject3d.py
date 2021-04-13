@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import ufeUtils
 from testUtils import assertVectorAlmostEqual
 from testUtils import assertVectorEqual
 import usdUtils
@@ -179,8 +180,7 @@ class Object3dTestCase(unittest.TestCase):
         # box is invalid.
         import mayaUsd_createStageWithNewLayer
  
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = '|stage1|stageShape1'
+        proxyShapePath = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePathSegment = mayaUtils.createUfePathSegment(proxyShapePath)
         stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
         usdPaths = ['/Cube1', '/Cube2', '/Cube3']
@@ -321,7 +321,7 @@ class Object3dTestCase(unittest.TestCase):
         self.assertFalse(ufe.Object3d.hasObserver(visObs))
         self.assertEqual(ufe.Object3d.nbObservers(), 0)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testUndoVisibleCmd is only available in UFE preview version 0.2.34 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testUndoVisibleCmd only available in UFE v2 or greater.')
     def testUndoVisibleCmd(self):
 
         ''' Verify the token / attribute values for visibility after performing undo/redo '''
@@ -330,14 +330,14 @@ class Object3dTestCase(unittest.TestCase):
 
         # create a Capsule via contextOps menu
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
 
         # create an Object3d interface.
-        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
         capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
         object3d = ufe.Object3d.object3d(capsuleItem)
@@ -386,7 +386,7 @@ class Object3dTestCase(unittest.TestCase):
         # capsuleItem must be invisible now
         self.assertFalse(object3d.visibility())
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testMayaHideAndShowHiddenUndoCommands is only available in UFE preview version 0.2.34 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaHideAndShowHiddenUndoCommands only available in UFE v2 or greater.')
     def testMayaHideAndShowHiddenUndoCommands(self):
         ''' Verify the token / attribute values for visibility via "hide", "showHidden" commands + Undo/Redo '''
 
@@ -394,20 +394,20 @@ class Object3dTestCase(unittest.TestCase):
 
         # create a Capsule and Cylinder via contextOps menu
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
         proxyShapeContextOps.doOp(['Add New Prim', 'Cylinder'])
 
         # capsule
-        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
         capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
 
         # cylinder
-        cylinderPath = ufe.PathString.path('|stage1|stageShape1,/Cylinder1')
+        cylinderPath = ufe.PathString.path('%s,/Cylinder1' % proxyShape)
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
         cylinderPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(cylinderPath))
 
@@ -500,14 +500,14 @@ class Object3dTestCase(unittest.TestCase):
 
         # create a Capsule via contextOps menu
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
 
         # capsule
-        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
         capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
 
@@ -535,19 +535,19 @@ class Object3dTestCase(unittest.TestCase):
 
         # create a Capsule via contextOps menu
         import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Xform'])
-        xformPath = ufe.PathString.path('|stage1|stageShape1,/Xform1')
+        xformPath = ufe.PathString.path('%s,/Xform1' % proxyShape)
         xformItem = ufe.Hierarchy.createItem(xformPath)
         xformObject3d = ufe.Object3d.object3d(xformItem)
         proxyShapeContextOps = ufe.ContextOps.contextOps(xformItem)
         proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
         proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
         selectionList = OpenMaya.MSelectionList()
-        selectionList.add('|stage1|stageShape1')
+        selectionList.add(proxyShape)
         shapeNode = OpenMaya.MFnDagNode(selectionList.getDependNode(0))
 
         # Two spheres at origin, the bounding box is the unit cube:
@@ -556,12 +556,12 @@ class Object3dTestCase(unittest.TestCase):
         # Shape BBox should be the same (and will be cached):
         self.assertTrue(almostEqualBBox(shapeNode.boundingBox, expectedBBox))
 
-        sphere1Path = ufe.PathString.path('|stage1|stageShape1,/Xform1/Sphere1')
+        sphere1Path = ufe.PathString.path('%s,/Xform1/Sphere1' % proxyShape)
         sphere1Item = ufe.Hierarchy.createItem(sphere1Path)
         sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
         UsdGeom.XformCommonAPI(sphere1Prim).SetTranslate((-5, 0, 0))
 
-        sphere2Path = ufe.PathString.path('|stage1|stageShape1,/Xform1/Sphere2')
+        sphere2Path = ufe.PathString.path('%s,/Xform1/Sphere2' % proxyShape)
         sphere2Item = ufe.Hierarchy.createItem(sphere2Path)
         sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
         UsdGeom.XformCommonAPI(sphere2Prim).SetTranslate((0, 5, 0))

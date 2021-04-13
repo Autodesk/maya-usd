@@ -9,12 +9,14 @@
 #include "stringResources.h"
 #include "warningDialogs.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 
+#include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 
 #include <algorithm>
@@ -264,7 +266,11 @@ void LayerTreeItem::saveEdits()
 
     // the layer is already saved on disk.
     // ask the user a confirmation before overwrite it.
-    if (!isAnonymous()) {
+    static const MString kConfirmExistingFileSave
+        = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
+    const bool showConfirmDgl = MGlobal::optionVarExists(kConfirmExistingFileSave)
+        && MGlobal::optionVarIntValue(kConfirmExistingFileSave) != 0;
+    if (showConfirmDgl && !isAnonymous()) {
         const MString titleFormat
             = StringResources::getAsMString(StringResources::kSaveLayerWarnTitle);
         const MString msgFormat = StringResources::getAsMString(StringResources::kSaveLayerWarnMsg);
@@ -307,7 +313,7 @@ void LayerTreeItem::saveAnonymousLayer()
     if (sessionState->saveLayerUI(nullptr, &fileName)) {
         // the path we has is an absolute path
         const QString dialogTitle = StringResources::getAsQString(StringResources::kSaveLayer);
-        std::string   formatTag = UsdMayaSerialization::usdFormatArgOption();
+        std::string   formatTag = MayaUsd::utils::usdFormatArgOption();
         if (saveSubLayer(dialogTitle, parentLayerItem(), layer(), fileName, formatTag)) {
             printf("USD Layer written to %s\n", fileName.c_str());
 
@@ -394,21 +400,6 @@ void LayerTreeItem::printLayer()
     }
 }
 
-void LayerTreeItem::clearLayer()
-{
-    MString title;
-    title.format(
-        StringResources::getAsMString(StringResources::kClearLayerTitle),
-        MQtUtil::toMString(text()));
-
-    MString desc;
-    desc.format(
-        StringResources::getAsMString(StringResources::kClearLayerConfirmMessage),
-        MQtUtil::toMString(text()));
-
-    if (confirmDialog(MQtUtil::toQString(title), MQtUtil::toQString(desc))) {
-        commandHook()->clearLayer(layer());
-    }
-}
+void LayerTreeItem::clearLayer() { commandHook()->clearLayer(layer()); }
 
 } // namespace UsdLayerEditor

@@ -33,12 +33,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapColorSpace()
 {
-    def("ConvertLinearToMaya", UsdMayaColorSpace::ConvertLinearToMaya<GfVec3f>);
-    def("ConvertLinearToMaya", UsdMayaColorSpace::ConvertLinearToMaya<GfVec3d>);
-    def("ConvertLinearToMaya", UsdMayaColorSpace::ConvertLinearToMaya<GfVec4f>);
-    def("ConvertLinearToMaya", UsdMayaColorSpace::ConvertLinearToMaya<GfVec4d>);
-    def("ConvertMayaToLinear", UsdMayaColorSpace::ConvertMayaToLinear<GfVec3f>);
-    def("ConvertMayaToLinear", UsdMayaColorSpace::ConvertMayaToLinear<GfVec3d>);
-    def("ConvertMayaToLinear", UsdMayaColorSpace::ConvertMayaToLinear<GfVec4f>);
-    def("ConvertMayaToLinear", UsdMayaColorSpace::ConvertMayaToLinear<GfVec4d>);
+    def("ConvertLinearToMaya", MayaUsd::utils::ConvertLinearToMaya<GfVec3f>);
+    def("ConvertLinearToMaya", MayaUsd::utils::ConvertLinearToMaya<GfVec3d>);
+    def("ConvertLinearToMaya", MayaUsd::utils::ConvertLinearToMaya<GfVec4f>);
+    def("ConvertLinearToMaya", MayaUsd::utils::ConvertLinearToMaya<GfVec4d>);
+    def("ConvertMayaToLinear", MayaUsd::utils::ConvertMayaToLinear<GfVec3f>);
+    def("ConvertMayaToLinear", MayaUsd::utils::ConvertMayaToLinear<GfVec3d>);
+    def("ConvertMayaToLinear", MayaUsd::utils::ConvertMayaToLinear<GfVec4f>);
+    def("ConvertMayaToLinear", MayaUsd::utils::ConvertMayaToLinear<GfVec4d>);
 }

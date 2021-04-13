@@ -20,6 +20,7 @@
 #include <hdMaya/adapters/mayaAttrs.h>
 #include <hdMaya/adapters/tokens.h>
 #include <hdMaya/utils.h>
+#include <mayaUsd/utils/hash.h>
 
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/token.h>
@@ -258,9 +259,9 @@ private:
     {
         auto       hash = filePath.Hash();
         const auto wrapping = GetFileTextureWrappingParams(fileObj);
-        boost::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
-        boost::hash_combine(hash, std::get<0>(wrapping));
-        boost::hash_combine(hash, std::get<1>(wrapping));
+        MayaUsd::hash_combine(hash, GetDelegate()->GetParams().textureMemoryPerTexture);
+        MayaUsd::hash_combine(hash, std::get<0>(wrapping));
+        MayaUsd::hash_combine(hash, std::get<1>(wrapping));
         return HdTextureResource::ID(hash);
     }
 

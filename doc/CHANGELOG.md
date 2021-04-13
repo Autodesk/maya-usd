@@ -1,5 +1,76 @@
 # Changelog
 
+## [0.9.0] - 2021-04-01
+
+**Build:**
+* Added "/permissive-" flag for VS compiler [#1262](https://github.com/Autodesk/maya-usd/pull/1262)
+* Explicitly case Ar path string to ArResolvedPath [#1261](https://github.com/Autodesk/maya-usd/pull/1261)
+* Remove/replace all UFE_PREVIEW_VERSION_NUM [#1243](https://github.com/Autodesk/maya-usd/pull/1243)
+* Namespace cleanup [#1214](https://github.com/Autodesk/maya-usd/pull/1214) [#1223](https://github.com/Autodesk/maya-usd/pull/1223) [#1231](https://github.com/Autodesk/maya-usd/pull/1231) [#1240](https://github.com/Autodesk/maya-usd/pull/1240)
+* Allow ufeUtils.ufeFeatureSetVersion before Maya standalone initialize [#1237](https://github.com/Autodesk/maya-usd/pull/1237)
+* Revert pxrUsdMayaGL tests to old color management [#1232](https://github.com/Autodesk/maya-usd/pull/1232)
+* Fixed Maya 2018 compilation [#1225](https://github.com/Autodesk/maya-usd/pull/1225)
+* Adapt tests to UsdShade GetInputs() and GetOutputs() API update with USD 21.05 [#1224](https://github.com/Autodesk/maya-usd/pull/1224)
+* Fixed include order [#1211](https://github.com/Autodesk/maya-usd/pull/1211)
+* Regression test for scene dirty when editing USD [#1205](https://github.com/Autodesk/maya-usd/pull/1205)
+* Updates for building with latest post-21.02 dev branch commit of core USD [#1199](https://github.com/Autodesk/maya-usd/pull/1199)
+* Remove dependency on boost
+  - filesystem/system [#1182](https://github.com/Autodesk/maya-usd/pull/1182)
+  - chrono and date_time [#1184](https://github.com/Autodesk/maya-usd/pull/1184)
+  - hash_combine [#1183](https://github.com/Autodesk/maya-usd/pull/1183)
+* Replaced usage of USD_VERSION_NUM with PXR_VERSION [#1181](https://github.com/Autodesk/maya-usd/pull/1181)
+
+**Translation Framework:**
+* Added support for indexed normals on import [#1250](https://github.com/Autodesk/maya-usd/pull/1250)
+* Uvset names not written [#1188](https://github.com/Autodesk/maya-usd/pull/1188)
+* Support duplicate blendshape target names [#1179](https://github.com/Autodesk/maya-usd/pull/1179)
+* Maintain UV connectivity across export and re-import round trips [#1175](https://github.com/Autodesk/maya-usd/pull/1175)
+* Added support import of textures from USDZ archives [#1151](https://github.com/Autodesk/maya-usd/pull/1151)
+* Support import chaser plugins [#1104](https://github.com/Autodesk/maya-usd/pull/1104)
+
+**Workflow:**
+* Return error code for issues when saving [#1293](https://github.com/Autodesk/maya-usd/pull/1293)
+* Fixed visibility attribute not blocked via outliner [#1275](https://github.com/Autodesk/maya-usd/pull/1275)
+* Fixed crash when learing mutiple layers [#1274](https://github.com/Autodesk/maya-usd/pull/1274)
+* Prim AE template:<br>
+  - option to suppress array attributes [#1267](https://github.com/Autodesk/maya-usd/pull/1267)
+  - show metadata [#1249](https://github.com/Autodesk/maya-usd/pull/1249)
+* Undoing transform will not update manipulator [#1266](https://github.com/Autodesk/maya-usd/pull/1266)
+* Don't convert the near and far clipping planes linear units to cm [#1265](https://github.com/Autodesk/maya-usd/pull/1265)
+* Ability to select usd objects based on kind from the Select menu [#1260](https://github.com/Autodesk/maya-usd/pull/1260)
+* Better return value (enum) from UI delegate [#1259](https://github.com/Autodesk/maya-usd/pull/1259)
+* Part 1: Block attribute(s) authoring in weaker layer(s) [#1258](https://github.com/Autodesk/maya-usd/pull/1258)
+* Added a camera test which relies on unimplemented methods [#1252](https://github.com/Autodesk/maya-usd/pull/1252)
+* Minimize name-based lookup of proxy shape nodes [#1245](https://github.com/Autodesk/maya-usd/pull/1245)
+* Added support for manipulating point instances via UFE [#1241](https://github.com/Autodesk/maya-usd/pull/1241)
+* Stage AE template<br>
+  - load/reload a file as stage source [#1218](https://github.com/Autodesk/maya-usd/pull/1218)
+  - load/unload all payloads [#1203](https://github.com/Autodesk/maya-usd/pull/1203) [#1242](https://github.com/Autodesk/maya-usd/pull/1242)
+  - show PrimPath/Purpose/Exlude Prim Path [#1189](https://github.com/Autodesk/maya-usd/pull/1189) [#1178](https://github.com/Autodesk/maya-usd/pull/1178) [#1176](https://github.com/Autodesk/maya-usd/pull/1176)
+* No warning icon in USD Save Overwrite section [#1234](https://github.com/Autodesk/maya-usd/pull/1234)
+* Fixed AE refresh problem when an Xformable is added [#1233](https://github.com/Autodesk/maya-usd/pull/1233)
+* Undoable command base class [#1227](https://github.com/Autodesk/maya-usd/pull/1227)
+* Separate callbacks for Save and Export [#1226](https://github.com/Autodesk/maya-usd/pull/1226)
+* Multiple ProxyShapes with Same Stage [#1228](https://github.com/Autodesk/maya-usd/pull/1228)
+* Null and anonymous layer checks [#1212](https://github.com/Autodesk/maya-usd/pull/1212)
+* Multi matrix and fallback parent absolute [#1201](https://github.com/Autodesk/maya-usd/pull/1201)
+* Fixed bbox computation for purposes [#1170](https://github.com/Autodesk/maya-usd/pull/1170)
+
+**Render:**
+* Added a basic test for Vp2RenderDelegate geom subset material binding support [#1255](https://github.com/Autodesk/maya-usd/pull/1255)
+* Author a default value for color & opacity if none are present [#1254](https://github.com/Autodesk/maya-usd/pull/1254)
+* Only assign the fallback material when no material is present [#1253](https://github.com/Autodesk/maya-usd/pull/1253)
+* Added single-channel half-float EXR support [#1248](https://github.com/Autodesk/maya-usd/pull/1248)
+* Added per instance inherited data support to Vp2RenderDelegate [#1220](https://github.com/Autodesk/maya-usd/pull/1220)
+* Added support for 16-bits textures in VP2 renderer delegate [#1219](https://github.com/Autodesk/maya-usd/pull/1219)
+* Fixed crash on failure to initialize a renderer [#1213](https://github.com/Autodesk/maya-usd/pull/1213)
+* Use the nurbs curve selection mask for basis curves [#1208](https://github.com/Autodesk/maya-usd/pull/1208)
+
+**Documentation:**
+* Update comment about using universalRenderContext [#1271](https://github.com/Autodesk/maya-usd/pull/1271)
+* Added namespace section to coding guidelines [#1239](https://github.com/Autodesk/maya-usd/pull/1239)
+* Identify clang-format version 10.0.0 as the "standard" version [#1229](https://github.com/Autodesk/maya-usd/pull/1229)
+
 ## [0.8.0] - 2021-02-18
 
 **Build:**
@@ -184,7 +255,6 @@ This release includes many changes, like:
 * Fixed PROJECT_SOURCE_DIR use for nested projects. [#780](https://github.com/Autodesk/maya-usd/pull/780)
 * Fixed namespace migration of QStringListModel between Maya 2019 and Maya 2020 in userExportedAttributesUI [#812](https://github.com/Autodesk/maya-usd/pull/812)
 
-
 **Translation Framework:**
 * Fixed import of "useSpecularWorkflow" input on UsdPreviewSurface shaders [#837](https://github.com/Autodesk/maya-usd/pull/837)
 * Added translation support between lambert transparency and UsdPreviewSurface opacity 
@@ -212,7 +282,6 @@ This release includes many changes, like:
 * Always register and de-register the PxrMayaHdImagingShape and its draw override [#810](https://github.com/Autodesk/maya-usd/pull/810)
 * Added selection and point snapping support for mtoh [#776](https://github.com/Autodesk/maya-usd/pull/776)
 * Refactored settings / defaultRenderGlobals storage for mtoh [#758](https://github.com/Autodesk/maya-usd/pull/758)
-
 
 ## [0.4.0] - 2020-09-22
 
@@ -254,7 +323,6 @@ This release includes:
 * Added mtoh support for standardSurface [PR #749](https://github.com/Autodesk/maya-usd/pull/749)
 * Fixed refresh with VP2RenderDelegate when the USD stage is cleared [PR #748](https://github.com/Autodesk/maya-usd/pull/748)
 * Improved draw performance for dense mesh [PR #715](https://github.com/Autodesk/maya-usd/pull/715)
-
 
 ## [0.3.0] - 2020-08-15
 
@@ -384,7 +452,6 @@ This release includes support for Python 3 (requires USD 20.05). The goal of thi
 * Added Markdown version of Pixar Maya USD Plugin Doc [PR #384](https://github.com/Autodesk/maya-usd/pull/384)
 * Added coding guidelines for maya-usd repository [PR #380](https://github.com/Autodesk/maya-usd/pull/380) [PR #400](https://github.com/Autodesk/maya-usd/pull/400)
 
-
 ## [0.1.0] - 2020-03-15
 This release adds *all* changes made to refactoring_sandbox branch, including BaseProxyShape, Maya’s Attribute Editor and Outliner support via Ufe-USD runtime plugin, VP2RenderDelegate and Maya To Hydra. Added Autodesk plugin with Import/Export workflows and initial support for stage creation.
 
@@ -458,10 +525,8 @@ Made several build improvements, including fixing regression tests execution on 
 * Removed MtohGetDefaultRenderer [PR #311](https://github.com/Autodesk/maya-usd/pull/311)
 * Fixed mtoh initialization to reject invalid delegates. [#292](https://github.com/Autodesk/maya-usd/pull/292)
 
-
 ## [v0.0.2] - 2019-10-30
 This release has the last merge from original repositories. Brings AnimalLogic plugin to version 0.34.6 and Pixar plugin to version 19.11. Both plugins now continue to be developed only in maya-usd repository.
-
 
 ## [v0.0.1] - 2019-10-01
 This is the first released version containing AnimalLogic (0.31.1) and Pixar (19.05) plugins.

@@ -19,7 +19,7 @@
 #include "saveLayersDialog.h"
 #include "stringResources.h"
 
-#include <mayaUsd/utils/query.h>
+#include <mayaUsd/nodes/usdPrimProvider.h>
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MDGMessage.h>
@@ -27,7 +27,9 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
+#include <maya/MPxNode.h>
 #include <maya/MSceneMessage.h>
+#include <maya/MUuid.h>
 
 #include <QtCore/QTimer>
 #include <QtWidgets/QMenu>
@@ -59,25 +61,29 @@ MayaSessionState::~MayaSessionState()
     //
 }
 
-void MayaSessionState::setStage(PXR_NS::UsdStageRefPtr const& in_stage)
+void MayaSessionState::setStageEntry(StageEntry const& inEntry)
 {
-    PARENT_CLASS::setStage(in_stage);
-    if (in_stage) {
-        auto stageList = allStages();
-        for (auto const& entry : stageList) {
-            if (entry._stage == in_stage) {
-                _currentProxyShapePath = entry._proxyShapePath;
-                break;
-            }
-        }
-    } else {
-        _currentProxyShapePath.clear();
+    PARENT_CLASS::setStageEntry(inEntry);
+    if (!inEntry._stage) {
+        _currentStageEntry.clear();
     }
 }
 
 bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& shapePath)
 {
-    auto prim = UsdMayaQuery::GetPrim(shapePath.asChar());
+    UsdPrim prim;
+
+    MObject shapeObj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(shapePath.asChar(), shapeObj);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    MFnDagNode dagNode(shapeObj, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    if (const UsdMayaUsdPrimProvider* usdPrimProvider
+        = dynamic_cast<const UsdMayaUsdPrimProvider*>(dagNode.userNode())) {
+        prim = usdPrimProvider->usdPrim();
+    }
+
     if (prim) {
         auto stage = prim.GetStage();
         // debatable, but we remove the path|to|shape
@@ -89,6 +95,7 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
         } else {
             niceName = tokenList[0];
         }
+        out_stageEntry->_id = dagNode.uuid().asString().asChar();
         out_stageEntry->_stage = stage;
         out_stageEntry->_displayName = niceName.toStdString();
         out_stageEntry->_proxyShapePath = shapePath.asChar();
@@ -155,25 +162,23 @@ void MayaSessionState::unregisterNotifications()
 
 void MayaSessionState::mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice)
 {
-    auto shapePath = notice.GetShapePath();
-    auto stage = notice.GetStage();
-    if (shapePath == _currentProxyShapePath) {
-        QTimer::singleShot(0, this, [this, stage]() { setStage(stage); });
-    } else {
-        auto shapePath = notice.GetShapePath();
-        QTimer::singleShot(
-            0, this, [this, shapePath, stage]() { mayaUsdStageResetCBOnIdle(shapePath, stage); });
+    auto       shapePath = notice.GetShapePath();
+    StageEntry entry;
+    if (getStageEntry(&entry, shapePath.c_str())) {
+        if (entry._proxyShapePath == _currentStageEntry._proxyShapePath) {
+            QTimer::singleShot(0, this, [this, entry]() {
+                mayaUsdStageResetCBOnIdle(entry);
+                setStageEntry(entry);
+            });
+        } else {
+            QTimer::singleShot(0, this, [this, entry]() { mayaUsdStageResetCBOnIdle(entry); });
+        }
     }
 }
 
-void MayaSessionState::mayaUsdStageResetCBOnIdle(
-    const std::string&            shapePath,
-    PXR_NS::UsdStageRefPtr const& stage)
+void MayaSessionState::mayaUsdStageResetCBOnIdle(StageEntry const& entry)
 {
-    StageEntry entry;
-    if (getStageEntry(&entry, shapePath.c_str())) {
-        Q_EMIT stageResetSignal(entry._proxyShapePath, stage);
-    }
+    Q_EMIT stageResetSignal(entry);
 }
 
 /* static */
@@ -195,7 +200,7 @@ void MayaSessionState::proxyShapeAddedCBOnIdle(const MObject& obj)
     auto       shapePath = dagPath.fullPathName();
     StageEntry entry;
     if (getStageEntry(&entry, shapePath)) {
-        Q_EMIT stageListChangedSignal(entry._stage);
+        Q_EMIT stageListChangedSignal(entry);
     }
 }
 
@@ -213,11 +218,12 @@ void MayaSessionState::nodeRenamedCB(MObject& obj, const MString& oldName, void*
         auto THIS = static_cast<MayaSessionState*>(clientData);
 
         // doing it on idle give time to the Load Stage to set a file name
-        QTimer::singleShot(0, [THIS, obj]() { THIS->nodeRenamedCBOnIdle(obj); });
+        QTimer::singleShot(
+            0, [THIS, obj, oldName]() { THIS->nodeRenamedCBOnIdle(oldName.asChar(), obj); });
     }
 }
 
-void MayaSessionState::nodeRenamedCBOnIdle(const MObject& obj)
+void MayaSessionState::nodeRenamedCBOnIdle(std::string const& oldName, const MObject& obj)
 {
     // this does not work:
     //        if OpenMaya.MFnDependencyNode(obj).typeName == PROXY_NODE_TYPE
@@ -228,7 +234,12 @@ void MayaSessionState::nodeRenamedCBOnIdle(const MObject& obj)
 
         StageEntry entry;
         if (getStageEntry(&entry, shapePath)) {
-            Q_EMIT stageRenamedSignal(entry._displayName, entry._stage);
+            // Need to update the current Entry also
+            if (_currentStageEntry._id == entry._id) {
+                _currentStageEntry = entry;
+            }
+
+            Q_EMIT stageRenamedSignal(entry);
         }
     }
 }
@@ -325,10 +336,10 @@ std::string MayaSessionState::defaultLoadPath() const
 // in this case, the stage needs to be re-created on the new file
 void MayaSessionState::rootLayerPathChanged(std::string const& in_path)
 {
-    if (!_currentProxyShapePath.empty()) {
+    if (!_currentStageEntry._proxyShapePath.empty()) {
 
         MString script;
-        MString proxyShape(_currentProxyShapePath.c_str());
+        MString proxyShape(_currentStageEntry._proxyShapePath.c_str());
         MString newValue(in_path.c_str());
         script.format("setAttr -type \"string\" ^1s.filePath \"^2s\"", proxyShape, newValue);
         MGlobal::executeCommand(

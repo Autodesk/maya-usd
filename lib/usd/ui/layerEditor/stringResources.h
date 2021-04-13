@@ -52,13 +52,9 @@ const auto kAddSublayer              { create("kAddSublayer", "Add sublayer") };
 const auto kAscii                    { create("kAscii", "ASCII") };
 const auto kAutoHideSessionLayer     { create("kAutoHideSessionLayer", "Auto-Hide Session Layer") };
 const auto kBinary                   { create("kBinary", "Binary") };
+const auto kConfirmExistFileSave     { create("kConfirmExistFileSave", "Confirm Save of Existing Files") };
 const auto kConvertToRelativePath    { create("kConvertToRelativePath", "Convert to Relative Path") };
 const auto kCancel                   { create("kCancel", "Cancel") };
-const auto kClearLayerTitle          { create("kclearLayerTitle", "Clear \"^1s\"") };
-const auto kClearLayerConfirmMessage { create("kClearLayerConfirmMessage",
-                                              "Are you sure you want to clear this layer?"
-                                              " \"^1s\"  will remain in the Layer Editor"
-                                              " but all contents will be cleared, including sublayer paths.") };
 const auto kCreate                   { create("kCreate", "Create") };
 const auto kRevertToFileTitle        { create("kRevertToFileTitle", "Revert to File \"^1s\"") };
 const auto kRevertToFileMsg          { create("kRevertToFileMsg", "Are you sure you want to revert \"^1s\" to its "
@@ -73,7 +69,7 @@ const auto kLayerPath                { create("kLayerPath", "Layer Path:") };
 const auto kMuteUnmuteLayer          { create("kMuteUnmuteLayer", "Mute/unmute the layer. Muted layers are ignored by the stage.")};
 const auto kNoLayers                 { create("kNoLayers", "No Layers") };
 const auto kNotUndoable              { create("kNotUndoable", "You can not undo this action.") };
-const auto kOptions                  { create("kOptions", "Options") };
+const auto kOption                   { create("kOption", "Option") };
 const auto kPathNotFound             { create("kPathNotFound", "Path not found: ") };
 const auto kRealPath                 { create("kRealPath", "Real Path: ^1s") };
 const auto kRemoveSublayer           { create("kRemoveSublayer", "Remove sublayer") };

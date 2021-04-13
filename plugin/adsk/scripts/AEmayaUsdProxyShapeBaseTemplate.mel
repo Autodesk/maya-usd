@@ -26,6 +26,100 @@ global proc AEmayaUsdProxyShapeInfoReplace(string $input)
     textFieldGrp -edit -text $defaultPrim mayaUsdProxyShapeDefaultPrim;
 }
 
+global proc AEmayaUsdProxyShapePayloadsNew(string $loadPayloads)
+{
+    setUITemplate -pst attributeEditorTemplate;
+    rowLayout -nc 5 -cl5 "right" "center" "center" "center" "center";
+        text -label `getMayaUsdString("kPayloads")` -ann `getMayaUsdString("kPayloadsAnn")`;
+        button -label `getMayaUsdString("kLoadAll")` payloadsLoadAllBtn;
+        button -label `getMayaUsdString("kUnloadAll")` payloadsUnloadAllBtn;
+        text -label "";
+        text -label "";
+    setParent ..;
+    setUITemplate -ppt;
+    AEmayaUsdProxyShapePayloadsReplace($loadPayloads);
+}
+
+global proc AEmayaUsdProxyShapePayloadsReplace(string $loadPayloads)
+{
+    // From the input attribute we simply want the node name.
+    string $nodeName = plugNode($loadPayloads);
+    string $res[] = `ls -l $nodeName`;
+    string $fullNodeName = $res[0];
+
+    button -e -c ("mayaUsdStageLoadAll(\"" + $fullNodeName + "\")") payloadsLoadAllBtn;
+    button -e -c ("mayaUsdStageUnloadAll(\"" + $fullNodeName + "\")") payloadsUnloadAllBtn;
+}
+
+global proc AEmayaUsdProxyShapeFilePathNew(string $filePathAttr)
+{
+    setUITemplate -pst attributeEditorTemplate;
+    columnLayout -adj true;
+        rowLayout -nc 4 -adj 2;
+            text -label `uiRes("m_scriptEditorPanel.kFile")` -ann `getMayaUsdString("kFileAnn")`;
+            textField mayaUsdProxyShapeFilePath;
+            symbolButton -image "navButtonBrowse.png" mayaUsdProxyShapeFilePathBrowser;
+            symbolButton -image "refresh.png" mayaUsdProxyShapeFilePathRefresh;
+        setParent ..;
+    setUITemplate -ppt;
+
+    AEmayaUsdProxyShapeFilePathReplace($filePathAttr);
+}
+
+global proc AEmayaUsdProxyShapeFilePathReplace(string $filePathAttr)
+{
+    // We don't want to connect FilePath control to the filePath attribute because we
+    // want to perform special validation on input before loading any new file.
+    // So do NOT use "connectControl" command.
+
+    string $currFilePath = `getAttr $filePathAttr`;
+    textField -e -fileName $currFilePath -changeCommand ("AEmayaUsdProxyShapeFilePathField(\"" + $filePathAttr + "\"\, \"" + $currFilePath + "\")") mayaUsdProxyShapeFilePath;
+    symbolButton -e -c ("AEmayaUsdProxyShapeFilePathBrowser(\"" + $filePathAttr + "\")") mayaUsdProxyShapeFilePathBrowser;
+    symbolButton -e -c ("AEmayaUsdProxyShapeFilePathRefresh(\"" + $filePathAttr + "\")") -enable `size($currFilePath)` mayaUsdProxyShapeFilePathRefresh;
+
+    // Add a script job on the filepath attribute so we can update the AE control
+    // if the attribute changes from the outside.
+    global int $mayaUsdProxyShapeFilePathScriptJobId = -1;
+    if (`scriptJob -exists $mayaUsdProxyShapeFilePathScriptJobId`)
+        scriptJob -kill $mayaUsdProxyShapeFilePathScriptJobId;
+    string $cmd = "AEmayaUsdProxyShapeFilePathChanged(\"" + $filePathAttr + "\")";
+    $mayaUsdProxyShapeFilePathScriptJobId = `scriptJob -parent mayaUsdProxyShapeFilePath -attributeChange $filePathAttr $cmd`;
+}
+
+// Called with file path attribute text field changes.
+global proc AEmayaUsdProxyShapeFilePathField(string $filePathAttr, string $currFilePath)
+{
+    string $newFilePath = `textField -q -fileName mayaUsdProxyShapeFilePath`;
+    int $result = python("import AETemplateHelpers; AETemplateHelpers.ProxyShapeFilePathChanged('" + $filePathAttr + "', newFilePath='" + $newFilePath + "')");
+    if ($result == 0) {
+        // The proxy shape file path update was rejected (no setAttr was done).
+        // Reset the field back to its original value.
+        textField -e -fileName $currFilePath mayaUsdProxyShapeFilePath;
+    }
+}
+
+// Called when user clicks the file path browser button.
+global proc AEmayaUsdProxyShapeFilePathBrowser(string $filePathAttr)
+{
+    python("import AETemplateHelpers; AETemplateHelpers.ProxyShapeFilePathChanged('" + $filePathAttr + "')");
+}
+
+// Called when the user clicks the file path refresh button.
+global proc AEmayaUsdProxyShapeFilePathRefresh(string $filePathAttr)
+{
+    python("import AETemplateHelpers; AETemplateHelpers.ProxyShapeFilePathRefresh('" + $filePathAttr + "')");
+}
+
+// Called in response to attributeChange notif on filePath attribute.
+global proc AEmayaUsdProxyShapeFilePathChanged(string $filePathAttr)
+{
+    // The Proxy Shape file path attribute was changed outside so we need to set
+    // the new value in our field and enable/disable the refresh button.
+    string $filePath = `getAttr $filePathAttr`;
+    textField -edit -fileName $filePath mayaUsdProxyShapeFilePath;
+    symbolButton -edit -enable `size($filePath)` mayaUsdProxyShapeFilePathRefresh;
+}
+
 // Callback used from editorTemplate -callCustom
 global proc AEmayaUsdProxyShapePurposeNew(string $drawGuidePurposeAttr, string $drawProxyPurposeAttr, string $drawRenderPurposeAttr)
 {
@@ -84,7 +178,6 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
         editorTemplate -suppress "outStageCacheId";
 
         // MAYA-109438 - temp suppress these non-functional attributes.
-        editorTemplate -suppress "primPath";
         editorTemplate -suppress "loadPayloads";
 
         editorTemplate -beginLayout `getMayaUsdString("kLabelStage")` -collapse 0;
@@ -92,11 +185,12 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
             // pass it in order to get the current nodename. Cannot use the input one here as it
             // changes based on which proxy shape the AE is viewing.
             editorTemplate -callCustom "AEmayaUsdProxyShapeInfoNew" "AEmayaUsdProxyShapeInfoReplace" inStageData;
-            //editorTemplate -addControl "loadPayloads";
+
+            editorTemplate -callCustom "AEmayaUsdProxyShapePayloadsNew" "AEmayaUsdProxyShapePayloadsReplace" loadPayloads;
         editorTemplate -endLayout;
 
         editorTemplate -beginLayout `getMayaUsdString("kLabelStageSource")` -collapse 0;
-            editorTemplate -addControl "filePath";
+            editorTemplate -callCustom "AEmayaUsdProxyShapeFilePathNew" "AEmayaUsdProxyShapeFilePathReplace" "filePath";
         editorTemplate -endLayout;
 
         editorTemplate -beginLayout `getMayaUsdString("kLabelStageDisplay")` -collapse 0;
@@ -108,7 +202,8 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
                 "drawGuidePurpose"
                 "drawProxyPurpose"
                 "drawRenderPurpose";
-            //editorTemplate -addControl "primPath";
+            editorTemplate -ann `getMayaUsdString("kPrimPathAnn")`
+                           -addControl "primPath";
             editorTemplate -ann `getMayaUsdString("kExcludePrimPathsAnn")`
                            -addControl "excludePrimPaths";
         editorTemplate -endLayout;

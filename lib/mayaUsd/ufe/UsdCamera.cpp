@@ -23,6 +23,8 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/imaging/hd/camera.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -41,6 +43,25 @@ UsdCamera::UsdCamera(const UsdSceneItem::Ptr& item)
 UsdCamera::Ptr UsdCamera::create(const UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdCamera>(item);
+}
+
+/* static */
+bool UsdCamera::isCameraToken(const PXR_NS::TfToken& token)
+{
+    static std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor> cameraTokens {
+        HdCameraTokens->horizontalAperture,
+        HdCameraTokens->verticalAperture,
+        HdCameraTokens->horizontalApertureOffset,
+        HdCameraTokens->verticalApertureOffset,
+        HdCameraTokens->focalLength,
+        HdCameraTokens->clippingRange,
+        HdCameraTokens->fStop
+    };
+    // There are more HdCameraTokens that Maya ignores:
+    // worldToViewMatrix, projectionMatrix, clipPlanes, windowPolicy, shutterOpen,
+    // shutterClose
+
+    return cameraTokens.count(token) > 0;
 }
 
 //------------------------------------------------------------------------------
@@ -244,17 +265,10 @@ float UsdCamera::nearClipPlane() const
     GfRange1f clippingRange = gfCamera.GetClippingRange();
     float     nearClipPlane = clippingRange.GetMin();
 
-    // Convert the near clip plane value to cm, the return unit of this function.
+    // Ufe doesn't convert linear units for prim size or translation, so don't convert the
+    // clipping plane.
 
-    // Figure out the stage unit
-    UsdStageWeakPtr stage = prim().GetStage();
-
-    double stageUnits = UsdGeomLinearUnits::centimeters;
-    if (UsdGeomStageHasAuthoredMetersPerUnit(stage)) {
-        stageUnits = UsdGeomGetStageMetersPerUnit(stage);
-    }
-
-    return UsdMayaUtil::ConvertUnit(nearClipPlane, stageUnits, UsdGeomLinearUnits::centimeters);
+    return nearClipPlane;
 }
 
 Ufe::FarClipPlaneUndoableCommand::Ptr UsdCamera::farClipPlaneCmd(float) { return nullptr; }
@@ -269,17 +283,10 @@ float UsdCamera::farClipPlane() const
     GfRange1f clippingRange = gfCamera.GetClippingRange();
     float     farClipPlane = clippingRange.GetMax();
 
-    // Convert the far clip plane value to cm, the return unit of this function.
+    // Ufe doesn't convert linear units for prim size or translation, so don't convert the
+    // clipping plane.
 
-    // Figure out the stage unit
-    UsdStageWeakPtr stage = prim().GetStage();
-
-    double stageUnits = UsdGeomLinearUnits::centimeters;
-    if (UsdGeomStageHasAuthoredMetersPerUnit(stage)) {
-        stageUnits = UsdGeomGetStageMetersPerUnit(stage);
-    }
-
-    return UsdMayaUtil::ConvertUnit(farClipPlane, stageUnits, UsdGeomLinearUnits::centimeters);
+    return farClipPlane;
 }
 
 Ufe::ProjectionUndoableCommand::Ptr UsdCamera::projectionCmd(Ufe::Camera::Projection projection)

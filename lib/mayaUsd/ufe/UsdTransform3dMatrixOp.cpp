@@ -16,6 +16,8 @@
 #include "UsdTransform3dMatrixOp.h"
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/XformOpUtils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -31,6 +33,8 @@
 
 #include <algorithm>
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 namespace {
 
 using namespace MayaUsd;
@@ -45,13 +49,59 @@ VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
 
 const char* getMatrixOp() { return std::getenv("MAYA_USD_MATRIX_XFORM_OP_NAME"); }
 
-// Class for setMatrixCmd() implementation.  UsdUndoBlock data member and
-// undo() / redo() should be factored out into a future command base class.
-class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+std::vector<UsdGeomXformOp>::const_iterator
+findMatrixOp(const std::vector<UsdGeomXformOp>& xformOps)
+{
+    auto opName = getMatrixOp();
+    return std::find_if(xformOps.cbegin(), xformOps.cend(), [opName](const UsdGeomXformOp& op) {
+        return (op.GetOpType() == UsdGeomXformOp::TypeTransform)
+            && (!opName || std::string(opName) == op.GetOpName());
+    });
+}
+
+// Given a starting point i (inclusive), is there a non-matrix transform op in
+// the vector?
+bool findNonMatrix(
+    const std::vector<UsdGeomXformOp>::const_iterator& i,
+    const std::vector<UsdGeomXformOp>&                 xformOps)
+{
+    return std::find_if(
+               i,
+               xformOps.cend(),
+               [](const UsdGeomXformOp& op) {
+                   return op.GetOpType() != UsdGeomXformOp::TypeTransform;
+               })
+        != xformOps.cend();
+}
+
+// Compute the inverse of the cumulative transform for the argument xform ops.
+GfMatrix4d xformInv(
+    const std::vector<UsdGeomXformOp>::const_iterator& begin,
+    const std::vector<UsdGeomXformOp>::const_iterator& end,
+    const Ufe::Path&                                   path)
+{
+    auto nbOps = std::distance(begin, end);
+    if (nbOps == 0) {
+        return GfMatrix4d { 1 };
+    }
+    std::vector<UsdGeomXformOp> ops(nbOps);
+    ops.assign(begin, end);
+
+    GfMatrix4d m { 1 };
+    if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path))) {
+        TF_FATAL_ERROR(
+            "Local transformation computation for item %s failed.", path.string().c_str());
+    }
+
+    return m.GetInverse();
+}
+
+// Class for setMatrixCmd() implementation.
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
 {
 public:
     UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
-        : Ufe::SetMatrix4dUndoableCommand(path)
+        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
         , _newM(newM)
     {
     }
@@ -65,19 +115,16 @@ public:
         return true;
     }
 
-    void execute() override
+    void executeUndoBlock() override
     {
-        UsdUndoBlock undoBlock(&_undoableItem);
-
-        auto t3d = Ufe::Transform3d::transform3d(sceneItem());
+        // Use editTransform3d() to set a single matrix transform op.
+        // transform3d() returns a whole-object interface, which may include
+        // other transform ops.
+        auto t3d = Ufe::Transform3d::editTransform3d(sceneItem());
         t3d->setMatrix(_newM);
     }
 
-    void undo() override { _undoableItem.undo(); }
-    void redo() override { _undoableItem.redo(); }
-
 private:
-    UsdUndoableItem     _undoableItem;
     const Ufe::Matrix4d _newM;
 };
 
@@ -320,6 +367,10 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdTranslateUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
@@ -332,6 +383,10 @@ UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdRotateUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
@@ -344,6 +399,10 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, doub
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdScaleUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
@@ -407,32 +466,48 @@ UsdTransform3dMatrixOpHandler::create(const Ufe::Transform3dHandler::Ptr& nextHa
 Ufe::Transform3d::Ptr
 UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    // Remove code duplication with editTransform3d().  PPT, 21-Jan-2021.
+    // We must create a Transform3d interface to edit the whole object,
+    // e.g. setting the local transformation matrix for the complete object.
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
     TF_AXIOM(usdItem);
 
-    auto             opName = getMatrixOp();
     UsdGeomXformable xformable(usdItem->prim());
     bool             unused;
     auto             xformOps = xformable.GetOrderedXformOps(&unused);
-    auto i = std::find_if(xformOps.begin(), xformOps.end(), [opName](const UsdGeomXformOp& op) {
-        return (op.GetOpType() == UsdGeomXformOp::TypeTransform)
-            && (!opName || std::string(opName) == op.GetOpName());
-    });
-    bool foundMatrix = (i != xformOps.end());
 
-    bool moreLocalNonMatrix = foundMatrix
-        ? (std::find_if(
-               i,
-               xformOps.end(),
-               [](const UsdGeomXformOp& op) {
-                   return op.GetOpType() != UsdGeomXformOp::TypeTransform;
-               })
-           != xformOps.end())
-        : false;
+    // If there is a single matrix transform op in the transform stack, then
+    // transform3d() and editTransform3d() are equivalent: use that matrix op.
+    if (xformOps.size() == 1 && xformOps.front().GetOpType() == UsdGeomXformOp::TypeTransform) {
+        return UsdTransform3dMatrixOp::create(usdItem, xformOps.front());
+    }
 
-    return (foundMatrix && !moreLocalNonMatrix) ? UsdTransform3dMatrixOp::create(usdItem, *i)
-                                                : _nextHandler->transform3d(item);
+    // Find the matrix op to be transformed.
+    auto i = findMatrixOp(xformOps);
+
+    // If no matrix was found, pass on to the next handler.
+    if (i == xformOps.cend()) {
+        return _nextHandler->transform3d(item);
+    }
+
+    // If we've found a matrix op, but there is a more local non-matrix op in
+    // the stack, the more local op should be used.  This will happen e.g. if a
+    // pivot edit was done on a matrix op stack.  Since matrix ops don't
+    // support pivot edits, a fallback Maya stack will be added, and from that
+    // point on the fallback Maya stack must be used.
+    if (findNonMatrix(i, xformOps)) {
+        return _nextHandler->transform3d(item);
+    }
+
+    // At this point we know we have a matrix op to transform, and that it is
+    // not alone on the transform op stack.  Wrap a matrix op Transform3d
+    // interface for that matrix into a UsdTransform3dSetObjectMatrix object.
+    // Ml is the transformation before the matrix op, Mr is the transformation
+    // after the matrix op.
+    auto mlInv = xformInv(xformOps.cbegin(), i, item->path());
+    auto mrInv = xformInv(i + 1, xformOps.cend(), item->path());
+
+    return UsdTransform3dSetObjectMatrix::create(
+        UsdTransform3dMatrixOp::create(usdItem, *i), mlInv, mrInv);
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
@@ -453,37 +528,32 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
     // has not been specified, we edit the first matrix op in the stack.  If
     // the matrix op is not found, or there is no matrix op in the stack, let
     // the next Transform3d handler in the chain handle the request.
-    auto             opName = getMatrixOp();
     UsdGeomXformable xformable(usdItem->prim());
     bool             unused;
     auto             xformOps = xformable.GetOrderedXformOps(&unused);
-    auto i = std::find_if(xformOps.begin(), xformOps.end(), [opName](const UsdGeomXformOp& op) {
-        return (op.GetOpType() == UsdGeomXformOp::TypeTransform)
-            && (!opName || std::string(opName) == op.GetOpName());
-    });
-    bool foundMatrix = (i != xformOps.end());
+
+    // Find the matrix op to be transformed.
+    auto i = findMatrixOp(xformOps);
+
+    // If no matrix was found, pass on to the next handler.
+    if (i == xformOps.cend()) {
+        return _nextHandler->editTransform3d(item UFE_V2(, hint));
+    }
 
     // If we've found a matrix op, but there is a more local non-matrix op in
-    // the stack, the more local op should be used to handle the edit.
-    bool moreLocalNonMatrix = foundMatrix
-        ? (std::find_if(
-               i,
-               xformOps.end(),
-               [](const UsdGeomXformOp& op) {
-                   return op.GetOpType() != UsdGeomXformOp::TypeTransform;
-               })
-           != xformOps.end())
-        : false;
-
-    // We can't handle pivot edits, so in that case pass on to the next handler.
-    return (foundMatrix && !moreLocalNonMatrix
+    // the stack, the more local op should be used.  This will happen e.g. if a
+    // pivot edit was done on a matrix op stack.  Since matrix ops don't
+    // support pivot edits, a fallback Maya stack will be added, and from that
+    // point on the fallback Maya stack must be used.  Also, pass pivot edits
+    // on to the next handler, since we can't handle them.
+    return (findNonMatrix(i, xformOps)
 #ifdef UFE_V2_FEATURES_AVAILABLE
-            && (hint.type() != Ufe::EditTransform3dHint::RotatePivot)
-            && (hint.type() != Ufe::EditTransform3dHint::ScalePivot)
+            || (hint.type() == Ufe::EditTransform3dHint::RotatePivot)
+            || (hint.type() == Ufe::EditTransform3dHint::ScalePivot)
 #endif
                 )
-        ? UsdTransform3dMatrixOp::create(usdItem, *i)
-        : _nextHandler->editTransform3d(item UFE_V2(, hint));
+        ? _nextHandler->editTransform3d(item UFE_V2(, hint))
+        : UsdTransform3dMatrixOp::create(usdItem, *i);
 }
 
 } // namespace ufe

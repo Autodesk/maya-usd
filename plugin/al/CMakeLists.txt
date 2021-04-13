@@ -20,15 +20,7 @@ option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 
-# FindBoost is particularly buggy, and doesn't like custom boost locations.
-# Adding specific components forces calls to _Boost_find_library, which
-# is the rationale for listing them here.
-set(Boost_FIND_COMPONENTS "")
 if(WIN32)
-    list(APPEND Boost_FIND_COMPONENTS
-        chrono
-        date_time
-    )
     if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
         set(Boost_USE_DEBUG_PYTHON ON)
     endif()
@@ -52,13 +44,13 @@ if (((${boost_version_string} VERSION_GREATER_EQUAL "1.67") AND
     Boost_NO_BOOST_CMAKE))
 
     set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
-    list(APPEND Boost_FIND_COMPONENTS
+    set(Boost_FIND_COMPONENTS
         python${python_version_nodot}
     )
 
     set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
 else()
-    list(APPEND Boost_FIND_COMPONENTS
+    set(Boost_FIND_COMPONENTS
         python
     )
 endif()

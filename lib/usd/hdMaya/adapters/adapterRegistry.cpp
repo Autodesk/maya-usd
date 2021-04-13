@@ -75,6 +75,20 @@ HdMayaAdapterRegistry::GetLightAdapterCreator(const MDagPath& dag)
     return ret;
 }
 
+void HdMayaAdapterRegistry::RegisterCameraAdapter(const TfToken& type, CameraAdapterCreator creator)
+{
+    GetInstance()._cameraAdapters.insert({ type, creator });
+}
+
+HdMayaAdapterRegistry::CameraAdapterCreator
+HdMayaAdapterRegistry::GetCameraAdapterCreator(const MDagPath& dag)
+{
+    MFnDependencyNode    depNode(dag.node());
+    CameraAdapterCreator ret = nullptr;
+    TfMapLookup(GetInstance()._cameraAdapters, TfToken(depNode.typeName().asChar()), &ret);
+    return ret;
+}
+
 void HdMayaAdapterRegistry::RegisterMaterialAdapter(
     const TfToken&         type,
     MaterialAdapterCreator creator)

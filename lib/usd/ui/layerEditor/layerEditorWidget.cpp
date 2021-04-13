@@ -120,8 +120,7 @@ void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
         // the time to be created
         QObject::connect(createMenu, &QMenu::aboutToShow, in_parent, aboutToShowCallback);
 
-        auto optionMenu
-            = menuBar->addMenu(StringResources::getAsQString(StringResources::kOptions));
+        auto optionMenu = menuBar->addMenu(StringResources::getAsQString(StringResources::kOption));
         auto action = optionMenu->addAction(
             StringResources::getAsQString(StringResources::kAutoHideSessionLayer));
         QObject::connect(
@@ -131,6 +130,26 @@ void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
 
         auto usdSaveMenu = optionMenu->addMenu(
             StringResources::getAsQString(StringResources::kUsdSaveFileFormat));
+
+        // Add the save confirm existing file save checkbox
+        static const MString kConfirmExistingFileSave
+            = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
+        auto confirmExistingFileSaveAct = optionMenu->addAction(
+            StringResources::getAsQString(StringResources::kConfirmExistFileSave));
+
+        confirmExistingFileSaveAct->setCheckable(true);
+
+        QObject::connect(confirmExistingFileSaveAct, &QAction::toggled, in_parent, [](bool enable) {
+            MGlobal::setOptionVarValue(kConfirmExistingFileSave, enable);
+        });
+
+        if (MGlobal::optionVarExists(kConfirmExistingFileSave)) {
+            confirmExistingFileSaveAct->setChecked(
+                MGlobal::optionVarIntValue(kConfirmExistingFileSave) != 0);
+        } else {
+            confirmExistingFileSaveAct->setChecked(true);
+        }
+
         auto formatGroup = new QActionGroup(usdSaveMenu);
         formatGroup->setExclusive(true);
         auto formatBinary

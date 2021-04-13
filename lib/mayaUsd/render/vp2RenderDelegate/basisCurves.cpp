@@ -72,10 +72,6 @@ struct CommitState
 
     //! If valid, new index buffer data to commit
     int* _indexBufferData { nullptr };
-    //! If valid, new color buffer data to commit
-    void* _colorBufferData { nullptr };
-    //! If valid, new normals buffer data to commit
-    void* _normalsBufferData { nullptr };
     //! If valid, new primvar buffer data to commit
     PrimvarBufferDataMap _primvarBufferDataMap;
 
@@ -111,8 +107,8 @@ struct CommitState
     bool _geometryDirty { false };
 
     //! Construct valid commit state
-    CommitState(HdVP2DrawItem& item)
-        : _drawItemData(item.GetRenderItemData())
+    CommitState(HdVP2DrawItem::RenderItemData& renderItemData)
+        : _drawItemData(renderItemData)
     {
     }
 
@@ -596,6 +592,11 @@ void HdVP2BasisCurves::Sync(
 #endif
     }
 
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    // Sync instance topology if necessary.
+    _UpdateInstancer(delegate, dirtyBits);
+#endif
+
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
         const HdVP2Material* material = static_cast<const HdVP2Material*>(
@@ -681,6 +682,23 @@ void HdVP2BasisCurves::Sync(
     _UpdateRepr(delegate, reprToken);
 }
 
+void HdVP2BasisCurves::_CommitMVertexBuffer(
+    MHWRender::MVertexBuffer* const buffer,
+    void*                           bufferData) const
+{
+    const MString& rprimId = _rprimId;
+
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit([buffer, bufferData, rprimId]() {
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "CommitBuffer",
+            rprimId.asChar());
+
+        buffer->commit(bufferData);
+    });
+}
+
 /*! \brief  Update the draw item
 
     This call happens on worker threads and results of the change are collected
@@ -698,7 +716,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
-    CommitState                    stateToCommit(*drawItem);
+    CommitState                    stateToCommit(drawItem->GetRenderItemData());
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
 
     const SdfPath& id = GetId();
@@ -788,23 +806,19 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             normals = _BuildInterpolatedArray(topology, normals);
 
-            if (!drawItemData._normalsBuffer) {
+            if (!_curvesSharedData._normalsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
                     "", MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
 
-                drawItemData._normalsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+                _curvesSharedData._normalsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
             }
 
             unsigned int numNormals = normals.size();
-            if (drawItemData._normalsBuffer && numNormals > 0) {
-                stateToCommit._normalsBufferData
-                    = drawItemData._normalsBuffer->acquire(numNormals, true);
-
-                if (stateToCommit._normalsBufferData != nullptr) {
-                    memcpy(
-                        stateToCommit._normalsBufferData,
-                        normals.cdata(),
-                        numNormals * sizeof(GfVec3f));
+            if (_curvesSharedData._normalsBuffer && numNormals > 0) {
+                void* bufferData = _curvesSharedData._normalsBuffer->acquire(numNormals, true);
+                if (bufferData) {
+                    memcpy(bufferData, normals.cdata(), numNormals * sizeof(GfVec3f));
+                    _CommitMVertexBuffer(_curvesSharedData._normalsBuffer.get(), bufferData);
                 }
             }
         }
@@ -830,14 +844,14 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             widths = _BuildInterpolatedArray(topology, widths);
 
             MHWRender::MVertexBuffer* widthsBuffer
-                = drawItemData._primvarBuffers[HdTokens->widths].get();
+                = _curvesSharedData._primvarBuffers[HdTokens->widths].get();
 
             if (!widthsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
                     "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 1);
 
                 widthsBuffer = new MHWRender::MVertexBuffer(vbDesc);
-                drawItemData._primvarBuffers[HdTokens->widths].reset(widthsBuffer);
+                _curvesSharedData._primvarBuffers[HdTokens->widths].reset(widthsBuffer);
             }
 
             unsigned int numWidths = widths.size();
@@ -882,14 +896,17 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         if (itemDirtyBits
             & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle
                | DirtySelectionHighlight)) {
-            VtVec3fArray colorArray;
-            VtFloatArray alphaArray;
+            VtVec3fArray    colorArray;
+            HdInterpolation colorInterpolation = HdInterpolationConstant;
+            VtFloatArray    alphaArray;
+            HdInterpolation alphaInterpolation = HdInterpolationConstant;
 
             auto itColor = primvarSourceMap.find(HdTokens->displayColor);
             if (itColor != primvarSourceMap.end()) {
                 const VtValue& value = itColor->second.data;
                 if (value.IsHolding<VtVec3fArray>() && value.GetArraySize() > 0) {
                     colorArray = value.UncheckedGet<VtVec3fArray>();
+                    colorInterpolation = itColor->second.interpolation;
                 }
             }
 
@@ -898,6 +915,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 const VtValue& value = itOpacity->second.data;
                 if (value.IsHolding<VtFloatArray>() && value.GetArraySize() > 0) {
                     alphaArray = value.UncheckedGet<VtFloatArray>();
+                    alphaInterpolation = itOpacity->second.interpolation;
 
                     // It is possible that all elements in the opacity array are 1.
                     // Due to the performance indication about transparency, we have to
@@ -918,13 +936,16 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             // to match the default color of Hydra Storm.
             if (colorArray.empty()) {
                 colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
+                colorInterpolation = HdInterpolationConstant;
             }
 
             if (alphaArray.empty()) {
                 alphaArray.push_back(1.0f);
+                alphaInterpolation = HdInterpolationConstant;
             }
 
             bool prepareCPVBuffer = true;
+            bool prepareInstanceColorBuffer = false;
 
             // Use fallback shader if there is no material binding or we failed to create a shader
             // instance from the material.
@@ -933,11 +954,18 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 MHWRender::MGeometry::Primitive primitiveType = MHWRender::MGeometry::kLines;
                 int                             primitiveStride = 0;
 
-                if (colorArray.size() == 1 && alphaArray.size() == 1) {
+                bool usingCPV
+                    = (colorArray.size() > 1 && colorInterpolation != HdInterpolationInstance)
+                    || (alphaArray.size() > 1 && alphaInterpolation != HdInterpolationInstance);
+
+                if (!usingCPV) {
                     prepareCPVBuffer = false;
+                    prepareInstanceColorBuffer = colorInterpolation == HdInterpolationInstance
+                        || alphaInterpolation == HdInterpolationInstance;
 
                     const GfVec3f& clr3f = colorArray[0];
-                    const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
+                    // When the interpolation is instance the color of the material is ignored
+                    const MColor color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
 
                     if (refineLevel > 0) {
                         shader = _delegate->GetBasisCurvesFallbackShader(type, basis, color);
@@ -983,15 +1011,15 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 }
 
                 // Fill color and opacity into the float4 color stream.
-                if (!drawItemData._colorBuffer) {
+                if (!_curvesSharedData._colorBuffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
                         "", MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
 
-                    drawItemData._colorBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+                    _curvesSharedData._colorBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
                 }
 
-                float* bufferData
-                    = static_cast<float*>(drawItemData._colorBuffer->acquire(numVertices, true));
+                float* bufferData = static_cast<float*>(
+                    _curvesSharedData._colorBuffer->acquire(numVertices, true));
 
                 if (bufferData) {
                     unsigned int offset = 0;
@@ -1004,7 +1032,38 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                         bufferData[offset++] = alphaArray[v];
                     }
 
-                    stateToCommit._colorBufferData = bufferData;
+                    _CommitMVertexBuffer(_curvesSharedData._colorBuffer.get(), bufferData);
+                }
+            } else if (prepareInstanceColorBuffer) {
+                TF_VERIFY(
+                    colorInterpolation == HdInterpolationInstance
+                    || alphaInterpolation == HdInterpolationInstance);
+
+                if (alphaInterpolation == HdInterpolationConstant) {
+                    float alpha = alphaArray[0];
+                    for (unsigned int i = 1; i < colorArray.size(); i++)
+                        alphaArray.push_back(alpha);
+                }
+                if (colorInterpolation == HdInterpolationConstant) {
+                    GfVec3f color = colorArray[0];
+                    for (unsigned int i = 1; i < alphaArray.size(); i++)
+                        colorArray.push_back(color);
+                }
+
+                unsigned int numInstances = colorArray.size();
+                stateToCommit._instanceColors.setLength(numInstances * kNumColorChannels);
+                float* bufferData = &stateToCommit._instanceColors[0];
+
+                if (bufferData) {
+                    unsigned int offset = 0;
+                    for (size_t i = 0; i < numInstances; i++) {
+                        const GfVec3f& color = colorArray[i];
+                        bufferData[offset++] = color[0];
+                        bufferData[offset++] = color[1];
+                        bufferData[offset++] = color[2];
+
+                        bufferData[offset++] = alphaArray[i];
+                    }
                 }
             }
         }
@@ -1092,11 +1151,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     // If the mesh is instanced but has 0 instance transforms remember that
     // so the render item can be hidden.
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-    // Sync instance topology if necessary.
-    _UpdateInstancer(sceneDelegate, &itemDirtyBits);
-#endif
-
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
 
@@ -1129,7 +1183,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 std::vector<unsigned char> colorIndices;
 
                 // Assign with the index to the dormant wireframe color by default.
-                colorIndices.resize(instanceCount, 0);
+                bool         hasAuthoredColor = stateToCommit._instanceColors.length() > 0;
+                const size_t authoredColorIndex = sizeof(colors) / sizeof(MColor);
+                colorIndices.resize(instanceCount, hasAuthoredColor ? authoredColorIndex : 0);
 
                 // Assign with the index to the active selection highlight color.
                 if (auto state = drawScene.GetActiveSelectionState(id)) {
@@ -1155,6 +1211,10 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
                 for (unsigned int i = 0; i < instanceCount; ++i) {
                     unsigned char colorIndex = colorIndices[i];
+                    if (colorIndex == authoredColorIndex) {
+                        offset += kNumColorChannels;
+                        continue;
+                    }
                     const MColor& color = colors[colorIndex];
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
                         stateToCommit._instanceColors[offset++] = color[j];
@@ -1243,6 +1303,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     // Capture the valid position buffer and index buffer
     MHWRender::MVertexBuffer* positionsBuffer = _curvesSharedData._positionsBuffer.get();
+    MHWRender::MVertexBuffer* colorBuffer = _curvesSharedData._colorBuffer.get();
+    MHWRender::MVertexBuffer* normalsBuffer = _curvesSharedData._normalsBuffer.get();
+    const PrimvarBufferMap*   primvarBuffers = &_curvesSharedData._primvarBuffers;
     MHWRender::MIndexBuffer*  indexBuffer = drawItemData._indexBuffer.get();
 
     if (isBoundingBoxItem) {
@@ -1255,6 +1318,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                                                        stateToCommit,
                                                        param,
                                                        positionsBuffer,
+                                                       normalsBuffer,
+                                                       colorBuffer,
+                                                       primvarBuffers,
                                                        indexBuffer]() {
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
         if (ARCH_UNLIKELY(!renderItem))
@@ -1263,31 +1329,16 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         MProfilingScope profilingScope(
             HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L2,
-            drawItem->GetRenderItemName().asChar(),
+            drawItem->GetDrawItemName().asChar(),
             "Commit");
-
-        const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
-
-        MHWRender::MVertexBuffer* colorBuffer = drawItemData._colorBuffer.get();
-        MHWRender::MVertexBuffer* normalsBuffer = drawItemData._normalsBuffer.get();
-
-        const HdVP2DrawItem::PrimvarBufferMap& primvarBuffers = drawItemData._primvarBuffers;
-
-        // If available, something changed
-        if (stateToCommit._colorBufferData)
-            colorBuffer->commit(stateToCommit._colorBufferData);
-
-        // If available, something changed
-        if (stateToCommit._normalsBufferData)
-            normalsBuffer->commit(stateToCommit._normalsBufferData);
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {
             const TfToken& primvarName = entry.first;
             void*          primvarBufferData = entry.second;
             if (primvarBufferData) {
-                const auto it = primvarBuffers.find(primvarName);
-                if (it != primvarBuffers.end()) {
+                const auto it = primvarBuffers->find(primvarName);
+                if (it != primvarBuffers->end()) {
                     MHWRender::MVertexBuffer* primvarBuffer = it->second.get();
                     if (primvarBuffer) {
                         primvarBuffer->commit(primvarBufferData);
@@ -1336,7 +1387,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             if (normalsBuffer)
                 vertexBuffers.addBuffer(kNormalsStr, normalsBuffer);
 
-            for (auto& entry : primvarBuffers) {
+            for (auto& entry : *primvarBuffers) {
                 const TfToken&            primvarName = entry.first;
                 MHWRender::MVertexBuffer* primvarBuffer = entry.second.get();
                 if (primvarBuffer) {
@@ -1353,8 +1404,12 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         }
 
         // Important, update instance transforms after setting geometry on render items!
-        auto& oldInstanceCount = stateToCommit._drawItemData._instanceCount;
-        auto  newInstanceCount = stateToCommit._instanceTransforms.length();
+        auto&   oldInstanceCount = stateToCommit._drawItemData._instanceCount;
+        auto    newInstanceCount = stateToCommit._instanceTransforms.length();
+        MString extraColorChannelName = kDiffuseColorStr;
+        if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            extraColorChannelName = kSolidColorStr;
+        }
 
         // GPU instancing has been enabled. We cannot switch to consolidation
         // without recreating render item, so we keep using GPU instancing.
@@ -1371,7 +1426,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             if (stateToCommit._instanceColors.length() == newInstanceCount * kNumColorChannels) {
                 drawScene.setExtraInstanceData(
-                    *renderItem, kSolidColorStr, stateToCommit._instanceColors);
+                    *renderItem, extraColorChannelName, stateToCommit._instanceColors);
             }
         }
 #if MAYA_API_VERSION >= 20210000
@@ -1390,7 +1445,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             if (stateToCommit._instanceColors.length() == newInstanceCount * kNumColorChannels) {
                 drawScene.setExtraInstanceData(
-                    *renderItem, kSolidColorStr, stateToCommit._instanceColors);
+                    *renderItem, extraColorChannelName, stateToCommit._instanceColors);
             }
 
             stateToCommit._drawItemData._usingInstancedDraw = true;
@@ -1561,7 +1616,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             = std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
 #endif
 
-        const MString& renderItemName = drawItem->GetRenderItemName();
+        const MString& renderItemName = drawItem->GetDrawItemName();
 
         MHWRender::MRenderItem* renderItem = nullptr;
 
@@ -1670,14 +1725,12 @@ void HdVP2BasisCurves::_HideAllDrawItems(const TfToken& reprToken)
         auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
         if (!drawItem)
             continue;
-        MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-        if (!renderItem)
-            continue;
 
-        drawItem->GetRenderItemData()._enabled = false;
-
-        _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-            [renderItem]() { renderItem->enable(false); });
+        for (auto& renderItemData : drawItem->GetRenderItems()) {
+            renderItemData._enabled = false;
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                [&]() { renderItemData._renderItem->enable(false); });
+        }
     }
 }
 
@@ -1698,6 +1751,28 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
 
     TfTokenVector::const_iterator begin = requiredPrimvars.cbegin();
     TfTokenVector::const_iterator end = requiredPrimvars.cend();
+
+    // inspired by HdStInstancer::_SyncPrimvars
+    // Get any required instanced primvars from the instancer. Get these before we get
+    // any rprims from the rprim itself. If both are present, the rprim's values override
+    // the instancer's value.
+    const SdfPath& instancerId = GetInstancerId();
+    if (!instancerId.IsEmpty()) {
+        HdPrimvarDescriptorVector instancerPrimvars
+            = sceneDelegate->GetPrimvarDescriptors(instancerId, HdInterpolationInstance);
+        for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
+            if (std::find(begin, end, pv.name) == end) {
+                // erase the unused primvar so we don't hold onto stale data
+                _curvesSharedData._primvarSourceMap.erase(pv.name);
+            } else {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)) {
+                    const VtValue value = sceneDelegate->Get(instancerId, pv.name);
+                    _curvesSharedData._primvarSourceMap[pv.name]
+                        = { value, HdInterpolationInstance };
+                }
+            }
+        }
+    }
 
     for (size_t i = 0; i < HdInterpolationCount; i++) {
         const HdInterpolation interp = static_cast<HdInterpolation>(i);
@@ -1727,7 +1802,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateWireRenderItem(const MString& n
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-    renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
+    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
@@ -1749,7 +1824,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateBBoxRenderItem(const MString& n
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-    renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
+    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
@@ -1772,7 +1847,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-    renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
+    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
@@ -1796,7 +1871,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString&
     renderItem->setShader(_delegate->Get3dFatPointShader());
 
     MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
-    selectionMask.addMask(MSelectionMask::kSelectCurves);
+    selectionMask.addMask(MSelectionMask::kSelectNurbsCurves);
     renderItem->setSelectionMask(selectionMask);
 
 #if MAYA_API_VERSION >= 20220000

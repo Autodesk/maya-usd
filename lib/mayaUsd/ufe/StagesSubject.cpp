@@ -20,12 +20,18 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UfeVersionCompat.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdCamera.h>
+#endif
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoManager.h>
 #endif
 
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 
@@ -38,6 +44,7 @@
 #include <ufe/transform3d.h>
 
 #include <atomic>
+#include <limits>
 #include <vector>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -47,6 +54,8 @@
 
 #include <unordered_map>
 #endif
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
@@ -63,7 +72,29 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
+// TODO: This should be an unordered_multimap to prevent notifications from
+// overwriting earlier recorded notifications for the same attribute. See
+// MAYA-110878 for more information on why this change isn't already made.
+std::unordered_map<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
+
+void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+{
+    Ufe::AttributeValueChanged vc(ufePath, changedToken.GetString());
+    Ufe::Attributes::notify(vc);
+
+    if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+        Ufe::Camera::notify(ufePath);
+    }
+}
+
+void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+{
+    if (inAttributeChangedNotificationGuard()) {
+        pendingAttributeChangedNotifications[ufePath] = changedToken;
+    } else {
+        sendValueChanged(ufePath, changedToken);
+    }
+}
 
 #endif
 } // namespace
@@ -199,11 +230,30 @@ void StagesSubject::stageChanged(
 
     auto stage = notice.GetStage();
     for (const auto& changedPath : notice.GetResyncedPaths()) {
-        // When visibility is toggled for the first time or you add a xformop we enter
-        // here with a resync path. However the changedPath is not a prim path, so we
-        // don't care about it. In those cases, the changePath will contain something like:
-        //   "/<prim>.visibility"
-        //   "/<prim>.xformOp:translate"
+        if (changedPath.IsPrimPropertyPath()) {
+            // Special case to detect when an xformop is added or removed from a prim.
+            // We need to send some notifs so Maya can update (such as on undo
+            // to move the transform manipulator back to original position).
+            const TfToken nameToken = changedPath.GetNameToken();
+            if (nameToken == UsdGeomTokens->xformOpOrder) {
+                auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
+                auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+                if (!InTransform3dChange::inTransform3dChange()) {
+                    Ufe::Transform3d::notify(ufePath);
+                }
+#ifdef UFE_V2_FEATURES_AVAILABLE
+                if (!inAttributeChangedNotificationGuard()) {
+                    sendValueChanged(ufePath, changedPath.GetNameToken());
+                }
+#endif
+            }
+
+            // No further processing for this prim property path is required.
+            continue;
+        }
+
+        // Relational attributes will not be caught by the IsPrimPropertyPath()
+        // and we don't care about them.
         if (changedPath.IsPropertyPath())
             continue;
 
@@ -284,16 +334,7 @@ void StagesSubject::stageChanged(
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
         if (changedPath.IsPrimPropertyPath()) {
-            if (inAttributeChangedNotificationGuard()) {
-                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
-            } else {
-#if UFE_PREVIEW_VERSION_NUM >= 2036
-                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                Ufe::Attributes::notify(vc);
-#else
-                Ufe::Attributes::notify(ufePath, changedPath.GetName());
-#endif
-            }
+            valueChanged(ufePath, changedPath.GetNameToken());
             sendValueChangedFallback = false;
         }
 
@@ -307,40 +348,76 @@ void StagesSubject::stageChanged(
 
         if (!InTransform3dChange::inTransform3dChange()) {
             // Is the change a Transform3d change?
+            const UsdPrim prim = stage->GetPrimAtPath(changedPath.GetPrimPath());
             const TfToken nameToken = changedPath.GetNameToken();
             if (nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken)) {
                 Ufe::Transform3d::notify(ufePath);
                 UFE_V2(sendValueChangedFallback = false;)
+            } else if (prim && prim.IsA<UsdGeomPointInstancer>()) {
+                // If the prim at the changed path is a PointInstancer, check
+                // whether the modified path is one of the attributes authored
+                // by point instance manipulation.
+                if (nameToken == UsdGeomTokens->orientations
+                    || nameToken == UsdGeomTokens->positions
+                    || nameToken == UsdGeomTokens->scales) {
+                    // This USD change represents a Transform3d change to a
+                    // PointInstancer prim.
+                    // Unfortunately though, there is no way for us to know
+                    // which point instance indices were actually affected by
+                    // this change. As a result, we must assume that they *all*
+                    // may have been affected, so we construct UFE paths for
+                    // every instance and issue a notification for each one.
+                    const UsdGeomPointInstancer pointInstancer(prim);
+
+#if PXR_VERSION >= 2011
+                    const size_t numInstances
+                        = bool(pointInstancer) ? pointInstancer.GetInstanceCount() : 0u;
+#else
+                    VtIntArray protoIndices;
+                    if (pointInstancer) {
+                        const UsdAttribute protoIndicesAttr = pointInstancer.GetProtoIndicesAttr();
+                        if (protoIndicesAttr) {
+                            protoIndicesAttr.Get(&protoIndices);
+                        }
+                    }
+                    const size_t numInstances = protoIndices.size();
+#endif
+
+                    // The PointInstancer schema can theoretically support as
+                    // as many instances as can be addressed by size_t, but
+                    // Hydra currently only represents the instanceIndex of
+                    // instances using int. We clamp the number of instance
+                    // indices to the largest possible int to ensure that we
+                    // don't overflow.
+                    const int numIndices
+                        = (numInstances <= static_cast<size_t>(std::numeric_limits<int>::max()))
+                        ? static_cast<int>(numInstances)
+                        : std::numeric_limits<int>::max();
+
+                    for (int instanceIndex = 0; instanceIndex < numIndices; ++instanceIndex) {
+                        const Ufe::Path instanceUfePath = stagePath(sender)
+                            + usdPathToUfePathSegment(changedPath.GetPrimPath(), instanceIndex);
+                        Ufe::Transform3d::notify(instanceUfePath);
+                    }
+                    UFE_V2(sendValueChangedFallback = false;)
+                }
             }
         }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         if (sendValueChangedFallback) {
-            // We didn't send any other UFE notif above, so send a UFE
-            // attribute value changed as a fallback notification.
-            if (inAttributeChangedNotificationGuard()) {
-                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
-            } else {
-#if UFE_PREVIEW_VERSION_NUM >= 2036
-                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                Ufe::Attributes::notify(vc);
-#else
-                Ufe::Attributes::notify(ufePath, changedPath.GetName());
-#endif
-            }
+            valueChanged(ufePath, changedPath.GetNameToken());
         }
 #endif
     }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2036
     // Special case when we are notified, but no paths given.
     if (notice.GetResyncedPaths().empty() && notice.GetChangedInfoOnlyPaths().empty()) {
         auto                       ufePath = stagePath(sender);
         Ufe::AttributeValueChanged vc(ufePath, "/");
         Ufe::Attributes::notify(vc);
     }
-#endif
 #endif
 }
 
@@ -438,12 +515,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-#if UFE_PREVIEW_VERSION_NUM >= 2036
-        Ufe::AttributeValueChanged vc(notificationInfo.first, notificationInfo.second);
-        Ufe::Attributes::notify(vc);
-#else
-        Ufe::Attributes::notify(notificationInfo.first, notificationInfo.second);
-#endif
+        sendValueChanged(notificationInfo.first, notificationInfo.second);
     }
 
     pendingAttributeChangedNotifications.clear();

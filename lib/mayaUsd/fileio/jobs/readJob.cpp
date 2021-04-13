@@ -15,14 +15,19 @@
 //
 #include "readJob.h"
 
+#include <mayaUsd/fileio/chaser/importChaserRegistry.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
+#include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -32,6 +37,7 @@
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usd/zipFile.h>
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
@@ -41,12 +47,16 @@
 #include <maya/MAnimControl.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MDistance.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MItDependencyGraph.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MTime.h>
+
+#include <ghc/filesystem.hpp>
 
 #include <map>
 #include <string>
@@ -251,7 +261,29 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
+    if (this->mArgs.importUSDZTextures == true) {
+        // NOTE: (yliangsiew) First we check if the archive in question _is_ even a USDZ archive...
+        if (!stage->GetRootLayer()->GetFileFormat()->IsPackage()) {
+            TF_WARN(
+                "The layer being imported: %s is not a USDZ file.",
+                stage->GetRootLayer()->GetRealPath().c_str());
+            return MStatus::kFailure;
+        }
+
+        if (this->mArgs.importUSDZTexturesFilePath.length() == 0) {
+            MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
+            TF_WARN(
+                "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
+                "will be imported to the workspace folder: %s.",
+                currentMayaWorkspacePath.asChar());
+        }
+    }
+
     DoImport(range, usdRootPrim);
+
+    // NOTE: (yliangsiew) Storage to later pass on to `PostImport` for import chasers.
+    MDagPathArray currentAddedDagPaths;
+    SdfPathVector fromSdfPaths;
 
     SdfPathSet topImportedPaths;
     if (isImportingPseudoRoot) {
@@ -271,9 +303,36 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         if (TfMapLookup(mNewNodeRegistry, key, &obj)) {
             if (obj.hasFn(MFn::kDagNode)) {
                 addedDagPaths->push_back(MDagPath::getAPathTo(obj));
+                currentAddedDagPaths.append(MDagPath::getAPathTo(obj));
+                fromSdfPaths.push_back(pathsIter->GetPrimPath());
             }
         }
     }
+
+    // NOTE: (yliangsiew) Look into a registry of post-import "chasers" here
+    // and call `PostImport` on each of them.
+    this->mImportChasers.clear();
+    UsdMayaImportChaserRegistry::FactoryContext ctx(
+        predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
+    for (const std::string& importChaserName : this->mArgs.chaserNames) {
+        if (UsdMayaImportChaserRefPtr fn
+            = UsdMayaImportChaserRegistry::GetInstance().Create(importChaserName.c_str(), ctx)) {
+            this->mImportChasers.emplace_back(fn);
+        } else {
+            TF_RUNTIME_ERROR("Failed to create import chaser: %s", importChaserName.c_str());
+        }
+    }
+
+    for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        bool bStat
+            = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
+        if (!bStat) {
+            TF_WARN("Failed to execute import chaser!");
+            return false;
+        }
+    }
+
+    UsdMayaReadUtil::mapFileHashes.clear();
 
     return (status == MS::kSuccess);
 }
@@ -467,11 +526,29 @@ bool UsdMaya_ReadJob::Redo()
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
 
+    // NOTE: (yliangsiew) All chasers need to have their Redo run as well.
+    for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        bool bStat = chaser->Redo();
+        if (!bStat) {
+            TF_WARN("Failed to execute import chaser's Redo()!");
+            return false;
+        }
+    }
+
     return (status == MS::kSuccess);
 }
 
 bool UsdMaya_ReadJob::Undo()
 {
+    // NOTE: (yliangsiew) All chasers need to have their Undo run as well.
+    for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        bool bStat = chaser->Undo();
+        if (!bStat) {
+            TF_WARN("Failed to execute import chaser's Redo()!");
+            return false;
+        }
+    }
+
     if (!mDagModifierSeeded) {
         mDagModifierSeeded = true;
         MStatus dagStatus;

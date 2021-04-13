@@ -39,6 +39,7 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MCommandResult.h>
 #include <maya/MDGContext.h>
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -392,7 +393,7 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             return ret;
         }
         MString seName = seDepNode.name();
-        materialName = MNamespace::stripNamespaceFromName(seName).asChar();
+        materialName = seName.asChar();
     }
 
     materialName = UsdMayaUtil::SanitizeName(materialName);
@@ -479,8 +480,39 @@ public:
                 }
                 MString getAttrCmd;
                 getAttrCmd.format("getAttr \"^1s\";", uvSetRef.c_str());
-                TfToken getAttrResult(MGlobal::executeCommandStringResult(getAttrCmd).asChar());
-
+                MCommandResult mayaCmdResult;
+                TfToken        getAttrResult;
+                MGlobal::executeCommand(getAttrCmd, mayaCmdResult, false, false);
+                // NOTE: (yliangsiew) We do this because if you have a mesh shape in Maya named the
+                // same as its parent transform, you get back the result `map1 map1` instead of just
+                // `map1`. Why? Refer to the issue here:
+                // https://github.com/Autodesk/maya-usd/issues/1079
+                switch (mayaCmdResult.resultType()) {
+                case MCommandResult::kStringArray: {
+                    MStringArray cmdResult;
+                    mayaCmdResult.getResult(cmdResult);
+                    if (cmdResult.length() == 0) {
+                        TF_RUNTIME_ERROR(
+                            "No valid UV set names could be determined! The command run was: %s",
+                            getAttrCmd.asChar());
+                        continue;
+                    }
+                    getAttrResult = TfToken(cmdResult[0].asChar());
+                    break;
+                }
+                case MCommandResult::kString: {
+                    MString cmdResult;
+                    mayaCmdResult.getResult(cmdResult);
+                    getAttrResult = TfToken(cmdResult.asChar());
+                    break;
+                }
+                default:
+                    TF_RUNTIME_ERROR(
+                        "The UV set name could not be determined; the result was of an "
+                        "unrecognized type! The command run was: %s",
+                        getAttrCmd.asChar());
+                    continue;
+                }
                 // Check if map1 should export as st:
                 if (getAttrResult == _tokens->map1 && UsdMayaWriteUtil::WriteMap1AsST()) {
                     getAttrResult = UsdUtilsGetPrimaryUVSetName();
@@ -517,6 +549,7 @@ public:
                 TfToken inputName(
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
                 UsdShadeInput materialInput = material.GetInput(inputName);
+                TF_VERIFY(itName != largestSet.cend());
                 materialInput.Set(*itName);
             }
             _uvNamesToMaterial[largestSet] = material;

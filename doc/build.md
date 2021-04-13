@@ -10,18 +10,18 @@ Before building the project, consult the following table to ensure you use the r
 
 |        Required       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
-|    Operating System   |         Windows 10        | Catalina (10.15), Mojave (10.14), High Sierra (10.13)        |       CentOS 7              |
-|   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3)<br>Maya 2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2)<br>Maya 2019/2020 (gcc 6.3.1) |
-| Minimum Cmake Version |           3.13            |                             3.13                             |         3.13                |
+|    Operating System   |         Windows 10        | High Sierra (10.13)<br>Mojave (10.14)<br>Catalina (10.15)<br>Big Sur (11.2.x)    |       CentOS 7/8              |
+|   Compiler Requirement| Maya 2019 (VS 2017)<br>Maya 2020 (VS 2017)<br>Maya 2022 (VS 2017/2019) | Maya 2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode 10.2.1)<br>Maya 2022 (Xcode 10.2.1) | Maya 2019 (gcc 6.3.1)<br>Maya 2020 (gcc 6.3.1)<br>Maya 2022 (gcc 6.3.1/9.3.1) |
+| CMake Version (min/max) |        3.13 - 3.17      |                              3.13 - 3.17                     |           3.13 - 3.17       |
 |         Python        |       2.7.15 or 3.7.7     |                            2.7.15 or 3.7.7                   |        2.7.15 or 3.7.7      |
-|    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
+|    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              | PyYAML, PySide, PyOpenGL, Jinja2 |
 |    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
-|    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
-| Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018, 2019, 2020     |
+|    Command processor  | Visual Studio X64 2017 or 2019 command prompt  |                     bash                |             bash            |
+| Supported Maya Version|     2019, 2020, 2022      |                      2019, 2020, 2022                        |      2019, 2020, 2022       |
 
 |        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
-|          Qt           | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 |
+|          Qt           | Maya 2019 = 5.6.1<br>Maya 2020 = 5.12.5<br>Maya 2022 = 5.15.2 | Maya 2019 = 5.6.1<br>Maya 2020 = 5.12.5<br>Maya 2022 = 5.15.2 | Maya 2019 = 5.6.1<br>Maya 2020 = 5.12.5<br>Maya 2022 = 5.15.2 |
 
 ***NOTE:*** Visit the online Maya developer help document under ***Setting up your build environment*** for additional compiler requirements on different platforms.
 
@@ -31,7 +31,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | release: [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) or [v20.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.11) or [v21.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.02)<br> dev: [09ff5b7](https://github.com/PixarAnimationStudios/USD/commit/09ff5b7d6d0ae9e92142781322daf6d79e058e2e) |
+|  CommitID/Tags | release: [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) or [v20.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.11) or [v21.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.02)<br> dev: [07d13fe](https://github.com/PixarAnimationStudios/USD/commit/07d13fe1ac2cd35ca0b8f1952f8b5dfb0b6ff052) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -39,7 +39,7 @@ For additional information on building Pixar USD, see the ***Additional Build In
 
 #### 3. Universal Front End (UFE)
 
-The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to browse and edit data in multiple data models. This allows Maya to edit pipeline data such as USD. UFE comes installed as a built-in component with Maya 2019 and later. UFE is developed as a separate binary component, and therefore versioned separately from Maya. Current shipped version of UFE is **1.0.0**
+The Universal Front End (UFE) is a DCC-agnostic component that allows Maya to browse and edit data in multiple data models. This allows Maya to edit pipeline data such as USD. UFE comes installed as a built-in component with Maya 2019 and later. UFE is developed as a separate binary component, and therefore versioned separately from Maya. Maya 2019 and Maya 2020 both shipped with UFE **v1.0.0**. Maya 2022 shipped with UFE **v2.0.0**.
 
 To build the project with UFE support, you will need to use the headers and libraries included in the ***Maya Devkit***:
 
@@ -187,22 +187,11 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 
 # Additional Build Instruction
 
-##### Boost:
-
-Currently the Animal Logic plugin has a dependency on some of the boost components. When building Pixar USD, one needs to pass the following key,value paired arguments for boost to include those components: 
-e.g 
-
-```
-python build_usd.py ~/Desktop/BUILD --build-args boost,"--with-date_time" 
-```
-
-***NOTE:*** ```--build-args``` needs to be passed at the very end of command, after build/install location.
-
 ##### Python:
 
 It is important to use the Python version shipped with Maya and not the system version when building USD on MacOS. Note that this is primarily an issue on MacOS, where Maya's version of Python is likely to conflict with the version provided by the system. 
 
-To build USD and the Maya plug-ins on MacOS for Maya(2018,2019,2020), run:
+To build USD and the Maya plug-ins on MacOS for Maya (2019, 2020, 2022), run:
 ```
 /Applications/Autodesk/maya2019/Maya.app/Contents/bin/mayapy build_usd.py ~/Desktop/BUILD
 ```
@@ -234,7 +223,7 @@ setuptools 39.0.1
 shiboken2  5.12.1 
 ```
 
-##### dependencies on Linux DSOs when running tests
+##### Dependencies on Linux DSOs when running tests
 
 Normally either runpath or rpath are used on some DSOs in this library to specify explicit on other libraries (such as USD itself)
 

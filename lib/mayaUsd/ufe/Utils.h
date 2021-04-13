@@ -37,8 +37,6 @@
 
 #include <cstring> // memcpy
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 UFE_NS_DEF
 {
     class PathSegment;
@@ -54,23 +52,23 @@ namespace ufe {
 
 //! Get USD stage corresponding to argument Maya Dag path.
 MAYAUSD_CORE_PUBLIC
-UsdStageWeakPtr getStage(const Ufe::Path& path);
+PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path);
 
 //! Return the ProxyShape node UFE path for the argument stage.
 MAYAUSD_CORE_PUBLIC
-Ufe::Path stagePath(UsdStageWeakPtr stage);
+Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage);
 
 //! Return all the USD stages.
 MAYAUSD_CORE_PUBLIC
-TfHashSet<UsdStageWeakPtr, TfHash> getAllStages();
+PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> getAllStages();
 
 //! Get the UFE path segment corresponding to the argument USD path.
 //! If an instanceIndex is provided, the path segment for a point instance with
 //! that USD path and index is returned.
 MAYAUSD_CORE_PUBLIC
 Ufe::PathSegment usdPathToUfePathSegment(
-    const SdfPath& usdPath,
-    int            instanceIndex = UsdImagingDelegate::ALL_INSTANCES);
+    const PXR_NS::SdfPath& usdPath,
+    int                    instanceIndex = PXR_NS::UsdImagingDelegate::ALL_INSTANCES);
 
 //! Get the UFE path representing just the USD prim for the argument UFE path.
 //! Any instance index component at the tail of the given path is removed from
@@ -80,7 +78,7 @@ Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path);
 
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
-UsdPrim ufePathToPrim(const Ufe::Path& path);
+PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 
 //! Return the instance index corresponding to the argument UFE path if it
 //! represents a point instance.
@@ -99,11 +97,11 @@ createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingNa
 //! Split the source name into a base name and a numerical suffix (set to
 //! 1 if absent).  Increment the numerical suffix until name is unique.
 MAYAUSD_CORE_PUBLIC
-std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcName);
+std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::string srcName);
 
 //! Return a unique child name.
 MAYAUSD_CORE_PUBLIC
-std::string uniqueChildName(const UsdPrim& parent, const std::string& name);
+std::string uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name);
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
@@ -118,13 +116,21 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 //! Get the time along the argument path.  A gateway node (i.e. proxy shape)
 //! along the path can transform Maya's time (e.g. with scale and offset).
 MAYAUSD_CORE_PUBLIC
-UsdTimeCode getTime(const Ufe::Path& path);
+PXR_NS::UsdTimeCode getTime(const Ufe::Path& path);
 
 //! Return the non-default purposes of the gateway node (i.e. proxy shape)
 //! along the argument path.  Only those purposes that are true are returned.
 //! The default purpose is not returned, and is considered implicit.
 MAYAUSD_CORE_PUBLIC
-TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
+PXR_NS::TfTokenVector getProxyShapePurposes(const Ufe::Path& path);
+
+//! Check if an attribute value is allowed to be changed.
+//! \return True, if the attribute value is allowed to be edited in the stage's local Layer Stack.
+MAYAUSD_CORE_PUBLIC
+bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg = nullptr);
+
+MAYAUSD_CORE_PUBLIC
+bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
 
 //! Send notification for data model changes
 template <class T>
@@ -145,7 +151,7 @@ inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
 }
 
 //! Copy the argument matrix into the return matrix.
-inline Ufe::Matrix4d toUfe(const GfMatrix4d& src)
+inline Ufe::Matrix4d toUfe(const PXR_NS::GfMatrix4d& src)
 {
     Ufe::Matrix4d dst;
     std::memcpy(&dst.matrix[0][0], src.GetArray(), sizeof(double) * 16);
@@ -153,15 +159,18 @@ inline Ufe::Matrix4d toUfe(const GfMatrix4d& src)
 }
 
 //! Copy the argument matrix into the return matrix.
-inline GfMatrix4d toUsd(const Ufe::Matrix4d& src)
+inline PXR_NS::GfMatrix4d toUsd(const Ufe::Matrix4d& src)
 {
-    GfMatrix4d dst;
+    PXR_NS::GfMatrix4d dst;
     std::memcpy(dst.GetArray(), &src.matrix[0][0], sizeof(double) * 16);
     return dst;
 }
 
 //! Copy the argument vector into the return vector.
-inline Ufe::Vector3d toUfe(const GfVec3d& src) { return Ufe::Vector3d(src[0], src[1], src[2]); }
+inline Ufe::Vector3d toUfe(const PXR_NS::GfVec3d& src)
+{
+    return Ufe::Vector3d(src[0], src[1], src[2]);
+}
 
 //! Filter a source selection by removing descendants of filterPath.
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);

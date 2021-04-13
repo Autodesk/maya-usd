@@ -22,8 +22,6 @@
 
 #include <ufe/transform3dUndoableCommands.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -33,7 +31,7 @@ namespace ufe {
  */
 class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand
     : public Ufe::TranslateUndoableCommand
-    , public UsdTRSUndoableCommandBase<GfVec3d>
+    , public UsdTRSUndoableCommandBase<PXR_NS::GfVec3d>
 {
 public:
     typedef std::shared_ptr<UsdTranslateUndoableCommand> Ptr;
@@ -80,11 +78,11 @@ protected:
     ~UsdTranslateUndoableCommand() override;
 
 private:
-    static TfToken xlate;
+    static PXR_NS::TfToken xlate;
 
-    TfToken attributeName() const override { return xlate; }
-    void    performImp(double x, double y, double z) override;
-    void    addEmptyAttribute() override;
+    PXR_NS::TfToken attributeName() const override { return xlate; }
+    void            performImp(double x, double y, double z) override;
+    void            addEmptyAttribute() override;
 
 }; // UsdTranslateUndoableCommand
 

@@ -191,6 +191,10 @@ struct UsdMayaReadUtil
         const UsdTimeCode&          usdTime = UsdTimeCode::Default());
 
     /// \}
+
+    /// A cache to store pre-computed file texture hashes on import.
+    MAYAUSD_CORE_PUBLIC
+    static std::unordered_map<std::string, uint64_t> mapFileHashes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

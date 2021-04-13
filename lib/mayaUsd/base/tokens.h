@@ -61,7 +61,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     /*    3: ignore all Usd edits.                                  */ \
     ((SerializedUsdEditsLocation, "mayaUsd_SerializedUsdEditsLocation")) \
     /* optionVar to force a prompt on every save                    */ \
-    ((SerializedUsdEditsLocationPrompt, "mayaUsd_SerializedUsdEditsLocationPrompt"))
+    ((SerializedUsdEditsLocationPrompt, "mayaUsd_SerializedUsdEditsLocationPrompt")) \
+    /* optionVar to control if comfirmation dialog will be show when overriding file */ \
+    ((ConfirmExistingFileSave, "mayaUsd_ConfirmExistingFileSave"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
