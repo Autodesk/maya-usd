@@ -888,12 +888,14 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
 #ifndef UFE_V2_FEATURES_AVAILABLE
-    const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
+    const MGlobal::ListAdjustment listAdjustment = _globalListAdjustment;
 #endif
 #else
     const TfToken selectionKind = GetSelectionKind();
     const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
+#ifndef UFE_V2_FEATURES_AVAILABLE
     const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
+#endif
 #endif
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
