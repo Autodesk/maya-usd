@@ -1866,6 +1866,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString&
         name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kPoints);
 
     renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
+    renderItem->depthPriority(MHWRender::MRenderItem::sDormantPointDepthPriority);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dFatPointShader());
