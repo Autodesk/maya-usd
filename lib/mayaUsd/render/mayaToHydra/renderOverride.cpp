@@ -30,6 +30,7 @@
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/hd/camera.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hdx/pickTask.h>
@@ -468,18 +469,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     // }
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RENDER).Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&](bool markTime = false) {
-        const auto originX = 0;
-        const auto originY = 0;
-        int        width = 0;
-        int        height = 0;
-        drawContext.getRenderTargetSize(width, height);
-
-        GfVec4d viewport(originX, originY, width, height);
-        _taskController->SetFreeCameraMatrices(
-            GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
-            GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
-        _taskController->SetRenderViewport(viewport);
-
         HdTaskSharedPtrVector tasks = _taskController->GetRenderingTasks();
 
         // For playblasting, a glReadPixels is going to occur sometime after we return.
@@ -583,7 +572,52 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
 
     params.cullStyle = HdCullStyleBackUnlessDoubleSided;
 
+    int width = 0;
+    int height = 0;
+    drawContext.getRenderTargetSize(width, height);
+
+    bool vpDirty;
+    if ((vpDirty = (width != _viewport[2] || height != _viewport[3]))) {
+        _viewport = GfVec4d(0, 0, width, height);
+        _taskController->SetRenderViewport(_viewport);
+    }
+
+    _taskController->SetFreeCameraMatrices(
+        GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
+        GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
+
+    if (delegateParams.motionSamplesEnabled()) {
+        MStatus  status;
+        MDagPath camPath = getFrameContext()->getCurrentCameraPath(&status);
+        if (status == MStatus::kSuccess) {
+            // FIXME: This is what a USD camera selected in the viewport returns.
+            static const MString defaultUfeProxyCameraShape(
+                "|defaultUfeProxyCameraTransformParent|defaultUfeProxyCameraTransform|"
+                "defaultUfeProxyCameraShape");
+            if (defaultUfeProxyCameraShape != camPath.fullPathName()) {
+                for (auto& delegate : _delegates) {
+                    if (HdMayaSceneDelegate* mayaScene
+                        = dynamic_cast<HdMayaSceneDelegate*>(delegate.get())) {
+                        params.camera = mayaScene->SetCameraViewport(camPath, _viewport);
+                        if (vpDirty)
+                            mayaScene->GetChangeTracker().MarkSprimDirty(
+                                params.camera, HdCamera::DirtyParams | HdCamera::DirtyProjMatrix);
+                        break;
+                    }
+                }
+            }
+        } else {
+            TF_WARN(
+                "MFrameContext::getCurrentCameraPath failure (%d): '%s'"
+                "\nUsing viewport matrices.",
+                int(status.statusCode()),
+                status.errorString().asChar());
+        }
+    }
+
     _taskController->SetRenderParams(params);
+    if (!params.camera.IsEmpty())
+        _taskController->SetCameraPath(params.camera);
 
     // Default color in usdview.
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
@@ -787,6 +821,7 @@ void MtohRenderOverride::ClearHydraResources()
         _rendererPlugin = nullptr;
     }
 
+    _viewport = GfVec4d(0, 0, 0, 0);
     _initializationSucceeded = false;
     _initializationAttempted = false;
     SelectionChanged();

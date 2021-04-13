@@ -19,16 +19,14 @@
 #include <hdMaya/adapters/shapeAdapter.h>
 #include <hdMaya/adapters/tokens.h>
 
+#include <pxr/base/gf/interval.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/pxOsd/tokens.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include <maya/MAnimControl.h>
 #include <maya/MCallbackIdArray.h>
-#include <maya/MDGContext.h>
-#include <maya/MDGContextGuard.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MIntArray.h>
@@ -207,16 +205,8 @@ public:
             if (ARCH_UNLIKELY(!status)) {
                 return 0;
             }
-            times[0] = 0.0f;
-            samples[0] = GetPoints(mesh);
-            if (maxSampleCount == 1 || !GetDelegate()->GetParams().enableMotionSamples) {
-                return 1;
-            }
-            times[1] = 1.0f;
-            MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
-            samples[1] = GetPoints(mesh);
-            // FIXME: should we do this or in the render delegate?
-            return samples[1] == samples[0] ? 1 : 2;
+            return GetDelegate()->SampleValues(
+                maxSampleCount, times, samples, [&]() -> VtValue { return GetPoints(mesh); });
         } else if (key == HdMayaAdapterTokens->st) {
             times[0] = 0.0f;
             samples[0] = GetUVs();
