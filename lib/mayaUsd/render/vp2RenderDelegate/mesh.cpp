@@ -1301,9 +1301,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
             }
             break;
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        case HdMeshGeomStylePoints:
-            renderItem = _CreatePointsRenderItem(renderItemName);
-            break;
+        case HdMeshGeomStylePoints: renderItem = _CreatePointsRenderItem(renderItemName); break;
 #endif
         default: TF_WARN("Unsupported geomStyle"); break;
         }
@@ -1876,8 +1874,8 @@ void HdVP2Mesh::_UpdateDrawItem(
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology));
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if ((itemDirtyBits & DirtySelectionHighlight) &&
-        !isBBoxItem && !isDedicatedSelectionHighlightItem) {
+    if (!isBBoxItem && !isDedicatedSelectionHighlightItem
+        && (itemDirtyBits & DirtySelectionHighlight)) {
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
         // Only unselected Rprims can be used for point snapping.

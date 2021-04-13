@@ -693,7 +693,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     }
 #endif // defined(WANT_UFE_BUILD)
 
-#else  // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
+#else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     HdReprSelector reprSelector;
