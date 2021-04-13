@@ -203,6 +203,8 @@ private:
 
     SdfPath _ID;
 
+    GfVec4d _viewport;
+
     int _currentOperation = -1;
 
     const bool _isUsingHdSt = false;

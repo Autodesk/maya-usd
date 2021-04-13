@@ -503,6 +503,38 @@ HdMayaMaterialAdapterPtr HdMayaSceneDelegate::GetMaterialAdapter(const SdfPath& 
     return iter == _materialAdapters.end() ? nullptr : iter->second;
 }
 
+template <typename AdapterPtr, typename Map>
+AdapterPtr HdMayaSceneDelegate::Create(
+    const MDagPath&                                                       dag,
+    const std::function<AdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>& adapterCreator,
+    Map&                                                                  adapterMap,
+    bool                                                                  isSprim)
+{
+    if (!adapterCreator) {
+        return {};
+    }
+
+    TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
+        .Msg(
+            "HdMayaSceneDelegate::Create::"
+            "found %s: %s\n",
+            MFnDependencyNode(dag.node()).typeName().asChar(),
+            dag.fullPathName().asChar());
+
+    const auto id = GetPrimPath(dag, isSprim);
+    if (TfMapLookupPtr(adapterMap, id) != nullptr) {
+        return {};
+    }
+    auto adapter = adapterCreator(this, dag);
+    if (adapter == nullptr || !adapter->IsSupported()) {
+        return {};
+    }
+    adapter->Populate();
+    adapter->CreateCallbacks();
+    adapterMap.insert({ id, adapter });
+    return adapter;
+}
+
 void HdMayaSceneDelegate::InsertDag(const MDagPath& dag)
 {
     TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
@@ -522,64 +554,34 @@ void HdMayaSceneDelegate::InsertDag(const MDagPath& dag)
 
     // Custom lights don't have MFn::kLight.
     if (GetLightsEnabled()) {
-        auto adapterCreator = HdMayaAdapterRegistry::GetLightAdapterCreator(dag);
-        if (adapterCreator != nullptr) {
-            TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
-                .Msg(
-                    "HdMayaSceneDelegate::InsertDag::"
-                    "found light: %s\n",
-                    dag.fullPathName().asChar());
-            const auto id = GetPrimPath(dag, true);
-            if (TfMapLookupPtr(_lightAdapters, id) != nullptr) {
-                return;
-            }
-            auto adapter = adapterCreator(this, dag);
-            if (adapter == nullptr || !adapter->IsSupported()) {
-                return;
-            }
-            adapter->Populate();
-            adapter->CreateCallbacks();
-            _lightAdapters.insert({ id, adapter });
+        if (Create(dag, HdMayaAdapterRegistry::GetLightAdapterCreator(dag), _lightAdapters, true))
             return;
-        }
     }
-    TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
-        .Msg(
-            "HdMayaSceneDelegate::InsertDag::"
-            "found shape: %s\n",
-            dag.fullPathName().asChar());
+    if (Create(dag, HdMayaAdapterRegistry::GetCameraAdapterCreator(dag), _cameraAdapters, true)) {
+        return;
+    }
     // We are inserting a single prim and
     // instancer for every instanced mesh.
     if (dag.isInstanced() && dag.instanceNumber() > 0) {
         return;
     }
-    auto adapterCreator = HdMayaAdapterRegistry::GetShapeAdapterCreator(dag);
-    if (adapterCreator == nullptr) {
-        // Proxy shape is registered as base class type but plugins can derrive from it
-        // Check the object type and if matches proxy base class find an adapter for it.
-        adapterCreator = HdMayaAdapterRegistry::GetProxyShapeAdapterCreator(dag);
-        if (adapterCreator == nullptr)
-            return;
-    }
-    const auto id = GetPrimPath(dag, false);
-    if (TfMapLookupPtr(_shapeAdapters, id) != nullptr) {
-        return;
-    }
-    auto adapter = adapterCreator(this, dag);
-    if (adapter == nullptr || !adapter->IsSupported()) {
-        return;
-    }
 
-    auto material = adapter->GetMaterial();
-    if (material != MObject::kNullObj) {
-        const auto materialId = GetMaterialPath(material);
-        if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
-            _CreateMaterial(materialId, material);
+    auto adapter = Create(dag, HdMayaAdapterRegistry::GetShapeAdapterCreator(dag), _shapeAdapters);
+    if (!adapter) {
+        // Proxy shape is registered as base class type but plugins can derive from it
+        // Check the object type and if matches proxy base class find an adapter for it.
+        adapter
+            = Create(dag, HdMayaAdapterRegistry::GetProxyShapeAdapterCreator(dag), _shapeAdapters);
+    }
+    if (adapter) {
+        auto material = adapter->GetMaterial();
+        if (material != MObject::kNullObj) {
+            const auto materialId = GetMaterialPath(material);
+            if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
+                _CreateMaterial(materialId, material);
+            }
         }
     }
-    adapter->Populate();
-    adapter->CreateCallbacks();
-    _shapeAdapters.insert({ id, adapter });
 }
 
 void HdMayaSceneDelegate::NodeAdded(const MObject& obj) { _addedNodes.push_back(obj); }
@@ -644,15 +646,21 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
             },
             _shapeAdapters);
     }
-    if (oldParams.enableMotionSamples != params.enableMotionSamples) {
+    if (oldParams.motionSampleStart != params.motionSampleStart
+        || oldParams.motionSampleEnd != params.motionSampleEnd) {
         _MapAdapter<HdMayaDagAdapter>(
             [](HdMayaDagAdapter* a) {
                 if (a->HasType(HdPrimTypeTokens->mesh)) {
-                    a->InvalidateTransform();
-                    a->MarkDirty(HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyTransform);
+                    a->MarkDirty(HdChangeTracker::DirtyPoints);
+                } else if (a->HasType(HdPrimTypeTokens->camera)) {
+                    a->MarkDirty(HdCamera::DirtyParams);
                 }
+                a->InvalidateTransform();
+                a->MarkDirty(HdChangeTracker::DirtyTransform);
             },
-            _shapeAdapters);
+            _shapeAdapters,
+            _lightAdapters,
+            _cameraAdapters);
     }
     // We need to trigger rebuilding shaders.
     if (oldParams.textureMemoryPerTexture != params.textureMemoryPerTexture) {
@@ -795,6 +803,7 @@ GfMatrix4d HdMayaSceneDelegate::GetTransform(const SdfPath& id)
         id,
         [](HdMayaDagAdapter* a) -> GfMatrix4d { return a->GetTransform(); },
         _shapeAdapters,
+        _cameraAdapters,
         _lightAdapters);
 }
 
@@ -815,6 +824,7 @@ size_t HdMayaSceneDelegate::SampleTransform(
             return a->SampleTransform(maxSampleCount, times, samples);
         },
         _shapeAdapters,
+        _cameraAdapters,
         _lightAdapters);
 }
 
@@ -846,6 +856,7 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key)
             id,
             [&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
             _shapeAdapters,
+            _cameraAdapters,
             _lightAdapters,
             _materialAdapters);
     }
@@ -925,6 +936,16 @@ VtValue HdMayaSceneDelegate::GetLightParamValue(const SdfPath& id, const TfToken
         id,
         [&paramName](HdMayaLightAdapter* a) -> VtValue { return a->GetLightParamValue(paramName); },
         _lightAdapters);
+}
+
+VtValue HdMayaSceneDelegate::GetCameraParamValue(const SdfPath& cameraId, const TfToken& paramName)
+{
+    return _GetValue<HdMayaCameraAdapter, VtValue>(
+        cameraId,
+        [&paramName](HdMayaCameraAdapter* a) -> VtValue {
+            return a->GetCameraParamValue(paramName);
+        },
+        _cameraAdapters);
 }
 
 VtIntArray
@@ -1131,6 +1152,17 @@ bool HdMayaSceneDelegate::_CreateMaterial(const SdfPath& id, const MObject& obj)
     materialAdapter->CreateCallbacks();
     _materialAdapters.emplace(id, std::move(materialAdapter));
     return true;
+}
+
+SdfPath HdMayaSceneDelegate::SetCameraViewport(const MDagPath& camPath, const GfVec4d& viewport)
+{
+    const SdfPath camID = GetPrimPath(camPath, true);
+    auto&&        cameraAdapter = TfMapLookupPtr(_cameraAdapters, camID);
+    if (cameraAdapter) {
+        (*cameraAdapter)->SetViewport(viewport);
+        return camID;
+    }
+    return {};
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -24,10 +24,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaParams
 {
-    int  textureMemoryPerTexture = 4 * 1024 * 1024;
-    int  maximumShadowMapResolution = 2048;
-    bool displaySmoothMeshes = true;
-    bool enableMotionSamples = false;
+    int   textureMemoryPerTexture = 4 * 1024 * 1024;
+    int   maximumShadowMapResolution = 2048;
+    float motionSampleStart = 0;
+    float motionSampleEnd = 0;
+    bool  displaySmoothMeshes = true;
+
+    bool motionSamplesEnabled() const { return motionSampleStart != 0 || motionSampleEnd != 0; }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

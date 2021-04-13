@@ -91,12 +91,12 @@ class TestCommand(unittest.TestCase):
         for flag in ("createRenderGlobals", "crg"):
             cmds.file(f=1, new=1)
             self.assertFalse(cmds.objExists(
-                "defaultRenderGlobals.mtohEnableMotionSamples"))
+                "defaultRenderGlobals.mtohMotionSampleStart"))
             cmds.mtoh(**{flag: 1})
             self.assertTrue(cmds.objExists(
-                "defaultRenderGlobals.mtohEnableMotionSamples"))
+                "defaultRenderGlobals.mtohMotionSampleStart"))
             self.assertFalse(cmds.getAttr(
-                "defaultRenderGlobals.mtohEnableMotionSamples"))
+                "defaultRenderGlobals.mtohMotionSampleStart"))
 
     # TODO: test_updateRenderGlobals
 

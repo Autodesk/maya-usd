@@ -15,6 +15,7 @@
 //
 #include "delegate.h"
 
+#include <pxr/base/gf/interval.h>
 #include <pxr/base/tf/type.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -31,5 +32,12 @@ HdMayaDelegate::HdMayaDelegate(const InitData& initData)
 }
 
 void HdMayaDelegate::SetParams(const HdMayaParams& params) { _params = params; }
+
+void HdMayaDelegate::SetCameraForSampling(SdfPath const& camID) { _cameraPathForSampling = camID; }
+
+GfInterval HdMayaDelegate::GetCurrentTimeSamplingInterval() const
+{
+    return GfInterval(_params.motionSampleStart, _params.motionSampleEnd);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
