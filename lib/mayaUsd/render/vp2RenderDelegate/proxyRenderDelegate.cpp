@@ -694,21 +694,19 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif // defined(WANT_UFE_BUILD)
 
 #else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    HdReprSelector reprSelector;
-#else
     HdReprSelector reprSelector = kPointsReprSelector;
-#endif
 
     constexpr bool inSelectionPass = false;
     constexpr bool inPointSnapping = false;
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
     if (inSelectionPass) {
+        // The new Maya point snapping support doesn't require point snapping items any more.
+#if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
         if (inPointSnapping && !reprSelector.Contains(HdReprTokens->points)) {
             reprSelector = reprSelector.CompositeOver(kPointsReprSelector);
         }
+#endif
     } else {
         if (_selectionChanged) {
             _UpdateSelectionStates();
@@ -887,15 +885,11 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
-#ifndef UFE_V2_FEATURES_AVAILABLE
-    const MGlobal::ListAdjustment listAdjustment = _globalListAdjustment;
-#endif
+    const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
 #else
     const TfToken selectionKind = GetSelectionKind();
     const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
-#ifndef UFE_V2_FEATURES_AVAILABLE
     const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
-#endif
 #endif
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
@@ -970,6 +964,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+    TF_UNUSED(listAdjustment);
+
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else

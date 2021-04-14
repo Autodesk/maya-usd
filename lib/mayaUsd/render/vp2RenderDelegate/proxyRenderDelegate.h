@@ -46,7 +46,7 @@
 #endif
 
 // Conditional compilation due to Maya API gap.
-#if MAYA_API_VERSION >= 20200000 && !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
+#if MAYA_API_VERSION >= 20200000
 #define MAYA_ENABLE_UPDATE_FOR_SELECTION
 #endif
 
