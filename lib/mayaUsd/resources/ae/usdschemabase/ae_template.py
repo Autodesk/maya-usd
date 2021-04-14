@@ -298,7 +298,12 @@ class AETemplate(object):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        return getPrettyName(schemaTypeName)
+        schemaTypeName = getPrettyName(schemaTypeName)
+
+        if schemaTypeName.endswith("api"): 
+            schemaTypeName = schemaTypeName.replace("api"," API")
+
+        return schemaTypeName
 
     def createTransformAttributesSection(self, sectionName, attrsToAdd):
         # Get the xformOp order and add those attributes (in order)
@@ -339,12 +344,12 @@ class AETemplate(object):
         showAppliedSchemasSection = False
 
         # loop on all applied schemas and store all those
-        # schema into a dictionary with they attributes.
+        # schema into a dictionary with the attributes.
         # Storing the schema into a dictionary allow us to
         # group all instances of a MultipleApply schema together
         # so we can later display them into the same UI section.
         #
-        # By example, if UsdCollectionAPI is apply twice, UsdPrim.GetAppliedSchemas()
+        # By example, if UsdCollectionAPI is applied twice, UsdPrim.GetAppliedSchemas()
         # will return ["CollectionAPI:instance1","CollectionAPI:instance2"] but we want to group
         # both instance inside a "CollectionAPI" section.
         #
@@ -358,7 +363,7 @@ class AETemplate(object):
             if schemaType.pythonClass:
                 isMultipleApplyAPISchema = Usd.SchemaRegistry().IsMultipleApplyAPISchema(typeName)
                 if isMultipleApplyAPISchema:
-                    # get the attributes names. They will not inclue the namespace and instance name.
+                    # get the attributes names. They will not include the namespace and instance name.
                     instanceName = typeAndInstance[1]
                     attrList = schemaType.pythonClass.GetSchemaAttributeNames(False, instanceName)
                     # build the real attr name
@@ -375,12 +380,13 @@ class AETemplate(object):
                     attrList = schemaType.pythonClass.GetSchemaAttributeNames(False)
                     schemaAttrsDict[typeName] = attrList
 
-                # The "Applied Schemas" will be only visible if at leats
+                # The "Applied Schemas" will be only visible if at least
                 # one applied Schemas has attribute.
                 if not showAppliedSchemasSection:
                     for attr in attrList:
                         if self.attrS.hasAttribute(attr):
                             showAppliedSchemasSection = True
+                            break
 
         # Create the "Applied Schemas" section
         # with all the applied schemas
@@ -388,8 +394,6 @@ class AETemplate(object):
             with ufeAeTemplate.Layout(self, 'Applied Schemas', collapse=True):
                 for typeName, attrs in schemaAttrsDict.items():
                     typeName = self.sectionNameFromSchema(typeName)
-                    if typeName.endswith("api"): 
-                        typeName = typeName.replace("api"," API")
                     self.createSection(typeName, attrs, False)
 
     def buildUI(self):
