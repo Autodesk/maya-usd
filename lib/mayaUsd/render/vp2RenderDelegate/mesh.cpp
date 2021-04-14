@@ -1280,6 +1280,14 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 
         switch (desc.geomStyle) {
         case HdMeshGeomStyleHull:
+#if MAYA_API_VERSION > 20220000
+            if (reprToken == HdVP2ReprTokens->defaultMaterial) {
+                // Default material mode does not use geom subsets, so we create the render item.
+                renderItem = _CreateSmoothHullRenderItem(renderItemName);
+                renderItem->setDefaultMaterialHandling(MRenderItem::DrawWhenActive);
+                renderItem->setShader(_delegate->Get3dDefaultMaterialShader());
+            }
+#endif
             break; // Creating the hull render items requires geom subsets from the topology, and we
                    // can't access that here.
         case HdMeshGeomStyleHullEdgeOnly:
@@ -1597,7 +1605,8 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 #endif
 
-    if (desc.geomStyle == HdMeshGeomStyleHull) {
+    if (desc.geomStyle == HdMeshGeomStyleHull
+        && desc.shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
         if ((itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0) {
             SdfPath materialId = GetMaterialId(); // This is an index path
             if (drawItemData._geomSubset.id != SdfPath::EmptyPath()) {
@@ -2332,6 +2341,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
+
+#if MAYA_API_VERSION > 20220000
+    renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenActive);
 #endif
 
     setWantConsolidation(*renderItem, true);

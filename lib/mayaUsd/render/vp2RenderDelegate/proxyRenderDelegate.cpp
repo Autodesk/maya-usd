@@ -79,6 +79,11 @@ namespace {
 //! Representation selector for shaded and textured viewport mode
 const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
 
+#if MAYA_API_VERSION > 20220000
+//! Representation selector for default material viewport mode
+const HdReprSelector kDefaultMaterialReprSelector(HdVP2ReprTokens->defaultMaterial);
+#endif
+
 //! Representation selector for wireframe viewport mode
 const HdReprSelector kWireReprSelector(TfToken(), HdReprTokens->wire);
 
@@ -252,6 +257,15 @@ void _ConfigureReprs()
         /*flatShadingEnabled=*/false,
         /*blendWireframeColor=*/false);
 
+#if MAYA_API_VERSION > 20220000
+    const HdMeshReprDesc reprDescHullDefaultMaterial(
+        HdMeshGeomStyleHull,
+        HdCullStyleDontCare,
+        HdMeshReprDescTokens->constantColor,
+        /*flatShadingEnabled=*/false,
+        /*blendWireframeColor=*/false);
+#endif
+
     const HdMeshReprDesc reprDescEdge(
         HdMeshGeomStyleHullEdgeOnly,
         HdCullStyleDontCare,
@@ -261,6 +275,12 @@ void _ConfigureReprs()
 
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
+
+#if MAYA_API_VERSION > 20220000
+    // Hull desc for shaded display, edge desc for selection highlight.
+    HdMesh::ConfigureRepr(
+        HdVP2ReprTokens->defaultMaterial, reprDescHullDefaultMaterial, reprDescEdge);
+#endif
 
     // Edge desc for bbox display.
     HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
@@ -728,6 +748,13 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             // To support Wireframe on Shaded mode, the two displayStyle checks
             // should not be mutually excluded.
             if (displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
+#if MAYA_API_VERSION > 20220000
+                if (displayStyle & MHWRender::MFrameContext::kDefaultMaterial) {
+                    if (!reprSelector.Contains(HdVP2ReprTokens->defaultMaterial)) {
+                        reprSelector = reprSelector.CompositeOver(kDefaultMaterialReprSelector);
+                    }
+                } else
+#endif
                 if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
                     reprSelector = reprSelector.CompositeOver(kSmoothHullReprSelector);
                 }

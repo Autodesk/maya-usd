@@ -171,6 +171,11 @@ public:
         if (!TF_VERIFY(shaderMgr))
             return;
 
+        _3dDefaultShader
+            = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dDefaultMaterialShader);
+
+        TF_VERIFY(_3dDefaultShader);
+
         _3dCPVSolidShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dCPVSolidShader);
 
         TF_VERIFY(_3dCPVSolidShader);
@@ -214,6 +219,10 @@ public:
         const size_t index = static_cast<size_t>(type);
         return _fallbackCPVShaders[index];
     }
+
+    /*! \brief  Returns the default material shader.
+     */
+    MHWRender::MShaderInstance* Get3dDefaultMaterialShader() const { return _3dDefaultShader; }
 
     /*! \brief  Returns a white 3d fat point shader.
      */
@@ -347,6 +356,7 @@ private:
 
     MHWRender::MShaderInstance* _3dFatPointShader { nullptr }; //!< 3d shader for points
     MHWRender::MShaderInstance* _3dCPVSolidShader { nullptr }; //!< 3d CPV solid-color shader
+    MHWRender::MShaderInstance* _3dDefaultShader { nullptr }; //!< 3d default material shader
 };
 
 MShaderCache sShaderCache; //!< Global shader cache to minimize the number of unique shaders.
@@ -860,6 +870,13 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackCPVShader() const
 MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dSolidShader(const MColor& color) const
 {
     return sShaderCache.Get3dSolidShader(color);
+}
+
+/*! \brief  Returns a white 3d fat point shader.
+ */
+MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dDefaultMaterialShader() const
+{
+    return sShaderCache.Get3dDefaultMaterialShader();
 }
 
 /*! \brief  Returns a 3d CPV solid-color shader.
