@@ -45,11 +45,6 @@ public:
     {
     }
 
-    UsdPointInstancePositionModifier(const PXR_NS::UsdPrim prim, int instanceIndex)
-        : UsdPointInstanceModifierBase<Ufe::Vector3d, PXR_NS::GfVec3f>(prim, instanceIndex)
-    {
-    }
-
     ~UsdPointInstancePositionModifier() override = default;
 
     PXR_NS::GfVec3f convertValueToUsd(const Ufe::Vector3d& ufeValue) const override
@@ -66,6 +61,8 @@ public:
     {
         return PXR_NS::GfVec3f(0.0f, 0.0f, 0.0f);
     }
+
+    Batches& batches() override;
 
 protected:
     PXR_NS::UsdAttribute _getAttribute() const override;
