@@ -693,7 +693,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     }
 #endif // defined(WANT_UFE_BUILD)
 
-#else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
+#else  // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     HdReprSelector reprSelector = kPointsReprSelector;
 
     constexpr bool inSelectionPass = false;
@@ -885,7 +885,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
-    const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
+    const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
 #else
     const TfToken selectionKind = GetSelectionKind();
     const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
