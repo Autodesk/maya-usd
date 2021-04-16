@@ -383,7 +383,7 @@ _UninstancePrim(const UsdStageRefPtr& stage, const SdfPath& path, const std::str
 namespace {
 // Detect a name that was generated directly from a surface shader name:
 const std::regex
-    _templatedRegex("(lambert|blinn|phong|standardSurface|UsdPreviewSurface)[0-9]*(SG)?");
+    _templatedRegex("(lambert|blinn|phong|standardSurface|usdPreviewSurface)[0-9]*(SG)?");
 } // namespace
 
 UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
