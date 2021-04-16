@@ -103,8 +103,8 @@ public:
 	HDMAYA_API
 	void UpdateTopology(MRenderItem& ri);
 
-	//HDMAYA_API
-	//virtual HdMeshTopology GetMeshTopology();
+	HDMAYA_API
+	void UpdateMaterial(MRenderItem& ri);
 
 	HDMAYA_API
 	virtual std::shared_ptr<HdTopology> GetTopology();
@@ -115,6 +115,12 @@ public:
 
 	HDMAYA_API
 	virtual TfToken GetRenderTag() const;
+
+	HDMAYA_API
+	virtual void IsStale(bool stale) { _isStale = stale; }
+	
+	HDMAYA_API
+	virtual bool IsStale() const { return _isStale; }
 
 private:	
 	//void _UpdateWireframe(MRenderItem& ri);
@@ -136,6 +142,7 @@ private:
 	MString _name;
     GfMatrix4d _transform[2];
     bool _isVisible = true;
+	bool _isStale = false;
 };
 
 using HdMayaRenderItemAdapterPtr = std::shared_ptr<HdMayaRenderItemAdapter>;

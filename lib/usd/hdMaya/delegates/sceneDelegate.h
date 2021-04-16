@@ -54,6 +54,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaSceneDelegate : public HdMayaDelegateCtx
 {
 public:
+	template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
+
     HDMAYA_API
     HdMayaSceneDelegate(const InitData& initData);
 
@@ -262,8 +264,6 @@ private:
         bool                                                                  isSprim = false);
 
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
-
-    template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
 	/// \brief Unordered Map storing the shape adapters.

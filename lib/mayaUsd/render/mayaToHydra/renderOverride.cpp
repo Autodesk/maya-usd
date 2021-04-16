@@ -1027,6 +1027,12 @@ bool MtohRenderOverride::select(
     MSelectionList& selectionList,
     MPointArray&    worldSpaceHitPts)
 {
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+	// Skip override on plugin-side if prototype 2
+	// Rely on VP2 select and simply draw selection items
+	return false;
+#endif
+
     MStatus status = MStatus::kFailure;
 
     MMatrix viewMatrix = frameContext.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);

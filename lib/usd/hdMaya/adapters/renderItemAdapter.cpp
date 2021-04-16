@@ -105,6 +105,20 @@ bool HdMayaRenderItemAdapter::IsSupported() const
 	}
 }
 
+// TODO do not choose hd material based on type should pass maya material in..
+void HdMayaRenderItemAdapter::UpdateMaterial(MRenderItem& ri)
+{
+	//auto dm = ri.drawMode();
+	//MHWRender::MGeometry::DrawMode::
+	switch (ri.type())
+	{
+		case MHWRender::MRenderItem::RenderItemType::DecorationItem:
+			break;
+		case MHWRender::MRenderItem::RenderItemType::NonMaterialSceneItem:
+			break;
+	}
+}
+
 void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 {
 	MGeometry* geom = ri.geometry();
@@ -115,28 +129,28 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 	if (geom && geom->vertexBufferCount() > 0)
 	{
 		// Vertices
-		MVertexBuffer* verts = nullptr;
-		if (verts = geom->vertexBuffer(0))
+		MVertexBuffer* mayaVertexBuffer = nullptr;
+		if (mayaVertexBuffer = geom->vertexBuffer(0))
 		{
-			int vertCount = verts->vertexCount();
+			int mayaVertexCount = mayaVertexBuffer->vertexCount();
 			_vertexPositions.clear();
-			_vertexPositions.resize(vertCount);
-			const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(verts->map());
+			_vertexPositions.resize(mayaVertexCount);
+			const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(mayaVertexBuffer->map());
 			// NOTE: Looking at HdMayaMeshAdapter::GetPoints notice assign(vertexPositions, vertexPositions + vertCount)
 			// Why are we not multiplying with sizeof(GfVec3f) to calculate the offset ? 
 			// The following happens when I try to do it :
 			// Invalid Hydra prim - Vertex primvar points has 288 elements, while its topology references only upto element index 24.
-			_vertexPositions.assign(vertexPositions, vertexPositions + vertCount);
-			verts->unmap();
+			_vertexPositions.assign(vertexPositions, vertexPositions + mayaVertexCount);
+			mayaVertexBuffer->unmap();
 		}
 		// Indices
-		MIndexBuffer* indices = nullptr;
-		if (indices = geom->indexBuffer(0))
+		MIndexBuffer* mayaIndexBuffer = nullptr;
+		if (mayaIndexBuffer = geom->indexBuffer(0))
 		{
-			int indexCount = indices->size();
-			vertexIndices.resize(indexCount);
-			int* indicesData = (int*)indices->map();
-			for (int i = 0; i < indexCount; i++)
+			int mayaIndexCount = mayaIndexBuffer->size();
+			vertexIndices.resize(mayaIndexCount);
+			int* indicesData = (int*)mayaIndexBuffer->map();
+			for (int i = 0; i < mayaIndexCount; i++)
 			{
 				vertexIndices[i] = indicesData[i];
 			}
@@ -144,8 +158,8 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 			switch (_primitive)
 			{
 			case MHWRender::MGeometry::Primitive::kTriangles:
-				vertexCounts.resize(indexCount / 3);
-				for (int i = 0; i < indexCount / 3; i++) vertexCounts[i] = 3;
+				vertexCounts.resize(mayaIndexCount / 3);
+				for (int i = 0; i < mayaIndexCount / 3; i++) vertexCounts[i] = 3;
 				break;
 			case MHWRender::MGeometry::Primitive::kLines:
 				vertexCounts.resize(1);
@@ -156,7 +170,7 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 									for (int i = 0; i < indexCount; i++) vertexCounts[i] = 1;
 									break;		*/
 			}
-			indices->unmap();
+			mayaIndexBuffer->unmap();
 		}
 
 		// UVs
@@ -170,7 +184,7 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 		//	for (int i = 0; i < indexCount; i++) _uvs[i] = (GfVec2f(0, 0));
 		//}
 
-		if (indices && verts)
+		if (mayaIndexBuffer && mayaVertexBuffer)
 		{
 			switch (_primitive)
 			{

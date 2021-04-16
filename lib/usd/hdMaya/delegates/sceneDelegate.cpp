@@ -224,13 +224,33 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
 {
+	for (auto it : _renderItemsAdapters)
+	// Mark all render items as stale
+	{
+		auto ria = it.second;
+		ria->IsStale(true);		
+	}
+
 	for (int i = 0; i < scene.mCount; i++)
 	{
-		HdMayaRenderItemAdapterPtr adapter;
-		CreateOrGetRenderItem(*scene.mItems[i], adapter);
-		adapter->UpdateTopology(*scene.mItems[i]);
-		adapter->UpdateTransform(*scene.mItems[i]);
+		HdMayaRenderItemAdapterPtr ria;
+		CreateOrGetRenderItem(*scene.mItems[i], ria);
+		ria->UpdateTopology(*scene.mItems[i]);
+		ria->UpdateMaterial(*scene.mItems[i]);
+		ria->UpdateTransform(*scene.mItems[i]);
+		ria->IsStale(false);
 	}
+
+	for (auto it : _renderItemsAdapters)
+	// Remove all stale render items
+	{
+		auto ria = it.second;
+		if (ria->IsStale())
+		{
+			RemoveAdapter(ria->GetID());
+		}
+	}
+
 }
 
 void HdMayaSceneDelegate::Populate()
@@ -581,6 +601,8 @@ AdapterPtr HdMayaSceneDelegate::Create(
     return adapter;
 }
 
+
+// Analogous to HdMayaSceneDelegate::InsertDag
 void HdMayaSceneDelegate::CreateOrGetRenderItem(const MRenderItem& ri, HdMayaRenderItemAdapterPtr& adapter)
 {
     TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
@@ -603,13 +625,6 @@ void HdMayaSceneDelegate::CreateOrGetRenderItem(const MRenderItem& ri, HdMayaRen
         return;
     }
 
-    //auto material = adapter->GetMaterial();
-    //if (material != MObject::kNullObj) {
-    //    const auto materialId = GetMaterialPath(material);
-    //    if (TfMapLookupPtr(_materialAdapters, materialId) == nullptr) {
-    //        _CreateMaterial(materialId, material);
-    //    }
-    //}
     adapter->Populate();
     adapter->CreateCallbacks();
     _renderItemsAdapters.insert({ id, adapter });
