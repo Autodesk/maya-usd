@@ -1297,7 +1297,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
             if (reprToken == HdReprTokens->smoothHull
                 || reprToken == HdVP2ReprTokens->defaultMaterial) {
                 // Share selection highlight render item between smoothHull and defaultMaterial:
-                bool foundShared = false;
+                bool                        foundShared = false;
                 _ReprVector::const_iterator it = std::find_if(
                     _reprs.begin(),
                     _reprs.end(),

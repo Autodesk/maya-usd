@@ -356,7 +356,7 @@ private:
 
     MHWRender::MShaderInstance* _3dFatPointShader { nullptr }; //!< 3d shader for points
     MHWRender::MShaderInstance* _3dCPVSolidShader { nullptr }; //!< 3d CPV solid-color shader
-    MHWRender::MShaderInstance* _3dDefaultShader { nullptr }; //!< 3d default material shader
+    MHWRender::MShaderInstance* _3dDefaultShader { nullptr };  //!< 3d default material shader
 };
 
 MShaderCache sShaderCache; //!< Global shader cache to minimize the number of unique shaders.

@@ -755,7 +755,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
                     }
                 } else
 #endif
-                if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
+                    if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
                     reprSelector = reprSelector.CompositeOver(kSmoothHullReprSelector);
                 }
             }
