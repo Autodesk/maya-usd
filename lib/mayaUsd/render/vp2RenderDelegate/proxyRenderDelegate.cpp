@@ -277,7 +277,7 @@ void _ConfigureReprs()
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
 
 #if MAYA_API_VERSION > 20220000
-    // Hull desc for shaded display, edge desc for selection highlight.
+    // Hull desc for default material display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(
         HdVP2ReprTokens->defaultMaterial, reprDescHullDefaultMaterial, reprDescEdge);
 #endif
