@@ -28,6 +28,8 @@
 #include <maya/MDGContextGuard.h>
 #include <maya/MHWGeometry.h>
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -62,13 +64,13 @@ TfToken HdMayaRenderItemAdapter::GetRenderTag() const
 {
 	switch (_primitive)
 	{		
-		case MHWRender::MGeometry::Primitive::kLineStrip:
 		case MHWRender::MGeometry::Primitive::kLines:
-			return HdTokens->points;
-		case MHWRender::MGeometry::Primitive::kTriangleStrip:
+			//return HdRenderTagTokens->guide;
+			// TODO: Why must render tag match  for both primitive type?
+			// Otherwise renderIndex.cpp _DirtyRprimIdsFilterPredicate will fail from filterParam->renderTags[tagNum] == primRenderTag 
 		case MHWRender::MGeometry::Primitive::kTriangles:
 		default:
-			return HdTokens->geometry;			
+			return HdRenderTagTokens->geometry;
 	}
 }
 
@@ -90,18 +92,31 @@ void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
 	}
 }
 
-void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
+bool HdMayaRenderItemAdapter::IsSupported() const
+{
+	switch (_primitive)
+	{
+		case MHWRender::MGeometry::Primitive::kTriangles:
+			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);			
+		case MHWRender::MGeometry::Primitive::kLines:
+			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);			
+		default:
+			return false;
+	}
+}
+
+void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 {
 	MGeometry* geom = ri.geometry();
-	VtIntArray faceVertexIndices;
-	VtIntArray faceVertexCounts;	
+	VtIntArray vertexIndices;
+	VtIntArray vertexCounts;	
 	// TODO : Multiple streams
 	// for now assume first is position
-	if (geom && geom->vertexBufferCount() > 0) 
-	{		
+	if (geom && geom->vertexBufferCount() > 0)
+	{
 		// Vertices
 		MVertexBuffer* verts = nullptr;
-		if (verts = geom->vertexBuffer(0)) 
+		if (verts = geom->vertexBuffer(0))
 		{
 			int vertCount = verts->vertexCount();
 			_vertexPositions.clear();
@@ -115,27 +130,35 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 			verts->unmap();
 		}
 		// Indices
-		MIndexBuffer* indices = nullptr;		
+		MIndexBuffer* indices = nullptr;
 		if (indices = geom->indexBuffer(0))
 		{
 			int indexCount = indices->size();
-			faceVertexIndices.resize(indexCount);
-			int* indicesData = (int*)indices->map();			
-			for (int i = 0; i < indexCount; i++) faceVertexIndices[i] = indicesData[i];
+			vertexIndices.resize(indexCount);
+			int* indicesData = (int*)indices->map();
+			for (int i = 0; i < indexCount; i++)
+			{
+				vertexIndices[i] = indicesData[i];
+			}
 
 			switch (_primitive)
 			{
-				case MHWRender::MGeometry::Primitive::kTriangles:
-					faceVertexCounts.resize(indexCount / 3);
-					for (int i = 0; i < indexCount / 3; i++) faceVertexCounts[i] = 3;					
-					break;
-				case MHWRender::MGeometry::Primitive::kLines:
-					faceVertexCounts.resize(indexCount);
-					for (int i = 0; i < indexCount; i++) faceVertexCounts[i] = 1;
-					break;					
+			case MHWRender::MGeometry::Primitive::kTriangles:
+				vertexCounts.resize(indexCount / 3);
+				for (int i = 0; i < indexCount / 3; i++) vertexCounts[i] = 3;
+				break;
+			case MHWRender::MGeometry::Primitive::kLines:
+				vertexCounts.resize(1);
+				vertexCounts[0] = vertexIndices.size();
+				break;
+				/*				case MHWRender::MGeometry::Primitive::kLines:
+									vertexCounts.resize(indexCount);
+									for (int i = 0; i < indexCount; i++) vertexCounts[i] = 1;
+									break;		*/
 			}
 			indices->unmap();
-		}	
+		}
+
 		// UVs
 		//if(indices)
 		//{
@@ -149,35 +172,82 @@ void HdMayaRenderItemAdapter::UpdateGeometry(MRenderItem& ri)
 
 		if (indices && verts)
 		{
-			// TODO: Maybe we could use the flat shading of the display style?
-			_meshTopology = HdMeshTopology(
-#if MAYA_APP_VERSION >= 2019
-				(GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
-				? PxOsdOpenSubdivTokens->catmullClark
-				: PxOsdOpenSubdivTokens->none,
-#else
-				GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
-				: PxOsdOpenSubdivTokens->none,
-#endif
+			switch (_primitive)
+			{
+			case MGeometry::Primitive::kTriangles:
+				// TODO: Maybe we could use the flat shading of the display style?
+				_topology.reset(new HdMeshTopology(
+					(GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
+					? PxOsdOpenSubdivTokens->catmullClark
+					: PxOsdOpenSubdivTokens->none,
+					UsdGeomTokens->rightHanded,
+					vertexCounts,
+					vertexIndices));
 
-				UsdGeomTokens->rightHanded,
-				faceVertexCounts,
-				faceVertexIndices);
+				MarkDirty(
+/*					HdChangeTracker::DirtyTransform |
+					HdChangeTracker::DirtyTopology |
+					HdChangeTracker::DirtyPrimvar |
+					HdChangeTracker::DirtyPoints		*/			
+					HdChangeTracker::Clean
+					| HdChangeTracker::InitRepr
+					| HdChangeTracker::DirtyExtent
+					| HdChangeTracker::DirtyNormals
+					| HdChangeTracker::DirtyPoints
+					| HdChangeTracker::DirtyPrimID
+					| HdChangeTracker::DirtyPrimvar
+					| HdChangeTracker::DirtyDisplayStyle
+					| HdChangeTracker::DirtyRepr
+					| HdChangeTracker::DirtyMaterialId
+					| HdChangeTracker::DirtyTopology
+					| HdChangeTracker::DirtyTransform
+					| HdChangeTracker::DirtyVisibility
+					| HdChangeTracker::DirtyWidths
+					| HdChangeTracker::DirtyComputationPrimvarDesc
+					| HdChangeTracker::DirtyInstancer
+				);
+				break;
+			case MGeometry::Primitive::kLines:
+				// This will allow us to output geometry to the effect of GL_LINES
+				_topology.reset(new HdBasisCurvesTopology(
+					HdTokens->linear,
+					// basis type is ignored, due to linear curve type
+					{},
+					HdTokens->segmented,
+					vertexCounts,
+					vertexIndices));
+				MarkDirty(
+					//HdChangeTracker::DirtyTransform |
+					//HdChangeTracker::DirtyTopology |
+					//HdChangeTracker::DirtyPrimvar |
+					//HdChangeTracker::DirtyPoints
+					HdChangeTracker::Clean
+					| HdChangeTracker::InitRepr
+					| HdChangeTracker::DirtyExtent
+					| HdChangeTracker::DirtyNormals
+					| HdChangeTracker::DirtyPoints
+					| HdChangeTracker::DirtyPrimID
+					| HdChangeTracker::DirtyPrimvar
+					| HdChangeTracker::DirtyDisplayStyle
+					| HdChangeTracker::DirtyRepr
+					| HdChangeTracker::DirtyMaterialId
+					| HdChangeTracker::DirtyTopology
+					| HdChangeTracker::DirtyTransform
+					| HdChangeTracker::DirtyVisibility
+					| HdChangeTracker::DirtyWidths
+					| HdChangeTracker::DirtyComputationPrimvarDesc
+					| HdChangeTracker::DirtyInstancer
+				);
+				break;
 
-			MarkDirty(
-				HdChangeTracker::DirtyTransform |
-				HdChangeTracker::DirtyMaterialId |
-				HdChangeTracker::DirtyTopology |
-				HdChangeTracker::DirtyPrimvar |
-				HdChangeTracker::DirtyPoints
-			);
+			}
 		}
 	}
 }
 
-HdMeshTopology HdMayaRenderItemAdapter::GetMeshTopology()
+std::shared_ptr<HdTopology> HdMayaRenderItemAdapter::GetTopology()
 {
-	return _meshTopology;
+	return _topology;
 }
 
 VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
@@ -220,7 +290,7 @@ void HdMayaRenderItemAdapter::Populate()
 			GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {}/* TODO : GetInstancerID() */);
 			break;
 		case MHWRender::MGeometry::Primitive::kLines:
-			GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {}/* TODO : GetInstancerID() */);
+			GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {}/* TODO : GetInstancerID() */);
 			break;
 	}
 	_isPopulated = true;
@@ -248,15 +318,6 @@ HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInter
 		desc.role = HdPrimvarRoleTokens->point;		
 		return { desc };
 	}
-	// UVs
-	//else if (interpolation == HdInterpolationFaceVarying) 
-	//{
-	//	HdPrimvarDescriptor desc;
-	//	desc.name = HdMayaAdapterTokens->st;
-	//	desc.interpolation = interpolation;
-	//	desc.role = HdPrimvarRoleTokens->textureCoordinate;
-	//	return { desc };
-	//}
 
 	return {};
 }

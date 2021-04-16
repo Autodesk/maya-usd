@@ -228,7 +228,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 	{
 		HdMayaRenderItemAdapterPtr adapter;
 		CreateOrGetRenderItem(*scene.mItems[i], adapter);
-		adapter->UpdateGeometry(*scene.mItems[i]);
+		adapter->UpdateTopology(*scene.mItems[i]);
 		adapter->UpdateTransform(*scene.mItems[i]);
 	}
 }
@@ -767,7 +767,11 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
         // from each adapter.
 		_MapAdapter<HdMayaRenderItemAdapter>(
 			[](HdMayaRenderItemAdapter* a) {
-				if (a->HasType(HdPrimTypeTokens->mesh)) {
+				if (
+					a->HasType(HdPrimTypeTokens->mesh) ||
+					a->HasType(HdPrimTypeTokens->basisCurves)
+					)
+				{
 					a->MarkDirty(HdChangeTracker::DirtyTopology);
 				}
 			},
@@ -787,7 +791,10 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
 		_MapAdapter<HdMayaRenderItemAdapter>(
 			[](HdMayaRenderItemAdapter* a) {
-			if (a->HasType(HdPrimTypeTokens->mesh)) {
+			if (
+				a->HasType(HdPrimTypeTokens->mesh) ||
+				a->HasType(HdPrimTypeTokens->basisCurves))
+			{
 				a->InvalidateTransform();
 				a->MarkDirty(HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyTransform);
 			}
@@ -912,7 +919,12 @@ HdMeshTopology HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id)
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
     return _GetValue<HdMayaRenderItemAdapter, HdMeshTopology>(
         id,
-        [](HdMayaRenderItemAdapter* a) -> HdMeshTopology { return a->GetMeshTopology(); },
+        [](HdMayaRenderItemAdapter* a) -> HdMeshTopology 
+		{ 
+			return std::dynamic_pointer_cast<HdMeshTopology>(a->GetTopology()) ?
+				*std::dynamic_pointer_cast<HdMeshTopology>(a->GetTopology()) :
+				HdMeshTopology();
+		},
         _renderItemsAdapters);
 #else
 	return _GetValue<HdMayaShapeAdapter, HdMeshTopology>(
@@ -927,10 +939,22 @@ HdBasisCurvesTopology HdMayaSceneDelegate::GetBasisCurvesTopology(const SdfPath&
 {
     TF_DEBUG(HDMAYA_DELEGATE_GET_CURVE_TOPOLOGY)
         .Msg("HdMayaSceneDelegate::GetBasisCurvesTopology(%s)\n", id.GetText());
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+	return _GetValue<HdMayaRenderItemAdapter, HdBasisCurvesTopology>(
+		id,
+		[](HdMayaRenderItemAdapter* a) -> HdBasisCurvesTopology
+		{
+			return std::dynamic_pointer_cast<HdBasisCurvesTopology>(a->GetTopology()) ?
+				*std::dynamic_pointer_cast<HdBasisCurvesTopology>(a->GetTopology()) :
+				HdBasisCurvesTopology();
+		},
+		_renderItemsAdapters);
+#else
     return _GetValue<HdMayaShapeAdapter, HdBasisCurvesTopology>(
         id,
         [](HdMayaShapeAdapter* a) -> HdBasisCurvesTopology { return a->GetBasisCurvesTopology(); },
         _shapeAdapters);
+#endif
 }
 
 //TODO HDMAYA_SCENE_RENDER_DATASERVER

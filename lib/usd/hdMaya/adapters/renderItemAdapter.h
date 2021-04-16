@@ -27,6 +27,7 @@
 #include <maya/MMatrix.h>
 
 #include <functional>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,7 +56,7 @@ public:
 	bool HasType(const TfToken& typeId) const override { return typeId == HdPrimTypeTokens->mesh; }
 
 	HDMAYA_API
-	virtual bool IsSupported() const override { return true; };
+	virtual bool IsSupported() const override;
 
 	HDMAYA_API
 	virtual bool GetDoubleSided() const { return true; };
@@ -100,10 +101,13 @@ public:
 	void UpdateTransform(MRenderItem& ri);
 
 	HDMAYA_API
-	void UpdateGeometry(MRenderItem& ri);
+	void UpdateTopology(MRenderItem& ri);
+
+	//HDMAYA_API
+	//virtual HdMeshTopology GetMeshTopology();
 
 	HDMAYA_API
-	virtual HdMeshTopology GetMeshTopology();
+	virtual std::shared_ptr<HdTopology> GetTopology();
 
 	// TODO : Different smooth levels
 	HDMAYA_API
@@ -112,10 +116,21 @@ public:
 	HDMAYA_API
 	virtual TfToken GetRenderTag() const;
 
-private:
+private:	
+	//void _UpdateWireframe(MRenderItem& ri);
+
+	//unsigned int _GetNumOfEdgeIndices(
+	//	MRenderItem& ri,
+	//	const HdMeshTopology& topology);
+
+	////! Helper utility function to extract edge indices
+	//void _FillEdgeIndices(
+	//	MRenderItem& ri,
+	//	int* indices, 
+	//	const HdMeshTopology& topology);
 
 	//VtArray<GfVec2f> _uvs = {};
-	HdMeshTopology _meshTopology = {};
+	std::shared_ptr<HdTopology> _topology = nullptr;
 	VtVec3fArray _vertexPositions = {};
 	MGeometry::Primitive _primitive;
 	MString _name;
