@@ -657,6 +657,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
 
             {
+                PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
+
                 // When opening or creating stages we must have an active UsdStageCache.
                 // The stage cache is the only one who holds a strong reference to the
                 // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
