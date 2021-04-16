@@ -447,7 +447,12 @@ public:
         }
 
         // Create the shading engine.
-        MObject shadingEngine = _context->CreateShadingEngine();
+        std::string       surfaceNodeName;
+        MFnDependencyNode surfaceNodeFn;
+        if (surfaceNodeFn.setObject(surfaceOutputPlug.node()) == MS::kSuccess) {
+            surfaceNodeName = surfaceNodeFn.name().asChar();
+        }
+        MObject shadingEngine = _context->CreateShadingEngine(surfaceNodeName);
         if (shadingEngine.isNull()) {
             return MObject();
         }

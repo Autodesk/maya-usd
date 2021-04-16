@@ -29,8 +29,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeImporterTokens, PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);
-
 bool UsdMayaShadingModeImportContext::GetCreatedObject(const UsdPrim& prim, MObject* obj) const
 {
     if (!prim) {
@@ -64,9 +62,10 @@ MObject UsdMayaShadingModeImportContext::AddCreatedObject(const SdfPath& path, c
     return obj;
 }
 
-MObject UsdMayaShadingModeImportContext::CreateShadingEngine() const
+MObject
+UsdMayaShadingModeImportContext::CreateShadingEngine(const std::string& surfaceNodeName) const
 {
-    const TfToken shadingEngineName = GetShadingEngineName();
+    const TfToken shadingEngineName = GetShadingEngineName(surfaceNodeName);
     if (shadingEngineName.IsEmpty()) {
         return MObject();
     }
@@ -82,37 +81,27 @@ MObject UsdMayaShadingModeImportContext::CreateShadingEngine() const
 
     fnSet.setName(
         shadingEngineName.GetText(),
-        /* createNamespace = */ true,
+        /* createNamespace = */ false,
         &status);
     CHECK_MSTATUS_AND_RETURN(status, MObject());
 
     return shadingEngine;
 }
 
-TfToken UsdMayaShadingModeImportContext::GetShadingEngineName() const
+TfToken
+UsdMayaShadingModeImportContext::GetShadingEngineName(const std::string& surfaceNodeName) const
 {
     if (!_shadeMaterial && !_boundPrim) {
         return TfToken();
     }
 
-    if (!_shadingEngineName.IsEmpty()) {
-        return _shadingEngineName;
-    }
-
-    TfToken primName;
+    TfToken shadingEngineName;
     if (_shadeMaterial) {
-        primName = _shadeMaterial.GetPrim().GetName();
+        shadingEngineName = _shadeMaterial.GetPrim().GetName();
     } else if (_boundPrim) {
-        primName = _boundPrim.GetPrim().GetName();
+        // We have no material, so we definitely want to use the surfaceNodeName here:
+        shadingEngineName = TfToken(UsdMayaUtil::SanitizeName(surfaceNodeName + "SG").c_str());
     }
-
-    // To make sure that the shadingEngine object names do not collide with
-    // Maya transform or shape node names, we put the shadingEngine objects
-    // into their own namespace.
-    const TfToken shadingEngineName(TfStringPrintf(
-        "%s:%s",
-        UsdMayaShadingModeImporterTokens->MayaMaterialNamespace.GetText(),
-        primName.GetText()));
 
     return shadingEngineName;
 }
@@ -130,11 +119,6 @@ TfToken UsdMayaShadingModeImportContext::GetVolumeShaderPlugName() const
 TfToken UsdMayaShadingModeImportContext::GetDisplacementShaderPlugName() const
 {
     return _displacementShaderPlugName;
-}
-
-void UsdMayaShadingModeImportContext::SetShadingEngineName(const TfToken& shadingEngineName)
-{
-    _shadingEngineName = shadingEngineName;
 }
 
 void UsdMayaShadingModeImportContext::SetSurfaceShaderPlugName(const TfToken& surfaceShaderPlugName)

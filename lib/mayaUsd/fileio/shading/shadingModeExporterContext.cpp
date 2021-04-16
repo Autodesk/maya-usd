@@ -54,6 +54,7 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
+#include <regex>
 #include <string>
 #include <utility>
 
@@ -379,6 +380,12 @@ _UninstancePrim(const UsdStageRefPtr& stage, const SdfPath& path, const std::str
     return stage->OverridePrim(path);
 }
 
+namespace {
+// Detect a name that was generated directly from a surface shader name:
+const std::regex
+    _templatedRegex("(lambert|blinn|phong|standardSurface|UsdPreviewSurface)[0-9]*(SG)?");
+} // namespace
+
 UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     const AssignmentVector& assignmentsToBind,
     const std::string&      name) const
@@ -387,13 +394,28 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 
     std::string materialName = name;
     if (materialName.empty()) {
-        MStatus           status;
-        MFnDependencyNode seDepNode(_shadingEngine, &status);
-        if (!status) {
+        std::string sgName;
+
+        MFnDependencyNode fnDepNode;
+        if (fnDepNode.setObject(_shadingEngine) == MS::kSuccess) {
+            sgName = fnDepNode.name().asChar();
+        } else {
             return ret;
         }
-        MString seName = seDepNode.name();
-        materialName = seName.asChar();
+
+        std::smatch match;
+        if (std::regex_match(sgName, match, _templatedRegex)) {
+            // We have an original SG name. Check if the surface shader has a more descriptive name
+            if (fnDepNode.setObject(GetSurfaceShader()) == MS::kSuccess) {
+                std::string surfName = fnDepNode.name().asChar();
+                if (!std::regex_match(surfName, match, _templatedRegex)) {
+                    // Surface node is more interesting:
+                    sgName = surfName + "SG";
+                }
+            }
+        }
+
+        materialName = sgName.c_str();
     }
 
     materialName = UsdMayaUtil::SanitizeName(materialName);

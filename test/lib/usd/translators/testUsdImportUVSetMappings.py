@@ -56,12 +56,12 @@ class testUsdImportUVSetMappings(unittest.TestCase):
         # two of them were made unmergeable)
         expected_sg = set(['initialParticleSE',
                            'initialShadingGroup',
-                           'USD_Materials:blinn1SG',
-                           'USD_Materials:blinn2SG',
-                           'USD_Materials:blinn3SG',
-                           'USD_Materials:blinn3SG_uvSet1',
-                           'USD_Materials:blinn4SG',
-                           'USD_Materials:blinn4SG_uvSet2'])
+                           'blinn1SG',
+                           'blinn2SG',
+                           'blinn3SG',
+                           'blinn3SG_uvSet1',
+                           'blinn4SG',
+                           'blinn4SG_uvSet2'])
 
         self.assertEqual(set(cmds.ls(type="shadingEngine")), expected_sg)
 
