@@ -23,6 +23,8 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
@@ -102,6 +104,8 @@ static const std::string kUSDCylinderPrimImage { "out_USD_Cylinder.png" };
 static constexpr char    kUSDSpherePrimItem[] = "Sphere";
 static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
 static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
+static constexpr char    kAllRegisteredTypesItem[] = "All Registered";
+static constexpr char    kAllRegisteredTypesLabel[] = "All Registered";
 
 //! \brief Undoable command for loading a USD prim.
 class LoadUndoableCommand : public Ufe::UndoableCommand
@@ -420,6 +424,26 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
     return itemLabelPairs;
 }
 
+// Get all the currently registered prim types from USD
+// so that we may display them in a UI list for users.
+static const std::vector<TfToken> getConcretePrimTypes()
+{
+    std::vector<TfToken> primTypes;
+
+    // Query all the available types
+    std::set<TfType> schemaTypes;
+    PlugRegistry::GetAllDerivedTypes<UsdSchemaBase>(&schemaTypes);
+
+    for (auto t : schemaTypes) {
+        // Find the primType as it would be within the USD file
+        if (UsdSchemaRegistry::IsConcrete(t)) {
+            primTypes.emplace_back(UsdSchemaRegistry::GetConcreteSchemaTypeName(t));
+        }
+    }
+
+    return primTypes;
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -537,19 +561,32 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             } // Variants of a variant set
         }     // Variant sets
         else if (itemPath[0] == kUSDAddNewPrimItem) {
-            items.emplace_back(
-                kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
-            items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
-            items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel, kUSDXformPrimImage);
-            items.emplace_back(Ufe::ContextItem::kSeparator);
-            items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel, kUSDCapsulePrimImage);
-            items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel, kUSDConePrimImage);
-            items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
-            items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
-            items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
-        }
-    } // Top-level items
-
+            if (itemPath.size() == 1u) { // Root setup
+                items.emplace_back(
+                    kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
+                items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
+                items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel, kUSDXformPrimImage);
+                items.emplace_back(Ufe::ContextItem::kSeparator);
+                items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel, kUSDCapsulePrimImage);
+                items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel, kUSDConePrimImage);
+                items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
+                items.emplace_back(
+                    kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
+                items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
+                items.emplace_back(Ufe::ContextItem::kSeparator);
+                items.emplace_back(
+                        kAllRegisteredTypesItem, kAllRegisteredTypesLabel, Ufe::ContextItem::kHasChildren);
+            } else if (itemPath.size() == 2u) { // Sub Menus
+                if (itemPath[1] == kAllRegisteredTypesItem) {
+                    auto primTypes = getConcretePrimTypes();
+                    std::sort(primTypes.begin(), primTypes.end());
+                    for (auto primType : primTypes) {
+                        items.emplace_back(primType, primType);
+                    }
+                }
+            }
+        } // Add New Prim Item
+    }     // Top-level items
     return items;
 }
 
@@ -592,14 +629,13 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     } // ActiveState
     else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
         // Operation is to create a new prim of the type specified.
-        if (itemPath.size() != 2u) {
+        if (itemPath.size() < 2u) {
             TF_CODING_ERROR("Wrong number of arguments");
             return nullptr;
         }
-
-        // At this point we know we have 2 arguments to execute the operation.
-        // itemPath[1] contains the new prim type to create.
-        return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
+        // At this point we know the last item in the itemPath is the prim type to create
+        auto primType = itemPath[itemPath.size() - 1];
+        return UsdUndoAddNewPrimCommand::create(fItem, primType, primType);
 #ifdef WANT_QT_BUILD
         // When building without Qt there is no LayerEditor
     } else if (itemPath[0] == kUSDLayerEditorItem) {
