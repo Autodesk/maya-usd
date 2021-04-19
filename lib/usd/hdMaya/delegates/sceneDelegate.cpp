@@ -184,6 +184,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (HdMayaSceneDelegate)
     ((FallbackMaterial, "__fallback_material__"))
     ((DormantWireframeMaterial, "__dormant_wireframe_material__"))
+	((DormantVertexMaterial, "__dormant_vertex_material__"))
 	(HdMayaMeshPoints)
 );
 // clang-format on
@@ -208,6 +209,7 @@ HdMayaSceneDelegate::HdMayaSceneDelegate(const InitData& initData)
     , _fallbackMaterial(initData.delegateID.AppendChild(_tokens->FallbackMaterial))
 	// TODO remove
 	, _wireframeMaterial(initData.delegateID.AppendChild(_tokens->DormantWireframeMaterial))	
+	, _vertexMaterial(initData.delegateID.AppendChild(_tokens->DormantVertexMaterial))
 {
 }
 
