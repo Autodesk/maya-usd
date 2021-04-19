@@ -341,6 +341,11 @@ class AETemplate(object):
             self.defineCustom(usdNoticeControl)
 
     def createAppliedSchemasSection(self):
+        # USD version 0.21.2 is required because of
+        # Usd.SchemaRegistry().GetPropertyNamespacePrefix()
+        if Usd.GetVersion() < (0, 21, 2):
+            return
+
         showAppliedSchemasSection = False
 
         # loop on all applied schemas and store all those
