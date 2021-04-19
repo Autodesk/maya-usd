@@ -30,6 +30,20 @@
 
 #include <functional>
 
+
+/*
+TODO:
+---------------------------------
+
+* Stipple lines (dotted lines)
+* materials
+* Depth priority
+
+
+*/
+
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -102,20 +116,6 @@ bool HdMayaRenderItemAdapter::IsSupported() const
 			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);			
 		default:
 			return false;
-	}
-}
-
-// TODO do not choose hd material based on type should pass maya material in..
-void HdMayaRenderItemAdapter::UpdateMaterial(MRenderItem& ri)
-{
-	//auto dm = ri.drawMode();
-	//MHWRender::MGeometry::DrawMode::
-	switch (ri.type())
-	{
-		case MHWRender::MRenderItem::RenderItemType::DecorationItem:
-			break;
-		case MHWRender::MRenderItem::RenderItemType::NonMaterialSceneItem:
-			break;
 	}
 }
 

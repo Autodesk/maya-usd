@@ -281,6 +281,13 @@ private:
     std::vector<SdfPath>                       _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
+	// TODO remove
+	SdfPath _shadedWireDormantMaterial;
+	//GfVec3f _shadedWireDormantColor = { 0.432f, 1.215f, 8.665f };
+	GfVec3f _shadedWireDormantColor = { 0.294f, 5.113f, 0.0f };
+
+	//GfVec3f _pointColor = 
+
     bool    _enableMaterials = false;
 };
 

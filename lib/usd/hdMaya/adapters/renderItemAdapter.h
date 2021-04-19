@@ -104,7 +104,11 @@ public:
 	void UpdateTopology(MRenderItem& ri);
 
 	HDMAYA_API
-	void UpdateMaterial(MRenderItem& ri);
+	void SetMaterial(const SdfPath& mat) { _material = mat; }
+
+
+	HDMAYA_API
+	const SdfPath& GetMaterial() const { return _material; }
 
 	HDMAYA_API
 	virtual std::shared_ptr<HdTopology> GetTopology();
@@ -122,20 +126,7 @@ public:
 	HDMAYA_API
 	virtual bool IsStale() const { return _isStale; }
 
-private:	
-	//void _UpdateWireframe(MRenderItem& ri);
-
-	//unsigned int _GetNumOfEdgeIndices(
-	//	MRenderItem& ri,
-	//	const HdMeshTopology& topology);
-
-	////! Helper utility function to extract edge indices
-	//void _FillEdgeIndices(
-	//	MRenderItem& ri,
-	//	int* indices, 
-	//	const HdMeshTopology& topology);
-
-	//VtArray<GfVec2f> _uvs = {};
+private:
 	std::shared_ptr<HdTopology> _topology = nullptr;
 	VtVec3fArray _vertexPositions = {};
 	MGeometry::Primitive _primitive;
@@ -143,6 +134,7 @@ private:
     GfMatrix4d _transform[2];
     bool _isVisible = true;
 	bool _isStale = false;
+	SdfPath _material;
 };
 
 using HdMayaRenderItemAdapterPtr = std::shared_ptr<HdMayaRenderItemAdapter>;

@@ -18,6 +18,8 @@
 #include <hdMaya/adapters/adapterRegistry.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 #include <hdMaya/adapters/renderItemAdapter.h>
+#include <hdMaya/adapters/materialNetworkConverter.h>
+
 #include <hdMaya/delegates/delegateDebugCodes.h>
 #include <hdMaya/delegates/delegateRegistry.h>
 #include <hdMaya/utils.h>
@@ -36,6 +38,8 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
+#include <pxr/imaging/hd/basisCurves.h>
+
 #include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -43,6 +47,8 @@
 #include <maya/MMatrixArray.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MString.h>
+
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -177,6 +183,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (HdMayaSceneDelegate)
     ((FallbackMaterial, "__fallback_material__"))
+    ((DormantWireframeMaterial, "__dormant_wireframe_material__"))
 );
 // clang-format on
 
@@ -198,6 +205,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaSceneDelegate)
 HdMayaSceneDelegate::HdMayaSceneDelegate(const InitData& initData)
     : HdMayaDelegateCtx(initData)
     , _fallbackMaterial(initData.delegateID.AppendChild(_tokens->FallbackMaterial))
+	// TODO remove
+	, _shadedWireDormantMaterial(initData.delegateID.AppendChild(_tokens->DormantWireframeMaterial))	
 {
 }
 
@@ -234,10 +243,25 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 	for (int i = 0; i < scene.mCount; i++)
 	{
 		HdMayaRenderItemAdapterPtr ria;
-		CreateOrGetRenderItem(*scene.mItems[i], ria);
-		ria->UpdateTopology(*scene.mItems[i]);
-		ria->UpdateMaterial(*scene.mItems[i]);
+		auto& ri = *scene.mItems[i];
+
+		CreateOrGetRenderItem(ri, ria);	
+		ria->UpdateTopology(ri);							
 		ria->UpdateTransform(*scene.mItems[i]);
+		// Update material
+		{
+			switch (ri.type())
+			{
+			case MHWRender::MRenderItem::RenderItemType::NonMaterialSceneItem:
+			case MHWRender::MRenderItem::RenderItemType::DecorationItem:
+				ria->SetMaterial(_shadedWireDormantMaterial);
+				break;
+			default:
+				ria->SetMaterial(_fallbackMaterial);
+				break;
+			}
+		}
+		
 		ria->IsStale(false);
 	}
 
@@ -277,10 +301,20 @@ void HdMayaSceneDelegate::Populate()
     }
 #endif
 
-    // Adding fallback material sprim to the render index.
+    // Adding fallback materials sprim to the render index.
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
         renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _fallbackMaterial);
+		// TODO remove
+		renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _shadedWireDormantMaterial);
     }
+	
+
+	// Special token for selection update and no need to create repr. Adding
+	// the null desc to remove Hydra warning.
+	//HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->selection, HdBasisCurvesGeomStylePoints);
+
+	//InsertSprim(HdPrimTypeTokens->material, _activeWireframeMaterial, HdMaterial::AllDirty);
+	//InsertSprim(HdPrimTypeTokens->material, _dormantWireframeMaterial, HdMaterial::AllDirty);
 }
 
 // 
@@ -1322,7 +1356,12 @@ HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id)
 SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 {
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	return _fallbackMaterial;
+	TF_DEBUG(HDMAYA_DELEGATE_GET_DISPLAY_STYLE)
+		.Msg("HdMayaSceneDelegate::Material(%s)\n", id.GetText());
+	return _GetValue<HdMayaRenderItemAdapter, SdfPath>(
+		id,
+		[](HdMayaRenderItemAdapter* a) -> SdfPath { return a->GetMaterial(); },
+		_renderItemsAdapters);
 #else
 	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
 		.Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
@@ -1348,21 +1387,54 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 {
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	//TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
-	//	.Msg("HdMayaSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
-	//if (id == _fallbackMaterial) 
+	// TODO remove throwaway code
+	HdMaterialNetworkMap map;
+	HdMaterialNetwork    network;
+	HdMaterialNode       node;
+	node.path = id;
+	node.identifier = UsdImagingTokens->UsdPreviewSurface;
+	map.terminals.push_back(node.path);
+	for (const auto& it : HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) 
 	{
-		return HdMayaMaterialAdapter::GetPreviewMaterialResource(_fallbackMaterial);
+		if (id == _shadedWireDormantMaterial)
+		{			
+			if (it.name == TfToken("diffuseColor"))
+			{
+				node.parameters.emplace(it.name, VtValue(_shadedWireDormantColor));
+			}
+			else if(it.name == TfToken("specularColor"))
+			{
+				node.parameters.emplace(it.name, VtValue(_shadedWireDormantColor));
+			}
+			else if (it.name == TfToken("opacity"))
+			{
+				node.parameters.emplace(it.name, VtValue(1.0f));
+			}
+
+			continue;
+		}
+
+		node.parameters.emplace(it.name, it.fallbackValue);
 	}
-	//auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
-	//	id,
-	//	[](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
-	//	_materialAdapters);
-	//return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
+	network.nodes.push_back(node);
+	map.map.emplace(HdMaterialTerminalTokens->surface, network);
+	map.terminals.push_back(network.nodes.back().path);
+
+	//HdMaterialNetworkMap materialNetworkMap;
+	//materialNetworkMap.map[HdMaterialTerminalTokens->surface] = materialNetwork;
+	//if (!materialNetwork.nodes.empty()) {
+	//	materialNetworkMap.terminals.push_back(materialNetwork.nodes.back().path);
+	//}
+
+	return VtValue(map);
+
 #else
 	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
 		.Msg("HdMayaSceneDelegate::GetMaterialResource(%s)\n", id.GetText());
-	if (id == _fallbackMaterial) {
+	if (
+		id == _fallbackMaterial
+		) 
+	{
 		return HdMayaMaterialAdapter::GetPreviewMaterialResource(id);
 	}
 	auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
