@@ -282,9 +282,10 @@ private:
 
     SdfPath _fallbackMaterial;
 	// TODO remove
-	SdfPath _shadedWireDormantMaterial;
-	//GfVec3f _shadedWireDormantColor = { 0.432f, 1.215f, 8.665f };
-	GfVec3f _shadedWireDormantColor = { 0.294f, 5.113f, 0.0f };
+	SdfPath _wireframeMaterial;	
+	GfVec3f _wireframeColor = { 0.432f, 1.215f, 8.665f };
+	SdfPath _vertexMaterial;
+	GfVec3f _vertexColor = { 10.0f, 10.0f, 0 };
 
 	//GfVec3f _pointColor = 
 

@@ -83,6 +83,7 @@ TfToken HdMayaRenderItemAdapter::GetRenderTag() const
 			// TODO: Why must render tag match  for both primitive type?
 			// Otherwise renderIndex.cpp _DirtyRprimIdsFilterPredicate will fail from filterParam->renderTags[tagNum] == primRenderTag 
 		case MHWRender::MGeometry::Primitive::kTriangles:
+		case MHWRender::MGeometry::Primitive::kPoints:
 		default:
 			return HdRenderTagTokens->geometry;
 	}
@@ -113,7 +114,9 @@ bool HdMayaRenderItemAdapter::IsSupported() const
 		case MHWRender::MGeometry::Primitive::kTriangles:
 			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->mesh);			
 		case MHWRender::MGeometry::Primitive::kLines:
-			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);			
+			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->basisCurves);	
+		case MHWRender::MGeometry::Primitive::kPoints:
+			return GetDelegate()->GetRenderIndex().IsRprimTypeSupported(HdPrimTypeTokens->points);
 		default:
 			return false;
 	}
@@ -161,6 +164,7 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 				vertexCounts.resize(mayaIndexCount / 3);
 				for (int i = 0; i < mayaIndexCount / 3; i++) vertexCounts[i] = 3;
 				break;
+			case MHWRender::MGeometry::Primitive::kPoints:
 			case MHWRender::MGeometry::Primitive::kLines:
 				vertexCounts.resize(1);
 				vertexCounts[0] = vertexIndices.size();
@@ -222,6 +226,7 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 				);
 				break;
 			case MGeometry::Primitive::kLines:
+			case MHWRender::MGeometry::Primitive::kPoints:
 				// This will allow us to output geometry to the effect of GL_LINES
 				_topology.reset(new HdBasisCurvesTopology(
 					HdTokens->linear,
@@ -305,6 +310,9 @@ void HdMayaRenderItemAdapter::Populate()
 			break;
 		case MHWRender::MGeometry::Primitive::kLines:
 			GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {}/* TODO : GetInstancerID() */);
+			break;
+		case MHWRender::MGeometry::Primitive::kPoints:
+			GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {}/* TODO : GetInstancerID() */);
 			break;
 	}
 	_isPopulated = true;

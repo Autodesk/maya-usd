@@ -184,6 +184,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (HdMayaSceneDelegate)
     ((FallbackMaterial, "__fallback_material__"))
     ((DormantWireframeMaterial, "__dormant_wireframe_material__"))
+	(HdMayaMeshPoints)
 );
 // clang-format on
 
@@ -206,7 +207,7 @@ HdMayaSceneDelegate::HdMayaSceneDelegate(const InitData& initData)
     : HdMayaDelegateCtx(initData)
     , _fallbackMaterial(initData.delegateID.AppendChild(_tokens->FallbackMaterial))
 	// TODO remove
-	, _shadedWireDormantMaterial(initData.delegateID.AppendChild(_tokens->DormantWireframeMaterial))	
+	, _wireframeMaterial(initData.delegateID.AppendChild(_tokens->DormantWireframeMaterial))	
 {
 }
 
@@ -250,16 +251,29 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 		ria->UpdateTransform(*scene.mItems[i]);
 		// Update material
 		{
-			switch (ri.type())
+			switch (ri.primitive())
 			{
-			case MHWRender::MRenderItem::RenderItemType::NonMaterialSceneItem:
-			case MHWRender::MRenderItem::RenderItemType::DecorationItem:
-				ria->SetMaterial(_shadedWireDormantMaterial);
-				break;
-			default:
-				ria->SetMaterial(_fallbackMaterial);
-				break;
+				case MHWRender::MGeometry::Primitive::kPoints:
+					ria->SetMaterial(_vertexMaterial);
+					break;
+				case MHWRender::MGeometry::Primitive::kLines:
+					ria->SetMaterial(_wireframeMaterial);
+					break;
+				default:
+					ria->SetMaterial(_fallbackMaterial);
+					break;
 			}
+
+			//switch (ri.type())
+			//{
+			//case MHWRender::MRenderItem::RenderItemType::NonMaterialSceneItem:
+			//case MHWRender::MRenderItem::RenderItemType::DecorationItem:
+			//	ria->SetMaterial(_wireframeMaterial);
+			//	break;
+			//default:
+			//	ria->SetMaterial(_fallbackMaterial);
+			//	break;
+			//}
 		}
 		
 		ria->IsStale(false);
@@ -305,16 +319,20 @@ void HdMayaSceneDelegate::Populate()
     if (renderIndex.IsSprimTypeSupported(HdPrimTypeTokens->material)) {
         renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _fallbackMaterial);
 		// TODO remove
-		renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _shadedWireDormantMaterial);
+		renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _wireframeMaterial);
+		renderIndex.InsertSprim(HdPrimTypeTokens->material, this, _vertexMaterial);
     }
 	
 
-	// Special token for selection update and no need to create repr. Adding
-	// the null desc to remove Hydra warning.
-	//HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->selection, HdBasisCurvesGeomStylePoints);
-
-	//InsertSprim(HdPrimTypeTokens->material, _activeWireframeMaterial, HdMaterial::AllDirty);
-	//InsertSprim(HdPrimTypeTokens->material, _dormantWireframeMaterial, HdMaterial::AllDirty);
+	// Add a meshPoints repr since it isn't populated in 
+	// HdRenderIndex::_ConfigureReprs
+	//HdMesh::ConfigureRepr(_tokens->HdMayaMeshPoints,
+	//	HdMeshReprDesc(
+	//		HdMeshGeomStylePoints,
+	//		HdCullStyleNothing,
+	//		HdMeshReprDescTokens->pointColor,
+	//		/*flatShadingEnabled=*/true,
+	//		/*blendWireframeColor=*/false));
 }
 
 // 
@@ -817,8 +835,9 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
 		_MapAdapter<HdMayaRenderItemAdapter>(
 			[](HdMayaRenderItemAdapter* a) {
 				if (
-					a->HasType(HdPrimTypeTokens->mesh) ||
-					a->HasType(HdPrimTypeTokens->basisCurves)
+					a->HasType(HdPrimTypeTokens->mesh)
+					|| a->HasType(HdPrimTypeTokens->basisCurves)
+					|| a->HasType(HdPrimTypeTokens->points)
 					)
 				{
 					a->MarkDirty(HdChangeTracker::DirtyTopology);
@@ -841,8 +860,9 @@ void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
 		_MapAdapter<HdMayaRenderItemAdapter>(
 			[](HdMayaRenderItemAdapter* a) {
 			if (
-				a->HasType(HdPrimTypeTokens->mesh) ||
-				a->HasType(HdPrimTypeTokens->basisCurves))
+				a->HasType(HdPrimTypeTokens->mesh)
+				|| a->HasType(HdPrimTypeTokens->basisCurves)
+				|| a->HasType(HdPrimTypeTokens->points))
 			{
 				a->InvalidateTransform();
 				a->MarkDirty(HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyTransform);
@@ -1396,15 +1416,26 @@ VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 	map.terminals.push_back(node.path);
 	for (const auto& it : HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) 
 	{
-		if (id == _shadedWireDormantMaterial)
-		{			
+		if (
+			id == _wireframeMaterial
+			|| id == _vertexMaterial
+			)
+		{		
+			// choose color
+			GfVec3f color = {0, 0, 0};
+			if (id == _wireframeMaterial) color = _wireframeColor;
+
+			else if (id == _vertexMaterial) color = _vertexColor;
+
+
+			// Set param
 			if (it.name == TfToken("diffuseColor"))
 			{
-				node.parameters.emplace(it.name, VtValue(_shadedWireDormantColor));
+				node.parameters.emplace(it.name, VtValue(color));
 			}
 			else if(it.name == TfToken("specularColor"))
 			{
-				node.parameters.emplace(it.name, VtValue(_shadedWireDormantColor));
+				node.parameters.emplace(it.name, VtValue(color));
 			}
 			else if (it.name == TfToken("opacity"))
 			{
@@ -1420,11 +1451,6 @@ VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 	map.map.emplace(HdMaterialTerminalTokens->surface, network);
 	map.terminals.push_back(network.nodes.back().path);
 
-	//HdMaterialNetworkMap materialNetworkMap;
-	//materialNetworkMap.map[HdMaterialTerminalTokens->surface] = materialNetwork;
-	//if (!materialNetwork.nodes.empty()) {
-	//	materialNetworkMap.terminals.push_back(materialNetwork.nodes.back().path);
-	//}
 
 	return VtValue(map);
 
