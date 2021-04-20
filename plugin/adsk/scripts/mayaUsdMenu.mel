@@ -128,7 +128,7 @@ proc int mayaUSD_isSelectionKindValid() {
 // create all the runtime commands we'll use and the user can map to hotkeys
 proc initRuntimeCommands() {
     if (!`runTimeCommand -exists mayaUsdCreateStageWithNewLayer`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -label `getMayaUsdString("kMenuStageWithNewLayer")`
             -annotation `getMayaUsdString("kMenuStageWithNewLayerAnn")`
             -category "Menu items.Maya USD"
@@ -138,7 +138,7 @@ proc initRuntimeCommands() {
     }
 
     if (!`runTimeCommand -exists mayaUsdCreateStageFromFile`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -label `getMayaUsdString("kMenuStageFromFile")`
             -annotation `getMayaUsdString("kMenuStageFromFileAnn")`
             -category   "Menu items.Maya USD"
@@ -148,7 +148,7 @@ proc initRuntimeCommands() {
     }
 
     if (!`runTimeCommand -exists mayaUsdCreateStageFromFileOptions`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -annotation `getMayaUsdString("kMenuStageFromFileOptionsAnn")`
             -category   "Menu items.Maya USD"
             -command    "mayaUsd_createStageFromFileOptions"
@@ -157,7 +157,7 @@ proc initRuntimeCommands() {
 
     if (`exists mayaUsdLayerEditorWindow`) {
         if (!`runTimeCommand -exists mayaUsdOpenUsdLayerEditor`) {
-            runTimeCommand -plugin "mayaUsdPlugin"
+            runTimeCommand -default true -plugin "mayaUsdPlugin"
                 -label 		`getMayaUsdString("kMenuLayerEditor")`
                 -annotation `getMayaUsdString("kMenuLayerEditorAnn")`
                 -category   "Menu items.Common.Windows.General Editors"
@@ -171,7 +171,7 @@ proc initRuntimeCommands() {
     // runTimeCommand for selection kind mode
     //
     if (!`runTimeCommand -exists mayaUsdSelectKindNone`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -label      `getMayaUsdString("kUSDSelectionModeNone")`
             -annotation `getMayaUsdString("kUSDSelectionModeNoneAnn")`
             -category   "Menu items.Maya USD"
@@ -179,7 +179,7 @@ proc initRuntimeCommands() {
             mayaUsdSelectKindNone;
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindModel`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -label      `python "from pxr import Kind; Kind.Tokens.model"`
             -annotation `getMayaUsdString("kUSDSelectionModeModelAnn")`
             -category   "Menu items.Maya USD"
@@ -187,7 +187,7 @@ proc initRuntimeCommands() {
             mayaUsdSelectKindModel; 
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindGroup`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -label      `python "from pxr import Kind; Kind.Tokens.group"`
             -annotation `getMayaUsdString("kUSDSelectionModeGroupAnn")`
             -category   "Menu items.Maya USD"
@@ -195,7 +195,7 @@ proc initRuntimeCommands() {
             mayaUsdSelectKindGroup; 
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindAssembly`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -label      `python "from pxr import Kind; Kind.Tokens.assembly"`
             -annotation `getMayaUsdString("kUSDSelectionModeAssemblyAnn")`
             -category   "Menu items.Maya USD"
@@ -203,7 +203,7 @@ proc initRuntimeCommands() {
             mayaUsdSelectKindAssembly;
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindComponent`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -label      `python "from pxr import Kind; Kind.Tokens.component"`
             -annotation `getMayaUsdString("kUSDSelectionModeComponentAnn")`
             -category   "Menu items.Maya USD"
@@ -211,7 +211,7 @@ proc initRuntimeCommands() {
             mayaUsdSelectKindComponent; 
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindSubComponent`) {
-        runTimeCommand -plugin "mayaUsdPlugin"
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
             -label      `python "from pxr import Kind; Kind.Tokens.subcomponent"`
             -annotation `getMayaUsdString("kUSDSelectionModeSubComponentAnn")`
             -category   "Menu items.Maya USD"
@@ -412,51 +412,6 @@ proc initCreateMenu() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// termRuntimeCommands
-// remove all Maya runtimeCommands that were created in initRuntimeCommands.
-proc termRuntimeCommands() {
-    if (`runTimeCommand -exists mayaUsdCreateStageWithNewLayer`) {
-        runTimeCommand -edit -delete mayaUsdCreateStageWithNewLayer;
-    }
-
-    if (`runTimeCommand -exists mayaUsdCreateStageFromFile`) {
-        runTimeCommand -edit -delete mayaUsdCreateStageFromFile;
-    }
-
-    if (`runTimeCommand -exists mayaUsdCreateStageFromFileOptions`) {
-        runTimeCommand -edit -delete mayaUsdCreateStageFromFileOptions;
-    }    
-
-    if (`runTimeCommand -exists mayaUsdOpenUsdLayerEditor`) {
-        runTimeCommand -edit -delete mayaUsdOpenUsdLayerEditor;
-    }
-
-    if (`runTimeCommand -exists mayaUsdSelectKindNone`) {
-        runTimeCommand -edit -delete mayaUsdSelectKindNone;
-    }
-
-    if (`runTimeCommand -exists mayaUsdSelectKindModel`) {
-        runTimeCommand -edit -delete mayaUsdSelectKindModel; 
-    }
-
-    if (`runTimeCommand -exists mayaUsdSelectKindGroup`) {
-        runTimeCommand -edit -delete mayaUsdSelectKindGroup; 
-    }
-
-    if (`runTimeCommand -exists mayaUsdSelectKindAssembly`) {
-        runTimeCommand -edit -delete mayaUsdSelectKindAssembly;
-    }
-
-    if (`runTimeCommand -exists mayaUsdSelectKindComponent`) {
-        runTimeCommand -edit -delete mayaUsdSelectKindComponent; 
-    }
-
-    if (`runTimeCommand -exists mayaUsdSelectKindSubComponent`) {
-        runTimeCommand -edit -delete mayaUsdSelectKindSubComponent; 
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // termCreateMenu
 // destroys the items in Maya's "Create" menu
 proc termCreateMenu() {
@@ -533,7 +488,6 @@ global proc mayaUsdMenu_loadui() {
 // mayaUsdMenu_unloadui
 // main entry point on plugin unload
 global proc mayaUsdMenu_unloadui() {
-    termRuntimeCommands();
     termCreateMenu();
     termSelectMenu();
     termAEShowMenu();
