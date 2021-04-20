@@ -33,6 +33,8 @@ limitations under the License.
         <float3 name="diffuseColor"/>
         <float3 name="specularColor"/>
         <float3 name="emissiveColor"/>
+        <float name="metallic"/>
+        <bool name="useSpecularWorkflow"/>
         <!-- The shader computes transparency from its "opacity" attribute. -->
         <float3 name="transparency"/>
     </properties>
@@ -48,6 +50,8 @@ limitations under the License.
         <float3 name="diffuseColor" value="0.18,0.18,0.18"/>
         <float3 name="specularColor" value="0.0,0.0,0.0"/>
         <float3 name="emissiveColor" value="0.0,0.0,0.0"/>
+        <bool name="useSpecularWorkflow" value="true"/>
+        <float name="metallic" value="0.0"/>
         <float3 name="transparency" value="0.0,0.0,0.0"/>
     </values>
     <outputs>
@@ -74,6 +78,8 @@ usdPreviewSurfaceCombiner(
         float3 diffuseColor,
         float3 specularColor,
         float3 emissiveColor,
+        float metallic,
+        bool useSpecularWorkflow,
         float3 transparency)
 {
     mayaSurfaceShaderOutput result;
@@ -86,7 +92,7 @@ usdPreviewSurfaceCombiner(
     result.outColor += diffuseColor * irradianceEnv;
 
     if (!mayaAlphaCut) {
-        result.outColor *= saturate(1.0 - transparency); 
+        result.outColor *= saturate(1.0 - transparency);
     }
 
     // Specular
@@ -128,6 +134,8 @@ usdPreviewSurfaceCombiner(
         float3 diffuseColor,
         float3 specularColor,
         float3 emissiveColor,
+        float metallic,
+        bool useSpecularWorkflow,
         float3 transparency)
 {
     mayaSurfaceShaderOutput result;
@@ -140,12 +148,16 @@ usdPreviewSurfaceCombiner(
     result.outColor += diffuseColor * irradianceEnv;
 
     if (!mayaAlphaCut) {
-        result.outColor *= saturate(1.0 - transparency); 
+        result.outColor *= saturate(1.0 - transparency);
     }
 
     // Specular
     result.outColor += specularIrradianceIn;
-    result.outColor += specularColor * specularEnv;
+    if (useSpecularWorkflow) {
+        result.outColor += specularColor * specularEnv;
+    } else {
+        result.outColor += metallic * specularEnv;
+    }
 
     // Emissive
     result.outColor += emissiveColor;
@@ -182,6 +194,8 @@ usdPreviewSurfaceCombiner(
         float3 diffuseColor,
         float3 specularColor,
         float3 emissiveColor,
+        float metallic,
+        bool useSpecularWorkflow,
         float3 transparency)
 {
     mayaSurfaceShaderOutput result;
@@ -194,7 +208,7 @@ usdPreviewSurfaceCombiner(
     result.outColor += diffuseColor * irradianceEnv;
 
     if (!mayaAlphaCut) {
-        result.outColor *= saturate(1.0 - transparency); 
+        result.outColor *= saturate(1.0 - transparency);
     }
 
     // Specular
@@ -236,6 +250,8 @@ usdPreviewSurfaceCombiner(
         float3 diffuseColor,
         float3 specularColor,
         float3 emissiveColor,
+        float metallic,
+        bool useSpecularWorkflow,
         float3 transparency)
 {
     mayaSurfaceShaderOutput result;
@@ -248,7 +264,7 @@ usdPreviewSurfaceCombiner(
     result.outColor += diffuseColor * irradianceEnv;
 
     if (!mayaAlphaCut) {
-        result.outColor *= saturate(1.0 - transparency); 
+        result.outColor *= saturate(1.0 - transparency);
     }
 
     // Specular
