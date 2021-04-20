@@ -230,7 +230,7 @@ public:
         auto       found = b.find(instancerPath);
         // If we're the first to join the batch, create it.
         if (found == b.end()) {
-            auto inserted = b.insert(Batches::value_type(
+            auto inserted = b.insert(typename Batches::value_type(
                 instancerPath, std::make_shared<UsdPointInstanceBatch<UsdValueType>>()));
             found = inserted.first;
         }
