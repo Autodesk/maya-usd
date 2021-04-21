@@ -48,16 +48,17 @@ public:
     void MarkBindings(const SdfPath& path, const SdfPath& skelPath, const TfToken& config);
 
     /// Performs final processing for skel bindings.
-    bool PostProcessSkelBindings(const UsdStagePtr& stage) const;
+    bool PostProcessSkelBindings(const UsdStagePtr& stage, const SdfPath& parentScopePath) const;
 
     /// Updates the SkelRoots with a given extent value and time sample.
     bool UpdateSkelRootsWithExtent(
         const UsdStagePtr&  stage,
         const VtVec3fArray& bbox,
-        const UsdTimeCode&  timeSample);
+        const UsdTimeCode&  timeSample,
+        const SdfPath& parentScopePath);
 
 private:
-    bool _VerifyOrMakeSkelRoots(const UsdStagePtr& stage) const;
+    bool _VerifyOrMakeSkelRoots(const UsdStagePtr& stage, const SdfPath& parentScopePath) const;
 
     using _Entry = std::pair<SdfPath, TfToken>;
 

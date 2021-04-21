@@ -153,10 +153,18 @@ VtTokenArray UsdMayaJointUtil::getJointNames(
 /// Gets the expected path where a skeleton will be exported for
 /// the given root joint. The skeleton both binds a skeleton and
 /// holds root transformations of the joint hierarchy.
-SdfPath UsdMayaJointUtil::getSkeletonPath(const MDagPath& rootJoint, bool stripNamespaces)
+SdfPath UsdMayaJointUtil::getSkeletonPath(const MDagPath& rootJoint, bool stripNamespaces, const SdfPath& parentScopePath)
 {
-    return UsdMayaUtil::MDagPathToUsdPath(
+    SdfPath skelPath = UsdMayaUtil::MDagPathToUsdPath(
         rootJoint, /*mergeTransformAndShape*/ false, stripNamespaces);
+    
+    // We now account for the parent scope path in here	
+    if(!parentScopePath.IsEmpty())
+	{
+		skelPath = skelPath.ReplacePrefix(SdfPath::AbsoluteRootPath(), parentScopePath);
+	}
+
+    return skelPath;
 }
 
 MObject UsdMayaJointUtil::getSkinCluster(const MDagPath& dagPath)
@@ -392,6 +400,7 @@ MObject UsdMayaJointUtil::writeSkinningData(
     const SdfPath&             usdPath,
     const MDagPath&            dagPath,
     SdfPath&                   skelPath,
+    const SdfPath&             parentScopePath,
     const bool                 stripNamespaces,
     UsdUtilsSparseValueWriter* valueWriter)
 {
@@ -454,7 +463,7 @@ MObject UsdMayaJointUtil::writeSkinningData(
 
     UsdMayaJointUtil::warnForPostDeformationTransform(usdPath, dagPath, skinCluster);
 
-    skelPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
+    skelPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces, parentScopPath);
 
     // Export will create a Skeleton at the location corresponding to
     // the root joint. Configure this mesh to be bound to the same skel.

@@ -78,7 +78,8 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
     }
 
     SdfPath skelPath
-        = UsdMayaJointUtil::getSkeletonPath(GetDagPath(), _GetExportArgs().stripNamespaces);
+        = UsdMayaJointUtil::getSkeletonPath(GetDagPath(), 
+            _GetExportArgs().stripNamespaces, _writeJobCtx.GetParentScopePath());
 
     _skel = UsdSkelSkeleton::Define(GetUsdStage(), skelPath);
     if (!TF_VERIFY(_skel)) {
