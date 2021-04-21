@@ -782,9 +782,11 @@ void ProxyRenderDelegate::updateSelectionGranularity(
     const MDagPath&               path,
     MHWRender::MSelectionContext& selectionContext)
 {
+    /*
     if (pointSnappingActive()) {
-        selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kComponent);
+        selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kVertex);
     }
+    */
 }
 
 //! \brief  Selection for both instanced and non-instanced cases.
