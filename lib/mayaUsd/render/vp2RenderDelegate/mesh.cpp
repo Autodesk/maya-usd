@@ -1300,7 +1300,9 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             break;
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
         case HdMeshGeomStylePoints: renderItem = _CreatePointsRenderItem(renderItemName); break;
+#endif
         default: TF_WARN("Unsupported geomStyle"); break;
         }
 
@@ -1509,7 +1511,13 @@ void HdVP2Mesh::_UpdateDrawItem(
     // doesn't need to extract index data from topology. Points use non-indexed
     // draw.
     const bool isBBoxItem = (renderItem->drawMode() == MHWRender::MGeometry::kBoundingBox);
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    constexpr bool isPointSnappingItem = false;
+#else
     const bool isPointSnappingItem = (renderItem->primitive() == MHWRender::MGeometry::kPoints);
+#endif
+
 #ifdef HDVP2_ENABLE_GPU_OSD
     const bool isLineItem = (renderItem->primitive() == MHWRender::MGeometry::kLines);
     // when we do OSD we don't bother creating indexing until after we have a smooth mesh
@@ -1864,6 +1872,21 @@ void HdVP2Mesh::_UpdateDrawItem(
         = (itemDirtyBits
            & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyNormals
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology));
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    if (!isBBoxItem && !isDedicatedSelectionHighlightItem
+        && (itemDirtyBits & DirtySelectionHighlight)) {
+        MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
+
+        // Only unselected Rprims can be used for point snapping.
+        if (_selectionStatus == kUnselected) {
+            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+        }
+
+        // The function is thread-safe, thus called in place to keep simple.
+        renderItem->setSelectionMask(selectionMask);
+    }
+#endif
 
     // Capture buffers we need
     MHWRender::MIndexBuffer* indexBuffer = drawItemData._indexBuffer.get();
@@ -2244,6 +2267,7 @@ void HdVP2Mesh::_UpdatePrimvarSources(
     }
 }
 
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
 /*! \brief  Create render item for points repr.
  */
 MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) const
@@ -2269,6 +2293,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
 
     return renderItem;
 }
+#endif
 
 /*! \brief  Create render item for wireframe repr.
  */
@@ -2282,7 +2307,14 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& nam
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
+    selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+    renderItem->setSelectionMask(selectionMask);
+#else
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
+#endif
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
@@ -2329,7 +2361,14 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->castsShadows(true);
     renderItem->receivesShadows(true);
     renderItem->setShader(_delegate->GetFallbackShader(kOpaqueGray));
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
+    selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+    renderItem->setSelectionMask(selectionMask);
+#else
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
+#endif
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
