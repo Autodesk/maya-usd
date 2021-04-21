@@ -23,14 +23,14 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     )
 endif()
 
-#temporarily disable the UsdCamera test to allow things to be merged in the right order
-#if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
-#    if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
-#        list(APPEND TEST_SCRIPT_FILES
-#            testVP2RenderDelegateUsdCamera.py
-#        )
-#    endif()
-#endif()
+temporarily disable the UsdCamera test to allow things to be merged in the right order
+if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
+    if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
+        list(APPEND TEST_SCRIPT_FILES
+            testVP2RenderDelegateUsdCamera.py
+        )
+    endif()
+endif()
 
 add_custom_target(${TARGET_NAME} ALL)
 
