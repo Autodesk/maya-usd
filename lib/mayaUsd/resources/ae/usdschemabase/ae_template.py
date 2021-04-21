@@ -237,6 +237,7 @@ class AETemplate(object):
 
         cmds.editorTemplate(beginScrollLayout=True)
         self.buildUI()
+        self.createAppliedSchemasSection()
         cmds.editorTemplate(addExtraControls=True)
         self.createMetadataSection()
         cmds.editorTemplate(endScrollLayout=True)
@@ -297,7 +298,12 @@ class AETemplate(object):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        return getPrettyName(schemaTypeName)
+        schemaTypeName = getPrettyName(schemaTypeName)
+
+        if schemaTypeName.endswith("api"): 
+            schemaTypeName = schemaTypeName.replace("api"," API")
+
+        return schemaTypeName
 
     def createTransformAttributesSection(self, sectionName, attrsToAdd):
         # Get the xformOp order and add those attributes (in order)
@@ -333,6 +339,67 @@ class AETemplate(object):
             usdNoticeControl = NoticeListener(self.prim, [metaDataControl])
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
+
+    def createAppliedSchemasSection(self):
+        # USD version 0.21.2 is required because of
+        # Usd.SchemaRegistry().GetPropertyNamespacePrefix()
+        if Usd.GetVersion() < (0, 21, 2):
+            return
+
+        showAppliedSchemasSection = False
+
+        # loop on all applied schemas and store all those
+        # schema into a dictionary with the attributes.
+        # Storing the schema into a dictionary allow us to
+        # group all instances of a MultipleApply schema together
+        # so we can later display them into the same UI section.
+        #
+        # By example, if UsdCollectionAPI is applied twice, UsdPrim.GetAppliedSchemas()
+        # will return ["CollectionAPI:instance1","CollectionAPI:instance2"] but we want to group
+        # both instance inside a "CollectionAPI" section.
+        #
+        schemaAttrsDict = {}
+        appliedSchemas = self.prim.GetAppliedSchemas()
+        for schema in appliedSchemas:
+            typeAndInstance = Usd.SchemaRegistry().GetTypeAndInstance(schema)
+            typeName        = typeAndInstance[0]
+            schemaType      = Usd.SchemaRegistry().GetTypeFromName(typeName)
+
+            if schemaType.pythonClass:
+                isMultipleApplyAPISchema = Usd.SchemaRegistry().IsMultipleApplyAPISchema(typeName)
+                if isMultipleApplyAPISchema:
+                    # get the attributes names. They will not include the namespace and instance name.
+                    instanceName = typeAndInstance[1]
+                    attrList = schemaType.pythonClass.GetSchemaAttributeNames(False, instanceName)
+                    # build the real attr name
+                    # By example, collection:lightLink:includeRoot
+                    namespace = Usd.SchemaRegistry().GetPropertyNamespacePrefix(typeName)
+                    prefix = namespace + ":" + instanceName + ":"
+                    attrList = [prefix + i for i in attrList]
+
+                    if typeName in schemaAttrsDict:
+                        schemaAttrsDict[typeName] += attrList
+                    else:
+                        schemaAttrsDict[typeName] = attrList
+                else:
+                    attrList = schemaType.pythonClass.GetSchemaAttributeNames(False)
+                    schemaAttrsDict[typeName] = attrList
+
+                # The "Applied Schemas" will be only visible if at least
+                # one applied Schemas has attribute.
+                if not showAppliedSchemasSection:
+                    for attr in attrList:
+                        if self.attrS.hasAttribute(attr):
+                            showAppliedSchemasSection = True
+                            break
+
+        # Create the "Applied Schemas" section
+        # with all the applied schemas
+        if showAppliedSchemasSection:
+            with ufeAeTemplate.Layout(self, 'Applied Schemas', collapse=True):
+                for typeName, attrs in schemaAttrsDict.items():
+                    typeName = self.sectionNameFromSchema(typeName)
+                    self.createSection(typeName, attrs, False)
 
     def buildUI(self):
         usdSch = Usd.SchemaRegistry()
