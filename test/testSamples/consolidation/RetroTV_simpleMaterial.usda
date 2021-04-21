@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    endTimeCode = 200
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Xform "Asset"
+{
+def Scope "Materials"
+{
+    def Material "RetroTVScreenMaterial"
+    {
+        token outputs:displacement.connect = </Asset/Materials/RetroTVScreenMaterial/pbrMat1.outputs:displacement>
+        token outputs:surface.connect = </Asset/Materials/RetroTVScreenMaterial/pbrMat1.outputs:surface>
+
+        def Shader "pbrMat1"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.0, 0.0, 1.0)
+        }
+    }
+
+    def Material "lambert1"
+    {
+        color3f inputs:displayColor = (0.5, 0.5, 0.5)
+    }
+
+    def Material "RetroTVBodyMaterial"
+    {
+        token inputs:frame:stPrimvarName = "Texture_uv"
+        token outputs:displacement.connect = </Asset/Materials/RetroTVBodyMaterial/pbrMat1.outputs:displacement>
+        token outputs:surface.connect = </Asset/Materials/RetroTVBodyMaterial/pbrMat1.outputs:surface>
+
+        def Shader "pbrMat1"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.0, 1.0, 0.0)
+        }
+    }
+}
+
+def Xform "things"
+{
+	def Capsule "capsule1"
+	{
+		rel material:binding = </Asset/Materials/RetroTVScreenMaterial>
+	}
+}
+
+}
