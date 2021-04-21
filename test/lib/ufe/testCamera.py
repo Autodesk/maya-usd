@@ -229,6 +229,7 @@ class CameraTestCase(unittest.TestCase):
         usdAttr.Set("orthographic")
         self.assertAlmostEqual(ufe.Camera.Orthographic, ufeCamera.projection())
 
+    @unittest.skipIf(mayaUtils.previewReleaseVertion() <= 124, 'Missing Python API for Ufe::Camera before Maya Preview Release 125.')
     def testUsdCamera(self):
         self._StartTest('TranslateRotate_vs_xform')
         mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
