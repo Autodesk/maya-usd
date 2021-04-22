@@ -500,7 +500,7 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
     // If there is no rotate transform op, we will create a RotXYZ.
     CvtRotXYZToAttrFn cvt = hasRotate ? getCvtRotXYZToAttrFn(op.GetOpName()) : toXYZ;
     OpFunc            f = hasRotate
-                   ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
+        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
@@ -514,7 +514,7 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 
               return UsdGeomXformOp(attr);
           })
-                   : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
+        : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
                      const BaseUndoableCommand& cmd) {
               // Use notification guard, otherwise will generate one notification
               // for the xform op add, and another for the reorder.
@@ -734,7 +734,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
     GfVec3f v(x, y, z);
     auto    attr = prim().GetAttribute(pvtAttrName);
     OpFunc  f = attr
-         ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
+        ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
@@ -748,7 +748,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 
               return UsdGeomXformOp(attr);
           })
-         : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
+        : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
                      const BaseUndoableCommand& cmd) {
               // Without a notification guard each operation (each transform op
               // addition, setting the attribute value, and setting the transform
