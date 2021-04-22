@@ -709,7 +709,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     HdVP2DrawItem*               drawItem,
     HdBasisCurvesReprDesc const& desc)
 {
-    const MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
+    MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
     if (ARCH_UNLIKELY(!renderItem)) {
         return;
     }
@@ -745,7 +745,13 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     // doesn't need to extract index data from topology. Points use non-indexed
     // draw.
     const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    constexpr bool isPointSnappingItem = false;
+#else
     const bool isPointSnappingItem = (renderItem->primitive() == MHWRender::MGeometry::kPoints);
+#endif
+
     const bool requiresIndexUpdate = !isBoundingBoxItem && !isPointSnappingItem;
 
     // Prepare index buffer.
@@ -1298,6 +1304,20 @@ void HdVP2BasisCurves::_UpdateDrawItem(
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology
               | DirtySelectionHighlight));
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    if ((itemDirtyBits & DirtySelectionHighlight) && !isBoundingBoxItem) {
+        MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
+
+        // Only unselected Rprims can be used for point snapping.
+        if (_selectionStatus == kUnselected) {
+            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+        }
+
+        // The function is thread-safe, thus called in place to keep simple.
+        renderItem->setSelectionMask(selectionMask);
+    }
+#endif
+
     // Reset dirty bits because we've prepared commit state for this draw item.
     drawItem->ResetDirtyBits();
 
@@ -1637,9 +1657,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             break;
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
         case HdBasisCurvesGeomStylePoints:
             renderItem = _CreatePointsRenderItem(renderItemName);
             break;
+#endif
         default: TF_WARN("Unsupported geomStyle"); break;
         }
 
@@ -1802,7 +1824,14 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateWireRenderItem(const MString& n
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
+    selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+    renderItem->setSelectionMask(selectionMask);
+#else
     renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
+#endif
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
@@ -1847,7 +1876,14 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
+    selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+    renderItem->setSelectionMask(selectionMask);
+#else
     renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
+#endif
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
@@ -1858,6 +1894,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
     return renderItem;
 }
 
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
 /*! \brief  Create render item for points repr.
  */
 MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString& name) const
@@ -1883,5 +1920,6 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString&
 
     return renderItem;
 }
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
