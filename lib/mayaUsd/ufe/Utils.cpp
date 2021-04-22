@@ -456,7 +456,7 @@ bool isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage, std::strin
         if (errMsg) {
             std::string err = TfStringPrintf(
                 "Cannot edit the layer [%s] because it is locked (PermissionToEdit is false).",
-                editLayer->GetDisplayName());
+                editLayer->GetDisplayName().c_str());
 
             *errMsg = err;
         }
@@ -467,7 +467,8 @@ bool isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage, std::strin
     if (stage->IsLayerMuted(editLayer->GetIdentifier())) {
         if (errMsg) {
             std::string err = TfStringPrintf(
-                "Cannot edit because the layer [%s] is Muted.", editLayer->GetDisplayName());
+                "Cannot edit because the layer [%s] is Muted.",
+                editLayer->GetDisplayName().c_str());
             *errMsg = err;
         }
 
