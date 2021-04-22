@@ -1606,8 +1606,8 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
 
     if (desc.geomStyle == HdMeshGeomStyleHull) {
-        if ((itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0 ||
-            _meshSharedData->_fallbackColorDirty) {
+        if ((itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0
+            || _meshSharedData->_fallbackColorDirty) {
             SdfPath materialId = GetMaterialId(); // This is an index path
             if (drawItemData._geomSubset.id != SdfPath::EmptyPath()) {
                 SdfPath cachePathMaterialId = drawItemData._geomSubset.materialId;
@@ -1631,7 +1631,8 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             // Use fallback shader if there is no material binding or we failed to create a shader
             // instance for the material.
-            if ((!drawItemData._shader || _meshSharedData->_fallbackColorDirty)&& _PrimvarIsRequired(HdTokens->displayColor)) {
+            if ((!drawItemData._shader || _meshSharedData->_fallbackColorDirty)
+                && _PrimvarIsRequired(HdTokens->displayColor)) {
                 MHWRender::MShaderInstance* shader = nullptr;
 
                 HdInterpolation colorInterp = HdInterpolationConstant;
@@ -2264,9 +2265,9 @@ void HdVP2Mesh::_UpdatePrimvarSources(
                     const VtValue value = GetPrimvar(sceneDelegate, pv.name);
                     updatePrimvarInfo(pv.name, value, interp);
 
-                    // if the primvar color changes then we might need to use a different fallback material
-                    if(interp == HdInterpolationConstant && pv.name == HdTokens->displayColor)
-                    {
+                    // if the primvar color changes then we might need to use a different fallback
+                    // material
+                    if (interp == HdInterpolationConstant && pv.name == HdTokens->displayColor) {
                         _meshSharedData->_fallbackColorDirty = true;
                     }
                 }
