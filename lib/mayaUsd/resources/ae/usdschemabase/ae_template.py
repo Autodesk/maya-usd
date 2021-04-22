@@ -20,7 +20,6 @@ import maya.cmds as cmds
 import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
-import maya.internal.common.ae.custom as aecustom
 from maya.common.ui import LayoutManager
 from maya.common.ui import setClipboardData
 
@@ -62,7 +61,7 @@ class UfeAttributesObserver(ufe.Observer):
     def __call__(self, notification):
         if isinstance(notification, ufe.AttributeValueChanged):
             if notification.name() == UsdGeom.Tokens.xformOpOrder:
-                mel.eval("evalDeferred(\"AEbuildControls\");")
+                mel.eval("evalDeferred -low \"refreshEditorTemplates\";")
 
     def onCreate(self, *args):
         ufe.Attributes.addObserver(self._item, self)
@@ -70,17 +69,16 @@ class UfeAttributesObserver(ufe.Observer):
     def onReplace(self, *args):
         pass
 
-class MetaDataCustomControl(aecustom.CustomControl):
+class MetaDataCustomControl(object):
     # Custom control for all prim metadata we want to display.
-    def __init__(self, prim, *args, **kwargs):
+    def __init__(self, prim):
         self.prim = prim
-        super(MetaDataCustomControl, self).__init__(args, kwargs)
 
         # There are four metadata that we always show: primPath, kind, active, instanceable
         # We use a dictionary to store the various other metadata that this prim contains.
         self.extraMetadata = dict()
 
-    def buildControlUI(self):
+    def onCreate(self, *args):
         # Should we display nice names in AE?
         useNiceName = True
         if cmds.optionVar(exists='attrEditorIsLongName'):
@@ -147,6 +145,9 @@ class MetaDataCustomControl(aecustom.CustomControl):
 
         # Update all metadata values.
         self.refresh()
+
+    def onReplace(self, *args):
+        pass
 
     def refresh(self):
         # PrimPath
@@ -276,6 +277,16 @@ class AETemplate(object):
         self.createMetadataSection()
         cmds.editorTemplate(endScrollLayout=True)
 
+        if int(cmds.about(majorVersion=True)) > 2022:
+            # Because of how we dynamically build the Transform attribute section,
+            # we need this template to rebuild each time it is needed. This will
+            # also restore the collapse/expand state of the sections.
+            # Note: in Maya 2022 all UFE templates were forcefully rebuilt, but
+            #       no restore of section states.
+            try:
+                cmds.editorTemplate(forceRebuild=True)
+            except:
+                pass
 
     def addControls(self, controls):
         for c in controls:
@@ -473,7 +484,10 @@ class AETemplate(object):
                 if schemaTypeName == 'UsdGeomXformable':
                     self.createTransformAttributesSection(sectionName, attrsToAdd)
                 else:
-                    self.createSection(sectionName, attrsToAdd)
+                    sectionsToCollapse = ['Curves', 'Point Based', 'Geometric Prim', 'Boundable',
+                                          'Imageable', 'Field Asset', 'Light']
+                    collapse = sectionName in sectionsToCollapse
+                    self.createSection(sectionName, attrsToAdd, collapse)
 
     def suppressArrayAttribute(self):
         # Suppress all array attributes except UsdGeom.Tokens.xformOpOrder
