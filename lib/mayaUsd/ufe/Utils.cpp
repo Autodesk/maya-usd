@@ -382,6 +382,10 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
     const auto& stage = prim.GetStage();
     const auto& editTarget = stage->GetEditTarget();
 
+    if (!isEditTargetLayerModifiable(stage, errMsg)) {
+        return false;
+    }
+
     // get the index to edit target layer
     const auto targetLayerIndex = findLayerIndex(prim, editTarget.GetLayer());
 
@@ -437,6 +441,36 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     // check the attribute itself
     if (!isAttributeEditAllowed(prim.GetAttribute(attrName), &errMsg)) {
         MGlobal::displayError(errMsg.c_str());
+        return false;
+    }
+
+    return true;
+}
+
+bool isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage, std::string* errMsg)
+{
+    const auto editTarget = stage->GetEditTarget();
+    const auto editLayer = editTarget.GetLayer();
+
+    if (editLayer && !editLayer->PermissionToEdit()) {
+        if (errMsg) {
+            std::string err = TfStringPrintf(
+                "Cannot edit the layer [%s] because it is locked (PermissionToEdit is false).",
+                editLayer->GetDisplayName());
+
+            *errMsg = err;
+        }
+
+        return false;
+    }
+
+    if (stage->IsLayerMuted(editLayer->GetIdentifier())) {
+        if (errMsg) {
+            std::string err = TfStringPrintf(
+                "Cannot edit because the layer [%s] is Muted.", editLayer->GetDisplayName());
+            *errMsg = err;
+        }
+
         return false;
     }
 

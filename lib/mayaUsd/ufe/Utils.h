@@ -132,6 +132,13 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
 MAYAUSD_CORE_PUBLIC
 bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
 
+//! Check if the edit target in the stage is allowed to be changed.
+//! \return True, if the edit target layer in the stage is allowed to be changed
+MAYAUSD_CORE_PUBLIC
+bool isEditTargetLayerModifiable(
+    const PXR_NS::UsdStageWeakPtr stage,
+    std::string*                  errMsg = nullptr);
+
 //! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)

@@ -10,6 +10,7 @@ set(TEST_SCRIPT_FILES
     testSelection.py
     testUfePythonImport.py
     testAttributeBlock.py
+    testBlockedLayerEdit.py
 )
 
 set(TEST_SUPPORT_FILES
