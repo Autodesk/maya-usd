@@ -36,6 +36,8 @@ limitations under the License.
         <float name="NdotL"/>
         <float name="NdotV"/>
         <float name="NdotH"/>
+        <!--  Note that VdotH is referred to as EdotH in the fragments below.
+              This is intentional where V represents View and E represents Eye-->
         <float name="VdotH"/>
 
         <!-- Irradiance values from Maya for the light being computed. The

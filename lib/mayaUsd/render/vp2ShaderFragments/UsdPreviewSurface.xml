@@ -42,6 +42,7 @@ limitations under the License.
         <fragment_ref name="usdPreviewSurfaceCombiner" ref="usdPreviewSurfaceCombiner"/>
         <fragment_ref name="useSpecularWorkflowPassThrough" ref="boolPassThrough" />
         <fragment_ref name="metallicPassThrough" ref="floatPassThrough" />
+        <fragment_ref name="iorPassThrough" ref="floatPassThrough" />
 
         <!-- Maya fragments for computing the output surface values. -->
         <fragment_ref name="maya_FogDepthSurface" ref="maya_FogDepthSurface"/>
@@ -64,6 +65,7 @@ limitations under the License.
         <connect from="mayaShaderGeom_Float4GetY.output" to="usdPreviewSurfaceLighting.NdotV" name="NdotV"/>
         <connect from="mayaShaderGeom_Float4GetZ.output" to="usdPreviewSurfaceLighting.NdotH" name="NdotH"/>
         <connect from="mayaShaderGeom_Float4GetW.output" to="usdPreviewSurfaceLighting.VdotH" name="VdotH"/>
+        <connect from="mayaShaderGeom_Float4GetW.output" to="usdPreviewSurfaceCombiner.VdotH" name="VdotH"/>
 
         <connect from="diffuseColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceLighting.diffuseColor" name="diffuseColor"/>
         <connect from="specularColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceLighting.specularColor" name="specularColor"/>
@@ -82,6 +84,8 @@ limitations under the License.
         <connect from="mayaComputeSurfaceFinal.mayaComputeSurfaceFinal" to="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput" name="mayaSurfaceShaderOutput"/>
         <connect from="metallicPassThrough.floatPassThrough" to="usdPreviewSurfaceLighting.metallic" name="metallic"/>
         <connect from="metallicPassThrough.floatPassThrough" to="usdPreviewSurfaceCombiner.metallic" name="metallic"/>
+        <connect from="iorPassThrough.floatPassThrough" to="usdPreviewSurfaceLighting.ior" name="ior"/>
+        <connect from="iorPassThrough.floatPassThrough" to="usdPreviewSurfaceCombiner.ior" name="ior"/>
         <connect from="useSpecularWorkflowPassThrough.boolPassThrough" to="usdPreviewSurfaceLighting.useSpecularWorkflow" name="useSpecularWorkflow"/>
         <connect from="useSpecularWorkflowPassThrough.boolPassThrough" to="usdPreviewSurfaceCombiner.useSpecularWorkflow" name="useSpecularWorkflow"/>
     </connections>
@@ -91,7 +95,7 @@ limitations under the License.
         <float name="clearcoatRoughness" ref="usdPreviewSurfaceLighting.clearcoatRoughness"/>
         <float3 name="diffuseColor" ref="diffuseColorPassThrough.input" flags="multiDraw"/>
         <float3 name="emissiveColor" ref="usdPreviewSurfaceCombiner.emissiveColor"/>
-        <float name="ior" ref="usdPreviewSurfaceLighting.ior"/>
+        <float name="ior" ref="iorPassThrough.input"/>
         <float name="metallic" ref="metallicPassThrough.input"/>
         <float name="occlusion" ref="usdPreviewSurfaceLighting.occlusion"/>
         <float name="roughness" ref="usdPreviewSurfaceLighting.specularRoughness"/>
