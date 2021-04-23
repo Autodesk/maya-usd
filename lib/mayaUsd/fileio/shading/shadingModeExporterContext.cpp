@@ -381,9 +381,24 @@ _UninstancePrim(const UsdStageRefPtr& stage, const SdfPath& path, const std::str
 }
 
 namespace {
-// Detect a name that was generated directly from a surface shader name:
-const std::regex
-    _templatedRegex("(lambert|blinn|phong|standardSurface|usdPreviewSurface)[0-9]*(SG)?");
+// Detect a name that was generated directly from a dg node typename:
+const std::regex _templatedRegex("^([a-zA-Z]+)([0-9]*)(SG)?$");
+
+bool isSurfaceNodeType(const std::string& nodeType)
+{
+    static std::vector<std::string> sKnownSurfaces;
+
+    if (sKnownSurfaces.empty()) {
+        MString     listSurfCmd("stringArrayToString(`listNodeTypes \"shader/surface\"`, \" \");");
+        std::string cmdResult = MGlobal::executeCommandStringResult(listSurfCmd).asChar();
+        sKnownSurfaces = TfStringTokenize(cmdResult);
+        // O(logN) will be close to O(N) for searches since N will usually be small, but with enough
+        // plugin surface nodes added it could start to matter, so let's sort the vector.
+        std::sort(sKnownSurfaces.begin(), sKnownSurfaces.end());
+    }
+
+    return std::binary_search(sKnownSurfaces.cbegin(), sKnownSurfaces.cend(), nodeType);
+}
 } // namespace
 
 UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
@@ -402,14 +417,24 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
         } else {
             return ret;
         }
-
-        std::smatch match;
-        if (std::regex_match(sgName, match, _templatedRegex)) {
-            // We have an original SG name. Check if the surface shader has a more descriptive name
+        std::smatch sgMatch;
+        // Is the SG name following the standard Maya naming protocol for a known surface nodeType?
+        if (std::regex_match(sgName, sgMatch, _templatedRegex)
+            && isSurfaceNodeType(sgMatch[1].str())) {
+            // Check if the surface shader has a more descriptive name
             if (fnDepNode.setObject(GetSurfaceShader()) == MS::kSuccess) {
                 std::string surfName = fnDepNode.name().asChar();
-                if (!std::regex_match(surfName, match, _templatedRegex)) {
-                    // Surface node is more interesting:
+                std::smatch surfMatch;
+                if (std::regex_match(surfName, surfMatch, _templatedRegex)) {
+                    // Surface node name is also templated. Check the nodeType part.
+                    if (!isSurfaceNodeType(surfMatch[1].str())) {
+                        // The surface is not named after a standard nodeType, so its name is more
+                        // interesting:
+                        sgName = surfName + "SG";
+                    }
+                } else {
+                    // Surface node is definitely more interesting since it does not follow a
+                    // templated name:
                     sgName = surfName + "SG";
                 }
             }

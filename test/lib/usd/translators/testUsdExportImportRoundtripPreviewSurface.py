@@ -189,15 +189,18 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             ("lambert", "bob", "bobSG", "bob", "bobSG"),
             # Modified sg name survive (and we do not touch surface name)
             ("blinn", "blinn42", "blueSG", "blinn42", "blueSG"),
-            # Templated names will survive even if mismatched:
+            # Default surface names will survive even if mismatched:
             ("phong", "phong12", "blinn27SG", "phong12", "blinn27SG"),
-            
+
             # WARNING: Meaninful surface names win over boring shading group
             # names, so this combination does not roundtrip. The final shading
             # group name will be modified to be consistent with the surface
             # shader name:
             ("standardSurface", "myGold", "standardSurface1SG",
                                 "myGold", "myGoldSG"),
+            ("usdPreviewSurface", "jersey12", "blinn27SG",
+                                  "jersey12", "jersey12SG"),
+
             # This will make the UsdMaterial and UsdGeomSubset names more
             # meaningful.
         ]
