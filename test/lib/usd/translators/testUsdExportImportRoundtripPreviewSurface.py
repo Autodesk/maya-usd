@@ -196,8 +196,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             # names, so this combination does not roundtrip. The final shading
             # group name will be modified to be consistent with the surface
             # shader name:
-            ("standardSurface", "myGold", "standardSurface1SG",
-                                "myGold", "myGoldSG"),
+            ("blinn", "myGold", "standardSurface1SG",
+                      "myGold", "myGoldSG"),
             ("usdPreviewSurface", "jersey12", "blinn27SG",
                                   "jersey12", "jersey12SG"),
 
