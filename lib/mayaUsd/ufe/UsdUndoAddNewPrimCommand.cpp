@@ -82,7 +82,7 @@ void UsdUndoAddNewPrimCommand::execute()
     if (_stage) {
         std::string errMsg;
         if (!MayaUsd::ufe::isEditTargetLayerModifiable(_stage, &errMsg)) {
-            TF_RUNTIME_ERROR(errMsg.c_str());
+            TF_RUNTIME_ERROR("%s", errMsg.c_str());
         } else {
             MayaUsd::ufe::InAddOrDeleteOperation ad;
             auto                                 prim = _stage->DefinePrim(_primPath, _primToken);
