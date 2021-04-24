@@ -95,12 +95,13 @@ class BlockedLayerEditTestCase(unittest.TestCase):
 
         # create a transform3d and translate
         cylinderPath = ufe.Path([
-                     mayaUtils.createUfePathSegment("|mayaUsdTransform|shape"), 
+                     mayaUtils.createUfePathSegment("|mayaUsdTransform|shape"),
                      usdUtils.createUfePathSegment("/pCylinder1")])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         cylinderT3d = ufe.Transform3d.transform3d(cylinderItem)
-        cylinderT3d.translate(5.0, 6.0, 7.0)
+        if cylinderT3d is not None:
+            cylinderT3d.translate(5.0, 6.0, 7.0)
 
         # check that the translate operation didn't change anything
         tranlateAfterEdit = translateAttr.Get()
@@ -148,12 +149,13 @@ class BlockedLayerEditTestCase(unittest.TestCase):
 
         # create a transform3d and translate
         cylinderPath = ufe.Path([
-                     mayaUtils.createUfePathSegment("|mayaUsdTransform|shape"), 
+                     mayaUtils.createUfePathSegment("|mayaUsdTransform|shape"),
                      usdUtils.createUfePathSegment("/pCylinder1")])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         cylinderT3d = ufe.Transform3d.transform3d(cylinderItem)
-        cylinderT3d.translate(5.0, 6.0, 7.0)
+        if cylinderT3d is not None:
+            cylinderT3d.translate(5.0, 6.0, 7.0)
 
         # check that the translate operation didn't change anything
         tranlateAfterEdit = translateAttr.Get()
