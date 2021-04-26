@@ -1447,6 +1447,12 @@ VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 			continue;
 		}
 
+		// Set param
+		if (it.name == TfToken("diffuseColor"))
+		{
+			node.parameters.emplace(it.name, VtValue(GfVec3f(.4, .4, .4)));
+		}
+
 		node.parameters.emplace(it.name, it.fallbackValue);
 	}
 	network.nodes.push_back(node);
