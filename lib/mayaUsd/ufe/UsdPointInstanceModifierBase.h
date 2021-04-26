@@ -49,8 +49,12 @@ template <class UsdValueType> struct MAYAUSD_CORE_PUBLIC UsdPointInstanceBatch
     inline bool isWriter() const { return ((count + 1) % nbInstances) == 0; }
 
     PXR_NS::VtArray<UsdValueType> usdValues;
-    int                           nbInstances { 0 };
-    int                           count { 0 };
+    // Number of instances in the batch.  Incremented by
+    // UsdPointInstanceModifierBase::joinBatch().
+    unsigned int nbInstances { 0 };
+    // Running count of execution of the batch.  Incremented by
+    // UsdPointInstanceModifierBase::setValue().
+    unsigned int count { 0 };
 };
 
 /// Abstract utility class for accessing and modifying attributes of USD point
@@ -74,12 +78,11 @@ template <class UfeValueType, class UsdValueType>
 class MAYAUSD_CORE_PUBLIC UsdPointInstanceModifierBase
 {
 public:
-    typedef std::shared_ptr<UsdPointInstanceBatch<UsdValueType>> Batch;
-    typedef std::unordered_map<Ufe::Path, Batch>                 Batches;
+    using Batch = std::shared_ptr<UsdPointInstanceBatch<UsdValueType>>;
+    using Batches = std::unordered_map<Ufe::Path, Batch>;
 
     UsdPointInstanceModifierBase()
         : _prim()
-        , _instanceIndex(-1)
     {
     }
 
@@ -110,8 +113,6 @@ public:
     const Ufe::Path& path() const { return _path; };
 
     Ufe::Path pointInstancerPath() const { return _path.pop(); };
-
-    virtual Batches& batches() = 0;
 
     PXR_NS::UsdGeomPointInstancer getPointInstancer() const
     {
@@ -218,6 +219,12 @@ public:
         return writer ? usdAttr.Set(_batch->usdValues, usdTime) : true;
     }
 
+    // Join a point instancer batch.  Because objects of
+    // UsdPointInstanceModifierBase derived types are used to read from point
+    // instancers (e.g. in UsdTransform3dPointInstance), joining a batch cannot
+    // be done automatically when calling setSceneItem().  It must be done
+    // deliberately by calling joinBatch() on a modifier used to actually write
+    // to the point instancer.
     void joinBatch()
     {
         // If we've already joined a point instance batch, nothing to do.
@@ -246,6 +253,16 @@ public:
     virtual UsdValueType getDefaultUsdValue() const = 0;
 
 protected:
+    // Retrieve the active batches (one per point instancer path) for the
+    // derived attribute type (i.e. position, orientation, or scale).  We keep
+    // one active batch map per attribute type (3 batch maps), rather than a
+    // single global active batch map, as the modifier interface allows
+    // creating a single command that would write in batches to a single point
+    // instancer for more than one attribute type (e.g. a command that would
+    // write both position and orientation).  At time of writing (26-Apr-2021)
+    // no such command exists.
+    virtual Batches& batches() = 0;
+
     virtual PXR_NS::UsdAttribute _getAttribute() const = 0;
 
     virtual PXR_NS::UsdAttribute _createAttribute() = 0;
@@ -359,10 +376,10 @@ protected:
     // An alternative to storing these three data members would be to simply
     // store a UsdSceneItem.  PPT, 12-Apr-2021.
     PXR_NS::UsdPrim _prim;
-    int             _instanceIndex;
-    Ufe::Path       _path {};
+    int             _instanceIndex { -1 };
+    Ufe::Path       _path;
 
-    Batch _batch { nullptr };
+    Batch _batch;
 };
 
 } // namespace ufe
