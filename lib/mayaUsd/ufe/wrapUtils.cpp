@@ -199,6 +199,11 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr)
     return ufe::isAttributeEditAllowed(attr);
 }
 
+bool isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage)
+{
+    return ufe::isEditTargetLayerModifiable(stage);
+}
+
 PXR_NS::TfTokenVector getProxyShapePurposes(const std::string& ufePathString)
 {
     auto path =
@@ -236,4 +241,5 @@ void wrapUtils()
     def("ufePathToInstanceIndex", ufePathToInstanceIndex);
     def("getProxyShapePurposes", getProxyShapePurposes);
     def("isAttributeEditAllowed", isAttributeEditAllowed);
+    def("isEditTargetLayerModifiable", isEditTargetLayerModifiable);
 }

@@ -16,6 +16,7 @@
 #include "UsdTransform3dHandler.h"
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <maya/MGlobal.h>
 
@@ -69,6 +70,12 @@ Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::P
             MString("Authoring to the descendant of an instance [")
             + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed.")
             + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
+        return nullptr;
+    }
+
+    std::string errMsg;
+    if (!MayaUsd::ufe::isEditTargetLayerModifiable(usdItem->prim().GetStage(), &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
         return nullptr;
     }
 
