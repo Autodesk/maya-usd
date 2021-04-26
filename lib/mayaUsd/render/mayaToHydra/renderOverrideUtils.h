@@ -44,7 +44,7 @@ public:
     }
 
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	MUint64 getObjectTypeExclusions() override { return MFrameContext::kExcludeMeshes; }
+	MUint64 getObjectTypeExclusions() override { return MFrameContext::kExcludeMeshes | MFrameContext::kUpdateExcludedTransforms; }
 #endif
 
     MSceneFilterOption renderFilterOverride() override { return kRenderPreSceneUIItems; }
