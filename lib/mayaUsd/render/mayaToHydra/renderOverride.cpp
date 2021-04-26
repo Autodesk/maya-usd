@@ -973,7 +973,19 @@ MStatus MtohRenderOverride::setup(const MString& destination)
 
     if (_operations.empty()) {
         // Clear and draw the grid
-        _operations.push_back(new HdMayaPreRender("HydraRenderOverride_PreScene"));
+
+#ifdef HDMAYA_SCENE_RENDER_DATASERVER
+		// If render item data server is enabled, do not draw full HdMayaPreRender (MSceneRender)
+		// since the wireframes and other UI would be drawn on top of the hydra meshes. 
+		// Instead simply add a clear operation.
+		auto clearOperation = new MClearOperation("HydraRenderOverride_PreScene");
+		static float clearColor[] = { 0.5f, 0.5f, 0.5f, 1.0f };
+		clearOperation->setClearColor(clearColor);
+        _operations.push_back(clearOperation);
+#else
+		// Clear and draw the grid
+		_operations.push_back(new HdMayaPreRender("HydraRenderOverride_PreScene"));
+#endif
 
         // The main hydra render
         _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this));

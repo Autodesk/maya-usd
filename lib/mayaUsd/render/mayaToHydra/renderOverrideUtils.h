@@ -43,10 +43,6 @@ public:
         mClearOperation.setClearGradient(gradient);
     }
 
-#ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	MUint64 getObjectTypeExclusions() override { return MFrameContext::kExcludeMeshes | MFrameContext::kUpdateExcludedTransforms; }
-#endif
-
     MSceneFilterOption renderFilterOverride() override { return kRenderPreSceneUIItems; }
 
     MHWRender::MClearOperation& clearOperation() override { return mClearOperation; }
