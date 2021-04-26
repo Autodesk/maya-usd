@@ -52,7 +52,7 @@ class testUsdExportPackage(unittest.TestCase):
 
         # Check with USD what the path to the texture is
         stage = Usd.Stage.Open(path)
-        prim = stage.GetPrimAtPath("/AssetGroup/Looks/pxrUsdPreviewSurface1SG/file1")
+        prim = stage.GetPrimAtPath("/AssetGroup/Looks/AssetMatSG/file1")
         shader = UsdShade.Shader(prim)
         tex = shader.GetInput("file").Get().path
 
