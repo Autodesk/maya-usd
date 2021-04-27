@@ -184,6 +184,38 @@ class MetaDataCustomControl(aecustom.CustomControl):
         with mayaUsdLib.UsdUndoBlock():
             self.prim.SetInstanceable(value)
 
+# Custom control for all array attribute.
+class ArrayCustomControl(object):
+
+    def __init__(self, prim, attrName):
+        self.prim = prim
+        self.attrName = attrName
+        super(ArrayCustomControl, self).__init__()
+
+    def onCreate(self, *args):
+        attr = self.prim.GetAttribute(self.attrName)
+        typeName = attr.GetTypeName()
+        if typeName.isArray:
+            values = attr.Get()
+            hasValue = True if values and len(values) > 0 else False
+
+            # build the array type string
+            # We want something like int[size] or int[] if empty
+            typeNameStr = str(typeName.scalarType)
+            typeNameStr += ("[" + str(len(values)) + "]") if hasValue else "[]"
+
+            cmds.textFieldGrp(editable=False, label=getPrettyName(self.attrName), text=typeNameStr, annotation=attr.GetDocumentation())
+
+            if hasValue:
+                cmds.popupMenu()
+                cmds.menuItem( label="Copy Attribute Value",   command=lambda *args: setClipboardData(str(values)) )
+                cmds.menuItem( label="Print to Script Editor", command=lambda *args: print(str(values)) )
+        else:
+            cmds.error(self.attrName + " must be an array!")
+
+    def onReplace(self, *args):
+        pass
+
 class NoticeListener(object):
     # Inserted as a custom control, but does not have any UI. Instead we use
     # this control to be notified from USD when any metadata has changed
@@ -229,6 +261,7 @@ class AETemplate(object):
 
         # Get the UFE Attributes interface for this scene item.
         self.attrS = ufe.Attributes.attributes(self.item)
+        self.addedAttrs = []
         self.suppressedAttrs = []
 
         self.showArrayAttributes = False
@@ -238,7 +271,7 @@ class AETemplate(object):
         cmds.editorTemplate(beginScrollLayout=True)
         self.buildUI()
         self.createAppliedSchemasSection()
-        cmds.editorTemplate(addExtraControls=True)
+        self.createCustomExtraAttrs()
         self.createMetadataSection()
         cmds.editorTemplate(endScrollLayout=True)
 
@@ -246,7 +279,12 @@ class AETemplate(object):
     def addControls(self, controls):
         for c in controls:
             if c not in self.suppressedAttrs:
-                cmds.editorTemplate(addControl=[c])
+                if self.isArrayAttribute(c):
+                    arrayCustomControl = ArrayCustomControl(self.prim, c)
+                    self.defineCustom(arrayCustomControl, c)
+                else:
+                    cmds.editorTemplate(addControl=[c])
+                self.addedAttrs.append(c)
 
     def suppress(self, control):
         cmds.editorTemplate(suppress=control)
@@ -340,6 +378,20 @@ class AETemplate(object):
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
 
+
+    def createCustomExtraAttrs(self):
+        # We are not using the maya default "Extra Attributes" section
+        # because we are using custom widget for array type and it's not
+        # possible to inject our widget inside the maya "Extra Attributes" section.
+
+        # The extraAttrs will contains suppressed attribute but this is not a big deal as
+        # long as the suppressed attributes are suppressed by suppress(self, control).
+        # This function will keep all suppressed attributes into a list which will be use
+        # by addControls(). So any suppressed attributes in extraAttrs will be ignored later.
+        extraAttrs = [attr for attr in self.attrS.attributeNames if attr not in self.addedAttrs]
+        sectionName = mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
+        self.createSection(sectionName, extraAttrs, True)
+
     def createAppliedSchemasSection(self):
         # USD version 0.21.2 is required because of
         # Usd.SchemaRegistry().GetPropertyNamespacePrefix()
@@ -400,6 +452,7 @@ class AETemplate(object):
                 for typeName, attrs in schemaAttrsDict.items():
                     typeName = self.sectionNameFromSchema(typeName)
                     self.createSection(typeName, attrs, False)
+
 
     def buildUI(self):
         usdSch = Usd.SchemaRegistry()
