@@ -104,8 +104,10 @@ static const std::string kUSDCylinderPrimImage { "out_USD_Cylinder.png" };
 static constexpr char    kUSDSpherePrimItem[] = "Sphere";
 static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
 static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
-static constexpr char    kAllRegisteredTypesItem[] = "All Registered";
-static constexpr char    kAllRegisteredTypesLabel[] = "All Registered";
+
+#if PXR_VERSION >= 2008
+static constexpr char kAllRegisteredTypesItem[] = "All Registered";
+static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
 
 // Grouping and name mapping for registered schema plugins
 static const std::vector<std::string> kSchemaPluginNames = {
@@ -138,6 +140,7 @@ static const std::vector<std::string> kSchemaNiceNames = {
     "", // Skip legacy AL schemas
 };
 // clang-format on
+#endif
 
 //! \brief Undoable command for loading a USD prim.
 class LoadUndoableCommand : public Ufe::UndoableCommand
@@ -455,23 +458,11 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
 
     return itemLabelPairs;
 }
-
-} // namespace
-
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
-
-std::vector<SchemaTypeGroup> UsdContextOps::fSchemaTypeGroups = {};
-
-bool _schemaGroupSortCompare(const SchemaTypeGroup& a, const SchemaTypeGroup& b)
-{
-    return a.name < b.name;
-}
-
+#if PXR_VERSION >= 2008
 //! \brief Get groups of concrete schema prim types to list dynamically in the UI
-static const std::vector<SchemaTypeGroup> getConcretePrimTypes(bool sorted)
+static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(bool sorted)
 {
-    std::vector<SchemaTypeGroup> groups;
+    std::vector<MayaUsd::ufe::SchemaTypeGroup> groups;
 
     // Query all the available types
     PlugRegistry&    plugReg = PlugRegistry::GetInstance();
@@ -506,26 +497,38 @@ static const std::vector<SchemaTypeGroup> getConcretePrimTypes(bool sorted)
         // Find or create the schema group and add to it
         auto group_itr = find(begin(groups), end(groups), plugin_name);
         if (group_itr == groups.end()) {
-            SchemaTypeGroup group { plugin_name };
-            group.types.emplace_back(type_name);
+            MayaUsd::ufe::SchemaTypeGroup group { plugin_name };
+            group._types.emplace_back(type_name);
             groups.emplace_back(group);
         } else {
-            groups[group_itr - groups.begin()].types.emplace_back(type_name);
+            groups[group_itr - groups.begin()]._types.emplace_back(type_name);
         }
     }
 
     if (sorted) {
         for (size_t i = 0; i < groups.size(); ++i) {
             auto group = groups[i];
-            std::sort(group.types.begin(), group.types.end());
+            std::sort(group._types.begin(), group._types.end());
             groups[i] = group;
         }
 
-        std::sort(groups.begin(), groups.end(), _schemaGroupSortCompare);
+        std::sort(groups.begin(), groups.end(), [](const auto& lhs, const auto& rhs) {
+            return lhs._name < rhs._name;
+        });
     }
 
     return groups;
 }
+#endif
+
+} // namespace
+
+namespace MAYAUSD_NS_DEF {
+namespace ufe {
+
+#if PXR_VERSION >= 2008
+std::vector<SchemaTypeGroup> UsdContextOps::schemaTypeGroups = {};
+#endif
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
     : Ufe::ContextOps()
@@ -651,6 +654,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 items.emplace_back(
                     kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
                 items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
+#if PXR_VERSION >= 2008
                 items.emplace_back(Ufe::ContextItem::kSeparator);
                 items.emplace_back(
                     kAllRegisteredTypesItem,
@@ -662,27 +666,29 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     // Load this each time the menu is called in case plugins were loaded
                     //      in between invocations.
                     // However we cache it so the submenus don't need to re-query
-                    fSchemaTypeGroups = getConcretePrimTypes(true);
-                    for (auto schema : fSchemaTypeGroups) {
+                    schemaTypeGroups = getConcretePrimTypes(true);
+                    for (auto schema : schemaTypeGroups) {
                         items.emplace_back(
-                            schema.name.c_str(),
-                            schema.name.c_str(),
+                            schema._name.c_str(),
+                            schema._name.c_str(),
                             Ufe::ContextItem::kHasChildren);
                     }
                 }
             } else if (itemPath.size() == 3u) {
                 if (itemPath[1] == kAllRegisteredTypesItem) {
                     // List the items that belong to this schema plugin
-                    for (auto schema : fSchemaTypeGroups) {
-                        if (schema.name != itemPath[2]) {
+                    for (auto schema : schemaTypeGroups) {
+                        if (schema._name != itemPath[2]) {
                             continue;
                         }
-                        for (auto t : schema.types) {
+                        for (auto t : schema._types) {
                             items.emplace_back(t, t);
                         }
                     }
                 }
-            }
+#endif
+            } // If USD >= 20.08, submenus end here. Otherwise end of Root Setup
+
         } // Add New Prim Item
     }     // Top-level items
     return items;

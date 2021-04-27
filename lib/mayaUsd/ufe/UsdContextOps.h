@@ -26,12 +26,14 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+#if PXR_VERSION >= 2008
 struct SchemaTypeGroup
 {
-    std::string               name;
-    std::vector<pxr::TfToken> types;
-    bool                      operator==(const std::string rhs) const { return name == rhs; }
+    std::string        _name;
+    pxr::TfTokenVector _types;
+    bool               operator==(const std::string rhs) const { return _name == rhs; }
 };
+#endif
 
 //! \brief Interface for scene item context operations.
 /*!
@@ -83,8 +85,10 @@ private:
     UsdSceneItem::Ptr fItem;
     bool              fIsAGatewayType { false };
 
+#if PXR_VERSION >= 2008
     // A cache to keep the dynamic listing of plugin types to a minimum
-    static std::vector<SchemaTypeGroup> fSchemaTypeGroups;
+    static std::vector<SchemaTypeGroup> schemaTypeGroups;
+#endif
 
 }; // UsdContextOps
 
