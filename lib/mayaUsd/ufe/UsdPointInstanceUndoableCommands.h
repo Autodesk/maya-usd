@@ -59,7 +59,10 @@ public:
             return;
         }
 
-        _modifier.setPrimAndInstanceIndex(item->prim(), item->instanceIndex());
+        _modifier.setSceneItem(item);
+        // We're using a modifier to change a point instancer attribute, so
+        // batch the reads and writes, for efficiency.
+        _modifier.joinBatch();
 
         _prevValue = _modifier.getUsdValue(_readTime);
         _newValue = _prevValue;

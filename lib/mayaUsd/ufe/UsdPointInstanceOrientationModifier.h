@@ -45,11 +45,6 @@ public:
     {
     }
 
-    UsdPointInstanceOrientationModifier(const PXR_NS::UsdPrim prim, int instanceIndex)
-        : UsdPointInstanceModifierBase<Ufe::Vector3d, PXR_NS::GfQuath>(prim, instanceIndex)
-    {
-    }
-
     ~UsdPointInstanceOrientationModifier() override = default;
 
     PXR_NS::GfQuath convertValueToUsd(const Ufe::Vector3d& ufeValue) const override;
@@ -57,6 +52,8 @@ public:
     Ufe::Vector3d convertValueToUfe(const PXR_NS::GfQuath& usdValue) const override;
 
     PXR_NS::GfQuath getDefaultUsdValue() const override { return PXR_NS::GfQuath::GetIdentity(); }
+
+    Batches& batches() override;
 
 protected:
     PXR_NS::UsdAttribute _getAttribute() const override;

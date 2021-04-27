@@ -81,7 +81,7 @@ class testUsdImportShadingModePxrRis(unittest.TestCase):
         shadingEngineObj = objectArray[0]
         shadingEngineDepFn = OpenMaya.MFnDependencyNode(shadingEngineObj)
         self.assertEqual(shadingEngineDepFn.name(),
-            'USD_Materials:MarbleCubeSG')
+            'MarbleCubeSG')
 
         # Validate the shader plugged in as the surfaceShader of the
         # shadingEngine.

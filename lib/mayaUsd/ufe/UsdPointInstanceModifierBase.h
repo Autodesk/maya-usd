@@ -17,6 +17,7 @@
 #define MAYAUSD_UFE_USD_POINT_INSTANCE_MODIFIER_BASE_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/vt/array.h>
@@ -29,6 +30,32 @@
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+//! \brief Shared data for USD point instance read and write batching.
+//
+// This data structure can be used by UsdPointInstanceModifierBase when
+// modifying the position, orientation, or scale of multiple point instances
+// from a single point instancer.  These changes can be batched such that the
+// first modifier to make a change will read from the point instancer attribute
+// into the usdValues array, and the last modifier to make a change will write
+// the usdValues array back to the point instancer attribute.  All modifiers in
+// the batch will write to and read from the usdValues array, a much less
+// expensive operation than writing to or reading from the point instancer
+// attribute.
+//
+template <class UsdValueType> struct MAYAUSD_CORE_PUBLIC UsdPointInstanceBatch
+{
+    inline bool isReader() const { return (count % nbInstances) == 0; }
+    inline bool isWriter() const { return ((count + 1) % nbInstances) == 0; }
+
+    PXR_NS::VtArray<UsdValueType> usdValues;
+    // Number of instances in the batch.  Incremented by
+    // UsdPointInstanceModifierBase::joinBatch().
+    unsigned int nbInstances { 0 };
+    // Running count of execution of the batch.  Incremented by
+    // UsdPointInstanceModifierBase::setValue().
+    unsigned int count { 0 };
+};
 
 /// Abstract utility class for accessing and modifying attributes of USD point
 /// instances.
@@ -51,23 +78,24 @@ template <class UfeValueType, class UsdValueType>
 class MAYAUSD_CORE_PUBLIC UsdPointInstanceModifierBase
 {
 public:
+    using Batch = std::shared_ptr<UsdPointInstanceBatch<UsdValueType>>;
+    using Batches = std::unordered_map<Ufe::Path, Batch>;
+
     UsdPointInstanceModifierBase()
         : _prim()
-        , _instanceIndex(-1)
     {
-    }
-
-    UsdPointInstanceModifierBase(const PXR_NS::UsdPrim prim, int instanceIndex)
-    {
-        setPrimAndInstanceIndex(prim, instanceIndex);
     }
 
     virtual ~UsdPointInstanceModifierBase() = default;
 
-    bool setPrimAndInstanceIndex(const PXR_NS::UsdPrim prim, int instanceIndex)
+    bool setSceneItem(const UsdSceneItem::Ptr& sceneItem)
     {
         _prim = PXR_NS::UsdPrim();
         _instanceIndex = -1;
+        _path = Ufe::Path();
+
+        auto prim = sceneItem->prim();
+        auto instanceIndex = sceneItem->instanceIndex();
 
         if (!PXR_NS::UsdGeomPointInstancer(prim) || instanceIndex < 0) {
             return false;
@@ -75,11 +103,16 @@ public:
 
         _prim = prim;
         _instanceIndex = instanceIndex;
+        _path = sceneItem->path();
 
         return true;
     }
 
     PXR_NS::UsdPrim prim() const { return _prim; };
+
+    const Ufe::Path& path() const { return _path; };
+
+    Ufe::Path pointInstancerPath() const { return _path.pop(); };
 
     PXR_NS::UsdGeomPointInstancer getPointInstancer() const
     {
@@ -153,23 +186,64 @@ public:
 
         const size_t instanceIndex = static_cast<size_t>(_instanceIndex);
 
-        PXR_NS::UsdAttribute usdAttr = _getOrCreateAttribute();
-        if (!usdAttr) {
+        // Once setValue() is called, any point instance batch under
+        // construction is closed.  If no batch was created, make a trivial,
+        // unshared batch of a single point instance.
+        _closeBatch();
+
+        PXR_NS::UsdAttribute usdAttr;
+
+        const bool reader = _batch->isReader();
+        const bool writer = _batch->isWriter();
+        _batch->count++;
+
+        if (reader || writer) {
+            usdAttr = _getOrCreateAttribute();
+            if (!usdAttr) {
+                return false;
+            }
+        }
+
+        if (reader) {
+            if (!usdAttr.Get(&_batch->usdValues, usdTime)) {
+                return false;
+            }
+        }
+
+        if (instanceIndex >= _batch->usdValues.size()) {
             return false;
         }
 
-        PXR_NS::VtArray<UsdValueType> usdValues;
-        if (!usdAttr.Get(&usdValues, usdTime)) {
-            return false;
+        _batch->usdValues[instanceIndex] = usdValue;
+
+        return writer ? usdAttr.Set(_batch->usdValues, usdTime) : true;
+    }
+
+    // Join a point instancer batch.  Because objects of
+    // UsdPointInstanceModifierBase derived types are used to read from point
+    // instancers (e.g. in UsdTransform3dPointInstance), joining a batch cannot
+    // be done automatically when calling setSceneItem().  It must be done
+    // deliberately by calling joinBatch() on a modifier used to actually write
+    // to the point instancer.
+    void joinBatch()
+    {
+        // If we've already joined a point instance batch, nothing to do.
+        if (_batch) {
+            return;
         }
 
-        if (instanceIndex >= usdValues.size()) {
-            return false;
+        const auto instancerPath = pointInstancerPath();
+        auto&      b = batches();
+        auto       found = b.find(instancerPath);
+        // If we're the first to join the batch, create it.
+        if (found == b.end()) {
+            auto inserted = b.insert(typename Batches::value_type(
+                instancerPath, std::make_shared<UsdPointInstanceBatch<UsdValueType>>()));
+            found = inserted.first;
         }
+        found->second->nbInstances++;
 
-        usdValues[instanceIndex] = usdValue;
-
-        return usdAttr.Set(usdValues, usdTime);
+        _batch = found->second;
     }
 
     virtual UsdValueType convertValueToUsd(const UfeValueType& ufeValue) const = 0;
@@ -179,6 +253,16 @@ public:
     virtual UsdValueType getDefaultUsdValue() const = 0;
 
 protected:
+    // Retrieve the active batches (one per point instancer path) for the
+    // derived attribute type (i.e. position, orientation, or scale).  We keep
+    // one active batch map per attribute type (3 batch maps), rather than a
+    // single global active batch map, as the modifier interface allows
+    // creating a single command that would write in batches to a single point
+    // instancer for more than one attribute type (e.g. a command that would
+    // write both position and orientation).  At time of writing (26-Apr-2021)
+    // no such command exists.
+    virtual Batches& batches() = 0;
+
     virtual PXR_NS::UsdAttribute _getAttribute() const = 0;
 
     virtual PXR_NS::UsdAttribute _createAttribute() = 0;
@@ -275,8 +359,27 @@ protected:
         return usdAttr;
     }
 
+    void _closeBatch()
+    {
+        // To close the batch we simply remove it from the map of batches under
+        // construction, and thus it can no longer be joined.  If a batch was
+        // created, erase() will harmlessly fail for all modifiers except the
+        // first one.  If no batch was created, make a trivial, unshared batch
+        // just for this modifier.
+        batches().erase(pointInstancerPath());
+        if (!_batch) {
+            _batch = std::make_shared<UsdPointInstanceBatch<UsdValueType>>();
+            _batch->nbInstances = 1;
+        }
+    }
+
+    // An alternative to storing these three data members would be to simply
+    // store a UsdSceneItem.  PPT, 12-Apr-2021.
     PXR_NS::UsdPrim _prim;
-    int             _instanceIndex;
+    int             _instanceIndex { -1 };
+    Ufe::Path       _path;
+
+    Batch _batch;
 };
 
 } // namespace ufe
