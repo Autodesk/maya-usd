@@ -185,14 +185,14 @@ class MetaDataCustomControl(aecustom.CustomControl):
             self.prim.SetInstanceable(value)
 
 # Custom control for all array attribute.
-class ArrayCustomControl(aecustom.CustomControl):
+class ArrayCustomControl(object):
 
-    def __init__(self, prim, attrName, *args, **kwargs):
+    def __init__(self, prim, attrName):
         self.prim = prim
         self.attrName = attrName
-        super(ArrayCustomControl, self).__init__(args, kwargs)
+        super(ArrayCustomControl, self).__init__()
 
-    def buildControlUI(self):
+    def onCreate(self, *args):
         attr = self.prim.GetAttribute(self.attrName)
         typeName = attr.GetTypeName()
         if typeName.isArray:
@@ -204,12 +204,17 @@ class ArrayCustomControl(aecustom.CustomControl):
             typeNameStr = str(typeName.scalarType)
             typeNameStr += ("[" + str(len(values)) + "]") if hasValue else "[]"
 
-            cmds.textFieldGrp(editable=False, label=getPrettyName(self.attrName), text=typeNameStr)
+            cmds.textFieldGrp(editable=False, label=getPrettyName(self.attrName), text=typeNameStr, annotation=attr.GetDocumentation())
 
             if hasValue:
                 cmds.popupMenu()
                 cmds.menuItem( label="Copy Attribute Value",   command=lambda *args: setClipboardData(str(values)) )
                 cmds.menuItem( label="Print to Script Editor", command=lambda *args: print(str(values)) )
+        else:
+            cmds.error(self.attrName + " must be an array!")
+
+    def onReplace(self, *args):
+        pass
 
 class NoticeListener(object):
     # Inserted as a custom control, but does not have any UI. Instead we use
@@ -379,7 +384,8 @@ class AETemplate(object):
         # because we are using custom widget for array type and it's not
         # possible to inject our widget inside the maya "Extra Attributes" section.
         extraAttrs = [attr for attr in self.attrS.attributeNames if attr not in self.addedAttrs]
-        self.createSection("Extra Attributes", extraAttrs, True)
+        sectionName = mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
+        self.createSection(sectionName, extraAttrs, True)
 
     def createAppliedSchemasSection(self):
         # USD version 0.21.2 is required because of
