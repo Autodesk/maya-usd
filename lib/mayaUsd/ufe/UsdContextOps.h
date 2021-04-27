@@ -26,6 +26,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+struct SchemaTypeGroup
+{
+    std::string               name;
+    std::vector<pxr::TfToken> types;
+    bool                      operator==(const std::string rhs) const { return name == rhs; }
+};
+
 //! \brief Interface for scene item context operations.
 /*!
     This class defines the interface that USD run-time implements to
@@ -75,6 +82,9 @@ public:
 private:
     UsdSceneItem::Ptr fItem;
     bool              fIsAGatewayType { false };
+
+    // A cache to keep the dynamic listing of plugin types to a minimum
+    static std::vector<SchemaTypeGroup> fSchemaTypeGroups;
 
 }; // UsdContextOps
 

@@ -107,6 +107,38 @@ static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
 static constexpr char    kAllRegisteredTypesItem[] = "All Registered";
 static constexpr char    kAllRegisteredTypesLabel[] = "All Registered";
 
+// Grouping and name mapping for registered schema plugins
+static const std::vector<std::string> kSchemaPluginNames = {
+    "usdGeom",
+    "usdLux",
+    "mayaUsd_Schemas",
+    "usdMedia",
+    "usdRender",
+    "usdRi",
+    "usdShade",
+    "usdSkel",
+    "usdUI",
+    "usdVol",
+    "AL_USDMayaSchemasTest",
+    "AL_USDMayaSchemas",
+};
+// clang-format off
+static const std::vector<std::string> kSchemaNiceNames = {
+    "Geometry",
+    "Lighting",
+    "Maya Reference",
+    "Media",
+    "Render",
+    "RenderMan",
+    "Shading",
+    "Skeleton",
+    "UI",
+    "Volumes",
+    "", // Skip legacy AL schemas
+    "", // Skip legacy AL schemas
+};
+// clang-format on
+
 //! \brief Undoable command for loading a USD prim.
 class LoadUndoableCommand : public Ufe::UndoableCommand
 {
@@ -424,30 +456,76 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
     return itemLabelPairs;
 }
 
-// Get all the currently registered prim types from USD
-// so that we may display them in a UI list for users.
-static const std::vector<TfToken> getConcretePrimTypes()
-{
-    std::vector<TfToken> primTypes;
-
-    // Query all the available types
-    std::set<TfType> schemaTypes;
-    PlugRegistry::GetAllDerivedTypes<UsdSchemaBase>(&schemaTypes);
-
-    for (auto t : schemaTypes) {
-        // Find the primType as it would be within the USD file
-        if (UsdSchemaRegistry::IsConcrete(t)) {
-            primTypes.emplace_back(UsdSchemaRegistry::GetConcreteSchemaTypeName(t));
-        }
-    }
-
-    return primTypes;
-}
-
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+std::vector<SchemaTypeGroup> UsdContextOps::fSchemaTypeGroups = {};
+
+bool _schemaGroupSortCompare(const SchemaTypeGroup& a, const SchemaTypeGroup& b)
+{
+    return a.name < b.name;
+}
+
+//! \brief Get groups of concrete schema prim types to list dynamically in the UI
+static const std::vector<SchemaTypeGroup> getConcretePrimTypes(bool sorted)
+{
+    std::vector<SchemaTypeGroup> groups;
+
+    // Query all the available types
+    PlugRegistry&    plugReg = PlugRegistry::GetInstance();
+    std::set<TfType> schemaTypes;
+    plugReg.GetAllDerivedTypes<UsdSchemaBase>(&schemaTypes);
+
+    for (auto t : schemaTypes) {
+        if (!UsdSchemaRegistry::IsConcrete(t)) {
+            continue;
+        }
+
+        auto plugin = plugReg.GetPluginForType(t);
+        if (!plugin) {
+            continue;
+        }
+
+        // For every plugin we check if there's a nice name registered and use that instead
+        auto plugin_name = plugin->GetName();
+        auto name_itr
+            = std::find(kSchemaPluginNames.begin(), kSchemaPluginNames.end(), plugin_name);
+        if (name_itr != kSchemaPluginNames.end()) {
+            plugin_name = kSchemaNiceNames[name_itr - kSchemaPluginNames.begin()];
+        }
+
+        // We don't list empty names. This allows hiding certain plugins too.
+        if (plugin_name.empty()) {
+            continue;
+        }
+
+        auto type_name = UsdSchemaRegistry::GetConcreteSchemaTypeName(t);
+
+        // Find or create the schema group and add to it
+        auto group_itr = find(begin(groups), end(groups), plugin_name);
+        if (group_itr == groups.end()) {
+            SchemaTypeGroup group { plugin_name };
+            group.types.emplace_back(type_name);
+            groups.emplace_back(group);
+        } else {
+            groups[group_itr - groups.begin()].types.emplace_back(type_name);
+        }
+    }
+
+    if (sorted) {
+        for (size_t i = 0; i < groups.size(); ++i) {
+            auto group = groups[i];
+            std::sort(group.types.begin(), group.types.end());
+            groups[i] = group;
+        }
+
+        std::sort(groups.begin(), groups.end(), _schemaGroupSortCompare);
+    }
+
+    return groups;
+}
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
     : Ufe::ContextOps()
@@ -575,13 +653,33 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
                 items.emplace_back(Ufe::ContextItem::kSeparator);
                 items.emplace_back(
-                        kAllRegisteredTypesItem, kAllRegisteredTypesLabel, Ufe::ContextItem::kHasChildren);
+                    kAllRegisteredTypesItem,
+                    kAllRegisteredTypesLabel,
+                    Ufe::ContextItem::kHasChildren);
             } else if (itemPath.size() == 2u) { // Sub Menus
                 if (itemPath[1] == kAllRegisteredTypesItem) {
-                    auto primTypes = getConcretePrimTypes();
-                    std::sort(primTypes.begin(), primTypes.end());
-                    for (auto primType : primTypes) {
-                        items.emplace_back(primType, primType);
+                    // List the Registered schema plugins
+                    // Load this each time the menu is called in case plugins were loaded
+                    //      in between invocations.
+                    // However we cache it so the submenus don't need to re-query
+                    fSchemaTypeGroups = getConcretePrimTypes(true);
+                    for (auto schema : fSchemaTypeGroups) {
+                        items.emplace_back(
+                            schema.name.c_str(),
+                            schema.name.c_str(),
+                            Ufe::ContextItem::kHasChildren);
+                    }
+                }
+            } else if (itemPath.size() == 3u) {
+                if (itemPath[1] == kAllRegisteredTypesItem) {
+                    // List the items that belong to this schema plugin
+                    for (auto schema : fSchemaTypeGroups) {
+                        if (schema.name != itemPath[2]) {
+                            continue;
+                        }
+                        for (auto t : schema.types) {
+                            items.emplace_back(t, t);
+                        }
                     }
                 }
             }
