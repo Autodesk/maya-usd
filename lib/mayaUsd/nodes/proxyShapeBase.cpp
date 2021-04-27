@@ -684,10 +684,15 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                         if (!sessionLayer)
                             sessionLayer = SdfLayer::CreateAnonymous();
                         usdStage = UsdStage::Open(
-                            rootLayer, sessionLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                            rootLayer,
+                            sessionLayer,
+                            ArGetResolver().CreateDefaultContextForAsset(fileString),
+                            loadSet);
                     } else {
                         usdStage = UsdStage::Open(
-                            rootLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                            rootLayer,
+                            ArGetResolver().CreateDefaultContextForAsset(fileString),
+                            loadSet);
                     }
                     if (sessionLayer && targetSession) {
                         usdStage->SetEditTarget(sessionLayer);
