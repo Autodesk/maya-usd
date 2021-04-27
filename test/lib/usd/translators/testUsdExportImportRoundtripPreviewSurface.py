@@ -56,7 +56,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         sphere_xform = cmds.polySphere()[0]
 
-        material_node = cmds.shadingNode("usdPreviewSurface", asShader=True)
+        material_node = cmds.shadingNode("usdPreviewSurface", asShader=True,
+                                         name="usdPreviewSurface42")
 
         material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
                                 empty=True, name=material_node+"SG")
@@ -94,6 +95,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         default_ext_setting = cmds.file(q=True, defaultExtensions=True)
         cmds.file(defaultExtensions=False)
         cmds.setAttr(uv_node+".wrapU", 0)
+        original_path = cmds.getAttr(file_node+".fileTextureName")
 
         # Export to USD:
         usd_path = os.path.abspath('UsdPreviewSurfaceRoundtripTest.usda')
@@ -103,6 +105,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                   typ="USD Export", pr=True, ea=True)
 
         cmds.file(defaultExtensions=default_ext_setting)
+
+        cmds.file(newFile=True, force=True)
 
         # Import back:
         import_options = ("shadingMode=[[useRegistry,UsdPreviewSurface]]",
@@ -116,37 +120,37 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # Check the new sphere is in the new shading group:
         self.assertTrue(cmds.sets(
             "pSphere1Shape",
-            isMember="USD_Materials:usdPreviewSurface1SG"))
+            isMember=material_sg))
 
         # Check that we have no spurious "Looks" transform
-        expectedTr = set(['front', 'persp', 'side', 'top', 'pSphere1', 'pSphere2'])
+        expectedTr = set(['front', 'persp', 'side', 'top', 'pSphere1'])
         allTr = set(cmds.ls(tr=True))
         self.assertEqual(allTr, expectedTr)
 
         # Check connections:
         self.assertEqual(
-            cmds.connectionInfo("usdPreviewSurface2.outColor", dfs=True),
-            ["USD_Materials:usdPreviewSurface1SG.surfaceShader"])
+            cmds.connectionInfo(material_node+".outColor", dfs=True),
+            [material_sg+".surfaceShader"])
         self.assertEqual(
-            cmds.connectionInfo("usdPreviewSurface2.diffuseColor", sfd=True),
-            "file2.outColor")
+            cmds.connectionInfo(material_node+".diffuseColor", sfd=True),
+            file_node+".outColor")
         self.assertEqual(
-            cmds.connectionInfo("file2.wrapU", sfd=True),
+            cmds.connectionInfo(file_node+".wrapU", sfd=True),
             "place2dTexture.wrapU")
 
         # Check values:
-        self.assertAlmostEqual(cmds.getAttr("usdPreviewSurface2.roughness"),
+        self.assertAlmostEqual(cmds.getAttr(material_node+".roughness"),
                                0.25)
-        self.assertAlmostEqual(cmds.getAttr("usdPreviewSurface2.opacityThreshold"),
+        self.assertAlmostEqual(cmds.getAttr(material_node+".opacityThreshold"),
                                0.5)
-        self.assertEqual(cmds.getAttr("usdPreviewSurface2.specularColor"),
+        self.assertEqual(cmds.getAttr(material_node+".specularColor"),
                          [(0.125, 0.25, 0.75)])
-        self.assertTrue(cmds.getAttr("usdPreviewSurface2.useSpecularWorkflow"))
-        self.assertEqual(cmds.getAttr("file2.defaultColor"),
+        self.assertTrue(cmds.getAttr(material_node+".useSpecularWorkflow"))
+        self.assertEqual(cmds.getAttr(file_node+".defaultColor"),
                          [(0.5, 0.25, 0.125)])
         self.assertEqual(cmds.getAttr(file_node+".colorSpace"), "ACEScg")
-        original_path = cmds.getAttr(file_node+".fileTextureName")
-        imported_path = cmds.getAttr("file2.fileTextureName")
+        self.assertEqual(cmds.getAttr(file_node+".colorSpace"), "ACEScg")
+        imported_path = cmds.getAttr(file_node+".fileTextureName")
         # imported path will be absolute:
         self.assertFalse(imported_path.startswith(".."))
         self.assertEqual(imported_path.lower(), original_path.lower())
@@ -158,12 +162,145 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # a file that exists.
         stage = Usd.Stage.Open(usd_path)
         texture_prim = stage.GetPrimAtPath(
-            "/pSphere1/Looks/usdPreviewSurface1SG/file1")
+            "/%s/Looks/%s/%s" % (sphere_xform, material_sg, file_node))
         rel_texture_path = texture_prim.GetAttribute('inputs:file').Get().path
 
         usd_dir = os.path.dirname(usd_path)
         full_texture_path = os.path.join(usd_dir, rel_texture_path)
         self.assertTrue(os.path.isfile(full_texture_path))
+
+    def testShadingRoundtrip(self):
+        """
+        Test that shading group and surface node names will survive a roundtrip
+        """
+        mayaUsdPluginName = "mayaUsdPlugin"
+        if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
+            cmds.loadPlugin(mayaUsdPluginName)
+
+        testPatterns = [
+            # Each test has 5 elements:
+            #   - Shader type
+            #   - Initial shader name
+            #   - Initial shading group name
+            #   - Roundtrip shader name
+            #   - Roundtrip shading group name
+
+            # Fully modified names will survive a roundtrip:
+            ("lambert", "bob", "bobSG", "bob", "bobSG"),
+            # Modified sg name survive (and we do not touch surface name)
+            ("blinn", "blinn42", "blueSG", "blinn42", "blueSG"),
+            # Default surface names will survive even if mismatched:
+            ("phong", "phong12", "blinn27SG", "phong12", "blinn27SG"),
+
+            # WARNING: Meaninful surface names win over boring shading group
+            # names, so this combination does not roundtrip. The final shading
+            # group name will be modified to be consistent with the surface
+            # shader name:
+            ("blinn", "myGold", "blinn12SG",
+                      "myGold", "myGoldSG"),
+            ("usdPreviewSurface", "jersey12", "blinn27SG",
+                                  "jersey12", "jersey12SG"),
+
+            # This will make the UsdMaterial and UsdGeomSubset names more
+            # meaningful.
+        ]
+
+        for sh_type, init_surf, init_sg, final_surf, final_sg in testPatterns:
+
+            cmds.file(f=True, new=True)
+
+            sphere_xform = cmds.polySphere()[0]
+
+            material_node = cmds.shadingNode(sh_type, asShader=True,
+                                             name=init_surf)
+            material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
+                                    empty=True, name=init_sg)
+            cmds.connectAttr(material_node+".outColor",
+                             material_sg+".surfaceShader", force=True)
+            cmds.sets(sphere_xform, e=True, forceElement=material_sg)
+
+            default_ext_setting = cmds.file(q=True, defaultExtensions=True)
+            cmds.file(defaultExtensions=False)
+
+            # Export to USD:
+            usd_path = os.path.abspath('%sRoundtripTest.usda' % init_surf)
+
+            cmds.file(usd_path, force=True,
+                    options="shadingMode=useRegistry;mergeTransformAndShape=1",
+                    typ="USD Export", pr=True, ea=True)
+
+            cmds.file(defaultExtensions=default_ext_setting)
+
+            cmds.file(newFile=True, force=True)
+
+            # Import back:
+            import_options = ("shadingMode=[[useRegistry,UsdPreviewSurface]]",
+                            "preferredMaterial=none",
+                            "primPath=/")
+            cmds.file(usd_path, i=True, type="USD Import",
+                    ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
+                    namespace="Test", pr=True, importTimeRange="combine",
+                    options=";".join(import_options))
+
+            # Check shading group name:
+            self.assertTrue(cmds.sets("pSphere1Shape", isMember=final_sg))
+
+            # Check surface name:
+            self.assertEqual(
+                cmds.connectionInfo(final_surf+".outColor", dfs=True),
+                [final_sg+".surfaceShader"])
+
+    def testDisplayColorLossyRoundtrip(self):
+        """
+        Test that shading group names created for display color import are in
+        sync with their surface shaders.
+        """
+        mayaUsdPluginName = "mayaUsdPlugin"
+        if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
+            cmds.loadPlugin(mayaUsdPluginName)
+
+        for i in range(1,4):
+            sphere_xform = cmds.polySphere()[0]
+            init_surf = "test%i" % i
+            init_sg = init_surf + "SG"
+            material_node = cmds.shadingNode("lambert", asShader=True,
+                                             name=init_surf)
+            material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
+                                    empty=True, name=init_sg)
+            cmds.connectAttr(material_node+".outColor",
+                             material_sg+".surfaceShader", force=True)
+            cmds.sets(sphere_xform, e=True, forceElement=material_sg)
+
+        # Export to USD:
+        usd_path = os.path.abspath('DisplayColorRoundtripTest.usda')
+        cmds.usdExport(mergeTransformAndShape=True,
+            file=usd_path,
+            shadingMode='none',
+            exportDisplayColor=True)
+
+
+        for preferred in ("blinn", "phong"):
+            cmds.file(newFile=True, force=True)
+
+            import_options = ("shadingMode=[[displayColor,default]]",
+                              "preferredMaterial=%s" % preferred,
+                              "primPath=/")
+            cmds.file(usd_path, i=True, type="USD Import",
+                    ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
+                    namespace="Test", pr=True, importTimeRange="combine",
+                    options=";".join(import_options))
+
+            for i in ("", "1", "2"):
+                # We expect blinn, blinn1, blinn2
+                final_surf = "%s%s" % (preferred, i)
+                # We expect blinnSG, blinn1SG, blinn2SG
+                final_sg = final_surf + "SG"
+
+                # Check surface name:
+                self.assertEqual(
+                    cmds.connectionInfo(final_surf+".outColor", dfs=True),
+                    [final_sg+".surfaceShader"])
+
 
 
 if __name__ == '__main__':

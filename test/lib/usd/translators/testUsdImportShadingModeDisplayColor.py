@@ -80,7 +80,7 @@ class testUsdImportShadingModeDisplayColor(unittest.TestCase):
         shadingEngineObj = objectArray[0]
         shadingEngineDepFn = OpenMaya.MFnDependencyNode(shadingEngineObj)
         self.assertEqual(shadingEngineDepFn.name(),
-            'USD_Materials:RedLambertSG')
+            'RedLambertSG')
 
         # Validate the lambert plugged in as the surfaceShader of the
         # shadingEngine.
