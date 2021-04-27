@@ -383,6 +383,11 @@ class AETemplate(object):
         # We are not using the maya default "Extra Attributes" section
         # because we are using custom widget for array type and it's not
         # possible to inject our widget inside the maya "Extra Attributes" section.
+
+        # The extraAttrs will contains suppressed attribute but this is not a big deal as
+        # long as the suppressed attributes are suppressed by suppress(self, control).
+        # This function will keep all suppressed attributes into a list which will be use
+        # by addControls(). So any suppressed attributes in extraAttrs will be ignored later.
         extraAttrs = [attr for attr in self.attrS.attributeNames if attr not in self.addedAttrs]
         sectionName = mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
         self.createSection(sectionName, extraAttrs, True)
