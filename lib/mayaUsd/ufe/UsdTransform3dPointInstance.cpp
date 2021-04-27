@@ -15,9 +15,6 @@
 //
 #include "UsdTransform3dPointInstance.h"
 
-#include <mayaUsd/ufe/UsdPointInstanceOrientationModifier.h>
-#include <mayaUsd/ufe/UsdPointInstancePositionModifier.h>
-#include <mayaUsd/ufe/UsdPointInstanceScaleModifier.h>
 #include <mayaUsd/ufe/UsdPointInstanceUndoableCommands.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
@@ -34,8 +31,6 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include <ufe/sceneItem.h>
-#include <ufe/transform3d.h>
 #include <ufe/transform3dHandler.h>
 #include <ufe/transform3dUndoableCommands.h>
 #include <ufe/types.h>
@@ -51,11 +46,9 @@ UsdTransform3dPointInstance::UsdTransform3dPointInstance(const UsdSceneItem::Ptr
     : UsdTransform3dBase(item)
 {
     if (item != nullptr) {
-        const UsdPrim prim = item->prim();
-        const int     instanceIndex = item->instanceIndex();
-        _positionModifier.setPrimAndInstanceIndex(prim, instanceIndex);
-        _orientationModifier.setPrimAndInstanceIndex(prim, instanceIndex);
-        _scaleModifier.setPrimAndInstanceIndex(prim, instanceIndex);
+        _positionModifier.setSceneItem(item);
+        _orientationModifier.setSceneItem(item);
+        _scaleModifier.setSceneItem(item);
     }
 }
 
