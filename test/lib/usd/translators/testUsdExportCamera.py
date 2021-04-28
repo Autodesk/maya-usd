@@ -261,6 +261,29 @@ class testUsdExportCamera(unittest.TestCase):
         self.assertTrue(Gf.IsClose(attr.Get(self.START_TIMECODE), 35.0, 1e-6))
         self.assertTrue(Gf.IsClose(attr.Get(self.END_TIMECODE), 100.0, 1e-6))
 
+    def testExportPerspectiveCameraNoDepthOfField(self):
+        usdCamera = self._GetUsdCamera('PerspCamNoDOF')
+
+        expectedPropertyTuples = [
+            ('clippingRange', Gf.Vec2f(0.1, 10000.0), False),
+            ('focalLength', 35.000, False),
+            ('horizontalAperture', 35.999928, False),
+            ('horizontalApertureOffset', 0.0, False),
+            ('projection', UsdGeom.Tokens.perspective, False),
+            ('verticalAperture', 23.999952, False),
+            ('verticalApertureOffset', 0.0, False),
+        ]
+
+        # There should be no animation on the transform.
+        self._ValidateUsdCamera(usdCamera, expectedPropertyTuples, False)
+
+        # Depth of field is disabled, which means USD fStop must be 0
+        fStop = usdCamera.GetFStopAttr().Get()
+        self.assertTrue(fStop == 0)
+
+        focusDist = usdCamera.GetFocusDistanceAttr().Get()
+        self.assertTrue(Gf.IsClose(focusDist, 5.0, 1e-6))
+
     def testExportOrthographicViewCheckCamera(self):
         """
         Tests exporting a specifically positioned orthographic camera. Looking

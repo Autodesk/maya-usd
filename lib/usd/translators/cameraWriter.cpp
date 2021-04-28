@@ -172,20 +172,25 @@ bool PxrUsdTranslators_CameraWriter::writeCameraAttrs(
         usdTime,
         _GetSparseValueWriter());
 
-    // Always export focus distance and fStop regardless of what
+    // Always export focus distance regardless of what
     // camFn.isDepthOfField() says. Downstream tools can choose to ignore or
-    // override them.
+    // override it.
     UsdMayaWriteUtil::SetAttribute(
         primSchema.GetFocusDistanceAttr(),
         static_cast<float>(camFn.focusDistance()),
         usdTime,
         _GetSparseValueWriter());
 
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetFStopAttr(),
-        static_cast<float>(camFn.fStop()),
-        usdTime,
-        _GetSparseValueWriter());
+    // USD specifies fStop=0 to disable depth-of-field, so we have to honor that by
+    // munging isDepthOfField and fStop together.
+    // XXX: Should an additional custom maya-namespaced attribute write the actual value?
+    if (camFn.isDepthOfField()) {
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetFStopAttr(),
+            static_cast<float>(camFn.fStop()),
+            usdTime,
+            _GetSparseValueWriter());
+    }
 
     // Set the clipping planes.
     GfVec2f clippingRange(camFn.nearClippingPlane(), camFn.farClippingPlane());

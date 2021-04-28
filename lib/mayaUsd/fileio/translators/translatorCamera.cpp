@@ -65,6 +65,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((MayaCameraAttrNameFocalLength, "focalLength"))
     ((MayaCameraAttrNameFocusDistance, "focusDistance"))
     ((MayaCameraAttrNameFStop, "fStop"))
+    ((MayaCameraAttrNameDepthOfField, "depthOfField"))
     ((MayaCameraAttrNameNearClippingPlane, "nearClipPlane"))
     ((MayaCameraAttrNameFarClippingPlane, "farClipPlane"))
 );
@@ -469,11 +470,28 @@ bool _ReadToCamera(
         return false;
     }
 
+    // Convert USD fStop to Maya fStop respecting the USD notion that fStop=0 disables
+    // depth of field.
+    // TODO: Handle time-sampled fStop and possibly import/export a custom attribute for
+    // fStop keyframe data in Maya. (Right now existance of samples or the USD
+    // default value as zero is our signal)
+    bool  enableMayaDOF = false;
+    float usdFStop = 0;
     usdAttr = usdCamera.GetFStopAttr();
-    plugName = _tokens->MayaCameraAttrNameFStop;
-    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName, args, context)) {
-        return false;
+    if (usdAttr.IsAuthored()
+        && (usdAttr.ValueMightBeTimeVarying() || (usdAttr.Get(&usdFStop) && usdFStop != 0))) {
+        plugName = _tokens->MayaCameraAttrNameFStop;
+        if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName, args, context)) {
+            return false;
+        }
+        enableMayaDOF = true;
     }
+    // Enable/Disable Maya camera's depthOfField
+    plugName = _tokens->MayaCameraAttrNameDepthOfField;
+    MPlug plug = cameraFn.findPlug(plugName.GetText(), true, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    status = plug.setBool(enableMayaDOF);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Set the clipping planes. This one is a little different from the others
     // because it is stored in USD as a single GfVec2f value but in Maya as
