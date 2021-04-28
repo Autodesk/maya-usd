@@ -1630,7 +1630,8 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
         }
 
-        bool useFallbackMaterial = dirtyMaterialId && !drawItemData._shader && _PrimvarIsRequired(HdTokens->displayColor);
+        bool useFallbackMaterial = dirtyMaterialId && !drawItemData._shader
+            && _PrimvarIsRequired(HdTokens->displayColor);
         bool updateFallbackMaterial = useFallbackMaterial && _meshSharedData->_fallbackColorDirty;
 
         // Use fallback shader if there is no material binding or we failed to create a shader
@@ -1646,8 +1647,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             _getColorData(_meshSharedData->_primvarInfo, colorArray, colorInterp);
             _getOpacityData(_meshSharedData->_primvarInfo, alphaArray, alphaInterp);
 
-            if ((colorInterp == HdInterpolationConstant
-                    || colorInterp == HdInterpolationInstance)
+            if ((colorInterp == HdInterpolationConstant || colorInterp == HdInterpolationInstance)
                 && (alphaInterp == HdInterpolationConstant
                     || alphaInterp == HdInterpolationInstance)) {
                 const GfVec3f& clr3f = MayaUsd::utils::ConvertLinearToMaya(colorArray[0]);
