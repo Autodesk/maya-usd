@@ -66,7 +66,9 @@ public:
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg, bool isSprim);
 	HDMAYA_API
-	SdfPath GetPrimPath(const MRenderItem& ri, bool isLight);
+	SdfPath GetRenderItemPrimPath(const MRenderItem& ri);
+	HDMAYA_API
+	SdfPath GetRenderItemShaderPrimPath(const MRenderItem& ri, const MShaderInstance& shader);
     HDMAYA_API
     SdfPath GetMaterialPath(const MObject& obj);
 

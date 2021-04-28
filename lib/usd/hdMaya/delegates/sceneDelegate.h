@@ -106,7 +106,13 @@ public:
     void InsertDag(const MDagPath& dag);
 
     HDMAYA_API
-    void CreateOrGetRenderItem(const MRenderItem& ri, HdMayaRenderItemAdapterPtr& adapter);
+	bool CreateOrGetShaderInstance(
+		const MRenderItem& ri,		
+		HdMayaShaderInstanceData& instance);
+
+
+	HDMAYA_API
+	bool CreateOrGetRenderItem(const MRenderItem& ri, HdMayaRenderItemAdapterPtr& adapter);
 
     HDMAYA_API
     void NodeAdded(const MObject& obj);

@@ -975,6 +975,7 @@ MStatus MtohRenderOverride::setup(const MString& destination)
         // Clear and draw the grid
 
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
+		// TODO: Integrate https://git.autodesk.com/maya3d/maya-usd/commit/634000c3f7d96cd02d9c92bbd32e17fdde12c284
 		// If render item data server is enabled, do not draw full HdMayaPreRender (MSceneRender)
 		// since the wireframes and other UI would be drawn on top of the hydra meshes. 
 		// Instead simply add a clear operation.

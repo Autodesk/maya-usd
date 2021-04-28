@@ -47,6 +47,7 @@
 #include <maya/MMatrixArray.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MString.h>
+#include <maya/MShaderManager.h>
 
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
@@ -245,38 +246,17 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 
 	for (int i = 0; i < scene.mCount; i++)
 	{
-		HdMayaRenderItemAdapterPtr ria;
 		auto& ri = *scene.mItems[i];
 
+		HdMayaRenderItemAdapterPtr ria;
 		CreateOrGetRenderItem(ri, ria);	
 		ria->UpdateTopology(ri);							
 		ria->UpdateTransform(*scene.mItems[i]);
-		// Update material
-		{
-			switch (ri.primitive())
-			{
-				case MHWRender::MGeometry::Primitive::kPoints:
-					ria->SetMaterial(_vertexMaterial);
-					break;
-				case MHWRender::MGeometry::Primitive::kLines:
-					ria->SetMaterial(_wireframeMaterial);
-					break;
-				default:
-					ria->SetMaterial(_fallbackMaterial);
-					break;
-			}
-
-			//switch (ri.type())
-			//{
-			//case MHWRender::MRenderItem::RenderItemType::NonMaterialSceneItem:
-			//case MHWRender::MRenderItem::RenderItemType::DecorationItem:
-			//	ria->SetMaterial(_wireframeMaterial);
-			//	break;
-			//default:
-			//	ria->SetMaterial(_fallbackMaterial);
-			//	break;
-			//}
-		}
+	
+		HdMayaShaderInstanceData& sd = ria->GetShaderData();
+		// TODO: Fix shader leaking due to bad API here..
+		const MShaderInstance* shaderInstance = ri.getShader();
+		HdMayaRenderItemShaderConverter::ExtractShaderData(*shaderInstance, sd);
 		
 		ria->IsStale(false);
 	}
@@ -657,7 +637,10 @@ AdapterPtr HdMayaSceneDelegate::Create(
 
 
 // Analogous to HdMayaSceneDelegate::InsertDag
-void HdMayaSceneDelegate::CreateOrGetRenderItem(const MRenderItem& ri, HdMayaRenderItemAdapterPtr& adapter)
+bool HdMayaSceneDelegate::CreateOrGetRenderItem(
+	const MRenderItem& ri, 
+	HdMayaRenderItemAdapterPtr& renderItemAdapter
+	)
 {
     TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
         .Msg(
@@ -665,23 +648,21 @@ void HdMayaSceneDelegate::CreateOrGetRenderItem(const MRenderItem& ri, HdMayaRen
             "found shape: %s\n",
             ri.name().asChar());
 
-	const SdfPath id = GetPrimPath(ri, false);
+	const SdfPath id = GetRenderItemPrimPath(ri);
 	HdMayaRenderItemAdapterPtr* result = TfMapLookupPtr(_renderItemsAdapters, id);
-    if (result != nullptr) {
-		adapter = *result;
-        return;
+    if (result != nullptr) 
+	{
+		renderItemAdapter = *result;
+        return false;
     }
 
-	auto adapterCreator = HdMayaAdapterRegistry::GetRenderItemAdapterCreator(ri);
+    renderItemAdapter = HdMayaRenderItemAdapterPtr(new HdMayaRenderItemAdapter(id, this, ri));
+    if (!renderItemAdapter->IsSupported()) return false;
 
-    adapter = adapterCreator(this, ri);
-    if (adapter == nullptr || !adapter->IsSupported()) {
-        return;
-    }
-
-    adapter->Populate();
-    adapter->CreateCallbacks();
-    _renderItemsAdapters.insert({ id, adapter });
+    renderItemAdapter->Populate();
+    renderItemAdapter->CreateCallbacks();
+    _renderItemsAdapters.insert({ id, renderItemAdapter });
+	return true;
 }
 
 void HdMayaSceneDelegate::InsertDag(const MDagPath& dag)
@@ -1378,12 +1359,9 @@ HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id)
 SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 {
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	TF_DEBUG(HDMAYA_DELEGATE_GET_DISPLAY_STYLE)
-		.Msg("HdMayaSceneDelegate::Material(%s)\n", id.GetText());
-	return _GetValue<HdMayaRenderItemAdapter, SdfPath>(
-		id,
-		[](HdMayaRenderItemAdapter* a) -> SdfPath { return a->GetMaterial(); },
-		_renderItemsAdapters);
+	// Return id of render item itself as shader instance id;
+	// Configured shader instance is returned in GetMaterialResource;
+	return id;
 #else
 	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
 		.Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
@@ -1409,58 +1387,12 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 {
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	// TODO remove throwaway code
-	HdMaterialNetworkMap map;
-	HdMaterialNetwork    network;
-	HdMaterialNode       node;
-	node.path = id;
-	node.identifier = UsdImagingTokens->UsdPreviewSurface;
-	map.terminals.push_back(node.path);
-	for (const auto& it : HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) 
-	{
-		if (
-			id == _wireframeMaterial
-			|| id == _vertexMaterial
-			)
-		{		
-			// choose color
-			GfVec3f color = {0, 0, 0};
-			if (id == _wireframeMaterial) color = _wireframeColor;
+	auto ret = _GetValue<HdMayaRenderItemAdapter, VtValue>(
+		id,
+		[](HdMayaRenderItemAdapter* a) -> VtValue { return a->GetMaterialResource(); },
+		_renderItemsAdapters);
 
-			else if (id == _vertexMaterial) color = _vertexColor;
-
-
-			// Set param
-			if (it.name == TfToken("diffuseColor"))
-			{
-				node.parameters.emplace(it.name, VtValue(color));
-			}
-			else if(it.name == TfToken("specularColor"))
-			{
-				node.parameters.emplace(it.name, VtValue(color));
-			}
-			else if (it.name == TfToken("opacity"))
-			{
-				node.parameters.emplace(it.name, VtValue(1.0f));
-			}
-
-			continue;
-		}
-
-		// Set param
-		if (it.name == TfToken("diffuseColor"))
-		{
-			node.parameters.emplace(it.name, VtValue(GfVec3f(.4, .4, .4)));
-		}
-
-		node.parameters.emplace(it.name, it.fallbackValue);
-	}
-	network.nodes.push_back(node);
-	map.map.emplace(HdMaterialTerminalTokens->surface, network);
-	map.terminals.push_back(network.nodes.back().path);
-
-
-	return VtValue(map);
+	return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(_fallbackMaterial) : ret;
 
 #else
 	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)

@@ -40,17 +40,6 @@ class HdMayaAdapterRegistry : public TfSingleton<HdMayaAdapterRegistry>
 
 public:
 
-	// Render Item Adapter
-	 
-	using RenderItemAdapterCreator
-		= std::function<HdMayaRenderItemAdapterPtr(HdMayaDelegateCtx*, const MRenderItem&)>;
-
-	HDMAYA_API
-		static void RegisterRenderItemAdapter(const TfToken& type, RenderItemAdapterCreator creator);
-
-	HDMAYA_API
-		static RenderItemAdapterCreator GetRenderItemAdapterCreator(const MRenderItem& ri);
-
 	// Shape Adapter
 	
 	using ShapeAdapterCreator
@@ -91,8 +80,7 @@ public:
     HDMAYA_API
     static void LoadAllPlugin();
 
-private:
-	std::unordered_map<TfToken, RenderItemAdapterCreator, TfToken::HashFunctor> _renderItemAdapters;
+private:	
     std::unordered_map<TfToken, ShapeAdapterCreator, TfToken::HashFunctor>    _dagAdapters;
     std::unordered_map<TfToken, LightAdapterCreator, TfToken::HashFunctor>    _lightAdapters;
     std::unordered_map<TfToken, MaterialAdapterCreator, TfToken::HashFunctor> _materialAdapters;

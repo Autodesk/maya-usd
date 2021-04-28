@@ -15,6 +15,8 @@
 
 #include <hdMaya/adapters/adapter.h>
 #include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/materialNetworkConverter.h>
+
 #include <hdMaya/utils.h>
 
 #include <pxr/base/gf/matrix4d.h>
@@ -36,18 +38,51 @@ namespace
 	std::string gsRenderItemTypeName = "renderItem";
 }
 
+using HdMayaRenderItemAdapterPtr = std::shared_ptr<class HdMayaRenderItemAdapter>;
+
+///////////////////////////////////////////////////////////////////////
+// HdMayaShaderInstanceData
+///////////////////////////////////////////////////////////////////////
+
+struct HdMayaRenderItemShaderParam
+{
+	TfToken name;
+	VtValue value;
+	SdfValueTypeName type;
+	bool isSupported = false;
+};
+
+struct HdMayaShaderInstanceData
+{
+	TfToken Identifier; // HdShaderNode identifier
+	std::map<TfToken, HdMayaRenderItemShaderParam> Params;
+
+	static constexpr const char* kPointSize = "pointSize";
+};
+
+class HdMayaRenderItemShaderConverter
+{
+public:
+	static bool ExtractShaderData(const MShaderInstance& shaderInstance, HdMayaShaderInstanceData& shaderData);
+};
+	
+
+///////////////////////////////////////////////////////////////////////
+// HdMayaRenderItemAdapter
+///////////////////////////////////////////////////////////////////////
+
 class HdMayaRenderItemAdapter : public HdMayaAdapter
 {
 public:
 	HDMAYA_API
 	HdMayaRenderItemAdapter(
-		const SdfPath& id, 
+		const SdfPath& id,
 		HdMayaDelegateCtx* del,
-		MGeometry::Primitive primitiveType,
-		MString name);
+		const MRenderItem& ri
+		);
 
 	HDMAYA_API
-	virtual ~HdMayaRenderItemAdapter() = default;
+	virtual ~HdMayaRenderItemAdapter();
 
 	// override
 	/////////////
@@ -77,6 +112,9 @@ public:
 	///////////
 
 	HDMAYA_API
+	VtValue GetMaterialResource();
+
+	HDMAYA_API
     virtual bool GetVisible() { return IsVisible(); }
     
 	HDMAYA_API
@@ -104,11 +142,7 @@ public:
 	void UpdateTopology(MRenderItem& ri);
 
 	HDMAYA_API
-	void SetMaterial(const SdfPath& mat) { _material = mat; }
-
-
-	HDMAYA_API
-	const SdfPath& GetMaterial() const { return _material; }
+	void UpdateShader(const HdMayaShaderInstanceData& shader);
 
 	HDMAYA_API
 	virtual std::shared_ptr<HdTopology> GetTopology();
@@ -126,7 +160,11 @@ public:
 	HDMAYA_API
 	virtual bool IsStale() const { return _isStale; }
 
+	HDMAYA_API
+		HdMayaShaderInstanceData& GetShaderData() { return _shader; }
+
 private:
+	HdMayaShaderInstanceData _shader;
 	std::shared_ptr<HdTopology> _topology = nullptr;
 	VtVec3fArray _vertexPositions = {};
 	MGeometry::Primitive _primitive;
@@ -134,10 +172,7 @@ private:
     GfMatrix4d _transform[2];
     bool _isVisible = true;
 	bool _isStale = false;
-	SdfPath _material;
 };
-
-using HdMayaRenderItemAdapterPtr = std::shared_ptr<HdMayaRenderItemAdapter>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

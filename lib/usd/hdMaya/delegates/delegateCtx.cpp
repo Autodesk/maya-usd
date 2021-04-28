@@ -25,6 +25,7 @@
 #include <pxr/imaging/hio/glslfx.h>
 
 #include <maya/MFnLight.h>
+#include <maya/MShaderManager.h>
 
 #include <array>
 
@@ -49,12 +50,30 @@ SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
     return base.AppendPath(SdfPath(s));
 }
 
-SdfPath _GetPrimPath(const SdfPath& base, const MRenderItem& ri)
+SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
 {
 	if (ri.InternalObjectID() == -1) return {};
-	const auto mayaPath = UsdMayaUtil::MRenderItemToUsdPath(ri, false, false);
+	const auto mayaPath = UsdMayaUtil::RenderItemToUsdPath(ri, false, false);
 	if (mayaPath.IsEmpty()) return {};
 		
+	const auto* chr = mayaPath.GetText();
+	if (chr == nullptr) {
+		return {};
+	};
+	std::string s(chr + 1);
+	if (s.empty()) {
+		return {};
+	}
+	return base.AppendPath(SdfPath(s));
+	return SdfPath();
+}
+
+SdfPath _GetRenderItemShaderPrimPath(const SdfPath& base, const MRenderItem& ri, const MShaderInstance& shader)
+{
+	if (shader.internalShaderID() == -1) return {};
+	const auto mayaPath = UsdMayaUtil::RenderItemToUsdPath(ri, false, false);
+	if (mayaPath.IsEmpty()) return {};
+
 	const auto* chr = mayaPath.GetText();
 	if (chr == nullptr) {
 		return {};
@@ -138,14 +157,14 @@ SdfPath HdMayaDelegateCtx::GetPrimPath(const MDagPath& dg, bool isSprim)
     }
 }
 
-SdfPath HdMayaDelegateCtx::GetPrimPath(const MRenderItem& ri, bool isLight)
+SdfPath HdMayaDelegateCtx::GetRenderItemPrimPath(const MRenderItem& ri)
 {
-	if (isLight) {
-		return _GetPrimPath(_sprimPath, ri);
-	}
-	else {
-		return _GetPrimPath(_rprimPath, ri);
-	}
+	return _GetRenderItemPrimPath(_rprimPath, ri);
+}
+
+SdfPath HdMayaDelegateCtx::GetRenderItemShaderPrimPath(const MRenderItem& ri, const MShaderInstance& shader)
+{
+	return _GetRenderItemShaderPrimPath(_rprimPath, ri, shader);
 }
 
 SdfPath HdMayaDelegateCtx::GetMaterialPath(const MObject& obj)

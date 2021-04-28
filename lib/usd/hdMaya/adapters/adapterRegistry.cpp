@@ -30,22 +30,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(HdMayaAdapterRegistry);
 
-void HdMayaAdapterRegistry::RegisterRenderItemAdapter(const TfToken& type, RenderItemAdapterCreator creator)
-{
-	GetInstance()._renderItemAdapters.insert({ type, creator });
-}
-
-HdMayaAdapterRegistry::RenderItemAdapterCreator
-HdMayaAdapterRegistry::GetRenderItemAdapterCreator(const MRenderItem& ri)
-{
-	//MFnDependencyNode   depNode(ri.node());
-	RenderItemAdapterCreator ret = nullptr;
-    // TODO multiple ri type
-	// TfMapLookup(GetInstance()._renderItemAdapters, TfToken(gsRenderItemTypeSuffix + std::to_string(ri.type())), &ret);
-    TfMapLookup(GetInstance()._renderItemAdapters, TfToken(gsRenderItemTypeName), &ret);
-	return ret;
-}
-
 void HdMayaAdapterRegistry::RegisterShapeAdapter(const TfToken& type, ShapeAdapterCreator creator)
 {
     GetInstance()._dagAdapters.insert({ type, creator });

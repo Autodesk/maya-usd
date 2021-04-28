@@ -853,6 +853,7 @@ VtValue HdMayaMaterialNetworkConverter::ConvertPlugToValue(
 std::mutex         _previewShaderParams_mutex;
 bool               _previewShaderParams_initialized = false;
 HdMayaShaderParams _previewShaderParams;
+static std::map<TfToken, HdMayaShaderParams> _defaultShaderParams;
 
 const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams()
 {
@@ -887,6 +888,52 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams
         }
     }
     return _previewShaderParams;
+}
+
+const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetShaderParams(const TfToken& shaderNodeIdentifier)
+{
+	auto& it = _defaultShaderParams.find(shaderNodeIdentifier);
+	if (it == _defaultShaderParams.end()) 
+	{
+		HdMayaShaderParams params;
+		auto& conv = _nodeConverters.find(shaderNodeIdentifier);
+		assert(conv != _nodeConverters.end());
+		// _nodeConverters is for material plug conversion, but we only use the param names here per material type.
+		for (auto& attr : conv->second.GetAttrConverters())
+		{
+			// TODO: Handle mutual exclusion
+			// Once we have the lock, recheck to make sure it's still
+			// uninitialized...
+			auto& shaderReg = SdrRegistry::GetInstance();
+			SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(UsdImagingTokens->UsdPreviewSurface);
+			assert(TF_VERIFY(sdrNode));
+
+			auto inputNames = sdrNode->GetInputNames();
+			params.reserve(inputNames.size());
+
+			for (auto& inputName : inputNames) {
+				auto property = sdrNode->GetInput(inputName);
+				if (!TF_VERIFY(property)) {
+					continue;
+				}
+				params.emplace_back(
+					inputName,
+					property->GetDefaultValue(),
+					property->GetTypeAsSdfType().first);
+			}
+		}
+
+		std::sort(
+			params.begin(),
+			params.end(),
+			[](const HdMayaShaderParam& a, const HdMayaShaderParam& b) -> bool {
+			return a.name < b.name;
+		});
+
+		return _defaultShaderParams.insert({ shaderNodeIdentifier, params }).first->second;			
+	}
+
+	return it->second;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

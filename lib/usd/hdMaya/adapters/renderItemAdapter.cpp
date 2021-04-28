@@ -16,17 +16,20 @@
 #include <hdMaya/adapters/adapterDebugCodes.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 #include <hdMaya/adapters/tokens.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/base/tf/registryManager.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
+#include <pxr/usd/sdr/registry.h>
 
 #include <maya/MAnimControl.h>
 #include <maya/MDGContext.h>
 #include <maya/MDGContextGuard.h>
 #include <maya/MHWGeometry.h>
+#include <maya/MShaderManager.h>
 
 #include <functional>
 
@@ -58,19 +61,117 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-namespace {
+// Maya to hydra shader parameter conversion
+// See void HdMayaMaterialNetworkConverter::initialize()
+std::map<std::string, TfToken> sHdMayaParamNameMap
+{
+	{"solidColor", TfToken("diffuseColor") }
+};
 
-} // namespace
+std::map<std::string, TfToken> sHdMayaMaterialNameMap
+{
+	{ "mayaPhongSurface", HdMayaAdapterTokens->phong },
+	{ "mayaBlinnSurface", HdMayaAdapterTokens->blinn },
+	{ "mayaLambertSurface", HdMayaAdapterTokens->lambert },
+	// Default
+	{ "mayaSolidColorShader", HdMayaAdapterTokens->usdPreviewSurface }
+};
+
+///////////////////////////////////////////////////////////////////////
+// HdMayaShaderAdapter
+///////////////////////////////////////////////////////////////////////
+
+bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& shaderInstance, HdMayaShaderInstanceData& shaderData)
+{
+	MString shaderName;
+	if (shaderInstance.internalShaderName(shaderName) == MS::kSuccess)
+	{
+		auto nameConv = sHdMayaMaterialNameMap.find(shaderName.asChar());
+		shaderData.Identifier = nameConv == sHdMayaMaterialNameMap.end() ?
+			HdMayaAdapterTokens->usdPreviewSurface :
+			nameConv->second;
+	}
+
+	MStringArray params;
+	shaderInstance.parameterList(params);		
+	for (unsigned int i = 0; i < params.length(); i++) 
+	{
+		HdMayaRenderItemShaderParam param;
+		std::string mayaParamName(params[i].asChar());
+		auto paramConv = sHdMayaParamNameMap.find(mayaParamName);
+		if (paramConv != sHdMayaParamNameMap.end())
+		{
+			param.isSupported = true;
+			param.name = paramConv->second;
+		}		
+		else
+		{
+			// Maintain unsupported parameter type to control
+			// aspects such as stippled lines, and point size
+			param.isSupported = false;
+			param.name = TfToken(mayaParamName);
+		}
+	
+		switch (shaderInstance.parameterType(params[i])) 
+		{
+			case MShaderInstance::ParameterType::kBoolean:
+			{
+				bool value;
+				shaderInstance.getParameter(params[i], value);
+				param.value = VtValue(value);
+				param.type = SdfValueTypeNames->Bool;
+				shaderData.Params.insert({ param.name, param });
+			}
+			break;
+			case MShaderInstance::ParameterType::kFloat:
+			{
+				float value;
+				shaderInstance.getParameter(params[i], value);
+				param.value = VtValue(value);
+				param.type = SdfValueTypeNames->Float;
+				shaderData.Params.insert({ param.name, param });				
+			}
+			break;
+			case MShaderInstance::ParameterType::kFloat3:
+			{
+				MFloatVector value;
+				shaderInstance.getParameter(params[i], value);
+				param.value = VtValue(GfVec3f(value[0], value[1], value[2]));
+				param.type = SdfValueTypeNames->Float3;
+				shaderData.Params.insert({ param.name, param });
+			}
+			break;
+			case MShaderInstance::ParameterType::kFloat4:
+			{
+				MFloatVector value;
+				shaderInstance.getParameter(params[i], value);
+				param.value = VtValue(GfVec4f(value[0], value[1], value[2], value[3]));
+				param.type = SdfValueTypeNames->Float4;
+				shaderData.Params.insert({ param.name, param });
+			}
+			break;			
+		}
+	}
+
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////
+// HdMayaRenderItemAdapter
+///////////////////////////////////////////////////////////////////////
 
 HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
     const SdfPath& id,
     HdMayaDelegateCtx* del,
-	MGeometry::Primitive primitiveType,
-	MString name
+	const MRenderItem& ri
 	)
     : HdMayaAdapter(MObject(), id, del)
-	, _primitive(primitiveType)
-	, _name(name)
+	, _primitive(ri.primitive())
+	, _name(ri.name())
+{
+}
+
+HdMayaRenderItemAdapter::~HdMayaRenderItemAdapter()
 {
 }
 
@@ -87,6 +188,11 @@ TfToken HdMayaRenderItemAdapter::GetRenderTag() const
 		default:
 			return HdRenderTagTokens->geometry;
 	}
+}
+
+void HdMayaRenderItemAdapter::UpdateShader(const HdMayaShaderInstanceData& shaderData)
+{
+
 }
 
 void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
@@ -177,17 +283,6 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 			mayaIndexBuffer->unmap();
 		}
 
-		// UVs
-		//if(indices)
-		//{
-		//	_uvs.clear();
-		//	int indexCount = indices->size();
-		//	_uvs.resize(indexCount);
-		//	// TODO : Fix this. these are bogus UVs but need to be there
-		//	// to display anything at all
-		//	for (int i = 0; i < indexCount; i++) _uvs[i] = (GfVec2f(0, 0));
-		//}
-
 		if (mayaIndexBuffer && mayaVertexBuffer)
 		{
 			switch (_primitive)
@@ -201,29 +296,7 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 					UsdGeomTokens->rightHanded,
 					vertexCounts,
 					vertexIndices));
-
-				MarkDirty(
-/*					HdChangeTracker::DirtyTransform |
-					HdChangeTracker::DirtyTopology |
-					HdChangeTracker::DirtyPrimvar |
-					HdChangeTracker::DirtyPoints		*/			
-					HdChangeTracker::Clean
-					| HdChangeTracker::InitRepr
-					| HdChangeTracker::DirtyExtent
-					| HdChangeTracker::DirtyNormals
-					| HdChangeTracker::DirtyPoints
-					| HdChangeTracker::DirtyPrimID
-					| HdChangeTracker::DirtyPrimvar
-					| HdChangeTracker::DirtyDisplayStyle
-					| HdChangeTracker::DirtyRepr
-					| HdChangeTracker::DirtyMaterialId
-					| HdChangeTracker::DirtyTopology
-					| HdChangeTracker::DirtyTransform
-					| HdChangeTracker::DirtyVisibility
-					| HdChangeTracker::DirtyWidths
-					| HdChangeTracker::DirtyComputationPrimvarDesc
-					| HdChangeTracker::DirtyInstancer
-				);
+				MarkDirty(HdChangeTracker::AllDirty);
 				break;
 			case MGeometry::Primitive::kLines:
 			case MHWRender::MGeometry::Primitive::kPoints:
@@ -235,28 +308,7 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 					HdTokens->segmented,
 					vertexCounts,
 					vertexIndices));
-				MarkDirty(
-					//HdChangeTracker::DirtyTransform |
-					//HdChangeTracker::DirtyTopology |
-					//HdChangeTracker::DirtyPrimvar |
-					//HdChangeTracker::DirtyPoints
-					HdChangeTracker::Clean
-					| HdChangeTracker::InitRepr
-					| HdChangeTracker::DirtyExtent
-					| HdChangeTracker::DirtyNormals
-					| HdChangeTracker::DirtyPoints
-					| HdChangeTracker::DirtyPrimID
-					| HdChangeTracker::DirtyPrimvar
-					| HdChangeTracker::DirtyDisplayStyle
-					| HdChangeTracker::DirtyRepr
-					| HdChangeTracker::DirtyMaterialId
-					| HdChangeTracker::DirtyTopology
-					| HdChangeTracker::DirtyTransform
-					| HdChangeTracker::DirtyVisibility
-					| HdChangeTracker::DirtyWidths
-					| HdChangeTracker::DirtyComputationPrimvarDesc
-					| HdChangeTracker::DirtyInstancer
-				);
+				MarkDirty(HdChangeTracker::AllDirty);
 				break;
 
 			}
@@ -274,11 +326,7 @@ VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
 	if (key == HdTokens->points) 
 	{
 		return VtValue(_vertexPositions);
-	}	 
-	/*else if (key == HdMayaAdapterTokens->st) 
-	{
-		return VtValue(_uvs);
-	}*/
+	}
 
 	return {};
 }
@@ -306,15 +354,17 @@ void HdMayaRenderItemAdapter::Populate()
 	switch (_primitive)
 	{
 		case MHWRender::MGeometry::Primitive::kTriangles:
-			GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {}/* TODO : GetInstancerID() */);
+			GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
 			break;
 		case MHWRender::MGeometry::Primitive::kLines:
-			GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {}/* TODO : GetInstancerID() */);
+			GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {});
 			break;
 		case MHWRender::MGeometry::Primitive::kPoints:
-			GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {}/* TODO : GetInstancerID() */);
+			GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
 			break;
 	}
+
+	GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
 	_isPopulated = true;
 }
 
@@ -325,6 +375,7 @@ void HdMayaRenderItemAdapter::RemovePrim()
         return;
     }
     GetDelegate()->RemoveRprim(GetID());
+	GetDelegate()->RemoveSprim(HdPrimTypeTokens->material, GetID());
 
     _isPopulated = false;
 }
@@ -344,6 +395,34 @@ HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInter
 	return {};
 }
 
+VtValue HdMayaRenderItemAdapter::GetMaterialResource()
+{	
+	HdMaterialNetworkMap map;
+	HdMaterialNetwork    network;
+	// Describes a material node which is made of a path, an identifier and a list of parameters. More...
+	// This corresponds to a material instance
+	HdMaterialNode       node;
+	node.path = GetID();
+	node.identifier = _shader.Identifier;
+	map.terminals.push_back(node.path);
+
+	for (const auto& it : HdMayaMaterialNetworkConverter::GetShaderParams(_shader.Identifier)) 
+	{
+		auto& param = _shader.Params.find(it.name);		
+		node.parameters.emplace(it.name, param == _shader.Params.end() ?
+			it.fallbackValue :
+			param->second.value);		
+	}
+
+	network.nodes.push_back(node);
+	map.map.emplace(HdMaterialTerminalTokens->surface, network);
+	return VtValue(map);
+};
+
+///////////////////////////////////////////////////////////////////////
+// TF_REGISTRY
+///////////////////////////////////////////////////////////////////////
+
 TF_REGISTRY_FUNCTION(TfType)
 {
 	TfType::Define<HdMayaRenderItemAdapter, TfType::Bases<HdMayaAdapter>>();
@@ -351,18 +430,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, renderItem)
 {	
-	HdMayaAdapterRegistry::RegisterRenderItemAdapter(
-		TfToken(gsRenderItemTypeName),
-		[](HdMayaDelegateCtx* del, const MRenderItem& ri) -> HdMayaRenderItemAdapterPtr
-		{
-			return HdMayaRenderItemAdapterPtr(
-				new HdMayaRenderItemAdapter(
-					del->GetPrimPath(ri, false),
-					del,
-					ri.primitive(),
-					ri.name()
-					));
-		});
 }
 
 
