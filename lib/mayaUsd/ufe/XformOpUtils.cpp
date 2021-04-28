@@ -63,7 +63,15 @@ computeLocalTransformWithOp(const UsdPrim& prim, const UsdGeomXformOp& op, const
     bool             unused;
     auto             ops = xformable.GetOrderedXformOps(&unused);
 
+    // The UsdGeomXformOp::operator==() was only added in v20.05, so
+    // prior to that we need to find using a predicate. In USD
+    // they define equality to be the same underlying UsdAttribute.
+#if PXR_VERSION < 2005
+    auto find_XFormOp = [op](const UsdGeomXformOp& x) { return x.GetAttr() == op.GetAttr(); };
+    auto i = std::find_if(ops.begin(), ops.end(), find_XFormOp);
+#else
     auto i = std::find(ops.begin(), ops.end(), op);
+#endif
 
     if (i == ops.end()) {
         TF_FATAL_ERROR("Matrix op %s not found in transform ops.", op.GetOpName().GetText());

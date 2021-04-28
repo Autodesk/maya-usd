@@ -184,6 +184,38 @@ class MetaDataCustomControl(aecustom.CustomControl):
         with mayaUsdLib.UsdUndoBlock():
             self.prim.SetInstanceable(value)
 
+# Custom control for all array attribute.
+class ArrayCustomControl(object):
+
+    def __init__(self, prim, attrName):
+        self.prim = prim
+        self.attrName = attrName
+        super(ArrayCustomControl, self).__init__()
+
+    def onCreate(self, *args):
+        attr = self.prim.GetAttribute(self.attrName)
+        typeName = attr.GetTypeName()
+        if typeName.isArray:
+            values = attr.Get()
+            hasValue = True if values and len(values) > 0 else False
+
+            # build the array type string
+            # We want something like int[size] or int[] if empty
+            typeNameStr = str(typeName.scalarType)
+            typeNameStr += ("[" + str(len(values)) + "]") if hasValue else "[]"
+
+            cmds.textFieldGrp(editable=False, label=getPrettyName(self.attrName), text=typeNameStr, annotation=attr.GetDocumentation())
+
+            if hasValue:
+                cmds.popupMenu()
+                cmds.menuItem( label="Copy Attribute Value",   command=lambda *args: setClipboardData(str(values)) )
+                cmds.menuItem( label="Print to Script Editor", command=lambda *args: print(str(values)) )
+        else:
+            cmds.error(self.attrName + " must be an array!")
+
+    def onReplace(self, *args):
+        pass
+
 class NoticeListener(object):
     # Inserted as a custom control, but does not have any UI. Instead we use
     # this control to be notified from USD when any metadata has changed
@@ -229,6 +261,7 @@ class AETemplate(object):
 
         # Get the UFE Attributes interface for this scene item.
         self.attrS = ufe.Attributes.attributes(self.item)
+        self.addedAttrs = []
         self.suppressedAttrs = []
 
         self.showArrayAttributes = False
@@ -237,7 +270,8 @@ class AETemplate(object):
 
         cmds.editorTemplate(beginScrollLayout=True)
         self.buildUI()
-        cmds.editorTemplate(addExtraControls=True)
+        self.createAppliedSchemasSection()
+        self.createCustomExtraAttrs()
         self.createMetadataSection()
         cmds.editorTemplate(endScrollLayout=True)
 
@@ -245,7 +279,12 @@ class AETemplate(object):
     def addControls(self, controls):
         for c in controls:
             if c not in self.suppressedAttrs:
-                cmds.editorTemplate(addControl=[c])
+                if self.isArrayAttribute(c):
+                    arrayCustomControl = ArrayCustomControl(self.prim, c)
+                    self.defineCustom(arrayCustomControl, c)
+                else:
+                    cmds.editorTemplate(addControl=[c])
+                self.addedAttrs.append(c)
 
     def suppress(self, control):
         cmds.editorTemplate(suppress=control)
@@ -297,7 +336,12 @@ class AETemplate(object):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        return getPrettyName(schemaTypeName)
+        schemaTypeName = getPrettyName(schemaTypeName)
+
+        if schemaTypeName.endswith("api"): 
+            schemaTypeName = schemaTypeName.replace("api"," API")
+
+        return schemaTypeName
 
     def createTransformAttributesSection(self, sectionName, attrsToAdd):
         # Get the xformOp order and add those attributes (in order)
@@ -333,6 +377,82 @@ class AETemplate(object):
             usdNoticeControl = NoticeListener(self.prim, [metaDataControl])
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
+
+
+    def createCustomExtraAttrs(self):
+        # We are not using the maya default "Extra Attributes" section
+        # because we are using custom widget for array type and it's not
+        # possible to inject our widget inside the maya "Extra Attributes" section.
+
+        # The extraAttrs will contains suppressed attribute but this is not a big deal as
+        # long as the suppressed attributes are suppressed by suppress(self, control).
+        # This function will keep all suppressed attributes into a list which will be use
+        # by addControls(). So any suppressed attributes in extraAttrs will be ignored later.
+        extraAttrs = [attr for attr in self.attrS.attributeNames if attr not in self.addedAttrs]
+        sectionName = mel.eval("uiRes(\"s_TPStemplateStrings.rExtraAttributes\");")
+        self.createSection(sectionName, extraAttrs, True)
+
+    def createAppliedSchemasSection(self):
+        # USD version 0.21.2 is required because of
+        # Usd.SchemaRegistry().GetPropertyNamespacePrefix()
+        if Usd.GetVersion() < (0, 21, 2):
+            return
+
+        showAppliedSchemasSection = False
+
+        # loop on all applied schemas and store all those
+        # schema into a dictionary with the attributes.
+        # Storing the schema into a dictionary allow us to
+        # group all instances of a MultipleApply schema together
+        # so we can later display them into the same UI section.
+        #
+        # By example, if UsdCollectionAPI is applied twice, UsdPrim.GetAppliedSchemas()
+        # will return ["CollectionAPI:instance1","CollectionAPI:instance2"] but we want to group
+        # both instance inside a "CollectionAPI" section.
+        #
+        schemaAttrsDict = {}
+        appliedSchemas = self.prim.GetAppliedSchemas()
+        for schema in appliedSchemas:
+            typeAndInstance = Usd.SchemaRegistry().GetTypeAndInstance(schema)
+            typeName        = typeAndInstance[0]
+            schemaType      = Usd.SchemaRegistry().GetTypeFromName(typeName)
+
+            if schemaType.pythonClass:
+                isMultipleApplyAPISchema = Usd.SchemaRegistry().IsMultipleApplyAPISchema(typeName)
+                if isMultipleApplyAPISchema:
+                    # get the attributes names. They will not include the namespace and instance name.
+                    instanceName = typeAndInstance[1]
+                    attrList = schemaType.pythonClass.GetSchemaAttributeNames(False, instanceName)
+                    # build the real attr name
+                    # By example, collection:lightLink:includeRoot
+                    namespace = Usd.SchemaRegistry().GetPropertyNamespacePrefix(typeName)
+                    prefix = namespace + ":" + instanceName + ":"
+                    attrList = [prefix + i for i in attrList]
+
+                    if typeName in schemaAttrsDict:
+                        schemaAttrsDict[typeName] += attrList
+                    else:
+                        schemaAttrsDict[typeName] = attrList
+                else:
+                    attrList = schemaType.pythonClass.GetSchemaAttributeNames(False)
+                    schemaAttrsDict[typeName] = attrList
+
+                # The "Applied Schemas" will be only visible if at least
+                # one applied Schemas has attribute.
+                if not showAppliedSchemasSection:
+                    for attr in attrList:
+                        if self.attrS.hasAttribute(attr):
+                            showAppliedSchemasSection = True
+                            break
+
+        # Create the "Applied Schemas" section
+        # with all the applied schemas
+        if showAppliedSchemasSection:
+            with ufeAeTemplate.Layout(self, 'Applied Schemas', collapse=True):
+                for typeName, attrs in schemaAttrsDict.items():
+                    typeName = self.sectionNameFromSchema(typeName)
+                    self.createSection(typeName, attrs, False)
+
 
     def buildUI(self):
         usdSch = Usd.SchemaRegistry()

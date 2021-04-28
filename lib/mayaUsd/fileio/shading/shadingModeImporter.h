@@ -34,16 +34,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// clang-format off
-#define PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS \
-    ((MayaMaterialNamespace, "USD_Materials"))
-// clang-format on
-
-TF_DECLARE_PUBLIC_TOKENS(
-    UsdMayaShadingModeImporterTokens,
-    MAYAUSD_CORE_PUBLIC,
-    PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);
-
 class UsdMayaShadingModeImportContext
 {
 public:
@@ -99,7 +89,7 @@ public:
     /// The shading engine's name is set using the value returned by
     /// GetShadingEngineName().
     MAYAUSD_CORE_PUBLIC
-    MObject CreateShadingEngine() const;
+    MObject CreateShadingEngine(const std::string& surfaceNodeName) const;
 
     /// Gets the name of the shading engine that will be created for this
     /// context.
@@ -108,7 +98,7 @@ public:
     /// will be returned. Otherwise, the shading engine name is computed based
     /// on the context's material and/or bound prim.
     MAYAUSD_CORE_PUBLIC
-    TfToken GetShadingEngineName() const;
+    TfToken GetShadingEngineName(const std::string& surfaceNodeName) const;
 
     MAYAUSD_CORE_PUBLIC
     TfToken GetSurfaceShaderPlugName() const;
@@ -116,14 +106,6 @@ public:
     TfToken GetVolumeShaderPlugName() const;
     MAYAUSD_CORE_PUBLIC
     TfToken GetDisplacementShaderPlugName() const;
-
-    /// Sets the name of the shading engine to be created for this context.
-    ///
-    /// Call this with an empty TfToken to reset the context to the default
-    /// behavior of computing the shading engine name based on its material
-    /// and/or bound prim.
-    MAYAUSD_CORE_PUBLIC
-    void SetShadingEngineName(const TfToken& shadingEngineName);
 
     MAYAUSD_CORE_PUBLIC
     void SetSurfaceShaderPlugName(const TfToken& surfaceShaderPlugName);
@@ -141,8 +123,6 @@ private:
     const UsdShadeMaterial&   _shadeMaterial;
     const UsdGeomGprim&       _boundPrim;
     UsdMayaPrimReaderContext* _context;
-
-    TfToken _shadingEngineName;
 
     TfToken _surfaceShaderPlugName;
     TfToken _volumeShaderPlugName;

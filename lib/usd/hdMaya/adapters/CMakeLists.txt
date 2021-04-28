@@ -8,6 +8,7 @@ target_sources(${TARGET_NAME}
         adapterRegistry.cpp
         aiSkydomeLightAdapter.cpp
         areaLightAdapter.cpp
+        cameraAdapter.cpp
         dagAdapter.cpp
         directionalLightAdapter.cpp
         lightAdapter.cpp
@@ -27,6 +28,7 @@ set(HEADERS
     adapter.h
     adapterDebugCodes.h
     adapterRegistry.h
+    cameraAdapter.h
     constantShadowMatrix.h
     dagAdapter.h
     lightAdapter.h

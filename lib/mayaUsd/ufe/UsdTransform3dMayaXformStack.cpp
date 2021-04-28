@@ -909,13 +909,10 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
         return nullptr;
     }
 
-    auto stage = usdItem->prim().GetStage();
-    if (stage) {
-        const SdfLayerHandle& editLayer = stage->GetEditTarget().GetLayer();
-        if (editLayer && stage->IsLayerMuted(editLayer->GetIdentifier())) {
-            MGlobal::displayError("Editing a muted layer is not allowed.");
-            return nullptr;
-        }
+    std::string errMsg;
+    if (!MayaUsd::ufe::isEditTargetLayerModifiable(usdItem->prim().GetStage(), &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
     }
 
     return createTransform3d(

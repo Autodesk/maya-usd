@@ -721,9 +721,12 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
     if (inSelectionPass) {
+        // The new Maya point snapping support doesn't require point snapping items any more.
+#if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
         if (inPointSnapping && !reprSelector.Contains(HdReprTokens->points)) {
             reprSelector = reprSelector.CompositeOver(kPointsReprSelector);
         }
+#endif
     } else {
         if (_selectionChanged) {
             _UpdateSelectionStates();
@@ -804,13 +807,20 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     param->EndUpdate();
 }
 
-//! \brief  Switch to component-level selection for point snapping.
+//! \brief  Update selection granularity for point snapping.
 void ProxyRenderDelegate::updateSelectionGranularity(
     const MDagPath&               path,
     MHWRender::MSelectionContext& selectionContext)
 {
+    // The component level is coarse-grain, causing Maya to produce undesired face/edge selection
+    // hits, as well as vertex selection hits that are required for point snapping. Switch to the
+    // new vertex selection level if available in order to produce vertex selection hits only.
     if (pointSnappingActive()) {
+#if MAYA_API_VERSION >= 20220100
+        selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kVertex);
+#else
         selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kComponent);
+#endif
     }
 }
 
@@ -899,9 +909,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
-#ifndef UFE_V2_FEATURES_AVAILABLE
-    const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
-#endif
+    const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
 #else
     const TfToken selectionKind = GetSelectionKind();
     const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
@@ -980,6 +988,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+    TF_UNUSED(listAdjustment);
+
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else
