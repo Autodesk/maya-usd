@@ -22,6 +22,7 @@ import mayaUsd.lib as mayaUsdLib
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 import maya.internal.common.ae.custom as aecustom
 from maya.common.ui import LayoutManager
+from maya.common.ui import setClipboardData
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
