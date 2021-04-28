@@ -892,6 +892,9 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams
 
 const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetShaderParams(const TfToken& shaderNodeIdentifier)
 {
+    if(shaderNodeIdentifier == UsdImagingTokens->UsdPreviewSurface)
+        return GetPreviewShaderParams();
+
 	auto& it = _defaultShaderParams.find(shaderNodeIdentifier);
 	if (it == _defaultShaderParams.end()) 
 	{

@@ -61,20 +61,22 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+static const TfToken sDefaultMaterial = UsdImagingTokens->UsdPreviewSurface;
+
 // Maya to hydra shader parameter conversion
 // See void HdMayaMaterialNetworkConverter::initialize()
-std::map<std::string, TfToken> sHdMayaParamNameMap
+static const std::map<std::string, TfToken> sHdMayaParamNameMap
 {
 	{"solidColor", TfToken("diffuseColor") }
 };
 
-std::map<std::string, TfToken> sHdMayaMaterialNameMap
+static const std::map<std::string, TfToken> sHdMayaMaterialNameMap
 {
 	{ "mayaPhongSurface", HdMayaAdapterTokens->phong },
 	{ "mayaBlinnSurface", HdMayaAdapterTokens->blinn },
 	{ "mayaLambertSurface", HdMayaAdapterTokens->lambert },
 	// Default
-	{ "mayaSolidColorShader", HdMayaAdapterTokens->usdPreviewSurface }
+	{ "mayaSolidColorShader",  sDefaultMaterial }
 };
 
 ///////////////////////////////////////////////////////////////////////
@@ -88,7 +90,7 @@ bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& s
 	{
 		auto nameConv = sHdMayaMaterialNameMap.find(shaderName.asChar());
 		shaderData.Identifier = nameConv == sHdMayaMaterialNameMap.end() ?
-			HdMayaAdapterTokens->usdPreviewSurface :
+			sDefaultMaterial :
 			nameConv->second;
 	}
 
