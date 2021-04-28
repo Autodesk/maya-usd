@@ -105,3 +105,7 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         cmds.modelEditor(panel, edit=True, lights=False, displayLights="all")
 
         self.assertSnapshotClose("testMetallicResponse.png")
+
+
+if __name__ == '__main__':
+    fixturesUtils.runTests(globals())
