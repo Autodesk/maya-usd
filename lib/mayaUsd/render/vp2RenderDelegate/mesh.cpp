@@ -1606,8 +1606,8 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
 
     if (desc.geomStyle == HdMeshGeomStyleHull) {
-        if ((itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0
-            || _meshSharedData->_fallbackColorDirty) {
+        bool dirtyMaterialId = (itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0;
+        if (dirtyMaterialId) {
             SdfPath materialId = GetMaterialId(); // This is an index path
             if (drawItemData._geomSubset.id != SdfPath::EmptyPath()) {
                 SdfPath cachePathMaterialId = drawItemData._geomSubset.materialId;
@@ -1628,40 +1628,42 @@ void HdVP2Mesh::_UpdateDrawItem(
                         = shader->isTransparent() || renderItemData._transparent;
                 }
             }
+        }
 
-            // Use fallback shader if there is no material binding or we failed to create a shader
-            // instance for the material.
-            if ((!drawItemData._shader || _meshSharedData->_fallbackColorDirty)
-                && _PrimvarIsRequired(HdTokens->displayColor)) {
-                MHWRender::MShaderInstance* shader = nullptr;
+        bool useFallbackMaterial = dirtyMaterialId && !drawItemData._shader && _PrimvarIsRequired(HdTokens->displayColor);
+        bool updateFallbackMaterial = useFallbackMaterial && _meshSharedData->_fallbackColorDirty;
 
-                HdInterpolation colorInterp = HdInterpolationConstant;
-                HdInterpolation alphaInterp = HdInterpolationConstant;
-                VtVec3fArray    colorArray;
-                VtFloatArray    alphaArray;
+        // Use fallback shader if there is no material binding or we failed to create a shader
+        // instance for the material.
+        if (updateFallbackMaterial) {
+            MHWRender::MShaderInstance* shader = nullptr;
 
-                _getColorData(_meshSharedData->_primvarInfo, colorArray, colorInterp);
-                _getOpacityData(_meshSharedData->_primvarInfo, alphaArray, alphaInterp);
+            HdInterpolation colorInterp = HdInterpolationConstant;
+            HdInterpolation alphaInterp = HdInterpolationConstant;
+            VtVec3fArray    colorArray;
+            VtFloatArray    alphaArray;
 
-                if ((colorInterp == HdInterpolationConstant
-                     || colorInterp == HdInterpolationInstance)
-                    && (alphaInterp == HdInterpolationConstant
-                        || alphaInterp == HdInterpolationInstance)) {
-                    const GfVec3f& clr3f = MayaUsd::utils::ConvertLinearToMaya(colorArray[0]);
-                    const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
-                    shader = _delegate->GetFallbackShader(color);
-                    // The color of the fallback shader is ignored when the interpolation is
-                    // instance
-                } else {
-                    shader = _delegate->GetFallbackCPVShader();
-                }
+            _getColorData(_meshSharedData->_primvarInfo, colorArray, colorInterp);
+            _getOpacityData(_meshSharedData->_primvarInfo, alphaArray, alphaInterp);
 
-                if (shader != nullptr && shader != drawItemData._shader) {
-                    drawItemData._shader = shader;
-                    stateToCommit._shader = shader;
-                    stateToCommit._isTransparent = renderItemData._transparent;
-                    _meshSharedData->_fallbackColorDirty = false;
-                }
+            if ((colorInterp == HdInterpolationConstant
+                    || colorInterp == HdInterpolationInstance)
+                && (alphaInterp == HdInterpolationConstant
+                    || alphaInterp == HdInterpolationInstance)) {
+                const GfVec3f& clr3f = MayaUsd::utils::ConvertLinearToMaya(colorArray[0]);
+                const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
+                shader = _delegate->GetFallbackShader(color);
+                // The color of the fallback shader is ignored when the interpolation is
+                // instance
+            } else {
+                shader = _delegate->GetFallbackCPVShader();
+            }
+
+            if (shader != nullptr && shader != drawItemData._shader) {
+                drawItemData._shader = shader;
+                stateToCommit._shader = shader;
+                stateToCommit._isTransparent = renderItemData._transparent;
+                _meshSharedData->_fallbackColorDirty = false;
             }
         }
     }
