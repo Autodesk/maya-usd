@@ -15,6 +15,7 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
         testVP2RenderDelegatePointInstancesPickMode.py
         testVP2RenderDelegatePrimPath.py
         testVP2RenderDelegateUSDPreviewSurface.py
+        testVP2RenderDelegateConsolidation.py
     )
 endif()
 
