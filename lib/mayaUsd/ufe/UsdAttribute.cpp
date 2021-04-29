@@ -17,6 +17,8 @@
 
 #include "private/Utils.h"
 
+#include <mayaUsd/ufe/StagesSubject.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
@@ -26,17 +28,9 @@
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
-#include <iostream>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
-
-// We unconditionally want the UFE asserts here (even in release builds).
-// The UFE_ASSERT_MSG has a built-in throw which we want to use for error handling.
-#define UFE_ENABLE_ASSERTS
-#include <mayaUsd/ufe/StagesSubject.h>
-#include <mayaUsd/ufe/Utils.h>
-
-#include <ufe/ufeAssert.h>
 
 // Note: normally we would use this using directive, but here we cannot because
 //       our class is called UsdAttribute which is exactly the same as the one
@@ -47,7 +41,6 @@ static constexpr char kErrorMsgFailedConvertToString[]
     = "Could not convert the attribute to a string";
 static constexpr char kErrorMsgInvalidType[]
     = "USD attribute does not match created attribute class type";
-static constexpr char kErrorMsgEnumNoValue[] = "Enum string attribute has no value";
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -118,7 +111,7 @@ getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::Usd
         return os.str();
     }
 
-    UFE_ASSERT_MSG(false, kErrorMsgFailedConvertToString);
+    TF_CODING_ERROR(kErrorMsgFailedConvertToString);
     return std::string();
 }
 
@@ -135,7 +128,6 @@ U getUsdAttributeVectorAsUfe(const PXR_NS::UsdAttribute& attr, const PXR_NS::Usd
         return ret;
     }
 
-    UFE_ASSERT_MSG(false, kErrorMsgInvalidType);
     return U();
 }
 
@@ -146,7 +138,6 @@ void setUsdAttributeVectorFromUfe(
     const PXR_NS::UsdTimeCode& time)
 {
     T vec;
-    UFE_ASSERT_MSG(attr.Get<T>(&vec, time), kErrorMsgInvalidType);
     vec.Set(value.x(), value.y(), value.z());
     setUsdAttr<T>(attr, vec);
 }
@@ -263,22 +254,17 @@ UsdAttributeEnumString::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdA
 
 std::string UsdAttributeEnumString::get() const
 {
-    UFE_ASSERT_MSG(hasValue(), kErrorMsgEnumNoValue);
     PXR_NS::VtValue vt;
     if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem())) && vt.IsHolding<TfToken>()) {
         TfToken tok = vt.UncheckedGet<TfToken>();
         return tok.GetString();
     }
 
-    UFE_ASSERT_MSG(false, kErrorMsgInvalidType);
     return std::string();
 }
 
 void UsdAttributeEnumString::set(const std::string& value)
 {
-    PXR_NS::TfToken dummy;
-    UFE_ASSERT_MSG(
-        fUsdAttr.Get<PXR_NS::TfToken>(&dummy, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
     PXR_NS::TfToken tok(value);
     setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
 }
@@ -286,7 +272,8 @@ void UsdAttributeEnumString::set(const std::string& value)
 Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& value)
 {
     auto self = std::dynamic_pointer_cast<UsdAttributeEnumString>(shared_from_this());
-    UFE_ASSERT_MSG(self, kErrorMsgInvalidType);
+    if (!TF_VERIFY(self, kErrorMsgInvalidType))
+        return nullptr;
     return std::make_shared<SetUndoableCommand<std::string, UsdAttributeEnumString>>(self, value);
 }
 
@@ -349,7 +336,6 @@ template <> std::string TypedUsdAttribute<std::string>::get() const
         }
     }
 
-    UFE_ASSERT_MSG(false, kErrorMsgInvalidType);
     return std::string();
 }
 
@@ -358,23 +344,16 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
     // We need to figure out if the USDAttribute is holding a TfToken or string.
     const PXR_NS::SdfValueTypeName typeName = fUsdAttr.GetTypeName();
     if (typeName.GetHash() == SdfValueTypeNames->String.GetHash()) {
-        std::string dummy;
-        UFE_ASSERT_MSG(
-            fUsdAttr.Get<std::string>(&dummy, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
         setUsdAttr<std::string>(fUsdAttr, value);
         return;
     } else if (typeName.GetHash() == SdfValueTypeNames->Token.GetHash()) {
-        PXR_NS::TfToken dummy;
-        UFE_ASSERT_MSG(
-            fUsdAttr.Get<PXR_NS::TfToken>(&dummy, getCurrentTime(sceneItem())),
-            kErrorMsgInvalidType);
         PXR_NS::TfToken tok(value);
         setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
         return;
     }
 
     // If we get here it means the USDAttribute type wasn't TfToken or string.
-    UFE_ASSERT_MSG(false, kErrorMsgInvalidType);
+    TF_CODING_ERROR(kErrorMsgInvalidType);
 }
 
 template <> Ufe::Color3f TypedUsdAttribute<Ufe::Color3f>::get() const
@@ -386,7 +365,6 @@ template <> Ufe::Color3f TypedUsdAttribute<Ufe::Color3f>::get() const
 template <> void TypedUsdAttribute<Ufe::Color3f>::set(const Ufe::Color3f& value)
 {
     GfVec3f vec;
-    UFE_ASSERT_MSG(fUsdAttr.Get<GfVec3f>(&vec, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
     vec.Set(value.r(), value.g(), value.b());
     setUsdAttr<GfVec3f>(fUsdAttr, vec);
 }
@@ -437,15 +415,11 @@ template <typename T> T TypedUsdAttribute<T>::get() const
         return vt.UncheckedGet<T>();
     }
 
-    UFE_ASSERT_MSG(false, kErrorMsgInvalidType);
     return T();
 }
 
 template <typename T> void TypedUsdAttribute<T>::set(const T& value)
 {
-    T dummy;
-    UFE_ASSERT_MSG(
-        fUsdAttr.Get<T>(&dummy, getCurrentTime(Ufe::Attribute::sceneItem())), kErrorMsgInvalidType);
     setUsdAttr<T>(fUsdAttr, value);
 }
 
