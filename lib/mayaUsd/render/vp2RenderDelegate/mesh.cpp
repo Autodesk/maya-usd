@@ -1628,8 +1628,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                     stateToCommit._isTransparent
                         = shader->isTransparent() || renderItemData._transparent;
                 }
-            }
-            else {
+            } else {
                 drawItemData._shaderIsFallback = true;
             }
         }
