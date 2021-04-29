@@ -1623,15 +1623,19 @@ void HdVP2Mesh::_UpdateDrawItem(
                 MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
+                    drawItemData._shaderIsFallback = false;
                     stateToCommit._shader = shader;
                     stateToCommit._isTransparent
                         = shader->isTransparent() || renderItemData._transparent;
                 }
             }
+            else {
+                drawItemData._shaderIsFallback = true;
+            }
         }
 
-        bool useFallbackMaterial = dirtyMaterialId && !drawItemData._shader
-            && _PrimvarIsRequired(HdTokens->displayColor);
+        bool useFallbackMaterial
+            = drawItemData._shaderIsFallback && _PrimvarIsRequired(HdTokens->displayColor);
         bool updateFallbackMaterial = useFallbackMaterial && _meshSharedData->_fallbackColorDirty;
 
         // Use fallback shader if there is no material binding or we failed to create a shader

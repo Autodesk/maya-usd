@@ -86,7 +86,7 @@ struct HdVP2MeshSharedData
 #endif
 
     //! Fallback color changed
-    bool _fallbackColorDirty { false };
+    bool _fallbackColorDirty { true };
 };
 
 /*! \brief  VP2 representation of poly-mesh object.
