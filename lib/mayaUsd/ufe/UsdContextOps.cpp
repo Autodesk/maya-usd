@@ -298,7 +298,7 @@ private:
 const char* selectUSDFileScript = R"(
 global proc string SelectUSDFileForAddReference()
 {
-    string $result[] = `fileDialog2 
+    string $result[] = `fileDialog2
         -fileMode 1
         -caption "Add Reference to USD Prim"
         -fileFilter "USD Files (*.usd *.usda *.usdc);;*.usd;;*.usda;;*.usdc"`;
@@ -314,7 +314,7 @@ SelectUSDFileForAddReference();
 const char* clearAllReferencesConfirmScript = R"(
 global proc string ClearAllUSDReferencesConfirm()
 {
-    return `confirmDialog -title "Remove All References" 
+    return `confirmDialog -title "Remove All References"
         -message "Removing all references from USD prim.  Are you sure?"
         -button "Yes" -button "No" -defaultButton "Yes"
         -cancelButton "No" -dismissString "No"`;
@@ -469,8 +469,9 @@ static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(boo
     std::set<TfType> schemaTypes;
     plugReg.GetAllDerivedTypes<UsdSchemaBase>(&schemaTypes);
 
+    UsdSchemaRegistry& schemaReg = UsdSchemaRegistry::GetInstance();
     for (auto t : schemaTypes) {
-        if (!UsdSchemaRegistry::IsConcrete(t)) {
+        if (!schemaReg.IsConcrete(t)) {
             continue;
         }
 
