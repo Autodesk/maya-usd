@@ -17,6 +17,8 @@
 
 #include "private/Utils.h"
 
+#include <mayaUsd/ufe/StagesSubject.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
@@ -29,9 +31,6 @@
 #include <sstream>
 #include <unordered_map>
 #include <unordered_set>
-
-#include <mayaUsd/ufe/StagesSubject.h>
-#include <mayaUsd/ufe/Utils.h>
 
 // Note: normally we would use this using directive, but here we cannot because
 //       our class is called UsdAttribute which is exactly the same as the one
