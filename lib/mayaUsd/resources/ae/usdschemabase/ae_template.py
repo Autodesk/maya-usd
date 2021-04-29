@@ -67,6 +67,7 @@ class UfeAttributesObserver(ufe.Observer):
         ufe.Attributes.addObserver(self._item, self)
 
     def onReplace(self, *args):
+        # Nothing needed here since we don't create any UI.
         pass
 
 class MetaDataCustomControl(object):
@@ -147,6 +148,9 @@ class MetaDataCustomControl(object):
         self.refresh()
 
     def onReplace(self, *args):
+        # Nothing needed here since USD data is not time varying. Normally this template
+        # is force rebuilt all the time, except in response to time change from Maya. In
+        # that case we don't need to update our controls since none will change.
         pass
 
     def refresh(self):
@@ -233,6 +237,7 @@ class NoticeListener(object):
         cmds.scriptJob(uiDeleted=[pname, self.onClose], runOnce=True)
 
     def onReplace(self, *args):
+        # Nothing needed here since we don't create any UI.
         pass
 
     def onClose(self):

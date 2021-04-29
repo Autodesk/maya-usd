@@ -26,17 +26,12 @@
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
-#include <iostream>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 
-// We unconditionally want the UFE asserts here (even in release builds).
-// The UFE_ASSERT_MSG has a built-in throw which we want to use for error handling.
-#define UFE_ENABLE_ASSERTS
 #include <mayaUsd/ufe/StagesSubject.h>
 #include <mayaUsd/ufe/Utils.h>
-
-#include <ufe/ufeAssert.h>
 
 // Note: normally we would use this using directive, but here we cannot because
 //       our class is called UsdAttribute which is exactly the same as the one
@@ -117,11 +112,7 @@ getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::Usd
         return os.str();
     }
 
-    try {
-        UFE_ASSERT_MSG(false, kErrorMsgFailedConvertToString);
-    } catch (const std::exception&) {
-        // noop
-    }
+    TF_CODING_ERROR(kErrorMsgFailedConvertToString);
     return std::string();
 }
 
@@ -282,11 +273,8 @@ void UsdAttributeEnumString::set(const std::string& value)
 Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& value)
 {
     auto self = std::dynamic_pointer_cast<UsdAttributeEnumString>(shared_from_this());
-    try {
-        UFE_ASSERT_MSG(self, kErrorMsgInvalidType);
-    } catch (const std::exception&) {
-        // noop
-    }
+    if (!TF_VERIFY(self, kErrorMsgInvalidType))
+        return nullptr;
     return std::make_shared<SetUndoableCommand<std::string, UsdAttributeEnumString>>(self, value);
 }
 
@@ -366,11 +354,7 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
     }
 
     // If we get here it means the USDAttribute type wasn't TfToken or string.
-    try {
-        UFE_ASSERT_MSG(false, kErrorMsgInvalidType);
-    } catch (const std::exception&) {
-        // noop
-    }
+    TF_CODING_ERROR(kErrorMsgInvalidType);
 }
 
 template <> Ufe::Color3f TypedUsdAttribute<Ufe::Color3f>::get() const
