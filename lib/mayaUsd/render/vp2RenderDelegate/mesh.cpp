@@ -1282,7 +1282,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
         case HdMeshGeomStyleHull:
             // Creating the smoothHull hull render items requires geom subsets from the topology,
             // and we can't access that here.
-#if MAYA_API_VERSION > 20220000
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             if (reprToken == HdVP2ReprTokens->defaultMaterial) {
                 // But default material mode does not use geom subsets, so we create the render item
                 renderItem = _CreateSmoothHullRenderItem(renderItemName);
@@ -1294,7 +1294,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
             break;
         case HdMeshGeomStyleHullEdgeOnly:
             // The smoothHull repr uses the wireframe item for selection highlight only.
-#if MAYA_API_VERSION > 20220000
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             if (reprToken == HdReprTokens->smoothHull
                 || reprToken == HdVP2ReprTokens->defaultMaterial) {
                 // Share selection highlight render item between smoothHull and defaultMaterial:
@@ -2421,7 +2421,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
-#if MAYA_API_VERSION > 20220000
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
 #endif
 

@@ -79,7 +79,7 @@ namespace {
 //! Representation selector for shaded and textured viewport mode
 const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
 
-#if MAYA_API_VERSION > 20220000
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
 //! Representation selector for default material viewport mode
 const HdReprSelector kDefaultMaterialReprSelector(HdVP2ReprTokens->defaultMaterial);
 #endif
@@ -257,7 +257,7 @@ void _ConfigureReprs()
         /*flatShadingEnabled=*/false,
         /*blendWireframeColor=*/false);
 
-#if MAYA_API_VERSION > 20220000
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     const HdMeshReprDesc reprDescHullDefaultMaterial(
         HdMeshGeomStyleHull,
         HdCullStyleDontCare,
@@ -276,7 +276,7 @@ void _ConfigureReprs()
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
 
-#if MAYA_API_VERSION > 20220000
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     // Hull desc for default material display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(
         HdVP2ReprTokens->defaultMaterial, reprDescHullDefaultMaterial, reprDescEdge);
@@ -751,7 +751,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             // To support Wireframe on Shaded mode, the two displayStyle checks
             // should not be mutually excluded.
             if (displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
-#if MAYA_API_VERSION > 20220000
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
                 if (displayStyle & MHWRender::MFrameContext::kDefaultMaterial) {
                     if (!reprSelector.Contains(HdVP2ReprTokens->defaultMaterial)) {
                         reprSelector = reprSelector.CompositeOver(kDefaultMaterialReprSelector);

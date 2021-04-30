@@ -1,0 +1,125 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+def Xform "root" (
+    kind = "assembly"
+)
+{
+	def Xform "group" (
+		kind = "group"
+	)
+	{
+		def Xform "billboard_01"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./billboard.usda@
+		)
+		{
+            double3 xformOp:translate = (-8, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+		}
+		def Xform "billboard_02"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./billboard.usda@
+		)
+		{
+            double3 xformOp:translate = (-4, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+		}
+
+		def Xform "billboard_03"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./billboard.usda@
+		)
+		{
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+		}
+
+		def Xform "billboard_04"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./billboard.usda@
+		)
+		{
+            double3 xformOp:translate = (4, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+		}
+
+		def Xform "billboard_05"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./billboard.usda@
+		)
+		{
+            double3 xformOp:translate = (8, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+		}
+
+		def Xform "flatquad_01"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./flatquad.usda@
+		)
+		{
+            double3 xformOp:translate = (-8, 4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+		}
+
+		def Xform "flatquad_02"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./flatquad.usda@
+		)
+		{
+            double3 xformOp:translate = (-4, 4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            color3f[] primvars:displayColor = [(1, 0, 0)] (
+                interpolation = "constant"
+            )
+		}
+
+		def Xform "flatquad_03"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./flatquad.usda@
+		)
+		{
+            double3 xformOp:translate = (0, 4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            color3f[] primvars:displayColor = [(1, 0, 0)] (
+                interpolation = "constant"
+            )
+		}
+
+		def Xform "flatquad_04"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./flatquad.usda@
+		)
+		{
+            double3 xformOp:translate = (4, 4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            color3f[] primvars:displayColor = [(1, 1, 0)] (
+                interpolation = "constant"
+            )
+		}
+
+		def Xform "flatquad_05"(
+		    kind = "component"
+		    instanceable = true
+		    prepend references = @./flatquad.usda@
+		)
+		{
+            double3 xformOp:translate = (8, 4, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            color3f[] primvars:displayColor = [(1, 1, 0)] (
+                interpolation = "constant"
+            )
+		}
+	}
+}
