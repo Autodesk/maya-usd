@@ -31,7 +31,7 @@
 // Workaround for a material consolidation update issue in VP2. Before USD 0.20.11, a Rprim will be
 // recreated if its material has any change, so everything gets refreshed and the update issue gets
 // masked. Once the update issue is fixed in VP2 we will disable this workaround.
-#if PXR_VERSION >= 2011 && MAYA_API_VERSION >= 20210000
+#if PXR_VERSION >= 2011 && MAYA_API_VERSION >= 20210000 && MAYA_API_VERSION < 20230000
 #define HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
 #endif
 

@@ -61,6 +61,9 @@ public:
         //! Shader instance assigned to the render item. No ownership is held.
         MHWRender::MShaderInstance* _shader { nullptr };
 
+        //! Is _shader a fallback material?
+        bool _shaderIsFallback { true };
+
         //! Whether or not the render item is enabled
         bool _enabled { true };
 
