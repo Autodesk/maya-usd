@@ -23,6 +23,8 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
@@ -102,6 +104,43 @@ static const std::string kUSDCylinderPrimImage { "out_USD_Cylinder.png" };
 static constexpr char    kUSDSpherePrimItem[] = "Sphere";
 static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
 static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
+
+#if PXR_VERSION >= 2008
+static constexpr char kAllRegisteredTypesItem[] = "All Registered";
+static constexpr char kAllRegisteredTypesLabel[] = "All Registered";
+
+// Grouping and name mapping for registered schema plugins
+static const std::vector<std::string> kSchemaPluginNames = {
+    "usdGeom",
+    "usdLux",
+    "mayaUsd_Schemas",
+    "usdMedia",
+    "usdRender",
+    "usdRi",
+    "usdShade",
+    "usdSkel",
+    "usdUI",
+    "usdVol",
+    "AL_USDMayaSchemasTest",
+    "AL_USDMayaSchemas",
+};
+// clang-format off
+static const std::vector<std::string> kSchemaNiceNames = {
+    "Geometry",
+    "Lighting",
+    "Maya Reference",
+    "Media",
+    "Render",
+    "RenderMan",
+    "Shading",
+    "Skeleton",
+    "UI",
+    "Volumes",
+    "", // Skip legacy AL schemas
+    "", // Skip legacy AL schemas
+};
+// clang-format on
+#endif
 
 //! \brief Undoable command for loading a USD prim.
 class LoadUndoableCommand : public Ufe::UndoableCommand
@@ -259,7 +298,7 @@ private:
 const char* selectUSDFileScript = R"(
 global proc string SelectUSDFileForAddReference()
 {
-    string $result[] = `fileDialog2 
+    string $result[] = `fileDialog2
         -fileMode 1
         -caption "Add Reference to USD Prim"
         -fileFilter "USD Files (*.usd *.usda *.usdc);;*.usd;;*.usda;;*.usdc"`;
@@ -275,7 +314,7 @@ SelectUSDFileForAddReference();
 const char* clearAllReferencesConfirmScript = R"(
 global proc string ClearAllUSDReferencesConfirm()
 {
-    return `confirmDialog -title "Remove All References" 
+    return `confirmDialog -title "Remove All References"
         -message "Removing all references from USD prim.  Are you sure?"
         -button "Yes" -button "No" -defaultButton "Yes"
         -cancelButton "No" -dismissString "No"`;
@@ -419,11 +458,78 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
 
     return itemLabelPairs;
 }
+#if PXR_VERSION >= 2008
+//! \brief Get groups of concrete schema prim types to list dynamically in the UI
+static const std::vector<MayaUsd::ufe::SchemaTypeGroup> getConcretePrimTypes(bool sorted)
+{
+    std::vector<MayaUsd::ufe::SchemaTypeGroup> groups;
+
+    // Query all the available types
+    PlugRegistry&    plugReg = PlugRegistry::GetInstance();
+    std::set<TfType> schemaTypes;
+    plugReg.GetAllDerivedTypes<UsdSchemaBase>(&schemaTypes);
+
+    UsdSchemaRegistry& schemaReg = UsdSchemaRegistry::GetInstance();
+    for (auto t : schemaTypes) {
+        if (!schemaReg.IsConcrete(t)) {
+            continue;
+        }
+
+        auto plugin = plugReg.GetPluginForType(t);
+        if (!plugin) {
+            continue;
+        }
+
+        // For every plugin we check if there's a nice name registered and use that instead
+        auto plugin_name = plugin->GetName();
+        auto name_itr
+            = std::find(kSchemaPluginNames.begin(), kSchemaPluginNames.end(), plugin_name);
+        if (name_itr != kSchemaPluginNames.end()) {
+            plugin_name = kSchemaNiceNames[name_itr - kSchemaPluginNames.begin()];
+        }
+
+        // We don't list empty names. This allows hiding certain plugins too.
+        if (plugin_name.empty()) {
+            continue;
+        }
+
+        auto type_name = UsdSchemaRegistry::GetConcreteSchemaTypeName(t);
+
+        // Find or create the schema group and add to it
+        auto group_itr = find(begin(groups), end(groups), plugin_name);
+        if (group_itr == groups.end()) {
+            MayaUsd::ufe::SchemaTypeGroup group { plugin_name };
+            group._types.emplace_back(type_name);
+            groups.emplace_back(group);
+        } else {
+            groups[group_itr - groups.begin()]._types.emplace_back(type_name);
+        }
+    }
+
+    if (sorted) {
+        for (size_t i = 0; i < groups.size(); ++i) {
+            auto group = groups[i];
+            std::sort(group._types.begin(), group._types.end());
+            groups[i] = group;
+        }
+
+        std::sort(groups.begin(), groups.end(), [](const auto& lhs, const auto& rhs) {
+            return lhs._name < rhs._name;
+        });
+    }
+
+    return groups;
+}
+#endif
 
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+#if PXR_VERSION >= 2008
+std::vector<SchemaTypeGroup> UsdContextOps::schemaTypeGroups = {};
+#endif
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
     : Ufe::ContextOps()
@@ -537,19 +643,55 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             } // Variants of a variant set
         }     // Variant sets
         else if (itemPath[0] == kUSDAddNewPrimItem) {
-            items.emplace_back(
-                kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
-            items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
-            items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel, kUSDXformPrimImage);
-            items.emplace_back(Ufe::ContextItem::kSeparator);
-            items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel, kUSDCapsulePrimImage);
-            items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel, kUSDConePrimImage);
-            items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
-            items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
-            items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
-        }
-    } // Top-level items
+            if (itemPath.size() == 1u) { // Root setup
+                items.emplace_back(
+                    kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
+                items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
+                items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel, kUSDXformPrimImage);
+                items.emplace_back(Ufe::ContextItem::kSeparator);
+                items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel, kUSDCapsulePrimImage);
+                items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel, kUSDConePrimImage);
+                items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
+                items.emplace_back(
+                    kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
+                items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
+#if PXR_VERSION >= 2008
+                items.emplace_back(Ufe::ContextItem::kSeparator);
+                items.emplace_back(
+                    kAllRegisteredTypesItem,
+                    kAllRegisteredTypesLabel,
+                    Ufe::ContextItem::kHasChildren);
+            } else if (itemPath.size() == 2u) { // Sub Menus
+                if (itemPath[1] == kAllRegisteredTypesItem) {
+                    // List the Registered schema plugins
+                    // Load this each time the menu is called in case plugins were loaded
+                    //      in between invocations.
+                    // However we cache it so the submenus don't need to re-query
+                    schemaTypeGroups = getConcretePrimTypes(true);
+                    for (auto schema : schemaTypeGroups) {
+                        items.emplace_back(
+                            schema._name.c_str(),
+                            schema._name.c_str(),
+                            Ufe::ContextItem::kHasChildren);
+                    }
+                }
+            } else if (itemPath.size() == 3u) {
+                if (itemPath[1] == kAllRegisteredTypesItem) {
+                    // List the items that belong to this schema plugin
+                    for (auto schema : schemaTypeGroups) {
+                        if (schema._name != itemPath[2]) {
+                            continue;
+                        }
+                        for (auto t : schema._types) {
+                            items.emplace_back(t, t);
+                        }
+                    }
+                }
+#endif
+            } // If USD >= 20.08, submenus end here. Otherwise end of Root Setup
 
+        } // Add New Prim Item
+    }     // Top-level items
     return items;
 }
 
@@ -592,14 +734,13 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     } // ActiveState
     else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
         // Operation is to create a new prim of the type specified.
-        if (itemPath.size() != 2u) {
+        if (itemPath.size() < 2u) {
             TF_CODING_ERROR("Wrong number of arguments");
             return nullptr;
         }
-
-        // At this point we know we have 2 arguments to execute the operation.
-        // itemPath[1] contains the new prim type to create.
-        return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
+        // At this point we know the last item in the itemPath is the prim type to create
+        auto primType = itemPath[itemPath.size() - 1];
+        return UsdUndoAddNewPrimCommand::create(fItem, primType, primType);
 #ifdef WANT_QT_BUILD
         // When building without Qt there is no LayerEditor
     } else if (itemPath[0] == kUSDLayerEditorItem) {
