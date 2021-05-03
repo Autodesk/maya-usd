@@ -20,6 +20,8 @@
 
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/base/tf/registryManager.h>
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/plug/plugin.h"
 
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
@@ -61,22 +63,30 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+#define PLUG_THIS_PLUGIN \
+    PlugRegistry::GetInstance().GetPluginWithName(\
+        TF_PP_STRINGIZE(MFB_PACKAGE_NAME))
+
 static const TfToken sDefaultMaterial = UsdImagingTokens->UsdPreviewSurface;
 
 // Maya to hydra shader parameter conversion
 // See void HdMayaMaterialNetworkConverter::initialize()
 static const std::map<std::string, TfToken> sHdMayaParamNameMap
 {
-	{"solidColor", TfToken("diffuseColor") }
+	{"solidColor", TfToken("diffuseColor") },
+	{"lambert_1color", TfToken("diffuseColor") },
+	{"phong_1color", TfToken("diffuseColor") },
+	{"blinn_1color", TfToken("diffuseColor") }
 };
 
 static const std::map<std::string, TfToken> sHdMayaMaterialNameMap
 {
-	{ "mayaPhongSurface", HdMayaAdapterTokens->phong },
-	{ "mayaBlinnSurface", HdMayaAdapterTokens->blinn },
-	{ "mayaLambertSurface", HdMayaAdapterTokens->lambert },
+	//{ "mayaPhongSurface", HdMayaAdapterTokens->HdMayaPhongShader },
+	//{ "mayaBlinnSurface", HdMayaAdapterTokens->HdMayaBlinnShader },
+	//{ "mayaLambertSurface", HdMayaAdapterTokens->HdMayaLambertShader },
+	{ "mayaStippleShader", HdMayaAdapterTokens->HdMayaStippleShader },
 	// Default
-	{ "mayaSolidColorShader",  sDefaultMaterial }
+	{ "mayaSolidColorShader",  sDefaultMaterial },
 };
 
 ///////////////////////////////////////////////////////////////////////
@@ -95,11 +105,15 @@ bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& s
 	}
 
 	MStringArray params;
-	shaderInstance.parameterList(params);		
+	shaderInstance.parameterList(params);
+	std::vector<std::string> myarray;
+	std::vector< MShaderInstance::ParameterType> artypes;
 	for (unsigned int i = 0; i < params.length(); i++) 
 	{
 		HdMayaRenderItemShaderParam param;
 		std::string mayaParamName(params[i].asChar());
+		myarray.push_back(mayaParamName);
+		artypes.push_back(shaderInstance.parameterType(params[i]));
 		auto paramConv = sHdMayaParamNameMap.find(mayaParamName);
 		if (paramConv != sHdMayaParamNameMap.end())
 		{
@@ -161,6 +175,71 @@ bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& s
 ///////////////////////////////////////////////////////////////////////
 // HdMayaRenderItemAdapter
 ///////////////////////////////////////////////////////////////////////
+
+static std::string
+_GetShaderResourcePath(char const * resourceName = "")
+{
+	//static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+	//const std::string path = PlugFindPluginResource(plugin,
+	//	TfStringCatPaths("shaders", resourceName));
+
+	//TF_VERIFY(!path.empty(), "Could not find shader resource: %s\n",
+	//	resourceName);
+
+	//return path;
+}
+
+void InitializeShaders()
+{
+	/*NdrNodeDiscoveryResultVec result;
+
+	static std::string shaderDefsFile = _GetShaderResourcePath(
+		"shaderDefs.usda");
+	if (shaderDefsFile.empty())
+		return result;
+
+	auto resolverContext = ArGetResolver().CreateDefaultContextForAsset(
+		shaderDefsFile);
+
+	const UsdStageRefPtr stage = UsdStage::Open(shaderDefsFile,
+		resolverContext);
+
+	if (!stage) {
+		TF_RUNTIME_ERROR("Could not open file '%s' on a USD stage.",
+			shaderDefsFile.c_str());
+		return result;
+	}
+
+	ArResolverContextBinder binder(resolverContext);
+	auto rootPrims = stage->GetPseudoRoot().GetChildren();
+	for (const auto &shaderDef : rootPrims) {
+		UsdShadeShader shader(shaderDef);
+		if (!shader) {
+			continue;
+		}
+
+		auto discoveryResults = UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
+			shader, shaderDefsFile);
+
+		result.insert(result.end(), discoveryResults.begin(),
+			discoveryResults.end());
+
+		if (discoveryResults.empty()) {
+			TF_RUNTIME_ERROR("Found shader definition <%s> with no valid "
+				"discovery results. This is likely because there are no "
+				"resolvable info:sourceAsset values.",
+				shaderDef.GetPath().GetText());
+		}
+	}
+
+	return result;*/
+}
+
+
+// static initialize
+void HdMayaRenderItemAdapter::Initialize()
+{
+}
 
 HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
     const SdfPath& id,

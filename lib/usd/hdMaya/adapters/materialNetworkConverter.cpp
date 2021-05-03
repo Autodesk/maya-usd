@@ -892,38 +892,39 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams
 
 const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetShaderParams(const TfToken& shaderNodeIdentifier)
 {
-    if(shaderNodeIdentifier == UsdImagingTokens->UsdPreviewSurface)
+	if(shaderNodeIdentifier == UsdImagingTokens->UsdPreviewSurface)
         return GetPreviewShaderParams();
 
 	auto& it = _defaultShaderParams.find(shaderNodeIdentifier);
 	if (it == _defaultShaderParams.end()) 
 	{
 		HdMayaShaderParams params;
-		auto& conv = _nodeConverters.find(shaderNodeIdentifier);
-		assert(conv != _nodeConverters.end());
-		// _nodeConverters is for material plug conversion, but we only use the param names here per material type.
-		for (auto& attr : conv->second.GetAttrConverters())
+
+		// TODO: Handle mutual exclusion
+		// Once we have the lock, recheck to make sure it's still
+		// uninitialized...
+		auto& shaderReg = SdrRegistry::GetInstance();
+		SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(shaderNodeIdentifier);
+		assert(TF_VERIFY(sdrNode));
+
+		auto inputNames = sdrNode->GetInputNames();
+		params.reserve(inputNames.size());
+
+		std::string inputNameStr;
+		std::vector<std::string> inputNameStrs;
+		for (auto& inputName : inputNames)
 		{
-			// TODO: Handle mutual exclusion
-			// Once we have the lock, recheck to make sure it's still
-			// uninitialized...
-			auto& shaderReg = SdrRegistry::GetInstance();
-			SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(UsdImagingTokens->UsdPreviewSurface);
-			assert(TF_VERIFY(sdrNode));
-
-			auto inputNames = sdrNode->GetInputNames();
-			params.reserve(inputNames.size());
-
-			for (auto& inputName : inputNames) {
-				auto property = sdrNode->GetInput(inputName);
-				if (!TF_VERIFY(property)) {
-					continue;
-				}
-				params.emplace_back(
-					inputName,
-					property->GetDefaultValue(),
-					property->GetTypeAsSdfType().first);
+			inputNameStr = inputName.GetString();
+			inputNameStrs.push_back(inputNameStr);
+			auto property = sdrNode->GetInput(inputName);
+			if (!TF_VERIFY(property)) {
+				continue;
 			}
+
+			params.emplace_back(
+				inputName,
+				property->GetDefaultValue(),
+				property->GetTypeAsSdfType().first);
 		}
 
 		std::sort(

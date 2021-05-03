@@ -108,6 +108,8 @@ public:
 	HDMAYA_API
 	VtValue Get(const TfToken& key) override;
 
+	static void Initialize();
+
 	// this
 	///////////
 
@@ -161,7 +163,7 @@ public:
 	virtual bool IsStale() const { return _isStale; }
 
 	HDMAYA_API
-		HdMayaShaderInstanceData& GetShaderData() { return _shader; }
+	HdMayaShaderInstanceData& GetShaderData() { return _shader; }
 
 private:
 	HdMayaShaderInstanceData _shader;

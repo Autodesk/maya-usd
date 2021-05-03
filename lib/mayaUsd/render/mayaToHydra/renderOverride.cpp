@@ -22,6 +22,7 @@
 
 #include <hdMaya/delegates/delegateRegistry.h>
 #include <hdMaya/delegates/sceneDelegate.h>
+#include <hdMaya/renderItemClient/renderDelegate.h>
 #include <hdMaya/utils.h>
 #include <mayaUsd/render/px_vp20/utils.h>
 #include <mayaUsd/utils/hash.h>
@@ -207,7 +208,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 #endif
     , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
     , _selectionTracker(new HdxSelectionTracker)
-    , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin)
+    , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin||
+                   desc.rendererName == MtohTokens->HdMayaRenderItemRendererPlugin)
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(

@@ -3,6 +3,19 @@
         {
             "Info": {
                 "Types": {
+                    # Discovery
+                    "HdMayaRenderItemDiscoveryPlugin" : {
+                        "bases": ["NdrDiscoveryPlugin"],
+                        "displayName": "USD-based shader definition discovery plugin."
+                    },
+                    # Plugin
+                    "HdMayaRenderItemRendererPlugin": {
+                        "bases": [
+                            "HdMayaRenderItemRendererPlugin"
+                        ],
+                        "displayName": "HdMayaRenderItemRendererPlugin",
+                        "priority": 99
+                    },
                     # Delegates
                     "HdMayaDelegate": {
                         "displayName": "Base type for all scene delegates in Hydra for Maya."

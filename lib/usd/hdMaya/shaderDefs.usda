@@ -1,0 +1,70 @@
+#usda 1.0
+
+def Shader "HdMayaStippleShader" (
+    doc = "Preview surface specification"
+)
+{
+    uniform token info:id = "HdMayaStippleShader"
+    uniform token info:implementationSource = "sourceAsset"
+
+    # XXX: This doesn't resolve if it's defined as a search path.
+    # Might require special resolver configuration, to include the resources
+    # directory.
+    uniform asset info:glslfx:sourceAsset = @./mayaStippleShader.glslfx@
+
+    ###########################
+    ## Uniforms
+    ###########################
+
+    matrix4d inputs:WorldViewProj = (
+        (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) )
+
+    matrix4d inputs:World = (
+        (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) )
+
+
+    matrix4d inputs:WorldIT = (
+        (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0) )
+
+    float inputs:DepthPriority = 1.0
+
+    bool inputs:orthographic = false
+
+    float inputs:depthPriorityThreshold = 1.0
+
+    float inputs:depthPriorityScale = 1.0
+
+    token inputs:map
+
+    token inputs:samp
+
+    float2 inputs:mayaTextureSize = ( 16.000000, 16.000000 )
+
+    float2 inputs:screenSize
+    
+    float4 inputs:solidColor = ( 1.000000, 1.000000, 1.000000, 1.000000 )
+
+    float4 inputs:selectionHiddenColor = ( -1.000000, -1.000000, -1.000000, 1.000000 )
+
+    bool inputs:isSelectionHighlightingON = true
+
+    float inputs:alphaDiscardThreshold = 0.050000
+
+    bool inputs:enableXRayComp = false
+
+    bool inputs:forceAlphaAdjust = false
+
+    float3 inputs:cameraPosition = ( 0.0, 0.0, 0.0 )
+
+    float inputs:mayaFrontFaceAlpha = 1.000000
+
+    float inputs:mayaBackFaceAlpha = 0.000000
+
+    ###########################
+    ## Attributes
+    ###########################
+
+    float3 inputs:Pm
+
+    float3 inputs:Nm
+}
