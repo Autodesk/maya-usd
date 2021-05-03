@@ -72,19 +72,15 @@ class UfeAttributesObserver(ufe.Observer):
 
 class MetaDataCustomControl(object):
     # Custom control for all prim metadata we want to display.
-    def __init__(self, prim):
+    def __init__(self, prim, useNiceName):
         self.prim = prim
+        self.useNiceName = useNiceName
 
         # There are four metadata that we always show: primPath, kind, active, instanceable
         # We use a dictionary to store the various other metadata that this prim contains.
         self.extraMetadata = dict()
 
     def onCreate(self, *args):
-        # Should we display nice names in AE?
-        useNiceName = True
-        if cmds.optionVar(exists='attrEditorIsLongName'):
-            useNiceName = (cmds.optionVar(q='attrEditorIsLongName') ==1)
-
         # Metadata: PrimPath
         # The prim path is for display purposes only - it is not editable, but we
         # allow keyboard focus so you copy the value.
@@ -141,7 +137,7 @@ class MetaDataCustomControl(object):
             for k in allMetadata:
                 # All extra metadata is for display purposes only - it is not editable, but we
                 # allow keyboard focus so you copy the value.
-                mdLabel = getPrettyName(k) if useNiceName else k
+                mdLabel = getPrettyName(k) if self.useNiceName else k
                 self.extraMetadata[k] = cmds.textFieldGrp(label=mdLabel, editable=False, enableKeyboardFocus=True)
 
         # Update all metadata values.
@@ -193,9 +189,10 @@ class MetaDataCustomControl(object):
 # Custom control for all array attribute.
 class ArrayCustomControl(object):
 
-    def __init__(self, prim, attrName):
+    def __init__(self, prim, attrName, useNiceName):
         self.prim = prim
         self.attrName = attrName
+        self.useNiceName = useNiceName
         super(ArrayCustomControl, self).__init__()
 
     def onCreate(self, *args):
@@ -210,7 +207,8 @@ class ArrayCustomControl(object):
             typeNameStr = str(typeName.scalarType)
             typeNameStr += ("[" + str(len(values)) + "]") if hasValue else "[]"
 
-            cmds.textFieldGrp(editable=False, label=getPrettyName(self.attrName), text=typeNameStr, annotation=attr.GetDocumentation())
+            mdLabel = getPrettyName(self.attrName) if self.useNiceName else self.attrName
+            cmds.textFieldGrp(editable=False, label=mdLabel, text=typeNameStr, annotation=attr.GetDocumentation())
 
             if hasValue:
                 cmds.popupMenu()
@@ -275,6 +273,11 @@ class AETemplate(object):
         if cmds.optionVar(exists="mayaUSD_AEShowArrayAttributes"):
             self.showArrayAttributes = cmds.optionVar(query="mayaUSD_AEShowArrayAttributes")
 
+        # Should we display nice names in AE?
+        self.useNiceName = True
+        if cmds.optionVar(exists='attrEditorIsLongName'):
+            self.useNiceName = (cmds.optionVar(q='attrEditorIsLongName') ==1)
+
         cmds.editorTemplate(beginScrollLayout=True)
         self.buildUI()
         self.createAppliedSchemasSection()
@@ -297,7 +300,7 @@ class AETemplate(object):
         for c in controls:
             if c not in self.suppressedAttrs:
                 if self.isArrayAttribute(c):
-                    arrayCustomControl = ArrayCustomControl(self.prim, c)
+                    arrayCustomControl = ArrayCustomControl(self.prim, c, self.useNiceName)
                     self.defineCustom(arrayCustomControl, c)
                 else:
                     cmds.editorTemplate(addControl=[c])
@@ -390,7 +393,7 @@ class AETemplate(object):
     def createMetadataSection(self):
         # We don't use createSection() because these are metadata (not attributes).
         with ufeAeTemplate.Layout(self, 'Metadata', collapse=True):
-            metaDataControl = MetaDataCustomControl(self.prim)
+            metaDataControl = MetaDataCustomControl(self.prim, self.useNiceName)
             usdNoticeControl = NoticeListener(self.prim, [metaDataControl])
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
