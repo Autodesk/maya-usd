@@ -107,7 +107,7 @@ void UsdMayaDiagnosticDelegate::IssueError(const TfError& err)
     // In addition, always display the full call site for errors by going
     // through _FormatDiagnostic.
     if (ArchIsMainThread()) {
-        MGlobal::displayError(_FormatDiagnostic(err));
+        MGlobal::displayError(err.GetCommentary().c_str());
     } else {
         std::cerr << _FormatDiagnostic(err) << std::endl;
     }
