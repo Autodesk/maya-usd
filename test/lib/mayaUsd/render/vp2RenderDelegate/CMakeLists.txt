@@ -5,7 +5,6 @@ set(TEST_SCRIPT_FILES "")
 
 list(APPEND TEST_SCRIPT_FILES
 	testVP2RenderDelegateGeomSubset.py
-    testVP2RenderDelegateBasisCurves.py
 )
 
 if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
@@ -23,6 +22,7 @@ endif()
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePerInstanceInheritedData.py
+        testVP2RenderDelegateBasisCurves.py
     )
 endif()
 
