@@ -22,6 +22,7 @@ import mayaUsd.lib as mayaUsdLib
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 from maya.common.ui import LayoutManager
 from maya.common.ui import setClipboardData
+from maya.OpenMaya import MGlobal
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
@@ -213,7 +214,7 @@ class ArrayCustomControl(object):
             if hasValue:
                 cmds.popupMenu()
                 cmds.menuItem( label="Copy Attribute Value",   command=lambda *args: setClipboardData(str(values)) )
-                cmds.menuItem( label="Print to Script Editor", command=lambda *args: print(str(values)) )
+                cmds.menuItem( label="Print to Script Editor", command=lambda *args: MGlobal.displayInfo(str(values)) )
         else:
             cmds.error(self.attrName + " must be an array!")
 
@@ -501,11 +502,14 @@ class AETemplate(object):
         # Suppress all array attributes except UsdGeom.Tokens.xformOpOrder
         if not self.showArrayAttributes:
             for attrName in self.attrS.attributeNames:
-                if attrName != UsdGeom.Tokens.xformOpOrder and self.isArrayAttribute(attrName):
+                if self.isArrayAttribute(attrName):
                     self.suppress(attrName)
 
     def isArrayAttribute(self, attrName):
-        if self.attrS.attributeType(attrName) == ufe.Attribute.kGeneric:
+        # Note: UsdGeom.Tokens.xformOpOrder is a exception,
+        #       we are not considering this attribute as an array.
+        if self.attrS.attributeType(attrName) == ufe.Attribute.kGeneric and \
+           attrName != UsdGeom.Tokens.xformOpOrder:
             attr = self.prim.GetAttribute(attrName)
             typeName = attr.GetTypeName()
             return typeName.isArray
