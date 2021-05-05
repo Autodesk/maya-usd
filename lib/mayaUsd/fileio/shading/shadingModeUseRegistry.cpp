@@ -410,7 +410,7 @@ public:
         // render context output we are looking for really exists:
         if (shadeMaterial.GetSurfaceOutput(renderContext)) {
 #if PXR_VERSION > 2105
-            UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource({renderContext});
+            UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource({ renderContext });
 #else
             UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource(renderContext);
 #endif
@@ -424,7 +424,7 @@ public:
 
         if (shadeMaterial.GetVolumeOutput(renderContext)) {
 #if PXR_VERSION > 2105
-            UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource({renderContext});
+            UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource({ renderContext });
 #else
             UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource(renderContext);
 #endif
@@ -439,7 +439,7 @@ public:
         if (shadeMaterial.GetDisplacementOutput(renderContext)) {
 #if PXR_VERSION > 2105
             UsdShadeShader displacementShader
-                = shadeMaterial.ComputeDisplacementSource({renderContext});
+                = shadeMaterial.ComputeDisplacementSource({ renderContext });
 #else
             UsdShadeShader displacementShader
                 = shadeMaterial.ComputeDisplacementSource(renderContext);
