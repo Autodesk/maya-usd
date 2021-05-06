@@ -236,20 +236,6 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
 #endif
 }
 
-void
-AddRenderTask(HdMayaSceneDelegate* delegate, SdfPath const &id)
-{
-	//delegate->GetRenderIndex().InsertTask<HdxRenderTask>(delegate, id);
-	//_ValueCache &cache = _valueCacheMap[id];
-	//cache[HdTokens->collection]
-	//	= HdRprimCollection(HdTokens->geometry,
-	//		HdReprSelector(HdReprTokens->smoothHull));
-
-	// Don't filter on render tag.
-	// XXX: However, this will mean no prim passes if any stage defines a tag
-	//cache[HdTokens->renderTags] = TfTokenVector();
-}
-
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
 {
@@ -265,21 +251,19 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 		auto& ri = *scene.mItems[i];
 
 		HdMayaShaderInstanceData sd;
-		// TODO: Fix shader leaking due to bad API here..
-		const MShaderInstance* shaderInstance = ri.getShader();
-		HdMayaShaderAdapterPtr sa = nullptr;
-		if (HdMayaRenderItemShaderConverter::ExtractShaderData(*shaderInstance, sd))
+		// TODO: Fix shader leaking due to bad MRenderItem::getShader API here..
+		if (HdMayaRenderItemShaderConverter::ExtractShaderData(*ri.getShader(), sd))
 		{
-			HdMayaShaderAdapterPtr* saPtr;
-			if (saPtr = TfMapLookupPtr(_renderItemShaderAdapters, SdfPath(sd.Shader->Name)))
+			SdfPath id = SdfPath(sd.Shader->Name);
+			if (!TfMapLookupPtr(_renderItemShaderAdapters, id))
 			{
-				sa = *saPtr;
-			}
-			else
-			{
-				sa = HdMayaShaderAdapterPtr(new HdMayaShaderAdapter(this, *sd.Shader));
-				_renderItemShaderAdapters.insert({ sa->GetID(), sa });
-				GetChangeTracker().MarkTaskDirty(sa->GetID(), HdChangeTracker::DirtyCollection);
+				_renderItemShaderAdapters.insert(
+				{ 
+					id,					
+					HdMayaShaderAdapterPtr(new HdMayaShaderAdapter(this, *sd.Shader)) 
+				});
+
+				GetChangeTracker().MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
 			}
 		}
 
@@ -804,34 +788,6 @@ void HdMayaSceneDelegate::AddNewInstance(const MDagPath& dag)
     }
 }
 
-void HdMayaSceneDelegate::AddNewInstance(const MRenderItem& ri)
-{
-	//MDagPathArray dags;
-	//MDagPath::getAllPathsTo(dag.node(), dags);
-	//const auto dagsLength = dags.length();
-	//if (dagsLength == 0) {
-	//	return;
-	//}
-	//const auto                          masterDag = dags[0];
-	//const auto                          id = GetPrimPath(masterDag, false);
-	//std::shared_ptr<HdMayaShapeAdapter> masterAdapter;
-	//if (!TfMapLookup(_shapeAdapters, id, &masterAdapter) || masterAdapter == nullptr) {
-	//	return;
-	//}
-	//// If dags is 1, we have to recreate the adapter.
-	//if (dags.length() == 1 || !masterAdapter->IsInstanced()) {
-	//	RecreateAdapterOnIdle(id, masterDag.node());
-	//}
-	//else {
-	//	// If dags is more than one, trigger rebuilding callbacks next call and
-	//	// mark dirty.
-	//	RebuildAdapterOnIdle(id, HdMayaDelegateCtx::RebuildFlagCallbacks);
-	//	masterAdapter->MarkDirty(
-	//		HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex
-	//		| HdChangeTracker::DirtyPrimvar);
-	//}
-}
-
 void HdMayaSceneDelegate::SetParams(const HdMayaParams& params)
 {
     const auto& oldParams = GetParams();
@@ -1144,7 +1100,6 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key)
 #endif
 }
 
-//
 size_t HdMayaSceneDelegate::SamplePrimvar(
     const SdfPath& id,
     const TfToken& key,

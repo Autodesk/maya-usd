@@ -203,19 +203,12 @@ HdMayaShaderAdapter::HdMayaShaderAdapter(
 {
 	_isPopulated = true;
 	GetDelegate()->GetRenderIndex().InsertTask<HdxRenderTask>(GetDelegate(), GetID());
-	auto renderTask = std::dynamic_pointer_cast<HdxRenderTask>(GetDelegate()->GetRenderIndex().GetTask(GetID()));
-	renderTask->_debugString = shader.Name;
-	const_cast<HdxTaskController*>(GetDelegate()->GetTaskController())->ScheduleRenderTask(GetID());
-
+	//auto renderTask = std::dynamic_pointer_cast<HdxRenderTask>(GetDelegate()->GetRenderIndex().GetTask(GetID()));
+	//renderTask->_debugString = shader.Name;
 }
 
 HdMayaShaderAdapter::~HdMayaShaderAdapter()
 {
-}
-
-bool HdMayaShaderAdapter::IsSupported() const
-{
-	return true;
 }
 
 void HdMayaShaderAdapter::MarkDirty(HdDirtyBits dirtyBits)
@@ -229,10 +222,25 @@ VtValue HdMayaShaderAdapter::Get(const TfToken& key)
 	{
 		return VtValue(_rprimCollection);
 	}
-	else if (key == HdTokens->params)
-	{
-	
-	}
+	// TODO: Customize shader uniforms per render item..
+	//else if (key == HdTokens->params)
+	//	/*
+	//		Rendering state management can be handled two ways: 
+	//		1.) An application can create an HdxRenderTask and pass it the HdxRenderTaskParams struct as "params". 
+	//		2.) An application can create an HdxRenderSetupTask and an HdxRenderTask, and pass params to the setup task. In this case the setup task must run first.	
+	//		
+	//		Parameter unpacking is handled by HdxRenderSetupTask; in case #1, HdxRenderTask creates a dummy setup task internally to manage the sync process.
+	//		Case #2 introduces complexity; the benefit is that by changing which setup task you run before the render task, you can change the render parameters 
+	//		without incurring a hydra sync or rebuilding any resources. 
+	//		https://graphics.pixar.com/usd/docs/api/class_hdx_render_task.html
+	//	*/
+	//{
+	//	HdxRenderTaskParams params;
+	//	params.pointColor = GfVec4f(1, 0, 0, 1);
+	//	params.overrideColor = GfVec4f(0, 1, 0, 1);
+	//	params.wireframeColor = GfVec4f(0, 0, 1, 1);
+	//	return VtValue(params);
+	//}
 
 	return {};
 }
@@ -241,66 +249,6 @@ VtValue HdMayaShaderAdapter::Get(const TfToken& key)
 ///////////////////////////////////////////////////////////////////////
 // HdMayaRenderItemAdapter
 ///////////////////////////////////////////////////////////////////////
-
-static std::string
-_GetShaderResourcePath(char const * resourceName = "")
-{
-	//static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
-	//const std::string path = PlugFindPluginResource(plugin,
-	//	TfStringCatPaths("shaders", resourceName));
-
-	//TF_VERIFY(!path.empty(), "Could not find shader resource: %s\n",
-	//	resourceName);
-
-	//return path;
-}
-
-void InitializeShaders()
-{
-	/*NdrNodeDiscoveryResultVec result;
-
-	static std::string shaderDefsFile = _GetShaderResourcePath(
-		"shaderDefs.usda");
-	if (shaderDefsFile.empty())
-		return result;
-
-	auto resolverContext = ArGetResolver().CreateDefaultContextForAsset(
-		shaderDefsFile);
-
-	const UsdStageRefPtr stage = UsdStage::Open(shaderDefsFile,
-		resolverContext);
-
-	if (!stage) {
-		TF_RUNTIME_ERROR("Could not open file '%s' on a USD stage.",
-			shaderDefsFile.c_str());
-		return result;
-	}
-
-	ArResolverContextBinder binder(resolverContext);
-	auto rootPrims = stage->GetPseudoRoot().GetChildren();
-	for (const auto &shaderDef : rootPrims) {
-		UsdShadeShader shader(shaderDef);
-		if (!shader) {
-			continue;
-		}
-
-		auto discoveryResults = UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
-			shader, shaderDefsFile);
-
-		result.insert(result.end(), discoveryResults.begin(),
-			discoveryResults.end());
-
-		if (discoveryResults.empty()) {
-			TF_RUNTIME_ERROR("Found shader definition <%s> with no valid "
-				"discovery results. This is likely because there are no "
-				"resolvable info:sourceAsset values.",
-				shaderDef.GetPath().GetText());
-		}
-	}
-
-	return result;*/
-}
-
 
 // static initialize
 
@@ -340,20 +288,16 @@ HdMayaRenderItemAdapter::~HdMayaRenderItemAdapter()
 
 TfToken HdMayaRenderItemAdapter::GetRenderTag() const
 {
-	return _shaderInstance.Shader ?
-		_shaderInstance.Shader->Name :
-		_shaderTokens->mayaInvalidShader;
-	//switch (_primitive)
-	//{		
-	//	case MHWRender::MGeometry::Primitive::kLines:
-	//		//return HdRenderTagTokens->guide;
-	//		// TODO: Why must render tag match  for both primitive type?
-	//		// Otherwise renderIndex.cpp _DirtyRprimIdsFilterPredicate will fail from filterParam->renderTags[tagNum] == primRenderTag 
-	//	case MHWRender::MGeometry::Primitive::kTriangles:
-	//	case MHWRender::MGeometry::Primitive::kPoints:
-	//	default:
-	//		return HdRenderTagTokens->geometry;
-	//}
+	if (_shaderInstance.Shader)
+	{
+		// Opt in to the render pass which corresponds to this shader
+		return _shaderInstance.Shader->Name;
+	}
+	else
+	{
+		// Otherwise opt in the default beauty pass
+		return HdRenderTagTokens->geometry;
+	}
 }
 
 void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)

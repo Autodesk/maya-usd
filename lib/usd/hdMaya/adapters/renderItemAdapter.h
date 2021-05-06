@@ -100,7 +100,7 @@ public:
 		bool HasType(const TfToken& typeId) const override { return typeId == HdPrimTypeTokens->mesh; }
 
 	HDMAYA_API
-		virtual bool IsSupported() const override;
+		virtual bool IsSupported() const override { return true; }
 
 	HDMAYA_API
 		virtual bool GetDoubleSided() const { return true; };
