@@ -18,6 +18,7 @@
 import fixturesUtils
 import imageUtils
 import mayaUtils
+import unittest
 import usdUtils
 import testUtils
 
@@ -25,6 +26,7 @@ from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
+import maya.api.OpenMayaRender as omr
 
 import ufe
 
@@ -81,7 +83,20 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         cmds.select("|stage|stageShape,/instanced_2")
         self.assertSnapshotClose('%s_selected.png' % self._testName)
 
-
+    @unittest.skipUnless("SkipWhenDefaultMaterialActive" in dir(omr.MRenderItem), "Requires new SDK API")
+    def testInstanceDefaultMaterial(self):
+        self._StartTest('defaultMaterialBillboards')
+        cmds.select("|stage|stageShape,/root/group/billboard_03",
+                    "|stage|stageShape,/root/group/flatquad_03")
+        self.assertSnapshotClose('%s_selected.png' % self._testName)
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, useDefaultMaterial=True)
+        self.assertSnapshotClose('%s_default.png' % self._testName)
+        cmds.select("|stage|stageShape,/root/group/billboard_04",
+                    "|stage|stageShape,/root/group/flatquad_04")
+        self.assertSnapshotClose('%s_defaultSelected.png' % self._testName)
+        cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
+        self.assertSnapshotClose('%s_notDefault.png' % self._testName)
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

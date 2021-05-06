@@ -1280,15 +1280,61 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 
         switch (desc.geomStyle) {
         case HdMeshGeomStyleHull:
-            break; // Creating the hull render items requires geom subsets from the topology, and we
-                   // can't access that here.
+            // Creating the smoothHull hull render items requires geom subsets from the topology,
+            // and we can't access that here.
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+            if (reprToken == HdVP2ReprTokens->defaultMaterial) {
+                // But default material mode does not use geom subsets, so we create the render item
+                renderItem = _CreateSmoothHullRenderItem(renderItemName);
+                renderItem->setDefaultMaterialHandling(
+                    MRenderItem::DrawOnlyWhenDefaultMaterialActive);
+                renderItem->setShader(_delegate->Get3dDefaultMaterialShader());
+            }
+#endif
+            break;
         case HdMeshGeomStyleHullEdgeOnly:
-            // The smoothHull repr uses the wireframe item for selection
-            // highlight only.
+            // The smoothHull repr uses the wireframe item for selection highlight only.
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+            if (reprToken == HdReprTokens->smoothHull
+                || reprToken == HdVP2ReprTokens->defaultMaterial) {
+                // Share selection highlight render item between smoothHull and defaultMaterial:
+                bool                        foundShared = false;
+                _ReprVector::const_iterator it = std::find_if(
+                    _reprs.begin(),
+                    _reprs.end(),
+                    _ReprComparator(
+                        reprToken == HdReprTokens->smoothHull ? HdVP2ReprTokens->defaultMaterial
+                                                              : HdReprTokens->smoothHull));
+                if (it != _reprs.end()) {
+                    const HdReprSharedPtr& repr = it->second;
+                    const auto&            items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
+                    for (HdDrawItem* item : items) {
+                        HdVP2DrawItem* shDrawItem = static_cast<HdVP2DrawItem*>(item);
+#else
+                    for (const HdRepr::DrawItemUniquePtr& item : items) {
+                        HdVP2DrawItem* const shDrawItem = static_cast<HdVP2DrawItem*>(item.get());
+#endif
+                        if (shDrawItem
+                            && shDrawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight)) {
+                            drawItem->SetRenderItem(shDrawItem->GetRenderItem());
+                            foundShared = true;
+                            break;
+                        }
+                    }
+                }
+                if (!foundShared) {
+                    renderItem = _CreateSelectionHighlightRenderItem(renderItemName);
+                }
+                drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
+            }
+#else
+            // The smoothHull repr uses the wireframe item for selection highlight only.
             if (reprToken == HdReprTokens->smoothHull) {
                 renderItem = _CreateSelectionHighlightRenderItem(renderItemName);
                 drawItem->SetUsage(HdVP2DrawItem::kSelectionHighlight);
             }
+#endif
             // The item is used for wireframe display and selection highlight.
             else if (reprToken == HdReprTokens->wire) {
                 renderItem = _CreateWireframeRenderItem(renderItemName);
@@ -1605,7 +1651,8 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 #endif
 
-    if (desc.geomStyle == HdMeshGeomStyleHull) {
+    if (desc.geomStyle == HdMeshGeomStyleHull
+        && desc.shadingTerminal == HdMeshReprDescTokens->surfaceShader) {
         bool dirtyMaterialId = (itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0;
         if (dirtyMaterialId) {
             SdfPath materialId = GetMaterialId(); // This is an index path
@@ -2386,6 +2433,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
+
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+    renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
 #endif
 
     setWantConsolidation(*renderItem, true);
