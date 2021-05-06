@@ -44,7 +44,13 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testUsdPreviewSurfaceRoundtrip(self):
+    def testUsdPreviewSurfaceRoundtripSpecular(self):
+        self.__testUsdPreviewSurfaceRoundtrip(metallic=False)
+
+    def testUsdPreviewSurfaceRoundtripMetallic(self):
+        self.__testUsdPreviewSurfaceRoundtrip(metallic=True)
+
+    def __testUsdPreviewSurfaceRoundtrip(self, metallic=True):
         """
         Tests that a usdPreviewSurface exports and imports correctly.
         """
@@ -65,10 +71,11 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                          material_sg+".surfaceShader", force=True)
         cmds.sets(sphere_xform, e=True, forceElement=material_sg)
 
+        cmds.setAttr(material_node + ".ior", 2)
         cmds.setAttr(material_node + ".roughness", 0.25)
         cmds.setAttr(material_node + ".specularColor", 0.125, 0.25, 0.75,
                      type="double3")
-        cmds.setAttr(material_node + ".useSpecularWorkflow", True)
+        cmds.setAttr(material_node + ".useSpecularWorkflow", not metallic)
         cmds.setAttr(material_node + ".opacityThreshold", 0.5)
 
         file_node = cmds.shadingNode("file", asTexture=True,
@@ -98,7 +105,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         original_path = cmds.getAttr(file_node+".fileTextureName")
 
         # Export to USD:
-        usd_path = os.path.abspath('UsdPreviewSurfaceRoundtripTest.usda')
+        usd_path = os.path.abspath('UsdPreviewSurfaceRoundtripTest{}.usda'.format('Metallic' if metallic else 'Specular'))
 
         cmds.file(usd_path, force=True,
                   options="shadingMode=useRegistry;mergeTransformAndShape=1",
@@ -139,13 +146,16 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             "place2dTexture.wrapU")
 
         # Check values:
+        self.assertAlmostEqual(cmds.getAttr(material_node+".ior"), 2)
         self.assertAlmostEqual(cmds.getAttr(material_node+".roughness"),
                                0.25)
         self.assertAlmostEqual(cmds.getAttr(material_node+".opacityThreshold"),
                                0.5)
         self.assertEqual(cmds.getAttr(material_node+".specularColor"),
                          [(0.125, 0.25, 0.75)])
-        self.assertTrue(cmds.getAttr(material_node+".useSpecularWorkflow"))
+
+        self.assertEqual(cmds.getAttr(material_node+".useSpecularWorkflow"), int(not metallic))
+
         self.assertEqual(cmds.getAttr(file_node+".defaultColor"),
                          [(0.5, 0.25, 0.125)])
         self.assertEqual(cmds.getAttr(file_node+".colorSpace"), "ACEScg")
