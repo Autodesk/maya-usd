@@ -27,6 +27,8 @@
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/usd/sdr/registry.h>
 
+#include "pxr/imaging/hdx/renderTask.h"
+
 #include <maya/MAnimControl.h>
 #include <maya/MDGContext.h>
 #include <maya/MDGContextGuard.h>
@@ -79,14 +81,32 @@ static const std::map<std::string, TfToken> sHdMayaParamNameMap
 	{"blinn_1color", TfToken("diffuseColor") }
 };
 
-static const std::map<std::string, TfToken> sHdMayaMaterialNameMap
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+	_shaderTokens,
+	(mayaLambertShader)
+	(mayaStippleShader)
+	(mayaSolidColorShader)
+	(mayaInvalidShader)
+);
+// clang-format on
+
+static const std::map<TfToken, HdMayaShaderData> sHdMayaSupportedShaders
 {
-	//{ "mayaPhongSurface", HdMayaAdapterTokens->HdMayaPhongShader },
-	//{ "mayaBlinnSurface", HdMayaAdapterTokens->HdMayaBlinnShader },
-	//{ "mayaLambertSurface", HdMayaAdapterTokens->HdMayaLambertShader },
-	{ "mayaStippleShader", HdMayaAdapterTokens->HdMayaStippleShader },
-	// Default
-	{ "mayaSolidColorShader",  sDefaultMaterial },
+	{ 
+		_shaderTokens->mayaStippleShader,
+		{
+			_shaderTokens->mayaStippleShader,
+			HdReprTokens->refined
+		}	
+	},	
+	//{
+	//	_shaderTokens->mayaSolidColorShader,
+	//	{
+	//		sDefaultMaterial,
+	//		HdReprTokens->refined
+	//	}
+	//}
 };
 
 ///////////////////////////////////////////////////////////////////////
@@ -96,13 +116,14 @@ static const std::map<std::string, TfToken> sHdMayaMaterialNameMap
 bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& shaderInstance, HdMayaShaderInstanceData& shaderData)
 {
 	MString shaderName;
-	if (shaderInstance.internalShaderName(shaderName) == MS::kSuccess)
+	auto entry = sHdMayaSupportedShaders.end();
+	if (
+		shaderInstance.internalShaderName(shaderName) == MS::kSuccess &&
+		(entry = sHdMayaSupportedShaders.find(TfToken(shaderName.asChar()))) != sHdMayaSupportedShaders.end())
 	{
-		auto nameConv = sHdMayaMaterialNameMap.find(shaderName.asChar());
-		shaderData.Identifier = nameConv == sHdMayaMaterialNameMap.end() ?
-			sDefaultMaterial :
-			nameConv->second;
+		shaderData.Shader = &entry->second;
 	}
+	else return false;
 
 	MStringArray params;
 	shaderInstance.parameterList(params);
@@ -172,6 +193,51 @@ bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& s
 	return true;
 }
 
+HdMayaShaderAdapter::HdMayaShaderAdapter(	
+	HdMayaDelegateCtx* del,
+	const HdMayaShaderData& shader
+	)
+	: HdMayaAdapter(MObject(), SdfPath(shader.Name), del)
+	, _shader(shader)
+	, _rprimCollection(shader.Name, HdReprSelector(shader.ReprSelector))
+{
+	_isPopulated = true;
+	GetDelegate()->GetRenderIndex().InsertTask<HdxRenderTask>(GetDelegate(), GetID());
+	auto renderTask = std::dynamic_pointer_cast<HdxRenderTask>(GetDelegate()->GetRenderIndex().GetTask(GetID()));
+	renderTask->_debugString = shader.Name;
+	const_cast<HdxTaskController*>(GetDelegate()->GetTaskController())->ScheduleRenderTask(GetID());
+
+}
+
+HdMayaShaderAdapter::~HdMayaShaderAdapter()
+{
+}
+
+bool HdMayaShaderAdapter::IsSupported() const
+{
+	return true;
+}
+
+void HdMayaShaderAdapter::MarkDirty(HdDirtyBits dirtyBits)
+{
+	GetDelegate()->GetRenderIndex().GetChangeTracker().MarkTaskDirty(GetID(), dirtyBits);
+}
+
+VtValue HdMayaShaderAdapter::Get(const TfToken& key)
+{
+	if (key == HdTokens->collection)
+	{
+		return VtValue(_rprimCollection);
+	}
+	else if (key == HdTokens->params)
+	{
+	
+	}
+
+	return {};
+}
+
+
 ///////////////////////////////////////////////////////////////////////
 // HdMayaRenderItemAdapter
 ///////////////////////////////////////////////////////////////////////
@@ -237,43 +303,57 @@ void InitializeShaders()
 
 
 // static initialize
-void HdMayaRenderItemAdapter::Initialize()
-{
-}
 
 HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
     const SdfPath& id,
     HdMayaDelegateCtx* del,
-	const MRenderItem& ri
+	const MRenderItem& ri,
+	const HdMayaShaderInstanceData& sd
 	)
     : HdMayaAdapter(MObject(), id, del)
+	, _shaderInstance(sd)
 	, _primitive(ri.primitive())
 	, _name(ri.name())
 {
+	_isPopulated = true;
+	switch (_primitive)
+	{
+	case MHWRender::MGeometry::Primitive::kTriangles:
+		GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
+		break;
+	case MHWRender::MGeometry::Primitive::kLines:
+		GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {});
+		break;
+	case MHWRender::MGeometry::Primitive::kPoints:
+		GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
+		break;
+	}
+
+	GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);	
 }
 
 HdMayaRenderItemAdapter::~HdMayaRenderItemAdapter()
 {
+	GetDelegate()->RemoveRprim(GetID());
+	GetDelegate()->RemoveSprim(HdPrimTypeTokens->material, GetID());
 }
 
 TfToken HdMayaRenderItemAdapter::GetRenderTag() const
 {
-	switch (_primitive)
-	{		
-		case MHWRender::MGeometry::Primitive::kLines:
-			//return HdRenderTagTokens->guide;
-			// TODO: Why must render tag match  for both primitive type?
-			// Otherwise renderIndex.cpp _DirtyRprimIdsFilterPredicate will fail from filterParam->renderTags[tagNum] == primRenderTag 
-		case MHWRender::MGeometry::Primitive::kTriangles:
-		case MHWRender::MGeometry::Primitive::kPoints:
-		default:
-			return HdRenderTagTokens->geometry;
-	}
-}
-
-void HdMayaRenderItemAdapter::UpdateShader(const HdMayaShaderInstanceData& shaderData)
-{
-
+	return _shaderInstance.Shader ?
+		_shaderInstance.Shader->Name :
+		_shaderTokens->mayaInvalidShader;
+	//switch (_primitive)
+	//{		
+	//	case MHWRender::MGeometry::Primitive::kLines:
+	//		//return HdRenderTagTokens->guide;
+	//		// TODO: Why must render tag match  for both primitive type?
+	//		// Otherwise renderIndex.cpp _DirtyRprimIdsFilterPredicate will fail from filterParam->renderTags[tagNum] == primRenderTag 
+	//	case MHWRender::MGeometry::Primitive::kTriangles:
+	//	case MHWRender::MGeometry::Primitive::kPoints:
+	//	default:
+	//		return HdRenderTagTokens->geometry;
+	//}
 }
 
 void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
@@ -425,42 +505,6 @@ void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
     }
 }
 
-void HdMayaRenderItemAdapter::Populate()
-{
-	if (_isPopulated) 
-	{
-		return;
-	}
-	
-	switch (_primitive)
-	{
-		case MHWRender::MGeometry::Primitive::kTriangles:
-			GetDelegate()->InsertRprim(HdPrimTypeTokens->mesh, GetID(), {});
-			break;
-		case MHWRender::MGeometry::Primitive::kLines:
-			GetDelegate()->InsertRprim(HdPrimTypeTokens->basisCurves, GetID(), {});
-			break;
-		case MHWRender::MGeometry::Primitive::kPoints:
-			GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
-			break;
-	}
-
-	GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);
-	_isPopulated = true;
-}
-
-void HdMayaRenderItemAdapter::RemovePrim()
-{
-    if (!_isPopulated) 
-	{
-        return;
-    }
-    GetDelegate()->RemoveRprim(GetID());
-	GetDelegate()->RemoveSprim(HdPrimTypeTokens->material, GetID());
-
-    _isPopulated = false;
-}
-
 HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
 {
 	// Vertices
@@ -484,19 +528,23 @@ VtValue HdMayaRenderItemAdapter::GetMaterialResource()
 	// This corresponds to a material instance
 	HdMaterialNode       node;
 	node.path = GetID();
-	node.identifier = _shader.Identifier;
+	node.identifier = _shaderInstance.Shader->Name;
 	map.terminals.push_back(node.path);
 
-	for (const auto& it : HdMayaMaterialNetworkConverter::GetShaderParams(_shader.Identifier)) 
+	for (const auto& it : HdMayaMaterialNetworkConverter::GetShaderParams(_shaderInstance.Shader->Name)) 
 	{
-		auto& param = _shader.Params.find(it.name);		
-		node.parameters.emplace(it.name, param == _shader.Params.end() ?
+		auto& param = _shaderInstance.Params.find(it.name);		
+		node.parameters.emplace(it.name, param == _shaderInstance.Params.end() ?
 			it.fallbackValue :
 			param->second.value);		
 	}
 
 	network.nodes.push_back(node);
-	map.map.emplace(HdMaterialTerminalTokens->surface, network);
+	if (_shaderInstance.Shader->Name == UsdImagingTokens->UsdPreviewSurface)
+	{
+		map.map.emplace(HdMaterialTerminalTokens->surface, network);
+	}
+
 	return VtValue(map);
 };
 

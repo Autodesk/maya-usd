@@ -105,14 +105,15 @@ public:
     HDMAYA_API
     void InsertDag(const MDagPath& dag);
 
-    HDMAYA_API
-	bool CreateOrGetShaderInstance(
-		const MRenderItem& ri,		
-		HdMayaShaderInstanceData& instance);
+	HDMAYA_API
+	bool CreateOrGetRenderItem(
+		const MRenderItem& ri, 
+		const HdMayaShaderInstanceData& sa,
+		HdMayaRenderItemAdapterPtr& adapter);
 
 
 	HDMAYA_API
-	bool CreateOrGetRenderItem(const MRenderItem& ri, HdMayaRenderItemAdapterPtr& adapter);
+		void ScheduleRenderTasks(HdTaskSharedPtrVector& tasks);
 
     HDMAYA_API
     void NodeAdded(const MObject& obj);
@@ -201,6 +202,9 @@ protected:
         float*         times,
         VtValue*       samples) override;
 
+	HDMAYA_API
+	TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
+
     HDMAYA_API
     TfToken GetRenderTag(SdfPath const& id) override;
 
@@ -274,6 +278,8 @@ private:
     AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
 	/// \brief Unordered Map storing the shape adapters.
 	AdapterMap<HdMayaRenderItemAdapterPtr> _renderItemsAdapters;
+	/// \brief Unordered Map storing the shape adapters.
+	AdapterMap<HdMayaShaderAdapterPtr> _renderItemShaderAdapters;
     /// \brief Unordered Map storing the light adapters.
     AdapterMap<HdMayaLightAdapterPtr> _lightAdapters;
     /// \brief Unordered Map storing the camera adapters.

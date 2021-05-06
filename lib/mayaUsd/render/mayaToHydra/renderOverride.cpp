@@ -521,6 +521,21 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
                 }
             }
         }
+
+		// TODO: Change management
+		// Every frame update everything
+		if (scene.mCount > 0)
+		{
+			for (auto& it : _delegates) {
+				auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
+				if (sceneDelegate)
+				{
+					sceneDelegate->HandleCompleteViewportScene(scene);
+					sceneDelegate->ScheduleRenderTasks(tasks);
+				}
+			}
+		}
+
         _engine.Execute(_renderIndex, &tasks);
 
         // HdTaskController will query all of the tasks it can for IsConverged.
@@ -551,19 +566,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext, c
             return MStatus::kFailure;
         }
     }
-
-	// TODO: Change management
-	// Every frame update everything
-	if (scene.mCount > 0)
-	{
-		for (auto& it : _delegates) {
-			auto sceneDelegate = std::dynamic_pointer_cast<HdMayaSceneDelegate>(it);
-			if (sceneDelegate)
-			{
-				sceneDelegate->HandleCompleteViewportScene(scene);
-			}
-		}
-	}
 
     GLUniformBufferBindingsSaver bindingsSaver;
 

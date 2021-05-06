@@ -26,6 +26,8 @@
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/pxr.h>
 
+#include <pxr/imaging/hdx/renderTask.h>
+
 #include <maya/MMatrix.h>
 
 #include <functional>
@@ -39,6 +41,7 @@ namespace
 }
 
 using HdMayaRenderItemAdapterPtr = std::shared_ptr<class HdMayaRenderItemAdapter>;
+using HdMayaShaderAdapterPtr = std::shared_ptr<class HdMayaShaderAdapter>;
 
 ///////////////////////////////////////////////////////////////////////
 // HdMayaShaderInstanceData
@@ -52,9 +55,18 @@ struct HdMayaRenderItemShaderParam
 	bool isSupported = false;
 };
 
+struct HdMayaShaderData
+{
+	// TODO Do not use anymore
+	TfToken Name; // HdShaderNode identifier
+	TfToken ReprSelector;
+};
+
 struct HdMayaShaderInstanceData
 {
-	TfToken Identifier; // HdShaderNode identifier
+	// TODO Do not use anymore
+	const HdMayaShaderData* Shader = nullptr; // HdShaderNode identifier
+	
 	std::map<TfToken, HdMayaRenderItemShaderParam> Params;
 
 	static constexpr const char* kPointSize = "pointSize";
@@ -66,6 +78,53 @@ public:
 	static bool ExtractShaderData(const MShaderInstance& shaderInstance, HdMayaShaderInstanceData& shaderData);
 };
 	
+class HdMayaShaderAdapter : public HdMayaAdapter
+{
+public:
+	HDMAYA_API
+		HdMayaShaderAdapter(
+			HdMayaDelegateCtx* del,
+			const HdMayaShaderData& shader
+		);
+
+	HDMAYA_API
+		virtual ~HdMayaShaderAdapter();
+
+	// override
+	/////////////
+
+	HDMAYA_API
+		VtValue Get(const TfToken& key) override;
+
+	HDMAYA_API
+		bool HasType(const TfToken& typeId) const override { return typeId == HdPrimTypeTokens->mesh; }
+
+	HDMAYA_API
+		virtual bool IsSupported() const override;
+
+	HDMAYA_API
+		virtual bool GetDoubleSided() const { return true; };
+
+	
+
+	HDMAYA_API
+		virtual void MarkDirty(HdDirtyBits dirtyBits) override;
+
+	// TODO: maybe this should not be an adapter??
+	// no rprim, sprim, instead a render task!
+	HDMAYA_API
+		virtual void RemovePrim() override {}
+	HDMAYA_API
+		virtual void Populate() override {}
+
+	const HdMayaShaderData& GetShaderData() { return _shader; }
+
+private:
+	const HdMayaShaderData& _shader;
+	HdRprimCollection _rprimCollection;
+
+};
+
 
 ///////////////////////////////////////////////////////////////////////
 // HdMayaRenderItemAdapter
@@ -78,7 +137,8 @@ public:
 	HdMayaRenderItemAdapter(
 		const SdfPath& id,
 		HdMayaDelegateCtx* del,
-		const MRenderItem& ri
+		const MRenderItem& ri,
+		const HdMayaShaderInstanceData& sd
 		);
 
 	HDMAYA_API
@@ -86,6 +146,11 @@ public:
 
 	// override
 	/////////////
+
+	HDMAYA_API
+		virtual void RemovePrim() override {}
+	HDMAYA_API
+		virtual void Populate() override {}
 
 	HDMAYA_API
 	bool HasType(const TfToken& typeId) const override { return typeId == HdPrimTypeTokens->mesh; }
@@ -96,19 +161,15 @@ public:
 	HDMAYA_API
 	virtual bool GetDoubleSided() const { return true; };
 
-	HDMAYA_API
-	virtual void Populate() override;
+	
 
 	HDMAYA_API
 	virtual void MarkDirty(HdDirtyBits dirtyBits) override;
 	
-	HDMAYA_API
-	virtual void RemovePrim() override;
+
 
 	HDMAYA_API
 	VtValue Get(const TfToken& key) override;
-
-	static void Initialize();
 
 	// this
 	///////////
@@ -144,9 +205,6 @@ public:
 	void UpdateTopology(MRenderItem& ri);
 
 	HDMAYA_API
-	void UpdateShader(const HdMayaShaderInstanceData& shader);
-
-	HDMAYA_API
 	virtual std::shared_ptr<HdTopology> GetTopology();
 
 	// TODO : Different smooth levels
@@ -163,10 +221,10 @@ public:
 	virtual bool IsStale() const { return _isStale; }
 
 	HDMAYA_API
-	HdMayaShaderInstanceData& GetShaderData() { return _shader; }
+	HdMayaShaderInstanceData& GetShaderData() { return _shaderInstance; }
 
 private:
-	HdMayaShaderInstanceData _shader;
+	HdMayaShaderInstanceData _shaderInstance;
 	std::shared_ptr<HdTopology> _topology = nullptr;
 	VtVec3fArray _vertexPositions = {};
 	MGeometry::Primitive _primitive;

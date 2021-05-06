@@ -50,6 +50,8 @@
 #include <maya/MShaderManager.h>
 
 #include <pxr/usdImaging/usdImaging/tokens.h>
+#include <pxr/imaging/hdx/renderTask.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -234,6 +236,20 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
 #endif
 }
 
+void
+AddRenderTask(HdMayaSceneDelegate* delegate, SdfPath const &id)
+{
+	//delegate->GetRenderIndex().InsertTask<HdxRenderTask>(delegate, id);
+	//_ValueCache &cache = _valueCacheMap[id];
+	//cache[HdTokens->collection]
+	//	= HdRprimCollection(HdTokens->geometry,
+	//		HdReprSelector(HdReprTokens->smoothHull));
+
+	// Don't filter on render tag.
+	// XXX: However, this will mean no prim passes if any stage defines a tag
+	//cache[HdTokens->renderTags] = TfTokenVector();
+}
+
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
 {
@@ -248,15 +264,30 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 	{
 		auto& ri = *scene.mItems[i];
 
+		HdMayaShaderInstanceData sd;
+		// TODO: Fix shader leaking due to bad API here..
+		const MShaderInstance* shaderInstance = ri.getShader();
+		HdMayaShaderAdapterPtr sa = nullptr;
+		if (HdMayaRenderItemShaderConverter::ExtractShaderData(*shaderInstance, sd))
+		{
+			HdMayaShaderAdapterPtr* saPtr;
+			if (saPtr = TfMapLookupPtr(_renderItemShaderAdapters, SdfPath(sd.Shader->Name)))
+			{
+				sa = *saPtr;
+			}
+			else
+			{
+				sa = HdMayaShaderAdapterPtr(new HdMayaShaderAdapter(this, *sd.Shader));
+				_renderItemShaderAdapters.insert({ sa->GetID(), sa });
+				GetChangeTracker().MarkTaskDirty(sa->GetID(), HdChangeTracker::DirtyCollection);
+			}
+		}
+
 		HdMayaRenderItemAdapterPtr ria;
-		CreateOrGetRenderItem(ri, ria);	
+		CreateOrGetRenderItem(ri, sd, ria);	
 		ria->UpdateTopology(ri);							
 		ria->UpdateTransform(*scene.mItems[i]);
 	
-		HdMayaShaderInstanceData& sd = ria->GetShaderData();
-		// TODO: Fix shader leaking due to bad API here..
-		const MShaderInstance* shaderInstance = ri.getShader();
-		HdMayaRenderItemShaderConverter::ExtractShaderData(*shaderInstance, sd);
 		
 		ria->IsStale(false);
 	}
@@ -638,8 +669,9 @@ AdapterPtr HdMayaSceneDelegate::Create(
 
 // Analogous to HdMayaSceneDelegate::InsertDag
 bool HdMayaSceneDelegate::CreateOrGetRenderItem(
-	const MRenderItem& ri, 
-	HdMayaRenderItemAdapterPtr& renderItemAdapter
+	const MRenderItem& ri,
+	const HdMayaShaderInstanceData& sd,
+	HdMayaRenderItemAdapterPtr& ria
 	)
 {
     TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
@@ -652,16 +684,12 @@ bool HdMayaSceneDelegate::CreateOrGetRenderItem(
 	HdMayaRenderItemAdapterPtr* result = TfMapLookupPtr(_renderItemsAdapters, id);
     if (result != nullptr) 
 	{
-		renderItemAdapter = *result;
+		ria = *result;
         return false;
     }
 
-    renderItemAdapter = HdMayaRenderItemAdapterPtr(new HdMayaRenderItemAdapter(id, this, ri));
-    if (!renderItemAdapter->IsSupported()) return false;
-
-    renderItemAdapter->Populate();
-    renderItemAdapter->CreateCallbacks();
-    _renderItemsAdapters.insert({ id, renderItemAdapter });
+    ria = HdMayaRenderItemAdapterPtr(new HdMayaRenderItemAdapter(id, this, ri, sd));        
+    _renderItemsAdapters.insert({ id, ria });
 	return true;
 }
 
@@ -1090,14 +1118,12 @@ VtValue HdMayaSceneDelegate::Get(const SdfPath& id, const TfToken& key)
 {
 
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-    // TF_DEBUG(HDMAYA_DELEGATE_GET)
-    //     .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
 	return _GetValue<HdMayaAdapter, VtValue>(
 		id,
 		[&key](HdMayaAdapter* a) -> VtValue { return a->Get(key); },
 		_renderItemsAdapters,
-		_lightAdapters,
-		_materialAdapters);
+		_renderItemShaderAdapters
+		);
 #else
     TF_DEBUG(HDMAYA_DELEGATE_GET)
         .Msg("HdMayaSceneDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
@@ -1150,6 +1176,23 @@ size_t HdMayaSceneDelegate::SamplePrimvar(
             },
             _shapeAdapters);
     }
+}
+
+//virtual
+TfTokenVector HdMayaSceneDelegate::GetTaskRenderTags(SdfPath const& taskId)
+{
+	return _GetValue<HdMayaShaderAdapter, TfTokenVector>(
+		taskId,
+		[](HdMayaShaderAdapter* a) -> TfTokenVector	{ return TfTokenVector{ a->GetShaderData().Name }; },
+		_renderItemShaderAdapters);
+}
+
+void HdMayaSceneDelegate::ScheduleRenderTasks(HdTaskSharedPtrVector& tasks)
+{
+	for (auto shader : _renderItemShaderAdapters)
+	{
+		tasks.push_back(GetRenderIndex().GetTask(shader.first));
+	}
 }
 
 TfToken HdMayaSceneDelegate::GetRenderTag(const SdfPath& id)
@@ -1361,7 +1404,7 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
 	// Return id of render item itself as shader instance id;
 	// Configured shader instance is returned in GetMaterialResource;
-	return id;
+	return _fallbackMaterial;
 #else
 	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
 		.Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
@@ -1387,12 +1430,7 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 {
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	auto ret = _GetValue<HdMayaRenderItemAdapter, VtValue>(
-		id,
-		[](HdMayaRenderItemAdapter* a) -> VtValue { return a->GetMaterialResource(); },
-		_renderItemsAdapters);
-
-	return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(_fallbackMaterial) : ret;
+	return HdMayaMaterialAdapter::GetPreviewMaterialResource(_fallbackMaterial);
 
 #else
 	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)

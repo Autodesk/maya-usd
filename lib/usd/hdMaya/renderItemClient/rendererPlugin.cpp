@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include <hdMaya/renderItemClient/rendererPlugin.h>
-#include <hdMaya/renderItemClient/renderDelegate.h>
 
+#include <pxr/imaging/hdSt/renderDelegate.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -37,14 +37,14 @@ TF_REGISTRY_FUNCTION(TfType)
 HdRenderDelegate*
 HdMayaRenderItemRendererPlugin::CreateRenderDelegate()
 {
-    return new HdMayaRenderItemRenderDelegate();
+    return new HdStRenderDelegate();
 }
 
 HdRenderDelegate*
 HdMayaRenderItemRendererPlugin::CreateRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
 {
-    return new HdMayaRenderItemRenderDelegate(settingsMap);
+    return new HdStRenderDelegate(settingsMap);
 }
 
 void
