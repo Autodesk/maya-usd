@@ -799,10 +799,11 @@ void HdVP2Mesh::Sync(
     // because we don't have access to the scene delegate there.
     if (!GetInstancerId().IsEmpty())
     {
-        unsigned int newInstanceCount = delegate->GetInstanceIndices(GetInstancerId(), GetId()).size();
-        unsigned int oldInstanceCount = _meshSharedData->_numInstances;
+        size_t newInstanceCount = delegate->GetInstanceIndices(GetInstancerId(), GetId()).size();
+        size_t& oldInstanceCount = _meshSharedData->_numInstances;
         if (newInstanceCount != oldInstanceCount) {
             *dirtyBits |= HdChangeTracker::DirtyInstancer;
+            oldInstanceCount = newInstanceCount;
         }
     }
 
