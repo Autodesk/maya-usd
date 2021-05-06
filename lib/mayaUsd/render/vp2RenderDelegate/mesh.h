@@ -79,6 +79,9 @@ struct HdVP2MeshSharedData
     //! Cache of the primvar data on this mesh, along with the MVertexBuffer holding that data.
     PrimvarInfoMap _primvarInfo;
 
+    //! The number of instances in the associated instancer, if it exists
+    size_t _numInstances { 0 };
+
     //! Render tag of the Rprim.
     TfToken _renderTag;
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
