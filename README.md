@@ -27,3 +27,4 @@ Animal Logic forum is [here](https://groups.google.com/forum/#!forum/al_usdmaya-
 + [License](doc/LICENSE.md)
 + [MayaToHydra](doc/MayaToHydra.md)
 + [Common Plug-in Base Commands](lib/mayaUsd/commands/Readme.md)
++ [Getting Started with USD in Maya 2022](https://help.autodesk.com/view/MAYAUL/2022/ENU/?guid=GUID-36CFE2C3-766F-4B00-8464-E94F95E7AF4B)
