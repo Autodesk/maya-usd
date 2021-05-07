@@ -261,16 +261,9 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
-    if (this->mArgs.importUSDZTextures == true) {
-        // NOTE: (yliangsiew) First we check if the archive in question _is_ even a USDZ archive...
-        if (!stage->GetRootLayer()->GetFileFormat()->IsPackage()) {
-            TF_WARN(
-                "The layer being imported: %s is not a USDZ file.",
-                stage->GetRootLayer()->GetRealPath().c_str());
-            return MStatus::kFailure;
-        }
-
-        if (this->mArgs.importUSDZTexturesFilePath.length() == 0) {
+    // check if "USDZ Texture import" option is checked and the archive in question is a USDZ.
+    if (mArgs.importUSDZTextures && stage->GetRootLayer()->GetFileFormat()->IsPackage()) {
+        if (mArgs.importUSDZTexturesFilePath.length() == 0) {
             MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
             TF_WARN(
                 "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
