@@ -524,7 +524,10 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
     }
 
     // Prepare color buffer.
-    if (((rprimDirtyBits & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyInstancer)) != 0)
+    if (((rprimDirtyBits
+          & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyInstancer
+             | HdChangeTracker::DirtyInstanceIndex))
+         != 0)
         && (_PrimvarIsRequired(HdTokens->displayColor)
             || _PrimvarIsRequired(HdTokens->displayOpacity))) {
         HdInterpolation colorInterp = HdInterpolationConstant;
@@ -792,18 +795,6 @@ void HdVP2Mesh::Sync(
     // they can be used to sync regular reprs later.
     if (reprToken == HdVP2ReprTokens->selection) {
         return;
-    }
-
-    // USD doesn't really give us good information about the instancer changing.
-    // try to fill that information in here. Can't be done from _PropagateDirtyBits
-    // because we don't have access to the scene delegate there.
-    if (!GetInstancerId().IsEmpty()) {
-        size_t  newInstanceCount = delegate->GetInstanceIndices(GetInstancerId(), GetId()).size();
-        size_t& oldInstanceCount = _meshSharedData->_numInstances;
-        if (newInstanceCount != oldInstanceCount) {
-            *dirtyBits |= HdChangeTracker::DirtyInstancer;
-            oldInstanceCount = newInstanceCount;
-        }
     }
 
     const SdfPath& id = GetId();
@@ -1077,7 +1068,8 @@ HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyMaterialId | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyInstancer
-        | HdChangeTracker::DirtyRenderTag | DirtySelectionHighlight;
+        | HdChangeTracker::DirtyInstanceIndex | HdChangeTracker::DirtyRenderTag
+        | DirtySelectionHighlight;
 
     return bits;
 }
