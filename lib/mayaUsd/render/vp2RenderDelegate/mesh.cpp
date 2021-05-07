@@ -797,9 +797,8 @@ void HdVP2Mesh::Sync(
     // USD doesn't really give us good information about the instancer changing.
     // try to fill that information in here. Can't be done from _PropagateDirtyBits
     // because we don't have access to the scene delegate there.
-    if (!GetInstancerId().IsEmpty())
-    {
-        size_t newInstanceCount = delegate->GetInstanceIndices(GetInstancerId(), GetId()).size();
+    if (!GetInstancerId().IsEmpty()) {
+        size_t  newInstanceCount = delegate->GetInstanceIndices(GetInstancerId(), GetId()).size();
         size_t& oldInstanceCount = _meshSharedData->_numInstances;
         if (newInstanceCount != oldInstanceCount) {
             *dirtyBits |= HdChangeTracker::DirtyInstancer;
