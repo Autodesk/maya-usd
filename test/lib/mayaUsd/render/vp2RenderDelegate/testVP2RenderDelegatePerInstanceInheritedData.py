@@ -69,6 +69,38 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
 
     def testPerInstanceInheritedData(self):
         self._StartTest('perInstanceInheritedData')
+
+        # Hide and show some instances to make sure it updates correctly
+        # These should start working correctly when MAYA-110508 is fixed
+        stage = mayaUsdUfe.getStage("|stage|stageShape")
+        ball_03_vis = stage.GetPrimAtPath('/root/group/ball_03').GetAttribute('visibility')
+        ball_04_vis = stage.GetPrimAtPath('/root/group/ball_04').GetAttribute('visibility')
+
+        cmds.select("|stage|stageShape,/root/group/ball_03")
+        self.assertSnapshotClose('%s_ball_03_selected.png' % self._testName)
+
+        ball_03_vis.Set('hidden')
+        self.assertSnapshotClose('%s_ball_03_hidden.png' % self._testName)
+        ball_04_vis.Set('hidden')
+        self.assertSnapshotClose('%s_ball_03_and_04_hidden.png' % self._testName)
+        ball_03_vis.Set('inherited') # this should show the object again
+        self.assertSnapshotClose('%s_ball_04_hidden.png' % self._testName)
+        ball_04_vis.Set('inherited')
+        self.assertSnapshotClose('%s_shown_after_hidden.png' % self._testName)
+
+        # Modify the purpose of some instances to make sure they update correctly
+        # These should start working correctly when MAYA-110170 is fixed
+        ball_03_purpose = stage.GetPrimAtPath('/root/group/ball_03').GetAttribute('purpose')
+        ball_04_purpose = stage.GetPrimAtPath('/root/group/ball_04').GetAttribute('purpose')
+
+        ball_03_purpose.Set('guide')
+        self.assertSnapshotClose('%s_ball_03_guide.png' % self._testName)
+        ball_04_purpose.Set('guide')
+        self.assertSnapshotClose('%s_ball_03_and_04_guide.png' % self._testName)
+        ball_03_purpose.Set('default')
+        self.assertSnapshotClose('%s_ball_04_guide.png' % self._testName)
+        ball_03_purpose.Set('default')
+        self.assertSnapshotClose('%s_default_after_guide.png' % self._testName)
     
     def testPerInstanceInheritedDataPartialOverridePxrMtls(self):
         self._StartTest('inheritedDisplayColor_noPxrMtls')
