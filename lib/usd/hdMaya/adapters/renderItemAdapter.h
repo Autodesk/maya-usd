@@ -231,6 +231,7 @@ private:
 	HdMayaShaderInstanceData _shaderInstance;
 	std::shared_ptr<HdTopology> _topology = nullptr;
 	VtVec3fArray _vertexPositions = {};
+	VtArray<GfVec2f> _uvs = {};
 	MGeometry::Primitive _primitive;
 	MString _name;
     GfMatrix4d _transform[2];

@@ -3,13 +3,11 @@
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME}
     PRIVATE
-        material.cpp
         renderDelegate.cpp
         rendererPlugin.cpp
 )
 
 set(HEADERS
-    material.h
     renderDelegate.h
     rendererPlugin.h
 )

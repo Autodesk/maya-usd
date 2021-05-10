@@ -68,9 +68,8 @@ SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
 	return SdfPath();
 }
 
-SdfPath _GetRenderItemShaderPrimPath(const SdfPath& base, const MRenderItem& ri, const MShaderInstance& shader)
+SdfPath _GetRenderItemShaderPrimPath(const SdfPath& base, const MRenderItem& ri)
 {
-	if (shader.internalShaderID() == -1) return {};
 	const auto mayaPath = UsdMayaUtil::RenderItemToUsdPath(ri, false, false);
 	if (mayaPath.IsEmpty()) return {};
 
@@ -162,9 +161,9 @@ SdfPath HdMayaDelegateCtx::GetRenderItemPrimPath(const MRenderItem& ri)
 	return _GetRenderItemPrimPath(_rprimPath, ri);
 }
 
-SdfPath HdMayaDelegateCtx::GetRenderItemShaderPrimPath(const MRenderItem& ri, const MShaderInstance& shader)
+SdfPath HdMayaDelegateCtx::GetRenderItemShaderPrimPath(const MRenderItem& ri)
 {
-	return _GetRenderItemShaderPrimPath(_rprimPath, ri, shader);
+	return _GetRenderItemShaderPrimPath(_rprimPath, ri);
 }
 
 SdfPath HdMayaDelegateCtx::GetMaterialPath(const MObject& obj)

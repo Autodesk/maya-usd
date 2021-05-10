@@ -68,7 +68,7 @@ public:
 	HDMAYA_API
 	SdfPath GetRenderItemPrimPath(const MRenderItem& ri);
 	HDMAYA_API
-	SdfPath GetRenderItemShaderPrimPath(const MRenderItem& ri, const MShaderInstance& shader);
+	SdfPath GetRenderItemShaderPrimPath(const MRenderItem& ri);
     HDMAYA_API
     SdfPath GetMaterialPath(const MObject& obj);
 

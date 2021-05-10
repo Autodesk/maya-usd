@@ -231,8 +231,6 @@ VtValue HdMayaShapeUIShaderAdapter::Get(const TfToken& key)
 // HdMayaRenderItemAdapter
 ///////////////////////////////////////////////////////////////////////
 
-// static initialize
-
 HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
     const SdfPath& id,
     HdMayaDelegateCtx* del,
@@ -309,14 +307,15 @@ bool HdMayaRenderItemAdapter::IsSupported() const
 void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 {
 	MGeometry* geom = ri.geometry();
+
 	VtIntArray vertexIndices;
 	VtIntArray vertexCounts;	
 	// TODO : Multiple streams
 	// for now assume first is position
 	if (geom && geom->vertexBufferCount() > 0)
-	{
+	{		
 		// Vertices
-		MVertexBuffer* mayaVertexBuffer = nullptr;
+		MVertexBuffer* mayaVertexBuffer = nullptr;		
 		if (mayaVertexBuffer = geom->vertexBuffer(0))
 		{
 			int mayaVertexCount = mayaVertexBuffer->vertexCount();
@@ -329,6 +328,24 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 			// Invalid Hydra prim - Vertex primvar points has 288 elements, while its topology references only upto element index 24.
 			_vertexPositions.assign(vertexPositions, vertexPositions + mayaVertexCount);
 			mayaVertexBuffer->unmap();
+		}
+		// Uvs
+		if (geom->vertexBufferCount() > 0)
+		{
+			MVertexBuffer* mayaUvsBuffer = geom->vertexBuffer(1);
+			if (mayaUvsBuffer)
+			{
+				auto sem = mayaUvsBuffer->descriptor().semantic();
+				if (sem == MGeometry::kTexture)
+				{
+					int uvCount = mayaUvsBuffer->vertexCount();
+					_uvs.clear();
+					_uvs.resize(uvCount);
+					const auto* uvs = reinterpret_cast<const GfVec2f*>(mayaUvsBuffer->map());
+					_uvs.assign(uvs, uvs + uvCount);
+					mayaUvsBuffer->unmap();
+				}
+			}
 		}
 		// Indices
 		MIndexBuffer* mayaIndexBuffer = nullptr;
@@ -353,10 +370,6 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 				vertexCounts.resize(1);
 				vertexCounts[0] = vertexIndices.size();
 				break;
-				/*				case MHWRender::MGeometry::Primitive::kLines:
-									vertexCounts.resize(indexCount);
-									for (int i = 0; i < indexCount; i++) vertexCounts[i] = 1;
-									break;		*/
 			}
 			mayaIndexBuffer->unmap();
 		}
@@ -404,6 +417,10 @@ VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
 	if (key == HdTokens->points) 
 	{
 		return VtValue(_vertexPositions);
+	}
+	if (key == HdMayaAdapterTokens->st)
+	{
+		return VtValue(_uvs);
 	}
 
 	return {};
