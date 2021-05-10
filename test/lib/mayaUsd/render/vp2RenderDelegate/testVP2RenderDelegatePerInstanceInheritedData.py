@@ -26,6 +26,8 @@ from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
 
+from pxr import Usd
+
 import ufe
 
 import os
@@ -70,6 +72,11 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
     def testPerInstanceInheritedData(self):
         self._StartTest('perInstanceInheritedData')
 
+        # These tests don't work in earlier versions of USD, the wrong
+        # instance index gets selected
+        if Usd.GetVersion() < (0, 20, 8):
+            return
+
         # Hide and show some instances to make sure it updates correctly
         # These should start working correctly when MAYA-110508 is fixed
         stage = mayaUsdUfe.getStage("|stage|stageShape")
@@ -87,6 +94,11 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         self.assertSnapshotClose('%s_ball_04_hidden.png' % self._testName)
         ball_04_vis.Set('inherited')
         self.assertSnapshotClose('%s_shown_after_hidden.png' % self._testName)
+
+        # These tests behave differently before USD version 21.05, so don't run
+        # them for those earlier versions.
+        if Usd.GetVersion() < (0, 21, 5):
+            return
 
         # Modify the purpose of some instances to make sure they update correctly
         # These should start working correctly when MAYA-110170 is fixed
