@@ -87,15 +87,15 @@ public:
         HdDirtyBits _dirtyBits { HdChangeTracker::AllDirty };
 
         /*! \brief  Bitwise OR with the input dirty bits.
-        */
+         */
         void SetDirtyBits(HdDirtyBits bits) { _dirtyBits |= bits; }
 
         /*! \brief  Reset the dirty bits to clean.
-        */
+         */
         void ResetDirtyBits() { _dirtyBits = 0; }
 
         /*! \brief  Get the dirty bits of the draw items.
-        */
+         */
         HdDirtyBits GetDirtyBits() const { return _dirtyBits; }
     };
 
@@ -116,7 +116,7 @@ public:
 
     using RenderItemDataVector = std::vector<RenderItemData>;
     const RenderItemDataVector& GetRenderItems() const { return _renderItems; }
-    RenderItemDataVector& GetRenderItems() { return _renderItems; }
+    RenderItemDataVector&       GetRenderItems() { return _renderItems; }
 
     /*! \brief  Get access to render item data.
      */
