@@ -188,8 +188,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (HdMayaSceneDelegate)
     ((FallbackMaterial, "__fallback_material__"))
-    ((DormantWireframeMaterial, "__dormant_wireframe_material__"))
-	((DormantVertexMaterial, "__dormant_vertex_material__"))
 	(HdMayaMeshPoints)
 );
 // clang-format on
@@ -212,9 +210,6 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaSceneDelegate)
 HdMayaSceneDelegate::HdMayaSceneDelegate(const InitData& initData)
     : HdMayaDelegateCtx(initData)
     , _fallbackMaterial(initData.delegateID.AppendChild(_tokens->FallbackMaterial))
-	// TODO remove
-	, _wireframeMaterial(initData.delegateID.AppendChild(_tokens->DormantWireframeMaterial))	
-	, _vertexMaterial(initData.delegateID.AppendChild(_tokens->DormantVertexMaterial))
 {
 }
 
@@ -236,33 +231,6 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
         _lightAdapters,
         _materialAdapters);
 #endif
-}
-
-namespace
-{
-	static constexpr char* kOutColorString = "outColor";
-
-	bool GetShadingEngineNode(const MObject& shaderNode, MObject& shadingEngineNode)
-	{
-		MFnDependencyNode depNode(shaderNode);
-		MStatus ms;
-		MPlug plug = depNode.findPlug(kOutColorString, ms);
-
-		if (ms == MS::kSuccess)
-		{
-			MPlugArray destinations;
-			plug.connectedTo(destinations, false, true);
-			for (auto dest : destinations)
-			{
-				if (dest.node().isNull()) continue;
-				if (dest.node().apiType() != MFn::Type::kShadingEngine) continue;
-				shadingEngineNode = dest.node();
-				return true;
-			}			
-		}
-
-		return false;
-	}
 }
 
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
@@ -665,6 +633,32 @@ AdapterPtr HdMayaSceneDelegate::Create(
     return adapter;
 }
 
+namespace
+{
+	static constexpr char* kOutColorString = "outColor";
+
+	bool GetShadingEngineNode(const MObject& shaderNode, MObject& shadingEngineNode)
+	{
+		MFnDependencyNode depNode(shaderNode);
+		MStatus ms;
+		MPlug plug = depNode.findPlug(kOutColorString, ms);
+
+		if (ms == MS::kSuccess)
+		{
+			MPlugArray destinations;
+			plug.connectedTo(destinations, false, true);
+			for (auto dest : destinations)
+			{
+				if (dest.node().isNull()) continue;
+				if (dest.node().apiType() != MFn::Type::kShadingEngine) continue;
+				shadingEngineNode = dest.node();
+				return true;
+			}
+		}
+
+		return false;
+	}
+}
 
 bool HdMayaSceneDelegate::InsertRenderItemMaterial(
 	const MRenderItem& ri,
