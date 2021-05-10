@@ -34,6 +34,14 @@ TF_DEFINE_ENV_SETTING(
     "If batching is off, all secondary threads' diagnostics will be "
     "printed to stderr.");
 
+
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_SHOW_FULL_DIAGNOSTICS,
+    false,
+    "This env flag controls the granularity of TF error/warning/status messages "
+    "being displayed in Maya." );
+
+
 // Globally-shared delegate. Uses shared_ptr so we can have weak ptrs.
 static std::shared_ptr<UsdMayaDiagnosticDelegate> _sharedDelegate;
 
@@ -68,7 +76,8 @@ static MString _FormatDiagnostic(const TfDiagnosticBase& d)
         d.GetContext().GetFunction(),
         d.GetContext().GetLine(),
         d.GetContext().GetFile());
-    return msg.c_str();
+
+    return TfGetEnvSetting(MAYAUSD_SHOW_FULL_DIAGNOSTICS) ? msg.c_str() : d.GetCommentary().c_str();
 }
 
 static MString _FormatCoalescedDiagnostic(const UsdUtilsCoalescingDiagnosticDelegateItem& item)
@@ -104,12 +113,13 @@ void UsdMayaDiagnosticDelegate::IssueError(const TfError& err)
 {
     // Errors are never batched. They should be rare, and in those cases, we
     // want to see them separately.
-    // In addition, always display the full call site for errors by going
-    // through _FormatDiagnostic.
+
+    const auto diagnosticMessage = _FormatDiagnostic(err);
+
     if (ArchIsMainThread()) {
-        MGlobal::displayError(err.GetCommentary().c_str());
+        MGlobal::displayInfo(diagnosticMessage);
     } else {
-        std::cerr << _FormatDiagnostic(err) << std::endl;
+        std::cerr << diagnosticMessage << std::endl;
     }
 }
 
@@ -119,10 +129,12 @@ void UsdMayaDiagnosticDelegate::IssueStatus(const TfStatus& status)
         return; // Batched.
     }
 
+    const auto diagnosticMessage = _FormatDiagnostic(status);
+
     if (ArchIsMainThread()) {
-        MGlobal::displayInfo(status.GetCommentary().c_str());
+        MGlobal::displayInfo(diagnosticMessage);
     } else {
-        std::cerr << _FormatDiagnostic(status) << std::endl;
+        std::cerr << diagnosticMessage << std::endl;
     }
 }
 
@@ -132,10 +144,12 @@ void UsdMayaDiagnosticDelegate::IssueWarning(const TfWarning& warning)
         return; // Batched.
     }
 
+    const auto diagnosticMessage = _FormatDiagnostic(warning);
+
     if (ArchIsMainThread()) {
-        MGlobal::displayWarning(warning.GetCommentary().c_str());
+        MGlobal::displayInfo(diagnosticMessage);
     } else {
-        std::cerr << _FormatDiagnostic(warning) << std::endl;
+        std::cerr << diagnosticMessage << std::endl;
     }
 }
 
