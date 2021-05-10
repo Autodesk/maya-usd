@@ -307,104 +307,103 @@ bool HdMayaRenderItemAdapter::IsSupported() const
 void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 {
 	MGeometry* geom = ri.geometry();
+	if (!geom) return;
+	if (geom->vertexBufferCount() <= 0) return;
 
+	int itemCount;
 	VtIntArray vertexIndices;
-	VtIntArray vertexCounts;	
-	// TODO : Multiple streams
-	// for now assume first is position
-	if (geom && geom->vertexBufferCount() > 0)
-	{		
-		// Vertices
-		MVertexBuffer* mayaVertexBuffer = nullptr;		
-		if (mayaVertexBuffer = geom->vertexBuffer(0))
-		{
-			int mayaVertexCount = mayaVertexBuffer->vertexCount();
-			_vertexPositions.clear();
-			_vertexPositions.resize(mayaVertexCount);
-			const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(mayaVertexBuffer->map());
-			// NOTE: Looking at HdMayaMeshAdapter::GetPoints notice assign(vertexPositions, vertexPositions + vertCount)
-			// Why are we not multiplying with sizeof(GfVec3f) to calculate the offset ? 
-			// The following happens when I try to do it :
-			// Invalid Hydra prim - Vertex primvar points has 288 elements, while its topology references only upto element index 24.
-			_vertexPositions.assign(vertexPositions, vertexPositions + mayaVertexCount);
-			mayaVertexBuffer->unmap();
-		}
-		// Uvs
-		if (geom->vertexBufferCount() > 0)
-		{
-			MVertexBuffer* mayaUvsBuffer = geom->vertexBuffer(1);
-			if (mayaUvsBuffer)
-			{
-				auto sem = mayaUvsBuffer->descriptor().semantic();
-				if (sem == MGeometry::kTexture)
-				{
-					int uvCount = mayaUvsBuffer->vertexCount();
-					_uvs.clear();
-					_uvs.resize(uvCount);
-					const auto* uvs = reinterpret_cast<const GfVec2f*>(mayaUvsBuffer->map());
-					_uvs.assign(uvs, uvs + uvCount);
-					mayaUvsBuffer->unmap();
-				}
-			}
-		}
-		// Indices
-		MIndexBuffer* mayaIndexBuffer = nullptr;
-		if (mayaIndexBuffer = geom->indexBuffer(0))
-		{
-			int mayaIndexCount = mayaIndexBuffer->size();
-			vertexIndices.resize(mayaIndexCount);
-			int* indicesData = (int*)mayaIndexBuffer->map();
-			for (int i = 0; i < mayaIndexCount; i++)
-			{
-				vertexIndices[i] = indicesData[i];
-			}
+	VtIntArray vertexCounts;		
+	MVertexBuffer* mvb = nullptr;
 
-			switch (_primitive)
-			{
-			case MHWRender::MGeometry::Primitive::kTriangles:
-				vertexCounts.resize(mayaIndexCount / 3);
-				for (int i = 0; i < mayaIndexCount / 3; i++) vertexCounts[i] = 3;
-				break;
-			case MHWRender::MGeometry::Primitive::kPoints:
-			case MHWRender::MGeometry::Primitive::kLines:
-				vertexCounts.resize(1);
-				vertexCounts[0] = vertexIndices.size();
-				break;
-			}
-			mayaIndexBuffer->unmap();
-		}
-
-		if (mayaIndexBuffer && mayaVertexBuffer)
+	// Vertices			
+	// for now assume first stream is position
+	if (!(mvb = geom->vertexBuffer(0))) return;
+	
+	itemCount = mvb->vertexCount();
+	_vertexPositions.clear();
+	_vertexPositions.resize(itemCount);
+	const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(mvb->map());
+	// NOTE: Looking at HdMayaMeshAdapter::GetPoints notice assign(vertexPositions, vertexPositions + vertCount)
+	// Why are we not multiplying with sizeof(GfVec3f) to calculate the offset ? 
+	// The following happens when I try to do it :
+	// Invalid Hydra prim - Vertex primvar points has 288 elements, while its topology references only upto element index 24.
+	_vertexPositions.assign(vertexPositions, vertexPositions + itemCount);
+	mvb->unmap();
+	
+	// Uvs
+	if (_primitive == MGeometry::Primitive::kTriangles)
+	{
+		for (int vbIdx = 0; vbIdx < geom->vertexBufferCount(); vbIdx++)
 		{
-			switch (_primitive)
-			{
-			case MGeometry::Primitive::kTriangles:
-				// TODO: Maybe we could use the flat shading of the display style?
-				_topology.reset(new HdMeshTopology(
-					(GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
-					? PxOsdOpenSubdivTokens->catmullClark
-					: PxOsdOpenSubdivTokens->none,
-					UsdGeomTokens->rightHanded,
-					vertexCounts,
-					vertexIndices));
-				MarkDirty(HdChangeTracker::AllDirty);
-				break;
-			case MGeometry::Primitive::kLines:
-			case MHWRender::MGeometry::Primitive::kPoints:
-				// This will allow us to output geometry to the effect of GL_LINES
-				_topology.reset(new HdBasisCurvesTopology(
-					HdTokens->linear,
-					// basis type is ignored, due to linear curve type
-					{},
-					HdTokens->segmented,
-					vertexCounts,
-					vertexIndices));
-				MarkDirty(HdChangeTracker::AllDirty);
-				break;
+			mvb = geom->vertexBuffer(vbIdx);
+			if (!mvb) continue;
 
-			}
+			const MVertexBufferDescriptor& desc = mvb->descriptor();
+			if (desc.dimension() != 2) continue;
+
+			if (desc.semantic() != MGeometry::Semantic::kTexture) continue;
+
+			itemCount = mvb->vertexCount();
+			_uvs.clear();
+			_uvs.resize(itemCount);
+			const auto* uvs = reinterpret_cast<const GfVec2f*>(mvb->map());
+			_uvs.assign(uvs, uvs + itemCount);
+			mvb->unmap();
+			break;
 		}
 	}
+	// Indices
+	MIndexBuffer* mib = nullptr;
+	if (!(mib = geom->indexBuffer(0))) return;
+	
+	itemCount = mib->size();
+	vertexIndices.resize(itemCount);
+	int* indicesData = (int*)mib->map();
+	for (int i = 0; i < itemCount; i++)
+	{
+		vertexIndices[i] = indicesData[i];
+	}
+
+	switch (_primitive)
+	{
+	case MGeometry::Primitive::kTriangles:
+		vertexCounts.resize(itemCount / 3);
+		for (int i = 0; i < itemCount / 3; i++) vertexCounts[i] = 3;
+		break;
+	case MGeometry::Primitive::kPoints:
+	case MGeometry::Primitive::kLines:
+		vertexCounts.resize(1);
+		vertexCounts[0] = vertexIndices.size();
+		break;
+	}
+	mib->unmap();
+	
+	switch (_primitive)
+	{
+		case MGeometry::Primitive::kTriangles:
+			// TODO: Maybe we could use the flat shading of the display style?
+			_topology.reset(new HdMeshTopology(
+				(GetDelegate()->GetParams().displaySmoothMeshes || GetDisplayStyle().refineLevel > 0)
+				? PxOsdOpenSubdivTokens->catmullClark
+				: PxOsdOpenSubdivTokens->none,
+				UsdGeomTokens->rightHanded,
+				vertexCounts,
+				vertexIndices));
+			MarkDirty(HdChangeTracker::AllDirty);
+			break;
+		case MGeometry::Primitive::kLines:
+		case MHWRender::MGeometry::Primitive::kPoints:
+			// This will allow us to output geometry to the effect of GL_LINES
+			_topology.reset(new HdBasisCurvesTopology(
+				HdTokens->linear,
+				// basis type is ignored, due to linear curve type
+				{},
+				HdTokens->segmented,
+				vertexCounts,
+				vertexIndices));
+			MarkDirty(HdChangeTracker::AllDirty);
+			break;
+	}	
 }
 
 std::shared_ptr<HdTopology> HdMayaRenderItemAdapter::GetTopology()
@@ -442,13 +441,26 @@ void HdMayaRenderItemAdapter::MarkDirty(HdDirtyBits dirtyBits)
 HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInterpolation interpolation)
 {
 	// Vertices
-	if (interpolation == HdInterpolationVertex) 
+	if (interpolation == HdInterpolationVertex)
 	{
 		HdPrimvarDescriptor desc;
 		desc.name = UsdGeomTokens->points;
 		desc.interpolation = interpolation;
-		desc.role = HdPrimvarRoleTokens->point;		
+		desc.role = HdPrimvarRoleTokens->point;
 		return { desc };
+	}
+	else if (interpolation == HdInterpolationFaceVarying) 
+	{
+		 // UVs are face varying in maya.
+		if (_primitive == MGeometry::Primitive::kTriangles)
+		// TODO: Check that we indeed have UVs on the given mesh
+		{
+			HdPrimvarDescriptor desc;
+			desc.name = HdMayaAdapterTokens->st;
+			desc.interpolation = interpolation;
+			desc.role = HdPrimvarRoleTokens->textureCoordinate;
+			return { desc };
+		}
 	}
 
 	return {};
