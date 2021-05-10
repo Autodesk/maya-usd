@@ -1372,18 +1372,6 @@ SdfPath UsdMayaUtil::RenderItemToUsdPath(
 		stripNamespaces);
 }
 
-SdfPath UsdMayaUtil::RenderItemShaderToUsdPath(
-	const MRenderItem& ri,
-	const MShaderInstance& shader,
-	const bool      mergeTransformAndShape,
-	const bool      stripNamespaces)
-{		
-	return UsdMayaUtil::MayaNodeNameToSdfPath(
-		(ri.name() + std::to_string(shader.internalShaderID()).c_str()).asChar(),
-		stripNamespaces);
-}
-
-
 bool UsdMayaUtil::GetBoolCustomData(
     const UsdAttribute& obj,
     const TfToken&      key,
