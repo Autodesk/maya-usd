@@ -34,13 +34,11 @@ TF_DEFINE_ENV_SETTING(
     "If batching is off, all secondary threads' diagnostics will be "
     "printed to stderr.");
 
-
 TF_DEFINE_ENV_SETTING(
     MAYAUSD_SHOW_FULL_DIAGNOSTICS,
     false,
     "This env flag controls the granularity of TF error/warning/status messages "
-    "being displayed in Maya." );
-
+    "being displayed in Maya.");
 
 // Globally-shared delegate. Uses shared_ptr so we can have weak ptrs.
 static std::shared_ptr<UsdMayaDiagnosticDelegate> _sharedDelegate;
