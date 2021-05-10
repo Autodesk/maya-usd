@@ -315,44 +315,24 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 	VtIntArray vertexCounts;		
 	MVertexBuffer* mvb = nullptr;
 
-	// Vertices			
+	// Vertices	
+	/////////////////////
 	// for now assume first stream is position
 	if (!(mvb = geom->vertexBuffer(0))) return;
 	
 	itemCount = mvb->vertexCount();
-	_vertexPositions.clear();
-	_vertexPositions.resize(itemCount);
+	_positions.clear();
+	_positions.resize(itemCount);
 	const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(mvb->map());
 	// NOTE: Looking at HdMayaMeshAdapter::GetPoints notice assign(vertexPositions, vertexPositions + vertCount)
 	// Why are we not multiplying with sizeof(GfVec3f) to calculate the offset ? 
 	// The following happens when I try to do it :
 	// Invalid Hydra prim - Vertex primvar points has 288 elements, while its topology references only upto element index 24.
-	_vertexPositions.assign(vertexPositions, vertexPositions + itemCount);
+	_positions.assign(vertexPositions, vertexPositions + itemCount);
 	mvb->unmap();
-	
-	// Uvs
-	if (_primitive == MGeometry::Primitive::kTriangles)
-	{
-		for (int vbIdx = 0; vbIdx < geom->vertexBufferCount(); vbIdx++)
-		{
-			mvb = geom->vertexBuffer(vbIdx);
-			if (!mvb) continue;
 
-			const MVertexBufferDescriptor& desc = mvb->descriptor();
-			if (desc.dimension() != 2) continue;
-
-			if (desc.semantic() != MGeometry::Semantic::kTexture) continue;
-
-			itemCount = mvb->vertexCount();
-			_uvs.clear();
-			_uvs.resize(itemCount);
-			const auto* uvs = reinterpret_cast<const GfVec2f*>(mvb->map());
-			_uvs.assign(uvs, uvs + itemCount);
-			mvb->unmap();
-			break;
-		}
-	}
 	// Indices
+	/////////////////////
 	MIndexBuffer* mib = nullptr;
 	if (!(mib = geom->indexBuffer(0))) return;
 	
@@ -368,7 +348,39 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 	{
 	case MGeometry::Primitive::kTriangles:
 		vertexCounts.resize(itemCount / 3);
-		for (int i = 0; i < itemCount / 3; i++) vertexCounts[i] = 3;
+		for (int i = 0; i < itemCount / 3; i++)
+		{
+			vertexCounts[i] = 3;
+		}
+
+		{
+			// UVs
+			/////////////////////
+			for (int vbIdx = 0; vbIdx < geom->vertexBufferCount(); vbIdx++)
+			{
+				mvb = geom->vertexBuffer(vbIdx);
+				if (!mvb) continue;
+
+				const MVertexBufferDescriptor& desc = mvb->descriptor();
+				if (desc.dimension() != 2) continue;
+
+				if (desc.semantic() != MGeometry::Semantic::kTexture) continue;
+
+				// Hydra expects a uv coordinate for each face-index (total of 36), not 1 per vertex.
+				// not for every vertex. e.g. a cube expects 36 uvs not 24.
+				// Note that ASSERT(mvb->vertexCount() == 24)
+				// See HdStMesh::_PopulateFaceVaryingPrimvars
+				_uvs.clear();
+				_uvs.resize(itemCount);
+				const auto* uvs = reinterpret_cast<const GfVec2f*>(mvb->map());
+				for (int i = 0; i < itemCount; i++)
+				{
+					_uvs[i] = uvs[indicesData[i]];
+				}
+				mvb->unmap();
+				break;
+			}
+		}
 		break;
 	case MGeometry::Primitive::kPoints:
 	case MGeometry::Primitive::kLines:
@@ -415,7 +427,7 @@ VtValue HdMayaRenderItemAdapter::Get(const TfToken& key)
 {
 	if (key == HdTokens->points) 
 	{
-		return VtValue(_vertexPositions);
+		return VtValue(_positions);
 	}
 	if (key == HdMayaAdapterTokens->st)
 	{
