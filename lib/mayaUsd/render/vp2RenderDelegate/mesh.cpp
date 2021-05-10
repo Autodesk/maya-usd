@@ -1150,7 +1150,9 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
             for (const HdRepr::DrawItemUniquePtr& item : items) {
                 if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
 #endif
-                    drawItem->SetDirtyBits(bits);
+                    for (auto& renderItemData : drawItem->GetRenderItems()) {
+                        renderItemData.SetDirtyBits(bits);
+                    }
                 }
             }
         }
@@ -1167,8 +1169,10 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
                 if (const HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
 #endif
                     // Is this Repr dirty and in need of a Sync?
-                    if (drawItem->GetDirtyBits() & HdChangeTracker::DirtyRepr) {
-                        bits |= (drawItem->GetDirtyBits() & ~HdChangeTracker::DirtyRepr);
+                    for (auto& renderItemData : drawItem->GetRenderItems()) {
+                        if (renderItemData.GetDirtyBits() & HdChangeTracker::DirtyRepr) {
+                            bits |= (renderItemData.GetDirtyBits() & ~HdChangeTracker::DirtyRepr);
+                        }
                     }
                 }
             }
@@ -1235,14 +1239,16 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
             HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
 #endif
             if (drawItem) {
-                if (drawItem->GetDirtyBits() & HdChangeTracker::AllDirty) {
-                    // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
-                    // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
-                    // items to ensure proper Sync
-                    drawItem->SetDirtyBits(HdChangeTracker::DirtyRepr);
-                }
-                if (drawItem->GetDirtyBits() & DirtySelection) {
-                    *dirtyBits |= DirtySelectionHighlight;
+                for (auto& renderItemData : drawItem->GetRenderItems()) {
+                    if (renderItemData.GetDirtyBits() & HdChangeTracker::AllDirty) {
+                        // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
+                        // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
+                        // items to ensure proper Sync
+                        renderItemData.SetDirtyBits(HdChangeTracker::DirtyRepr);
+                    }
+                    if (renderItemData.GetDirtyBits() & DirtySelection) {
+                        *dirtyBits |= DirtySelectionHighlight;
+                    }
                 }
             }
         }
@@ -1511,8 +1517,6 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
         for (auto& renderItemData : drawItem->GetRenderItems()) {
             _UpdateDrawItem(sceneDelegate, drawItem, renderItemData, desc);
         }
-        // Reset dirty bits because we've prepared commit state for this draw item.
-        drawItem->ResetDirtyBits();
     }
 }
 
@@ -1527,7 +1531,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     HdVP2DrawItem::RenderItemData& renderItemData,
     const HdMeshReprDesc&          desc)
 {
-    HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
+    HdDirtyBits itemDirtyBits = renderItemData.GetDirtyBits();
 
     // We don't need to update the dedicated selection highlight item when there
     // is no selection highlight change and the mesh is not selected. Draw item
@@ -2089,6 +2093,9 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             oldInstanceCount = newInstanceCount;
         });
+
+    // Reset dirty bits because we've prepared commit state for this render item.
+    renderItemData.ResetDirtyBits();
 }
 
 void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)

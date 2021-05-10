@@ -82,6 +82,21 @@ public:
 
         //! Whether or not the render item is using GPU instanced draw.
         bool _usingInstancedDraw { false };
+
+        //! Dirty bits to control data update of draw item
+        HdDirtyBits _dirtyBits { HdChangeTracker::AllDirty };
+
+        /*! \brief  Bitwise OR with the input dirty bits.
+        */
+        void SetDirtyBits(HdDirtyBits bits) { _dirtyBits |= bits; }
+
+        /*! \brief  Reset the dirty bits to clean.
+        */
+        void ResetDirtyBits() { _dirtyBits = 0; }
+
+        /*! \brief  Get the dirty bits of the draw items.
+        */
+        HdDirtyBits GetDirtyBits() const { return _dirtyBits; }
     };
 
     //! Bit fields indicating what the render item is created for. A render item
@@ -100,6 +115,7 @@ public:
     void AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset = nullptr);
 
     using RenderItemDataVector = std::vector<RenderItemData>;
+    const RenderItemDataVector& GetRenderItems() const { return _renderItems; }
     RenderItemDataVector& GetRenderItems() { return _renderItems; }
 
     /*! \brief  Get access to render item data.
@@ -156,15 +172,15 @@ public:
 
     /*! \brief  Bitwise OR with the input dirty bits.
      */
-    void SetDirtyBits(HdDirtyBits bits) { _dirtyBits |= bits; }
+    void SetDirtyBits(HdDirtyBits bits) { GetRenderItemData().SetDirtyBits(bits); }
 
     /*! \brief  Reset the dirty bits to clean.
      */
-    void ResetDirtyBits() { _dirtyBits = 0; }
+    void ResetDirtyBits() { GetRenderItemData().ResetDirtyBits(); }
 
     /*! \brief  Get the dirty bits of the draw items.
      */
-    HdDirtyBits GetDirtyBits() const { return _dirtyBits; }
+    HdDirtyBits GetDirtyBits() const { return GetRenderItemData().GetDirtyBits(); }
 
 private:
     /*
@@ -178,8 +194,6 @@ private:
     MString _drawItemName;
     //!< What is the render item created for
     uint32_t _renderItemUsage { kRegular };
-    //! Dirty bits to control data update of draw item
-    HdDirtyBits _dirtyBits { HdChangeTracker::AllDirty };
 
     /*
         The list of MRenderItems used to represent *this in VP2.
