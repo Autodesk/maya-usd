@@ -84,7 +84,7 @@ static const std::map<std::string, TfToken> sHdMayaParamNameMap
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
 	_shaderTokens,
-	(mayaLambertShader)
+	(mayaLambertSurface)
 	(mayaStippleShader)
 	(mayaSolidColorShader)
 	(mayaInvalidShader)
@@ -97,64 +97,47 @@ static const std::map<TfToken, HdMayaShaderData> sHdMayaSupportedShaders
 		_shaderTokens->mayaStippleShader,
 		{
 			_shaderTokens->mayaStippleShader,
-			HdReprTokens->refined
-		}	
-	},	
-	//{
-	//	_shaderTokens->mayaSolidColorShader,
-	//	{
-	//		sDefaultMaterial,
-	//		HdReprTokens->refined
-	//	}
-	//}
+			HdReprTokens->refined			
+		}
+	}
 };
 
 ///////////////////////////////////////////////////////////////////////
 // HdMayaShaderAdapter
 ///////////////////////////////////////////////////////////////////////
 
-bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& shaderInstance, HdMayaShaderInstanceData& shaderData)
+// Extracts shape UI shader data
+bool HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(
+	const MRenderItem& renderItem,
+	HdMayaShaderInstanceData& shaderData)
 {
 	MString shaderName;
-	auto entry = sHdMayaSupportedShaders.end();
+	auto& end = sHdMayaSupportedShaders.end();
+	auto entry = end;
 	if (
-		shaderInstance.internalShaderName(shaderName) == MS::kSuccess &&
-		(entry = sHdMayaSupportedShaders.find(TfToken(shaderName.asChar()))) != sHdMayaSupportedShaders.end())
+		renderItem.getShaderName(shaderName) != MS::kSuccess ||
+		(entry = sHdMayaSupportedShaders.find(TfToken(shaderName.asChar()))) == end
+		)
 	{
-		shaderData.Shader = &entry->second;
+		return false;
 	}
-	else return false;
+
+	shaderData.ShapeUIShader = &entry->second;
 
 	MStringArray params;
-	shaderInstance.parameterList(params);
-	std::vector<std::string> myarray;
-	std::vector< MShaderInstance::ParameterType> artypes;
+	// TODO: Fix leaky api here :(
+	const MShaderInstance* shaderInstance = renderItem.getShader();
+	shaderInstance->parameterList(params);		
 	for (unsigned int i = 0; i < params.length(); i++) 
 	{
 		HdMayaRenderItemShaderParam param;
-		std::string mayaParamName(params[i].asChar());
-		myarray.push_back(mayaParamName);
-		artypes.push_back(shaderInstance.parameterType(params[i]));
-		auto paramConv = sHdMayaParamNameMap.find(mayaParamName);
-		if (paramConv != sHdMayaParamNameMap.end())
-		{
-			param.isSupported = true;
-			param.name = paramConv->second;
-		}		
-		else
-		{
-			// Maintain unsupported parameter type to control
-			// aspects such as stippled lines, and point size
-			param.isSupported = false;
-			param.name = TfToken(mayaParamName);
-		}
-	
-		switch (shaderInstance.parameterType(params[i])) 
+		std::string mayaParamName(params[i].asChar());		
+		switch (shaderInstance->parameterType(params[i])) 
 		{
 			case MShaderInstance::ParameterType::kBoolean:
 			{
 				bool value;
-				shaderInstance.getParameter(params[i], value);
+				shaderInstance->getParameter(params[i], value);
 				param.value = VtValue(value);
 				param.type = SdfValueTypeNames->Bool;
 				shaderData.Params.insert({ param.name, param });
@@ -163,7 +146,7 @@ bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& s
 			case MShaderInstance::ParameterType::kFloat:
 			{
 				float value;
-				shaderInstance.getParameter(params[i], value);
+				shaderInstance->getParameter(params[i], value);
 				param.value = VtValue(value);
 				param.type = SdfValueTypeNames->Float;
 				shaderData.Params.insert({ param.name, param });				
@@ -172,7 +155,7 @@ bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& s
 			case MShaderInstance::ParameterType::kFloat3:
 			{
 				MFloatVector value;
-				shaderInstance.getParameter(params[i], value);
+				shaderInstance->getParameter(params[i], value);
 				param.value = VtValue(GfVec3f(value[0], value[1], value[2]));
 				param.type = SdfValueTypeNames->Float3;
 				shaderData.Params.insert({ param.name, param });
@@ -181,7 +164,7 @@ bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& s
 			case MShaderInstance::ParameterType::kFloat4:
 			{
 				MFloatVector value;
-				shaderInstance.getParameter(params[i], value);
+				shaderInstance->getParameter(params[i], value);
 				param.value = VtValue(GfVec4f(value[0], value[1], value[2], value[3]));
 				param.type = SdfValueTypeNames->Float4;
 				shaderData.Params.insert({ param.name, param });
@@ -193,7 +176,7 @@ bool HdMayaRenderItemShaderConverter::ExtractShaderData(const MShaderInstance& s
 	return true;
 }
 
-HdMayaShaderAdapter::HdMayaShaderAdapter(	
+HdMayaShapeUIShaderAdapter::HdMayaShapeUIShaderAdapter(	
 	HdMayaDelegateCtx* del,
 	const HdMayaShaderData& shader
 	)
@@ -203,20 +186,18 @@ HdMayaShaderAdapter::HdMayaShaderAdapter(
 {
 	_isPopulated = true;
 	GetDelegate()->GetRenderIndex().InsertTask<HdxRenderTask>(GetDelegate(), GetID());
-	//auto renderTask = std::dynamic_pointer_cast<HdxRenderTask>(GetDelegate()->GetRenderIndex().GetTask(GetID()));
-	//renderTask->_debugString = shader.Name;
 }
 
-HdMayaShaderAdapter::~HdMayaShaderAdapter()
+HdMayaShapeUIShaderAdapter::~HdMayaShapeUIShaderAdapter()
 {
 }
 
-void HdMayaShaderAdapter::MarkDirty(HdDirtyBits dirtyBits)
+void HdMayaShapeUIShaderAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
 	GetDelegate()->GetRenderIndex().GetChangeTracker().MarkTaskDirty(GetID(), dirtyBits);
 }
 
-VtValue HdMayaShaderAdapter::Get(const TfToken& key)
+VtValue HdMayaShapeUIShaderAdapter::Get(const TfToken& key)
 {
 	if (key == HdTokens->collection)
 	{
@@ -275,29 +256,21 @@ HdMayaRenderItemAdapter::HdMayaRenderItemAdapter(
 	case MHWRender::MGeometry::Primitive::kPoints:
 		GetDelegate()->InsertRprim(HdPrimTypeTokens->points, GetID(), {});
 		break;
-	}
-
-	GetDelegate()->InsertSprim(HdPrimTypeTokens->material, GetID(), HdMaterial::AllDirty);	
+	}	
 }
 
 HdMayaRenderItemAdapter::~HdMayaRenderItemAdapter()
 {
-	GetDelegate()->RemoveRprim(GetID());
-	GetDelegate()->RemoveSprim(HdPrimTypeTokens->material, GetID());
+	GetDelegate()->RemoveRprim(GetID());	
 }
 
 TfToken HdMayaRenderItemAdapter::GetRenderTag() const
 {
-	if (_shaderInstance.Shader)
-	{
-		// Opt in to the render pass which corresponds to this shader
-		return _shaderInstance.Shader->Name;
-	}
-	else
-	{
-		// Otherwise opt in the default beauty pass
-		return HdRenderTagTokens->geometry;
-	}
+	return _shaderInstance.ShapeUIShader ?
+		// Opt-in to the render pass which corresponds to this shader
+		_shaderInstance.ShapeUIShader->Name :
+		// Otherwise opt-in the default beauty pass
+		HdRenderTagTokens->geometry;
 }
 
 void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
@@ -466,30 +439,36 @@ HdPrimvarDescriptorVector HdMayaRenderItemAdapter::GetPrimvarDescriptors(HdInter
 
 VtValue HdMayaRenderItemAdapter::GetMaterialResource()
 {	
-	HdMaterialNetworkMap map;
-	HdMaterialNetwork    network;
-	// Describes a material node which is made of a path, an identifier and a list of parameters. More...
-	// This corresponds to a material instance
-	HdMaterialNode       node;
-	node.path = GetID();
-	node.identifier = _shaderInstance.Shader->Name;
-	map.terminals.push_back(node.path);
-
-	for (const auto& it : HdMayaMaterialNetworkConverter::GetShaderParams(_shaderInstance.Shader->Name)) 
+	if (_shaderInstance.ShapeUIShader)
 	{
-		auto& param = _shaderInstance.Params.find(it.name);		
-		node.parameters.emplace(it.name, param == _shaderInstance.Params.end() ?
-			it.fallbackValue :
-			param->second.value);		
+
+		HdMaterialNetworkMap map;
+		HdMaterialNetwork    network;
+		// Describes a material node which is made of a path, an identifier and a list of parameters. More...
+		// This corresponds to a material instance
+		HdMaterialNode       node;
+		node.path = GetID();
+		node.identifier = _shaderInstance.ShapeUIShader->Name;
+		map.terminals.push_back(node.path);
+
+		for (const auto& it : HdMayaMaterialNetworkConverter::GetShaderParams(_shaderInstance.ShapeUIShader->Name))
+		{
+			auto& param = _shaderInstance.Params.find(it.name);
+			node.parameters.emplace(it.name, param == _shaderInstance.Params.end() ?
+				it.fallbackValue :
+				param->second.value);
+		}
+
+		network.nodes.push_back(node);
+		if (_shaderInstance.ShapeUIShader->Name == UsdImagingTokens->UsdPreviewSurface)
+		{
+			map.map.emplace(HdMaterialTerminalTokens->surface, network);
+		}
+
+		return VtValue(map);
 	}
 
-	network.nodes.push_back(node);
-	if (_shaderInstance.Shader->Name == UsdImagingTokens->UsdPreviewSurface)
-	{
-		map.map.emplace(HdMaterialTerminalTokens->surface, network);
-	}
-
-	return VtValue(map);
+	return {};
 };
 
 ///////////////////////////////////////////////////////////////////////

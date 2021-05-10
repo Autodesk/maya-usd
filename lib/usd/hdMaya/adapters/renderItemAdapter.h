@@ -37,11 +37,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-	std::string gsRenderItemTypeName = "renderItem";
+	std::string kRenderItemTypeName = "renderItem";
+
+	static constexpr const char* kPointSize = "pointSize";
+
+	static const SdfPath kInvalidMaterial = SdfPath("");
 }
 
 using HdMayaRenderItemAdapterPtr = std::shared_ptr<class HdMayaRenderItemAdapter>;
-using HdMayaShaderAdapterPtr = std::shared_ptr<class HdMayaShaderAdapter>;
+using HdMayaShaderAdapterPtr = std::shared_ptr<class HdMayaShapeUIShaderAdapter>;
+using HdMayaMaterialShaderAdapterPtr = std::shared_ptr<class HdMayaMaterialShaderAdapter>;
 
 ///////////////////////////////////////////////////////////////////////
 // HdMayaShaderInstanceData
@@ -49,46 +54,45 @@ using HdMayaShaderAdapterPtr = std::shared_ptr<class HdMayaShaderAdapter>;
 
 struct HdMayaRenderItemShaderParam
 {
-	TfToken name;
+	TfToken name = TfToken("");
 	VtValue value;
-	SdfValueTypeName type;
-	bool isSupported = false;
+	SdfValueTypeName type;	
 };
 
 struct HdMayaShaderData
-{
-	// TODO Do not use anymore
-	TfToken Name; // HdShaderNode identifier
-	TfToken ReprSelector;
+{	
+	TfToken Name = TfToken("");
+	TfToken ReprSelector = TfToken("");	
 };
 
 struct HdMayaShaderInstanceData
-{
-	// TODO Do not use anymore
-	const HdMayaShaderData* Shader = nullptr; // HdShaderNode identifier
+{	
+	const HdMayaShaderData* ShapeUIShader = nullptr;
+	
+	SdfPath Material = kInvalidMaterial;
 	
 	std::map<TfToken, HdMayaRenderItemShaderParam> Params;
-
-	static constexpr const char* kPointSize = "pointSize";
 };
 
 class HdMayaRenderItemShaderConverter
 {
 public:
-	static bool ExtractShaderData(const MShaderInstance& shaderInstance, HdMayaShaderInstanceData& shaderData);
+	static bool ExtractShapeUIShaderData(
+		const MRenderItem& renderItem,		
+		HdMayaShaderInstanceData& shaderData);
 };
-	
-class HdMayaShaderAdapter : public HdMayaAdapter
+
+class HdMayaShapeUIShaderAdapter : public HdMayaAdapter
 {
 public:
 	HDMAYA_API
-		HdMayaShaderAdapter(
+		HdMayaShapeUIShaderAdapter(
 			HdMayaDelegateCtx* del,
 			const HdMayaShaderData& shader
 		);
 
 	HDMAYA_API
-		virtual ~HdMayaShaderAdapter();
+		virtual ~HdMayaShapeUIShaderAdapter();
 
 	// override
 	/////////////

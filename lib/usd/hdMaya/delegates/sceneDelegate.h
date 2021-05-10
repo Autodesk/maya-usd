@@ -106,11 +106,15 @@ public:
     void InsertDag(const MDagPath& dag);
 
 	HDMAYA_API
-	bool CreateOrGetRenderItem(
+	bool InsertRenderItem(
 		const MRenderItem& ri, 
 		const HdMayaShaderInstanceData& sa,
 		HdMayaRenderItemAdapterPtr& adapter);
 
+	HDMAYA_API
+		bool InsertRenderItemMaterial(
+			const MRenderItem& ri,
+			HdMayaShaderInstanceData& sd);
 
 	HDMAYA_API
 		void ScheduleRenderTasks(HdTaskSharedPtrVector& tasks);

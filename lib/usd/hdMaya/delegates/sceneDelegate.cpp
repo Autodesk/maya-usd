@@ -48,6 +48,8 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MString.h>
 #include <maya/MShaderManager.h>
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 
 #include <pxr/usdImaging/usdImaging/tokens.h>
 #include <pxr/imaging/hdx/renderTask.h>
@@ -236,6 +238,33 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
 #endif
 }
 
+namespace
+{
+	static constexpr char* kOutColorString = "outColor";
+
+	bool GetShadingEngineNode(const MObject& shaderNode, MObject& shadingEngineNode)
+	{
+		MFnDependencyNode depNode(shaderNode);
+		MStatus ms;
+		MPlug plug = depNode.findPlug(kOutColorString, ms);
+
+		if (ms == MS::kSuccess)
+		{
+			MPlugArray destinations;
+			plug.connectedTo(destinations, false, true);
+			for (auto dest : destinations)
+			{
+				if (dest.node().isNull()) continue;
+				if (dest.node().apiType() != MFn::Type::kShadingEngine) continue;
+				shadingEngineNode = dest.node();
+				return true;
+			}			
+		}
+
+		return false;
+	}
+}
+
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
 {
@@ -248,27 +277,13 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 
 	for (int i = 0; i < scene.mCount; i++)
 	{
-		auto& ri = *scene.mItems[i];
+		MRenderItem& ri = *scene.mItems[i];
 
 		HdMayaShaderInstanceData sd;
-		// TODO: Fix shader leaking due to bad MRenderItem::getShader API here..
-		if (HdMayaRenderItemShaderConverter::ExtractShaderData(*ri.getShader(), sd))
-		{
-			SdfPath id = SdfPath(sd.Shader->Name);
-			if (!TfMapLookupPtr(_renderItemShaderAdapters, id))
-			{
-				_renderItemShaderAdapters.insert(
-				{ 
-					id,					
-					HdMayaShaderAdapterPtr(new HdMayaShaderAdapter(this, *sd.Shader)) 
-				});
-
-				GetChangeTracker().MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
-			}
-		}
+		InsertRenderItemMaterial(ri, sd);
 
 		HdMayaRenderItemAdapterPtr ria;
-		CreateOrGetRenderItem(ri, sd, ria);	
+		InsertRenderItem(ri, sd, ria);	
 		ria->UpdateTopology(ri);							
 		ria->UpdateTransform(*scene.mItems[i]);
 	
@@ -651,8 +666,52 @@ AdapterPtr HdMayaSceneDelegate::Create(
 }
 
 
+bool HdMayaSceneDelegate::InsertRenderItemMaterial(
+	const MRenderItem& ri,
+	HdMayaShaderInstanceData& sd
+	)
+{
+	MObject shaderNode;
+	MObject shadingEngineNode;	
+	if (HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(ri, sd))
+		// Determine whether this is a supported UI shader
+	{
+		SdfPath id = SdfPath(sd.ShapeUIShader->Name);
+		if (!TfMapLookupPtr(_renderItemShaderAdapters, id))
+		{
+			_renderItemShaderAdapters.insert(
+				{
+					id,
+					HdMayaShaderAdapterPtr(new HdMayaShapeUIShaderAdapter(this, *sd.ShapeUIShader))
+				});
+
+			GetChangeTracker().MarkTaskDirty(id, HdChangeTracker::DirtyCollection);
+		}
+
+		return true;
+	}
+	else if (
+		ri.getShaderNode(shaderNode) == MS::kSuccess &&
+		GetShadingEngineNode(shaderNode, shadingEngineNode)
+		)
+		// Else try to find associated material node if this is a material shader.
+		// NOTE: The existing maya material support in hydra expects a shading engine node
+	{
+		sd.ShapeUIShader = nullptr;
+		sd.Material = GetMaterialPath(shadingEngineNode);
+		if (TfMapLookupPtr(_materialAdapters, sd.Material) == nullptr)
+		{
+			_CreateMaterial(sd.Material, shadingEngineNode);
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
 // Analogous to HdMayaSceneDelegate::InsertDag
-bool HdMayaSceneDelegate::CreateOrGetRenderItem(
+bool HdMayaSceneDelegate::InsertRenderItem(
 	const MRenderItem& ri,
 	const HdMayaShaderInstanceData& sd,
 	HdMayaRenderItemAdapterPtr& ria
@@ -1136,9 +1195,9 @@ size_t HdMayaSceneDelegate::SamplePrimvar(
 //virtual
 TfTokenVector HdMayaSceneDelegate::GetTaskRenderTags(SdfPath const& taskId)
 {
-	return _GetValue<HdMayaShaderAdapter, TfTokenVector>(
+	return _GetValue<HdMayaShapeUIShaderAdapter, TfTokenVector>(
 		taskId,
-		[](HdMayaShaderAdapter* a) -> TfTokenVector	{ return TfTokenVector{ a->GetShaderData().Name }; },
+		[](HdMayaShapeUIShaderAdapter* a) -> TfTokenVector	{ return TfTokenVector{ a->GetShaderData().Name }; },
 		_renderItemShaderAdapters);
 }
 
@@ -1357,9 +1416,37 @@ HdDisplayStyle HdMayaSceneDelegate::GetDisplayStyle(const SdfPath& id)
 SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 {
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	// Return id of render item itself as shader instance id;
-	// Configured shader instance is returned in GetMaterialResource;
-	return _fallbackMaterial;
+	if (!_enableMaterials)
+		return {};
+	auto result = TfMapLookupPtr(_renderItemsAdapters, id);
+	if (result == nullptr) {
+		return _fallbackMaterial;
+	}
+
+	auto& renderItemAdapter = *result;
+	auto& shaderData = renderItemAdapter->GetShaderData();
+	if (renderItemAdapter->GetShaderData().ShapeUIShader)
+	// Do not return material for shape UI,
+	// we do not want those drawn in the beauty pass,
+	// these are handled via a separate draw pass
+	{
+		return {};
+	}
+	
+	if (shaderData.Material ==  kInvalidMaterial) 
+	{
+		return _fallbackMaterial;
+	}
+	
+	if (TfMapLookupPtr(_materialAdapters, shaderData.Material) != nullptr) 
+	{
+		return shaderData.Material;
+	}
+
+	// TODO
+	// Why would we get here with render item prototype?
+	//return _CreateMaterial(materialId, material) ? materialId : _fallbackMaterial;
+	return {};
 #else
 	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
 		.Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
@@ -1385,7 +1472,18 @@ SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id)
 VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
 {
 #ifdef HDMAYA_SCENE_RENDER_DATASERVER
-	return HdMayaMaterialAdapter::GetPreviewMaterialResource(_fallbackMaterial);
+	// TODO this is the same as !HDMAYA_SCENE_RENDER_DATASERVER
+	if (
+		id == _fallbackMaterial
+		)
+	{
+		return HdMayaMaterialAdapter::GetPreviewMaterialResource(id);
+	}
+	auto ret = _GetValue<HdMayaMaterialAdapter, VtValue>(
+		id,
+		[](HdMayaMaterialAdapter* a) -> VtValue { return a->GetMaterialResource(); },
+		_materialAdapters);
+	return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 
 #else
 	TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_RESOURCE)
