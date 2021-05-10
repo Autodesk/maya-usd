@@ -524,7 +524,10 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
     }
 
     // Prepare color buffer.
-    if (((rprimDirtyBits & HdChangeTracker::DirtyPrimvar) != 0)
+    if (((rprimDirtyBits
+          & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyInstancer
+             | HdChangeTracker::DirtyInstanceIndex))
+         != 0)
         && (_PrimvarIsRequired(HdTokens->displayColor)
             || _PrimvarIsRequired(HdTokens->displayOpacity))) {
         HdInterpolation colorInterp = HdInterpolationConstant;
@@ -1065,7 +1068,8 @@ HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyMaterialId | HdChangeTracker::DirtyPrimvar
         | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyInstancer
-        | HdChangeTracker::DirtyRenderTag | DirtySelectionHighlight;
+        | HdChangeTracker::DirtyInstanceIndex | HdChangeTracker::DirtyRenderTag
+        | DirtySelectionHighlight;
 
     return bits;
 }
