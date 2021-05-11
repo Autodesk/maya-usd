@@ -235,18 +235,18 @@ void StagesSubject::stageChanged(
             // We need to send some notifs so Maya can update (such as on undo
             // to move the transform manipulator back to original position).
             const TfToken nameToken = changedPath.GetNameToken();
+            auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
+            auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
             if (nameToken == UsdGeomTokens->xformOpOrder) {
-                auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
-                auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
                 if (!InTransform3dChange::inTransform3dChange()) {
                     Ufe::Transform3d::notify(ufePath);
                 }
-#ifdef UFE_V2_FEATURES_AVAILABLE
-                if (!inAttributeChangedNotificationGuard()) {
-                    sendValueChanged(ufePath, changedPath.GetNameToken());
-                }
-#endif
             }
+#ifdef UFE_V2_FEATURES_AVAILABLE
+            if (!inAttributeChangedNotificationGuard()) {
+                sendValueChanged(ufePath, changedPath.GetNameToken());
+            }
+#endif
 
             // No further processing for this prim property path is required.
             continue;
