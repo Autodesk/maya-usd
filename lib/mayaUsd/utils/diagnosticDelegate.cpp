@@ -23,7 +23,7 @@
 
 #include <maya/MGlobal.h>
 
-#include <iostream>
+#include <ghc/filesystem.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -67,17 +67,13 @@ class _WarningOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 
 static MString _FormatDiagnostic(const TfDiagnosticBase& d)
 {
-    // strip out all the characters before "maya-usd"
-    std::string filterFilePath { d.GetContext().GetFile() };
-    filterFilePath = filterFilePath.substr(filterFilePath.find("maya-usd"));
-
     const std::string msg = TfStringPrintf(
         "%s -- %s in %s at line %zu of %s",
         d.GetCommentary().c_str(),
         TfDiagnosticMgr::GetCodeName(d.GetDiagnosticCode()).c_str(),
         d.GetContext().GetFunction(),
         d.GetContext().GetLine(),
-        filterFilePath.c_str());
+        ghc::filesystem::path(d.GetContext().GetFile()).relative_path().string().c_str());
 
     return TfGetEnvSetting(MAYAUSD_SHOW_FULL_DIAGNOSTICS) ? msg.c_str() : d.GetCommentary().c_str();
 }
