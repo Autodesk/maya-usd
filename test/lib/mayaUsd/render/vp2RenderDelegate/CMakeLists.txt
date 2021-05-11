@@ -5,8 +5,13 @@ set(TEST_SCRIPT_FILES "")
 
 list(APPEND TEST_SCRIPT_FILES
 	testVP2RenderDelegateGeomSubset.py
-    testVP2RenderDelegateDuplicateProxy.py
 )
+
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+    testVP2RenderDelegateDuplicateProxy.py
+    )
+endif()
 
 if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
     # The point instance selection tests requires UsdImaging API version 14 or
