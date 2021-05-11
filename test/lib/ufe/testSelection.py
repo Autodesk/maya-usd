@@ -445,16 +445,17 @@ class SelectTestCase(unittest.TestCase):
 
         self.assertTrue(sn.empty())
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 125, 'Requires Maya fixes only available in Maya Preview Release 125 or later.')
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 126, 'Requires Maya fixes only available in Maya Preview Release 126 or later.')
     def testMayaSelectUndoPrimCreation(self):
-        '''Test if the SceneItem's prim is still valid on selection after the prim creation is undo than redo'''
+        '''Test if the SceneItem's prim is still valid on selection after the prim creation is undone then redone'''
 
         # helper function to check if the current
         # selected SceneItem's prim is valid.
-        def checkSelectedSceneItemPrim():
+        def checkSelectedSceneItemPrim(expectedSceneItem):
             globalSn = ufe.GlobalSelection.get()
             self.assertEqual(len(globalSn), 1)
             sceneItem = globalSn.front()
+            self.assertEqual(sceneItem, expectedSceneItem)
             prim = mayaUsd.ufe.getPrimFromRawItem(sceneItem.getRawAddress())
             self.assertTrue(prim)
 
@@ -472,12 +473,12 @@ class SelectTestCase(unittest.TestCase):
         capsulePath    = ufe.PathString.path('%s,/Capsule1' % shapeNode)
         capsuleItem    = ufe.Hierarchy.createItem(capsulePath)
         cmds.select(ufe.PathString.string(capsuleItem.path()), replace=True)
-        checkSelectedSceneItemPrim()
+        checkSelectedSceneItemPrim(capsuleItem)
 
         cubePath    = ufe.PathString.path('%s,/Cube1' % shapeNode)
         cubeItem    = ufe.Hierarchy.createItem(cubePath)
         cmds.select(ufe.PathString.string(cubeItem.path()), replace=True)
-        checkSelectedSceneItemPrim()
+        checkSelectedSceneItemPrim(cubeItem)
 
         cmds.undo() # undo the selection of the cube
         cmds.undo() # undo the selection of the capsule
@@ -487,11 +488,11 @@ class SelectTestCase(unittest.TestCase):
         cmds.redo() # redo the creation of the capsule
         cmds.redo() # redo the creation of the cube
         cmds.redo() # redo the selection of the capsule
-        checkSelectedSceneItemPrim()
+        checkSelectedSceneItemPrim(capsuleItem)
         cmds.redo() # redo the selection of the cube
-        checkSelectedSceneItemPrim()
+        checkSelectedSceneItemPrim(cubeItem)
         cmds.undo() # undo the selection of the cube
-        checkSelectedSceneItemPrim()
+        checkSelectedSceneItemPrim(capsuleItem)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
