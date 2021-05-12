@@ -67,15 +67,18 @@ class _WarningOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
 
 static MString _FormatDiagnostic(const TfDiagnosticBase& d)
 {
-    const std::string msg = TfStringPrintf(
-        "%s -- %s in %s at line %zu of %s",
-        d.GetCommentary().c_str(),
-        TfDiagnosticMgr::GetCodeName(d.GetDiagnosticCode()).c_str(),
-        d.GetContext().GetFunction(),
-        d.GetContext().GetLine(),
-        ghc::filesystem::path(d.GetContext().GetFile()).relative_path().string().c_str());
-
-    return TfGetEnvSetting(MAYAUSD_SHOW_FULL_DIAGNOSTICS) ? msg.c_str() : d.GetCommentary().c_str();
+    if (!TfGetEnvSetting(MAYAUSD_SHOW_FULL_DIAGNOSTICS)) {
+        return d.GetCommentary().c_str();
+    } else {
+        const std::string msg = TfStringPrintf(
+            "%s -- %s in %s at line %zu of %s",
+            d.GetCommentary().c_str(),
+            TfDiagnosticMgr::GetCodeName(d.GetDiagnosticCode()).c_str(),
+            d.GetContext().GetFunction(),
+            d.GetContext().GetLine(),
+            ghc::filesystem::path(d.GetContext().GetFile()).relative_path().string().c_str());
+        return msg.c_str();
+    }
 }
 
 static MString _FormatCoalescedDiagnostic(const UsdUtilsCoalescingDiagnosticDelegateItem& item)
@@ -115,7 +118,7 @@ void UsdMayaDiagnosticDelegate::IssueError(const TfError& err)
     const auto diagnosticMessage = _FormatDiagnostic(err);
 
     if (ArchIsMainThread()) {
-        MGlobal::displayInfo(diagnosticMessage);
+        MGlobal::displayError(diagnosticMessage);
     } else {
         std::cerr << diagnosticMessage << std::endl;
     }
@@ -145,7 +148,7 @@ void UsdMayaDiagnosticDelegate::IssueWarning(const TfWarning& warning)
     const auto diagnosticMessage = _FormatDiagnostic(warning);
 
     if (ArchIsMainThread()) {
-        MGlobal::displayInfo(diagnosticMessage);
+        MGlobal::displayWarning(diagnosticMessage);
     } else {
         std::cerr << diagnosticMessage << std::endl;
     }
