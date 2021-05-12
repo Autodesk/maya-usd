@@ -5,8 +5,13 @@ set(TEST_SCRIPT_FILES "")
 
 list(APPEND TEST_SCRIPT_FILES
 	testVP2RenderDelegateGeomSubset.py
-	testVP2RenderDelegateInteractiveWorkflows.py #probably ufe v2 only
 )
+
+if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateInteractiveWorkflows.py
+    )
+endif()
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
