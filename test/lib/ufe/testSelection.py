@@ -445,7 +445,7 @@ class SelectTestCase(unittest.TestCase):
 
         self.assertTrue(sn.empty())
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 127, 'Requires Maya fixes only available in Maya Preview Release 127 or later.')
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 126, 'Requires Maya fixes only available in Maya Preview Release 126 or later.')
     def testMayaSelectUndoPrimCreation(self):
         '''Test if the SceneItem's prim is still valid on selection after the prim creation is undone then redone'''
 
