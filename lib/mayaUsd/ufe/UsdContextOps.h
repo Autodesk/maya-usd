@@ -29,9 +29,9 @@ namespace ufe {
 #if PXR_VERSION >= 2008
 struct SchemaTypeGroup
 {
-    std::string        _name;
-    pxr::TfTokenVector _types;
-    bool               operator==(const std::string rhs) const { return _name == rhs; }
+    std::string           _name;
+    PXR_NS::TfTokenVector _types;
+    bool                  operator==(const std::string rhs) const { return _name == rhs; }
 };
 #endif
 

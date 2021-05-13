@@ -359,8 +359,11 @@ class AETemplate(object):
 
         schemaTypeName = getPrettyName(schemaTypeName)
 
+        # if the schema name ends with "api", replace it with
+        # "API" and make sure to only replace the last occurence.
+        # Example: "Shaping api" which contains "api" twice most become "Shaping API"
         if schemaTypeName.endswith("api"): 
-            schemaTypeName = schemaTypeName.replace("api"," API")
+            schemaTypeName = " API".join(schemaTypeName.rsplit("api", 1))
 
         return schemaTypeName
 
