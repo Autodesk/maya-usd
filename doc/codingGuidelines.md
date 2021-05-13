@@ -268,6 +268,21 @@ Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) followin
 * `nullptr` keyword
 * …
 
+## Diagnostic Facilities
+
+Developers are encouraged to use TF library diagnostic facilities in Maya USD. Please follow below guideline for picking the correct facility: https://graphics.pixar.com/usd/docs/api/page_tf__diagnostic.html
+
+In MayaUSD, `UsdMayaDiagnosticDelegate` converts TF diagnostics into native Maya infos, warnings, and errors. The environment flag `MAYAUSD_SHOW_FULL_DIAGNOSTICS`, controls the granularity of TF error/warning/status messages being displayed in Maya:
+
+e.g
+```
+Error: Failed verification: ' image ' -- Unable to create an image from RetroTVBody_Albedo.png
+```
+vs
+```
+Error: Failed verification: ' image ' -- Unable to create an image from RetroTVBody_Albedo.png -- Coding Error in _LoadTexture at line 422 of C:\maya-usd\lib\mayaUsd\render\vp2RenderDelegate\material.cpp
+```
+
 # Coding guidelines for Python
 We are adopting the [PEP-8](https://www.python.org/dev/peps/pep-0008) style for Python Code with the following modification:
 * Mixed-case for variable and function names are allowed 

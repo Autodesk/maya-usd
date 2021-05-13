@@ -426,7 +426,8 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 #else
     GlfImageSharedPtr     image = GlfImage::OpenForReading(path);
 #endif
-    if (!TF_VERIFY(image)) {
+
+    if (!TF_VERIFY(image, "Unable to create an image from %s", path.c_str())) {
         return nullptr;
     }
 

@@ -118,9 +118,13 @@ class testDiagnosticDelegate(unittest.TestCase):
         # the module name will match the file name and be reported as
         # "testDiagnosticDelegate". We make the regex here recognize both
         # cases.
-        self.assertRegex(logText,
-            "^Python coding error: blah -- Coding Error in "
-            "(__main__|testDiagnosticDelegate)\.testError at line [0-9]+ of ")
+        if (Tf.GetEnvSetting('MAYAUSD_SHOW_FULL_DIAGNOSTICS')):
+            self.assertRegex(logText,
+                "^Python coding error: blah -- Coding Error in "
+                "(__main__|testDiagnosticDelegate)\.testError at line [0-9]+ of ")
+        else:
+            self.assertEqual(logText, "Python coding error: blah")
+
         self.assertEqual(logCode, OM.MCommandMessage.kError)
 
     def testError_Python(self):
