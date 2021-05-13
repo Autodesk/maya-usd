@@ -230,7 +230,7 @@ class ArrayCustomControl(object):
                 rl = cmds.rowLayout(nc=5, adj=3)
                 with LayoutManager(rl):
                     cmds.text(nameTxt, al='right', label=attrLabel, annotation=attr.GetDocumentation())
-                    cmds.textField(attrTypeFld, editable=False, text=typeNameStr, width=singleWidgetWidth*1.5)
+                    cmds.textField(attrTypeFld, editable=False, text=typeNameStr, font='obliqueLabelFont', width=singleWidgetWidth*1.5)
 
                     if hasValue:
                         cmds.popupMenu()
@@ -270,7 +270,7 @@ class ConnectionsCustomControl(object):
             rl = cmds.rowLayout(nc=5, adj=3)
             with LayoutManager(rl):
                 cmds.text(nameTxt, al='right', label=attrLabel, annotation=attr.GetDocumentation())
-                cmds.textField(attrTypeFld, editable=False, text=attrType, backgroundColor=[0.945, 0.945, 0.647], width=singleWidgetWidth*1.5)
+                cmds.textField(attrTypeFld, editable=False, text=attrType, backgroundColor=[0.945, 0.945, 0.647], font='obliqueLabelFont', width=singleWidgetWidth*1.5)
 
                 # Add a menu item for each connection.
                 cmds.popupMenu()
