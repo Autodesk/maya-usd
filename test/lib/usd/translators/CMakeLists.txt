@@ -70,6 +70,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportImportUDIM.py
     testUsdImportSkeleton.py
     testUsdImportXforms.py
+    testUsdImportXformOps.py
     testUsdImportXformAnim.py
     testUsdMayaAdaptor.py
     testUsdMayaAdaptorGeom.py

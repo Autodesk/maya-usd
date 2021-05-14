@@ -22,6 +22,7 @@
 #include <pxr/base/gf/math.h>
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3d.h>
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
@@ -30,6 +31,7 @@
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
+#include <maya/MAnimUtil.h>
 #include <maya/MDagModifier.h>
 #include <maya/MEulerRotation.h>
 #include <maya/MFnAnimCurve.h>
@@ -122,8 +124,8 @@ _getXformOpAsVec3d(const UsdGeomXformOp& xformOp, GfVec3d& value, const UsdTimeC
 // Sets the animation curve (a knot per frame) for a given plug/attribute
 static void _setAnimPlugData(
     MPlug                           plg,
-    std::vector<double>&            value,
-    MTimeArray&                     timeArray,
+    const std::vector<double>&      value,
+    const MTimeArray&               timeArray,
     const UsdMayaPrimReaderContext* context)
 {
     MStatus      status;
@@ -135,7 +137,7 @@ static void _setAnimPlugData(
     MObject animObj = animFn.create(plg, nullptr, &status);
     if (status == MS::kSuccess) {
         MDoubleArray valueArray(&value[0], value.size());
-        animFn.addKeys(&timeArray, &valueArray);
+        animFn.addKeys(&(const_cast<MTimeArray&>(timeArray)), &valueArray);
         if (context) {
             context->RegisterNewMayaNode(animFn.name().asChar(), animObj);
         }
@@ -146,8 +148,72 @@ static void _setAnimPlugData(
     }
 }
 
+static void _applyAnimPlugData(
+    MPlug                           plg,
+    const std::vector<double>&      value,
+    const MTimeArray&               timeArray,
+    const UsdMayaPrimReaderContext* context)
+{
+    MStatus      status;
+    MFnAnimCurve animFn;
+    // Make the plug keyable before attaching an anim curve
+    if (!plg.isKeyable()) {
+        plg.setKeyable(true);
+    }
+
+    MObjectArray animCurves;
+    MAnimUtil::findAnimation(plg, animCurves);
+    // NOTE: (yliangsiew) If there are no existing animCurves, then just set the values as-is.
+    // Otherwise, we need to additively apply the values to the existing keyframes.
+    if (animCurves.length() == 0) {
+        MObject animObj = animFn.create(plg, nullptr, &status);
+        if (status == MS::kSuccess) {
+            MDoubleArray valueArray(&value[0], value.size());
+            animFn.addKeys(&(const_cast<MTimeArray&>(timeArray)), &valueArray);
+            if (context) {
+                context->RegisterNewMayaNode(animFn.name().asChar(), animObj);
+            }
+        } else {
+            MString mayaPlgName = plg.partialName(true, true, true, false, true, true, &status);
+            TF_RUNTIME_ERROR(
+                "Failed to create animation object for attribute: %s", mayaPlgName.asChar());
+        }
+    } else {
+        // NOTE: (yliangsiew) We will assume that we will apply all our new values to the first
+        // animCurve affecting the plug.
+        MObject animCurve = animCurves[0];
+        status = animFn.setObject(animCurve);
+        if (status != MS::kSuccess) {
+            TF_RUNTIME_ERROR(
+                "Failed to create animation object for attribute: %s",
+                plg.partialName(true, true, true, false, true, true).asChar());
+            return;
+        }
+        unsigned int numKeys = animFn.numKeys();
+        MDoubleArray valueArray(&value[0], value.size());
+        if (numKeys == 0) {
+            animFn.addKeys(&(const_cast<MTimeArray&>(timeArray)), &valueArray);
+        } else {
+            for (unsigned int i = 0; i < timeArray.length(); ++i) {
+                MTime        curTime = timeArray[i];
+                unsigned int keyIdx = 0;
+                bool         hasKey = animFn.find(curTime, keyIdx, &status);
+                TF_VERIFY(status == MStatus::kSuccess, "Mismatch between times and key indices.");
+                if (!hasKey) {
+                    animFn.addKey(curTime, valueArray[i]);
+                } else {
+                    double curVal = animFn.value(keyIdx, &status);
+                    TF_VERIFY(status == MStatus::kSuccess, "Unable to retrieve value for key.");
+                    status = animFn.setValue(keyIdx, curVal + valueArray[i]);
+                    TF_VERIFY(status == MStatus::kSuccess, "Unable to set value for key.");
+                }
+            }
+        }
+    }
+}
+
 // Returns true if the array is not constant
-static bool _isArrayVarying(std::vector<double>& value)
+static bool _isArrayVarying(const std::vector<double>& value)
 {
     bool isVarying = false;
     for (unsigned int i = 1; i < value.size(); i++) {
@@ -199,6 +265,61 @@ static void _setMayaAttribute(
                 _setAnimPlugData(plg, zVal, timeArray, context);
         }
     }
+}
+
+static void _applyToMayaAttribute(
+    MFnDagNode&                     depFn,
+    const std::vector<double>&      xVal,
+    const std::vector<double>&      yVal,
+    const std::vector<double>&      zVal,
+    const MTimeArray&               timeArray,
+    const MString&                  opName,
+    const MString&                  x,
+    const MString&                  y,
+    const MString&                  z,
+    const UsdMayaPrimReaderContext* context)
+{
+    MPlug plg;
+    if (x != "" && !xVal.empty()) {
+        plg = depFn.findPlug(opName + x);
+        if (!plg.isNull()) {
+            double curValue = plg.asDouble();
+            if (opName == "scale") {
+                plg.setDouble(xVal[0] * curValue);
+            } else {
+                plg.setDouble(xVal[0] + curValue);
+            }
+            if (xVal.size() > 1 && _isArrayVarying(xVal))
+                _applyAnimPlugData(plg, xVal, timeArray, context);
+        }
+    }
+    if (y != "" && !yVal.empty()) {
+        plg = depFn.findPlug(opName + y);
+        if (!plg.isNull()) {
+            double curValue = plg.asDouble();
+            if (opName == "scale") {
+                plg.setDouble(yVal[0] * curValue);
+            } else {
+                plg.setDouble(yVal[0] + curValue);
+            }
+            if (yVal.size() > 1 && _isArrayVarying(yVal))
+                _applyAnimPlugData(plg, yVal, timeArray, context);
+        }
+    }
+    if (z != "" && !zVal.empty()) {
+        plg = depFn.findPlug(opName + z);
+        if (!plg.isNull()) {
+            double curValue = plg.asDouble();
+            if (opName == "scale") {
+                plg.setDouble(zVal[0] * curValue);
+            } else {
+                plg.setDouble(zVal[0] + curValue);
+            }
+            if (zVal.size() > 1 && _isArrayVarying(zVal))
+                _applyAnimPlugData(plg, zVal, timeArray, context);
+        }
+    }
+    return;
 }
 
 // For each xformop, we gather it's data either time sampled or not and we push
@@ -255,7 +376,7 @@ static bool _pushUSDXformOpToMayaXform(
     }
     if (!xValue.empty()) {
         if (opName == UsdMayaXformStackTokens->shear) {
-            _setMayaAttribute(
+            _applyToMayaAttribute(
                 MdagNode,
                 xValue,
                 yValue,
@@ -267,7 +388,7 @@ static bool _pushUSDXformOpToMayaXform(
                 "YZ",
                 context);
         } else if (opName == UsdMayaXformStackTokens->pivot) {
-            _setMayaAttribute(
+            _applyToMayaAttribute(
                 MdagNode,
                 xValue,
                 yValue,
@@ -278,7 +399,7 @@ static bool _pushUSDXformOpToMayaXform(
                 "Y",
                 "Z",
                 context);
-            _setMayaAttribute(
+            _applyToMayaAttribute(
                 MdagNode,
                 xValue,
                 yValue,
@@ -290,7 +411,7 @@ static bool _pushUSDXformOpToMayaXform(
                 "Z",
                 context);
         } else if (opName == UsdMayaXformStackTokens->pivotTranslate) {
-            _setMayaAttribute(
+            _applyToMayaAttribute(
                 MdagNode,
                 xValue,
                 yValue,
@@ -301,7 +422,7 @@ static bool _pushUSDXformOpToMayaXform(
                 "Y",
                 "Z",
                 context);
-            _setMayaAttribute(
+            _applyToMayaAttribute(
                 MdagNode,
                 xValue,
                 yValue,
@@ -342,7 +463,7 @@ static bool _pushUSDXformOpToMayaXform(
                     }
                 }
             }
-            _setMayaAttribute(
+            _applyToMayaAttribute(
                 MdagNode,
                 xValue,
                 yValue,
@@ -550,16 +671,18 @@ void UsdMayaTranslatorXformable::Read(
     MFnDagNode MdagNode(mayaNode);
     if (!stackOps.empty()) {
         // make sure stackIndices.size() == xformops.size()
-        for (unsigned int i = 0; i < stackOps.size(); i++) {
+        size_t numStackOps = stackOps.size();
+        for (unsigned int i = 0; i < numStackOps; i++) {
             const UsdGeomXformOp&               xformop(xformops[i]);
             const UsdMayaXformOpClassification& opDef(stackOps[i]);
             // If we got a valid stack, we have both the members of the inverted twins..
             // ...so we can go ahead and skip the inverted twin
-            if (opDef.IsInvertedTwin())
+            // TODO: (yliangsiew) To fix the issue in https://github.com/Autodesk/maya-usd/pull/1426,
+            // for now if we _only_ have the paired twin, we do not skip the inverse operation,
+            // since that gives an incorrect result.
+            if (numStackOps != 2 && opDef.IsInvertedTwin())
                 continue;
-
             const TfToken& opName(opDef.GetName());
-
             _pushUSDXformOpToMayaXform(xformop, opName, MdagNode, args, context);
         }
     } else {
