@@ -323,7 +323,9 @@ void StagesSubject::stageChanged(
 #endif
     }
 
-    for (const auto& changedPath : notice.GetChangedInfoOnlyPaths()) {
+    auto changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
+    for (auto it = changedInfoOnlyPaths.begin(), end = changedInfoOnlyPaths.end(); it != end; ++it) {
+        const auto& changedPath = *it;
         auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
         auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
 
@@ -406,7 +408,20 @@ void StagesSubject::stageChanged(
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         if (sendValueChangedFallback) {
-            valueChanged(ufePath, changedPath.GetNameToken());
+
+            // check to see if there is an entry which Ufe should notify about.
+            std::vector<const SdfChangeList::Entry*> entries = it.base()->second;
+            for (const auto& entry : entries)
+            {
+                // Adding an inert prim means we created a primSpec for an ancestor of
+                // a prim which has a real change to it.
+                if (entry->flags.didAddInertPrim || entry->flags.didRemoveInertPrim)
+                    continue;
+                
+                valueChanged(ufePath, changedPath.GetNameToken());
+                // just send one notification
+                break;
+            }
         }
 #endif
     }
