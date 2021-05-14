@@ -367,18 +367,21 @@ bool LayerDatabase::getStagesToSave(bool isExport)
     _proxiesToSave.clear();
     for (const auto& stage : allStages) {
         auto stagePath = MayaUsd::ufe::stagePath(stage);
-        if (!checkSelection
-            || (ufeSelection->contains(stagePath) || ufeSelection->containsAncestor(stagePath))) {
-            // Remove the leading "|world| component.
-            std::string       strStagePath = stagePath.popHead().string();
-            MDagPath          proxyDagPath = UsdMayaUtil::nameToDagPath(strStagePath);
-            MFnDependencyNode fn(proxyDagPath.node());
-            if (!fn.isFromReferencedFile() && supportedNodeType(fn.typeId())) {
-                SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
-                for (auto layer : allLayers) {
-                    if (layer->IsDirty()) {
-                        _proxiesToSave.append(proxyDagPath);
-                        break;
+        if (!stagePath.empty()) {
+            if (!checkSelection
+                || (ufeSelection->contains(stagePath)
+                    || ufeSelection->containsAncestor(stagePath))) {
+                // Remove the leading "|world| component.
+                std::string       strStagePath = stagePath.popHead().string();
+                MDagPath          proxyDagPath = UsdMayaUtil::nameToDagPath(strStagePath);
+                MFnDependencyNode fn(proxyDagPath.node());
+                if (!fn.isFromReferencedFile() && supportedNodeType(fn.typeId())) {
+                    SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
+                    for (auto layer : allLayers) {
+                        if (layer->IsDirty()) {
+                            _proxiesToSave.append(proxyDagPath);
+                            break;
+                        }
                     }
                 }
             }
