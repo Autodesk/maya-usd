@@ -47,8 +47,8 @@ Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& it
 
 Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
 {
-    const PXR_NS::UsdPrim prim = ufePathToPrim(path);
-    const int             instanceIndex = ufePathToInstanceIndex(path);
+    PXR_NS::UsdPrim prim;
+    const int       instanceIndex = ufePathToInstanceIndex(path, &prim);
     return prim.IsValid() ? UsdSceneItem::create(path, prim, instanceIndex) : nullptr;
 }
 
