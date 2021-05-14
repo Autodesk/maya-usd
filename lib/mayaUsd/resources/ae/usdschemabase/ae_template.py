@@ -14,6 +14,7 @@
 #
 
 import fnmatch
+from functools import partial
 import ufe
 import maya.mel as mel
 import maya.cmds as cmds
@@ -27,6 +28,10 @@ from maya.OpenMaya import MGlobal
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
 # method so we have access to it and the 'pythonClass' method.
 from pxr import Usd, UsdGeom, UsdLux, UsdRender, UsdRi, UsdShade, UsdSkel, UsdUI, UsdVol, Kind, Tf
+
+nameTxt = 'nameTxt'
+attrValueFld = 'attrValueFld'
+attrTypeFld = 'attrTypeFld'
 
 def getPrettyName(name):
     # Put a space in the name when preceded by a capital letter.
@@ -46,6 +51,16 @@ def getPrettyName(name):
 
     # Make each word start with an uppercase.
     return prettyName.title()
+
+# Helper class to push/pop the Attribute Editor Template. This makes
+# sure that controls are aligned properly.
+class AEUITemplate:
+    def __enter__(self):
+        cmds.setUITemplate('attributeEditorTemplate', pst=True)
+        return self
+
+    def __exit__(self, mytype, value, tb):
+        cmds.setUITemplate(ppt=True)
 
 # Custom control, but does not have any UI. Instead we use
 # this control to be notified from UFE when any attribute has changed
@@ -208,17 +223,70 @@ class ArrayCustomControl(object):
             typeNameStr = str(typeName.scalarType)
             typeNameStr += ("[" + str(len(values)) + "]") if hasValue else "[]"
 
-            mdLabel = getPrettyName(self.attrName) if self.useNiceName else self.attrName
-            cmds.textFieldGrp(editable=False, label=mdLabel, text=typeNameStr, annotation=attr.GetDocumentation())
+            attrLabel = getPrettyName(self.attrName) if self.useNiceName else self.attrName
+            singleWidgetWidth = mel.eval('global int $gAttributeEditorTemplateSingleWidgetWidth; $gAttributeEditorTemplateSingleWidgetWidth += 0')
+            with AEUITemplate():
+                # See comment in ConnectionsCustomControl below for why nc=5.
+                rl = cmds.rowLayout(nc=5, adj=3)
+                with LayoutManager(rl):
+                    cmds.text(nameTxt, al='right', label=attrLabel, annotation=attr.GetDocumentation())
+                    cmds.textField(attrTypeFld, editable=False, text=typeNameStr, font='obliqueLabelFont', width=singleWidgetWidth*1.5)
 
-            if hasValue:
-                cmds.popupMenu()
-                cmds.menuItem( label="Copy Attribute Value",   command=lambda *args: setClipboardData(str(values)) )
-                cmds.menuItem( label="Print to Script Editor", command=lambda *args: MGlobal.displayInfo(str(values)) )
+                    if hasValue:
+                        cmds.popupMenu()
+                        cmds.menuItem( label="Copy Attribute Value",   command=lambda *args: setClipboardData(str(values)) )
+                        cmds.menuItem( label="Print to Script Editor", command=lambda *args: MGlobal.displayInfo(str(values)) )
         else:
             cmds.error(self.attrName + " must be an array!")
 
     def onReplace(self, *args):
+        pass
+
+def showEditorForUSDPrim(usdPrimPathStr):
+    # Simple helper to open the AE on input prim.
+    mel.eval('evalDeferred "showEditor(\\\"%s\\\")"' % usdPrimPathStr)
+
+# Custom control for all attributes that have connections.
+class ConnectionsCustomControl(object):
+    def __init__(self, ufeItem, prim, attrName, useNiceName):
+        self.path = ufeItem.path()
+        self.prim = prim
+        self.attrName = attrName
+        self.useNiceName = useNiceName
+        super(ConnectionsCustomControl, self).__init__()
+
+    def onCreate(self, *args):
+        frontPath = self.path.popSegment()
+        attr = self.prim.GetAttribute(self.attrName)
+        attrLabel = getPrettyName(self.attrName) if self.useNiceName else self.attrName
+        attrType = attr.GetMetadata('typeName')
+
+        singleWidgetWidth = mel.eval('global int $gAttributeEditorTemplateSingleWidgetWidth; $gAttributeEditorTemplateSingleWidgetWidth += 0')
+        with AEUITemplate():
+            # Because of the way the Maya AE template is defined we use a 5 column setup, even
+            # though we only have two fields. We resize the main field and purposely set the
+            # adjustable column to 3 (one we don't have a field in). We want the textField to
+            # remain at a given width.
+            rl = cmds.rowLayout(nc=5, adj=3)
+            with LayoutManager(rl):
+                cmds.text(nameTxt, al='right', label=attrLabel, annotation=attr.GetDocumentation())
+                cmds.textField(attrTypeFld, editable=False, text=attrType, backgroundColor=[0.945, 0.945, 0.647], font='obliqueLabelFont', width=singleWidgetWidth*1.5)
+
+                # Add a menu item for each connection.
+                cmds.popupMenu()
+                for c in attr.GetConnections():
+                    parentPath = c.GetParentPath()
+                    primName = parentPath.MakeRelativePath(parentPath.GetParentPath())
+                    mLabel = '%s%s...' % (primName, c.elementString)
+
+                    usdSeg = ufe.PathSegment(str(c.GetPrimPath()), mayaUsdUfe.getUsdRunTimeId(), '/')
+                    newPath = (frontPath + usdSeg)
+                    newPathStr = ufe.PathString.string(newPath)
+                    cmds.menuItem(label=mLabel, command=lambda *args: showEditorForUSDPrim(newPathStr))
+
+    def onReplace(self, *args):
+        # We only display the attribute name and type. Neither of these are time
+        # varying, so we don't need to implement the replace.
         pass
 
 class NoticeListener(object):
@@ -300,7 +368,10 @@ class AETemplate(object):
     def addControls(self, controls):
         for c in controls:
             if c not in self.suppressedAttrs:
-                if self.isArrayAttribute(c):
+                if self.attributeHasConnections(c):
+                    connectionsCustomControl = ConnectionsCustomControl(self.item, self.prim, c, self.useNiceName)
+                    self.defineCustom(connectionsCustomControl, c)
+                elif self.isArrayAttribute(c):
                     arrayCustomControl = ArrayCustomControl(self.prim, c, self.useNiceName)
                     self.defineCustom(arrayCustomControl, c)
                 else:
@@ -517,3 +588,9 @@ class AETemplate(object):
             typeName = attr.GetTypeName()
             return typeName.isArray
         return False
+
+    def attributeHasConnections(self, attrName):
+        # Simple helper to return whether the input attribute (by name) has
+        # any connections.
+        attr = self.prim.GetAttribute(attrName)
+        return attr.HasAuthoredConnections() if attr else False
