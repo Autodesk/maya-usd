@@ -203,11 +203,14 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     return prim;
 }
 
-int ufePathToInstanceIndex(const Ufe::Path& path)
+int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim)
 {
     int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
 
     const UsdPrim usdPrim = ufePathToPrim(path);
+    if (prim) {
+        *prim = usdPrim;
+    }
     if (!usdPrim || !usdPrim.IsA<UsdGeomPointInstancer>()) {
         return instanceIndex;
     }
