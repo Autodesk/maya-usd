@@ -50,7 +50,6 @@ struct _OnSceneResetListener : public TfWeakBase
 
     void OnSceneReset(const UsdMayaSceneResetNotice& notice)
     {
-        TF_STATUS("Clearing USD Stage Cache");
         UsdMayaStageCache::Clear();
 
         std::lock_guard<std::mutex> lock(_sharedSessionLayersMutex);

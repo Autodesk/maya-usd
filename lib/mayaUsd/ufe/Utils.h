@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -84,8 +84,10 @@ PXR_NS::UsdPrim ufePathToPrim(const Ufe::Path& path);
 //! represents a point instance.
 //! If the given path does not represent a point instance,
 //! UsdImagingDelegate::ALL_INSTANCES (-1) will be returned.
+//! If the optional argument prim pointer is non-null, the USD prim
+//! corresponding to the argument UFE path is returned, as per ufePathToPrim().
 MAYAUSD_CORE_PUBLIC
-int ufePathToInstanceIndex(const Ufe::Path& path);
+int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim = nullptr);
 
 MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);

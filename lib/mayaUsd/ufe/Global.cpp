@@ -30,6 +30,11 @@
 #include <mayaUsd/ufe/UsdCameraHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdObject3dHandler.h>
+#include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
+#include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
+#include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
+#include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
+#include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #endif
 
@@ -113,13 +118,37 @@ MStatus initialize()
 #ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::RunTimeMgr::Handlers handlers;
     handlers.hierarchyHandler = UsdHierarchyHandler::create();
-    handlers.transform3dHandler = UsdTransform3dHandler::create();
     handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
     handlers.attributesHandler = UsdAttributesHandler::create();
     handlers.object3dHandler = UsdObject3dHandler::create();
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
     handlers.cameraHandler = UsdCameraHandler::create();
+
+    // USD has a very flexible data model to support 3d transformations --- see
+    // https://graphics.pixar.com/usd/docs/api/class_usd_geom_xformable.html
+    //
+    // To map this flexibility into a UFE Transform3d handler, we set up a
+    // chain of responsibility
+    // https://en.wikipedia.org/wiki/Chain-of-responsibility_pattern
+    // for Transform3d interface creation, from least important to most
+    // important:
+    // - Perform operations on a Maya transform stack appended to the existing
+    //   transform stack (fallback).
+    // - Perform operations on a 4x4 matrix transform op.
+    // - Perform operations using the USD common transform API.
+    // - Perform operations using a Maya transform stack.
+    // - If the object is a point instance, use the point instance handler.
+    auto fallbackHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
+    auto matrixHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(fallbackHandler);
+    auto commonAPIHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(matrixHandler);
+    auto mayaStackHandler
+        = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(commonAPIHandler);
+    auto pointInstanceHandler
+        = MayaUsd::ufe::UsdTransform3dPointInstanceHandler::create(mayaStackHandler);
+
+    handlers.transform3dHandler = pointInstanceHandler;
+
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
 #else
     auto usdHierHandler = UsdHierarchyHandler::create();
