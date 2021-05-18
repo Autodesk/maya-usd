@@ -32,6 +32,19 @@ import ufe
 
 import os
 
+def mayaHasNGLighting():
+    """
+    There is a new way to compute lighting that will be available in PR126 and
+    2022.1.
+    """
+    mayaMajor = mayaUtils.mayaMajorVersion()
+    if mayaMajor >= 2023:
+        return mayaUtils.previewReleaseVersion() > 125
+    elif mayaMajor >= 2022:
+        return mayaUtils.mayaMinorVersion() > 0
+    else:
+        return False
+
 
 class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
     """
@@ -104,7 +117,10 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, lights=False, displayLights="all")
 
-        self.assertSnapshotClose("testMetallicResponse.png")
+        if mayaHasNGLighting():
+            self.assertSnapshotClose("testMetallicResponseNG.png")
+        else:
+            self.assertSnapshotClose("testMetallicResponse.png")
 
 
 if __name__ == '__main__':

@@ -225,16 +225,6 @@ evaluateLight(
 
 //-- glsl Preview.LightIntegration
 
-vec2 projectToLatLong(vec3 sample3D)
-{
-    // project spherical coord onto latitude-longitude map with
-    // latitude: +y == pi/2 and longitude: +z == 0, +x == pi/2
-    const float PI = 3.141593;
-    vec2 coord = vec2((atan(sample3D.z, sample3D.x) + 0.5 * PI) / (2.0 * PI),
-                      acos(sample3D.y) / PI);
-    return coord;
-}
-
 vec3
 evaluateIndirectLighting(
         vec3 diffuseColor,
@@ -595,16 +585,6 @@ evaluateLight(
 
 //-- glsl Preview.LightIntegration
 
-vec2 projectToLatLong(vec3 sample3D)
-{
-    // project spherical coord onto latitude-longitude map with
-    // latitude: +y == pi/2 and longitude: +z == 0, +x == pi/2
-    const float PI = 3.141593;
-    vec2 coord = vec2((atan(sample3D.z, sample3D.x) + 0.5 * PI) / (2.0 * PI),
-                      acos(sample3D.y) / PI);
-    return coord;
-}
-
 vec3
 evaluateIndirectLighting(
         vec3 diffuseColor,
@@ -964,16 +944,6 @@ evaluateLight(
 
 
 //-- glsl Preview.LightIntegration
-
-float2 projectToLatLong(float3 sample3D)
-{
-    // project spherical coord onto latitude-longitude map with
-    // latitude: +y == pi/2 and longitude: +z == 0, +x == pi/2
-    const float PI = 3.141593;
-    float2 coord = float2((atan2(sample3D.z, sample3D.x) + 0.5 * PI) / (2.0 * PI),
-                      acos(sample3D.y) / PI);
-    return coord;
-}
 
 float3
 evaluateIndirectLighting(

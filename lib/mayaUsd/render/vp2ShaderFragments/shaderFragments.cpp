@@ -304,11 +304,33 @@ MStatus HdVP2ShaderFragments::registerFragments()
     // Register the UsdPreviewSurface shader graph:
     {
         const MString fragGraphName(HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText());
-#if MAYA_API_VERSION > 20220000
-        const MString fragGraphFileName(_tokens->UsdPreviewSurfaceNG.GetText());
-#else
-        const MString fragGraphFileName(fragGraphName);
-#endif
+
+        // Next generation lighting is available in 2023 and 2022.1
+        bool    useNGLighting = false;
+        int     majorVersion = 0;
+        MString cmdResult;
+        MGlobal::executeCommand("about -majorVersion", cmdResult);
+        if (cmdResult.isInt()) {
+            majorVersion = cmdResult.asInt();
+        }
+        if (majorVersion >= 2023) {
+            MGlobal::executeCommand("about -version", cmdResult);
+            if (cmdResult.substitute("Preview Release ", "") == MS::kSuccess) {
+                if (cmdResult.asInt() > 125) {
+                    useNGLighting = true;
+                }
+            } else {
+                useNGLighting = true;
+            }
+        } else if (majorVersion >= 2022) {
+            MGlobal::executeCommand("about -minorVersion", cmdResult);
+            if (cmdResult.isInt() && cmdResult.asInt() > 0) {
+                useNGLighting = true;
+            }
+        }
+
+        const MString fragGraphFileName(
+            useNGLighting ? _tokens->UsdPreviewSurfaceNG.GetText() : fragGraphName);
         if (!fragmentManager->hasFragment(fragGraphName)) {
             const std::string fragGraphXmlFile
                 = TfStringPrintf("%s.xml", fragGraphFileName.asChar());
