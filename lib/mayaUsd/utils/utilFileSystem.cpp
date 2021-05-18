@@ -143,23 +143,24 @@ std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     const MObject&     proxyShape,
     const std::string& relativeFilePath)
 {
-    if (relativeFilePath.length() < 3)
+    if (relativeFilePath.length() < 3) {
         return relativeFilePath;
+    }
 
     std::string currentFileDir = getMayaReferencedFileDir(proxyShape);
 
-    if (currentFileDir.empty())
+    if (currentFileDir.empty()) {
         currentFileDir = getMayaSceneFileDir();
+    }
 
-    if (currentFileDir.empty())
+    if (currentFileDir.empty()) {
         return relativeFilePath;
+    }
 
-    std::error_code errorCode;
-    auto            path = ghc::filesystem::canonical(
-        ghc::filesystem::path(currentFileDir).append(relativeFilePath), errorCode);
+    auto path = ghc::filesystem::path(currentFileDir).append(relativeFilePath);
 
-    if (errorCode) {
-        // file does not exist
+    // if file does not exist
+    if (path.empty()) {
         return std::string();
     }
 
