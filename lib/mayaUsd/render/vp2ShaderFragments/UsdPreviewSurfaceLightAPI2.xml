@@ -23,7 +23,7 @@ limitations under the License.
 
         <!-- Fragments for computing material. -->
         <fragment_ref name="opacityToTransparency" ref="opacityToTransparency"/>
-        <fragment_ref name="usdPreviewSurfaceNGLighting" ref="usdPreviewSurfaceNGLighting"/>
+        <fragment_ref name="usdPreviewSurfaceLightingAPI2" ref="usdPreviewSurfaceLightingAPI2"/>
 
         <!-- Maya fragments for computing the output surface values. -->
         <fragment_ref name="maya_FogDepthSurface" ref="maya_FogDepthSurface"/>
@@ -31,32 +31,32 @@ limitations under the License.
         <fragment_ref name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput"/>
     </fragments>
     <connections>
-        <connect from="NwFaceCameraIfNAN.output" to="usdPreviewSurfaceNGLighting.Nw" name="Nw"/>
-        <connect from="opacityToTransparency.transparency" to="usdPreviewSurfaceNGLighting.transparency" name="transparency"/>
-        <connect from="usdPreviewSurfaceNGLighting.surfaceShader" to="mayaComputeSurfaceFinal.input" name="input"/>
+        <connect from="NwFaceCameraIfNAN.output" to="usdPreviewSurfaceLightingAPI2.Nw" name="Nw"/>
+        <connect from="opacityToTransparency.transparency" to="usdPreviewSurfaceLightingAPI2.transparency" name="transparency"/>
+        <connect from="usdPreviewSurfaceLightingAPI2.surfaceShader" to="mayaComputeSurfaceFinal.input" name="input"/>
         <connect from="maya_FogDepthSurface.maya_FogDepthSurface" to="mayaComputeSurfaceFinal.maya_FogDepthSurface" name="maya_FogDepthSurface"/>
         <connect from="mayaComputeSurfaceFinal.mayaComputeSurfaceFinal" to="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput" name="mayaSurfaceShaderOutput"/>
     </connections>
     <properties>
         <!-- UsdPreviewSurface Parameters -->
-        <float name="clearcoat" ref="usdPreviewSurfaceNGLighting.clearcoatAmount"/>
-        <float name="clearcoatRoughness" ref="usdPreviewSurfaceNGLighting.clearcoatRoughness"/>
-        <float3 name="diffuseColor" ref="usdPreviewSurfaceNGLighting.diffuseColor" flags="multiDraw"/>
-        <float3 name="emissiveColor" ref="usdPreviewSurfaceNGLighting.emissiveColor"/>
-        <float name="ior" ref="usdPreviewSurfaceNGLighting.ior"/>
-        <float name="metallic" ref="usdPreviewSurfaceNGLighting.metallic"/>
-        <float name="occlusion" ref="usdPreviewSurfaceNGLighting.occlusion"/>
-        <float name="roughness" ref="usdPreviewSurfaceNGLighting.specularRoughness"/>
-        <float3 name="specularColor" ref="usdPreviewSurfaceNGLighting.specularColor"/>
+        <float name="clearcoat" ref="usdPreviewSurfaceLightingAPI2.clearcoatAmount"/>
+        <float name="clearcoatRoughness" ref="usdPreviewSurfaceLightingAPI2.clearcoatRoughness"/>
+        <float3 name="diffuseColor" ref="usdPreviewSurfaceLightingAPI2.diffuseColor" flags="multiDraw"/>
+        <float3 name="emissiveColor" ref="usdPreviewSurfaceLightingAPI2.emissiveColor"/>
+        <float name="ior" ref="usdPreviewSurfaceLightingAPI2.ior"/>
+        <float name="metallic" ref="usdPreviewSurfaceLightingAPI2.metallic"/>
+        <float name="occlusion" ref="usdPreviewSurfaceLightingAPI2.occlusion"/>
+        <float name="roughness" ref="usdPreviewSurfaceLightingAPI2.specularRoughness"/>
+        <float3 name="specularColor" ref="usdPreviewSurfaceLightingAPI2.specularColor"/>
         <float name="opacity" ref="opacityToTransparency.opacity"/>
-        <bool name="useSpecularWorkflow" ref="usdPreviewSurfaceNGLighting.useSpecularWorkflow"/>
+        <bool name="useSpecularWorkflow" ref="usdPreviewSurfaceLightingAPI2.useSpecularWorkflow"/>
 
         <!-- Maya Parameters for Lighting -->
-        <float3 name="u_viewPosition" semantic="WorldCameraPosition" flags="isRequirementOnly" ref="usdPreviewSurfaceNGLighting.u_viewPosition"/>
-        <int name="mayaExternalLightFunctions" flags="isRequirementOnly" ref="usdPreviewSurfaceNGLighting.mayaExternalLightFunctions"/>
+        <float3 name="u_viewPosition" semantic="WorldCameraPosition" flags="isRequirementOnly" ref="usdPreviewSurfaceLightingAPI2.u_viewPosition"/>
+        <int name="mayaExternalLightFunctions" flags="isRequirementOnly" ref="usdPreviewSurfaceLightingAPI2.mayaExternalLightFunctions"/>
         <undefined name="GPUStage" ref="mayaComputeSurfaceFinal.GPUStage" semantic="GPUStage"/>
         <float3 name="Nw" ref="NwFaceCameraIfNAN.Nw" flags="varyingInputParam"/>
-        <float3 name="Pw" ref="usdPreviewSurfaceNGLighting.Pw" semantic="Pw"/>
+        <float3 name="Pw" ref="usdPreviewSurfaceLightingAPI2.Pw" semantic="Pw"/>
         <float name="extraOpacity" ref="mayaComputeSurfaceFinal.extraOpacity"/>
         <bool name="fogEnabled" ref="mayaComputeSurfaceFinal.fogEnabled"/>
         <float4x4 name="ViewProj" ref="maya_FogDepthSurface.ViewProj" semantic="viewprojection"/>

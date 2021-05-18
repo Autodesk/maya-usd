@@ -32,20 +32,6 @@ import ufe
 
 import os
 
-def mayaHasNGLighting():
-    """
-    There is a new way to compute lighting that will be available in PR126 and
-    2022.1.
-    """
-    mayaMajor = mayaUtils.mayaMajorVersion()
-    if mayaMajor >= 2023:
-        return mayaUtils.previewReleaseVersion() > 125
-    elif mayaMajor >= 2022:
-        return mayaUtils.mayaMinorVersion() > 0
-    else:
-        return False
-
-
 class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
     """
     Test various features of the USD Preview Surface implementation.
@@ -117,10 +103,10 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, lights=False, displayLights="all")
 
-        if mayaHasNGLighting():
-            self.assertSnapshotClose("testMetallicResponseNG.png")
+        if int(os.getenv("MAYA_LIGHTAPI_VERSION")) == 2:
+            self.assertSnapshotClose("testMetallicResponseLightAPI2.png")
         else:
-            self.assertSnapshotClose("testMetallicResponse.png")
+            self.assertSnapshotClose("testMetallicResponseLightAPI1.png")
 
 
 if __name__ == '__main__':

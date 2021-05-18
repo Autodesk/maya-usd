@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ========================================================================
 -->
-<fragment uiName="usdPreviewSurfaceNGLighting" name="usdPreviewSurfaceNGLighting" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+<fragment uiName="usdPreviewSurfaceLightingAPI2" name="usdPreviewSurfaceLightingAPI2" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
     <description>
         Computes usdPreviewSurface using latest maya lighting functions.
     </description>

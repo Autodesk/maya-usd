@@ -67,8 +67,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (scaledDiffusePassThrough)
     (scaledSpecularPassThrough)
     (opacityToTransparency)
-    (usdPreviewSurfaceLighting)
-    (usdPreviewSurfaceNGLighting)
+    (usdPreviewSurfaceLightingAPI1)
+    (usdPreviewSurfaceLightingAPI2)
     (usdPreviewSurfaceCombiner)
 
     (UsdPrimvarColor)
@@ -83,7 +83,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPrimvarReader_vector)
 
     // Graph:
-    (UsdPreviewSurfaceNG)
+    (UsdPreviewSurfaceLightAPI1)
+    (UsdPreviewSurfaceLightAPI2)
 );
 // clang-format on
 
@@ -123,8 +124,8 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->scaledDiffusePassThrough,
                                               _tokens->scaledSpecularPassThrough,
                                               _tokens->opacityToTransparency,
-                                              _tokens->usdPreviewSurfaceLighting,
-                                              _tokens->usdPreviewSurfaceNGLighting,
+                                              _tokens->usdPreviewSurfaceLightingAPI1,
+                                              _tokens->usdPreviewSurfaceLightingAPI2,
                                               _tokens->usdPreviewSurfaceCombiner };
 
 static const TfTokenVector _FragmentGraphNames
@@ -301,36 +302,14 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
-    // Register the UsdPreviewSurface shader graph:
+    // Register a UsdPreviewSurface shader graph:
     {
         const MString fragGraphName(HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText());
-
-        // Next generation lighting is available in 2023 and 2022.1
-        bool    useNGLighting = false;
-        int     majorVersion = 0;
-        MString cmdResult;
-        MGlobal::executeCommand("about -majorVersion", cmdResult);
-        if (cmdResult.isInt()) {
-            majorVersion = cmdResult.asInt();
-        }
-        if (majorVersion >= 2023) {
-            MGlobal::executeCommand("about -version", cmdResult);
-            if (cmdResult.substitute("Preview Release ", "") == MS::kSuccess) {
-                if (cmdResult.asInt() > 125) {
-                    useNGLighting = true;
-                }
-            } else {
-                useNGLighting = true;
-            }
-        } else if (majorVersion >= 2022) {
-            MGlobal::executeCommand("about -minorVersion", cmdResult);
-            if (cmdResult.isInt() && cmdResult.asInt() > 0) {
-                useNGLighting = true;
-            }
-        }
-
-        const MString fragGraphFileName(
-            useNGLighting ? _tokens->UsdPreviewSurfaceNG.GetText() : fragGraphName);
+#ifdef MAYA_LIGHTAPI_VERSION_2
+        const MString fragGraphFileName(_tokens->UsdPreviewSurfaceLightAPI2.GetText());
+#else
+        const MString fragGraphFileName(_tokens->UsdPreviewSurfaceLightAPI1.GetText());
+#endif
         if (!fragmentManager->hasFragment(fragGraphName)) {
             const std::string fragGraphXmlFile
                 = TfStringPrintf("%s.xml", fragGraphFileName.asChar());

@@ -11,6 +11,7 @@
 # MAYA_INCLUDE_DIRS   Path to the devkit's include directories
 # MAYA_API_VERSION    Maya version (6-8 digits)
 # MAYA_APP_VERSION    Maya app version (4 digits)
+# MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2)
 #
 
 #=============================================================================
@@ -297,6 +298,37 @@ find_program(MAYA_PY_EXECUTABLE
         "Maya's Python executable path"
 )
 
+set(MAYA_LIGHTAPI_VERSION 1)
+if(IS_MACOSX)
+    set(MAYA_DSO_SUFFIX ".dylib")
+elseif(IS_WINDOWS)
+    set(MAYA_DSO_SUFFIX ".dll")
+else(IS_LINUX)
+    set(MAYA_DSO_SUFFIX ".so")
+endif()
+find_file(MAYA_OGSDEVICES_LIBRARY
+        "OGSDevices${MAYA_DSO_SUFFIX}"
+    HINTS
+        "${MAYA_LIBRARY_DIR}"
+        "${MAYA_LOCATION}"
+    PATH_SUFFIXES
+        lib/
+        bin/
+    DOC
+        "Maya's ${MAYA_LIB} library path"
+    # NO_CMAKE_SYSTEM_PATH needed to avoid conflicts between
+    # Maya's Foundation library and OSX's framework.
+    NO_CMAKE_SYSTEM_PATH
+)
+message(INFO " Got MAYA_OGSDEVICES_LIBRARY = ${MAYA_OGSDEVICES_LIBRARY}")
+if (MAYA_OGSDEVICES_LIBRARY)
+    file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_2 REGEX "InitializeLightShader")
+    if (HAS_LIGHTAPI_2)
+        set(MAYA_LIGHTAPI_VERSION 2)
+    endif()
+endif()
+message(INFO " Got MAYA_LIGHTAPI_VERSION = ${MAYA_LIGHTAPI_VERSION}")
+
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
@@ -310,6 +342,7 @@ find_package_handle_standard_args(Maya
         MAYA_LIBRARIES
         MAYA_API_VERSION
         MAYA_APP_VERSION
+        MAYA_LIGHTAPI_VERSION
     VERSION_VAR
         MAYA_APP_VERSION
 )
