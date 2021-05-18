@@ -136,6 +136,12 @@ public:
                     return false;
                 }
             }
+
+            auto layerToAdd = SdfLayer::FindOrOpen(_subPath);
+            if(layerToAdd) {
+                _subPath = layerToAdd->GetIdentifier();
+            }
+
             layer->InsertSubLayerPath(_subPath, _index);
             TF_VERIFY(layer->GetSubLayerPaths()[_index] == _subPath);
         } else {
