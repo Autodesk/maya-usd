@@ -392,6 +392,8 @@ class AETemplate(object):
         # We create the section named "layoutName" if at least one
         # of the attributes from the input list exists.
         for attr in attrList:
+            if attr in self.suppressedAttrs:
+                continue
             if self.attrS.hasAttribute(attr):
                 with ufeAeTemplate.Layout(self, layoutName, collapse):
                     # Note: addControls will silently skip any attributes
