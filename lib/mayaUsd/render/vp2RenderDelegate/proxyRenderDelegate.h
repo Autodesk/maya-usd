@@ -41,7 +41,7 @@
 #endif
 
 // The new Maya point snapping support doesn't require point snapping items any more.
-#if MAYA_API_VERSION >= 20230000
+#if MAYA_API_VERSION >= 20220100
 #define MAYA_NEW_POINT_SNAPPING_SUPPORT
 #endif
 
