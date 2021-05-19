@@ -301,13 +301,16 @@ find_program(MAYA_PY_EXECUTABLE
 set(MAYA_LIGHTAPI_VERSION 1)
 if(IS_MACOSX)
     set(MAYA_DSO_SUFFIX ".dylib")
+    sef(MAYA_DSO_PREFIX "lib")
 elseif(IS_WINDOWS)
     set(MAYA_DSO_SUFFIX ".dll")
+    sef(MAYA_DSO_PREFIX "")
 else(IS_LINUX)
     set(MAYA_DSO_SUFFIX ".so")
+    sef(MAYA_DSO_PREFIX "lib")
 endif()
 find_file(MAYA_OGSDEVICES_LIBRARY
-        "OGSDevices${MAYA_DSO_SUFFIX}"
+        "${MAYA_DSO_PREFIX}OGSDevices${MAYA_DSO_SUFFIX}"
     HINTS
         "${MAYA_LIBRARY_DIR}"
         "${MAYA_LOCATION}"
