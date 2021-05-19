@@ -433,11 +433,16 @@ class AttributeTestCase(unittest.TestCase):
                          ufe.Vector3d(vec.x()-1.0, vec.y()-2.0, vec.z()-3.0))
 
     def testObservation(self):
-        '''Test Attributes observation interface.
+        '''
+        Test Attributes observation interface.
 
         Test both global attribute observation and per-node attribute
         observation.
         '''
+
+        # Start we a clean scene so we can get a consistent number of notifications
+        cmds.file(new=True, force=True)
+        mayaUtils.openTopLayerScene()
 
         # Create three observers, one for global attribute observation, and two
         # on different UFE items.
@@ -507,47 +512,70 @@ class AttributeTestCase(unittest.TestCase):
 
         self.assertEqual(ball34Obs.notifications, 0)
 
-        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(1, 2, 3)))
-
+        # The first modification adds a new spec to ball_34 & its ancestors
+        # "Props" and "Room_set". Ufe should be filtering out those notifications
+        # so the global observer should still only see one notification.
+        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 15)))
         self.assertEqual(ball34Obs.notifications, 1)
         self.assertEqual(ball35Obs.notifications, 0)
         self.assertEqual(globalObs.notifications, 1)
 
-        # Undo, redo
-        cmds.undo()
-
+        # The second modification only sends one USD notification for "xformOps:translate"
+        # because all the spec's already exist. Ufe should also see one notification.
+        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 20)))
         self.assertEqual(ball34Obs.notifications, 2)
         self.assertEqual(ball35Obs.notifications, 0)
         self.assertEqual(globalObs.notifications, 2)
 
-        cmds.redo()
-
+        # Undo, redo
+        cmds.undo()
         self.assertEqual(ball34Obs.notifications, 3)
         self.assertEqual(ball35Obs.notifications, 0)
         self.assertEqual(globalObs.notifications, 3)
+
+        cmds.redo()
+        self.assertEqual(ball34Obs.notifications, 4)
+        self.assertEqual(ball35Obs.notifications, 0)
+        self.assertEqual(globalObs.notifications, 4)
+
+        # get ready to undo the first modification
+        cmds.undo()
+        self.assertEqual(ball34Obs.notifications, 5)
+        self.assertEqual(ball35Obs.notifications, 0)
+        self.assertEqual(globalObs.notifications, 5)
+
+        # Undo-ing the modification which created the USD specs is a little
+        # different in USD, but from Ufe we should just still see one notification.
+        cmds.undo()
+        self.assertEqual(ball34Obs.notifications, 6)
+        self.assertEqual(ball35Obs.notifications, 0)
+        self.assertEqual(globalObs.notifications, 6)
+
+        cmds.redo()
+        self.assertEqual(ball34Obs.notifications, 7)
+        self.assertEqual(ball35Obs.notifications, 0)
+        self.assertEqual(globalObs.notifications, 7)
 
         # Make a change to ball35, global and ball35 observers change.
         ball35Attrs = ufe.Attributes.attributes(ball35)
         ball35XlateAttr = ball35Attrs.attribute('xformOp:translate')
 
-        ufeCmd.execute(ball35XlateAttr.setCmd(ufe.Vector3d(1, 2, 3)))
-
-        self.assertEqual(ball34Obs.notifications, 3)
+        # "xformOp:translate"
+        ufeCmd.execute(ball35XlateAttr.setCmd(ufe.Vector3d(4, 8, 15)))
+        self.assertEqual(ball34Obs.notifications, 7)
         self.assertEqual(ball35Obs.notifications, 1)
-        self.assertEqual(globalObs.notifications, 4)
+        self.assertEqual(globalObs.notifications, 8)
 
         # Undo, redo
         cmds.undo()
-
-        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball34Obs.notifications, 7)
         self.assertEqual(ball35Obs.notifications, 2)
-        self.assertEqual(globalObs.notifications, 5)
+        self.assertEqual(globalObs.notifications, 9)
 
         cmds.redo()
-
-        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball34Obs.notifications, 7)
         self.assertEqual(ball35Obs.notifications, 3)
-        self.assertEqual(globalObs.notifications, 6)
+        self.assertEqual(globalObs.notifications, 10)
 
         # Test removeObserver.
         ufe.Attributes.removeObserver(ball34, ball34Obs)
@@ -558,11 +586,11 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ufe.Attributes.nbObservers(ball35), 1)
         self.assertFalse(ufe.Attributes.hasObserver(ball34, ball34Obs))
 
-        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 5, 6)))
+        ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(4, 4, 25)))
 
-        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball34Obs.notifications, 7)
         self.assertEqual(ball35Obs.notifications, 3)
-        self.assertEqual(globalObs.notifications, 7)
+        self.assertEqual(globalObs.notifications, 11)
 
         ufe.Attributes.removeObserver(globalObs)
 
@@ -570,9 +598,9 @@ class AttributeTestCase(unittest.TestCase):
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(7, 8, 9)))
 
-        self.assertEqual(ball34Obs.notifications, 3)
+        self.assertEqual(ball34Obs.notifications, 7)
         self.assertEqual(ball35Obs.notifications, 3)
-        self.assertEqual(globalObs.notifications, 7)
+        self.assertEqual(globalObs.notifications, 11)
 
     # Run last to avoid file new disturbing other tests.
     def testZAttrChangeRedoAfterPrimCreateRedo(self):
