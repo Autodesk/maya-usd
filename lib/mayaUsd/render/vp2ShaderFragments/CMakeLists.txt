@@ -15,13 +15,15 @@ list(APPEND SHADERFRAGMENTS_XMLS
     Float4ToFloatX.xml
     Float4ToFloatY.xml
     Float4ToFloatZ.xml
-    UsdPreviewSurface.xml
+    UsdPreviewSurfaceLightAPI1.xml
+    UsdPreviewSurfaceLightAPI2.xml
     lightingContributions.xml
     opacityToTransparency.xml
     scaledDiffusePassThrough.xml
     scaledSpecularPassThrough.xml
     usdPreviewSurfaceCombiner.xml
-    usdPreviewSurfaceLighting.xml
+    usdPreviewSurfaceLightingAPI1.xml
+    usdPreviewSurfaceLightingAPI2.xml
     # New fragments
     BasisCurvesCubicColorDomain.xml
     BasisCurvesCubicCPVHull.xml

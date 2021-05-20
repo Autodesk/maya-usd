@@ -19,6 +19,8 @@
 import fixturesUtils
 import mayaUtils
 import usdUtils
+import ufeUtils
+import testUtils
 
 from maya import cmds
 from maya import standalone
@@ -161,6 +163,27 @@ class Transform3dMatricesTestCase(unittest.TestCase):
             cylInclMat.matrix, [[1, 0, 0, 0], [0, cx60, sx60, 0],
                                 [0, -sx60, cx60, 0], [0, 10, 0, 1]])
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testTransform3dMatrixOpAccessors only available in UFE v2 or greater.')
+    def testTransform3dMatrixOpAccessors(self):
+        '''Matrix transform op TRS must match separate transform op TRS.'''
+
+        testFile = testUtils.getTestScene("transform3d", "TranslateRotate_vs_xform.usda")
+        (psPath, stage) = mayaUtils.createProxyFromFile(testFile)
+
+        # cam1 has the "transform" transform op (i.e. a matrix), and cam2 has
+        # translate + rotateXYZ transform ops.
+        cam1 = ufe.Hierarchy.createItem(
+            ufe.PathString.path(psPath + ",/cameras/cam1"))
+        cam2 = ufe.Hierarchy.createItem(
+            ufe.PathString.path(psPath + ",/cameras/cam2"))
+        cam1t3d = ufe.Transform3d.transform3d(cam1)
+        cam2t3d = ufe.Transform3d.transform3d(cam2)
+        cam1T = cam1t3d.translation()
+        cam2T = cam2t3d.translation()
+        testUtils.assertVectorAlmostEqual(self, cam1T.vector, cam2T.vector)
+        cam1R = cam1t3d.rotation()
+        cam2R = cam2t3d.rotation()
+        testUtils.assertVectorAlmostEqual(self, cam1R.vector, cam2R.vector)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

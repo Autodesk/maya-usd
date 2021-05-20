@@ -32,7 +32,6 @@ import ufe
 
 import os
 
-
 class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
     """
     Test various features of the USD Preview Surface implementation.
@@ -104,7 +103,10 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, lights=False, displayLights="all")
 
-        self.assertSnapshotClose("testMetallicResponse.png")
+        if int(os.getenv("MAYA_LIGHTAPI_VERSION")) == 2:
+            self.assertSnapshotClose("testMetallicResponseLightAPI2.png")
+        else:
+            self.assertSnapshotClose("testMetallicResponseLightAPI1.png")
 
 
 if __name__ == '__main__':

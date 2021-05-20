@@ -59,6 +59,7 @@ foreach(script ${TEST_SCRIPT_FILES})
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
 
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
