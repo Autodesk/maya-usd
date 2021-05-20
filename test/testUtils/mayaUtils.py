@@ -245,6 +245,8 @@ def previewReleaseVersion():
 def mayaMajorVersion():
     return int(cmds.about(majorVersion=True))
 
+def mayaMinorVersion():
+    return int(cmds.about(minorVersion=True))
 
 def activeModelPanel():
     """Return the model panel that will be used for playblasting etc..."""

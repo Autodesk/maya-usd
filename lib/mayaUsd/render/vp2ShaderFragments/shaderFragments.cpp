@@ -67,7 +67,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (scaledDiffusePassThrough)
     (scaledSpecularPassThrough)
     (opacityToTransparency)
-    (usdPreviewSurfaceLighting)
+    (usdPreviewSurfaceLightingAPI1)
+    (usdPreviewSurfaceLightingAPI2)
     (usdPreviewSurfaceCombiner)
 
     (UsdPrimvarColor)
@@ -80,6 +81,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPrimvarReader_float3)
     (UsdPrimvarReader_float4)
     (UsdPrimvarReader_vector)
+
+    // Graph:
+    (UsdPreviewSurfaceLightAPI1)
+    (UsdPreviewSurfaceLightAPI2)
 );
 // clang-format on
 
@@ -119,17 +124,14 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->scaledDiffusePassThrough,
                                               _tokens->scaledSpecularPassThrough,
                                               _tokens->opacityToTransparency,
-                                              _tokens->usdPreviewSurfaceLighting,
+                                              _tokens->usdPreviewSurfaceLightingAPI1,
+                                              _tokens->usdPreviewSurfaceLightingAPI2,
                                               _tokens->usdPreviewSurfaceCombiner };
 
 static const TfTokenVector _FragmentGraphNames
-    = { _tokens->BasisCurvesCubicCPVShader,
-        _tokens->BasisCurvesCubicFallbackShader,
-        _tokens->BasisCurvesLinearCPVShader,
-        _tokens->BasisCurvesLinearFallbackShader,
-        _tokens->FallbackCPVShader,
-        _tokens->FallbackShader,
-        HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName };
+    = { _tokens->BasisCurvesCubicCPVShader,  _tokens->BasisCurvesCubicFallbackShader,
+        _tokens->BasisCurvesLinearCPVShader, _tokens->BasisCurvesLinearFallbackShader,
+        _tokens->FallbackCPVShader,          _tokens->FallbackShader };
 
 namespace {
 //! Get the file path of the shader fragment.
@@ -300,6 +302,32 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
+    // Register a UsdPreviewSurface shader graph:
+    {
+        const MString fragGraphName(HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText());
+#ifdef MAYA_LIGHTAPI_VERSION_2
+        const MString fragGraphFileName(_tokens->UsdPreviewSurfaceLightAPI2.GetText());
+#else
+        const MString fragGraphFileName(_tokens->UsdPreviewSurfaceLightAPI1.GetText());
+#endif
+        if (!fragmentManager->hasFragment(fragGraphName)) {
+            const std::string fragGraphXmlFile
+                = TfStringPrintf("%s.xml", fragGraphFileName.asChar());
+            const std::string fragGraphXmlPath = _GetResourcePath(fragGraphXmlFile);
+
+            const MString addedName
+                = fragmentManager->addFragmentGraphFromFile(fragGraphXmlPath.c_str());
+            if (addedName != fragGraphName) {
+                MGlobal::displayError(TfStringPrintf(
+                                          "Failed to register fragment graph '%s' from file: %s",
+                                          fragGraphName.asChar(),
+                                          fragGraphXmlPath.c_str())
+                                          .c_str());
+                return MS::kFailure;
+            }
+        }
+    }
+
 #if MAYA_API_VERSION >= 20210000
 
     // Register automatic shader stage input parameters.
@@ -360,6 +388,13 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
     }
 
 #endif
+
+    // De-register UsdPreviewsurface graph:
+    if (!fragmentManager->removeFragment(
+            HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText())) {
+        MGlobal::displayWarning("Failed to remove fragment graph: UsdPreviewsurface");
+        return MS::kFailure;
+    }
 
     // De-register all fragment graphs.
     for (const TfToken& fragGraphNameToken : _FragmentGraphNames) {
