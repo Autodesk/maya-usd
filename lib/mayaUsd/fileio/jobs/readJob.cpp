@@ -261,7 +261,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
-    // check if "USDZ Texture import" option is checked and the archive in question is a USDZ.
+    // check if "USDZ Texture Import" option is checked and the archive in question is a USDZ.
     if (mArgs.importUSDZTextures && stage->GetRootLayer()->GetFileFormat()->IsPackage()) {
         if (mArgs.importUSDZTexturesFilePath.length() == 0) {
             MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
