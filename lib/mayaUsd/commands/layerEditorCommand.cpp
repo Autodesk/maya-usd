@@ -137,6 +137,14 @@ public:
                 }
             }
 
+            // According to USD codebase, we should always call SdfLayer::InsertSubLayerPath()
+            // with a layer's identifier. So, if the layer exists, override _subPath with the
+            // identifier in case this command was called with a filesystem path. Otherwise,
+            // adding the layer with the filesystem path can cause issue when muting the layer
+            // on Windows if the path is absolute and start with a capital drive letter.
+            //
+            // Note: It's possible that SdfLayer::FindOrOpen() fail because we
+            //       allow user to add layer that does not exists.
             auto layerToAdd = SdfLayer::FindOrOpen(_subPath);
             if(layerToAdd) {
                 _subPath = layerToAdd->GetIdentifier();
