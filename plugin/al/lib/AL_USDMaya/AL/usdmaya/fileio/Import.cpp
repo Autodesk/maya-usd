@@ -147,7 +147,7 @@ void Import::doImport()
             m_nonImportablePrims.insert(TfToken("NurbsCurves"));
         }
 
-        std::map<SdfPath, MObject> masterMap;
+        std::map<SdfPath, MObject> prototypeMap;
         TransformIterator          it(stage, m_params.m_parentPath);
         // start from the assigned prim
         const std::string importPrimPath = AL::maya::utils::convert(m_params.m_primPath);
@@ -161,13 +161,18 @@ void Import::doImport()
         for (; !it.done(); it.next()) {
             const UsdPrim& prim = it.prim();
             if (prim.IsInstance()) {
-                UsdPrim masterPrim = prim.GetMaster();
-                auto    iter = masterMap.find(masterPrim.GetPath());
-                if (iter == masterMap.end()) {
+                UsdPrim prototypePrim = 
+#if PXR_VERSION < 2011
+                    prim.GetMaster();
+#else
+                    prim.GetPrototype();
+#endif
+                auto    iter = prototypeMap.find(prototypePrim.GetPath());
+                if (iter == prototypeMap.end()) {
                     MObject    mayaObject = createParentTransform(prim, it, manufacture);
                     MFnDagNode fnInstance(mayaObject);
                     fnInstance.setInstanceable(true);
-                    masterMap.emplace(masterPrim.GetPath(), mayaObject);
+                    prototypeMap.emplace(prototypePrim.GetPath(), mayaObject);
                 } else {
                     MStatus status;
                     MObject instanceParent = iter->second;
@@ -241,7 +246,11 @@ MObject Import::createShape(
     bool                                parentUnmerged)
 {
     MObject shapeObj;
+#if PXR_VERSION < 2011
     if (prim.IsInMaster()) {
+#else
+    if (prim.IsInPrototype()) {
+#endif
         const SdfPath& primPath = prim.GetPrimPath();
         if (m_instanceObjects.find(primPath) != m_instanceObjects.end()) {
             shapeObj = m_instanceObjects[primPath];
