@@ -56,7 +56,7 @@
 #include <maya/MStatus.h>
 #include <maya/MTime.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 #include <map>
 #include <string>
@@ -396,7 +396,7 @@ void UsdMaya_ReadJob::_DoImportInstanceIt(
     if (!primIt.IsPostVisit()) {
         return;
     }
-    const UsdPrim prototype = 
+    const UsdPrim prototype =
 #if PXR_VERSION < 2011
         prim.GetMaster();
 #else

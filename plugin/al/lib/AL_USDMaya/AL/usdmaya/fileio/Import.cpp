@@ -161,13 +161,13 @@ void Import::doImport()
         for (; !it.done(); it.next()) {
             const UsdPrim& prim = it.prim();
             if (prim.IsInstance()) {
-                UsdPrim prototypePrim = 
+                UsdPrim prototypePrim =
 #if PXR_VERSION < 2011
                     prim.GetMaster();
 #else
                     prim.GetPrototype();
 #endif
-                auto    iter = prototypeMap.find(prototypePrim.GetPath());
+                auto iter = prototypeMap.find(prototypePrim.GetPath());
                 if (iter == prototypeMap.end()) {
                     MObject    mayaObject = createParentTransform(prim, it, manufacture);
                     MFnDagNode fnInstance(mayaObject);

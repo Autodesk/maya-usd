@@ -100,7 +100,7 @@ bool TransformIterator::next()
         StackRef& r = *(m_primStack.end() - 1);
         if (r.m_prim.IsInstance() && !m_stopOnInstance) {
             if (!m_stopOnInstance) {
-                UsdPrim prototype = 
+                UsdPrim prototype =
 #if PXR_VERSION < 2011
                     r.m_prim.GetMaster();
 #else
@@ -184,7 +184,11 @@ UsdPrim TransformIterator::parentPrim() const
     UsdPrim parentPrim = m_stage->GetPseudoRoot();
     if (m_primStack.size() > 1) {
         parentPrim = (m_primStack.end() - 2)->m_prim;
+#if PXR_VERSION < 2011
+        if (parentPrim.IsMaster()) {
+#else
         if (parentPrim.IsPrototype()) {
+#endif
             if (m_primStack.size() > 2) {
                 parentPrim = (m_primStack.end() - 3)->m_prim;
             }
