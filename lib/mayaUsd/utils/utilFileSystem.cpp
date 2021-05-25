@@ -157,10 +157,12 @@ std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
         return relativeFilePath;
     }
 
-    auto path = ghc::filesystem::path(currentFileDir).append(relativeFilePath);
+    std::error_code errorCode;
+    auto            path = ghc::filesystem::canonical(
+        ghc::filesystem::path(currentFileDir).append(relativeFilePath), errorCode);
 
-    // if file does not exist
-    if (path.empty()) {
+    if (errorCode) {
+        // file does not exist
         return std::string();
     }
 
