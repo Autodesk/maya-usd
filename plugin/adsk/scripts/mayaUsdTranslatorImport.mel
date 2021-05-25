@@ -140,7 +140,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         menuItem -l "Phong" -ann "phong";
 
         string $importUSDZTexturesAnn = "When a .usdz file is chosen and this is selected, .usdz texture files are imported and copied to new files on disk. To locate these files, navigate to the current Maya workspace /sourceimages directory.";
-        checkBoxGrp -label "USDZ Texture import: " -cw 1 $cw2 -ann $importUSDZTexturesAnn mayaUsdTranslator_ImportUSDZTexturesCheckBox;
+        checkBoxGrp -label "USDZ Texture Import: " -cw 1 $cw2 -ann $importUSDZTexturesAnn mayaUsdTranslator_ImportUSDZTexturesCheckBox;
 
         string $instancedAnn = "Converts instanced prims to Maya instances. Instanced prims share parts of\nthe USD scenegraph through instancing. Each instanced prim is associated\nwith a master prim that serves as the root of the scenegraph. This hierarchy\nreduces the time needed to load the file. Instanced prims must be manually\ntagged.";
         checkBoxGrp -label "Instanced Prims: " -label1 "Convert to Instances" -cw 1 $cw1 -value1 1 -ann $instancedAnn mayaUsdTranslator_ImportInstancesCheckBox;
