@@ -1486,28 +1486,30 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
     Repr objects are created to support specific reprName tokens, and contain a list of
     HdVP2DrawItems and corresponding RenderItems.
 */
-void HdVP2Mesh::_MakeOtherReprRenderItemsInvisible(HdSceneDelegate* sceneDelegate, const TfToken& reprToken)
+void HdVP2Mesh::_MakeOtherReprRenderItemsInvisible(
+    HdSceneDelegate* sceneDelegate,
+    const TfToken&   reprToken)
 {
     for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
         if (pair.first != reprToken) {
             // For each relevant draw item, update dirty buffer sources.
             _MeshReprConfig::DescArray reprDescs = _GetReprDesc(pair.first);
-            int drawItemIndex = 0;
+            int                        drawItemIndex = 0;
             for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx, drawItemIndex++) {
                 const HdMeshReprDesc& desc = reprDescs[descIdx];
                 if (desc.geomStyle == HdMeshGeomStyleInvalid) {
                     continue;
                 }
-                auto* drawItem = static_cast<HdVP2DrawItem*>(pair.second->GetDrawItem(drawItemIndex));
+                auto* drawItem
+                    = static_cast<HdVP2DrawItem*>(pair.second->GetDrawItem(drawItemIndex));
                 if (!drawItem)
                     continue;
 
                 for (auto& renderItemData : drawItem->GetRenderItems()) {
-                    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                        [&renderItemData]() {
-                            renderItemData._enabled = false;
-                            renderItemData._renderItem->enable(false);
-                        });
+                    _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() {
+                        renderItemData._enabled = false;
+                        renderItemData._renderItem->enable(false);
+                    });
                 }
             }
         }
