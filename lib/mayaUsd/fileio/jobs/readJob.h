@@ -121,8 +121,8 @@ private:
         UsdMayaPrimReaderContext& readCtx,
         _PrimReaderMap&           primReaders);
 
-    void _ImportMaster(
-        const UsdPrim&            master,
+    void _ImportPrototype(
+        const UsdPrim&            prototype,
         const UsdPrim&            usdRootPrim,
         UsdMayaPrimReaderContext& readCtx);
 
