@@ -146,7 +146,7 @@ public:
             // Note: It's possible that SdfLayer::FindOrOpen() fail because we
             //       allow user to add layer that does not exists.
             auto layerToAdd = SdfLayer::FindOrOpen(_subPath);
-            if(layerToAdd) {
+            if (layerToAdd) {
                 _subPath = layerToAdd->GetIdentifier();
             }
 
