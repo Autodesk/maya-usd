@@ -24,6 +24,8 @@ list(APPEND SHADERFRAGMENTS_XMLS
     usdPreviewSurfaceCombiner.xml
     usdPreviewSurfaceLightingAPI1.xml
     usdPreviewSurfaceLightingAPI2.xml
+    # MaterialX
+    materialXTw.xml
     # New fragments
     BasisCurvesCubicColorDomain.xml
     BasisCurvesCubicCPVHull.xml

@@ -47,6 +47,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
         $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
         $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
 
@@ -97,6 +98,15 @@ target_compile_definitions(${PROJECT_NAME}
         MAYA_PY_VERSION=${MAYA_PY_VERSION}
 )
 
+if(CMAKE_WANT_MATERIALX_BUILD)
+# Path where MaterialX was found. Allows loading the required libraries.
+string(REPLACE "\\" "/" Forward_MaterialX_DIR ${MaterialX_DIR})
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        MaterialX_DIR="${Forward_MaterialX_DIR}"
+)
+endif()
+
 mayaUsd_compile_config(${PROJECT_NAME})
 
 # -----------------------------------------------------------------------------
@@ -139,6 +149,11 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
         ${MAYA_LIBRARIES}
         mayaUsdUtils
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXCore>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXFormat>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXRender>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenOgsXml>
     PRIVATE
         ghc_filesystem
 )

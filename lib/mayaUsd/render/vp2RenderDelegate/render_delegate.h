@@ -122,6 +122,10 @@ public:
     void CommitResources(HdChangeTracker* tracker) override;
 
     TfToken GetMaterialBindingPurpose() const override;
+#ifdef WANT_MATERIALX_BUILD
+    TfTokenVector GetShaderSourceTypes() const override;
+    TfTokenVector GetMaterialRenderContexts() const override;
+#endif
 
     MString GetLocalNodeName(const MString& name) const;
 

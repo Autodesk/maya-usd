@@ -71,6 +71,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (usdPreviewSurfaceLightingAPI2)
     (usdPreviewSurfaceCombiner)
 
+    (materialXTw)
+
     (UsdPrimvarColor)
 
     (UsdUVTexture)
@@ -119,6 +121,8 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->Float4ToFloat4,
 
                                               _tokens->NwFaceCameraIfNAN,
+
+                                              _tokens->materialXTw,
 
                                               _tokens->lightingContributions,
                                               _tokens->scaledDiffusePassThrough,

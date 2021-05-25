@@ -24,6 +24,11 @@
 
 #include <maya/MShaderManager.h>
 
+#ifdef WANT_MATERIALX_BUILD
+#include <MaterialXCore/Document.h>
+#include <MaterialXFormat/File.h>
+#endif
+
 #include <mutex>
 #include <set>
 #include <unordered_map>
@@ -102,9 +107,17 @@ public:
 
 private:
     void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet);
-    MHWRender::MShaderInstance* _CreateShaderInstance(const HdMaterialNetwork& mat);
-    void                        _UpdateShaderInstance(const HdMaterialNetwork& mat);
-    const HdVP2TextureInfo&     _AcquireTexture(const std::string& path);
+#ifdef WANT_MATERIALX_BUILD
+    MHWRender::MShaderInstance* _CreateMaterialXShaderInstance(
+        SdfPath const&              materialId,
+        HdMaterialNetworkMap const& hdNetworkMap);
+#endif
+    MHWRender::MShaderInstance*  _CreateShaderInstance(const HdMaterialNetwork& mat);
+    void                         _UpdateShaderInstance(const HdMaterialNetwork& mat);
+    const HdVP2TextureInfo&      _AcquireTexture(const std::string& path);
+    bool                         _IsTransparent(const HdMaterialNetwork& network) const;
+    bool                         _IsUsdUVTexture(const HdMaterialNode& node) const;
+    MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node) const;
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
     //! Trigger sync on all Rprims which are listening to changes on this material.
@@ -123,7 +136,11 @@ private:
     SdfPath              _surfaceShaderId;  //!< Path of the surface shader
     HdVP2TextureMap      _textureMap;       //!< Textures used by this material
     TfTokenVector        _requiredPrimvars; //!< primvars required by this material
-
+#ifdef WANT_MATERIALX_BUILD
+    MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
+    MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
+    bool                      _isMtlx = false;
+#endif
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
     //! Mutex protecting concurrent access to the Rprim set
     std::mutex _materialSubscriptionsMutex;

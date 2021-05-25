@@ -21,6 +21,7 @@
 #include "material.h"
 #include "mesh.h"
 #include "render_pass.h"
+#include "tokens.h"
 
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 #include <mayaUsd/utils/hash.h>
@@ -768,6 +769,20 @@ void HdVP2RenderDelegate::DestroyBprim(HdBprim* bPrim) { delete bPrim; }
       https://github.com/PixarAnimationStudios/USD/pull/853
 */
 TfToken HdVP2RenderDelegate::GetMaterialBindingPurpose() const { return HdTokens->full; }
+
+#ifdef WANT_MATERIALX_BUILD
+TfTokenVector
+HdVP2RenderDelegate::GetShaderSourceTypes() const
+{
+    return {HdVP2Tokens->mtlx, HdVP2Tokens->glslfx};
+}
+
+TfTokenVector
+HdVP2RenderDelegate::GetMaterialRenderContexts() const
+{
+    return {HdVP2Tokens->mtlx, HdVP2Tokens->glslfx};
+}
+#endif
 
 /*! \brief  Returns a node name made as a child of delegate's id.
  */

@@ -17,6 +17,7 @@
 
 #include "debugCodes.h"
 #include "render_delegate.h"
+#include "tokens.h"
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
@@ -24,10 +25,16 @@
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/getenv.h>
+#include <pxr/base/tf/pathUtils.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
+#ifdef WANT_MATERIALX_BUILD
+#include <pxr/imaging/hdMtlx/hdMtlx.h>
+#endif
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/packageUtils.h>
 #include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usdHydra/tokens.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
@@ -41,6 +48,18 @@
 #include <maya/MTextureManager.h>
 #include <maya/MUintArray.h>
 #include <maya/MViewport2Renderer.h>
+
+#ifdef WANT_MATERIALX_BUILD
+#include <MaterialXCore/Document.h>
+#include <MaterialXFormat/Util.h>
+#include <MaterialXGenGlsl/GlslShaderGenerator.h>
+#include <MaterialXGenOgsXml/OgsFragment.h>
+#include <MaterialXGenOgsXml/OgsXmlGenerator.h>
+#include <MaterialXGenShader/HwShaderGenerator.h>
+#include <MaterialXGenShader/ShaderStage.h>
+#include <MaterialXGenShader/Util.h>
+#include <MaterialXRender/ImageHandler.h>
+#endif
 
 #if PXR_VERSION <= 2008
 // Needed for GL_HALF_FLOAT.
@@ -63,6 +82,10 @@
 #include <pxr/imaging/hio/image.h>
 #else
 #include <pxr/imaging/glf/image.h>
+#endif
+
+#ifdef WANT_MATERIALX_BUILD
+namespace mx = MaterialX;
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -101,6 +124,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
+
+    (image)
+    (tiledimage)
+    (tangents)
+    (i_geomprop_)
+    (geomprop)
+    (ND_geompropvalue_)
 );
 // clang-format on
 
@@ -114,12 +144,6 @@ bool _IsUsdPrimvarReader(const HdMaterialNode& node)
         || id == UsdImagingTokens->UsdPrimvarReader_float3
         || id == UsdImagingTokens->UsdPrimvarReader_float4
         || id == _tokens->UsdPrimvarReader_vector);
-}
-
-//! Helper utility function to test whether a node is a UsdShade UV texture.
-inline bool _IsUsdUVTexture(const HdMaterialNode& node)
-{
-    return (node.identifier == UsdImagingTokens->UsdUVTexture);
 }
 
 //! Helper function to generate a XML string about nodes, relationships and primvars in the
@@ -202,25 +226,6 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
     return result;
 }
 
-//! Return true if the surface shader has its opacity attribute connected to a node which isn't
-//! a USD primvar reader.
-bool _IsTransparent(const HdMaterialNetwork& network)
-{
-    const HdMaterialNode& surfaceShader = network.nodes.back();
-
-    for (const HdMaterialRelationship& rel : network.relationships) {
-        if (rel.outputName == _tokens->opacity && rel.outputId == surfaceShader.path) {
-            for (const HdMaterialNode& node : network.nodes) {
-                if (node.path == rel.inputId) {
-                    return !_IsUsdPrimvarReader(node);
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
 //! Helper utility function to convert Hydra texture addressing token to VP2 enum.
 MHWRender::MSamplerState::TextureAddress _ConvertToTextureSamplerAddressEnum(const TfToken& token)
 {
@@ -237,35 +242,6 @@ MHWRender::MSamplerState::TextureAddress _ConvertToTextureSamplerAddressEnum(con
     }
 
     return address;
-}
-
-//! Get sampler state description as required by the material node.
-MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
-{
-    TF_VERIFY(_IsUsdUVTexture(node));
-
-    MHWRender::MSamplerStateDesc desc;
-    desc.filter = MHWRender::MSamplerState::kMinMagMipLinear;
-
-    auto it = node.parameters.find(UsdHydraTokens->wrapS);
-    if (it != node.parameters.end()) {
-        const VtValue& value = it->second;
-        if (value.IsHolding<TfToken>()) {
-            const TfToken& token = value.UncheckedGet<TfToken>();
-            desc.addressU = _ConvertToTextureSamplerAddressEnum(token);
-        }
-    }
-
-    it = node.parameters.find(UsdHydraTokens->wrapT);
-    if (it != node.parameters.end()) {
-        const VtValue& value = it->second;
-        if (value.IsHolding<TfToken>()) {
-            const TfToken& token = value.UncheckedGet<TfToken>();
-            desc.addressV = _ConvertToTextureSamplerAddressEnum(token);
-        }
-    }
-
-    return desc;
 }
 
 MHWRender::MTexture*
@@ -664,6 +640,23 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     return texture;
 }
 
+#ifdef WANT_MATERIALX_BUILD
+
+static HdMaterialNode2 const*
+_GetTerminalNode(HdMaterialNetwork2 const& network, SdfPath& terminalPath)
+{
+    auto const& terminalConnIt = network.terminals.find(HdMaterialTerminalTokens->surface);
+    if (terminalConnIt == network.terminals.end()) {
+        return nullptr;
+    }
+    HdMaterialConnection2 const& connection = terminalConnIt->second;
+    terminalPath = connection.upstreamNode;
+    auto const& terminalIt = network.nodes.find(terminalPath);
+    return &terminalIt->second;
+}
+
+#endif
+
 } // anonymous namespace
 
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
@@ -684,6 +677,33 @@ HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath&
     : HdMaterial(id)
     , _renderDelegate(renderDelegate)
 {
+#ifdef WANT_MATERIALX_BUILD
+    _mtlxLibrary = mx::createDocument();
+
+    // In the final product, the libraries will be intalled with the plugin and
+    // will be found in a location that is relative to the plugin load path. We
+    // are not ready for the full installer yet, so use the install paths of the
+    // MaterialX used to build the module just like Pixar does in USD.
+    //
+    // Also, since users are able to provide plug-in libraries, we need a fully
+    // extendable mechanism so they can declare where to search for these.
+    //
+    // The MaterialX_DIR location is most likely the cmake folder for a regular
+    // build of MaterialX:
+    mx::FilePath materialXPath(MaterialX_DIR);
+    materialXPath = materialXPath.getParentPath() / mx::FilePath("libraries");
+    _mtlxSearchPath.append(materialXPath);
+
+    const std::unordered_set<std::string> uniqueLibraryNames {
+        "targets",        "adsklib",        "stdlib", "pbrlib",        "bxdf",
+        "stdlib/genglsl", "pbrlib/genglsl", "lights", "lights/genglsl"
+    };
+
+    mx::loadLibraries(
+        mx::FilePathVec(uniqueLibraryNames.begin(), uniqueLibraryNames.end()),
+        _mtlxSearchPath,
+        _mtlxLibrary);
+#endif
 }
 
 /*! \brief  Synchronize VP2 state with scene delegate state based on dirty bits
@@ -712,6 +732,46 @@ void HdVP2Material::Sync(
 
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
+
+#ifdef WANT_MATERIALX_BUILD
+            if (!bxdfNet.nodes.empty()) {
+                SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
+                NdrNodeConstPtr terminalNode
+                    = shaderReg.GetNodeByIdentifier(bxdfNet.nodes.back().identifier);
+
+                if (terminalNode->GetSourceType() == HdVP2Tokens->mtlx) {
+                    _surfaceShader.reset(_CreateMaterialXShaderInstance(GetId(), networkMap));
+                    if (_surfaceShader) {
+                        if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
+                            std::cout << "BXDF material network for " << id << ":\n"
+                                      << _GenerateXMLString(bxdfNet) << "\n"
+                                      << "Displacement material network for " << id << ":\n"
+                                      << _GenerateXMLString(dispNet) << "\n"
+                                      << "Required primvars:\n";
+
+                            for (TfToken const& primvar : _requiredPrimvars) {
+                                std::cout << "\t" << primvar << std::endl;
+                            }
+
+                            auto tmpDir = ghc::filesystem::temp_directory_path();
+                            tmpDir /= "HdVP2Material_";
+                            tmpDir += id.GetName();
+                            tmpDir += ".txt";
+                            _surfaceShader->writeEffectSourceToFile(tmpDir.c_str());
+
+                            std::cout << "BXDF generated shader code for " << id << ":\n";
+                            std::cout << "  " << tmpDir << "\n";
+                        }
+                        _UpdateShaderInstance(bxdfNet);
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+                        _MaterialChanged(sceneDelegate);
+#endif
+                        *dirtyBits = HdMaterial::Clean;
+                    }
+                    return;
+                }
+            }
+#endif
 
             _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
 
@@ -942,6 +1002,156 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
     }
 }
 
+#ifdef WANT_MATERIALX_BUILD
+
+/*! \brief  Detects MaterialX networks and rehydrates them.
+ */
+MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
+    SdfPath const&              materialId,
+    HdMaterialNetworkMap const& hdNetworkMap)
+{
+    MHWRender::MShaderInstance* shaderInstance = nullptr;
+
+    bool               isVolume = false;
+    HdMaterialNetwork2 surfaceNetwork;
+    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(hdNetworkMap, &surfaceNetwork, &isVolume);
+
+    if (isVolume) {
+        // Not supported.
+        return shaderInstance;
+    }
+
+    SdfPath                terminalPath;
+    HdMaterialNode2 const* surfTerminal = _GetTerminalNode(surfaceNetwork, terminalPath);
+    if (!surfTerminal) {
+        return shaderInstance;
+    }
+
+    // Check if the Terminal is a MaterialX Node
+    SdrRegistry&                sdrRegistry = SdrRegistry::GetInstance();
+    const SdrShaderNodeConstPtr mtlxSdrNode
+        = sdrRegistry.GetShaderNodeByIdentifierAndType(surfTerminal->nodeTypeId, HdVP2Tokens->mtlx);
+
+    mx::DocumentPtr           mtlxDoc;
+    const mx::FileSearchPath& crLibrarySearchPath(_mtlxSearchPath);
+    if (mtlxSdrNode) {
+
+        // Create the MaterialX Document from the HdMaterialNetwork
+        std::set<SdfPath> hdTextureNodes;
+        mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
+        mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
+            surfaceNetwork,
+            *surfTerminal, // MaterialX HdNode
+            materialId,
+            _mtlxLibrary,
+            &hdTextureNodes,
+            &mxHdTextureMap);
+
+        _surfaceShaderId = terminalPath;
+
+        if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
+            std::cout << "generated shader code for " << materialId.GetText() << ":\n";
+            std::cout << "Generated graph\n==============================\n"
+                      << mx::writeToXmlString(mtlxDoc) << "\n==============================\n";
+        }
+    }
+
+    if (!mtlxDoc) {
+        return shaderInstance;
+    }
+
+    try {
+
+        // This function is very recent and might only exist in a PR at this point in time
+        // See https://github.com/autodesk-forks/MaterialX/pull/1197 for current status.
+        mx::OgsXmlGenerator::setUseLightAPIV2(true);
+
+        mx::NodePtr materialNode;
+        for (const mx::NodePtr& material : mtlxDoc->getMaterialNodes()) {
+            if (material->getName() == materialId.GetName()) {
+                materialNode = material;
+            }
+        }
+
+        if (!materialNode) {
+            return shaderInstance;
+        }
+
+        MaterialXMaya::OgsFragment ogsFragment(materialNode, crLibrarySearchPath);
+
+        // Explore the fragment for primvars:
+        mx::ShaderPtr            shader = ogsFragment.getShader();
+        const mx::VariableBlock& vertexInputs
+            = shader->getStage(mx::Stage::VERTEX).getInputBlock(mx::HW::VERTEX_INPUTS);
+        for (size_t i = 0; i < vertexInputs.size(); ++i) {
+            const mx::ShaderPort* variable = vertexInputs[i];
+            // Position is always assumed.
+            // Tangent will be generated in the vertex shader using a utility fragment
+            if (variable->getName() == mx::HW::T_IN_NORMAL) {
+                _requiredPrimvars.push_back(HdTokens->normals);
+            }
+        }
+
+        MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
+        if (!TF_VERIFY(renderer)) {
+            return shaderInstance;
+        }
+
+        MHWRender::MFragmentManager* const fragmentManager = renderer->getFragmentManager();
+        if (!TF_VERIFY(fragmentManager)) {
+            return shaderInstance;
+        }
+
+        MString fragmentName(ogsFragment.getFragmentName().c_str());
+
+        if (!fragmentManager->hasFragment(fragmentName)) {
+            std::string   fragSrc = ogsFragment.getFragmentSource();
+            const MString registeredFragment
+                = fragmentManager->addShadeFragmentFromBuffer(fragSrc.c_str(), false);
+            if (registeredFragment.length() == 0) {
+                TF_WARN("Failed to register shader fragment %s", fragmentName.asChar());
+                return shaderInstance;
+            }
+        }
+
+        const MHWRender::MShaderManager* const shaderMgr = renderer->getShaderManager();
+        if (!TF_VERIFY(shaderMgr)) {
+            return shaderInstance;
+        }
+
+        shaderInstance = shaderMgr->getFragmentShader(fragmentName, "outColor", true);
+
+        // Find named primvar readers:
+        MStringArray parameterList;
+        shaderInstance->parameterList(parameterList);
+        for (unsigned int i = 0; i < parameterList.length(); ++i) {
+            static const unsigned int u_geomprop_length
+                = static_cast<unsigned int>(_tokens->i_geomprop_.GetString().length());
+            if (parameterList[i].substring(0, u_geomprop_length - 1)
+                == _tokens->i_geomprop_.GetText()) {
+                MString varname
+                    = parameterList[i].substring(u_geomprop_length, parameterList[i].length());
+                shaderInstance->renameParameter(parameterList[i], varname);
+                _requiredPrimvars.push_back(TfToken(varname.asChar()));
+            }
+        }
+
+        _isMtlx = true;
+
+        // Add automatic tangent generation:
+        shaderInstance->addInputFragment("materialXTw", "Tw", "Tw");
+
+    } catch (mx::Exception e) {
+        TF_RUNTIME_ERROR(
+            "Caught exception '%s' while processing '%s'", e.what(), materialId.GetText());
+        return nullptr;
+    }
+
+    return shaderInstance;
+}
+
+#endif
+
 /*! \brief  Creates a shader instance for the surface shader.
  */
 MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat)
@@ -1142,16 +1352,32 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "UpdateShaderInstance");
 
     for (const HdMaterialNode& node : mat.nodes) {
-        // Find the simplified path for the authored node path from the map which has been created
-        // when applying VP2-specific fixes.
-        const auto it = _nodePathMap.find(node.path);
-        if (it == _nodePathMap.end()) {
-            continue;
-        }
+        MString nodeName = "";
+#ifdef WANT_MATERIALX_BUILD
+        if (_isMtlx) {
+            nodeName += node.path.GetName().c_str();
+            if (node.path == _surfaceShaderId) {
+                nodeName = "";
+            } else {
+                nodeName += "_";
+            }
+        } else {
+#endif
+            // Find the simplified path for the authored node path from the map which has been
+            // created when applying VP2-specific fixes.
+            const auto it = _nodePathMap.find(node.path);
+            if (it == _nodePathMap.end()) {
+                continue;
+            }
 
-        // The simplified path has only one token which is the node name.
-        const SdfPath& nodePath = it->second;
-        const MString  nodeName(nodePath != _surfaceShaderId ? nodePath.GetText() : "");
+            // The simplified path has only one token which is the node name.
+            const SdfPath& nodePath = it->second;
+            if (nodePath != _surfaceShaderId) {
+                nodeName = nodePath.GetText();
+            }
+#ifdef WANT_MATERIALX_BUILD
+        }
+#endif
 
         MStatus samplerStatus = MStatus::kFailure;
 
@@ -1210,7 +1436,17 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                     assignment.texture = info._texture.get();
                     status = _surfaceShader->setParameter(paramName, assignment);
 
+#ifdef WANT_MATERIALX_BUILD
+                    // TODO: MaterialX image nodes have colorSpace metadata on the file attribute,
+                    // and this can be found in the UsdShade version of the MaterialX document. At
+                    // this point in time, there is no mechanism in Hydra to transmit metadata so
+                    // this information will not reach the render delegate. Follow
+                    // https://github.com/PixarAnimationStudios/USD/issues/1523 for future updates
+                    // on colorspace handling in MaterialX/Hydra.
+                    if (status && !_isMtlx) {
+#else
                     if (status) {
+#endif
                         paramName = nodeName + "isColorSpaceSRGB";
                         status = _surfaceShader->setParameter(paramName, info._isColorSpaceSRGB);
                     }
@@ -1237,6 +1473,17 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 MFloatMatrix matrix;
                 value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
                 status = _surfaceShader->setParameter(paramName, matrix);
+            } else if (value.IsHolding<std::string>()) {
+#ifdef WANT_MATERIALX_BUILD
+                // The geompropvalue nodes have a string member that does not translate to a shader
+                // parameter
+                if (_isMtlx && token == _tokens->geomprop) {
+                    std::string nodeID(node.identifier.GetText());
+                    if (nodeID.rfind(_tokens->ND_geompropvalue_.GetText(), 0) == 0) {
+                        status = MS::kSuccess;
+                    }
+                }
+#endif
             }
 
             if (!status) {
@@ -1270,6 +1517,73 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(const std::string& path)
             uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
     }
     return info;
+}
+
+//! Helper utility function to test whether a node is a UsdShade UV texture.
+bool HdVP2Material::_IsUsdUVTexture(const HdMaterialNode& node) const
+{
+    if (node.identifier == UsdImagingTokens->UsdUVTexture) {
+        return true;
+    }
+
+#ifdef WANT_MATERIALX_BUILD
+    mx::NodeDefPtr nodeDef = _mtlxLibrary->getNodeDef(node.identifier.GetString());
+    if (nodeDef
+        && (nodeDef->getNodeString() == _tokens->image.GetString()
+            || nodeDef->getNodeString() == _tokens->tiledimage.GetString())) {
+        return true;
+    }
+#endif
+
+    return false;
+}
+
+//! Get sampler state description as required by the material node.
+MHWRender::MSamplerStateDesc HdVP2Material::_GetSamplerStateDesc(const HdMaterialNode& node) const
+{
+    TF_VERIFY(_IsUsdUVTexture(node));
+
+    MHWRender::MSamplerStateDesc desc;
+    desc.filter = MHWRender::MSamplerState::kMinMagMipLinear;
+
+    auto it = node.parameters.find(UsdHydraTokens->wrapS);
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<TfToken>()) {
+            const TfToken& token = value.UncheckedGet<TfToken>();
+            desc.addressU = _ConvertToTextureSamplerAddressEnum(token);
+        }
+    }
+
+    it = node.parameters.find(UsdHydraTokens->wrapT);
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<TfToken>()) {
+            const TfToken& token = value.UncheckedGet<TfToken>();
+            desc.addressV = _ConvertToTextureSamplerAddressEnum(token);
+        }
+    }
+
+    return desc;
+}
+
+//! Return true if the surface shader has its opacity attribute connected to a node which isn't
+//! a USD primvar reader.
+bool HdVP2Material::_IsTransparent(const HdMaterialNetwork& network) const
+{
+    const HdMaterialNode& surfaceShader = network.nodes.back();
+
+    for (const HdMaterialRelationship& rel : network.relationships) {
+        if (rel.outputName == _tokens->opacity && rel.outputId == surfaceShader.path) {
+            for (const HdMaterialNode& node : network.nodes) {
+                if (node.path == rel.inputId) {
+                    return !_IsUsdPrimvarReader(node);
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
