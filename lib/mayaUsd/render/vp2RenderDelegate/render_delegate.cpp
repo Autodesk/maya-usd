@@ -771,16 +771,14 @@ void HdVP2RenderDelegate::DestroyBprim(HdBprim* bPrim) { delete bPrim; }
 TfToken HdVP2RenderDelegate::GetMaterialBindingPurpose() const { return HdTokens->full; }
 
 #ifdef WANT_MATERIALX_BUILD
-TfTokenVector
-HdVP2RenderDelegate::GetShaderSourceTypes() const
+TfTokenVector HdVP2RenderDelegate::GetShaderSourceTypes() const
 {
-    return {HdVP2Tokens->mtlx, HdVP2Tokens->glslfx};
+    return { HdVP2Tokens->mtlx, HdVP2Tokens->glslfx };
 }
 
-TfTokenVector
-HdVP2RenderDelegate::GetMaterialRenderContexts() const
+TfTokenVector HdVP2RenderDelegate::GetMaterialRenderContexts() const
 {
-    return {HdVP2Tokens->mtlx, HdVP2Tokens->glslfx};
+    return { HdVP2Tokens->mtlx, HdVP2Tokens->glslfx };
 }
 #endif
 
