@@ -510,7 +510,10 @@ class AETemplate(object):
         schemaAttrsDict = {}
         appliedSchemas = self.prim.GetAppliedSchemas()
         for schema in appliedSchemas:
-            typeAndInstance = Usd.SchemaRegistry().GetTypeAndInstance(schema)
+            if Usd.GetVersion() > (0, 21, 5):
+                typeAndInstance = Usd.SchemaRegistry().GetTypeNameAndInstance(schema)
+            else:
+                typeAndInstance = Usd.SchemaRegistry().GetTypeAndInstance(schema)
             typeName        = typeAndInstance[0]
             schemaType      = Usd.SchemaRegistry().GetTypeFromName(typeName)
 
