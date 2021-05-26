@@ -361,3 +361,73 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayerID)
         cmds.undo()
         self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+
+    def testMuteLayer(self):
+        """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """
+
+        def testMuteLayerImpl(addLayerFunc):
+
+            def checkMuted(layer, stage):
+                # Make sure the layer is muted inside the stage.
+                self.assertTrue(stage.IsLayerMuted(layer.identifier))
+                self.assertTrue(layer.identifier in stage.GetMutedLayers())
+                # Make sure the stage does not used the muted layer
+                self.assertFalse(layer in stage.GetLayerStack(False))
+                self.assertFalse(layer in stage.GetUsedLayers(False))
+
+            def checkUnMuted(layer, stage):
+                self.assertFalse(stage.IsLayerMuted(layer.identifier))
+                self.assertFalse(layer.identifier in stage.GetMutedLayers())
+                self.assertTrue(layer in stage.GetLayerStack(False))
+                self.assertTrue(layer in stage.GetUsedLayers(False))
+
+            shapePath, stage = getCleanMayaStage()
+            rootLayer = stage.GetRootLayer()
+
+            layer = addLayerFunc(rootLayer)
+            
+            checkUnMuted(layer, stage)
+            
+            # Mute the layer
+            cmds.mayaUsdLayerEditor(layer.identifier, edit=True, muteLayer=(True, shapePath))
+            checkMuted(layer, stage)
+        
+            # undo mute
+            cmds.undo()
+            checkUnMuted(layer, stage)
+
+            # redo mute
+            cmds.redo()
+            checkMuted(layer, stage)
+        
+        # Add an anonymous layer under the "parentLayer" 
+        def addAnonymousLayer(parentLayer):
+            layerId = cmds.mayaUsdLayerEditor(parentLayer.identifier, edit=True, addAnonymous="MyLayer")[0]
+            layer = Sdf.Layer.Find(layerId)
+            return layer
+
+        # Add a layer baked file under the "parentLayer"
+        # The layer is added by using it's identifier.
+        def addFileBakedLayer(parentLayer):
+            tempFile = tempfile.NamedTemporaryFile(suffix=".usda", delete=False, mode="w")
+            tempFile.write("#usda 1.0")
+            tempFile.close()
+            layer = Sdf.Layer.FindOrOpen(tempFile.name)
+            cmds.mayaUsdLayerEditor(parentLayer.identifier, edit=True, insertSubPath=[0, layer.identifier])
+            self.assertTrue(layer)
+            return layer
+
+        # Add a layer baked file under the "parentLayer"
+        # The layer is added by using it's filesystem path.
+        def addFileBakedLayerByPath(parentLayer):
+            tempFile = tempfile.NamedTemporaryFile(suffix=".usda", delete=False, mode="w")
+            tempFile.write("#usda 1.0")
+            tempFile.close()
+            cmds.mayaUsdLayerEditor(parentLayer.identifier, edit=True, insertSubPath=[0, tempFile.name])
+            layer = Sdf.Layer.FindOrOpen(tempFile.name)
+            self.assertTrue(layer)
+            return layer
+
+        testMuteLayerImpl(addAnonymousLayer)
+        testMuteLayerImpl(addFileBakedLayer)
+        testMuteLayerImpl(addFileBakedLayerByPath)
