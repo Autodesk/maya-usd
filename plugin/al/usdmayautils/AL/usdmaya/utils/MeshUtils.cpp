@@ -1917,8 +1917,20 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
                             mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
                         }
 
-                        VtArray<GfVec3f> normals(vecData, vecData + numNormals);
-                        normalsAttr.Set(normals, time);
+                        if (numNormals == (size_t)fnMesh.numVertices()) {
+                            auto             object = fnMesh.object();
+                            MItMeshVertex    itVertex(object);
+                            VtArray<GfVec3f> normals(numNormals);
+                            for (size_t i = 0; !itVertex.isDone(); itVertex.next(), i++) {
+                                MVector mayaNormal;
+                                itVertex.getNormal(mayaNormal);
+                                normals[i] = GfVec3f(mayaNormal.x, mayaNormal.y, mayaNormal.z);
+                            }
+                            normalsAttr.Set(normals, time);
+                        } else {
+                            VtArray<GfVec3f> normals(vecData, vecData + numNormals);
+                            normalsAttr.Set(normals, time);
+                        }
                     } else {
                         std::unordered_map<uint32_t, uint32_t> missing;
                         bool                                   isPerVertex = true;
