@@ -325,7 +325,8 @@ finally:
     # Note: ${WORKING_DIR} can point to the source folder, so don't use it
     #       in any env var that will write files (such as MAYA_APP_DIR).
     set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
-        "MAYA_APP_DIR=${MAYA_APP_TEMP_DIR}")
+        "MAYA_APP_DIR=${MAYA_APP_TEMP_DIR}"
+        "TEMP=${MAYA_APP_TEMP_DIR}")
     file(MAKE_DIRECTORY ${MAYA_APP_TEMP_DIR})
 
     # Set the Python major version in MAYA_PYTHON_VERSION. Maya 2020 and
