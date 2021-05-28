@@ -44,6 +44,9 @@ public:
     // replaces a path in the layer stack
     void replaceSubLayerPath(UsdLayer usdLayer, Path oldPath, Path newPath) override;
 
+    // move a path at a given index inside the same layer or another layer.
+    void moveSubLayerPath(Path path, UsdLayer oldParentUsdLayer, UsdLayer newParentUsdLayer, int index) override;
+
     // discard edit on a layer
     void discardEdits(UsdLayer usdLayer) override;
 

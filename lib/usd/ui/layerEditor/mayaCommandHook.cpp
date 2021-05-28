@@ -108,6 +108,17 @@ void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
     executeMel(cmd);
 }
 
+void MayaCommandHook::moveSubLayerPath(Path path, UsdLayer oldParentUsdLayer, UsdLayer newParentUsdLayer, int index)
+{
+    std::string cmd;
+    cmd = "mayaUsdLayerEditor -edit -moveSubPath ";
+    cmd += quote(path);
+    cmd += quote(newParentUsdLayer->GetIdentifier());
+    cmd += std::to_string(index);
+    cmd += quote(oldParentUsdLayer->GetIdentifier());
+    executeMel(cmd);
+}
+
 // replaces a path in the layer stack
 void MayaCommandHook::replaceSubLayerPath(UsdLayer usdLayer, Path oldPath, Path newPath)
 {

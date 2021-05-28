@@ -45,6 +45,8 @@ const char kRemoveSubPathFlag[] = "rs";
 const char kRemoveSubPathFlagL[] = "removeSubPath";
 const char kReplaceSubPathFlag[] = "rp";
 const char kReplaceSubPathFlagL[] = "replaceSubPath";
+const char kMoveSubPathFlag[] = "mv";
+const char kMoveSubPathFlagL[] = "moveSubPath";
 const char kDiscardEditsFlag[] = "de";
 const char kDiscardEditsFlagL[] = "discardEdits";
 const char kClearLayerFlag[] = "cl";
@@ -64,6 +66,7 @@ enum class CmdId
 {
     kInsert,
     kRemove,
+    kMove,
     kReplace,
     kDiscardEdit,
     kClearLayer,
@@ -299,6 +302,118 @@ public:
         : InsertRemoveSubPathBase(CmdId::kRemove)
     {
     }
+};
+
+// Move a sublayer into another layer.
+class MoveSubPath : public BaseCmd
+{
+public:
+    MoveSubPath()
+        : BaseCmd(CmdId::kMove)
+    {
+    }
+
+    bool doIt(SdfLayerHandle layer) override
+    {
+        auto proxy = layer->GetSubLayerPaths();
+        auto subPathIndex = proxy.Find(_path);
+        if (subPathIndex == size_t(-1)) {
+            std::string message = std::string("path ") + _path
+                + std::string(" not found on layer ") + layer->GetIdentifier();
+            MPxCommand::displayError(message.c_str());
+            return false;
+        }
+
+        _oldIndex = subPathIndex; // save for undo
+
+        SdfLayerHandle newParentLayer;
+
+        if (layer->GetIdentifier() == _newParentLayer) {
+
+            if (_newIndex > layer->GetNumSubLayerPaths() - 1) {
+                std::string message = std::string("Index ") + std::to_string(_newIndex)
+                    + std::string(" out-of-bound for ") + layer->GetIdentifier();
+                MPxCommand::displayError(message.c_str());
+                return false;
+            }
+
+            newParentLayer = layer;
+        } else {
+            newParentLayer = SdfLayer::Find(_newParentLayer);
+            if (!newParentLayer) {
+                std::string message = std::string("Layer ") + _newParentLayer
+                    + std::string(" not found!");
+                return false;
+            }
+
+            if (_newIndex > newParentLayer->GetNumSubLayerPaths()) {
+                std::string message = std::string("Index ") + std::to_string(_newIndex)
+                    + std::string(" out-of-bound for ") + newParentLayer->GetIdentifier();
+                MPxCommand::displayError(message.c_str());
+                return false;
+            }
+
+            // make sure the subpath is not already in the new parent layer.
+            // Otherwise, the SdfLayer::InsertSubLayerPath() below will do nothing
+            // and the subpath will be removed from it's current parent.
+            if (newParentLayer->GetSubLayerPaths().Find(_path) != size_t(-1)) {
+                std::string message = std::string("SubPath ") + _path
+                    + std::string(" already exist in layer ") + newParentLayer->GetIdentifier();
+                MPxCommand::displayError(message.c_str());
+                return false;        
+            }
+        }
+
+        // When the subLayer is moved inside the current parent,
+        // Remove it from it's current location and insert it into it's
+        // new location. The order of remove / insert is important
+        // oterwise InsertSubLayerPath() will fail because the subLayer
+        // already exists.
+        layer->RemoveSubLayerPath(subPathIndex);
+        newParentLayer->InsertSubLayerPath(_path, _newIndex);
+
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle layer) override
+    {
+        if (layer->GetIdentifier() == _newParentLayer) {
+            // When the subLayer is moved inside the current parent,
+            // Remove it from it's current location and insert it into it's
+            // new location. The order of remove / insert is important
+            // oterwise InsertSubLayerPath() will fail because the subLayer
+            // already exists.
+            layer->RemoveSubLayerPath(_newIndex);
+            layer->InsertSubLayerPath(_path, _oldIndex);
+        } else {
+            auto newParentLayer = SdfLayer::Find(_newParentLayer);
+            newParentLayer->RemoveSubLayerPath(_newIndex);
+            layer->InsertSubLayerPath(_path, _oldIndex);
+        }
+
+        return true;
+    }
+
+    std::string _path;
+    std::string _newParentLayer;
+    unsigned int _newIndex;
+
+private:
+
+    static bool validateAndReportIndex(SdfLayerHandle layer, int index, int maxIndex)
+    {
+        if (index < 0 || index >= maxIndex) {
+            std::string message = std::string("Index ") + std::to_string(index)
+                + std::string(" out-of-bound for ") + layer->GetIdentifier();
+            MPxCommand::displayError(message.c_str());
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+private:
+    unsigned int _oldIndex { 0 };
 };
 
 class ReplaceSubPath : public BaseCmd
@@ -548,6 +663,7 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kRemoveSubPathFlag);
     syntax.addFlag(kReplaceSubPathFlag, kReplaceSubPathFlagL, MSyntax::kString, MSyntax::kString);
     syntax.makeFlagMultiUse(kReplaceSubPathFlag);
+    syntax.addFlag(kMoveSubPathFlag, kMoveSubPathFlagL, MSyntax::kString, MSyntax::kString, MSyntax::kUnsigned);
     syntax.addFlag(kDiscardEditsFlag, kDiscardEditsFlagL);
     syntax.addFlag(kClearLayerFlag, kClearLayerFlagL);
     // parameter: new layer name
@@ -628,6 +744,24 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 cmd->_newPath = listOfArgs.asString(1).asUTF8();
                 _subCommands.push_back(std::move(cmd));
             }
+        }
+
+        if (argParser.isFlagSet(kMoveSubPathFlag)) {
+            auto cmd = std::make_shared<Impl::MoveSubPath>();
+
+            MString subPath;
+            argParser.getFlagArgument(kMoveSubPathFlag, 0, subPath);
+
+            MString newParentLayer;
+            argParser.getFlagArgument(kMoveSubPathFlag, 1, newParentLayer);
+
+            unsigned int index {0};
+            argParser.getFlagArgument(kMoveSubPathFlag, 2, index);
+
+            cmd->_path = subPath.asUTF8();
+            cmd->_newParentLayer = newParentLayer.asUTF8();
+            cmd->_newIndex = index;
+            _subCommands.push_back(std::move(cmd));
         }
 
         if (argParser.isFlagSet(kDiscardEditsFlag)) {

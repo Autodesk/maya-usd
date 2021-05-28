@@ -177,14 +177,14 @@ bool LayerTreeModel::dropMimeData(
                 auto oldParent = layerItem->parentLayerItem()->layer();
                 int  index = (int)oldParent->GetSubLayerPaths().Find(layerItem->subLayerPath());
                 auto itemSubLayerPath = layerItem->subLayerPath();
-                context.hook()->removeSubLayerPath(oldParent, itemSubLayerPath);
+
                 // When we are moving an item (underneath the same parent)
                 // to a new location higher up we have to adjust the row
                 // (new location) to account for the remove we just did.
                 if (oldParent == parentItem->layer() && (index < row)) {
                     row -= 1;
                 }
-                context.hook()->insertSubLayerPath(parentItem->layer(), itemSubLayerPath, row);
+                context.hook()->moveSubLayerPath(itemSubLayerPath, oldParent, parentItem->layer(), row);
             }
         }
     }
