@@ -746,7 +746,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             MString newParentLayer;
             argParser.getFlagArgument(kMoveSubPathFlag, 1, newParentLayer);
 
-            unsigned int index {0};
+            unsigned int index { 0 };
             argParser.getFlagArgument(kMoveSubPathFlag, 2, index);
 
             cmd->_path = subPath.asUTF8();
