@@ -88,7 +88,11 @@ class UfeAttributesObserver(ufe.Observer):
 
 class MetaDataCustomControl(object):
     # Custom control for all prim metadata we want to display.
-    def __init__(self, prim, useNiceName):
+    def __init__(self, item, prim, useNiceName):
+        # In Maya 2022.1 we need to hold onto the Ufe SceneItem to make
+        # sure it doesn't go stale. This is not needed in latest Maya.
+        mayaVer = '%s.%s' % (cmds.about(majorVersion=True), cmds.about(minorVersion=True))
+        self.item = item if mayaVer == '2022.1' else None
         self.prim = prim
         self.useNiceName = useNiceName
 
@@ -470,7 +474,7 @@ class AETemplate(object):
     def createMetadataSection(self):
         # We don't use createSection() because these are metadata (not attributes).
         with ufeAeTemplate.Layout(self, 'Metadata', collapse=True):
-            metaDataControl = MetaDataCustomControl(self.prim, self.useNiceName)
+            metaDataControl = MetaDataCustomControl(self.item, self.prim, self.useNiceName)
             usdNoticeControl = NoticeListener(self.prim, [metaDataControl])
             self.defineCustom(metaDataControl)
             self.defineCustom(usdNoticeControl)
