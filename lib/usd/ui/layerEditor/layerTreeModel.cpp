@@ -184,7 +184,8 @@ bool LayerTreeModel::dropMimeData(
                 if (oldParent == parentItem->layer() && (index < row)) {
                     row -= 1;
                 }
-                context.hook()->moveSubLayerPath(itemSubLayerPath, oldParent, parentItem->layer(), row);
+                context.hook()->moveSubLayerPath(
+                    itemSubLayerPath, oldParent, parentItem->layer(), row);
             }
         }
     }

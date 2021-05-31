@@ -318,8 +318,8 @@ public:
         auto proxy = layer->GetSubLayerPaths();
         auto subPathIndex = proxy.Find(_path);
         if (subPathIndex == size_t(-1)) {
-            std::string message = std::string("path ") + _path
-                + std::string(" not found on layer ") + layer->GetIdentifier();
+            std::string message = std::string("path ") + _path + std::string(" not found on layer ")
+                + layer->GetIdentifier();
             MPxCommand::displayError(message.c_str());
             return false;
         }
@@ -341,8 +341,8 @@ public:
         } else {
             newParentLayer = SdfLayer::Find(_newParentLayer);
             if (!newParentLayer) {
-                std::string message = std::string("Layer ") + _newParentLayer
-                    + std::string(" not found!");
+                std::string message
+                    = std::string("Layer ") + _newParentLayer + std::string(" not found!");
                 return false;
             }
 
@@ -360,7 +360,7 @@ public:
                 std::string message = std::string("SubPath ") + _path
                     + std::string(" already exist in layer ") + newParentLayer->GetIdentifier();
                 MPxCommand::displayError(message.c_str());
-                return false;        
+                return false;
             }
         }
 
@@ -394,23 +394,9 @@ public:
         return true;
     }
 
-    std::string _path;
-    std::string _newParentLayer;
+    std::string  _path;
+    std::string  _newParentLayer;
     unsigned int _newIndex;
-
-private:
-
-    static bool validateAndReportIndex(SdfLayerHandle layer, int index, int maxIndex)
-    {
-        if (index < 0 || index >= maxIndex) {
-            std::string message = std::string("Index ") + std::to_string(index)
-                + std::string(" out-of-bound for ") + layer->GetIdentifier();
-            MPxCommand::displayError(message.c_str());
-            return false;
-        } else {
-            return true;
-        }
-    }
 
 private:
     unsigned int _oldIndex { 0 };

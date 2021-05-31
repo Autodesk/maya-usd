@@ -63,7 +63,9 @@ public:
     virtual void replaceSubLayerPath(UsdLayer usdLayer, Path oldPath, Path newPath) = 0;
 
     // move a path at a given index inside the same layer or another layer.
-    virtual void moveSubLayerPath(Path path, UsdLayer oldParentUsdLayer, UsdLayer newParentUsdLayer, int index) = 0;
+    virtual void
+    moveSubLayerPath(Path path, UsdLayer oldParentUsdLayer, UsdLayer newParentUsdLayer, int index)
+        = 0;
 
     // discard edit on a layer
     virtual void discardEdits(UsdLayer usdLayer) = 0;
