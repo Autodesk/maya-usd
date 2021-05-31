@@ -649,7 +649,12 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kRemoveSubPathFlag);
     syntax.addFlag(kReplaceSubPathFlag, kReplaceSubPathFlagL, MSyntax::kString, MSyntax::kString);
     syntax.makeFlagMultiUse(kReplaceSubPathFlag);
-    syntax.addFlag(kMoveSubPathFlag, kMoveSubPathFlagL, MSyntax::kString, MSyntax::kString, MSyntax::kUnsigned);
+    syntax.addFlag(
+        kMoveSubPathFlag,
+        kMoveSubPathFlagL,
+        MSyntax::kString,    // path to move
+        MSyntax::kString,    // new parent layer
+        MSyntax::kUnsigned); // layer index inside the new parent
     syntax.addFlag(kDiscardEditsFlag, kDiscardEditsFlagL);
     syntax.addFlag(kClearLayerFlag, kClearLayerFlagL);
     // parameter: new layer name
