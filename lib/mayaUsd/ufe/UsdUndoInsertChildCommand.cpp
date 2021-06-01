@@ -28,9 +28,15 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
 
+#include <maya/MGlobal.h>
+#include <maya/MItSelectionList.h>
+#include <maya/MSelectionList.h>
+#include <ufe/globalSelection.h>
 #include <ufe/log.h>
+#include <ufe/observableSelection.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
+#include <ufe/selection.h>
 
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
@@ -137,6 +143,10 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
         if (status) {
             _ufeDstItem = UsdSceneItem::create(_ufeDstPath, ufePathToPrim(_ufeDstPath));
             sendNotification<Ufe::ObjectReparent>(_ufeDstItem, _ufeSrcPath);
+
+            Ufe::Selection dstSel;
+            dstSel.append(_ufeDstItem);
+            Ufe::GlobalSelection::get()->replaceWith(dstSel);
         }
     } else {
         UFE_LOG(
@@ -166,6 +176,10 @@ bool UsdUndoInsertChildCommand::insertChildUndo()
         if (status) {
             auto ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, ufePathToPrim(_ufeSrcPath));
             sendNotification<Ufe::ObjectReparent>(ufeSrcItem, _ufeDstPath);
+
+            Ufe::Selection dstSel;
+            dstSel.append(ufeSrcItem);
+            Ufe::GlobalSelection::get()->replaceWith(dstSel);
         }
     } else {
         UFE_LOG(
