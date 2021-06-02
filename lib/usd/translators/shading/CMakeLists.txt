@@ -32,3 +32,12 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
             usdStandardSurfaceWriter.cpp
     )
 endif()
+
+if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            mtlxBaseWriter.cpp
+            mtlxStandardSurfaceWriter.cpp
+            mtlxFileTextureWriter.cpp
+    )
+endif()

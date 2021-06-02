@@ -231,6 +231,23 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
     endforeach()
 endif()
 
+# Tests using MaterialX, which was introduced in Maya 2022.1 with USD > 21.05.
+if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
+    set(MTLX_TEST_SCRIPT_FILES
+        testUsdExportMaterialX.py
+    )
+    foreach(script ${MTLX_TEST_SCRIPT_FILES})
+        mayaUsd_get_unittest_target(target ${script})
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+
+        # Add a ctest label to these tests for easy filtering.
+        set_property(TEST ${target} APPEND PROPERTY LABELS translators)
+    endforeach()
+endif()
+
 # We are explicitly not setting PXR_PLUGINPATH_NAME here. We want to test
 # manually loading the plugin that provides Maya export.
 mayaUsd_add_test(testUsdMayaListShadingModesCommand
