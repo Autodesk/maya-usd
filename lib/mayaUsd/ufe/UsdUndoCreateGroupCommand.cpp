@@ -97,7 +97,8 @@ void UsdUndoCreateGroupCommand::execute()
         + noWorld.getSegments().back().string();
 
     MString groupPath(fullPath.c_str());
-    MGlobal::executeCommand(MString("select -r \"") + groupPath + "\" ");
+    MStatus status = MGlobal::executeCommand(MString("select -r \"") + groupPath + "\" ");
+    CHECK_MSTATUS(status);
 
     TF_VERIFY(
         Ufe::GlobalSelection::get()->size() == 1,
