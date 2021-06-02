@@ -1065,7 +1065,9 @@ class ParentCmdTestCase(unittest.TestCase):
                     relative=True)
 
         # parented object should be in the selection list now
-        self.assertEqual(len(globalSelection), 1)
+        cubePath = ufe.Path([shapeSegment, usdUtils.createUfePathSegment("/cylinderXform/cubeXform")])
+
+        self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(cubePath))
 
         cmds.undo()
 
@@ -1073,7 +1075,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         cmds.redo()
 
-        self.assertEqual(len(globalSelection), 1)
+        self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(cubePath))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

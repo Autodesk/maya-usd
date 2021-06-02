@@ -28,15 +28,11 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
 
-#include <maya/MGlobal.h>
-#include <maya/MItSelectionList.h>
-#include <maya/MSelectionList.h>
 #include <ufe/globalSelection.h>
 #include <ufe/log.h>
 #include <ufe/observableSelection.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
-#include <ufe/selection.h>
 
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
