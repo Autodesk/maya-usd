@@ -22,11 +22,9 @@
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <maya/MGlobal.h>
 #include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
-#include <ufe/pathString.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
@@ -92,13 +90,9 @@ void UsdUndoCreateGroupCommand::execute()
 
     // Make sure to add the newly created _group (a.k.a parent) to selection. This matches native
     // Maya behavior and also prevents the crash on grouping a prim twice.
-    auto noWorld = _group->path().popHead();
-    auto fullPath = noWorld.getSegments().front().string() + Ufe::PathString::pathSegmentSeparator()
-        + noWorld.getSegments().back().string();
-
-    MString groupPath(fullPath.c_str());
-    MStatus status = MGlobal::executeCommand(MString("select -r \"") + groupPath + "\" ");
-    CHECK_MSTATUS(status);
+    Ufe::Selection groupSelect;
+    groupSelect.append(_group);
+    Ufe::GlobalSelection::get()->replaceWith(groupSelect);
 
     TF_VERIFY(
         Ufe::GlobalSelection::get()->size() == 1,
