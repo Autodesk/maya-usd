@@ -71,8 +71,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (usdPreviewSurfaceLightingAPI2)
     (usdPreviewSurfaceCombiner)
 
-    (materialXTw)
-
     (UsdPrimvarColor)
 
     (UsdUVTexture)
@@ -121,8 +119,6 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->Float4ToFloat4,
 
                                               _tokens->NwFaceCameraIfNAN,
-
-                                              _tokens->materialXTw,
 
                                               _tokens->lightingContributions,
                                               _tokens->scaledDiffusePassThrough,
@@ -283,6 +279,29 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
+#ifdef WANT_MATERIALX_BUILD
+    {
+        const MString fragName("materialXTw");
+
+        if (!fragmentManager->hasFragment(fragName)) {
+            const std::string fragXmlFile = TfStringPrintf("%s.xml", fragName.asChar());
+            const std::string fragXmlPath = _GetResourcePath(fragXmlFile);
+
+            const MString addedName
+                = fragmentManager->addShadeFragmentFromFile(fragXmlPath.c_str(), false);
+
+            if (addedName != fragName) {
+                MGlobal::displayError(TfStringPrintf(
+                                          "Failed to register fragment '%s' from file: %s",
+                                          fragName.asChar(),
+                                          fragXmlPath.c_str())
+                                          .c_str());
+                return MS::kFailure;
+            }
+        }
+    }
+#endif
+
     // Register all fragment graphs.
     for (const TfToken& fragGraphNameToken : _FragmentGraphNames) {
         const MString fragGraphName(fragGraphNameToken.GetText());
@@ -411,6 +430,17 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
             return MS::kFailure;
         }
     }
+
+#ifdef WANT_MATERIALX_BUILD
+    {
+        const MString fragName("materialXTw");
+        if (!fragmentManager->removeFragment(fragName)) {
+            MGlobal::displayWarning(
+                TfStringPrintf("Failed to remove fragment: %s", fragName.asChar()).c_str());
+            return MS::kFailure;
+        }
+    }
+#endif
 
     // De-register all fragments.
     for (const TfToken& fragNameToken : _FragmentNames) {
