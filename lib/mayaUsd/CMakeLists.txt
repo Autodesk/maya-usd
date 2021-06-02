@@ -149,13 +149,13 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
         ${MAYA_LIBRARIES}
         mayaUsdUtils
+    PRIVATE
+        ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXCore>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXFormat>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXRender>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenOgsXml>
-    PRIVATE
-        ghc_filesystem
 )
 
 # -----------------------------------------------------------------------------

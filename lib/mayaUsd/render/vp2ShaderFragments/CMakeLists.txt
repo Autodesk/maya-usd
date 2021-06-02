@@ -24,8 +24,6 @@ list(APPEND SHADERFRAGMENTS_XMLS
     usdPreviewSurfaceCombiner.xml
     usdPreviewSurfaceLightingAPI1.xml
     usdPreviewSurfaceLightingAPI2.xml
-    # MaterialX
-    materialXTw.xml
     # New fragments
     BasisCurvesCubicColorDomain.xml
     BasisCurvesCubicCPVHull.xml
@@ -61,6 +59,13 @@ list(APPEND SHADERFRAGMENTS_XMLS
     # USD plug info
     plugInfo.json
 )
+
+if(CMAKE_WANT_MATERIALX_BUILD)
+    list(APPEND SHADERFRAGMENTS_XMLS
+        # MaterialX
+        materialXTw.xml
+    )
+endif()
 
 set(HEADERS
     shaderFragments.h

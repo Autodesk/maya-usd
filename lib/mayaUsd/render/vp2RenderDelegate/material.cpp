@@ -51,6 +51,7 @@
 
 #ifdef WANT_MATERIALX_BUILD
 #include <MaterialXCore/Document.h>
+#include <MaterialXFormat/File.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
 #include <MaterialXGenOgsXml/OgsFragment.h>
@@ -124,15 +125,90 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
+);
+// clang-format on
+
+#ifdef WANT_MATERIALX_BUILD
+
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _mtlxTokens,
 
     (image)
     (tiledimage)
-    (tangents)
     (i_geomprop_)
     (geomprop)
-    (ND_geompropvalue_)
+    (uaddressmode)
+    (vaddressmode)
+    (filtertype)
 );
 // clang-format on
+
+struct _MaterialXData
+{
+    _MaterialXData()
+    {
+        _mtlxLibrary = mx::createDocument();
+
+        // In the final product, the libraries will be intalled with the plugin and
+        // will be found in a location that is relative to the plugin load path. We
+        // are not ready for the full installer yet, so use the install paths of the
+        // MaterialX used to build the module just like Pixar does in USD.
+        //
+        // Also, since users are able to provide plug-in libraries, we need a fully
+        // extendable mechanism so they can declare where to search for these.
+        //
+        // The MaterialX_DIR location is most likely the cmake folder for a regular
+        // build of MaterialX:
+        mx::FilePath materialXPath(MaterialX_DIR);
+        materialXPath = materialXPath.getParentPath() / mx::FilePath("libraries");
+        _mtlxSearchPath.append(materialXPath);
+
+        const std::unordered_set<std::string> uniqueLibraryNames {
+            "targets",        "adsklib",        "stdlib", "pbrlib",        "bxdf",
+            "stdlib/genglsl", "pbrlib/genglsl", "lights", "lights/genglsl"
+        };
+
+        mx::loadLibraries(
+            mx::FilePathVec(uniqueLibraryNames.begin(), uniqueLibraryNames.end()),
+            _mtlxSearchPath,
+            _mtlxLibrary);
+    }
+    MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
+    MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
+};
+
+_MaterialXData& _GetMaterialXData()
+{
+    static std::unique_ptr<_MaterialXData> materialXData;
+    static std::once_flag                  once;
+    std::call_once(once, []() { materialXData.reset(new _MaterialXData()); });
+
+    return *materialXData;
+}
+
+bool _IsMaterialX(const HdMaterialNode& node)
+{
+    SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
+    NdrNodeConstPtr ndrNode = shaderReg.GetNodeByIdentifier(node.identifier);
+
+    return ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
+}
+
+static HdMaterialNode2 const*
+_GetTerminalNode(HdMaterialNetwork2 const& network, SdfPath& terminalPath)
+{
+    auto const& terminalConnIt = network.terminals.find(HdMaterialTerminalTokens->surface);
+    if (terminalConnIt == network.terminals.end()) {
+        return nullptr;
+    }
+    HdMaterialConnection2 const& connection = terminalConnIt->second;
+    terminalPath = connection.upstreamNode;
+    auto const& terminalIt = network.nodes.find(terminalPath);
+    return &terminalIt->second;
+}
+
+#endif
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
 bool _IsUsdPrimvarReader(const HdMaterialNode& node)
@@ -144,6 +220,28 @@ bool _IsUsdPrimvarReader(const HdMaterialNode& node)
         || id == UsdImagingTokens->UsdPrimvarReader_float3
         || id == UsdImagingTokens->UsdPrimvarReader_float4
         || id == _tokens->UsdPrimvarReader_vector);
+}
+
+//! Helper utility function to test whether a node is a UsdShade UV texture.
+bool _IsUsdUVTexture(const HdMaterialNode& node)
+{
+    if (node.identifier == UsdImagingTokens->UsdUVTexture) {
+        return true;
+    }
+
+#ifdef WANT_MATERIALX_BUILD
+    if (_IsMaterialX(node)) {
+        mx::NodeDefPtr nodeDef
+            = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.identifier.GetString());
+        if (nodeDef
+            && (nodeDef->getNodeString() == _mtlxTokens->image.GetString()
+                || nodeDef->getNodeString() == _mtlxTokens->tiledimage.GetString())) {
+            return true;
+        }
+    }
+#endif
+
+    return false;
 }
 
 //! Helper function to generate a XML string about nodes, relationships and primvars in the
@@ -226,6 +324,25 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
     return result;
 }
 
+//! Return true if the surface shader has its opacity attribute connected to a node which isn't
+//! a USD primvar reader.
+bool _IsTransparent(const HdMaterialNetwork& network)
+{
+    const HdMaterialNode& surfaceShader = network.nodes.back();
+
+    for (const HdMaterialRelationship& rel : network.relationships) {
+        if (rel.outputName == _tokens->opacity && rel.outputId == surfaceShader.path) {
+            for (const HdMaterialNode& node : network.nodes) {
+                if (node.path == rel.inputId) {
+                    return !_IsUsdPrimvarReader(node);
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 //! Helper utility function to convert Hydra texture addressing token to VP2 enum.
 MHWRender::MSamplerState::TextureAddress _ConvertToTextureSamplerAddressEnum(const TfToken& token)
 {
@@ -242,6 +359,57 @@ MHWRender::MSamplerState::TextureAddress _ConvertToTextureSamplerAddressEnum(con
     }
 
     return address;
+}
+
+//! Get sampler state description as required by the material node.
+MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
+{
+    TF_VERIFY(_IsUsdUVTexture(node));
+
+    MHWRender::MSamplerStateDesc desc;
+    desc.filter = MHWRender::MSamplerState::kMinMagMipLinear;
+
+#ifdef WANT_MATERIALX_BUILD
+    const bool isMaterialXNode = _IsMaterialX(node);
+    auto       it
+        = node.parameters.find(isMaterialXNode ? _mtlxTokens->uaddressmode : UsdHydraTokens->wrapS);
+#else
+    auto it = node.parameters.find(UsdHydraTokens->wrapS);
+#endif
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<TfToken>()) {
+            const TfToken& token = value.UncheckedGet<TfToken>();
+            desc.addressU = _ConvertToTextureSamplerAddressEnum(token);
+        }
+#ifdef WANT_MATERIALX_BUILD
+        if (value.IsHolding<std::string>()) {
+            TfToken token(value.UncheckedGet<std::string>().c_str());
+            desc.addressU = _ConvertToTextureSamplerAddressEnum(token);
+        }
+#endif
+    }
+
+#ifdef WANT_MATERIALX_BUILD
+    it = node.parameters.find(isMaterialXNode ? _mtlxTokens->vaddressmode : UsdHydraTokens->wrapT);
+#else
+    it = node.parameters.find(UsdHydraTokens->wrapT);
+#endif
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<TfToken>()) {
+            const TfToken& token = value.UncheckedGet<TfToken>();
+            desc.addressV = _ConvertToTextureSamplerAddressEnum(token);
+        }
+#ifdef WANT_MATERIALX_BUILD
+        if (value.IsHolding<std::string>()) {
+            TfToken token(value.UncheckedGet<std::string>().c_str());
+            desc.addressV = _ConvertToTextureSamplerAddressEnum(token);
+        }
+#endif
+    }
+
+    return desc;
 }
 
 MHWRender::MTexture*
@@ -469,6 +637,64 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
 
+    // Dual channel (quite rare, but seen with mono + alpha files)
+    case HioFormatFloat32Vec2:
+        desc.fFormat = MHWRender::kR32G32_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case HioFormatFloat16Vec2: {
+        // R16G16 is not supported by VP2. Converted to R16G16B16A16.
+        constexpr int bpp_8 = 8;
+
+        desc.fFormat = MHWRender::kR16G16B16A16_FLOAT;
+        desc.fBytesPerRow = spec.width * bpp_8;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_8 + 0] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 1] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 2] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 3] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 4] = storage[t * bpp + 0];
+                texels[t * bpp_8 + 5] = storage[t * bpp + 1];
+                texels[t * bpp_8 + 6] = storage[t * bpp + 2];
+                texels[t * bpp_8 + 7] = storage[t * bpp + 3];
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        break;
+    }
+    case HioFormatUNorm8Vec2:
+    case HioFormatUNorm8Vec2srgb: {
+        // R8G8 is not supported by VP2. Converted to R8G8B8A8.
+        constexpr int bpp_4 = 4;
+
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        desc.fBytesPerRow = spec.width * bpp_4;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_4] = storage[t * bpp];
+                texels[t * bpp_4 + 1] = storage[t * bpp];
+                texels[t * bpp_4 + 2] = storage[t * bpp];
+                texels[t * bpp_4 + 3] = storage[t * bpp + 1];
+            }
+        }
+
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+        break;
+    }
+
     // 3-Channel
     case HioFormatFloat32Vec3:
         desc.fFormat = MHWRender::kR32G32B32_FLOAT;
@@ -640,23 +866,6 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     return texture;
 }
 
-#ifdef WANT_MATERIALX_BUILD
-
-static HdMaterialNode2 const*
-_GetTerminalNode(HdMaterialNetwork2 const& network, SdfPath& terminalPath)
-{
-    auto const& terminalConnIt = network.terminals.find(HdMaterialTerminalTokens->surface);
-    if (terminalConnIt == network.terminals.end()) {
-        return nullptr;
-    }
-    HdMaterialConnection2 const& connection = terminalConnIt->second;
-    terminalPath = connection.upstreamNode;
-    auto const& terminalIt = network.nodes.find(terminalPath);
-    return &terminalIt->second;
-}
-
-#endif
-
 } // anonymous namespace
 
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
@@ -677,33 +886,6 @@ HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath&
     : HdMaterial(id)
     , _renderDelegate(renderDelegate)
 {
-#ifdef WANT_MATERIALX_BUILD
-    _mtlxLibrary = mx::createDocument();
-
-    // In the final product, the libraries will be intalled with the plugin and
-    // will be found in a location that is relative to the plugin load path. We
-    // are not ready for the full installer yet, so use the install paths of the
-    // MaterialX used to build the module just like Pixar does in USD.
-    //
-    // Also, since users are able to provide plug-in libraries, we need a fully
-    // extendable mechanism so they can declare where to search for these.
-    //
-    // The MaterialX_DIR location is most likely the cmake folder for a regular
-    // build of MaterialX:
-    mx::FilePath materialXPath(MaterialX_DIR);
-    materialXPath = materialXPath.getParentPath() / mx::FilePath("libraries");
-    _mtlxSearchPath.append(materialXPath);
-
-    const std::unordered_set<std::string> uniqueLibraryNames {
-        "targets",        "adsklib",        "stdlib", "pbrlib",        "bxdf",
-        "stdlib/genglsl", "pbrlib/genglsl", "lights", "lights/genglsl"
-    };
-
-    mx::loadLibraries(
-        mx::FilePathVec(uniqueLibraryNames.begin(), uniqueLibraryNames.end()),
-        _mtlxSearchPath,
-        _mtlxLibrary);
-#endif
 }
 
 /*! \brief  Synchronize VP2 state with scene delegate state based on dirty bits
@@ -735,11 +917,7 @@ void HdVP2Material::Sync(
 
 #ifdef WANT_MATERIALX_BUILD
             if (!bxdfNet.nodes.empty()) {
-                SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
-                NdrNodeConstPtr terminalNode
-                    = shaderReg.GetNodeByIdentifier(bxdfNet.nodes.back().identifier);
-
-                if (terminalNode->GetSourceType() == HdVP2Tokens->mtlx) {
+                if (_IsMaterialX(bxdfNet.nodes.back())) {
                     _surfaceShader.reset(_CreateMaterialXShaderInstance(GetId(), networkMap));
                     if (_surfaceShader) {
                         if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
@@ -1033,7 +1211,7 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
         = sdrRegistry.GetShaderNodeByIdentifierAndType(surfTerminal->nodeTypeId, HdVP2Tokens->mtlx);
 
     mx::DocumentPtr           mtlxDoc;
-    const mx::FileSearchPath& crLibrarySearchPath(_mtlxSearchPath);
+    const mx::FileSearchPath& crLibrarySearchPath(_GetMaterialXData()._mtlxSearchPath);
     if (mtlxSdrNode) {
 
         // Create the MaterialX Document from the HdMaterialNetwork
@@ -1043,7 +1221,7 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             surfaceNetwork,
             *surfTerminal, // MaterialX HdNode
             materialId,
-            _mtlxLibrary,
+            _GetMaterialXData()._mtlxLibrary,
             &hdTextureNodes,
             &mxHdTextureMap);
 
@@ -1126,17 +1304,15 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
         shaderInstance->parameterList(parameterList);
         for (unsigned int i = 0; i < parameterList.length(); ++i) {
             static const unsigned int u_geomprop_length
-                = static_cast<unsigned int>(_tokens->i_geomprop_.GetString().length());
+                = static_cast<unsigned int>(_mtlxTokens->i_geomprop_.GetString().length());
             if (parameterList[i].substring(0, u_geomprop_length - 1)
-                == _tokens->i_geomprop_.GetText()) {
+                == _mtlxTokens->i_geomprop_.GetText()) {
                 MString varname
                     = parameterList[i].substring(u_geomprop_length, parameterList[i].length());
                 shaderInstance->renameParameter(parameterList[i], varname);
                 _requiredPrimvars.push_back(TfToken(varname.asChar()));
             }
         }
-
-        _isMtlx = true;
 
         // Add automatic tangent generation:
         shaderInstance->addInputFragment("materialXTw", "Tw", "Tw");
@@ -1354,15 +1530,17 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
     for (const HdMaterialNode& node : mat.nodes) {
         MString nodeName = "";
 #ifdef WANT_MATERIALX_BUILD
-        if (_isMtlx) {
+        const bool isMaterialXNode = _IsMaterialX(node);
+        if (isMaterialXNode) {
             nodeName += node.path.GetName().c_str();
             if (node.path == _surfaceShaderId) {
                 nodeName = "";
             } else {
                 nodeName += "_";
             }
-        } else {
+        } else
 #endif
+        {
             // Find the simplified path for the authored node path from the map which has been
             // created when applying VP2-specific fixes.
             const auto it = _nodePathMap.find(node.path);
@@ -1375,9 +1553,7 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             if (nodePath != _surfaceShaderId) {
                 nodeName = nodePath.GetText();
             }
-#ifdef WANT_MATERIALX_BUILD
         }
-#endif
 
         MStatus samplerStatus = MStatus::kFailure;
 
@@ -1385,8 +1561,16 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
             const MHWRender::MSamplerStateDesc desc = _GetSamplerStateDesc(node);
             const MHWRender::MSamplerState*    sampler = _renderDelegate->GetSamplerState(desc);
             if (sampler) {
-                const MString paramName = nodeName + "fileSampler";
-                samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
+#ifdef WANT_MATERIALX_BUILD
+                if (isMaterialXNode) {
+                    const MString paramName = "_" + nodeName + "file_sampler";
+                    samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
+                } else
+#endif
+                {
+                    const MString paramName = nodeName + "fileSampler";
+                    samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
+                }
             }
         }
 
@@ -1443,7 +1627,7 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                     // this information will not reach the render delegate. Follow
                     // https://github.com/PixarAnimationStudios/USD/issues/1523 for future updates
                     // on colorspace handling in MaterialX/Hydra.
-                    if (status && !_isMtlx) {
+                    if (status && !isMaterialXNode) {
 #else
                     if (status) {
 #endif
@@ -1473,15 +1657,15 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 MFloatMatrix matrix;
                 value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
                 status = _surfaceShader->setParameter(paramName, matrix);
-            } else if (value.IsHolding<std::string>()) {
 #ifdef WANT_MATERIALX_BUILD
-                // The geompropvalue nodes have a string member that does not translate to a shader
-                // parameter
-                if (_isMtlx && token == _tokens->geomprop) {
-                    std::string nodeID(node.identifier.GetText());
-                    if (nodeID.rfind(_tokens->ND_geompropvalue_.GetText(), 0) == 0) {
-                        status = MS::kSuccess;
-                    }
+            } else if (value.IsHolding<std::string>()) {
+                // Some MaterialX nodes have a string member that does not translate to a shader
+                // parameter.
+                if (isMaterialXNode
+                    && (token == _mtlxTokens->geomprop || token == _mtlxTokens->uaddressmode
+                        || token == _mtlxTokens->vaddressmode
+                        || token == _mtlxTokens->filtertype)) {
+                    status = MS::kSuccess;
                 }
 #endif
             }
@@ -1517,73 +1701,6 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(const std::string& path)
             uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
     }
     return info;
-}
-
-//! Helper utility function to test whether a node is a UsdShade UV texture.
-bool HdVP2Material::_IsUsdUVTexture(const HdMaterialNode& node) const
-{
-    if (node.identifier == UsdImagingTokens->UsdUVTexture) {
-        return true;
-    }
-
-#ifdef WANT_MATERIALX_BUILD
-    mx::NodeDefPtr nodeDef = _mtlxLibrary->getNodeDef(node.identifier.GetString());
-    if (nodeDef
-        && (nodeDef->getNodeString() == _tokens->image.GetString()
-            || nodeDef->getNodeString() == _tokens->tiledimage.GetString())) {
-        return true;
-    }
-#endif
-
-    return false;
-}
-
-//! Get sampler state description as required by the material node.
-MHWRender::MSamplerStateDesc HdVP2Material::_GetSamplerStateDesc(const HdMaterialNode& node) const
-{
-    TF_VERIFY(_IsUsdUVTexture(node));
-
-    MHWRender::MSamplerStateDesc desc;
-    desc.filter = MHWRender::MSamplerState::kMinMagMipLinear;
-
-    auto it = node.parameters.find(UsdHydraTokens->wrapS);
-    if (it != node.parameters.end()) {
-        const VtValue& value = it->second;
-        if (value.IsHolding<TfToken>()) {
-            const TfToken& token = value.UncheckedGet<TfToken>();
-            desc.addressU = _ConvertToTextureSamplerAddressEnum(token);
-        }
-    }
-
-    it = node.parameters.find(UsdHydraTokens->wrapT);
-    if (it != node.parameters.end()) {
-        const VtValue& value = it->second;
-        if (value.IsHolding<TfToken>()) {
-            const TfToken& token = value.UncheckedGet<TfToken>();
-            desc.addressV = _ConvertToTextureSamplerAddressEnum(token);
-        }
-    }
-
-    return desc;
-}
-
-//! Return true if the surface shader has its opacity attribute connected to a node which isn't
-//! a USD primvar reader.
-bool HdVP2Material::_IsTransparent(const HdMaterialNetwork& network) const
-{
-    const HdMaterialNode& surfaceShader = network.nodes.back();
-
-    for (const HdMaterialRelationship& rel : network.relationships) {
-        if (rel.outputName == _tokens->opacity && rel.outputId == surfaceShader.path) {
-            for (const HdMaterialNode& node : network.nodes) {
-                if (node.path == rel.inputId) {
-                    return !_IsUsdPrimvarReader(node);
-                }
-            }
-        }
-    }
-
-    return false;
 }
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
