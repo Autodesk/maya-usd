@@ -118,7 +118,7 @@ UsdAttribute MaterialXTranslators_BaseWriter::AddSwizzle(
     int                numChannels,
     UsdAttribute       nodeOutput)
 {
-    if (numChannels == channels.size()) {
+    if (numChannels == static_cast<int>(channels.size())) {
         // No swizzle actually needed:
         return nodeOutput;
     }
