@@ -448,7 +448,7 @@ UsdAttribute MaterialXTranslators_FileTextureWriter::GetShadingAttributeForMayaA
     }
 
     // Starting here, we handle subcomponent requests:
-    
+
     if (_numChannels == 2) {
         // This will be ND_image_vector2, so requires xyz swizzles:
         if (mayaAttrName == _tokens->outColorR) {
