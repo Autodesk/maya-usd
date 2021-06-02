@@ -22,9 +22,15 @@
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
 
+#include <maya/MGlobal.h>
+#include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
+#include <ufe/observableSelection.h>
+#include <ufe/pathString.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -83,6 +89,19 @@ void UsdUndoCreateGroupCommand::execute()
             append(parentCmd);
         }
     }
+
+    // Make sure to add the newly created _group (a.k.a parent) to selection. This matches native
+    // Maya behavior and also prevents the crash on grouping a prim twice.
+    auto noWorld = _group->path().popHead();
+    auto fullPath = noWorld.getSegments().front().string() + Ufe::PathString::pathSegmentSeparator()
+        + noWorld.getSegments().back().string();
+
+    MString groupPath(fullPath.c_str());
+    MGlobal::executeCommand(MString("select -r \"") + groupPath + "\" ");
+
+    TF_VERIFY(
+        Ufe::GlobalSelection::get()->size() == 1,
+        "_group node should be in the global selection now. \n");
 }
 
 } // namespace ufe
