@@ -165,8 +165,8 @@ class ParentCmdTestCase(unittest.TestCase):
         self.assertEqual(cubeChildT3d.rotation(),    cubeR)
         self.assertEqual(cubeChildT3d.scale(),       cubeS)
 
-        # moved object should be in the selection list by now
-        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
+        # Move the parent
+        ufe.GlobalSelection.get().append(cylinderItem)
 
         cmds.move(0, 10, 0, relative=True)
 
@@ -258,8 +258,8 @@ class ParentCmdTestCase(unittest.TestCase):
         # Cube world y coordinate is currently 0.
         self.assertAlmostEqual(cubeWorld.matrix[3][1], 0)
 
-        # moved object should be in the selection list by now
-        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
+        # Move the parent
+        ufe.GlobalSelection.get().append(cylinderItem)
 
         cmds.move(0, 10, 0, relative=True)
 
@@ -1039,43 +1039,6 @@ class ParentCmdTestCase(unittest.TestCase):
             cmds.parent("|Tree_usd|Tree_usdShape,/TreeBase/trunk",
                         "|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves")
 
-    def testSelectionListAfterParent(self):
-        ''' Parented object will be added to selection list. This behavior matches the native Maya parent command. '''
-
-        # create scene items for the cube and the cylinder.
-        shapeSegment = mayaUtils.createUfePathSegment(
-            "|mayaUsdProxy1|mayaUsdProxyShape1")
-        cubePath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/cubeXform")])
-        cubeItem = ufe.Hierarchy.createItem(cubePath)
-        cylinderPath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform")])
-        cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
-
-        # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(shapeSegment))
-
-        # global selection is empty at this point.
-        globalSelection = ufe.GlobalSelection.get()
-        self.assertEqual(len(globalSelection), 0)
-
-        # parent cube to cylinder in relative mode, using UFE path strings.
-        cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/cubeXform",
-                    "|mayaUsdProxy1|mayaUsdProxyShape1,/cylinderXform",
-                    relative=True)
-
-        # parented object should be in the selection list now
-        cubePath = ufe.Path([shapeSegment, usdUtils.createUfePathSegment("/cylinderXform/cubeXform")])
-
-        self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(cubePath))
-
-        cmds.undo()
-
-        self.assertEqual(len(globalSelection), 1)
-
-        cmds.redo()
-
-        self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(cubePath))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
