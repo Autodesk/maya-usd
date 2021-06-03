@@ -73,15 +73,18 @@ public:
     virtual ~AbstractLayerEditorWindow();
 
     // queries about the current selection
-    virtual int  selectionLength() = 0;
-    virtual bool isInvalidLayer() = 0;
-    virtual bool isSessionLayer() = 0;
-    virtual bool isLayerDirty() = 0;
-    virtual bool isSubLayer() = 0;
-    virtual bool isAnonymousLayer() = 0;
-    virtual bool layerNeedsSaving() = 0;
-    virtual bool layerAppearsMuted() = 0;
-    virtual bool layerIsMuted() = 0;
+    virtual int         selectionLength() = 0;
+    virtual bool        isInvalidLayer() = 0;
+    virtual bool        isSessionLayer() = 0;
+    virtual bool        isLayerDirty() = 0;
+    virtual bool        isSubLayer() = 0;
+    virtual bool        isAnonymousLayer() = 0;
+    virtual bool        isIncomingLayer() = 0;
+    virtual bool        layerNeedsSaving() = 0;
+    virtual bool        layerAppearsMuted() = 0;
+    virtual bool        layerIsMuted() = 0;
+    virtual bool        layerIsReadOnly() = 0;
+    virtual std::string proxyShapeName() = 0;
 
     virtual void removeSubLayer() = 0;
     virtual void saveEdits() = 0;

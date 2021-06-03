@@ -2434,3 +2434,42 @@ MString UsdMayaUtil::GetCurrentSceneFilePath()
 
     return currentSceneFilePath;
 }
+
+std::set<std::string> UsdMayaUtil::getAllSublayers(const PXR_NS::SdfLayerRefPtr& layer)
+{
+    std::set<std::string>      allSublayers;
+    std::deque<SdfLayerRefPtr> processing;
+    processing.push_back(layer);
+    while (!processing.empty()) {
+        auto layerToProcess = processing.front();
+        processing.pop_front();
+        SdfSubLayerProxy sublayerPaths = layerToProcess->GetSubLayerPaths();
+        for (auto path : sublayerPaths) {
+            allSublayers.insert(path);
+            SdfLayerRefPtr sublayer = SdfLayer::Find(path);
+            if (sublayer) {
+                processing.push_back(sublayer);
+            }
+        }
+    }
+
+    return allSublayers;
+}
+
+std::set<std::string>
+UsdMayaUtil::getAllSublayers(const std::vector<std::string>& layerPaths, bool includeParents)
+{
+    std::set<std::string> layers;
+
+    for (auto layerPath : layerPaths) {
+        SdfLayerRefPtr layer = PXR_NS::SdfLayer::Find(layerPath);
+        if (layer) {
+            if (includeParents)
+                layers.insert(layerPath);
+            auto sublayerPaths = UsdMayaUtil::getAllSublayers(layer);
+            std::move(sublayerPaths.begin(), sublayerPaths.end(), inserter(layers, layers.end()));
+        }
+    }
+
+    return layers;
+}

@@ -518,58 +518,59 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     int $isSessionLayer = `mayaUsdLayerEditorWindow -q -isSessionLayer $panelName`;
     int $isAnonymousLayer = `mayaUsdLayerEditorWindow -q -isAnonymousLayer $panelName`;
     int $needsSaving = `mayaUsdLayerEditorWindow -q -layerNeedsSaving $panelName`;
-    int $singleSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` == 1;  
+    int $singleSelect = `mayaUsdLayerEditorWindow -q -selectionLength $panelName` == 1;
     int $appearsMuted = `mayaUsdLayerEditorWindow -q -layerAppearsMuted $panelName`;
     int $isSubLayer = `mayaUsdLayerEditorWindow -q -isSubLayer $panelName`;
     int $isMuted = `mayaUsdLayerEditorWindow -q -layerIsMuted $panelName`;
-    
+    int $isReadOnly = `mayaUsdLayerEditorWindow -q -layerIsReadOnly $panelName`;
+    int $isIncoming = `mayaUsdLayerEditorWindow -q -isIncomingLayer $panelName`;
+    string $proxyShape = `mayaUsdLayerEditorWindow -q -proxyShape $panelName`;
+
     string $label;
     int $enabled;
 
     if (!$isSessionLayer) {
         if ($isAnonymousLayer)
             $label = getMayaUsdString("kMenuSaveAs");
-        else 
+        else
             $label = getMayaUsdString("kMenuSaveEdits");
         $enabled = $singleSelect && $needsSaving;
         $cmd = makeCommand($panelName, "saveEdits");
         menuItem -label $label -enable $enabled -c $cmd;
-        
-
     }
 
     if (!$isAnonymousLayer) {
         $label = getMayaUsdString("kMenuRevertToFile");
         $cmd = makeCommand($panelName, "discardEdits");
         menuItem -label $label -c $cmd;
-    }    
+    }
 
     menuItem -divider 1;
 
     $label = getMayaUsdString("kMenuAddSublayer");
     $cmd = makeCommand($panelName, "addAnonymousSublayer");
-    $enabled = $appearsMuted == 0;
+    $enabled = $appearsMuted == 0 && !$isReadOnly;
     menuItem -label $label -enable $enabled -c $cmd;
 
     $label = getMayaUsdString("kMenuAddParentLayer");
     $cmd = makeCommand($panelName, "addParentLayer");
-    $enabled = $isSubLayer && $appearsMuted == 0;
+    $enabled = $isSubLayer && $appearsMuted == 0 && !$isReadOnly;
     menuItem -label $label -enable $enabled -c $cmd;
 
     $label = getMayaUsdString("kMenuLoadSublayers");
     $cmd = makeCommand($panelName, "loadSubLayers");
-    $enabled = $singleSelect && !$appearsMuted;
+    $enabled = $singleSelect && !$appearsMuted && !$isReadOnly;
     menuItem -label $label -enable $enabled -c $cmd;
 
     menuItem -divider 1;
-    
+
     if ($isSubLayer) {
-        if ($isMuted) 
+        if ($isMuted)
             $label = getMayaUsdString("kMenuUnmute");
         else
             $label = getMayaUsdString("kMenuMute");
         $cmd = makeCommand($panelName, "muteLayer");
-        $enabled = 1;    	
+        $enabled = 1;
         menuItem -label $label -enable $enabled -c $cmd;
     }
 
@@ -585,21 +586,41 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     $enabled = 1;
     menuItem -label $label -enable $enabled -c $cmd;
 
+    if($isIncoming) {
+        $incoming = `listConnections -s true -d false -c true $proxyShape`;
+        $incomingNode = "";
+        for($i=0;$i<size($incoming);$i+=2) {
+            $j = $i+1;
+            if($incoming[$i] == $proxyShape+".inStageData") {
+                $incomingNode = $incoming[$j];
+            }
+            else if($incomingNode == "" && $incoming[$i] ==  $proxyShape+".stageCacheId") {
+                $incomingNode = $incoming[$j];
+            }
+        }
+
+        if($incomingNode != "") {
+            $label = "Select Incoming Node "+$incomingNode;
+            $cmd = "select "+$incomingNode;
+            menuItem -label $label -enable 1 -c $cmd;
+        }
+    }
+
     // if we add any more menus, add a divider
-    if ($isSubLayer || !$isAnonymousLayer) 
+    if ($isSubLayer || !$isAnonymousLayer)
         menuItem -divider 1;
 
     if ($isSubLayer) {
         $label = getMayaUsdString("kMenuRemove");
         $cmd = makeCommand($panelName, "removeSubLayer");
-        $enabled = 1;
+        $enabled = !$isReadOnly;
         menuItem -label $label -enable $enabled -c $cmd;
     }
 
 
     $label = getMayaUsdString("kMenuClear");
     $cmd = makeCommand($panelName, "clearLayer");
-    $enabled = 1;
+    $enabled = !$isReadOnly;
     menuItem -label $label -enable $enabled -c $cmd;
 }
 

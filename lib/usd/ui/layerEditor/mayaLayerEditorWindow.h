@@ -48,15 +48,18 @@ public:
     ~MayaLayerEditorWindow();
 
     // tree commands
-    int  selectionLength() override;
-    bool isInvalidLayer() override;
-    bool isSessionLayer() override;
-    bool isLayerDirty() override;
-    bool isSubLayer() override;
-    bool isAnonymousLayer() override;
-    bool layerNeedsSaving() override;
-    bool layerAppearsMuted() override;
-    bool layerIsMuted() override;
+    int         selectionLength() override;
+    bool        isInvalidLayer() override;
+    bool        isSessionLayer() override;
+    bool        isLayerDirty() override;
+    bool        isSubLayer() override;
+    bool        isAnonymousLayer() override;
+    bool        isIncomingLayer() override;
+    bool        layerNeedsSaving() override;
+    bool        layerAppearsMuted() override;
+    bool        layerIsMuted() override;
+    bool        layerIsReadOnly() override;
+    std::string proxyShapeName() override;
 
     void removeSubLayer() override;
     void saveEdits() override;

@@ -79,8 +79,9 @@ void LayerTreeItemDelegate::paint_drawTarget(
 
     bool pressed = (_pressedTarget == item);
     bool muted = item->appearsMuted();
+    bool readOnly = item->isReadOnly();
 
-    bool hover = !muted && (option.state & QStyle::State_MouseOver)
+    bool hover = !muted && !readOnly && (option.state & QStyle::State_MouseOver)
         && QtUtils::isMouseInRectangle(_treeView, targetRect);
 
     QPixmap icon;
@@ -101,11 +102,11 @@ void LayerTreeItemDelegate::paint_drawTarget(
     }
 
     iconRect.moveCenter(targetRect.center());
-    if (muted) {
+    if (muted || readOnly) {
         painter->setOpacity(DISABLED_OPACITY);
     }
     painter->drawPixmap(iconRect, icon);
-    if (muted) {
+    if (muted || readOnly) {
         painter->setOpacity(1.0);
     }
 }
@@ -166,7 +167,8 @@ void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item 
     painter->setPen(QPen(item->data(Qt::TextColorRole).value<QColor>(), 1));
     const auto textRect = getTextRect(rect);
     bool       muted = item->appearsMuted();
-    if (muted)
+    bool       readOnly = item->isReadOnly();
+    if (muted || readOnly)
         painter->setOpacity(DISABLED_OPACITY);
 
     QString text = item->data(Qt::DisplayRole).value<QString>();
@@ -187,7 +189,7 @@ void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item 
         painter->drawPixmap(x, y, WARNING_IMAGE);
     }
 
-    if (muted)
+    if (muted || readOnly)
         painter->setOpacity(1.0);
 }
 void LayerTreeItemDelegate::paint_drawToolbarFrame(QPainter* painter, QRectC rect, int iconCount)

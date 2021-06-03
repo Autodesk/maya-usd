@@ -151,14 +151,20 @@ int MayaLayerEditorWindow::selectionLength()
     auto item = treeView()->currentLayerItem(); \
     return (item == nullptr) ? false : item->method()
 
-bool MayaLayerEditorWindow::isInvalidLayer() { CALL_CURRENT_ITEM(isInvalidLayer); }
-bool MayaLayerEditorWindow::isSessionLayer() { CALL_CURRENT_ITEM(isSessionLayer); }
-bool MayaLayerEditorWindow::isLayerDirty() { CALL_CURRENT_ITEM(isDirty); }
-bool MayaLayerEditorWindow::isSubLayer() { CALL_CURRENT_ITEM(isSublayer); }
-bool MayaLayerEditorWindow::isAnonymousLayer() { CALL_CURRENT_ITEM(isAnonymous); }
-bool MayaLayerEditorWindow::layerNeedsSaving() { CALL_CURRENT_ITEM(needsSaving); }
-bool MayaLayerEditorWindow::layerAppearsMuted() { CALL_CURRENT_ITEM(appearsMuted); }
-bool MayaLayerEditorWindow::layerIsMuted() { CALL_CURRENT_ITEM(isMuted); }
+bool        MayaLayerEditorWindow::isInvalidLayer() { CALL_CURRENT_ITEM(isInvalidLayer); }
+bool        MayaLayerEditorWindow::isSessionLayer() { CALL_CURRENT_ITEM(isSessionLayer); }
+bool        MayaLayerEditorWindow::isLayerDirty() { CALL_CURRENT_ITEM(isDirty); }
+bool        MayaLayerEditorWindow::isSubLayer() { CALL_CURRENT_ITEM(isSublayer); }
+bool        MayaLayerEditorWindow::isAnonymousLayer() { CALL_CURRENT_ITEM(isAnonymous); }
+bool        MayaLayerEditorWindow::isIncomingLayer() { CALL_CURRENT_ITEM(isIncoming); }
+bool        MayaLayerEditorWindow::layerNeedsSaving() { CALL_CURRENT_ITEM(needsSaving); }
+bool        MayaLayerEditorWindow::layerAppearsMuted() { CALL_CURRENT_ITEM(appearsMuted); }
+bool        MayaLayerEditorWindow::layerIsMuted() { CALL_CURRENT_ITEM(isMuted); }
+bool        MayaLayerEditorWindow::layerIsReadOnly() { CALL_CURRENT_ITEM(isReadOnly); }
+std::string MayaLayerEditorWindow::proxyShapeName()
+{
+    return _sessionState.stageEntry()._displayName;
+}
 
 void MayaLayerEditorWindow::removeSubLayer()
 {

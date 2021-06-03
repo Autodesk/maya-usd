@@ -205,4 +205,41 @@ ufeSelectCmd.replaceWith(sn)
     MGlobal::executePythonCommand(script.c_str(), true, false);
 }
 
+std::string GetProxyShapeName(const std::string& proxyShapePath)
+{
+    std::size_t found = proxyShapePath.find_last_of("|");
+    if (std::string::npos != found) {
+        return proxyShapePath.substr(found + 1);
+    } else {
+        return proxyShapePath;
+    }
+}
+
+bool GetBooleanAttributeOnProxyShape(
+    const std::string& proxyShapePath,
+    const std::string& attributeName)
+{
+    if (proxyShapePath.empty()) {
+        return false;
+    }
+    std::string cmd = "getAttr " + GetProxyShapeName(proxyShapePath) + "." + attributeName;
+    int         result = 0;
+    auto        status = MGlobal::executeCommand(MString(cmd.c_str()), result, false, false);
+    if (status != MS::kSuccess || result == 0) {
+        return false;
+    }
+
+    return true;
+}
+
+bool MayaCommandHook::isProxyShapeStageIncoming(std::string proxyShapePath)
+{
+    return GetBooleanAttributeOnProxyShape(proxyShapePath, "stageIncoming");
+}
+
+bool MayaCommandHook::isProxyShapeSharedStage(std::string proxyShapePath)
+{
+    return GetBooleanAttributeOnProxyShape(proxyShapePath, "shareStage");
+}
+
 } // namespace UsdLayerEditor

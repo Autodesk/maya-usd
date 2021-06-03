@@ -76,6 +76,17 @@ MAYAUSD_CORE_PUBLIC
 bool pathAppendPath(std::string& a, const std::string& b);
 
 /**
+ * Appends `b` to the path `a` and returns directory separators as necessary.
+ *
+ * @param a         A string that respresents the first path
+ * @param b         A string that respresents the second path
+ *
+ * @return         the two paths joinied by a seperator
+ */
+MAYAUSD_CORE_PUBLIC
+std::string appendPaths(const std::string& a, const std::string& b);
+
+/**
  * Writes data to a file path on disk.
  *
  * @param filePath      A pointer to the file path to write to on disk.

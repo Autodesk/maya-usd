@@ -23,6 +23,7 @@
 #include "warningDialogs.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/customLayerData.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -153,7 +154,7 @@ bool LayerTreeModel::dropMimeData(
     }
 
     auto parentItem = layerItemFromIndex(parentIndex);
-    if (!parentItem) {
+    if (!parentItem || parentItem->isReadOnly()) {
         return false;
     }
 
@@ -193,7 +194,7 @@ bool LayerTreeModel::dropMimeData(
 
 void LayerTreeModel::setEditTarget(LayerTreeItem* item)
 {
-    if (!item->appearsMuted()) {
+    if (!item->appearsMuted() && !item->isReadOnly()) {
         UndoContext context(_sessionState->commandHook(), "Set USD Edit Target Layer");
         context.hook()->setEditTarget(item->layer());
     }
@@ -204,7 +205,7 @@ void LayerTreeModel::selectUsdLayerOnIdle(const SdfLayerRefPtr& usdLayer)
     QTimer::singleShot(0, this, [this, usdLayer]() {
         auto item = findUSDLayerItem(usdLayer);
         if (item != nullptr) {
-            auto   index = indexFromItem(item);
+            auto index = indexFromItem(item);
             Q_EMIT selectLayerSignal(index);
         }
     });
@@ -255,18 +256,49 @@ void LayerTreeModel::rebuildModel()
     clear();
 
     if (_sessionState->isValid()) {
+        auto rootLayer = _sessionState->stage()->GetRootLayer();
         bool showSessionLayer = true;
         auto sessionLayer = _sessionState->stage()->GetSessionLayer();
         if (_sessionState->autoHideSessionLayer()) {
             showSessionLayer
                 = sessionLayer->IsDirty() || sessionLayer == _sessionState->targetLayer();
         }
-        if (showSessionLayer) {
-            appendRow(new LayerTreeItem(sessionLayer, LayerType::SessionLayer));
+
+        std::set<std::string> sharedLayers;
+        auto                  sharedStage = _sessionState->commandHook()->isProxyShapeSharedStage(
+            _sessionState->stageEntry()._proxyShapePath);
+        if (!sharedStage) {
+            auto layers = MayaUsd::CustomLayerData::getStringArray(
+                rootLayer, MayaUsd::CustomLayerData::kReferencedLayersToken);
+            std::vector<std::string> layerIds;
+            std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
+            sharedLayers = UsdMayaUtil::getAllSublayers(layerIds, true);
         }
 
-        auto rootLayer = _sessionState->stage()->GetRootLayer();
-        appendRow(new LayerTreeItem(rootLayer, LayerType::RootLayer));
+        std::set<std::string> incomingLayers;
+        if (_sessionState->commandHook()->isProxyShapeStageIncoming(
+                _sessionState->stageEntry()._proxyShapePath)) {
+            if (!sharedStage) {
+                incomingLayers = sharedLayers;
+            } else {
+                std::vector<std::string> layerIds;
+                layerIds.push_back(rootLayer->GetIdentifier());
+                incomingLayers = UsdMayaUtil::getAllSublayers(layerIds, true);
+            }
+        }
+
+        if (showSessionLayer) {
+            appendRow(new LayerTreeItem(
+                sessionLayer,
+                LayerType::SessionLayer,
+                "",
+                &incomingLayers,
+                sharedStage,
+                &sharedLayers));
+        }
+
+        appendRow(new LayerTreeItem(
+            rootLayer, LayerType::RootLayer, "", &incomingLayers, sharedStage, &sharedLayers));
 
         updateTargetLayer(InRebuildModel::Yes);
     }

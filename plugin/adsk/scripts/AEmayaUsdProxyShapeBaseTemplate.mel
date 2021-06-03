@@ -40,6 +40,24 @@ global proc AEmayaUsdProxyShapePayloadsNew(string $loadPayloads)
     AEmayaUsdProxyShapePayloadsReplace($loadPayloads);
 }
 
+global proc AEmayaUsdProxyShapeShareStageNew(string $shareStageAttr)
+{
+    checkBoxGrp
+        -numberOfCheckBoxes 1
+        -label `getMayaUsdString("kShareStageShareable")`
+        -ann `getMayaUsdString("kShareStageAnn")`
+        shareStageCheckBoxGrp;
+    AEmayaUsdProxyShapeShareStageReplace($shareStageAttr);
+}
+
+global proc AEmayaUsdProxyShapeShareStageReplace(string $shareStageAttr)
+{
+    checkBoxGrp -edit
+        -value1 `getAttr($shareStageAttr)`
+        -changeCommand1 ("setAttr " + $shareStageAttr + " #1")
+        shareStageCheckBoxGrp;
+}
+
 global proc AEMayaUsdProxyShapeStageLoadAll(string $fullNodeName)
 {
     mayaUsdStageLoadAll $fullNodeName;
@@ -209,7 +227,7 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
             // pass it in order to get the current nodename. Cannot use the input one here as it
             // changes based on which proxy shape the AE is viewing.
             editorTemplate -callCustom "AEmayaUsdProxyShapeInfoNew" "AEmayaUsdProxyShapeInfoReplace" inStageData;
-
+            editorTemplate -callCustom "AEmayaUsdProxyShapeShareStageNew" "AEmayaUsdProxyShapeShareStageReplace" "shareStage";
             editorTemplate -callCustom "AEmayaUsdProxyShapePayloadsNew" "AEmayaUsdProxyShapePayloadsReplace" loadPayloads;
         editorTemplate -endLayout;
 
