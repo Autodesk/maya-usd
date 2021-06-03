@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME}
     PRIVATE
+        shadingTokens.cpp
         usdBlinnReader.cpp
         usdBlinnWriter.cpp
         usdDisplacementShaderWriter.cpp

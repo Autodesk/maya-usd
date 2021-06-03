@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
 #include "usdMaterialWriter.h"
 
 #include <mayaUsd/fileio/shaderWriter.h>
@@ -56,27 +57,6 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(standardSurface, PxrUsdTranslators_StandardSurfaceWriter);
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (base)
-    (baseColor)
-    (emission)
-    (emissionColor)
-    (metalness)
-    (specular)
-    (specularColor)
-    (specularIOR)
-    (specularRoughness)
-    (coat)
-    (coatRoughness)
-    (transmission)
-    (normalCamera)
-);
-// clang-format on
-
 PxrUsdTranslators_StandardSurfaceWriter::PxrUsdTranslators_StandardSurfaceWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
@@ -107,29 +87,29 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
 
     AuthorShaderInputFromScaledShadingNodeAttr(
         depNodeFn,
-        _tokens->baseColor,
+        TrMayaTokens->baseColor,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName,
         usdTime,
-        _tokens->base);
+        TrMayaTokens->base);
 
     // Emission is modulated from emission weight:
     AuthorShaderInputFromScaledShadingNodeAttr(
         depNodeFn,
-        _tokens->emissionColor,
+        TrMayaTokens->emissionColor,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName,
         usdTime,
-        _tokens->emission);
+        TrMayaTokens->emission);
 
     MPlug metalnessPlug = depNodeFn.findPlug(
-        depNodeFn.attribute(_tokens->metalness.GetText()),
+        depNodeFn.attribute(TrMayaTokens->metalness.GetText()),
         /* wantNetworkedPlug = */ true,
         &status);
     if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(metalnessPlug)) {
         AuthorShaderInputFromShadingNodeAttr(
             depNodeFn,
-            _tokens->metalness,
+            TrMayaTokens->metalness,
             shaderSchema,
             PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName,
             usdTime);
@@ -141,7 +121,7 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
 
         AuthorShaderInputFromShadingNodeAttr(
             depNodeFn,
-            _tokens->specularColor,
+            TrMayaTokens->specularColor,
             shaderSchema,
             PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
             usdTime);
@@ -149,34 +129,34 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->specularIOR,
+        TrMayaTokens->specularIOR,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->IorAttrName,
         usdTime);
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->specularRoughness,
+        TrMayaTokens->specularRoughness,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName,
         usdTime);
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->coat,
+        TrMayaTokens->coat,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName,
         usdTime);
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->coatRoughness,
+        TrMayaTokens->coatRoughness,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName,
         usdTime);
 
     MPlug transmissionPlug = depNodeFn.findPlug(
-        depNodeFn.attribute(_tokens->transmission.GetText()),
+        depNodeFn.attribute(TrMayaTokens->transmission.GetText()),
         /* wantNetworkedPlug = */ true,
         &status);
     if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(transmissionPlug)) {
@@ -192,7 +172,7 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
     // Exported, but unsupported in hdStorm.
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->normalCamera,
+        TrMayaTokens->normalCamera,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
         usdTime,
@@ -206,23 +186,23 @@ TfToken PxrUsdTranslators_StandardSurfaceWriter::GetShadingAttributeNameForMayaA
 {
     TfToken usdAttrName;
 
-    if (mayaAttrName == _tokens->baseColor) {
+    if (mayaAttrName == TrMayaTokens->baseColor) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName;
-    } else if (mayaAttrName == _tokens->emissionColor) {
+    } else if (mayaAttrName == TrMayaTokens->emissionColor) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName;
-    } else if (mayaAttrName == _tokens->metalness) {
+    } else if (mayaAttrName == TrMayaTokens->metalness) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName;
-    } else if (mayaAttrName == _tokens->specularColor) {
+    } else if (mayaAttrName == TrMayaTokens->specularColor) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName;
-    } else if (mayaAttrName == _tokens->specularIOR) {
+    } else if (mayaAttrName == TrMayaTokens->specularIOR) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->IorAttrName;
-    } else if (mayaAttrName == _tokens->specularRoughness) {
+    } else if (mayaAttrName == TrMayaTokens->specularRoughness) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName;
-    } else if (mayaAttrName == _tokens->coat) {
+    } else if (mayaAttrName == TrMayaTokens->coat) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName;
-    } else if (mayaAttrName == _tokens->coatRoughness) {
+    } else if (mayaAttrName == TrMayaTokens->coatRoughness) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName;
-    } else if (mayaAttrName == _tokens->normalCamera) {
+    } else if (mayaAttrName == TrMayaTokens->normalCamera) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->NormalAttrName;
     } else {
         return BaseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
