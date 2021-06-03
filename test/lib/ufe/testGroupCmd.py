@@ -149,8 +149,9 @@ class GroupCmdTestCase(unittest.TestCase):
 
         groupCmd.redo()
 
-        # global selection should still have the group path.
-        self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(groupPath))
+        # last item in selection list should be selected.
+        newBallPath = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/Props/newGroup1/Ball_3")])
+        self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(newBallPath))
 
         parentChildrenRedo = parentHierarchy.children()
         self.assertEqual(len(parentChildrenRedo), 5)
