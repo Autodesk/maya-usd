@@ -81,10 +81,10 @@ void UsdUndoCreateGroupCommand::execute()
 
     auto newParentHierarchy = Ufe::Hierarchy::hierarchy(_group);
     if (newParentHierarchy) {
-        for (auto child : _selection) {
+        for (const auto& child : _selection) {
             auto parentCmd = newParentHierarchy->appendChildCmd(child);
-            parentCmd->execute();
             append(parentCmd);
+            parentCmd->execute();
         }
     }
 
