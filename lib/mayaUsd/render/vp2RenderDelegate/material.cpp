@@ -1008,7 +1008,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
             outNet.primvars.push_back(HdTokens->normals);
 
             // no passthrough nodes necessary between the draw mode cards node & the fallback shader.
-            continue;
+            return;
         }
 
         // Copy outgoing connections and if needed add passthrough node/connection.

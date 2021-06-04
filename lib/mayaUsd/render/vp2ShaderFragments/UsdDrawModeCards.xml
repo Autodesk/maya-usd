@@ -16,7 +16,7 @@ limitations under the License.
 -->
 <fragment uiName="UsdDrawModeCards" name="UsdDrawModeCards" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
     <description>
-        Computes drawMode = "cards" fragment using latest maya lighting functions, from drawMode.glslfx
+        Computes drawMode = "cards" fragment, from drawMode.glslfx
     </description>
     <properties>
         <!-- diffuseColor gets used if there is no color & opacity from the texture. -->
@@ -62,64 +62,68 @@ limitations under the License.
     </outputs>
     <implementation>
         <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
-            <function_name val="surfaceShader"/>
+            <function_name val="UsdDrawModeCards"/>
             <source>
                 <![CDATA[
 
-//-- glsl Preview.Surface
+bool WithinFloatEpsilon(float value1, float value2)
+{
+    return abs(value1 - value2) < 0.005 ? true : false;
+}
+
+// -- glsl Surface.Fallback
 
 float4
-surfaceShader(vec3 Peye, vec3 Neye,
-    float clearcoatAmount,
-    float clearcoatRoughness,
-    vec3 diffuseColor,
-    vec3 emissiveColor,
-    float ior,
-    float metallic,
-    float occlusion,
-    vec3 transparency,
-    float opacityThreshold,
-    float roughness,
-    vec3 specularColor,
-    bool useSpecularWorkflow,
-    vec3 clearcoatColor,
-    float specularAmount
+UsdDrawModeCards(
+    float4 diffuseColor,
+    float activeTexCard,
+    bool isBackfacing,
+    float3 textureXPosColor,
+    float textureXPosOpacity,
+    float3 textureXNegColor,
+    float textureXNegOpacity,
+    float3 textureYPosColor,
+    float textureYPosOpacity,
+    float3 textureYNegColor,
+    float textureYNegOpacity,
+    float3 textureZPosColor,
+    float textureZPosOpacity,
+    float3 textureZNegColor,
+    float textureZNegOpacity
 )
 {
-    float opacity = 1.0 - transparency.r;
-    if (opacity < opacityThreshold) {
+    // discard backfaces to prevent z-fighting
+    if (isBackfacing)
         discard;
-    } 
 
-    mayaSurfaceShaderOutput result;
+    const float X_POS = 1.0;
+    const float Y_POS = 2.0;
+    const float Z_POS = 4.0;
+    const float X_NEG = 8.0;
+    const float Y_NEG = 16.0;
+    const float Z_NEG = 32.0;
 
-    // Pre-multiply diffuse color by opacity if not done so already
-    diffuseColor *= opacity;
+    float4 diffuse = diffuseColor;
 
-    // Evaluate all lights.
-    result.outColor = evaluateLights(
-        emissiveColor,
-        diffuseColor,
-        useSpecularWorkflow,
-        ior,
-        metallic,
-        specularAmount,
-        specularColor,
-        roughness,
-        clearcoatAmount,
-        clearcoatColor,
-        clearcoatRoughness,
-        occlusion,
-        Peye,
-        Neye);
+    if (WithinFloatEpsilon(activeTexCard, X_POS)) {
+        diffuse = float4(textureXPosColor, textureXPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, X_NEG)) {
+        diffuse = float4(textureXNegColor, textureXNegOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Y_POS)) {
+        diffuse = float4(textureYPosColor, textureYPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Y_NEG)) {
+        diffuse = float4(textureYNegColor, textureYNegOpacity);;
+    } else if (WithinFloatEpsilon(activeTexCard, Z_POS)) {
+        diffuse = float4(textureZPosColor, textureZPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Z_NEG)) {
+        diffuse = float4(textureZNegColor, textureZNegOpacity);;
+    }
 
-    // Transparency
-    result.outTransparency = transparency;
+    // discard trasparent fragments
+    if (diffuse.w < 0.9)
+        discard;
 
-    result.outGlowColor = vec3(0.0, 0.0, 0.0);
-    result.outMatteOpacity = vec3(opacity);
-
-    return result;
+    return diffuse;
 }
 
 
@@ -196,66 +200,70 @@ UsdDrawModeCards(
             </source>
         </implementation>
         <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
-            <function_name val="surfaceShader"/>
+            <function_name val="UsdDrawModeCards"/>
             <source>
                 <![CDATA[
 
 
 
-//-- glsl Preview.Surface
+bool WithinFloatEpsilon(float value1, float value2)
+{
+    return abs(value1 - value2) < 0.005 ? true : false;
+}
 
-mayaSurfaceShaderOutput
-surfaceShader(float3 Peye, float3 Neye,
-    float clearcoatAmount,
-    float clearcoatRoughness,
-    float3 diffuseColor,
-    float3 emissiveColor,
-    float ior,
-    float metallic,
-    float occlusion,
-    float3 transparency,
-    float opacityThreshold,
-    float roughness,
-    float3 specularColor,
-    bool useSpecularWorkflow,
-    float3 clearcoatColor,
-    float specularAmount
+// -- glsl Surface.Fallback
+
+float4
+UsdDrawModeCards(
+    float4 diffuseColor,
+    float activeTexCard,
+    bool isBackfacing,
+    float3 textureXPosColor,
+    float textureXPosOpacity,
+    float3 textureXNegColor,
+    float textureXNegOpacity,
+    float3 textureYPosColor,
+    float textureYPosOpacity,
+    float3 textureYNegColor,
+    float textureYNegOpacity,
+    float3 textureZPosColor,
+    float textureZPosOpacity,
+    float3 textureZNegColor,
+    float textureZNegOpacity
 )
 {
-    float opacity = 1.0 - transparency.r;
-    if (opacity < opacityThreshold) {
+    // discard backfaces to prevent z-fighting
+    if (isBackfacing)
         discard;
-    } 
 
-    mayaSurfaceShaderOutput result;
+    const float X_POS = 1.0;
+    const float Y_POS = 2.0;
+    const float Z_POS = 4.0;
+    const float X_NEG = 8.0;
+    const float Y_NEG = 16.0;
+    const float Z_NEG = 32.0;
 
-    // Pre-multiply diffuse color by opacity if not done so already
-    diffuseColor *= opacity;
+    float4 diffuse = diffuseColor;
 
-    // Evaluate all lights.
-    result.outColor = evaluateLights(
-        emissiveColor,
-        diffuseColor,
-        useSpecularWorkflow,
-        ior,
-        metallic,
-        specularAmount,
-        specularColor,
-        roughness,
-        clearcoatAmount,
-        clearcoatColor,
-        clearcoatRoughness,
-        occlusion,
-        Peye,
-        Neye);
+    if (WithinFloatEpsilon(activeTexCard, X_POS)) {
+        diffuse = float4(textureXPosColor, textureXPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, X_NEG)) {
+        diffuse = float4(textureXNegColor, textureXNegOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Y_POS)) {
+        diffuse = float4(textureYPosColor, textureYPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Y_NEG)) {
+        diffuse = float4(textureYNegColor, textureYNegOpacity);;
+    } else if (WithinFloatEpsilon(activeTexCard, Z_POS)) {
+        diffuse = float4(textureZPosColor, textureZPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Z_NEG)) {
+        diffuse = float4(textureZNegColor, textureZNegOpacity);;
+    }
 
-    // Transparency
-    result.outTransparency = transparency;
+    // discard trasparent fragments
+    if (diffuse.w < 0.9)
+        discard;
 
-    result.outGlowColor = float3(0.0, 0.0, 0.0);
-    result.outMatteOpacity = float3(opacity, opacity, opacity);
-
-    return result;
+    return diffuse;
 }
 
 
