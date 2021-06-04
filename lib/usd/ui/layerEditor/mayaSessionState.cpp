@@ -247,7 +247,7 @@ void MayaSessionState::nodeRenamedCBOnIdle(std::string const& oldName, const MOb
 /* static */
 void MayaSessionState::sceneClosingCB(void* clientData)
 {
-    auto THIS = static_cast<MayaSessionState*>(clientData);
+    auto   THIS = static_cast<MayaSessionState*>(clientData);
     Q_EMIT THIS->clearUIOnSceneResetSignal();
 }
 

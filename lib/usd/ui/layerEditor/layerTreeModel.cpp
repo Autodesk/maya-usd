@@ -205,7 +205,7 @@ void LayerTreeModel::selectUsdLayerOnIdle(const SdfLayerRefPtr& usdLayer)
     QTimer::singleShot(0, this, [this, usdLayer]() {
         auto item = findUSDLayerItem(usdLayer);
         if (item != nullptr) {
-            auto index = indexFromItem(item);
+            auto   index = indexFromItem(item);
             Q_EMIT selectLayerSignal(index);
         }
     });
