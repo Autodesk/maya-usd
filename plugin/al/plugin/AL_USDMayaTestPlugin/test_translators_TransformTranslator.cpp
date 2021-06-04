@@ -196,6 +196,79 @@ TEST(translators_TranformTranslator, animated_io)
     }
 }
 
+TEST(translators_TranformTranslator, default_rotateOrder_true)
+{
+    // If the Rotate order is not default, confrim xformOpOrder value is set correctly
+    DagNodeTranslator::registerType();
+    TransformTranslator::registerType();
+
+    MDagModifier fn;
+    MObject      node = fn.createNode("transform");
+    fn.doIt();
+
+    MFnDependencyNode nodeFn(node);
+    MPlug             plug = nodeFn.findPlug("rotateOrder");
+    plug.setInt(5); // rotateZYX
+
+    MDagPath nodeDagPath;
+    MDagPath::getAPathTo(node, nodeDagPath);
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    ExporterParams eparams;
+    eparams.m_animation = false;
+
+    UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/rotateOrder_true"));
+    UsdPrim      prim = xform.GetPrim();
+    EXPECT_EQ(
+        MStatus(MS::kSuccess),
+        TransformTranslator::copyAttributes(
+            node, prim, eparams, nodeDagPath, eparams.m_exportInWorldSpace));
+
+    bool reset;
+    auto xformOps = xform.GetOrderedXformOps(&reset);
+    ASSERT_TRUE(1 == xformOps.size());
+
+    GfVec3f resultValue;
+    xformOps[0].Get(&resultValue);
+    auto resultName = xformOps[0].GetName().GetString();
+
+    ASSERT_EQ(resultName, "xformOp:rotateZYX");
+    ASSERT_EQ(resultValue, GfVec3f(0.f, 0.f, 0.f));
+}
+
+TEST(translators_TranformTranslator, default_rotateOrder_false)
+{
+    // If the Rotate order is default, confrim xformOpOrder value is not set
+    DagNodeTranslator::registerType();
+    TransformTranslator::registerType();
+
+    MDagModifier fn;
+    MObject      node = fn.createNode("transform");
+    fn.doIt();
+
+    MDagPath nodeDagPath;
+    MDagPath::getAPathTo(node, nodeDagPath);
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    ExporterParams eparams;
+    eparams.m_animation = false;
+
+    UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/rotateOrder_false"));
+    UsdPrim      prim = xform.GetPrim();
+    EXPECT_EQ(
+        MStatus(MS::kSuccess),
+        TransformTranslator::copyAttributes(
+            node, prim, eparams, nodeDagPath, eparams.m_exportInWorldSpace));
+
+    auto    attribute = xform.GetXformOpOrderAttr();
+    VtValue currentValue;
+    attribute.Get(&currentValue, UsdTimeCode::Default());
+
+    ASSERT_TRUE(currentValue.GetArraySize() == 0);
+}
+
 TEST(translators_TranformTranslator, worldSpaceExport)
 {
     MFileIO::newFile(true);
