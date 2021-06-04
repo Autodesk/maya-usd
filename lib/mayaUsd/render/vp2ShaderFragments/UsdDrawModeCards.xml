@@ -1,0 +1,267 @@
+<!--
+========================================================================
+Copyright 2018 Pixar
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment uiName="UsdDrawModeCards" name="UsdDrawModeCards" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        Computes drawMode = "cards" fragment using latest maya lighting functions, from drawMode.glslfx
+    </description>
+    <properties>
+        <!-- diffuseColor gets used if there is no color & opacity from the texture. -->
+        <float4 name="diffuseColor" />
+        <float name="activeTexCard" semantic="TEXTURE" flags="varyingInputParam"/>
+        <bool name="isBackfacing"/>
+
+        <!-- drawModeCards Parameters -->
+        <float3 name="textureXPosColor"/>
+        <float name="textureXPosOpacity"/>
+        <float3 name="textureXNegColor"/>
+        <float name="textureXNegOpacity"/>
+        <float3 name="textureYPosColor"/>
+        <float name="textureYPosOpacity"/>
+        <float3 name="textureYNegColor"/>
+        <float name="textureYNegOpacity"/>
+        <float3 name="textureZPosColor"/>
+        <float name="textureZPosOpacity"/>
+        <float3 name="textureZNegColor"/>
+        <float name="textureZNegOpacity"/>
+
+    </properties>
+    <values>
+        <!-- UsdPreviewSurface Parameter Default Values -->
+        <float4 name="diffuseColor" value="0.18,0.18,0.18,1.0"/>
+        <float name="activeTexCard" value="0"/>
+        <bool name="isBackfacing" value="false"/>
+        <float3 name="textureXPosColor" value="1.0,0.0,0.0"/>
+        <float name="textureXPosOpacity" value="1.0"/>
+        <float3 name="textureXNegColor" value="1.0,0.0,0.0"/>
+        <float name="textureXNegOpacity" value="1.0"/>
+        <float3 name="textureYPosColor" value="0.0,1.0,0.0"/>
+        <float name="textureYPosOpacity" value="1.0"/>
+        <float3 name="textureYNegColor" value="0.0,1.0,0.0"/>
+        <float name="textureYNegOpacity" value="1.0"/>
+        <float3 name="textureZPosColor" value="0.0,0.0,1.0"/>
+        <float name="textureZPosOpacity" value="1.0"/>
+        <float3 name="textureZNegColor" value="0.0,0.0,1.0"/>
+        <float name="textureZNegOpacity" value="1.0"/>
+    </values>
+    <outputs>
+        <float4 name="output"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="surfaceShader"/>
+            <source>
+                <![CDATA[
+
+//-- glsl Preview.Surface
+
+float4
+surfaceShader(vec3 Peye, vec3 Neye,
+    float clearcoatAmount,
+    float clearcoatRoughness,
+    vec3 diffuseColor,
+    vec3 emissiveColor,
+    float ior,
+    float metallic,
+    float occlusion,
+    vec3 transparency,
+    float opacityThreshold,
+    float roughness,
+    vec3 specularColor,
+    bool useSpecularWorkflow,
+    vec3 clearcoatColor,
+    float specularAmount
+)
+{
+    float opacity = 1.0 - transparency.r;
+    if (opacity < opacityThreshold) {
+        discard;
+    } 
+
+    mayaSurfaceShaderOutput result;
+
+    // Pre-multiply diffuse color by opacity if not done so already
+    diffuseColor *= opacity;
+
+    // Evaluate all lights.
+    result.outColor = evaluateLights(
+        emissiveColor,
+        diffuseColor,
+        useSpecularWorkflow,
+        ior,
+        metallic,
+        specularAmount,
+        specularColor,
+        roughness,
+        clearcoatAmount,
+        clearcoatColor,
+        clearcoatRoughness,
+        occlusion,
+        Peye,
+        Neye);
+
+    // Transparency
+    result.outTransparency = transparency;
+
+    result.outGlowColor = vec3(0.0, 0.0, 0.0);
+    result.outMatteOpacity = vec3(opacity);
+
+    return result;
+}
+
+
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="UsdDrawModeCards"/>
+            <source>
+                <![CDATA[
+
+bool WithinFloatEpsilon(float value1, float value2)
+{
+    return abs(value1 - value2) < 0.005 ? true : false;
+}
+
+// -- glsl Surface.Fallback
+
+vec4
+UsdDrawModeCards(
+    vec4 diffuseColor,
+    float activeTexCard,
+    bool isBackfacing,
+    vec3 textureXPosColor,
+    float textureXPosOpacity,
+    vec3 textureXNegColor,
+    float textureXNegOpacity,
+    vec3 textureYPosColor,
+    float textureYPosOpacity,
+    vec3 textureYNegColor,
+    float textureYNegOpacity,
+    vec3 textureZPosColor,
+    float textureZPosOpacity,
+    vec3 textureZNegColor,
+    float textureZNegOpacity
+)
+{
+    // discard backfaces to prevent z-fighting
+    if (isBackfacing)
+        discard;
+
+    const float X_POS = 1.0;
+    const float Y_POS = 2.0;
+    const float Z_POS = 4.0;
+    const float X_NEG = 8.0;
+    const float Y_NEG = 16.0;
+    const float Z_NEG = 32.0;
+
+    vec4 diffuse = diffuseColor;
+
+    if (WithinFloatEpsilon(activeTexCard, X_POS)) {
+        diffuse = vec4(textureXPosColor, textureXPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, X_NEG)) {
+        diffuse = vec4(textureXNegColor, textureXNegOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Y_POS)) {
+        diffuse = vec4(textureYPosColor, textureYPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Y_NEG)) {
+        diffuse = vec4(textureYNegColor, textureYNegOpacity);;
+    } else if (WithinFloatEpsilon(activeTexCard, Z_POS)) {
+        diffuse = vec4(textureZPosColor, textureZPosOpacity);
+    } else if (WithinFloatEpsilon(activeTexCard, Z_NEG)) {
+        diffuse = vec4(textureZNegColor, textureZNegOpacity);;
+    }
+
+    // discard trasparent fragments
+    if (diffuse.w < 0.9)
+        discard;
+
+    return diffuse;
+}
+
+
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
+            <function_name val="surfaceShader"/>
+            <source>
+                <![CDATA[
+
+
+
+//-- glsl Preview.Surface
+
+mayaSurfaceShaderOutput
+surfaceShader(float3 Peye, float3 Neye,
+    float clearcoatAmount,
+    float clearcoatRoughness,
+    float3 diffuseColor,
+    float3 emissiveColor,
+    float ior,
+    float metallic,
+    float occlusion,
+    float3 transparency,
+    float opacityThreshold,
+    float roughness,
+    float3 specularColor,
+    bool useSpecularWorkflow,
+    float3 clearcoatColor,
+    float specularAmount
+)
+{
+    float opacity = 1.0 - transparency.r;
+    if (opacity < opacityThreshold) {
+        discard;
+    } 
+
+    mayaSurfaceShaderOutput result;
+
+    // Pre-multiply diffuse color by opacity if not done so already
+    diffuseColor *= opacity;
+
+    // Evaluate all lights.
+    result.outColor = evaluateLights(
+        emissiveColor,
+        diffuseColor,
+        useSpecularWorkflow,
+        ior,
+        metallic,
+        specularAmount,
+        specularColor,
+        roughness,
+        clearcoatAmount,
+        clearcoatColor,
+        clearcoatRoughness,
+        occlusion,
+        Peye,
+        Neye);
+
+    // Transparency
+    result.outTransparency = transparency;
+
+    result.outGlowColor = float3(0.0, 0.0, 0.0);
+    result.outMatteOpacity = float3(opacity, opacity, opacity);
+
+    return result;
+}
+
+
+
+]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>
