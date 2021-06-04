@@ -137,7 +137,7 @@ class MetaDataCustomControl(object):
         self.active = cmds.checkBoxGrp(label='Active',
                                        ncb=1,
                                        cc1=self._onActiveChanged,
-                                       ann='If selected, the prim is set to active and contributes to the composition of a stage. If a prim is set to inactive, it doesn’t contribute to the composition of a stage (it gets striked out in the Outliner and is deactivated from the Viewport).')
+                                       ann="If selected, the prim is set to active and contributes to the composition of a stage. If a prim is set to inactive, it doesn't contribute to the composition of a stage (it gets striked out in the Outliner and is deactivated from the Viewport).")
 
         # Metadata: Instanceable
         self.instan = cmds.checkBoxGrp(label='Instanceable',
