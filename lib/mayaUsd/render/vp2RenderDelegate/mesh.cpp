@@ -767,7 +767,7 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
             } else if (value.IsHolding<VtIntArray>()) {
                 if (!buffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
-                        "", semantic, MHWRender::MGeometry::kFloat, 1); //kInt32
+                        "", semantic, MHWRender::MGeometry::kFloat, 1); // kInt32
 
                     buffer = new MHWRender::MVertexBuffer(vbDesc);
                     _meshSharedData->_primvarInfo[token]->_buffer.reset(buffer);
@@ -779,10 +779,10 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                         : nullptr;
                     if (bufferData) {
                         const VtIntArray& primvarData = value.UncheckedGet<VtIntArray>();
-                        
+
                         VtFloatArray convertedPrimvarData;
                         convertedPrimvarData.reserve(primvarData.size());
-                        for(auto& source : primvarData) {
+                        for (auto& source : primvarData) {
                             convertedPrimvarData.push_back(static_cast<float>(source));
                         }
 

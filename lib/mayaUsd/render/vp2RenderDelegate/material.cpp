@@ -16,6 +16,8 @@
 #include "material.h"
 
 #include "debugCodes.h"
+#include "pxr/usd/sdr/registry.h"
+#include "pxr/usd/sdr/shaderNode.h"
 #include "render_delegate.h"
 
 #include <pxr/base/gf/matrix4d.h>
@@ -31,8 +33,6 @@
 #include <pxr/usd/usdHydra/tokens.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
-#include "pxr/usd/sdr/registry.h"
-#include "pxr/usd/sdr/shaderNode.h"
 
 #include <maya/MFragmentManager.h>
 #include <maya/MProfiler.h>
@@ -115,18 +115,15 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-TfToken _DrawModeCards = TfToken("drawMode.glslfx");    //!< can't make a token the normal way because it has a '.' in it.
+TfToken _DrawModeCards
+    = TfToken("drawMode.glslfx"); //!< can't make a token the normal way because it has a '.' in it.
 
 bool _IsUsdDrawModeId(const TfToken& id)
 {
-    return id == _DrawModeCards ||
-        id == _tokens->UsdDrawModeCards;
+    return id == _DrawModeCards || id == _tokens->UsdDrawModeCards;
 }
 
-bool _IsUsdDrawModeNode(const HdMaterialNode& node)
-{
-    return _IsUsdDrawModeId(node.identifier);
-}
+bool _IsUsdDrawModeNode(const HdMaterialNode& node) { return _IsUsdDrawModeId(node.identifier); }
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
 bool _IsUsdPrimvarReader(const HdMaterialNode& node)
@@ -136,8 +133,7 @@ bool _IsUsdPrimvarReader(const HdMaterialNode& node)
         id == UsdImagingTokens->UsdPrimvarReader_float
         || id == UsdImagingTokens->UsdPrimvarReader_float2
         || id == UsdImagingTokens->UsdPrimvarReader_float3
-        || id == UsdImagingTokens->UsdPrimvarReader_float4
-        || id == _tokens->UsdPrimvarReader_vector
+        || id == UsdImagingTokens->UsdPrimvarReader_float4 || id == _tokens->UsdPrimvarReader_vector
         || id == UsdImagingTokens->UsdPrimvarReader_int);
 }
 
@@ -874,7 +870,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
     HdMaterialNode* stPrimvarReader = nullptr;
 
     // Get the shader registry so I can look up the real names of shading nodes.
-    SdrRegistry &shaderReg = SdrRegistry::GetInstance();
+    SdrRegistry& shaderReg = SdrRegistry::GetInstance();
 
     // Replace the authored node paths with simplified paths in the form of "node#". By doing so
     // we will be able to reuse shader effects among material networks which have the same node
@@ -884,17 +880,20 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         tmpNet.nodes.push_back(node);
 
         HdMaterialNode& outNode = tmpNet.nodes.back();
-        
-        // For card draw mode the HdMaterialNode will have an identifier which is the hash of the file
-        // path to drawMode.glslfx on disk. Using that value I can get the SdrShaderNode, and then
-        // get the actual name of the shader "drawMode.glslfx".
-        // For other node names the HdMaterialNode identifier and the SdrShaderNode name seem to be
-        // the same, so just convert everything to use the SdrShaderNode name.
-        SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(outNode.identifier, _tokens->glslfx);
+
+        // For card draw mode the HdMaterialNode will have an identifier which is the hash of the
+        // file path to drawMode.glslfx on disk. Using that value I can get the SdrShaderNode, and
+        // then get the actual name of the shader "drawMode.glslfx". For other node names the
+        // HdMaterialNode identifier and the SdrShaderNode name seem to be the same, so just convert
+        // everything to use the SdrShaderNode name.
+        SdrShaderNodeConstPtr sdrNode
+            = shaderReg.GetShaderNodeByIdentifierAndType(outNode.identifier, _tokens->glslfx);
         outNode.identifier = TfToken(sdrNode->GetName());
 
         if (_IsUsdDrawModeNode(outNode)) {
-            outNode.identifier = _tokens->UsdDrawModeCards; // I can't easily name a Maya fragment something with a '.' in it, so pick a different fragment name.
+            outNode.identifier
+                = _tokens->UsdDrawModeCards; // I can't easily name a Maya fragment something with a
+                                             // '.' in it, so pick a different fragment name.
             TF_VERIFY(!usdDrawModeCardsNode); // there should only be one.
             usdDrawModeCardsNode = &outNode;
         }
@@ -930,11 +929,11 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         if (_IsUsdUVTexture(node)) {
             // the DrawModeCardsFragment has UsdUVtexture nodes without primvar readers.
             // Add a primvar reader to each UsdUVTexture which doesn't already have one.
-            if (!stPrimvarReader)
-            {
+            if (!stPrimvarReader) {
                 HdMaterialNode stReader;
                 stReader.identifier = UsdImagingTokens->UsdPrimvarReader_float2;
-                stReader.path = SdfPath(stReader.identifier.GetString() + std::to_string(++nodeCounter));
+                stReader.path
+                    = SdfPath(stReader.identifier.GetString() + std::to_string(++nodeCounter));
                 stReader.parameters[_tokens->varname] = _tokens->cardsUv;
                 outNet.nodes.push_back(stReader);
                 stPrimvarReader = &outNet.nodes.back();
@@ -946,55 +945,58 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
             // a connection to a specific UsdPrimvarReader_float2.
             bool hasRelationship = false;
             for (const HdMaterialRelationship& rel : tmpNet.relationships) {
-                if (rel.inputId == stPrimvarReader->path &&
-                    rel.inputName == _tokens->result &&
-                    rel.outputId == node.path &&
-                    rel.outputName == _tokens->st) {
+                if (rel.inputId == stPrimvarReader->path && rel.inputName == _tokens->result
+                    && rel.outputId == node.path && rel.outputName == _tokens->st) {
                     hasRelationship = true;
                     break;
                 }
             }
 
-            if (!hasRelationship)
-            {
+            if (!hasRelationship) {
                 // The only case I'm currently aware of where we have UsdUVTexture nodes without
                 // a corresponding UsdPrimvarReader_float2 to read the UVs is draw mode cards.
                 // There could be other cases, and it could be find to add the primvar reader
                 // and connection, but we want to know when it is happening.
                 TF_VERIFY(usdDrawModeCardsNode);
-                
+
                 HdMaterialRelationship newRel
                     = { stPrimvarReader->path, _tokens->result, node.path, _tokens->st };
                 outNet.relationships.push_back(newRel);
             }
         }
 
-        // If the node is a DrawModeCardsFragment add a MayaIsBackFacing fragment to cull out backfaces.
+        // If the node is a DrawModeCardsFragment add a MayaIsBackFacing fragment to cull out
+        // backfaces.
         if (_IsUsdDrawModeNode(node)) {
             // Add the MayaIsBackFacing fragment
             HdMaterialNode mayaIsBackFacingNode;
             mayaIsBackFacingNode.identifier = _tokens->mayaIsBackFacing;
-            mayaIsBackFacingNode.path = SdfPath(mayaIsBackFacingNode.identifier.GetString() + std::to_string(++nodeCounter));
+            mayaIsBackFacingNode.path = SdfPath(
+                mayaIsBackFacingNode.identifier.GetString() + std::to_string(++nodeCounter));
             outNet.nodes.push_back(mayaIsBackFacingNode);
 
             // Connect to the isBackfacing input of the DrawModeCards fragment
-            HdMaterialRelationship newRel = { mayaIsBackFacingNode.path, _tokens->mayaIsBackFacing, node.path, _tokens->isBackfacing };
+            HdMaterialRelationship newRel = { mayaIsBackFacingNode.path,
+                                              _tokens->mayaIsBackFacing,
+                                              node.path,
+                                              _tokens->isBackfacing };
             outNet.relationships.push_back(newRel);
         }
     };
 
     // Add additional nodes necessary for Maya's fragment compiler
     // to work that are logical successors of node.
-    auto addSuccessorNodes = [&](const HdMaterialNode& node, const TfToken& primvarToRead)
-    {
+    auto addSuccessorNodes = [&](const HdMaterialNode& node, const TfToken& primvarToRead) {
         // If the node is a DrawModeCardsFragment add the fallback material after it to do
         // the lighting etc.
         if (_IsUsdDrawModeNode(node)) {
 
-            // Add the fallback shader node and hook it up. This has to be the last node in outNet.nodes.
+            // Add the fallback shader node and hook it up. This has to be the last node in
+            // outNet.nodes.
             HdMaterialNode fallbackShaderNode;
             fallbackShaderNode.identifier = _tokens->FallbackShader;
-            fallbackShaderNode.path = SdfPath(fallbackShaderNode.identifier.GetString() + std::to_string(++nodeCounter));
+            fallbackShaderNode.path = SdfPath(
+                fallbackShaderNode.identifier.GetString() + std::to_string(++nodeCounter));
             outNet.nodes.push_back(fallbackShaderNode);
 
             // The DrawModeCards fragment is basically a texture picker. Connect its output to
@@ -1007,7 +1009,8 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
             outNet.primvars.push_back(HdTokens->points);
             outNet.primvars.push_back(HdTokens->normals);
 
-            // no passthrough nodes necessary between the draw mode cards node & the fallback shader.
+            // no passthrough nodes necessary between the draw mode cards node & the fallback
+            // shader.
             return;
         }
 
