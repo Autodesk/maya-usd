@@ -53,7 +53,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dMayaXformStack.cpp
             UsdTransform3dPointInstance.cpp
             UsdTransform3dSetObjectMatrix.cpp
-            UsdTransform3dUndoableCommands.cpp
             UsdUIInfoHandler.cpp
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
@@ -117,7 +116,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdTransform3dMayaXformStack.h
         UsdTransform3dPointInstance.h
         UsdTransform3dSetObjectMatrix.h
-        UsdTransform3dUndoableCommands.h
         UsdUIInfoHandler.h
         UsdUndoableCommand.h
         UsdUndoAddNewPrimCommand.h

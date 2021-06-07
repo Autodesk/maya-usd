@@ -66,11 +66,6 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 
 Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 {
-    // early return if name is empty.
-    if (name.empty()) {
-        return nullptr;
-    }
-
     // If we've already created an attribute for this name, just return it.
     auto iter = fAttributes.find(name);
     if (iter != std::end(fAttributes))

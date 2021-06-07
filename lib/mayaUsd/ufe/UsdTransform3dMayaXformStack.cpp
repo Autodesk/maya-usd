@@ -20,13 +20,16 @@
 
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
-#include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
+#include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>
+#include <maya/MMatrix.h>
+#include <maya/MTransformationMatrix.h>
+#include <maya/MVector.h>
 
 #include <cstring>
 #include <functional>
@@ -158,6 +161,59 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
 
     return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
+
+// Class for setMatrixCmd() implementation.
+class UsdSetMatrix4dUndoableCmd : public UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>
+{
+public:
+    UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
+        : UsdUndoableCommand<Ufe::SetMatrix4dUndoableCommand>(path)
+    {
+        // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
+        // nor GfTransform decomposition provide results that match Maya,
+        // so use MTransformationMatrix.
+        MMatrix m;
+        std::memcpy(m[0], &newM.matrix[0][0], sizeof(double) * 16);
+        MTransformationMatrix                xformM(m);
+        auto                                 t = xformM.getTranslation(MSpace::kTransform);
+        double                               r[3];
+        double                               s[3];
+        MTransformationMatrix::RotationOrder rotOrder;
+        xformM.getRotation(r, rotOrder);
+        xformM.getScale(s, MSpace::kTransform);
+        constexpr double radToDeg = 57.295779506;
+
+        _newT = Ufe::Vector3d(t[0], t[1], t[2]);
+        _newR = Ufe::Vector3d(r[0] * radToDeg, r[1] * radToDeg, r[2] * radToDeg);
+        _newS = Ufe::Vector3d(s[0], s[1], s[2]);
+    }
+
+    ~UsdSetMatrix4dUndoableCmd() override { }
+
+    bool set(const Ufe::Matrix4d&) override
+    {
+        // No-op: Maya does not set matrices through interactive manipulation.
+        TF_WARN("Illegal call to UsdSetMatrix4dUndoableCmd::set()");
+        return true;
+    }
+
+protected:
+    void executeUndoBlock() override
+    {
+        // transform3d() and editTransform3d() are equivalent for a normal Maya
+        // transform stack, but not for a fallback Maya transform stack, and
+        // both can be edited by this command.
+        auto t3d = Ufe::Transform3d::editTransform3d(sceneItem());
+        t3d->translate(_newT.x(), _newT.y(), _newT.z());
+        t3d->rotate(_newR.x(), _newR.y(), _newR.z());
+        t3d->scale(_newS.x(), _newS.y(), _newS.z());
+    }
+
+private:
+    Ufe::Vector3d _newT;
+    Ufe::Vector3d _newR;
+    Ufe::Vector3d _newS;
+};
 
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
@@ -732,7 +788,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 Ufe::SetMatrix4dUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    return std::make_shared<UsdSetMatrix4dUndoableCommand>(path(), m);
+    return std::make_shared<UsdSetMatrix4dUndoableCmd>(path(), m);
 }
 
 UsdTransform3dMayaXformStack::SetXformOpOrderFn

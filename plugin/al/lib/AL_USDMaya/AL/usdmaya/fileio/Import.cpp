@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/fileio/Import.h"
+#include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
 #include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/CodeTimings.h"
@@ -87,6 +88,7 @@ MObject Import::createParentTransform(
         }
     }
     it.append(obj);
+
     return obj;
 };
 
@@ -269,6 +271,11 @@ MObject Import::createShape(
         // special case
         dataPlugin->import(prim, parent);
     }
+
+    // Copy (add/set) the shape attributes from the USD
+    MStatus status;
+    status = translators::DgNodeTranslator::copyAttributes(prim, shapeObj, m_params);
+    AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(status, "DagNodeTranslator::createNode unable to copy attributes");
 
     return shapeObj;
 }

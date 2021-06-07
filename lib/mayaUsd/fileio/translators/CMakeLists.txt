@@ -17,22 +17,26 @@ target_sources(${PROJECT_NAME}
         translatorUtil.cpp
         translatorXformable.cpp
         translatorXformable_decompose.cpp
+        NodeHelper.cpp
+        DgNodeHelper.cpp
 )
 
 set(HEADERS
-    skelBindingsProcessor.h
-    translatorCamera.h
-    translatorCurves.h
-    translatorGprim.h
-    translatorMaterial.h
-    translatorMayaReference.h
-    translatorMesh.h
-    translatorNurbsPatch.h
-    translatorPrim.h
-    translatorRfMLight.h
-    translatorSkel.h
-    translatorUtil.h
-    translatorXformable.h
+        skelBindingsProcessor.h
+        translatorCamera.h
+        translatorCurves.h
+        translatorGprim.h
+        translatorMaterial.h
+        translatorMayaReference.h
+        translatorMesh.h
+        translatorNurbsPatch.h
+        translatorPrim.h
+        translatorRfMLight.h
+        translatorSkel.h
+        translatorUtil.h
+        translatorXformable.h
+        NodeHelper.h
+        DgNodeHelper.h
 )
 
 # -----------------------------------------------------------------------------

@@ -89,6 +89,7 @@ MObject NodeFactory::createNode(
     }
     MObject obj = it->second->createNode(from, parent, nodeType, *m_params);
     setupNode(from, obj, parent, parentUnmerged);
+
     return obj;
 }
 

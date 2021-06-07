@@ -62,8 +62,6 @@ public:
     void                               rotatePivot(double x, double y, double z) override;
     Ufe::Vector3d                      rotatePivot() const override;
 
-    Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
-
 private:
     PXR_NS::UsdGeomXformCommonAPI _commonAPI;
 

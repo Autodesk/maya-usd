@@ -19,6 +19,8 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/utils/userTaggedAttribute.h>
 
+#include "mayaUsd/fileio/writeJobContext.h"
+
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/types.h>
 #include <pxr/pxr.h>
@@ -148,6 +150,15 @@ struct UsdMayaWriteUtil
         const UsdTimeCode&         usdTime,
         UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteUserAttributes(
+        const MObject&             mayaNode,
+        const UsdPrim&             usdPrim,
+        const UsdTimeCode&         usdTime,
+        UsdMayaWriteJobContext& writeJobCtx,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+
+
     /// Given a Maya node \p mayaNode, inspect it for attributes tagged by
     /// the user for export to USD and write them onto \p usdPrim at time
     /// \p usdTime.
@@ -206,6 +217,7 @@ struct UsdMayaWriteUtil
     MAYAUSD_CORE_PUBLIC
     static bool
     WriteClassInherits(const UsdPrim& usdPrim, const std::vector<std::string>& inheritClassNames);
+
 
     /// Given \p inputPointsData (native Maya particle data), writes the
     /// arrays as point-instancer attributes on the given \p instancer

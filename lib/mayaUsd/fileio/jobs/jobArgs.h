@@ -100,7 +100,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     ((auto_, "auto")) \
     ((explicit_, "explicit")) \
     /* compatibility values */ \
-    (appleArKit)
+    (appleArKit) \
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -206,6 +206,12 @@ struct UsdMayaJobExportArgs
     /// data should be exported.
     const std::vector<double> timeSamples;
 
+    // user custom attributes from the export command directly using the -userattr multi-flag
+    std::vector<std::string> userAttrNames;
+
+    // given root names to to start exporting from (passed by the -root/-rt multi-flag)
+    std::vector<std::string> rootNames;
+
     // This path is provided when dealing with variants
     // where a _BaseModel_ root path is used instead of
     // the model path. This to allow a proper internal reference.
@@ -227,6 +233,7 @@ struct UsdMayaJobExportArgs
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();
 
+
     /// Adds type name to filter out during export. This will also add all
     /// inherited types (so if you exclude "constraint", it will also exclude
     /// "parentConstraint")
@@ -247,6 +254,7 @@ private:
         const VtDictionary&             userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
         const std::vector<double>&      timeSamples = std::vector<double>());
+
 
     // Maya type ids to avoid exporting; these are
     // EXACT types, though the only exposed way to modify this,

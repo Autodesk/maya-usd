@@ -265,12 +265,12 @@ bool _GetLocalTransformForDagPoseMember(
         // already exists
         MIntArray allIndices;
         xformMatrixPlug.getExistingArrayAttributeIndices(allIndices);
-        if (std::find(allIndices.cbegin(), allIndices.cend(), logicalIndex) == allIndices.cend()) {
-            TfDebug::Helper().Msg(
-                "Warning - attempting to retrieve %s[%u], but that index did not exist yet",
-                xformMatrixPlug.name().asChar(),
-                logicalIndex);
-        }
+//        if (std::find(allIndices.cbegin(), allIndices.cend(), logicalIndex) == allIndices.cend()) {
+//            TfDebug::Helper().Msg(
+//                "Warning - attempting to retrieve %s[%u], but that index did not exist yet",
+//                xformMatrixPlug.name().asChar(),
+//                logicalIndex);
+//        }
     }
 #endif
     MPlug xformPlug = xformMatrixPlug.elementByLogicalIndex(logicalIndex, &status);

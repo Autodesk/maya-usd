@@ -125,7 +125,6 @@ private:
     void _InitRepr(const TfToken&, HdDirtyBits*) override;
 
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
-    void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 

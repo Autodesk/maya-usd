@@ -70,7 +70,7 @@ public:
     /// \param  params the importer params to determine what to import
     /// \return MS::kSuccess if ok
     AL_USDMAYA_PUBLIC
-    MStatus copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params);
+    static MStatus copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params);
 
     /// \brief  Copies data from the maya node onto the usd primitive
     /// \param  from the maya node to copy the data from
@@ -88,7 +88,7 @@ public:
     /// \param  usdAttr the attribute to test
     /// \return true if your translator is handling this attr
     AL_USDMAYA_PUBLIC
-    virtual bool attributeHandled(const UsdAttribute& usdAttr);
+    static bool attributeHandled(const UsdAttribute& usdAttr);
 };
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -516,6 +516,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
     return d;
 }
 
+
 void UsdMayaJobExportArgs::AddFilteredTypeName(const MString& typeName)
 {
     MNodeClass   cls(typeName);
