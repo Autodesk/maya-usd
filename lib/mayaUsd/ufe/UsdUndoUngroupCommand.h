@@ -48,8 +48,6 @@ private:
     void undo() override;
     void redo() override;
 
-    bool removePrimGroup();
-
 private:
     UsdSceneItem::Ptr _groupItem;
 

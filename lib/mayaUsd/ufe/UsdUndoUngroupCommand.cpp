@@ -63,8 +63,13 @@ void UsdUndoUngroupCommand::execute()
     _compositeInsertCmd->execute();
 
     // remove group prim
-    auto status = removePrimGroup();
-    TF_VERIFY(status, "Removing group node failed!");
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    UsdUndoBlock                         undoBlock(&_undoableItem);
+
+    auto           stage = _groupItem->prim().GetStage();
+    UsdEditContext ctx(stage, stage->GetEditTarget().GetLayer());
+    auto           retVal = stage->RemovePrim(_groupItem->prim().GetPath());
+    TF_VERIFY(retVal, "Failed to remove '%s'", _groupItem->prim().GetPath().GetText());
 }
 
 void UsdUndoUngroupCommand::undo()
@@ -109,16 +114,6 @@ void UsdUndoUngroupCommand::redo()
     _compositeInsertCmd->redo();
 
     _undoableItem.redo();
-}
-
-bool UsdUndoUngroupCommand::removePrimGroup()
-{
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
-    UsdUndoBlock                         undoBlock(&_undoableItem);
-
-    auto           stage = _groupItem->prim().GetStage();
-    UsdEditContext ctx(stage, stage->GetEditTarget().GetLayer());
-    return stage->RemovePrim(_groupItem->prim().GetPath());
 }
 
 } // namespace ufe
