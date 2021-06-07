@@ -72,7 +72,7 @@ void UsdUndoDuplicateCommand::execute()
     auto prim = ufePathToPrim(_ufeSrcPath);
     auto layer = prim.GetStage()->GetEditTarget().GetLayer();
     bool retVal = PXR_NS::SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
-    TF_VERIFY(retVal, "Failed to copy spec data at '%s' to '%s'", prim.GetPath(), _usdDstPath);
+    TF_VERIFY(retVal, "Failed to copy spec data at '%s' to '%s'", prim.GetPath().GetText(), _usdDstPath.GetText());
 }
 
 void UsdUndoDuplicateCommand::undo()
