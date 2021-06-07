@@ -30,6 +30,7 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePerInstanceInheritedData.py
         testVP2RenderDelegateBasisCurves.py
+        testVP2RenderDelegateDrawModes.py
     )
 endif()
 
