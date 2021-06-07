@@ -77,6 +77,8 @@ public:
     insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
 
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
+
+    Ufe::UndoableCommand::Ptr ungroupCmd() const override;
 #endif
 
 private:

@@ -61,6 +61,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoReorderCommand.cpp
             UsdUndoSetKindCommand.cpp
             UsdUndoVisibleCommand.cpp
+            UsdUndoUngroupCommand.cpp
             XformOpUtils.cpp
     )
 endif()
@@ -126,6 +127,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoReorderCommand.h
         UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
+        UsdUndoUngroupCommand.h
         XformOpUtils.h
     )
 endif()

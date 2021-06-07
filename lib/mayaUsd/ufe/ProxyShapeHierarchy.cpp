@@ -32,6 +32,7 @@
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
 #include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
 #include <mayaUsd/ufe/UsdUndoReorderCommand.h>
+#include <mayaUsd/ufe/UsdUndoUngroupCommand.h>
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -246,6 +247,13 @@ ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 
     // create a reorder command and pass in the parent and its ordered children list
     return UsdUndoReorderCommand::create(getUsdRootPrim(), orderedTokens);
+}
+
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::ungroupCmd() const
+{
+    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+
+    return UsdUndoUngroupCommand::create(usdItem);
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
