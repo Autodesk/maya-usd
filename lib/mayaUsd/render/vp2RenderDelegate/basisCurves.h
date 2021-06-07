@@ -129,6 +129,7 @@ protected:
 
 private:
     void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
+    void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
