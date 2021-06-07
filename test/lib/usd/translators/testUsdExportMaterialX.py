@@ -123,7 +123,6 @@ class testUsdExportMaterialX(unittest.TestCase):
         self.assertEqual(shader.GetPath(), ng_path + "/file1")
 
         # Check a few values:
-        self.assertTrue(self.compareValue(shader, "filtertype", "cubic"))
         self.assertTrue(self.compareValue(shader, "uaddressmode", "periodic"))
         self.assertTrue(self.compareValue(shader, "default", (0.5, 0.5, 0.5)))
 
@@ -155,11 +154,16 @@ class testUsdExportMaterialX(unittest.TestCase):
 
             (4, 5, "MayaSwizzle_file4_rgb", "ND_swizzle_color4_color3"),
             (6, 7, "MayaSwizzle_file6_xxx", "ND_swizzle_vector2_color3"),
+            (19, 21, "MayaSwizzle_file20_x", "ND_swizzle_vector2_float"),
             (7, 8, "MayaSwizzle_file7_rrr", "ND_swizzle_float_color3"),
             (8, 9, "MayaSwizzle_file8_r", "ND_swizzle_color4_float"),
             (13, 14, "MayaSwizzle_file13_g", "ND_swizzle_color3_float"),
 
+            (27, 20, "MayaLuminance_file27", "ND_luminance_color3"),
             (12, 13, "MayaLuminance_file12", "ND_luminance_color4"),
+
+            (14, 15, "MayaConvert_file14_color3f_float3", 
+             "ND_convert_color3_vector3"),
         ]
 
         for prim_idx, sg_idx, node_name, id_attr in to_test:

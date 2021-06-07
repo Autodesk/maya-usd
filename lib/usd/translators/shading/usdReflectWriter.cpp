@@ -15,6 +15,8 @@
 //
 #include "usdReflectWriter.h"
 
+#include "shadingTokens.h"
+
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -27,15 +29,6 @@
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (specularColor)
-);
-// clang-format on
 
 PxrUsdTranslators_ReflectWriter::PxrUsdTranslators_ReflectWriter(
     const MFnDependencyNode& depNodeFn,
@@ -58,7 +51,7 @@ void PxrUsdTranslators_ReflectWriter::WriteSpecular(const UsdTimeCode& usdTime)
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->specularColor,
+        TrMayaTokens->specularColor,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
         usdTime);
@@ -75,7 +68,7 @@ void PxrUsdTranslators_ReflectWriter::WriteSpecular(const UsdTimeCode& usdTime)
 TfToken
 PxrUsdTranslators_ReflectWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
-    if (mayaAttrName == _tokens->specularColor) {
+    if (mayaAttrName == TrMayaTokens->specularColor) {
         return UsdShadeUtils::GetFullName(
             PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName, UsdShadeAttributeType::Input);
     }

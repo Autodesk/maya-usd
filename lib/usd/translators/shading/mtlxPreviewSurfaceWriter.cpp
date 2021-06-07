@@ -36,66 +36,19 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
 
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
+
 #include <unordered_map>
 
 using namespace MAYAUSD_NS;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-// Mapping from Maya to MaterialX:
-using TokenHashMap = std::unordered_map<TfToken, TfToken, TfToken::HashFunctor>;
-TokenHashMap mayaToMaterialX {
-    { TrMayaTokens->base, TrMtlxTokens->base },
-    { TrMayaTokens->baseColor, TrMtlxTokens->base_color },
-    { TrMayaTokens->diffuseRoughness, TrMtlxTokens->diffuse_roughness },
-    { TrMayaTokens->metalness, TrMtlxTokens->metalness },
-    { TrMayaTokens->specular, TrMtlxTokens->specular },
-    { TrMayaTokens->specularColor, TrMtlxTokens->specular_color },
-    { TrMayaTokens->specularRoughness, TrMtlxTokens->specular_roughness },
-    { TrMayaTokens->specularIOR, TrMtlxTokens->specular_IOR },
-    { TrMayaTokens->specularAnisotropy, TrMtlxTokens->specular_anisotropy },
-    { TrMayaTokens->specularRotation, TrMtlxTokens->specular_rotation },
-    { TrMayaTokens->transmission, TrMtlxTokens->transmission },
-    { TrMayaTokens->transmissionColor, TrMtlxTokens->transmission_color },
-    { TrMayaTokens->transmissionDepth, TrMtlxTokens->transmission_depth },
-    { TrMayaTokens->transmissionScatter, TrMtlxTokens->transmission_scatter },
-    { TrMayaTokens->transmissionScatterAnisotropy, TrMtlxTokens->transmission_scatter_anisotropy },
-    { TrMayaTokens->transmissionDispersion, TrMtlxTokens->transmission_dispersion },
-    { TrMayaTokens->transmissionExtraRoughness, TrMtlxTokens->transmission_extra_roughness },
-    { TrMayaTokens->subsurface, TrMtlxTokens->subsurface },
-    { TrMayaTokens->subsurfaceColor, TrMtlxTokens->subsurface_color },
-    { TrMayaTokens->subsurfaceRadius, TrMtlxTokens->subsurface_radius },
-    { TrMayaTokens->subsurfaceScale, TrMtlxTokens->subsurface_scale },
-    { TrMayaTokens->subsurfaceAnisotropy, TrMtlxTokens->subsurface_anisotropy },
-    { TrMayaTokens->sheen, TrMtlxTokens->sheen },
-    { TrMayaTokens->sheenColor, TrMtlxTokens->sheen_color },
-    { TrMayaTokens->sheenRoughness, TrMtlxTokens->sheen_roughness },
-    { TrMayaTokens->coat, TrMtlxTokens->coat },
-    { TrMayaTokens->coatColor, TrMtlxTokens->coat_color },
-    { TrMayaTokens->coatRoughness, TrMtlxTokens->coat_roughness },
-    { TrMayaTokens->coatAnisotropy, TrMtlxTokens->coat_anisotropy },
-    { TrMayaTokens->coatRotation, TrMtlxTokens->coat_rotation },
-    { TrMayaTokens->coatIOR, TrMtlxTokens->coat_IOR },
-    { TrMayaTokens->coatNormal, TrMtlxTokens->coat_normal },
-    { TrMayaTokens->coatAffectColor, TrMtlxTokens->coat_affect_color },
-    { TrMayaTokens->coatAffectRoughness, TrMtlxTokens->coat_affect_roughness },
-    { TrMayaTokens->thinFilmThickness, TrMtlxTokens->thin_film_thickness },
-    { TrMayaTokens->thinFilmIOR, TrMtlxTokens->thin_film_IOR },
-    { TrMayaTokens->emission, TrMtlxTokens->emission },
-    { TrMayaTokens->emissionColor, TrMtlxTokens->emission_color },
-    { TrMayaTokens->opacity, TrMtlxTokens->opacity },
-    { TrMayaTokens->thinWalled, TrMtlxTokens->thin_walled },
-    { TrMayaTokens->normalCamera, TrMtlxTokens->normal },
-    { TrMayaTokens->tangentUCamera, TrMtlxTokens->tangent }
-};
-
-} // namespace
-// This is basically UsdMayaSymmetricShaderWriter with a table for attribute renaming:
-class MaterialXTranslators_StandardSurfaceWriter : public MtlxUsd_BaseWriter
+// This is basically UsdMayaSymmetricShaderWriter but with a NodeGraph:
+class MtlxUsd_PreviewSurfaceWriter : public MtlxUsd_BaseWriter
 {
 public:
-    MaterialXTranslators_StandardSurfaceWriter(
+    MtlxUsd_PreviewSurfaceWriter(
         const MFnDependencyNode& depNodeFn,
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx);
@@ -109,9 +62,9 @@ private:
     std::unordered_map<TfToken, MPlug, TfToken::HashFunctor> _inputNameAttrMap;
 };
 
-PXRUSDMAYA_REGISTER_SHADER_WRITER(standardSurface, MaterialXTranslators_StandardSurfaceWriter);
+PXRUSDMAYA_REGISTER_SHADER_WRITER(usdPreviewSurface, MtlxUsd_PreviewSurfaceWriter);
 
-MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurfaceWriter(
+MtlxUsd_PreviewSurfaceWriter::MtlxUsd_PreviewSurfaceWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
     UsdMayaWriteJobContext&  jobCtx)
@@ -133,7 +86,7 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
         return;
     }
 
-    shaderSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_standard_surface_surfaceshader));
+    shaderSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_UsdPreviewSurface_surfaceshader));
 
     UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
     if (!TF_VERIFY(
@@ -143,27 +96,19 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
         return;
     }
 
-    for (unsigned int i = 0u; i < depNodeFn.attributeCount(); ++i) {
-        const MObject      attrObj = depNodeFn.reorderedAttribute(i);
-        const MFnAttribute attrFn(attrObj);
+    for (const TfToken& mayaAttrName : PxrMayaUsdPreviewSurfaceTokens->allTokens) {
 
-        const TfToken                mayaAttrName = TfToken(attrFn.name().asChar());
-        TokenHashMap::const_iterator renaming = mayaToMaterialX.find(mayaAttrName);
-
-        if (renaming == mayaToMaterialX.cend()) {
-            continue;
+        if (mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OutColorAttrName) {
+            // Done with inputs.
+            break;
         }
 
-        MPlug attrPlug = depNodeFn.findPlug(attrObj, true);
-
-        const TfToken usdAttrName = renaming->second;
+        MPlug attrPlug = depNodeFn.findPlug(mayaAttrName.GetText(), true);
 
         // Keep our authoring sparse by ignoring attributes with no values set
         // and no connections. We know that the default value of base and base
         // color diverged between Maya and MaterialX in version 1.38.
-        if (!(UsdMayaUtil::IsAuthored(attrPlug) || usdAttrName == TrMtlxTokens->base
-              || usdAttrName == TrMtlxTokens->base_color)
-            && !attrPlug.isConnected()) {
+        if (!UsdMayaUtil::IsAuthored(attrPlug) && !attrPlug.isConnected()) {
             continue;
         }
 
@@ -173,7 +118,7 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
             continue;
         }
 
-        UsdShadeInput input = shaderSchema.CreateInput(usdAttrName, valueTypeName);
+        UsdShadeInput input = shaderSchema.CreateInput(mayaAttrName, valueTypeName);
         if (!input) {
             continue;
         }
@@ -184,7 +129,7 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
 
         // Add this input to the name/attrPlug map. We'll iterate through
         // these entries during Write() to set their values.
-        _inputNameAttrMap.insert(std::make_pair(usdAttrName, attrPlug));
+        _inputNameAttrMap.insert(std::make_pair(mayaAttrName, attrPlug));
 
         // All connections go directly to the node graph:
         if (attrPlug.isConnected()) {
@@ -198,7 +143,7 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
 }
 
 /* override */
-void MaterialXTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
+void MtlxUsd_PreviewSurfaceWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaShaderWriter::Write(usdTime);
 
@@ -231,7 +176,7 @@ void MaterialXTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTim
 }
 
 /* override */
-UsdAttribute MaterialXTranslators_StandardSurfaceWriter::GetShadingAttributeForMayaAttrName(
+UsdAttribute MtlxUsd_PreviewSurfaceWriter::GetShadingAttributeForMayaAttrName(
     const TfToken& mayaAttrName,
     const SdfValueTypeName&)
 {
@@ -251,12 +196,6 @@ UsdAttribute MaterialXTranslators_StandardSurfaceWriter::GetShadingAttributeForM
         return UsdAttribute();
     }
 
-    if (mayaAttrName == TrMayaTokens->normalCamera || mayaAttrName == TrMayaTokens->coatNormal) {
-        // Add the proper nodes for normal mapping:
-        return AddNormalMapping(nodegraphSchema.GetOutput(mayaAttrName));
-    }
-
-    // And they use the camelCase Maya name directly:
     return nodegraphSchema.GetOutput(mayaAttrName);
 }
 

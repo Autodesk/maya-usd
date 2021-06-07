@@ -79,7 +79,10 @@ public:
     virtual TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName);
 
     /// Get the USD shading attribute that corresponds to the Maya attribute
-    /// named \p mayaAttrName.
+    /// named \p mayaAttrName which will be connected to an attribute of type
+    /// \p typeName. We pass the type of the other plug to allow exporters to
+    /// add the proper conversion nodes if their syntax do not allow automatic
+    /// typecasting.
     ///
     /// The default implementation calls
     /// GetShadingAttributeNameForMayaAttrName() with the given
@@ -89,7 +92,9 @@ public:
     /// has already authored on its privately held UsdPrim, so this method
     /// should only be called after Write() has been called at least once.
     MAYAUSD_CORE_PUBLIC
-    virtual UsdAttribute GetShadingAttributeForMayaAttrName(const TfToken& mayaAttrName);
+    virtual UsdAttribute GetShadingAttributeForMayaAttrName(
+        const TfToken&          mayaAttrName,
+        const SdfValueTypeName& typeName);
 };
 
 typedef std::shared_ptr<UsdMayaShaderWriter> UsdMayaShaderWriterSharedPtr;

@@ -15,6 +15,8 @@
 //
 #include "mtlxBaseWriter.h"
 
+#include "shadingTokens.h"
+
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -54,42 +56,33 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((conversionName, "MaterialX"))
-    ((contextName, "mtlx"))
-    ((niceName, "MaterialX shading"))
-    ((exportDescription, "Exports bound shaders as a MaterialX UsdShade network."))
-
     ((nodeGraphPrefix, "MayaNG"))
 
     // Prefix for conversion nodes:
+    ((ConverterPrefix, "MayaConvert"))
     ((SwizzlePrefix, "MayaSwizzle"))
     ((LuminancePrefix, "MayaLuminance"))
-
-    // Conversion nodes:
-    (ND_luminance_color3)
-    (ND_luminance_color4)
-
-    // Conversion ports:
-    (in)
-    (out)
-    (channels)
+    ((NormalMapPrefix, "MayaNormalMap"))
+    ((NormalMapBiasPrefix, "MayaNormalMapBias"))
+    ((NormalMapScalePrefix, "MayaNormalMapScale"))
 );
 // clang-format on
 
 REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
-    _tokens->conversionName,
-    _tokens->contextName,
-    _tokens->niceName,
-    _tokens->exportDescription);
+    TrMtlxTokens->conversionName,
+    TrMtlxTokens->contextName,
+    TrMtlxTokens->niceName,
+    TrMtlxTokens->exportDescription);
 
 UsdMayaShaderWriter::ContextSupport
-MaterialXTranslators_BaseWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
+MtlxUsd_BaseWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    return exportArgs.convertMaterialsTo == _tokens->conversionName ? ContextSupport::Supported
-                                                                    : ContextSupport::Unsupported;
+    return exportArgs.convertMaterialsTo == TrMtlxTokens->conversionName
+        ? ContextSupport::Supported
+        : ContextSupport::Unsupported;
 }
 
-MaterialXTranslators_BaseWriter::MaterialXTranslators_BaseWriter(
+MtlxUsd_BaseWriter::MtlxUsd_BaseWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
     UsdMayaWriteJobContext&  jobCtx)
@@ -97,7 +90,7 @@ MaterialXTranslators_BaseWriter::MaterialXTranslators_BaseWriter(
 {
 }
 
-UsdPrim MaterialXTranslators_BaseWriter::GetNodeGraph()
+UsdPrim MtlxUsd_BaseWriter::GetNodeGraph()
 {
     SdfPath materialPath = GetUsdPath().GetParentPath();
     TfToken ngName(TfStringPrintf(
@@ -106,14 +99,56 @@ UsdPrim MaterialXTranslators_BaseWriter::GetNodeGraph()
     return UsdShadeNodeGraph::Define(GetUsdStage(), ngPath).GetPrim();
 }
 
-UsdAttribute
-MaterialXTranslators_BaseWriter::AddSwizzle(const std::string& channels, int numChannels)
+UsdAttribute MtlxUsd_BaseWriter::AddConversion(
+    const SdfValueTypeName& fromType,
+    const SdfValueTypeName& toType,
+    UsdAttribute            nodeOutput)
 {
-    UsdAttribute nodeOutput = UsdShadeShader(_usdPrim).GetOutput(_tokens->out);
+
+    // We currently only support color3f to vector3f for normal maps:
+    if (fromType == SdfValueTypeNames->Color3f && toType == SdfValueTypeNames->Float3) {
+        MStatus                 status;
+        const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
+        if (status != MS::kSuccess) {
+            return UsdAttribute();
+        }
+
+        UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
+        SdfPath           nodegraphPath = nodegraphSchema.GetPath();
+
+        TfToken        converterName(TfStringPrintf(
+            "%s_%s_%s_%s",
+            _tokens->ConverterPrefix.GetText(),
+            depNodeFn.name().asChar(),
+            fromType.GetAsToken().GetText(),
+            toType.GetAsToken().GetText()));
+        const SdfPath  converterPath = nodegraphPath.AppendChild(converterName);
+        UsdShadeShader converterSchema = UsdShadeShader::Define(GetUsdStage(), converterPath);
+
+        UsdAttribute converterOutput = converterSchema.GetOutput(TrMtlxTokens->out);
+        if (converterOutput) {
+            // Reusing existing node:
+            return converterOutput;
+        }
+
+        converterSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_convert_color3_vector3));
+        converterSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Color3f)
+            .ConnectToSource(UsdShadeOutput(nodeOutput));
+        converterOutput
+            = converterSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float3);
+        return converterOutput;
+    }
+
+    return UsdAttribute();
+}
+
+UsdAttribute MtlxUsd_BaseWriter::AddSwizzle(const std::string& channels, int numChannels)
+{
+    UsdAttribute nodeOutput = UsdShadeShader(_usdPrim).GetOutput(TrMtlxTokens->out);
     return AddSwizzle(channels, numChannels, nodeOutput);
 }
 
-UsdAttribute MaterialXTranslators_BaseWriter::AddSwizzle(
+UsdAttribute MtlxUsd_BaseWriter::AddSwizzle(
     const std::string& channels,
     int                numChannels,
     UsdAttribute       nodeOutput)
@@ -136,7 +171,7 @@ UsdAttribute MaterialXTranslators_BaseWriter::AddSwizzle(
     const SdfPath  swizzlePath = nodegraphPath.AppendChild(swizzleName);
     UsdShadeShader swizzleSchema = UsdShadeShader::Define(GetUsdStage(), swizzlePath);
 
-    UsdAttribute swizzleOutput = swizzleSchema.GetOutput(_tokens->out);
+    UsdAttribute swizzleOutput = swizzleSchema.GetOutput(TrMtlxTokens->out);
     if (swizzleOutput) {
         // Reusing existing node:
         return swizzleOutput;
@@ -148,46 +183,46 @@ UsdAttribute MaterialXTranslators_BaseWriter::AddSwizzle(
     switch (numChannels) {
     case 1:
         srcType = "float";
-        swizzleSchema.CreateInput(_tokens->in, SdfValueTypeNames->Float)
+        swizzleSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Float)
             .ConnectToSource(UsdShadeOutput(nodeOutput));
         break;
     case 2:
         srcType = "vector2";
-        swizzleSchema.CreateInput(_tokens->in, SdfValueTypeNames->Float2)
+        swizzleSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Float2)
             .ConnectToSource(UsdShadeOutput(nodeOutput));
         break;
     case 3:
         srcType = "color3";
-        swizzleSchema.CreateInput(_tokens->in, SdfValueTypeNames->Color3f)
+        swizzleSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Color3f)
             .ConnectToSource(UsdShadeOutput(nodeOutput));
         break;
     case 4:
         srcType = "color4";
-        swizzleSchema.CreateInput(_tokens->in, SdfValueTypeNames->Color4f)
+        swizzleSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Color4f)
             .ConnectToSource(UsdShadeOutput(nodeOutput));
         break;
     default: TF_CODING_ERROR("Unsupported format for swizzle"); return UsdAttribute();
     }
 
-    swizzleSchema.CreateInput(_tokens->channels, SdfValueTypeNames->String)
+    swizzleSchema.CreateInput(TrMtlxTokens->channels, SdfValueTypeNames->String)
         .Set(channels, UsdTimeCode::Default());
 
     switch (channels.size()) {
     case 1:
         dstType = "float";
-        swizzleOutput = swizzleSchema.CreateOutput(_tokens->out, SdfValueTypeNames->Float);
+        swizzleOutput = swizzleSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float);
         break;
     case 2:
         dstType = "vector2";
-        swizzleOutput = swizzleSchema.CreateOutput(_tokens->out, SdfValueTypeNames->Float2);
+        swizzleOutput = swizzleSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float2);
         break;
     case 3:
         dstType = "color3";
-        swizzleOutput = swizzleSchema.CreateOutput(_tokens->out, SdfValueTypeNames->Color3f);
+        swizzleOutput = swizzleSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Color3f);
         break;
     case 4:
         dstType = "color4";
-        swizzleOutput = swizzleSchema.CreateOutput(_tokens->out, SdfValueTypeNames->Color4f);
+        swizzleOutput = swizzleSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Color4f);
         break;
     }
 
@@ -198,9 +233,9 @@ UsdAttribute MaterialXTranslators_BaseWriter::AddSwizzle(
     return swizzleOutput;
 }
 
-UsdAttribute MaterialXTranslators_BaseWriter::AddLuminance(int numChannels)
+UsdAttribute MtlxUsd_BaseWriter::AddLuminance(int numChannels)
 {
-    UsdAttribute nodeOutput = UsdShadeShader(_usdPrim).GetOutput(_tokens->out);
+    UsdAttribute nodeOutput = UsdShadeShader(_usdPrim).GetOutput(TrMtlxTokens->out);
     if (numChannels < 3) {
         // Not enough channels:
         return nodeOutput;
@@ -220,7 +255,7 @@ UsdAttribute MaterialXTranslators_BaseWriter::AddLuminance(int numChannels)
     const SdfPath  luminancePath = nodegraphPath.AppendChild(luminanceName);
     UsdShadeShader luminanceSchema = UsdShadeShader::Define(GetUsdStage(), luminancePath);
 
-    UsdAttribute luminanceOutput = luminanceSchema.GetOutput(_tokens->out);
+    UsdAttribute luminanceOutput = luminanceSchema.GetOutput(TrMtlxTokens->out);
     if (luminanceOutput) {
         // Reusing existing node:
         return luminanceOutput;
@@ -228,21 +263,85 @@ UsdAttribute MaterialXTranslators_BaseWriter::AddLuminance(int numChannels)
 
     switch (numChannels) {
     case 3:
-        luminanceSchema.CreateIdAttr(VtValue(_tokens->ND_luminance_color3));
-        luminanceSchema.CreateInput(_tokens->in, SdfValueTypeNames->Color3f)
+        luminanceSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_luminance_color3));
+        luminanceSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Color3f)
             .ConnectToSource(UsdShadeOutput(nodeOutput));
-        luminanceOutput = luminanceSchema.CreateOutput(_tokens->out, SdfValueTypeNames->Color3f);
+        luminanceOutput
+            = luminanceSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Color3f);
         break;
     case 4:
-        luminanceSchema.CreateIdAttr(VtValue(_tokens->ND_luminance_color4));
-        luminanceSchema.CreateInput(_tokens->in, SdfValueTypeNames->Color4f)
+        luminanceSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_luminance_color4));
+        luminanceSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Color4f)
             .ConnectToSource(UsdShadeOutput(nodeOutput));
-        luminanceOutput = luminanceSchema.CreateOutput(_tokens->out, SdfValueTypeNames->Color4f);
+        luminanceOutput
+            = luminanceSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Color4f);
         break;
     default: TF_CODING_ERROR("Unsupported format for luminance"); return UsdAttribute();
     }
 
     return AddSwizzle("r", numChannels, luminanceOutput);
+}
+
+UsdAttribute MtlxUsd_BaseWriter::AddNormalMapping(UsdAttribute normalInput)
+{
+    // For standard surface (and not preview surface)
+
+    // We are starting at the NodeGraph boundary and building a chain that will
+    // eventually reach an image node
+    MStatus                 status;
+    const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
+    if (status != MS::kSuccess) {
+        return UsdAttribute();
+    }
+
+    UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
+    SdfPath           nodegraphPath = nodegraphSchema.GetPath();
+
+    // Normal map:
+    TfToken        nodeName(TfStringPrintf(
+        "%s_%s_%s",
+        _tokens->NormalMapPrefix.GetText(),
+        depNodeFn.name().asChar(),
+        normalInput.GetBaseName().GetText()));
+    SdfPath        nodePath = nodegraphPath.AppendChild(nodeName);
+    UsdShadeShader nodeSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);
+    nodeSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_normalmap));
+    UsdShadeInput  mapInput = nodeSchema.CreateInput(TrMtlxTokens->in, SdfValueTypeNames->Float3);
+    UsdShadeOutput mapOutput
+        = nodeSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float3);
+    UsdShadeOutput(normalInput).ConnectToSource(UsdShadeOutput(mapOutput));
+
+    // Texture bias:
+    nodeName = TfToken(TfStringPrintf(
+        "%s_%s_%s",
+        _tokens->NormalMapBiasPrefix.GetText(),
+        depNodeFn.name().asChar(),
+        normalInput.GetBaseName().GetText()));
+    nodePath = nodegraphPath.AppendChild(nodeName);
+    nodeSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);
+    nodeSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_add_vector3FA));
+    UsdShadeInput biasInput = nodeSchema.CreateInput(TrMtlxTokens->in1, SdfValueTypeNames->Float3);
+    nodeSchema.CreateInput(TrMtlxTokens->in2, SdfValueTypeNames->Float).Set(0.5f);
+    UsdShadeOutput biasOutput
+        = nodeSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float3);
+    mapInput.ConnectToSource(UsdShadeOutput(biasOutput));
+
+    // Texture scale:
+    nodeName = TfToken(TfStringPrintf(
+        "%s_%s_%s",
+        _tokens->NormalMapScalePrefix.GetText(),
+        depNodeFn.name().asChar(),
+        normalInput.GetBaseName().GetText()));
+    nodePath = nodegraphPath.AppendChild(nodeName);
+    nodeSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);
+    nodeSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_multiply_vector3FA));
+    UsdShadeInput scaleInput = nodeSchema.CreateInput(TrMtlxTokens->in1, SdfValueTypeNames->Float3);
+    nodeSchema.CreateInput(TrMtlxTokens->in2, SdfValueTypeNames->Float).Set(0.5f);
+    UsdShadeOutput scaleOutput
+        = nodeSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float3);
+    biasInput.ConnectToSource(UsdShadeOutput(scaleOutput));
+
+    return scaleInput;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

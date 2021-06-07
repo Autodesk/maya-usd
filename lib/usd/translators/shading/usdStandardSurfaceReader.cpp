@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
 #include "usdMaterialReader.h"
 
 #include <mayaUsd/fileio/shaderReader.h>

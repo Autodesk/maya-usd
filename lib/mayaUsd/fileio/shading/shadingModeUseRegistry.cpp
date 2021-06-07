@@ -22,6 +22,7 @@
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/shadingUtil.h>
+#include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -268,15 +269,18 @@ private:
                 // Maya plugs represent so that we can author the
                 // connection in USD.
 
+                // We pass in the type of the plug on the other side to allow the export code to
+                // add conversion nodes as required.
+
                 const TfToken srcPlugName
                     = TfToken(UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
-                UsdAttribute srcAttribute
-                    = srcShaderInfo->GetShadingAttributeForMayaAttrName(srcPlugName);
+                UsdAttribute srcAttribute = srcShaderInfo->GetShadingAttributeForMayaAttrName(
+                    srcPlugName, MayaUsd::Converter::getUsdTypeName(dstPlug));
 
                 const TfToken dstPlugName
                     = TfToken(UsdMayaShadingUtil::GetStandardAttrName(dstPlug, false));
-                UsdAttribute dstAttribute
-                    = dstShaderInfo->GetShadingAttributeForMayaAttrName(dstPlugName);
+                UsdAttribute dstAttribute = dstShaderInfo->GetShadingAttributeForMayaAttrName(
+                    dstPlugName, MayaUsd::Converter::getUsdTypeName(srcPlug));
 
                 if (srcAttribute && dstAttribute) {
                     if (UsdShadeInput::IsInput(srcAttribute)) {
@@ -512,9 +516,11 @@ private:
         const auto                   iter = _shaderReaderMap.find(shaderPath);
         UsdMayaShaderReaderSharedPtr shaderReader;
         MObject                      sourceObj;
+        MPlug                        sourcePlug;
         if (iter != _shaderReaderMap.end()) {
             shaderReader = iter->second;
-            if (!_context->GetCreatedObject(shaderSchema.GetPrim(), &sourceObj)) {
+            sourceObj = shaderReader->GetCreatedObject(*_context, shaderSchema.GetPrim());
+            if (sourceObj.isNull()) {
                 return MPlug();
             }
         } else {
@@ -530,10 +536,25 @@ private:
 
                 shaderReader = std::dynamic_pointer_cast<UsdMayaShaderReader>(factoryFn(args));
 
-                sourceObj = _ReadSchema(shaderSchema, *shaderReader);
-                if (sourceObj.isNull()) {
-                    // Read failed. Invalidate the reader.
-                    shaderReader = nullptr;
+                UsdShadeShader downstreamSchema;
+                TfToken        downstreamName;
+                if (shaderReader->IsConverter(downstreamSchema, downstreamName)) {
+                    // Recurse downstream:
+                    sourcePlug = _GetSourcePlug(downstreamSchema, downstreamName);
+                    if (!sourcePlug.isNull()) {
+                        shaderReader->SetDownstreamReader(
+                            _shaderReaderMap[downstreamSchema.GetPath()]);
+                        sourceObj = sourcePlug.node();
+                    } else {
+                        // Read failed. Invalidate the reader.
+                        shaderReader = nullptr;
+                    }
+                } else {
+                    sourceObj = _ReadSchema(shaderSchema, *shaderReader);
+                    if (sourceObj.isNull()) {
+                        // Read failed. Invalidate the reader.
+                        shaderReader = nullptr;
+                    }
                 }
             }
 
@@ -550,7 +571,7 @@ private:
         TfToken sourceOutputName = TfToken(
             TfStringPrintf("%s%s", UsdShadeTokens->outputs.GetText(), outputName.GetText())
                 .c_str());
-        MPlug sourcePlug = shaderReader->GetMayaPlugForUsdAttrName(sourceOutputName, sourceObj);
+        sourcePlug = shaderReader->GetMayaPlugForUsdAttrName(sourceOutputName, sourceObj);
         if (sourcePlug.isArray()) {
             const unsigned int numElements = sourcePlug.evaluateNumElements();
             if (numElements > 0u) {
@@ -583,8 +604,8 @@ private:
             return MObject();
         }
 
-        MObject shaderObj;
-        if (!_context->GetCreatedObject(shaderSchema.GetPrim(), &shaderObj)) {
+        MObject shaderObj = shaderReader.GetCreatedObject(*_context, shaderSchema.GetPrim());
+        if (shaderObj.isNull()) {
             return MObject();
         }
 
@@ -606,7 +627,23 @@ private:
 
             UsdShadeShader sourceShaderSchema = UsdShadeShader(source.GetPrim());
             if (!sourceShaderSchema) {
-                continue;
+                // The exporter can choose to group ancillary nodes in a NodeGraph
+                UsdShadeNodeGraph sourceNodeGraph = UsdShadeNodeGraph(source.GetPrim());
+                if (!sourceNodeGraph) {
+                    continue;
+                }
+
+                // Follow through to see if the node graph output is connected:
+                const UsdShadeOutput& ngOutput = sourceNodeGraph.GetOutput(sourceOutputName);
+                if (!UsdShadeConnectableAPI::GetConnectedSource(
+                        ngOutput, &source, &sourceOutputName, &sourceType)) {
+                    continue;
+                }
+
+                sourceShaderSchema = UsdShadeShader(source.GetPrim());
+                if (!sourceShaderSchema) {
+                    continue;
+                }
             }
 
             MPlug srcAttr = _GetSourcePlug(sourceShaderSchema, sourceOutputName);

@@ -15,6 +15,8 @@
 //
 #include "usdLambertWriter.h"
 
+#include "shadingTokens.h"
+
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/utils/util.h>
@@ -38,19 +40,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(lambert, PxrUsdTranslators_LambertWriter);
-
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (color)
-    (transparency)
-    (diffuse)
-    (incandescence)
-    (normalCamera)
-);
-// clang-format on
 
 PxrUsdTranslators_LambertWriter::PxrUsdTranslators_LambertWriter(
     const MFnDependencyNode& depNodeFn,
@@ -82,14 +71,14 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
 
     AuthorShaderInputFromScaledShadingNodeAttr(
         depNodeFn,
-        _tokens->color,
+        TrMayaTokens->color,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName,
         usdTime,
-        _tokens->diffuse);
+        TrMayaTokens->diffuse);
 
     const MPlug transparencyPlug = depNodeFn.findPlug(
-        depNodeFn.attribute(_tokens->transparency.GetText()),
+        depNodeFn.attribute(TrMayaTokens->transparency.GetText()),
         /* wantNetworkedPlug = */ true,
         &status);
     if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(transparencyPlug)) {
@@ -115,7 +104,7 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
     // both black by default, only author it in USD if it is authored in Maya.
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->incandescence,
+        TrMayaTokens->incandescence,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName,
         usdTime,
@@ -124,7 +113,7 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
     // Exported, but unsupported in hdStorm.
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->normalCamera,
+        TrMayaTokens->normalCamera,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
         usdTime,
@@ -158,13 +147,13 @@ PxrUsdTranslators_LambertWriter::GetShadingAttributeNameForMayaAttrName(const Tf
 {
     TfToken usdAttrName;
 
-    if (mayaAttrName == _tokens->color) {
+    if (mayaAttrName == TrMayaTokens->color) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName;
-    } else if (mayaAttrName == _tokens->transparency) {
+    } else if (mayaAttrName == TrMayaTokens->transparency) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName;
-    } else if (mayaAttrName == _tokens->incandescence) {
+    } else if (mayaAttrName == TrMayaTokens->incandescence) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName;
-    } else if (mayaAttrName == _tokens->normalCamera) {
+    } else if (mayaAttrName == TrMayaTokens->normalCamera) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->NormalAttrName;
     } else {
         return BaseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);

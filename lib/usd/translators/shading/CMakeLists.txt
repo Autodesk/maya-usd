@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME}
     PRIVATE
+        shadingTokens.cpp
         usdBlinnReader.cpp
         usdBlinnWriter.cpp
         usdDisplacementShaderWriter.cpp
@@ -37,7 +38,16 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
     target_sources(${TARGET_NAME}
         PRIVATE
             mtlxBaseWriter.cpp
+            mtlxConverterReader.cpp
+            mtlxImageReader.cpp
+            mtlxPreviewSurfaceReader.cpp
+            mtlxPreviewSurfaceWriter.cpp
+            mtlxStandardSurfaceReader.cpp
             mtlxStandardSurfaceWriter.cpp
             mtlxFileTextureWriter.cpp
+    )
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+        WANT_MATERIALX_TRANSLATORS=1
     )
 endif()

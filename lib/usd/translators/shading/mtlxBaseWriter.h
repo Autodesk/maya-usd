@@ -25,10 +25,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Shader writer for exporting Maya's material shading nodes to MaterialX.
-class MaterialXTranslators_BaseWriter : public UsdMayaShaderWriter
+class MtlxUsd_BaseWriter : public UsdMayaShaderWriter
 {
 public:
-    MaterialXTranslators_BaseWriter(
+    MtlxUsd_BaseWriter(
         const MFnDependencyNode& depNodeFn,
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx);
@@ -38,14 +38,23 @@ protected:
     // Returns the node graph where all ancillary nodes reside
     UsdPrim GetNodeGraph();
 
+    // Add a direct conversion node from one type to another:
+    UsdAttribute AddConversion(
+        const SdfValueTypeName& fromType,
+        const SdfValueTypeName& toType,
+        UsdAttribute            nodeOutput);
+
     // Add a swizzle node to the current node to extract a channel from a color output:
     UsdAttribute AddSwizzle(const std::string& channel, int numChannels);
 
     // Add a swizzle node to extract a channel from a color output:
     UsdAttribute AddSwizzle(const std::string& channel, int numChannels, UsdAttribute nodeOutput);
 
-    // Add a luminance node to get an alpha value from a RGB texture:
+    // Add a luminance node to the current node to get an alpha value from an RGB texture:
     UsdAttribute AddLuminance(int numChannels);
+
+    // Add normal mapping functionnality to a normal input
+    UsdAttribute AddNormalMapping(UsdAttribute normalInput);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
