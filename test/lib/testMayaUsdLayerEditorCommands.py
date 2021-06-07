@@ -379,7 +379,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
             self.assertEqual(newParentLayer.subLayerPaths, originalSubLayerPaths)
 
         def moveElement(list, item, index):
-            l = list.copy()
+            l = list[:] #copy the list
             l.remove(item)
             l.insert(index, item)
             return l
