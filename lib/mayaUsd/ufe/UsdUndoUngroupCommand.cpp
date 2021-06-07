@@ -106,12 +106,9 @@ void UsdUndoUngroupCommand::undo()
 
 void UsdUndoUngroupCommand::redo()
 {
-    // redo the inserted children first
     _compositeInsertCmd->redo();
 
-    // remove group prim
-    auto status = removePrimGroup();
-    TF_VERIFY(status, "Removing group node failed!");
+    _undoableItem.redo();
 }
 
 bool UsdUndoUngroupCommand::removePrimGroup()
