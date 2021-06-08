@@ -180,6 +180,12 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(kFileFlag, kFileFlagLong, MSyntax::kString);
     syntax.addFlag(kSelectionFlag, kSelectionFlagLong, MSyntax::kNoArg);
 
+    syntax.addFlag(kUserAttrFlag, kUserAttrFlagLong, MSyntax::kString);
+    syntax.makeFlagMultiUse(kUserAttrFlag);
+
+    syntax.addFlag(kRootFlag, kkRootFlagLong, MSyntax::kString);
+    syntax.makeFlagMultiUse(kRootFlag);
+
     syntax.addFlag(kFilterTypesFlag, kFilterTypesFlagLong, MSyntax::kString);
     syntax.makeFlagMultiUse(kFilterTypesFlag);
 
@@ -309,6 +315,29 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
         UsdMayaJobExportArgs jobArgs
             = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+
+        unsigned int numUserAttrs = argData.numberOfFlagUses(kUserAttrFlag);
+        for (unsigned int i = 0; i < numUserAttrs; i++) {
+            MArgList tmpArgList;
+            argData.getFlagArgumentList(kUserAttrFlag, i, tmpArgList);
+            jobArgs.userAttrNames.emplace_back(tmpArgList.asString(0).asChar());
+        }
+
+        unsigned int numRoots = argData.numberOfFlagUses(kRootFlag);
+        for (unsigned int i = 0; i < numRoots; i++) {
+            MArgList tmpArgList;
+            argData.getFlagArgumentList(kRootFlag, i, tmpArgList);
+            std::string this_root = tmpArgList.asString(0).asChar();
+            if (!this_root.empty()) {
+                MDagPath dagPath;
+                UsdMayaUtil::GetDagPathByName(this_root, dagPath);
+                if (!dagPath.isValid()) {
+                    MGlobal::displayError("Invalid root path: " + tmpArgList.asString(0));
+                    return MS::kFailure;
+                }
+                jobArgs.rootNames.emplace_back(this_root);
+            }
+        }
 
         unsigned int numFilteredTypes = argData.numberOfFlagUses(kFilterTypesFlag);
         for (unsigned int i = 0; i < numFilteredTypes; i++) {

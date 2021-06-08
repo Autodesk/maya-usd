@@ -15,6 +15,8 @@
 //
 #include "writeUtil.h"
 
+#include "mayaUsd/fileio/writeJobContext.h"
+
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/userTaggedAttribute.h>
@@ -65,6 +67,8 @@
 #include <maya/MString.h>
 #include <maya/MVector.h>
 #include <maya/MVectorArray.h>
+
+#include <boost/algorithm/string.hpp>
 
 #include <string>
 #include <vector>
@@ -648,6 +652,70 @@ bool UsdMayaWriteUtil::SetUsdAttr(
     }
 
     return SetAttribute(usdAttr, val, usdTime, valueWriter);
+}
+
+
+// Write user custom attributes passed using the -userattr multi-flag by passing the attr name
+// into a desired namespace (like, userProperties:ast, primvar:varyRGB, primvar:ri:whateverAttr)
+// this is an alternative method to the USD_ json attribute, we prefer not to add unneeded custom
+// attribute on each maya node for the purpose of writing the custom attributes, instead, in this
+// method, we check if the attr exists on the shape or transform maya nodes, then the usdAttrs are
+// created
+// - defaults to not convert maya doubles to USD single precision.
+// - if the attr is meant to be written as primvar, the "primvars:" can be used as the attr namesapace.
+// - if it's meant to be written as usdRi, the namespace "primvars:ri:attributes:user:" can be used for the attr namespace
+bool UsdMayaWriteUtil::WriteUserAttributes(
+    const MObject&             mayaNode,
+    const UsdPrim&             usdPrim,
+    const UsdTimeCode&         usdTime,
+    UsdMayaWriteJobContext& writeJobCtx,
+    UsdUtilsSparseValueWriter* valueWriter)
+{
+    MStatus stat;
+    MFnDagNode mFn(mayaNode);
+    bool isTransform = false;
+    if (mFn.typeName() == "transform") {
+        isTransform = true;
+    }
+
+    MPlug attrPlug;
+    for (std::string attrName : writeJobCtx.GetArgs().userAttrNames) {
+        if (isTransform) {
+            // we are adding the custom attributes of transform nodes into 'xform:' namesapace, to avoid
+            // attr names clashes between shapes and transforms in both USDs and when importing back to maya
+            attrName = std::string("xform:") + attrName;
+        }
+        const std::string& usdAttrName = attrName;
+
+        std::vector<std::string> attrNameParts;
+        boost::split(attrNameParts, attrName, boost::is_any_of(":"));
+        std::string& mAttrName = attrNameParts[attrNameParts.size()-1];
+        MString mAttr = MString(mAttrName.c_str());
+        attrPlug = mFn.findPlug(mAttr, &stat);
+        if (stat == MS::kSuccess) {
+            UsdAttribute usdAttr;
+            usdAttr = UsdMayaWriteUtil::GetOrCreateUsdAttr(attrPlug, usdPrim, usdAttrName, true, false);
+            if (usdAttr) {
+                if (!UsdMayaWriteUtil::SetUsdAttr(attrPlug,
+                                                  usdAttr,
+                                                  usdTime,
+                                                  valueWriter)) {
+                    TF_RUNTIME_ERROR(
+                        "Could not set value for attribute <%s>",
+                        usdAttr.GetPath().GetText());
+                    continue;
+                }
+            } else {
+                TF_RUNTIME_ERROR(
+                    "Could not create attribute '%s' for USD prim <%s>",
+                    usdAttrName.c_str(),
+                    usdPrim.GetPath().GetText());
+                continue;
+            }
+        }
+    }
+    return true;
+
 }
 
 // This method inspects the JSON blob stored in the

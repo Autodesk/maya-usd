@@ -15,6 +15,9 @@
 //
 #include "translatorUtil.h"
 
+#include <mayaUsd/fileio/translators/NodeHelper.h>
+#include <mayaUsd/fileio/translators/DgNodeHelper.h>
+
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
@@ -38,6 +41,220 @@
 #include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+
+UsdDataType getAttributeType(const UsdAttribute& usdAttr)
+{
+    if (!usdAttr.IsValid()) {
+        return UsdDataType::kUnknown;
+    }
+    const SdfValueTypeName typeName = usdAttr.GetTypeName();
+    const auto             it = usdTypeHashToEnum.find(typeName.GetHash());
+    if (it == usdTypeHashToEnum.end()) {
+        return UsdDataType::kUnknown;
+    }
+    return it->second;
+}
+
+
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = str.find(from);
+    if(start_pos == std::string::npos)
+        return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus UsdMayaTranslatorUtil::addDynamicAttribute(MObject node, const UsdAttribute& usdAttr)
+{
+    const SdfValueTypeName typeName = usdAttr.GetTypeName();
+    const bool             isArray = typeName.IsArray();
+    const UsdDataType      dataType = getAttributeType(usdAttr);
+    MObject                attribute = MObject::kNullObj;
+    const char*            attrName = usdAttr.GetName().GetString().c_str();
+
+
+    if (isArray)
+        cout << dataType << endl;
+
+    // Fixing attr names to match the original maya names before writing them to USD Attrs
+    // using -userattr flag that was added to usdExport in our implementation
+    bool isShapeAttr = true;
+    std::string tmpAttrName = attrName;
+    if (tmpAttrName.rfind("xform:userProperties:", 0) == 0) {
+        // This is transform userProperties
+        isShapeAttr = false;
+        replace(tmpAttrName, "xform:userProperties:", "");
+    } else if (tmpAttrName.rfind("userProperties:", 0) == 0) {
+        isShapeAttr = true;
+        replace(tmpAttrName, "userProperties:", "");
+    } else if (tmpAttrName.rfind("primvars:", 0) == 0) {
+        return MS::kSuccess; // We will not create the primvars here (it's done somewhere else)
+    }
+    attrName = tmpAttrName.c_str();
+
+    MDagPath dagPath = MDagPath::getAPathTo(node);
+    // don't add/set the attribute when it's a shape attr and the node is transform and vise versa
+    // in such case, assume kSuccess
+    if ((isShapeAttr and node.apiType() ==  MFn::kTransform) || (!isShapeAttr and node.apiType() !=  MFn::kTransform))
+        return  MS::kSuccess;
+
+    // Some plugins like renderman creates custom attributes on time of object creation (before us here)
+    // when these attributes are modified and exported out into the USD, we need to set them back when loading
+    // the USD, So, we have to check if the custom attr exists, then we have to set the value rather than adding a new attr.
+    MFnDependencyNode depNode(node);
+    if (!depNode.hasAttribute(attrName)) {
+
+        const uint32_t flags = (isArray ? NodeHelper::kArray : 0)
+                               | NodeHelper::kReadable | NodeHelper::kWritable
+                               | NodeHelper::kStorable | NodeHelper::kConnectable;
+        switch (dataType) {
+        case UsdDataType::kAsset: {
+            return MS::kSuccess;
+        } break;
+
+        case UsdDataType::kBool: {
+            NodeHelper::addBoolAttr(node, attrName, attrName, false, flags, &attribute);
+        } break;
+
+        case UsdDataType::kUChar: {
+            NodeHelper::addInt8Attr(
+                node, attrName, attrName, 0, flags, &attribute);
+        } break;
+
+        case UsdDataType::kInt:
+        case UsdDataType::kUInt: {
+            NodeHelper::addInt32Attr(
+                node, attrName, attrName, 0, flags, &attribute);
+        } break;
+
+        case UsdDataType::kInt64:
+        case UsdDataType::kUInt64: {
+            NodeHelper::addInt64Attr(
+                node, attrName, attrName, 0, flags, &attribute);
+        } break;
+
+        case UsdDataType::kHalf:
+        case UsdDataType::kFloat: {
+            NodeHelper::addFloatAttr(
+                node, attrName, attrName, 0, flags, &attribute);
+        } break;
+
+        case UsdDataType::kDouble: {
+            NodeHelper::addDoubleAttr(
+                node, attrName, attrName, 0, flags, &attribute);
+        } break;
+
+        case UsdDataType::kString: {
+            NodeHelper::addStringAttr(
+                node, attrName, attrName, flags, true, &attribute);
+        } break;
+
+        case UsdDataType::kMatrix2d: {
+            const float defValue[2][2] = { { 0, 0 }, { 0, 0 } };
+            NodeHelper::addMatrix2x2Attr(
+                node, attrName, attrName, defValue, flags, &attribute);
+        } break;
+
+        case UsdDataType::kMatrix3d: {
+            const float defValue[3][3] = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+            NodeHelper::addMatrix3x3Attr(
+                node, attrName, attrName, defValue, flags, &attribute);
+        } break;
+
+        case UsdDataType::kMatrix4d: {
+            NodeHelper::addMatrixAttr(
+                node, attrName, attrName, MMatrix(), flags, &attribute);
+        } break;
+
+        case UsdDataType::kQuatd: {
+            NodeHelper::addVec4dAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kQuatf:
+        case UsdDataType::kQuath: {
+            NodeHelper::addVec4fAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec2d: {
+            NodeHelper::addVec2dAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec2f:
+        case UsdDataType::kVec2h: {
+            NodeHelper::addVec2fAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec2i: {
+            NodeHelper::addVec2iAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec3d: {
+            NodeHelper::addVec3dAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec3f:
+        case UsdDataType::kVec3h: {
+            NodeHelper::addVec3fAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec3i: {
+            NodeHelper::addVec3iAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec4d: {
+            NodeHelper::addVec4dAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec4f:
+        case UsdDataType::kVec4h: {
+            NodeHelper::addVec4fAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        case UsdDataType::kVec4i: {
+            NodeHelper::addVec4iAttr(node, attrName, attrName, flags, &attribute);
+        } break;
+
+        default:
+            MGlobal::displayError(
+                "DgNodeTranslator::addDynamicAttribute - unsupported USD data type");
+            return MS::kFailure;
+        }
+    } else {
+        // Get the attribute
+        attribute = depNode.attribute(attrName);
+    }
+
+    if (isArray) {
+        return DgNodeHelper::setArrayMayaValue(node, attribute, usdAttr, dataType);
+    }
+    return DgNodeHelper::setSingleMayaValue(node, attribute, usdAttr, dataType);
+
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus
+UsdMayaTranslatorUtil::copyAttributes(const UsdPrim& from, MObject to)
+{
+    const std::vector<UsdAttribute> attributes = from.GetAttributes();
+    for (size_t i = 0; i < attributes.size(); ++i) {
+        if (attributes[i].IsAuthored() && attributes[i].HasValue()
+            && attributes[i].IsCustom()) {
+            if (!attributeHandled(attributes[i]))
+                addDynamicAttribute(to, attributes[i]);
+        }
+    }
+    return MS::kSuccess;
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+bool UsdMayaTranslatorUtil::attributeHandled(const UsdAttribute& usdAttr) { return false; }
+
+
 
 const MString _DEFAULT_TRANSFORM_TYPE("transform");
 
@@ -143,7 +360,12 @@ bool UsdMayaTranslatorUtil::CreateNode(
     MStatus*                  status,
     MObject*                  mayaNodeObj)
 {
-    return CreateNode(usdPrim.GetPath(), nodeTypeName, parentNode, context, status, mayaNodeObj);
+    bool stat = CreateNode(usdPrim.GetPath(), nodeTypeName, parentNode, context, status, mayaNodeObj);
+
+    // Copy userProperties to the created transform node
+    copyAttributes(usdPrim, *mayaNodeObj);
+
+    return stat;
 }
 
 /* static */
