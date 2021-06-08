@@ -109,7 +109,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (FallbackShader)
     (mayaIsBackFacing)
     (isBackfacing)
-    (DrawMode, "drawMode.glslfx")
+    ((DrawMode, "drawMode.glslfx"))
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
@@ -118,7 +118,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 bool _IsUsdDrawModeId(const TfToken& id)
 {
-    return id == _tokens->_DrawMode || id == _tokens->UsdDrawModeCards;
+    return id == _tokens->DrawMode || id == _tokens->UsdDrawModeCards;
 }
 
 bool _IsUsdDrawModeNode(const HdMaterialNode& node) { return _IsUsdDrawModeId(node.identifier); }
