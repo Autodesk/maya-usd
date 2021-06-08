@@ -21,6 +21,7 @@
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsdUtils/util.h>
 
+#include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/usd/editContext.h>
 
 #include <ufe/globalSelection.h>
@@ -85,11 +86,15 @@ void UsdUndoUngroupCommand::undo()
     auto prim = ufePathToPrim(_groupItem->path());
     TF_AXIOM(prim);
 
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    TF_AXIOM(primSpec);
+    {
+        SdfChangeBlock changeBlock;
 
-    primSpec->SetSpecifier(SdfSpecifierDef);
-    primSpec->SetTypeName("Xform");
+        auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+        TF_AXIOM(primSpec);
+
+        primSpec->SetSpecifier(SdfSpecifierDef);
+        primSpec->SetTypeName("Xform");
+    }
 
     // create a new group scene item
     _groupItem = UsdSceneItem::create(_groupItem->path(), prim);
