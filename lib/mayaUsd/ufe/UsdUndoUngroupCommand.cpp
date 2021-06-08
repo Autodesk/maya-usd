@@ -81,23 +81,15 @@ void UsdUndoUngroupCommand::undo()
 
     // After undo, the group prim loses it's specifier and type.
     // At this point _groupItem->prim() is stale and should not be used.
-    // Create a new prim from ufe path and manually set the SetSpecifier and SetTypeName
-    // to get back the original concrete xfrom prim.
-    auto prim = ufePathToPrim(_groupItem->path());
-    TF_AXIOM(prim);
+    // Define a new prim from ufe path to get back the original concrete xfrom prim.
+    auto stage = getStage(_groupItem->path());
+    TF_AXIOM(stage);
 
-    {
-        SdfChangeBlock changeBlock;
-
-        auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-        TF_AXIOM(primSpec);
-
-        primSpec->SetSpecifier(SdfSpecifierDef);
-        primSpec->SetTypeName("Xform");
-    }
+    auto groupUsdPath = getPath(_groupItem->path());
+    auto groupPrim = stage->DefinePrim(groupUsdPath, TfToken("Xform"));
 
     // create a new group scene item
-    _groupItem = UsdSceneItem::create(_groupItem->path(), prim);
+    _groupItem = UsdSceneItem::create(_groupItem->path(), groupPrim);
     TF_AXIOM(_groupItem);
 
     // undo the inserted children

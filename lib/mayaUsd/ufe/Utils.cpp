@@ -135,6 +135,11 @@ UsdStageWeakPtr getStage(const Ufe::Path& path) { return g_StageMap.stage(path);
 
 Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
 
+PXR_NS::SdfPath getPath(const Ufe::Path& path)
+{
+    return SdfPath(path.getSegments().back().string());
+}
+
 TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return g_StageMap.allStages(); }
 
 Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
