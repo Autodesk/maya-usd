@@ -95,10 +95,6 @@ class testVP2RenderDelegateDrawModes(imageUtils.ImageDiffingTestCase):
         cmds.rotate(145, 45, 0, 'persp')
         self.assertSnapshotClose('%s_box_all_negative.png' % self._testName)
 
-        drawModeAttr = drawModesPrim.GetAttribute('model:drawMode')
-        drawModeAttr.Set('default')
-        self.assertSnapshotClose('%s_default.png' % self._testName)
-        
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
