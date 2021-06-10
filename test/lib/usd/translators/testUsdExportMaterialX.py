@@ -164,6 +164,8 @@ class testUsdExportMaterialX(unittest.TestCase):
 
             (14, 15, "MayaConvert_file14_color3f_float3", 
              "ND_convert_color3_vector3"),
+            (15, 16, "MayaNormalMap_standardSurface16_normalCamera",
+             "ND_normalmap"),
         ]
 
         for prim_idx, sg_idx, node_name, id_attr in to_test:

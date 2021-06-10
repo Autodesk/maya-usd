@@ -70,18 +70,7 @@ public:
         TfToken shaderId;
         shaderSchema.GetIdAttr().Get(&shaderId);
 
-        const bool isArithmetic = shaderId == TrMtlxTokens->ND_multiply_vector3FA
-            || shaderId == TrMtlxTokens->ND_add_vector3FA;
-
-        if (isArithmetic
-            && prim.GetPath().GetName().rfind("MayaNormalMap", 0) == std::string::npos) {
-            // For ND_multiply_vector3FA and ND_add_vector3FA, if these are not auto
-            // generated for normal mapping, then we are losing information...
-            TF_RUNTIME_ERROR("Unknown arithmetic node. Skipping %s", prim.GetPath().GetText());
-        }
-
-        const UsdShadeInput& input
-            = shaderSchema.GetInput(isArithmetic ? TrMtlxTokens->in1 : TrMtlxTokens->in);
+        const UsdShadeInput& input = shaderSchema.GetInput(TrMtlxTokens->in);
         if (!input) {
             return false;
         }
@@ -215,7 +204,5 @@ PXRUSDMAYA_REGISTER_SHADER_READER(ND_swizzle_vector2_float, MtlxUsd_ConverterRea
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_swizzle_color4_color3, MtlxUsd_ConverterReader);
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_convert_color3_vector3, MtlxUsd_ConverterReader);
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_normalmap, MtlxUsd_ConverterReader);
-PXRUSDMAYA_REGISTER_SHADER_READER(ND_add_vector3FA, MtlxUsd_ConverterReader);
-PXRUSDMAYA_REGISTER_SHADER_READER(ND_multiply_vector3FA, MtlxUsd_ConverterReader);
 
 PXR_NAMESPACE_CLOSE_SCOPE

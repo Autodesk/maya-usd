@@ -193,9 +193,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (ND_luminance_color3) \
     (ND_luminance_color4) \
     (ND_convert_color3_vector3) \
-    (ND_normalmap) \
-    (ND_add_vector3FA) \
-    (ND_multiply_vector3FA)
+    (ND_normalmap)
 
 #define TR_MTLX_STANDARD_SURFACE \
     (base) \

@@ -63,8 +63,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((SwizzlePrefix, "MayaSwizzle"))
     ((LuminancePrefix, "MayaLuminance"))
     ((NormalMapPrefix, "MayaNormalMap"))
-    ((NormalMapBiasPrefix, "MayaNormalMapBias"))
-    ((NormalMapScalePrefix, "MayaNormalMapScale"))
 );
 // clang-format on
 
@@ -311,37 +309,7 @@ UsdAttribute MtlxUsd_BaseWriter::AddNormalMapping(UsdAttribute normalInput)
         = nodeSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float3);
     UsdShadeOutput(normalInput).ConnectToSource(UsdShadeOutput(mapOutput));
 
-    // Texture bias:
-    nodeName = TfToken(TfStringPrintf(
-        "%s_%s_%s",
-        _tokens->NormalMapBiasPrefix.GetText(),
-        depNodeFn.name().asChar(),
-        normalInput.GetBaseName().GetText()));
-    nodePath = nodegraphPath.AppendChild(nodeName);
-    nodeSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);
-    nodeSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_add_vector3FA));
-    UsdShadeInput biasInput = nodeSchema.CreateInput(TrMtlxTokens->in1, SdfValueTypeNames->Float3);
-    nodeSchema.CreateInput(TrMtlxTokens->in2, SdfValueTypeNames->Float).Set(0.5f);
-    UsdShadeOutput biasOutput
-        = nodeSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float3);
-    mapInput.ConnectToSource(UsdShadeOutput(biasOutput));
-
-    // Texture scale:
-    nodeName = TfToken(TfStringPrintf(
-        "%s_%s_%s",
-        _tokens->NormalMapScalePrefix.GetText(),
-        depNodeFn.name().asChar(),
-        normalInput.GetBaseName().GetText()));
-    nodePath = nodegraphPath.AppendChild(nodeName);
-    nodeSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);
-    nodeSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_multiply_vector3FA));
-    UsdShadeInput scaleInput = nodeSchema.CreateInput(TrMtlxTokens->in1, SdfValueTypeNames->Float3);
-    nodeSchema.CreateInput(TrMtlxTokens->in2, SdfValueTypeNames->Float).Set(0.5f);
-    UsdShadeOutput scaleOutput
-        = nodeSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float3);
-    biasInput.ConnectToSource(UsdShadeOutput(scaleOutput));
-
-    return scaleInput;
+    return mapInput;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
