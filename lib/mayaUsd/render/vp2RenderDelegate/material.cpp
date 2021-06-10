@@ -19,6 +19,8 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+#include <mayaUsd/utils/hash.h>
+
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/vec2f.h>
@@ -71,6 +73,7 @@
 #include <tbb/parallel_for.h>
 
 #include <iostream>
+#include <sstream>
 #include <string>
 
 #if PXR_VERSION >= 2102
@@ -134,6 +137,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_PRIVATE_TOKENS(
     _mtlxTokens,
 
+    (USD_Mtlx_VP2_Material)
+    (NG_Maya)
     (image)
     (tiledimage)
     (i_geomprop_)
@@ -141,6 +146,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (uaddressmode)
     (vaddressmode)
     (filtertype)
+    (channels)
 );
 // clang-format on
 
@@ -195,17 +201,148 @@ bool _IsMaterialX(const HdMaterialNode& node)
     return ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
 }
 
-static HdMaterialNode2 const*
-_GetTerminalNode(HdMaterialNetwork2 const& network, SdfPath& terminalPath)
+// Returns true if s begins with prefix
+inline bool _BeginsWith(const std::string& s, const std::string& prefix)
 {
-    auto const& terminalConnIt = network.terminals.find(HdMaterialTerminalTokens->surface);
-    if (terminalConnIt == network.terminals.end()) {
-        return nullptr;
+    return s.rfind(prefix, 0) == 0;
+}
+
+// Returns true if s ends with suffix
+inline bool _EndsWith(const std::string& s, const std::string& suffix)
+{
+    return s.size() >= suffix.size()
+        && s.compare(s.size() - suffix.size(), std::string::npos, suffix) == 0;
+}
+
+//! Return true if that node parameter has topological impact on the generated code.
+//
+// Swizzle and geompropvalue nodes are currently the only ones that have an attribute that affects
+// shader topology. The "channels" and "geomprop" attributes will have effects at the codegen level,
+// not at runtime. Yes, this is forbidden internal knowledge of the MaterialX shader generator and
+// we might get other nodes like this one in a future update.
+//
+// Things to look out for are parameters of type "string" and parameters with the "uniform"
+// metadata. These need to be reviewed against the code used in their registered
+// implementations (see registerImplementation calls in the GlslShaderGenerator CTOR). Sadly
+// we can not make that a rule because the filename of an image node is both a "string" and
+// has the "uniform" metadata, yet is not affecting topology.
+bool _IsTopologicalNode(const HdMaterialNode2& inNode)
+{
+    return _BeginsWith(inNode.nodeTypeId.GetString(), "ND_swizzle_")
+        || _BeginsWith(inNode.nodeTypeId.GetString(), "ND_geompropvalue_");
+}
+
+//! Helper function to generate a topo hash that can be used to detect if two networks share the
+//  same topology.
+size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
+{
+    // The HdMaterialNetwork2 structure is stable. Everything is alphabetically sorted.
+    size_t topoHash = 0;
+    for (const auto& c : materialNetwork.terminals) {
+        MayaUsd::hash_combine(topoHash, hash_value(c.first));
+        MayaUsd::hash_combine(topoHash, hash_value(c.second.upstreamNode));
+        MayaUsd::hash_combine(topoHash, hash_value(c.second.upstreamOutputName));
     }
-    HdMaterialConnection2 const& connection = terminalConnIt->second;
-    terminalPath = connection.upstreamNode;
-    auto const& terminalIt = network.nodes.find(terminalPath);
-    return &terminalIt->second;
+    for (const auto& nodePair : materialNetwork.nodes) {
+        MayaUsd::hash_combine(topoHash, hash_value(nodePair.first));
+
+        const auto& node = nodePair.second;
+        MayaUsd::hash_combine(topoHash, hash_value(node.nodeTypeId));
+
+        if (_IsTopologicalNode(node)) {
+            // We need to capture values that affect topology:
+            for (auto const& p : node.parameters) {
+                MayaUsd::hash_combine(topoHash, hash_value(p.first));
+                MayaUsd::hash_combine(topoHash, hash_value(p.second));
+            }
+        }
+        for (auto const& i : node.inputConnections) {
+            MayaUsd::hash_combine(topoHash, hash_value(i.first));
+            for (auto const& c : i.second) {
+                MayaUsd::hash_combine(topoHash, hash_value(c.upstreamNode));
+                MayaUsd::hash_combine(topoHash, hash_value(c.upstreamOutputName));
+            }
+        }
+    }
+    return topoHash;
+}
+
+//! Helper function to generate a XML string about nodes, relationships and primvars in the
+//! specified material network.
+std::string _GenerateXMLString(const HdMaterialNetwork2& materialNetwork)
+{
+    std::ostringstream result;
+
+    if (ARCH_LIKELY(!materialNetwork.nodes.empty())) {
+
+        result << "<terminals>\n";
+        for (const auto& c : materialNetwork.terminals) {
+            result << "  <terminal name=\"" << c.first << "\" dest=\"" << c.second.upstreamNode
+                   << "\"/>\n";
+        }
+        result << "</terminals>\n";
+        result << "<nodes>\n";
+        for (const auto& nodePair : materialNetwork.nodes) {
+            const auto& node = nodePair.second;
+            const bool  hasChildren = !(node.parameters.empty() && node.inputConnections.empty());
+            result << "  <node path=\"" << nodePair.first << "\" id=\"" << node.nodeTypeId << "\""
+                   << (hasChildren ? ">\n" : "/>\n");
+            if (!node.parameters.empty()) {
+                result << "    <parameters>\n";
+                for (auto const& p : node.parameters) {
+                    result << "      <param name=\"" << p.first << "\" value=\"" << p.second
+                           << "\"/>\n";
+                }
+                result << "    </parameters>\n";
+            }
+            if (!node.inputConnections.empty()) {
+                result << "    <inputs>\n";
+                for (auto const& i : node.inputConnections) {
+                    if (i.second.size() == 1) {
+                        result << "      <input name=\"" << i.first << "\" dest=\""
+                               << i.second.back().upstreamNode << "."
+                               << i.second.back().upstreamOutputName << "\"/>\n";
+                    } else {
+                        // Extremely rare case seen only with array connections.
+                        result << "      <input name=\"" << i.first << "\">\n";
+                        result << "      <connections>\n";
+                        for (auto const& c : i.second) {
+                            result << "        <cnx dest=\"" << c.upstreamNode << "."
+                                   << c.upstreamOutputName << "\"/>\n";
+                        }
+                        result << "      </connections>\n";
+                    }
+                }
+                result << "    </inputs>\n";
+            }
+            if (hasChildren) {
+                result << "  </node>\n";
+            }
+        }
+        result << "</nodes>\n";
+        // We do not add primvars. They are found later while traversing the actual effect instance.
+    }
+
+    return result.str();
+}
+
+// MaterialX FA nodes will "upgrade" the in2 uniform to whatever the vector type it needs for its
+// arithmetic operation. So we need to "upgrade" the value we want to set as well.
+//
+// One example: ND_multiply_vector3FA(vector3 in1, float in2) will generate a float3 in2 uniform.
+MStatus _SetFAParameter(
+    MHWRender::MShaderInstance* surfaceShader,
+    const HdMaterialNode&       node,
+    const MString&              paramName,
+    float                       val)
+{
+    if (_IsMaterialX(node) && _EndsWith(paramName.asChar(), "_in2")
+        && _EndsWith(node.identifier.GetString(), "FA")) {
+        // Try as vector
+        float vec[4] { val, val, val, val };
+        return surfaceShader->setParameter(paramName, &vec[0]);
+    }
+    return MS::kFailure;
 }
 
 #endif
@@ -918,28 +1055,25 @@ void HdVP2Material::Sync(
 #ifdef WANT_MATERIALX_BUILD
             if (!bxdfNet.nodes.empty()) {
                 if (_IsMaterialX(bxdfNet.nodes.back())) {
-                    _surfaceShader.reset(_CreateMaterialXShaderInstance(GetId(), networkMap));
+
+                    bool               isVolume = false;
+                    HdMaterialNetwork2 surfaceNetwork;
+                    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
+                        networkMap, &surfaceNetwork, &isVolume);
+                    if (isVolume) {
+                        // Not supported.
+                        return;
+                    }
+
+                    size_t topoHash = _GenerateNetwork2TopoHash(surfaceNetwork);
+
+                    if (!_surfaceShader || topoHash != _topoHash) {
+                        _surfaceShader.reset(
+                            _CreateMaterialXShaderInstance(GetId(), surfaceNetwork));
+                        _topoHash = topoHash;
+                    }
+
                     if (_surfaceShader) {
-                        if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
-                            std::cout << "BXDF material network for " << id << ":\n"
-                                      << _GenerateXMLString(bxdfNet) << "\n"
-                                      << "Displacement material network for " << id << ":\n"
-                                      << _GenerateXMLString(dispNet) << "\n"
-                                      << "Required primvars:\n";
-
-                            for (TfToken const& primvar : _requiredPrimvars) {
-                                std::cout << "\t" << primvar << std::endl;
-                            }
-
-                            auto tmpDir = ghc::filesystem::temp_directory_path();
-                            tmpDir /= "HdVP2Material_";
-                            tmpDir += id.GetName();
-                            tmpDir += ".txt";
-                            _surfaceShader->writeEffectSourceToFile(tmpDir.c_str());
-
-                            std::cout << "BXDF generated shader code for " << id << ":\n";
-                            std::cout << "  " << tmpDir << "\n";
-                        }
                         _UpdateShaderInstance(bxdfNet);
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
                         _MaterialChanged(sceneDelegate);
@@ -1182,63 +1316,155 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
 
 #ifdef WANT_MATERIALX_BUILD
 
+void HdVP2Material::_ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMaterialNetwork2& inNet)
+{
+
+    // The goal here is to strip all local names in the network paths in order to reduce the shader
+    // to its topological elements only.
+
+    // We also strip all local values so that the Maya effect gets created with all values set to
+    // their MaterialX default values.
+
+    // Once we have that, we can fully re-use any previously encountered effect that has the same
+    // MaterialX topology and only update the values that are found in the material network.
+
+    size_t nodeCounter = 0;
+    _nodePathMap.clear();
+
+    // Paths will go /NG_Maya/N0, /NG_Maya/N1, /NG_Maya/N2...
+    // We need NG_Maya, one level up, as this will be the name assigned to the MaterialX node graph
+    // when run thru HdMtlxCreateMtlxDocumentFromHdNetwork (I know, forbidden knowledge again).
+    SdfPath ngBase(_mtlxTokens->NG_Maya);
+
+    // We will traverse the network in a depth-first traversal starting at the
+    // terminals. This will allow a stable traversal that will not be affected
+    // by the ordering of the SdfPaths and make sure we assign the same index to
+    // all nodes regardless of the way they are sorted in the network node map.
+    std::vector<const SdfPath*> pathsToTraverse;
+    for (const auto& terminal : inNet.terminals) {
+        const auto& connection = terminal.second;
+        pathsToTraverse.push_back(&(connection.upstreamNode));
+    }
+    while (!pathsToTraverse.empty()) {
+        const SdfPath* path = pathsToTraverse.back();
+        pathsToTraverse.pop_back();
+        if (!_nodePathMap.count(*path)) {
+            const HdMaterialNode2& node = inNet.nodes.find(*path)->second;
+            // We only need to create the anonymized name at this time:
+            _nodePathMap[*path] = ngBase.AppendChild(TfToken("N" + std::to_string(nodeCounter++)));
+            for (const auto& input : node.inputConnections) {
+                for (const auto& connection : input.second) {
+                    pathsToTraverse.push_back(&(connection.upstreamNode));
+                }
+            }
+        }
+    }
+
+    // Copy the incoming network using only the anonymized names:
+    outNet.primvars = inNet.primvars;
+    for (const auto& terminal : inNet.terminals) {
+        outNet.terminals.emplace(
+            terminal.first,
+            HdMaterialConnection2 { _nodePathMap[terminal.second.upstreamNode],
+                                    terminal.second.upstreamOutputName });
+    }
+    for (const auto& nodePair : inNet.nodes) {
+        const HdMaterialNode2& inNode = nodePair.second;
+        HdMaterialNode2        outNode;
+        outNode.nodeTypeId = inNode.nodeTypeId;
+        if (_IsTopologicalNode(inNode)) {
+            // These parameters affect topology:
+            outNode.parameters = inNode.parameters;
+        }
+        for (const auto& cnxPair : inNode.inputConnections) {
+            std::vector<HdMaterialConnection2> outCnx;
+            for (const auto& c : cnxPair.second) {
+                outCnx.emplace_back(
+                    HdMaterialConnection2 { _nodePathMap[c.upstreamNode], c.upstreamOutputName });
+            }
+            outNode.inputConnections.emplace(cnxPair.first, std::move(outCnx));
+        }
+        outNet.nodes.emplace(_nodePathMap[nodePair.first], std::move(outNode));
+    }
+}
+
 /*! \brief  Detects MaterialX networks and rehydrates them.
  */
 MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
-    SdfPath const&              materialId,
-    HdMaterialNetworkMap const& hdNetworkMap)
+    SdfPath const&            materialId,
+    HdMaterialNetwork2 const& surfaceNetwork)
 {
     MHWRender::MShaderInstance* shaderInstance = nullptr;
 
-    bool               isVolume = false;
-    HdMaterialNetwork2 surfaceNetwork;
-    HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(hdNetworkMap, &surfaceNetwork, &isVolume);
-
-    if (isVolume) {
-        // Not supported.
+    auto const& terminalConnIt = surfaceNetwork.terminals.find(HdMaterialTerminalTokens->surface);
+    if (terminalConnIt == surfaceNetwork.terminals.end()) {
+        // No surface material
         return shaderInstance;
     }
 
-    SdfPath                terminalPath;
-    HdMaterialNode2 const* surfTerminal = _GetTerminalNode(surfaceNetwork, terminalPath);
+    HdMaterialNetwork2 fixedNetwork;
+    _ApplyMtlxVP2Fixes(fixedNetwork, surfaceNetwork);
+
+    SdfPath       terminalPath = terminalConnIt->second.upstreamNode;
+    const TfToken shaderCacheID(_GenerateXMLString(fixedNetwork));
+
+    // Acquire a shader instance from the shader cache. If a shader instance has been cached with
+    // the same token, a clone of the shader instance will be returned. Multiple clones of a shader
+    // instance will share the same shader effect, thus reduce compilation overhead and enable
+    // material consolidation.
+    shaderInstance = _renderDelegate->GetShaderFromCache(shaderCacheID);
+    if (shaderInstance) {
+        _surfaceShaderId = terminalPath;
+        const TfTokenVector* cachedPrimvars = _renderDelegate->GetPrimvarsFromCache(shaderCacheID);
+        if (cachedPrimvars) {
+            _requiredPrimvars = *cachedPrimvars;
+        }
+        return shaderInstance;
+    }
+
+    SdfPath fixedPath = fixedNetwork.terminals[HdMaterialTerminalTokens->surface].upstreamNode;
+    HdMaterialNode2 const* surfTerminal = &fixedNetwork.nodes[fixedPath];
     if (!surfTerminal) {
         return shaderInstance;
     }
 
-    // Check if the Terminal is a MaterialX Node
-    SdrRegistry&                sdrRegistry = SdrRegistry::GetInstance();
-    const SdrShaderNodeConstPtr mtlxSdrNode
-        = sdrRegistry.GetShaderNodeByIdentifierAndType(surfTerminal->nodeTypeId, HdVP2Tokens->mtlx);
-
-    mx::DocumentPtr           mtlxDoc;
-    const mx::FileSearchPath& crLibrarySearchPath(_GetMaterialXData()._mtlxSearchPath);
-    if (mtlxSdrNode) {
-
-        // Create the MaterialX Document from the HdMaterialNetwork
-        std::set<SdfPath> hdTextureNodes;
-        mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
-        mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
-            surfaceNetwork,
-            *surfTerminal, // MaterialX HdNode
-            materialId,
-            _GetMaterialXData()._mtlxLibrary,
-            &hdTextureNodes,
-            &mxHdTextureMap);
-
-        _surfaceShaderId = terminalPath;
-
-        if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
-            std::cout << "generated shader code for " << materialId.GetText() << ":\n";
-            std::cout << "Generated graph\n==============================\n"
-                      << mx::writeToXmlString(mtlxDoc) << "\n==============================\n";
-        }
-    }
-
-    if (!mtlxDoc) {
-        return shaderInstance;
-    }
-
     try {
+        // The HdMtlxCreateMtlxDocumentFromHdNetwork function can throw if any MaterialX error is
+        // raised.
+
+        // Check if the Terminal is a MaterialX Node
+        SdrRegistry&                sdrRegistry = SdrRegistry::GetInstance();
+        const SdrShaderNodeConstPtr mtlxSdrNode = sdrRegistry.GetShaderNodeByIdentifierAndType(
+            surfTerminal->nodeTypeId, HdVP2Tokens->mtlx);
+
+        mx::DocumentPtr           mtlxDoc;
+        const mx::FileSearchPath& crLibrarySearchPath(_GetMaterialXData()._mtlxSearchPath);
+        if (mtlxSdrNode) {
+
+            // Create the MaterialX Document from the HdMaterialNetwork
+            std::set<SdfPath> hdTextureNodes;
+            mx::StringMap     mxHdTextureMap; // Mx-Hd texture name counterparts
+            mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
+                fixedNetwork,
+                *surfTerminal, // MaterialX HdNode
+                SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
+                _GetMaterialXData()._mtlxLibrary,
+                &hdTextureNodes,
+                &mxHdTextureMap);
+
+            _surfaceShaderId = terminalPath;
+
+            if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
+                std::cout << "generated shader code for " << materialId.GetText() << ":\n";
+                std::cout << "Generated graph\n==============================\n";
+                mx::writeToXmlStream(mtlxDoc, std::cout);
+                std::cout << "\n==============================\n";
+            }
+        }
+
+        if (!mtlxDoc) {
+            return shaderInstance;
+        }
 
         // This function is very recent and might only exist in a PR at this point in time
         // See https://github.com/autodesk-forks/MaterialX/pull/1197 for current status.
@@ -1246,7 +1472,7 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
 
         mx::NodePtr materialNode;
         for (const mx::NodePtr& material : mtlxDoc->getMaterialNodes()) {
-            if (material->getName() == materialId.GetName()) {
+            if (material->getName() == _mtlxTokens->USD_Mtlx_VP2_Material.GetText()) {
                 materialNode = material;
             }
         }
@@ -1321,6 +1547,32 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
         TF_RUNTIME_ERROR(
             "Caught exception '%s' while processing '%s'", e.what(), materialId.GetText());
         return nullptr;
+    }
+
+    if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
+        std::cout << "BXDF material network for " << materialId << ":\n"
+                  << _GenerateXMLString(surfaceNetwork) << "\n"
+                  << "Topology-only network for " << materialId << ":\n"
+                  << shaderCacheID << "\n"
+                  << "Required primvars:\n";
+
+        for (TfToken const& primvar : _requiredPrimvars) {
+            std::cout << "\t" << primvar << std::endl;
+        }
+
+        auto tmpDir = ghc::filesystem::temp_directory_path();
+        tmpDir /= "HdVP2Material_";
+        tmpDir += materialId.GetName();
+        tmpDir += ".txt";
+        shaderInstance->writeEffectSourceToFile(tmpDir.c_str());
+
+        std::cout << "BXDF generated shader code for " << materialId << ":\n";
+        std::cout << "  " << tmpDir << "\n";
+    }
+
+    if (shaderInstance) {
+        _renderDelegate->AddShaderToCache(shaderCacheID, *shaderInstance);
+        _renderDelegate->AddPrimvarsToCache(shaderCacheID, _requiredPrimvars);
     }
 
     return shaderInstance;
@@ -1532,7 +1784,7 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 #ifdef WANT_MATERIALX_BUILD
         const bool isMaterialXNode = _IsMaterialX(node);
         if (isMaterialXNode) {
-            nodeName += node.path.GetName().c_str();
+            nodeName += _nodePathMap[node.path].GetName().c_str();
             if (node.path == _surfaceShaderId) {
                 nodeName = "";
             } else {
@@ -1586,6 +1838,11 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 const float& val = value.UncheckedGet<float>();
                 status = _surfaceShader->setParameter(paramName, val);
 
+#ifdef WANT_MATERIALX_BUILD
+                if (!status) {
+                    status = _SetFAParameter(_surfaceShader.get(), node, paramName, val);
+                }
+#endif
                 // The opacity parameter can be found and updated only when it
                 // has no connection. In this case, transparency of the shader
                 // is solely determined by the opacity value.
@@ -1663,8 +1920,8 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 // parameter.
                 if (isMaterialXNode
                     && (token == _mtlxTokens->geomprop || token == _mtlxTokens->uaddressmode
-                        || token == _mtlxTokens->vaddressmode
-                        || token == _mtlxTokens->filtertype)) {
+                        || token == _mtlxTokens->vaddressmode || token == _mtlxTokens->filtertype
+                        || token == _mtlxTokens->channels)) {
                     status = MS::kSuccess;
                 }
 #endif

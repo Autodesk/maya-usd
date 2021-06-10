@@ -103,9 +103,10 @@ public:
 private:
     void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet);
 #ifdef WANT_MATERIALX_BUILD
+    void _ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMaterialNetwork2& inNet);
     MHWRender::MShaderInstance* _CreateMaterialXShaderInstance(
-        SdfPath const&              materialId,
-        HdMaterialNetworkMap const& hdNetworkMap);
+        SdfPath const&            materialId,
+        HdMaterialNetwork2 const& hdNetworkMap);
 #endif
     MHWRender::MShaderInstance* _CreateShaderInstance(const HdMaterialNetwork& mat);
     void                        _UpdateShaderInstance(const HdMaterialNetwork& mat);
@@ -134,6 +135,12 @@ private:
 
     //! The set of Rprims listening to changes on this material
     std::set<SdfPath> _materialSubscriptions;
+#endif
+
+#ifdef WANT_MATERIALX_BUILD
+    // MaterialX-only at the moment, but will be used for UsdPreviewSurface when the upgrade to
+    // HdMaterialNetwork2 is complete.
+    size_t _topoHash = 0;
 #endif
 };
 
