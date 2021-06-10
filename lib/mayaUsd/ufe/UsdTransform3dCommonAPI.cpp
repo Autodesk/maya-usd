@@ -15,6 +15,7 @@
 //
 #include "UsdTransform3dCommonAPI.h"
 
+#include <mayaUsd/ufe/UsdTransform3dUndoableCommands.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -316,6 +317,17 @@ Ufe::Vector3d UsdTransform3dCommonAPI::rotatePivot() const
     }
 
     return toUfe(pvt);
+}
+
+Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dCommonAPI::setMatrixCmd(const Ufe::Matrix4d& m)
+{
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))
+        || !isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))
+        || !isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+        return nullptr;
+    }
+
+    return std::make_shared<UsdSetMatrix4dUndoableCommand>(path(), m);
 }
 
 //------------------------------------------------------------------------------
