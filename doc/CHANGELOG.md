@@ -1,5 +1,85 @@
 # Changelog
 
+## [0.10.0] - 2021-06-11
+
+**Build:**
+
+- Use new schemaregistry API [#1435](https://github.com/Autodesk/maya-usd/pull/1435)
+- Update Pixar ProxyShape image tests affected from storm wireframe [#1414](https://github.com/Autodesk/maya-usd/pull/1414)
+- Use new usdShade/material vector based API for USD versions beyond 21.05 [#1394](https://github.com/Autodesk/maya-usd/pull/1394)
+- Support building Gulark library locally [#1291](https://github.com/Autodesk/maya-usd/pull/1291)
+- Center pivot command support test [#1207](https://github.com/Autodesk/maya-usd/pull/1207)
+
+**Translation Framework:**
+
+- Use Maya matrix decomposition for matrix op TRS accessors [#1428](https://github.com/Autodesk/maya-usd/pull/1428)
+- Move Transform3d handler creation into core [#1409](https://github.com/Autodesk/maya-usd/pull/1409)
+- Write correct IOR for metallic shaders [#1388](https://github.com/Autodesk/maya-usd/pull/1388)
+- Remove namespace on material import [#1344](https://github.com/Autodesk/maya-usd/pull/1344)
+- Configure resolver to generate resolver context [#1342](https://github.com/Autodesk/maya-usd/pull/1342)
+- Referenced material non-default attributes not getting exported to USD [#1284](https://github.com/Autodesk/maya-usd/pull/1284)
+- Don't write fStop when depthOfField is disabled [#1280](https://github.com/Autodesk/maya-usd/pull/1280)
+- Spurious warning being raised about USDZ texture import [#1279](https://github.com/Autodesk/maya-usd/pull/1279)
+- Guard against past-end iterator invalidation [#1247](https://github.com/Autodesk/maya-usd/pull/1247)
+
+**Workflow:**
+
+- Grouping a prim twice will crash Maya [#1453](https://github.com/Autodesk/maya-usd/pull/1453)
+- AE missing information on materials and texture [#1446](https://github.com/Autodesk/maya-usd/pull/1446)
+- Implement setMatrixCmd() for common transform API [#1445](https://github.com/Autodesk/maya-usd/pull/1445)
+- Error messages showing up when opening the "Applied Schema" category [#1434](https://github.com/Autodesk/maya-usd/pull/1434)
+- Replace callsites into deprecated "Master" API [#1430](https://github.com/Autodesk/maya-usd/pull/1430)
+- Empty categories appear [#1427](https://github.com/Autodesk/maya-usd/pull/1427)
+- See mayaUsdProxyShape icon in Node Editor [#1425](https://github.com/Autodesk/maya-usd/pull/1425)
+- Mute layer doesn't work [#1423](https://github.com/Autodesk/maya-usd/pull/1423)
+- USD files fail to load on mapped mounted volume [#1422](https://github.com/Autodesk/maya-usd/pull/1422)
+- Send ufe notifications on undo and redo [#1412](https://github.com/Autodesk/maya-usd/pull/1412)
+- Remove use of deprecated pxr namespace in favor of PXR_NS [#1411](https://github.com/Autodesk/maya-usd/pull/1411)
+- On prim AE template, see connected attributes [#1410](https://github.com/Autodesk/maya-usd/pull/1410)
+- Layer Editor save icon missing when Maya scaling is 125% [#1408](https://github.com/Autodesk/maya-usd/pull/1408)
+- Title for Shaping API shows up incorrect in Attribute Editor [#1407](https://github.com/Autodesk/maya-usd/pull/1407)
+- Crash on redo of creation and manipulation of prim [#1406](https://github.com/Autodesk/maya-usd/pull/1406)
+- On the prim AE template see useful widgets for arrays [#1393](https://github.com/Autodesk/maya-usd/pull/1393) [#1374](https://github.com/Autodesk/maya-usd/pull/1374) [#1367](https://github.com/Autodesk/maya-usd/pull/1367)
+- Importing USD file with USDZ Texture import option on causes import to fail [#1392](https://github.com/Autodesk/maya-usd/pull/1392)
+- Check for empty paths [#1387](https://github.com/Autodesk/maya-usd/pull/1387)
+- Attribute Editor: array attribute does not support nice/long name [#1380](https://github.com/Autodesk/maya-usd/pull/1380)
+- Prim AE template: categories persist their expand/collapse state [#1372](https://github.com/Autodesk/maya-usd/pull/1372)
+- Crash when editing layer that has permission to edit false (locked) [#1363](https://github.com/Autodesk/maya-usd/pull/1363)
+- Clean up runtimeCommands created by the plugin [#1354](https://github.com/Autodesk/maya-usd/pull/1354)
+- Point instance interactive batched position, orientation and scale changes [#1352](https://github.com/Autodesk/maya-usd/pull/1352)
+- List all registered prim types for creation [#1350](https://github.com/Autodesk/maya-usd/pull/1350)
+- On the prim AE template see applied schemas [#1333](https://github.com/Autodesk/maya-usd/pull/1333)
+- USD load/unload payloads does not update viewport [#1332](https://github.com/Autodesk/maya-usd/pull/1332)
+- Increase depth priority for point snapping items [#1329](https://github.com/Autodesk/maya-usd/pull/1329)
+- Point snapping issue on USD instances [#1321](https://github.com/Autodesk/maya-usd/pull/1321)
+- Send Ufe::CameraChanged when camera attributes are modified [#1315](https://github.com/Autodesk/maya-usd/pull/1315)
+- Block attribute edits for the remaining transformation stacks [#1308](https://github.com/Autodesk/maya-usd/pull/1308)
+- Test usd camera animated params and editing params [#1298](https://github.com/Autodesk/maya-usd/pull/1298)
+- Block attribute authoring in weaker layers in legacy transform3d [#1294](https://github.com/Autodesk/maya-usd/pull/1294)
+- No tooltip for prim path in Attribute Editor [#1288](https://github.com/Autodesk/maya-usd/pull/1288)
+- Crash when token for "Info: id" is editied to invalide value [#1287](https://github.com/Autodesk/maya-usd/pull/1287)
+- Ability to turn off file-backed Save confirmation in Layer Editor [#1277](https://github.com/Autodesk/maya-usd/pull/1277)
+
+**Render:**
+
+- Invisible prims don't get notifications on _PropagateDirtyBits or Sync [#1432](https://github.com/Autodesk/maya-usd/pull/1432)
+- Integrate 21.05 UsdPreviewSurface shader into MayaUsd plugin [#1416](https://github.com/Autodesk/maya-usd/pull/1416)
+- Store render item dirty bits with each render item [#1404](https://github.com/Autodesk/maya-usd/pull/1404)
+- When the instance count changes we need to update everything related to instancer [#1398](https://github.com/Autodesk/maya-usd/pull/1398)
+- Add a VP2RenderDelegate test for basis curves to ensure they draw correctly [#1390](https://github.com/Autodesk/maya-usd/pull/1390)
+- Disable the material consolidation update workaround [#1359](https://github.com/Autodesk/maya-usd/pull/1359)
+- Metallic IBL Reflection [#1356](https://github.com/Autodesk/maya-usd/pull/1356)
+- Support default material shading using new SDK APIs [#1339](https://github.com/Autodesk/maya-usd/pull/1339)
+- Faster point snapping [#1292](https://github.com/Autodesk/maya-usd/pull/1292)
+- Add camera adapter to support physical camera parameters and configurable motion blur and depth-of-field [#1282](https://github.com/Autodesk/maya-usd/pull/1282)
+- Hydra prim invalidation for hidden lights [#1281](https://github.com/Autodesk/maya-usd/pull/1281)
+
+**Documentation:**
+
+- Added getting started docs link to Detailed Documentation section [#1401](https://github.com/Autodesk/maya-usd/pull/1401)
+- Keep the TF_ERROR message format consistence with TF_WARN and TF_STATUS [#1386](https://github.com/Autodesk/maya-usd/pull/1386)
+- Update build.md for supported USD v21.05 version [#1365](https://github.com/Autodesk/maya-usd/pull/1365)
+
 ## [0.9.0] - 2021-04-01
 
 **Build:**
@@ -487,7 +567,7 @@ Made several build improvements, including fixing regression tests execution on 
 
 *Autodesk plugin*
 * Added import UI [PR #304](https://github.com/Autodesk/maya-usd/pull/304)  [PR #206](https://github.com/Autodesk/maya-usd/pull/206)  [PR #276](https://github.com/Autodesk/maya-usd/pull/276)
-* MAYA-103736 Clear frameSamples set [#326](https://github.com/Autodesk/maya-usd/pull/326)
+* Clear frameSamples set [#326](https://github.com/Autodesk/maya-usd/pull/326)
 * Added export UI [PR #216](https://github.com/Autodesk/maya-usd/pull/216)
 * Enabled import of .usdz files  [PR #313](https://github.com/Autodesk/maya-usd/pull/313)
 * Added “Create USD Stage” to enable proxy shape creation from Maya’s UI [PR #306](https://github.com/Autodesk/maya-usd/pull/306) [PR #317](https://github.com/Autodesk/maya-usd/pull/317)
