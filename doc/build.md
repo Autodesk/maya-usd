@@ -237,7 +237,7 @@ There is a related ADDITIONAL_PXR_PLUGINPATH_NAME cmake var which can be used if
 
 ##### Devtoolset-6:
 
-Devtoolset-6, which includes GCC 6 on CentOS has been retired from the main repo and moved into the vault. Follow below instruction for installing devtoolset-6 on CentOS:
+Devtoolset-6, which includes GCC 6 on CentOS has been retired from the main repo and moved into the vault. Follow instructions below for installing devtoolset-6 on CentOS:
 
 ```
 # download the packages, install may fail with "no public key found"
