@@ -16,6 +16,7 @@
 #ifndef HDMAYA_SCENE_DELEGATE_H
 #define HDMAYA_SCENE_DELEGATE_H
 
+#include <hdMaya/adapters/cameraAdapter.h>
 #include <hdMaya/adapters/lightAdapter.h>
 #include <hdMaya/adapters/materialAdapter.h>
 #include <hdMaya/adapters/shapeAdapter.h>
@@ -111,6 +112,9 @@ public:
     void SetParams(const HdMayaParams& params) override;
 
     HDMAYA_API
+    SdfPath SetCameraViewport(const MDagPath& camPath, const GfVec4d& viewport);
+
+    HDMAYA_API
     void PopulateSelectedPaths(
         const MSelectionList&       mayaSelection,
         SdfPathVector&              selectedSdfPaths,
@@ -185,6 +189,9 @@ protected:
     VtValue GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
 
     HDMAYA_API
+    VtValue GetCameraParamValue(const SdfPath& cameraId, const TfToken& paramName) override;
+
+    HDMAYA_API
     VtIntArray GetInstanceIndices(const SdfPath& instancerId, const SdfPath& prototypeId) override;
 
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
@@ -227,6 +234,13 @@ protected:
 #endif // PXR_VERSION < 2011
 
 private:
+    template <typename AdapterPtr, typename Map>
+    AdapterPtr Create(
+        const MDagPath&                                                       dag,
+        const std::function<AdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>& adapterCreator,
+        Map&                                                                  adapterMap,
+        bool                                                                  isSprim = false);
+
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
 
     template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
@@ -234,6 +248,8 @@ private:
     AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
     /// \brief Unordered Map storing the light adapters.
     AdapterMap<HdMayaLightAdapterPtr> _lightAdapters;
+    /// \brief Unordered Map storing the camera adapters.
+    AdapterMap<HdMayaCameraAdapterPtr> _cameraAdapters;
     /// \brief Unordered Map storing the material adapters.
     AdapterMap<HdMayaMaterialAdapterPtr>       _materialAdapters;
     std::vector<MCallbackId>                   _callbacks;

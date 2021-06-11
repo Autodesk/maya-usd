@@ -20,6 +20,9 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UfeVersionCompat.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdCamera.h>
+#endif
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -69,7 +72,29 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
+// TODO: This should be an unordered_multimap to prevent notifications from
+// overwriting earlier recorded notifications for the same attribute. See
+// MAYA-110878 for more information on why this change isn't already made.
+std::unordered_map<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
+
+void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+{
+    Ufe::AttributeValueChanged vc(ufePath, changedToken.GetString());
+    Ufe::Attributes::notify(vc);
+
+    if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
+        Ufe::Camera::notify(ufePath);
+    }
+}
+
+void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
+{
+    if (inAttributeChangedNotificationGuard()) {
+        pendingAttributeChangedNotifications[ufePath] = changedToken;
+    } else {
+        sendValueChanged(ufePath, changedToken);
+    }
+}
 
 #endif
 } // namespace
@@ -210,19 +235,18 @@ void StagesSubject::stageChanged(
             // We need to send some notifs so Maya can update (such as on undo
             // to move the transform manipulator back to original position).
             const TfToken nameToken = changedPath.GetNameToken();
+            auto          usdPrimPathStr = changedPath.GetPrimPath().GetString();
+            auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
             if (nameToken == UsdGeomTokens->xformOpOrder) {
-                auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
-                auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
                 if (!InTransform3dChange::inTransform3dChange()) {
                     Ufe::Transform3d::notify(ufePath);
                 }
-#ifdef UFE_V2_FEATURES_AVAILABLE
-                if (!inAttributeChangedNotificationGuard()) {
-                    Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                    Ufe::Attributes::notify(vc);
-                }
-#endif
             }
+#ifdef UFE_V2_FEATURES_AVAILABLE
+            if (!inAttributeChangedNotificationGuard()) {
+                sendValueChanged(ufePath, changedPath.GetNameToken());
+            }
+#endif
 
             // No further processing for this prim property path is required.
             continue;
@@ -299,9 +323,12 @@ void StagesSubject::stageChanged(
 #endif
     }
 
-    for (const auto& changedPath : notice.GetChangedInfoOnlyPaths()) {
-        auto usdPrimPathStr = changedPath.GetPrimPath().GetString();
-        auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+    auto changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
+    for (auto it = changedInfoOnlyPaths.begin(), end = changedInfoOnlyPaths.end(); it != end;
+         ++it) {
+        const auto& changedPath = *it;
+        auto        usdPrimPathStr = changedPath.GetPrimPath().GetString();
+        auto        ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         bool sendValueChangedFallback = true;
@@ -310,12 +337,7 @@ void StagesSubject::stageChanged(
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
         if (changedPath.IsPrimPropertyPath()) {
-            if (inAttributeChangedNotificationGuard()) {
-                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
-            } else {
-                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                Ufe::Attributes::notify(vc);
-            }
+            valueChanged(ufePath, changedPath.GetNameToken());
             sendValueChangedFallback = false;
         }
 
@@ -387,13 +409,18 @@ void StagesSubject::stageChanged(
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
         if (sendValueChangedFallback) {
-            // We didn't send any other UFE notif above, so send a UFE
-            // attribute value changed as a fallback notification.
-            if (inAttributeChangedNotificationGuard()) {
-                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
-            } else {
-                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
-                Ufe::Attributes::notify(vc);
+
+            // check to see if there is an entry which Ufe should notify about.
+            std::vector<const SdfChangeList::Entry*> entries = it.base()->second;
+            for (const auto& entry : entries) {
+                // Adding an inert prim means we created a primSpec for an ancestor of
+                // a prim which has a real change to it.
+                if (entry->flags.didAddInertPrim || entry->flags.didRemoveInertPrim)
+                    continue;
+
+                valueChanged(ufePath, changedPath.GetNameToken());
+                // just send one notification
+                break;
             }
         }
 #endif
@@ -503,8 +530,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
-        Ufe::AttributeValueChanged vc(notificationInfo.first, notificationInfo.second);
-        Ufe::Attributes::notify(vc);
+        sendValueChanged(notificationInfo.first, notificationInfo.second);
     }
 
     pendingAttributeChangedNotifications.clear();

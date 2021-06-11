@@ -261,13 +261,14 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
-    if (this->mArgs.importUSDZTextures == true) {
-        // NOTE: (yliangsiew) First we check if the archive in question _is_ even a USDZ archive...
-        if (!stage->GetRootLayer()->GetFileFormat()->IsPackage()) {
+    // check if "USDZ Texture Import" option is checked and the archive in question is a USDZ.
+    if (mArgs.importUSDZTextures && stage->GetRootLayer()->GetFileFormat()->IsPackage()) {
+        if (mArgs.importUSDZTexturesFilePath.length() == 0) {
+            MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
             TF_WARN(
-                "The layer being imported: %s is not a USDZ file.",
-                stage->GetRootLayer()->GetRealPath().c_str());
-            return MStatus::kFailure;
+                "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
+                "will be imported to the workspace folder: %s.",
+                currentMayaWorkspacePath.asChar());
         }
     }
 
@@ -395,22 +396,27 @@ void UsdMaya_ReadJob::_DoImportInstanceIt(
     if (!primIt.IsPostVisit()) {
         return;
     }
-    const UsdPrim master = prim.GetMaster();
-    if (!master) {
+    const UsdPrim prototype =
+#if PXR_VERSION < 2011
+        prim.GetMaster();
+#else
+        prim.GetPrototype();
+#endif
+    if (!prototype) {
         return;
     }
 
-    const SdfPath masterPath = master.GetPath();
-    MObject       masterObject = readCtx.GetMayaNode(masterPath, false);
-    if (masterObject == MObject::kNullObj) {
-        _ImportMaster(master, usdRootPrim, readCtx);
-        masterObject = readCtx.GetMayaNode(masterPath, false);
-        if (masterObject == MObject::kNullObj) {
+    const SdfPath prototypePath = prototype.GetPath();
+    MObject       prototypeObject = readCtx.GetMayaNode(prototypePath, false);
+    if (prototypeObject == MObject::kNullObj) {
+        _ImportPrototype(prototype, usdRootPrim, readCtx);
+        prototypeObject = readCtx.GetMayaNode(prototypePath, false);
+        if (prototypeObject == MObject::kNullObj) {
             return;
         }
     }
     MStatus    status;
-    MFnDagNode masterNode(masterObject, &status);
+    MFnDagNode prototypeNode(prototypeObject, &status);
     if (!status) {
         return;
     }
@@ -423,9 +429,9 @@ void UsdMaya_ReadJob::_DoImportInstanceIt(
         return;
     }
 
-    const unsigned int childCount = masterNode.childCount();
+    const unsigned int childCount = prototypeNode.childCount();
     for (unsigned int child = 0; child < childCount; ++child) {
-        MObject childObject = masterNode.child(child);
+        MObject childObject = prototypeNode.child(child);
         duplicateNode.addChild(childObject, MFnDagNode::kNextPos, true);
     }
 
@@ -436,13 +442,13 @@ void UsdMaya_ReadJob::_DoImportInstanceIt(
     UsdMayaTranslatorXformable::Read(xformable, duplicateObject, readerArgs, &readCtx);
 }
 
-void UsdMaya_ReadJob::_ImportMaster(
-    const UsdPrim&            master,
+void UsdMaya_ReadJob::_ImportPrototype(
+    const UsdPrim&            prototype,
     const UsdPrim&            usdRootPrim,
     UsdMayaPrimReaderContext& readCtx)
 {
     _PrimReaderMap     primReaderMap;
-    const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(master);
+    const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(prototype);
     for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
         const UsdPrim&           prim = *primIt;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
@@ -485,25 +491,29 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
     }
 
     if (buildInstances) {
-        MDGModifier              deleteMasterMod;
+        MDGModifier              deletePrototypeMod;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
 
-        for (const auto& master : usdRootPrim.GetStage()->GetMasters()) {
-            const SdfPath masterPath = master.GetPath();
-            MObject       masterObject = readCtx.GetMayaNode(masterPath, false);
-            if (masterObject != MObject::kNullObj) {
+#if PXR_VERSION < 2011
+        for (const auto& prototype : usdRootPrim.GetStage()->GetMasters()) {
+#else
+        for (const auto& prototype : usdRootPrim.GetStage()->GetPrototypes()) {
+#endif
+            const SdfPath prototypePath = prototype.GetPath();
+            MObject       prototypeObject = readCtx.GetMayaNode(prototypePath, false);
+            if (prototypeObject != MObject::kNullObj) {
                 MStatus    status;
-                MFnDagNode masterNode(masterObject, &status);
+                MFnDagNode prototypeNode(prototypeObject, &status);
                 if (status) {
-                    while (masterNode.childCount()) {
-                        masterNode.removeChildAt(masterNode.childCount() - 1);
+                    while (prototypeNode.childCount()) {
+                        prototypeNode.removeChildAt(prototypeNode.childCount() - 1);
                     }
                 }
-                deleteMasterMod.deleteNode(masterObject);
+                deletePrototypeMod.deleteNode(prototypeObject);
             }
         }
-        deleteMasterMod.doIt();
+        deletePrototypeMod.doIt();
     }
 
     return true;

@@ -79,7 +79,7 @@ class testUsdImportRfMShaders(unittest.TestCase):
         shadingEngineObj = objectArray[0]
         shadingEngineDepFn = OpenMaya.MFnDependencyNode(shadingEngineObj)
         self.assertEqual(shadingEngineDepFn.name(),
-            'USD_Materials:MarbleCubeSG')
+            'MarbleCubeSG')
 
         # Validate the lambert shader plugged in as the surfaceShader of the
         # shadingEngine.

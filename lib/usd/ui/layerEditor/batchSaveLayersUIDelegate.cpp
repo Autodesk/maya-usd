@@ -19,6 +19,7 @@
 #include "mayaQtUtils.h"
 #include "saveLayersDialog.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
@@ -36,17 +37,39 @@ MayaUsd::BatchSaveResult UsdLayerEditor::batchSaveLayersUIDelegate(const MDagPat
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
         auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
         if (MayaUsd::utils::kSaveToUSDFiles == opt) {
-            UsdLayerEditor::SaveLayersDialog dlg(nullptr, proxyShapes);
 
-            // The SaveLayers dialog only handles choosing new names for anonymous layers and making
-            // sure that they are remapped correctly in either their parent layer or by the owning
-            // proxy shape. The SaveLayers dialog itself does not currently handle the saving of
-            // file-backed layers, so for now we will return that we only partiall completed saving.
-            // This will trigger the LayerManager to double check what needs to be saved and to
-            // complete the saving of all file-backed layers.
-            //
-            return (QDialog::Rejected == dlg.exec()) ? MayaUsd::kAbort
-                                                     : MayaUsd::kPartiallyCompleted;
+            static const MString kConfirmExistingFileSave
+                = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
+            bool showConfirmDgl = MGlobal::optionVarExists(kConfirmExistingFileSave)
+                && MGlobal::optionVarIntValue(kConfirmExistingFileSave) != 0;
+
+            // if at least one stage contains anonymous layers, you need to show the comfirm dialog
+            // so the user can choose where to save the anonymous layers.
+            if (!showConfirmDgl) {
+                for (auto& shape : proxyShapes) {
+                    MayaUsd::utils::stageLayersToSave stageLayersToSave;
+                    MayaUsd::utils::getLayersToSaveFromProxy(
+                        shape.fullPathName().asChar(), stageLayersToSave);
+                    if (!stageLayersToSave._anonLayers.empty()) {
+                        showConfirmDgl = true;
+                        break;
+                    }
+                }
+            }
+
+            if (showConfirmDgl) {
+                UsdLayerEditor::SaveLayersDialog dlg(nullptr, proxyShapes);
+
+                // The SaveLayers dialog only handles choosing new names for anonymous layers and
+                // making sure that they are remapped correctly in either their parent layer or by
+                // the owning proxy shape. The SaveLayers dialog itself does not currently handle
+                // the saving of file-backed layers, so for now we will return that we only partiall
+                // completed saving. This will trigger the LayerManager to double check what needs
+                // to be saved and to complete the saving of all file-backed layers.
+                //
+                return (QDialog::Rejected == dlg.exec()) ? MayaUsd::kAbort
+                                                         : MayaUsd::kPartiallyCompleted;
+            }
         }
     }
 

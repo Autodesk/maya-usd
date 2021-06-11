@@ -57,7 +57,7 @@ public:
     HDMAYA_API
     virtual void RemovePrim() override;
     HDMAYA_API
-    const GfMatrix4d& GetTransform();
+    GfMatrix4d GetTransform();
     HDMAYA_API
     size_t SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples);
     HDMAYA_API
@@ -77,15 +77,13 @@ public:
 
 protected:
     HDMAYA_API
-    void _CalculateTransform();
-    HDMAYA_API
     void _AddHierarchyChangedCallbacks(MDagPath& dag);
     HDMAYA_API
     virtual bool _GetVisibility() const;
 
 private:
     MDagPath   _dagPath;
-    GfMatrix4d _transform[2];
+    GfMatrix4d _transform;
     bool       _isVisible = true;
     bool       _visibilityDirty = true;
     bool       _invalidTransform = true;

@@ -135,11 +135,13 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
         return MObject();
     }
 
-    MPlug outputPlug;
+    MPlug       outputPlug;
+    std::string surfaceNodeName;
 #if MAYA_API_VERSION >= 20200000
     if (preferredMaterial == UsdMayaPreferredMaterialTokens->standardSurface) {
         MFnStandardSurfaceShader surfaceFn;
         surfaceFn.setObject(shadingObj);
+        surfaceNodeName = surfaceFn.name().asChar();
         surfaceFn.setBase(1.0f);
         surfaceFn.setBaseColor(MColor(displayColor[0], displayColor[1], displayColor[2]));
 
@@ -158,6 +160,7 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
         if (preferredMaterial == UsdMayaPreferredMaterialTokens->usdPreviewSurface) {
         MFnDependencyNode depNodeFn;
         depNodeFn.setObject(shadingObj);
+        surfaceNodeName = depNodeFn.name().asChar();
 
         MPlug diffusePlug = depNodeFn.findPlug(_tokens->diffuseColor.GetText());
         UsdMayaReadUtil::SetMayaAttr(
@@ -172,6 +175,7 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
     } else {
         MFnLambertShader lambertFn;
         lambertFn.setObject(shadingObj);
+        surfaceNodeName = lambertFn.name().asChar();
         lambertFn.setColor(MColor(displayColor[0], displayColor[1], displayColor[2]));
         lambertFn.setTransparency(
             MColor(linearTransparency[0], linearTransparency[1], linearTransparency[2]));
@@ -190,7 +194,7 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
         CHECK_MSTATUS_AND_RETURN(status, MObject());
     }
     // Create the shading engine.
-    MObject shadingEngine = context->CreateShadingEngine();
+    MObject shadingEngine = context->CreateShadingEngine(surfaceNodeName);
     if (shadingEngine.isNull()) {
         return MObject();
     }

@@ -610,7 +610,12 @@ DEFINE_SHADING_MODE_IMPORTER(pxrRis, "RfM Shaders", "", context)
     }
 
     // Create the shading engine.
-    MObject shadingEngine = context->CreateShadingEngine();
+    std::string       surfaceNodeName;
+    MFnDependencyNode surfaceNodeFn;
+    if (surfaceNodeFn.setObject(surfaceShaderObj) == MS::kSuccess) {
+        surfaceNodeName = surfaceNodeFn.name().asChar();
+    }
+    MObject shadingEngine = context->CreateShadingEngine(surfaceNodeName);
     if (shadingEngine.isNull()) {
         return MObject();
     }

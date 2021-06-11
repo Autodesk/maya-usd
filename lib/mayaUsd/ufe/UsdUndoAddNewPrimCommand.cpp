@@ -80,10 +80,15 @@ void UsdUndoAddNewPrimCommand::execute()
     UsdUndoBlock undoBlock(&_undoableItem);
 
     if (_stage) {
-        MayaUsd::ufe::InAddOrDeleteOperation ad;
-        auto                                 prim = _stage->DefinePrim(_primPath, _primToken);
-        if (!prim.IsValid())
-            TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
+        std::string errMsg;
+        if (!MayaUsd::ufe::isEditTargetLayerModifiable(_stage, &errMsg)) {
+            TF_RUNTIME_ERROR("%s", errMsg.c_str());
+        } else {
+            MayaUsd::ufe::InAddOrDeleteOperation ad;
+            auto                                 prim = _stage->DefinePrim(_primPath, _primToken);
+            if (!prim.IsValid())
+                TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
+        }
     }
 }
 

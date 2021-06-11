@@ -657,6 +657,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
 
             {
+                PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
+
                 // When opening or creating stages we must have an active UsdStageCache.
                 // The stage cache is the only one who holds a strong reference to the
                 // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
@@ -682,10 +684,15 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                         if (!sessionLayer)
                             sessionLayer = SdfLayer::CreateAnonymous();
                         usdStage = UsdStage::Open(
-                            rootLayer, sessionLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                            rootLayer,
+                            sessionLayer,
+                            ArGetResolver().CreateDefaultContextForAsset(fileString),
+                            loadSet);
                     } else {
                         usdStage = UsdStage::Open(
-                            rootLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                            rootLayer,
+                            ArGetResolver().CreateDefaultContextForAsset(fileString),
+                            loadSet);
                     }
                     if (sessionLayer && targetSession) {
                         usdStage->SetEditTarget(sessionLayer);

@@ -16,14 +16,32 @@
 
 include(FetchContent)
 
+set(CONTENT_NAME gulark)
+
 set(FETCHCONTENT_QUIET OFF)
 
-FetchContent_Declare(
-    gulark
-    GIT_REPOSITORY https://github.com/gulrak/filesystem.git
-    GIT_TAG        v1.5.0
-    USES_TERMINAL_DOWNLOAD TRUE
-    GIT_CONFIG     advice.detachedHead=false
-)
+# GULARK_SOURCE_DIR : Set this to the directory where you have cloned gulark filesystem repo, 
+#                     if you would like to bypass pulling from Github repository via Internet.
+if(DEFINED GULARK_SOURCE_DIR)
+    message(STATUS "**** Building Gulark From " ${GULARK_SOURCE_DIR})
+    FetchContent_Declare(
+        ${CONTENT_NAME}
+        URL ${GULARK_SOURCE_DIR}
+    )
 
-FetchContent_MakeAvailable(gulark)
+    string(TOUPPER ${CONTENT_NAME} UPPERGULARK)
+    mark_as_advanced(FETCHCONTENT_SOURCE_DIR_${UPPERGULARK})
+    mark_as_advanced(FETCHCONTENT_UPDATES_DISCONNECTED_${UPPERGULARK})
+
+else()
+    message(STATUS "**** Building Gulark From Github Repository.")
+    FetchContent_Declare(
+        ${CONTENT_NAME}
+        GIT_REPOSITORY https://github.com/gulrak/filesystem.git
+        GIT_TAG        4e21ab305794f5309a1454b4ae82ab9a0f5e0d25
+        USES_TERMINAL_DOWNLOAD TRUE
+        GIT_CONFIG     advice.detachedHead=false
+    )
+endif()
+
+FetchContent_MakeAvailable(${CONTENT_NAME})

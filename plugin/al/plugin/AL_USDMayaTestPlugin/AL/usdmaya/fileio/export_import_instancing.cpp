@@ -71,10 +71,14 @@ TEST(export_import_instancing, usd_instancing_roundtrip)
     usdXform.GetLocalTransformation(&usdTransform, &resetsXformStack);
     EXPECT_DOUBLE_EQ(usdTransform[3][0], 5.0);
 
-    UsdPrim masterPrim = prim.GetMaster();
-    EXPECT_TRUE(masterPrim.IsValid());
-    UsdPrim masterPrimChild = masterPrim.GetChild(TfToken("pSphereShape1"));
-    EXPECT_TRUE(masterPrimChild.IsValid() && masterPrimChild.IsA<UsdGeomMesh>());
+#if PXR_VERSION < 2011
+    UsdPrim prototypePrim = prim.GetMaster();
+#else
+    UsdPrim prototypePrim = prim.GetPrototype();
+#endif
+    EXPECT_TRUE(prototypePrim.IsValid());
+    UsdPrim prototypePrimChild = prototypePrim.GetChild(TfToken("pSphereShape1"));
+    EXPECT_TRUE(prototypePrimChild.IsValid() && prototypePrimChild.IsA<UsdGeomMesh>());
 
     prim = stage->GetPrimAtPath(SdfPath("/parentTransform/nurbsCircle2"));
     EXPECT_TRUE(prim.IsValid() && prim.IsInstance() && prim.IsA<UsdGeomXform>());

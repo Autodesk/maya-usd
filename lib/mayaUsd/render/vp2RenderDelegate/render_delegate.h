@@ -128,6 +128,7 @@ public:
     MHWRender::MShaderInstance* GetFallbackShader(const MColor& color) const;
     MHWRender::MShaderInstance* GetFallbackCPVShader() const;
     MHWRender::MShaderInstance* Get3dSolidShader(const MColor& color) const;
+    MHWRender::MShaderInstance* Get3dDefaultMaterialShader() const;
     MHWRender::MShaderInstance* Get3dCPVSolidShader() const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
 
