@@ -33,13 +33,16 @@ limitations under the License.
              and combining them with material properties. -->
         <fragment_ref name="diffuseColorPassThrough" ref="mayafloat3PassThrough"/>
         <fragment_ref name="specularColorPassThrough" ref="mayafloat3PassThrough"/>
-        <fragment_ref name="usdPreviewSurfaceLighting" ref="usdPreviewSurfaceLighting"/>
+        <fragment_ref name="usdPreviewSurfaceLightingAPI1" ref="usdPreviewSurfaceLightingAPI1"/>
         <fragment_ref name="lightingContributions" ref="lightingContributions"/>
         <fragment_ref name="scaledDiffusePassThrough" ref="scaledDiffusePassThrough"/>
         <fragment_ref name="scaledSpecularPassThrough" ref="scaledSpecularPassThrough"/>
         <fragment_ref name="opacityToTransparency" ref="opacityToTransparency"/>
         <fragment_ref name="maya16LightAccum" ref="maya16LightAccum"/>
         <fragment_ref name="usdPreviewSurfaceCombiner" ref="usdPreviewSurfaceCombiner"/>
+        <fragment_ref name="useSpecularWorkflowPassThrough" ref="boolPassThrough" />
+        <fragment_ref name="metallicPassThrough" ref="floatPassThrough" />
+        <fragment_ref name="iorPassThrough" ref="floatPassThrough" />
 
         <!-- Maya fragments for computing the output surface values. -->
         <fragment_ref name="maya_FogDepthSurface" ref="maya_FogDepthSurface"/>
@@ -58,14 +61,15 @@ limitations under the License.
         <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetZ.input" name="input"/>
         <connect from="mayaShaderGeom.mayaShaderGeom" to="mayaShaderGeom_Float4GetW.input" name="input"/>
 
-        <connect from="mayaShaderGeom_Float4GetX.output" to="usdPreviewSurfaceLighting.NdotL" name="NdotL"/>
-        <connect from="mayaShaderGeom_Float4GetY.output" to="usdPreviewSurfaceLighting.NdotV" name="NdotV"/>
-        <connect from="mayaShaderGeom_Float4GetZ.output" to="usdPreviewSurfaceLighting.NdotH" name="NdotH"/>
-        <connect from="mayaShaderGeom_Float4GetW.output" to="usdPreviewSurfaceLighting.VdotH" name="VdotH"/>
+        <connect from="mayaShaderGeom_Float4GetX.output" to="usdPreviewSurfaceLightingAPI1.NdotL" name="NdotL"/>
+        <connect from="mayaShaderGeom_Float4GetY.output" to="usdPreviewSurfaceLightingAPI1.NdotV" name="NdotV"/>
+        <connect from="mayaShaderGeom_Float4GetZ.output" to="usdPreviewSurfaceLightingAPI1.NdotH" name="NdotH"/>
+        <connect from="mayaShaderGeom_Float4GetW.output" to="usdPreviewSurfaceLightingAPI1.VdotH" name="VdotH"/>
+        <connect from="mayaShaderGeom_Float4GetW.output" to="usdPreviewSurfaceCombiner.VdotH" name="VdotH"/>
 
-        <connect from="diffuseColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceLighting.diffuseColor" name="diffuseColor"/>
-        <connect from="specularColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceLighting.specularColor" name="specularColor"/>
-        <connect from="usdPreviewSurfaceLighting.usdPreviewSurfaceLighting" to="lightingContributions.lightingContributions" name="lightingContributions"/>
+        <connect from="diffuseColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceLightingAPI1.diffuseColor" name="diffuseColor"/>
+        <connect from="specularColorPassThrough.mayafloat3PassThrough" to="usdPreviewSurfaceLightingAPI1.specularColor" name="specularColor"/>
+        <connect from="usdPreviewSurfaceLightingAPI1.usdPreviewSurfaceLightingAPI1" to="lightingContributions.lightingContributions" name="lightingContributions"/>
         <connect from="lightingContributions.lightingContributions" to="scaledDiffusePassThrough.lightingContributions" name="lightingContributions"/>
         <connect from="lightingContributions.lightingContributions" to="scaledSpecularPassThrough.lightingContributions" name="lightingContributions"/>
         <connect from="scaledDiffusePassThrough.scaledDiffuse" to="maya16LightAccum.scaledDiffuse" name="scaledDiffuse"/>
@@ -78,28 +82,34 @@ limitations under the License.
         <connect from="usdPreviewSurfaceCombiner.usdPreviewSurfaceCombiner" to="mayaComputeSurfaceFinal.input" name="input"/>
         <connect from="maya_FogDepthSurface.maya_FogDepthSurface" to="mayaComputeSurfaceFinal.maya_FogDepthSurface" name="maya_FogDepthSurface"/>
         <connect from="mayaComputeSurfaceFinal.mayaComputeSurfaceFinal" to="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput" name="mayaSurfaceShaderOutput"/>
+        <connect from="metallicPassThrough.floatPassThrough" to="usdPreviewSurfaceLightingAPI1.metallic" name="metallic"/>
+        <connect from="metallicPassThrough.floatPassThrough" to="usdPreviewSurfaceCombiner.metallic" name="metallic"/>
+        <connect from="iorPassThrough.floatPassThrough" to="usdPreviewSurfaceLightingAPI1.ior" name="ior"/>
+        <connect from="iorPassThrough.floatPassThrough" to="usdPreviewSurfaceCombiner.ior" name="ior"/>
+        <connect from="useSpecularWorkflowPassThrough.boolPassThrough" to="usdPreviewSurfaceLightingAPI1.useSpecularWorkflow" name="useSpecularWorkflow"/>
+        <connect from="useSpecularWorkflowPassThrough.boolPassThrough" to="usdPreviewSurfaceCombiner.useSpecularWorkflow" name="useSpecularWorkflow"/>
     </connections>
     <properties>
         <!-- UsdPreviewSurface Parameters -->
-        <float name="clearcoat" ref="usdPreviewSurfaceLighting.clearcoatAmount"/>
-        <float name="clearcoatRoughness" ref="usdPreviewSurfaceLighting.clearcoatRoughness"/>
+        <float name="clearcoat" ref="usdPreviewSurfaceLightingAPI1.clearcoatAmount"/>
+        <float name="clearcoatRoughness" ref="usdPreviewSurfaceLightingAPI1.clearcoatRoughness"/>
         <float3 name="diffuseColor" ref="diffuseColorPassThrough.input" flags="multiDraw"/>
         <float3 name="emissiveColor" ref="usdPreviewSurfaceCombiner.emissiveColor"/>
-        <float name="ior" ref="usdPreviewSurfaceLighting.ior"/>
-        <float name="metallic" ref="usdPreviewSurfaceLighting.metallic"/>
-        <float name="occlusion" ref="usdPreviewSurfaceLighting.occlusion"/>
-        <float name="roughness" ref="usdPreviewSurfaceLighting.specularRoughness"/>
+        <float name="ior" ref="iorPassThrough.input"/>
+        <float name="metallic" ref="metallicPassThrough.input"/>
+        <float name="occlusion" ref="usdPreviewSurfaceLightingAPI1.occlusion"/>
+        <float name="roughness" ref="usdPreviewSurfaceLightingAPI1.specularRoughness"/>
         <float3 name="specularColor" ref="specularColorPassThrough.input"/>
         <float name="opacity" ref="opacityToTransparency.opacity"/>
-        <bool name="useSpecularWorkflow" ref="usdPreviewSurfaceLighting.useSpecularWorkflow"/>
+        <bool name="useSpecularWorkflow" ref="useSpecularWorkflowPassThrough.input"/>
 
         <!-- Maya Parameters for Lighting -->
         <undefined name="GPUStage" ref="mayaComputeSurfaceFinal.GPUStage" semantic="GPUStage"/>
         <float3 name="Nw" ref="NwFaceCameraIfNAN.Nw" flags="varyingInputParam"/>
         <float3 name="Lw" ref="mayaShaderGeom.Lw"/>
         <float3 name="HLw" ref="mayaHVector.HLw"/>
-        <float3 name="diffuseI" ref="usdPreviewSurfaceLighting.diffuseIrradiance"/>
-        <float3 name="specularI" ref="usdPreviewSurfaceLighting.specularIrradiance"/>
+        <float3 name="diffuseI" ref="usdPreviewSurfaceLightingAPI1.diffuseIrradiance"/>
+        <float3 name="specularI" ref="usdPreviewSurfaceLightingAPI1.specularIrradiance"/>
         <string name="selector" ref="maya16LightAccum.selector"/>
         <bool name="mayaAlphaCut" ref="usdPreviewSurfaceCombiner.mayaAlphaCut" semantic="mayaAlphaCut" flags="isRequirementOnly"/>
         <float3 name="ambientIn" ref="usdPreviewSurfaceCombiner.ambientIn"/>

@@ -118,7 +118,7 @@ static bool _AuthorShaderInputFromShadingNodeAttr(
         return false;
     }
 
-    if (UsdMayaUtil::IsAuthored(shadingNodePlug)) {
+    if (!UsdMayaUtil::IsPlugDefaultValue(shadingNodePlug)) {
         // Color values are all linear on the shader, so do not re-linearize
         // them.
         VtValue value = UsdMayaWriteUtil::GetVtValue(

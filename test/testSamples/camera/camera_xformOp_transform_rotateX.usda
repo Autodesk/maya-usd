@@ -11,18 +11,23 @@ def Camera "cam" (
 	kind = "camera"
 )
 {
-	float2 clippingRange = (2, 500000)
+	float2 clippingRange.timeSamples = {
+        1: (2, 500000),
+        2: (10, 500000),
+        3: (2, 500000),
+    }
 	float focalLength = 9.5
 	float focusDistance = 330
-	float fStop = 2.8
+	float fStop = 0
 	float horizontalAperture = 12
 	float lensSqueezeRatio = 1
 	token projection = "perspective"
 	float verticalAperture = 6.75
 	float xformOp:rotateX = 90
-	matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -5, 0, 1) ) (
-		hidden = true
-	)
+	matrix4d xformOp:transform.timeSamples = {
+        1: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -5, 0, 1) ),
+        3: ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, -5, 0, 1) ),
+    }
 	uniform token[] xformOpOrder = ["xformOp:transform", "xformOp:rotateX"]
 }
 

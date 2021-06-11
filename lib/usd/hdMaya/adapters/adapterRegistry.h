@@ -16,6 +16,7 @@
 #ifndef HDMAYA_ADAPTER_REGISTRY_H
 #define HDMAYA_ADAPTER_REGISTRY_H
 
+#include <hdMaya/adapters/cameraAdapter.h>
 #include <hdMaya/adapters/lightAdapter.h>
 #include <hdMaya/adapters/materialAdapter.h>
 #include <hdMaya/adapters/shapeAdapter.h>
@@ -63,6 +64,14 @@ public:
     HDMAYA_API
     static MaterialAdapterCreator GetMaterialAdapterCreator(const MObject& node);
 
+    using CameraAdapterCreator
+        = std::function<HdMayaCameraAdapterPtr(HdMayaDelegateCtx*, const MDagPath&)>;
+    HDMAYA_API
+    static void RegisterCameraAdapter(const TfToken& type, CameraAdapterCreator creator);
+
+    HDMAYA_API
+    static CameraAdapterCreator GetCameraAdapterCreator(const MDagPath& dag);
+
     // Find all HdMayaAdapter plugins, and load them all
     HDMAYA_API
     static void LoadAllPlugin();
@@ -71,6 +80,7 @@ private:
     std::unordered_map<TfToken, ShapeAdapterCreator, TfToken::HashFunctor>    _dagAdapters;
     std::unordered_map<TfToken, LightAdapterCreator, TfToken::HashFunctor>    _lightAdapters;
     std::unordered_map<TfToken, MaterialAdapterCreator, TfToken::HashFunctor> _materialAdapters;
+    std::unordered_map<TfToken, CameraAdapterCreator, TfToken::HashFunctor>   _cameraAdapters;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -18,6 +18,7 @@
 #include <hdMaya/adapters/adapterDebugCodes.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 
+#include <pxr/base/gf/interval.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
 
@@ -134,48 +135,28 @@ HdMayaDagAdapter::HdMayaDagAdapter(
     _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
 }
 
-void HdMayaDagAdapter::_CalculateTransform()
-{
-    if (_invalidTransform) {
-        if (IsInstanced()) {
-            _transform[0].SetIdentity();
-            _transform[1].SetIdentity();
-        } else {
-            _transform[0] = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
-            if (GetDelegate()->GetParams().enableMotionSamples) {
-                MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
-                _transform[1] = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
-            } else {
-                _transform[1] = _transform[0];
-            }
-        }
-        _invalidTransform = false;
-    }
-};
-
-const GfMatrix4d& HdMayaDagAdapter::GetTransform()
+GfMatrix4d HdMayaDagAdapter::GetTransform()
 {
     TF_DEBUG(HDMAYA_ADAPTER_GET)
         .Msg("Called HdMayaDagAdapter::GetTransform() - %s\n", _dagPath.partialPathName().asChar());
-    _CalculateTransform();
-    return _transform[0];
+
+    if (_invalidTransform) {
+        if (IsInstanced()) {
+            _transform.SetIdentity();
+        } else {
+            _transform = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+        }
+        _invalidTransform = false;
+    }
+
+    return _transform;
 }
 
 size_t HdMayaDagAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
 {
-    _CalculateTransform();
-    if (maxSampleCount < 1) {
-        return 0;
-    }
-    times[0] = 0.0f;
-    samples[0] = _transform[0];
-    if (maxSampleCount == 1 || !GetDelegate()->GetParams().enableMotionSamples) {
-        return 1;
-    } else {
-        times[1] = 1.0f;
-        samples[1] = _transform[1];
-        return 2;
-    }
+    return GetDelegate()->SampleValues(maxSampleCount, times, samples, [&]() -> GfMatrix4d {
+        return GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
+    });
 }
 
 void HdMayaDagAdapter::CreateCallbacks()

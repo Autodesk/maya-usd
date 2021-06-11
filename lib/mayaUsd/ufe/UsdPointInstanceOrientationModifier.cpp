@@ -37,6 +37,11 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+// Map of point instance batches under construction, keyed on instancer path.
+MayaUsd::ufe::UsdPointInstanceOrientationModifier::Batches sBatches;
+} // namespace
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -99,6 +104,11 @@ UsdAttribute UsdPointInstanceOrientationModifier::_createAttribute()
     }
 
     return pointInstancer.CreateOrientationsAttr();
+}
+
+UsdPointInstanceOrientationModifier::Batches& UsdPointInstanceOrientationModifier::batches()
+{
+    return sBatches;
 }
 
 } // namespace ufe

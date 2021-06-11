@@ -133,11 +133,6 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
             shaderSchema,
             PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName,
             usdTime);
-
-        // IOR value from Gold USDPreviewSurface preset
-        shaderSchema
-            .CreateInput(PxrMayaUsdPreviewSurfaceTokens->IorAttrName, SdfValueTypeNames->Float)
-            .Set(50.0f, usdTime);
     } else {
         shaderSchema
             .CreateInput(
@@ -150,14 +145,14 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
             shaderSchema,
             PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
             usdTime);
-
-        AuthorShaderInputFromShadingNodeAttr(
-            depNodeFn,
-            _tokens->specularIOR,
-            shaderSchema,
-            PxrMayaUsdPreviewSurfaceTokens->IorAttrName,
-            usdTime);
     }
+
+    AuthorShaderInputFromShadingNodeAttr(
+        depNodeFn,
+        _tokens->specularIOR,
+        shaderSchema,
+        PxrMayaUsdPreviewSurfaceTokens->IorAttrName,
+        usdTime);
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,

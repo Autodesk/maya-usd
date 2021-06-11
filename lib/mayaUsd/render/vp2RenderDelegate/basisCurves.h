@@ -129,6 +129,7 @@ protected:
 
 private:
     void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
+    void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
@@ -147,7 +148,10 @@ private:
     MHWRender::MRenderItem* _CreatePatchRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateBBoxRenderItem(const MString& name) const;
+
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
+#endif
 
     enum DirtyBits : HdDirtyBits
     {

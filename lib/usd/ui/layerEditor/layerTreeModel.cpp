@@ -22,7 +22,9 @@
 #include "stringResources.h"
 #include "warningDialogs.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/tf/notice.h>
 
@@ -401,33 +403,56 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
-    SaveLayersDialog dlg(_sessionState, in_parent);
-    if (QDialog::Accepted == dlg.exec()) {
+    auto saveAllLayers = [this]() {
+        const auto layers = getAllNeedsSavingLayers();
+        for (auto layer : layers) {
+            if (!layer->isAnonymous())
+                layer->saveEditsNoPrompt();
+        }
+    };
 
-        if (!dlg.layersWithErrorPairs().isEmpty()) {
-            const QStringList& errors = dlg.layersWithErrorPairs();
-            MString            resultMsg;
-            for (int i = 0; i < errors.length() - 1; i += 2) {
-                MString errorMsg;
-                errorMsg.format(
-                    StringResources::getAsMString(StringResources::kSaveAnonymousLayersErrors),
-                    MQtUtil::toMString(errors[i]),
-                    MQtUtil::toMString(errors[i + 1]));
-                resultMsg += errorMsg + "\n";
-            }
+    static const MString kConfirmExistingFileSave
+        = MayaUsdOptionVars->ConfirmExistingFileSave.GetText();
+    bool showConfirmDgl = MGlobal::optionVarExists(kConfirmExistingFileSave)
+        && MGlobal::optionVarIntValue(kConfirmExistingFileSave) != 0;
 
-            MGlobal::displayError(resultMsg);
+    // if the stage contains anonymous layers, you need to show the comfirm dialog
+    // so the user can choose where to save the anonymous layers.
+    if (!showConfirmDgl) {
+        // Get the layers to save for this stage.
+        MayaUsd::utils::stageLayersToSave stageLayersToSave;
+        auto&                             stageEntry = _sessionState->stageEntry();
+        MayaUsd::utils::getLayersToSaveFromProxy(stageEntry._proxyShapePath, stageLayersToSave);
+        showConfirmDgl = !stageLayersToSave._anonLayers.empty();
+    }
 
-            warningDialog(
-                StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
-                StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
-        } else {
-            const auto layers = getAllNeedsSavingLayers();
-            for (auto layer : layers) {
-                if (!layer->isAnonymous())
-                    layer->saveEditsNoPrompt();
+    if (showConfirmDgl) {
+        SaveLayersDialog dlg(_sessionState, in_parent);
+        if (QDialog::Accepted == dlg.exec()) {
+
+            if (!dlg.layersWithErrorPairs().isEmpty()) {
+                const QStringList& errors = dlg.layersWithErrorPairs();
+                MString            resultMsg;
+                for (int i = 0; i < errors.length() - 1; i += 2) {
+                    MString errorMsg;
+                    errorMsg.format(
+                        StringResources::getAsMString(StringResources::kSaveAnonymousLayersErrors),
+                        MQtUtil::toMString(errors[i]),
+                        MQtUtil::toMString(errors[i + 1]));
+                    resultMsg += errorMsg + "\n";
+                }
+
+                MGlobal::displayError(resultMsg);
+
+                warningDialog(
+                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
+                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
+            } else {
+                saveAllLayers();
             }
         }
+    } else {
+        saveAllLayers();
     }
 }
 

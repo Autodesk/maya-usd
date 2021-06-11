@@ -7,6 +7,13 @@ list(APPEND TEST_SCRIPT_FILES
 	testVP2RenderDelegateGeomSubset.py
 )
 
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+    	testVP2RenderDelegateDuplicateProxy.py
+	testVP2RenderDelegateInteractiveWorkflows.py
+    )
+endif()
+
 if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
     # The point instance selection tests requires UsdImaging API version 14 or
     # later, which is only provided by core USD 20.08 or later.
@@ -14,12 +21,15 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
         testVP2RenderDelegatePointInstanceSelection.py
         testVP2RenderDelegatePointInstancesPickMode.py
         testVP2RenderDelegatePrimPath.py
+        testVP2RenderDelegateUSDPreviewSurface.py
+        testVP2RenderDelegateConsolidation.py
     )
 endif()
 
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePerInstanceInheritedData.py
+        testVP2RenderDelegateBasisCurves.py
     )
 endif()
 
@@ -49,6 +59,7 @@ foreach(script ${TEST_SCRIPT_FILES})
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
 
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.

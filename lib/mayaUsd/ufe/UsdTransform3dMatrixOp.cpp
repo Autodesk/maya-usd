@@ -339,34 +339,19 @@ UsdTransform3dMatrixOp::create(const UsdSceneItem::Ptr& item, const UsdGeomXform
     return std::make_shared<UsdTransform3dMatrixOp>(item, op);
 }
 
-Ufe::Vector3d UsdTransform3dMatrixOp::translation() const
-{
-    auto local = computeLocalInclusiveTransform(prim(), _op, getTime(path()));
-    return toUfe(local.ExtractTranslation());
-}
+Ufe::Vector3d UsdTransform3dMatrixOp::translation() const { return getTranslation(matrix()); }
 
-Ufe::Vector3d UsdTransform3dMatrixOp::rotation() const
-{
-    auto local = computeLocalInclusiveTransform(prim(), _op, getTime(path()));
-    return toUfe(local.DecomposeRotation(GfVec3d::XAxis(), GfVec3d::YAxis(), GfVec3d::ZAxis()));
-}
+Ufe::Vector3d UsdTransform3dMatrixOp::rotation() const { return getRotation(matrix()); }
 
-Ufe::Vector3d UsdTransform3dMatrixOp::scale() const
-{
-    auto       local = computeLocalInclusiveTransform(prim(), _op, getTime(path()));
-    GfMatrix4d unusedR, unusedP, unusedU;
-    GfVec3d    s, unusedT;
-    if (!local.Factor(&unusedR, &s, &unusedU, &unusedT, &unusedP)) {
-        TF_WARN("Cannot decompose local transform for %s", path().string().c_str());
-        return Ufe::Vector3d(1, 1, 1);
-    }
-
-    return toUfe(s);
-}
+Ufe::Vector3d UsdTransform3dMatrixOp::scale() const { return getScale(matrix()); }
 
 Ufe::TranslateUndoableCommand::Ptr
 UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:translate"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdTranslateUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
@@ -379,6 +364,10 @@ UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:rotateXYZ"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdRotateUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),
@@ -391,6 +380,10 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, doub
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
 {
+    if (!isAttributeEditAllowed(prim(), TfToken("xformOp:scale"))) {
+        return nullptr;
+    }
+
     return std::make_shared<UsdScaleUndoableCmd>(
 #ifdef UFE_V2_FEATURES_AVAILABLE
         path(),

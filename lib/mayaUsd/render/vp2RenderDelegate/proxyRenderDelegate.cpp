@@ -79,6 +79,11 @@ namespace {
 //! Representation selector for shaded and textured viewport mode
 const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
 
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+//! Representation selector for default material viewport mode
+const HdReprSelector kDefaultMaterialReprSelector(HdVP2ReprTokens->defaultMaterial);
+#endif
+
 //! Representation selector for wireframe viewport mode
 const HdReprSelector kWireReprSelector(TfToken(), HdReprTokens->wire);
 
@@ -252,6 +257,15 @@ void _ConfigureReprs()
         /*flatShadingEnabled=*/false,
         /*blendWireframeColor=*/false);
 
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+    const HdMeshReprDesc reprDescHullDefaultMaterial(
+        HdMeshGeomStyleHull,
+        HdCullStyleDontCare,
+        HdMeshReprDescTokens->constantColor,
+        /*flatShadingEnabled=*/false,
+        /*blendWireframeColor=*/false);
+#endif
+
     const HdMeshReprDesc reprDescEdge(
         HdMeshGeomStyleHullEdgeOnly,
         HdCullStyleDontCare,
@@ -261,6 +275,12 @@ void _ConfigureReprs()
 
     // Hull desc for shaded display, edge desc for selection highlight.
     HdMesh::ConfigureRepr(HdReprTokens->smoothHull, reprDescHull, reprDescEdge);
+
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+    // Hull desc for default material display, edge desc for selection highlight.
+    HdMesh::ConfigureRepr(
+        HdVP2ReprTokens->defaultMaterial, reprDescHullDefaultMaterial, reprDescEdge);
+#endif
 
     // Edge desc for bbox display.
     HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
@@ -701,9 +721,12 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
     if (inSelectionPass) {
+        // The new Maya point snapping support doesn't require point snapping items any more.
+#if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
         if (inPointSnapping && !reprSelector.Contains(HdReprTokens->points)) {
             reprSelector = reprSelector.CompositeOver(kPointsReprSelector);
         }
+#endif
     } else {
         if (_selectionChanged) {
             _UpdateSelectionStates();
@@ -728,7 +751,14 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             // To support Wireframe on Shaded mode, the two displayStyle checks
             // should not be mutually excluded.
             if (displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
-                if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+                if (displayStyle & MHWRender::MFrameContext::kDefaultMaterial) {
+                    if (!reprSelector.Contains(HdVP2ReprTokens->defaultMaterial)) {
+                        reprSelector = reprSelector.CompositeOver(kDefaultMaterialReprSelector);
+                    }
+                } else
+#endif
+                    if (!reprSelector.Contains(HdReprTokens->smoothHull)) {
                     reprSelector = reprSelector.CompositeOver(kSmoothHullReprSelector);
                 }
             }
@@ -777,13 +807,20 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     param->EndUpdate();
 }
 
-//! \brief  Switch to component-level selection for point snapping.
+//! \brief  Update selection granularity for point snapping.
 void ProxyRenderDelegate::updateSelectionGranularity(
     const MDagPath&               path,
     MHWRender::MSelectionContext& selectionContext)
 {
+    // The component level is coarse-grain, causing Maya to produce undesired face/edge selection
+    // hits, as well as vertex selection hits that are required for point snapping. Switch to the
+    // new vertex selection level if available in order to produce vertex selection hits only.
     if (pointSnappingActive()) {
+#if MAYA_API_VERSION >= 20220100
+        selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kVertex);
+#else
         selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kComponent);
+#endif
     }
 }
 
@@ -794,19 +831,16 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     MDagPath&                       dagPath) const
 {
 #if defined(WANT_UFE_BUILD)
-    if (_proxyShapeData->ProxyShape() == nullptr) {
-        return false;
+    // When point snapping, only the point position matters, so return the DAG path and avoid the
+    // UFE global selection list to be updated.
+    if (pointSnappingActive()) {
+        dagPath = _proxyShapeData->ProxyDagPath();
+        return true;
     }
 
-    if (!_proxyShapeData->ProxyShape()->isUfeSelectionEnabled()) {
+    if (!_proxyShapeData->ProxyShape() || !_proxyShapeData->ProxyShape()->isUfeSelectionEnabled()) {
         return false;
     }
-
-    // When point snapping, only the point position matters, so return false
-    // to use the DAG path from the default implementation and avoid the UFE
-    // global selection list to be updated.
-    if (pointSnappingActive())
-        return false;
 
     auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
     if (handler == nullptr)
@@ -875,9 +909,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     const TfToken&                   selectionKind = _selectionKind;
     const UsdPointInstancesPickMode& pointInstancesPickMode = _pointInstancesPickMode;
-#ifndef UFE_V2_FEATURES_AVAILABLE
-    const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
-#endif
+    const MGlobal::ListAdjustment&   listAdjustment = _globalListAdjustment;
 #else
     const TfToken selectionKind = GetSelectionKind();
     const UsdPointInstancesPickMode pointInstancesPickMode = GetPointInstancesPickMode();
@@ -956,6 +988,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+    TF_UNUSED(listAdjustment);
+
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else

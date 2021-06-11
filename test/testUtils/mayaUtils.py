@@ -235,6 +235,8 @@ def previewReleaseVersion():
         return 98
     elif majorVersion == 2020:
         return 110
+    elif majorVersion == 2022:
+        return 122
 
     match = prRe.match(cmds.about(v=True))
 
@@ -242,3 +244,12 @@ def previewReleaseVersion():
 
 def mayaMajorVersion():
     return int(cmds.about(majorVersion=True))
+
+def mayaMinorVersion():
+    return int(cmds.about(minorVersion=True))
+
+def activeModelPanel():
+    """Return the model panel that will be used for playblasting etc..."""
+    for panel in cmds.getPanel(type="modelPanel"):
+        if cmds.modelEditor(panel, q=1, av=1):
+            return panel

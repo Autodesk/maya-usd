@@ -409,7 +409,11 @@ public:
         // renderContext is not found. Therefore we need to test first that the
         // render context output we are looking for really exists:
         if (shadeMaterial.GetSurfaceOutput(renderContext)) {
+#if PXR_VERSION > 2105
+            UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource({ renderContext });
+#else
             UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource(renderContext);
+#endif
             if (surfaceShader) {
                 const TfToken surfaceShaderPlugName = _context->GetSurfaceShaderPlugName();
                 if (!surfaceShaderPlugName.IsEmpty()) {
@@ -419,7 +423,11 @@ public:
         }
 
         if (shadeMaterial.GetVolumeOutput(renderContext)) {
+#if PXR_VERSION > 2105
+            UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource({ renderContext });
+#else
             UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource(renderContext);
+#endif
             if (volumeShader) {
                 const TfToken volumeShaderPlugName = _context->GetVolumeShaderPlugName();
                 if (!volumeShaderPlugName.IsEmpty()) {
@@ -429,8 +437,13 @@ public:
         }
 
         if (shadeMaterial.GetDisplacementOutput(renderContext)) {
+#if PXR_VERSION > 2105
+            UsdShadeShader displacementShader
+                = shadeMaterial.ComputeDisplacementSource({ renderContext });
+#else
             UsdShadeShader displacementShader
                 = shadeMaterial.ComputeDisplacementSource(renderContext);
+#endif
             if (displacementShader) {
                 const TfToken displacementShaderPlugName
                     = _context->GetDisplacementShaderPlugName();
@@ -447,7 +460,12 @@ public:
         }
 
         // Create the shading engine.
-        MObject shadingEngine = _context->CreateShadingEngine();
+        std::string       surfaceNodeName;
+        MFnDependencyNode surfaceNodeFn;
+        if (surfaceNodeFn.setObject(surfaceOutputPlug.node()) == MS::kSuccess) {
+            surfaceNodeName = surfaceNodeFn.name().asChar();
+        }
+        MObject shadingEngine = _context->CreateShadingEngine(surfaceNodeName);
         if (shadingEngine.isNull()) {
             return MObject();
         }

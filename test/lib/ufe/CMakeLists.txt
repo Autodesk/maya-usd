@@ -9,6 +9,8 @@ set(TEST_SCRIPT_FILES
     testPythonWrappers.py
     testSelection.py
     testUfePythonImport.py
+    testAttributeBlock.py
+    testBlockedLayerEdit.py
 )
 
 set(TEST_SUPPORT_FILES
@@ -40,6 +42,13 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testObservableScene.py
     )
 endif()
+
+if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
+    list(APPEND TEST_SCRIPT_FILES
+        testCamera.py
+    )
+endif()
+
 
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
 add_custom_target(${TARGET_NAME} ALL)

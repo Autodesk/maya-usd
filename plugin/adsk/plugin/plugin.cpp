@@ -60,11 +60,7 @@
 #include <mayaUsd/ufe/Global.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
-#include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
-#include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
-#include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
-#include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
+#include <mayaUsd/ufe/UsdTransform3dHandler.h>
 
 #include <ufe/runTimeMgr.h>
 
@@ -235,25 +231,14 @@ MStatus initializePlugin(MObject obj)
     }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    // Set up a chain of responsibility for Transform3d interface creation,
-    // from least important to most important:
-    // - Perform operations on a Maya transform stack appended to the existing
-    //   transform stack (fallback).
-    // - Perform operations on a 4x4 matrix transform op.
-    // - Perform operations using the USD common transform API.
-    // - Perform operations using a Maya transform stack.
+    // For backward compatibility, provide a command to revert to UFE v1 (Maya
+    // 2020) Ufe::Transform3d handling, which is based on the USD common
+    // transform API:
+    // https://graphics.pixar.com/usd/docs/api/class_usd_geom_xform_common_a_p_i.html
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
     auto  usdRtid = MayaUsd::ufe::getUsdRunTimeId();
-    g_OldTransform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
-    auto fallbackHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
-    auto matrixHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(fallbackHandler);
-    auto commonAPIHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(matrixHandler);
-    auto mayaStackHandler
-        = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(commonAPIHandler);
-    auto pointInstanceHandler
-        = MayaUsd::ufe::UsdTransform3dPointInstanceHandler::create(mayaStackHandler);
-    g_NewTransform3dHandler = pointInstanceHandler;
-    runTimeMgr.setTransform3dHandler(usdRtid, pointInstanceHandler);
+    g_NewTransform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
+    g_OldTransform3dHandler = MayaUsd::ufe::UsdTransform3dHandler::create();
 
     status = plugin.registerCommand(ToggleTransform3d::commandName, ToggleTransform3d::creator);
     if (!status) {

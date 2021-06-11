@@ -132,7 +132,7 @@ private:
     std::vector<StackRef>             m_primStack;
     UsdStageRefPtr                    m_stage;
     MDagPath                          m_parentPath;
-    TfHashSet<SdfPath, SdfPath::Hash> m_visitedMasterPrimPaths;
+    TfHashSet<SdfPath, SdfPath::Hash> m_visitedPrototypePrimPaths;
     bool                              m_stopOnInstance;
 };
 

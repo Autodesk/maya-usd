@@ -91,7 +91,8 @@ void HdVP2Instancer::_SyncPrimvars()
     // primvars are dirty.
     HdDirtyBits dirtyBits = changeTracker.GetInstancerDirtyBits(id);
     if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, id)
-        || HdChangeTracker::IsInstancerDirty(dirtyBits, id)) {
+        || HdChangeTracker::IsInstancerDirty(dirtyBits, id)
+        || HdChangeTracker::IsInstanceIndexDirty(dirtyBits, id)) {
         std::lock_guard<std::mutex> lock(_instanceLock);
 
         // If not dirty, then another thread did the job

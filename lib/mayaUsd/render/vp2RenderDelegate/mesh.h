@@ -84,6 +84,9 @@ struct HdVP2MeshSharedData
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
     MSharedPtr<MeshViewportCompute> _viewportCompute;
 #endif
+
+    //! Fallback color changed
+    bool _fallbackColorDirty { true };
 };
 
 /*! \brief  VP2 representation of poly-mesh object.
@@ -122,6 +125,7 @@ private:
     void _InitRepr(const TfToken&, HdDirtyBits*) override;
 
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
+    void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
@@ -157,8 +161,11 @@ private:
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
+
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
+#endif
 
     static void _InitGPUCompute();
 
