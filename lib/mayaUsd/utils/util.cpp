@@ -627,7 +627,8 @@ bool UsdMayaUtil::isRenderable(const MObject& object)
     }
 
     const MDAGDrawOverrideInfo drawOverrideInfo = dagPath.getDrawOverrideInfo();
-    if (drawOverrideInfo.fOverrideEnabled && drawOverrideInfo.fDisplayType == MDAGDrawOverrideInfo::kDisplayTypeTemplate) {
+    if (drawOverrideInfo.fOverrideEnabled
+        && drawOverrideInfo.fDisplayType == MDAGDrawOverrideInfo::kDisplayTypeTemplate) {
         return false;
     }
 
