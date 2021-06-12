@@ -193,6 +193,11 @@ void UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
             GetMayaObject(), _usdPrim, _GetSparseValueWriter());
     }
 
+    // write out user-tagged attributes as given by the multi-flag -userattr
+    UsdMayaWriteUtil::WriteUserAttributes(
+        GetMayaObject(), _usdPrim, usdTime, _writeJobCtx, _GetSparseValueWriter());
+
+
     // Write out user-tagged attributes, which are supported at default time
     // and at animated time-samples.
     UsdMayaWriteUtil::WriteUserExportedAttributes(

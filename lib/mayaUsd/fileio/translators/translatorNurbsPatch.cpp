@@ -480,6 +480,9 @@ bool UsdMayaTranslatorNurbsPatch::Read(
         MGlobal::deleteNode(deleteAfterTrim[l]);
     }
 
+    // Copy userProperties
+    UsdMayaTranslatorUtil::copyAttributes(prim, surfaceObj);
+
     return true;
 }
 

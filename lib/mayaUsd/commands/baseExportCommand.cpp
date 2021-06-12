@@ -180,6 +180,9 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(kFileFlag, kFileFlagLong, MSyntax::kString);
     syntax.addFlag(kSelectionFlag, kSelectionFlagLong, MSyntax::kNoArg);
 
+    syntax.addFlag(kUserAttrFlag, kUserAttrFlagLong, MSyntax::kString);
+    syntax.makeFlagMultiUse(kUserAttrFlag);
+
     syntax.addFlag(kFilterTypesFlag, kFilterTypesFlagLong, MSyntax::kString);
     syntax.makeFlagMultiUse(kFilterTypesFlag);
 
@@ -309,6 +312,13 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
         UsdMayaJobExportArgs jobArgs
             = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+
+        unsigned int numUserAttrs = argData.numberOfFlagUses(kUserAttrFlag);
+        for (unsigned int i = 0; i < numUserAttrs; i++) {
+            MArgList tmpArgList;
+            argData.getFlagArgumentList(kUserAttrFlag, i, tmpArgList);
+            jobArgs.userAttrNames.emplace_back(tmpArgList.asString(0).asChar());
+        }
 
         unsigned int numFilteredTypes = argData.numberOfFlagUses(kFilterTypesFlag);
         for (unsigned int i = 0; i < numFilteredTypes; i++) {

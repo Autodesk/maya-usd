@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/utils/DgNodeHelper.h"
+#include "mayaUsd/fileio/translators/DgNodeHelper.h"
 
-#include "AL/maya/utils/NodeHelper.h"
+#include <mayaUsd/fileio/translators/NodeHelper.h>
 
 #include <mayaUsdUtils/ALHalf.h>
 #include <mayaUsdUtils/SIMD.h>
@@ -37,130 +37,126 @@
 
 #include <iostream>
 
-namespace AL {
-namespace usdmaya {
-namespace utils {
-
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setFloat(const MObject node, const MObject attr, float value)
 {
-    const char* const errorString = "float error";
+    // const char* const errorString = "float error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setValue(value), errorString);
+    plug.setValue(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setAngle(const MObject node, const MObject attr, MAngle value)
 {
-    const char* const errorString = "DgNodeHelper::setAngle";
+    // const char* const errorString = "DgNodeHelper::setAngle";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setValue(value), errorString);
+    plug.setValue(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setTime(const MObject node, const MObject attr, MTime value)
 {
-    const char* const errorString = "DgNodeHelper::setTime";
+    // const char* const errorString = "DgNodeHelper::setTime";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setValue(value), errorString);
+    plug.setValue(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setDistance(const MObject node, const MObject attr, MDistance value)
 {
-    const char* const errorString = "DgNodeHelper::setDistance";
+    // const char* const errorString = "DgNodeHelper::setDistance";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setValue(value), errorString);
+    plug.setValue(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setDouble(MObject node, MObject attr, double value)
 {
-    const char* const errorString = "double error";
+    // const char* const errorString = "double error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setValue(value), errorString);
+    plug.setValue(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setBool(MObject node, MObject attr, bool value)
 {
-    const char* const errorString = "int error";
+    // const char* const errorString = "int error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setValue(value), errorString);
+    plug.setValue(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setInt8(MObject node, MObject attr, int8_t value)
 {
-    const char* const errorString = "int error";
+    // const char* const errorString = "int error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setChar(value), errorString);
+    plug.setChar(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setInt16(MObject node, MObject attr, int16_t value)
 {
-    const char* const errorString = "int error";
+    // const char* const errorString = "int error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setShort(value), errorString);
+    plug.setShort(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setInt32(MObject node, MObject attr, int32_t value)
 {
-    const char* const errorString = "int error";
+    // const char* const errorString = "int error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setValue(value), errorString);
+    plug.setValue(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setInt64(MObject node, MObject attr, int64_t value)
 {
-    const char* const errorString = "int64 error";
+    // const char* const errorString = "int64 error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setInt64(value), errorString);
+    plug.setInt64(value); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec3(MObject node, MObject attr, float x, float y, float z)
 {
-    const char* const errorString = "vec3f error";
+    // const char* const errorString = "vec3f error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(x), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(y), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(z), errorString);
+    plug.child(0).setValue(x); // , errorString);
+    plug.child(1).setValue(y); // , errorString);
+    plug.child(2).setValue(z); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec3(MObject node, MObject attr, double x, double y, double z)
 {
-    const char* const errorString = "vec3d error";
+    // const char* const errorString = "vec3d error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(x), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(y), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(z), errorString);
+    plug.child(0).setValue(x); // , errorString);
+    plug.child(1).setValue(y); // , errorString);
+    plug.child(2).setValue(z); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec3(MObject node, MObject attr, MAngle x, MAngle y, MAngle z)
 {
-    const char* const errorString = "vec3d error";
+    // const char* const errorString = "vec3d error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(x), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(y), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(z), errorString);
+    plug.child(0).setValue(x); // , errorString);
+    plug.child(1).setValue(y); // , errorString);
+    plug.child(2).setValue(z); // , errorString);
     return MS::kSuccess;
 }
 
@@ -175,8 +171,7 @@ MStatus DgNodeHelper::setBoolArray(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0; i != count; ++i) {
         plug.elementByLogicalIndex(i).setBool(values[i]);
@@ -195,8 +190,7 @@ MStatus DgNodeHelper::setBoolArray(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(values.size()), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(values.size()); // , "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, n = values.size(); i != n; ++i) {
         plug.elementByLogicalIndex(i).setBool(values[i]);
@@ -216,8 +210,7 @@ MStatus DgNodeHelper::setInt8Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0; i != count; ++i) {
         plug.elementByLogicalIndex(i).setChar(values[i]);
@@ -237,8 +230,7 @@ MStatus DgNodeHelper::setInt16Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0; i != count; ++i) {
         plug.elementByLogicalIndex(i).setShort(values[i]);
@@ -257,9 +249,8 @@ MStatus DgNodeHelper::setInt32Array(
     MPlug plug(node, attribute);
     if (!plug || !plug.isArray())
         return MS::kFailure;
-
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0; i != count; ++i) {
         plug.elementByLogicalIndex(i).setValue(values[i]);
@@ -278,9 +269,8 @@ MStatus DgNodeHelper::setInt64Array(
     MPlug plug(node, attribute);
     if (!plug || !plug.isArray())
         return MS::kFailure;
-
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    
+    plug.setNumElements(count); // , "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0; i != count; ++i) {
         plug.elementByLogicalIndex(i).setInt64(values[i]);
@@ -299,9 +289,8 @@ MStatus DgNodeHelper::setHalfArray(
     MPlug plug(node, attribute);
     if (!plug || !plug.isArray())
         return MS::kFailure;
-
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    
+    plug.setNumElements(count); // , "DgNodeHelper: attribute array could not be resized");
 
     size_t count8 = count & ~0x7ULL;
     for (size_t j = 0; j != count8; j += 8) {
@@ -363,8 +352,7 @@ MStatus DgNodeHelper::setFloatArray(
                 return MS::kSuccess;
             }
         } else {
-            AL_MAYA_CHECK_ERROR(
-                plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+            plug.setNumElements(count); // , "DgNodeHelper: attribute array could not be resized");
             for (size_t i = 0; i != count; ++i) {
                 plug.elementByLogicalIndex(i).setFloat(values[i]);
             }
@@ -394,8 +382,7 @@ MStatus DgNodeHelper::setDoubleArray(
                 return MS::kSuccess;
             }
         } else {
-            AL_MAYA_CHECK_ERROR(
-                plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+                plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
             for (size_t i = 0; i != count; ++i) {
                 plug.elementByLogicalIndex(i).setDouble(values[i]);
             }
@@ -416,8 +403,7 @@ MStatus DgNodeHelper::setVec2Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, j = 0; i != count; ++i, j += 2) {
         auto v = plug.elementByLogicalIndex(i);
@@ -439,8 +425,7 @@ MStatus DgNodeHelper::setVec2Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     size_t count4 = count & ~0x3ULL;
     for (size_t i = 0, j = 0; i != count4; i += 4, j += 8) {
@@ -492,8 +477,7 @@ MStatus DgNodeHelper::setVec2Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, j = 0; i != count; ++i, j += 2) {
         auto v = plug.elementByLogicalIndex(i);
@@ -515,8 +499,7 @@ MStatus DgNodeHelper::setVec2Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, j = 0; i != count; ++i, j += 2) {
         auto v = plug.elementByLogicalIndex(i);
@@ -538,8 +521,8 @@ MStatus DgNodeHelper::setVec3Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
+
     for (size_t i = 0, j = 0; i != count; ++i, j += 3) {
         auto v = plug.elementByLogicalIndex(i);
         v.child(0).setInt(values[j]);
@@ -560,8 +543,8 @@ MStatus DgNodeHelper::setVec3Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
+
     size_t count8 = count & ~0x7ULL;
     for (size_t i = 0, j = 0; i != count8; i += 8, j += 24) {
         float f[24];
@@ -604,8 +587,7 @@ MStatus DgNodeHelper::setVec3Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, j = 0; i != count; ++i, j += 3) {
         auto v = plug.elementByLogicalIndex(i);
@@ -628,8 +610,7 @@ MStatus DgNodeHelper::setVec3Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, j = 0; i != count; ++i, j += 3) {
         auto v = plug.elementByLogicalIndex(i);
@@ -653,8 +634,7 @@ MStatus DgNodeHelper::setVec4Array(
         return MS::kFailure;
     }
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
     size_t count2 = count & ~0x1ULL;
 
     for (size_t i = 0, j = 0; i != count2; i += 2, j += 8) {
@@ -695,8 +675,7 @@ MStatus DgNodeHelper::setVec4Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, j = 0; i != count; ++i, j += 4) {
         auto v = plug.elementByLogicalIndex(i);
@@ -720,8 +699,7 @@ MStatus DgNodeHelper::setVec4Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, j = 0; i != count; ++i, j += 4) {
         auto v = plug.elementByLogicalIndex(i);
@@ -745,8 +723,7 @@ MStatus DgNodeHelper::setVec4Array(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
     for (size_t i = 0, j = 0; i != count; ++i, j += 4) {
         auto v = plug.elementByLogicalIndex(i);
@@ -778,9 +755,9 @@ MStatus DgNodeHelper::setMatrix4x4Array(
 
         MFnMatrixArrayData fn;
         MObject            data = fn.create(arrayData, &status);
-        AL_MAYA_CHECK_ERROR2(status, MString("Count not set array value"));
+//        AL_MAYA_CHECK_ERROR2(status, MString("Count not set array value"));
         status = plug.setValue(data);
-        AL_MAYA_CHECK_ERROR2(status, MString("Count not set array value"));
+//        AL_MAYA_CHECK_ERROR2(status, MString("Count not set array value"));
     } else {
         // Yes this is horrible. It would appear that as of Maya 2017, setting the contents of
         // matrix array attributes doesn't work. Well, at least for dynamic attributes. Using an
@@ -867,9 +844,9 @@ MStatus DgNodeHelper::setMatrix4x4Array(
 
         MFnMatrixArrayData fn;
         MObject            data = fn.create(arrayData, &status);
-        AL_MAYA_CHECK_ERROR2(status, MString("Count not set array value"));
+//        AL_MAYA_CHECK_ERROR2(status, MString("Count not set array value"));
         status = plug.setValue(data);
-        AL_MAYA_CHECK_ERROR2(status, MString("Count not set array value"));
+//        AL_MAYA_CHECK_ERROR2(status, MString("Count not set array value"));
     } else {
         // I can't seem to create a multi of arrays within the Maya API (without using an array data
         // builder within a compute).
@@ -921,8 +898,7 @@ MStatus DgNodeHelper::setTimeArray(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
 #if AL_UTILS_ENABLE_SIMD
     const f128   unitConversion128 = splat4f(unitConversion);
@@ -972,8 +948,7 @@ MStatus DgNodeHelper::setAngleArray(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
 #if AL_UTILS_ENABLE_SIMD
     const f128   unitConversion128 = splat4f(unitConversion);
@@ -1023,8 +998,7 @@ MStatus DgNodeHelper::setDistanceArray(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(count), "DgNodeHelper: attribute array could not be resized");
+    plug.setNumElements(count); //, "DgNodeHelper: attribute array could not be resized");
 
 #if AL_UTILS_ENABLE_SIMD
     const f128   unitConversion128 = splat4f(unitConversion);
@@ -1068,9 +1042,7 @@ MStatus DgNodeHelper::setUsdBoolArray(
     if (!plug || !plug.isArray())
         return MS::kFailure;
 
-    AL_MAYA_CHECK_ERROR(
-        plug.setNumElements(values.size()),
-        "DgNodeTranslator: attribute array could not be resized");
+    plug.setNumElements(values.size()); // "DgNodeTranslator: attribute array could not be resized");
 
     for (size_t i = 0, n = values.size(); i != n; ++i) {
         plug.elementByLogicalIndex(i).setBool(values[i]);
@@ -1089,8 +1061,7 @@ MStatus DgNodeHelper::prepareAnimCurve(
         return MS::kFailure;
 
     MStatus           status = MS::kSuccess;
-    const char* const errorCreate
-        = "DgNodeTranslator:prepareAnimCurve(): error creating animation curve";
+//    const char* const errorCreate = "DgNodeTranslator:prepareAnimCurve(): error creating animation curve";
     MDGModifier dgmod;
     if (plug.isDestination()) {
         MPlug sourcePlug = plug.source();
@@ -1110,7 +1081,6 @@ MStatus DgNodeHelper::prepareAnimCurve(
     }
 
     animCurveFn.create(plug, NULL, &status);
-    AL_MAYA_CHECK_ERROR(status, errorCreate);
 
     if (!isAnimCurveTypeSupported(animCurveFn)) {
         // If we don't support the animCurve type, we rollback and clean up.
@@ -1137,7 +1107,7 @@ MStatus DgNodeHelper::setAngleAnim(
     MObjectArray*        newAnimCurves)
 {
     MStatus           status;
-    const char* const errorString = "DgNodeHelper::setAngleAnim";
+    // const char* const errorString = "DgNodeHelper::setAngleAnim";
 
     MPlug        plug(node, attr);
     MFnAnimCurve fnCurve;
@@ -1165,7 +1135,6 @@ MStatus DgNodeHelper::setAngleAnim(
             MFnAnimCurve::kTangentGlobal,
             NULL,
             &status);
-        AL_MAYA_CHECK_ERROR(status, errorString);
     }
 
     return MS::kSuccess;
@@ -1183,7 +1152,7 @@ MStatus DgNodeHelper::setFloatAttrAnim(
         return MS::kFailure;
     }
 
-    const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
+    // const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
     MStatus           status;
 
     MPlug        plug(node, attr);
@@ -1195,12 +1164,11 @@ MStatus DgNodeHelper::setFloatAttrAnim(
     std::vector<double> times;
     usdAttr.GetTimeSamples(&times);
 
-    float value;
+    double value;
     for (auto const& timeValue : times) {
         const bool retValue = usdAttr.Get(&value, timeValue);
         if (!retValue)
             continue;
-
         MTime tm(timeValue, MTime::kFilm);
         fnCurve.addKey(
             tm,
@@ -1209,7 +1177,88 @@ MStatus DgNodeHelper::setFloatAttrAnim(
             MFnAnimCurve::kTangentGlobal,
             NULL,
             &status);
-        AL_MAYA_CHECK_ERROR(status, errorString);
+    }
+
+    return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setIntAttrAnim(
+    const MObject node,
+    const MObject attr,
+    UsdAttribute  usdAttr,
+    MObjectArray* newAnimCurves)
+{
+    if (!usdAttr.GetNumTimeSamples()) {
+        return MS::kFailure;
+    }
+
+    // const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
+    MStatus           status;
+
+    MPlug        plug(node, attr);
+    MFnAnimCurve fnCurve;
+    status = prepareAnimCurve(plug, fnCurve, newAnimCurves);
+    if (!status)
+        return MS::kFailure;
+
+    std::vector<double> times;
+    usdAttr.GetTimeSamples(&times);
+
+    int value;
+    for (auto const& timeValue : times) {
+        const bool retValue = usdAttr.Get(&value, timeValue);
+        if (!retValue)
+            continue;
+        MTime tm(timeValue, MTime::kFilm);
+        fnCurve.addKey(
+            tm,
+            value,
+            MFnAnimCurve::kTangentGlobal,
+            MFnAnimCurve::kTangentGlobal,
+            NULL,
+            &status);
+    }
+
+    return MS::kSuccess;
+}
+
+// ----------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setBoolAttrAnim(
+    const MObject node,
+    const MObject attr,
+    UsdAttribute  usdAttr,
+    MObjectArray* newAnimCurves)
+{
+    if (!usdAttr.GetNumTimeSamples()) {
+        return MS::kFailure;
+    }
+
+    // const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
+    MStatus           status;
+
+    MPlug        plug(node, attr);
+    MFnAnimCurve fnCurve;
+    status = prepareAnimCurve(plug, fnCurve, newAnimCurves);
+    if (!status)
+        return MS::kFailure;
+
+    std::vector<double> times;
+    usdAttr.GetTimeSamples(&times);
+
+    bool value;
+    for (auto const& timeValue : times) {
+        const bool retValue = usdAttr.Get(&value, timeValue);
+        if (!retValue)
+            continue;
+        MTime tm(timeValue, MTime::kFilm);
+        fnCurve.addKey(
+            tm,
+            value,
+            MFnAnimCurve::kTangentStep,
+            MFnAnimCurve::kTangentStep,
+            NULL,
+            &status);
     }
 
     return MS::kSuccess;
@@ -1226,7 +1275,7 @@ MStatus DgNodeHelper::setVisAttrAnim(
         return MS::kFailure;
     }
 
-    const char* const errorString = "DgNodeTranslator::setVisAttrAnim: Error adding keyframes";
+    // const char* const errorString = "DgNodeTranslator::setVisAttrAnim: Error adding keyframes";
     MStatus           status;
 
     MPlug        plug(node, attr);
@@ -1253,7 +1302,7 @@ MStatus DgNodeHelper::setVisAttrAnim(
             MFnAnimCurve::kTangentGlobal,
             NULL,
             &status);
-        AL_MAYA_CHECK_ERROR(status, errorString);
+
     }
 
     return MS::kSuccess;
@@ -1271,8 +1320,7 @@ MStatus DgNodeHelper::setClippingRangeAttrAnim(
         return MS::kFailure;
     }
 
-    const char* const errorString
-        = "DgNodeTranslator::setClippingRangeAttrAnim: Error adding keyframes";
+    // const char* const errorString = "DgNodeTranslator::setClippingRangeAttrAnim: Error adding keyframes";
     MStatus status;
 
     MPlug        nearPlug(node, nearAttr);
@@ -1304,7 +1352,7 @@ MStatus DgNodeHelper::setClippingRangeAttrAnim(
             MFnAnimCurve::kTangentGlobal,
             NULL,
             &status);
-        AL_MAYA_CHECK_ERROR(status, errorString);
+
         fnCurveFar.addKey(
             tm,
             clippingRange[1],
@@ -1312,7 +1360,7 @@ MStatus DgNodeHelper::setClippingRangeAttrAnim(
             MFnAnimCurve::kTangentGlobal,
             NULL,
             &status);
-        AL_MAYA_CHECK_ERROR(status, errorString);
+
     }
 
     return MS::kSuccess;
@@ -2767,15 +2815,15 @@ MStatus DgNodeHelper::getMatrix2x2Array(
     double* const values,
     const size_t  count)
 {
-    const char* const errorString = "getMatrix2x2Array error";
+    // const char* const errorString = "getMatrix2x2Array error";
     MPlug             arrayPlug(node, attribute);
     for (uint32_t i = 0; i < count; ++i) {
         double* const str = values + i * 4;
         MPlug         plug = arrayPlug.elementByLogicalIndex(i);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(0).getValue(str[0]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(1).getValue(str[1]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(0).getValue(str[2]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(1).getValue(str[3]), errorString);
+        plug.child(0).child(0).getValue(str[0]); // , errorString);
+        plug.child(0).child(1).getValue(str[1]); // , errorString);
+        plug.child(1).child(0).getValue(str[2]); // , errorString);
+        plug.child(1).child(1).getValue(str[3]); // , errorString);
     }
     return MS::kSuccess;
 }
@@ -2787,15 +2835,15 @@ MStatus DgNodeHelper::getMatrix2x2Array(
     float* const values,
     const size_t count)
 {
-    const char* const errorString = "getMatrix2x2Array error";
+    // const char* const errorString = "getMatrix2x2Array error";
     MPlug             arrayPlug(node, attribute);
     for (uint32_t i = 0; i < count; ++i) {
         float* const str = values + i * 4;
         MPlug        plug = arrayPlug.elementByLogicalIndex(i);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(0).getValue(str[0]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(1).getValue(str[1]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(0).getValue(str[2]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(1).getValue(str[3]), errorString);
+        plug.child(0).child(0).getValue(str[0]); // , errorString);
+        plug.child(0).child(1).getValue(str[1]); // , errorString);
+        plug.child(1).child(0).getValue(str[2]); // , errorString);
+        plug.child(1).child(1).getValue(str[3]); // , errorString);
     }
     return MS::kSuccess;
 }
@@ -2807,20 +2855,20 @@ MStatus DgNodeHelper::getMatrix3x3Array(
     double* const values,
     const size_t  count)
 {
-    const char* const errorString = "getMatrix3x3Array error";
+    // const char* const errorString = "getMatrix3x3Array error";
     MPlug             arrayPlug(node, attribute);
     for (uint32_t i = 0; i < count; ++i) {
         double* const str = values + i * 9;
         MPlug         plug = arrayPlug.elementByLogicalIndex(i);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(0).getValue(str[0]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(1).getValue(str[1]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(2).getValue(str[2]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(0).getValue(str[3]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(1).getValue(str[4]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(2).getValue(str[5]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(0).getValue(str[6]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(1).getValue(str[7]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(2).getValue(str[8]), errorString);
+        plug.child(0).child(0).getValue(str[0]); // , errorString);
+        plug.child(0).child(1).getValue(str[1]); // , errorString);
+        plug.child(0).child(2).getValue(str[2]); // , errorString);
+        plug.child(1).child(0).getValue(str[3]); // , errorString);
+        plug.child(1).child(1).getValue(str[4]); // , errorString);
+        plug.child(1).child(2).getValue(str[5]); // , errorString);
+        plug.child(2).child(0).getValue(str[6]); // , errorString);
+        plug.child(2).child(1).getValue(str[7]); // , errorString);
+        plug.child(2).child(2).getValue(str[8]); // , errorString);
     }
     return MS::kSuccess;
 }
@@ -2832,20 +2880,20 @@ MStatus DgNodeHelper::getMatrix3x3Array(
     float* const values,
     const size_t count)
 {
-    const char* const errorString = "getMatrix3x3Array error";
+    // const char* const errorString = "getMatrix3x3Array error";
     MPlug             arrayPlug(node, attribute);
     for (uint32_t i = 0; i < count; ++i) {
         float* const str = values + i * 9;
         MPlug        plug = arrayPlug.elementByLogicalIndex(i);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(0).getValue(str[0]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(1).getValue(str[1]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(2).getValue(str[2]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(0).getValue(str[3]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(1).getValue(str[4]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(2).getValue(str[5]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(0).getValue(str[6]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(1).getValue(str[7]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(2).getValue(str[8]), errorString);
+        plug.child(0).child(0).getValue(str[0]); // , errorString);
+        plug.child(0).child(1).getValue(str[1]); // , errorString);
+        plug.child(0).child(2).getValue(str[2]); // , errorString);
+        plug.child(1).child(0).getValue(str[3]); // , errorString);
+        plug.child(1).child(1).getValue(str[4]); // , errorString);
+        plug.child(1).child(2).getValue(str[5]); // , errorString);
+        plug.child(2).child(0).getValue(str[6]); // , errorString);
+        plug.child(2).child(1).getValue(str[7]); // , errorString);
+        plug.child(2).child(2).getValue(str[8]); // , errorString);
     }
     return MS::kSuccess;
 }
@@ -3314,196 +3362,196 @@ MStatus DgNodeHelper::setString(MObject node, MObject attr, const std::string& s
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec2(MObject node, MObject attr, const int* const xy)
 {
-    const char* const errorString = "vec2i error";
+    // const char* const errorString = "vec2i error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xy[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xy[1]), errorString);
+    plug.child(0).setValue(xy[0]); // , errorString);
+    plug.child(1).setValue(xy[1]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec2(MObject node, MObject attr, const float* const xy)
 {
-    const char* const errorString = "vec2f error";
+    // const char* const errorString = "vec2f error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xy[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xy[1]), errorString);
+    plug.child(0).setValue(xy[0]); // , errorString);
+    plug.child(1).setValue(xy[1]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec2(MObject node, MObject attr, const GfHalf* const xy)
 {
-    const char* const errorString = "vec2h error";
+    // const char* const errorString = "vec2h error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(MayaUsdUtils::float2half_1f(xy[0])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(MayaUsdUtils::float2half_1f(xy[1])), errorString);
+    plug.child(0).setValue(MayaUsdUtils::float2half_1f(xy[0])); // , errorString);
+    plug.child(1).setValue(MayaUsdUtils::float2half_1f(xy[1])); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec2(MObject node, MObject attr, const double* const xy)
 {
-    const char* const errorString = "vec2d error";
+    // const char* const errorString = "vec2d error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xy[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xy[1]), errorString);
+    plug.child(0).setValue(xy[0]); // , errorString);
+    plug.child(1).setValue(xy[1]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec3(MObject node, MObject attr, const int* const xyz)
 {
-    const char* const errorString = "vec3i error";
+    // const char* const errorString = "vec3i error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xyz[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xyz[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(xyz[2]), errorString);
+    plug.child(0).setValue(xyz[0]); // , errorString);
+    plug.child(1).setValue(xyz[1]); // , errorString);
+    plug.child(2).setValue(xyz[2]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec3(MObject node, MObject attr, const float* const xyz)
 {
-    const char* const errorString = "vec3f error";
+    // const char* const errorString = "vec3f error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xyz[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xyz[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(xyz[2]), errorString);
+    plug.child(0).setValue(xyz[0]); // , errorString);
+    plug.child(1).setValue(xyz[1]); // , errorString);
+    plug.child(2).setValue(xyz[2]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec3(MObject node, MObject attr, const GfHalf* const xyz)
 {
-    const char* const errorString = "vec3h error";
+    // const char* const errorString = "vec3h error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyz[0])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyz[1])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyz[2])), errorString);
+    plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyz[0])); // , errorString);
+    plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyz[1])); // , errorString);
+    plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyz[2])); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec3(MObject node, MObject attr, const double* const xyz)
 {
-    const char* const errorString = "vec3d error";
+    // const char* const errorString = "vec3d error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xyz[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xyz[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(xyz[2]), errorString);
+    plug.child(0).setValue(xyz[0]); // , errorString);
+    plug.child(1).setValue(xyz[1]); // , errorString);
+    plug.child(2).setValue(xyz[2]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec4(MObject node, MObject attr, const int* const xyzw)
 {
-    const char* const errorString = "vec4i error";
+    // const char* const errorString = "vec4i error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xyzw[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xyzw[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(xyzw[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).setValue(xyzw[3]), errorString);
+    plug.child(0).setValue(xyzw[0]); // , errorString);
+    plug.child(1).setValue(xyzw[1]); // , errorString);
+    plug.child(2).setValue(xyzw[2]); // , errorString);
+    plug.child(3).setValue(xyzw[3]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec4(MObject node, MObject attr, const float* const xyzw)
 {
-    const char* const errorString = "vec4f error";
+    // const char* const errorString = "vec4f error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xyzw[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xyzw[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(xyzw[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).setValue(xyzw[3]), errorString);
+    plug.child(0).setValue(xyzw[0]); // , errorString);
+    plug.child(1).setValue(xyzw[1]); // , errorString);
+    plug.child(2).setValue(xyzw[2]); // , errorString);
+    plug.child(3).setValue(xyzw[3]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec4(MObject node, MObject attr, const double* const xyzw)
 {
-    const char* const errorString = "vec4d error";
+    // const char* const errorString = "vec4d error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xyzw[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xyzw[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(xyzw[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).setValue(xyzw[3]), errorString);
+    plug.child(0).setValue(xyzw[0]); // , errorString);
+    plug.child(1).setValue(xyzw[1]); // , errorString);
+    plug.child(2).setValue(xyzw[2]); // , errorString);
+    plug.child(3).setValue(xyzw[3]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setVec4(MObject node, MObject attr, const GfHalf* const xyzw)
 {
-    const char* const errorString = "vec4h error";
+    // const char* const errorString = "vec4h error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyzw[0])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyzw[1])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyzw[2])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).setValue(MayaUsdUtils::float2half_1f(xyzw[3])), errorString);
+    plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyzw[0])); // , errorString);
+    plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyzw[1])); // , errorString);
+    plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyzw[2])); // , errorString);
+    plug.child(3).setValue(MayaUsdUtils::float2half_1f(xyzw[3])); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setQuat(MObject node, MObject attr, const float* const xyzw)
 {
-    const char* const errorString = "quatf error";
+    // const char* const errorString = "quatf error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xyzw[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xyzw[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(xyzw[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).setValue(xyzw[3]), errorString);
+    plug.child(0).setValue(xyzw[0]); // , errorString);
+    plug.child(1).setValue(xyzw[1]); // , errorString);
+    plug.child(2).setValue(xyzw[2]); // , errorString);
+    plug.child(3).setValue(xyzw[3]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setQuat(MObject node, MObject attr, const double* const xyzw)
 {
-    const char* const errorString = "quatd error";
+    // const char* const errorString = "quatd error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(xyzw[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(xyzw[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(xyzw[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).setValue(xyzw[3]), errorString);
+    plug.child(0).setValue(xyzw[0]); // , errorString);
+    plug.child(1).setValue(xyzw[1]); // , errorString);
+    plug.child(2).setValue(xyzw[2]); // , errorString);
+    plug.child(3).setValue(xyzw[3]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setQuat(MObject node, MObject attr, const GfHalf* const xyzw)
 {
-    const char* const errorString = "quath error";
+    // const char* const errorString = "quath error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyzw[0])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyzw[1])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyzw[2])), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).setValue(MayaUsdUtils::float2half_1f(xyzw[3])), errorString);
+    plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyzw[0])); // , errorString);
+    plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyzw[1])); // , errorString);
+    plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyzw[2])); // , errorString);
+    plug.child(3).setValue(MayaUsdUtils::float2half_1f(xyzw[3])); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setString(MObject node, MObject attr, const char* const str)
 {
-    const char* const errorString = "string error";
+    // const char* const errorString = "string error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.setString(str), errorString);
+    plug.setString(str); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setMatrix4x4(MObject node, MObject attr, const double* const str)
 {
-    const char* const errorString = "matrix4x4 error - unimplemented";
+    // const char* const errorString = "matrix4x4 error - unimplemented";
     MPlug             plug(node, attr);
     MFnMatrixData     fn;
     typedef double    hack[4];
     MObject           data = fn.create(MMatrix((const hack*)str));
-    AL_MAYA_CHECK_ERROR(plug.setValue(data), errorString);
+    plug.setValue(data); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setMatrix4x4(MObject node, MObject attr, const float* const ptr)
 {
-    const char* const errorString = "matrix4x4 error - unimplemented";
+    // const char* const errorString = "matrix4x4 error - unimplemented";
     MPlug             plug(node, attr);
     MFnMatrixData     fn;
     MMatrix           m;
@@ -3549,65 +3597,65 @@ MStatus DgNodeHelper::setMatrix4x4(MObject node, MObject attr, const float* cons
 #endif
 
     MObject data = fn.create(m);
-    AL_MAYA_CHECK_ERROR(plug.setValue(data), errorString);
+    plug.setValue(data); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setMatrix3x3(MObject node, MObject attr, const double* const str)
 {
-    const char* const errorString = "matrix3x3 error";
+    // const char* const errorString = "matrix3x3 error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(0).setValue(str[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(1).setValue(str[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(2).setValue(str[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(0).setValue(str[3]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(1).setValue(str[4]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(2).setValue(str[5]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(0).setValue(str[6]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(1).setValue(str[7]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(2).setValue(str[8]), errorString);
+    plug.child(0).child(0).setValue(str[0]); // , errorString);
+    plug.child(0).child(1).setValue(str[1]); // , errorString);
+    plug.child(0).child(2).setValue(str[2]); // , errorString);
+    plug.child(1).child(0).setValue(str[3]); // , errorString);
+    plug.child(1).child(1).setValue(str[4]); // , errorString);
+    plug.child(1).child(2).setValue(str[5]); // , errorString);
+    plug.child(2).child(0).setValue(str[6]); // , errorString);
+    plug.child(2).child(1).setValue(str[7]); // , errorString);
+    plug.child(2).child(2).setValue(str[8]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setMatrix3x3(MObject node, MObject attr, const float* const str)
 {
-    const char* const errorString = "matrix3x3 error";
+    // const char* const errorString = "matrix3x3 error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(0).setValue(str[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(1).setValue(str[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(2).setValue(str[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(0).setValue(str[3]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(1).setValue(str[4]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(2).setValue(str[5]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(0).setValue(str[6]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(1).setValue(str[7]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(2).setValue(str[8]), errorString);
+    plug.child(0).child(0).setValue(str[0]); // , errorString);
+    plug.child(0).child(1).setValue(str[1]); // , errorString);
+    plug.child(0).child(2).setValue(str[2]); // , errorString);
+    plug.child(1).child(0).setValue(str[3]); // , errorString);
+    plug.child(1).child(1).setValue(str[4]); // , errorString);
+    plug.child(1).child(2).setValue(str[5]); // , errorString);
+    plug.child(2).child(0).setValue(str[6]); // , errorString);
+    plug.child(2).child(1).setValue(str[7]); // , errorString);
+    plug.child(2).child(2).setValue(str[8]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setMatrix2x2(MObject node, MObject attr, const double* const str)
 {
-    const char* const errorString = "matrix2x2 error";
+    // const char* const errorString = "matrix2x2 error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(0).setValue(str[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(1).setValue(str[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(0).setValue(str[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(1).setValue(str[3]), errorString);
+    plug.child(0).child(0).setValue(str[0]); // , errorString);
+    plug.child(0).child(1).setValue(str[1]); // , errorString);
+    plug.child(1).child(0).setValue(str[2]); // , errorString);
+    plug.child(1).child(1).setValue(str[3]); // , errorString);
     return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setMatrix2x2(MObject node, MObject attr, const float* const str)
 {
-    const char* const errorString = "matrix2x2 error";
+    // const char* const errorString = "matrix2x2 error";
     MPlug             plug(node, attr);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(0).setValue(str[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(1).setValue(str[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(0).setValue(str[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(1).setValue(str[3]), errorString);
+    plug.child(0).child(0).setValue(str[0]); // , errorString);
+    plug.child(0).child(1).setValue(str[1]); // , errorString);
+    plug.child(1).child(0).setValue(str[2]); // , errorString);
+    plug.child(1).child(1).setValue(str[3]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -3618,16 +3666,16 @@ MStatus DgNodeHelper::setMatrix2x2Array(
     const double* const values,
     const size_t        count)
 {
-    const char* const errorString = "setMatrix2x2Array error";
+    // const char* const errorString = "setMatrix2x2Array error";
     MPlug             arrayPlug(node, attribute);
     arrayPlug.setNumElements(count);
     for (uint32_t i = 0; i < count; ++i) {
         const double* const str = values + i * 4;
         MPlug               plug = arrayPlug.elementByLogicalIndex(i);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(0).setValue(str[0]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(1).setValue(str[1]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(0).setValue(str[2]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(1).setValue(str[3]), errorString);
+        plug.child(0).child(0).setValue(str[0]); // , errorString);
+        plug.child(0).child(1).setValue(str[1]); // , errorString);
+        plug.child(1).child(0).setValue(str[2]); // , errorString);
+        plug.child(1).child(1).setValue(str[3]); // , errorString);
     }
     return MS::kSuccess;
 }
@@ -3639,16 +3687,16 @@ MStatus DgNodeHelper::setMatrix2x2Array(
     const float* const values,
     const size_t       count)
 {
-    const char* const errorString = "setMatrix2x2Array error";
+    // const char* const errorString = "setMatrix2x2Array error";
     MPlug             arrayPlug(node, attribute);
     arrayPlug.setNumElements(count);
     for (uint32_t i = 0; i < count; ++i) {
         const float* const str = values + i * 4;
         MPlug              plug = arrayPlug.elementByLogicalIndex(i);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(0).setValue(str[0]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(1).setValue(str[1]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(0).setValue(str[2]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(1).setValue(str[3]), errorString);
+        plug.child(0).child(0).setValue(str[0]); // , errorString);
+        plug.child(0).child(1).setValue(str[1]); // , errorString);
+        plug.child(1).child(0).setValue(str[2]); // , errorString);
+        plug.child(1).child(1).setValue(str[3]); // , errorString);
     }
     return MS::kSuccess;
 }
@@ -3660,21 +3708,21 @@ MStatus DgNodeHelper::setMatrix3x3Array(
     const double* const values,
     const size_t        count)
 {
-    const char* const errorString = "setMatrix3x3Array error";
+    // const char* const errorString = "setMatrix3x3Array error";
     MPlug             arrayPlug(node, attribute);
     arrayPlug.setNumElements(count);
     for (uint32_t i = 0; i < count; ++i) {
         const double* const str = values + i * 9;
         MPlug               plug = arrayPlug.elementByLogicalIndex(i);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(0).setValue(str[0]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(1).setValue(str[1]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(2).setValue(str[2]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(0).setValue(str[3]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(1).setValue(str[4]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(2).setValue(str[5]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(0).setValue(str[6]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(1).setValue(str[7]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(2).setValue(str[8]), errorString);
+        plug.child(0).child(0).setValue(str[0]); // , errorString);
+        plug.child(0).child(1).setValue(str[1]); // , errorString);
+        plug.child(0).child(2).setValue(str[2]); // , errorString);
+        plug.child(1).child(0).setValue(str[3]); // , errorString);
+        plug.child(1).child(1).setValue(str[4]); // , errorString);
+        plug.child(1).child(2).setValue(str[5]); // , errorString);
+        plug.child(2).child(0).setValue(str[6]); // , errorString);
+        plug.child(2).child(1).setValue(str[7]); // , errorString);
+        plug.child(2).child(2).setValue(str[8]); // , errorString);
     }
     return MS::kSuccess;
 }
@@ -3686,21 +3734,21 @@ MStatus DgNodeHelper::setMatrix3x3Array(
     const float* const values,
     const size_t       count)
 {
-    const char* const errorString = "setMatrix3x3Array error";
+    // const char* const errorString = "setMatrix3x3Array error";
     MPlug             arrayPlug(node, attribute);
     arrayPlug.setNumElements(count);
     for (uint32_t i = 0; i < count; ++i) {
         const float* const str = values + i * 9;
         MPlug              plug = arrayPlug.elementByLogicalIndex(i);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(0).setValue(str[0]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(1).setValue(str[1]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(0).child(2).setValue(str[2]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(0).setValue(str[3]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(1).setValue(str[4]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(1).child(2).setValue(str[5]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(0).setValue(str[6]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(1).setValue(str[7]), errorString);
-        AL_MAYA_CHECK_ERROR(plug.child(2).child(2).setValue(str[8]), errorString);
+        plug.child(0).child(0).setValue(str[0]); // , errorString);
+        plug.child(0).child(1).setValue(str[1]); // , errorString);
+        plug.child(0).child(2).setValue(str[2]); // , errorString);
+        plug.child(1).child(0).setValue(str[3]); // , errorString);
+        plug.child(1).child(1).setValue(str[4]); // , errorString);
+        plug.child(1).child(2).setValue(str[5]); // , errorString);
+        plug.child(2).child(0).setValue(str[6]); // , errorString);
+        plug.child(2).child(1).setValue(str[7]); // , errorString);
+        plug.child(2).child(2).setValue(str[8]); // , errorString);
     }
     return MS::kSuccess;
 }
@@ -3891,10 +3939,10 @@ MStatus DgNodeHelper::getMatrix2x2(MObject node, MObject attr, float* const str)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(0).getValue(str[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(1).getValue(str[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(0).getValue(str[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(1).getValue(str[3]), errorString);
+    plug.child(0).child(0).getValue(str[0]); // , errorString);
+    plug.child(0).child(1).getValue(str[1]); // , errorString);
+    plug.child(1).child(0).getValue(str[2]); // , errorString);
+    plug.child(1).child(1).getValue(str[3]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -3907,15 +3955,15 @@ MStatus DgNodeHelper::getMatrix3x3(MObject node, MObject attr, float* const str)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(0).getValue(str[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(1).getValue(str[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(2).getValue(str[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(0).getValue(str[3]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(1).getValue(str[4]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(2).getValue(str[5]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(0).getValue(str[6]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(1).getValue(str[7]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(2).getValue(str[8]), errorString);
+    plug.child(0).child(0).getValue(str[0]); // , errorString);
+    plug.child(0).child(1).getValue(str[1]); // , errorString);
+    plug.child(0).child(2).getValue(str[2]); // , errorString);
+    plug.child(1).child(0).getValue(str[3]); // , errorString);
+    plug.child(1).child(1).getValue(str[4]); // , errorString);
+    plug.child(1).child(2).getValue(str[5]); // , errorString);
+    plug.child(2).child(0).getValue(str[6]); // , errorString);
+    plug.child(2).child(1).getValue(str[7]); // , errorString);
+    plug.child(2).child(2).getValue(str[8]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -3929,7 +3977,7 @@ MStatus DgNodeHelper::getMatrix4x4(MObject node, MObject attr, float* const valu
         return MS::kFailure;
     }
     MObject data;
-    AL_MAYA_CHECK_ERROR(plug.getValue(data), errorString);
+    plug.getValue(data); // , errorString);
     MFnMatrixData  fn(data);
     const MMatrix& mat = fn.matrix();
 
@@ -3984,10 +4032,10 @@ MStatus DgNodeHelper::getMatrix2x2(MObject node, MObject attr, double* const str
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(0).getValue(str[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(1).getValue(str[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(0).getValue(str[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(1).getValue(str[3]), errorString);
+    plug.child(0).child(0).getValue(str[0]); // , errorString);
+    plug.child(0).child(1).getValue(str[1]); // , errorString);
+    plug.child(1).child(0).getValue(str[2]); // , errorString);
+    plug.child(1).child(1).getValue(str[3]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4000,15 +4048,15 @@ MStatus DgNodeHelper::getMatrix3x3(MObject node, MObject attr, double* const str
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(0).getValue(str[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(1).getValue(str[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(0).child(2).getValue(str[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(0).getValue(str[3]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(1).getValue(str[4]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).child(2).getValue(str[5]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(0).getValue(str[6]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(1).getValue(str[7]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).child(2).getValue(str[8]), errorString);
+    plug.child(0).child(0).getValue(str[0]); // , errorString);
+    plug.child(0).child(1).getValue(str[1]); // , errorString);
+    plug.child(0).child(2).getValue(str[2]); // , errorString);
+    plug.child(1).child(0).getValue(str[3]); // , errorString);
+    plug.child(1).child(1).getValue(str[4]); // , errorString);
+    plug.child(1).child(2).getValue(str[5]); // , errorString);
+    plug.child(2).child(0).getValue(str[6]); // , errorString);
+    plug.child(2).child(1).getValue(str[7]); // , errorString);
+    plug.child(2).child(2).getValue(str[8]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4022,7 +4070,7 @@ MStatus DgNodeHelper::getMatrix4x4(MObject node, MObject attr, double* const val
         return MS::kFailure;
     }
     MObject data;
-    AL_MAYA_CHECK_ERROR(plug.getValue(data), errorString);
+    plug.getValue(data); // , errorString);
     MFnMatrixData  fn(data);
     const MMatrix& mat = fn.matrix();
 
@@ -4086,7 +4134,7 @@ MStatus DgNodeHelper::getString(MObject node, MObject attr, std::string& str)
         return MS::kFailure;
     }
     MString value;
-    AL_MAYA_CHECK_ERROR(plug.getValue(value), errorString);
+    plug.getValue(value); // , errorString);
 
     str.assign(value.asChar(), value.asChar() + value.length());
     return MS::kSuccess;
@@ -4101,8 +4149,8 @@ MStatus DgNodeHelper::getVec2(MObject node, MObject attr, int* xy)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xy[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xy[1]), errorString);
+    plug.child(0).getValue(xy[0]); // , errorString);
+    plug.child(1).getValue(xy[1]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4115,8 +4163,8 @@ MStatus DgNodeHelper::getVec2(MObject node, MObject attr, float* xy)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xy[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xy[1]), errorString);
+    plug.child(0).getValue(xy[0]); // , errorString);
+    plug.child(1).getValue(xy[1]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4129,8 +4177,8 @@ MStatus DgNodeHelper::getVec2(MObject node, MObject attr, double* xy)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xy[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xy[1]), errorString);
+    plug.child(0).getValue(xy[0]); // , errorString);
+    plug.child(1).getValue(xy[1]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4153,9 +4201,9 @@ MStatus DgNodeHelper::getVec3(MObject node, MObject attr, int* xyz)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xyz[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xyz[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).getValue(xyz[2]), errorString);
+    plug.child(0).getValue(xyz[0]); // , errorString);
+    plug.child(1).getValue(xyz[1]); // , errorString);
+    plug.child(2).getValue(xyz[2]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4168,9 +4216,9 @@ MStatus DgNodeHelper::getVec3(MObject node, MObject attr, float* xyz)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xyz[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xyz[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).getValue(xyz[2]), errorString);
+    plug.child(0).getValue(xyz[0]); // , errorString);
+    plug.child(1).getValue(xyz[1]); // , errorString);
+    plug.child(2).getValue(xyz[2]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4183,9 +4231,9 @@ MStatus DgNodeHelper::getVec3(MObject node, MObject attr, double* xyz)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xyz[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xyz[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).getValue(xyz[2]), errorString);
+    plug.child(0).getValue(xyz[0]); // , errorString);
+    plug.child(1).getValue(xyz[1]); // , errorString);
+    plug.child(2).getValue(xyz[2]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4211,10 +4259,10 @@ MStatus DgNodeHelper::getVec4(MObject node, MObject attr, int* xyzw)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xyzw[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xyzw[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).getValue(xyzw[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).getValue(xyzw[3]), errorString);
+    plug.child(0).getValue(xyzw[0]); // , errorString);
+    plug.child(1).getValue(xyzw[1]); // , errorString);
+    plug.child(2).getValue(xyzw[2]); // , errorString);
+    plug.child(3).getValue(xyzw[3]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4227,10 +4275,10 @@ MStatus DgNodeHelper::getVec4(MObject node, MObject attr, float* xyzw)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xyzw[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xyzw[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).getValue(xyzw[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).getValue(xyzw[3]), errorString);
+    plug.child(0).getValue(xyzw[0]); // , errorString);
+    plug.child(1).getValue(xyzw[1]); // , errorString);
+    plug.child(2).getValue(xyzw[2]); // , errorString);
+    plug.child(3).getValue(xyzw[3]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4243,10 +4291,10 @@ MStatus DgNodeHelper::getVec4(MObject node, MObject attr, double* xyzw)
         MGlobal::displayError(errorString);
         return MS::kFailure;
     }
-    AL_MAYA_CHECK_ERROR(plug.child(0).getValue(xyzw[0]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(1).getValue(xyzw[1]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(2).getValue(xyzw[2]), errorString);
-    AL_MAYA_CHECK_ERROR(plug.child(3).getValue(xyzw[3]), errorString);
+    plug.child(0).getValue(xyzw[0]); // , errorString);
+    plug.child(1).getValue(xyzw[1]); // , errorString);
+    plug.child(2).getValue(xyzw[2]); // , errorString);
+    plug.child(3).getValue(xyzw[3]); // , errorString);
     return MS::kSuccess;
 }
 
@@ -4416,184 +4464,6 @@ MStatus DgNodeHelper::copyVec3(MObject node, MObject attr, const UsdAttribute& v
     return MS::kSuccess;
 }
 
-
-bool replace(std::string& str, const std::string& from, const std::string& to) {
-    size_t start_pos = str.find(from);
-    if(start_pos == std::string::npos)
-        return false;
-    str.replace(start_pos, from.length(), to);
-    return true;
-}
-
-
-//----------------------------------------------------------------------------------------------------------------------
-MStatus DgNodeHelper::addDynamicAttribute(MObject node, const UsdAttribute& usdAttr)
-{
-    const SdfValueTypeName typeName = usdAttr.GetTypeName();
-    const bool             isArray = typeName.IsArray();
-    const UsdDataType      dataType = getAttributeType(usdAttr);
-    MObject                attribute = MObject::kNullObj;
-    const char*            attrName = usdAttr.GetName().GetString().c_str();
-
-
-    // Fixing attr names to match the original maya names before writing them to USD Attrs
-    // using -userattr flag that was added to usdExport in our implementation
-    bool isShapeAttr = true;
-    std::string tmpAttrName = attrName;
-    if (tmpAttrName.rfind("xform:userProperties:", 0) == 0) {
-        // This is transform userProperties
-        isShapeAttr = false;
-        replace(tmpAttrName, "xform:userProperties:", "");
-    } else if (tmpAttrName.rfind("userProperties:", 0) == 0) {
-        isShapeAttr = true;
-        replace(tmpAttrName, "userProperties:", "");
-    } else if (tmpAttrName.rfind("primvars:ri:user:", 0) == 0) {
-        isShapeAttr = true;
-        replace(tmpAttrName, "primvars:ri:user:", "");
-    } else if (tmpAttrName.rfind("primvars:", 0) == 0) {
-        isShapeAttr = true;
-        replace(tmpAttrName, "primvars:", "");
-    }
-    attrName = tmpAttrName.c_str();
-
-    MDagPath dagPath = MDagPath::getAPathTo(node);
-    // don't add/set the attribute when it's a shape attr and the node is transform and vise versa
-    // in such case, assume kSuccess
-    if ((isShapeAttr and node.apiType() ==  MFn::kTransform) || (!isShapeAttr and node.apiType() !=  MFn::kTransform))
-        return  MS::kSuccess;
-
-    // Some plugins like renderman creates custom attributes on time of object creation (before us here)
-    // when these attributes are modified and exported out into the USD, we need to set them back when loading
-    // the USD, So, we have to check if the custom attr exists, then we have to set the value rather than adding a new attr.
-    MFnDependencyNode depNode(node);
-    if (!depNode.hasAttribute(attrName)) {
-
-        const uint32_t flags = (isArray ? AL::maya::utils::NodeHelper::kArray : 0)
-            | AL::maya::utils::NodeHelper::kReadable | AL::maya::utils::NodeHelper::kWritable
-            | AL::maya::utils::NodeHelper::kStorable | AL::maya::utils::NodeHelper::kConnectable;
-        switch (dataType) {
-        case UsdDataType::kAsset: {
-            return MS::kSuccess;
-        } break;
-
-        case UsdDataType::kBool: {
-            AL::maya::utils::NodeHelper::addBoolAttr(
-                node, attrName, attrName, false, flags, &attribute);
-        } break;
-
-        case UsdDataType::kUChar: {
-            AL::maya::utils::NodeHelper::addInt8Attr(
-                node, attrName, attrName, 0, flags, &attribute);
-        } break;
-
-        case UsdDataType::kInt:
-        case UsdDataType::kUInt: {
-            AL::maya::utils::NodeHelper::addInt32Attr(
-                node, attrName, attrName, 0, flags, &attribute);
-        } break;
-
-        case UsdDataType::kInt64:
-        case UsdDataType::kUInt64: {
-            AL::maya::utils::NodeHelper::addInt64Attr(
-                node, attrName, attrName, 0, flags, &attribute);
-        } break;
-
-        case UsdDataType::kHalf:
-        case UsdDataType::kFloat: {
-            AL::maya::utils::NodeHelper::addFloatAttr(
-                node, attrName, attrName, 0, flags, &attribute);
-        } break;
-
-        case UsdDataType::kDouble: {
-            AL::maya::utils::NodeHelper::addDoubleAttr(
-                node, attrName, attrName, 0, flags, &attribute);
-        } break;
-
-        case UsdDataType::kString: {
-            AL::maya::utils::NodeHelper::addStringAttr(
-                node, attrName, attrName, flags, true, &attribute);
-        } break;
-
-        case UsdDataType::kMatrix2d: {
-            const float defValue[2][2] = { { 0, 0 }, { 0, 0 } };
-            AL::maya::utils::NodeHelper::addMatrix2x2Attr(
-                node, attrName, attrName, defValue, flags, &attribute);
-        } break;
-
-        case UsdDataType::kMatrix3d: {
-            const float defValue[3][3] = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-            AL::maya::utils::NodeHelper::addMatrix3x3Attr(
-                node, attrName, attrName, defValue, flags, &attribute);
-        } break;
-
-        case UsdDataType::kMatrix4d: {
-            AL::maya::utils::NodeHelper::addMatrixAttr(
-                node, attrName, attrName, MMatrix(), flags, &attribute);
-        } break;
-
-        case UsdDataType::kQuatd: {
-            AL::maya::utils::NodeHelper::addVec4dAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kQuatf:
-        case UsdDataType::kQuath: {
-            AL::maya::utils::NodeHelper::addVec4fAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec2d: {
-            AL::maya::utils::NodeHelper::addVec2dAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec2f:
-        case UsdDataType::kVec2h: {
-            AL::maya::utils::NodeHelper::addVec2fAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec2i: {
-            AL::maya::utils::NodeHelper::addVec2iAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec3d: {
-            AL::maya::utils::NodeHelper::addVec3dAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec3f:
-        case UsdDataType::kVec3h: {
-            AL::maya::utils::NodeHelper::addVec3fAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec3i: {
-            AL::maya::utils::NodeHelper::addVec3iAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec4d: {
-            AL::maya::utils::NodeHelper::addVec4dAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec4f:
-        case UsdDataType::kVec4h: {
-            AL::maya::utils::NodeHelper::addVec4fAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        case UsdDataType::kVec4i: {
-            AL::maya::utils::NodeHelper::addVec4iAttr(node, attrName, attrName, flags, &attribute);
-        } break;
-
-        default:
-            MGlobal::displayError(
-                "DgNodeTranslator::addDynamicAttribute - unsupported USD data type");
-            return MS::kFailure;
-        }
-    } else {
-        // Get the attribute
-        attribute = depNode.attribute(attrName);
-    }
-
-    if (isArray) {
-        return setArrayMayaValue(node, attribute, usdAttr, dataType);
-    }
-    return setSingleMayaValue(node, attribute, usdAttr, dataType);
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setMayaValue(MObject node, MObject attr, const UsdAttribute& usdAttr)
@@ -5003,694 +4873,6 @@ MStatus DgNodeHelper::convertSpecialValueToUSDAttribute(const MPlug& plug, UsdAt
     return MS::kFailure;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-MStatus
-DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim, AnimationTranslator* translator)
-{
-    MFnDependencyNode fn(node);
-    uint32_t          numAttributes = fn.attributeCount();
-    for (uint32_t i = 0; i < numAttributes; ++i) {
-        MObject attribute = fn.attribute(i);
-        MPlug   plug(node, attribute);
-
-        // skip child attributes (only export from highest level)
-        if (plug.isChild())
-            continue;
-
-        bool isDynamic = plug.isDynamic();
-        if (isDynamic) {
-            TfToken attributeName
-                = TfToken(plug.partialName(false, false, false, false, false, true).asChar());
-
-            // first test if the attribute happen to come with the prim by nature and we have a
-            // mapping rule for it:
-            if (prim.HasAttribute(attributeName)) {
-                UsdAttribute usdAttr = prim.GetAttribute(attributeName);
-                // if the conversion works, we are done:
-                if (convertSpecialValueToUSDAttribute(plug, usdAttr)) {
-                    continue;
-                }
-                // if not, then we count on CreateAttribute codes below since that will return the
-                // USDAttribute if already exists and hopefully the type conversions below will
-                // work.
-            }
-
-            bool isArray = plug.isArray();
-            switch (attribute.apiType()) {
-            case MFn::kAttribute2Double: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double2);
-                    GfVec2d m;
-                    getVec2(node, attribute, (double*)&m);
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                    if (translator)
-                        translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double2Array);
-                    VtArray<GfVec2d> m;
-                    m.resize(plug.numElements());
-                    getVec2Array(node, attribute, (double*)m.data(), m.size());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kAttribute2Float: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float2);
-                    GfVec2f m;
-                    getVec2(node, attribute, (float*)&m);
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                    if (translator)
-                        translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float2Array);
-                    VtArray<GfVec2f> m;
-                    m.resize(plug.numElements());
-                    getVec2Array(node, attribute, (float*)m.data(), m.size());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kAttribute2Int:
-            case MFn::kAttribute2Short: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int2);
-                    GfVec2i m;
-                    getVec2(node, attribute, (int32_t*)&m);
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                    if (translator)
-                        translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int2Array);
-                    VtArray<GfVec2i> m;
-                    m.resize(plug.numElements());
-                    getVec2Array(node, attribute, (int32_t*)m.data(), m.size());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kAttribute3Double: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double3);
-                    GfVec3d m;
-                    getVec3(node, attribute, (double*)&m);
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                    if (translator)
-                        translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double3Array);
-                    VtArray<GfVec3d> m;
-                    m.resize(plug.numElements());
-                    getVec3Array(node, attribute, (double*)m.data(), m.size());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kAttribute3Float: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float3);
-                    GfVec3f m;
-                    getVec3(node, attribute, (float*)&m);
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                    if (translator)
-                        translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float3Array);
-                    VtArray<GfVec3f> m;
-                    m.resize(plug.numElements());
-                    getVec3Array(node, attribute, (float*)m.data(), m.size());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kAttribute3Long:
-            case MFn::kAttribute3Short: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int3);
-                    GfVec3i m;
-                    getVec3(node, attribute, (int32_t*)&m);
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                    if (translator)
-                        translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int3Array);
-                    VtArray<GfVec3i> m;
-                    m.resize(plug.numElements());
-                    getVec3Array(node, attribute, (int32_t*)m.data(), m.size());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kAttribute4Double: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double4);
-                    GfVec4d m;
-                    getVec4(node, attribute, (double*)&m);
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                    if (translator)
-                        translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double4Array);
-                    VtArray<GfVec4d> m;
-                    m.resize(plug.numElements());
-                    getVec4Array(node, attribute, (double*)m.data(), m.size());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kNumericAttribute: {
-                MFnNumericAttribute fn(attribute);
-                switch (fn.unitType()) {
-                case MFnNumericData::kBoolean: {
-                    if (!isArray) {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->Bool);
-                        bool value;
-                        getBool(node, attribute, value);
-                        usdAttr.Set(value);
-                        usdAttr.SetCustom(true);
-                        if (translator)
-                            translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                    } else {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->BoolArray);
-                        VtArray<bool> m;
-                        m.resize(plug.numElements());
-                        getUsdBoolArray(node, attribute, m);
-                        usdAttr.Set(m);
-                        usdAttr.SetCustom(true);
-                    }
-                } break;
-
-                case MFnNumericData::kFloat: {
-                    if (!isArray) {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float);
-                        float value;
-                        getFloat(node, attribute, value);
-                        usdAttr.Set(value);
-                        usdAttr.SetCustom(true);
-                        if (translator)
-                            translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                    } else {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->FloatArray);
-                        VtArray<float> m;
-                        m.resize(plug.numElements());
-                        getFloatArray(node, attribute, (float*)m.data(), m.size());
-                        usdAttr.Set(m);
-                        usdAttr.SetCustom(true);
-                    }
-                } break;
-
-                case MFnNumericData::kDouble: {
-                    if (!isArray) {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double);
-                        double value;
-                        getDouble(node, attribute, value);
-                        usdAttr.Set(value);
-                        usdAttr.SetCustom(true);
-                        if (translator)
-                            translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                    } else {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->DoubleArray);
-                        VtArray<double> m;
-                        m.resize(plug.numElements());
-                        getDoubleArray(node, attribute, (double*)m.data(), m.size());
-                        usdAttr.Set(m);
-                        usdAttr.SetCustom(true);
-                    }
-                } break;
-
-                case MFnNumericData::kInt:
-                case MFnNumericData::kShort: {
-                    if (!isArray) {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int);
-                        int32_t value;
-                        getInt32(node, attribute, value);
-                        usdAttr.Set(value);
-                        usdAttr.SetCustom(true);
-                        if (translator)
-                            translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                    } else {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->IntArray);
-                        VtArray<int> m;
-                        m.resize(plug.numElements());
-                        getInt32Array(node, attribute, (int32_t*)m.data(), m.size());
-                        usdAttr.Set(m);
-                        usdAttr.SetCustom(true);
-                    }
-                } break;
-
-                case MFnNumericData::kInt64: {
-                    if (!isArray) {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int64);
-                        int64_t value;
-                        getInt64(node, attribute, value);
-                        usdAttr.Set(value);
-                        usdAttr.SetCustom(true);
-                        if (translator)
-                            translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                    } else {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int64Array);
-                        VtArray<int64_t> m;
-                        m.resize(plug.numElements());
-                        getInt64Array(node, attribute, (int64_t*)m.data(), m.size());
-                        usdAttr.Set(m);
-                        usdAttr.SetCustom(true);
-                    }
-                } break;
-
-                case MFnNumericData::kByte:
-                case MFnNumericData::kChar: {
-                    if (!isArray) {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->UChar);
-                        int16_t value;
-                        getInt16(node, attribute, value);
-                        usdAttr.Set(uint8_t(value));
-                        usdAttr.SetCustom(true);
-                        if (translator)
-                            translator->addPlug(MPlug(node, attribute), usdAttr, true);
-                    } else {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->UCharArray);
-                        VtArray<uint8_t> m;
-                        m.resize(plug.numElements());
-                        getInt8Array(node, attribute, (int8_t*)m.data(), m.size());
-                        usdAttr.Set(m);
-                        usdAttr.SetCustom(true);
-                    }
-                } break;
-
-                default: {
-                    std::cout << "Unhandled numeric attribute: " << fn.name().asChar() << " "
-                              << fn.unitType() << std::endl;
-                } break;
-                }
-            } break;
-
-            case MFn::kDoubleAngleAttribute: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double);
-                    double value;
-                    getDouble(node, attribute, value);
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->DoubleArray);
-                    VtArray<double> value;
-                    value.resize(plug.numElements());
-                    getDoubleArray(node, attribute, (double*)value.data(), value.size());
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kFloatAngleAttribute: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float);
-                    float value;
-                    getFloat(node, attribute, value);
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->FloatArray);
-                    VtArray<float> value;
-                    value.resize(plug.numElements());
-                    getFloatArray(node, attribute, (float*)value.data(), value.size());
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kDoubleLinearAttribute: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double);
-                    double value;
-                    getDouble(node, attribute, value);
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->DoubleArray);
-                    VtArray<double> value;
-                    value.resize(plug.numElements());
-                    getDoubleArray(node, attribute, (double*)value.data(), value.size());
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kFloatLinearAttribute: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Float);
-                    float value;
-                    getFloat(node, attribute, value);
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->FloatArray);
-                    VtArray<float> value;
-                    value.resize(plug.numElements());
-                    getFloatArray(node, attribute, (float*)value.data(), value.size());
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kTimeAttribute: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Double);
-                    double value;
-                    getDouble(node, attribute, value);
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->DoubleArray);
-                    VtArray<double> value;
-                    value.resize(plug.numElements());
-                    getDoubleArray(node, attribute, (double*)value.data(), value.size());
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kEnumAttribute: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Int);
-                    int32_t value;
-                    getInt32(node, attribute, value);
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->IntArray);
-                    VtArray<int> m;
-                    m.resize(plug.numElements());
-                    getInt32Array(node, attribute, (int32_t*)m.data(), m.size());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            case MFn::kTypedAttribute: {
-                MFnTypedAttribute fnTyped(plug.attribute());
-                MFnData::Type     type = fnTyped.attrType();
-
-                switch (type) {
-                case MFnData::kString: {
-                    if (!isArray) {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->String);
-                        std::string value;
-                        getString(node, attribute, value);
-                        usdAttr.Set(value);
-                        usdAttr.SetCustom(true);
-                    } else {
-                        UsdAttribute usdAttr
-                            = prim.CreateAttribute(attributeName, SdfValueTypeNames->StringArray);
-                        VtArray<std::string> value;
-                        value.resize(plug.numElements());
-                        getStringArray(node, attribute, (std::string*)value.data(), value.size());
-                        usdAttr.Set(value);
-                        usdAttr.SetCustom(true);
-                    }
-                } break;
-
-                case MFnData::kMatrixArray: {
-                    MFnMatrixArrayData fnData(plug.asMObject());
-                    UsdAttribute       usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix4dArray);
-                    VtArray<GfMatrix4d> m;
-                    m.assign(
-                        (const GfMatrix4d*)&fnData.array()[0],
-                        ((const GfMatrix4d*)&fnData.array()[0]) + fnData.array().length());
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                } break;
-
-                default: {
-                    std::cout << "Unhandled typed attribute: " << fn.name().asChar() << " "
-                              << fn.typeName().asChar() << std::endl;
-                } break;
-                }
-            } break;
-
-            case MFn::kCompoundAttribute: {
-                MFnCompoundAttribute fnCompound(plug.attribute());
-                {
-                    if (fnCompound.numChildren() == 2) {
-                        MObject x = fnCompound.child(0);
-                        MObject y = fnCompound.child(1);
-                        if (x.apiType() == MFn::kCompoundAttribute
-                            && y.apiType() == MFn::kCompoundAttribute) {
-                            MFnCompoundAttribute fnCompoundX(x);
-                            MFnCompoundAttribute fnCompoundY(y);
-
-                            if (fnCompoundX.numChildren() == 2 && fnCompoundY.numChildren() == 2) {
-                                MObject xx = fnCompoundX.child(0);
-                                MObject xy = fnCompoundX.child(1);
-                                MObject yx = fnCompoundY.child(0);
-                                MObject yy = fnCompoundY.child(1);
-                                if (xx.apiType() == MFn::kNumericAttribute
-                                    && xy.apiType() == MFn::kNumericAttribute
-                                    && yx.apiType() == MFn::kNumericAttribute
-                                    && yy.apiType() == MFn::kNumericAttribute) {
-                                    if (!isArray) {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Matrix2d);
-                                        GfMatrix2d value;
-                                        getMatrix2x2(node, attribute, (double*)&value);
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    } else {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Matrix2dArray);
-                                        VtArray<GfMatrix2d> value;
-                                        value.resize(plug.numElements());
-                                        getMatrix2x2Array(
-                                            node,
-                                            attribute,
-                                            (double*)value.data(),
-                                            plug.numElements());
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    }
-                                }
-                            }
-                        }
-                    } else if (fnCompound.numChildren() == 3) {
-                        MObject x = fnCompound.child(0);
-                        MObject y = fnCompound.child(1);
-                        MObject z = fnCompound.child(2);
-                        if (x.apiType() == MFn::kCompoundAttribute
-                            && y.apiType() == MFn::kCompoundAttribute
-                            && z.apiType() == MFn::kCompoundAttribute) {
-                            MFnCompoundAttribute fnCompoundX(x);
-                            MFnCompoundAttribute fnCompoundY(y);
-                            MFnCompoundAttribute fnCompoundZ(z);
-
-                            if (fnCompoundX.numChildren() == 3 && fnCompoundY.numChildren() == 3
-                                && fnCompoundZ.numChildren() == 3) {
-                                MObject xx = fnCompoundX.child(0);
-                                MObject xy = fnCompoundX.child(1);
-                                MObject xz = fnCompoundX.child(2);
-                                MObject yx = fnCompoundY.child(0);
-                                MObject yy = fnCompoundY.child(1);
-                                MObject yz = fnCompoundY.child(2);
-                                MObject zx = fnCompoundZ.child(0);
-                                MObject zy = fnCompoundZ.child(1);
-                                MObject zz = fnCompoundZ.child(2);
-                                if (xx.apiType() == MFn::kNumericAttribute
-                                    && xy.apiType() == MFn::kNumericAttribute
-                                    && xz.apiType() == MFn::kNumericAttribute
-                                    && yx.apiType() == MFn::kNumericAttribute
-                                    && yy.apiType() == MFn::kNumericAttribute
-                                    && yz.apiType() == MFn::kNumericAttribute
-                                    && zx.apiType() == MFn::kNumericAttribute
-                                    && zy.apiType() == MFn::kNumericAttribute
-                                    && zz.apiType() == MFn::kNumericAttribute) {
-                                    if (!isArray) {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Matrix3d);
-                                        GfMatrix3d value;
-                                        getMatrix3x3(node, attribute, (double*)&value);
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    } else {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Matrix3dArray);
-                                        VtArray<GfMatrix3d> value;
-                                        value.resize(plug.numElements());
-                                        getMatrix3x3Array(
-                                            node,
-                                            attribute,
-                                            (double*)value.data(),
-                                            plug.numElements());
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    }
-                                }
-                            }
-                        }
-                    } else if (fnCompound.numChildren() == 4) {
-                        MObject x = fnCompound.child(0);
-                        MObject y = fnCompound.child(1);
-                        MObject z = fnCompound.child(2);
-                        MObject w = fnCompound.child(3);
-                        if (x.apiType() == MFn::kNumericAttribute
-                            && y.apiType() == MFn::kNumericAttribute
-                            && z.apiType() == MFn::kNumericAttribute
-                            && w.apiType() == MFn::kNumericAttribute) {
-                            MFnNumericAttribute  fnx(x);
-                            MFnNumericAttribute  fny(y);
-                            MFnNumericAttribute  fnz(z);
-                            MFnNumericAttribute  fnw(w);
-                            MFnNumericData::Type typex = fnx.unitType();
-                            MFnNumericData::Type typey = fny.unitType();
-                            MFnNumericData::Type typez = fnz.unitType();
-                            MFnNumericData::Type typew = fnw.unitType();
-                            if (typex == typey && typex == typez && typex == typew) {
-                                switch (typex) {
-                                case MFnNumericData::kInt: {
-                                    if (!isArray) {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Int4);
-                                        GfVec4i value;
-                                        getVec4(node, attribute, (int32_t*)&value);
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    } else {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Int4Array);
-                                        VtArray<GfVec4i> value;
-                                        value.resize(plug.numElements());
-                                        getVec4Array(
-                                            node, attribute, (int32_t*)value.data(), value.size());
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    }
-                                } break;
-
-                                case MFnNumericData::kFloat: {
-                                    if (!isArray) {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Float4);
-                                        GfVec4f value;
-                                        getVec4(node, attribute, (float*)&value);
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    } else {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Float4Array);
-                                        VtArray<GfVec4f> value;
-                                        value.resize(plug.numElements());
-                                        getVec4Array(
-                                            node, attribute, (float*)value.data(), value.size());
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    }
-                                } break;
-
-                                case MFnNumericData::kDouble: {
-                                    if (!isArray) {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Double4);
-                                        GfVec4d value;
-                                        getVec4(node, attribute, (double*)&value);
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    } else {
-                                        UsdAttribute usdAttr = prim.CreateAttribute(
-                                            attributeName, SdfValueTypeNames->Double4Array);
-                                        VtArray<GfVec4d> value;
-                                        value.resize(plug.numElements());
-                                        getVec4Array(
-                                            node, attribute, (double*)value.data(), value.size());
-                                        usdAttr.Set(value);
-                                        usdAttr.SetCustom(true);
-                                    }
-                                } break;
-
-                                default: break;
-                                }
-                            }
-                        }
-                    }
-                }
-            } break;
-
-            case MFn::kFloatMatrixAttribute:
-            case MFn::kMatrixAttribute: {
-                if (!isArray) {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix4d);
-                    GfMatrix4d m;
-                    getMatrix4x4(node, attribute, (double*)&m);
-                    usdAttr.Set(m);
-                    usdAttr.SetCustom(true);
-                } else {
-                    UsdAttribute usdAttr
-                        = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix4dArray);
-                    VtArray<GfMatrix4d> value;
-                    value.resize(plug.numElements());
-                    getMatrix4x4Array(node, attribute, (double*)value.data(), value.size());
-                    usdAttr.Set(value);
-                    usdAttr.SetCustom(true);
-                }
-            } break;
-
-            default: break;
-            }
-        }
-    }
-    return MS::kSuccess;
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 void DgNodeHelper::copySimpleValue(
@@ -6462,8 +5644,3 @@ void DgNodeHelper::copyAttributeValue(
     }
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-} // namespace utils
-} // namespace usdmaya
-} // namespace AL
-//----------------------------------------------------------------------------------------------------------------------

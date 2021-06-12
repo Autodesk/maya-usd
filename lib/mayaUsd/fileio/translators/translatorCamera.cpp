@@ -346,6 +346,9 @@ bool UsdMayaTranslatorCamera::Read(
         context->RegisterNewMayaNode(shapePrimPath.GetString(), cameraObj);
     }
 
+    // Copy userProperties to the created node
+    UsdMayaTranslatorUtil::copyAttributes(prim, cameraObj);
+
     return _ReadToCamera(usdCamera, cameraFn, args, context);
 }
 

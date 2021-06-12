@@ -206,6 +206,9 @@ struct UsdMayaJobExportArgs
     /// data should be exported.
     const std::vector<double> timeSamples;
 
+    // user custom attributes from the export command directly using the -userattr multi-flag
+    std::vector<std::string> userAttrNames;
+
     // This path is provided when dealing with variants
     // where a _BaseModel_ root path is used instead of
     // the model path. This to allow a proper internal reference.

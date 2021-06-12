@@ -83,6 +83,8 @@ public:
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";
     static constexpr auto kAppendFlagLong = "append";
+    static constexpr auto kUserAttrFlag = "u";
+    static constexpr auto kUserAttrFlagLong = "userattr";
     static constexpr auto kFilterTypesFlag = "ft";
     static constexpr auto kFilterTypesFlagLong = "filterTypes";
     static constexpr auto kFileFlag = "f";
