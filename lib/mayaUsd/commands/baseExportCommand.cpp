@@ -318,15 +318,13 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             MArgList tmpArgList;
             argData.getFlagArgumentList(kRootFlag, i, tmpArgList);
             std::string this_root = tmpArgList.asString(0).asChar();
-            if (!this_root.empty()) {
-                MDagPath dagPath;
-                UsdMayaUtil::GetDagPathByName(this_root, dagPath);
-                if (!dagPath.isValid() and tmpArgList.asString(0) != "|") {
-                    MGlobal::displayError("Invalid root path: " + tmpArgList.asString(0));
-                    return MS::kFailure;
-                }
-                jobArgs.rootNames.emplace_back(this_root);
+            MDagPath dagPath;
+            UsdMayaUtil::GetDagPathByName(this_root, dagPath);
+            if (!dagPath.isValid() && tmpArgList.asString(0) != "|" && tmpArgList.asString(0) != "") {
+                MGlobal::displayError("Invalid root path: " + tmpArgList.asString(0));
+                return MS::kFailure;
             }
+            jobArgs.rootNames.emplace_back(this_root);
         }
 
         unsigned int numFilteredTypes = argData.numberOfFlagUses(kFilterTypesFlag);

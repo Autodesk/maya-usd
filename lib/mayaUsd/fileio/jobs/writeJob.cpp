@@ -311,7 +311,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
         // ignore any mArgs.dagPath above the given -root(s)
         for (const std::string& rootName : tmpRootNames) {
-            if (rootName != "|" and rootName != "*") {
+            if (rootName != "|" and rootName != "") {
                 UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
 
                 if (MFnDagNode(rootDagPath).hasParent(curDagPath.node())) {
@@ -365,25 +365,27 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     // TODO: We want each selected object to be its own parent without passing the whole selection
     // TODO: list to the root arg... So, here are several options:
     // -------------------------------------------------------------------------------------------
-    // Option 1: All selected will work directly as roots, and their parents won't be exported
-    //           because we haven't ask for them
-    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) { // Fixme: need to find out if the sl flag is set (add it to the if statement)
-        // put all selected objects in the rootNames list
-        for (const std::string& dgPathStr : argDagPaths) {
-            mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
-        }
-    }
-
-//    // Option 2: all selected will be roots if the "*" was passed to the root arg
-//    if (!mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) { // Fixme: need to find out if the sl flag is set (add it to the if statement)
-//        if (mJobCtx.mArgs.rootNames[0] == "*") {
-//            mJobCtx.mArgs.rootNames.clear();
-//            // put all selected objects in the rootNames list
-//            for (const std::string& dgPathStr : argDagPaths) {
-//                mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
-//            }
+//    // Option 1: All selected will work directly as roots, and their parents won't be exported
+//    //           because we haven't ask for them
+//    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
+//        // put all selected objects in the rootNames list
+//        for (const std::string& dgPathStr : argDagPaths) {
+//            mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
 //        }
 //    }
+    // Option 2: passing '*' instead of empty str
+
+    // Option 3: all selected will be roots if the empty string "" was passed to the root arg
+    if (!mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
+        if (mJobCtx.mArgs.rootNames[0].empty()) {
+            mJobCtx.mArgs.rootNames.clear();
+            // put all selected objects in the rootNames list
+            for (const std::string& dgPathStr : argDagPaths) {
+                MGlobal::displayInfo(dgPathStr.c_str());
+                mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
+            }
+        }
+    }
 
 
     // when no roots are passed, tmpRootNames is {"|"} from above
@@ -396,7 +398,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         MItDag   itDag(MItDag::kDepthFirst, MFn::kInvalid);
         MDagPath curDagPath;
         UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
-        if (rootName != "|")
+        if (rootName != "|" && rootName != "")
             itDag.reset(rootDagPath, MItDag::kDepthFirst, MFn::kInvalid);
         else
             itDag.reset();
