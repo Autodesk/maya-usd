@@ -619,6 +619,19 @@ bool UsdMayaUtil::isRenderable(const MObject& object)
         }
     }
 
+    MDagPath dagPath;
+    stat = mFn.getPath(dagPath);
+    CHECK_MSTATUS_AND_RETURN(stat, false);
+    if (!dagPath.isVisible()) {
+        return false;
+    }
+
+    const MDAGDrawOverrideInfo drawOverrideInfo = dagPath.getDrawOverrideInfo();
+    if (drawOverrideInfo.fOverrideEnabled
+        && drawOverrideInfo.fDisplayType == MDAGDrawOverrideInfo::kDisplayTypeTemplate) {
+        return false;
+    }
+
     // this shape is renderable
     return true;
 }
