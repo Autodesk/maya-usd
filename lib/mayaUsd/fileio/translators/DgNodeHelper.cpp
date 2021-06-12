@@ -1308,6 +1308,7 @@ MStatus DgNodeHelper::setVisAttrAnim(
     return MS::kSuccess;
 }
 
+
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setClippingRangeAttrAnim(
     const MObject       node,
