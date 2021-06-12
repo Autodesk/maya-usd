@@ -367,6 +367,8 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     // -------------------------------------------------------------------------------------------
     // Option 1: All selected will work directly as roots, and their parents won't be exported
     //           because we haven't ask for them
+    // The advantage of this method, that we can easily mix/pass new roots in addition to the
+    // roots made from the currently selected maya nodes
     if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) { // Fixme: need to find out if the sl flag is set (add it to the if statement)
         // put all selected objects in the rootNames list
         for (const std::string& dgPathStr : argDagPaths) {
