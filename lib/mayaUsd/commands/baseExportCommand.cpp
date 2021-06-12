@@ -324,6 +324,15 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
                 MGlobal::displayError("Invalid root path: " + tmpArgList.asString(0));
                 return MS::kFailure;
             }
+            // TODO: pass the selection list to rootNames in the scope below, but make sure to remove
+            //       whats under a root from the roots list
+//            if (tmpArgList.asString(0) == "") {
+//                for (const MDagPath& thisDagPath : dagPaths) {
+//                    jobArgs.rootNames.emplace_back(thisDagPath.fullPathName().asChar());
+//                }
+//            } else {
+//                jobArgs.rootNames.emplace_back(this_root);
+//            }
             jobArgs.rootNames.emplace_back(this_root);
         }
 

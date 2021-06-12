@@ -36,6 +36,7 @@ def main():
     cmds.usdExport(file='{}/onlySelectedRootEmpty.usda'.format(tmpdir), sl=True, root='')
     cmds.usdExport(file='{}/regularSelectedToTop.usda'.format(tmpdir), sl=True)
     
+    cmds.usdExport(file='{}/mixedRootsAndSelRoots.usda'.format(tmpdir), sl=True, root=['Mid_Transformation', ''])
     '''
     # neither root nor selected
     cmds.usdExport(file='{}/export_all.usda'.format(tmpdir))
