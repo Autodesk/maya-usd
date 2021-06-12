@@ -4425,8 +4425,8 @@ MStatus DgNodeHelper::addDynamicAttribute(MObject node, const UsdAttribute& usdA
     MObject                attribute = MObject::kNullObj;
     const char*            attrName = usdAttr.GetName().GetString().c_str();
     const uint32_t         flags = (isArray ? AL::maya::utils::NodeHelper::kArray : 0)
-        | AL::maya::utils::NodeHelper::kReadable | AL::maya::utils::NodeHelper::kWritable
-        | AL::maya::utils::NodeHelper::kStorable | AL::maya::utils::NodeHelper::kConnectable;
+                                   | AL::maya::utils::NodeHelper::kReadable | AL::maya::utils::NodeHelper::kWritable
+                                   | AL::maya::utils::NodeHelper::kStorable | AL::maya::utils::NodeHelper::kConnectable;
     switch (dataType) {
     case UsdDataType::kAsset: {
         return MS::kSuccess;

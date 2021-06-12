@@ -280,11 +280,21 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     // arg dagPaths all the way up to the world root. Partial path names are
     // enough because Maya guarantees them to still be unique, and they require
     // less work to hash and compare than full path names.
-    TfHashSet<std::string, TfHash>           argDagPaths;
-    TfHashSet<std::string, TfHash>           argDagPathParents;
+    TfHashSet<std::string, TfHash> argDagPaths;
+    TfHashSet<std::string, TfHash> argDagPathParents;
+    MDagPath                       rootDagPath;
+    MDagPath                       curLeafDagPath;
+
+    std::vector<std::string> tmpRootNames;
+    if (mJobCtx.mArgs.rootNames.empty()) {
+        // in case when no roots are passed, insert the world root "|" as if it's passed to the root arg
+        tmpRootNames.emplace_back("|");
+    } else {
+        tmpRootNames = mJobCtx.mArgs.rootNames;
+    }
+
     UsdMayaUtil::MDagPathSet::const_iterator end = mJobCtx.mArgs.dagPaths.end();
-    for (UsdMayaUtil::MDagPathSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin(); it != end;
-         ++it) {
+    for (UsdMayaUtil::MDagPathSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin(); it != end; ++it) {
         MDagPath curDagPath = *it;
         MStatus  status;
         bool     curDagPathIsValid = curDagPath.isValid(&status);
@@ -296,85 +306,147 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         if (status != MS::kSuccess) {
             continue;
         }
-
-        argDagPaths.insert(curDagPathStr);
-
-        status = curDagPath.pop();
-        if (status != MS::kSuccess) {
+        if (curDagPathStr.empty())
             continue;
-        }
-        curDagPathIsValid = curDagPath.isValid(&status);
 
-        while (status == MS::kSuccess && curDagPathIsValid) {
-            curDagPathStr = curDagPath.partialPathName(&status).asChar();
-            if (status != MS::kSuccess) {
-                break;
+        // ignore any mArgs.dagPath above the given -root(s)
+        for (const std::string& rootName : tmpRootNames) {
+            if (rootName != "|" and rootName != "*") {
+                UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
+
+                if (MFnDagNode(rootDagPath).hasParent(curDagPath.node())) {
+                    curLeafDagPath = curDagPath;
+                } else if (!(rootDagPath == curDagPath
+                             || MFnDagNode(curDagPath).hasParent(rootDagPath.node()))) {
+                    continue;
+                }
             }
 
-            if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
-                // We've already traversed up from this path.
-                break;
-            }
-            argDagPathParents.insert(curDagPathStr);
+            argDagPaths.insert(curDagPathStr);
 
             status = curDagPath.pop();
             if (status != MS::kSuccess) {
-                break;
+                continue;
             }
             curDagPathIsValid = curDagPath.isValid(&status);
+
+            while (status == MS::kSuccess && curDagPathIsValid) {
+                curDagPathStr = curDagPath.partialPathName(&status).asChar();
+                if (status != MS::kSuccess) {
+                    goto ctn;
+                }
+
+                if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
+                    // We've already traversed up from this path.
+                    goto ctn;
+                }
+
+                // when -root flag is is set, ignore any parents above the given rootName
+                if (!rootName.empty()) {
+                    std::string rootDagFullPathStr = rootDagPath.fullPathName().asChar();
+                    std::string curDagFullPathStr = curDagPath.fullPathName().asChar();
+                    if (curDagFullPathStr.rfind(rootDagFullPathStr, 0) == 0) {
+                        argDagPathParents.insert(curDagPathStr);
+                    }
+                } else {
+                    argDagPathParents.insert(curDagPathStr);
+                }
+
+                status = curDagPath.pop();
+                if (status != MS::kSuccess) {
+                    goto ctn;
+                }
+                curDagPathIsValid = curDagPath.isValid(&status);
+            }
+            ctn:;
         }
     }
 
-    // Now do a depth-first traversal of the Maya DAG from the world root.
-    // We keep a reference to arg dagPaths as we encounter them.
-    MDagPath curLeafDagPath;
-    for (MItDag itDag(MItDag::kDepthFirst, MFn::kInvalid); !itDag.isDone(); itDag.next()) {
-        MDagPath curDagPath;
-        itDag.getPath(curDagPath);
-        std::string curDagPathStr(curDagPath.partialPathName().asChar());
-
-        if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
-            // This dagPath is a parent of one of the arg dagPaths. It should
-            // be included in the export, but not necessarily all of its
-            // children should be, so we continue to traverse down.
-        } else if (argDagPaths.find(curDagPathStr) != argDagPaths.end()) {
-            // This dagPath IS one of the arg dagPaths. It AND all of its
-            // children should be included in the export.
-            curLeafDagPath = curDagPath;
-        } else if (!MFnDagNode(curDagPath).hasParent(curLeafDagPath.node())) {
-            // This dagPath is not a child of one of the arg dagPaths, so prune
-            // it and everything below it from the traversal.
-            itDag.prune();
-            continue;
+    // TODO: We want each selected object to be its own parent without passing the whole selection
+    // TODO: list to the root arg... So, here are several options:
+    // -------------------------------------------------------------------------------------------
+    // Option 1: All selected will work directly as roots, and their parents won't be exported
+    //           because we haven't ask for them
+    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) { // Fixme: need to find out if the sl flag is set (add it to the if statement)
+        // put all selected objects in the rootNames list
+        for (const std::string& dgPathStr : argDagPaths) {
+            mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
         }
+    }
 
-        if (!mJobCtx._NeedToTraverse(curDagPath) && curDagPath.length() > 0) {
-            // This dagPath and all of its children should be pruned.
-            itDag.prune();
-        } else {
-            const MFnDagNode           dagNodeFn(curDagPath);
-            UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(dagNodeFn);
+//    // Option 2: all selected will be roots if the "*" was passed to the root arg
+//    if (!mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) { // Fixme: need to find out if the sl flag is set (add it to the if statement)
+//        if (mJobCtx.mArgs.rootNames[0] == "*") {
+//            mJobCtx.mArgs.rootNames.clear();
+//            // put all selected objects in the rootNames list
+//            for (const std::string& dgPathStr : argDagPaths) {
+//                mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
+//            }
+//        }
+//    }
 
-            if (primWriter) {
-                mJobCtx.mMayaPrimWriterList.push_back(primWriter);
 
-                // Write out data (non-animated/default values).
-                if (const auto& usdPrim = primWriter->GetUsdPrim()) {
-                    if (!_CheckNameClashes(usdPrim.GetPath(), primWriter->GetDagPath())) {
-                        return false;
+    // when no roots are passed, tmpRootNames is {"|"} from above
+    if (!(mJobCtx.mArgs.rootNames.empty() &! argDagPathParents.empty()))
+        tmpRootNames = mJobCtx.mArgs.rootNames;
+
+    for (std::string& rootName : tmpRootNames) {
+        // Now do a depth-first traversal of the Maya DAG from the world root.
+        // We keep a reference to arg dagPaths as we encounter them.
+        MItDag   itDag(MItDag::kDepthFirst, MFn::kInvalid);
+        MDagPath curDagPath;
+        UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
+        if (rootName != "|")
+            itDag.reset(rootDagPath, MItDag::kDepthFirst, MFn::kInvalid);
+        else
+            itDag.reset();
+        for (; !itDag.isDone(); itDag.next()) {
+            itDag.getPath(curDagPath);
+            std::string curDagPathStr(curDagPath.partialPathName().asChar());
+
+            if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
+                // This dagPath is a parent of one of the arg dagPaths. It should
+                // be included in the export, but not necessarily all of its
+                // children should be, so we continue to traverse down.
+            } else if (argDagPaths.find(curDagPathStr) != argDagPaths.end()) {
+                // This dagPath IS one of the arg dagPaths. It AND all of its
+                // children should be included in the export.
+                curLeafDagPath = curDagPath;
+            } else if (!MFnDagNode(curDagPath).hasParent(curLeafDagPath.node())) {
+                // This dagPath is not a child of one of the arg dagPaths, so prune
+                // it and everything below it from the traversal.
+                itDag.prune();
+                continue;
+            }
+
+            if (!mJobCtx._NeedToTraverse(curDagPath) && curDagPath.length() > 0) {
+                // This dagPath and all of its children should be pruned.
+                itDag.prune();
+            } else {
+                const MFnDagNode           dagNodeFn(curDagPath);
+                UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(dagNodeFn, rootDagPath);
+
+                if (primWriter) {
+                    mJobCtx.mMayaPrimWriterList.push_back(primWriter);
+
+                    // Write out data (non-animated/default values).
+                    if (const auto& usdPrim = primWriter->GetUsdPrim()) {
+                        if (!_CheckNameClashes(usdPrim.GetPath(), primWriter->GetDagPath())) {
+                            return false;
+                        }
+
+                        primWriter->Write(UsdTimeCode::Default());
+
+                        const UsdMayaUtil::MDagPathMap<SdfPath>& mapping
+                            = primWriter->GetDagToUsdPathMapping();
+                        mDagPathToUsdPathMap.insert(mapping.begin(), mapping.end());
+
+                        _modelKindProcessor->OnWritePrim(usdPrim, primWriter);
                     }
 
-                    primWriter->Write(UsdTimeCode::Default());
-
-                    const UsdMayaUtil::MDagPathMap<SdfPath>& mapping
-                        = primWriter->GetDagToUsdPathMapping();
-                    mDagPathToUsdPathMap.insert(mapping.begin(), mapping.end());
-
-                    _modelKindProcessor->OnWritePrim(usdPrim, primWriter);
-                }
-
-                if (primWriter->ShouldPruneChildren()) {
-                    itDag.prune();
+                    if (primWriter->ShouldPruneChildren()) {
+                        itDag.prune();
+                    }
                 }
             }
         }

@@ -206,6 +206,9 @@ struct UsdMayaJobExportArgs
     /// data should be exported.
     const std::vector<double> timeSamples;
 
+    // given root names to to start exporting from (passed by the -root/-rt multi-flag)
+    std::vector<std::string> rootNames;
+
     // This path is provided when dealing with variants
     // where a _BaseModel_ root path is used instead of
     // the model path. This to allow a proper internal reference.

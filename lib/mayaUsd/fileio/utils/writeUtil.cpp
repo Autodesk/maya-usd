@@ -15,6 +15,8 @@
 //
 #include "writeUtil.h"
 
+#include "mayaUsd/fileio/writeJobContext.h"
+
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/userTaggedAttribute.h>
@@ -65,6 +67,8 @@
 #include <maya/MString.h>
 #include <maya/MVector.h>
 #include <maya/MVectorArray.h>
+
+#include <boost/algorithm/string.hpp>
 
 #include <string>
 #include <vector>
@@ -274,8 +278,8 @@ static VtValue _ConvertVec(const T& val, const TfToken& role, const bool lineari
 {
     return VtValue(
         ((role == SdfValueRoleNames->Color) && linearizeColors)
-            ? MayaUsd::utils::ConvertMayaToLinear(val)
-            : val);
+        ? MayaUsd::utils::ConvertMayaToLinear(val)
+        : val);
 }
 
 VtValue UsdMayaWriteUtil::GetVtValue(
@@ -948,13 +952,13 @@ bool UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
 
         VtIntArray vtArray
             = _MapMayaToVtArray<MDoubleArray, double, int>(objectIndex, [numPrototypes](double x) {
-                  if (x < numPrototypes) {
-                      return (int)x;
-                  } else {
-                      // Return the *last* prototype if out of bounds.
-                      return (int)numPrototypes - 1;
-                  }
-              });
+                if (x < numPrototypes) {
+                    return (int)x;
+                } else {
+                    // Return the *last* prototype if out of bounds.
+                    return (int)numPrototypes - 1;
+                }
+            });
         SetAttribute(instancer.CreateProtoIndicesAttr(), vtArray, usdTime, valueWriter);
     } else {
         VtIntArray vtArray;
@@ -984,7 +988,7 @@ bool UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
         VtQuathArray vtArray = _MapMayaToVtArray<MVectorArray, const MVector&, GfQuath>(
             rotation, [](const MVector& v) {
                 GfRotation rot = GfRotation(GfVec3d::XAxis(), v.x)
-                    * GfRotation(GfVec3d::YAxis(), v.y) * GfRotation(GfVec3d::ZAxis(), v.z);
+                                 * GfRotation(GfVec3d::YAxis(), v.y) * GfRotation(GfVec3d::ZAxis(), v.z);
                 return GfQuath(rot.GetQuat());
             });
         SetAttribute(instancer.CreateOrientationsAttr(), vtArray, usdTime, valueWriter);
