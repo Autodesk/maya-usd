@@ -1183,7 +1183,7 @@ MStatus DgNodeHelper::setFloatAttrAnim(
         return MS::kFailure;
     }
 
-    const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
+    // const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
     MStatus           status;
 
     MPlug        plug(node, attr);
@@ -1195,12 +1195,11 @@ MStatus DgNodeHelper::setFloatAttrAnim(
     std::vector<double> times;
     usdAttr.GetTimeSamples(&times);
 
-    float value;
+    double value;
     for (auto const& timeValue : times) {
         const bool retValue = usdAttr.Get(&value, timeValue);
         if (!retValue)
             continue;
-
         MTime tm(timeValue, MTime::kFilm);
         fnCurve.addKey(
             tm,
@@ -1209,7 +1208,88 @@ MStatus DgNodeHelper::setFloatAttrAnim(
             MFnAnimCurve::kTangentGlobal,
             NULL,
             &status);
-        AL_MAYA_CHECK_ERROR(status, errorString);
+    }
+
+    return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setIntAttrAnim(
+    const MObject node,
+    const MObject attr,
+    UsdAttribute  usdAttr,
+    MObjectArray* newAnimCurves)
+{
+    if (!usdAttr.GetNumTimeSamples()) {
+        return MS::kFailure;
+    }
+
+    // const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
+    MStatus           status;
+
+    MPlug        plug(node, attr);
+    MFnAnimCurve fnCurve;
+    status = prepareAnimCurve(plug, fnCurve, newAnimCurves);
+    if (!status)
+        return MS::kFailure;
+
+    std::vector<double> times;
+    usdAttr.GetTimeSamples(&times);
+
+    int value;
+    for (auto const& timeValue : times) {
+        const bool retValue = usdAttr.Get(&value, timeValue);
+        if (!retValue)
+            continue;
+        MTime tm(timeValue, MTime::kFilm);
+        fnCurve.addKey(
+            tm,
+            value,
+            MFnAnimCurve::kTangentGlobal,
+            MFnAnimCurve::kTangentGlobal,
+            NULL,
+            &status);
+    }
+
+    return MS::kSuccess;
+}
+
+// ----------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setBoolAttrAnim(
+    const MObject node,
+    const MObject attr,
+    UsdAttribute  usdAttr,
+    MObjectArray* newAnimCurves)
+{
+    if (!usdAttr.GetNumTimeSamples()) {
+        return MS::kFailure;
+    }
+
+    // const char* const errorString = "DgNodeTranslator::setFloatAttrAnim";
+    MStatus           status;
+
+    MPlug        plug(node, attr);
+    MFnAnimCurve fnCurve;
+    status = prepareAnimCurve(plug, fnCurve, newAnimCurves);
+    if (!status)
+        return MS::kFailure;
+
+    std::vector<double> times;
+    usdAttr.GetTimeSamples(&times);
+
+    bool value;
+    for (auto const& timeValue : times) {
+        const bool retValue = usdAttr.Get(&value, timeValue);
+        if (!retValue)
+            continue;
+        MTime tm(timeValue, MTime::kFilm);
+        fnCurve.addKey(
+            tm,
+            value,
+            MFnAnimCurve::kTangentStep,
+            MFnAnimCurve::kTangentStep,
+            NULL,
+            &status);
     }
 
     return MS::kSuccess;
@@ -4589,10 +4669,24 @@ MStatus DgNodeHelper::addDynamicAttribute(MObject node, const UsdAttribute& usdA
         attribute = depNode.attribute(attrName);
     }
 
+    bool isAnimated = usdAttr.GetNumTimeSamples() > 0;
     if (isArray) {
         return setArrayMayaValue(node, attribute, usdAttr, dataType);
+    } else {
+        if (isAnimated) {
+            if (dataType == UsdDataType::kDouble || dataType == UsdDataType::kFloat) {
+                return setFloatAttrAnim(node, attribute, usdAttr);
+            } else if (dataType == UsdDataType::kBool) {
+                return setBoolAttrAnim(node, attribute, usdAttr);
+            } else if (dataType == UsdDataType::kInt) {
+                return setIntAttrAnim(node, attribute, usdAttr);
+            } else {
+                return DgNodeHelper::setSingleMayaValue(node, attribute, usdAttr, dataType);
+            }
+        } else {
+            return DgNodeHelper::setSingleMayaValue(node, attribute, usdAttr, dataType);
+        }
     }
-    return setSingleMayaValue(node, attribute, usdAttr, dataType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

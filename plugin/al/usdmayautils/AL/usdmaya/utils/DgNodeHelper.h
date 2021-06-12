@@ -1289,6 +1289,18 @@ public:
         double        conversionFactor = 1.0,
         MObjectArray* newAnimCurves = nullptr);
 
+    static MStatus setIntAttrAnim(
+        MObject       node,
+        MObject       attr,
+        UsdAttribute  usdAttr,
+        MObjectArray* newAnimCurves = nullptr);
+
+    static MStatus setBoolAttrAnim(
+        MObject       node,
+        MObject       attr,
+        UsdAttribute  usdAttr,
+        MObjectArray* newAnimCurves = nullptr);
+
     /// \brief  creates animation curves in maya for the visibility attribute
     /// \param  node the node instance the animated attribute belongs to
     /// \param  attr the visibility attribute handle
