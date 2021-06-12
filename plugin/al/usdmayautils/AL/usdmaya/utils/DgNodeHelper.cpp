@@ -4681,10 +4681,10 @@ MStatus DgNodeHelper::addDynamicAttribute(MObject node, const UsdAttribute& usdA
             } else if (dataType == UsdDataType::kInt) {
                 return setIntAttrAnim(node, attribute, usdAttr);
             } else {
-                return DgNodeHelper::setSingleMayaValue(node, attribute, usdAttr, dataType);
+                return setSingleMayaValue(node, attribute, usdAttr, dataType);
             }
         } else {
-            return DgNodeHelper::setSingleMayaValue(node, attribute, usdAttr, dataType);
+            return setSingleMayaValue(node, attribute, usdAttr, dataType);
         }
     }
 }
