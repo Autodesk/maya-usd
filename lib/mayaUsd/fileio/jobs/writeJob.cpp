@@ -376,7 +376,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-//    // Option 2: all selected will be roots if the "*" was passed to the root arg
+//    // Option 2: all selected will be roots if the "*" was passed to the root arg  (replaced later "*" with empty string)
 //    if (!mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) { // Fixme: need to find out if the sl flag is set (add it to the if statement)
 //        if (mJobCtx.mArgs.rootNames[0] == "*") {
 //            mJobCtx.mArgs.rootNames.clear();
