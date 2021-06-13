@@ -163,6 +163,17 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     return true;
 }
 
+void removeDups(std::vector<std::string> &v)
+{
+    auto end = v.end();
+    for (auto it = v.begin(); it != end; ++it) {
+        end = std::remove(it + 1, end, *it);
+    }
+
+    v.erase(end, v.end());
+}
+
+
 bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
@@ -311,18 +322,20 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
         // ignore any mArgs.dagPath above the given -root(s)
         for (const std::string& rootName : tmpRootNames) {
-            if (rootName != "|" and rootName != "") {
+            if (rootName != "|" && rootName != "") {
                 UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
 
                 if (MFnDagNode(rootDagPath).hasParent(curDagPath.node())) {
                     curLeafDagPath = curDagPath;
                 } else if (!(rootDagPath == curDagPath
                              || MFnDagNode(curDagPath).hasParent(rootDagPath.node()))) {
-                    continue;
+                    mJobCtx.mArgs.rootNames.emplace_back(curDagPathStr.c_str());
+//                    continue;
                 }
             }
 
             argDagPaths.insert(curDagPathStr);
+
 
             status = curDagPath.pop();
             if (status != MS::kSuccess) {
@@ -336,10 +349,10 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                     goto ctn;
                 }
 
-                if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
-                    // We've already traversed up from this path.
-                    goto ctn;
-                }
+//                if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
+//                    // We've already traversed up from this path.
+//                    goto ctn;
+//                }
 
                 // when -root flag is is set, ignore any parents above the given rootName
                 if (!rootName.empty()) {
@@ -362,30 +375,36 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-    // TODO: We want each selected object to be its own parent without passing the whole selection
-    // TODO: list to the root arg... So, here are several options:
-    // -------------------------------------------------------------------------------------------
-//    // Option 1: All selected will work directly as roots, and their parents won't be exported
-//    //           because we haven't ask for them
-//    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
-//        // put all selected objects in the rootNames list
-//        for (const std::string& dgPathStr : argDagPaths) {
-//            mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
-//        }
-//    }
-    // Option 2: passing '*' instead of empty str
 
-    // Option 3: all selected will be roots if the empty string "" was passed to the root arg
-    if (!mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
-        if (mJobCtx.mArgs.rootNames[0].empty()) {
+    // Preparing the final roots (both directly passed and roots made of selection due to empty string)
+    if (mJobCtx.mArgs.rootNames.empty())
+        mJobCtx.mArgs.rootNames.emplace_back("|");
+
+    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
+        // put all selected objects in the rootNames list
+        for (const std::string& dgPathStr : argDagPaths) {
+            mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
+        }
+    } else if (!mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
+        if (mJobCtx.mArgs.rootNames[0] == "" || mJobCtx.mArgs.rootNames[0] == "") {
             mJobCtx.mArgs.rootNames.clear();
             // put all selected objects in the rootNames list
             for (const std::string& dgPathStr : argDagPaths) {
-                MGlobal::displayInfo(dgPathStr.c_str());
                 mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
             }
         }
     }
+
+    // Clear empty string from the rootNames vector
+    std::vector<std::string> finalRootNames;
+    for (std::string& rt : mJobCtx.mArgs.rootNames) {
+        if (!rt.empty())
+            finalRootNames.emplace_back(rt);
+    }
+    mJobCtx.mArgs.rootNames = finalRootNames;
+
+    // Prevent user mistakes, prevents duplicates resulted from indirect roots mixed with direct passed roots
+    removeDups(mJobCtx.mArgs.rootNames);
 
 
     // when no roots are passed, tmpRootNames is {"|"} from above
@@ -398,7 +417,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         MItDag   itDag(MItDag::kDepthFirst, MFn::kInvalid);
         MDagPath curDagPath;
         UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
-        if (rootName != "|" && rootName != "")
+        if (rootName != "|")
             itDag.reset(rootDagPath, MItDag::kDepthFirst, MFn::kInvalid);
         else
             itDag.reset();
@@ -799,7 +818,7 @@ void UsdMaya_WriteJob::_CreatePackage() const
         // UsdUtilsCreateNewARKitUsdzPackage will automatically flatten and
         // enforce that the first layer has a .usdc extension.
         if (!UsdUtilsCreateNewARKitUsdzPackage(
-                SdfAssetPath(_fileName), _packageName, firstLayerName)) {
+            SdfAssetPath(_fileName), _packageName, firstLayerName)) {
             TF_RUNTIME_ERROR(
                 "Could not create package '%s' from temporary stage '%s'",
                 _packageName.c_str(),

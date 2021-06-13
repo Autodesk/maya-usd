@@ -12,7 +12,6 @@ def main():
     cmds.file('{}/UsdExportRootTest.ma'.format(scn_dir), type="mayaAscii", o=True)
    
     
-    '''
     select(['pCone1', 'Cube1'], r=True)
     cmds.usdExport(file='{}/only_set1_to_top.usda'.format(tmpdir), sl=True, root="Top")
     cmds.usdExport(file='{}/only_set1_to_Grp1.usda'.format(tmpdir), sl=True, root="GrpRoot1")
@@ -31,7 +30,6 @@ def main():
     # no root, only selection
     select(['pCone1', 'Cube1', 'pCone2', 'Cube2'], r=True)
     cmds.usdExport(file='{}/onlySelected.usda'.format(tmpdir), sl=True)
-    '''
     select(['pCone1', 'Cube1', 'pCone2', 'Cube2'], r=True)
     cmds.usdExport(file='{}/onlySelectedRootEmpty.usda'.format(tmpdir), sl=True, root='')
     cmds.usdExport(file='{}/regularSelectedToTop.usda'.format(tmpdir), sl=True)
