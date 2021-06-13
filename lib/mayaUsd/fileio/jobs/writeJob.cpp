@@ -382,7 +382,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     //           because we haven't ask for them
     // The advantage of this method, that we can easily mix/pass new roots in addition to the
     // roots made from the currently selected maya nodes
-    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) { // Fixme: need to find out if the sl flag is set (add it to the if statement)
+    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
         // put all selected objects in the rootNames list
         for (const std::string& dgPathStr : argDagPaths) {
             mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
@@ -395,18 +395,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     for (const std::string& rt : mJobCtx.mArgs.rootNames) {
         MGlobal::displayInfo(rt.c_str());
     }
-
-//    // Option 2: all selected will be roots if the "*" was passed to the root arg  (replaced later "*" with empty string)
-//    if (!mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) { // Fixme: need to find out if the sl flag is set (add it to the if statement)
-//        if (mJobCtx.mArgs.rootNames[0] == "*") {
-//            mJobCtx.mArgs.rootNames.clear();
-//            // put all selected objects in the rootNames list
-//            for (const std::string& dgPathStr : argDagPaths) {
-//                mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
-//            }
-//        }
-//    }
-
 
     // when no roots are passed, tmpRootNames is {"|"} from above
     if (!(mJobCtx.mArgs.rootNames.empty() &! argDagPathParents.empty()))
