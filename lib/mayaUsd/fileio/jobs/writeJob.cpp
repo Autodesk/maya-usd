@@ -311,18 +311,21 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
         // ignore any mArgs.dagPath above the given -root(s)
         for (const std::string& rootName : tmpRootNames) {
-            if (rootName != "|" and rootName != "*") {
+            if (rootName != "|" && rootName != "*") {
                 UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
 
                 if (MFnDagNode(rootDagPath).hasParent(curDagPath.node())) {
                     curLeafDagPath = curDagPath;
                 } else if (!(rootDagPath == curDagPath
                              || MFnDagNode(curDagPath).hasParent(rootDagPath.node()))) {
-                    continue;
+//                    MGlobal::displayInfo(curDagPathStr.c_str());
+                    mJobCtx.mArgs.rootNames.emplace_back(curDagPathStr.c_str());
+//                    continue;
                 }
             }
 
             argDagPaths.insert(curDagPathStr);
+
 
             status = curDagPath.pop();
             if (status != MS::kSuccess) {
@@ -336,10 +339,10 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                     goto ctn;
                 }
 
-                if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
-                    // We've already traversed up from this path.
-                    goto ctn;
-                }
+//                if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
+//                    // We've already traversed up from this path.
+//                    goto ctn;
+//                }
 
                 // when -root flag is is set, ignore any parents above the given rootName
                 if (!rootName.empty()) {
@@ -374,6 +377,11 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         for (const std::string& dgPathStr : argDagPaths) {
             mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
         }
+    }
+
+    MGlobal::displayInfo("****************************************");
+    for (const std::string& thisPath : mJobCtx.mArgs.rootNames) {
+        MGlobal::displayInfo(thisPath.c_str());
     }
 
 //    // Option 2: all selected will be roots if the "*" was passed to the root arg  (replaced later "*" with empty string)
