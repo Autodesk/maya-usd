@@ -163,6 +163,17 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     return true;
 }
 
+void removeDups(std::vector<std::string> &v)
+{
+    auto end = v.end();
+    for (auto it = v.begin(); it != end; ++it) {
+        end = std::remove(it + 1, end, *it);
+    }
+
+    v.erase(end, v.end());
+}
+
+
 bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
@@ -319,7 +330,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                 } else if (!(rootDagPath == curDagPath
                              || MFnDagNode(curDagPath).hasParent(rootDagPath.node()))) {
                     mJobCtx.mArgs.rootNames.emplace_back(curDagPathStr.c_str());
-                    // continue;
+//                    continue;
                 }
             }
 
@@ -376,6 +387,13 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         for (const std::string& dgPathStr : argDagPaths) {
             mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
         }
+    }
+
+    // Prevent user mistakes, prevents duplicates resulted from indirect roots mixed with direct passed roots
+    removeDups(mJobCtx.mArgs.rootNames);
+
+    for (const std::string& rt : mJobCtx.mArgs.rootNames) {
+        MGlobal::displayInfo(rt.c_str());
     }
 
 //    // Option 2: all selected will be roots if the "*" was passed to the root arg  (replaced later "*" with empty string)
