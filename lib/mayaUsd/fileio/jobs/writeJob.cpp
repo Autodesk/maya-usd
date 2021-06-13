@@ -318,9 +318,8 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                     curLeafDagPath = curDagPath;
                 } else if (!(rootDagPath == curDagPath
                              || MFnDagNode(curDagPath).hasParent(rootDagPath.node()))) {
-//                    MGlobal::displayInfo(curDagPathStr.c_str());
                     mJobCtx.mArgs.rootNames.emplace_back(curDagPathStr.c_str());
-//                    continue;
+                    // continue;
                 }
             }
 
@@ -377,11 +376,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         for (const std::string& dgPathStr : argDagPaths) {
             mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
         }
-    }
-
-    MGlobal::displayInfo("****************************************");
-    for (const std::string& thisPath : mJobCtx.mArgs.rootNames) {
-        MGlobal::displayInfo(thisPath.c_str());
     }
 
 //    // Option 2: all selected will be roots if the "*" was passed to the root arg  (replaced later "*" with empty string)

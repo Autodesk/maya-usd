@@ -326,11 +326,6 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
                     return MS::kFailure;
                 }
                 jobArgs.rootNames.emplace_back(this_root);
-//                if (exportSelected) {
-//                    for (const MDagPath& dgp : dagPaths) {
-//                        jobArgs.rootNames.emplace_back(dgp.partialPathName().asChar());
-//                    }
-//                }
             }
         }
 
