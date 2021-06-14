@@ -305,11 +305,17 @@ public:
 };
 
 // Move a sublayer into another layer.
+// @param path The layer's path to move.
+// @param newParentLayer The new parent layer's path 
+// @param newIndex The index where the moved layer will be in the new parent.
 class MoveSubPath : public BaseCmd
 {
 public:
-    MoveSubPath()
+    MoveSubPath(const std::string& path, const std::string& newParentLayer, unsigned newIndex)
         : BaseCmd(CmdId::kMove)
+        , _path(path)
+        , _newParentLayer(newParentLayer)
+        , _newIndex(newIndex)
     {
     }
 
@@ -394,11 +400,10 @@ public:
         return true;
     }
 
+private:
     std::string  _path;
     std::string  _newParentLayer;
     unsigned int _newIndex;
-
-private:
     unsigned int _oldIndex { 0 };
 };
 
@@ -738,8 +743,6 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
         }
 
         if (argParser.isFlagSet(kMoveSubPathFlag)) {
-            auto cmd = std::make_shared<Impl::MoveSubPath>();
-
             MString subPath;
             argParser.getFlagArgument(kMoveSubPathFlag, 0, subPath);
 
@@ -749,9 +752,8 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             unsigned int index { 0 };
             argParser.getFlagArgument(kMoveSubPathFlag, 2, index);
 
-            cmd->_path = subPath.asUTF8();
-            cmd->_newParentLayer = newParentLayer.asUTF8();
-            cmd->_newIndex = index;
+            auto cmd = std::make_shared<Impl::MoveSubPath>(
+                subPath.asUTF8(), newParentLayer.asUTF8(), index);
             _subCommands.push_back(std::move(cmd));
         }
 
