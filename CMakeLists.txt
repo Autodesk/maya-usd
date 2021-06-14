@@ -99,7 +99,7 @@ include(cmake/utils.cmake)
 include(cmake/jinja.cmake)
 
 find_package(Maya 2018 REQUIRED)
-find_package(USD 0.20.02 REQUIRED)
+find_package(USD 0.20.05 REQUIRED)
 include(cmake/usd.cmake)
 
 if( MAYA_APP_VERSION LESS 2020 AND PXR_VERSION GREATER 2005 AND PXR_VERSION LESS 2102 )
