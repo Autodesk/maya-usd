@@ -306,7 +306,7 @@ public:
 
 // Move a sublayer into another layer.
 // @param path The layer's path to move.
-// @param newParentLayer The new parent layer's path 
+// @param newParentLayer The new parent layer's path
 // @param newIndex The index where the moved layer will be in the new parent.
 class MoveSubPath : public BaseCmd
 {
