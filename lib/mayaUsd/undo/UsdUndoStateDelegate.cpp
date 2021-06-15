@@ -22,6 +22,42 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+void copySpecAtPath(const SdfAbstractData& src, SdfAbstractData* dst, const SdfPath& path)
+{
+    dst->CreateSpec(path, src.GetSpecType(path));
+
+    const std::vector<TfToken>& tokens = src.List(path);
+
+    for (const auto& token : tokens) {
+        dst->Set(path, token, src.Get(path, token));
+    }
+}
+
+class SpecCopier : public SdfAbstractDataSpecVisitor
+{
+public:
+    SpecCopier(SdfAbstractData* dst)
+        : _dst(dst)
+    {
+    }
+
+    bool VisitSpec(const SdfAbstractData& src, const SdfPath& path) override
+    {
+        copySpecAtPath(src, _dst, path);
+        return true;
+    }
+
+    void Done(const SdfAbstractData&) override
+    {
+        // Do nothing
+    }
+
+    SdfAbstractData* const _dst;
+};
+
+} // namespace
+
 namespace MAYAUSD_NS_DEF {
 
 UsdUndoStateDelegate::UsdUndoStateDelegate()
@@ -92,6 +128,10 @@ void UsdUndoStateDelegate::invertDeleteSpec(
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Inverting deleting spec at '%s'\n", path.GetText());
 
     CreateSpec(path, deletedSpecType, inert);
+
+    // copy back every spec(s) with the given visitor
+    SpecCopier specCopier(get_pointer(_GetLayerData()));
+    deletedData->VisitSpecs(&specCopier);
 
     _setMessageAlreadyShowed = false;
 }
@@ -327,7 +367,15 @@ void UsdUndoStateDelegate::_OnDeleteSpec(const SdfPath& path, bool inert)
         return;
     }
 
-    SdfDataRefPtr     deletedData = TfCreateRefPtr(new SdfData());
+    SdfDataRefPtr deletedData = TfCreateRefPtr(new SdfData());
+
+    SdfLayer::TraversalFunction copyFunc = std::bind(
+        &copySpecAtPath,
+        std::cref(*get_pointer(_GetLayerData())),
+        get_pointer(deletedData),
+        std::placeholders::_1);
+    _GetLayer()->Traverse(path, copyFunc);
+
     const SdfSpecType deletedSpecType = _GetLayer()->GetSpecType(path);
 
     UsdUndoManager::instance().addInverse(std::bind(

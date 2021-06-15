@@ -79,31 +79,7 @@ void UsdUndoUngroupCommand::undo()
 
     _undoableItem.undo();
 
-    // After undo, the group prim loses it's specifier and type.
-    // At this point _groupItem->prim() is stale and should not be used.
-    // Define a new prim from ufe path to get back the original concrete xfrom prim.
-    auto stage = getStage(_groupItem->path());
-    TF_AXIOM(stage);
-
-    auto groupUsdPath = getPath(_groupItem->path());
-    auto groupPrim = stage->DefinePrim(groupUsdPath, TfToken("Xform"));
-
-    // create a new group scene item
-    _groupItem = UsdSceneItem::create(_groupItem->path(), groupPrim);
-    TF_AXIOM(_groupItem);
-
-    // undo the inserted children
     _compositeInsertCmd->undo();
-
-    // Make sure to add the newly created _group (a.k.a parent) to selection. This matches native
-    // Maya behavior and also prevents the crash on grouping a prim twice.
-    Ufe::Selection groupSelect;
-    groupSelect.append(_groupItem);
-    Ufe::GlobalSelection::get()->replaceWith(groupSelect);
-
-    TF_VERIFY(
-        Ufe::GlobalSelection::get()->size() == 1,
-        "_group node should be in the global selection now. \n");
 }
 
 void UsdUndoUngroupCommand::redo()
