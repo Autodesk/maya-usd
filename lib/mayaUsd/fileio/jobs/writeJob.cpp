@@ -312,8 +312,15 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
     // selected objects that didn't have root entry given to be their parent, they become root(s) for their own
     std::vector<std::string> additionalRoots;
-    // whatever transform that is not a root and not leaf
-    std::vector<std::string> intermediate;
+
+    // When only roots are passed, we clear out the dagPaths and replace them with the given roots to avoid exporting everything
+    if (!mJobCtx.mArgs.exportSelected &! mJobCtx.mArgs.rootNames.empty()) {
+        mJobCtx.mArgs.dagPaths.clear();
+        for (const std::string& rootName : mJobCtx.mArgs.rootNames) {
+            UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
+            mJobCtx.mArgs.dagPaths.insert(rootDagPath);
+        }
+    }
 
     UsdMayaUtil::MDagPathSet::const_iterator end = mJobCtx.mArgs.dagPaths.end();
     for (UsdMayaUtil::MDagPathSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin(); it != end; ++it) {
@@ -331,14 +338,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         if (curDagPathStr.empty())
             continue;
 
-//        for (const std::string& rootName : mJobCtx.mArgs.rootNames) {
-//            UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
-//            if (MFnDagNode(rootDagPath).hasParent(curDagPath.node())) {
-//                curLeafDagPath = curDagPath;
-//            } else if (!(rootDagPath == curDagPath || MFnDagNode(curDagPath).hasParent(rootDagPath.node()))) {
-//                goto ctn;
-//            }
-//        }
         argDagPaths.insert(curDagPathStr);
 
         status = curDagPath.pop();
@@ -369,44 +368,27 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             curDagPathIsValid = curDagPath.isValid(&status);
         }
         ctn:;
-        // assume each selected object as parent by itself
-//        argDagPathParents.insert(curDagPathStr.c_str());
     }
 
-    // Inspecting the additionalRoots
-    for (const MDagPath& dg : mJobCtx.mArgs.dagPaths) {
-        bool hasAParent = false;
-        for (const std::string& parentName : mJobCtx.mArgs.rootNames) {
-            UsdMayaUtil::GetDagPathByName(parentName, parentDagPath);
-            if (MFnDagNode(dg).hasParent(parentDagPath.node())) {
-                hasAParent = true;
+    // Append the indirect additional roots only when we are not exporting to the scene top
+    if (!(std::find(mJobCtx.mArgs.rootNames.begin(), mJobCtx.mArgs.rootNames.end(), "|") != mJobCtx.mArgs.rootNames.end())) {
+        // Inspecting the additionalRoots
+        for (const MDagPath& dg : mJobCtx.mArgs.dagPaths) {
+            bool hasAParent = false;
+            for (const std::string& parentName : mJobCtx.mArgs.rootNames) {
+                UsdMayaUtil::GetDagPathByName(parentName, parentDagPath);
+                if (MFnDagNode(dg).hasParent(parentDagPath.node())) {
+                    hasAParent = true;
+                }
+            }
+            if (!hasAParent) {
+                additionalRoots.emplace_back(dg.partialPathName().asChar());
             }
         }
-        if (!hasAParent) {
-            additionalRoots.emplace_back(dg.partialPathName().asChar());
-        }
-    }
 
-    // Appending the additionalRoots
-    for (const std::string& adRoot : additionalRoots) {
-        mJobCtx.mArgs.rootNames.emplace_back(adRoot);
-    }
-
-//    for (const std::string& dgPath : argDagPathParents) {
-//        MGlobal::displayInfo(dgPath.c_str());
-//    }
-
-    // TODO: We want each selected object to be its own parent without passing the whole selection
-    // TODO: list to the root arg... So, here are several options:
-    // -------------------------------------------------------------------------------------------
-    // Option 1: All selected will work directly as roots, and their parents won't be exported
-    //           because we haven't ask for them
-    // The advantage of this method, that we can easily mix/pass new roots in addition to the
-    // roots made from the currently selected maya nodes
-    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
-        // put all selected objects in the rootNames list
-        for (const std::string& dgPathStr : argDagPaths) {
-            mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
+        // Appending the additionalRoots
+        for (const std::string& adRoot : additionalRoots) {
+            mJobCtx.mArgs.rootNames.emplace_back(adRoot);
         }
     }
 
@@ -417,23 +399,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     if (!(mJobCtx.mArgs.rootNames.empty() &! argDagPathParents.empty()))
         tmpRootNames = mJobCtx.mArgs.rootNames;
 
-//    // Inspect intermediate transform nodes
-//    for (const std::string& dgStr : argDagPaths) {
-//        if ((std::find(mJobCtx.mArgs.rootNames.begin(), mJobCtx.mArgs.rootNames.end(), dgStr)
-//            != mJobCtx.mArgs.rootNames.end()) && (std::find(mJobCtx.mArgs.rootNames.begin(),
-//                          mJobCtx.mArgs.rootNames.end(), dgStr) != mJobCtx.mArgs.rootNames.end())) {
-//
-//        }
-//    }
-
-//    for (const std::string& dgPathStr : mJobCtx.mArgs.rootNames) {
-//        MGlobal::displayInfo(dgPathStr.c_str());
-//    }
-
-
-
-    // TODO: Sort roots and objects before exporting to have a consistent objects order in the USD
-
+    // TODO: Need to discuss... Should we sort the roots and objects based on the full path?!
     for (std::string& rootName : tmpRootNames) {
         // Now do a depth-first traversal of the Maya DAG from the world root.
         // We keep a reference to arg dagPaths as we encounter them.
@@ -447,7 +413,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         for (; !itDag.isDone(); itDag.next()) {
             itDag.getPath(curDagPath);
             std::string curDagPathStr(curDagPath.partialPathName().asChar());
-
             if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
                 // This dagPath is a parent of one of the arg dagPaths. It should
                 // be included in the export, but not necessarily all of its
@@ -459,11 +424,8 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             } else if (curLeafDagPath.isValid() &! (MFnDagNode(curDagPath).hasParent(curLeafDagPath.node()))) {
                 // This dagPath is not a child of one of the arg dagPaths, so prune
                 // it and everything below it from the traversal.
-                // except when this is an intermediate transform node between the root and the dag node
-                if (!(std::find(intermediate.begin(), intermediate.end(), curDagPathStr) != intermediate.end())) {
-                    itDag.prune();
-                    continue;
-                }
+                itDag.prune();
+                continue;
             }
 
             if (!mJobCtx._NeedToTraverse(curDagPath) && curDagPath.length() > 0) {
