@@ -17,6 +17,7 @@
 
 #include "render_delegate.h"
 #include "tokens.h"
+#include "mayaPrimCommon.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -728,9 +729,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
 #endif
     } else {
-        if (_selectionChanged) {
+        if (_selectionChanged || _selectionModeChanged) {
             _UpdateSelectionStates();
             _selectionChanged = false;
+            _selectionModeChanged = false;
         }
 
         const unsigned int displayStyle = frameContext.getDisplayStyle();
@@ -822,6 +824,14 @@ void ProxyRenderDelegate::updateSelectionGranularity(
         selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kComponent);
 #endif
     }
+
+#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
+    bool oldSnapToSelectedObjects = _snapToSelectedObjects;
+    _snapToSelectedObjects = pointSnapToSelectedObjects();
+    if (_snapToSelectedObjects != oldSnapToSelectedObjects) {
+        _selectionModeChanged = true;
+    }
+#endif
 }
 
 //! \brief  Selection for both instanced and non-instanced cases.
@@ -1081,6 +1091,16 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     }
 
     if (!rootPaths.empty()) {
+        // When the selection mode changes then we have to update all the selected render
+        // items. Set a dirty flag on each of the rprims so they know what to update.
+        if (_selectionModeChanged) {
+            HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+            for(auto path : rootPaths)
+            {
+                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
+            }
+        }
+
         HdRprimCollection collection(HdTokens->geometry, kSelectionReprSelector);
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
@@ -1286,6 +1306,13 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
         return true;
     }
 }
+
+#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
+bool ProxyRenderDelegate::SnapToSelectedObjects() const
+{
+    return _snapToSelectedObjects;
+}
+#endif
 
 // ProxyShapeData
 ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(

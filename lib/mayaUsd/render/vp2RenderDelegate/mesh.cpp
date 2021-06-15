@@ -1159,11 +1159,6 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
         bits |= _customDirtyBitsInUse & (DirtySmoothNormals | DirtyFlatNormals);
     }
 
-    // If the topology is dirty, recompute custom indices resources.
-    if (bits & HdChangeTracker::DirtyTopology) {
-        bits |= _customDirtyBitsInUse & (DirtyIndices | DirtyHullIndices | DirtyPointsIndices);
-    }
-
     // If normals are dirty and we are doing CPU normals
     // then the normals computation needs the points primvar
     // so mark points as dirty, so that the scene delegate will provide
@@ -2016,13 +2011,19 @@ void HdVP2Mesh::_UpdateDrawItem(
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     if (!isBBoxItem && !isDedicatedSelectionHighlightItem
-        && (itemDirtyBits & DirtySelectionHighlight)) {
+        && (itemDirtyBits & (DirtySelectionHighlight | DirtySelectionMode))) {
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
+#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
+        if (_selectionStatus == kUnselected || drawScene.SnapToSelectedObjects()) {
+            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+        }
+#else
         // Only unselected Rprims can be used for point snapping.
         if (_selectionStatus == kUnselected) {
             selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
         }
+#endif
 
         // The function is thread-safe, thus called in place to keep simple.
         renderItem->setSelectionMask(selectionMask);

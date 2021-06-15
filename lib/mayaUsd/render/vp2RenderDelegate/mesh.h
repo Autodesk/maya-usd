@@ -17,6 +17,7 @@
 #define HD_VP2_MESH
 
 #include "draw_item.h"
+#include "mayaPrimCommon.h"
 #include "meshViewportCompute.h"
 #include "primvarInfo.h"
 
@@ -173,13 +174,13 @@ private:
     //! Custom dirty bits used by this mesh
     enum DirtyBits : HdDirtyBits
     {
-        DirtySmoothNormals = HdChangeTracker::CustomBitsBegin,
+        DirtySmoothNormals = MayaPrimCommon::DirtyBitLast,
         DirtyFlatNormals = (DirtySmoothNormals << 1),
-        DirtyIndices = (DirtyFlatNormals << 1),
-        DirtyHullIndices = (DirtyIndices << 1),
-        DirtyPointsIndices = (DirtyHullIndices << 1),
-        DirtySelection = (DirtyPointsIndices << 1),
-        DirtySelectionHighlight = (DirtySelection << 1)
+        //! "Forward" the enumerated types here so we don't have to keep writing MayaPrimCommon in
+        //! the cpp file.
+        DirtySelection = MayaPrimCommon::DirtySelection,
+        DirtySelectionHighlight = MayaPrimCommon::DirtySelectionHighlight,
+        DirtySelectionMode = MayaPrimCommon::DirtySelectionMode
     };
 
     HdVP2RenderDelegate* _delegate {
