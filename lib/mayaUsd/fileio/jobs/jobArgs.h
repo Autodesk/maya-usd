@@ -199,7 +199,7 @@ struct UsdMayaJobExportArgs
     const std::string pythonPerFrameCallback;
     const std::string pythonPostCallback;
 
-    const UsdMayaUtil::MDagPathSet dagPaths;
+    UsdMayaUtil::MDagPathSet dagPaths;
     /// The time samples at which to export animated data; the times must be
     /// monotonically non-decreasing.
     /// An empty list of time samples means that no animated (time-sampled)
@@ -208,6 +208,7 @@ struct UsdMayaJobExportArgs
 
     // given root names to to start exporting from (passed by the -root/-rt multi-flag)
     std::vector<std::string> rootNames;
+    bool exportSelected;
 
     // This path is provided when dealing with variants
     // where a _BaseModel_ root path is used instead of

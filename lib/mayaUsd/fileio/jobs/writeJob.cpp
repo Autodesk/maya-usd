@@ -295,13 +295,41 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     TfHashSet<std::string, TfHash> argDagPathParents;
     MDagPath                       rootDagPath;
     MDagPath                       curLeafDagPath;
+    MDagPath                       parentDagPath;
+
+    // Assume selected objects are roots by themselves
+    if (mJobCtx.mArgs.exportSelected) {
+        for (const std::string& rootName : mJobCtx.mArgs.rootNames) {
+            argDagPathParents.insert(rootName);
+        }
+    }
+
+    // Assume selected objects are roots by themselves if an empty string is passed to root
+    if (mJobCtx.mArgs.exportSelected &&
+        (std::find(mJobCtx.mArgs.rootNames.begin(), mJobCtx.mArgs.rootNames.end(), "")
+         != mJobCtx.mArgs.rootNames.end())) {
+        for (const MDagPath& dgPath : mJobCtx.mArgs.dagPaths) {
+            mJobCtx.mArgs.rootNames.emplace_back(dgPath.partialPathName().asChar());
+        }
+    }
 
     std::vector<std::string> tmpRootNames;
     if (mJobCtx.mArgs.rootNames.empty()) {
         // in case when no roots are passed, insert the world root "|" as if it's passed to the root arg
         tmpRootNames.emplace_back("|");
-    } else {
-        tmpRootNames = mJobCtx.mArgs.rootNames;
+        mJobCtx.mArgs.rootNames.emplace_back("|");
+    }
+
+    // selected objects that didn't have root entry given to be their parent, they become root(s) for their own
+    std::vector<std::string> additionalRoots;
+
+    // When only roots are passed, we clear out the dagPaths and replace them with the given roots to avoid exporting everything
+    if (!mJobCtx.mArgs.exportSelected &! mJobCtx.mArgs.rootNames.empty()) {
+        mJobCtx.mArgs.dagPaths.clear();
+        for (const std::string& rootName : mJobCtx.mArgs.rootNames) {
+            UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
+            mJobCtx.mArgs.dagPaths.insert(rootDagPath);
+        }
     }
 
     UsdMayaUtil::MDagPathSet::const_iterator end = mJobCtx.mArgs.dagPaths.end();
@@ -320,103 +348,80 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         if (curDagPathStr.empty())
             continue;
 
-        // ignore any mArgs.dagPath above the given -root(s)
-        for (const std::string& rootName : tmpRootNames) {
-            if (rootName != "|" && rootName != "") {
-                UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
+        argDagPaths.insert(curDagPathStr);
 
-                if (MFnDagNode(rootDagPath).hasParent(curDagPath.node())) {
-                    curLeafDagPath = curDagPath;
-                } else if (!(rootDagPath == curDagPath
-                             || MFnDagNode(curDagPath).hasParent(rootDagPath.node()))) {
-                    mJobCtx.mArgs.rootNames.emplace_back(curDagPathStr.c_str());
-//                    continue;
-                }
+        status = curDagPath.pop();
+
+        if (status != MS::kSuccess) {
+            continue;
+        }
+        curDagPathIsValid = curDagPath.isValid(&status);
+
+        while (status == MS::kSuccess && curDagPathIsValid) {
+            curDagPathStr = curDagPath.partialPathName(&status).asChar();
+
+            if (status != MS::kSuccess) {
+                goto ctn;
             }
 
-            argDagPaths.insert(curDagPathStr);
+            if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
+                // We've already traversed up from this path.
+                goto ctn;
+            }
 
+            argDagPathParents.insert(curDagPathStr);
 
             status = curDagPath.pop();
             if (status != MS::kSuccess) {
-                continue;
+                goto ctn;
             }
             curDagPathIsValid = curDagPath.isValid(&status);
-
-            while (status == MS::kSuccess && curDagPathIsValid) {
-                curDagPathStr = curDagPath.partialPathName(&status).asChar();
-                if (status != MS::kSuccess) {
-                    goto ctn;
-                }
-
-//                if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
-//                    // We've already traversed up from this path.
-//                    goto ctn;
-//                }
-
-                // when -root flag is is set, ignore any parents above the given rootName
-                if (!rootName.empty()) {
-                    std::string rootDagFullPathStr = rootDagPath.fullPathName().asChar();
-                    std::string curDagFullPathStr = curDagPath.fullPathName().asChar();
-                    if (curDagFullPathStr.rfind(rootDagFullPathStr, 0) == 0) {
-                        argDagPathParents.insert(curDagPathStr);
-                    }
-                } else {
-                    argDagPathParents.insert(curDagPathStr);
-                }
-
-                status = curDagPath.pop();
-                if (status != MS::kSuccess) {
-                    goto ctn;
-                }
-                curDagPathIsValid = curDagPath.isValid(&status);
-            }
-            ctn:;
         }
+        ctn:;
     }
 
-
-    // Preparing the final roots (both directly passed and roots made of selection due to empty string)
-    if (mJobCtx.mArgs.rootNames.empty())
-        mJobCtx.mArgs.rootNames.emplace_back("|");
-
-    if (mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
-        // put all selected objects in the rootNames list
-        for (const std::string& dgPathStr : argDagPaths) {
-            mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
-        }
-    } else if (!mJobCtx.mArgs.rootNames.empty() &! argDagPaths.empty()) {
-        if (mJobCtx.mArgs.rootNames[0] == "" || mJobCtx.mArgs.rootNames[0] == "") {
-            mJobCtx.mArgs.rootNames.clear();
-            // put all selected objects in the rootNames list
-            for (const std::string& dgPathStr : argDagPaths) {
-                mJobCtx.mArgs.rootNames.emplace_back(dgPathStr);
+    // Append the indirect additional roots only when we are not exporting to the scene top
+    if (!(std::find(mJobCtx.mArgs.rootNames.begin(), mJobCtx.mArgs.rootNames.end(), "|") != mJobCtx.mArgs.rootNames.end())) {
+        // Inspecting the additionalRoots
+        for (const MDagPath& dg : mJobCtx.mArgs.dagPaths) {
+            bool hasAParent = false;
+            for (const std::string& parentName : mJobCtx.mArgs.rootNames) {
+                UsdMayaUtil::GetDagPathByName(parentName, parentDagPath);
+                if (MFnDagNode(dg).hasParent(parentDagPath.node())) {
+                    hasAParent = true;
+                }
+            }
+            if (!hasAParent) {
+                additionalRoots.emplace_back(dg.partialPathName().asChar());
             }
         }
-    }
 
-    // Clear empty string from the rootNames vector
-    std::vector<std::string> finalRootNames;
-    for (std::string& rt : mJobCtx.mArgs.rootNames) {
-        if (!rt.empty())
-            finalRootNames.emplace_back(rt);
+        // Appending the additionalRoots
+        for (const std::string& adRoot : additionalRoots) {
+            mJobCtx.mArgs.rootNames.emplace_back(adRoot);
+        }
     }
-    mJobCtx.mArgs.rootNames = finalRootNames;
 
     // Prevent user mistakes, prevents duplicates resulted from indirect roots mixed with direct passed roots
     removeDups(mJobCtx.mArgs.rootNames);
-
 
     // when no roots are passed, tmpRootNames is {"|"} from above
     if (!(mJobCtx.mArgs.rootNames.empty() &! argDagPathParents.empty()))
         tmpRootNames = mJobCtx.mArgs.rootNames;
 
+    // objects found has a root already
+    std::vector<std::string> hasARoot;
+
+    // TODO: Need to discuss... Should we sort the roots and objects based on the full path?!
     for (std::string& rootName : tmpRootNames) {
         // Now do a depth-first traversal of the Maya DAG from the world root.
         // We keep a reference to arg dagPaths as we encounter them.
         MItDag   itDag(MItDag::kDepthFirst, MFn::kInvalid);
         MDagPath curDagPath;
         UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
+        if (rootName == "")
+            continue;
+
         if (rootName != "|")
             itDag.reset(rootDagPath, MItDag::kDepthFirst, MFn::kInvalid);
         else
@@ -424,7 +429,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         for (; !itDag.isDone(); itDag.next()) {
             itDag.getPath(curDagPath);
             std::string curDagPathStr(curDagPath.partialPathName().asChar());
-
             if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
                 // This dagPath is a parent of one of the arg dagPaths. It should
                 // be included in the export, but not necessarily all of its
@@ -432,10 +436,15 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             } else if (argDagPaths.find(curDagPathStr) != argDagPaths.end()) {
                 // This dagPath IS one of the arg dagPaths. It AND all of its
                 // children should be included in the export.
+                if ((std::find(hasARoot.begin(), hasARoot.end(), curDagPathStr) != hasARoot.end())) {
+                    continue;
+                }
+                hasARoot.emplace_back(curDagPathStr);
                 curLeafDagPath = curDagPath;
-            } else if (!MFnDagNode(curDagPath).hasParent(curLeafDagPath.node())) {
+            } else if (curLeafDagPath.isValid() &! (MFnDagNode(curDagPath).hasParent(curLeafDagPath.node()))) {
                 // This dagPath is not a child of one of the arg dagPaths, so prune
                 // it and everything below it from the traversal.
+
                 itDag.prune();
                 continue;
             }
