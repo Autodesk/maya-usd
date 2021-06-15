@@ -29,11 +29,11 @@ def main():
     cmds.usdExport(file='{}/onlyRootsB.usda'.format(tmpdir), root=['Mid_1', 'Mid_Transformation'])
 
     # no root, only selection
-    select(['pCone1', 'Cube1', 'pCone2', 'Cube2'], r=True)
+    select(['pCone1', 'Cube1', 'pSphere1', 'pSphere2', 'pCone2', 'Cube2'], r=True)
     cmds.usdExport(file='{}/onlySelected.usda'.format(tmpdir), sl=True)
     cmds.usdExport(file='{}/onlySelectedOldBehavior.usda'.format(tmpdir), sl=True, root='|')
     cmds.usdExport(file='{}/selectedMultiRoots.usda'.format(tmpdir), sl=True, root=['Mid_Transformation', 'Mid_NoTransformation'])
-    cmds.usdExport(file='{}/mixedRootsAndSelRoots.usda'.format(tmpdir), sl=True, root=['Mid_Transformation'])
+    cmds.usdExport(file='{}/mixedRootsAndSelRoots.usda'.format(tmpdir), sl=True, root=['Mid_Transformation', 'Mid_1'])
     
     # neither root nor selected
     cmds.usdExport(file='{}/export_all.usda'.format(tmpdir))
