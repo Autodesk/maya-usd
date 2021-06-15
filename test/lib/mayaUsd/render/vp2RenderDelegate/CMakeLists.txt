@@ -31,6 +31,12 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
         testVP2RenderDelegatePerInstanceInheritedData.py
         testVP2RenderDelegateBasisCurves.py
     )
+
+    if (PXR_VERSION GREATER_EQUAL 2105)
+        list(APPEND TEST_SCRIPT_FILES
+            testVP2RenderDelegateDrawModes.py
+        )
+    endif()
 endif()
 
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)

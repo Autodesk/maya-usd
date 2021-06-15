@@ -764,6 +764,40 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                             interp);
                     }
                 }
+            } else if (value.IsHolding<VtIntArray>()) {
+                if (!buffer) {
+                    const MHWRender::MVertexBufferDescriptor vbDesc(
+                        "", semantic, MHWRender::MGeometry::kFloat, 1); // kInt32
+
+                    buffer = new MHWRender::MVertexBuffer(vbDesc);
+                    _meshSharedData->_primvarInfo[token]->_buffer.reset(buffer);
+                }
+
+                if (buffer) {
+                    bufferData = _meshSharedData->_numVertices > 0
+                        ? buffer->acquire(_meshSharedData->_numVertices, true)
+                        : nullptr;
+                    if (bufferData) {
+                        const VtIntArray& primvarData = value.UncheckedGet<VtIntArray>();
+
+                        VtFloatArray convertedPrimvarData;
+                        convertedPrimvarData.reserve(primvarData.size());
+                        for (auto& source : primvarData) {
+                            convertedPrimvarData.push_back(static_cast<float>(source));
+                        }
+
+                        _FillPrimvarData(
+                            static_cast<float*>(bufferData),
+                            _meshSharedData->_numVertices,
+                            0,
+                            _meshSharedData->_renderingToSceneFaceVtxIds,
+                            _rprimId,
+                            _meshSharedData->_topology,
+                            token,
+                            convertedPrimvarData,
+                            interp);
+                    }
+                }
             } else {
                 TF_WARN("Unsupported primvar array");
             }
