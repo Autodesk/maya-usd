@@ -328,6 +328,8 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
                 jobArgs.rootNames.emplace_back(this_root);
             }
         }
+        if (exportSelected)
+            jobArgs.exportSelected = true;
 
         unsigned int numFilteredTypes = argData.numberOfFlagUses(kFilterTypesFlag);
         for (unsigned int i = 0; i < numFilteredTypes; i++) {

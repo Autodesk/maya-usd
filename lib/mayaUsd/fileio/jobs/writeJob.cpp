@@ -417,15 +417,20 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     if (!(mJobCtx.mArgs.rootNames.empty() &! argDagPathParents.empty()))
         tmpRootNames = mJobCtx.mArgs.rootNames;
 
-    // Inspect intermediate transform nodes
+//    // Inspect intermediate transform nodes
+//    for (const std::string& dgStr : argDagPaths) {
+//        if ((std::find(mJobCtx.mArgs.rootNames.begin(), mJobCtx.mArgs.rootNames.end(), dgStr)
+//            != mJobCtx.mArgs.rootNames.end()) && (std::find(mJobCtx.mArgs.rootNames.begin(),
+//                          mJobCtx.mArgs.rootNames.end(), dgStr) != mJobCtx.mArgs.rootNames.end())) {
+//
+//        }
+//    }
 
-    for (const std::string& dgStr : argDagPaths) {
-        if ((std::find(mJobCtx.mArgs.rootNames.begin(), mJobCtx.mArgs.rootNames.end(), dgStr)
-            != mJobCtx.mArgs.rootNames.end()) && (std::find(mJobCtx.mArgs.rootNames.begin(),
-                          mJobCtx.mArgs.rootNames.end(), dgStr) != mJobCtx.mArgs.rootNames.end())) {
+//    for (const std::string& dgPathStr : mJobCtx.mArgs.rootNames) {
+//        MGlobal::displayInfo(dgPathStr.c_str());
+//    }
 
-        }
-    }
+
 
     // TODO: Sort roots and objects before exporting to have a consistent objects order in the USD
 
@@ -451,7 +456,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                 // This dagPath IS one of the arg dagPaths. It AND all of its
                 // children should be included in the export.
                 curLeafDagPath = curDagPath;
-            } else if (!MFnDagNode(curDagPath).hasParent(curLeafDagPath.node())) {
+            } else if (curLeafDagPath.isValid() &! (MFnDagNode(curDagPath).hasParent(curLeafDagPath.node()))) {
                 // This dagPath is not a child of one of the arg dagPaths, so prune
                 // it and everything below it from the traversal.
                 // except when this is an intermediate transform node between the root and the dag node
