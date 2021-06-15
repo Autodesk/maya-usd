@@ -297,7 +297,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     MDagPath                       curLeafDagPath;
     MDagPath                       parentDagPath;
 
-    // Assume selected objects are roots by themselves
     if (mJobCtx.mArgs.exportSelected) {
         for (const std::string& rootName : mJobCtx.mArgs.rootNames) {
             argDagPathParents.insert(rootName);
@@ -305,15 +304,42 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     }
 
     // Assume selected objects are roots by themselves if an empty string is passed to root
-    if (mJobCtx.mArgs.exportSelected &&
-        (std::find(mJobCtx.mArgs.rootNames.begin(), mJobCtx.mArgs.rootNames.end(), "")
-         != mJobCtx.mArgs.rootNames.end())) {
-        for (const MDagPath& dgPath : mJobCtx.mArgs.dagPaths) {
-            mJobCtx.mArgs.rootNames.emplace_back(dgPath.partialPathName().asChar());
+    std::vector<std::string> tmpRootNames = mJobCtx.mArgs.rootNames;
+    if (mJobCtx.mArgs.exportSelected &! mJobCtx.mArgs.rootNames.empty()) {
+        if (mJobCtx.mArgs.rootNames.size() == 1 && mJobCtx.mArgs.rootNames[0].empty()) {
+            // It's faster to set all selected objects to roots without the below intensive string comp
+            // in case only the empty string is passed alone with no other actual roots
+            for (const std::string& rt : tmpRootNames) {
+                mJobCtx.mArgs.rootNames.emplace_back(rt);
+            }
+        } else {
+            // Because we pass an empty string to consider all selected objects are also roots if no
+            // root is given to them, then we have to loop over the given roots accurately set a
+            // selected object as root only when it doesn't fall under any of the given roots,
+            // otherwise, there will be a risk that in some cases an object maybe written twice,
+            // once under its root and once more at the USD root.
+            if (std::find(mJobCtx.mArgs.rootNames.begin(), mJobCtx.mArgs.rootNames.end(), "")
+                != mJobCtx.mArgs.rootNames.end()) {
+                for (const MDagPath& dgPath : mJobCtx.mArgs.dagPaths) {
+                    bool hasARoot = false;
+                    for (const std::string& rt : tmpRootNames) {
+                        if (!rt.empty() && rt != "|") {
+                            UsdMayaUtil::GetDagPathByName(rt, rootDagPath);
+                            std::string dgPathStr = dgPath.fullPathName().asChar();
+                            if (dgPathStr.rfind(rootDagPath.fullPathName().asChar(), 0) == 0)
+                            {
+                                hasARoot = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!hasARoot)
+                        mJobCtx.mArgs.rootNames.emplace_back(dgPath.partialPathName().asChar());
+                }
+            }
         }
     }
 
-    std::vector<std::string> tmpRootNames;
     if (mJobCtx.mArgs.rootNames.empty()) {
         // in case when no roots are passed, insert the world root "|" as if it's passed to the root arg
         tmpRootNames.emplace_back("|");
@@ -419,7 +445,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         MItDag   itDag(MItDag::kDepthFirst, MFn::kInvalid);
         MDagPath curDagPath;
         UsdMayaUtil::GetDagPathByName(rootName, rootDagPath);
-        if (rootName == "")
+        if (rootName.empty())
             continue;
 
         if (rootName != "|")
