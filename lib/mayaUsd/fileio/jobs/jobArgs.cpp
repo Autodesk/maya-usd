@@ -355,9 +355,12 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaShadingModeRegistry::ListMaterialConversions()))
     , verbose(_Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
     , staticSingleSample(_Boolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))
-    ,
-
-    chaserNames(_Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
+    , geomSidedness(_Token(
+          userArgs,
+          UsdMayaJobExportArgsTokens->geomSidedness,
+          UsdMayaJobExportArgsTokens->derived,
+          { UsdMayaJobExportArgsTokens->single, UsdMayaJobExportArgsTokens->double_ }))
+    , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
     ,
 
@@ -409,6 +412,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
         << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
         << "staticSingleSample: " << TfStringify(exportArgs.staticSingleSample) << std::endl
+        << "geomSidedness: " << TfStringify(exportArgs.geomSidedness) << std::endl
         << "usdModelRootOverridePath: " << exportArgs.usdModelRootOverridePath << std::endl;
 
     out << "melPerFrameCallback: " << exportArgs.melPerFrameCallback << std::endl
@@ -504,6 +508,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
+        d[UsdMayaJobExportArgsTokens->geomSidedness]
+            = UsdMayaJobExportArgsTokens->derived.GetString();
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable

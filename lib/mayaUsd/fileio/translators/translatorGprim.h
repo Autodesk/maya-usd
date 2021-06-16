@@ -27,6 +27,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+enum GeomSidedness
+{
+    Derived,
+    Single,
+    Double
+};
+
 /// \brief Provides helper functions for reading UsdGeomGprim.
 struct UsdMayaTranslatorGprim
 {
@@ -35,8 +42,11 @@ struct UsdMayaTranslatorGprim
     Read(const UsdGeomGprim& gprim, MObject mayaNode, UsdMayaPrimReaderContext* context);
 
     MAYAUSD_CORE_PUBLIC
-    static void
-    Write(const MObject& mayaNode, const UsdGeomGprim& gprim, UsdMayaPrimWriterContext* context);
+    static void Write(
+        const MObject&            mayaNode,
+        const UsdGeomGprim&       gprim,
+        UsdMayaPrimWriterContext* context,
+        GeomSidedness             sidedness);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

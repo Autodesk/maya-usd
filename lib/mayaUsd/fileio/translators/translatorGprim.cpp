@@ -15,6 +15,8 @@
 //
 #include "translatorGprim.h"
 
+#include "../writeJobContext.h"
+
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MFnDagNode.h>
@@ -37,13 +39,21 @@ void UsdMayaTranslatorGprim::Read(
 void UsdMayaTranslatorGprim::Write(
     const MObject&      mayaNode,
     const UsdGeomGprim& gprim,
-    UsdMayaPrimWriterContext*)
+    UsdMayaPrimWriterContext*,
+    GeomSidedness sidedness)
 {
     MFnDependencyNode depFn(mayaNode);
 
     bool doubleSided = false;
-    if (UsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)) {
-        gprim.CreateDoubleSidedAttr(VtValue(doubleSided), true);
+    if (sidedness == GeomSidedness::Derived
+        && UsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided) && doubleSided) {
+        doubleSided = true;
+    } else if (sidedness == GeomSidedness::Double) {
+        doubleSided = true;
+    }
+
+    if (doubleSided) {
+        gprim.CreateDoubleSidedAttr(VtValue(doubleSided), doubleSided);
     }
 
     bool opposite = false;
