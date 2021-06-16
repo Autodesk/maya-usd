@@ -1,6 +1,6 @@
 //Maya ASCII 2019 scene
 //Name: UsdExportRootTest.ma
-//Last modified: Tue, Jun 15, 2021 08:01:49 PM
+//Last modified: Wed, Jun 16, 2021 06:08:02 PM
 //Codeset: UTF-8
 requires maya "2019";
 currentUnit -l centimeter -a degree -t film;
@@ -1346,7 +1346,7 @@ createNode transform -n "Conflicting1" -p "GrpRoot2";
 	rename -uid "1C72F9C0-0003-FC42-60C2-3EF2000005CE";
 	setAttr ".t" -type "double3" -2.1654426531785687 1.0046767663911893 3.922874331426706e-15 ;
 	setAttr ".s" -type "double3" 0.5982021026824127 0.5982021026824127 0.5982021026824127 ;
-createNode mesh -n "Conflicting1Shape" -p "|Top|Mid_Transformation|GrpRoot2|Conflicting1";
+createNode mesh -n "Conflicting1Shape" -p "Conflicting1";
 	rename -uid "1C72F9C0-0003-FC42-60C2-3EF2000005CF";
 	setAttr -k off ".v";
 	setAttr ".vir" yes;
@@ -1427,131 +1427,8 @@ createNode transform -n "Conflicting2" -p "GrpRoot2";
 	rename -uid "1C72F9C0-0003-FC42-60C2-3EF2000005D0";
 	setAttr ".t" -type "double3" -2.16544265317857 1.8773951983290045 8.9408419162606534e-15 ;
 	setAttr ".s" -type "double3" 0.5982021026824127 0.5982021026824127 0.5982021026824127 ;
-createNode mesh -n "Conflicting2Shape" -p "|Top|Mid_Transformation|GrpRoot2|Conflicting2";
+createNode mesh -n "Conflicting2Shape" -p "Conflicting2";
 	rename -uid "1C72F9C0-0003-FC42-60C2-3EF2000005D1";
-	setAttr -k off ".v";
-	setAttr ".vir" yes;
-	setAttr ".vif" yes;
-	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
-		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
-		 0.875 0.25 0.125 0 0.125 0.25;
-	setAttr ".cuvs" -type "string" "map1";
-	setAttr ".dcc" -type "string" "Ambient+Diffuse";
-	setAttr ".covm[0]"  0 1 1;
-	setAttr ".cdvm[0]"  0 1 1;
-	setAttr -s 8 ".vt[0:7]"  -0.5 -0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 0.5 0.5 0.5
-		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
-	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
-		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
-		f 4 0 5 -2 -5
-		mu 0 4 0 1 3 2
-		f 4 1 7 -3 -7
-		mu 0 4 2 3 5 4
-		f 4 2 9 -4 -9
-		mu 0 4 4 5 7 6
-		f 4 3 11 -1 -11
-		mu 0 4 6 7 9 8
-		f 4 -12 -10 -8 -6
-		mu 0 4 1 10 11 3
-		f 4 10 4 6 8
-		mu 0 4 12 0 2 13;
-	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
-	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
-	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
-	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
-createNode transform -n "GrpRoot3" -p "Mid_Transformation";
-	rename -uid "1C72F9C0-0003-FC42-60C2-3E09000005A2";
-	setAttr ".t" -type "double3" -0.16220328977761139 1.5246460781128439 0.76375908293246053 ;
-	setAttr ".r" -type "double3" -21.015249863472487 18.284097963354078 15.545994295870752 ;
-createNode transform -n "Conflicting1" -p "GrpRoot3";
-	rename -uid "1C72F9C0-0003-FC42-60C2-3E09000005A3";
-	setAttr ".t" -type "double3" 2.81022594928932 1.0046767663911917 8.8817841970012523e-16 ;
-	setAttr ".s" -type "double3" 1.36670553772346 1.36670553772346 1.36670553772346 ;
-createNode mesh -n "Conflicting1Shape" -p "|Top|Mid_Transformation|GrpRoot3|Conflicting1";
-	rename -uid "1C72F9C0-0003-FC42-60C2-3E09000005A4";
-	setAttr -k off ".v";
-	setAttr ".vir" yes;
-	setAttr ".vif" yes;
-	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr -s 42 ".uvst[0].uvsp[0:41]" -type "float2" 0.7377643 0.1727457
-		 0.70225441 0.1030536 0.64694643 0.04774563 0.5772543 0.012235746 0.5 -1.1920929e-07
-		 0.4227457 0.012235761 0.35305363 0.047745675 0.2977457 0.10305364 0.26223582 0.17274573
-		 0.24999994 0.25 0.26223582 0.32725427 0.2977457 0.39694634 0.35305366 0.4522543 0.42274573
-		 0.48776418 0.5 0.5 0.57725424 0.48776415 0.64694631 0.45225427 0.70225424 0.39694631
-		 0.73776412 0.32725424 0.75 0.25 0.25 0.5 0.27500001 0.5 0.30000001 0.5 0.32500002
-		 0.5 0.35000002 0.5 0.37500003 0.5 0.40000004 0.5 0.42500004 0.5 0.45000005 0.5 0.47500005
-		 0.5 0.50000006 0.5 0.52500004 0.5 0.55000001 0.5 0.57499999 0.5 0.59999996 0.5 0.62499994
-		 0.5 0.64999992 0.5 0.67499989 0.5 0.69999987 0.5 0.72499985 0.5 0.74999982 0.5 0.5
-		 1;
-	setAttr ".cuvs" -type "string" "map1";
-	setAttr ".dcc" -type "string" "Ambient+Diffuse";
-	setAttr ".covm[0]"  0 1 1;
-	setAttr ".cdvm[0]"  0 1 1;
-	setAttr -s 21 ".vt[0:20]"  0.95105714 -1 -0.30901718 0.80901754 -1 -0.5877856
-		 0.5877856 -1 -0.80901748 0.30901715 -1 -0.95105702 0 -1 -1.000000476837 -0.30901715 -1 -0.95105696
-		 -0.58778548 -1 -0.8090173 -0.80901724 -1 -0.58778542 -0.95105678 -1 -0.30901706 -1.000000238419 -1 0
-		 -0.95105678 -1 0.30901706 -0.80901718 -1 0.58778536 -0.58778536 -1 0.80901712 -0.30901706 -1 0.95105666
-		 -2.9802322e-08 -1 1.000000119209 0.30901697 -1 0.9510566 0.58778524 -1 0.80901706
-		 0.809017 -1 0.5877853 0.95105654 -1 0.309017 1 -1 0 0 1 0;
-	setAttr -s 40 ".ed[0:39]"  0 1 0 1 2 0 2 3 0 3 4 0 4 5 0 5 6 0 6 7 0
-		 7 8 0 8 9 0 9 10 0 10 11 0 11 12 0 12 13 0 13 14 0 14 15 0 15 16 0 16 17 0 17 18 0
-		 18 19 0 19 0 0 0 20 1 1 20 1 2 20 1 3 20 1 4 20 1 5 20 1 6 20 1 7 20 1 8 20 1 9 20 1
-		 10 20 1 11 20 1 12 20 1 13 20 1 14 20 1 15 20 1 16 20 1 17 20 1 18 20 1 19 20 1;
-	setAttr -s 21 -ch 80 ".fc[0:20]" -type "polyFaces" 
-		f 20 -20 -19 -18 -17 -16 -15 -14 -13 -12 -11 -10 -9 -8 -7 -6 -5 -4 -3 -2 -1
-		mu 0 20 0 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1
-		f 3 0 21 -21
-		mu 0 3 20 21 41
-		f 3 1 22 -22
-		mu 0 3 21 22 41
-		f 3 2 23 -23
-		mu 0 3 22 23 41
-		f 3 3 24 -24
-		mu 0 3 23 24 41
-		f 3 4 25 -25
-		mu 0 3 24 25 41
-		f 3 5 26 -26
-		mu 0 3 25 26 41
-		f 3 6 27 -27
-		mu 0 3 26 27 41
-		f 3 7 28 -28
-		mu 0 3 27 28 41
-		f 3 8 29 -29
-		mu 0 3 28 29 41
-		f 3 9 30 -30
-		mu 0 3 29 30 41
-		f 3 10 31 -31
-		mu 0 3 30 31 41
-		f 3 11 32 -32
-		mu 0 3 31 32 41
-		f 3 12 33 -33
-		mu 0 3 32 33 41
-		f 3 13 34 -34
-		mu 0 3 33 34 41
-		f 3 14 35 -35
-		mu 0 3 34 35 41
-		f 3 15 36 -36
-		mu 0 3 35 36 41
-		f 3 16 37 -37
-		mu 0 3 36 37 41
-		f 3 17 38 -38
-		mu 0 3 37 38 41
-		f 3 18 39 -39
-		mu 0 3 38 39 41
-		f 3 19 20 -40
-		mu 0 3 39 40 41;
-	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
-	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
-	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
-	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
-createNode transform -n "Conflicting2" -p "GrpRoot3";
-	rename -uid "1C72F9C0-0003-FC42-60C2-3E09000005A5";
-	setAttr ".t" -type "double3" 2.8102259492893205 2.9808578711625673 4.112542825909618e-15 ;
-	setAttr ".s" -type "double3" 1.36670553772346 1.36670553772346 1.36670553772346 ;
-createNode mesh -n "Conflicting2Shape" -p "|Top|Mid_Transformation|GrpRoot3|Conflicting2";
-	rename -uid "1C72F9C0-0003-FC42-60C2-3E09000005A6";
 	setAttr -k off ".v";
 	setAttr ".vir" yes;
 	setAttr ".vif" yes;
@@ -1587,8 +1464,8 @@ createNode mesh -n "Conflicting2Shape" -p "|Top|Mid_Transformation|GrpRoot3|Conf
 createNode transform -s -n "persp";
 	rename -uid "1C72F9C0-0003-FC42-60C2-3A0E00000456";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 13.616537174567233 4.8833262051031907 3.2817892873276966 ;
-	setAttr ".r" -type "double3" 179.66164727039603 83.399999999998684 -179.99999999999963 ;
+	setAttr ".t" -type "double3" 13.119995414032797 5.4398177057639794 0.63912290388533988 ;
+	setAttr ".r" -type "double3" 174.26164727039583 76.999999999998636 -179.9999999999998 ;
 	setAttr ".rp" -type "double3" -8.8817841970012523e-16 -8.8817841970012523e-16 0 ;
 	setAttr ".rpt" -type "double3" 1.0815821569573157e-15 5.4291871708045674e-18 8.7239360229535795e-16 ;
 createNode camera -s -n "perspShape" -p "persp";
@@ -1657,19 +1534,19 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
 createNode lightLinker -s -n "lightLinker1";
-	rename -uid "CB9979C0-0004-B297-60C5-D7A9000002EE";
+	rename -uid "8206E9C0-0004-DADB-60CA-151B000002BF";
 	setAttr -s 2 ".lnk";
 	setAttr -s 2 ".slnk";
 createNode shapeEditorManager -n "shapeEditorManager";
-	rename -uid "CB9979C0-0004-B297-60C5-D7A9000002EF";
+	rename -uid "8206E9C0-0004-DADB-60CA-151B000002C0";
 createNode poseInterpolatorManager -n "poseInterpolatorManager";
-	rename -uid "CB9979C0-0004-B297-60C5-D7A9000002F0";
+	rename -uid "8206E9C0-0004-DADB-60CA-151B000002C1";
 createNode displayLayerManager -n "layerManager";
-	rename -uid "CB9979C0-0004-B297-60C5-D7A9000002F1";
+	rename -uid "8206E9C0-0004-DADB-60CA-151B000002C2";
 createNode displayLayer -n "defaultLayer";
 	rename -uid "1C72F9C0-0003-FC42-60C2-3A0E00000462";
 createNode renderLayerManager -n "renderLayerManager";
-	rename -uid "CB9979C0-0004-B297-60C5-D7A9000002F3";
+	rename -uid "8206E9C0-0004-DADB-60CA-151B000002C4";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "1C72F9C0-0003-FC42-60C2-3A0E00000464";
 	setAttr ".g" yes;
@@ -1737,7 +1614,7 @@ select -ne :postProcessList1;
 	setAttr -s 2 ".p";
 select -ne :defaultRenderingList1;
 select -ne :initialShadingGroup;
-	setAttr -s 10 ".dsm";
+	setAttr -s 8 ".dsm";
 connectAttr "polyCone1.out" "pCone1Shape.i";
 connectAttr "polySphere1.out" "pSphereShape1.i";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
@@ -1751,14 +1628,8 @@ connectAttr "Cube1Shape.iog" ":initialShadingGroup.dsm" -na;
 connectAttr "pCone1Shape.iog" ":initialShadingGroup.dsm" -na;
 connectAttr "pCone2Shape.iog" ":initialShadingGroup.dsm" -na;
 connectAttr "Cube2Shape.iog" ":initialShadingGroup.dsm" -na;
-connectAttr "|Top|Mid_Transformation|GrpRoot3|Conflicting1|Conflicting1Shape.iog" ":initialShadingGroup.dsm"
-		 -na;
-connectAttr "|Top|Mid_Transformation|GrpRoot3|Conflicting2|Conflicting2Shape.iog" ":initialShadingGroup.dsm"
-		 -na;
-connectAttr "|Top|Mid_Transformation|GrpRoot2|Conflicting1|Conflicting1Shape.iog" ":initialShadingGroup.dsm"
-		 -na;
-connectAttr "|Top|Mid_Transformation|GrpRoot2|Conflicting2|Conflicting2Shape.iog" ":initialShadingGroup.dsm"
-		 -na;
+connectAttr "Conflicting1Shape.iog" ":initialShadingGroup.dsm" -na;
+connectAttr "Conflicting2Shape.iog" ":initialShadingGroup.dsm" -na;
 connectAttr "pSphereShape1.iog" ":initialShadingGroup.dsm" -na;
 connectAttr "pSphereShape2.iog" ":initialShadingGroup.dsm" -na;
 // End of UsdExportRootTest.ma

@@ -308,7 +308,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     if (mJobCtx.mArgs.exportSelected &! mJobCtx.mArgs.rootNames.empty()) {
         if (mJobCtx.mArgs.rootNames.size() == 1 && mJobCtx.mArgs.rootNames[0].empty()) {
             // It's faster to set all selected objects to roots without the below intensive string comp
-            // in case only the empty string is passed alone with no other actual roots
+            // in case when the empty string is passed alone with no other actual roots
             for (const std::string& rt : tmpRootNames) {
                 mJobCtx.mArgs.rootNames.emplace_back(rt);
             }
@@ -428,7 +428,8 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
-    // Prevent user mistakes, prevents duplicates resulted from indirect roots mixed with direct passed roots
+    // Prevent user mistakes, prevents duplicates resulted from indirect roots mixed with direct
+    // passed roots (note: this might not be needed after we already made an accurate root(s) filtering above)
     removeDups(mJobCtx.mArgs.rootNames);
 
     // when no roots are passed, tmpRootNames is {"|"} from above
@@ -452,9 +453,11 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             itDag.reset(rootDagPath, MItDag::kDepthFirst, MFn::kInvalid);
         else
             itDag.reset();
+
         for (; !itDag.isDone(); itDag.next()) {
             itDag.getPath(curDagPath);
             std::string curDagPathStr(curDagPath.partialPathName().asChar());
+
             if (argDagPathParents.find(curDagPathStr) != argDagPathParents.end()) {
                 // This dagPath is a parent of one of the arg dagPaths. It should
                 // be included in the export, but not necessarily all of its
@@ -467,12 +470,14 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                 }
                 hasARoot.emplace_back(curDagPathStr);
                 curLeafDagPath = curDagPath;
-            } else if (curLeafDagPath.isValid() &! (MFnDagNode(curDagPath).hasParent(curLeafDagPath.node()))) {
+            } else if (!(MFnDagNode(curDagPath).hasParent(curLeafDagPath.node()))) {
                 // This dagPath is not a child of one of the arg dagPaths, so prune
                 // it and everything below it from the traversal.
-
-                itDag.prune();
-                continue;
+                if (mJobCtx.mArgs.exportSelected && curDagPath.apiType() != MFn::kMesh &&
+                    curDagPath.apiType() != MFn::kShape) {
+                    itDag.prune();
+                    continue;
+                }
             }
 
             if (!mJobCtx._NeedToTraverse(curDagPath) && curDagPath.length() > 0) {
