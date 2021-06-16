@@ -208,7 +208,7 @@ struct UsdMayaJobExportArgs
 
     // given root names to to start exporting from (passed by the -root/-rt multi-flag)
     std::vector<std::string> rootNames;
-    bool exportSelected;
+    bool exportSelected = false;
 
     // This path is provided when dealing with variants
     // where a _BaseModel_ root path is used instead of

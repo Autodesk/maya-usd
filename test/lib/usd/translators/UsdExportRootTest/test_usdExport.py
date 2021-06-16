@@ -34,7 +34,7 @@ def main():
     cmds.usdExport(file='{}/onlySelectedOldBehavior.usda'.format(tmpdir), sl=True, root='|')
     cmds.usdExport(file='{}/mixedRootsAndSelRootsA.usda'.format(tmpdir), sl=True, root=['Mid_Transformation', 'Mid_NoTransformation'])
     cmds.usdExport(file='{}/mixedRootsAndSelRootsB.usda'.format(tmpdir), sl=True, root=['Mid_Transformation', 'Mid_1'])
-    cmds.usdExport(file='{}/mixedRootsAndSelRootsC.usda'.format(tmpdir), sl=True, root=['Mid_Transformation', 'Mid_NoTransformation', 'Mid_1'])
+    cmds.usdExport(file='{}/mixedRootsAndSelRootsC.usda'.format(tmpdir), sl=True, root=['Mid_NoTransformation', 'Mid_Transformation', 'Mid_1'])
     
     # neither root nor selected
     cmds.usdExport(file='{}/export_all.usda'.format(tmpdir))

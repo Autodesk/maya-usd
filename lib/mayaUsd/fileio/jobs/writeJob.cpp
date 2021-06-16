@@ -424,8 +424,11 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             } else if (curLeafDagPath.isValid() &! (MFnDagNode(curDagPath).hasParent(curLeafDagPath.node()))) {
                 // This dagPath is not a child of one of the arg dagPaths, so prune
                 // it and everything below it from the traversal.
-                itDag.prune();
-                continue;
+                if (mJobCtx.mArgs.exportSelected && curDagPath.apiType() != MFn::kMesh &&
+                    curDagPath.apiType() != MFn::kShape) {
+                    itDag.prune();
+                    continue;
+                }
             }
 
             if (!mJobCtx._NeedToTraverse(curDagPath) && curDagPath.length() > 0) {
