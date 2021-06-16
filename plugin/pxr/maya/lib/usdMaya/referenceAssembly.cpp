@@ -1098,10 +1098,21 @@ bool UsdMayaRepresentationBase::inactivate()
     while (numChildNodes > 0) {
         MObject childNode = dagFn.child(0, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
-        MStatus status = dagFn.removeChild(childNode);
+
+        MObject tmpNode = dagMod.createNode("transform");
+
+        // Calling removeChild here caused a crash with nested assemblies. 
+        // deleteNode will recursively call back into this function, and when 
+        // the nested node is inactivated, its own children are in a bogus 
+        // state. Reparenting nested nodes prior to delete works around this 
+        // issue 
+        MStatus status = dagMod.reparentNode(childNode, tmpNode);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        status = dagMod.deleteNode(childNode);
+        status = dagMod.doIt();
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        status = dagMod.deleteNode(tmpNode);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         numChildNodes = dagFn.childCount(&status);
