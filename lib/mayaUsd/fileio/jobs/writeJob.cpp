@@ -421,11 +421,10 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                 // This dagPath IS one of the arg dagPaths. It AND all of its
                 // children should be included in the export.
                 curLeafDagPath = curDagPath;
-            } else if (curLeafDagPath.isValid() &! (MFnDagNode(curDagPath).hasParent(curLeafDagPath.node()))) {
+            } else if (!MFnDagNode(curDagPath).hasParent(curLeafDagPath.node())) {
                 // This dagPath is not a child of one of the arg dagPaths, so prune
                 // it and everything below it from the traversal.
-                if (mJobCtx.mArgs.exportSelected && curDagPath.apiType() != MFn::kMesh &&
-                    curDagPath.apiType() != MFn::kShape) {
+                if (mJobCtx.mArgs.exportSelected && curDagPath.apiType() == MFn::kTransform) {
                     itDag.prune();
                     continue;
                 }
