@@ -1,0 +1,14 @@
+name: Move Issues to Triage
+on:
+  issues:
+    types: [opened, reopened]
+     
+jobs:
+  move-triage-card:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: alex-page/github-project-automation-plus@v0.3.0
+        with:
+          project: Issue Triage
+          column: Needs Triage
+          repo-token: ${{ secrets.REPO_ACCESS_TOKEN }}
