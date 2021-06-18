@@ -19,9 +19,7 @@
 
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsdUtils/util.h>
 
-#include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/usd/editContext.h>
 
 #include <ufe/globalSelection.h>
@@ -37,7 +35,6 @@ namespace ufe {
 UsdUndoUngroupCommand::UsdUndoUngroupCommand(const UsdSceneItem::Ptr& groupItem)
     : Ufe::UndoableCommand()
     , _groupItem(groupItem)
-    , _compositeInsertCmd(std::make_shared<Ufe::CompositeUndoableCommand>())
 {
 }
 
@@ -53,15 +50,9 @@ void UsdUndoUngroupCommand::execute()
     // "Ungrouping" means moving group's children up a level in hierarchy
     // followed by group node getting removed.
 
-    // move group's children one level up
-    auto groupHier = Ufe::Hierarchy::hierarchy(_groupItem);
-    auto levelUpHier = Ufe::Hierarchy::hierarchy(groupHier->parent());
-    for (auto& child : groupHier->children()) {
-        auto insertChildCmd = levelUpHier->appendChildCmd(child);
-        _compositeInsertCmd->append(insertChildCmd);
-    }
-
-    _compositeInsertCmd->execute();
+    // Handling insertion (a.k.a move ) is best to be done on Maya side to cover
+    // all possible flags ( absolute, relative, world, parent ).
+    // For now, the prim removal must still happen in the plugin side. HS, June17, 2021
 
     // remove group prim
     MayaUsd::ufe::InAddOrDeleteOperation ad;
@@ -78,16 +69,9 @@ void UsdUndoUngroupCommand::undo()
     MayaUsd::ufe::InAddOrDeleteOperation ad;
 
     _undoableItem.undo();
-
-    _compositeInsertCmd->undo();
 }
 
-void UsdUndoUngroupCommand::redo()
-{
-    _compositeInsertCmd->redo();
-
-    _undoableItem.redo();
-}
+void UsdUndoUngroupCommand::redo() { _undoableItem.redo(); }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

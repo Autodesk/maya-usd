@@ -61,73 +61,37 @@ class UngroupCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    def testUngroupCommand(self):
-        '''Simple test for ungroup command.'''
+    def testUngroupUndoRedo(self):
+        '''Verify multiple undo/redo.'''
+        pass
 
-        mayaPathSegment = mayaUtils.createUfePathSegment(
-            "|transform1|proxyShape1")
+    def testUngroupMultipleGroupItems(self):
+        '''Verify ungrouping of multiple group nodes.'''
+        pass
 
-        usdSegmentBall5 = usdUtils.createUfePathSegment(
-            "/Ball_set/Props/Ball_5")
-        ball5Path = ufe.Path([mayaPathSegment, usdSegmentBall5])
-        ball5Item = ufe.Hierarchy.createItem(ball5Path)
+    def testUngroupAbsolute(self):
+        '''Verify -absolute flag.'''
+        pass
 
-        usdSegmentBall3 = usdUtils.createUfePathSegment(
-            "/Ball_set/Props/Ball_3")
-        ball3Path = ufe.Path([mayaPathSegment, usdSegmentBall3])
-        ball3Item = ufe.Hierarchy.createItem(ball3Path)
+    def testUngroupRelative(self):
+        '''Verify -relative flag.'''
+        pass
 
-        usdSegmentProps = usdUtils.createUfePathSegment("/Ball_set/Props")
-        parentPath = ufe.Path([mayaPathSegment, usdSegmentProps])
-        parentItem = ufe.Hierarchy.createItem(parentPath)
+    def testUngroupWorld(self):
+        '''Verify -world flag.'''
+        pass
 
-        parentHierarchy = ufe.Hierarchy.hierarchy(parentItem)
-        parentChildrenPre = parentHierarchy.children()
-        self.assertEqual(len(parentChildrenPre), 6)
+    def testUngroupParent(self):
+        '''Verify -parent flag.'''
+        pass
 
-        newGroupName = ufe.PathComponent("newGroup")
+    def testUngroupProxyShape(self):
+        '''Verify ungrouping of the proxyShape.'''
+        pass
 
-        # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
-
-        # set the edit target to balls.usda
-        layer = stage.GetLayerStack()[1]
-        self.assertEqual("ballset.usda", layer.GetDisplayName())
-        stage.SetEditTarget(layer)
-
-        ufeSelectionList = ufe.Selection()
-        ufeSelectionList.append(ball5Item)
-        ufeSelectionList.append(ball3Item)
-
-        groupCmd = parentHierarchy.createGroupCmd(
-            ufeSelectionList, newGroupName)
-        groupCmd.execute()
-
-        # Group object (a.k.a parent) will be added to selection list. This behavior matches the native Maya group command.
-        globalSelection = ufe.GlobalSelection.get()
-
-        groupPath = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/Props/newGroup1")])
-        self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(groupPath))
-
-        # check parentHierarchy children size
-        self.assertEqual(len(parentHierarchy.children()), 5)
-
-        # ungroup
-        groupHierarchy = ufe.Hierarchy.hierarchy(globalSelection.front())
-        ungroupCmd = groupHierarchy.ungroupCmd()
-        ungroupCmd.execute()
-
-        # check parentHierarchy children size
-        self.assertEqual(len(parentHierarchy.children()), 6)
-
-        ungroupCmd.undo()
-
-        # check parentHierarchy children size
-        self.assertEqual(len(parentHierarchy.children()), 5)
-
-        ungroupCmd.redo()
-
-        self.assertEqual(len(parentHierarchy.children()), 6)
+    def testUngroupLeaf(self):
+        '''Verify ungrouping of a leaf node.'''
+        pass
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -28,8 +28,7 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdUndoUngroupCommand : public Ufe::UndoableCommand
 {
 public:
-    typedef std::shared_ptr<UsdUndoUngroupCommand>         Ptr;
-    typedef std::shared_ptr<Ufe::CompositeUndoableCommand> CompositeCmd;
+    using Ptr = std::shared_ptr<UsdUndoUngroupCommand>;
 
     UsdUndoUngroupCommand(const UsdSceneItem::Ptr& groupItem);
     ~UsdUndoUngroupCommand() override;
@@ -50,8 +49,6 @@ private:
 
 private:
     UsdSceneItem::Ptr _groupItem;
-
-    CompositeCmd _compositeInsertCmd;
 
     UsdUndoableItem _undoableItem;
 
