@@ -170,7 +170,7 @@ void UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
         UsdGeomGprim gprim(_usdPrim);
         if (gprim) {
             GeomSidedness sidedness = GeomSidedness::Derived;
-            auto          sidednessArg = _writeJobCtx.GetArgs().geomSidedness;
+            const TfToken sidednessArg = _writeJobCtx.GetArgs().geomSidedness;
             if (sidednessArg == UsdMayaJobExportArgsTokens->derived) {
                 sidedness = GeomSidedness::Derived;
             } else if (sidednessArg == UsdMayaJobExportArgsTokens->single) {
