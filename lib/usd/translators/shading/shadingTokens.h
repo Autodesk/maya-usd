@@ -41,6 +41,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (black) \
     (mirror) \
     (repeat) \
+    (sourceColorSpace) \
+    (raw) \
+    (sRGB) \
     ((RGBOutputName, "rgb")) \
     ((RedOutputName, "r")) \
     ((GreenOutputName, "g")) \
@@ -140,7 +143,9 @@ TF_DECLARE_PUBLIC_TOKENS(TrUsdTokens, , TR_USD_COMMON TR_USD_TEXTURE TR_USD_PRIM
     (fileTextureName) \
     (filterType) \
     ((UDIMTag, "<UDIM>")) \
-    (uvTilingMode)
+    (uvTilingMode) \
+    (Raw) \
+    (sRGB)
 
 #define TR_MAYA_UV \
     (place2dTexture) \

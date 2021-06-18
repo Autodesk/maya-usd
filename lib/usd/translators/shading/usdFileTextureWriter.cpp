@@ -252,6 +252,17 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         if (status == MS::kSuccess && colorSpace != colorSpaceByRule) {
             fileInput.GetAttr().SetColorSpace(TfToken(colorSpace.asChar()));
         }
+
+        // Set the sourceColorSpace as well. The color space metadata will not be transmitted via
+        // Hydra, so we need to set this attribute as well if we want hdStorm and the VP2 render
+        // delegate to look correct
+        if (colorSpace == TrMayaTokens->Raw.GetText()) {
+            shaderSchema.CreateInput(TrUsdTokens->sourceColorSpace, SdfValueTypeNames->Token)
+                .Set(TrUsdTokens->raw);
+        } else if (colorSpace == TrMayaTokens->sRGB.GetText()) {
+            shaderSchema.CreateInput(TrUsdTokens->sourceColorSpace, SdfValueTypeNames->Token)
+                .Set(TrUsdTokens->sRGB);
+        }
     }
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the
