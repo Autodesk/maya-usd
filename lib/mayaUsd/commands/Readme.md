@@ -156,6 +156,8 @@ their own purposes, similar to the Alembic export chaser example.
 | `-selection`                     | `-sl`      | noarg            | false               | When set, only selected nodes (and their descendants) will be exported |
 | `-stripNamespaces`               | `-sn`      | bool             | false               | Remove namespaces during export. By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1 |
 | `-staticSingleSample`            | `-sss`     | bool             | false               | Converts animated values with a single time sample to be static instead |
+| `-geomSidedness`                   | `-gs`     | string           | derived                | Determines how geometry sidedness is defined. Valid values are: `derived` - Value is taken from the shapes doubleSided attribute, `single` - Export single sided, `double` - Export double sided |
+
 | `-verbose`                       | `-v`       | noarg            | false               | Make the command output more verbose |
 
 #### Frame Samples
