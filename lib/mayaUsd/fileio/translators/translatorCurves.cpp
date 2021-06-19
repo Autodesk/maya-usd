@@ -267,6 +267,9 @@ bool UsdMayaTranslatorCurves::Create(
         }
     }
 
+    // Copy userProperties to the created node
+    UsdMayaTranslatorUtil::copyAttributes(prim, curveObj);
+
     return true;
 }
 

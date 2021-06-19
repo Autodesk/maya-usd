@@ -15,6 +15,8 @@
 //
 #include "translatorMesh.h"
 
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+
 #include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
@@ -246,6 +248,9 @@ TranslatorMeshRead::TranslatorMeshRead(
         { UsdGeomTokens->subdivisionScheme,
           UsdGeomTokens->interpolateBoundary,
           UsdGeomTokens->faceVaryingLinearInterpolation });
+
+    // Copy userProperties to the created node
+    UsdMayaTranslatorUtil::copyAttributes(prim, m_meshObj);
 
     // ==================================================
     // construct blendshape object, PointBasedDeformer

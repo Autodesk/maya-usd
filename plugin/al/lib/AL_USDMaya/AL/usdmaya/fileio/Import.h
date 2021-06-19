@@ -18,6 +18,7 @@
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
+#include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
 #include <pxr/pxr.h>
 
