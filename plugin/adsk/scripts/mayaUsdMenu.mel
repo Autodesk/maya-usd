@@ -588,7 +588,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
 
     if($isIncoming) {
         $incoming = `listConnections -s true -d false -c true $proxyShape`;
-        $incomingNode = "";
+        string $incomingNode = "";
         for($i=0;$i<size($incoming);$i+=2) {
             $j = $i+1;
             if($incoming[$i] == $proxyShape+".inStageData") {
@@ -623,4 +623,3 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     $enabled = !$isReadOnly;
     menuItem -label $label -enable $enabled -c $cmd;
 }
-
