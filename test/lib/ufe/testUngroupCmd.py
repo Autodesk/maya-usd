@@ -24,16 +24,54 @@ import usdUtils
 
 import mayaUsd.ufe
 
-from pxr import Kind
-from pxr import Usd
+from pxr import UsdGeom, Gf
 
+from maya.api import OpenMaya as OpenMaya
 from maya import cmds
 from maya import standalone
 
 import ufe
-
 import os
 import unittest
+
+def createStage():
+    ''' create a simple stage '''
+    cmds.file(new=True, force=True)
+    import mayaUsd_createStageWithNewLayer
+    proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+    proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+    proxyShapePath = proxyShapes[0]
+    proxyShapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(proxyShapePath))
+    proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+    stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+    return (stage, proxyShapePathStr, proxyShapeItem, proxyShapeContextOps)
+
+class SphereGenerator():
+    ''' simple sphere generator '''
+    def __init__(self, num, contextOp, proxyShapePathStr):
+        self.gen = self.__generate(num)
+        self.num = num
+        self.contextOp = contextOp
+        self.proxyShapePathStr = proxyShapePathStr
+
+    def createSphere(self):
+        return next(self.gen)
+
+    def __addPrimSphere(self, incrment):
+        self.contextOp.doOp(['Add New Prim', 'Sphere'])
+        return ufe.PathString.path('{},/Sphere{}'.format(self.proxyShapePathStr, incrment))
+
+    def __generate(self, num):
+        incrment = 0
+        while incrment < self.num:
+            incrment += 1
+            yield self.__addPrimSphere(incrment)
+
+def joinPathSegments(ufePath):
+    return ','.join([str(segment) for segment in ufePath.segments])
+
+def createTransform3d(ufeScenePath):
+    return ufe.Transform3d.transform3d(ufe.Hierarchy.createItem(ufeScenePath))
 
 class UngroupCmdTestCase(unittest.TestCase):
 
@@ -52,46 +90,326 @@ class UngroupCmdTestCase(unittest.TestCase):
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
-        # Load plugins
+        # load plugins
         self.assertTrue(self.pluginsLoaded)
 
-        # Open ballset.ma scene in testSamples
-        mayaUtils.openGroupBallsScene()
-
-        # Clear selection to start off
+        # clear selection to start off
         cmds.select(clear=True)
+
+        # global selection
+        self.globalSn = ufe.GlobalSelection.get()
+        self.globalSn.clear()
+
+        # create a stage
+        (self.stage, self.proxyShapePathStr, self.proxyShapeItem, self.contextOp) = createStage();
 
     def testUngroupUndoRedo(self):
         '''Verify multiple undo/redo.'''
-        pass
+
+        # sphere generator
+        sphereGen = SphereGenerator(2, self.contextOp, self.proxyShapePathStr)
+
+        # create 2 spheres
+        sphere1Path = sphereGen.createSphere()
+        sphere2Path = sphereGen.createSphere()
+
+        # create a group
+        cmds.group(joinPathSegments(sphere1Path), 
+                   joinPathSegments(sphere2Path))
+
+        # verify selected item is "group1"
+        self.assertEqual(len(self.globalSn), 1)
+        groupItem = self.globalSn.front()
+        self.assertEqual(str(groupItem.path().back()), "group1")
+
+        # verify that groupItem has 2 children
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 2)
+
+        # remove group1 from the hierarchy. What should remain
+        # is /Sphere1, /Sphere2.
+        cmds.ungroup("{},/group1".format(self.proxyShapePathStr), absolute=True)
+
+        # TODO: after ungroup all children must be selected per Maya native behavior.
+        # HS, June 21, 2021 this is not yet implemented
+        # self.assertEqual(len(self.globalSn), 2)
+
+        # undo
+        cmds.undo();
+
+        # verify that pseudoroot has 1 child (group1)
+        self.assertEqual(len(self.stage.GetPseudoRoot().GetChildren()), 1)
+
+        # verify group1 is selected
+        self.assertEqual(len(self.globalSn), 1)
+        self.assertEqual(str(self.globalSn.front().path().back()), "group1")
+
+        # redo
+        cmds.redo()
+
+        # verify that pseudoroot has 2 children (Sphere1, Sphere2)
+        self.assertEqual(len(self.stage.GetPseudoRoot().GetChildren()), 2)
+
+        # undo again
+        cmds.undo()
+
+        # redo again
+        cmds.redo()
+
+        # verify that pseudoroot has 2 children (Sphere1, Sphere2)
+        self.assertEqual(len(self.stage.GetPseudoRoot().GetChildren()), 2)
 
     def testUngroupMultipleGroupItems(self):
         '''Verify ungrouping of multiple group nodes.'''
-        pass
+
+        sphereGen = SphereGenerator(2, self.contextOp, self.proxyShapePathStr)
+
+        sphere1Path = sphereGen.createSphere()
+        sphere2Path = sphereGen.createSphere()
+
+        # create group1
+        cmds.group(joinPathSegments(sphere1Path))
+
+        # create group2
+        cmds.group(joinPathSegments(sphere2Path))
+
+        assert ([x for x in self.stage.Traverse()] == 
+            [self.stage.GetPrimAtPath("/group1"),
+            self.stage.GetPrimAtPath("/group1/Sphere1"), 
+            self.stage.GetPrimAtPath("/group2"),
+            self.stage.GetPrimAtPath("/group2/Sphere2"),])
+
+        # ungroup
+        cmds.ungroup("{},/group1".format(self.proxyShapePathStr), 
+                     "{},/group2".format(self.proxyShapePathStr))
+
+        assert ([x for x in self.stage.Traverse()] == 
+            [self.stage.GetPrimAtPath("/Sphere1"), 
+            self.stage.GetPrimAtPath("/Sphere2")])
 
     def testUngroupAbsolute(self):
         '''Verify -absolute flag.'''
-        pass
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(2, self.contextOp, self.proxyShapePathStr)
+
+        # create a sphere and move it on x axis by +2
+        sphere1Path = sphereGen.createSphere()
+        sphere1T3d = createTransform3d(sphere1Path)
+        sphere1T3d.translate(2.0, 0.0, 0.0)
+
+        # create another sphere and move it on x axis by -2
+        sphere2Path = sphereGen.createSphere()
+        sphere2T3d = createTransform3d(sphere2Path)
+        sphere2T3d.translate(-2.0, 0.0, 0.0)
+
+        # create a group
+        cmds.group(joinPathSegments(sphere1Path), 
+                   joinPathSegments(sphere2Path))
+
+        # move the group 
+        cmds.move(7.0, 8.0, 12.0, r=True)
+
+        # verify selected item is "group1"
+        self.assertEqual(len(self.globalSn), 1)
+        groupItem = self.globalSn.front()
+        self.assertEqual(str(groupItem.path().back()), "group1")
+
+        # remove group1 from the hierarchy. What should remain
+        # is /Sphere1, /Sphere2.
+        cmds.ungroup("{},/group1".format(self.proxyShapePathStr))
+
+        # the objects don't move since the `absolute` flag is implied by default.
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+        translateAttr = spherePrim.GetAttribute('xformOp:translate')
+        self.assertEqual(translateAttr.Get(), Gf.Vec3d(9.0, 8.0, 12.0))
+
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+        translateAttr = spherePrim.GetAttribute('xformOp:translate')
+        self.assertEqual(translateAttr.Get(), Gf.Vec3d(5.0, 8.0, 12.0))
 
     def testUngroupRelative(self):
         '''Verify -relative flag.'''
-        pass
+        # create a sphere generator
+        sphereGen = SphereGenerator(2, self.contextOp, self.proxyShapePathStr)
+
+        # create a sphere and move it on x axis by +2
+        sphere1Path = sphereGen.createSphere()
+        sphere1T3d = createTransform3d(sphere1Path)
+        sphere1T3d.translate(2.0, 0.0, 0.0)
+
+        # create another sphere and move it on x axis by -2
+        sphere2Path = sphereGen.createSphere()
+        sphere2T3d = createTransform3d(sphere2Path)
+        sphere2T3d.translate(-2.0, 0.0, 0.0)
+
+        # create a group
+        cmds.group(joinPathSegments(sphere1Path), 
+                   joinPathSegments(sphere2Path))
+
+        # move the group 
+        cmds.move(20.0, 8.0, 12.0, r=True)
+
+        # verify selected item is "group1"
+        self.assertEqual(len(self.globalSn), 1)
+        groupItem = self.globalSn.front()
+        self.assertEqual(str(groupItem.path().back()), "group1")
+
+        # remove group1 from the hierarchy. What should remain
+        # is /Sphere1, /Sphere2.
+        cmds.ungroup("{},/group1".format(self.proxyShapePathStr), relative=True)
+
+        # the objects move to their relative positions
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+        translateAttr = spherePrim.GetAttribute('xformOp:translate')
+        self.assertEqual(translateAttr.Get(), Gf.Vec3d(2.0, 0.0, 0.0))
+
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+        translateAttr = spherePrim.GetAttribute('xformOp:translate')
+        self.assertEqual(translateAttr.Get(), Gf.Vec3d(-2.0, 0.0, 0.0))
 
     def testUngroupWorld(self):
         '''Verify -world flag.'''
-        pass
+        
+        # create a sphere generator
+        sphereGen = SphereGenerator(4, self.contextOp, self.proxyShapePathStr)
 
+        # create 4 spheres
+        pathList = list()
+        for _ in range(4):
+            pathList.append(sphereGen.createSphere())
+
+        # group /Sphere2, /Sphere3, /Sphere4
+        cmds.group(joinPathSegments(pathList[1]),
+                   joinPathSegments(pathList[2]),
+                   joinPathSegments(pathList[3]))
+
+        # verify the paths after grouping
+        assert ([x for x in self.stage.Traverse()] == 
+            [self.stage.GetPrimAtPath("/Sphere1"),
+            self.stage.GetPrimAtPath("/group1"),
+            self.stage.GetPrimAtPath("/group1/Sphere2"),
+            self.stage.GetPrimAtPath("/group1/Sphere3"),
+            self.stage.GetPrimAtPath("/group1/Sphere4")])
+
+        # group /group1/Sphere2, /group1/Sphere3, /group1/Sphere4
+        cmds.group("{},/group1/Sphere2".format(self.proxyShapePathStr),
+                   "{},/group1/Sphere3".format(self.proxyShapePathStr),
+                   "{},/group1/Sphere4".format(self.proxyShapePathStr))
+
+        # verify the paths after second grouping
+        assert ([x for x in self.stage.Traverse()] == 
+            [self.stage.GetPrimAtPath("/Sphere1"),
+            self.stage.GetPrimAtPath("/group1"),
+            self.stage.GetPrimAtPath("/group1/group1"),
+            self.stage.GetPrimAtPath("/group1/group1/Sphere2"),
+            self.stage.GetPrimAtPath("/group1/group1/Sphere3"),
+            self.stage.GetPrimAtPath("/group1/group1/Sphere4")])
+
+        # remove /group1/group1 from the hierarchy with the -world flag
+        cmds.ungroup("{},/group1/group1".format(self.proxyShapePathStr), world=True)
+
+        # verify the paths after ungroup
+        assert ([x for x in self.stage.Traverse()] == 
+            [self.stage.GetPrimAtPath("/Sphere1"),
+            self.stage.GetPrimAtPath("/group1"),
+            self.stage.GetPrimAtPath("/Sphere2"),
+            self.stage.GetPrimAtPath("/Sphere3"),
+            self.stage.GetPrimAtPath("/Sphere4")])
+
+    @unittest.skip("parent flag is not supported yet")
     def testUngroupParent(self):
         '''Verify -parent flag.'''
         pass
 
     def testUngroupProxyShape(self):
         '''Verify ungrouping of the proxyShape.'''
-        pass
+
+        # select proxyShape
+        cmds.select(ufe.PathString.string(self.proxyShapeItem.path()))
+
+        # create a group
+        cmds.group()
+
+        # verify global selection len and dag node
+        globalSelection = OpenMaya.MGlobal.getActiveSelectionList()
+        self.assertEqual(globalSelection.length(), 1)
+        dagNode = OpenMaya.MFnDagNode(globalSelection.getDependNode(0))
+        self.assertEqual(dagNode.partialPathName(), "group1")
+
+        # create a ungroup
+        cmds.ungroup()
+
+        # traverse Maya scene graph ( DFS )
+        dagItr = OpenMaya.MItDag(OpenMaya.MItDag.kDepthFirst)
+
+        # verify that no group1 exist
+        groupFound = False
+        while(not dagItr.isDone()):
+            dagPath = dagItr.getPath()
+
+            if (dagPath.partialPathName() == "group1"):
+                groupFound = True
+                break
+
+            dagItr.next()
+
+        self.assertEqual(groupFound, False)
 
     def testUngroupLeaf(self):
         '''Verify ungrouping of a leaf node.'''
-        pass
+        # create a sphere generator
+        sphereGen = SphereGenerator(1, self.contextOp, self.proxyShapePathStr)
+
+        # create a sphere
+        sphere1Path = sphereGen.createSphere()
+
+        # expect the exception happens
+        with self.assertRaises(RuntimeError):
+            # ungroup
+            cmds.ungroup(joinPathSegments(sphere1Path))
+
+    def testUngroupAfterUndoRedo(self):
+        ''' '''
+        # create a sphere generator
+        sphereGen = SphereGenerator(2, self.contextOp, self.proxyShapePathStr)
+
+        # create 2 spheres
+        sphere1Path = sphereGen.createSphere()
+        sphere2Path = sphereGen.createSphere()
+
+        # create a group
+        cmds.group(joinPathSegments(sphere1Path), 
+                   joinPathSegments(sphere2Path))
+
+        # verify selected item is "group1"
+        self.assertEqual(len(self.globalSn), 1)
+        groupItem = self.globalSn.front()
+        self.assertEqual(str(groupItem.path().back()), "group1")
+
+        # remove group1 from the hierarchy. What should remain
+        # is /Sphere1, /Sphere2.
+        cmds.ungroup("{},/group1".format(self.proxyShapePathStr))
+
+        # undo again
+        cmds.undo()
+
+        # redo again
+        cmds.redo()
+
+        # verify that group1 is in global selection list
+        self.assertEqual(len(self.globalSn), 1)
+        groupItem = self.globalSn.front()
+        self.assertEqual(str(groupItem.path().back()), "group1")
+
+        # Hmmm, looks like we have a bug here. HS, June 21, 2021
+        # verify that group hierarchy has 2 children
+        # groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        # self.assertEqual(len(groupHierarchy.children()), 2)
+
+        # remove group1 from the hierarchy. What should remain
+        # is /Sphere1, /Sphere2.
+        # cmds.ungroup("|stage1|stageShape1,/group1")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -58,10 +58,6 @@ PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage);
 
-//! Get USD path corresponding to argument UFE path.
-MAYAUSD_CORE_PUBLIC
-PXR_NS::SdfPath getPath(const Ufe::Path& path);
-
 //! Return all the USD stages.
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> getAllStages();
