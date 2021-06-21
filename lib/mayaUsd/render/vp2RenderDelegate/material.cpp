@@ -20,6 +20,8 @@
 #include "pxr/usd/sdr/shaderNode.h"
 #include "render_delegate.h"
 
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
+
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/vec2f.h>
@@ -35,6 +37,7 @@
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFragmentManager.h>
+#include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
 #include <maya/MShaderManager.h>
 #include <maya/MStatus.h>
@@ -143,7 +146,7 @@ bool _IsUsdFloat2PrimvarReader(const HdMaterialNode& node)
 //! Helper utility function to test whether a node is a UsdShade UV texture.
 inline bool _IsUsdUVTexture(const HdMaterialNode& node)
 {
-    return (node.identifier == UsdImagingTokens->UsdUVTexture);
+    return node.identifier.GetString().rfind(UsdImagingTokens->UsdUVTexture.GetString(), 0) == 0;
 }
 
 //! Helper function to generate a XML string about nodes, relationships and primvars in the
@@ -1056,6 +1059,8 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         }
     };
 
+    MString mayaWorkingColorSpace;
+
     // Add nodes necessary for the fragment compiler to produce a shader that works.
     for (const HdMaterialNode& node : tmpNet.nodes) {
         TfToken primvarToRead;
@@ -1069,7 +1074,21 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         }
 
         addPredecessorNodes(node);
-        outNet.nodes.push_back(node);
+        if (_IsUsdUVTexture(node)) {
+            // We need to rename according to the Maya color working space pref:
+            if (!mayaWorkingColorSpace.length()) {
+                // Query the user pref:
+                mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
+                    "colorManagementPrefs -q -renderingSpaceName");
+            }
+            MString nodeName
+                = HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace);
+            const HdMaterialNode texNode
+                = { node.path, TfToken(nodeName.asChar()), node.parameters };
+            outNet.nodes.push_back(texNode);
+        } else {
+            outNet.nodes.push_back(node);
+        }
         addSuccessorNodes(node, primvarToRead);
 
         // If the primvar reader is reading color or opacity, replace it with
