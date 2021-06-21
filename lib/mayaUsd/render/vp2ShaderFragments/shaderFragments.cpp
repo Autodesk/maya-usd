@@ -494,7 +494,7 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
 #endif
 
     // De-register the various UsdUVTexture fragments:
-    for (const auto& txtFrag: _textureFragNames) {
+    for (const auto& txtFrag : _textureFragNames) {
         if (!fragmentManager->removeFragment(txtFrag.second.c_str())) {
             MGlobal::displayWarning(
                 TfStringPrintf("Failed to remove fragment graph: %s", txtFrag.second.c_str())
