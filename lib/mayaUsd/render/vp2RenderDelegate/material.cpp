@@ -873,6 +873,10 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
     // Get the shader registry so I can look up the real names of shading nodes.
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
 
+    // We might need to query the working color space of Maya if we hit texture nodes. Delay
+    // the query until necessary.
+    MString mayaWorkingColorSpace;
+
     // Replace the authored node paths with simplified paths in the form of "node#". By doing so
     // we will be able to reuse shader effects among material networks which have the same node
     // identifiers and relationships but different node paths, reduce shader compilation overhead
@@ -889,7 +893,19 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         // everything to use the SdrShaderNode name.
         SdrShaderNodeConstPtr sdrNode
             = shaderReg.GetShaderNodeByIdentifierAndType(outNode.identifier, _tokens->glslfx);
-        outNode.identifier = TfToken(sdrNode->GetName());
+
+        if (_IsUsdUVTexture(node)) {
+            // We need to rename according to the Maya color working space pref:
+            if (!mayaWorkingColorSpace.length()) {
+                // Query the user pref:
+                mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
+                    "colorManagementPrefs -q -renderingSpaceName");
+            }
+            outNode.identifier = TfToken(
+                HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace).asChar());
+        } else {
+            outNode.identifier = TfToken(sdrNode->GetName());
+        }
 
         if (_IsUsdDrawModeNode(outNode)) {
             // I can't easily name a Maya fragment something with a '.' in it, so pick a different
@@ -1059,8 +1075,6 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         }
     };
 
-    MString mayaWorkingColorSpace;
-
     // Add nodes necessary for the fragment compiler to produce a shader that works.
     for (const HdMaterialNode& node : tmpNet.nodes) {
         TfToken primvarToRead;
@@ -1074,21 +1088,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         }
 
         addPredecessorNodes(node);
-        if (_IsUsdUVTexture(node)) {
-            // We need to rename according to the Maya color working space pref:
-            if (!mayaWorkingColorSpace.length()) {
-                // Query the user pref:
-                mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
-                    "colorManagementPrefs -q -renderingSpaceName");
-            }
-            MString nodeName
-                = HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace);
-            const HdMaterialNode texNode
-                = { node.path, TfToken(nodeName.asChar()), node.parameters };
-            outNet.nodes.push_back(texNode);
-        } else {
-            outNet.nodes.push_back(node);
-        }
+        outNet.nodes.push_back(node);
         addSuccessorNodes(node, primvarToRead);
 
         // If the primvar reader is reading color or opacity, replace it with

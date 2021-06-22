@@ -361,6 +361,20 @@ MStatus HdVP2ShaderFragments::registerFragments()
         const std::regex RE_HLSL("TO_MAYA_COLOR_SPACE_HLSL");
         const std::regex RE_CG("TO_MAYA_COLOR_SPACE_CG");
 
+        // We create custom UsdUVTexture fragments. We use the original UsdUVTexture.xml as template
+        // where we replace four important tokens with custom code:
+        //
+        //  - UsdUVTexture gets renamed by appending the name of the working space we are targetting
+        //  - The three TO_MAYA_COLOR_SPACE_* markers gets replaced by the correct 4x4 matrix
+        //  multiplication that will take the color from a "scene-linear Rec 709/sRGB" to the final
+        //  color space. The syntax of the multiplication varies by shading language, and the
+        //  template is:
+        //     GLSL: outColor = mat4( ... ) * outColor;
+        //     HLSL: outColor = mul(outColor, float4x4( ... ));
+        //       CG: outColor = mul(float4x4( transpose( ... ) ), outColor);
+        //    Where the ... denotes a 4x4 matrix expanded from the 3x3 matrix passed in as parameter
+        //    to the function (alpha is always left untouched).
+        //
         auto registerSpace = [&](const std::string& spaceName,
                                  const std::string& fragName,
                                  const float*       convMatrix) {
@@ -405,29 +419,42 @@ MStatus HdVP2ShaderFragments::registerFragments()
             }
         };
 
+        // LINEAR is equivalent to "scene-linear Rec 709/sRGB", so we do not need a transformation
         registerSpace("scene-linear Rec 709/sRGB", "UsdUVTexture_to_linrec709", nullptr);
 
+        // clang-format off
         const float LINEAR_TO_ACESCG[9]
-            = { 0.61309740, 0.07019372, 0.02061559, 0.33952315, 0.91635388,
-                0.10956977, 0.04737945, 0.01345240, 0.86981463 };
+            = { 0.61309740, 0.07019372, 0.02061559,
+                0.33952315, 0.91635388, 0.10956977,
+                0.04737945, 0.01345240, 0.86981463 };
+        // clang-format on
         registerSpace("ACEScg", "UsdUVTexture_to_ACEScg", LINEAR_TO_ACESCG);
 
+        // clang-format off
         const float LINEAR_TO_ACES2065_1[9]
-            = { 0.43963298, 0.08977644, 0.01754117, 0.38298870, 0.81343943,
-                0.11154655, 0.17737832, 0.09678413, 0.87091228 };
+            = { 0.43963298, 0.08977644, 0.01754117,
+                0.38298870, 0.81343943, 0.11154655,
+                0.17737832, 0.09678413, 0.87091228 };
+        // clang-format on
         registerSpace("ACES2065-1", "UsdUVTexture_to_ACES2065_1", LINEAR_TO_ACES2065_1);
 
+        // clang-format off
         const float LINEAR_TO_SCENE_LINEAR_DCI_P3_D65[9]
-            = { 0.82246197, 0.03319420, 0.01708263, 0.17753803, 0.96680580,
-                0.07239744, 0.,         0.,         0.91051993 };
+            = { 0.82246197, 0.03319420, 0.01708263,
+                0.17753803, 0.96680580, 0.07239744,
+                0.,         0.,         0.91051993 };
+        // clang-format on
         registerSpace(
             "scene-linear DCI-P3 D65",
             "UsdUVTexture_to_lin_DCI_P3_D65",
             LINEAR_TO_SCENE_LINEAR_DCI_P3_D65);
 
+        // clang-format off
         const float LINEAR_TO_SCENE_LINEAR_REC_2020[9]
-            = { 0.62740389, 0.06909729, 0.01639144, 0.32928304, 0.91954039,
-                0.08801331, 0.04331307, 0.01136232, 0.89559525 };
+            = { 0.62740389, 0.06909729, 0.01639144,
+                0.32928304, 0.91954039, 0.08801331,
+                0.04331307, 0.01136232, 0.89559525 };
+        // clang-format on
         registerSpace(
             "scene-linear Rec.2020", "UsdUVTexture_to_linrec2020", LINEAR_TO_SCENE_LINEAR_REC_2020);
     }
