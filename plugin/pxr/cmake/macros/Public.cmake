@@ -385,6 +385,15 @@ function(pxr_register_test TEST_NAME)
                     "--pre-path=${_testPrePath}" ${testCmd}
         )
 
+        # Set a temporary folder path for the test
+        # Note: replace bad chars in test_name with _.
+        string(REGEX REPLACE "[:<>\|]" "_" SANITIZED_TEST_NAME ${TEST_NAME})
+        set(TEST_TEMP_DIR "${CMAKE_BINARY_DIR}/test/Temporary/${SANITIZED_TEST_NAME}")
+        set_property(TEST "${TEST_NAME}" APPEND PROPERTY ENVIRONMENT
+            "TMP=${TEST_TEMP_DIR}"
+            "TEMP=${TEST_TEMP_DIR}")
+        file(MAKE_DIRECTORY ${TEST_TEMP_DIR})
+
         # But in some cases, we need to pass cmake properties directly to cmake
         # run_test, rather than configuring the environment
         if (bt_RUN_SERIAL)

@@ -90,6 +90,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (stripNamespaces) \
     (verbose) \
     (staticSingleSample) \
+    (geomSidedness)   \
     /* Special "none" token */ \
     (none) \
     /* renderLayerMode values */ \
@@ -100,7 +101,11 @@ TF_DECLARE_PUBLIC_TOKENS(
     ((auto_, "auto")) \
     ((explicit_, "explicit")) \
     /* compatibility values */ \
-    (appleArKit)
+    (appleArKit)                          \
+    /* geomSidedness values */ \
+    (derived)                             \
+    (single)                              \
+    ((double_, "double"))                                          \
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
@@ -189,6 +194,7 @@ struct UsdMayaJobExportArgs
     const TfToken convertMaterialsTo;
     const bool    verbose;
     const bool    staticSingleSample;
+    const TfToken geomSidedness;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;

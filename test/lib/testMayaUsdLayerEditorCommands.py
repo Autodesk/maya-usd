@@ -362,6 +362,100 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         cmds.undo()
         self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
 
+    def testMoveSubPath(self):
+        """ test 'mayaUsdLayerEditor' command 'moveSubPath' paramater """
+
+        def moveSubPath(parentLayer, subPath, newParentLayer, index, originalSubLayerPaths, newSubLayerPaths):
+            cmds.mayaUsdLayerEditor(parentLayer.identifier, edit=True, moveSubPath=[subPath, newParentLayer.identifier, index])
+            self.assertEqual(newParentLayer.subLayerPaths, newSubLayerPaths)
+
+            cmds.undo()
+            self.assertEqual(newParentLayer.subLayerPaths, originalSubLayerPaths)
+
+            cmds.redo()
+            self.assertEqual(newParentLayer.subLayerPaths, newSubLayerPaths)
+
+            cmds.undo()
+            self.assertEqual(newParentLayer.subLayerPaths, originalSubLayerPaths)
+
+        def moveElement(list, item, index):
+            l = list[:] #copy the list
+            l.remove(item)
+            l.insert(index, item)
+            return l
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+
+        layerId1 = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="MyLayer1")[0]
+        layerId2 = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="MyLayer2")[0]
+        layerId3 = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="MyLayer3")[0]
+
+        originalSubLayerPaths = [layerId3, layerId2, layerId1]
+        self.assertEqual(rootLayer.subLayerPaths, originalSubLayerPaths)
+
+        # Test moving each layers under the root layer to any valid index in the root layer
+        # and test out-of-bound index
+        for layer in originalSubLayerPaths:
+            for i in range(len(originalSubLayerPaths)):
+                expectedSubPath = moveElement(originalSubLayerPaths, layer, i)
+                moveSubPath(rootLayer, layer, rootLayer, i, originalSubLayerPaths, expectedSubPath)
+
+                with self.assertRaises(RuntimeError):
+                    cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, moveSubPath=[layer, rootLayer.identifier, len(originalSubLayerPaths)])
+                self.assertEqual(rootLayer.subLayerPaths, originalSubLayerPaths)
+
+        #
+        # Test moving sublayer (layer2 and layer3) inside a new parent layer (layer1)
+        #
+
+        layer1 = Sdf.Layer.Find(layerId1)     
+        self.assertTrue(len(layer1.subLayerPaths) == 0)
+
+        # layer1 has no subLayer so index 1 is invalide
+        with self.assertRaises(RuntimeError):
+            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, moveSubPath=[layerId3, layerId1, 1])
+        self.assertTrue(len(layer1.subLayerPaths) == 0)
+        self.assertEqual(rootLayer.subLayerPaths, originalSubLayerPaths)
+
+        # Move layer3 from the root layer inside layer1 at index 0
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, moveSubPath=[layerId3, layerId1, 0])
+        self.assertEqual(rootLayer.subLayerPaths, [layerId2, layerId1])
+        self.assertEqual(layer1.subLayerPaths, [layerId3])
+
+        # Move layer2 from the root layer inside layer1 at index 0
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, moveSubPath=[layerId2, layerId1, 0])
+        self.assertEqual(rootLayer.subLayerPaths, [layerId1])
+        self.assertEqual(layer1.subLayerPaths, [layerId2, layerId3])
+
+        cmds.undo()
+        self.assertEqual(rootLayer.subLayerPaths, [layerId2, layerId1])
+        self.assertEqual(layer1.subLayerPaths, [layerId3])
+
+        # Move layer2 from the root layer inside layer1 at index 1
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, moveSubPath=[layerId2, layerId1, 1])
+        self.assertEqual(rootLayer.subLayerPaths, [layerId1])
+        self.assertEqual(layer1.subLayerPaths, [layerId3, layerId2])
+
+        cmds.undo()
+        self.assertEqual(rootLayer.subLayerPaths, [layerId2, layerId1])
+        self.assertEqual(layer1.subLayerPaths, [layerId3])
+
+        # Undo moving layer3 inside layer1
+        cmds.undo()
+        self.assertEqual(rootLayer.subLayerPaths, [layerId3, layerId2, layerId1])
+        self.assertEqual(layer1.subLayerPaths, [])
+
+        # Insert layer3 inside layer1 and try to move the layer3 from the root layer
+        # inside layer1. This should fail.
+        cmds.mayaUsdLayerEditor(layerId1, edit=True, insertSubPath=[0, layerId3])
+        self.assertEqual(layer1.subLayerPaths, [layerId3])
+
+        with self.assertRaises(RuntimeError):
+            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, moveSubPath=[layerId3, layerId1, 0])
+        self.assertEqual(rootLayer.subLayerPaths, originalSubLayerPaths)
+        self.assertEqual(layer1.subLayerPaths, [layerId3])
+
     def testMuteLayer(self):
         """ test 'mayaUsdLayerEditor' command 'muteLayer' paramater """
 
