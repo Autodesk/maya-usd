@@ -81,6 +81,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (varname)
     (result)
     (cardsUv)
+    (sourceColorSpace)
+    (sRGB)
+    (raw)
     (glslfx)
 
     (input)
@@ -1347,11 +1350,14 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 const float* val = value.UncheckedGet<GfVec4f>().data();
                 status = _surfaceShader->setParameter(paramName, val);
             } else if (value.IsHolding<TfToken>()) {
-                // The two parameters have been converted to sampler state
-                // before entering this loop.
-                if (_IsUsdUVTexture(node)
-                    && (token == UsdHydraTokens->wrapS || token == UsdHydraTokens->wrapT)) {
-                    status = samplerStatus;
+                if (_IsUsdUVTexture(node)) {
+                    if (token == UsdHydraTokens->wrapS || token == UsdHydraTokens->wrapT) {
+                        // The two parameters have been converted to sampler state before entering
+                        // this loop.
+                        status = samplerStatus;
+                    } else if (token == _tokens->sourceColorSpace) {
+                        status = MStatus::kSuccess;
+                    }
                 }
             } else if (value.IsHolding<SdfAssetPath>()) {
                 const SdfAssetPath& val = value.UncheckedGet<SdfAssetPath>();
@@ -1367,7 +1373,20 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 
                     if (status) {
                         paramName = nodeName + "isColorSpaceSRGB";
-                        status = _surfaceShader->setParameter(paramName, info._isColorSpaceSRGB);
+                        bool isSRGB = info._isColorSpaceSRGB;
+                        auto scsIt = node.parameters.find(_tokens->sourceColorSpace);
+                        if (scsIt != node.parameters.end()) {
+                            const VtValue& scsValue = scsIt->second;
+                            if (scsValue.IsHolding<TfToken>()) {
+                                const TfToken& scsToken = scsValue.UncheckedGet<TfToken>();
+                                if (scsToken == _tokens->raw) {
+                                    isSRGB = false;
+                                } else if (scsToken == _tokens->sRGB) {
+                                    isSRGB = true;
+                                }
+                            }
+                        }
+                        status = _surfaceShader->setParameter(paramName, isSRGB);
                     }
                     if (status) {
                         paramName = nodeName + "stScale";
