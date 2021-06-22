@@ -61,11 +61,19 @@ MayaUsd_SchemasMayaReference::Define(const UsdStagePtr& stage, const SdfPath& pa
     return MayaUsd_SchemasMayaReference(stage->DefinePrim(path, usdPrimTypeName));
 }
 
+#if PXR_VERSION >= 2108
+/* virtual */
+UsdSchemaKind MayaUsd_SchemasMayaReference::_GetSchemaKind() const
+{
+    return MayaUsd_SchemasMayaReference::schemaKind;
+}
+#else
 /* virtual */
 UsdSchemaType MayaUsd_SchemasMayaReference::_GetSchemaType() const
 {
     return MayaUsd_SchemasMayaReference::schemaType;
 }
+#endif
 
 /* static */
 const TfType& MayaUsd_SchemasMayaReference::_GetStaticTfType()
