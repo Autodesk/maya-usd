@@ -23,17 +23,23 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
+
 void copySpecAtPath(const SdfAbstractData& src, SdfAbstractData* dst, const SdfPath& path)
 {
+    // create a new spec at a path with the given specType
     dst->CreateSpec(path, src.GetSpecType(path));
 
+    // get the list of tokens
     const std::vector<TfToken>& tokens = src.List(path);
 
+    // set the value of dst at the given path and a fieldName
     for (const auto& token : tokens) {
         dst->Set(path, token, src.Get(path, token));
     }
 }
 
+// This class is used to copy specs from source SdfAbstractData contrainer
+// to the destination SdfAbstractData container.
 class SpecCopier : public SdfAbstractDataSpecVisitor
 {
 public:
@@ -129,8 +135,11 @@ void UsdUndoStateDelegate::invertDeleteSpec(
 
     CreateSpec(path, deletedSpecType, inert);
 
+    auto layerDataPtr = get_pointer(_GetLayerData());
+    TF_AXIOM(layerDataPtr);
+
     // copy back every spec(s) with the given visitor
-    SpecCopier specCopier(get_pointer(_GetLayerData()));
+    SpecCopier specCopier(layerDataPtr);
     deletedData->VisitSpecs(&specCopier);
 
     _setMessageAlreadyShowed = false;
@@ -369,12 +378,15 @@ void UsdUndoStateDelegate::_OnDeleteSpec(const SdfPath& path, bool inert)
 
     SdfDataRefPtr deletedData = TfCreateRefPtr(new SdfData());
 
-    SdfLayer::TraversalFunction copyFunc = std::bind(
-        &copySpecAtPath,
-        std::cref(*get_pointer(_GetLayerData())),
-        get_pointer(deletedData),
-        std::placeholders::_1);
-    _GetLayer()->Traverse(path, copyFunc);
+    // traverse the hierarchy and call copySpecAtPath on each spec
+    auto layerDataPtr = std::cref(*get_pointer(_GetLayerData()));
+    TF_AXIOM(layerDataPtr);
+
+    auto deleteDataPtr = get_pointer(deletedData);
+    TF_AXIOM(deleteDataPtr);
+
+    _GetLayer()->Traverse(
+        path, [&](const SdfPath& path) { copySpecAtPath(layerDataPtr, deleteDataPtr, path); });
 
     const SdfSpecType deletedSpecType = _GetLayer()->GetSpecType(path);
 

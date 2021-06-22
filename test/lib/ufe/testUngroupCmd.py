@@ -57,15 +57,15 @@ class SphereGenerator():
     def createSphere(self):
         return next(self.gen)
 
-    def __addPrimSphere(self, incrment):
+    def __addPrimSphere(self, increment):
         self.contextOp.doOp(['Add New Prim', 'Sphere'])
-        return ufe.PathString.path('{},/Sphere{}'.format(self.proxyShapePathStr, incrment))
+        return ufe.PathString.path('{},/Sphere{}'.format(self.proxyShapePathStr, increment))
 
     def __generate(self, num):
-        incrment = 0
-        while incrment < self.num:
-            incrment += 1
-            yield self.__addPrimSphere(incrment)
+        increment = 0
+        while increment < self.num:
+            increment += 1
+            yield self.__addPrimSphere(increment)
 
 def joinPathSegments(ufePath):
     return ','.join([str(segment) for segment in ufePath.segments])
@@ -120,7 +120,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(str(groupItem.path().back()), "group1")
+        self.assertEqual(groupItem.nodeName(), "group1")
 
         # verify that groupItem has 2 children
         groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
@@ -142,7 +142,7 @@ class UngroupCmdTestCase(unittest.TestCase):
 
         # verify group1 is selected
         self.assertEqual(len(self.globalSn), 1)
-        self.assertEqual(str(self.globalSn.front().path().back()), "group1")
+        self.assertEqual(self.globalSn.front().nodeName(), "group1")
 
         # redo
         cmds.redo()
@@ -173,17 +173,17 @@ class UngroupCmdTestCase(unittest.TestCase):
         # create group2
         cmds.group(joinPathSegments(sphere2Path))
 
-        assert ([x for x in self.stage.Traverse()] == 
+        self.assertEqual([x for x in self.stage.Traverse()],
             [self.stage.GetPrimAtPath("/group1"),
             self.stage.GetPrimAtPath("/group1/Sphere1"), 
             self.stage.GetPrimAtPath("/group2"),
-            self.stage.GetPrimAtPath("/group2/Sphere2"),])
+            self.stage.GetPrimAtPath("/group2/Sphere2")])
 
         # ungroup
         cmds.ungroup("{},/group1".format(self.proxyShapePathStr), 
                      "{},/group2".format(self.proxyShapePathStr))
 
-        assert ([x for x in self.stage.Traverse()] == 
+        self.assertEqual([x for x in self.stage.Traverse()],
             [self.stage.GetPrimAtPath("/Sphere1"), 
             self.stage.GetPrimAtPath("/Sphere2")])
 
@@ -213,7 +213,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(str(groupItem.path().back()), "group1")
+        self.assertEqual(groupItem.nodeName(), "group1")
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.
@@ -253,7 +253,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(str(groupItem.path().back()), "group1")
+        self.assertEqual(groupItem.nodeName(), "group1")
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.
@@ -285,7 +285,7 @@ class UngroupCmdTestCase(unittest.TestCase):
                    joinPathSegments(pathList[3]))
 
         # verify the paths after grouping
-        assert ([x for x in self.stage.Traverse()] == 
+        self.assertEqual([x for x in self.stage.Traverse()], 
             [self.stage.GetPrimAtPath("/Sphere1"),
             self.stage.GetPrimAtPath("/group1"),
             self.stage.GetPrimAtPath("/group1/Sphere2"),
@@ -298,7 +298,7 @@ class UngroupCmdTestCase(unittest.TestCase):
                    "{},/group1/Sphere4".format(self.proxyShapePathStr))
 
         # verify the paths after second grouping
-        assert ([x for x in self.stage.Traverse()] == 
+        self.assertEqual([x for x in self.stage.Traverse()],
             [self.stage.GetPrimAtPath("/Sphere1"),
             self.stage.GetPrimAtPath("/group1"),
             self.stage.GetPrimAtPath("/group1/group1"),
@@ -310,7 +310,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         cmds.ungroup("{},/group1/group1".format(self.proxyShapePathStr), world=True)
 
         # verify the paths after ungroup
-        assert ([x for x in self.stage.Traverse()] == 
+        self.assertEqual([x for x in self.stage.Traverse()],
             [self.stage.GetPrimAtPath("/Sphere1"),
             self.stage.GetPrimAtPath("/group1"),
             self.stage.GetPrimAtPath("/Sphere2"),
@@ -385,7 +385,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(str(groupItem.path().back()), "group1")
+        self.assertEqual(groupItem.nodeName(), "group1")
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.
@@ -400,7 +400,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify that group1 is in global selection list
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(str(groupItem.path().back()), "group1")
+        self.assertEqual(groupItem.nodeName(), "group1")
 
         # Hmmm, looks like we have a bug here. HS, June 21, 2021
         # verify that group hierarchy has 2 children
