@@ -22,11 +22,6 @@
 
 #include <pxr/usd/usd/editContext.h>
 
-#include <ufe/globalSelection.h>
-#include <ufe/hierarchy.h>
-#include <ufe/observableSelection.h>
-#include <ufe/scene.h>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
@@ -71,7 +66,12 @@ void UsdUndoUngroupCommand::undo()
     _undoableItem.undo();
 }
 
-void UsdUndoUngroupCommand::redo() { _undoableItem.redo(); }
+void UsdUndoUngroupCommand::redo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.redo();
+}
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
