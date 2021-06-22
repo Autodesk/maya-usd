@@ -67,9 +67,6 @@ class SphereGenerator():
             increment += 1
             yield self.__addPrimSphere(increment)
 
-def joinPathSegments(ufePath):
-    return ','.join([str(segment) for segment in ufePath.segments])
-
 def createTransform3d(ufeScenePath):
     return ufe.Transform3d.transform3d(ufe.Hierarchy.createItem(ufeScenePath))
 
@@ -114,8 +111,8 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2Path = sphereGen.createSphere()
 
         # create a group
-        cmds.group(joinPathSegments(sphere1Path), 
-                   joinPathSegments(sphere2Path))
+        cmds.group(ufe.PathString.string(sphere1Path), 
+                   ufe.PathString.string(sphere2Path))
 
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
@@ -168,10 +165,10 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2Path = sphereGen.createSphere()
 
         # create group1
-        cmds.group(joinPathSegments(sphere1Path))
+        cmds.group(ufe.PathString.string(sphere1Path))
 
         # create group2
-        cmds.group(joinPathSegments(sphere2Path))
+        cmds.group(ufe.PathString.string(sphere2Path))
 
         self.assertEqual([x for x in self.stage.Traverse()],
             [self.stage.GetPrimAtPath("/group1"),
@@ -204,8 +201,8 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2T3d.translate(-2.0, 0.0, 0.0)
 
         # create a group
-        cmds.group(joinPathSegments(sphere1Path), 
-                   joinPathSegments(sphere2Path))
+        cmds.group(ufe.PathString.string(sphere1Path), 
+                   ufe.PathString.string(sphere2Path))
 
         # move the group 
         cmds.move(7.0, 8.0, 12.0, r=True)
@@ -244,8 +241,8 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2T3d.translate(-2.0, 0.0, 0.0)
 
         # create a group
-        cmds.group(joinPathSegments(sphere1Path), 
-                   joinPathSegments(sphere2Path))
+        cmds.group(ufe.PathString.string(sphere1Path), 
+                   ufe.PathString.string(sphere2Path))
 
         # move the group 
         cmds.move(20.0, 8.0, 12.0, r=True)
@@ -280,9 +277,9 @@ class UngroupCmdTestCase(unittest.TestCase):
             pathList.append(sphereGen.createSphere())
 
         # group /Sphere2, /Sphere3, /Sphere4
-        cmds.group(joinPathSegments(pathList[1]),
-                   joinPathSegments(pathList[2]),
-                   joinPathSegments(pathList[3]))
+        cmds.group(ufe.PathString.string(pathList[1]),
+                   ufe.PathString.string(pathList[2]),
+                   ufe.PathString.string(pathList[3]))
 
         # verify the paths after grouping
         self.assertEqual([x for x in self.stage.Traverse()], 
@@ -367,7 +364,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         # expect the exception happens
         with self.assertRaises(RuntimeError):
             # ungroup
-            cmds.ungroup(joinPathSegments(sphere1Path))
+            cmds.ungroup(ufe.PathString.string(sphere1Path))
 
     def testUngroupAfterUndoRedo(self):
         ''' '''
@@ -379,8 +376,8 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2Path = sphereGen.createSphere()
 
         # create a group
-        cmds.group(joinPathSegments(sphere1Path), 
-                   joinPathSegments(sphere2Path))
+        cmds.group(ufe.PathString.string(sphere1Path), 
+                   ufe.PathString.string(sphere2Path))
 
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)

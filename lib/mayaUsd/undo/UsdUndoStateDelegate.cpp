@@ -380,10 +380,7 @@ void UsdUndoStateDelegate::_OnDeleteSpec(const SdfPath& path, bool inert)
 
     // traverse the hierarchy and call copySpecAtPath on each spec
     auto layerDataPtr = std::cref(*get_pointer(_GetLayerData()));
-    TF_AXIOM(layerDataPtr);
-
     auto deleteDataPtr = get_pointer(deletedData);
-    TF_AXIOM(deleteDataPtr);
 
     _GetLayer()->Traverse(
         path, [&](const SdfPath& path) { copySpecAtPath(layerDataPtr, deleteDataPtr, path); });
