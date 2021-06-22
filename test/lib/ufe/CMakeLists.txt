@@ -40,6 +40,11 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testTransform3dTranslate.py
         testUIInfoHandler.py
         testObservableScene.py
+    )
+endif()
+
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
         testUngroupCmd.py
     )
 endif()

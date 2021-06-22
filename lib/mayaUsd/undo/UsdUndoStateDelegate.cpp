@@ -38,7 +38,7 @@ void copySpecAtPath(const SdfAbstractData& src, SdfAbstractData* dst, const SdfP
     }
 }
 
-// This class is used to copy specs from source SdfAbstractData contrainer
+// This class is used to copy specs from source SdfAbstractData container
 // to the destination SdfAbstractData container.
 class SpecCopier : public SdfAbstractDataSpecVisitor
 {

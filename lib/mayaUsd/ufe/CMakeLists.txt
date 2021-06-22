@@ -66,6 +66,13 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     )
 endif()
 
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdUndoUngroupCommand.cpp
+    )
+endif()
+
 set(HEADERS
     Global.h
     ProxyShapeHandler.h
@@ -127,8 +134,13 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoReorderCommand.h
         UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
-        UsdUndoUngroupCommand.h
         XformOpUtils.h
+    )
+endif()
+
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    list(APPEND HEADERS
+        UsdUndoUngroupCommand.h
     )
 endif()
 
