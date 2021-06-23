@@ -26,7 +26,6 @@ import mayaUsd.ufe
 
 from pxr import UsdGeom, Gf
 
-from maya.api import OpenMaya as OpenMaya
 from maya import cmds
 from maya import standalone
 
@@ -133,6 +132,9 @@ class UngroupCmdTestCase(unittest.TestCase):
 
         # undo
         cmds.undo();
+
+        # verify the child is group1
+        self.assertEqual(self.stage.GetPseudoRoot().GetChildren()[0].GetName(), "group1")
 
         # verify that pseudoroot has 1 child (group1)
         self.assertEqual(len(self.stage.GetPseudoRoot().GetChildren()), 1)
@@ -320,38 +322,18 @@ class UngroupCmdTestCase(unittest.TestCase):
         pass
 
     def testUngroupProxyShape(self):
-        '''Verify ungrouping of the proxyShape.'''
+        '''Verify ungrouping of the proxyShape results in error.'''
 
-        # select proxyShape
-        cmds.select(ufe.PathString.string(self.proxyShapeItem.path()))
+        # create a sphere generator
+        sphereGen = SphereGenerator(5, self.contextOp, self.proxyShapePathStr)
 
-        # create a group
-        cmds.group()
+        # create 5 spheres 
+        for _ in range(5):
+            sphereGen.createSphere()
 
-        # verify global selection len and dag node
-        globalSelection = OpenMaya.MGlobal.getActiveSelectionList()
-        self.assertEqual(globalSelection.length(), 1)
-        dagNode = OpenMaya.MFnDagNode(globalSelection.getDependNode(0))
-        self.assertEqual(dagNode.partialPathName(), "group1")
-
-        # create a ungroup
-        cmds.ungroup()
-
-        # traverse Maya scene graph ( DFS )
-        dagItr = OpenMaya.MItDag(OpenMaya.MItDag.kDepthFirst)
-
-        # verify that no group1 exist
-        groupFound = False
-        while(not dagItr.isDone()):
-            dagPath = dagItr.getPath()
-
-            if (dagPath.partialPathName() == "group1"):
-                groupFound = True
-                break
-
-            dagItr.next()
-
-        self.assertEqual(groupFound, False)
+        # ungrouping the proxy shape with existing USD children should fail
+        with self.assertRaises(RuntimeError):
+            cmds.ungroup(ufe.PathString.string(self.proxyShapeItem.path()))
 
     def testUngroupLeaf(self):
         '''Verify ungrouping of a leaf node.'''
