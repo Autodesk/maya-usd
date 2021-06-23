@@ -108,6 +108,32 @@ TokenHashMap mtlxToMaya {
     { TrMtlxTokens->normal, TrMayaTokens->normalCamera },
     { TrMtlxTokens->tangent, TrMayaTokens->tangentUCamera }
 };
+
+// Read a value that was set on a UsdShadeMaterial instead of the UsdShadeShader. This is something
+// we see with materials imported by UsdMtlx:
+bool _ReadFromMaterial(const UsdShadeInput& input, VtValue& inputVal)
+{
+    UsdShadeConnectableAPI source;
+    TfToken                sourceInputName;
+    UsdShadeAttributeType  sourceType;
+    if (!UsdShadeConnectableAPI::GetConnectedSource(
+            input, &source, &sourceInputName, &sourceType)) {
+        return false;
+    }
+
+    UsdShadeMaterial sourceMaterial(source.GetPrim());
+    if (!sourceMaterial) {
+        return false;
+    }
+
+    const UsdShadeInput& materialInput = sourceMaterial.GetInput(sourceInputName);
+    if (!materialInput) {
+        return false;
+    }
+
+    return materialInput.Get(&inputVal);
+}
+
 } // namespace
 /* virtual */
 bool MtlxUsd_StandardSurfaceWriter::Read(UsdMayaPrimReaderContext* context)
@@ -148,7 +174,7 @@ bool MtlxUsd_StandardSurfaceWriter::Read(UsdMayaPrimReaderContext* context)
         }
 
         VtValue inputVal;
-        if (!input.GetAttr().Get(&inputVal)) {
+        if (!input.GetAttr().Get(&inputVal) && !_ReadFromMaterial(input, inputVal)) {
             continue;
         }
 

@@ -635,7 +635,8 @@ private:
 
                 // Follow through to see if the node graph output is connected:
                 const UsdShadeOutput& ngOutput = sourceNodeGraph.GetOutput(sourceOutputName);
-                if (!UsdShadeConnectableAPI::GetConnectedSource(
+                if (!ngOutput
+                    || !UsdShadeConnectableAPI::GetConnectedSource(
                         ngOutput, &source, &sourceOutputName, &sourceType)) {
                     continue;
                 }
