@@ -15,6 +15,8 @@
 //
 #include "shadingUtil.h"
 
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -30,6 +32,44 @@
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (place2dTexture)
+    (coverage)
+    (translateFrame)
+    (rotateFrame) 
+    (mirrorU)
+    (mirrorV)
+    (stagger)
+    (wrapU)
+    (wrapV)
+    (repeatUV)
+    (offset)
+    (rotateUV)
+    (noiseUV)
+    (vertexUvOne)
+    (vertexUvTwo)
+    (vertexUvThree)
+    (vertexCameraOne)
+    (outUvFilterSize)
+    (uvFilterSize)
+    (outUV)
+    (uvCoord)
+);
+// clang-format on
+
+static const TfTokenVector _Place2dTextureConnections = {
+    _tokens->coverage,    _tokens->translateFrame, _tokens->rotateFrame,   _tokens->mirrorU,
+    _tokens->mirrorV,     _tokens->stagger,        _tokens->wrapU,         _tokens->wrapV,
+    _tokens->repeatUV,    _tokens->offset,         _tokens->rotateUV,      _tokens->noiseUV,
+    _tokens->vertexUvOne, _tokens->vertexUvTwo,    _tokens->vertexUvThree, _tokens->vertexCameraOne
+};
+
+} // namespace
 
 std::string
 UsdMayaShadingUtil::GetStandardAttrName(const MPlug& attrPlug, bool allowMultiElementArrays)
@@ -98,4 +138,44 @@ UsdShadeOutput UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
     materialOutput.ConnectToSource(shaderOutput);
 
     return shaderOutput;
+}
+
+MObject UsdMayaShadingUtil::CreatePlace2dTextureAndConnectTexture(MObject textureNode)
+{
+    MStatus           status;
+    MObject           uvObj;
+    MFnDependencyNode uvDepFn;
+    MFnDependencyNode depFn(textureNode);
+    if (!(UsdMayaTranslatorUtil::CreateShaderNode(
+              _tokens->place2dTexture.GetText(),
+              _tokens->place2dTexture.GetText(),
+              UsdMayaShadingNodeType::Utility,
+              &status,
+              &uvObj)
+          && uvDepFn.setObject(uvObj))) {
+        // we need to make sure assumes those types are loaded..
+        TF_RUNTIME_ERROR(
+            "Could not create place2dTexture for texture '%s'.\n", depFn.name().asChar());
+        return MObject();
+    }
+
+    // Connect manually (fileTexturePlacementConnect is not available in batch):
+    {
+        MPlug uvPlug = uvDepFn.findPlug(_tokens->outUV.GetText(), true, &status);
+        MPlug filePlug = depFn.findPlug(_tokens->uvCoord.GetText(), true, &status);
+        UsdMayaUtil::Connect(uvPlug, filePlug, false);
+    }
+    {
+        MPlug uvPlug = uvDepFn.findPlug(_tokens->outUvFilterSize.GetText(), true, &status);
+        MPlug filePlug = depFn.findPlug(_tokens->uvFilterSize.GetText(), true, &status);
+        UsdMayaUtil::Connect(uvPlug, filePlug, false);
+    }
+    MString connectCmd;
+    for (const TfToken& uvName : _Place2dTextureConnections) {
+        MPlug uvPlug = uvDepFn.findPlug(uvName.GetText(), true, &status);
+        MPlug filePlug = depFn.findPlug(uvName.GetText(), true, &status);
+        UsdMayaUtil::Connect(uvPlug, filePlug, false);
+    }
+
+    return uvObj;
 }

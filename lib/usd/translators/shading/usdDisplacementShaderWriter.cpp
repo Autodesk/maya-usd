@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
+
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
@@ -57,15 +59,6 @@ public:
 };
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(displacementShader, PxrUsdTranslators_DisplacementShaderWriter);
-
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (displacement)
-);
-// clang-format on
 
 PxrUsdTranslators_DisplacementShaderWriter::PxrUsdTranslators_DisplacementShaderWriter(
     const MFnDependencyNode& depNodeFn,
@@ -131,8 +124,8 @@ void PxrUsdTranslators_DisplacementShaderWriter::Write(const UsdTimeCode& usdTim
         return;
     }
 
-    MPlug displacementPlug
-        = depNodeFn.findPlug(depNodeFn.attribute(_tokens->displacement.GetText()), true, &status);
+    MPlug displacementPlug = depNodeFn.findPlug(
+        depNodeFn.attribute(TrMayaTokens->displacement.GetText()), true, &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -171,7 +164,7 @@ PxrUsdTranslators_DisplacementShaderWriter::CanExport(const UsdMayaJobExportArgs
 TfToken PxrUsdTranslators_DisplacementShaderWriter::GetShadingAttributeNameForMayaAttrName(
     const TfToken& mayaAttrName)
 {
-    if (mayaAttrName == _tokens->displacement) {
+    if (mayaAttrName == TrMayaTokens->displacement) {
         return UsdShadeUtils::GetFullName(
             PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName, UsdShadeAttributeType::Input);
     }

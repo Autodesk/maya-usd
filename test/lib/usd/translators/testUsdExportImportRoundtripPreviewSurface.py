@@ -37,7 +37,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         test_dir = os.path.join(inputPath,
                                 "UsdExportImportRoundtripPreviewSurface")
-
+        if not os.path.isdir(test_dir):
+            os.mkdir(test_dir)
         cmds.workspace(test_dir, o=True)
 
     @classmethod
@@ -92,8 +93,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.connectAttr(file_node + ".outColor",
                          material_node + ".diffuseColor", f=True)
 
-        txfile = os.path.join("UsdExportImportRoundtripPreviewSurface",
-                              "Brazilian_rosewood_pxr128.png")
+        txfile = os.path.join("..", "textures", "Brazilian_rosewood_pxr128.png")
         cmds.setAttr(file_node+".fileTextureName", txfile, type="string")
         cmds.setAttr(file_node+".colorSpace", "ACEScg", type="string")
         cmds.setAttr(file_node + ".defaultColor", 0.5, 0.25, 0.125,

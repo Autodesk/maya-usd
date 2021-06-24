@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/shading/shadingModeImporter.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -60,6 +61,26 @@ MPlug UsdMayaShaderReader::GetMayaPlugForUsdAttrName(
 TfToken UsdMayaShaderReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
     return TfToken();
+}
+
+bool UsdMayaShaderReader::IsConverter(
+    UsdShadeShader& downstreamSchema,
+    TfToken&        downstreamOutputName)
+{
+    return false;
+}
+
+void UsdMayaShaderReader::SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader)
+{
+}
+
+MObject UsdMayaShaderReader::GetCreatedObject(
+    const UsdMayaShadingModeImportContext& context,
+    const UsdPrim&                         prim) const
+{
+    MObject mayaObject;
+    context.GetCreatedObject(prim, &mayaObject);
+    return mayaObject;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
