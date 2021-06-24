@@ -37,7 +37,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         test_dir = os.path.join(inputPath,
                                 "UsdExportImportRoundtripPreviewSurface")
-        os.makedirs(test_dir, exist_ok=True)
+        if not os.path.isdir(test_dir):
+            os.mkdir(test_dir)
         cmds.workspace(test_dir, o=True)
 
     @classmethod
