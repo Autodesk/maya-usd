@@ -59,8 +59,13 @@ AL_usd_FrameRange AL_usd_FrameRange::Define(const UsdStagePtr& stage, const SdfP
     return AL_usd_FrameRange(stage->DefinePrim(path, usdPrimTypeName));
 }
 
+#if PXR_VERSION >= 2108
+/* virtual */
+UsdSchemaKind AL_usd_FrameRange::_GetSchemaKind() const { return AL_usd_FrameRange::schemaKind; }
+#else
 /* virtual */
 UsdSchemaType AL_usd_FrameRange::_GetSchemaType() const { return AL_usd_FrameRange::schemaType; }
+#endif
 
 /* static */
 const TfType& AL_usd_FrameRange::_GetStaticTfType()
