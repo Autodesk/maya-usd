@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
 #include "usdReflectWriter.h"
 
 #include <mayaUsd/fileio/shaderWriter.h>
@@ -55,17 +56,6 @@ protected:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(blinn, PxrUsdTranslators_BlinnWriter);
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (eccentricity)
-    (specularColor)
-    (specularRollOff)
-);
-// clang-format on
-
 PxrUsdTranslators_BlinnWriter::PxrUsdTranslators_BlinnWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
@@ -96,7 +86,7 @@ void PxrUsdTranslators_BlinnWriter::Write(const UsdTimeCode& usdTime)
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->eccentricity,
+        TrMayaTokens->eccentricity,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName,
         usdTime);
@@ -115,11 +105,11 @@ void PxrUsdTranslators_BlinnWriter::WriteSpecular(const UsdTimeCode& usdTime)
 
     AuthorShaderInputFromScaledShadingNodeAttr(
         depNodeFn,
-        _tokens->specularColor,
+        TrMayaTokens->specularColor,
         shaderSchema,
-        _tokens->specularColor,
+        TrMayaTokens->specularColor,
         usdTime,
-        _tokens->specularRollOff);
+        TrMayaTokens->specularRollOff);
 
     shaderSchema
         .CreateInput(
@@ -133,7 +123,7 @@ void PxrUsdTranslators_BlinnWriter::WriteSpecular(const UsdTimeCode& usdTime)
 TfToken
 PxrUsdTranslators_BlinnWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
-    if (mayaAttrName == _tokens->eccentricity) {
+    if (mayaAttrName == TrMayaTokens->eccentricity) {
         return UsdShadeUtils::GetFullName(
             PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, UsdShadeAttributeType::Input);
     }

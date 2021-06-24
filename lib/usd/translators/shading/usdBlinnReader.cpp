@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
 #include "usdLambertReader.h"
 
 #include <mayaUsd/fileio/shaderReader.h>
@@ -71,16 +72,6 @@ protected:
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrUsdTranslators_BlinnReader);
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (eccentricity)
-    (specularColor)
-);
-// clang-format on
-
 PxrUsdTranslators_BlinnReader::PxrUsdTranslators_BlinnReader(const UsdMayaPrimReaderArgs& readArgs)
     : PxrUsdTranslators_LambertReader(readArgs)
 {
@@ -104,7 +95,7 @@ void PxrUsdTranslators_BlinnReader::_OnBeforeReadAttribute(
     const TfToken&     mayaAttrName,
     MFnDependencyNode& shaderFn) const
 {
-    if (mayaAttrName == _tokens->specularColor) {
+    if (mayaAttrName == TrMayaTokens->specularColor) {
         MFnBlinnShader blinnFn;
         blinnFn.setObject(shaderFn.object());
         MColor color(blinnFn.specularColor());
@@ -126,9 +117,9 @@ TfToken PxrUsdTranslators_BlinnReader::GetMayaNameForUsdAttrName(const TfToken& 
 
     if (attrType == UsdShadeAttributeType::Input) {
         if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName) {
-            return _tokens->specularColor;
+            return TrMayaTokens->specularColor;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName) {
-            return _tokens->eccentricity;
+            return TrMayaTokens->eccentricity;
         }
     }
 

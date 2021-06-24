@@ -72,7 +72,7 @@ def Mesh "pCube2" (
                 uniform token info:id = "file"
                 string inputs:colorSpace = "sRGB"
                 float2 inputs:coverage.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:coverage>
-                asset inputs:fileTextureName = @E:/Ws/UsdBuild/ecg-maya-usd/maya-usd/test/lib/usd/translators/UsdImportCustomConverterTest/Brazilian_rosewood_pxr128.png@
+                asset inputs:fileTextureName = @../textures/Brazilian_rosewood_pxr128.png@
                 bool inputs:mirrorU.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:mirrorU>
                 bool inputs:mirrorV.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:mirrorV>
                 float2 inputs:noiseUV = (0, 0)
@@ -164,7 +164,7 @@ def Mesh "pCube3" (
             {
                 uniform token info:id = "UsdUVTexture"
                 float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
-                asset inputs:file = @E:/Ws/UsdBuild/ecg-maya-usd/maya-usd/test/lib/usd/translators/UsdImportCustomConverterTest/Brazilian_rosewood_pxr128.png@
+                asset inputs:file = @../textures/Brazilian_rosewood_pxr128.png@
                 float2 inputs:st.connect = </pCube3/Looks/usdPreviewSurface1SG/file2/TexCoordReader.outputs:result>
                 token inputs:wrapS = "repeat"
                 token inputs:wrapT = "repeat"
