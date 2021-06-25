@@ -1595,7 +1595,7 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
         }
 
         for (auto& renderItemData : drawItem->GetRenderItems()) {
-            _UpdateDrawItem(sceneDelegate, drawItem, renderItemData, desc);
+            _UpdateDrawItem(sceneDelegate, drawItem, renderItemData, desc, reprToken);
         }
     }
 }
@@ -1609,7 +1609,8 @@ void HdVP2Mesh::_UpdateDrawItem(
     HdSceneDelegate*               sceneDelegate,
     HdVP2DrawItem*                 drawItem,
     HdVP2DrawItem::RenderItemData& renderItemData,
-    const HdMeshReprDesc&          desc)
+    const HdMeshReprDesc&          desc,
+    const TfToken&                 reprToken)
 {
     HdDirtyBits itemDirtyBits = renderItemData.GetDirtyBits();
 
@@ -1666,10 +1667,11 @@ void HdVP2Mesh::_UpdateDrawItem(
             // geom subset and add those triangles to the index buffer for renderItem.
 
             VtVec3iArray trianglesFaceVertexIndices; // for this item only!
-            if (_meshSharedData->_faceIdToRenderItem.size() == 0) {
-                // If there is no mapping from face to render item, then all the faces are on this
-                // render item.
-                // VtArray has copy-on-write semantics so this is fast
+            if (_meshSharedData->_faceIdToRenderItem.size() == 0
+                || reprToken == HdVP2ReprTokens->defaultMaterial) {
+                // If there is no mapping from face to render item or if this is the default
+                // material item then all the faces are on this render item. VtArray has
+                // copy-on-write semantics so this is fast
                 trianglesFaceVertexIndices = _meshSharedData->_trianglesFaceVertexIndices;
             } else {
                 for (size_t triangleId = 0; triangleId < _meshSharedData->_primitiveParam.size();

@@ -142,7 +142,8 @@ private:
         HdSceneDelegate*,
         HdVP2DrawItem*,
         HdVP2DrawItem::RenderItemData&,
-        const HdMeshReprDesc& desc);
+        const HdMeshReprDesc& desc,
+        const TfToken&        reprToken);
 
     void _HideAllDrawItems(const TfToken& reprToken);
 
