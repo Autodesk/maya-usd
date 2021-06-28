@@ -48,6 +48,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     Float4ToFloat3.xml
     Float4ToFloat4.xml
     NwFaceCameraIfNAN.xml
+    NwToNv.xml
     UsdDrawModeCards.xml
     UsdPrimvarColor.xml
     UsdPrimvarReader_color.xml

@@ -18,8 +18,9 @@ limitations under the License.
 -->
 <fragment_graph name="UsdPreviewSurface" ref="UsdPreviewSurface" class="FragmentGraph" version="1.0" feature_level="0">
     <fragments>
-        <!-- Fragments for extracting computed dot products. -->
+        <!-- Fragments for setting up the normals. -->
         <fragment_ref name="NwFaceCameraIfNAN" ref="NwFaceCameraIfNAN"/>
+        <fragment_ref name="NwToNv" ref="NwToNv"/>
 
         <!-- Fragments for computing material. -->
         <fragment_ref name="opacityToTransparency" ref="opacityToTransparency"/>
@@ -31,7 +32,8 @@ limitations under the License.
         <fragment_ref name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput"/>
     </fragments>
     <connections>
-        <connect from="NwFaceCameraIfNAN.output" to="usdPreviewSurfaceLightingAPI2.Nw" name="Nw"/>
+        <connect from="NwFaceCameraIfNAN.output" to="NwToNv.Nw" name="Nw"/>
+        <connect from="NwToNv.Nv" to="usdPreviewSurfaceLightingAPI2.Nv" name="Nv"/>
         <connect from="opacityToTransparency.transparency" to="usdPreviewSurfaceLightingAPI2.transparency" name="transparency"/>
         <connect from="usdPreviewSurfaceLightingAPI2.surfaceShader" to="mayaComputeSurfaceFinal.input" name="input"/>
         <connect from="maya_FogDepthSurface.maya_FogDepthSurface" to="mayaComputeSurfaceFinal.maya_FogDepthSurface" name="maya_FogDepthSurface"/>
@@ -56,7 +58,7 @@ limitations under the License.
         <int name="mayaExternalLightFunctions" flags="isRequirementOnly" ref="usdPreviewSurfaceLightingAPI2.mayaExternalLightFunctions"/>
         <undefined name="GPUStage" ref="mayaComputeSurfaceFinal.GPUStage" semantic="GPUStage"/>
         <float3 name="Nw" ref="NwFaceCameraIfNAN.Nw" flags="varyingInputParam"/>
-        <float3 name="Pw" ref="usdPreviewSurfaceLightingAPI2.Pw" semantic="Pw"/>
+        <float3 name="Pv" ref="usdPreviewSurfaceLightingAPI2.Pv" semantic="Pv"/>
         <float name="extraOpacity" ref="mayaComputeSurfaceFinal.extraOpacity"/>
         <bool name="fogEnabled" ref="mayaComputeSurfaceFinal.fogEnabled"/>
         <float4x4 name="ViewProj" ref="maya_FogDepthSurface.ViewProj" semantic="viewprojection"/>
