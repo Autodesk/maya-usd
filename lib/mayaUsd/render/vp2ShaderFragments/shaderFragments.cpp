@@ -391,8 +391,8 @@ MStatus HdVP2ShaderFragments::registerFragments()
         //     GLSL: outColor = mat4( ... ) * outColor;
         //     HLSL: outColor = mul(outColor, float4x4( ... ));
         //       CG: outColor = mul(float4x4( transpose( ... ) ), outColor);
-        //    Where the ... denotes a 4x4 matrix expanded from the 3x3 matrix passed in as parameter
-        //    to the function (alpha is always left untouched).
+        //    Where the ... denotes a 4x4 matrix passed in as parameter to the function. These
+        //    matrices will already have correct OpenGL/Dx11 element ordering.
         //
         auto registerSpace = [&](const std::string& ocioName,
                                  const std::string& synColorName,
