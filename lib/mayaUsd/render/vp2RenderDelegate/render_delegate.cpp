@@ -21,6 +21,7 @@
 #include "material.h"
 #include "mesh.h"
 #include "render_pass.h"
+#include "tokens.h"
 
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 #include <mayaUsd/utils/hash.h>
@@ -347,6 +348,63 @@ public:
         return shader;
     }
 
+    MHWRender::MShaderInstance* GetShaderFromCache(const TfToken& id)
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_userCache._mutex, false /*write*/);
+
+        const auto it = _userCache._map.find(id);
+
+        const MHWRender::MShaderInstance* shader
+            = (it != _userCache._map.cend() ? it->second.get() : nullptr);
+        return (shader ? shader->clone() : nullptr);
+    }
+
+    /*! \brief  Adds a clone of the shader to the cache with the specified id if it doesn't exist.
+     */
+    bool AddShaderToCache(const TfToken& id, const MHWRender::MShaderInstance& shader)
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_userCache._mutex, false /*write*/);
+
+        const auto it = _userCache._map.find(id);
+        if (it != _userCache._map.cend()) {
+            return false;
+        }
+
+        lock.upgrade_to_writer();
+        _userCache._map[id].reset(shader.clone());
+        return true;
+    }
+
+#ifdef WANT_MATERIALX_BUILD
+    /*! \brief  Returns the cached primvars associated with a shader entry.
+                Will return nullptr if there are no primvars associated with the shader id.
+     */
+    const TfTokenVector* GetPrimvarsFromCache(const TfToken& id)
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_userCache._mutex, false /*write*/);
+
+        const auto it = _userCache._primvars.find(id);
+
+        return (it != _userCache._primvars.cend() ? &it->second : nullptr);
+    }
+
+    /*! \brief  Adds the primvars associated with a shader id to the cache.
+     */
+    bool AddPrimvarsToCache(const TfToken& id, const TfTokenVector& primvars)
+    {
+        tbb::spin_rw_mutex::scoped_lock lock(_userCache._mutex, false /*write*/);
+
+        const auto it = _userCache._primvars.find(id);
+        if (it != _userCache._primvars.cend()) {
+            return false;
+        }
+
+        lock.upgrade_to_writer();
+        _userCache._primvars[id] = primvars;
+        return true;
+    }
+#endif
+
 private:
     bool _isInitialized { false }; //!< Whether the shader cache is initialized
 
@@ -361,6 +419,8 @@ private:
 
     MHWRender::MShaderInstance* _3dFatPointShader { nullptr }; //!< 3d shader for points
     MHWRender::MShaderInstance* _3dCPVSolidShader { nullptr }; //!< 3d CPV solid-color shader
+
+    HdVP2ShaderCache _userCache; //!< A thread-safe cache of user generated shaders.
 };
 
 MShaderCache sShaderCache; //!< Global shader cache to minimize the number of unique shaders.
@@ -769,6 +829,18 @@ void HdVP2RenderDelegate::DestroyBprim(HdBprim* bPrim) { delete bPrim; }
 */
 TfToken HdVP2RenderDelegate::GetMaterialBindingPurpose() const { return HdTokens->full; }
 
+#ifdef WANT_MATERIALX_BUILD
+TfTokenVector HdVP2RenderDelegate::GetShaderSourceTypes() const
+{
+    return { HdVP2Tokens->mtlx, HdVP2Tokens->glslfx };
+}
+
+TfTokenVector HdVP2RenderDelegate::GetMaterialRenderContexts() const
+{
+    return { HdVP2Tokens->mtlx, HdVP2Tokens->glslfx };
+}
+#endif
+
 /*! \brief  Returns a node name made as a child of delegate's id.
  */
 MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const
@@ -780,13 +852,7 @@ MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const
  */
 MHWRender::MShaderInstance* HdVP2RenderDelegate::GetShaderFromCache(const TfToken& id)
 {
-    tbb::spin_rw_mutex::scoped_lock lock(_shaderCache._mutex, false /*write*/);
-
-    const auto it = _shaderCache._map.find(id);
-
-    const MHWRender::MShaderInstance* shader
-        = (it != _shaderCache._map.cend() ? it->second.get() : nullptr);
-    return (shader ? shader->clone() : nullptr);
+    return sShaderCache.GetShaderFromCache(id);
 }
 
 /*! \brief  Adds a clone of the shader to the cache with the specified id if it doesn't exist.
@@ -795,17 +861,25 @@ bool HdVP2RenderDelegate::AddShaderToCache(
     const TfToken&                    id,
     const MHWRender::MShaderInstance& shader)
 {
-    tbb::spin_rw_mutex::scoped_lock lock(_shaderCache._mutex, false /*write*/);
-
-    const auto it = _shaderCache._map.find(id);
-    if (it != _shaderCache._map.cend()) {
-        return false;
-    }
-
-    lock.upgrade_to_writer();
-    _shaderCache._map[id].reset(shader.clone());
-    return true;
+    return sShaderCache.AddShaderToCache(id, shader);
 }
+
+#ifdef WANT_MATERIALX_BUILD
+/*! \brief  Returns the cached primvars associated with a shader entry.
+            Will return nullptr if there are no primvars associated with the shader id.
+ */
+const TfTokenVector* HdVP2RenderDelegate::GetPrimvarsFromCache(const TfToken& id)
+{
+    return sShaderCache.GetPrimvarsFromCache(id);
+}
+
+/*! \brief  Adds the primvars associated with a shader id to the cache.
+ */
+bool HdVP2RenderDelegate::AddPrimvarsToCache(const TfToken& id, const TfTokenVector& primvars)
+{
+    return sShaderCache.AddPrimvarsToCache(id, primvars);
+}
+#endif
 
 /*! \brief  Returns a fallback shader instance when no material is bound.
 

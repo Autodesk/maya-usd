@@ -323,14 +323,13 @@ find_file(MAYA_OGSDEVICES_LIBRARY
     # Maya's Foundation library and OSX's framework.
     NO_CMAKE_SYSTEM_PATH
 )
-message(INFO " Got MAYA_OGSDEVICES_LIBRARY = ${MAYA_OGSDEVICES_LIBRARY}")
 if (MAYA_OGSDEVICES_LIBRARY)
     file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_2 REGEX "InitializeLightShader")
     if (HAS_LIGHTAPI_2)
         set(MAYA_LIGHTAPI_VERSION 2)
     endif()
 endif()
-message(INFO " Got MAYA_LIGHTAPI_VERSION = ${MAYA_LIGHTAPI_VERSION}")
+message(STATUS "Using Maya Light API Version ${MAYA_LIGHTAPI_VERSION}")
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE
