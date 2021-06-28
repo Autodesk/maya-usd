@@ -107,7 +107,6 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
 
                                               _tokens->UsdPrimvarColor,
 
-                                              _tokens->UsdUVTexture,
                                               _tokens->NwToNv,
 
                                               _tokens->UsdPrimvarReader_color,
