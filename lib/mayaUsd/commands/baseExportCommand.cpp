@@ -169,6 +169,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kStaticSingleSample,
         UsdMayaJobExportArgsTokens->staticSingleSample.GetText(),
         MSyntax::kBoolean);
+    syntax.addFlag(
+        kGeomSidednessFlag, UsdMayaJobExportArgsTokens->geomSidedness.GetText(), MSyntax::kString);
 
     // These are additional flags under our control.
     syntax.addFlag(kFrameRangeFlag, kFrameRangeFlagLong, MSyntax::kDouble, MSyntax::kDouble);

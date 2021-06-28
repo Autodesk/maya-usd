@@ -597,7 +597,11 @@ public:
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
                 UsdShadeInput materialInput = material.GetInput(inputName);
                 TF_VERIFY(itName != largestSet.cend());
-                materialInput.Set(*itName);
+                if (materialInput.GetTypeName() == SdfValueTypeNames->Token) {
+                    materialInput.Set(*itName);
+                } else if (materialInput.GetTypeName() == SdfValueTypeNames->String) {
+                    materialInput.Set((*itName).GetString());
+                }
             }
             _uvNamesToMaterial[largestSet] = material;
         }
@@ -640,7 +644,11 @@ public:
                 TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
             UsdShadeInput materialInput
                 = newMaterial.CreateInput(inputName, SdfValueTypeNames->Token);
-            materialInput.Set(*itName);
+            if (materialInput.GetTypeName() == SdfValueTypeNames->Token) {
+                materialInput.Set(*itName);
+            } else if (materialInput.GetTypeName() == SdfValueTypeNames->String) {
+                materialInput.Set((*itName).GetString());
+            }
         }
         auto insertResult
             = _uvNamesToMaterial.insert(MaterialMappings::value_type { uvNames, newMaterial });

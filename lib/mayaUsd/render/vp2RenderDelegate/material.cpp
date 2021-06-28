@@ -21,6 +21,7 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 #include <mayaUsd/utils/hash.h>
 
 #include <pxr/base/gf/matrix4d.h>
@@ -44,6 +45,7 @@
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFragmentManager.h>
+#include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
 #include <maya/MShaderManager.h>
 #include <maya/MStatus.h>
@@ -108,6 +110,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (varname)
     (result)
     (cardsUv)
+    (sourceColorSpace)
+    (sRGB)
+    (raw)
     (glslfx)
 
     (input)
@@ -213,19 +218,6 @@ bool _IsMaterialX(const HdMaterialNode& node)
     return ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
 }
 
-// Returns true if s begins with prefix
-inline bool _BeginsWith(const std::string& s, const std::string& prefix)
-{
-    return s.rfind(prefix, 0) == 0;
-}
-
-// Returns true if s ends with suffix
-inline bool _EndsWith(const std::string& s, const std::string& suffix)
-{
-    return s.size() >= suffix.size()
-        && s.compare(s.size() - suffix.size(), std::string::npos, suffix) == 0;
-}
-
 //! Return true if that node parameter has topological impact on the generated code.
 //
 // Swizzle and geompropvalue nodes are currently the only ones that have an attribute that affects
@@ -240,8 +232,11 @@ inline bool _EndsWith(const std::string& s, const std::string& suffix)
 // has the "uniform" metadata, yet is not affecting topology.
 bool _IsTopologicalNode(const HdMaterialNode2& inNode)
 {
-    return _BeginsWith(inNode.nodeTypeId.GetString(), "ND_swizzle_")
-        || _BeginsWith(inNode.nodeTypeId.GetString(), "ND_geompropvalue_");
+    auto _beginsWith
+        = [](const std::string& s, const std::string& prefix) { return s.rfind(prefix, 0) == 0; };
+
+    return _beginsWith(inNode.nodeTypeId.GetString(), "ND_swizzle_")
+        || _beginsWith(inNode.nodeTypeId.GetString(), "ND_geompropvalue_");
 }
 
 //! Helper function to generate a topo hash that can be used to detect if two networks share the
@@ -348,8 +343,13 @@ MStatus _SetFAParameter(
     const MString&              paramName,
     float                       val)
 {
-    if (_IsMaterialX(node) && _EndsWith(paramName.asChar(), "_in2")
-        && _EndsWith(node.identifier.GetString(), "FA")) {
+    auto _endsWith = [](const std::string& s, const std::string& suffix) {
+        return s.size() >= suffix.size()
+            && s.compare(s.size() - suffix.size(), std::string::npos, suffix) == 0;
+    };
+
+    if (_IsMaterialX(node) && _endsWith(paramName.asChar(), "_in2")
+        && _endsWith(node.identifier.GetString(), "FA")) {
         // Try as vector
         float vec[4] { val, val, val, val };
         return surfaceShader->setParameter(paramName, &vec[0]);
@@ -386,7 +386,7 @@ bool _IsUsdFloat2PrimvarReader(const HdMaterialNode& node)
 //! Helper utility function to test whether a node is a UsdShade UV texture.
 bool _IsUsdUVTexture(const HdMaterialNode& node)
 {
-    if (node.identifier == UsdImagingTokens->UsdUVTexture) {
+    if (node.identifier.GetString().rfind(UsdImagingTokens->UsdUVTexture.GetString(), 0) == 0) {
         return true;
     }
 
@@ -1242,6 +1242,10 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
     // Get the shader registry so I can look up the real names of shading nodes.
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
 
+    // We might need to query the working color space of Maya if we hit texture nodes. Delay
+    // the query until necessary.
+    MString mayaWorkingColorSpace;
+
     // Replace the authored node paths with simplified paths in the form of "node#". By doing so
     // we will be able to reuse shader effects among material networks which have the same node
     // identifiers and relationships but different node paths, reduce shader compilation overhead
@@ -1258,7 +1262,19 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         // everything to use the SdrShaderNode name.
         SdrShaderNodeConstPtr sdrNode
             = shaderReg.GetShaderNodeByIdentifierAndType(outNode.identifier, _tokens->glslfx);
-        outNode.identifier = TfToken(sdrNode->GetName());
+
+        if (_IsUsdUVTexture(node)) {
+            // We need to rename according to the Maya color working space pref:
+            if (!mayaWorkingColorSpace.length()) {
+                // Query the user pref:
+                mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
+                    "colorManagementPrefs -q -renderingSpaceName");
+            }
+            outNode.identifier = TfToken(
+                HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace).asChar());
+        } else {
+            outNode.identifier = TfToken(sdrNode->GetName());
+        }
 
         if (_IsUsdDrawModeNode(outNode)) {
             // I can't easily name a Maya fragment something with a '.' in it, so pick a different
@@ -2014,11 +2030,14 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 const float* val = value.UncheckedGet<GfVec4f>().data();
                 status = _surfaceShader->setParameter(paramName, val);
             } else if (value.IsHolding<TfToken>()) {
-                // The two parameters have been converted to sampler state
-                // before entering this loop.
-                if (_IsUsdUVTexture(node)
-                    && (token == UsdHydraTokens->wrapS || token == UsdHydraTokens->wrapT)) {
-                    status = samplerStatus;
+                if (_IsUsdUVTexture(node)) {
+                    if (token == UsdHydraTokens->wrapS || token == UsdHydraTokens->wrapT) {
+                        // The two parameters have been converted to sampler state before entering
+                        // this loop.
+                        status = samplerStatus;
+                    } else if (token == _tokens->sourceColorSpace) {
+                        status = MStatus::kSuccess;
+                    }
                 }
             } else if (value.IsHolding<SdfAssetPath>()) {
                 const SdfAssetPath& val = value.UncheckedGet<SdfAssetPath>();
@@ -2044,7 +2063,20 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                     if (status) {
 #endif
                         paramName = nodeName + "isColorSpaceSRGB";
-                        status = _surfaceShader->setParameter(paramName, info._isColorSpaceSRGB);
+                        bool isSRGB = info._isColorSpaceSRGB;
+                        auto scsIt = node.parameters.find(_tokens->sourceColorSpace);
+                        if (scsIt != node.parameters.end()) {
+                            const VtValue& scsValue = scsIt->second;
+                            if (scsValue.IsHolding<TfToken>()) {
+                                const TfToken& scsToken = scsValue.UncheckedGet<TfToken>();
+                                if (scsToken == _tokens->raw) {
+                                    isSRGB = false;
+                                } else if (scsToken == _tokens->sRGB) {
+                                    isSRGB = true;
+                                }
+                            }
+                        }
+                        status = _surfaceShader->setParameter(paramName, isSRGB);
                     }
                     if (status) {
                         paramName = nodeName + "stScale";

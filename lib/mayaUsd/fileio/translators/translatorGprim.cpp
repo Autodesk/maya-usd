@@ -37,12 +37,21 @@ void UsdMayaTranslatorGprim::Read(
 void UsdMayaTranslatorGprim::Write(
     const MObject&      mayaNode,
     const UsdGeomGprim& gprim,
-    UsdMayaPrimWriterContext*)
+    UsdMayaPrimWriterContext*,
+    GeomSidedness sidedness)
 {
     MFnDependencyNode depFn(mayaNode);
 
-    bool doubleSided = false;
-    if (UsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)) {
+    // Write the doubleSided attribute regardless of its value, and let USD decide whether it's
+    // required
+    bool doubleSided = (sidedness == GeomSidedness::Double);
+    if (sidedness == GeomSidedness::Derived) {
+        // Preserves the behaviour of writing to the boolean and then writing the attribute
+        // regardless of what the value may be, to let USD handle it.
+        if (UsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)) {
+            gprim.CreateDoubleSidedAttr(VtValue(doubleSided), true);
+        }
+    } else {
         gprim.CreateDoubleSidedAttr(VtValue(doubleSided), true);
     }
 

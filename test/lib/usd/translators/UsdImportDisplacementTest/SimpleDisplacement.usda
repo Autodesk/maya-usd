@@ -48,7 +48,7 @@ def Material "blinn6SG"
     {
         uniform token info:id = "UsdUVTexture"
         float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
-        asset inputs:file = @RGBA.png@
+        asset inputs:file = @../textures/RGBA.png@
         float2 inputs:st.connect = </blinn6SG/file28/TexCoordReader.outputs:result>
         token inputs:wrapS = "repeat"
         token inputs:wrapT = "repeat"
@@ -66,7 +66,7 @@ def Material "blinn6SG"
     {
         uniform token info:id = "UsdUVTexture"
         float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
-        asset inputs:file = @RGBA.png@
+        asset inputs:file = @../textures/RGBA.png@
         float2 inputs:st.connect = </blinn6SG/file12/TexCoordReader.outputs:result>
         token inputs:wrapS = "repeat"
         token inputs:wrapT = "repeat"

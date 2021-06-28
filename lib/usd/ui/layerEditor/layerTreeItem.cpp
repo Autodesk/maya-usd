@@ -12,9 +12,9 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/utils/utilSerialization.h>
 
-#include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/layerUtils.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
@@ -70,9 +70,7 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
     if (isInvalidLayer())
         return;
 
-    auto  subPaths = _layer->GetSubLayerPaths();
-    auto& resolver = ArGetResolver();
-    auto  anchor = toForwardSlashes(_layer->GetRealPath());
+    auto subPaths = _layer->GetSubLayerPaths();
 
     RecursionDetector defaultDetector;
     if (!recursionDetector) {
@@ -81,7 +79,7 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
     recursionDetector->push(_layer->GetRealPath());
 
     for (auto const path : subPaths) {
-        std::string actualPath = computePathToLoadSublayer(path, anchor, resolver);
+        std::string actualPath = SdfComputeAssetPathRelativeToLayer(_layer, path);
         auto        subLayer = SdfLayer::FindOrOpen(actualPath);
         if (subLayer) {
             if (recursionDetector->contains(subLayer->GetRealPath())) {

@@ -30,6 +30,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class TfToken;
 class UsdMayaPrimReaderArgs;
+class UsdMayaShadingModeImportContext;
+class UsdShadeShader;
 
 /// Base class for USD prim readers that import USD shader prims as Maya shading nodes.
 class UsdMayaShaderReader : public UsdMayaPrimReader
@@ -64,6 +66,9 @@ public:
     /// the imported shader nodes. Derived classes should override this and
     /// return the corresponding plugs for the USD attributes that should be
     /// considered for connections.
+    ///
+    /// Converters can potentially refine the plug returned by the downstream
+    /// reader.
     MAYAUSD_CORE_PUBLIC
     virtual MPlug
     GetMayaPlugForUsdAttrName(const TfToken& usdAttrName, const MObject& mayaObject) const;
@@ -78,6 +83,34 @@ public:
     /// that should be considered for connections.
     MAYAUSD_CORE_PUBLIC
     virtual TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const;
+
+    /// Is this a converter importer.
+    ///
+    /// Converters do not create any Maya object. They represent a UsdShade node which functions as
+    /// a conversion utility (swizzle, typecasting) and can therefore not return any valid plug
+    /// until a downstream non-converter node has been created.
+    ///
+    /// If the call returns true, the downstream node needed to complete the connection will be
+    /// returned in \p downstreamSchema and the requested output will be in \p downstreamOutputName
+    ///
+    MAYAUSD_CORE_PUBLIC
+    virtual bool IsConverter(UsdShadeShader& downstreamSchema, TfToken& downstreamOutputName);
+
+    /// Sets a downstream converter to use for caching calls to GetCreatedObject and
+    /// GetMayaPlugForUsdAttrName
+    ///
+    MAYAUSD_CORE_PUBLIC
+    virtual void SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader);
+
+    /// Gets the Maya object that was created by this reader
+    ///
+    /// The default implementation always returns the object created for the
+    /// prim found in the initial arguments.
+    ///
+    /// Converters are expected to pass the request to the downstream reader
+    MAYAUSD_CORE_PUBLIC
+    virtual MObject
+    GetCreatedObject(const UsdMayaShadingModeImportContext&, const UsdPrim& prim) const;
 };
 
 typedef std::shared_ptr<UsdMayaShaderReader> UsdMayaShaderReaderSharedPtr;

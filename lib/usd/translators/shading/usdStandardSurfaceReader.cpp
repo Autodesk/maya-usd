@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
 #include "usdMaterialReader.h"
 
 #include <mayaUsd/fileio/shaderReader.h>
@@ -75,26 +76,6 @@ protected:
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrUsdTranslators_StandardSurfaceReader);
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (base)
-    (baseColor)
-    (emission)
-    (emissionColor)
-    (metalness)
-    (specularColor)
-    (specularIOR)
-    (specularRoughness)
-    (coat)
-    (coatRoughness)
-    (transmission)
-    (normalCamera)
-);
-// clang-format on
-
 PxrUsdTranslators_StandardSurfaceReader::PxrUsdTranslators_StandardSurfaceReader(
     const UsdMayaPrimReaderArgs& readArgs)
     : PxrUsdTranslators_MaterialReader(readArgs)
@@ -120,7 +101,7 @@ void PxrUsdTranslators_StandardSurfaceReader::_ConvertToMaya(
     const TfToken& mayaAttrName,
     VtValue&       usdValue) const
 {
-    if (mayaAttrName == _tokens->transmission && usdValue.IsHolding<float>()) {
+    if (mayaAttrName == TrMayaTokens->transmission && usdValue.IsHolding<float>()) {
         usdValue = 1.0f - usdValue.UncheckedGet<float>();
     }
 }
@@ -131,13 +112,13 @@ void PxrUsdTranslators_StandardSurfaceReader::_OnBeforeReadAttribute(
 {
     MFnStandardSurfaceShader surfaceFn;
     surfaceFn.setObject(shaderFn.object());
-    if (mayaAttrName == _tokens->baseColor) {
+    if (mayaAttrName == TrMayaTokens->baseColor) {
         MColor color(surfaceFn.baseColor());
         float  scale(surfaceFn.base());
         color /= scale;
         surfaceFn.setBaseColor(color);
         surfaceFn.setBase(1.0f);
-    } else if (mayaAttrName == _tokens->emissionColor) {
+    } else if (mayaAttrName == TrMayaTokens->emissionColor) {
         MColor color(surfaceFn.emissionColor());
         float  scale(surfaceFn.emission());
         color /= scale;
@@ -158,25 +139,25 @@ PxrUsdTranslators_StandardSurfaceReader::GetMayaNameForUsdAttrName(const TfToken
 
     if (attrType == UsdShadeAttributeType::Input) {
         if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName) {
-            return _tokens->baseColor;
+            return TrMayaTokens->baseColor;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName) {
-            return _tokens->emissionColor;
+            return TrMayaTokens->emissionColor;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName) {
-            return _tokens->metalness;
+            return TrMayaTokens->metalness;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName) {
-            return _tokens->specularColor;
+            return TrMayaTokens->specularColor;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->IorAttrName) {
-            return _tokens->specularIOR;
+            return TrMayaTokens->specularIOR;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName) {
-            return _tokens->specularRoughness;
+            return TrMayaTokens->specularRoughness;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName) {
-            return _tokens->coatRoughness;
+            return TrMayaTokens->coatRoughness;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName) {
-            return _tokens->normalCamera;
+            return TrMayaTokens->normalCamera;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName) {
-            return _tokens->coat;
+            return TrMayaTokens->coat;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName) {
-            return _tokens->transmission;
+            return TrMayaTokens->transmission;
         }
     }
 
