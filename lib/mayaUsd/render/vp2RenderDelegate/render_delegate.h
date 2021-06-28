@@ -122,6 +122,10 @@ public:
     void CommitResources(HdChangeTracker* tracker) override;
 
     TfToken GetMaterialBindingPurpose() const override;
+#ifdef WANT_MATERIALX_BUILD
+    TfTokenVector GetShaderSourceTypes() const override;
+    TfTokenVector GetMaterialRenderContexts() const override;
+#endif
 
     MString GetLocalNodeName(const MString& name) const;
 
@@ -142,6 +146,10 @@ public:
 
     MHWRender::MShaderInstance* GetShaderFromCache(const TfToken& id);
     bool AddShaderToCache(const TfToken& id, const MHWRender::MShaderInstance& shader);
+#ifdef WANT_MATERIALX_BUILD
+    const TfTokenVector* GetPrimvarsFromCache(const TfToken& id);
+    bool                 AddPrimvarsToCache(const TfToken& id, const TfTokenVector& primvars);
+#endif
 
     const MHWRender::MSamplerState* GetSamplerState(const MHWRender::MSamplerStateDesc& desc) const;
 
@@ -166,8 +174,6 @@ private:
     SdfPath _id;          //!< Render delegate ID
     HdVP2ResourceRegistry
         _resourceRegistryVP2; //!< VP2 resource registry used for enqueue and execution of commits
-
-    HdVP2ShaderCache _shaderCache; //!< A thread-safe cache of named shaders.
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
