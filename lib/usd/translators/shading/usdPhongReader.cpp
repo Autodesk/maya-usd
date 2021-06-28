@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
 #include "usdLambertReader.h"
 
 #include <mayaUsd/fileio/shaderReader.h>
@@ -69,16 +70,6 @@ protected:
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrUsdTranslators_PhongReader);
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (cosinePower)
-    (specularColor)
-);
-// clang-format on
-
 PxrUsdTranslators_PhongReader::PxrUsdTranslators_PhongReader(const UsdMayaPrimReaderArgs& readArgs)
     : PxrUsdTranslators_LambertReader(readArgs)
 {
@@ -101,7 +92,7 @@ const TfToken& PxrUsdTranslators_PhongReader::_GetMayaNodeTypeName() const
 void PxrUsdTranslators_PhongReader::_ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue)
     const
 {
-    if (mayaAttrName == _tokens->cosinePower && usdValue.IsHolding<float>()) {
+    if (mayaAttrName == TrMayaTokens->cosinePower && usdValue.IsHolding<float>()) {
         float roughness = usdValue.UncheckedGet<float>();
         float squared = roughness * roughness;
         // In the maya UI, cosinePower goes from 2.0 to 100.0
@@ -119,9 +110,9 @@ TfToken PxrUsdTranslators_PhongReader::GetMayaNameForUsdAttrName(const TfToken& 
 
     if (attrType == UsdShadeAttributeType::Input) {
         if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName) {
-            return _tokens->specularColor;
+            return TrMayaTokens->specularColor;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName) {
-            return _tokens->cosinePower;
+            return TrMayaTokens->cosinePower;
         }
     }
 

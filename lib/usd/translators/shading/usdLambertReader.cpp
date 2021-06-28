@@ -15,6 +15,8 @@
 //
 #include "usdLambertReader.h"
 
+#include "shadingTokens.h"
+
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -48,18 +50,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrUsdTranslators_LambertReader);
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (color)
-    (transparency)
-    (incandescence)
-    (normalCamera)
-);
-// clang-format on
-
 PxrUsdTranslators_LambertReader::PxrUsdTranslators_LambertReader(
     const UsdMayaPrimReaderArgs& readArgs)
     : PxrUsdTranslators_MaterialReader(readArgs)
@@ -84,7 +74,7 @@ void PxrUsdTranslators_LambertReader::_OnBeforeReadAttribute(
     const TfToken&     mayaAttrName,
     MFnDependencyNode& shaderFn) const
 {
-    if (mayaAttrName == _tokens->color) {
+    if (mayaAttrName == TrMayaTokens->color) {
         MFnLambertShader lambertFn;
         lambertFn.setObject(shaderFn.object());
         MColor color(lambertFn.color());
@@ -101,7 +91,7 @@ void PxrUsdTranslators_LambertReader::_OnBeforeReadAttribute(
 void PxrUsdTranslators_LambertReader::_ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue)
     const
 {
-    if (mayaAttrName == _tokens->transparency && usdValue.IsHolding<float>()) {
+    if (mayaAttrName == TrMayaTokens->transparency && usdValue.IsHolding<float>()) {
         const float opacity = usdValue.UncheckedGet<float>();
         usdValue = GfVec3f(1.0f - opacity);
         return;
@@ -119,13 +109,13 @@ TfToken PxrUsdTranslators_LambertReader::GetMayaNameForUsdAttrName(const TfToken
 
     if (attrType == UsdShadeAttributeType::Input) {
         if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName) {
-            return _tokens->color;
+            return TrMayaTokens->color;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName) {
-            return _tokens->transparency;
+            return TrMayaTokens->transparency;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName) {
-            return _tokens->incandescence;
+            return TrMayaTokens->incandescence;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName) {
-            return _tokens->normalCamera;
+            return TrMayaTokens->normalCamera;
         }
     }
 

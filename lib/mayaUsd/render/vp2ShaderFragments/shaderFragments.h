@@ -48,6 +48,10 @@ public:
     //! Deregister all HdVP2 fragments
     MAYAUSD_CORE_PUBLIC
     static MStatus deregisterFragments();
+
+    //! Get the right UsdUVTexture fragment name for the working color space
+    MAYAUSD_CORE_PUBLIC
+    static MString getUsdUVTextureFragmentName(const MString& workingColorSpace);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

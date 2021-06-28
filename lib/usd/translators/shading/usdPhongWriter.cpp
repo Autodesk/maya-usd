@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
 #include "usdReflectWriter.h"
 
 #include <mayaUsd/fileio/shaderWriter.h>
@@ -54,15 +55,6 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(phong, PxrUsdTranslators_PhongWriter);
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (cosinePower)
-);
-// clang-format on
-
 PxrUsdTranslators_PhongWriter::PxrUsdTranslators_PhongWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
@@ -92,7 +84,7 @@ void PxrUsdTranslators_PhongWriter::Write(const UsdTimeCode& usdTime)
     }
 
     MPlug cosinePowerPlug = depNodeFn.findPlug(
-        depNodeFn.attribute(_tokens->cosinePower.GetText()),
+        depNodeFn.attribute(TrMayaTokens->cosinePower.GetText()),
         /* wantNetworkedPlug = */ true,
         &status);
     if (status == MS::kSuccess) {

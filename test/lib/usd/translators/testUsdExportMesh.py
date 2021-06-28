@@ -29,10 +29,10 @@ class testUsdExportMesh(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        inputPath = fixturesUtils.setUpClass(__file__)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
-        filePath = os.path.join(inputPath, "UsdExportMeshTest", "UsdExportMeshTest.ma")
-        cmds.file(filePath, force=True, open=True)
+        cls.meshTestFile = os.path.join(cls.inputPath, "UsdExportMeshTest", "UsdExportMeshTest.ma")
+        cmds.file(cls.meshTestFile, force=True, open=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -45,6 +45,7 @@ class testUsdExportMesh(unittest.TestCase):
                 self.assertAlmostEqual(arr1[i][j], arr2[i][j], places=3)
 
     def testExportAsCatmullClark(self):
+        cmds.file(self.meshTestFile, force=True, open=True)
         usdFile = os.path.abspath('UsdExportMesh_catmullClark.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none', defaultMeshScheme='catmullClark')
@@ -92,6 +93,7 @@ class testUsdExportMesh(unittest.TestCase):
         self.assertTrue(not m.GetNormalsAttr().Get())
 
     def testExportAsPoly(self):
+        cmds.file(self.meshTestFile, force=True, open=True)
         usdFile = os.path.abspath('UsdExportMesh_none.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none', defaultMeshScheme='none')
@@ -134,6 +136,7 @@ class testUsdExportMesh(unittest.TestCase):
             self.assertNotAlmostEqual(abs(n[0]) + abs(n[2]), 0.0, delta=1e-4)
 
     def testExportCreases(self):
+        cmds.file(self.meshTestFile, force=True, open=True)
         usdFile = os.path.abspath('UsdExportMesh_creases.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none')
@@ -157,6 +160,31 @@ class testUsdExportMesh(unittest.TestCase):
         creaseSharpnesses = m.GetCreaseSharpnessesAttr().Get()
         self.assertAlmostEqual(creaseSharpnesses, expectedCreaseSharpnesses,
             places=3)
+
+    def testSidedness(self):
+        for sidedness in ('single', 'double', 'derived'):
+            for doubleSided in (False, True):
+                output = os.path.join(self.inputPath, 'sidedness_{}_{}.usda'.format(sidedness, doubleSided))
+                cmds.file(new=True, force=True)
+
+                xform, _ = cmds.polyCube()
+                shape = cmds.listRelatives(xform)[0]
+
+                cmds.setAttr("{}.doubleSided".format(shape), doubleSided)
+                cmds.mayaUSDExport(file=output, selection=True, geomSidedness=sidedness)
+
+                stage = Usd.Stage.Open(output)
+                prim = stage.GetPrimAtPath("/pCube1")
+
+                value = UsdGeom.Mesh(prim).GetDoubleSidedAttr().Get()
+                if sidedness == 'derived':
+                    self.assertEqual(value, doubleSided, "Incorrect derived sidedness value")
+                elif sidedness == 'single':
+                    self.assertFalse(value, "Incorrect single sidedness value")
+                elif sidedness == 'double':
+                    self.assertTrue(value, "Incorrect double sidedness value")
+
+
 
 
 if __name__ == '__main__':

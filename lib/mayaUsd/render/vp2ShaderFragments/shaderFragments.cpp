@@ -25,6 +25,9 @@
 #include <maya/MShaderManager.h>
 #include <maya/MViewport2Renderer.h>
 
+#include <fstream>
+#include <regex>
+#include <sstream>
 #include <utility>
 #include <vector>
 
@@ -204,6 +207,19 @@ std::vector<std::pair<MString, MString>> _domainShaderInputNameMappings
 
 namespace {
 int _registrationCount = 0;
+
+std::map<std::string, std::string> _textureFragNames;
+} // namespace
+
+MString HdVP2ShaderFragments::getUsdUVTextureFragmentName(const MString& workingColorSpace)
+{
+    auto it = _textureFragNames.find(workingColorSpace.asChar());
+    if (it != _textureFragNames.end()) {
+        return it->second.c_str();
+    }
+
+    // Default to linrec 709, which only does the gamma correction part from sRGB.
+    return "UsdUVTexture_to_linrec709";
 }
 
 // Fragment registration should be done after VP2 has been initialized, to avoid any errors from
@@ -332,6 +348,121 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
+    {
+        // Register UVTexture readers for some common working spaces:
+        std::string uvTextureFile = TfStringPrintf("%s.xml", _tokens->UsdUVTexture.GetText());
+        uvTextureFile = _GetResourcePath(uvTextureFile);
+        std::ifstream xmlFile(uvTextureFile.c_str());
+        std::string   xmlString;
+        xmlFile.seekg(0, std::ios::end);
+        xmlString.reserve(xmlFile.tellg());
+        xmlFile.seekg(0, std::ios::beg);
+        xmlString.assign(
+            (std::istreambuf_iterator<char>(xmlFile)), std::istreambuf_iterator<char>());
+
+        const std::regex RE_FRAG("UsdUVTexture");
+        const std::regex RE_GLSL("TO_MAYA_COLOR_SPACE_GLSL");
+        const std::regex RE_HLSL("TO_MAYA_COLOR_SPACE_HLSL");
+        const std::regex RE_CG("TO_MAYA_COLOR_SPACE_CG");
+
+        // We create custom UsdUVTexture fragments. We use the original UsdUVTexture.xml as template
+        // where we replace four important tokens with custom code:
+        //
+        //  - UsdUVTexture gets renamed by appending the name of the working space we are targetting
+        //  - The three TO_MAYA_COLOR_SPACE_* markers gets replaced by the correct 4x4 matrix
+        //  multiplication that will take the color from a "scene-linear Rec 709/sRGB" to the final
+        //  color space. The syntax of the multiplication varies by shading language, and the
+        //  template is:
+        //     GLSL: outColor = mat4( ... ) * outColor;
+        //     HLSL: outColor = mul(outColor, float4x4( ... ));
+        //       CG: outColor = mul(float4x4( transpose( ... ) ), outColor);
+        //    Where the ... denotes a 4x4 matrix expanded from the 3x3 matrix passed in as parameter
+        //    to the function (alpha is always left untouched).
+        //
+        auto registerSpace = [&](const std::string& spaceName,
+                                 const std::string& fragName,
+                                 const float*       convMatrix) {
+            if (!fragmentManager->hasFragment(fragName.c_str())) {
+                std::string xmlFinal = std::regex_replace(xmlString, RE_FRAG, fragName.c_str());
+                if (convMatrix) {
+                    std::stringstream op_glsl, op_hlsl, op_cg;
+                    op_glsl << "outColor = mat4(";
+                    op_hlsl << "outColor = mul(outColor, float4x4(";
+                    op_cg << "outColor = mul(float4x4(";
+                    for (int i = 0; i < 3; ++i) {
+                        op_glsl << convMatrix[3 * i] << ", " << convMatrix[3 * i + 1] << ", "
+                                << convMatrix[3 * i + 2] << ", " << 0.0 << ", ";
+                        op_hlsl << convMatrix[3 * i] << ", " << convMatrix[3 * i + 1] << ", "
+                                << convMatrix[3 * i + 2] << ", " << 0.0 << ", ";
+                        // Cg needs transposed matrix:
+                        op_cg << convMatrix[i] << ", " << convMatrix[3 + i] << ", "
+                              << convMatrix[6 + i] << ", " << 0.0 << ", ";
+                    }
+                    op_glsl << 0.0 << ", " << 0.0 << ", " << 0.0 << ", " << 1.0 << ") * outColor;";
+                    op_hlsl << 0.0 << ", " << 0.0 << ", " << 0.0 << ", " << 1.0 << "));";
+                    op_cg << 0.0 << ", " << 0.0 << ", " << 0.0 << ", " << 1.0 << "), outColor);";
+                    xmlFinal = std::regex_replace(xmlFinal, RE_GLSL, op_glsl.str().c_str());
+                    xmlFinal = std::regex_replace(xmlFinal, RE_HLSL, op_hlsl.str().c_str());
+                    xmlFinal = std::regex_replace(xmlFinal, RE_CG, op_cg.str().c_str());
+                } else {
+                    xmlFinal = std::regex_replace(xmlFinal, RE_GLSL, "");
+                    xmlFinal = std::regex_replace(xmlFinal, RE_HLSL, "");
+                    xmlFinal = std::regex_replace(xmlFinal, RE_CG, "");
+                }
+                const MString addedName
+                    = fragmentManager->addShadeFragmentFromBuffer(xmlFinal.c_str(), false);
+                if (addedName == fragName.c_str()) {
+                    _textureFragNames.emplace(spaceName, fragName);
+                } else {
+                    MGlobal::displayError(
+                        TfStringPrintf(
+                            "Failed to register UsdUVTexture fragment graph for color space: %s",
+                            spaceName.c_str())
+                            .c_str());
+                }
+            }
+        };
+
+        // LINEAR is equivalent to "scene-linear Rec 709/sRGB", so we do not need a transformation
+        registerSpace("scene-linear Rec 709/sRGB", "UsdUVTexture_to_linrec709", nullptr);
+
+        // clang-format off
+        const float LINEAR_TO_ACESCG[9]
+            = { 0.61309740, 0.07019372, 0.02061559,
+                0.33952315, 0.91635388, 0.10956977,
+                0.04737945, 0.01345240, 0.86981463 };
+        // clang-format on
+        registerSpace("ACEScg", "UsdUVTexture_to_ACEScg", LINEAR_TO_ACESCG);
+
+        // clang-format off
+        const float LINEAR_TO_ACES2065_1[9]
+            = { 0.43963298, 0.08977644, 0.01754117,
+                0.38298870, 0.81343943, 0.11154655,
+                0.17737832, 0.09678413, 0.87091228 };
+        // clang-format on
+        registerSpace("ACES2065-1", "UsdUVTexture_to_ACES2065_1", LINEAR_TO_ACES2065_1);
+
+        // clang-format off
+        const float LINEAR_TO_SCENE_LINEAR_DCI_P3_D65[9]
+            = { 0.82246197, 0.03319420, 0.01708263,
+                0.17753803, 0.96680580, 0.07239744,
+                0.,         0.,         0.91051993 };
+        // clang-format on
+        registerSpace(
+            "scene-linear DCI-P3 D65",
+            "UsdUVTexture_to_lin_DCI_P3_D65",
+            LINEAR_TO_SCENE_LINEAR_DCI_P3_D65);
+
+        // clang-format off
+        const float LINEAR_TO_SCENE_LINEAR_REC_2020[9]
+            = { 0.62740389, 0.06909729, 0.01639144,
+                0.32928304, 0.91954039, 0.08801331,
+                0.04331307, 0.01136232, 0.89559525 };
+        // clang-format on
+        registerSpace(
+            "scene-linear Rec.2020", "UsdUVTexture_to_linrec2020", LINEAR_TO_SCENE_LINEAR_REC_2020);
+    }
+
 #if MAYA_API_VERSION >= 20210000
 
     // Register automatic shader stage input parameters.
@@ -392,6 +523,16 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
     }
 
 #endif
+
+    // De-register the various UsdUVTexture fragments:
+    for (const auto& txtFrag : _textureFragNames) {
+        if (!fragmentManager->removeFragment(txtFrag.second.c_str())) {
+            MGlobal::displayWarning(
+                TfStringPrintf("Failed to remove fragment graph: %s", txtFrag.second.c_str())
+                    .c_str());
+            return MS::kFailure;
+        }
+    }
 
     // De-register UsdPreviewsurface graph:
     if (!fragmentManager->removeFragment(

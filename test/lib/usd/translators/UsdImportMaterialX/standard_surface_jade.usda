@@ -1,0 +1,118 @@
+#usda 1.0
+(
+    customLayerData = {
+        string colorSpace = "lin_rec709"
+    }
+    doc = """Generated from Composed Stage of root layer
+"""
+)
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "Jade"
+        {
+            float inputs:base = 0.5
+            color3f inputs:base_color = (0.0603, 0.4398, 0.1916)
+            float inputs:coat
+            float inputs:coat_affect_color
+            float inputs:coat_affect_roughness
+            float inputs:coat_anisotropy
+            color3f inputs:coat_color
+            float inputs:coat_IOR
+            float3 inputs:coat_normal
+            float inputs:coat_rotation
+            float inputs:coat_roughness
+            float inputs:diffuse_roughness
+            float inputs:emission
+            color3f inputs:emission_color
+            float inputs:metalness
+            float3 inputs:normal
+            color3f inputs:opacity
+            float inputs:sheen
+            color3f inputs:sheen_color
+            float inputs:sheen_roughness
+            float inputs:specular
+            float inputs:specular_anisotropy = 0.5
+            color3f inputs:specular_color
+            float inputs:specular_IOR = 2.418
+            float inputs:specular_rotation
+            float inputs:specular_roughness = 0.25
+            float inputs:subsurface = 0.4
+            float inputs:subsurface_anisotropy
+            color3f inputs:subsurface_color = (0.0603, 0.4398, 0.1916)
+            color3f inputs:subsurface_radius
+            float inputs:subsurface_scale
+            float3 inputs:tangent
+            float inputs:thin_film_IOR
+            float inputs:thin_film_thickness
+            bool inputs:thin_walled
+            float inputs:transmission
+            color3f inputs:transmission_color
+            float inputs:transmission_depth
+            float inputs:transmission_dispersion
+            float inputs:transmission_extra_roughness
+            color3f inputs:transmission_scatter
+            float inputs:transmission_scatter_anisotropy
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/Jade/ND_standard_surface_surfaceshader.outputs:surface>
+
+            def Shader "ND_standard_surface_surfaceshader"
+            {
+                uniform token info:id = "ND_standard_surface_surfaceshader"
+                float inputs:base.connect = </MaterialX/Materials/Jade.inputs:base>
+                color3f inputs:base_color.connect = </MaterialX/Materials/Jade.inputs:base_color>
+                float inputs:coat.connect = </MaterialX/Materials/Jade.inputs:coat>
+                float inputs:coat_affect_color.connect = </MaterialX/Materials/Jade.inputs:coat_affect_color>
+                float inputs:coat_affect_roughness.connect = </MaterialX/Materials/Jade.inputs:coat_affect_roughness>
+                float inputs:coat_anisotropy.connect = </MaterialX/Materials/Jade.inputs:coat_anisotropy>
+                color3f inputs:coat_color.connect = </MaterialX/Materials/Jade.inputs:coat_color>
+                float inputs:coat_IOR.connect = </MaterialX/Materials/Jade.inputs:coat_IOR>
+                float3 inputs:coat_normal.connect = </MaterialX/Materials/Jade.inputs:coat_normal>
+                float inputs:coat_rotation.connect = </MaterialX/Materials/Jade.inputs:coat_rotation>
+                float inputs:coat_roughness.connect = </MaterialX/Materials/Jade.inputs:coat_roughness>
+                float inputs:diffuse_roughness.connect = </MaterialX/Materials/Jade.inputs:diffuse_roughness>
+                float inputs:emission.connect = </MaterialX/Materials/Jade.inputs:emission>
+                color3f inputs:emission_color.connect = </MaterialX/Materials/Jade.inputs:emission_color>
+                float inputs:metalness.connect = </MaterialX/Materials/Jade.inputs:metalness>
+                float3 inputs:normal.connect = </MaterialX/Materials/Jade.inputs:normal>
+                color3f inputs:opacity.connect = </MaterialX/Materials/Jade.inputs:opacity>
+                float inputs:sheen.connect = </MaterialX/Materials/Jade.inputs:sheen>
+                color3f inputs:sheen_color.connect = </MaterialX/Materials/Jade.inputs:sheen_color>
+                float inputs:sheen_roughness.connect = </MaterialX/Materials/Jade.inputs:sheen_roughness>
+                float inputs:specular.connect = </MaterialX/Materials/Jade.inputs:specular>
+                float inputs:specular_anisotropy.connect = </MaterialX/Materials/Jade.inputs:specular_anisotropy>
+                color3f inputs:specular_color.connect = </MaterialX/Materials/Jade.inputs:specular_color>
+                float inputs:specular_IOR.connect = </MaterialX/Materials/Jade.inputs:specular_IOR>
+                float inputs:specular_rotation.connect = </MaterialX/Materials/Jade.inputs:specular_rotation>
+                float inputs:specular_roughness.connect = </MaterialX/Materials/Jade.inputs:specular_roughness>
+                float inputs:subsurface.connect = </MaterialX/Materials/Jade.inputs:subsurface>
+                float inputs:subsurface_anisotropy.connect = </MaterialX/Materials/Jade.inputs:subsurface_anisotropy>
+                color3f inputs:subsurface_color.connect = </MaterialX/Materials/Jade.inputs:subsurface_color>
+                color3f inputs:subsurface_radius.connect = </MaterialX/Materials/Jade.inputs:subsurface_radius>
+                float inputs:subsurface_scale.connect = </MaterialX/Materials/Jade.inputs:subsurface_scale>
+                float3 inputs:tangent.connect = </MaterialX/Materials/Jade.inputs:tangent>
+                float inputs:thin_film_IOR.connect = </MaterialX/Materials/Jade.inputs:thin_film_IOR>
+                float inputs:thin_film_thickness.connect = </MaterialX/Materials/Jade.inputs:thin_film_thickness>
+                bool inputs:thin_walled.connect = </MaterialX/Materials/Jade.inputs:thin_walled>
+                float inputs:transmission.connect = </MaterialX/Materials/Jade.inputs:transmission>
+                color3f inputs:transmission_color.connect = </MaterialX/Materials/Jade.inputs:transmission_color>
+                float inputs:transmission_depth.connect = </MaterialX/Materials/Jade.inputs:transmission_depth>
+                float inputs:transmission_dispersion.connect = </MaterialX/Materials/Jade.inputs:transmission_dispersion>
+                float inputs:transmission_extra_roughness.connect = </MaterialX/Materials/Jade.inputs:transmission_extra_roughness>
+                color3f inputs:transmission_scatter.connect = </MaterialX/Materials/Jade.inputs:transmission_scatter>
+                float inputs:transmission_scatter_anisotropy.connect = </MaterialX/Materials/Jade.inputs:transmission_scatter_anisotropy>
+                token outputs:surface
+            }
+        }
+    }
+
+    def "Shaders"
+    {
+        def Shader "ND_standard_surface_surfaceshader"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            token outputs:surface
+        }
+    }
+}

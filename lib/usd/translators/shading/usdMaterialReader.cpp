@@ -15,6 +15,8 @@
 //
 #include "usdMaterialReader.h"
 
+#include "shadingTokens.h"
+
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
@@ -41,14 +43,6 @@
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (outColor)
-);
-// clang-format on
 
 PxrUsdTranslators_MaterialReader::PxrUsdTranslators_MaterialReader(
     const UsdMayaPrimReaderArgs& readArgs)
@@ -152,7 +146,7 @@ PxrUsdTranslators_MaterialReader::GetMayaNameForUsdAttrName(const TfToken& usdAt
         return usdOutputName;
     } else if (attrType == UsdShadeAttributeType::Output) {
         if (usdOutputName == UsdShadeTokens->surface) {
-            return _tokens->outColor;
+            return TrMayaTokens->outColor;
         }
     }
 

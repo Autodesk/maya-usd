@@ -83,6 +83,10 @@ UsdShadeOutput CreateShaderOutputAndConnectMaterial(
     const TfToken&    terminalName,
     const TfToken&    renderContext);
 
+// Connects a place2dTexture to a texture node
+MAYAUSD_CORE_PUBLIC
+MObject CreatePlace2dTextureAndConnectTexture(MObject textureNode);
+
 } // namespace UsdMayaShadingUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE

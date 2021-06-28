@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
 #include "usdReflectWriter.h"
 
 #include <mayaUsd/fileio/shaderWriter.h>
@@ -52,15 +53,6 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(phongE, PxrUsdTranslators_PhongEWriter);
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya
-    (roughness)
-);
-// clang-format on
-
 PxrUsdTranslators_PhongEWriter::PxrUsdTranslators_PhongEWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
@@ -91,7 +83,7 @@ void PxrUsdTranslators_PhongEWriter::Write(const UsdTimeCode& usdTime)
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        _tokens->roughness,
+        TrMayaTokens->roughness,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName,
         usdTime);
@@ -101,7 +93,7 @@ void PxrUsdTranslators_PhongEWriter::Write(const UsdTimeCode& usdTime)
 TfToken
 PxrUsdTranslators_PhongEWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
-    if (mayaAttrName == _tokens->roughness) {
+    if (mayaAttrName == TrMayaTokens->roughness) {
         return UsdShadeUtils::GetFullName(
             PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, UsdShadeAttributeType::Input);
     }
