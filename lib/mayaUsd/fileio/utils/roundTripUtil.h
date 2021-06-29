@@ -61,6 +61,14 @@ struct UsdMayaRoundTripUtil
 
     MAYAUSD_CORE_PUBLIC
     static void MarkAttributeAsArray(const UsdAttribute& attr, const unsigned int index);
+
+    /// Texcoord primvars will get renamed st, st1, st2... We need to store and retrieve the
+    /// original Maya name
+    MAYAUSD_CORE_PUBLIC
+    static TfToken GetPrimVarMayaName(const UsdAttribute& attr);
+
+    MAYAUSD_CORE_PUBLIC
+    static void SetPrimVarMayaName(const UsdAttribute& attr, const TfToken& name);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -33,11 +33,7 @@ class testUsdExportMaterialX(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        suffix = ""
-        if mayaUsdLib.WriteUtil.WriteMap1AsST():
-            suffix += "ST"
-
-        inputPath = fixturesUtils.setUpClass(__file__, suffix)
+        inputPath = fixturesUtils.setUpClass(__file__)
 
         mayaFile = os.path.join(inputPath, 'UsdExportMaterialXTest',
             'StandardSurfaceTextured.ma')
@@ -89,7 +85,7 @@ class testUsdExportMaterialX(unittest.TestCase):
         self.assertEqual(material_path, base_path)
 
         # Needs a resolved inputs:file1:varname attribute:
-        self.assertEqual(mat.GetInput("file1:varname").GetAttr().Get(), "map1")
+        self.assertEqual(mat.GetInput("file1:varname").GetAttr().Get(), "st")
 
         # Needs a MaterialX surface source:
         shader = mat.ComputeSurfaceSource("mtlx")[0]

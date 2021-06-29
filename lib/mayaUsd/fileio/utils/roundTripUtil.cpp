@@ -43,6 +43,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // of the array is likely encoded in the attribute name though we could
     // extend this to store the name and index.
     (arrayIndex)
+
+    // This annotates the original Maya name of a primvar
+    (name)
 );
 // clang-format on
 
@@ -143,6 +146,18 @@ bool UsdMayaRoundTripUtil::GetAttributeArray(const UsdAttribute& attr, unsigned 
 void UsdMayaRoundTripUtil::MarkAttributeAsArray(const UsdAttribute& attr, const unsigned int index)
 {
     _SetMayaDictValue(attr, _tokens->arrayIndex, index);
+}
+
+TfToken UsdMayaRoundTripUtil::GetPrimVarMayaName(const UsdAttribute& attr)
+{
+    TfToken ret;
+    _GetMayaDictValue(attr, _tokens->name, &ret);
+    return ret;
+}
+
+void UsdMayaRoundTripUtil::SetPrimVarMayaName(const UsdAttribute& attr, const TfToken& name)
+{
+    _SetMayaDictValue(attr, _tokens->name, name);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

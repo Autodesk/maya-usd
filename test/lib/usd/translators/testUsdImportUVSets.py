@@ -71,9 +71,6 @@ class testUsdImportUVSets(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.asFloat2 = mayaUsdLib.ReadUtil.ReadFloat2AsUV()
-        cls.defaultUVName = "st"
-        if mayaUsdLib.ReadUtil.ReadSTAsMap1():
-            cls.defaultUVName = "map1"
 
         cls.inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
@@ -139,7 +136,7 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
+        self._AssertUVSet(mayaCubeMesh, "st", expectedValues,
             expectedNumValues=14, expectedNumUVShells=1)
 
     def testImportMap1UVSet(self):
@@ -210,7 +207,7 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
+        self._AssertUVSet(mayaCubeMesh, "st", expectedValues,
             expectedNumValues=14, expectedNumUVShells=2)
 
     def testImportOneAssignedFaceUVSet(self):
@@ -227,7 +224,7 @@ class testUsdImportUVSets(unittest.TestCase):
             11: Gf.Vec2f(0.375, 0.75)
         }
 
-        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
+        self._AssertUVSet(mayaCubeMesh, "st", expectedValues,
             expectedNumValues=4, expectedNumUVShells=1)
 
     def testImportCompressedUVSets(self):
@@ -393,7 +390,7 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
+        self._AssertUVSet(mayaCubeMesh, "st", expectedValues,
             expectedNumValues=14)
 
 
