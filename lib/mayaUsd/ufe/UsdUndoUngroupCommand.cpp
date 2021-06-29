@@ -47,7 +47,6 @@ void UsdUndoUngroupCommand::execute()
 
     // Handling insertion (a.k.a move ) is best to be done on Maya side to cover
     // all possible flags ( absolute, relative, world, parent ).
-    // For now, the prim removal must still happen in the plugin side. HS, June17, 2021
 
     // remove group prim
     MayaUsd::ufe::InAddOrDeleteOperation ad;
