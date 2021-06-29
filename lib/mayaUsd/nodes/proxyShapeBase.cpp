@@ -87,7 +87,7 @@
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <ghc/filesystem.hpp>
+#include <boost/filesystem.hpp>
 
 #include <map>
 #include <string>
@@ -623,7 +623,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     "ProxyShapeBase::reloadStage original USD file path is %s\n",
                     fileString.c_str());
 
-            ghc::filesystem::path filestringPath(fileString);
+            boost::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
                 fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
                 TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
@@ -657,7 +657,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
 
             {
+#if AR_VERSION == 1
                 PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
+#endif
 
                 // When opening or creating stages we must have an active UsdStageCache.
                 // The stage cache is the only one who holds a strong reference to the

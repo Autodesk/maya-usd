@@ -63,7 +63,7 @@
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <ghc/filesystem.hpp>
+#include <boost/filesystem.hpp>
 
 #if defined(WANT_UFE_BUILD)
 #include "ufe/path.h"
@@ -1246,7 +1246,7 @@ void ProxyShape::loadStage()
                 }
             }
         } else {
-            ghc::filesystem::path filestringPath(fileString);
+            boost::filesystem::path filestringPath(fileString);
             if (filestringPath.is_absolute()) {
                 fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
                 TF_DEBUG(ALUSDMAYA_TRANSLATORS)
@@ -1320,6 +1320,7 @@ void ProxyShape::loadStage()
 
             const MString assetResolverConfig = inputStringValue(dataBlock, m_assetResolverConfig);
 
+#if AR_VERSION == 1
             if (assetResolverConfig.length() == 0) {
                 // Initialise the asset resolver with the filepath
                 PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
@@ -1327,6 +1328,8 @@ void ProxyShape::loadStage()
                 // Initialise the asset resolver with the resolverConfig string
                 PXR_NS::ArGetResolver().ConfigureResolverForAsset(assetResolverConfig.asChar());
             }
+#endif
+
             AL_END_PROFILE_SECTION();
 
             AL_BEGIN_PROFILE_SECTION(UpdateGlobalVariantFallbacks);
