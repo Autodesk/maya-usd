@@ -587,10 +587,12 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     menuItem -label $label -enable $enabled -c $cmd;
 
     if($isIncoming) {
+        // Find the incoming node from the connections
         $incoming = `listConnections -s true -d false -c true $proxyShape`;
         string $incomingNode = "";
         for($i=0;$i<size($incoming);$i+=2) {
             $j = $i+1;
+            // The instageData connection wins over StageCatchId so check that first
             if($incoming[$i] == $proxyShape+".inStageData") {
                 $incomingNode = $incoming[$j];
             }
@@ -598,7 +600,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
                 $incomingNode = $incoming[$j];
             }
         }
-
+        // If we found an incoming node we set the label
         if($incomingNode != "") {
             $label = "Select Incoming Node "+$incomingNode;
             $cmd = "select "+$incomingNode;

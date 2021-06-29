@@ -19,6 +19,8 @@
 #include "abstractCommandHook.h"
 #include "mayaSessionState.h"
 
+#include <mayaUsd/utils/util.h>
+
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usd/stage.h>
@@ -34,6 +36,9 @@
 #define STR(x) std::string(x)
 
 namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE;
+
 std::string quote(const std::string& string) { return STR(" \"") + string + STR("\""); }
 
 MString executeMel(const std::string& commandString)
@@ -54,7 +59,40 @@ MString executeMel(const std::string& commandString)
 // maya doesn't support spaces in undo chunk names...
 MString cleanChunkName(QString name) { return quote(name.replace(" ", "_").toStdString()).c_str(); }
 
+std::string GetProxyShapeName(const std::string& proxyShapePath)
+{
+    std::size_t found = proxyShapePath.find_last_of("|");
+    if (std::string::npos != found) {
+        return proxyShapePath.substr(found + 1);
+    } else {
+        return proxyShapePath;
+    }
+}
+
+bool GetBooleanAttributeOnProxyShape(
+    const std::string& proxyShapePath,
+    const std::string& attributeName)
+{
+    if (proxyShapePath.empty()) {
+        return false;
+    }
+
+    MObject mobj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(GetProxyShapeName(proxyShapePath), mobj);
+    if (status == MStatus::kSuccess) {
+        MFnDependencyNode fn;
+        fn.setObject(mobj);
+        bool attribute;
+        if (UsdMayaUtil::getPlugValue(fn, attributeName.c_str(), &attribute)) {
+            return attribute;
+        }
+    }
+
+    return false;
+}
+
 } // namespace
+
 namespace UsdLayerEditor {
 std::string MayaCommandHook::proxyShapePath()
 {
@@ -205,39 +243,12 @@ ufeSelectCmd.replaceWith(sn)
     MGlobal::executePythonCommand(script.c_str(), true, false);
 }
 
-std::string GetProxyShapeName(const std::string& proxyShapePath)
-{
-    std::size_t found = proxyShapePath.find_last_of("|");
-    if (std::string::npos != found) {
-        return proxyShapePath.substr(found + 1);
-    } else {
-        return proxyShapePath;
-    }
-}
-
-bool GetBooleanAttributeOnProxyShape(
-    const std::string& proxyShapePath,
-    const std::string& attributeName)
-{
-    if (proxyShapePath.empty()) {
-        return false;
-    }
-    std::string cmd = "getAttr " + GetProxyShapeName(proxyShapePath) + "." + attributeName;
-    int         result = 0;
-    auto        status = MGlobal::executeCommand(MString(cmd.c_str()), result, false, false);
-    if (status != MS::kSuccess || result == 0) {
-        return false;
-    }
-
-    return true;
-}
-
-bool MayaCommandHook::isProxyShapeStageIncoming(std::string proxyShapePath)
+bool MayaCommandHook::isProxyShapeStageIncoming(const std::string& proxyShapePath)
 {
     return GetBooleanAttributeOnProxyShape(proxyShapePath, "stageIncoming");
 }
 
-bool MayaCommandHook::isProxyShapeSharedStage(std::string proxyShapePath)
+bool MayaCommandHook::isProxyShapeSharedStage(const std::string& proxyShapePath)
 {
     return GetBooleanAttributeOnProxyShape(proxyShapePath, "shareStage");
 }

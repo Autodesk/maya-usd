@@ -2445,9 +2445,9 @@ std::set<std::string> UsdMayaUtil::getAllSublayers(const PXR_NS::SdfLayerRefPtr&
         processing.pop_front();
         SdfSubLayerProxy sublayerPaths = layerToProcess->GetSubLayerPaths();
         for (auto path : sublayerPaths) {
-            allSublayers.insert(path);
-            SdfLayerRefPtr sublayer = SdfLayer::Find(path);
+            SdfLayerRefPtr sublayer = SdfLayer::FindOrOpen(path);
             if (sublayer) {
+                allSublayers.insert(path);
                 processing.push_back(sublayer);
             }
         }

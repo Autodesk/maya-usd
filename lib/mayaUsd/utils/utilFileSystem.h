@@ -76,12 +76,12 @@ MAYAUSD_CORE_PUBLIC
 bool pathAppendPath(std::string& a, const std::string& b);
 
 /**
- * Appends `b` to the path `a` and returns directory separators as necessary.
+ * Appends `b` to the path `a` and returns a path (by appending two input paths).
  *
  * @param a         A string that respresents the first path
  * @param b         A string that respresents the second path
  *
- * @return         the two paths joinied by a seperator
+ * @return         the two paths joined by a seperator
  */
 MAYAUSD_CORE_PUBLIC
 std::string appendPaths(const std::string& a, const std::string& b);

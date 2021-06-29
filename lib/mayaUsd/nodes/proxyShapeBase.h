@@ -275,6 +275,9 @@ public:
     bool isUfeSelectionEnabled() const { return _isUfeSelectionEnabled; }
 
     MAYAUSD_CORE_PUBLIC
+    bool isShareableStage() const;
+
+    MAYAUSD_CORE_PUBLIC
     bool isStageIncoming() const;
 
     MAYAUSD_CORE_PUBLIC
@@ -374,8 +377,15 @@ private:
     // For unshared composition
     SdfLayerRefPtr _unsharedStageRootLayer;
 
+    // We need to keep track of unshared sublayers (otherwise they get removed)
+    std::vector<SdfLayerRefPtr> _unsharedStageRootSublayers;
+
     // Keep track of the incoming layers
     std::set<std::string> _incomingLayers;
+
+    // Keep track of source stage's root identifier (when we change the source we can swap it
+    // in-place in the layer heirarchy)
+    std::string _sourceRootIdentifier;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

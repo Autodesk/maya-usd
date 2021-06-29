@@ -174,7 +174,7 @@ void LayerTreeItemDelegate::paint_drawText(QPainter* painter, QRectC rect, Item 
     QString text = item->data(Qt::DisplayRole).value<QString>();
 
     // draw a * for dirty layers
-    if (item->needsSaving() || item->isDirty()) {
+    if (item->needsSaving() || (item->isDirty() && !item->isReadOnly())) {
         // item.needsSaving returns false for sessionLayer, but I think we should show the dirty
         // flag for it
         text += "*";

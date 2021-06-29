@@ -84,7 +84,7 @@ public:
     virtual bool        layerAppearsMuted() = 0;
     virtual bool        layerIsMuted() = 0;
     virtual bool        layerIsReadOnly() = 0;
-    virtual std::string proxyShapeName() = 0;
+    virtual std::string proxyShapeName() const = 0;
 
     virtual void removeSubLayer() = 0;
     virtual void saveEdits() = 0;

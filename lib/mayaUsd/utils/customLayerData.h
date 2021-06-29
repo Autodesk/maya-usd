@@ -32,13 +32,24 @@ const std::string kReferencedLayersToken = "maya_shared_layers";
 // Token for export file path
 const std::string kExportFilePathToken = "maya_export_file_path";
 
-/*! \brief Get the String Array custom data on the layer
+/**
+ * Get the String Array custom data on the layer
+ *
+ * @param layer     The layer the custom data is on
+ * @param token     The key (dictionary) where the data is stored
+ *
+ * @return          Returns the string array (empty if not found)
  */
 MAYAUSD_CORE_PUBLIC
 PXR_NS::VtArray<std::string>
 getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const std::string& token);
 
-/*! \brief Get the String Array custom data on the layer
+/**
+ * Set the String Array custom data on the layer
+ *
+ * @param data      The array that we want to save in the custom data
+ * @param layer     The layer the custom data will be stored in
+ * @param token     The key (dictionary) where the data is stored
  */
 MAYAUSD_CORE_PUBLIC
 void setStringArray(
@@ -46,12 +57,23 @@ void setStringArray(
     const PXR_NS::SdfLayerRefPtr&       layer,
     const std::string&                  token);
 
-/*! \brief Get the String custom data on the layer
+/**
+ * Get the String custom data on the laye
+ *
+ * @param layer     The layer the custom data is on
+ * @param token     The key (dictionary) where the data is stored
+ *
+ * @return          Returns the string (empty if not found)
  */
 MAYAUSD_CORE_PUBLIC
 std::string getString(const PXR_NS::SdfLayerRefPtr& layer, const std::string& token);
 
-/*! \brief Get the String custom data on the layer
+/**
+ * Set the String Array custom data on the layer
+ *
+ * @param data      The string that we want to save in the custom data
+ * @param layer     The layer the custom data will be stored in
+ * @param token     The key (dictionary) where the data is stored
  */
 MAYAUSD_CORE_PUBLIC
 void setString(

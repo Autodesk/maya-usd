@@ -248,14 +248,7 @@ bool LayerTreeItem::sublayerOfShared() const
     return false;
 }
 
-bool LayerTreeItem::isReadOnly() const
-{
-    if (_isSharedLayer || !_layer->PermissionToEdit()) {
-        return true;
-    }
-
-    return false;
-}
+bool LayerTreeItem::isReadOnly() const { return (_isSharedLayer || !_layer->PermissionToEdit()); }
 
 bool LayerTreeItem::isMovable() const
 {

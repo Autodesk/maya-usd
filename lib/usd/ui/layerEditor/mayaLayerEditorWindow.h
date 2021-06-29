@@ -59,7 +59,7 @@ public:
     bool        layerAppearsMuted() override;
     bool        layerIsMuted() override;
     bool        layerIsReadOnly() override;
-    std::string proxyShapeName() override;
+    std::string proxyShapeName() const override;
 
     void removeSubLayer() override;
     void saveEdits() override;

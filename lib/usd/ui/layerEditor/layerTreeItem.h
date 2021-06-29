@@ -102,7 +102,7 @@ public:
     // check if this layer is readonly
     bool isReadOnly() const;
     // true if dirty, but look at needsSaving for UI feedback
-    bool isDirty() const { return _layer ? _layer->IsDirty() && !isReadOnly() : false; }
+    bool isDirty() const { return _layer ? _layer->IsDirty() : false; }
     // need to indicate visually that layer has something to save
     bool needsSaving() const;
     // for drag and drop

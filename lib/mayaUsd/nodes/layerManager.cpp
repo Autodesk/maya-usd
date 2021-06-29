@@ -399,17 +399,31 @@ bool LayerDatabase::getProxiesToSave(bool isExport)
             if (!checkSelection
                 || (ufeSelection->contains(stagePath)
                     || ufeSelection->containsAncestor(stagePath))) {
-                MPlug   shareStagePlug(mobj, MayaUsdProxyShapeBase::shareStageAttr);
-                bool    sharedStage = true;
-                MStatus status = shareStagePlug.getValue(sharedStage);
-                if ((status == MS::kSuccess && !sharedStage) || !pShape->isStageIncoming()) {
+                // Should we save the stage?
+                // 1) Shareable Stage : In this case we case we only care about saving if the
+                // input is not an incoming connection, since in that case the node that "owns" the
+                // stage (upstream node) is responsible for saving. For example if you have multiple
+                // proxy shapes daisy chained one's out_stage feeding the other's in_stage. In that
+                // case only one proxy is responsible for saving (the first one).
+                // 2) Unshareable Stage: Similarly but in this case if the stage is unshared, it
+                // means we are responsible for saving the root layer (and stubs for the sublayers
+                // so we can put them back in the same spot). So doesn't matter if its incoming or
+                // not, we need to save.
+                if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
                     SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
                     for (auto layer : allLayers) {
                         if (layer->IsDirty()) {
                             MDagPath proxyDagPath;
                             MDagPath::getAPathTo(mobj, proxyDagPath);
-                            // We handle unshared compostion internally in Maya USD file
-                            if ((status == MS::kSuccess && sharedStage) || status != MS::kSuccess) {
+                            // Where should we save the stage?
+                            // We handle unshared composition internally in Maya USD file
+                            // The reason we have this distinction now is that some Layers are
+                            // special case layers that should be saved to the maya file only.
+                            // There are two examples currently of this, the session layer and
+                            // unshared root layer. So since we have batchSave and a delegate which
+                            // handles saving externally, we need to manage some proxies ourselves
+                            // and control where they save
+                            if (pShape->isShareableStage()) {
                                 _proxiesToSave.append(proxyDagPath);
                             } else {
                                 _internalProxiesToSave.append(proxyDagPath);
@@ -476,7 +490,7 @@ MStatus addLayerToBuilder(
     SdfLayerHandle         layer,
     bool                   isAnon,
     bool                   stubOnly = false,
-    bool                   exportOnlyIfDitry = false)
+    bool                   exportOnlyIfDirty = false)
 {
     if (!lm)
         return MS::kFailure;
@@ -492,7 +506,7 @@ MStatus addLayerToBuilder(
     anonHandle.setBool(isAnon);
 
     std::string temp;
-    if (!stubOnly && ((exportOnlyIfDitry && layer->IsDirty()) || !exportOnlyIfDitry)) {
+    if (!stubOnly && ((exportOnlyIfDirty && layer->IsDirty()) || !exportOnlyIfDirty)) {
         if (!layer->ExportToString(&temp)) {
             status = MS::kFailure;
         }
@@ -512,8 +526,8 @@ MStatus setValueForAttr(const MObject& node, const MObject& attribute, const std
 
 struct SaveStageToMayaResult
 {
-    bool saveSuceeded { false };
-    bool stageHasDirtyLayers { false };
+    bool _saveSuceeded { false };
+    bool _stageHasDirtyLayers { false };
 };
 
 SaveStageToMayaResult saveStageToMayaFile(
@@ -541,11 +555,11 @@ SaveStageToMayaResult saveStageToMayaFile(
             pShape->isIncomingLayer(layer->GetIdentifier()),
             true);
         if (layer->IsDirty()) {
-            result.stageHasDirtyLayers = true;
+            result._stageHasDirtyLayers = true;
         }
     }
 
-    if (result.stageHasDirtyLayers) {
+    if (result._stageHasDirtyLayers) {
         setValueForAttr(
             proxyNode,
             MayaUsdProxyShapeBase::sessionLayerNameAttr,
@@ -557,7 +571,7 @@ SaveStageToMayaResult saveStageToMayaFile(
             stage->GetRootLayer()->GetIdentifier());
     }
 
-    result.saveSuceeded = true;
+    result._saveSuceeded = true;
     return result;
 }
 
@@ -598,14 +612,12 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
     bool atLeastOneDirty = false;
 
     MFnDependencyNode fn;
-    while ((_proxiesToSave.length() + _internalProxiesToSave.length()) > 0) {
+    for (size_t i = 0; i < _proxiesToSave.length() + _internalProxiesToSave.length(); i++) {
         MDagPath dagPath;
-        if (_proxiesToSave.length() > 0) {
-            dagPath = _proxiesToSave[0];
-            _proxiesToSave.remove(0);
+        if (i < _proxiesToSave.length()) {
+            dagPath = _proxiesToSave[i];
         } else {
-            dagPath = _internalProxiesToSave[0];
-            _internalProxiesToSave.remove(0);
+            dagPath = _internalProxiesToSave[i - _proxiesToSave.length()];
         }
         MObject mobj = dagPath.node();
         fn.setObject(mobj);
@@ -617,20 +629,18 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
                 continue;
             }
 
-            MPlug   shareStagePlug(mobj, MayaUsdProxyShapeBase::shareStageAttr);
-            bool    sharedStage = true;
-            MStatus status = shareStagePlug.getValue(sharedStage);
             // Here if its unshared or not an incoming connection we save otherwise skip
-            if ((status == MS::kSuccess && !sharedStage) || !pShape->isStageIncoming()) {
+            if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
                 auto result = saveStageToMayaFile(lm, builder, mobj, stage);
-                if (result.stageHasDirtyLayers) {
+                if (result._stageHasDirtyLayers) {
                     atLeastOneDirty = true;
                 }
                 layersHandle.set(builder);
             }
         }
     }
-
+    _proxiesToSave.clear();
+    _internalProxiesToSave.clear();
     layersHandle.setAllClean();
     dataBlock.setClean(lm->layers);
 
@@ -646,14 +656,12 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
 BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
 {
     MFnDependencyNode fn;
-    while ((_proxiesToSave.length() + _internalProxiesToSave.length()) > 0) {
+    for (size_t i = 0; i < _proxiesToSave.length() + _internalProxiesToSave.length(); i++) {
         MDagPath dagPath;
-        if (_proxiesToSave.length() > 0) {
-            dagPath = _proxiesToSave[0];
-            _proxiesToSave.remove(0);
+        if (i < _proxiesToSave.length()) {
+            dagPath = _proxiesToSave[i];
         } else {
-            dagPath = _internalProxiesToSave[0];
-            _internalProxiesToSave.remove(0);
+            dagPath = _internalProxiesToSave[i - _proxiesToSave.length()];
         }
 
         MObject mobj = dagPath.node();
@@ -667,10 +675,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
             }
 
             // Unshared Composition Saves to MayaFile Always
-            MPlug   shareStagePlug(mobj, MayaUsdProxyShapeBase::shareStageAttr);
-            bool    sharedStage = true;
-            MStatus status = shareStagePlug.getValue(sharedStage);
-            if (status == MS::kSuccess && !sharedStage) {
+            if (!pShape->isShareableStage()) {
                 saveStageToMayaFile(mobj, stage);
             } else {
                 // No need to save stages from external sources
@@ -687,6 +692,9 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
             }
         }
     }
+
+    _proxiesToSave.clear();
+    _internalProxiesToSave.clear();
 
     return MayaUsd::kCompleted;
 }

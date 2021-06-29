@@ -498,11 +498,11 @@ The purpose of this command is to control the layer editor window.
 | `-isIncomingLayer`      | `-in`      | Query if the layer is incoming (connection)   |
 | `-layerAppearsMuted`    | `-am`      | Query if the layer or any parent is muted     |
 | `-layerIsMuted`         | `-mu`      | Query if the layer itself is muted            |
-| `-layerIsReadOnly`      | `-r`       | Query if the layer or any parent is readonly  |
+| `-layerIsReadOnly`      | `-r`       | Query if the layer or any parent is read only |
 | `-muteLayer`            | `-mt`      | Toggle the muting of a layer                  |
 | `-layerNeedsSaving`     | `-ns`      | Query if the layer is dirty or anonymous      |
 | `-printLayer`           | `-pl`      | Print the layer to the script editor output   |
-| `-proxyShape`           | `-ps`      | Query the proxyShape path or Sets the selected shape by its path. Takes the path as argument |
+| `-proxyShape`           | `-ps`      | Query the proxyShape path or sets the selected shape by its path. Takes the path as argument |
 | `-reload`               | `-rl`      | Open or show the editor window                |
 | `-selectionLength`      | `-se`      | Query the number of items selected            |
 | `-isSessionLayer`       | `-sl`      | Query if the layer is a session layer         |

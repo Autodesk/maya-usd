@@ -586,24 +586,6 @@ SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock&) { return 
 
 namespace {
 
-VtArray<std::string> getReferencedLayers(const SdfLayerRefPtr& layer)
-{
-    return MayaUsd::CustomLayerData::getStringArray(
-        layer, MayaUsd::CustomLayerData::kReferencedLayersToken);
-}
-
-void setReferencedLayers(
-    const SdfLayerRefPtr&           layer,
-    const std::vector<std::string>& referencedLayers)
-{
-    VtArray<std::string> convertedArray;
-    for (auto refLayer : referencedLayers) {
-        convertedArray.push_back(refLayer);
-    }
-    MayaUsd::CustomLayerData::setStringArray(
-        convertedArray, layer, MayaUsd::CustomLayerData::kReferencedLayersToken);
-}
-
 void remapSublayerRecursive(
     const SdfLayerRefPtr&              layer,
     std::map<std::string, std::string> remappedLayers)
@@ -694,32 +676,43 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    MDataHandle shareStageHandle = dataBlock.inputValue(shareStageAttr, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    bool sharableStage = isShareableStage();
 
-#if defined(WANT_UFE_BUILD)
     // Load the unshared comp from file
-    if (!_unsharedStageRootLayer && !shareStageHandle.asBool()) {
-        auto rootLayerIdentiferBefore = dataBlock.inputValue(rootLayerNameAttr).asString();
+    // This is so that we can remap the anon layer identifiers that have been loaded from disk which
+    // are saved in the unshared root layer
+    if (!_unsharedStageRootLayer && !sharableStage) {
         // Once an anon layer is loaded the identifier changes
         _unsharedStageRootLayer = computeRootLayer(dataBlock, "");
         if (_unsharedStageRootLayer) {
             // Anon layers when loaded will have difference identifiers, remap them
-            auto referencedLayers = getReferencedLayers(_unsharedStageRootLayer);
-            std::vector<std::string> updatedReferences;
-            for (VtArray<std::string>::const_iterator it = referencedLayers.cbegin(),
-                                                      end = referencedLayers.cend();
-                 it != end;
-                 ++it) {
-                auto layer = LayerManager::findLayer(*it);
+            auto referencedLayers = MayaUsd::CustomLayerData::getStringArray(
+                _unsharedStageRootLayer, MayaUsd::CustomLayerData::kReferencedLayersToken);
+            VtArray<std::string> updatedReferences;
+            for (const auto& identifier : referencedLayers) {
+                // Update the identifier reference in the customer layer data
+                auto layer = LayerManager::findLayer(identifier);
                 if (layer) {
                     updatedReferences.push_back(layer->GetIdentifier());
+                    // update the source root as well
+                    if (identifier == _sourceRootIdentifier) {
+                        _sourceRootIdentifier = layer->GetIdentifier();
+                    }
+                }
+                // We also need to push this anyway in case we dont find it since file backed layers
+                // arent in the layermanager database
+                else {
+                    updatedReferences.push_back(identifier);
                 }
             }
-            setReferencedLayers(_unsharedStageRootLayer, updatedReferences);
+            if (!updatedReferences.empty()) {
+                MayaUsd::CustomLayerData::setStringArray(
+                    updatedReferences,
+                    _unsharedStageRootLayer,
+                    MayaUsd::CustomLayerData::kReferencedLayersToken);
+            }
         }
     }
-#endif
 
     bool isIncomingStage = false;
 
@@ -801,7 +794,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
 
                 SdfLayerRefPtr rootLayer
-                    = shareStageHandle.asBool() ? computeRootLayer(dataBlock, fileString) : nullptr;
+                    = sharableStage ? computeRootLayer(dataBlock, fileString) : nullptr;
                 if (nullptr == rootLayer)
                     rootLayer = SdfLayer::FindOrOpen(fileString);
 
@@ -857,15 +850,30 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         std::vector<std::string> incomingLayers { usdStage->GetRootLayer()->GetIdentifier() };
         _incomingLayers = UsdMayaUtil::getAllSublayers(incomingLayers, true);
     } else {
-        _incomingLayers = {};
+        _incomingLayers.clear();
     }
 
     // Share the stage
-    if (shareStageHandle.asBool()) {
+    if (sharableStage) {
         if (isIncomingStage) {
             // If the stage is incoming we can't (shouldn't) target its layers, use session
             usdStage->SetEditTarget(usdStage->GetSessionLayer());
         }
+
+        // When we switch out of unshared we need to save this data so when the user toggles back
+        // they get the same state they were in, but in order to this we have to keep the layers in
+        // the heirharchy alive since the stage is gone and so they will get removed
+        if (_unsharedStageRootLayer) {
+            auto subLayerIds = UsdMayaUtil::getAllSublayers(_unsharedStageRootLayer);
+            _unsharedStageRootSublayers.clear();
+            for (const auto& identifier : subLayerIds) {
+                SdfLayerRefPtr sublayer = SdfLayer::Find(identifier);
+                if (sublayer) {
+                    _unsharedStageRootSublayers.push_back(sublayer);
+                }
+            }
+        }
+
         // Set the outUsdStageData
         stageData->stage = usdStage;
         stageData->primPath = primPath;
@@ -877,6 +885,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         inDataCachedHandle.set(stageData);
         inDataCachedHandle.setClean();
 
+        _sourceRootIdentifier = stageData->stage->GetRootLayer()->GetIdentifier();
+
         return MS::kSuccess;
     }
     // Own the stage
@@ -886,55 +896,38 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         if (!_unsharedStageRootLayer) {
             _unsharedStageRootLayer = SdfLayer::CreateAnonymous(kUnsharedStageLayerName);
             // Add the incoming root layer as a subpath
-            std::vector<std::string> referencedLayers { inRootLayer->GetIdentifier() };
-            setReferencedLayers(_unsharedStageRootLayer, referencedLayers);
-            _unsharedStageRootLayer->SetSubLayerPaths(referencedLayers);
+            VtArray<std::string> referencedLayers { inRootLayer->GetIdentifier() };
+            MayaUsd::CustomLayerData::setStringArray(
+                referencedLayers,
+                _unsharedStageRootLayer,
+                MayaUsd::CustomLayerData::kReferencedLayersToken);
+            _unsharedStageRootLayer->SetSubLayerPaths({ inRootLayer->GetIdentifier() });
         } else {
-            // Find the old incoming root layer, user could have moved it
-            VtArray<std::string> referencedLayers = getReferencedLayers(_unsharedStageRootLayer);
-            const std::vector<std::string> newReferencedLayers { inRootLayer->GetIdentifier() };
-            std::vector<std::string>       remainingLayers(newReferencedLayers);
-            if (referencedLayers.size() > 0) {
-                std::map<std::string, std::string> remappedLayers;
-                for (VtArray<std::string>::const_iterator oldRef = referencedLayers.cbegin(),
-                                                          end = referencedLayers.cend();
-                     oldRef != end;
-                     ++oldRef) {
-                    int remappedIndex = -1;
-                    for (size_t i = 0; i < remainingLayers.size(); ++i) {
-                        auto newRef = remainingLayers[i];
-                        if (SdfLayer::GetDisplayNameFromIdentifier(*oldRef)
-                            == SdfLayer::GetDisplayNameFromIdentifier(newRef)) {
-                            remappedLayers.insert({ *oldRef, newRef });
-                            remappedIndex = i;
-                            break;
-                        }
-                    }
-                    if (remappedIndex < 0) {
-                        remappedLayers.insert({ *oldRef, "" }); // Empty means delete it
-                    } else {
-                        remainingLayers.erase(remainingLayers.begin() + remappedIndex);
-                    }
-                }
-
+            // Check if we need to remap the source
+            if (!_sourceRootIdentifier.empty()
+                && _sourceRootIdentifier != inRootLayer->GetIdentifier()) {
+                // Remap the existing source to the new one
+                std::map<std::string, std::string> remappedLayers {
+                    { _sourceRootIdentifier, inRootLayer->GetIdentifier() }
+                };
                 remapSublayerRecursive(_unsharedStageRootLayer, remappedLayers);
             }
 
-            // Remember layers referenced from source
-            setReferencedLayers(_unsharedStageRootLayer, newReferencedLayers);
-
-            // Add remaining layers to the subpaths
-            if (remainingLayers.size() > 0) {
-                const std::vector<std::string>& subLayers
-                    = _unsharedStageRootLayer->GetSubLayerPaths();
-                std::vector<std::string> outSubLayers;
-                outSubLayers.reserve(subLayers.size() + remainingLayers.size());
-                outSubLayers.insert(outSubLayers.end(), subLayers.begin(), subLayers.end());
-                outSubLayers.insert(
-                    outSubLayers.end(), remainingLayers.begin(), remainingLayers.end());
-
-                _unsharedStageRootLayer->SetSubLayerPaths(outSubLayers);
+            // If its a new layer (or wasn't remapped properly)
+            auto sublayerIds = UsdMayaUtil::getAllSublayers(_unsharedStageRootLayer);
+            if (sublayerIds.find(inRootLayer->GetIdentifier()) == sublayerIds.end()) {
+                // Add new layer to subpaths
+                auto subLayers = _unsharedStageRootLayer->GetSubLayerPaths();
+                subLayers.push_back(inRootLayer->GetIdentifier());
+                _unsharedStageRootLayer->SetSubLayerPaths(subLayers);
             }
+
+            // Remember layers referenced from source
+            const VtArray<std::string> newReferencedLayers { inRootLayer->GetIdentifier() };
+            MayaUsd::CustomLayerData::setStringArray(
+                newReferencedLayers,
+                _unsharedStageRootLayer,
+                MayaUsd::CustomLayerData::kReferencedLayersToken);
         }
 
         stageData->stage = UsdStage::UsdStage::Open(_unsharedStageRootLayer);
@@ -945,6 +938,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         inDataCachedHandle.set(stageData);
         inDataCachedHandle.setClean();
+
+        _sourceRootIdentifier = inRootLayer->GetIdentifier();
 
         return MS::kSuccess;
     }
@@ -1322,6 +1317,19 @@ bool MayaUsdProxyShapeBase::isStageValid() const
     return true;
 }
 
+bool MayaUsdProxyShapeBase::isShareableStage() const
+{
+    MStatus                localStatus;
+    MayaUsdProxyShapeBase* nonConstThis = const_cast<MayaUsdProxyShapeBase*>(this);
+    MDataBlock             dataBlock = nonConstThis->forceCache();
+
+    MDataHandle shareStageHandle = dataBlock.inputValue(shareStageAttr, &localStatus);
+
+    CHECK_MSTATUS_AND_RETURN(localStatus, false);
+
+    return shareStageHandle.asBool();
+}
+
 bool MayaUsdProxyShapeBase::isStageIncoming() const
 {
     MStatus                localStatus;
@@ -1626,6 +1634,10 @@ MDagPath MayaUsdProxyShapeBase::parentTransform()
 MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection)
     : MPxSurfaceShape()
     , _isUfeSelectionEnabled(enableUfeSelection)
+    , _unsharedStageRootLayer(nullptr)
+    , _unsharedStageRootSublayers()
+    , _incomingLayers()
+    , _sourceRootIdentifier("")
 {
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
 }
