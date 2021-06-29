@@ -112,7 +112,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
                 # we know the pattern: pPlaneShapeX -> pPlaneXShape
                 plugPath = link.split(".")
                 selectionList = OM.MSelectionList()
-                selectionList.add(plugPath[0])
+                selectionList.add(link)
                 mayaMesh = OM.MFnMesh(selectionList.getDependNode(0))
                 meshName = mayaMesh.name()
                 plugPath[0] = "pPlane" + meshName[-1] + "Shape"

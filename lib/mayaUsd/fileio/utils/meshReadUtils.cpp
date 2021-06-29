@@ -202,7 +202,6 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
     // Determine the name to use for the Maya UV set.
     MStatus status { MS::kSuccess };
     MString uvSetName(primvarName.GetText());
-    bool    createUVSet = true;
 
     TfToken originalName = UsdMayaRoundTripUtil::GetPrimVarMayaName(primvar);
     if (!originalName.IsEmpty()) {
