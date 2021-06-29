@@ -27,6 +27,28 @@
 
 #include <ghc/filesystem.hpp>
 
+#include <random>
+#include <system_error>
+namespace {
+std::string generateUniqueName()
+{
+    const auto  len { 6 };
+    std::string uniqueName;
+    uniqueName.reserve(len);
+
+    const std::string alphaNum { "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" };
+
+    std::random_device              rd;
+    std::mt19937                    gen(rd());
+    std::uniform_int_distribution<> dis(0, alphaNum.size() - 1);
+
+    for (auto i = 0; i < len; ++i) {
+        uniqueName += (alphaNum[dis(gen)]);
+    }
+    return uniqueName;
+}
+} // namespace
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
@@ -153,7 +175,7 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
     const std::string& basename,
     const std::string& ext)
 {
-    std::string fileNameModel = basename + "-%%%%%%." + ext;
+    const std::string fileNameModel = basename + '-' + generateUniqueName() + '.' + ext;
 
     ghc::filesystem::path pathModel(dir);
     pathModel.append(fileNameModel);
