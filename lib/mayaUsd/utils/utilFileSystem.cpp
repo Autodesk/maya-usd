@@ -25,7 +25,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 
-#include <boost/filesystem.hpp>
+#include <ghc/filesystem.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,7 +40,7 @@ std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
 
 std::string UsdMayaUtilFileSystem::getDir(const std::string& fullFilePath)
 {
-    return boost::filesystem::path(fullFilePath).parent_path().string();
+    return ghc::filesystem::path(fullFilePath).parent_path().string();
 }
 
 std::string UsdMayaUtilFileSystem::getMayaReferencedFileDir(const MObject& proxyShapeNode)
@@ -136,8 +136,10 @@ std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
         return relativeFilePath;
     }
 
-    boost::system::error_code errorCode;
-    auto path = boost::filesystem::canonical(relativeFilePath, currentFileDir, errorCode);
+    std::error_code errorCode;
+    auto            path = ghc::filesystem::canonical(
+        ghc::filesystem::path(currentFileDir).append(relativeFilePath), errorCode);
+
     if (errorCode) {
         // file does not exist
         return std::string();
@@ -153,19 +155,19 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
 {
     std::string fileNameModel = basename + "-%%%%%%." + ext;
 
-    boost::filesystem::path pathModel(dir);
+    ghc::filesystem::path pathModel(dir);
     pathModel.append(fileNameModel);
 
-    return boost::filesystem::unique_path(pathModel).generic_string();
+    return pathModel.generic_string();
 }
 
 bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
 {
-    if (!boost::filesystem::is_directory(a)) {
+    if (!ghc::filesystem::is_directory(a)) {
         return false;
     }
-    boost::filesystem::path aPath(a);
-    boost::filesystem::path bPath(b);
+    ghc::filesystem::path aPath(a);
+    ghc::filesystem::path bPath(b);
     aPath /= b;
     a.assign(aPath.string());
     return true;
@@ -192,27 +194,27 @@ UsdMayaUtilFileSystem::writeToFilePath(const char* filePath, const void* buffer,
 
 void UsdMayaUtilFileSystem::pathStripPath(std::string& filePath)
 {
-    boost::filesystem::path p(filePath);
-    boost::filesystem::path filename = p.filename();
+    ghc::filesystem::path p(filePath);
+    ghc::filesystem::path filename = p.filename();
     filePath.assign(filename.string());
     return;
 }
 
 void UsdMayaUtilFileSystem::pathRemoveExtension(std::string& filePath)
 {
-    boost::filesystem::path p(filePath);
-    boost::filesystem::path dir = p.parent_path();
-    boost::filesystem::path finalPath = dir / p.stem();
+    ghc::filesystem::path p(filePath);
+    ghc::filesystem::path dir = p.parent_path();
+    ghc::filesystem::path finalPath = dir / p.stem();
     filePath.assign(finalPath.string());
     return;
 }
 
 std::string UsdMayaUtilFileSystem::pathFindExtension(std::string& filePath)
 {
-    boost::filesystem::path p(filePath);
+    ghc::filesystem::path p(filePath);
     if (!p.has_extension()) {
         return std::string();
     }
-    boost::filesystem::path ext = p.extension();
+    ghc::filesystem::path ext = p.extension();
     return ext.string();
 }
