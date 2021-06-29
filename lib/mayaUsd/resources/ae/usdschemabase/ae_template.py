@@ -358,7 +358,7 @@ class AETemplate(object):
         self.createMetadataSection()
         cmds.editorTemplate(endScrollLayout=True)
 
-        if int(cmds.about(majorVersion=True)) > 2022:
+        if ('%s.%s' % (cmds.about(majorVersion=True), cmds.about(minorVersion=True))) > '2022.1':
             # Because of how we dynamically build the Transform attribute section,
             # we need this template to rebuild each time it is needed. This will
             # also restore the collapse/expand state of the sections.

@@ -117,7 +117,7 @@ global proc stageFromFile_UICommit(string $parent) {
 
 proc string doCreateStage(string $fileName) {
     // actually load the file
-    string $baseName = capitalizeString(`basenameEx $fileName`);
+    string $baseName = basenameEx($fileName);
     if( ! isValidObjectName($baseName) )
         $baseName = "UsdStage";
 
