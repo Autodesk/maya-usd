@@ -79,6 +79,10 @@ public:
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
 #endif
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    Ufe::UndoableCommand::Ptr ungroupCmd() const override;
+#endif
+
 private:
     const PXR_NS::UsdPrim& getUsdRootPrim() const;
     Ufe::SceneItemList     createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range) const;

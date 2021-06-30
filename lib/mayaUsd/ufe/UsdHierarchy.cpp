@@ -44,6 +44,10 @@
 #include <mayaUsd/ufe/UsdUndoReorderCommand.h>
 #endif
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdUndoUnGroupCommand.h>
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -260,8 +264,14 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& ord
     // create a reorder command and pass in the parent and its reordered children list
     return UsdUndoReorderCommand::create(downcast(sceneItem())->prim(), orderedTokens);
 }
-
 #endif // UFE_V2_FEATURES_AVAILABLE
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+Ufe::UndoableCommand::Ptr UsdHierarchy::ungroupCmd() const
+{
+    return UsdUndoUngroupCommand::create(fItem);
+}
+#endif // UFE_V3_FEATURES_AVAILABLE
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
