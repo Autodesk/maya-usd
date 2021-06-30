@@ -72,10 +72,12 @@ bool inAttributeChangedNotificationGuard()
     return attributeChangedNotificationGuardCount.load() > 0;
 }
 
-// TODO: This should be an unordered_multimap to prevent notifications from
-// overwriting earlier recorded notifications for the same attribute. See
-// MAYA-110878 for more information on why this change isn't already made.
-std::unordered_map<Ufe::Path, TfToken> pendingAttributeChangedNotifications;
+// Keep an array of the pending attribute change notifications. Using a vector
+// for two main reasons:
+// 1) Order of notifs must be maintained.
+// 2) Allow notif with same path, but different token. At worst the check is linear
+//    in the size of the vector (which is the same as an unordered_multimap).
+std::vector<std::pair<Ufe::Path, TfToken>> pendingAttributeChangedNotifications;
 
 void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
@@ -90,7 +92,15 @@ void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
     if (inAttributeChangedNotificationGuard()) {
-        pendingAttributeChangedNotifications[ufePath] = changedToken;
+        // Don't add pending notif if one already exists with same path/token.
+        auto p = std::make_pair(ufePath, changedToken);
+        if (std::find(
+                pendingAttributeChangedNotifications.begin(),
+                pendingAttributeChangedNotifications.end(),
+                p)
+            == pendingAttributeChangedNotifications.end()) {
+            pendingAttributeChangedNotifications.emplace_back(p);
+        }
     } else {
         sendValueChanged(ufePath, changedToken);
     }
@@ -242,11 +252,7 @@ void StagesSubject::stageChanged(
                     Ufe::Transform3d::notify(ufePath);
                 }
             }
-#ifdef UFE_V2_FEATURES_AVAILABLE
-            if (!inAttributeChangedNotificationGuard()) {
-                sendValueChanged(ufePath, changedPath.GetNameToken());
-            }
-#endif
+            UFE_V2(valueChanged(ufePath, changedPath.GetNameToken());)
 
             // No further processing for this prim property path is required.
             continue;
