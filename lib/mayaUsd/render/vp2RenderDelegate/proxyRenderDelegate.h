@@ -33,6 +33,7 @@
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPxSubSceneOverride.h>
+#include <maya/MDefines.h>
 
 #include <memory>
 
@@ -41,12 +42,8 @@
 #endif
 
 // The new Maya point snapping support doesn't require point snapping items any more.
-#if MAYA_API_VERSION >= 20230000
-// The new Maya point snapping support has some known issues. Disable it for now.
+#if (MAYA_API_VERSION >= 20220200 && MAYA_API_VERSION < 20230000) || (MAYA_API_VERSION >= 20230000 && MAYA_PREVIEW_RELEASE_VERSION >= 127)
 #define MAYA_NEW_POINT_SNAPPING_SUPPORT
-#endif
-
-#if MAYA_API_VERSION >= 20230000
 #define MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
 #endif
 

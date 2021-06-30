@@ -728,6 +728,12 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             reprSelector = reprSelector.CompositeOver(kPointsReprSelector);
         }
 #endif
+
+        if (_selectionModeChanged) {
+            _UpdateSelectionStates();
+            _selectionChanged = false;
+            _selectionModeChanged = false;
+        }
     } else {
         if (_selectionChanged || _selectionModeChanged) {
             _UpdateSelectionStates();
@@ -793,6 +799,19 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;
 
+#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
+    const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();
+    MStatus status;
+    if (selectionInfo) {
+        bool oldSnapToSelectedObjects = _snapToSelectedObjects;
+        _snapToSelectedObjects = selectionInfo->snapToActive(&status);
+        TF_VERIFY(status == MStatus::kSuccess);
+        if (_snapToSelectedObjects != oldSnapToSelectedObjects) {
+            _selectionModeChanged = true;
+        }
+    }
+#endif
+
     _ClearInvalidData(container);
 
     _InitRenderDelegate();
@@ -824,14 +843,6 @@ void ProxyRenderDelegate::updateSelectionGranularity(
         selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kComponent);
 #endif
     }
-
-#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
-    bool oldSnapToSelectedObjects = _snapToSelectedObjects;
-    _snapToSelectedObjects = pointSnapToSelectedObjects();
-    if (_snapToSelectedObjects != oldSnapToSelectedObjects) {
-        _selectionModeChanged = true;
-    }
-#endif
 }
 
 //! \brief  Selection for both instanced and non-instanced cases.
