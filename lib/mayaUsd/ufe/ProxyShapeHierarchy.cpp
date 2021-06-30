@@ -248,12 +248,6 @@ ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
     return UsdUndoReorderCommand::create(getUsdRootPrim(), orderedTokens);
 }
 
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::ungroupCmd() const
-{
-    // pseudo root can not be ungrouped.
-    return nullptr;
-}
-
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 {
     // Maya shape nodes cannot be unparented.
@@ -261,6 +255,14 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 }
 
 #endif // UFE_V2_FEATURES_AVAILABLE
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::ungroupCmd() const
+{
+    // pseudo root can not be ungrouped.
+    return nullptr;
+}
+#endif // UFE_V3_FEATURES_AVAILABLE
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
