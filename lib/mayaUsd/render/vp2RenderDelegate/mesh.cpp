@@ -2032,13 +2032,14 @@ void HdVP2Mesh::_UpdateDrawItem(
     // Capture buffers we need
     MHWRender::MIndexBuffer* indexBuffer = drawItemData._indexBuffer.get();
     PrimvarInfoMap*          primvarInfo = &_meshSharedData->_primvarInfo;
+    TfTokenVector*           primvars = &_meshSharedData->_allRequiredPrimvars;
     const HdVP2BBoxGeom&     sharedBBoxGeom = _delegate->GetSharedBBoxGeom();
     if (isBBoxItem) {
         indexBuffer = const_cast<MHWRender::MIndexBuffer*>(sharedBBoxGeom.GetIndexBuffer());
     }
 
     _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-        [stateToCommit, param, primvarInfo, indexBuffer, isBBoxItem, &sharedBBoxGeom]() {
+        [stateToCommit, param, primvarInfo, primvars, indexBuffer, isBBoxItem, &sharedBBoxGeom]() {
             const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
             MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
             if (ARCH_UNLIKELY(!renderItem))
@@ -2073,17 +2074,41 @@ void HdVP2Mesh::_UpdateDrawItem(
             if (stateToCommit._geometryDirty || stateToCommit._boundingBox) {
                 MHWRender::MVertexBufferArray vertexBuffers;
 
-                for (auto& entry : *primvarInfo) {
-                    const TfToken&            primvarName = entry.first;
-                    MHWRender::MVertexBuffer* primvarBuffer = nullptr;
-                    if (isBBoxItem && primvarName == HdTokens->points) {
-                        primvarBuffer = const_cast<MHWRender::MVertexBuffer*>(
-                            sharedBBoxGeom.GetPositionBuffer());
-                    } else {
-                        primvarBuffer = entry.second->_buffer.get();
+                std::set<TfToken> addedPrimvars;
+                auto              addPrimvar =
+                    [primvarInfo, &vertexBuffers, &addedPrimvars, isBBoxItem, &sharedBBoxGeom](
+                        const TfToken& p) {
+                        auto entry = primvarInfo->find(p);
+                        if (entry == primvarInfo->cend()) {
+                            // No primvar by that name.
+                            return;
+                        }
+                        MHWRender::MVertexBuffer* primvarBuffer = nullptr;
+                        if (isBBoxItem && p == HdTokens->points) {
+                            primvarBuffer = const_cast<MHWRender::MVertexBuffer*>(
+                                sharedBBoxGeom.GetPositionBuffer());
+                        } else {
+                            primvarBuffer = entry->second->_buffer.get();
+                        }
+                        if (primvarBuffer) { // this filters out the separate color & alpha entries
+                            vertexBuffers.addBuffer(p.GetText(), primvarBuffer);
+                        }
+                        addedPrimvars.insert(p);
+                    };
+
+                // Points and normals always are at the beginning of vertex requirements:
+                addPrimvar(HdTokens->points);
+                addPrimvar(HdTokens->normals);
+                // Then add required primvars *in order*:
+                for (const TfToken& primvarName : *primvars) {
+                    if (addedPrimvars.find(primvarName) == addedPrimvars.cend()) {
+                        addPrimvar(primvarName);
                     }
-                    if (primvarBuffer) { // this filters out the separate color & alpha entries
-                        vertexBuffers.addBuffer(primvarName.GetText(), primvarBuffer);
+                }
+                // Then add whatever primvar is left that was not in the requirements:
+                for (auto& entry : *primvarInfo) {
+                    if (addedPrimvars.find(entry.first) == addedPrimvars.cend()) {
+                        addPrimvar(entry.first);
                     }
                 }
 
