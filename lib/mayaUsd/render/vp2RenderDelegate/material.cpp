@@ -444,7 +444,7 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
     // We expect only one node graph, but fixing them all is not an issue:
     for (mx::NodeGraphPtr nodeGraph : mtlxDoc->getNodeGraphs()) {
         // This will hold the emergency "ST" reader if one was necessary
-        mx::NodePtr              stReader;
+        mx::NodePtr stReader;
         // Store nodes to delete when loop iteration is complete
         std::vector<std::string> nodesToDelete;
 
@@ -480,7 +480,7 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
                 node->setName(oldName);
                 nodesToDelete.push_back(oldName);
                 // Find out if there is an explicit stream index:
-                int streamIndex = 0;
+                int          streamIndex = 0;
                 mx::InputPtr indexInput = node->getInput(_mtlxTokens->index.GetString());
                 if (indexInput && indexInput->hasValue()) {
                     mx::ValuePtr indexValue = indexInput->getValue();
