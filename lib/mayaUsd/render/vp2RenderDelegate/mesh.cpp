@@ -2100,9 +2100,11 @@ void HdVP2Mesh::_UpdateDrawItem(
                 addPrimvar(HdTokens->points);
                 addPrimvar(HdTokens->normals);
                 // Then add required primvars *in order*:
-                for (const TfToken& primvarName : *primvars) {
-                    if (addedPrimvars.find(primvarName) == addedPrimvars.cend()) {
-                        addPrimvar(primvarName);
+                if (primvars) {
+                    for (const TfToken& primvarName : *primvars) {
+                        if (addedPrimvars.find(primvarName) == addedPrimvars.cend()) {
+                            addPrimvar(primvarName);
+                        }
                     }
                 }
                 // Then add whatever primvar is left that was not in the requirements:

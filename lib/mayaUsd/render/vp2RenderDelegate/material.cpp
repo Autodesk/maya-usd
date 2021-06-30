@@ -314,7 +314,7 @@ bool _IsMaterialX(const HdMaterialNode& node)
     SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
     NdrNodeConstPtr ndrNode = shaderReg.GetNodeByIdentifier(node.identifier);
 
-    return ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
+    return ndrNode && ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
 }
 
 //! Helper function to generate a topo hash that can be used to detect if two networks share the
