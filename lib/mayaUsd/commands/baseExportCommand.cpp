@@ -182,6 +182,9 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(kFileFlag, kFileFlagLong, MSyntax::kString);
     syntax.addFlag(kSelectionFlag, kSelectionFlagLong, MSyntax::kNoArg);
 
+    syntax.addFlag(kRootFlag, kkRootFlagLong, MSyntax::kString);
+    syntax.makeFlagMultiUse(kRootFlag);
+
     syntax.addFlag(kFilterTypesFlag, kFilterTypesFlagLong, MSyntax::kString);
     syntax.makeFlagMultiUse(kFilterTypesFlag);
 
@@ -311,6 +314,22 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
         UsdMayaJobExportArgs jobArgs
             = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
+
+        unsigned int numRoots = argData.numberOfFlagUses(kRootFlag);
+        for (unsigned int i = 0; i < numRoots; i++) {
+            MArgList tmpArgList;
+            argData.getFlagArgumentList(kRootFlag, i, tmpArgList);
+            std::string this_root = tmpArgList.asString(0).asChar();
+            MDagPath dagPath;
+            UsdMayaUtil::GetDagPathByName(this_root, dagPath);
+            if (!dagPath.isValid() && tmpArgList.asString(0) != "|" && tmpArgList.asString(0) != "") {
+                MGlobal::displayError("Invalid root path: " + tmpArgList.asString(0));
+                return MS::kFailure;
+            }
+            jobArgs.rootNames.emplace_back(this_root);
+        }
+        if (exportSelected)
+            jobArgs.exportSelected = true;
 
         unsigned int numFilteredTypes = argData.numberOfFlagUses(kFilterTypesFlag);
         for (unsigned int i = 0; i < numFilteredTypes; i++) {

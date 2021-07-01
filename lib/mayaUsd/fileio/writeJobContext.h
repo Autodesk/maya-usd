@@ -92,6 +92,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimWriterSharedPtr CreatePrimWriter(
         const MFnDependencyNode& depNodeFn,
+        const MDagPath&          rootDagPath,
         const SdfPath&           usdPath = SdfPath(),
         const bool               forceUninstance = false);
 

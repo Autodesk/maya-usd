@@ -443,6 +443,7 @@ bool UsdMayaWriteJobContext::_PostProcess()
 
 UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
     const MFnDependencyNode& depNodeFn,
+    const MDagPath&          rootDagPath,
     const SdfPath&           usdPath,
     const bool               forceUninstance)
 {
@@ -465,6 +466,25 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
 
         if (writePath.IsEmpty()) {
             writePath = ConvertDagToUsdPath(dagPath);
+        }
+
+        // Get the relative prim paths in relation to the their argRoot passed via the -root (multi) flag
+        // to bypass writing the parent transforms of the these requested usd roots, that
+        // in case the -root arg was set (so, /any/thing/originalRoot/obj becomes /originalRoot/obj
+        // (assuming the -root "originalRoot" was passed)
+        const MFnDagNode dagFn( rootDagPath.node() );
+        const MObject rootParentObj = dagFn.parent( 0 );
+        MDagPath rootParentPath;
+        MStatus status = MDagPath::getAPathTo(rootParentObj, rootParentPath);
+
+        // Do nothing with the Sdf writePath if -root flag was not given (or the given root is already
+        // the highest root node in the scene)
+        const char* rootPathStr = rootParentPath.fullPathName().asChar();
+        if ((rootParentPath.isValid() && status == MS::kSuccess)
+            &! mArgs.rootNames.empty() && rootPathStr[0] != '\0') {
+            std::string rootParentSdfStr = ConvertDagToUsdPath(rootParentPath).GetString();
+            std::string newWritePath = TfStringReplace(writePath.GetText(), rootParentSdfStr, "");
+            writePath = SdfPath(newWritePath);
         }
 
         const MFnDagNode dagNodeFn(dagPath);
@@ -561,11 +581,14 @@ void UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
 
         const MFnDagNode dagNodeFn(curDagPath);
 
+        // Fixme: temporarily passing an empty dagPath to reuse the same method declaration
+        MDagPath rootDagPath;
+
         // Currently, forceUninstance only applies to the root DAG path but not
         // to descendant nodes (i.e. nested instancing will always occur).
         // Its purpose is to allow us to do the actual write of the master.
         UsdMayaPrimWriterSharedPtr writer = this->CreatePrimWriter(
-            dagNodeFn, curActualUsdPath, curDagPath == rootDag ? forceUninstance : false);
+            dagNodeFn, rootDagPath, curActualUsdPath, curDagPath == rootDag ? forceUninstance : false);
         if (!writer) {
             continue;
         }
