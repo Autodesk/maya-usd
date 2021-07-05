@@ -59,7 +59,7 @@ float3 iNwToNv(
     float4x4 ViewIT,
     float3 Nw)
 {
-    return (ViewIT * (vec4(Nw, 0.0))).xyz;
+    return mul(float4(Nw, 0.0), ViewIT).xyz;
 }
                 ]]>
             </vertex_source>
@@ -81,7 +81,7 @@ float3 iNwToNv(
     float4x4 ViewIT,
     float3 Nw)
 {
-    return (ViewIT * (vec4(Nw, 0.0))).xyz;
+    return mul(ViewIT, float4(Nw, 0.0f)).xyz;
 }
                 ]]>
             </vertex_source>
