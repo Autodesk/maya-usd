@@ -47,6 +47,12 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     endif()
 endif()
 
+if (CMAKE_WANT_MATERIALX_BUILD)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateMaterialX.py
+    )
+endif()
+
 add_custom_target(${TARGET_NAME} ALL)
 
 # Copy all the resources and Python scripts to build directory
