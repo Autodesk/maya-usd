@@ -241,6 +241,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertEqual(Usd.ModelAPI(newGroupPrim).GetKind(), "")
         self.assertFalse(newGroupPrim.IsModel())
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Grouping restriction is only available in Maya 2022 or greater.')
     def testGroupRestirction(self):
         ''' Verify group restriction. '''
         mayaPathSegment = mayaUtils.createUfePathSegment(
