@@ -241,6 +241,39 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertEqual(Usd.ModelAPI(newGroupPrim).GetKind(), "")
         self.assertFalse(newGroupPrim.IsModel())
 
+    def testGroupRestirction(self):
+        ''' Verify group restriction. '''
+        mayaPathSegment = mayaUtils.createUfePathSegment(
+            "|transform1|proxyShape1")
+
+        usdSegmentBall3 = usdUtils.createUfePathSegment(
+            "/Ball_set/Props/Ball_3")
+        ball3Path = ufe.Path([mayaPathSegment, usdSegmentBall3])
+        ball3Item = ufe.Hierarchy.createItem(ball3Path)
+
+        usdSegmentBall5 = usdUtils.createUfePathSegment(
+            "/Ball_set/Props/Ball_5")
+        ball5Path = ufe.Path([mayaPathSegment, usdSegmentBall5])
+        ball5Item = ufe.Hierarchy.createItem(ball5Path)
+
+        usdSegmentProps = usdUtils.createUfePathSegment("/Ball_set/Props")
+        propsPath = ufe.Path([mayaPathSegment, usdSegmentProps])
+        propsItem = ufe.Hierarchy.createItem(propsPath)
+
+        ufeSelection = ufe.GlobalSelection.get()
+        ufeSelection.append(ball3Item)
+        ufeSelection.append(ball5Item)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # set the edit target to the session layer
+        stage.SetEditTarget(stage.GetSessionLayer())
+
+        # expect the exception happens
+        with self.assertRaises(RuntimeError):
+            cmds.group(name="newGroup")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
