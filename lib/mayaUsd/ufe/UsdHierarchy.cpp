@@ -45,7 +45,7 @@
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/UsdUndoUnGroupCommand.h>
+#include <mayaUsd/ufe/UsdUndoUngroupCommand.h>
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
