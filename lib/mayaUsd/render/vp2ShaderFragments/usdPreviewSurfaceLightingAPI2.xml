@@ -778,8 +778,6 @@ surfaceShader(vec3 Peye, vec3 Neye,
     result.outGlowColor = vec3(0.0, 0.0, 0.0);
     result.outMatteOpacity = vec3(opacity);
 
-    //result.outColor = Neye;
-
     return result;
 }
 
