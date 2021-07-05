@@ -164,8 +164,107 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vaddressmode)
     (filtertype)
     (channels)
+
+    // Texcoord reader identifiers:
+    (index)
+    (UV0)
+    (geompropvalue)
+    (ST_reader)
+    (vector2)
+);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _mtlxTopoNodeTokens,
+
+    // Topo affecting nodes due to object/model/world space parameter
+    (ND_position_vector3)
+    (ND_normal_vector3)
+    (ND_tangent_vector3)
+    (ND_bitangent_vector3)
+    // Topo affecting nodes due to channel index. We remap to geomprop in _AddMissingTexcoordReaders
+    (ND_texcoord_vector2)
+    (ND_texcoord_vector3)
+    // Color at vertices also affect topo, but we have not locked a naming scheme to go from index
+    // based to name based as we did for UV sets. We will mark them as topo-affecting, but there is
+    // nothing we can do to link them correctly to a primvar without specifying a naming scheme.
+    (ND_geomcolor_float)
+    (ND_geomcolor_color3)
+    (ND_geomcolor_color4)
+    // Geompropvalue are the best way to reference a primvar by name. The primvar name is
+    // topo-affecting. Note that boolean and string are not supported by the GLSL codegen.
+    (ND_geompropvalue_integer)
+    (ND_geompropvalue_boolean)
+    (ND_geompropvalue_string)
+    (ND_geompropvalue_float)
+    (ND_geompropvalue_color3)
+    (ND_geompropvalue_color4)
+    (ND_geompropvalue_vector2)
+    (ND_geompropvalue_vector3)
+    (ND_geompropvalue_vector4)
+    // Swizzles are inlined into the codegen and affect topology.
+    (ND_swizzle_float_color3)
+    (ND_swizzle_float_color4)
+    (ND_swizzle_float_vector2)
+    (ND_swizzle_float_vector3)
+    (ND_swizzle_float_vector4)
+    (ND_swizzle_color3_float)
+    (ND_swizzle_color3_color3)
+    (ND_swizzle_color3_color4)
+    (ND_swizzle_color3_vector2)
+    (ND_swizzle_color3_vector3)
+    (ND_swizzle_color3_vector4)
+    (ND_swizzle_color4_float)
+    (ND_swizzle_color4_color3)
+    (ND_swizzle_color4_color4)
+    (ND_swizzle_color4_vector2)
+    (ND_swizzle_color4_vector3)
+    (ND_swizzle_color4_vector4)
+    (ND_swizzle_vector2_float)
+    (ND_swizzle_vector2_color3)
+    (ND_swizzle_vector2_color4)
+    (ND_swizzle_vector2_vector2)
+    (ND_swizzle_vector2_vector3)
+    (ND_swizzle_vector2_vector4)
+    (ND_swizzle_vector3_float)
+    (ND_swizzle_vector3_color3)
+    (ND_swizzle_vector3_color4)
+    (ND_swizzle_vector3_vector2)
+    (ND_swizzle_vector3_vector3)
+    (ND_swizzle_vector3_vector4)
+    (ND_swizzle_vector4_float)
+    (ND_swizzle_vector4_color3)
+    (ND_swizzle_vector4_color4)
+    (ND_swizzle_vector4_vector2)
+    (ND_swizzle_vector4_vector3)
+    (ND_swizzle_vector4_vector4)
 );
 // clang-format on
+
+static const std::set<TfToken> _mtlxTopoNodeTokenSet(
+    _mtlxTopoNodeTokens->allTokens.cbegin(),
+    _mtlxTopoNodeTokens->allTokens.cend());
+
+//! Return true if that node parameter has topological impact on the generated code.
+//
+// Swizzle and geompropvalue nodes are known to have an attribute that affects
+// shader topology. The "channels" and "geomprop" attributes will have effects at the codegen level,
+// not at runtime. Yes, this is forbidden internal knowledge of the MaterialX shader generator and
+// we might get other nodes like this one in a future update.
+//
+// The index input of the texcoord and geomcolor nodes affect which stream to read and is topo
+// affecting.
+//
+// Any geometric input that can specify model/object/world space is also topo affecting.
+//
+// Things to look out for are parameters of type "string" and parameters with the "uniform"
+// metadata. These need to be reviewed against the code used in their registered
+// implementations (see registerImplementation calls in the GlslShaderGenerator CTOR). Sadly
+// we can not make that a rule because the filename of an image node is both a "string" and
+// has the "uniform" metadata, yet is not affecting topology.
+bool _IsTopologicalNode(const HdMaterialNode2& inNode)
+{
+    return _mtlxTopoNodeTokenSet.find(inNode.nodeTypeId) != _mtlxTopoNodeTokenSet.cend();
+}
 
 struct _MaterialXData
 {
@@ -215,28 +314,7 @@ bool _IsMaterialX(const HdMaterialNode& node)
     SdrRegistry&    shaderReg = SdrRegistry::GetInstance();
     NdrNodeConstPtr ndrNode = shaderReg.GetNodeByIdentifier(node.identifier);
 
-    return ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
-}
-
-//! Return true if that node parameter has topological impact on the generated code.
-//
-// Swizzle and geompropvalue nodes are currently the only ones that have an attribute that affects
-// shader topology. The "channels" and "geomprop" attributes will have effects at the codegen level,
-// not at runtime. Yes, this is forbidden internal knowledge of the MaterialX shader generator and
-// we might get other nodes like this one in a future update.
-//
-// Things to look out for are parameters of type "string" and parameters with the "uniform"
-// metadata. These need to be reviewed against the code used in their registered
-// implementations (see registerImplementation calls in the GlslShaderGenerator CTOR). Sadly
-// we can not make that a rule because the filename of an image node is both a "string" and
-// has the "uniform" metadata, yet is not affecting topology.
-bool _IsTopologicalNode(const HdMaterialNode2& inNode)
-{
-    auto _beginsWith
-        = [](const std::string& s, const std::string& prefix) { return s.rfind(prefix, 0) == 0; };
-
-    return _beginsWith(inNode.nodeTypeId.GetString(), "ND_swizzle_")
-        || _beginsWith(inNode.nodeTypeId.GetString(), "ND_geompropvalue_");
+    return ndrNode && ndrNode->GetSourceType() == HdVP2Tokens->mtlx;
 }
 
 //! Helper function to generate a topo hash that can be used to detect if two networks share the
@@ -355,6 +433,81 @@ MStatus _SetFAParameter(
         return surfaceShader->setParameter(paramName, &vec[0]);
     }
     return MS::kFailure;
+}
+
+// MaterialX has a lot of node definitions that will auto-connect to a zero-index texture coordinate
+// system. To make these graphs compatible, we will redirect any unconnected input that uses such an
+// auto-connection scheme to instead read a texcoord geomprop called "st" which is the canonical
+// name for UV at index zero.
+void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
+{
+    // We expect only one node graph, but fixing them all is not an issue:
+    for (mx::NodeGraphPtr nodeGraph : mtlxDoc->getNodeGraphs()) {
+        // This will hold the emergency "ST" reader if one was necessary
+        mx::NodePtr stReader;
+        // Store nodes to delete when loop iteration is complete
+        std::vector<std::string> nodesToDelete;
+
+        for (mx::NodePtr node : nodeGraph->getNodes()) {
+            // Check the inputs of the node for UV0 default geom properties
+            mx::NodeDefPtr nodeDef = node->getNodeDef();
+            for (mx::InputPtr input : nodeDef->getInputs()) {
+                if (input->hasDefaultGeomPropString()
+                    && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
+                    // See if the corresponding input is connected on the node:
+                    if (node->getConnectedNodeName(input->getName()).empty()) {
+                        // Create emergency ST reader if necessary
+                        if (!stReader) {
+                            stReader = nodeGraph->addNode(
+                                _mtlxTokens->geompropvalue.GetString(),
+                                _mtlxTokens->ST_reader.GetString(),
+                                _mtlxTokens->vector2.GetString());
+                            mx::ValueElementPtr prpInput
+                                = stReader->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
+                            prpInput->setValueString(_tokens->st.GetString());
+                        }
+                        node->addInputFromNodeDef(input->getName());
+                        node->setConnectedNodeName(input->getName(), stReader->getName());
+                    }
+                }
+            }
+            // Check if it is an explicit texcoord reader:
+            if (nodeDef->getName() == _mtlxTopoNodeTokens->ND_texcoord_vector2
+                || nodeDef->getName() == _mtlxTopoNodeTokens->ND_texcoord_vector3) {
+                // Switch it with a geompropvalue of the same name:
+                std::string nodeName = node->getName();
+                std::string oldName = nodeName + "_toDelete";
+                node->setName(oldName);
+                nodesToDelete.push_back(oldName);
+                // Find out if there is an explicit stream index:
+                int          streamIndex = 0;
+                mx::InputPtr indexInput = node->getInput(_mtlxTokens->index.GetString());
+                if (indexInput && indexInput->hasValue()) {
+                    mx::ValuePtr indexValue = indexInput->getValue();
+                    if (indexValue->isA<int>()) {
+                        streamIndex = indexValue->asA<int>();
+                    }
+                }
+                // Add replacement geompropvalue node:
+                mx::NodePtr doppelNode = nodeGraph->addNode(
+                    _mtlxTokens->geompropvalue.GetString(),
+                    nodeName,
+                    nodeDef->getOutput("out")->getType());
+                mx::ValueElementPtr prpInput
+                    = doppelNode->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
+                MString primvar = _tokens->st.GetText();
+                if (streamIndex) {
+                    // If reading at index > 0 we add the index to the primvar name:
+                    primvar += streamIndex;
+                }
+                prpInput->setValueString(primvar.asChar());
+            }
+        }
+        // Delete all obsolete texcoord reader nodes.
+        for (const std::string& deadNode : nodesToDelete) {
+            nodeGraph->removeNode(deadNode);
+        }
+    }
 }
 
 #endif // WANT_MATERIALX_BUILD
@@ -1623,6 +1776,13 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
                 &hdTextureNodes,
                 &mxHdTextureMap);
 
+            if (!mtlxDoc) {
+                return shaderInstance;
+            }
+
+            // Fix any missing texcoord reader.
+            _AddMissingTexcoordReaders(mtlxDoc);
+
             _surfaceShaderId = terminalPath;
 
             if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
@@ -1631,9 +1791,7 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
                 mx::writeToXmlStream(mtlxDoc, std::cout);
                 std::cout << "\n==============================\n";
             }
-        }
-
-        if (!mtlxDoc) {
+        } else {
             return shaderInstance;
         }
 
