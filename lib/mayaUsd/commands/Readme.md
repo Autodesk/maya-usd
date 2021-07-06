@@ -240,17 +240,8 @@ further `kind`/model inference optional. The current behavior is:
 #### UV Set Names
 
 Currently, for Mesh export (and similarly for NurbsPatch, also),
-the UV set names will be preserved.
-
-A previous version renamed the UV sets. To get back this old behavior,
-set the `MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET` on export or
-`MAYAUSD_IMPORT_PRIMARY_UV_SET_AS_MAP1` when importing. The old
-renaming behavior worked as follow: we renamed the UV set `map1` to `st`.
-`st` is the primary UV set for RenderMan, so this was very convenient
-for a Renderman-based pipeline. The translation is reversed on
-importing USD into Maya, when the environment variable shown above
-is set. We understand this behavior was not desirable for all,
-so this translation is now off by default.
+the UV set names will be renamed st, st1, st2,... based on ordering of the
+primitive. The original name will be preserved in custom data for roundtripping.
 
 
 ### Custom Attributes and Tagging for USD

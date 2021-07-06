@@ -186,7 +186,7 @@ MIntArray getMayaFaceVertexAssignmentIds(
     return valueIds;
 }
 
-bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bool hasDefaultUVSet)
+bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bool& firstUVPrimvar)
 {
     const TfToken& primvarName = primvar.GetPrimvarName();
 
@@ -202,28 +202,21 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
     // Determine the name to use for the Maya UV set.
     MStatus status { MS::kSuccess };
     MString uvSetName(primvarName.GetText());
-    bool    createUVSet = true;
 
-    if (primvarName == UsdUtilsGetPrimaryUVSetName() && UsdMayaReadUtil::ReadSTAsMap1()) {
-        // We assume that the primary USD UV set maps to Maya's default 'map1'
-        // set which always exists, so we shouldn't try to create it.
-        uvSetName = UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText();
-        createUVSet = false;
-    } else if (!hasDefaultUVSet) {
-        // If map1 still exists, we rename and re-use it:
-        MStringArray uvSetNames;
-        meshFn.getUVSetNames(uvSetNames);
-        if (uvSetNames[0u] == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()) {
-            meshFn.renameUVSet(
-                UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText(), uvSetName);
-            createUVSet = false;
-        }
-    } else if (primvarName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName) {
-        // For UV sets explicitly named map1
-        createUVSet = false;
+    TfToken originalName = UsdMayaRoundTripUtil::GetPrimVarMayaName(primvar);
+    if (!originalName.IsEmpty()) {
+        uvSetName = originalName.GetText();
     }
 
-    if (createUVSet) {
+    // The initial mesh will already have one empty UV set. We must re-use it.
+    if (firstUVPrimvar) {
+        MStringArray uvSetNames;
+        meshFn.getUVSetNames(uvSetNames);
+        if (uvSetNames[0u] != uvSetName) {
+            meshFn.renameUVSet(uvSetNames[0u], uvSetName);
+        }
+        firstUVPrimvar = false;
+    } else {
         status = meshFn.createUVSet(uvSetName);
         if (status != MS::kSuccess) {
             TF_WARN(
@@ -603,22 +596,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
 
     // GETTING PRIMVARS
     const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
-
-    // Maya always has a map1 UV set. We need to find out if there is any stream in the file that
-    // will use that slot. If not, the first texcoord stream to load will replace the default map1
-    // stream.
-    bool hasDefaultUVSet = false;
-    for (const UsdGeomPrimvar& primvar : primvars) {
-        const SdfValueTypeName typeName = primvar.GetTypeName();
-        if (typeName == SdfValueTypeNames->TexCoord2fArray
-            || (UsdMayaReadUtil::ReadFloat2AsUV() && typeName == SdfValueTypeNames->Float2Array)) {
-            const TfToken fullName = primvar.GetPrimvarName();
-            if (fullName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName
-                || (fullName == UsdUtilsGetPrimaryUVSetName() && UsdMayaReadUtil::ReadSTAsMap1())) {
-                hasDefaultUVSet = true;
-            }
-        }
-    }
+    bool                              firstUVPrimvar = true;
 
     for (const UsdGeomPrimvar& primvar : primvars) {
         const TfToken          name = primvar.GetBaseName();
@@ -655,7 +633,7 @@ void UsdMayaMeshReadUtils::assignPrimvarsToMesh(
             // Otherwise, if env variable for reading Float2
             // as uv sets is turned on, we assume that Float2Array primvars
             // are UV sets.
-            if (!assignUVSetPrimvarToMesh(primvar, meshFn, hasDefaultUVSet)) {
+            if (!assignUVSetPrimvarToMesh(primvar, meshFn, firstUVPrimvar)) {
                 TF_WARN(
                     "Unable to retrieve and assign data for UV set <%s> on "
                     "mesh <%s>",
