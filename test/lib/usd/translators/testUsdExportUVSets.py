@@ -70,8 +70,6 @@ class testUsdExportUVSets(unittest.TestCase):
         suffix = ""
         if asFloat2:
             suffix += "Float"
-        if mayaUsdLib.WriteUtil.WriteMap1AsST():
-            suffix += "ST"
 
         inputPath = fixturesUtils.setUpClass(__file__, suffix)
 
@@ -166,10 +164,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         usdCubeMesh = self._GetCubeUsdMesh('EmptyDefaultUVSetCube')
 
-        if mayaUsdLib.WriteUtil.WriteMap1AsST():
-            self.assertFalse(usdCubeMesh.GetPrimvar('map1'))
-        else:
-            self.assertFalse(usdCubeMesh.GetPrimvar('st'))
+        self.assertFalse(usdCubeMesh.GetPrimvar('map1'))
 
     def testExportDefaultUVSet(self):
         """
@@ -208,10 +203,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        if mayaUsdLib.WriteUtil.WriteMap1AsST():
-            primvar = usdCubeMesh.GetPrimvar('st')
-        else:
-            primvar = usdCubeMesh.GetPrimvar('map1')
+        primvar = usdCubeMesh.GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
@@ -254,10 +246,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        if mayaUsdLib.WriteUtil.WriteMap1AsST():
-            primvar = usdCubeMesh.GetPrimvar('st')
-        else:
-            primvar = usdCubeMesh.GetPrimvar('map1')
+        primvar = usdCubeMesh.GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
@@ -291,16 +280,22 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        if mayaUsdLib.WriteUtil.WriteMap1AsST():
-            primvar = usdCubeMesh.GetPrimvar('st')
-        else:
-            primvar = usdCubeMesh.GetPrimvar('map1')
+        primvar = usdCubeMesh.GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
             expectedIndices=expectedIndices,
             expectedUnauthoredValuesIndex=expectedUnauthoredValuesIndex)
+
+    @staticmethod
+    def _GetRenamedPrimvar(mesh, name):
+        """
+        Uses roundtripping utils to get a renamed primvar.
+        """
+        for primVar in mesh.GetPrimvars():
+            if mayaUsdLib.RoundTripUtil.GetPrimVarMayaName(primVar) == name:
+                return primVar
 
     def testExportSharedFacesUVSets(self):
         """
@@ -320,7 +315,7 @@ class testUsdExportUVSets(unittest.TestCase):
         expectedIndices = [0, 1, 2, 3] * 6
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar(uvSetName)
+        primvar = testUsdExportUVSets._GetRenamedPrimvar(usdCubeMesh, uvSetName)
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
@@ -342,7 +337,7 @@ class testUsdExportUVSets(unittest.TestCase):
             2, 4, 5, 6] * 3
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar(uvSetName)
+        primvar = testUsdExportUVSets._GetRenamedPrimvar(usdCubeMesh, uvSetName)
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
@@ -358,10 +353,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         brokenBoxMesh = UsdGeom.Mesh(self._stage.GetPrimAtPath(
                 "/UsdExportUVSetsTest/Geom/BrokenUVs/box"))
-        if mayaUsdLib.WriteUtil.WriteMap1AsST():
-            stPrimvar = brokenBoxMesh.GetPrimvar("st").ComputeFlattened()
-        else:
-            stPrimvar = brokenBoxMesh.GetPrimvar("map1").ComputeFlattened()
+        stPrimvar = brokenBoxMesh.GetPrimvar("st").ComputeFlattened()
 
         self.assertEqual(stPrimvar[0], Gf.Vec2f(1.0, 2.0))
 
