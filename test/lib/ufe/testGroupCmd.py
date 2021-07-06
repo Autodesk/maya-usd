@@ -275,6 +275,41 @@ class GroupCmdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.group(name="newGroup")
 
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+
+        # create a sphere
+        stage.DefinePrim('/Sphere1', 'Sphere')
+
+        # select the Sphere
+        spherePath = ufe.PathString.path("{},/Sphere1".format("|transform1|proxyShape1"))
+        sphereItem = ufe.Hierarchy.createItem(spherePath)
+        ufeSelection = ufe.GlobalSelection.get()
+        ufeSelection.clear()
+        ufeSelection.append(sphereItem)
+
+        # set the edit target to the session layer
+        stage.SetEditTarget(stage.GetSessionLayer())
+
+        # expect the exception happens.
+        with self.assertRaises(RuntimeError):
+            cmds.group(name="newGroup")
+
+        # undo
+        cmds.undo()
+
+        # verify that group1 doesn't exist after the undo
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/Ball_set"),
+            stage.GetPrimAtPath("/Ball_set/Props"), 
+            stage.GetPrimAtPath("/Ball_set/Props/Ball_1"),
+            stage.GetPrimAtPath("/Ball_set/Props/Ball_2"),
+            stage.GetPrimAtPath("/Ball_set/Props/Ball_3"),
+            stage.GetPrimAtPath("/Ball_set/Props/Ball_4"),
+            stage.GetPrimAtPath("/Ball_set/Props/Ball_5"),
+            stage.GetPrimAtPath("/Ball_set/Props/Ball_6"),
+            stage.GetPrimAtPath("/Sphere1")])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

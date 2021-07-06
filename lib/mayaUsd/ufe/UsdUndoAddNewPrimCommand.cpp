@@ -64,7 +64,8 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
             _newUfePath = appendToPath(ufePath, newPrimName);
         }
 
-        ufe::applyCommandRestriction(usdSceneItem->prim(), "add new [" + _newUfePath.back().string() + "] under ");
+        ufe::applyCommandRestriction(
+            usdSceneItem->prim(), "add new [" + _newUfePath.back().string() + "] under ");
 
         // Build (and store) the usd path for the new prim with the unique name.
         PXR_NS::SdfPath usdItemPath = usdSceneItem->prim().GetPath();
