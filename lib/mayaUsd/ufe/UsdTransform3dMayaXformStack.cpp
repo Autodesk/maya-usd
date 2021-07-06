@@ -476,8 +476,13 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
                   return UsdGeomXformOp();
               }
 
+              // See comment in setVector3dCmd().
               auto r = xformable.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
-              TF_AXIOM(r);
+              if (!TF_VERIFY(
+                      r,
+                      "RotateXYZOp already exists for %s",
+                      usdSceneItem->path().string().c_str()))
+                  return UsdGeomXformOp();
               r.Set(v);
               auto result = setXformOpOrderFn(xformable);
               TF_AXIOM(result);
@@ -530,8 +535,13 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
                   return UsdGeomXformOp();
               }
 
+              // See comment in setVector3dCmd().
               auto s = xformable.AddScaleOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
-              TF_AXIOM(s);
+              if (!TF_VERIFY(
+                      s,
+                      "ScaleOp already exists for %s",
+                      usdSceneItem->path().string().c_str()))
+                  return UsdGeomXformOp();
               s.Set(v);
               auto result = setXformOpOrderFn(xformable);
               TF_AXIOM(result);
@@ -657,8 +667,20 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
                     return UsdGeomXformOp();
                 }
 
+                // MAYA-111834 - Crash when transforming multiple objects with duplicate stage
+                // When sharing a stage if you have the same object selected from both proxy shapes
+                // and you perform a manip (such as translate) we end up with this OpFunc for both
+                // since the GetAttribute() above returns nothing. Now when we execute these OpFunc
+                // commands the first will succeed and add the translate op, but the second will
+                // error and return an empty UsdGeomXformOp (since a TranslateOp already exists).
+                // Therefore we detect (and allow) this case.
+                // TODO - What is the expected behavior in this case? Should the object move twice?
                 auto op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
-                TF_AXIOM(op);
+                if (!TF_VERIFY(
+                        op,
+                        "TranslateOp already exists for %s",
+                        cmd.sceneItem()->path().string().c_str()))
+                    return UsdGeomXformOp();
                 op.Set(v);
                 auto result = setXformOpOrderFn(xformable);
                 TF_AXIOM(result);
@@ -706,6 +728,11 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
               TF_AXIOM(usdSceneItem);
               UsdGeomXformable xformable(usdSceneItem->prim());
               auto p = xformable.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, pvtOpSuffix);
+              if (!TF_VERIFY(
+                      p,
+                      "TranslateOp already exists for %s",
+                      usdSceneItem->path().string().c_str()))
+                  return UsdGeomXformOp();
 
               // At this point we already know that writing to attribute is going
               // to succeed but we do not know if writing to "transform op order" succeed since
@@ -716,9 +743,14 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
                   return UsdGeomXformOp();
               }
 
+              // See comment in setVector3dCmd().
               auto pInv = xformable.AddTranslateOp(
                   UsdGeomXformOp::PrecisionFloat, pvtOpSuffix, /* isInverseOp */ true);
-              TF_AXIOM(p && pInv);
+              if (!TF_VERIFY(
+                      pInv,
+                      "TranslateOp (inverse) already exists for %s",
+                      usdSceneItem->path().string().c_str()))
+                  return UsdGeomXformOp();
               p.Set(v);
               auto result = setXformOpOrderFn(xformable);
               TF_AXIOM(result);
