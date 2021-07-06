@@ -124,7 +124,7 @@ TfToken MtlxUsd_PreviewSurfaceReader::GetMayaNameForUsdAttrName(const TfToken& u
 
     if (attrType == UsdShadeAttributeType::Input) {
         return baseName;
-    } else if (attrType == UsdShadeAttributeType::Output && baseName == TrMtlxTokens->out) {
+    } else if (attrType == UsdShadeAttributeType::Output && baseName == UsdShadeTokens->surface) {
         return TrMayaTokens->outColor;
     }
     return TfToken();

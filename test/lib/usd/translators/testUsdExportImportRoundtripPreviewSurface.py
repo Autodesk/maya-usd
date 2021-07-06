@@ -28,6 +28,7 @@ from maya import cmds
 from maya import standalone
 
 import fixturesUtils
+import mayaUtils
 
 class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
@@ -51,7 +52,13 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
     def testUsdPreviewSurfaceRoundtripMetallic(self):
         self.__testUsdPreviewSurfaceRoundtrip(metallic=True)
 
-    def __testUsdPreviewSurfaceRoundtrip(self, metallic=True):
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 126 and Usd.GetVersion() > (0, 21, 5), 'Requires MaterialX support.')
+    def testUsdPreviewSurfaceRoundtripMaterialX(self):
+        self.__testUsdPreviewSurfaceRoundtrip(metallic=True, convertTo="MaterialX")
+
+    def __testUsdPreviewSurfaceRoundtrip(self,
+                                         metallic=True,
+                                         convertTo="UsdPreviewSurface"):
         """
         Tests that a usdPreviewSurface exports and imports correctly.
         """
@@ -105,10 +112,17 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         original_path = cmds.getAttr(file_node+".fileTextureName")
 
         # Export to USD:
-        usd_path = os.path.abspath('UsdPreviewSurfaceRoundtripTest{}.usda'.format('Metallic' if metallic else 'Specular'))
+        file_suffix = "_{}_{}".format(convertTo, 'Metallic' if metallic else 'Specular')
+        usd_path = os.path.abspath('UsdPreviewSurfaceRoundtripTest{}.usda'.format(file_suffix))
+
+        export_options = [
+            "shadingMode=useRegistry",
+            "convertMaterialsTo={}".format(convertTo),
+            "mergeTransformAndShape=1"
+        ]
 
         cmds.file(usd_path, force=True,
-                  options="shadingMode=useRegistry;mergeTransformAndShape=1",
+                  options=";".join(export_options),
                   typ="USD Export", pr=True, ea=True)
 
         cmds.file(defaultExtensions=default_ext_setting)
@@ -116,7 +130,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.file(newFile=True, force=True)
 
         # Import back:
-        import_options = ("shadingMode=[[useRegistry,UsdPreviewSurface]]",
+        import_options = ("shadingMode=[[useRegistry,{}]]".format(convertTo),
                           "preferredMaterial=none",
                           "primPath=/")
         cmds.file(usd_path, i=True, type="USD Import",
@@ -170,9 +184,12 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # Make sure paths are relative in the USD file. Joining the directory
         # that the USD file lives in with the texture path should point us at
         # a file that exists.
+        file_template = "/{}/Looks/{}/{}"
+        if convertTo == "MaterialX":
+            file_template = "/{0}/Looks/{1}/MayaNG_{1}/{2}"
         stage = Usd.Stage.Open(usd_path)
         texture_prim = stage.GetPrimAtPath(
-            "/%s/Looks/%s/%s" % (sphere_xform, material_sg, file_node))
+            file_template.format(sphere_xform, material_sg, file_node))
         rel_texture_path = texture_prim.GetAttribute('inputs:file').Get().path
 
         usd_dir = os.path.dirname(usd_path)
