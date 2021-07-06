@@ -12,6 +12,7 @@
 # MAYA_API_VERSION    Maya version (6-8 digits)
 # MAYA_APP_VERSION    Maya app version (4 digits)
 # MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2)
+# MAYA_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
 #
 
 #=============================================================================
@@ -331,6 +332,30 @@ if (MAYA_OGSDEVICES_LIBRARY)
 endif()
 message(STATUS "Using Maya Light API Version ${MAYA_LIGHTAPI_VERSION}")
 
+set(MAYA_DEFAULT_MATERIAL_API 0)
+# Grep for the new API in OpenMayaRender. Might be quicker than asking MayaPy.
+find_file(MAYA_OPENMAYARENDER_LIBRARY
+        "${MAYA_DSO_PREFIX}OpenMayaRender${MAYA_DSO_SUFFIX}"
+    HINTS
+        "${MAYA_LIBRARY_DIR}"
+        "${MAYA_LOCATION}"
+    PATH_SUFFIXES
+        lib/
+        bin/
+    DOC
+        "Maya's ${MAYA_LIB} library path"
+    # NO_CMAKE_SYSTEM_PATH needed to avoid conflicts between
+    # Maya's Foundation library and OSX's framework.
+    NO_CMAKE_SYSTEM_PATH
+)
+if (MAYA_OPENMAYARENDER_LIBRARY)
+    file(STRINGS ${MAYA_OPENMAYARENDER_LIBRARY} HAS_DEFAULT_MATERIAL_API REGEX "setDefaultMaterialHandling")
+    if (HAS_DEFAULT_MATERIAL_API)
+        set(MAYA_DEFAULT_MATERIAL_API 1)
+        message(STATUS "This version of Maya has the default material API")
+    endif()
+endif()
+
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
@@ -345,6 +370,7 @@ find_package_handle_standard_args(Maya
         MAYA_API_VERSION
         MAYA_APP_VERSION
         MAYA_LIGHTAPI_VERSION
+        MAYA_DEFAULT_MATERIAL_API
     VERSION_VAR
         MAYA_APP_VERSION
 )
