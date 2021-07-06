@@ -28,7 +28,10 @@ from maya import cmds
 from maya import standalone
 
 import fixturesUtils
-import mayaUtils
+try:
+    import mayaUtils
+except ImportError:
+    pass
 
 class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
@@ -52,7 +55,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
     def testUsdPreviewSurfaceRoundtripMetallic(self):
         self.__testUsdPreviewSurfaceRoundtrip(metallic=True)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 126 and Usd.GetVersion() > (0, 21, 5), 'Requires MaterialX support.')
+    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.previewReleaseVersion() >= 126 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
     def testUsdPreviewSurfaceRoundtripMaterialX(self):
         self.__testUsdPreviewSurfaceRoundtrip(metallic=True, convertTo="MaterialX")
 
