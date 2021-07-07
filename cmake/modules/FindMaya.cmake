@@ -12,6 +12,7 @@
 # MAYA_API_VERSION    Maya version (6-8 digits)
 # MAYA_APP_VERSION    Maya app version (4 digits)
 # MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2)
+# MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
 #
 
 #=============================================================================
@@ -330,6 +331,15 @@ if (MAYA_OGSDEVICES_LIBRARY)
     endif()
 endif()
 message(STATUS "Using Maya Light API Version ${MAYA_LIGHTAPI_VERSION}")
+
+set(MAYA_HAS_DEFAULT_MATERIAL_API FALSE CACHE INTERNAL "setDefaultMaterialHandling")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h MAYA_HAS_API REGEX "setDefaultMaterialHandling")
+    if(MAYA_HAS_API)
+        set(MAYA_HAS_DEFAULT_MATERIAL_API TRUE CACHE INTERNAL "setDefaultMaterialHandling")
+        message(STATUS "Maya has setDefaultMaterialHandling API")
+    endif()
+endif()
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE
