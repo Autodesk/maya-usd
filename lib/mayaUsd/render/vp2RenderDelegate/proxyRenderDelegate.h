@@ -42,9 +42,8 @@
 #endif
 
 // The new Maya point snapping support doesn't require point snapping items any more.
-#if (MAYA_API_VERSION >= 20220200 && MAYA_API_VERSION < 20230000) || (MAYA_API_VERSION >= 20230000 && MAYA_PREVIEW_RELEASE_VERSION >= 127)
+#if (MAYA_API_VERSION >= 20220200 && MAYA_API_VERSION < 20230000) || (MAYA_API_VERSION >= 20230000 && (MAYA_PREVIEW_RELEASE_VERSION >= 127 || MAYA_PREVIEW_RELEASE_VERSION == 0))
 #define MAYA_NEW_POINT_SNAPPING_SUPPORT
-#define MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
 #endif
 
 // Conditional compilation due to Maya API gap.
@@ -172,7 +171,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool DrawRenderTag(const TfToken& renderTag) const;
 
-#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MAYAUSD_CORE_PUBLIC
     bool SnapToSelectedObjects() const;
 #endif
@@ -260,7 +259,7 @@ private:
     }; //!< If false, scene delegate wasn't populated yet within render index
     bool   _selectionChanged { true }; //!< Whether there is any selection change or not
     bool   _selectionModeChanged { true }; //!< Whether the global selection mode has changed
-#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool   _snapToSelectedObjects { false }; //!< Whether point snapping should snap to selected objects
 #endif
     MColor _wireframeColor;            //!< Wireframe color assigned to the proxy shape

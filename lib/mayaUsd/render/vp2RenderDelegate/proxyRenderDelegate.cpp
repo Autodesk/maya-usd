@@ -799,7 +799,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;
 
-#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();
     MStatus status;
     if (selectionInfo) {
@@ -1318,7 +1318,7 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
     }
 }
 
-#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 bool ProxyRenderDelegate::SnapToSelectedObjects() const
 {
     return _snapToSelectedObjects;

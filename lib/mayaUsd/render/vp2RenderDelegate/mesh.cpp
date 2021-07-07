@@ -2019,11 +2019,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         && (itemDirtyBits & (DirtySelectionHighlight | DirtySelectionMode))) {
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
-#ifdef MAYA_SNAP_TO_SELECTED_OBJECTS_SUPPORT
         if (_selectionStatus == kUnselected || drawScene.SnapToSelectedObjects()) {
             selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
         }
-#else
         // Only unselected Rprims can be used for point snapping.
         if (_selectionStatus == kUnselected) {
             selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
