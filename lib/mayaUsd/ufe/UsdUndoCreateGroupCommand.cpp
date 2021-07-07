@@ -37,10 +37,12 @@ UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(
     const UsdSceneItem::Ptr&  parentItem,
     const Ufe::Selection&     selection,
     const Ufe::PathComponent& name)
-    : Ufe::CompositeUndoableCommand()
+    : Ufe::InsertChildCommand()
     , _parentItem(parentItem)
     , _name(name)
     , _selection(selection)
+    , _groupCompositeCmd(std::make_shared<Ufe::CompositeUndoableCommand>())
+
 {
 }
 
@@ -54,7 +56,7 @@ UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
     return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, selection, name);
 }
 
-Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _group; }
+Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::insertedChild() const { return _group; }
 
 //------------------------------------------------------------------------------
 // UsdUndoCreateGroupCommand overrides
@@ -63,7 +65,7 @@ Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _group; }
 void UsdUndoCreateGroupCommand::execute()
 {
     auto addPrimCmd = UsdUndoAddNewPrimCommand::create(_parentItem, _name.string(), "Xform");
-    append(addPrimCmd);
+    _groupCompositeCmd->append(addPrimCmd);
     addPrimCmd->execute();
 
     _group = UsdSceneItem::create(addPrimCmd->newUfePath(), addPrimCmd->newPrim());
@@ -75,7 +77,7 @@ void UsdUndoCreateGroupCommand::execute()
     if (PXR_NS::UsdModelAPI(parentPrim).IsModel()) {
         const PXR_NS::UsdPrim& groupPrim = _group->prim();
         auto setKindCmd = UsdUndoSetKindCommand::create(groupPrim, PXR_NS::KindTokens->group);
-        append(setKindCmd);
+        _groupCompositeCmd->append(setKindCmd);
         setKindCmd->execute();
     }
 
@@ -89,8 +91,8 @@ void UsdUndoCreateGroupCommand::execute()
         if (newParentHierarchy) {
             for (auto child : _selection) {
                 auto parentCmd = newParentHierarchy->appendChildCmd(child);
+                _groupCompositeCmd->append(parentCmd);
                 parentCmd->execute();
-                append(parentCmd);
             }
         }
 
@@ -110,6 +112,10 @@ void UsdUndoCreateGroupCommand::execute()
         throw; // re-throw the same exception
     }
 }
+
+void UsdUndoCreateGroupCommand::undo() { _groupCompositeCmd->undo(); }
+
+void UsdUndoCreateGroupCommand::redo() { _groupCompositeCmd->redo(); }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

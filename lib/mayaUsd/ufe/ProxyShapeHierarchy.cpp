@@ -220,13 +220,13 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
         = UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
     if (cmd) {
         cmd->execute();
-        createdItem = cmd->group();
+        createdItem = cmd->insertedChild();
     }
 
     return createdItem;
 }
 
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
+Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
     const Ufe::Selection&     selection,
     const Ufe::PathComponent& name) const
 {

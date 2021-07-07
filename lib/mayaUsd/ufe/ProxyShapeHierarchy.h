@@ -66,7 +66,7 @@ public:
 #ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::SceneItem::Ptr
     createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
-    Ufe::UndoableCommand::Ptr
+    Ufe::InsertChildCommand::Ptr
     createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
 
     Ufe::SceneItem::Ptr defaultParent() const override;

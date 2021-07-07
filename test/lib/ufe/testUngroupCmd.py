@@ -110,13 +110,13 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2Path = sphereGen.createSphere()
 
         # create a group
-        cmds.group(ufe.PathString.string(sphere1Path), 
-                   ufe.PathString.string(sphere2Path))
+        groupName = cmds.group(ufe.PathString.string(sphere1Path), 
+                               ufe.PathString.string(sphere2Path))
 
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        self.assertEqual(groupItem.nodeName(), groupName)
 
         # verify that groupItem has 2 children
         groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
@@ -203,8 +203,8 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2T3d.translate(-2.0, 0.0, 0.0)
 
         # create a group
-        cmds.group(ufe.PathString.string(sphere1Path), 
-                   ufe.PathString.string(sphere2Path))
+        groupName = cmds.group(ufe.PathString.string(sphere1Path), 
+                               ufe.PathString.string(sphere2Path))
 
         # move the group 
         cmds.move(7.0, 8.0, 12.0, r=True)
@@ -212,7 +212,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        self.assertEqual(groupItem.nodeName(), groupName)
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.
@@ -243,8 +243,8 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2T3d.translate(-2.0, 0.0, 0.0)
 
         # create a group
-        cmds.group(ufe.PathString.string(sphere1Path), 
-                   ufe.PathString.string(sphere2Path))
+        groupName = cmds.group(ufe.PathString.string(sphere1Path), 
+                               ufe.PathString.string(sphere2Path))
 
         # move the group 
         cmds.move(20.0, 8.0, 12.0, r=True)
@@ -252,7 +252,7 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        self.assertEqual(groupItem.nodeName(), groupName)
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.
@@ -358,13 +358,13 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2Path = sphereGen.createSphere()
 
         # create a group
-        cmds.group(ufe.PathString.string(sphere1Path), 
-                   ufe.PathString.string(sphere2Path))
+        groupName = cmds.group(ufe.PathString.string(sphere1Path), 
+                               ufe.PathString.string(sphere2Path))
 
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        self.assertEqual(groupItem.nodeName(), groupName)
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.

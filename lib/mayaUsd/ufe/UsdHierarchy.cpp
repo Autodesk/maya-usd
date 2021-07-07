@@ -229,13 +229,13 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
         = UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
     if (cmd) {
         cmd->execute();
-        createdItem = cmd->group();
+        createdItem = cmd->insertedChild();
     }
 
     return createdItem;
 }
 
-Ufe::UndoableCommand::Ptr
+Ufe::InsertChildCommand::Ptr
 UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
     return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
