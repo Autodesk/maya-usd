@@ -55,6 +55,11 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
 
         cls._testDir = os.path.abspath('.')
 
+    @classmethod
+    def tearDownClass(cls):
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
+
     def assertSnapshotClose(self, imageName):
         baselineImage = os.path.join(self._baselineDir, imageName)
         snapshotImage = os.path.join(self._testDir, imageName)
@@ -64,6 +69,8 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
     def _StartTest(self, testName):
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
         self._testName = testName
         testFile = testUtils.getTestScene("instances", self._testName + ".usda")
         mayaUtils.createProxyFromFile(testFile)
