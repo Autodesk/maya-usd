@@ -1390,7 +1390,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
     // HdMaterialNetwork. Keep track of the existence of some key nodes to help
     // with performance.
     HdMaterialNode* usdDrawModeCardsNode = nullptr;
-    HdMaterialNode* stPrimvarReader = nullptr;
+    HdMaterialNode* cardsUvPrimvarReader = nullptr;
 
     // Get the shader registry so I can look up the real names of shading nodes.
     SdrRegistry& shaderReg = SdrRegistry::GetInstance();
@@ -1437,9 +1437,10 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
             usdDrawModeCardsNode = &outNode;
         }
 
-        if (_IsUsdFloat2PrimvarReader(outNode)) {
-            TF_VERIFY(!stPrimvarReader); // I haven't thought about what to do for multiple UV sets!
-            stPrimvarReader = &outNode;
+        if (_IsUsdFloat2PrimvarReader(outNode)
+            && outNode.parameters[_tokens->varname] == _tokens->cardsUv) {
+            TF_VERIFY(!cardsUvPrimvarReader);
+            cardsUvPrimvarReader = &outNode;
         }
 
         outNode.path = SdfPath(outNode.identifier.GetString() + std::to_string(++nodeCounter));
@@ -1470,24 +1471,24 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         if (_IsUsdUVTexture(node) && usdDrawModeCardsNode) {
             // the DrawModeCardsFragment has UsdUVtexture nodes without primvar readers.
             // Add a primvar reader to each UsdUVTexture which doesn't already have one.
-            if (!stPrimvarReader) {
+            if (!cardsUvPrimvarReader) {
                 HdMaterialNode stReader;
                 stReader.identifier = UsdImagingTokens->UsdPrimvarReader_float2;
                 stReader.path
                     = SdfPath(stReader.identifier.GetString() + std::to_string(++nodeCounter));
                 stReader.parameters[_tokens->varname] = _tokens->cardsUv;
                 outNet.nodes.push_back(stReader);
-                stPrimvarReader = &outNet.nodes.back();
+                cardsUvPrimvarReader = &outNet.nodes.back();
                 // Specifically looking for the cardsUv primvar
                 outNet.primvars.push_back(_tokens->cardsUv);
             }
 
-            // search for an existing relationship between stPrimvarReader & node.
+            // search for an existing relationship between cardsUvPrimvarReader & node.
             // TODO: if there are multiple UV sets this can fail, it is looking for
             // a connection to a specific UsdPrimvarReader_float2.
             bool hasRelationship = false;
             for (const HdMaterialRelationship& rel : tmpNet.relationships) {
-                if (rel.inputId == stPrimvarReader->path && rel.inputName == _tokens->result
+                if (rel.inputId == cardsUvPrimvarReader->path && rel.inputName == _tokens->result
                     && rel.outputId == node.path && rel.outputName == _tokens->st) {
                     hasRelationship = true;
                     break;
@@ -1502,7 +1503,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
                 TF_VERIFY(usdDrawModeCardsNode);
 
                 HdMaterialRelationship newRel
-                    = { stPrimvarReader->path, _tokens->result, node.path, _tokens->st };
+                    = { cardsUvPrimvarReader->path, _tokens->result, node.path, _tokens->st };
                 outNet.relationships.push_back(newRel);
             }
         }
