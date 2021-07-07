@@ -106,9 +106,11 @@ MtlxUsd_PreviewSurfaceWriter::MtlxUsd_PreviewSurfaceWriter(
         MPlug attrPlug = depNodeFn.findPlug(mayaAttrName.GetText(), true);
 
         // Keep our authoring sparse by ignoring attributes with no values set
-        // and no connections. We know that the default value of base and base
-        // color diverged between Maya and MaterialX in version 1.38.
-        if (!UsdMayaUtil::IsAuthored(attrPlug) && !attrPlug.isConnected()) {
+        // and no connections. We know that the default value of roughness is
+        // wrong in MaterialX 1.38.
+        if (!(UsdMayaUtil::IsAuthored(attrPlug)
+              || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName)
+            && !attrPlug.isConnected()) {
             continue;
         }
 
