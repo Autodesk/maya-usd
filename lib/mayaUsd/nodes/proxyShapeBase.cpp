@@ -657,7 +657,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
 
             {
+#if AR_VERSION == 1
                 PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
+#endif
 
                 // When opening or creating stages we must have an active UsdStageCache.
                 // The stage cache is the only one who holds a strong reference to the
