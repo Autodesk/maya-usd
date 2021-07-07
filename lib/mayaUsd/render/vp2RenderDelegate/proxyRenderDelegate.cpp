@@ -15,9 +15,9 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include "mayaPrimCommon.h"
 #include "render_delegate.h"
 #include "tokens.h"
-#include "mayaPrimCommon.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
@@ -801,7 +801,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();
-    MStatus status;
+    MStatus               status;
     if (selectionInfo) {
         bool oldSnapToSelectedObjects = _snapToSelectedObjects;
         _snapToSelectedObjects = selectionInfo->snapToActive(&status);
@@ -1106,8 +1106,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
         // items. Set a dirty flag on each of the rprims so they know what to update.
         if (_selectionModeChanged) {
             HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-            for(auto path : rootPaths)
-            {
+            for (auto path : rootPaths) {
                 changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
             }
         }
@@ -1319,10 +1318,7 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
 }
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-bool ProxyRenderDelegate::SnapToSelectedObjects() const
-{
-    return _snapToSelectedObjects;
-}
+bool ProxyRenderDelegate::SnapToSelectedObjects() const { return _snapToSelectedObjects; }
 #endif
 
 // ProxyShapeData

@@ -16,12 +16,13 @@
 #ifndef HD_VP2_MAYA_PRIM_COMMON
 #define HD_VP2_MAYA_PRIM_COMMON
 
-#include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/changeTracker.h"
+#include "pxr/imaging/hd/types.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct MayaPrimCommon {
+struct MayaPrimCommon
+{
     enum DirtyBits : HdDirtyBits
     {
         DirtySelection = HdChangeTracker::CustomBitsBegin,

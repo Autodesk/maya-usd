@@ -26,6 +26,7 @@
 #include <pxr/usd/usd/prim.h>
 
 #include <maya/MDagPath.h>
+#include <maya/MDefines.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
@@ -33,7 +34,6 @@
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPxSubSceneOverride.h>
-#include <maya/MDefines.h>
 
 #include <memory>
 
@@ -252,12 +252,14 @@ private:
     bool _isPopulated {
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
-    bool   _selectionChanged { true }; //!< Whether there is any selection change or not
-    bool   _selectionModeChanged { true }; //!< Whether the global selection mode has changed
+    bool _selectionChanged { true };     //!< Whether there is any selection change or not
+    bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    bool   _snapToSelectedObjects { false }; //!< Whether point snapping should snap to selected objects
+    bool _snapToSelectedObjects {
+        false
+    }; //!< Whether point snapping should snap to selected objects
 #endif
-    MColor _wireframeColor;            //!< Wireframe color assigned to the proxy shape
+    MColor _wireframeColor; //!< Wireframe color assigned to the proxy shape
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
