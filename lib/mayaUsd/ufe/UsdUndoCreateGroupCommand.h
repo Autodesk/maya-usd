@@ -60,7 +60,7 @@ public:
 private:
     UsdSceneItem::Ptr  _parentItem;
     Ufe::PathComponent _name;
-    UsdSceneItem::Ptr  _group;
+    UsdSceneItem::Ptr  _groupItem;
     Ufe::Selection     _selection;
 
     std::shared_ptr<Ufe::CompositeUndoableCommand> _groupCompositeCmd;
