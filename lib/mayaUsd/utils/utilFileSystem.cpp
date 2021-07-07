@@ -55,7 +55,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
 {
     ArResolver& resolver = ArGetResolver();
+#if AR_VERSION == 1
     resolver.ConfigureResolverForAsset(filePath);
+#endif
     return resolver.Resolve(filePath);
 }
 
