@@ -2026,7 +2026,6 @@ void HdVP2Mesh::_UpdateDrawItem(
         if (_selectionStatus == kUnselected) {
             selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
         }
-#endif
 
         // The function is thread-safe, thus called in place to keep simple.
         renderItem->setSelectionMask(selectionMask);
