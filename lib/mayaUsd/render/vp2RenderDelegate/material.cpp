@@ -1437,7 +1437,8 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
             usdDrawModeCardsNode = &outNode;
         }
 
-        if (_IsUsdFloat2PrimvarReader(outNode) && outNode.parameters[_tokens->varname] == _tokens->cardsUv) {
+        if (_IsUsdFloat2PrimvarReader(outNode)
+            && outNode.parameters[_tokens->varname] == _tokens->cardsUv) {
             TF_VERIFY(!cardsUvPrimvarReader);
             cardsUvPrimvarReader = &outNode;
         }
