@@ -333,20 +333,9 @@ endif()
 message(STATUS "Using Maya Light API Version ${MAYA_LIGHTAPI_VERSION}")
 
 set(MAYA_HAS_DEFAULT_MATERIAL_API FALSE CACHE INTERNAL "setDefaultMaterialHandling")
-# Grep for the new API in include/maya/MHWGeometry.h
-find_file(MAYA_MHWGeometry_HEADER
-        "MHWGeometry.h"
-    HINTS
-        "${MAYA_INCLUDE_DIRS}"
-    PATH_SUFFIXES
-        maya
-    # NO_CMAKE_SYSTEM_PATH needed to avoid conflicts between
-    # Maya's Foundation library and OSX's framework.
-    NO_CMAKE_SYSTEM_PATH
-)
-if (MAYA_MHWGeometry_HEADER)
-    file(STRINGS ${MAYA_MHWGeometry_HEADER} HAS_DEFAULT_MATERIAL_API REGEX "setDefaultMaterialHandling")
-    if (HAS_DEFAULT_MATERIAL_API)
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h MAYA_HAS_API REGEX "setDefaultMaterialHandling")
+    if(MAYA_HAS_API)
         set(MAYA_HAS_DEFAULT_MATERIAL_API TRUE CACHE INTERNAL "setDefaultMaterialHandling")
         message(STATUS "Maya has setDefaultMaterialHandling API")
     endif()
