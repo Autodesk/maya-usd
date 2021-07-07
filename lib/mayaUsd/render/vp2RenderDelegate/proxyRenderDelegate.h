@@ -26,7 +26,6 @@
 #include <pxr/usd/usd/prim.h>
 
 #include <maya/MDagPath.h>
-#include <maya/MDefines.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
