@@ -258,7 +258,7 @@ private:
     }; //!< If false, scene delegate wasn't populated yet within render index
     bool _selectionChanged { true };     //!< Whether there is any selection change or not
     bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed
-    bool _snapToPoints { false }; //!< Whether point snapping is enabled or not
+    bool _snapToPoints { false };        //!< Whether point snapping is enabled or not
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _snapToSelectedObjects {
         false

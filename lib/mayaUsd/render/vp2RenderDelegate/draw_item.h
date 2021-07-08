@@ -109,7 +109,7 @@ public:
     //! can be created for multiple usages.
     enum RenderItemUsage
     {
-        kRegular = 1 << 0,           //!< Regular drawing (shaded, wireframe etc.)
+        kRegular = 1 << 0,                  //!< Regular drawing (shaded, wireframe etc.)
         kSelectionHighlight = kRegular << 1 //!< Selection highlight.
     };
 
@@ -118,7 +118,8 @@ public:
 
     ~HdVP2DrawItem();
 
-    RenderItemData& AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset = nullptr);
+    RenderItemData&
+    AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset = nullptr);
 
     using RenderItemDataVector = std::vector<RenderItemData>;
     const RenderItemDataVector& GetRenderItems() const { return _renderItems; }

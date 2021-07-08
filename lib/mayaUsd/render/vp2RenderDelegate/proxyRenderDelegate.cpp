@@ -811,7 +811,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     }
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MStatus               status;
+    MStatus status;
     if (selectionInfo) {
         bool oldSnapToSelectedObjects = _snapToSelectedObjects;
         _snapToSelectedObjects = selectionInfo->snapToActive(&status);
@@ -896,8 +896,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
     // Get the custom data from the MRenderItem and map the instance index to the USD instance index
     auto mayaToUsd = MayaUsdCustomData::Get(renderItem);
-    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES && mayaToUsd.size() > instanceIndex)
-    {
+    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES && mayaToUsd.size() > instanceIndex) {
         instanceIndex = mayaToUsd[instanceIndex];
     }
 
@@ -1338,10 +1337,7 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
 bool ProxyRenderDelegate::SnapToSelectedObjects() const { return _snapToSelectedObjects; }
 #endif
 
-bool ProxyRenderDelegate::SnapToPoints() const
-{
-    return _snapToPoints;
-}
+bool ProxyRenderDelegate::SnapToPoints() const { return _snapToPoints; }
 
 // ProxyShapeData
 ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(

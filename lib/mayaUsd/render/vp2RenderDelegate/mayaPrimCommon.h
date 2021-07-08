@@ -21,9 +21,9 @@
 
 #include <maya/MHWGeometry.h>
 
-#include <vector>
-
 #include <tbb/concurrent_unordered_map.h>
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
