@@ -58,7 +58,7 @@ void setStringArray(
     const std::string&                  token);
 
 /**
- * Get the String custom data on the laye
+ * Get the String custom data on the layer
  *
  * @param layer     The layer the custom data is on
  * @param token     The key (dictionary) where the data is stored

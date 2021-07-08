@@ -37,8 +37,6 @@
 
 namespace {
 
-PXR_NAMESPACE_USING_DIRECTIVE;
-
 std::string quote(const std::string& string) { return STR(" \"") + string + STR("\""); }
 
 MString executeMel(const std::string& commandString)
@@ -78,12 +76,12 @@ bool GetBooleanAttributeOnProxyShape(
     }
 
     MObject mobj;
-    MStatus status = UsdMayaUtil::GetMObjectByName(GetProxyShapeName(proxyShapePath), mobj);
+    MStatus status = PXR_NS::UsdMayaUtil::GetMObjectByName(GetProxyShapeName(proxyShapePath), mobj);
     if (status == MStatus::kSuccess) {
         MFnDependencyNode fn;
         fn.setObject(mobj);
         bool attribute;
-        if (UsdMayaUtil::getPlugValue(fn, attributeName.c_str(), &attribute)) {
+        if (PXR_NS::UsdMayaUtil::getPlugValue(fn, attributeName.c_str(), &attribute)) {
             return attribute;
         }
     }
