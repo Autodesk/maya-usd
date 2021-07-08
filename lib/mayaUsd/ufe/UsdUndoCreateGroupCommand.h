@@ -49,7 +49,6 @@ public:
         const Ufe::Selection&     selection,
         const Ufe::PathComponent& name);
 
-
 #ifdef UFE_V3_FEATURES_AVAILABLE
     Ufe::SceneItem::Ptr insertedChild() const override;
 #elif
