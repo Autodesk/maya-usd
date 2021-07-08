@@ -54,7 +54,8 @@ HdVP2DrawItem::~HdVP2DrawItem()
     }
 }
 
-HdVP2DrawItem::RenderItemData& HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
+HdVP2DrawItem::RenderItemData&
+HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
 {
     _renderItems.emplace_back();
     RenderItemData& renderItemData = _renderItems.back();
