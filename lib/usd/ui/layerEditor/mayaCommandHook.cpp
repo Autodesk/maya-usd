@@ -67,7 +67,7 @@ std::string getProxyShapeName(const std::string& proxyShapePath)
     }
 }
 
-bool GetBooleanAttributeOnProxyShape(
+bool getBooleanAttributeOnProxyShape(
     const std::string& proxyShapePath,
     const std::string& attributeName)
 {
@@ -243,12 +243,12 @@ ufeSelectCmd.replaceWith(sn)
 
 bool MayaCommandHook::isProxyShapeStageIncoming(const std::string& proxyShapePath)
 {
-    return GetBooleanAttributeOnProxyShape(proxyShapePath, "stageIncoming");
+    return getBooleanAttributeOnProxyShape(proxyShapePath, "stageIncoming");
 }
 
 bool MayaCommandHook::isProxyShapeSharedStage(const std::string& proxyShapePath)
 {
-    return GetBooleanAttributeOnProxyShape(proxyShapePath, "shareStage");
+    return getBooleanAttributeOnProxyShape(proxyShapePath, "shareStage");
 }
 
 } // namespace UsdLayerEditor
