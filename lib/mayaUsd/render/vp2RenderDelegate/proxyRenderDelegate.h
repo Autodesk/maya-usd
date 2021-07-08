@@ -51,6 +51,7 @@
 #define MAYA_ENABLE_UPDATE_FOR_SELECTION
 #endif
 
+#if PXR_VERSION < 2008
 #define ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
 /*  In USD v20.05 and earlier when the purpose of an rprim changes the visibility gets dirtied,
     and that doesn't update the render tag version.
@@ -61,6 +62,7 @@
     Logged as:
     https://github.com/PixarAnimationStudios/USD/issues/1243
 */
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
