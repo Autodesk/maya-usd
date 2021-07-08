@@ -70,6 +70,14 @@ if (MAYA_HAS_DEFAULT_MATERIAL_API)
     )
 endif()
 
+message(STATUS "MAYA_NEW_POINT_SNAPPING_SUPPORT is ${MAYA_NEW_POINT_SNAPPING_SUPPORT}")
+if (MAYA_NEW_POINT_SNAPPING_SUPPORT)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        MAYA_NEW_POINT_SNAPPING_SUPPORT=1
+    )
+endif()
+
 if (MAYA_LIGHTAPI_VERSION EQUAL 2)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
