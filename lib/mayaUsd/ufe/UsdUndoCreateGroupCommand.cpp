@@ -58,6 +58,8 @@ UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
 
 #if UFE_PREVIEW_VERSION_NUM >= 3001
 Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::insertedChild() const { return _groupItem; }
+#else
+Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _groupItem; }
 #endif
 
 void UsdUndoCreateGroupCommand::execute()

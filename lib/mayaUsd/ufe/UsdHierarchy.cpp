@@ -231,7 +231,7 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
         cmd->execute();
 #if (UFE_PREVIEW_VERSION_NUM >= 3001)
         createdItem = cmd->insertedChild();
-#else
+#elif
         createdItem = cmd->group();
 #endif
     }
@@ -241,7 +241,7 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
 
 #if (UFE_PREVIEW_VERSION_NUM >= 3001)
 Ufe::InsertChildCommand::Ptr
-#else
+#elif
 Ufe::UndoableCommand::Ptr
 #endif
 UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const

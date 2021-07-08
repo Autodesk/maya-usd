@@ -67,6 +67,13 @@ public:
     Ufe::SceneItem::Ptr
     createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
 
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
+    Ufe::InsertChildCommand::Ptr
+#elif
+    Ufe::UndoableCommand::Ptr
+#endif
+    createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
+
     Ufe::SceneItem::Ptr defaultParent() const override;
 
     Ufe::SceneItem::Ptr
@@ -76,13 +83,6 @@ public:
 
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
 #endif
-
-#if (UFE_PREVIEW_VERSION_NUM >= 3001)
-    Ufe::InsertChildCommand::Ptr
-#else
-    Ufe::UndoableCommand::Ptr
-#endif
-    createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
     Ufe::UndoableCommand::Ptr ungroupCmd() const override;
