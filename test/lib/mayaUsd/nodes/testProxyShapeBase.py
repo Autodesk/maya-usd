@@ -435,53 +435,6 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(len(unshareableLayerFromA.subLayerPaths), 1)
         self.assertEqual(unshareableLayerFromA.subLayerPaths[0], originalRootIdentifierB)
 
-    def testStageIncoming(self):
-        '''
-        Verify that the stageIncoming property works as designed, incoming stage is a stage that is coming from either cache Id or in stage data
-        '''
-        # create new stage
-        cmds.file(new=True, force=True)
-
-        # Open usdCylinder.ma scene in testSamples
-        mayaUtils.openCylinderScene()
-
-        # get the proxy shape path
-        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
-        proxyShapeA = proxyShapes[0]
-
-        # check that the stage is not incoming (from cache id or in stage data)
-        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapeA,"stageIncoming")))
-
-        # create another proxyshape (B)
-        import mayaUsd_createStageWithNewLayer
-        proxyShapeB = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-
-        # check that the stage is not incoming (from cache id or in stage data)
-        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapeB,"stageIncoming")))
-
-        #Connect them using stage data
-        cmds.connectAttr('{}.outStageData'.format(proxyShapeA),
-                         '{}.inStageData'.format(proxyShapeB))
-
-        # check that the stage is now incoming for B
-        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapeA,"stageIncoming")))
-        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapeB,"stageIncoming")))
-
-        # create another proxyshape (C)
-        proxyShapeC = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-
-        # check that the stage is not incoming (from cache id or in stage data)
-        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapeC,"stageIncoming")))
-
-        #Connect them using cache id
-        cmds.connectAttr('{}.outStageCacheId'.format(proxyShapeB),
-                         '{}.stageCacheId'.format(proxyShapeC))
-
-        # check that the values are correct (B and C incoming and A is not)
-        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapeA,"stageIncoming")))
-        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapeB,"stageIncoming")))
-        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapeC,"stageIncoming")))
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

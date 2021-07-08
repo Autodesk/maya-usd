@@ -60,13 +60,13 @@ LayerTreeItem::LayerTreeItem(
 {
     if (in_incomingLayers != nullptr) {
         _incomingLayers = *in_incomingLayers;
-        if (_incomingLayers.find(_layer->GetIdentifier()) != _incomingLayers.end()) {
+        if (_layer && _incomingLayers.find(_layer->GetIdentifier()) != _incomingLayers.end()) {
             _isIncomingLayer = true;
         }
     }
     if (in_sharedLayers != nullptr) {
         _sharedLayers = *in_sharedLayers;
-        if (_sharedLayers.find(_layer->GetIdentifier()) != _sharedLayers.end()) {
+        if (_layer && _sharedLayers.find(_layer->GetIdentifier()) != _sharedLayers.end()) {
             _isSharedLayer = true;
         }
     }
@@ -248,7 +248,10 @@ bool LayerTreeItem::sublayerOfShared() const
     return false;
 }
 
-bool LayerTreeItem::isReadOnly() const { return (_isSharedLayer || !_layer->PermissionToEdit()); }
+bool LayerTreeItem::isReadOnly() const
+{
+    return (_isSharedLayer || (_layer && !_layer->PermissionToEdit()));
+}
 
 bool LayerTreeItem::isMovable() const
 {

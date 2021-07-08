@@ -129,8 +129,6 @@ public:
     static MObject outStageDataAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject outStageCacheIdAttr;
-    MAYAUSD_CORE_PUBLIC
-    static MObject outIsStageIncomingAttr;
 
     /// Delegate function for computing the closest point and surface normal
     /// on the proxy shape to a given ray.
@@ -346,7 +344,6 @@ private:
     MStatus computeInStageDataCached(MDataBlock& dataBlock);
     MStatus computeOutStageData(MDataBlock& dataBlock);
     MStatus computeOutStageCacheId(MDataBlock& dataBlock);
-    MStatus computeIsStageIncoming(MDataBlock& dataBlock);
 
     SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
     int           _GetComplexity(MDataBlock dataBlock) const;
@@ -382,10 +379,6 @@ private:
 
     // Keep track of the incoming layers
     std::set<std::string> _incomingLayers;
-
-    // Keep track of source stage's root identifier (when we change the source we can swap it
-    // in-place in the layer heirarchy)
-    std::string _sourceRootIdentifier;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

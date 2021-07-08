@@ -147,7 +147,6 @@ MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
-MObject MayaUsdProxyShapeBase::outIsStageIncomingAttr;
 
 namespace {
 // utility function to extract the tag name from an anonymous layer.
@@ -263,15 +262,6 @@ MStatus MayaUsdProxyShapeBase::initialize()
     numericAttrFn.setReadable(false);
     numericAttrFn.setAffectsAppearance(true);
     retValue = addAttribute(shareStageAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    outIsStageIncomingAttr
-        = numericAttrFn.create("stageIncoming", "sxtr", MFnNumericData::kBoolean, 0.0, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    numericAttrFn.setKeyable(false);
-    numericAttrFn.setReadable(true);
-    numericAttrFn.setWritable(false);
-    retValue = addAttribute(outIsStageIncomingAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     timeAttr = unitAttrFn.create("time", "tm", MFnUnitAttribute::kTime, 0.0, &retValue);
@@ -407,15 +397,10 @@ MStatus MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(filePathAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(filePathAttr, outStageCacheIdAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(filePathAttr, outIsStageIncomingAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(primPathAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(primPathAttr, outStageCacheIdAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(primPathAttr, outIsStageIncomingAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(shareStageAttr, inStageDataCachedAttr);
@@ -424,16 +409,12 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(shareStageAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(shareStageAttr, outIsStageIncomingAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(loadPayloadsAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(loadPayloadsAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(loadPayloadsAttr, outStageCacheIdAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(loadPayloadsAttr, outIsStageIncomingAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(inStageDataAttr, inStageDataCachedAttr);
@@ -442,8 +423,6 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(inStageDataAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(inStageDataAttr, outIsStageIncomingAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(stageCacheIdAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -451,14 +430,10 @@ MStatus MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(stageCacheIdAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(stageCacheIdAttr, outIsStageIncomingAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(inStageDataCachedAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(inStageDataCachedAttr, outStageCacheIdAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(inStageDataCachedAttr, outIsStageIncomingAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     return retValue;
@@ -540,8 +515,6 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
         return computeOutStageData(dataBlock);
     } else if (plug == outStageCacheIdAttr) {
         return computeOutStageCacheId(dataBlock);
-    } else if (plug == outIsStageIncomingAttr) {
-        return computeIsStageIncoming(dataBlock);
     } else if (plug.isDynamic()) {
         return ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
     }
@@ -590,36 +563,31 @@ void remapSublayerRecursive(
     const SdfLayerRefPtr&              layer,
     std::map<std::string, std::string> remappedLayers)
 {
-    if (remappedLayers.empty())
+    if (!layer || remappedLayers.empty())
         return;
 
-    bool                        updated = false;
-    SdfSubLayerProxy            sublayerPaths = layer->GetSubLayerPaths();
-    std::vector<SdfLayerRefPtr> sublayers;
-    std::vector<std::string>    newSublayerPaths;
+    bool                     updated = false;
+    SdfSubLayerProxy         sublayerPaths = layer->GetSubLayerPaths();
+    std::vector<std::string> newSublayerPaths;
     newSublayerPaths.reserve(sublayerPaths.size());
-    for (auto path : sublayerPaths) {
-        if (remappedLayers.find(path) != remappedLayers.end()) {
+    for (const auto& sublayerPath : sublayerPaths) {
+        auto sublayer = SdfLayer::Find(sublayerPath);
+        remapSublayerRecursive(sublayer, remappedLayers);
+        if (remappedLayers.empty())
+            return;
+
+        if (remappedLayers.find(sublayerPath) != remappedLayers.end()) {
             updated = true;
-            if (!remappedLayers[path].empty())
-                newSublayerPaths.push_back(remappedLayers[path]);
-            remappedLayers.erase(path);
+            if (!remappedLayers[sublayerPath].empty())
+                newSublayerPaths.push_back(remappedLayers[sublayerPath]);
+            remappedLayers.erase(sublayerPath);
         } else {
-            newSublayerPaths.push_back(path);
+            newSublayerPaths.push_back(sublayerPath);
         }
-        SdfLayerRefPtr subLayer = SdfLayer::Find(path);
-        if (subLayer) {
-            sublayers.push_back(subLayer);
-        }
-    }
-    if (updated) {
-        layer->SetSubLayerPaths(newSublayerPaths);
     }
 
-    if (!remappedLayers.empty()) {
-        for (auto sublayer : sublayers) {
-            remapSublayerRecursive(sublayer, remappedLayers);
-        }
+    if (updated) {
+        layer->SetSubLayerPaths(newSublayerPaths);
     }
 }
 
@@ -694,10 +662,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 auto layer = LayerManager::findLayer(identifier);
                 if (layer) {
                     updatedReferences.push_back(layer->GetIdentifier());
-                    // update the source root as well
-                    if (identifier == _sourceRootIdentifier) {
-                        _sourceRootIdentifier = layer->GetIdentifier();
-                    }
                 }
                 // We also need to push this anyway in case we dont find it since file backed layers
                 // arent in the layermanager database
@@ -855,11 +819,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     // Share the stage
     if (sharableStage) {
-        if (isIncomingStage) {
-            // If the stage is incoming we can't (shouldn't) target its layers, use session
-            usdStage->SetEditTarget(usdStage->GetSessionLayer());
-        }
-
         // When we switch out of unshared we need to save this data so when the user toggles back
         // they get the same state they were in, but in order to this we have to keep the layers in
         // the heirharchy alive since the stage is gone and so they will get removed
@@ -885,8 +844,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         inDataCachedHandle.set(stageData);
         inDataCachedHandle.setClean();
 
-        _sourceRootIdentifier = stageData->stage->GetRootLayer()->GetIdentifier();
-
         return MS::kSuccess;
     }
     // Own the stage
@@ -904,11 +861,16 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             _unsharedStageRootLayer->SetSubLayerPaths({ inRootLayer->GetIdentifier() });
         } else {
             // Check if we need to remap the source
-            if (!_sourceRootIdentifier.empty()
-                && _sourceRootIdentifier != inRootLayer->GetIdentifier()) {
+            // At the moment we remap the old root with the new root  and we assumne that the root
+            // is the first item in the referenced layers
+            auto referencedLayers = MayaUsd::CustomLayerData::getStringArray(
+                _unsharedStageRootLayer, MayaUsd::CustomLayerData::kReferencedLayersToken);
+            auto oldRootIdentifer = referencedLayers.empty() ? "" : referencedLayers[0];
+
+            if (!oldRootIdentifer.empty() && oldRootIdentifer != inRootLayer->GetIdentifier()) {
                 // Remap the existing source to the new one
                 std::map<std::string, std::string> remappedLayers {
-                    { _sourceRootIdentifier, inRootLayer->GetIdentifier() }
+                    { oldRootIdentifer, inRootLayer->GetIdentifier() }
                 };
                 remapSublayerRecursive(_unsharedStageRootLayer, remappedLayers);
             }
@@ -938,8 +900,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         inDataCachedHandle.set(stageData);
         inDataCachedHandle.setClean();
-
-        _sourceRootIdentifier = inRootLayer->GetIdentifier();
 
         return MS::kSuccess;
     }
@@ -1090,38 +1050,6 @@ MStatus MayaUsdProxyShapeBase::computeOutStageCacheId(MDataBlock& dataBlock)
 
     outCacheIdHandle.set(cacheId);
     outCacheIdHandle.setClean();
-
-    return MS::kSuccess;
-}
-
-MStatus MayaUsdProxyShapeBase::computeIsStageIncoming(MDataBlock& dataBlock)
-{
-    MStatus retValue = MS::kSuccess;
-
-    MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    bool isIncomingStage = false;
-
-    // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
-    if (!inDataHandle.data().isNull()) {
-        isIncomingStage = true;
-    } else {
-        // Check if we have a Stage from the Cache Id
-        const auto cacheIdNum = dataBlock.inputValue(stageCacheIdAttr, &retValue).asInt();
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-        const auto cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
-        const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
-        if (stageCached) {
-            isIncomingStage = true;
-        }
-    }
-
-    MDataHandle isStageIncomingHandle = dataBlock.outputValue(outIsStageIncomingAttr, &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    isStageIncomingHandle.set(isIncomingStage);
-    isStageIncomingHandle.setClean();
 
     return MS::kSuccess;
 }
@@ -1336,10 +1264,26 @@ bool MayaUsdProxyShapeBase::isStageIncoming() const
     MayaUsdProxyShapeBase* nonConstThis = const_cast<MayaUsdProxyShapeBase*>(this);
     MDataBlock             dataBlock = nonConstThis->forceCache();
 
-    MDataHandle isStageIncomingHandle = dataBlock.inputValue(outIsStageIncomingAttr, &localStatus);
+    MDataHandle inDataHandle = dataBlock.inputValue(inStageDataAttr, &localStatus);
     CHECK_MSTATUS_AND_RETURN(localStatus, false);
 
-    return isStageIncomingHandle.asBool();
+    bool isIncomingStage = false;
+
+    // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
+    if (!inDataHandle.data().isNull()) {
+        isIncomingStage = true;
+    } else {
+        // Check if we have a Stage from the Cache Id
+        const auto cacheIdNum = dataBlock.inputValue(stageCacheIdAttr, &localStatus).asInt();
+        CHECK_MSTATUS_AND_RETURN(localStatus, false);
+        const auto cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
+        const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
+        if (stageCached) {
+            isIncomingStage = true;
+        }
+    }
+
+    return isIncomingStage;
 }
 
 bool MayaUsdProxyShapeBase::isIncomingLayer(const std::string& layerIdentifier) const
@@ -1637,7 +1581,6 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection)
     , _unsharedStageRootLayer(nullptr)
     , _unsharedStageRootSublayers()
     , _incomingLayers()
-    , _sourceRootIdentifier("")
 {
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
 }
