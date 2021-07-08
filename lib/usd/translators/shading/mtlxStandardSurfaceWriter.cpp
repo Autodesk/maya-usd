@@ -162,7 +162,7 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
         // Some attributes with an history of default value updates will be written always.
         if (!(UsdMayaUtil::IsAuthored(attrPlug) || usdAttrName == TrMtlxTokens->base
               || usdAttrName == TrMtlxTokens->base_color || usdAttrName == TrMtlxTokens->specular
-              || usdAttrName == TrMtlxTokens->specularRoughness)
+              || usdAttrName == TrMtlxTokens->specular_roughness)
             && !attrPlug.isConnected()) {
             continue;
         }
