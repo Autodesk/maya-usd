@@ -54,7 +54,7 @@ HdVP2DrawItem::~HdVP2DrawItem()
     }
 }
 
-void HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
+HdVP2DrawItem::RenderItemData& HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
 {
     _renderItems.emplace_back();
     RenderItemData& renderItemData = _renderItems.back();
@@ -69,6 +69,8 @@ void HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubs
 
     renderItemData._indexBuffer.reset(
         new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
+
+    return renderItemData;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

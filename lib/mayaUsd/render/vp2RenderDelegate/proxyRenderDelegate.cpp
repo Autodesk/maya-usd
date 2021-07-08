@@ -797,8 +797,20 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;
 
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();
+    if (selectionInfo) {
+        bool oldSnapToPoints = _snapToPoints;
+#if MAYA_API_VERSION >= 20220000
+        _snapToPoints = selectionInfo->pointSnapping();
+#else
+        _snapToPoints = pointSnappingActive();
+#endif
+        if (_snapToPoints != oldSnapToPoints) {
+            _selectionModeChanged = true;
+        }
+    }
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MStatus               status;
     if (selectionInfo) {
         bool oldSnapToSelectedObjects = _snapToSelectedObjects;
@@ -881,6 +893,13 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // improve draw performance in Maya 2020 and before.
     const int drawInstID = intersection.instanceID();
     int       instanceIndex = (drawInstID > 0) ? drawInstID - 1 : UsdImagingDelegate::ALL_INSTANCES;
+
+    // Get the custom data from the MRenderItem and map the instance index to the USD instance index
+    auto mayaToUsd = MayaUsdCustomData::Get(renderItem);
+    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES && mayaToUsd.size() > instanceIndex)
+    {
+        instanceIndex = mayaToUsd[instanceIndex];
+    }
 
     SdfPath topLevelPath;
     int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
@@ -1318,6 +1337,11 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 bool ProxyRenderDelegate::SnapToSelectedObjects() const { return _snapToSelectedObjects; }
 #endif
+
+bool ProxyRenderDelegate::SnapToPoints() const
+{
+    return _snapToPoints;
+}
 
 // ProxyShapeData
 ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(
