@@ -158,11 +158,11 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
 
         const TfToken usdAttrName = renaming->second;
 
-        // Keep our authoring sparse by ignoring attributes with no values set
-        // and no connections. We know that the default value of base and base
-        // color diverged between Maya and MaterialX in version 1.38.
+        // Keep our authoring sparse by ignoring attributes with no values set and no connections.
+        // Some attributes with an history of default value updates will be written always.
         if (!(UsdMayaUtil::IsAuthored(attrPlug) || usdAttrName == TrMtlxTokens->base
-              || usdAttrName == TrMtlxTokens->base_color)
+              || usdAttrName == TrMtlxTokens->base_color || usdAttrName == TrMtlxTokens->specular
+              || usdAttrName == TrMtlxTokens->specular_roughness)
             && !attrPlug.isConnected()) {
             continue;
         }
