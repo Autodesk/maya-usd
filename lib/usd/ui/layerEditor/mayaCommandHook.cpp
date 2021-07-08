@@ -57,7 +57,7 @@ MString executeMel(const std::string& commandString)
 // maya doesn't support spaces in undo chunk names...
 MString cleanChunkName(QString name) { return quote(name.replace(" ", "_").toStdString()).c_str(); }
 
-std::string GetProxyShapeName(const std::string& proxyShapePath)
+std::string getProxyShapeName(const std::string& proxyShapePath)
 {
     std::size_t found = proxyShapePath.find_last_of("|");
     if (std::string::npos != found) {
@@ -76,7 +76,7 @@ bool GetBooleanAttributeOnProxyShape(
     }
 
     MObject mobj;
-    MStatus status = PXR_NS::UsdMayaUtil::GetMObjectByName(GetProxyShapeName(proxyShapePath), mobj);
+    MStatus status = PXR_NS::UsdMayaUtil::GetMObjectByName(getProxyShapeName(proxyShapePath), mobj);
     if (status == MStatus::kSuccess) {
         MFnDependencyNode fn;
         fn.setObject(mobj);
