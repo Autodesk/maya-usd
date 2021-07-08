@@ -827,7 +827,7 @@ void HdVP2RenderDelegate::DestroyBprim(HdBprim* bPrim) { delete bPrim; }
     The full material purpose is suggested according to
       https://github.com/PixarAnimationStudios/USD/pull/853
 */
-TfToken HdVP2RenderDelegate::GetMaterialBindingPurpose() const { return HdTokens->full; }
+TfToken HdVP2RenderDelegate::GetMaterialBindingPurpose() const { return HdTokens->preview; }
 
 #ifdef WANT_MATERIALX_BUILD
 TfTokenVector HdVP2RenderDelegate::GetShaderSourceTypes() const
