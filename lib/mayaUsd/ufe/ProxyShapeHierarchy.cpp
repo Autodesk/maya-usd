@@ -231,13 +231,12 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
 }
 
 #if (UFE_PREVIEW_VERSION_NUM >= 3001)
-    Ufe::InsertChildCommand::Ptr
+Ufe::InsertChildCommand::Ptr
 #elif
-    Ufe::UndoableCommand::Ptr
+Ufe::UndoableCommand::Ptr
 #endif
-ProxyShapeHierarchy::createGroupCmd(
-    const Ufe::Selection&     selection,
-    const Ufe::PathComponent& name) const
+ProxyShapeHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name)
+    const
 {
     auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 
