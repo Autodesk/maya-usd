@@ -16,6 +16,8 @@
 #ifndef HDVP2_BASIS_CURVES_H
 #define HDVP2_BASIS_CURVES_H
 
+#include "mayaPrimCommon.h"
+
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <pxr/base/vt/array.h>
@@ -155,8 +157,8 @@ private:
 
     enum DirtyBits : HdDirtyBits
     {
-        DirtySelection = HdChangeTracker::CustomBitsBegin,
-        DirtySelectionHighlight = (DirtySelection << 1)
+        DirtySelection = MayaPrimCommon::DirtySelection,
+        DirtySelectionHighlight = MayaPrimCommon::DirtySelectionHighlight
     };
 
     HdVP2RenderDelegate* _delegate {

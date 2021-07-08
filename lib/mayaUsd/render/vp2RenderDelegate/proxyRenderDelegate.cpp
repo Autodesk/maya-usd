@@ -15,6 +15,7 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include "mayaPrimCommon.h"
 #include "render_delegate.h"
 #include "tokens.h"
 
@@ -471,7 +472,9 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
     // reset any version ids or dirty information that doesn't make sense if we clear
     // the render index.
     _renderTagVersion = 0;
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     _visibilityVersion = 0;
+#endif
     _taskRenderTagsValid = false;
     _isPopulated = false;
 }
@@ -727,10 +730,17 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             reprSelector = reprSelector.CompositeOver(kPointsReprSelector);
         }
 #endif
-    } else {
-        if (_selectionChanged) {
+
+        if (_selectionModeChanged) {
             _UpdateSelectionStates();
             _selectionChanged = false;
+            _selectionModeChanged = false;
+        }
+    } else {
+        if (_selectionChanged || _selectionModeChanged) {
+            _UpdateSelectionStates();
+            _selectionChanged = false;
+            _selectionModeChanged = false;
         }
 
         const unsigned int displayStyle = frameContext.getDisplayStyle();
@@ -790,6 +800,19 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // Without a proxy shape we can't do anything
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();
+    MStatus               status;
+    if (selectionInfo) {
+        bool oldSnapToSelectedObjects = _snapToSelectedObjects;
+        _snapToSelectedObjects = selectionInfo->snapToActive(&status);
+        TF_VERIFY(status == MStatus::kSuccess);
+        if (_snapToSelectedObjects != oldSnapToSelectedObjects) {
+            _selectionModeChanged = true;
+        }
+    }
+#endif
 
     _ClearInvalidData(container);
 
@@ -1081,6 +1104,15 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     }
 
     if (!rootPaths.empty()) {
+        // When the selection mode changes then we have to update all the selected render
+        // items. Set a dirty flag on each of the rprims so they know what to update.
+        if (_selectionModeChanged) {
+            HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+            for (auto path : rootPaths) {
+                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
+            }
+        }
+
         HdRprimCollection collection(HdTokens->geometry, kSelectionReprSelector);
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
@@ -1286,6 +1318,10 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
         return true;
     }
 }
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+bool ProxyRenderDelegate::SnapToSelectedObjects() const { return _snapToSelectedObjects; }
+#endif
 
 // ProxyShapeData
 ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(

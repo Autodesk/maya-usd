@@ -824,10 +824,15 @@ void HdVP2Mesh::Sync(
     HdDirtyBits*     dirtyBits,
     const TfToken&   reprToken)
 {
-    // We don't create a repr for the selection token because this token serves
-    // for selection state update only. Return early to reserve dirty bits so
-    // they can be used to sync regular reprs later.
+    // We don't create render items for the selection repr. The selection repr
+    // is used when the Sync call is made during a selection pass.
+    // When the selection mode changes, we DO want the chance to update our
+    // shaded render items (to support things like point snapping to similar instances), so make
+    // another call to Sync but with the smoothHull repr.
     if (reprToken == HdVP2ReprTokens->selection) {
+        if (*dirtyBits & DirtySelectionMode) {
+            Sync(delegate, renderParam, dirtyBits, HdReprTokens->smoothHull);
+        }
         return;
     }
 
@@ -1157,11 +1162,6 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
         & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyDisplayStyle
            | HdChangeTracker::DirtyTopology)) {
         bits |= _customDirtyBitsInUse & (DirtySmoothNormals | DirtyFlatNormals);
-    }
-
-    // If the topology is dirty, recompute custom indices resources.
-    if (bits & HdChangeTracker::DirtyTopology) {
-        bits |= _customDirtyBitsInUse & (DirtyIndices | DirtyHullIndices | DirtyPointsIndices);
     }
 
     // If normals are dirty and we are doing CPU normals
@@ -2016,9 +2016,12 @@ void HdVP2Mesh::_UpdateDrawItem(
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     if (!isBBoxItem && !isDedicatedSelectionHighlightItem
-        && (itemDirtyBits & DirtySelectionHighlight)) {
+        && (itemDirtyBits & (DirtySelectionHighlight | DirtySelectionMode))) {
         MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
 
+        if (_selectionStatus == kUnselected || drawScene.SnapToSelectedObjects()) {
+            selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
+        }
         // Only unselected Rprims can be used for point snapping.
         if (_selectionStatus == kUnselected) {
             selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);

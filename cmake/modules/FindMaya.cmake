@@ -13,6 +13,8 @@
 # MAYA_APP_VERSION    Maya app version (4 digits)
 # MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2)
 # MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
+# MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
+# MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
 #
 
 #=============================================================================
@@ -261,6 +263,15 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
     endif()
 endif()
 
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MDefines.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MDefines.h MAYA_PREVIEW_RELEASE_VERSION REGEX "#define MAYA_PREVIEW_RELEASE_VERSION.*$")
+    if(MAYA_PREVIEW_RELEASE_VERSION)
+        string(REGEX MATCHALL "[0-9]+" MAYA_PREVIEW_RELEASE_VERSION ${MAYA_PREVIEW_RELEASE_VERSION})
+    else()
+        set(MAYA_PREVIEW_RELEASE_VERSION 0)
+    endif()
+endif()
+
 # Determine the Python version and switch between mayapy and mayapy2.
 set(MAYAPY_EXE mayapy)
 set(MAYA_PY_VERSION 2)
@@ -338,6 +349,15 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
     if(MAYA_HAS_API)
         set(MAYA_HAS_DEFAULT_MATERIAL_API TRUE CACHE INTERNAL "setDefaultMaterialHandling")
         message(STATUS "Maya has setDefaultMaterialHandling API")
+    endif()
+endif()
+
+set(MAYA_NEW_POINT_SNAPPING_SUPPORT FALSE CACHE INTERNAL "snapToActive")
+if (MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MSelectionContext.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MSelectionContext.h MAYA_HAS_API REGEX "snapToActive")
+    if(MAYA_HAS_API)
+        set(MAYA_NEW_POINT_SNAPPING_SUPPORT TRUE CACHE INTERNAL "snapToActive")
+        message(STATUS "Maya has new point snapping API")
     endif()
 endif()
 
