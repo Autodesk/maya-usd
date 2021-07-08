@@ -52,7 +52,7 @@ public:
 #if (UFE_PREVIEW_VERSION_NUM >= 3001)
     Ufe::SceneItem::Ptr insertedChild() const override;
 #else
-    Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _group; }
+    Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _groupItem; }
 #endif
 
     void execute() override;
