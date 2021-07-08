@@ -472,7 +472,9 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
     // reset any version ids or dirty information that doesn't make sense if we clear
     // the render index.
     _renderTagVersion = 0;
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     _visibilityVersion = 0;
+#endif
     _taskRenderTagsValid = false;
     _isPopulated = false;
 }
