@@ -226,7 +226,11 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
     return createdItem;
 }
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
+#elif
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
+#endif
     const Ufe::Selection&     selection,
     const Ufe::PathComponent& name) const
 {

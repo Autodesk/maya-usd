@@ -51,9 +51,7 @@ public:
 
     Ufe::SceneItem::Ptr insertedChild() const override;
 
-    // UsdUndoCreateGroupCommand overrides
     void execute() override;
-
     void undo() override;
     void redo() override;
 

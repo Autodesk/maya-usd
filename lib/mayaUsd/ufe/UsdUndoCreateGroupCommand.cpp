@@ -58,10 +58,6 @@ UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
 
 Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::insertedChild() const { return _groupItem; }
 
-//------------------------------------------------------------------------------
-// UsdUndoCreateGroupCommand overrides
-//------------------------------------------------------------------------------
-
 void UsdUndoCreateGroupCommand::execute()
 {
     auto addPrimCmd = UsdUndoAddNewPrimCommand::create(_parentItem, _name.string(), "Xform");
