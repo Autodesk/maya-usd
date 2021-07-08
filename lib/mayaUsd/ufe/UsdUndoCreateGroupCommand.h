@@ -49,7 +49,12 @@ public:
         const Ufe::Selection&     selection,
         const Ufe::PathComponent& name);
 
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
     Ufe::SceneItem::Ptr insertedChild() const override;
+#elif
+    Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _group; }
+#endif
 
     void execute() override;
     void undo() override;
