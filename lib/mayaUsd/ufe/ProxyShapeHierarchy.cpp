@@ -220,9 +220,9 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
         = UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
     if (cmd) {
         cmd->execute();
-#ifdef UFE_V3_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
         createdItem = cmd->insertedChild();
-#elif
+#else
         createdItem = cmd->group();
 #endif
     }
@@ -230,9 +230,9 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
     return createdItem;
 }
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
 Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
-#elif
+#else
 Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
 #endif
     const Ufe::Selection&     selection,

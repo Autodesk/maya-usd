@@ -83,9 +83,9 @@ public:
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
 #endif
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
     Ufe::InsertChildCommand::Ptr
-#elif
+#else
     Ufe::UndoableCommand::Ptr
 #endif
     createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;

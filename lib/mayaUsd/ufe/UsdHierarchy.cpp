@@ -229,9 +229,9 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
         = UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
     if (cmd) {
         cmd->execute();
-#ifdef UFE_V3_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
         createdItem = cmd->insertedChild();
-#elif
+#else
         createdItem = cmd->group();
 #endif
     }
@@ -239,9 +239,9 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
     return createdItem;
 }
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
 Ufe::InsertChildCommand::Ptr
-#elif
+#else
 Ufe::UndoableCommand::Ptr
 #endif
 UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const

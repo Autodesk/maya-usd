@@ -49,9 +49,9 @@ public:
         const Ufe::Selection&     selection,
         const Ufe::PathComponent& name);
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
     Ufe::SceneItem::Ptr insertedChild() const override;
-#elif
+#else
     Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _group; }
 #endif
 
