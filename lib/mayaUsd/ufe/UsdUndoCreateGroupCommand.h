@@ -18,6 +18,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <ufe/hierarchy.h>
 #include <ufe/pathComponent.h>
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
