@@ -37,10 +37,12 @@ UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(
     const UsdSceneItem::Ptr&  parentItem,
     const Ufe::Selection&     selection,
     const Ufe::PathComponent& name)
-    : Ufe::CompositeUndoableCommand()
+    : Ufe::InsertChildCommand()
     , _parentItem(parentItem)
     , _name(name)
     , _selection(selection)
+    , _groupCompositeCmd(std::make_shared<Ufe::CompositeUndoableCommand>())
+
 {
 }
 
@@ -54,28 +56,24 @@ UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
     return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, selection, name);
 }
 
-Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _group; }
-
-//------------------------------------------------------------------------------
-// UsdUndoCreateGroupCommand overrides
-//------------------------------------------------------------------------------
+Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::insertedChild() const { return _groupItem; }
 
 void UsdUndoCreateGroupCommand::execute()
 {
     auto addPrimCmd = UsdUndoAddNewPrimCommand::create(_parentItem, _name.string(), "Xform");
-    append(addPrimCmd);
+    _groupCompositeCmd->append(addPrimCmd);
     addPrimCmd->execute();
 
-    _group = UsdSceneItem::create(addPrimCmd->newUfePath(), addPrimCmd->newPrim());
+    _groupItem = UsdSceneItem::create(addPrimCmd->newUfePath(), addPrimCmd->newPrim());
 
     // If the parent prim is part of the model hierarchy, set the kind of the
     // newly created group prim to make sure that the model hierarchy remains
     // contiguous.
     const PXR_NS::UsdPrim& parentPrim = _parentItem->prim();
     if (PXR_NS::UsdModelAPI(parentPrim).IsModel()) {
-        const PXR_NS::UsdPrim& groupPrim = _group->prim();
+        const PXR_NS::UsdPrim& groupPrim = _groupItem->prim();
         auto setKindCmd = UsdUndoSetKindCommand::create(groupPrim, PXR_NS::KindTokens->group);
-        append(setKindCmd);
+        _groupCompositeCmd->append(setKindCmd);
         setKindCmd->execute();
     }
 
@@ -85,24 +83,24 @@ void UsdUndoCreateGroupCommand::execute()
     // will succeed, however the re-parenting is expected to throw an exception. We also need to
     // make sure to undo the previous command ( AddNewPrimCommand ) when this happens.
     try {
-        auto newParentHierarchy = Ufe::Hierarchy::hierarchy(_group);
+        auto newParentHierarchy = Ufe::Hierarchy::hierarchy(_groupItem);
         if (newParentHierarchy) {
-            for (auto child : _selection) {
+            for (const auto& child : _selection) {
                 auto parentCmd = newParentHierarchy->appendChildCmd(child);
+                _groupCompositeCmd->append(parentCmd);
                 parentCmd->execute();
-                append(parentCmd);
             }
         }
 
-        // Make sure to add the newly created _group (a.k.a parent) to selection. This matches
+        // Make sure to add the newly created _groupItem (a.k.a parent) to selection. This matches
         // native Maya behavior and also prevents the crash on grouping a prim twice.
         Ufe::Selection groupSelect;
-        groupSelect.append(_group);
+        groupSelect.append(_groupItem);
         Ufe::GlobalSelection::get()->replaceWith(groupSelect);
 
         TF_VERIFY(
             Ufe::GlobalSelection::get()->size() == 1,
-            "_group node should be in the global selection now. \n");
+            "_groupItem node should be in the global selection now. \n");
     } catch (...) {
         // undo previous AddNewPrimCommand
         undo();
@@ -110,6 +108,10 @@ void UsdUndoCreateGroupCommand::execute()
         throw; // re-throw the same exception
     }
 }
+
+void UsdUndoCreateGroupCommand::undo() { _groupCompositeCmd->undo(); }
+
+void UsdUndoCreateGroupCommand::redo() { _groupCompositeCmd->redo(); }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
