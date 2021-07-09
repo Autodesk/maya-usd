@@ -363,6 +363,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(rootLayer.GetDisplayName(), "unshareableLayer")
         self.assertEqual(rootLayer.subLayerPaths, [middleLayer.identifier])
 
+    @unittest.skip("Skipping since we found a bigger issue with stage connection")
     def testShareStageSourceChange(self):
         '''
         Verify the stage source change maintains the position in the hierarchy
