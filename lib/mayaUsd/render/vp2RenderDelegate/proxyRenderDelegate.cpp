@@ -897,7 +897,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     // Get the custom data from the MRenderItem and map the instance index to the USD instance index
     auto mayaToUsd = MayaUsdCustomData::Get(renderItem);
-    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES && ((int)mayaToUsd.size()) > instanceIndex) {
+    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES
+        && ((int)mayaToUsd.size()) > instanceIndex) {
         instanceIndex = mayaToUsd[instanceIndex];
     }
 #endif
