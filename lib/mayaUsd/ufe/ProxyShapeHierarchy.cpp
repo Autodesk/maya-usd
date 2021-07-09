@@ -220,11 +220,7 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
         = UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
     if (cmd) {
         cmd->execute();
-#if (UFE_PREVIEW_VERSION_NUM >= 3001)
         createdItem = cmd->insertedChild();
-#else
-        createdItem = cmd->group();
-#endif
     }
 
     return createdItem;

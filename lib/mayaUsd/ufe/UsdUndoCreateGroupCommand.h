@@ -50,11 +50,7 @@ public:
         const Ufe::Selection&     selection,
         const Ufe::PathComponent& name);
 
-#if (UFE_PREVIEW_VERSION_NUM >= 3001)
     Ufe::SceneItem::Ptr insertedChild() const override;
-#else
-    Ufe::SceneItem::Ptr group() const;
-#endif
 
     void execute() override;
     void undo() override;

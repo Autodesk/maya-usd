@@ -56,11 +56,7 @@ UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
     return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, selection, name);
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 3001
 Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::insertedChild() const { return _groupItem; }
-#else
-Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _groupItem; }
-#endif
 
 void UsdUndoCreateGroupCommand::execute()
 {
