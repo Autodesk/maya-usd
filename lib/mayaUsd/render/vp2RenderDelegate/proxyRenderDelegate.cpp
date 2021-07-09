@@ -719,6 +719,13 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     constexpr bool inPointSnapping = false;
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    if (_selectionModeChanged) {
+        _UpdateSelectionStates();
+        _selectionChanged = false;
+        _selectionModeChanged = false;
+    }
+#endif
     if (inSelectionPass) {
         // The new Maya point snapping support doesn't require point snapping items any more.
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
@@ -726,19 +733,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             reprSelector = reprSelector.CompositeOver(kPointsReprSelector);
         }
 #endif
-
-        if (_selectionModeChanged) {
-            _UpdateSelectionStates();
-            _selectionChanged = false;
-            _selectionModeChanged = false;
-        }
     } else {
-        if (_selectionChanged || _selectionModeChanged) {
-            _UpdateSelectionStates();
-            _selectionChanged = false;
-            _selectionModeChanged = false;
-        }
-
         const unsigned int displayStyle = frameContext.getDisplayStyle();
 
         // Query the wireframe color assigned to proxy shape.
@@ -797,6 +792,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();
     if (selectionInfo) {
         bool oldSnapToPoints = _snapToPoints;
@@ -810,7 +806,6 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
         }
     }
 
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MStatus status;
     if (selectionInfo) {
         bool oldSnapToSelectedObjects = _snapToSelectedObjects;
@@ -1121,6 +1116,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     }
 
     if (!rootPaths.empty()) {
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         // When the selection mode changes then we have to update all the selected render
         // items. Set a dirty flag on each of the rprims so they know what to update.
         if (_selectionModeChanged) {
@@ -1129,6 +1125,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
                 changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
             }
         }
+#endif
 
         HdRprimCollection collection(HdTokens->geometry, kSelectionReprSelector);
         collection.SetRootPaths(rootPaths);
@@ -1338,9 +1335,8 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 bool ProxyRenderDelegate::SnapToSelectedObjects() const { return _snapToSelectedObjects; }
-#endif
-
 bool ProxyRenderDelegate::SnapToPoints() const { return _snapToPoints; }
+#endif
 
 // ProxyShapeData
 ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(

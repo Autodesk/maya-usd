@@ -73,8 +73,10 @@ public:
         //! Whether or not the render item is transparent
         bool _transparent { false };
 
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
         //! Whether or not the render item represents the shaded draw for selected instances
         bool _shadedSelectedInstances { false };
+#endif
 
         //! Primitive type of the render item
         MHWRender::MGeometry::Primitive _primitiveType {

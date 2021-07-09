@@ -1650,6 +1650,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     // We don't need to update the shaded selected instance item when the selection mode is not
     // dirty.
     const bool isShadedSelectedInstanceItem = renderItemData._shadedSelectedInstances;
@@ -1660,6 +1661,11 @@ void HdVP2Mesh::_UpdateDrawItem(
         && !updateShadedSelectedInstanceItem) {
         return;
     }
+#else
+    const bool isShadedSelectedInstanceItem = false;
+    const bool usingShadedSelectedInstanceItem = false;
+    const bool updateShadedSelectedInstanceItem = false;
+#endif
 
     // We don't need to update the dedicated selection highlight item when there
     // is no selection highlight change and the mesh is not selected. Draw item
@@ -2042,7 +2048,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 
                     colorInterpolation = entry.second->_source.interpolation;
 
-                    const MFloatArray& extraInstanceData = entry.second->_extraInstanceData;
                     if (colorInterpolation == HdInterpolationInstance) {
                         shadedColors = &entry.second->_extraInstanceData;
                         TF_VERIFY(shadedColors->length() == instanceCount * kNumColorChannels);

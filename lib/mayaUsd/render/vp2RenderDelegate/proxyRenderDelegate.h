@@ -170,10 +170,10 @@ public:
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MAYAUSD_CORE_PUBLIC
     bool SnapToSelectedObjects() const;
-#endif
 
     MAYAUSD_CORE_PUBLIC
     bool SnapToPoints() const;
+#endif
 
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
@@ -257,9 +257,9 @@ private:
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
     bool _selectionChanged { true };     //!< Whether there is any selection change or not
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed
     bool _snapToPoints { false };        //!< Whether point snapping is enabled or not
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _snapToSelectedObjects {
         false
     }; //!< Whether point snapping should snap to selected objects
