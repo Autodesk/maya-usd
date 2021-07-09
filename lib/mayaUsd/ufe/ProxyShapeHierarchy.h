@@ -69,7 +69,7 @@ public:
 
 #if (UFE_PREVIEW_VERSION_NUM >= 3001)
     Ufe::InsertChildCommand::Ptr
-#elif
+#else
     Ufe::UndoableCommand::Ptr
 #endif
     createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;

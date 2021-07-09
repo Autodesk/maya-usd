@@ -222,7 +222,7 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
         cmd->execute();
 #if (UFE_PREVIEW_VERSION_NUM >= 3001)
         createdItem = cmd->insertedChild();
-#elif
+#else
         createdItem = cmd->group();
 #endif
     }
@@ -232,7 +232,7 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
 
 #if (UFE_PREVIEW_VERSION_NUM >= 3001)
 Ufe::InsertChildCommand::Ptr
-#elif
+#else
 Ufe::UndoableCommand::Ptr
 #endif
 ProxyShapeHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name)
