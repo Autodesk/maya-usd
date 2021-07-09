@@ -894,11 +894,13 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const int drawInstID = intersection.instanceID();
     int       instanceIndex = (drawInstID > 0) ? drawInstID - 1 : UsdImagingDelegate::ALL_INSTANCES;
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     // Get the custom data from the MRenderItem and map the instance index to the USD instance index
     auto mayaToUsd = MayaUsdCustomData::Get(renderItem);
-    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES && mayaToUsd.size() > instanceIndex) {
+    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES && ((int)mayaToUsd.size()) > instanceIndex) {
         instanceIndex = mayaToUsd[instanceIndex];
     }
+#endif
 
     SdfPath topLevelPath;
     int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;

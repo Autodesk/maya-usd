@@ -27,6 +27,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 // Each instanced render item needs to map from a Maya instance id
 // back to a usd instance id.
 using InstanceIdMap = std::vector<unsigned int>;
@@ -40,6 +41,7 @@ public:
 
     static InstanceIdMap& Get(const MHWRender::MRenderItem& item);
 };
+#endif
 
 struct MayaPrimCommon
 {

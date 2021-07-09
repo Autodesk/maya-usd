@@ -2050,10 +2050,12 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             }
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
             // Create & fill the per-instance data buffers: the transform buffer, the color buffer
             // and the Maya instance id to usd instance id mapping buffer.
             auto& mayaToUsd = MayaUsdCustomData::Get(*renderItem);
             mayaToUsd.clear();
+#endif
 
             for (unsigned int i = 0; i < instanceCount; i++) {
                 unsigned char info = instanceInfo[i];
@@ -2062,7 +2064,9 @@ void HdVP2Mesh::_UpdateDrawItem(
 
                 transforms[i].Get(instanceMatrix.matrix);
                 stateToCommit._instanceTransforms.append(worldMatrix * instanceMatrix);
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
                 mayaToUsd.push_back(i);
+#endif
 
                 if (useWireframeColors) {
                     const MColor& color = wireframeColors[info];

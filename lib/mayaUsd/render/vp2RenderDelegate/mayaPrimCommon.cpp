@@ -18,6 +18,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+
 namespace {
 
 MayaUsdCustomData sMayaUsdCustomData;
@@ -29,5 +31,7 @@ InstanceIdMap& MayaUsdCustomData::Get(const MHWRender::MRenderItem& renderItem)
 {
     return sMayaUsdCustomData._itemData[renderItem.InternalObjectId()];
 }
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
