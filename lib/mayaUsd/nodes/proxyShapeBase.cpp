@@ -570,7 +570,7 @@ void remapSublayerRecursive(
     SdfSubLayerProxy         sublayerPaths = layer->GetSubLayerPaths();
     std::vector<std::string> newSublayerPaths;
     newSublayerPaths.reserve(sublayerPaths.size());
-    for (const auto& sublayerPath : sublayerPaths) {
+    for (const auto sublayerPath : sublayerPaths) {
         auto sublayer = SdfLayer::Find(sublayerPath);
         remapSublayerRecursive(sublayer, remappedLayers);
         if (remappedLayers.empty())
@@ -646,6 +646,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     bool sharableStage = isShareableStage();
 
+#if defined(WANT_UFE_BUILD)
     // Load the unshared comp from file
     // This is so that we can remap the anon layer identifiers that have been loaded from disk which
     // are saved in the unshared root layer
@@ -677,6 +678,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
         }
     }
+#endif
 
     bool isIncomingStage = false;
 
