@@ -1,0 +1,9 @@
+#usda 1.0
+(
+    defaultPrim = "Room_set"
+    subLayers = [
+        @Assembly_room_set.usda@,
+        @x:/some/invalid/locataion/shouldnotfail.usda@
+    ]
+    upAxis = "Y"
+)
