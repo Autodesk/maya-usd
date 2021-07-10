@@ -92,6 +92,14 @@ public:
     // this method is used to select the prims with spec in a layer
     virtual void selectPrimsWithSpec(UsdLayer usdLayer) = 0;
 
+    // this method is used to check if the stage in the proxy shape is from
+    // an incoming connection (using instage data or cache id for example)
+    virtual bool isProxyShapeStageIncoming(const std::string& proxyShapePath) = 0;
+
+    // this method is used to check if the proxy shape is sharing the composition
+    // or has an owned root
+    virtual bool isProxyShapeSharedStage(const std::string& proxyShapePath) = 0;
+
 protected:
     SessionState* _sessionState;
 };

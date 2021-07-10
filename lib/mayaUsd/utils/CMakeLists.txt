@@ -6,6 +6,7 @@ target_sources(${PROJECT_NAME}
         blockSceneModificationContext.cpp
         colorSpace.cpp
         converter.cpp
+        customLayerData.cpp
         diagnosticDelegate.cpp
         query.cpp
         plugRegistryHelper.cpp
@@ -19,6 +20,7 @@ target_sources(${PROJECT_NAME}
 set(HEADERS
     blockSceneModificationContext.h
     colorSpace.h
+    customLayerData.h
     converter.h
     diagnosticDelegate.h
     query.h

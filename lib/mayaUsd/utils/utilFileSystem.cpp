@@ -196,6 +196,15 @@ bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
     return true;
 }
 
+std::string UsdMayaUtilFileSystem::appendPaths(const std::string& a, const std::string& b)
+{
+    ghc::filesystem::path aPath(a);
+    ghc::filesystem::path bPath(b);
+    aPath /= b;
+
+    return aPath.string();
+}
+
 size_t
 UsdMayaUtilFileSystem::writeToFilePath(const char* filePath, const void* buffer, const size_t size)
 {

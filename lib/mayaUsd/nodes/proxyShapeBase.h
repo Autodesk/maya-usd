@@ -75,6 +75,7 @@ class MayaUsdProxyShapeBase
     , public ProxyStageProvider
     , public UsdMayaUsdPrimProvider
 {
+
 public:
     typedef MayaUsdProxyShapeBase ThisClass;
 
@@ -97,6 +98,8 @@ public:
     static MObject excludePrimPathsAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject loadPayloadsAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject shareStageAttr;
     MAYAUSD_CORE_PUBLIC
     static MObject timeAttr;
     MAYAUSD_CORE_PUBLIC
@@ -269,6 +272,15 @@ public:
     /// should be represented as assembly edits.
     bool isUfeSelectionEnabled() const { return _isUfeSelectionEnabled; }
 
+    MAYAUSD_CORE_PUBLIC
+    bool isShareableStage() const;
+
+    MAYAUSD_CORE_PUBLIC
+    bool isStageIncoming() const;
+
+    MAYAUSD_CORE_PUBLIC
+    bool isIncomingLayer(const std::string& layerIdentifier) const;
+
 protected:
     MAYAUSD_CORE_PUBLIC
     MayaUsdProxyShapeBase(const bool enableUfeSelection = true);
@@ -358,6 +370,15 @@ private:
 
     // Whether or not the proxy shape has enabled UFE/subpath selection
     const bool _isUfeSelectionEnabled;
+
+    // For unshared composition
+    SdfLayerRefPtr _unsharedStageRootLayer;
+
+    // We need to keep track of unshared sublayers (otherwise they get removed)
+    std::vector<SdfLayerRefPtr> _unsharedStageRootSublayers;
+
+    // Keep track of the incoming layers
+    std::set<std::string> _incomingLayers;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

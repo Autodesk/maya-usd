@@ -206,6 +206,7 @@ namespace UsdLayerEditor {
 LayerEditorWidget::LayerEditorWidget(SessionState& in_sessionState, QMainWindow* in_parent)
     : QWidget(in_parent)
     , _sessionState(in_sessionState)
+    , _saveButtonParent(nullptr)
 {
     setupLayout();
     ::setupDefaultMenu(&in_sessionState, in_parent);
@@ -268,11 +269,11 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
     toolbar->addStretch();
 
     { // save stage button: contains a push button and a "badge" widget
-        auto saveButtonParent = new QWidget();
+        _saveButtonParent = new QWidget();
         auto saveButtonYOffset = DPIScale(4);
         auto saveButtonSize = QSize(buttonSize + DPIScale(12), buttonSize + saveButtonYOffset);
-        saveButtonParent->setFixedSize(saveButtonSize);
-        auto saveStageBtn = new QPushButton(saveButtonParent);
+        _saveButtonParent->setFixedSize(saveButtonSize);
+        auto saveStageBtn = new QPushButton(_saveButtonParent);
         saveStageBtn->move(0, saveButtonYOffset);
         setupButtonWithHIGBitmaps(saveStageBtn, ":/UsdLayerEditor/LE_save_all");
         saveStageBtn->setFixedSize(buttonSize, buttonSize);
@@ -284,26 +285,26 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
             this,
             &LayerEditorWidget::onSaveStageButtonClicked);
 
-        auto dirtyCountBadge = new DirtyLayersCountBadge(saveButtonParent);
+        auto dirtyCountBadge = new DirtyLayersCountBadge(_saveButtonParent);
         dirtyCountBadge->setFixedSize(saveButtonSize);
-        toolbar->addWidget(saveButtonParent, 0, buttonAlignment);
+        toolbar->addWidget(_saveButtonParent, 0, buttonAlignment);
 
         _buttons._saveStageButton = saveStageBtn;
         _buttons._dirtyCountBadge = dirtyCountBadge;
-
-        // update dirty count on stage change
-        connect(
-            _treeView->model(),
-            &QAbstractItemModel::modelReset,
-            this,
-            &LayerEditorWidget::updateDirtyCountBadgeOnIdle);
-        // update dirty count on dirty notfication
-        connect(
-            _treeView->model(),
-            &QAbstractItemModel::dataChanged,
-            this,
-            &LayerEditorWidget::updateDirtyCountBadgeOnIdle);
     }
+
+    // update buttons on stage change for example dirty count
+    connect(
+        _treeView->model(),
+        &QAbstractItemModel::modelReset,
+        this,
+        &LayerEditorWidget::updateButtonsOnIdle);
+    // update dirty count on dirty notfication
+    connect(
+        _treeView->model(),
+        &QAbstractItemModel::dataChanged,
+        this,
+        &LayerEditorWidget::updateButtonsOnIdle);
 
     return toolbar;
 }
@@ -326,14 +327,14 @@ void LayerEditorWidget::setupLayout()
     setLayout(mainVLayout);
 
     updateNewLayerButton();
-    updateDirtyCountBadge();
+    updateButtons();
 }
 
-void LayerEditorWidget::updateDirtyCountBadgeOnIdle()
+void LayerEditorWidget::updateButtonsOnIdle()
 {
-    if (!_updateDirtyCountOnIdle) {
-        _updateDirtyCountOnIdle = true;
-        QTimer::singleShot(0, this, &LayerEditorWidget::updateDirtyCountBadge);
+    if (!_updateButtonsOnIdle) {
+        _updateButtonsOnIdle = true;
+        QTimer::singleShot(0, this, &LayerEditorWidget::updateButtons);
     }
 }
 
@@ -349,7 +350,7 @@ void LayerEditorWidget::updateNewLayerButton()
         if (!disabled) {
             auto item = _treeView->currentLayerItem();
             if (item) {
-                disabled = item->isInvalidLayer() || item->appearsMuted();
+                disabled = item->isInvalidLayer() || item->appearsMuted() || item->isReadOnly();
             }
         }
     }
@@ -357,15 +358,20 @@ void LayerEditorWidget::updateNewLayerButton()
     _buttons._loadLayer->setDisabled(disabled);
 }
 
-void LayerEditorWidget::updateDirtyCountBadge()
+void LayerEditorWidget::updateButtons()
 {
-    const auto layers = _treeView->layerTreeModel()->getAllNeedsSavingLayers();
-    int        count = static_cast<int>(layers.size());
-    _buttons._dirtyCountBadge->updateCount(count);
-
-    bool disable = count == 0;
-    disableHIGButton(_buttons._saveStageButton, disable);
-    _updateDirtyCountOnIdle = false;
+    if (_sessionState.commandHook()->isProxyShapeSharedStage(
+            _sessionState.stageEntry()._proxyShapePath)) {
+        _saveButtonParent->setVisible(true);
+        const auto layers = _treeView->layerTreeModel()->getAllNeedsSavingLayers();
+        int        count = static_cast<int>(layers.size());
+        _buttons._dirtyCountBadge->updateCount(count);
+        bool disable = count == 0;
+        disableHIGButton(_buttons._saveStageButton, disable);
+    } else {
+        _saveButtonParent->setVisible(false);
+    }
+    _updateButtonsOnIdle = false;
 }
 
 void LayerEditorWidget::onNewLayerButtonClicked()

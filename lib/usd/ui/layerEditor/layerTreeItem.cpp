@@ -41,15 +41,35 @@ const std::vector<LayerActionInfo>& LayerTreeItem::actionButtonsDefinition()
 }
 
 LayerTreeItem::LayerTreeItem(
-    SdfLayerRefPtr     in_usdLayer,
-    LayerType          in_layerType,
-    std::string        in_subLayerPath,
-    RecursionDetector* in_recursionDetector)
+    SdfLayerRefPtr         in_usdLayer,
+    LayerType              in_layerType,
+    std::string            in_subLayerPath,
+    std::set<std::string>* in_incomingLayers,
+    bool                   in_sharedStage,
+    std::set<std::string>* in_sharedLayers,
+    RecursionDetector*     in_recursionDetector)
     : _layer(std::move(in_usdLayer))
     , _isTargetLayer(false)
     , _layerType(in_layerType)
     , _subLayerPath(in_subLayerPath)
+    , _isIncomingLayer(false)
+    , _incomingLayers()
+    , _isSharedStage(in_sharedStage)
+    , _isSharedLayer(false)
+    , _sharedLayers()
 {
+    if (in_incomingLayers != nullptr) {
+        _incomingLayers = *in_incomingLayers;
+        if (_layer && _incomingLayers.find(_layer->GetIdentifier()) != _incomingLayers.end()) {
+            _isIncomingLayer = true;
+        }
+    }
+    if (in_sharedLayers != nullptr) {
+        _sharedLayers = *in_sharedLayers;
+        if (_layer && _sharedLayers.find(_layer->GetIdentifier()) != _sharedLayers.end()) {
+            _isSharedLayer = true;
+        }
+    }
     fetchData(RebuildChildren::Yes, in_recursionDetector);
 }
 
@@ -89,8 +109,14 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
                     subLayer->GetRealPath().c_str());
                 puts(msg.asChar());
             } else {
-                auto item
-                    = new LayerTreeItem(subLayer, LayerType::SubLayer, path, recursionDetector);
+                auto item = new LayerTreeItem(
+                    subLayer,
+                    LayerType::SubLayer,
+                    path,
+                    &_incomingLayers,
+                    _isSharedStage,
+                    &_sharedLayers,
+                    recursionDetector);
                 appendRow(item);
             }
         } else {
@@ -99,7 +125,13 @@ void LayerTreeItem::populateChildren(RecursionDetector* recursionDetector)
                 StringResources::getAsMString(StringResources::kErrorDidNotFind),
                 std::string(path).c_str());
             puts(msg.asChar());
-            auto item = new LayerTreeItem(subLayer, LayerType::SubLayer, path);
+            auto item = new LayerTreeItem(
+                subLayer,
+                LayerType::SubLayer,
+                path,
+                &_incomingLayers,
+                _isSharedStage,
+                &_sharedLayers);
             appendRow(item);
         }
     }
@@ -201,16 +233,37 @@ bool LayerTreeItem::appearsMuted() const
     return false;
 }
 
+bool LayerTreeItem::sublayerOfShared() const
+{
+    auto item = parentLayerItem();
+    while (item != nullptr) {
+        if (item->_isSharedLayer) {
+            return true;
+        }
+        item = item->parentLayerItem();
+    }
+
+    return false;
+}
+
+bool LayerTreeItem::isReadOnly() const
+{
+    return (_isSharedLayer || (_layer && !_layer->PermissionToEdit()));
+}
+
 bool LayerTreeItem::isMovable() const
 {
     // Dragging the root layer, session and muted layer is not allowed.
-    return !isSessionLayer() && !isRootLayer() && !appearsMuted();
+    return !isSessionLayer() && !isRootLayer() && !appearsMuted() && !sublayerOfShared();
 }
+
+bool LayerTreeItem::isIncoming() const { return _isIncomingLayer; }
 
 bool LayerTreeItem::needsSaving() const
 {
     if (_layer) {
-        if (!isSessionLayer()) {
+        if (!isSessionLayer() && !isReadOnly()
+            && !(!_incomingLayers.empty() && parentLayerItem() == nullptr)) {
             return isDirty() || isAnonymous();
         }
     }
