@@ -725,7 +725,13 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _selectionChanged = false;
         _selectionModeChanged = false;
     }
+#else
+    if (_selectionChanged && !inSelectionPass) {
+        _UpdateSelectionStates();
+        _selectionChanged = false;
+    }
 #endif
+
     if (inSelectionPass) {
         // The new Maya point snapping support doesn't require point snapping items any more.
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
