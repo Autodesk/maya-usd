@@ -1668,7 +1668,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 #else
     const bool isShadedSelectedInstanceItem = false;
     const bool usingShadedSelectedInstanceItem = false;
-    const bool updateShadedSelectedInstanceItem = false;
 #endif
 
     // We don't need to update the dedicated selection highlight item when there
