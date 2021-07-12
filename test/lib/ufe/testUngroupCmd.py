@@ -358,7 +358,7 @@ class UngroupCmdTestCase(unittest.TestCase):
             # ungroup
             cmds.ungroup(ufe.PathString.string(sphere1Path))
 
-    def testUngroupAfterUndoRedo(self):
+    def testUngroupSelectionAfterUndoRedo(self):
         ''' '''
         # create a sphere generator
         sphereGen = SphereGenerator(2, self.contextOp, self.proxyShapePathStr)
@@ -383,25 +383,22 @@ class UngroupCmdTestCase(unittest.TestCase):
         # is /Sphere1, /Sphere2.
         cmds.ungroup("{},/group1".format(self.proxyShapePathStr))
 
+        # verify that Sphere1 and Sphere2 are selected
+        self.assertEqual(len(self.globalSn), 2)
+        self.assertEqual(self.globalSn.front().nodeName(), "Sphere1")
+        self.assertEqual(self.globalSn.back().nodeName(), "Sphere2")
+
         # undo again
         cmds.undo()
 
         # redo again
         cmds.redo()
 
-        # verify that group1 is in global selection list
-        self.assertEqual(len(self.globalSn), 1)
-        groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        # verify that Sphere1 and Sphere2 are selected
+        self.assertEqual(len(self.globalSn), 2)
+        self.assertEqual(self.globalSn.front().nodeName(), "Sphere1")
+        self.assertEqual(self.globalSn.back().nodeName(), "Sphere2")
 
-        # Hmmm, looks like we have a bug here. HS, June 21, 2021
-        # verify that group hierarchy has 2 children
-        # groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
-        # self.assertEqual(len(groupHierarchy.children()), 2)
-
-        # remove group1 from the hierarchy. What should remain
-        # is /Sphere1, /Sphere2.
-        # cmds.ungroup("|stage1|stageShape1,/group1")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
