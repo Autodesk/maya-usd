@@ -720,7 +720,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if (_selectionModeChanged) {
+    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass)) {
         _UpdateSelectionStates();
         _selectionChanged = false;
         _selectionModeChanged = false;
