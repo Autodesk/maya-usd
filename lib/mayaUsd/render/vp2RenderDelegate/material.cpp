@@ -1426,6 +1426,10 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
             outNode.identifier = TfToken(
                 HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace).asChar());
         } else {
+            if (!sdrNode) {
+                TF_WARN("Could not find a shader node for <%s>", node.path.GetText());
+                return;
+            }
             outNode.identifier = TfToken(sdrNode->GetName());
         }
 
