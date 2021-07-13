@@ -1333,7 +1333,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
         case HdMeshGeomStyleHull:
             // Creating the smoothHull hull render items requires geom subsets from the topology,
             // and we can't access that here.
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
             if (reprToken == HdVP2ReprTokens->defaultMaterial) {
                 // But default material mode does not use geom subsets, so we create the render item
                 renderItem = _CreateSmoothHullRenderItem(renderItemName);
@@ -1499,7 +1499,7 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
         MHWRender::MRenderItem* renderItem = _CreateSmoothHullRenderItem(renderItemName);
         drawItem.AddRenderItem(renderItem, &geomSubset);
 
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
             renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
             renderItemName += "shadedSelectedInstances";
@@ -1526,7 +1526,7 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
             = _CreateSmoothHullRenderItem(drawItem.GetDrawItemName());
         drawItem.AddRenderItem(renderItem);
 
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
             MString renderItemName = drawItem.GetDrawItemName();
             renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
