@@ -771,7 +771,9 @@ UsdTransform3dMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName) const
     return cvt.at(opName);
 }
 
-bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(const PXR_NS::TfToken attrName, std::string& errMsg) const
+bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(
+    const PXR_NS::TfToken attrName,
+    std::string&          errMsg) const
 {
     UsdAttribute attr;
     if (!attrName.IsEmpty())
