@@ -1349,8 +1349,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                         renderItemName, *drawItem.get(), *subSceneContainer, nullptr);
                     defaultMaterialItem->setDefaultMaterialHandling(
                         MRenderItem::DrawOnlyWhenDefaultMaterialActive);
-                    defaultMaterialItem->setShader(
-                        _delegate->Get3dDefaultMaterialShader());
+                    defaultMaterialItem->setShader(_delegate->Get3dDefaultMaterialShader());
                 }
 #endif
             }
@@ -1489,7 +1488,8 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
-            _CreateShadedSelectedInstancesItem(renderItemName, drawItem, subSceneContainer, &geomSubset);
+            _CreateShadedSelectedInstancesItem(
+                renderItemName, drawItem, subSceneContainer, &geomSubset);
         }
 #endif
 
@@ -1506,7 +1506,8 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
 
     if (numFacesWithoutRenderItem > 0) {
         // create an item for the remaining faces
-        _CreateSmoothHullRenderItem(drawItem.GetDrawItemName(), drawItem, subSceneContainer, nullptr);
+        _CreateSmoothHullRenderItem(
+            drawItem.GetDrawItemName(), drawItem, subSceneContainer, nullptr);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
