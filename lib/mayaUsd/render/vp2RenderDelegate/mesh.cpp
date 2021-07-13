@@ -1333,34 +1333,26 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
         case HdMeshGeomStyleHull:
             // Creating the smoothHull hull render items requires geom subsets from the topology,
             // and we can't access that here.
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             if (reprToken == HdVP2ReprTokens->defaultMaterial) {
                 // But default material mode does not use geom subsets, so we create the render item
-                renderItem = _CreateSmoothHullRenderItem(renderItemName);
-                renderItem->setDefaultMaterialHandling(
+                MHWRender::MRenderItem* defaultMaterialItem
+                    = _CreateSmoothHullRenderItem(
+                          renderItemName, *drawItem.get(), *subSceneContainer, nullptr)
+                          ._renderItem;
+                defaultMaterialItem->setDefaultMaterialHandling(
                     MRenderItem::DrawOnlyWhenDefaultMaterialActive);
-                renderItem->setShader(_delegate->Get3dDefaultMaterialShader());
-
+                defaultMaterialItem->setShader(_delegate->Get3dDefaultMaterialShader());
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
                 if (!GetInstancerId().IsEmpty()) {
-                    MString shadedSelectedInstancesRenderItemName = renderItemName;
-                    shadedSelectedInstancesRenderItemName
-                        += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
-                    shadedSelectedInstancesRenderItemName += "shadedSelectedInstances";
-                    MHWRender::MRenderItem* shadedSelectedInstancesRenderItem
-                        = _CreateSmoothHullRenderItem(shadedSelectedInstancesRenderItemName);
-                    shadedSelectedInstancesRenderItem->setDefaultMaterialHandling(
+                    defaultMaterialItem = _CreateShadedSelectedInstancesItem(
+                        renderItemName, *drawItem.get(), *subSceneContainer, nullptr);
+                    defaultMaterialItem->setDefaultMaterialHandling(
                         MRenderItem::DrawOnlyWhenDefaultMaterialActive);
-                    shadedSelectedInstancesRenderItem->setShader(
+                    defaultMaterialItem->setShader(
                         _delegate->Get3dDefaultMaterialShader());
-                    HdVP2DrawItem::RenderItemData& renderItemData
-                        = drawItem->AddRenderItem(shadedSelectedInstancesRenderItem);
-                    renderItemData._shadedSelectedInstances = true;
-
-                    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                        [subSceneContainer, shadedSelectedInstancesRenderItem]() {
-                            subSceneContainer->add(shadedSelectedInstancesRenderItem);
-                        });
                 }
+#endif
             }
 #endif
             break;
@@ -1455,16 +1447,13 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
     }
 }
 
-void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
+void HdVP2Mesh::_CreateSmoothHullRenderItems(
+    HdVP2DrawItem&      drawItem,
+    MSubSceneContainer& subSceneContainer)
 {
     // 2021-01-29: Changing topology is not tested
     TF_VERIFY(drawItem.GetRenderItems().size() == 0);
     drawItem.GetRenderItems().clear();
-
-    auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    MSubSceneContainer* subSceneContainer = param->GetContainer();
-    if (ARCH_UNLIKELY(!subSceneContainer))
-        return;
 
     // Need to topology to check for geom subsets.
     const HdMeshTopology& topology = _meshSharedData->_topology;
@@ -1496,16 +1485,11 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
         MString renderItemName = drawItem.GetDrawItemName();
         renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
         renderItemName += geomSubset.id.GetString().c_str();
-        MHWRender::MRenderItem* renderItem = _CreateSmoothHullRenderItem(renderItemName);
-        drawItem.AddRenderItem(renderItem, &geomSubset);
+        _CreateSmoothHullRenderItem(renderItemName, drawItem, subSceneContainer, &geomSubset);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
-            renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
-            renderItemName += "shadedSelectedInstances";
-            renderItem = _CreateSmoothHullRenderItem(renderItemName);
-            HdVP2DrawItem::RenderItemData& renderItemData = drawItem.AddRenderItem(renderItem);
-            renderItemData._shadedSelectedInstances = true;
+            _CreateShadedSelectedInstancesItem(renderItemName, drawItem, subSceneContainer, &geomSubset);
         }
 #endif
 
@@ -1522,20 +1506,12 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
 
     if (numFacesWithoutRenderItem > 0) {
         // create an item for the remaining faces
-        MHWRender::MRenderItem* renderItem
-            = _CreateSmoothHullRenderItem(drawItem.GetDrawItemName());
-        drawItem.AddRenderItem(renderItem);
+        _CreateSmoothHullRenderItem(drawItem.GetDrawItemName(), drawItem, subSceneContainer, nullptr);
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         if (!GetInstancerId().IsEmpty()) {
-            MString renderItemName = drawItem.GetDrawItemName();
-            renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
-            renderItemName += "shadedSelectedInstances";
-            MHWRender::MRenderItem* shadedSelectedInstancesRenderItem
-                = _CreateSmoothHullRenderItem(renderItemName);
-            HdVP2DrawItem::RenderItemData& shadedSelectedInstancesRenderItemData
-                = drawItem.AddRenderItem(shadedSelectedInstancesRenderItem);
-            shadedSelectedInstancesRenderItemData._shadedSelectedInstances = true;
+            _CreateShadedSelectedInstancesItem(
+                drawItem.GetDrawItemName(), drawItem, subSceneContainer, nullptr);
         }
 #endif
 
@@ -1619,15 +1595,7 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
             // it is possible we haven't created MRenderItems for this HdDrawItem yet.
             // if there are no MRenderItems, create them.
             if (drawItem->GetRenderItems().size() == 0) {
-                _CreateSmoothHullRenderItems(*drawItem);
-
-                for (const auto& renderItemData : drawItem->GetRenderItems()) {
-                    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                        [subSceneContainer, &renderItemData]() {
-                            bool result = subSceneContainer->add(renderItemData._renderItem);
-                            TF_VERIFY(result);
-                        });
-                }
+                _CreateSmoothHullRenderItems(*drawItem, *subSceneContainer);
             }
         }
 
@@ -2676,9 +2644,29 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(const MString& n
     return renderItem;
 }
 
+MHWRender::MRenderItem* HdVP2Mesh::_CreateShadedSelectedInstancesItem(
+    const MString&      name,
+    HdVP2DrawItem&      drawItem,
+    MSubSceneContainer& subSceneContainer,
+    const HdGeomSubset* geomSubset) const
+{
+    MString ssiName = name;
+    ssiName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
+    ssiName += "shadedSelectedInstances";
+    HdVP2DrawItem::RenderItemData& renderItemData
+        = _CreateSmoothHullRenderItem(ssiName, drawItem, subSceneContainer, geomSubset);
+    renderItemData._shadedSelectedInstances = true;
+
+    return renderItemData._renderItem;
+}
+
 /*! \brief  Create render item for smoothHull repr.
  */
-MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& name) const
+HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
+    const MString&      name,
+    HdVP2DrawItem&      drawItem,
+    MSubSceneContainer& subSceneContainer,
+    const HdGeomSubset* geomSubset) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kTriangles);
@@ -2709,7 +2697,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
 
     setWantConsolidation(*renderItem, true);
 
-    return renderItem;
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+        [&subSceneContainer, renderItem]() { subSceneContainer.add(renderItem); });
+
+    return drawItem.AddRenderItem(renderItem, geomSubset);
 }
 
 /*! \brief  Create render item to support selection highlight for smoothHull repr.

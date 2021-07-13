@@ -40,6 +40,7 @@ public:
     tbb::concurrent_unordered_map<int, InstanceIdMap> _itemData;
 
     static InstanceIdMap& Get(const MHWRender::MRenderItem& item);
+    static void Remove(const MHWRender::MRenderItem& item);
 };
 #endif
 

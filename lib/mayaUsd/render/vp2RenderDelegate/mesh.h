@@ -155,10 +155,20 @@ private:
         const HdDirtyBits& rprimDirtyBits,
         const TfToken&     reprToken);
 
-    void _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem);
+    void
+    _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem, MSubSceneContainer& subSceneContainer);
 
+    MHWRender::MRenderItem* _CreateShadedSelectedInstancesItem(
+        const MString&      name,
+        HdVP2DrawItem&      drawItem,
+        MSubSceneContainer& subSceneContainer,
+        const HdGeomSubset* geomSubset) const;
+    HdVP2DrawItem::RenderItemData& _CreateSmoothHullRenderItem(
+        const MString&      name,
+        HdVP2DrawItem&      drawItem,
+        MSubSceneContainer& subSceneContainer,
+        const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
 

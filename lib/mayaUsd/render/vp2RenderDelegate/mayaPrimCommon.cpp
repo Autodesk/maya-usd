@@ -32,6 +32,14 @@ InstanceIdMap& MayaUsdCustomData::Get(const MHWRender::MRenderItem& renderItem)
     return sMayaUsdCustomData._itemData[renderItem.InternalObjectId()];
 }
 
+/* static */
+void MayaUsdCustomData::Remove(const MHWRender::MRenderItem& renderItem)
+{
+    // not thread safe, so if they are destroyed in parallel this will crash.
+    // consider concurrent_hash_map for locking version that can erase
+    sMayaUsdCustomData._itemData.unsafe_erase(renderItem.InternalObjectId());
+}
+
 #endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
