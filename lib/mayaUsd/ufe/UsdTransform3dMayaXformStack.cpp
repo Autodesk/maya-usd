@@ -442,19 +442,10 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
     }
 
     // Return null command if the attribute edit is not allowed.
-    UsdAttribute attr;
     std::string errMsg;
-    if (!attrName.IsEmpty())
-        attr = prim().GetAttribute(attrName);
-    if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
-    } else if (!attr) {
-        UsdGeomXformable xformable(prim());
-        if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-            MGlobal::displayError(errMsg.c_str());
-            return nullptr;
-        }
     }
 
     // If there is no rotate transform op, we will create a RotXYZ.
@@ -501,19 +492,10 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
     }
 
     // Return null command if the attribute edit is not allowed.
-    UsdAttribute attr;
-    std::string  errMsg;
-    if (!attrName.IsEmpty())
-        attr = prim().GetAttribute(attrName);
-    if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
-    } else if (!attr) {
-        UsdGeomXformable xformable(prim());
-        if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-            MGlobal::displayError(errMsg.c_str());
-            return nullptr;
-        }
     }
 
     GfVec3f v(x, y, z);
@@ -623,17 +605,10 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
     const TfToken& opSuffix)
 {
     // Return null command if the attribute edit is not allowed.
-    auto        attr = prim().GetAttribute(attrName);
     std::string errMsg;
-    if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
-    } else if (!attr) {
-        UsdGeomXformable xformable(prim());
-        if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-            MGlobal::displayError(errMsg.c_str());
-            return nullptr;
-        }
     }
 
     auto setXformOpOrderFn = getXformOpOrderFn();
@@ -674,16 +649,9 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 
     // Return null command if the attribute edit is not allowed.
     std::string errMsg;
-    auto        attr = prim().GetAttribute(pvtAttrName);
-    if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+    if (!isAttributeEditAllowed(pvtAttrName, errMsg)) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
-    } else if (!attr) {
-        UsdGeomXformable xformable(prim());
-        if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-            MGlobal::displayError(errMsg.c_str());
-            return nullptr;
-        }
     }
 
     GfVec3f v(x, y, z);
@@ -801,6 +769,22 @@ UsdTransform3dMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName) const
     }; // FIXME, unsupported.
 
     return cvt.at(opName);
+}
+
+bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(const PXR_NS::TfToken attrName, std::string& errMsg) const
+{
+    UsdAttribute attr;
+    if (!attrName.IsEmpty())
+        attr = prim().GetAttribute(attrName);
+    if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+        return false;
+    } else if (!attr) {
+        UsdGeomXformable xformable(prim());
+        if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------
