@@ -49,6 +49,7 @@
 #include <pxr/base/tf/singleton.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/tf/weakBase.h>
+#include <pxr/imaging/hd/driver.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/rprimCollection.h>
@@ -68,10 +69,6 @@
 #include <maya/MSelectionContext.h>
 #include <maya/MTypes.h>
 #include <maya/MUserData.h>
-
-#if PXR_VERSION > 2002
-#include <pxr/imaging/hd/driver.h>
-#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -454,12 +451,10 @@ private:
     /// *after* the render index. We enforce that ordering by declaring the
     /// render delegate *before* the render index, since class members are
     /// destructed in reverse declaration order.
-#if PXR_VERSION > 2002
     /// Hgi and HdDriver should be constructed before HdEngine to ensure they
     /// are destructed last. Hgi may be used during engine/delegate destruction.
-    HgiUniquePtr _hgi;
-    HdDriver     _hgiDriver;
-#endif
+    HgiUniquePtr                   _hgi;
+    HdDriver                       _hgiDriver;
     HdEngine                       _hdEngine;
     HdStRenderDelegate             _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;

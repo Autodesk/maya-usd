@@ -1300,11 +1300,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
         return;
     }
 
-#if PXR_VERSION > 2002
     _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
-#else
-    _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
-#endif
     HdReprSharedPtr repr = _reprs.back().second;
 
     // set dirty bit to say we need to sync a new repr
