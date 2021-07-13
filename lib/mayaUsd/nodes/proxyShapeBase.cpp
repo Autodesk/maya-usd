@@ -1671,13 +1671,8 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
         }
 
         // If the attribute is not part of the primitive schema, it does not affect extents
-#if PXR_VERSION > 2002
         auto attrDefn
             = changedPrim.GetPrimDefinition().GetSchemaAttributeSpec(changedPropertyToken);
-#else
-        auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(
-            changedPrim.GetTypeName(), changedPropertyToken);
-#endif
         if (!attrDefn) {
             continue;
         }

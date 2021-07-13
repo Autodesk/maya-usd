@@ -22,6 +22,13 @@
 #endif
 
 #include <pxr/base/tf/singleton.h>
+#include <pxr/imaging/hd/driver.h>
+#include <pxr/imaging/hd/engine.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
+#include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hdSt/renderDelegate.h>
+#include <pxr/imaging/hdx/taskController.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MMessage.h>
@@ -32,16 +39,6 @@
 #include <chrono>
 #include <memory>
 #include <mutex>
-
-#if PXR_VERSION > 2002
-#include <pxr/imaging/hd/driver.h>
-#endif
-#include <pxr/imaging/hd/engine.h>
-#include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hd/rendererPlugin.h>
-#include <pxr/imaging/hd/rprimCollection.h>
-#include <pxr/imaging/hdSt/renderDelegate.h>
-#include <pxr/imaging/hdx/taskController.h>
 
 #if WANT_UFE_BUILD
 #include <ufe/observer.h>
@@ -162,12 +159,10 @@ private:
     std::atomic<bool>                     _isConverged = { false };
     std::atomic<bool>                     _needsClear = { false };
 
-#if PXR_VERSION > 2002
     /// Hgi and HdDriver should be constructed before HdEngine to ensure they
     /// are destructed last. Hgi may be used during engine/delegate destruction.
-    HgiUniquePtr _hgi;
-    HdDriver     _hgiDriver;
-#endif
+    HgiUniquePtr                              _hgi;
+    HdDriver                                  _hgiDriver;
     HdEngine                                  _engine;
     HdRendererPlugin*                         _rendererPlugin = nullptr;
     HdxTaskController*                        _taskController = nullptr;

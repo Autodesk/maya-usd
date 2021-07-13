@@ -157,12 +157,7 @@ UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
             // Special case for TfToken -> Enum. If it doesn't have any allowed
             // tokens, then use String instead.
             if (iter->second == Ufe::Attribute::kEnumString) {
-#if PXR_VERSION > 2002
                 auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(usdAttr.GetName());
-#else
-                auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(
-                    fPrim.GetTypeName(), usdAttr.GetName());
-#endif
                 if (!attrDefn || !attrDefn->HasAllowedTokens())
                     return Ufe::Attribute::kString;
             }

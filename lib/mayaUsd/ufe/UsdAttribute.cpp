@@ -280,11 +280,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
 Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() const
 {
     PXR_NS::TfToken tk(name());
-#if PXR_VERSION > 2002
-    auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(tk);
-#else
-    auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(fPrim.GetTypeName(), tk);
-#endif
+    auto            attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(tk);
     if (attrDefn && attrDefn->HasAllowedTokens()) {
         auto                         tokenArray = attrDefn->GetAllowedTokens();
         std::vector<PXR_NS::TfToken> tokenVec(tokenArray.begin(), tokenArray.end());
