@@ -296,6 +296,11 @@ void _ConfigureReprs()
     // Special token for selection update and no need to create repr. Adding
     // the null desc to remove Hydra warning.
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->selection, HdBasisCurvesGeomStyleInvalid);
+
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+    // Wire for default material:
+    HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->defaultMaterial, HdBasisCurvesGeomStyleWire);
+#endif
 }
 
 #if defined(WANT_UFE_BUILD)

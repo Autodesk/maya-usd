@@ -764,8 +764,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     // Prepare index buffer.
     if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
 
-        const bool forceLines
-            = (refineLevel <= 0) || (drawMode == MHWRender::MGeometry::kWireframe);
+        const bool forceLines = (refineLevel <= 0) || (drawMode & MHWRender::MGeometry::kWireframe);
 
         VtValue result;
 
@@ -1651,18 +1650,36 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         case HdBasisCurvesGeomStylePatch:
             renderItem = _CreatePatchRenderItem(renderItemName);
             drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+            renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
+#endif
             break;
         case HdBasisCurvesGeomStyleWire:
             // The item is used for wireframe display and selection highlight.
             if (reprToken == HdReprTokens->wire) {
                 renderItem = _CreateWireRenderItem(renderItemName);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+                renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
+#endif
             }
             // The item is used for bbox display and selection highlight.
             else if (reprToken == HdVP2ReprTokens->bbox) {
                 renderItem = _CreateBBoxRenderItem(renderItemName);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+                renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
+#endif
             }
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+            else if (reprToken == HdVP2ReprTokens->defaultMaterial) {
+                renderItem = _CreateWireRenderItem(renderItemName);
+                renderItem->setDrawMode(MHWRender::MGeometry::kAll);
+                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
+                renderItem->setDefaultMaterialHandling(
+                    MRenderItem::DrawOnlyWhenDefaultMaterialActive);
+            }
+#endif
             break;
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
         case HdBasisCurvesGeomStylePoints:
