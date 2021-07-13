@@ -1396,11 +1396,11 @@ void ProxyShape::loadStage()
         }
     }
 
-    // Get the prim
+    // Get the prim, if the stage is valid.
     // If no primPath string specified, then use the pseudo-root.
     const SdfPath rootPath(std::string("/"));
     MString       primPathStr = inputStringValue(dataBlock, primPath());
-    if (primPathStr.length()) {
+    if (m_stage && primPathStr.length()) {
         m_path = SdfPath(AL::maya::utils::convert(primPathStr));
         UsdPrim prim = m_stage->GetPrimAtPath(m_path);
         if (!prim) {
