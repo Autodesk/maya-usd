@@ -180,8 +180,6 @@ class RotatePivotTestCase(unittest.TestCase):
         self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(2, 0, 0))
         t3d.rotatePivot(0, 0, 0)
 
-        print(mayaUtils.previewReleaseVersion())
-
         # Start with a non-zero initial rotation. This is required to test
         # MAYA-112175, otherwise a zero initial rotation means rotate pivot
         # translation will be empty and we get the correct result by accident.
