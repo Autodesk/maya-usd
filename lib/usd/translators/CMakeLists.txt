@@ -20,6 +20,8 @@ target_sources(${TARGET_NAME}
         instancerWriter.cpp
         jointWriter.cpp
         lightReader.cpp
+        lightRfMReader.cpp
+        lightRfMWriter.cpp
         lightWriter.cpp
         locatorWriter.cpp
         materialReader.cpp
