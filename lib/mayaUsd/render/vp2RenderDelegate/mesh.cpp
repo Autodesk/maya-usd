@@ -2645,6 +2645,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(const MString& n
     return renderItem;
 }
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 MHWRender::MRenderItem* HdVP2Mesh::_CreateShadedSelectedInstancesItem(
     const MString&      name,
     HdVP2DrawItem&      drawItem,
@@ -2660,6 +2661,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateShadedSelectedInstancesItem(
 
     return renderItemData._renderItem;
 }
+#endif
 
 /*! \brief  Create render item for smoothHull repr.
  */

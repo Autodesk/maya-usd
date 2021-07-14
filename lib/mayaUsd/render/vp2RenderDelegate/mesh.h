@@ -158,11 +158,13 @@ private:
     void
     _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem, MSubSceneContainer& subSceneContainer);
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MHWRender::MRenderItem* _CreateShadedSelectedInstancesItem(
         const MString&      name,
         HdVP2DrawItem&      drawItem,
         MSubSceneContainer& subSceneContainer,
         const HdGeomSubset* geomSubset) const;
+#endif
     HdVP2DrawItem::RenderItemData& _CreateSmoothHullRenderItem(
         const MString&      name,
         HdVP2DrawItem&      drawItem,
