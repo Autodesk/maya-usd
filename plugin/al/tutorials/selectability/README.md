@@ -1,5 +1,5 @@
 # Selectability 
-Selectability is used by AL_USDMaya to determine if a prim is selectable in the Maya viewport. At Animal Logic, we disable selection on prims for certain departments to stop them from accidently selecting a prim. Selectability it computed hierarchically, meaning that a child prim inherits it's ancestors Selectability value. 
+Selectability is used by AL_USDMaya to determine if a prim is selectable in the Maya viewport. At Animal Logic, we disable selection on prims for certain departments to stop them from accidently selecting a prim. Selectability is computed hierarchically, meaning that a child prim inherits it's ancestors Selectability value. 
 
 By default every prim is seletable, If any ancestor is found to be unselectable then all descendant prims are unselectable.
 
