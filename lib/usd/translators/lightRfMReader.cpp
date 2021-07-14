@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #include <mayaUsd/fileio/primReaderRegistry.h>
-#include <mayaUsd/fileio/translators/translatorLight.h>
+#include <mayaUsd/fileio/translators/translatorRfMLight.h>
 
 #include <pxr/usd/usdLux/cylinderLight.h>
 #include <pxr/usd/usdLux/diskLight.h>
@@ -28,24 +28,53 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Build variable used to import usd builtin
-// lights as maya lights
-#ifndef MAYA_USD_IMPORT_PXR_LIGHTS
+
+#ifdef MAYA_USD_IMPORT_PXR_LIGHTS
+
+PXRUSDMAYA_DEFINE_READER(UsdLuxCylinderLight, args, context)
+{
+    return UsdMayaTranslatorRfMLight::Read(args, context);
+}
+
+PXRUSDMAYA_DEFINE_READER(UsdLuxDiskLight, args, context)
+{
+    return UsdMayaTranslatorRfMLight::Read(args, context);
+}
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxDistantLight, args, context)
 {
-    return UsdMayaTranslatorLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
+}
+
+PXRUSDMAYA_DEFINE_READER(UsdLuxDomeLight, args, context)
+{
+    return UsdMayaTranslatorRfMLight::Read(args, context);
+}
+
+PXRUSDMAYA_DEFINE_READER(UsdLuxGeometryLight, args, context)
+{
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdLuxRectLight, args, context)
 {
-    return UsdMayaTranslatorLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, context);
 }
-
+/*
 PXRUSDMAYA_DEFINE_READER(UsdLuxSphereLight, args, context)
 {
-    return UsdMayaTranslatorLight::Read(args, context);
-}
+    return UsdMayaTranslatorRfMLight::Read(args, context);
+}*/
 #endif
+
+PXRUSDMAYA_DEFINE_READER(UsdRiPxrAovLight, args, context)
+{
+    return UsdMayaTranslatorRfMLight::Read(args, context);
+}
+
+PXRUSDMAYA_DEFINE_READER(UsdRiPxrEnvDayLight, args, context)
+{
+    return UsdMayaTranslatorRfMLight::Read(args, context);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

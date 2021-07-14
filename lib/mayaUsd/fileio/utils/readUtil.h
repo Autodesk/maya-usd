@@ -27,6 +27,9 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -186,6 +189,15 @@ struct UsdMayaReadUtil
         const UsdTimeCode&          usdTime = UsdTimeCode::Default());
 
     /// \}
+
+
+    // Translates a USD attribute to a Maya MPlug, accounting for eventual animations
+    MAYAUSD_CORE_PUBLIC
+    static bool ReadUsdAttribute(const UsdAttribute& usdAttr,
+                                 const MFnDependencyNode& depFn,
+                                 const TfToken& plugName,
+                                 const UsdMayaPrimReaderArgs& args,
+                                 UsdMayaPrimReaderContext* context);
 
     /// A cache to store pre-computed file texture hashes on import.
     MAYAUSD_CORE_PUBLIC
