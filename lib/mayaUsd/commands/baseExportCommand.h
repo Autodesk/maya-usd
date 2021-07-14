@@ -53,6 +53,7 @@ public:
     static constexpr auto kMergeTransformAndShapeFlag = "mt";
     static constexpr auto kStripNamespacesFlag = "sn";
     static constexpr auto kExportRefsAsInstanceableFlag = "eri";
+    static constexpr auto kExportRootFlag = "rt";
     static constexpr auto kExportDisplayColorFlag = "dsp";
     static constexpr auto kShadingModeFlag = "shd";
     static constexpr auto kConvertMaterialsToFlag = "cmt";

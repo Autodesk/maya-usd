@@ -75,6 +75,18 @@ MStatus UsdMayaExportTranslator::writer(
                 frameStride = theOption[1].asDouble();
             } else if (argName == "filterTypes") {
                 theOption[1].split(',', filteredTypes);
+            } else if (argName == "root") {
+                std::string exportRootPath = theOption[1].asChar();
+                userArgs[argName] = VtValue(exportRootPath);
+                if (!exportRootPath.empty()) {
+                    MDagPath rootDagPath;
+                    UsdMayaUtil::GetDagPathByName(exportRootPath, rootDagPath);
+                    if (!rootDagPath.isValid()) {
+                        MGlobal::displayError(
+                            MString("Invalid dag path provided for root: ") + theOption[1]);
+                        return MS::kFailure;
+                    }
+                }
             } else {
                 if (argName == "shadingMode") {
                     TfToken shadingMode(theOption[1].asChar());

@@ -61,12 +61,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-inline SdfPath _GetRootOverridePath(const UsdMayaJobExportArgs& args, const SdfPath& path)
+inline SdfPath _GetRootOverridePath(
+    const UsdMayaJobExportArgs& args,
+    const SdfPath&              exportRootSdfPath,
+    const SdfPath&              path)
 {
-    if (!args.usdModelRootOverridePath.IsEmpty() && !path.IsEmpty()) {
-        return path.ReplacePrefix(path.GetPrefixes()[0], args.usdModelRootOverridePath);
+    if (!path.IsEmpty()) {
+        SdfPath newPath = path;
+        if (!args.usdModelRootOverridePath.IsEmpty()) {
+            newPath = path.ReplacePrefix(path.GetPrefixes()[0], args.usdModelRootOverridePath);
+        }
+        if (!exportRootSdfPath.IsEmpty()) {
+            newPath = path.ReplacePrefix(
+                exportRootSdfPath.GetParentPath(), SdfPath::AbsoluteRootPath());
+        }
+        return newPath;
     }
-
     return path;
 }
 
@@ -78,6 +88,20 @@ UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
     : mArgs(args)
     , _skelBindingsProcessor(new UsdMaya_SkelBindingsProcessor())
 {
+    if (!mArgs.exportRootPath.empty()) {
+        MDagPath rootDagPath;
+        UsdMayaUtil::GetDagPathByName(mArgs.exportRootPath, rootDagPath);
+        if (rootDagPath.isValid()) {
+            SdfPath rootSdfPath;
+            UsdMayaUtil::GetDagPathByName(mArgs.exportRootPath, rootDagPath);
+            _exportRootSdfPath
+                = UsdMayaUtil::MDagPathToUsdPath(rootDagPath, false, mArgs.stripNamespaces);
+        } else {
+            TF_RUNTIME_ERROR(
+                "Invalid dag path provided for root: %s", mArgs.exportRootPath.c_str());
+            mArgs.exportRootPath = "";
+        }
+    }
 }
 
 UsdMayaWriteJobContext::~UsdMayaWriteJobContext() = default;
@@ -163,7 +187,7 @@ SdfPath UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) con
         path = path.ReplacePrefix(SdfPath::AbsoluteRootPath(), mParentScopePath);
     }
 
-    return _GetRootOverridePath(mArgs, path);
+    return _GetRootOverridePath(mArgs, _exportRootSdfPath, path);
 }
 
 UsdMayaWriteJobContext::_ExportAndRefPaths
@@ -185,9 +209,8 @@ UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) co
     fullName = TfStringReplace(fullName, "_", "__");
     // This should make a valid path component.
     fullName = TfMakeValidIdentifier(fullName);
-
-    const SdfPath path
-        = _GetRootOverridePath(mArgs, mInstancesPrim.GetPath().AppendChild(TfToken(fullName)));
+    const SdfPath path = _GetRootOverridePath(
+        mArgs, _exportRootSdfPath, mInstancesPrim.GetPath().AppendChild(TfToken(fullName)));
 
     // In Maya, you can directly instance gprims or transforms, but
     // UsdImaging really wants you to instance at the transform level.
