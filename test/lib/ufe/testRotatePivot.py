@@ -158,13 +158,12 @@ class RotatePivotTestCase(unittest.TestCase):
         rot = om.MEulerRotation(0, 0, rotZ)
         # Pivot around x=0.
         pivot = om.MPoint(-10, 0, 0)
-        pivotTranslate = om.MPoint(0, 0, 0)
         xyWorldValue = sin(rotZ) * 10
 
         # USD sphere is at (10, 0, 0) in local space, and since its parents
         # have an identity transform, in world space as well.
         spherePath = ufe.PathString.path(
-                '|usdSphereParent|usdSphereParentShape,/sphereXform')
+                '|usdSphereParent|usdSphereParentShape,/sphereXform/sphere')
         sphereItem = ufe.Hierarchy.createItem(spherePath)
         ufe.GlobalSelection.get().append(sphereItem)
 
@@ -177,30 +176,15 @@ class RotatePivotTestCase(unittest.TestCase):
         t3d.rotatePivot(2, 0, 0)
         usdPivot = t3d.rotatePivot()
         self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(2, 0, 0))
-        t3d.rotatePivot(0, 0, 0)
 
-        print(mayaUtils.previewReleaseVersion())
-
-        # Start with a non-zero initial rotation. This is required to test
-        # MAYA-112175, otherwise a zero initial rotation means rotate pivot
-        # translation will be empty and we get the correct result by accident.
-        if (mayaUtils.previewReleaseVersion() >= 128):
-            cmds.rotate(0, 0, 90)
-            pivot = om.MPoint(0, 10, 0)
-            pivotTranslate = om.MPoint(-10, -10, 0)
-
-        cmds.move(-10, 0, 0, relative=True, ufeRotatePivot=True)
+        cmds.move(-12, 0, 0, relative=True, ufeRotatePivot=True)
         usdPivot = t3d.rotatePivot()
         self.assertEqual(v3dToMPoint(usdPivot), pivot)
-        usdRotatePivotTranslation = t3d.rotatePivotTranslation()
-        self.assertEqual(v3dToMPoint(usdRotatePivotTranslation), pivotTranslate)
 
         cmds.undo()
 
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
-        usdRotatePivotTranslation = t3d.rotatePivotTranslation()
-        self.assertEqual(v3dToMPoint(usdRotatePivotTranslation), om.MPoint(0, 0, 0))
+        self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(2, 0, 0))
 
         cmds.redo()
 
@@ -210,15 +194,6 @@ class RotatePivotTestCase(unittest.TestCase):
         cmds.rotate(degrees(rot[0]), degrees(rot[1]), degrees(rot[2]))
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
         self.checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 0])
-
-        if (mayaUtils.previewReleaseVersion() >= 128):
-            cmds.undo()
-            cmds.move(10, 10, 0, absolute=True)
-            sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
-            self.checkPos(sphereMatrix, [10, 10, 0])
-            cmds.move(10, 10, 0, absolute=True, rotatePivotRelative=True)
-            sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
-            self.checkPos(sphereMatrix, [20, 10, 0])
 
 
 if __name__ == '__main__':
