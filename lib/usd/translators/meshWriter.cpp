@@ -378,6 +378,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                 GetUsdPath(),
                 GetDagPath(),
                 skelPath,
+                _writeJobCtx.GetParentScopePath(),
                 exportArgs.stripNamespaces,
                 _GetSparseValueWriter());
 

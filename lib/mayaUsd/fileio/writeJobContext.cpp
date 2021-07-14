@@ -388,7 +388,7 @@ bool UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
         // scope, and will be created when we writ out the model variants
         if (mArgs.usdModelRootOverridePath.IsEmpty()) {
             mParentScopePath
-                = UsdGeomScope::Define(mStage, mParentScopePath).GetPrim().GetPrimPath();
+                = UsdGeomXform::Define(mStage, mParentScopePath).GetPrim().GetPrimPath();
         }
     }
 
@@ -434,7 +434,7 @@ bool UsdMayaWriteJobContext::_PostProcess()
         }
     }
 
-    if (!_skelBindingsProcessor->PostProcessSkelBindings(mStage)) {
+    if (!_skelBindingsProcessor->PostProcessSkelBindings(mStage, mParentScopePath)) {
         return false;
     }
 
@@ -595,7 +595,7 @@ bool UsdMayaWriteJobContext::UpdateSkelBindingsWithExtent(
     const VtVec3fArray& bbox,
     const UsdTimeCode&  timeSample)
 {
-    return _skelBindingsProcessor->UpdateSkelRootsWithExtent(stage, bbox, timeSample);
+    return _skelBindingsProcessor->UpdateSkelRootsWithExtent(stage, bbox, timeSample, mParentScopePath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

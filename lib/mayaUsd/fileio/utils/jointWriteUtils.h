@@ -71,7 +71,7 @@ getJointNames(const std::vector<MDagPath>& joints, const MDagPath& rootJoint, bo
 /// the given root joint. The skeleton both binds a skeleton and
 /// holds root transformations of the joint hierarchy.
 MAYAUSD_CORE_PUBLIC
-SdfPath getSkeletonPath(const MDagPath& rootJoint, bool stripNamespaces);
+SdfPath getSkeletonPath(const MDagPath& rootJoint, bool stripNamespaces, const SdfPath& parentScopePath);
 
 /// Gets the closest upstream skin cluster for the mesh at the given dag path.
 /// Warns if there is more than one skin cluster.
@@ -169,6 +169,7 @@ MObject writeSkinningData(
     const SdfPath&             usdPath,
     const MDagPath&            dagPath,
     SdfPath&                   skelPath,
+    const SdfPath&             parentScopePath,
     const bool                 stripNamespaces,
     UsdUtilsSparseValueWriter* valueWriter);
 } // namespace UsdMayaJointUtil

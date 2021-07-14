@@ -59,6 +59,8 @@ public:
 
     const UsdStageRefPtr& GetUsdStage() const { return mStage; }
 
+    const SdfPath& GetParentScopePath() const { return mParentScopePath; }
+    
     /// Whether we will merge the transform at \p path with its single
     /// exportable child shape, given its hierarchy and the current path
     /// translation rules. (This always returns false if the export args
