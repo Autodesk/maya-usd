@@ -64,11 +64,19 @@ public:
         //! Is _shader a fallback material?
         bool _shaderIsFallback { true };
 
+        //! Fallback color changed
+        bool _fallbackColorDirty { true };
+
         //! Whether or not the render item is enabled
         bool _enabled { true };
 
         //! Whether or not the render item is transparent
         bool _transparent { false };
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+        //! Whether or not the render item represents the shaded draw for selected instances
+        bool _shadedSelectedInstances { false };
+#endif
 
         //! Primitive type of the render item
         MHWRender::MGeometry::Primitive _primitiveType {
@@ -103,8 +111,8 @@ public:
     //! can be created for multiple usages.
     enum RenderItemUsage
     {
-        kRegular = 1 << 0,           //!< Regular drawing (shaded, wireframe etc.)
-        kSelectionHighlight = 1 << 1 //!< Selection highlight.
+        kRegular = 1 << 0,                  //!< Regular drawing (shaded, wireframe etc.)
+        kSelectionHighlight = kRegular << 1 //!< Selection highlight.
     };
 
 public:
@@ -112,7 +120,8 @@ public:
 
     ~HdVP2DrawItem();
 
-    void AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset = nullptr);
+    RenderItemData&
+    AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset = nullptr);
 
     using RenderItemDataVector = std::vector<RenderItemData>;
     const RenderItemDataVector& GetRenderItems() const { return _renderItems; }
