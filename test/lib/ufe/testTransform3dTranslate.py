@@ -22,7 +22,7 @@ from testUtils import assertVectorAlmostEqual
 import ufeUtils
 import usdUtils
 
-from pxr import Gf
+from pxr import Gf, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -239,10 +239,16 @@ class Transform3dTranslateTestCase(unittest.TestCase):
         # change to update the bounding box.
         ufe.GlobalSelection.get().append(ball35Item)
 
-        # Move the prim.
+        # Move the prim.  Use a change block to condense USD notifications into
+        # one.  Otherwise, as of 15-Jul-2021, the implementation of
+        # UsdStage::_SetValue() notifies once for creation of the 
+        # 'xformOp:translate' attrSpec, at the end of an SdfChangeBlock, and
+        # once for setting the 'xformOp:translate' field (in Sdf terminology),
+        # again at the end of a separate SdfChangeBlock.
         ball35Prim = usdUtils.getPrimFromSceneItem(ball35Item)
-        ball35Prim.GetAttribute('xformOp:translate').Set(
-            Gf.Vec3d(10, 20, 30))
+        with Sdf.ChangeBlock():
+            ball35Prim.GetAttribute('xformOp:translate').Set(
+                Gf.Vec3d(10, 20, 30))
 
         # Notified.
         self.assertEqual(t3dObs.notifications(), 1)
