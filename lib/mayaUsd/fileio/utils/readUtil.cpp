@@ -940,7 +940,7 @@ static bool _GetValuesInInterval(
 
 // Check if this usd attribute is animated and eventually connect an animation
 // curve if needed. Return true if the animation was imported properly.
-static bool _TranslateAnimatedUsdAttribute(
+static bool _ReadAnimatedUsdAttribute(
     const UsdAttribute&          usdAttr,
     MPlug&                       plug,
     const UsdMayaPrimReaderArgs& args,
@@ -948,7 +948,7 @@ static bool _TranslateAnimatedUsdAttribute(
 {
     const GfInterval& timeInterval = args.GetTimeInterval();
     // If this attribute isn't varying in the time interval, 
-    // we can early out and just let it be exported as a single value 
+    // we can early out and just let it be imported as a single value 
     if (timeInterval.IsEmpty() || !usdAttr.ValueMightBeTimeVarying()) {
         return false;
     }
@@ -1060,7 +1060,7 @@ bool UsdMayaReadUtil::ReadUsdAttribute(const UsdAttribute& usdAttr,
     SdfValueTypeName typeName = usdAttr.GetTypeName();
     
     // First check for and translate animation if there is any.
-    if (_TranslateAnimatedUsdAttribute(usdAttr, plug, args, context)) {
+    if (_ReadAnimatedUsdAttribute(usdAttr, plug, args, context)) {
         return true;
     }
     // If no animation is needed, simply set the maya attribute as a single value

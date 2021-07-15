@@ -1,6 +1,6 @@
 #!/usr/bin/env mayapy
 #
-# Copyright 2017 Pixar
+# Copyright 2021 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,8 +46,6 @@ class testUsdExportLight(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
             frameRange=(cls.START_TIMECODE, cls.END_TIMECODE))
 
-        print(usdFilePath)
-
         cls._stage = Usd.Stage.Open(usdFilePath)
 
     @classmethod
@@ -74,9 +72,6 @@ class testUsdExportLight(unittest.TestCase):
             2, 1e-6))
         self.assertTrue(Gf.IsClose(distantLight.GetColorAttr().Get(1), Gf.Vec3f(1, 0.9, 0.8), 1e-6))
 
-
-        print(distantLight.GetAngleAttr().Get(1))
-        print(distantLight.GetAngleAttr().Get(5))
         self.assertTrue(Gf.IsClose(distantLight.GetAngleAttr().Get(1),
             1.5, 1e-6))
         self.assertTrue(Gf.IsClose(distantLight.GetAngleAttr().Get(5),

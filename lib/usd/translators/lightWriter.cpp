@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ PxrUsdTranslators_DirectionalLightWriter::PxrUsdTranslators_DirectionalLightWrit
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx)  : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-	UsdLuxDistantLight distantLight = UsdLuxDistantLight::Define(GetUsdStage(), GetUsdPath());
+    UsdLuxDistantLight distantLight = UsdLuxDistantLight::Define(GetUsdStage(), GetUsdPath());
     _usdPrim = distantLight.GetPrim();
     if (!TF_VERIFY(
             _usdPrim,
@@ -47,9 +47,9 @@ PxrUsdTranslators_DirectionalLightWriter::PxrUsdTranslators_DirectionalLightWrit
 /* virtual */
 void PxrUsdTranslators_DirectionalLightWriter::Write(const UsdTimeCode& usdTime)
 {
-	MStatus status;
+    MStatus status;
     UsdMayaPrimWriter::Write(usdTime);
-	// Since write() above will take care of any animation on the light's
+    // Since write() above will take care of any animation on the light's
     // transform, we only want to proceed here if:
     // - We are at the default time and NO attributes on the shape are animated.
     //    OR
@@ -66,7 +66,7 @@ void PxrUsdTranslators_DirectionalLightWriter::Write(const UsdTimeCode& usdTime)
     }
     
     // First write the base light attributes
-	UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+    UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
     // Then write the specialized attributes for directional lights
     UsdMayaTranslatorLight::WriteDirectionalLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
 }
@@ -81,7 +81,6 @@ PxrUsdTranslators_PointLightWriter::PxrUsdTranslators_PointLightWriter(
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx)  : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    // TODO : do we want to move the creation to fileio/translators ?
     UsdLuxSphereLight sphereLight = UsdLuxSphereLight::Define(GetUsdStage(), GetUsdPath());
     _usdPrim = sphereLight.GetPrim();
     if (!TF_VERIFY(
@@ -128,7 +127,6 @@ PxrUsdTranslators_SpotLightWriter::PxrUsdTranslators_SpotLightWriter(
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx)  : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    // TODO : do we want to move the creation to fileio/translators ?
     UsdLuxSphereLight sphereLight = UsdLuxSphereLight::Define(GetUsdStage(), GetUsdPath());
     _usdPrim = sphereLight.GetPrim();
     if (!TF_VERIFY(
@@ -174,7 +172,6 @@ PxrUsdTranslators_AreaLightWriter::PxrUsdTranslators_AreaLightWriter(
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx)  : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    // TODO : do we want to move the creation to fileio/translators ?
     UsdLuxRectLight rectLight = UsdLuxRectLight::Define(GetUsdStage(), GetUsdPath());
     _usdPrim = rectLight.GetPrim();
     if (!TF_VERIFY(
