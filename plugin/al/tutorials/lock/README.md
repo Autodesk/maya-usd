@@ -38,6 +38,7 @@ transCApi.SetLock("inherited")
 Now let's unlock all nodes under "transA" hierarchy
 
 ```
+transA = stage.GetPrimAtPath('/transA')
 transAApi = maya_schemas.ModelAPI(transA)
 transAApi.SetLock("unlocked")
 ```
