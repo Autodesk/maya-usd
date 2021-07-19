@@ -263,7 +263,7 @@ bool LayerTreeItem::needsSaving() const
 {
     if (_layer) {
         if (!isSessionLayer() && !isReadOnly()
-            && !(!_incomingLayers.empty() && parentLayerItem() == nullptr)) {
+            && (_isSharedStage || parentLayerItem() != nullptr)) {
             return isDirty() || isAnonymous();
         }
     }
