@@ -2241,12 +2241,22 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                         }
                         status = _surfaceShader->setParameter(paramName, isSRGB);
                     }
+                    // These parameters allow scaling texcoords into the proper coordinates of the
+                    // Maya UDIM texture atlas:
                     if (status) {
+#ifdef WANT_MATERIALX_BUILD
+                        paramName = nodeName + (isMaterialXNode ? "uv_scale" : "stScale");
+#else
                         paramName = nodeName + "stScale";
+#endif
                         status = _surfaceShader->setParameter(paramName, info._stScale.data());
                     }
                     if (status) {
+#ifdef WANT_MATERIALX_BUILD
+                        paramName = nodeName + (isMaterialXNode ? "uv_offset" : "stOffset");
+#else
                         paramName = nodeName + "stOffset";
+#endif
                         status = _surfaceShader->setParameter(paramName, info._stOffset.data());
                     }
                 }
