@@ -1049,8 +1049,6 @@ bool UsdMayaReadUtil::ReadUsdAttribute(
     MPlug   plug = depFn.findPlug(plugName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    SdfValueTypeName typeName = usdAttr.GetTypeName();
-
     // First check for and translate animation if there is any.
     if (_ReadAnimatedUsdAttribute(usdAttr, plug, args, context)) {
         return true;

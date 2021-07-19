@@ -484,10 +484,10 @@ bool UsdMayaTranslatorLight::Read(
             &status,
             &lightObj,
             mayaNodeTransformObj)) {
-        TF_RUNTIME_ERROR(TfStringPrintf(
+        TF_RUNTIME_ERROR(
             "Failed to create %s node for light %s",
             mayaLightTypeToken.GetText(),
-            lightSchema.GetPath()));
+            lightSchema.GetPath().GetText());
         return false;
     }
 
