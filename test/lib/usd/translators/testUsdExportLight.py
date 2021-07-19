@@ -321,7 +321,7 @@ class testUsdExportLight(unittest.TestCase):
             0.7, 1e-6))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath),
             0.6, 1e-6))
-        self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 0)
+        self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 1)
    
     def _ValidateRoundtrip(self):
         cmds.file(new=True, force=True)
