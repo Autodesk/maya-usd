@@ -83,7 +83,7 @@ struct UsdMayaReadUtil
         const std::string&   attrNiceName,
         MDGModifier&         modifier);
 
-    /// Sets a Maya plug using the value on a USD attribute at default time.
+    /// Sets a Maya plug using the value on a USD attribute at the requested \p time.
     /// If the variability of the USD attribute doesn't match the keyable state
     /// of the Maya plug, then the plug's keyable state will also be updated.
     /// Returns true if the plug was set.
@@ -91,8 +91,11 @@ struct UsdMayaReadUtil
     /// For plugs with color roles, the value will be converted from a linear
     /// color value before being set if \p unlinearizeColors is true.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    SetMayaAttr(MPlug& attrPlug, const UsdAttribute& usdAttr, const bool unlinearizeColors = true);
+    static bool SetMayaAttr(
+        MPlug&              attrPlug,
+        const UsdAttribute& usdAttr,
+        const bool          unlinearizeColors = true,
+        UsdTimeCode         time = UsdTimeCode::Default());
 
     /// Sets a Maya plug using the given VtValue. The plug keyable state won't
     /// be affected.

@@ -461,10 +461,11 @@ template <typename T> T _ConvertVec(const MPlug& plug, const T& val)
 bool UsdMayaReadUtil::SetMayaAttr(
     MPlug&              attrPlug,
     const UsdAttribute& usdAttr,
-    const bool          unlinearizeColors)
+    const bool          unlinearizeColors,
+    UsdTimeCode         time)
 {
     VtValue val;
-    if (usdAttr.Get(&val)) {
+    if (usdAttr.Get(&val, time)) {
         if (SetMayaAttr(attrPlug, val, unlinearizeColors)) {
             SetMayaAttrKeyableState(attrPlug, usdAttr.GetVariability());
             return true;
@@ -1057,14 +1058,7 @@ bool UsdMayaReadUtil::ReadUsdAttribute(
     // If no animation is needed, simply set the maya attribute as a single value.
     // Note that we need to specify a time when getting the attribute, otherwise
     // values with a single time sample can return an invalid value
-    VtValue val;
-    if (usdAttr.Get(&val, args.GetTimeInterval().GetMin())) {
-        if (SetMayaAttr(plug, val, false)) {
-            SetMayaAttrKeyableState(plug, usdAttr.GetVariability());
-            return true;
-        }
-    }
-    return false;
+    return SetMayaAttr(plug, usdAttr, false, UsdTimeCode::EarliestTime());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
