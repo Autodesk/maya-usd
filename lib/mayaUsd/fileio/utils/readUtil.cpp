@@ -1063,8 +1063,17 @@ bool UsdMayaReadUtil::ReadUsdAttribute(const UsdAttribute& usdAttr,
     if (_ReadAnimatedUsdAttribute(usdAttr, plug, args, context)) {
         return true;
     }
-    // If no animation is needed, simply set the maya attribute as a single value
-    return SetMayaAttr(plug, usdAttr, false);
+    // If no animation is needed, simply set the maya attribute as a single value.
+    // Note that we need to specify a time when getting the attribute, otherwise 
+    // values with a single time sample can return an invalid value
+    VtValue val;
+    if (usdAttr.Get(&val, args.GetTimeInterval().GetMin())) {
+        if (SetMayaAttr(plug, val, false)) {
+            SetMayaAttrKeyableState(plug, usdAttr.GetVariability());
+            return true;
+        }
+    }
+    return false;
 }
 
 

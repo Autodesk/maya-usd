@@ -79,15 +79,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-static bool _ReportError(const std::string& msg, const SdfPath& primPath = SdfPath())
-{
-    TF_RUNTIME_ERROR(
-        "%s%s",
-        msg.c_str(),
-        primPath.IsPrimPath() ? TfStringPrintf(" for Light <%s>", primPath.GetText()).c_str() : "");
-    return false;
-}
-
 // Export the "common" light attributes from MFnLights to UsdLuxLight
 bool UsdMayaTranslatorLight::WriteLightAttrs(const UsdTimeCode &usdTime, UsdLuxLight &usdLight, 
                                 MFnLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter)
@@ -155,6 +146,10 @@ static bool _ReadLightAttrs(const UsdLuxLight& lightSchema,
     bool success = true;
     UsdPrim prim = lightSchema.GetPrim();
 
+    // We need to specify a time when getting an attribute, otherwise we can get invalid data
+    // for single time-samples
+    UsdTimeCode timeCode(args.GetTimeInterval().GetMin());
+
     // ReadUsdAttribute will read a Usd attribute, accounting for eventual animations
     success &= UsdMayaReadUtil::ReadUsdAttribute(lightSchema.GetIntensityAttr(), depFn,
                      _tokens->IntensityPlugName,
@@ -171,7 +166,7 @@ static bool _ReadLightAttrs(const UsdLuxLight& lightSchema,
     success &= (status == MS::kSuccess);
     if (status == MS::kSuccess) {
         float diffuse = 1.f;
-        lightSchema.GetDiffuseAttr().Get(&diffuse);
+        lightSchema.GetDiffuseAttr().Get(&diffuse, timeCode);
         emitDiffusePlug.setBool(diffuse > 0);
     } else {
         success = false;
@@ -180,7 +175,7 @@ static bool _ReadLightAttrs(const UsdLuxLight& lightSchema,
     success &= (status == MS::kSuccess);
     if (status == MS::kSuccess) {
         float specular = 1.f;
-        lightSchema.GetSpecularAttr().Get(&specular);
+        lightSchema.GetSpecularAttr().Get(&specular, timeCode);
         emitSpecularPlug.setBool(specular > 0);
     } else {
         success = false;
@@ -345,6 +340,9 @@ static bool _ReadSpotLight(const UsdLuxLight& lightSchema,
         return false;
     }
 
+    // We need to specify a time when getting an attribute, otherwise we can get invalid data
+    // for single time-samples    
+    UsdTimeCode timeCode(args.GetTimeInterval().GetMin());
     // We need some magic conversions between maya dropOff, coneAngle, penumbraAngle, 
     // and Usd shapingFocus, shapingConeAngle, shapingConeSoftness
     success &= UsdMayaReadUtil::ReadUsdAttribute(shapingAPI.GetShapingFocusAttr(), depFn,
@@ -352,14 +350,16 @@ static bool _ReadSpotLight(const UsdLuxLight& lightSchema,
                      args, context);
 
     float UsdConeAngle = 1.f;
-    shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle);
+    shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
     float coneSoftness = 0.f;
-    shapingAPI.GetShapingConeSoftnessAttr().Get(&coneSoftness);
+    shapingAPI.GetShapingConeSoftnessAttr().Get(&coneSoftness, timeCode);
 
     float penumbraAngle = UsdConeAngle * coneSoftness;
     float mayaConeAngle = 2.f * (UsdConeAngle - penumbraAngle);
 
-
+    // Note that the roundtrip might not return the exact same result as originally,
+    // e.g. a negative penumbra angle would become positive. It would result in the same
+    // illumination, though with different values
     MPlug penumbraAnglePlug = depFn.findPlug(_tokens->PenumbraAnglePlugName.GetText(), &status);
     success &= (status == MS::kSuccess);
     if (status == MS::kSuccess) {
@@ -428,7 +428,8 @@ bool UsdMayaTranslatorLight::Read(
     }
     const UsdLuxLight lightSchema(usdPrim);
     if (!lightSchema) {
-        return _ReportError("Failed to read UsdLuxLight prim", usdPrim.GetPath());
+        TF_RUNTIME_ERROR("Failed to read UsdLuxLight prim for light %s", usdPrim.GetPath().GetText());
+        return false;
     }
     // Find the corresponding maya light type depending on 
     // the usd light schema
@@ -447,8 +448,8 @@ bool UsdMayaTranslatorLight::Read(
         mayaLightTypeToken = (shapingAPI) ? _tokens->SpotLightMayaTypeName : _tokens->PointLightMayaTypeName;
     }    
     if (mayaLightTypeToken.IsEmpty()) {
-        return _ReportError(
-            "Could not determine Maya light type for UsdLuxLight prim", usdPrim.GetPath());
+        TF_RUNTIME_ERROR("Could not determine Maya light type for UsdLuxLight prim %s", usdPrim.GetPath().GetText());
+        return false;
     }
 
     // Find which maya node needs to be our light's parent
@@ -458,7 +459,8 @@ bool UsdMayaTranslatorLight::Read(
     // First create the transform node
     if (!UsdMayaTranslatorUtil::CreateTransformNode(
             usdPrim, parentNode, args, context, &status, &mayaNodeTransformObj)) {
-        return _ReportError("Failed to create transform node", lightSchema.GetPath());
+        TF_RUNTIME_ERROR("Failed to create transform node for %s", lightSchema.GetPath().GetText());
+        return false;
     }
 
     // Create the Maya light (shape) node of the desired type
@@ -471,9 +473,8 @@ bool UsdMayaTranslatorLight::Read(
             &status,
             &lightObj,
             mayaNodeTransformObj)) {
-        return _ReportError(
-            TfStringPrintf("Failed to create %s node", mayaLightTypeToken.GetText()),
-            lightSchema.GetPath());
+        TF_RUNTIME_ERROR(TfStringPrintf("Failed to create %s node for light %s", mayaLightTypeToken.GetText(), lightSchema.GetPath()));
+        return false;
     }
 
     const std::string nodePath
@@ -482,7 +483,8 @@ bool UsdMayaTranslatorLight::Read(
 
     MFnDependencyNode depFn(lightObj, &status);
     if (status != MS::kSuccess) {
-        return _ReportError("Failed to get Maya light", lightSchema.GetPath());
+        TF_RUNTIME_ERROR("Failed to get Maya light %s", lightSchema.GetPath().GetText());
+        return false;
     }
     
     // Whatever the light type is, we always want to read the "common" UsdLuxLight attributes
