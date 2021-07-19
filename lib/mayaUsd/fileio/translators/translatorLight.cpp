@@ -22,8 +22,8 @@
 #include <mayaUsd/fileio/primWriterContext.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -80,25 +80,27 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 // Export the "common" light attributes from MFnLights to UsdLuxLight
-bool UsdMayaTranslatorLight::WriteLightAttrs(const UsdTimeCode &usdTime, UsdLuxLight &usdLight, 
-                                MFnLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter)
+bool UsdMayaTranslatorLight::WriteLightAttrs(
+    const UsdTimeCode&         usdTime,
+    UsdLuxLight&               usdLight,
+    MFnLight&                  mayaLight,
+    UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status;
-    float intensity = mayaLight.intensity(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);    
-    UsdMayaWriteUtil::SetAttribute(
-            usdLight.GetIntensityAttr(), intensity, usdTime, valueWriter);
-    
+    float   intensity = mayaLight.intensity(&status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    UsdMayaWriteUtil::SetAttribute(usdLight.GetIntensityAttr(), intensity, usdTime, valueWriter);
+
     UsdPrim prim = usdLight.GetPrim();
 
     MColor color = mayaLight.color(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     UsdMayaWriteUtil::SetAttribute(
-            usdLight.GetColorAttr(), GfVec3f(color.r, color.g, color.b), usdTime, valueWriter);
+        usdLight.GetColorAttr(), GfVec3f(color.r, color.g, color.b), usdTime, valueWriter);
 
     // Note that normalize doesn't exist in the Maya light, but might exist as extension attributes
     // in renderers. We won't be authoring it here, so that it follows USD default (false)
-    
+
     bool rayTraceShadows = mayaLight.useRayTraceShadows(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     // Here we're just considering "useRayTracedShadows" to enable UsdLux shadows,
@@ -106,7 +108,7 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(const UsdTimeCode &usdTime, UsdLuxL
     if (rayTraceShadows) {
         UsdLuxShadowAPI shadowAPI = UsdLuxShadowAPI::Apply(prim);
         UsdMayaWriteUtil::SetAttribute(
-                shadowAPI.CreateShadowEnableAttr(), true, usdTime, valueWriter);
+            shadowAPI.CreateShadowEnableAttr(), true, usdTime, valueWriter);
 
         const MColor shadowColor = mayaLight.shadowColor(&status);
         CHECK_MSTATUS_AND_RETURN(status, false);
@@ -117,14 +119,14 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(const UsdTimeCode &usdTime, UsdLuxL
             valueWriter);
     }
 
-    // Some renderers have a float value for diffuse and specular just like UsdLuxLight does (it defaults to 1)
-    // But Maya lights also have a checkbox to enable/disable diffuse and specular. We can just set 
-    // it to 0 or 1 depending on this boolean
+    // Some renderers have a float value for diffuse and specular just like UsdLuxLight does (it
+    // defaults to 1) But Maya lights also have a checkbox to enable/disable diffuse and specular.
+    // We can just set it to 0 or 1 depending on this boolean
     bool lightDiffuse = mayaLight.lightDiffuse(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);    
+    CHECK_MSTATUS_AND_RETURN(status, false);
     UsdMayaWriteUtil::SetAttribute(
         usdLight.GetDiffuseAttr(), lightDiffuse ? 1.f : 0.f, usdTime, valueWriter);
-    
+
     bool lightSpecular = mayaLight.lightSpecular(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     UsdMayaWriteUtil::SetAttribute(
@@ -135,15 +137,16 @@ bool UsdMayaTranslatorLight::WriteLightAttrs(const UsdTimeCode &usdTime, UsdLuxL
 
 // Import the common light attributes from UsdLuxLight.
 // As opposed to the writer, we can't rely on the MFnLight attribute
-// accessors, as we need to support animations. Instead we're getting 
+// accessors, as we need to support animations. Instead we're getting
 // the Maya plugs from MFnDependencyNode
-static bool _ReadLightAttrs(const UsdLuxLight& lightSchema, 
-                            MFnDependencyNode &depFn,  
-                            const UsdMayaPrimReaderArgs& args,
-                            UsdMayaPrimReaderContext*    context)
+static bool _ReadLightAttrs(
+    const UsdLuxLight&           lightSchema,
+    MFnDependencyNode&           depFn,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     MStatus status;
-    bool success = true;
+    bool    success = true;
     UsdPrim prim = lightSchema.GetPrim();
 
     // We need to specify a time when getting an attribute, otherwise we can get invalid data
@@ -151,16 +154,14 @@ static bool _ReadLightAttrs(const UsdLuxLight& lightSchema,
     UsdTimeCode timeCode(args.GetTimeInterval().GetMin());
 
     // ReadUsdAttribute will read a Usd attribute, accounting for eventual animations
-    success &= UsdMayaReadUtil::ReadUsdAttribute(lightSchema.GetIntensityAttr(), depFn,
-                     _tokens->IntensityPlugName,
-                     args, context);
+    success &= UsdMayaReadUtil::ReadUsdAttribute(
+        lightSchema.GetIntensityAttr(), depFn, _tokens->IntensityPlugName, args, context);
 
-    success &= UsdMayaReadUtil::ReadUsdAttribute(lightSchema.GetColorAttr(), depFn,
-                     _tokens->ColorPlugName,
-                     args, context);
+    success &= UsdMayaReadUtil::ReadUsdAttribute(
+        lightSchema.GetColorAttr(), depFn, _tokens->ColorPlugName, args, context);
 
     // For diffuse & specular, the USD value is a [0,1] float, but it's a boolean in Maya.
-    // We can't really import this properly, but at least we're enabling the maya attibute 
+    // We can't really import this properly, but at least we're enabling the maya attibute
     // as soon as the input floating value is non-null
     MPlug emitDiffusePlug = depFn.findPlug(_tokens->EmitDiffusePlugName.GetText(), &status);
     success &= (status == MS::kSuccess);
@@ -185,118 +186,124 @@ static bool _ReadLightAttrs(const UsdLuxLight& lightSchema,
     UsdLuxShadowAPI shadowAPI(prim);
     if (shadowAPI) {
         // We set maya'slight "useRayTracedShadows" if the usd shadows are enabled
-        success &= UsdMayaReadUtil::ReadUsdAttribute(shadowAPI.GetShadowEnableAttr(), depFn,
-                     _tokens->UseRayTraceShadowsPlugName,
-                     args, context);
-        success &= UsdMayaReadUtil::ReadUsdAttribute(shadowAPI.GetShadowColorAttr(), depFn,
-                     _tokens->ShadowColorPlugName,
-                     args, context);
+        success &= UsdMayaReadUtil::ReadUsdAttribute(
+            shadowAPI.GetShadowEnableAttr(),
+            depFn,
+            _tokens->UseRayTraceShadowsPlugName,
+            args,
+            context);
+        success &= UsdMayaReadUtil::ReadUsdAttribute(
+            shadowAPI.GetShadowColorAttr(), depFn, _tokens->ShadowColorPlugName, args, context);
     }
     return success;
 }
 
 // Export the specialized MFnDirectionalLight attributes
 bool UsdMayaTranslatorLight::WriteDirectionalLightAttrs(
-            const UsdTimeCode &usdTime, UsdLuxDistantLight &usdLight, 
-            MFnDirectionalLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter)
+    const UsdTimeCode&         usdTime,
+    UsdLuxDistantLight&        usdLight,
+    MFnDirectionalLight&       mayaLight,
+    UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status;
-    // UsdLuxDistantLight have an attribute "angle" that is similar 
+    // UsdLuxDistantLight have an attribute "angle" that is similar
     // to Maya's directional light's shadowAngle attribute
     float shadowAngle = mayaLight.shadowAngle(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    UsdMayaWriteUtil::SetAttribute(
-            usdLight.GetAngleAttr(), shadowAngle, usdTime, valueWriter);
+    UsdMayaWriteUtil::SetAttribute(usdLight.GetAngleAttr(), shadowAngle, usdTime, valueWriter);
     return true;
 }
 
 // Import the specialized MFnDirectionalLight attributes
-static bool _ReadDirectionalLight(const UsdLuxLight& lightSchema, 
-                            MFnDependencyNode &depFn,  
-                            const UsdMayaPrimReaderArgs& args,
-                            UsdMayaPrimReaderContext*    context)
+static bool _ReadDirectionalLight(
+    const UsdLuxLight&           lightSchema,
+    MFnDependencyNode&           depFn,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
-    MStatus status;
-    bool success = true;
-    UsdPrim prim = lightSchema.GetPrim();
+    MStatus            status;
+    bool               success = true;
+    UsdPrim            prim = lightSchema.GetPrim();
     UsdLuxDistantLight distantLight(lightSchema.GetPrim());
     if (!distantLight) {
         return false;
     }
-    success &= UsdMayaReadUtil::ReadUsdAttribute(distantLight.GetAngleAttr(), depFn,
-                     _tokens->LightAnglePlugName,
-                     args, context);
+    success &= UsdMayaReadUtil::ReadUsdAttribute(
+        distantLight.GetAngleAttr(), depFn, _tokens->LightAnglePlugName, args, context);
     return success;
 }
 
 // Export the specialized MFnPointLight attributes
 bool UsdMayaTranslatorLight::WritePointLightAttrs(
-        const UsdTimeCode &usdTime, UsdLuxSphereLight &usdLight, 
-        MFnPointLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter)
+    const UsdTimeCode&         usdTime,
+    UsdLuxSphereLight&         usdLight,
+    MFnPointLight&             mayaLight,
+    UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status;
-    // A pointLight is simply a sphere light with a null radius. 
-    // We check however the parameter lightRadius that is used for shadows, and set this as the sphere radius 
-    MPlug lightRadiusPlug = mayaLight.findPlug(_tokens->LightRadiusPlugName.GetText(), true, &status);
+    // A pointLight is simply a sphere light with a null radius.
+    // We check however the parameter lightRadius that is used for shadows, and set this as the
+    // sphere radius
+    MPlug lightRadiusPlug
+        = mayaLight.findPlug(_tokens->LightRadiusPlugName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     float lightRadius = lightRadiusPlug.asFloat();
 
+    UsdMayaWriteUtil::SetAttribute(usdLight.GetRadiusAttr(), lightRadius, usdTime, valueWriter);
     UsdMayaWriteUtil::SetAttribute(
-            usdLight.GetRadiusAttr(), lightRadius, usdTime, valueWriter);
-    UsdMayaWriteUtil::SetAttribute(
-            usdLight.GetTreatAsPointAttr(), (lightRadius == 0.f), usdTime, valueWriter);
+        usdLight.GetTreatAsPointAttr(), (lightRadius == 0.f), usdTime, valueWriter);
     return true;
 }
 
 // Import the specialized MFnPointLight attributes
-static bool _ReadPointLight(const UsdLuxLight& lightSchema, 
-                            MFnDependencyNode &depFn,  
-                            const UsdMayaPrimReaderArgs& args,
-                            UsdMayaPrimReaderContext*    context)
+static bool _ReadPointLight(
+    const UsdLuxLight&           lightSchema,
+    MFnDependencyNode&           depFn,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
-    MStatus status;
-    bool success = true;
-    UsdPrim prim = lightSchema.GetPrim();
+    MStatus           status;
+    bool              success = true;
+    UsdPrim           prim = lightSchema.GetPrim();
     UsdLuxSphereLight sphereLight(lightSchema.GetPrim());
     if (!sphereLight) {
         return false;
     }
-    success &= UsdMayaReadUtil::ReadUsdAttribute(sphereLight.GetRadiusAttr(), depFn,
-                     _tokens->LightRadiusPlugName,
-                     args, context);
+    success &= UsdMayaReadUtil::ReadUsdAttribute(
+        sphereLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, context);
     return success;
 }
 
 // Export the specialized MFnSpotLight attributes
-bool UsdMayaTranslatorLight::WriteSpotLightAttrs(const UsdTimeCode &usdTime, UsdLuxSphereLight &usdLight, 
-                                MFnSpotLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter)
+bool UsdMayaTranslatorLight::WriteSpotLightAttrs(
+    const UsdTimeCode&         usdTime,
+    UsdLuxSphereLight&         usdLight,
+    MFnSpotLight&              mayaLight,
+    UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status;
     // A spot light is similar to point lights, but it has a shaping API for the spot cone
-    MPlug lightRadiusPlug = mayaLight.findPlug(_tokens->LightRadiusPlugName.GetText(), true, &status);
+    MPlug lightRadiusPlug
+        = mayaLight.findPlug(_tokens->LightRadiusPlugName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     float lightRadius = lightRadiusPlug.asFloat();
 
+    UsdMayaWriteUtil::SetAttribute(usdLight.GetRadiusAttr(), lightRadius, usdTime, valueWriter);
     UsdMayaWriteUtil::SetAttribute(
-            usdLight.GetRadiusAttr(), lightRadius, usdTime, valueWriter);
-    UsdMayaWriteUtil::SetAttribute(
-            usdLight.GetTreatAsPointAttr(), (lightRadius == 0.f), usdTime, valueWriter);
-    
-    UsdPrim prim = usdLight.GetPrim();
+        usdLight.GetTreatAsPointAttr(), (lightRadius == 0.f), usdTime, valueWriter);
+
+    UsdPrim          prim = usdLight.GetPrim();
     UsdLuxShapingAPI shapingAPI = UsdLuxShapingAPI::Apply(prim);
 
-    // We need some magic conversions between maya dropOff, coneAngle, penumbraAngle, 
+    // We need some magic conversions between maya dropOff, coneAngle, penumbraAngle,
     // and Usd shapingFocus, shapingConeAngle, shapingConeSoftness
     const double dropOff = mayaLight.dropOff(&status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     if (dropOff > 0) {
         UsdMayaWriteUtil::SetAttribute(
-            shapingAPI.CreateShapingFocusAttr(),
-            static_cast<float>(dropOff),
-            usdTime,
-            valueWriter);
+            shapingAPI.CreateShapingFocusAttr(), static_cast<float>(dropOff), usdTime, valueWriter);
     }
 
     double coneAngle = GfRadiansToDegrees(mayaLight.coneAngle(&status)) * 0.5;
@@ -318,22 +325,22 @@ bool UsdMayaTranslatorLight::WriteSpotLightAttrs(const UsdTimeCode &usdTime, Usd
 }
 
 // Import the specialized MFnSpotLight attributes
-static bool _ReadSpotLight(const UsdLuxLight& lightSchema, 
-                            MFnDependencyNode &depFn,  
-                            const UsdMayaPrimReaderArgs& args,
-                            UsdMayaPrimReaderContext*    context)
+static bool _ReadSpotLight(
+    const UsdLuxLight&           lightSchema,
+    MFnDependencyNode&           depFn,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
 
-    MStatus status;
-    bool success = true;
-    UsdPrim prim = lightSchema.GetPrim();
+    MStatus           status;
+    bool              success = true;
+    UsdPrim           prim = lightSchema.GetPrim();
     UsdLuxSphereLight sphereLight(prim);
     if (!sphereLight) {
         return false;
     }
-    success &= UsdMayaReadUtil::ReadUsdAttribute(sphereLight.GetRadiusAttr(), depFn,
-                     _tokens->LightRadiusPlugName,
-                     args, context);
+    success &= UsdMayaReadUtil::ReadUsdAttribute(
+        sphereLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, context);
 
     UsdLuxShapingAPI shapingAPI(prim);
     if (!shapingAPI) {
@@ -341,13 +348,12 @@ static bool _ReadSpotLight(const UsdLuxLight& lightSchema,
     }
 
     // We need to specify a time when getting an attribute, otherwise we can get invalid data
-    // for single time-samples    
+    // for single time-samples
     UsdTimeCode timeCode(args.GetTimeInterval().GetMin());
-    // We need some magic conversions between maya dropOff, coneAngle, penumbraAngle, 
+    // We need some magic conversions between maya dropOff, coneAngle, penumbraAngle,
     // and Usd shapingFocus, shapingConeAngle, shapingConeSoftness
-    success &= UsdMayaReadUtil::ReadUsdAttribute(shapingAPI.GetShapingFocusAttr(), depFn,
-                     _tokens->DropoffPlugName,
-                     args, context);
+    success &= UsdMayaReadUtil::ReadUsdAttribute(
+        shapingAPI.GetShapingFocusAttr(), depFn, _tokens->DropoffPlugName, args, context);
 
     float UsdConeAngle = 1.f;
     shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
@@ -378,60 +384,62 @@ static bool _ReadSpotLight(const UsdLuxLight& lightSchema,
 }
 
 // Export the specialized MFnAreaLight attributes
-bool UsdMayaTranslatorLight::WriteAreaLightAttrs(const UsdTimeCode &usdTime, UsdLuxRectLight &usdLight, 
-                                MFnAreaLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter)
+bool UsdMayaTranslatorLight::WriteAreaLightAttrs(
+    const UsdTimeCode&         usdTime,
+    UsdLuxRectLight&           usdLight,
+    MFnAreaLight&              mayaLight,
+    UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status;
 
-    // Area lights "normalize" isn't exposed through the MFnAreaLight API. 
+    // Area lights "normalize" isn't exposed through the MFnAreaLight API.
     // So we're getting it with MFnDependencyNode::findPlug
     MPlug normalizePlug = mayaLight.findPlug(_tokens->normalizeAttrName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     UsdMayaWriteUtil::SetAttribute(
-            usdLight.GetNormalizeAttr(), normalizePlug.asBool(), usdTime, valueWriter);
+        usdLight.GetNormalizeAttr(), normalizePlug.asBool(), usdTime, valueWriter);
     return true;
 }
 
 /// Read the parameters from UsdLuxRectLight into a Maya area light
-static bool _ReadAreaLight(const UsdLuxLight& lightSchema, 
-                            MFnDependencyNode &depFn,  
-                            const UsdMayaPrimReaderArgs& args,
-                            UsdMayaPrimReaderContext*    context)
+static bool _ReadAreaLight(
+    const UsdLuxLight&           lightSchema,
+    MFnDependencyNode&           depFn,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
-    MStatus status;
-    bool success = true;
-    UsdPrim prim = lightSchema.GetPrim();
+    MStatus         status;
+    bool            success = true;
+    UsdPrim         prim = lightSchema.GetPrim();
     UsdLuxRectLight rectLight(prim);
     if (!rectLight) {
         return false;
     }
-    
-    success &= UsdMayaReadUtil::ReadUsdAttribute(rectLight.GetNormalizeAttr(), depFn,
-                     _tokens->normalizeAttrName,
-                     args, context);
+
+    success &= UsdMayaReadUtil::ReadUsdAttribute(
+        rectLight.GetNormalizeAttr(), depFn, _tokens->normalizeAttrName, args, context);
 
     return success;
 }
-
-
 
 /* static */
 bool UsdMayaTranslatorLight::Read(
     const UsdMayaPrimReaderArgs& args,
     UsdMayaPrimReaderContext*    context)
-{   
-    // Get the Usd primitive we're reading 
+{
+    // Get the Usd primitive we're reading
     const UsdPrim& usdPrim = args.GetUsdPrim();
     if (!usdPrim) {
         return false;
     }
     const UsdLuxLight lightSchema(usdPrim);
     if (!lightSchema) {
-        TF_RUNTIME_ERROR("Failed to read UsdLuxLight prim for light %s", usdPrim.GetPath().GetText());
+        TF_RUNTIME_ERROR(
+            "Failed to read UsdLuxLight prim for light %s", usdPrim.GetPath().GetText());
         return false;
     }
-    // Find the corresponding maya light type depending on 
+    // Find the corresponding maya light type depending on
     // the usd light schema
     TfToken mayaLightTypeToken;
     if (usdPrim.IsA<UsdLuxDistantLight>()) {
@@ -441,14 +449,17 @@ bool UsdMayaTranslatorLight::Read(
         // USD Rect Light => Maya Area Light
         mayaLightTypeToken = _tokens->AreaLightMayaTypeName;
     } else if (usdPrim.IsA<UsdLuxSphereLight>()) {
-        // For USD Sphere Lights, if they have a shapingAPI with 
+        // For USD Sphere Lights, if they have a shapingAPI with
         // a non-null cone angle, we import it as a Maya Spot light.
         // Otherwise it's a Point light
         UsdLuxShapingAPI shapingAPI(lightSchema);
-        mayaLightTypeToken = (shapingAPI) ? _tokens->SpotLightMayaTypeName : _tokens->PointLightMayaTypeName;
-    }    
+        mayaLightTypeToken
+            = (shapingAPI) ? _tokens->SpotLightMayaTypeName : _tokens->PointLightMayaTypeName;
+    }
     if (mayaLightTypeToken.IsEmpty()) {
-        TF_RUNTIME_ERROR("Could not determine Maya light type for UsdLuxLight prim %s", usdPrim.GetPath().GetText());
+        TF_RUNTIME_ERROR(
+            "Could not determine Maya light type for UsdLuxLight prim %s",
+            usdPrim.GetPath().GetText());
         return false;
     }
 
@@ -465,7 +476,7 @@ bool UsdMayaTranslatorLight::Read(
 
     // Create the Maya light (shape) node of the desired type
     const MString nodeName = TfStringPrintf("%sShape", usdPrim.GetName().GetText()).c_str();
-    MObject lightObj;
+    MObject       lightObj;
     if (!UsdMayaTranslatorUtil::CreateShaderNode(
             nodeName,
             MString(mayaLightTypeToken.GetText()),
@@ -473,7 +484,10 @@ bool UsdMayaTranslatorLight::Read(
             &status,
             &lightObj,
             mayaNodeTransformObj)) {
-        TF_RUNTIME_ERROR(TfStringPrintf("Failed to create %s node for light %s", mayaLightTypeToken.GetText(), lightSchema.GetPath()));
+        TF_RUNTIME_ERROR(TfStringPrintf(
+            "Failed to create %s node for light %s",
+            mayaLightTypeToken.GetText(),
+            lightSchema.GetPath()));
         return false;
     }
 
@@ -486,7 +500,7 @@ bool UsdMayaTranslatorLight::Read(
         TF_RUNTIME_ERROR("Failed to get Maya light %s", lightSchema.GetPath().GetText());
         return false;
     }
-    
+
     // Whatever the light type is, we always want to read the "common" UsdLuxLight attributes
     _ReadLightAttrs(lightSchema, depFn, args, context);
     // Read the specialized light attributes depending on the maya light type
@@ -498,7 +512,7 @@ bool UsdMayaTranslatorLight::Read(
         _ReadSpotLight(lightSchema, depFn, args, context);
     } else if (mayaLightTypeToken == _tokens->AreaLightMayaTypeName) {
         _ReadAreaLight(lightSchema, depFn, args, context);
-    } 
+    }
     return true;
 }
 

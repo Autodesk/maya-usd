@@ -22,17 +22,17 @@
 #include <mayaUsd/fileio/primWriterArgs.h>
 #include <mayaUsd/fileio/primWriterContext.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
-#include <pxr/usd/usdLux/light.h>
-#include <pxr/usd/usdLux/distantLight.h>
-#include <pxr/usd/usdLux/sphereLight.h>
-#include <pxr/usd/usdLux/rectLight.h>
+
 #include <pxr/pxr.h>
+#include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/light.h>
+#include <pxr/usd/usdLux/rectLight.h>
+#include <pxr/usd/usdLux/sphereLight.h>
 
-#include <maya/MFnDirectionalLight.h>
-#include <maya/MFnSpotLight.h>
-#include <maya/MFnPointLight.h>
 #include <maya/MFnAreaLight.h>
-
+#include <maya/MFnDirectionalLight.h>
+#include <maya/MFnPointLight.h>
+#include <maya/MFnSpotLight.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,28 +43,43 @@ struct UsdMayaTranslatorLight
     /// This function should be called when exporting to any of the specialized light schemas.
     /// Return true if all the parameters were exported properly.
     MAYAUSD_CORE_PUBLIC
-    static bool WriteLightAttrs(const UsdTimeCode &usdTime, UsdLuxLight &usdLight, 
-            MFnLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter = nullptr);
+    static bool WriteLightAttrs(
+        const UsdTimeCode&         usdTime,
+        UsdLuxLight&               usdLight,
+        MFnLight&                  mayaLight,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's directional light attributes using UsdLuxDistantLight schema
     MAYAUSD_CORE_PUBLIC
-    static bool WriteDirectionalLightAttrs(const UsdTimeCode &usdTime, UsdLuxDistantLight &usdLight, 
-            MFnDirectionalLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter = nullptr);
+    static bool WriteDirectionalLightAttrs(
+        const UsdTimeCode&         usdTime,
+        UsdLuxDistantLight&        usdLight,
+        MFnDirectionalLight&       mayaLight,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's point light attributes using UsdLuxSphereLight schema
     MAYAUSD_CORE_PUBLIC
-    static bool WritePointLightAttrs(const UsdTimeCode &usdTime, UsdLuxSphereLight &usdLight, 
-            MFnPointLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter = nullptr);
+    static bool WritePointLightAttrs(
+        const UsdTimeCode&         usdTime,
+        UsdLuxSphereLight&         usdLight,
+        MFnPointLight&             mayaLight,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's spot light attributes using UsdLuxSphereLight and UsdLuxShapingAPI schemas
     MAYAUSD_CORE_PUBLIC
-    static bool WriteSpotLightAttrs(const UsdTimeCode &usdTime, UsdLuxSphereLight &usdLight, 
-            MFnSpotLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter = nullptr);
+    static bool WriteSpotLightAttrs(
+        const UsdTimeCode&         usdTime,
+        UsdLuxSphereLight&         usdLight,
+        MFnSpotLight&              mayaLight,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
     /// Exports Maya's area light attributes using UsdLuxRectLight schema
     MAYAUSD_CORE_PUBLIC
-    static bool WriteAreaLightAttrs(const UsdTimeCode &usdTime, UsdLuxRectLight &usdLight, 
-            MFnAreaLight &mayaLight, UsdUtilsSparseValueWriter* valueWriter = nullptr);
+    static bool WriteAreaLightAttrs(
+        const UsdTimeCode&         usdTime,
+        UsdLuxRectLight&           usdLight,
+        MFnAreaLight&              mayaLight,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
     /// Import a UsdLuxLight schema as a corresponding Maya light.
     /// Return true if the maya light was properly created and imported

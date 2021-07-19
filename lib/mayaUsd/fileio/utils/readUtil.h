@@ -17,6 +17,8 @@
 #define PXRUSDMAYA_READUTIL_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
@@ -26,9 +28,6 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
-
-#include <mayaUsd/fileio/primReaderArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <string>
 
@@ -190,14 +189,14 @@ struct UsdMayaReadUtil
 
     /// \}
 
-
     // Translates a USD attribute to a Maya MPlug, accounting for eventual animations
     MAYAUSD_CORE_PUBLIC
-    static bool ReadUsdAttribute(const UsdAttribute& usdAttr,
-                                 const MFnDependencyNode& depFn,
-                                 const TfToken& plugName,
-                                 const UsdMayaPrimReaderArgs& args,
-                                 UsdMayaPrimReaderContext* context);
+    static bool ReadUsdAttribute(
+        const UsdAttribute&          usdAttr,
+        const MFnDependencyNode&     depFn,
+        const TfToken&               plugName,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext*    context);
 
     /// A cache to store pre-computed file texture hashes on import.
     MAYAUSD_CORE_PUBLIC

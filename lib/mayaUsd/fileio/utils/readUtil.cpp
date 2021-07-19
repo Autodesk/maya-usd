@@ -30,6 +30,7 @@
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFloatArray.h>
+#include <maya/MFnAnimCurve.h>
 #include <maya/MFnAttribute.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnDoubleArrayData.h>
@@ -47,9 +48,8 @@
 #include <maya/MPointArray.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
-#include <maya/MVectorArray.h>
-#include <maya/MFnAnimCurve.h>
 #include <maya/MTimeArray.h>
+#include <maya/MVectorArray.h>
 
 using namespace MAYAUSD_NS_DEF;
 
@@ -891,8 +891,6 @@ size_t UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
     return count;
 }
 
-
-
 // Create an animation curve to be connected to a Maya MPlug,
 // in order to represent an animated attribute
 static bool _CreateAnimCurveForPlug(
@@ -926,10 +924,10 @@ static bool _GetValuesInInterval(
 {
     size_t numTimeSamples = timeSamples.size();
     values.resize(numTimeSamples);
-    
+
     for (size_t i = 0; i < numTimeSamples; ++i) {
         const double timeSample = timeSamples[i];
-        T attrValue;
+        T            attrValue;
         if (!usdAttr.Get(&attrValue, timeSample)) {
             return false;
         }
@@ -947,13 +945,13 @@ static bool _ReadAnimatedUsdAttribute(
     UsdMayaPrimReaderContext*    context)
 {
     const GfInterval& timeInterval = args.GetTimeInterval();
-    // If this attribute isn't varying in the time interval, 
-    // we can early out and just let it be imported as a single value 
+    // If this attribute isn't varying in the time interval,
+    // we can early out and just let it be imported as a single value
     if (timeInterval.IsEmpty() || !usdAttr.ValueMightBeTimeVarying()) {
         return false;
     }
     // Get the list of time samples for the given time interval
-    std::vector<double>  timeSamples;
+    std::vector<double> timeSamples;
     if (!usdAttr.GetTimeSamplesInInterval(timeInterval, &timeSamples)) {
         return false;
     }
@@ -969,19 +967,16 @@ static bool _ReadAnimatedUsdAttribute(
     MTimeArray timeArray;
     timeArray.setLength(numTimeSamples);
     MTime::Unit timeUnit = MTime::uiUnit();
-    float timeSampleMultiplier = (context) ? 
-        context->GetTimeSampleMultiplier() : 1.0;
+    float       timeSampleMultiplier = (context) ? context->GetTimeSampleMultiplier() : 1.0;
     for (size_t i = 0; i < numTimeSamples; ++i) {
-        timeArray.set(MTime(timeSamples[i] * timeSampleMultiplier, timeUnit), i);        
-    }       
+        timeArray.set(MTime(timeSamples[i] * timeSampleMultiplier, timeUnit), i);
+    }
 
     SdfValueTypeName typeName = usdAttr.GetTypeName();
     if (typeName == SdfValueTypeNames->Float) {
         // For float attributes, read the animation as a single animation curve.
         std::vector<float> values;
-        if (!_GetValuesInInterval(usdAttr,
-                                  timeSamples,
-                                  values)) {
+        if (!_GetValuesInInterval(usdAttr, timeSamples, values)) {
             return false;
         }
         MDoubleArray valueArray(numTimeSamples);
@@ -992,79 +987,75 @@ static bool _ReadAnimatedUsdAttribute(
             return false;
         }
         return true;
-    } else if (typeName == SdfValueTypeNames->Float2 ) {
+    } else if (typeName == SdfValueTypeNames->Float2) {
         // For float2 attributes, we read them as 2 curves connected to each
         // plug child (e.g. valueX, valueY)
         std::vector<GfVec2f> values;
-        if (!_GetValuesInInterval(usdAttr,
-                                  timeSamples,
-                                  values)) {
+        if (!_GetValuesInInterval(usdAttr, timeSamples, values)) {
             return false;
         }
         MDoubleArray valueArrayX(numTimeSamples);
         MDoubleArray valueArrayY(numTimeSamples);
-        
+
         for (size_t i = 0; i < numTimeSamples; ++i) {
             valueArrayX.set(values[i][0], i);
             valueArrayY.set(values[i][1], i);
         }
 
-        if (!_CreateAnimCurveForPlug(plug.child(0), timeArray, valueArrayX, context) || 
-            !_CreateAnimCurveForPlug(plug.child(1), timeArray, valueArrayY, context)) {
+        if (!_CreateAnimCurveForPlug(plug.child(0), timeArray, valueArrayX, context)
+            || !_CreateAnimCurveForPlug(plug.child(1), timeArray, valueArrayY, context)) {
             return false;
         }
         return true;
-    } else if (typeName == SdfValueTypeNames->Color3f || 
-               typeName == SdfValueTypeNames->Vector3f ) {
+    } else if (typeName == SdfValueTypeNames->Color3f || typeName == SdfValueTypeNames->Vector3f) {
 
-        // For Color3f and Vector3f attributes, we read them as 3 curves connected to 
+        // For Color3f and Vector3f attributes, we read them as 3 curves connected to
         // each plug child (e.g. translateX, translateY, translateZ or colorR, colorG, colorB)
 
         std::vector<GfVec3f> values;
-        if (!_GetValuesInInterval(usdAttr,
-                                  timeSamples,
-                                  values)) {
+        if (!_GetValuesInInterval(usdAttr, timeSamples, values)) {
             return false;
         }
         MDoubleArray valueArrayR(numTimeSamples);
         MDoubleArray valueArrayG(numTimeSamples);
         MDoubleArray valueArrayB(numTimeSamples);
-        
+
         for (size_t i = 0; i < numTimeSamples; ++i) {
             valueArrayR.set(values[i][0], i);
             valueArrayG.set(values[i][1], i);
             valueArrayB.set(values[i][2], i);
         }
 
-        if (!_CreateAnimCurveForPlug(plug.child(0), timeArray, valueArrayR, context) || 
-            !_CreateAnimCurveForPlug(plug.child(1), timeArray, valueArrayG, context) || 
-            !_CreateAnimCurveForPlug(plug.child(2), timeArray, valueArrayB, context)) {
+        if (!_CreateAnimCurveForPlug(plug.child(0), timeArray, valueArrayR, context)
+            || !_CreateAnimCurveForPlug(plug.child(1), timeArray, valueArrayG, context)
+            || !_CreateAnimCurveForPlug(plug.child(2), timeArray, valueArrayB, context)) {
             return false;
         }
         return true;
     }
-    return false;   
+    return false;
 }
 
 /* static */
-bool UsdMayaReadUtil::ReadUsdAttribute(const UsdAttribute& usdAttr,
-                                            const MFnDependencyNode& depFn,
-                                            const TfToken& plugName,
-                                            const UsdMayaPrimReaderArgs& args,
-                                            UsdMayaPrimReaderContext* context)
+bool UsdMayaReadUtil::ReadUsdAttribute(
+    const UsdAttribute&          usdAttr,
+    const MFnDependencyNode&     depFn,
+    const TfToken&               plugName,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     MStatus status;
-    MPlug plug = depFn.findPlug(plugName.GetText(), true, &status);
+    MPlug   plug = depFn.findPlug(plugName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     SdfValueTypeName typeName = usdAttr.GetTypeName();
-    
+
     // First check for and translate animation if there is any.
     if (_ReadAnimatedUsdAttribute(usdAttr, plug, args, context)) {
         return true;
     }
     // If no animation is needed, simply set the maya attribute as a single value.
-    // Note that we need to specify a time when getting the attribute, otherwise 
+    // Note that we need to specify a time when getting the attribute, otherwise
     // values with a single time sample can return an invalid value
     VtValue val;
     if (usdAttr.Get(&val, args.GetTimeInterval().GetMin())) {
@@ -1075,6 +1066,5 @@ bool UsdMayaReadUtil::ReadUsdAttribute(const UsdAttribute& usdAttr,
     }
     return false;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

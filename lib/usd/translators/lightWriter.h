@@ -29,8 +29,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdLux/light.h>
 #include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/light.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnDirectionalLight.h>
@@ -40,7 +40,6 @@
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Exports Maya directional lights to UsdLux distant lights
 class PxrUsdTranslators_DirectionalLightWriter : public UsdMayaPrimWriter
@@ -89,7 +88,6 @@ public:
 
     void Write(const UsdTimeCode& usdTime) override;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
