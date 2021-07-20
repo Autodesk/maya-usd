@@ -318,7 +318,7 @@ struct UsdMayaJobImportArgs
     static const VtDictionary& GetDefaultDictionary();
 
     MAYAUSD_CORE_PUBLIC
-    static const std::string GetImportUSDZTexturesFilePath(const std::string& userArg);
+    static const std::string GetImportUSDZTexturesFilePath(const VtDictionary& userArgs);
 
 private:
     MAYAUSD_CORE_PUBLIC
