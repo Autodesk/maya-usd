@@ -38,8 +38,28 @@ class testUsdImportLight(unittest.TestCase):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
         cmds.file(new=True, force=True)
 
+        # We need to use different input usd files depending on the version of USD.
+        # We do this because USD introduced breaking changes on lights in USD 21.*
+        # More precisely :
+        # 
+        # - Before USD 21.* : lights attributes didn't have any prefix. Attributes
+        #                     were named "intensity", "color", etc...
+        # - In 21.02        : The attributes from light schemas were added a
+        #                     namespace "inputs". But attributes from UsdLuxShapingAPI
+        #                     (used for spot lights) or UsdLuxShadowsAPI (for shadows)
+        #                     were still left without this namespace
+        # - In 21.05        : Attributes from UsdLuxShadows and UsdLuxShapingAPI also 
+        #                     have a namespace "inputs" 
+        usdVersion = Usd.GetVersion()
+        testFile = "LightsTest.usda"
+        if int(usdVersion[0]) == 0:
+            if int(usdVersion[1]) < 21:
+                testFile = "LightsTest_2011.usda"
+            elif int(usdVersion[1]) == 21 and int(usdVersion[1]) < 5:
+                testFile = "LightsTest_2102.usda"
+            
         # Import from USD.
-        usdFilePath = os.path.join(inputPath, "UsdImportLightTest", "LightsTest.usda")
+        usdFilePath = os.path.join(inputPath, "UsdImportLightTest", testFile)
         cmds.usdImport(file=usdFilePath, readAnimData=True)
         cls._stage = Usd.Stage.Open(usdFilePath)
 
