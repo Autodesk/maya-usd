@@ -62,6 +62,11 @@ namespace {
 // Prevent re-entrant stage set.
 std::atomic_bool stageSetGuardCount { false };
 
+bool isTransformChange(const TfToken& nameToken)
+{
+    return nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken);
+}
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // The attribute change notification guard is not meant to be nested, but
 // use a counter nonetheless to provide consistent behavior in such cases.
@@ -77,11 +82,6 @@ std::vector<std::pair<Ufe::Path, TfToken>> pendingAttributeChangedNotifications;
 bool inAttributeChangedNotificationGuard()
 {
     return attributeChangedNotificationGuardCount.load() > 0;
-}
-
-bool isTransformChange(const TfToken& nameToken)
-{
-    return nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken);
 }
 
 void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)

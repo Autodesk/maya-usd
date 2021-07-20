@@ -41,15 +41,6 @@ namespace {
 using namespace MayaUsd;
 using namespace MayaUsd::ufe;
 
-void warnUnimplemented(const char* msg) { TF_WARN("Illegal call to unimplemented %s", msg); }
-
-VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
-{
-    VtValue value;
-    attr.Get(&value, time);
-    return value;
-}
-
 const char* getMatrixOp() { return std::getenv("MAYA_USD_MATRIX_XFORM_OP_NAME"); }
 
 std::vector<UsdGeomXformOp>::const_iterator

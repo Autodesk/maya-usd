@@ -39,7 +39,6 @@ public:
 
     void setValue(const GfVec3d& v) override { _commonAPI.SetTranslate(v, writeTime()); }
 
-    // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
         handleSet(GfVec3d(x, y, z));
@@ -64,7 +63,6 @@ public:
         _commonAPI.SetRotate(v, UsdGeomXformCommonAPI::RotationOrderXYZ, writeTime());
     }
 
-    // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
         handleSet(GfVec3f(x, y, z));
@@ -87,7 +85,6 @@ public:
 
     void setValue(const GfVec3f& v) override { _commonAPI.SetScale(v, writeTime()); }
 
-    // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
         handleSet(GfVec3f(x, y, z));
@@ -109,7 +106,6 @@ public:
 
     void setValue(const GfVec3f& v) override { _commonAPI.SetPivot(v, writeTime()); }
 
-    // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
         handleSet(GfVec3f(x, y, z));
