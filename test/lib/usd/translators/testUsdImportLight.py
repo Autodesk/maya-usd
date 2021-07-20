@@ -50,13 +50,12 @@ class testUsdImportLight(unittest.TestCase):
         #                     were still left without this namespace
         # - In 21.05        : Attributes from UsdLuxShadows and UsdLuxShapingAPI also 
         #                     have a namespace "inputs" 
-        usdVersion = Usd.GetVersion()
         testFile = "LightsTest.usda"
-        if int(usdVersion[0]) == 0:
-            if int(usdVersion[1]) < 21:
-                testFile = "LightsTest_2011.usda"
-            elif int(usdVersion[1]) == 21 and int(usdVersion[1]) < 5:
-                testFile = "LightsTest_2102.usda"
+        usdVersion = Usd.GetVersion()
+        if usdVersion < (0,21,2):
+            testFile = "LightsTest_2011.usda"
+        elif usdVersion == (0,21,2):
+            testFile = "LightsTest_2102.usda"
             
         # Import from USD.
         usdFilePath = os.path.join(inputPath, "UsdImportLightTest", testFile)
