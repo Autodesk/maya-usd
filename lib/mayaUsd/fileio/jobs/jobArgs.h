@@ -219,6 +219,9 @@ struct UsdMayaJobExportArgs
     // the model path. This to allow a proper internal reference.
     SdfPath usdModelRootOverridePath; // XXX can we make this const?
 
+    // When using export roots feature we will leverage map function to
+    // override the sdfpath generated from source DAG path. Will be empty
+    // if export roots is not used.
     const PcpMapFunction rootMapFunction;
 
     /// Creates a UsdMayaJobExportArgs from the given \p dict, overlaid on
