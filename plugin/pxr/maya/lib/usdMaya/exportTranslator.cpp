@@ -61,6 +61,13 @@ MStatus UsdMayaExportTranslator::writer(
             theOption.clear();
             optionList[i].split('=', theOption);
             if (theOption.length() != 2) {
+                // We allow an empty string to be passed to exportRoots. We must process it here.
+                if (theOption.length() == 1
+                    && theOption[0] == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
+                    std::vector<VtValue> userArgVals;
+                    userArgVals.push_back(VtValue(""));
+                    userArgs[UsdMayaJobExportArgsTokens->exportRoots] = userArgVals;
+                }
                 continue;
             }
 
@@ -75,6 +82,30 @@ MStatus UsdMayaExportTranslator::writer(
                 frameStride = theOption[1].asDouble();
             } else if (argName == "filterTypes") {
                 theOption[1].split(',', filteredTypes);
+            } else if (argName == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
+                MStringArray exportRootStrings;
+                theOption[1].split(',', exportRootStrings);
+                
+                std::vector<VtValue> userArgVals;
+                
+                unsigned int nbRoots = exportRootStrings.length();
+                for (unsigned int idxRoot = 0; idxRoot < nbRoots; ++idxRoot) {
+                    const std::string exportRootPath = exportRootStrings[idxRoot].asChar();
+                    
+                    if (!exportRootPath.empty()) {
+                        MDagPath rootDagPath;
+                        UsdMayaUtil::GetDagPathByName(exportRootPath, rootDagPath);
+                        if (!rootDagPath.isValid()) {
+                            MGlobal::displayError(
+                                MString("Invalid dag path provided for export root: ") + exportRootStrings[idxRoot]);
+                            return MS::kFailure;
+                        }
+                        userArgVals.push_back(VtValue(exportRootPath));
+                    } else {
+                        userArgVals.push_back(VtValue(""));
+                    }
+                }
+                userArgs[argName] = userArgVals;
             } else {
                 if (argName == "shadingMode") {
                     TfToken shadingMode(theOption[1].asChar());
@@ -184,7 +215,9 @@ const std::string& UsdMayaExportTranslator::GetDefaultOptions()
             bool        canConvert;
             std::string valueStr;
             std::tie(canConvert, valueStr) = UsdMayaUtil::ValueToArgument(keyValue.second);
-            if (canConvert) {
+            // Options don't handle empty arrays well preventing users from passing actual
+            // values for options with such default value.
+            if (canConvert && valueStr != "[]") {
                 entries.push_back(
                     TfStringPrintf("%s=%s", keyValue.first.c_str(), valueStr.c_str()));
             }

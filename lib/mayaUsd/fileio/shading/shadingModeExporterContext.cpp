@@ -88,17 +88,37 @@ UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
         // if none specified, push back '/' which encompasses all
         _bindableRoots.insert(SdfPath::AbsoluteRootPath());
     } else {
+        const bool hasExportRootsMapping = !GetExportArgs().rootMapFunction.IsNull();
+        auto findBindableRootFn = [this,hasExportRootsMapping](const MDagPath& inDagPath, SdfPath& outPath) {
+            auto iter = _dagPathToUsdMap.find(inDagPath);
+            if (iter != _dagPathToUsdMap.end()) {
+                outPath = iter->second;
+                return true;
+            }
+            
+            // We may be only exporting some roots from under the selected hierarchy.
+            // Search for root but only if export root mapping is set to save time.
+            if (hasExportRootsMapping) {
+                for(auto pair : _dagPathToUsdMap) {
+                    if (MFnDagNode(pair.first).hasParent(inDagPath.node())) {
+                        outPath = pair.second;
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        };
+        
         TF_FOR_ALL(bindableRootIter, GetExportArgs().dagPaths)
         {
             const MDagPath& bindableRootDagPath = *bindableRootIter;
 
-            auto iter = _dagPathToUsdMap.find(bindableRootDagPath);
-            if (iter == _dagPathToUsdMap.end()) {
+            SdfPath usdPath;
+            if (!findBindableRootFn(bindableRootDagPath, usdPath)) {
                 // Geometry w/ this material bound doesn't seem to exist in USD.
                 continue;
             }
-
-            SdfPath usdPath = iter->second;
 
             // If usdModelRootOverridePath is not empty, replace the root
             // namespace with it.

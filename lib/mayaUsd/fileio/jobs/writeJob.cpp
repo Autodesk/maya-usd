@@ -380,6 +380,17 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         }
     }
 
+    if (!mJobCtx.mArgs.rootMapFunction.IsNull()) {
+        // Check if there was no intersection between export roots and given selection.
+        // We achieve this by checking if any valid prim writer was executed and populated
+        // the mDagPathToUsdPathMap map.
+        if (mDagPathToUsdPathMap.size() == 0) {
+            MGlobal::displayError("Given export root was neither a parent or child of"
+                                  " any of the items to export; export aborting");
+            return false;
+        }
+    }
+    
     // Writing Materials/Shading
     UsdMayaTranslatorMaterial::ExportShadingEngines(mJobCtx, mDagPathToUsdPathMap);
 

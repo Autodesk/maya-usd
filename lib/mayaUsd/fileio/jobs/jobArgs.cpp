@@ -280,6 +280,47 @@ static TfToken _GetMaterialsScopeName(const std::string& materialsScopeName)
     return defaultMaterialsScopeName;
 }
 
+static PcpMapFunction::PathMap
+_ExportRootsMap(const VtDictionary& userArgs, const TfToken& key, bool stripNamespaces, const UsdMayaUtil::MDagPathSet& dagPaths)
+{
+    PcpMapFunction::PathMap pathMap;
+        
+    auto addExportRootPathPairFn = [&pathMap, stripNamespaces](const MDagPath& rootDagPath) {
+        if (!rootDagPath.isValid())
+            return;
+        
+        SdfPath rootSdfPath = UsdMayaUtil::MDagPathToUsdPath(rootDagPath, false, stripNamespaces);
+            
+        if (rootSdfPath.IsEmpty())
+            return;
+                
+        SdfPath newRootSdfPath = rootSdfPath.ReplacePrefix(rootSdfPath.GetParentPath(), SdfPath::AbsoluteRootPath());
+        
+        pathMap[rootSdfPath] = newRootSdfPath;
+    };
+    
+    bool includeEntireSelection = false;
+    
+    const std::vector<std::string> exportRoots = _Vector<std::string>(userArgs,key);
+    for(const std::string& rootPath : exportRoots) {
+        if (!rootPath.empty()) {
+            MDagPath rootDagPath;
+            UsdMayaUtil::GetDagPathByName(rootPath, rootDagPath);
+            addExportRootPathPairFn(rootDagPath);
+        } else {
+            includeEntireSelection = true;
+        }
+    }
+    
+    if (includeEntireSelection) {
+        for (const MDagPath& dagPath : dagPaths) {
+            addExportRootPathPairFn(dagPath);
+        }
+    }
+    
+    return pathMap;
+}
+
 UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary&             userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
@@ -368,11 +409,11 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , melPostCallback(_String(userArgs, UsdMayaJobExportArgsTokens->melPostCallback))
     , pythonPerFrameCallback(_String(userArgs, UsdMayaJobExportArgsTokens->pythonPerFrameCallback))
     , pythonPostCallback(_String(userArgs, UsdMayaJobExportArgsTokens->pythonPostCallback))
-    ,
-
-    dagPaths(dagPaths)
+    , dagPaths(dagPaths)
     , timeSamples(timeSamples)
+    , rootMapFunction(PcpMapFunction::Create(_ExportRootsMap(userArgs, UsdMayaJobExportArgsTokens->exportRoots, stripNamespaces, dagPaths), SdfLayerOffset()))
 {
+
 }
 
 std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
@@ -445,6 +486,8 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
                 << std::endl;
         }
     }
+    
+    out << "exportRootMapFunction (" << exportArgs.rootMapFunction.GetString() << ")" << std::endl;
 
     return out;
 }
@@ -480,6 +523,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
         d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = false;
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
+        d[UsdMayaJobExportArgsTokens->exportRoots] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->exportSkin] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportSkels] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportBlendShapes] = false;
