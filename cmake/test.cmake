@@ -120,12 +120,12 @@ import os\\n\
 import sys\\n\
 import time\\n\
 import traceback\\n\
-file = \\\"${PREFIX_PYTHON_SCRIPT}\\\"\\n\
+file = '${PREFIX_PYTHON_SCRIPT}'\\n\
 if not os.path.isabs(file):\\n\
-    file = os.path.join(\\\"${WORKING_DIR}\\\", file)\\n\
-openMode = \\\"rb\\\"\\n\
-compileMode = \\\"exec\\\"\\n\
-globals = {\\\"__file__\\\": file, \\\"__name__\\\": \\\"__main__\\\"}\\n\
+    file = os.path.join('${WORKING_DIR}', file)\\n\
+openMode = 'rb'\\n\
+compileMode = 'exec'\\n\
+globals = {'__file__': file, '__name__': '__main__'}\\n\
 try:\\n\
     exec(compile(open(file, openMode).read(), file, compileMode), globals)\\n\
 except Exception:\\n\
@@ -337,6 +337,9 @@ finally:
     set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
         "MAYA_PYTHON_VERSION=${MAYA_PY_VERSION}"
         "MAYA_NO_STANDALONE_ATEXIT=1"
+        "MAYA_DEBUG_ENABLE_CRASH_REPORTING=1"
+        "MAYA_DEBUG_NO_SAVE_ON_CRASH=1"
+        "MAYA_NO_MORE_ASSERT=1"
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
 
@@ -350,5 +353,8 @@ finally:
         # to function correctly. Has no effect when not running remote.
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "MAYA_ALLOW_OPENGL_REMOTE_SESSION=1")
+    else()
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "MAYA_IGNORE_DIALOGS=1")
     endif()
 endfunction()

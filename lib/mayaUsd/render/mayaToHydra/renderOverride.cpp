@@ -287,6 +287,7 @@ MtohRenderOverride::~MtohRenderOverride()
         MMessage::removeCallbacks(panelAndCallbacks.second);
     }
 
+    if(!_allInstances.empty())
     {
         std::lock_guard<std::mutex> lock(_allInstancesMutex);
         _allInstances.erase(

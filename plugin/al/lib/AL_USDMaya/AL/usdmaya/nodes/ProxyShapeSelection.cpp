@@ -241,16 +241,16 @@ inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
             m_required);
     switch (reason) {
     case kSelection:
-        assert(m_selected);
-        --m_selected;
+        if(m_selected>0)
+            --m_selected;
         break;
     case kRequested:
-        assert(m_refCount);
-        --m_refCount;
+        if(m_refCount>0)
+	    --m_refCount;
         break;
     case kRequired:
-        assert(m_required);
-        --m_required;
+        if(m_required>0)
+            --m_required;
         break;
     default: assert(0); break;
     }
