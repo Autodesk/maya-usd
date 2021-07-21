@@ -390,7 +390,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             return false;
         }
     }
-    
+
     // Writing Materials/Shading
     UsdMayaTranslatorMaterial::ExportShadingEngines(mJobCtx, mDagPathToUsdPathMap);
 

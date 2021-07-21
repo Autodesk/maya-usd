@@ -89,27 +89,28 @@ UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
         _bindableRoots.insert(SdfPath::AbsoluteRootPath());
     } else {
         const bool hasExportRootsMapping = !GetExportArgs().rootMapFunction.IsNull();
-        auto findBindableRootFn = [this,hasExportRootsMapping](const MDagPath& inDagPath, SdfPath& outPath) {
-            auto iter = _dagPathToUsdMap.find(inDagPath);
-            if (iter != _dagPathToUsdMap.end()) {
-                outPath = iter->second;
-                return true;
-            }
-            
-            // We may be only exporting some roots from under the selected hierarchy.
-            // Search for root but only if export root mapping is set to save time.
-            if (hasExportRootsMapping) {
-                for(auto pair : _dagPathToUsdMap) {
-                    if (MFnDagNode(pair.first).hasParent(inDagPath.node())) {
-                        outPath = pair.second;
-                        return true;
-                    }
-                }
-            }
-            
-            return false;
-        };
-        
+        auto       findBindableRootFn
+            = [this, hasExportRootsMapping](const MDagPath& inDagPath, SdfPath& outPath) {
+                  auto iter = _dagPathToUsdMap.find(inDagPath);
+                  if (iter != _dagPathToUsdMap.end()) {
+                      outPath = iter->second;
+                      return true;
+                  }
+
+                  // We may be only exporting some roots from under the selected hierarchy.
+                  // Search for root but only if export root mapping is set to save time.
+                  if (hasExportRootsMapping) {
+                      for (auto pair : _dagPathToUsdMap) {
+                          if (MFnDagNode(pair.first).hasParent(inDagPath.node())) {
+                              outPath = pair.second;
+                              return true;
+                          }
+                      }
+                  }
+
+                  return false;
+              };
+
         TF_FOR_ALL(bindableRootIter, GetExportArgs().dagPaths)
         {
             const MDagPath& bindableRootDagPath = *bindableRootIter;

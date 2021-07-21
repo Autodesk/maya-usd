@@ -67,7 +67,7 @@ inline SdfPath _GetRootOverridePath(const UsdMayaJobExportArgs& args, const SdfP
         if (!args.usdModelRootOverridePath.IsEmpty()) {
             return path.ReplacePrefix(path.GetPrefixes()[0], args.usdModelRootOverridePath);
         }
-        
+
         if (!args.rootMapFunction.IsNull()) {
             return args.rootMapFunction.MapSourceToTarget(path);
         }
@@ -471,13 +471,13 @@ UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
 
         if (writePath.IsEmpty()) {
             writePath = ConvertDagToUsdPath(dagPath);
-            
+
             if (writePath.IsEmpty()) {
                 if (mArgs.rootMapFunction.IsNull()) {
                     TF_CODING_ERROR(
                         "When root mapping is not set we should always have a valid write path");
                 }
-                
+
                 return nullptr;
             }
         }

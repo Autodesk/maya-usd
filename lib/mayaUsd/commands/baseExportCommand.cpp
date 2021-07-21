@@ -115,7 +115,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kExportReferenceObjectsFlag,
         UsdMayaJobExportArgsTokens->exportReferenceObjects.GetText(),
         MSyntax::kBoolean);
-    syntax.addFlag(kExportRootsFlag, UsdMayaJobExportArgsTokens->exportRoots.GetText(), MSyntax::kString);
+    syntax.addFlag(
+        kExportRootsFlag, UsdMayaJobExportArgsTokens->exportRoots.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kExportRootsFlag);
     syntax.addFlag(
         kExportSkelsFlag, UsdMayaJobExportArgsTokens->exportSkels.GetText(), MSyntax::kString);
@@ -266,7 +267,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         if (fileName.empty()) {
             return MS::kFailure;
         }
-        
+
         // If you provide a frame range we consider this an anim
         // export even if start and end are the same
         GfInterval timeInterval;
@@ -308,7 +309,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             argData.getObjects(objSelList);
         }
         UsdMayaUtil::GetFilteredSelectionToExport(exportSelected, objSelList, dagPaths);
-        
+
         // Validation of paths. The real read in of argument is happening as part of
         // GetDictionaryFromArgDatabase.
         unsigned int numRoots = argData.numberOfFlagUses(kExportRootsFlag);
@@ -322,12 +323,13 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
                 UsdMayaUtil::GetDagPathByName(rootPath, rootDagPath);
                 if (!rootDagPath.isValid()) {
                     MGlobal::displayError(
-                        MString("Invalid dag path provided for exportRoot: ") + tmpArgList.asString(0));
+                        MString("Invalid dag path provided for exportRoot: ")
+                        + tmpArgList.asString(0));
                     return MS::kFailure;
                 }
             }
         }
-        
+
         const std::vector<double> timeSamples
             = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
         UsdMayaJobExportArgs jobArgs

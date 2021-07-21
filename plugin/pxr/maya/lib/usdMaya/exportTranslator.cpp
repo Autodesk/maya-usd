@@ -85,19 +85,20 @@ MStatus UsdMayaExportTranslator::writer(
             } else if (argName == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
                 MStringArray exportRootStrings;
                 theOption[1].split(',', exportRootStrings);
-                
+
                 std::vector<VtValue> userArgVals;
-                
+
                 unsigned int nbRoots = exportRootStrings.length();
                 for (unsigned int idxRoot = 0; idxRoot < nbRoots; ++idxRoot) {
                     const std::string exportRootPath = exportRootStrings[idxRoot].asChar();
-                    
+
                     if (!exportRootPath.empty()) {
                         MDagPath rootDagPath;
                         UsdMayaUtil::GetDagPathByName(exportRootPath, rootDagPath);
                         if (!rootDagPath.isValid()) {
                             MGlobal::displayError(
-                                MString("Invalid dag path provided for export root: ") + exportRootStrings[idxRoot]);
+                                MString("Invalid dag path provided for export root: ")
+                                + exportRootStrings[idxRoot]);
                             return MS::kFailure;
                         }
                         userArgVals.push_back(VtValue(exportRootPath));

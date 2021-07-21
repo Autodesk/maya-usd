@@ -22,8 +22,8 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
-#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/pcp/mapFunction.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MString.h>
 
@@ -220,7 +220,7 @@ struct UsdMayaJobExportArgs
     SdfPath usdModelRootOverridePath; // XXX can we make this const?
 
     const PcpMapFunction rootMapFunction;
-    
+
     /// Creates a UsdMayaJobExportArgs from the given \p dict, overlaid on
     /// top of the default dictionary given by GetDefaultDictionary().
     /// The values of \p dict are stronger (will override) the values from the
