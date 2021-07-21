@@ -395,10 +395,11 @@ bool UsdMayaTranslatorLight::WriteAreaLightAttrs(
     // Area lights "normalize" isn't exposed through the MFnAreaLight API.
     // So we're getting it with MFnDependencyNode::findPlug
     MPlug normalizePlug = mayaLight.findPlug(_tokens->normalizeAttrName.GetText(), true, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    // This attribute is enabled by default, but it didn't exist before Maya 2020.
+    // So we're setting it to true if we couldn't find it
+    bool normalize = (status == MS::kSuccess) ? normalizePlug.asBool() : true;
+    UsdMayaWriteUtil::SetAttribute(usdLight.GetNormalizeAttr(), normalize, usdTime, valueWriter);
 
-    UsdMayaWriteUtil::SetAttribute(
-        usdLight.GetNormalizeAttr(), normalizePlug.asBool(), usdTime, valueWriter);
     return true;
 }
 

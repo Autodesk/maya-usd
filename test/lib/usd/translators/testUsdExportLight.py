@@ -30,6 +30,10 @@ from maya import OpenMaya
 
 import fixturesUtils
 
+def getMayaAPIVersion():
+    version = cmds.about(api=True)
+    return int(str(version)[:4])
+
 class testUsdExportLight(unittest.TestCase):
 
     START_TIMECODE = 1.0
@@ -154,7 +158,10 @@ class testUsdExportLight(unittest.TestCase):
         self.assertTrue(rectLight)
         self.assertTrue(Gf.IsClose(rectLight.GetColorAttr().Get(), Gf.Vec3f(0.8, 0.7, 0.6), 1e-6))
         self.assertTrue(Gf.IsClose(rectLight.GetIntensityAttr().Get(), 1.2, 1e-6))
-        self.assertTrue(rectLight.GetNormalizeAttr().Get())
+        
+        # normalize didn't exist before Maya 2020
+        if getMayaAPIVersion() > 2019:
+            self.assertTrue(rectLight.GetNormalizeAttr().Get())
         
         self.assertTrue(lightPrim.HasAPI(UsdLux.ShadowAPI))
         shadowAPI = UsdLux.ShadowAPI(lightPrim)
@@ -321,7 +328,10 @@ class testUsdExportLight(unittest.TestCase):
             0.7, 1e-6))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath),
             0.6, 1e-6))
-        self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 1)
+        
+        # normalize didn't exist before Maya 2020
+        if getMayaAPIVersion() > 2019:
+            self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 1)
    
     def _ValidateRoundtrip(self):
         cmds.file(new=True, force=True)
