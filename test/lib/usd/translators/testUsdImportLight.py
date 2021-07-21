@@ -28,6 +28,10 @@ from maya import standalone
 
 import fixturesUtils
 
+def getMayaAPIVersion():
+    version = cmds.about(api=True)
+    return int(str(version)[:4])
+
 class testUsdImportLight(unittest.TestCase):
 
     START_TIMECODE = 1.0
@@ -227,7 +231,8 @@ class testUsdImportLight(unittest.TestCase):
             0.7, 1e-6))
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.colorB' % nodePath),
             0.6, 1e-6))
-        self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 0)
+        if getMayaAPIVersion() > 2019:
+            self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 0)
    
 
     def testImportMayaLights(self):
