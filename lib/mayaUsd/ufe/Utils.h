@@ -28,6 +28,8 @@
 
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
+#include <ufe/rtid.h>
+#include <ufe/runTimeMgr.h>
 #include <ufe/scene.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/types.h>
@@ -140,6 +142,9 @@ MAYAUSD_CORE_PUBLIC
 bool isEditTargetLayerModifiable(
     const PXR_NS::UsdStageWeakPtr stage,
     std::string*                  errMsg = nullptr);
+
+MAYAUSD_CORE_PUBLIC
+Ufe::Rtid getUsdUfeRuntimeId();
 
 //! Send notification for data model changes
 template <class T>

@@ -42,8 +42,7 @@
 #include <ufe/namedSelection.h>
 #endif
 #include <ufe/observableSelection.h>
-#include <ufe/rtid.h>
-#include <ufe/runTimeMgr.h>
+#include <mayaUsd/ufe/Utils.h>
 #endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -70,11 +69,6 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaProxyDelegate)
 }
 
 namespace {
-
-#if WANT_UFE_BUILD
-constexpr auto      USD_UFE_RUNTIME_NAME = "USD";
-static UFE_NS::Rtid usdUfeRtid = 0;
-#endif // WANT_UFE_BUILD
 
 // Don't know if this variable would be accessed from multiple threads, but
 // plugin load/unload is infrequent enough that performance isn't an issue, and
@@ -178,21 +172,6 @@ HdMayaProxyDelegate::HdMayaProxyDelegate(const InitData& initData)
 {
     TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
         .Msg("HdMayaProxyDelegate - creating with delegateID %s\n", GetMayaDelegateID().GetText());
-
-    MStatus status;
-
-#if WANT_UFE_BUILD
-    if (usdUfeRtid == 0) {
-        try {
-            usdUfeRtid = UFE_NS::RunTimeMgr::instance().getId(USD_UFE_RUNTIME_NAME);
-        }
-        // This shoudl catch ufe's InvalidRunTimeName exception, but they don't
-        // expose that!
-        catch (...) {
-            TF_WARN("USD UFE Runtime plugin not loaded!\n");
-        }
-    }
-#endif // WANT_UFE_BUILD
 }
 
 HdMayaProxyDelegate::~HdMayaProxyDelegate()
@@ -297,7 +276,7 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
     }
 
     for (auto item : ufeSelection) {
-        if (item->runTimeId() != usdUfeRtid) {
+        if (item->runTimeId() != MayaUsd::ufe::getUsdUfeRuntimeId()) {
             continue;
         }
         auto& pathSegments = item->path().getSegments();
@@ -342,7 +321,7 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
     }
 }
 
-bool HdMayaProxyDelegate::SupportsUfeSelection() { return usdUfeRtid != 0; }
+bool HdMayaProxyDelegate::SupportsUfeSelection() { return MayaUsd::ufe::getUsdUfeRuntimeId() != 0; }
 
 #endif // WANT_UFE_BUILD
 

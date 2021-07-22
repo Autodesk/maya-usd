@@ -61,6 +61,9 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selectionNotification.h>
+#include <ufe/path.h>
+#include <ufe/pathString.h>
+#include <mayaUsd/ufe/Utils.h>
 #endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -581,11 +584,17 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         MStatus  status;
         MDagPath camPath = getFrameContext()->getCurrentCameraPath(&status);
         if (status == MStatus::kSuccess) {
-            // FIXME: This is what a USD camera selected in the viewport returns.
+#ifdef MAYA_CURRENT_UFE_CAMERA_SUPPORT
+            MString ufeCameraPathString = getFrameContext()->getCurrentUfeCameraPath(&status);
+            Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.c_str());
+            bool isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdUfeRuntimeId();
+#else
             static const MString defaultUfeProxyCameraShape(
                 "|defaultUfeProxyCameraTransformParent|defaultUfeProxyCameraTransform|"
                 "defaultUfeProxyCameraShape");
-            if (defaultUfeProxyCameraShape != camPath.fullPathName()) {
+            bool isUsdCamera = defaultUfeProxyCameraShape == camPath.fullPathName();
+#endif
+            if (!isUsdCamera) {
                 for (auto& delegate : _delegates) {
                     if (HdMayaSceneDelegate* mayaScene
                         = dynamic_cast<HdMayaSceneDelegate*>(delegate.get())) {
