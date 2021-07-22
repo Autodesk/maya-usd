@@ -232,6 +232,12 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         // Handle usdModelRootOverridePath for USD Variants
         MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
         if (mRenderLayerObjs.length() > 1) {
+            if (!mJobCtx.mArgs.rootMapFunction.IsNull()) {
+                MGlobal::displayError("Export roots can't be used together with export to modeling"
+                                      " variant; export aborting");
+                return false;
+            }
+
             mJobCtx.mArgs.usdModelRootOverridePath = SdfPath("/_BaseModel_");
         }
     }
