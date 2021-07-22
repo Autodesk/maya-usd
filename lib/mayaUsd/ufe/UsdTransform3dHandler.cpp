@@ -51,6 +51,10 @@ Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::P
     assert(usdItem);
 #endif
 
+    if (!usdItem) {
+        return nullptr;
+    }
+
     if (usdItem->isPointInstance()) {
         // Point instance manipulation using this handler is only supported
         // with UFE v2. Otherwise, we disallow any manipulation for point
