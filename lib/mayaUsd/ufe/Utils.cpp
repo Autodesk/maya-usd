@@ -122,8 +122,6 @@ namespace ufe {
 
 extern UsdStageMap g_StageMap;
 extern Ufe::Rtid   g_MayaRtid;
-constexpr auto     USD_UFE_RUNTIME_NAME = "USD";
-static Ufe::Rtid   usdUfeRtid = 0;
 
 // Cache of Maya node types we've queried before for inheritance from the
 // gateway node type.
@@ -514,22 +512,6 @@ Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& f
         }
     }
     return dst;
-}
-
-Ufe::Rtid getUsdUfeRuntimeId()
-{
-    if (usdUfeRtid == 0) {
-        try {
-            usdUfeRtid = UFE_NS::RunTimeMgr::instance().getId(USD_UFE_RUNTIME_NAME);
-        }
-        // This shoudl catch ufe's InvalidRunTimeName exception, but they don't
-        // expose that!
-        catch (...) {
-            TF_WARN("USD UFE Runtime plugin not loaded!\n");
-        }
-    }
-
-    return usdUfeRtid;
 }
 
 } // namespace ufe

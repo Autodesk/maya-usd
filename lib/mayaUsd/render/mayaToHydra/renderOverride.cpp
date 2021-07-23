@@ -57,7 +57,7 @@
 #include <limits>
 
 #if WANT_UFE_BUILD
-#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/Global.h>
 
 #include <maya/MFileIO.h>
 #include <ufe/globalSelection.h>
@@ -588,7 +588,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
 #ifdef MAYA_CURRENT_UFE_CAMERA_SUPPORT
             MString   ufeCameraPathString = getFrameContext()->getCurrentUfeCameraPath(&status);
             Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.c_str());
-            bool      isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdUfeRuntimeId();
+            bool      isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId();
 #else
             static const MString defaultUfeProxyCameraShape(
                 "|defaultUfeProxyCameraTransformParent|defaultUfeProxyCameraTransform|"

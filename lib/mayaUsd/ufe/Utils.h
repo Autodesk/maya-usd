@@ -143,9 +143,6 @@ bool isEditTargetLayerModifiable(
     const PXR_NS::UsdStageWeakPtr stage,
     std::string*                  errMsg = nullptr);
 
-MAYAUSD_CORE_PUBLIC
-Ufe::Rtid getUsdUfeRuntimeId();
-
 //! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)

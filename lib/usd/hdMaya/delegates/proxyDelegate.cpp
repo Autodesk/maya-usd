@@ -37,13 +37,14 @@
 #include <unordered_set>
 
 #if WANT_UFE_BUILD
+#include <mayaUsd/ufe/Global.h>
+
 #include <ufe/globalSelection.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
 #endif
-#include <mayaUsd/ufe/Utils.h>
-
 #include <ufe/observableSelection.h>
+#include <ufe/runTimeMgr.h>
 #endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -277,7 +278,7 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
     }
 
     for (auto item : ufeSelection) {
-        if (item->runTimeId() != MayaUsd::ufe::getUsdUfeRuntimeId()) {
+        if (item->runTimeId() != MayaUsd::ufe::getUsdRunTimeId()) {
             continue;
         }
         auto& pathSegments = item->path().getSegments();
@@ -322,7 +323,7 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
     }
 }
 
-bool HdMayaProxyDelegate::SupportsUfeSelection() { return MayaUsd::ufe::getUsdUfeRuntimeId() != 0; }
+bool HdMayaProxyDelegate::SupportsUfeSelection() { return MayaUsd::ufe::getUsdRunTimeId() != 0; }
 
 #endif // WANT_UFE_BUILD
 
