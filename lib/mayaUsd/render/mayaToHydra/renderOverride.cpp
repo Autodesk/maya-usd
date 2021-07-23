@@ -57,13 +57,14 @@
 #include <limits>
 
 #if WANT_UFE_BUILD
+#include <mayaUsd/ufe/Utils.h>
+
 #include <maya/MFileIO.h>
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
-#include <ufe/selectionNotification.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
-#include <mayaUsd/ufe/Utils.h>
+#include <ufe/selectionNotification.h>
 #endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -585,9 +586,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         MDagPath camPath = getFrameContext()->getCurrentCameraPath(&status);
         if (status == MStatus::kSuccess) {
 #ifdef MAYA_CURRENT_UFE_CAMERA_SUPPORT
-            MString ufeCameraPathString = getFrameContext()->getCurrentUfeCameraPath(&status);
+            MString   ufeCameraPathString = getFrameContext()->getCurrentUfeCameraPath(&status);
             Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.c_str());
-            bool isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdUfeRuntimeId();
+            bool      isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdUfeRuntimeId();
 #else
             static const MString defaultUfeProxyCameraShape(
                 "|defaultUfeProxyCameraTransformParent|defaultUfeProxyCameraTransform|"

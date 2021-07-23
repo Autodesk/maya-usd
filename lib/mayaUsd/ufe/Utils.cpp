@@ -120,10 +120,10 @@ namespace ufe {
 // Global variables & macros
 //------------------------------------------------------------------------------
 
-extern UsdStageMap  g_StageMap;
-extern Ufe::Rtid    g_MayaRtid;
-constexpr auto      USD_UFE_RUNTIME_NAME = "USD";
-static Ufe::Rtid usdUfeRtid = 0;
+extern UsdStageMap g_StageMap;
+extern Ufe::Rtid   g_MayaRtid;
+constexpr auto     USD_UFE_RUNTIME_NAME = "USD";
+static Ufe::Rtid   usdUfeRtid = 0;
 
 // Cache of Maya node types we've queried before for inheritance from the
 // gateway node type.

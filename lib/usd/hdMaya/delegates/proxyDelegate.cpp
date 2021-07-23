@@ -41,8 +41,9 @@
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
 #endif
-#include <ufe/observableSelection.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <ufe/observableSelection.h>
 #endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
