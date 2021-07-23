@@ -64,7 +64,7 @@ VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
 // when GetAttribute() is called with an empty token.
 UsdAttribute getUsdPrimAttribute(const UsdPrim& prim, const TfToken& attrName)
 {
-    return !attrName.IsEmpty() ? prim.GetAttribute(attrName) : UsdAttribute() ;
+    return !attrName.IsEmpty() ? prim.GetAttribute(attrName) : UsdAttribute();
 }
 
 // UsdMayaXformStack::FindOpIndex() requires an inconvenient isInvertedTwin
