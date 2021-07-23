@@ -28,8 +28,6 @@
 
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
-#include <ufe/rtid.h>
-#include <ufe/runTimeMgr.h>
 #include <ufe/scene.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/types.h>
