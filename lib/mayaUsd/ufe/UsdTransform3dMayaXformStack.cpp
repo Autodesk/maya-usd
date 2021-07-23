@@ -60,6 +60,13 @@ VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
     return value;
 }
 
+// This utility function is used to avoid the TF_VERIFY message thrown up
+// when GetAttribute() is called with an empty token.
+UsdAttribute getUsdPrimAttribute(const UsdPrim& prim, const TfToken& attrName)
+{
+    return !attrName.IsEmpty() ? prim.GetAttribute(attrName) : UsdAttribute() ;
+}
+
 // UsdMayaXformStack::FindOpIndex() requires an inconvenient isInvertedTwin
 // argument, various rotate transform op equivalences in a separate
 // UsdMayaXformStack::IsCompatibleType().  Just roll our own op name to
@@ -457,7 +464,8 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
             const BaseUndoableCommand& cmd) {
             auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
             TF_AXIOM(usdSceneItem);
-            auto attr = usdSceneItem->prim().GetAttribute(attrName);
+
+            auto attr = getUsdPrimAttribute(usdSceneItem->prim(), attrName);
             if (attr) {
                 return UsdGeomXformOp(attr);
             } else {
@@ -505,7 +513,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
             auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
             TF_AXIOM(usdSceneItem);
 
-            auto attr = usdSceneItem->prim().GetAttribute(attrName);
+            auto attr = getUsdPrimAttribute(usdSceneItem->prim(), attrName);
             if (attr) {
                 return UsdGeomXformOp(attr);
             } else {
@@ -622,7 +630,7 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
             auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
             TF_AXIOM(usdSceneItem);
 
-            auto attr = usdSceneItem->prim().GetAttribute(attrName);
+            auto attr = getUsdPrimAttribute(usdSceneItem->prim(), attrName);
             if (attr) {
                 return UsdGeomXformOp(attr);
             } else {

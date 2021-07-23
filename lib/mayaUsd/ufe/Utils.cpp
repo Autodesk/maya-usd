@@ -431,6 +431,9 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
 {
     std::string errMsg;
 
+    TF_AXIOM(prim);
+    TF_AXIOM(!attrName.IsEmpty());
+
     UsdGeomXformable xformable(prim);
     if (xformable) {
         if (UsdGeomXformOp::IsXformOp(attrName)) {
