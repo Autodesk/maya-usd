@@ -48,7 +48,8 @@ HdVP2DrawItem::~HdVP2DrawItem()
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
             for (const auto& renderItemData : _renderItems) {
-                subSceneContainer->remove(renderItemData._renderItemName);
+                TF_VERIFY(renderItemData._renderItemName == renderItemData._renderItem->name());
+                subSceneContainer->remove(renderItemData._renderItem->name());
             }
         }
     }
@@ -57,6 +58,8 @@ HdVP2DrawItem::~HdVP2DrawItem()
 HdVP2DrawItem::RenderItemData&
 HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
 {
+    TF_VERIFY(item);
+
     _renderItems.emplace_back();
     RenderItemData& renderItemData = _renderItems.back();
 
