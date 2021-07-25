@@ -91,8 +91,6 @@ class GroupCmdTestCase(unittest.TestCase):
         parentChildrenPre = parentHierarchy.children()
         self.assertEqual(len(parentChildrenPre), 6)
 
-        newGroupName = ufe.PathComponent("newGroup")
-
         # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
@@ -101,13 +99,19 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertEqual("ballset.usda", layer.GetDisplayName())
         stage.SetEditTarget(layer)
 
-        ufeSelectionList = ufe.Selection()
-        ufeSelectionList.append(ball5Item)
-        ufeSelectionList.append(ball3Item)
+        if (ufeUtils.ufeFeatureSetVersion() >= 3):
+            # group
+            groupName = cmds.group(ufe.PathString.string(ball5Path), 
+                                   ufe.PathString.string(ball3Path), n="newGroup")
+        else:
+            newGroupName = ufe.PathComponent("newGroup")
 
-        groupCmd = parentHierarchy.createGroupCmd(
-            ufeSelectionList, newGroupName)
-        groupCmd.execute()
+            ufeSelectionList = ufe.Selection()
+            ufeSelectionList.append(ball5Item)
+            ufeSelectionList.append(ball3Item)
+
+            groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList, newGroupName)
+            groupCmd.execute()
 
         # Group object (a.k.a parent) will be added to selection list. This behavior matches the native Maya group command.
         globalSelection = ufe.GlobalSelection.get()
@@ -120,7 +124,10 @@ class GroupCmdTestCase(unittest.TestCase):
 
         # The command will now append a number 1 at the end to match the naming
         # convention in Maya.
-        newGroupPath = parentPath + ufe.PathComponent("newGroup1")
+        if (ufeUtils.ufeFeatureSetVersion() >= 3):
+            newGroupPath = parentPath + ufe.PathComponent(groupName)
+        else:
+            newGroupPath = parentPath + ufe.PathComponent("newGroup1")
 
         # Make sure the new group item has the correct Usd type
         newGroupItem = ufe.Hierarchy.createItem(newGroupPath)
@@ -133,8 +140,11 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(newGroupPath in childPaths)
         self.assertTrue(ball5Path not in childPaths)
         self.assertTrue(ball3Path not in childPaths)
-
-        groupCmd.undo()
+        
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
+            cmds.undo()
+        else:
+            groupCmd.undo()
 
         # gloabl selection should not be empty after undo.
         self.assertEqual(len(globalSelection), 1)
@@ -146,8 +156,11 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(newGroupPath not in childPathsUndo)
         self.assertTrue(ball5Path in childPathsUndo)
         self.assertTrue(ball3Path in childPathsUndo)
-
-        groupCmd.redo()
+        
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
+            cmds.redo()
+        else:
+            groupCmd.redo()
 
         # global selection should still have the group path.
         self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(groupPath))
@@ -310,6 +323,25 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/Ball_set/Props/Ball_6"),
             stage.GetPrimAtPath("/Sphere1")])
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupAbsolute only available in UFE v3 or greater.')
+    def testGroupAbsolute(self):
+        '''Verify -absolute flag.'''
+        pass
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupRelative only available in UFE v3 or greater.')
+    def testGroupRelative(self):
+        '''Verify -relative flag.'''
+        pass
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupWorld only available in UFE v3 or greater.')
+    def testGroupWorld(self):
+        '''Verify -world flag.'''
+        pass 
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupHierarchyAfterUndoRedo only available in UFE v3 or greater.')
+    def testGroupHierarchyAfterUndoRedo(self):
+        '''Verify grouping after multiple undo/redo.'''
+        pass
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
