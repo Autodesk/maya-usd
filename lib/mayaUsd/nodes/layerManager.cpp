@@ -197,6 +197,15 @@ void convertAnonymousLayersRecursive(
     }
 }
 
+bool isCrashing()
+{
+#ifdef MAYA_HAS_CRASH_DETECTION
+    return MGlobal::isInCrashHandler();
+#else
+    return false;
+#endif
+}
+
 constexpr auto kSaveOptionUICmd = "usdFileSaveOptions(true);";
 
 } // namespace
@@ -361,6 +370,7 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
         int dialogResult = true;
 
         if (MGlobal::kInteractive == MGlobal::mayaState()
+            && !isCrashing()
             && LayerDatabase::instance().saveInteractionRequired()) {
             MGlobal::executeCommand(kSaveOptionUICmd, dialogResult);
         }
@@ -448,7 +458,10 @@ bool LayerDatabase::saveUsd(bool isExport)
     auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
 
     if (MayaUsd::utils::kIgnoreUSDEdits != opt) {
-        if (_batchSaveDelegate && _proxiesToSave.length() > 0) {
+        if (isCrashing()) {
+            result = kPartiallyCompleted;
+            opt = MayaUsd::utils::kSaveToUSDFiles;
+        } else if (_batchSaveDelegate && _proxiesToSave.length() > 0) {
             result = _batchSaveDelegate(_proxiesToSave);
         }
 
