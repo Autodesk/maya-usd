@@ -358,6 +358,7 @@ class UngroupCmdTestCase(unittest.TestCase):
             # ungroup
             cmds.ungroup(ufe.PathString.string(sphere1Path))
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 4, 'testUngroupSelectionAfterUndoRedo only available in UFE v3.4 or greater.')
     def testUngroupSelectionAfterUndoRedo(self):
         ''' '''
         # create a sphere generator
