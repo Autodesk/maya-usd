@@ -458,9 +458,12 @@ bool LayerDatabase::saveUsd(bool isExport)
     auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
 
     if (MayaUsd::utils::kIgnoreUSDEdits != opt) {
+        // When Maya is crashing, we don't want to save the the USD file to avoid
+        // overwriting them with possibly unwanted data. Instead, we will save the
+        // USD data inside the temporary crash recovery Maya file.
         if (isCrashing()) {
             result = kPartiallyCompleted;
-            opt = MayaUsd::utils::kSaveToUSDFiles;
+            opt = MayaUsd::utils::kSaveToMayaSceneFile;
         } else if (_batchSaveDelegate && _proxiesToSave.length() > 0) {
             result = _batchSaveDelegate(_proxiesToSave);
         }
