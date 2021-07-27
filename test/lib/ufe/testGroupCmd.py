@@ -131,6 +131,11 @@ class GroupCmdTestCase(unittest.TestCase):
         stage.SetEditTarget(layer)
 
         if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
+
+            globalSn = ufe.GlobalSelection.get()
+            globalSn.append(ball5Item)
+            globalSn.append(ball3Item)
+
             # group
             groupName = cmds.group(ufe.PathString.string(ball5Path), 
                                    ufe.PathString.string(ball3Path), n="newGroup")
@@ -179,10 +184,7 @@ class GroupCmdTestCase(unittest.TestCase):
 
         # gloabl selection should not be empty after undo.
         if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3004'):
-            pass
-            # TODO: for some strange reasons the globalSelection returns 0??
-            # I tried the same steps in interactive Maya and it correctly returns 2
-            # self.assertEqual(len(globalSelection), 2)
+            self.assertEqual(len(globalSelection), 2)
         else:
             self.assertEqual(len(globalSelection), 1)
 
