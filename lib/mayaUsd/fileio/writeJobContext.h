@@ -20,6 +20,8 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/schemaApiWriter.h>
+#include <mayaUsd/fileio/schemaApiWriterRegistry.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
@@ -118,6 +120,13 @@ public:
         const bool                               exportRootVisibility,
         std::vector<UsdMayaPrimWriterSharedPtr>* primWritersOut);
 
+    /// Creates a SchemaAPI writer that writes the Maya node \p depNodeFn
+    ///
+    /// Note that you must call UsdMayaSchemaApiWriter::Write() on the returned schema API writer in
+    /// order to author its USD attributes.
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaSchemaApiWriterList CreateSchemaApiWriters(const UsdMayaPrimWriterSharedPtr& primWriter);
+
     /// Mark \p path as containing bindings utilizing the skeleton
     /// at \p skelPath.
     /// Bindings are marked so that SkelRoots may be post-processed.
@@ -153,6 +162,9 @@ protected:
     UsdMayaJobExportArgs mArgs;
     // List of the primitive writers to iterate over
     std::vector<UsdMayaPrimWriterSharedPtr> mMayaPrimWriterList;
+    // Map of the extra SchemaAPI writers associated to a primWritr
+    std::map<UsdMayaPrimWriterSharedPtr, UsdMayaSchemaApiWriterList> mSchemaApiWriterMap;
+
     // Stage used to write out USD file
     UsdStageRefPtr mStage;
 
@@ -188,6 +200,10 @@ private:
     /// Prim writer search with ancestor type resolution behavior.
     UsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(const std::string& mayaNodeType);
 
+    /// Schema API writer search with ancestor type resolution behavior.
+    UsdMayaSchemaApiWriterRegistry::WriterFactoryFnMap
+    _FindSchemaApiWriters(const std::string& mayaNodeType);
+
     struct MObjectHandleComp
     {
         bool operator()(const MObjectHandle& rhs, const MObjectHandle& lhs) const
@@ -218,6 +234,12 @@ private:
     // some types not resolved by the UsdMayaPrimWriterRegistry will get
     // resolved in this map).
     std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn> mWriterFactoryCache;
+
+    // Cache of node type names mapped to their "resolved" schema API writer factory, taking into
+    // account Maya's type hierarchy (note that this means that some types not resolved by the
+    // UsdMayaPrimWriterRegistry will get resolved in this map).
+    std::map<std::string, UsdMayaSchemaApiWriterRegistry::WriterFactoryFnMap>
+        mSchemaApiWriterFactoryCache;
 
     // UsdMaya_InstancedNodeWriter is in a separate file, but functions as
     // an internal helper for UsdMayaWriteJobContext.

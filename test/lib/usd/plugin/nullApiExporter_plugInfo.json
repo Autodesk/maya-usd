@@ -1,0 +1,18 @@
+{
+  "Plugins": [
+    {
+      "Info": {
+        "UsdMaya": {
+          "SchemaApiWriter": {
+            "providesTranslator": [
+              "mesh"
+            ]
+          }
+        }
+      },
+      "Name": "usdTestApiWriter",
+      "LibraryPath": "@CMAKE_CURRENT_BINARY_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@usdTestApiWriter@CMAKE_SHARED_LIBRARY_SUFFIX@",
+      "Type": "library"
+    }
+  ]
+}
