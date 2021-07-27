@@ -381,7 +381,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertFalse(spherePrim.HasAttribute('xformOp:scale'))
 
         # create a group with absolute flag set to True
-        cmds.group(ufe.PathString.string(spherePath), absolute= True)
+        cmds.group(ufe.PathString.string(spherePath), absolute=True)
 
         # verify that groupItem has 1 child
         groupItem = ufe.GlobalSelection.get().front()
@@ -400,7 +400,37 @@ class GroupCmdTestCase(unittest.TestCase):
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupRelative is only available in UFE preview version 0.3.5 and greater')
     def testGroupRelative(self):
         '''Verify -relative flag.'''
-        pass
+        cmds.file(new=True, force=True)
+
+         # create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(1, contextOp, proxyShapePathStr)
+
+        spherePath = sphereGen.createSphere()
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(spherePath))
+
+        # no TRS attributes
+        self.assertFalse(spherePrim.HasAttribute('xformOp:translate'))
+        self.assertFalse(spherePrim.HasAttribute('xformOp:rotateXYZ'))
+        self.assertFalse(spherePrim.HasAttribute('xformOp:scale'))
+
+        # create a group with absolute flag set to True
+        cmds.group(ufe.PathString.string(spherePath), relative=True)
+
+        # verify that groupItem has 1 child
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 1)
+
+        # verify XformOpOrderAttr exist after grouping
+        newspherePrim = stage.GetPrimAtPath("/group1/Sphere1")
+
+        # no TRS attributes
+        self.assertFalse(newspherePrim.HasAttribute('xformOp:translate'))
+        self.assertFalse(newspherePrim.HasAttribute('xformOp:rotateXYZ'))
+        self.assertFalse(newspherePrim.HasAttribute('xformOp:scale'))
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupWorld is only available in UFE preview version 0.3.5 and greater')
     def testGroupWorld(self):
@@ -445,10 +475,51 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group2/Sphere2"),
             stage.GetPrimAtPath("/group2/Sphere3")])
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupHierarchyAfterUndoRedo is only available in UFE preview version 0.3.5 and greater')
-    def testGroupHierarchyAfterUndoRedo(self):
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupUndoRedo is only available in UFE preview version 0.3.5 and greater')
+    def testGroupUndoRedo(self):
         '''Verify grouping after multiple undo/redo.'''
-        pass
+        cmds.file(new=True, force=True)
+
+         # create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
+
+        sphere1Path = sphereGen.createSphere()
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+
+        sphere2Path = sphereGen.createSphere()
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+
+        sphere3Path = sphereGen.createSphere()
+        sphere3Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere3Path))
+
+        # group Sphere1, Sphere2, and Sphere3
+        groupName = cmds.group(ufe.PathString.string(sphere1Path),
+                               ufe.PathString.string(sphere2Path),
+                               ufe.PathString.string(sphere3Path))
+
+        # verify that groupItem has 3 children
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 3)
+
+        cmds.undo()
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/Sphere3"), 
+            stage.GetPrimAtPath("/Sphere2"),
+            stage.GetPrimAtPath("/Sphere1")])
+
+        cmds.redo()
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/group1"),
+            stage.GetPrimAtPath("/group1/Sphere1"), 
+            stage.GetPrimAtPath("/group1/Sphere2"),
+            stage.GetPrimAtPath("/group1/Sphere3")])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
