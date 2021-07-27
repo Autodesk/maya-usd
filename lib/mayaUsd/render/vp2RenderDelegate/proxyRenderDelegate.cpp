@@ -1130,10 +1130,14 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         // When the selection mode changes then we have to update all the selected render
         // items. Set a dirty flag on each of the rprims so they know what to update.
+        // Avoid trying to set dirty the absolute root as it is not a Rprim.
         if (_selectionModeChanged) {
             HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+            const SdfPath& absRoot = SdfPath::AbsoluteRootPath();
             for (auto path : rootPaths) {
-                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
+                if (path != absRoot) {
+                    changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
+                }
             }
         }
 #endif
