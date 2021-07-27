@@ -370,8 +370,8 @@ class GroupCmdTestCase(unittest.TestCase):
         (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
 
         # create a sphere generator
-        sphereGen = SphereGenerator(2, contextOp, proxyShapePathStr)
-        
+        sphereGen = SphereGenerator(1, contextOp, proxyShapePathStr)
+
         spherePath = sphereGen.createSphere()
         spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(spherePath))
 
@@ -405,7 +405,45 @@ class GroupCmdTestCase(unittest.TestCase):
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupWorld is only available in UFE preview version 0.3.5 and greater')
     def testGroupWorld(self):
         '''Verify -world flag.'''
-        pass 
+        cmds.file(new=True, force=True)
+
+         # create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
+
+        sphere1Path = sphereGen.createSphere()
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+
+        sphere2Path = sphereGen.createSphere()
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+
+        sphere3Path = sphereGen.createSphere()
+        sphere3Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere3Path))
+
+        # group Sphere1, Sphere2, and Sphere3
+        groupName = cmds.group(ufe.PathString.string(sphere1Path),
+                               ufe.PathString.string(sphere2Path),
+                               ufe.PathString.string(sphere3Path))
+
+        # verify that groupItem has 3 children
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 3)
+
+        # group Sphere2 and Sphere3 with world flag enabled.
+        # world flag puts the new group under the world
+        cmds.group("{},/group1/Sphere2".format(proxyShapePathStr), 
+                   "{},/group1/Sphere3".format(proxyShapePathStr), world=True)
+
+        # verify group2 was created under the proxyshape
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/group1"),
+            stage.GetPrimAtPath("/group1/Sphere1"), 
+            stage.GetPrimAtPath("/group2"),
+            stage.GetPrimAtPath("/group2/Sphere2"),
+            stage.GetPrimAtPath("/group2/Sphere3")])
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupHierarchyAfterUndoRedo is only available in UFE preview version 0.3.5 and greater')
     def testGroupHierarchyAfterUndoRedo(self):
