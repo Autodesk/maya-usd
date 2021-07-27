@@ -47,10 +47,17 @@ class SdfAssetPath;
 class AL_usd_FrameRange : public UsdTyped
 {
 public:
+#if PXR_VERSION >= 2108
+    /// Compile time constant representing what kind of schema this class is.
+    ///
+    /// \sa UsdSchemaKind
+    static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
+#else
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaType
     static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
+#endif
 
     /// Construct a AL_usd_FrameRange on UsdPrim \p prim .
     /// Equivalent to AL_usd_FrameRange::Get(prim.GetStage(), prim.GetPath())
@@ -117,11 +124,19 @@ public:
     static AL_usd_FrameRange Define(const UsdStagePtr& stage, const SdfPath& path);
 
 protected:
+#if PXR_VERSION >= 2108
+    /// Returns the kind of schema this class belongs to.
+    ///
+    /// \sa UsdSchemaKind
+    AL_USDMAYASCHEMAS_API
+    virtual UsdSchemaKind _GetSchemaKind() const;
+#else
     /// Returns the type of schema this class belongs to.
     ///
     /// \sa UsdSchemaType
     AL_USDMAYASCHEMAS_API
     virtual UsdSchemaType _GetSchemaType() const;
+#endif
 
 private:
     // needs to invoke _GetStaticTfType.

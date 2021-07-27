@@ -169,7 +169,19 @@ void UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
         // so it's OK to skip writing if this isn't a Gprim.
         UsdGeomGprim gprim(_usdPrim);
         if (gprim) {
-            UsdMayaTranslatorGprim::Write(GetMayaObject(), gprim, nullptr);
+            GeomSidedness sidedness = GeomSidedness::Derived;
+            const TfToken sidednessArg = _writeJobCtx.GetArgs().geomSidedness;
+            if (sidednessArg == UsdMayaJobExportArgsTokens->derived) {
+                sidedness = GeomSidedness::Derived;
+            } else if (sidednessArg == UsdMayaJobExportArgsTokens->single) {
+                sidedness = GeomSidedness::Single;
+            } else if (sidednessArg == UsdMayaJobExportArgsTokens->double_) {
+                sidedness = GeomSidedness::Double;
+            } else {
+                TF_CODING_ERROR("Unsupported sidedness: %s", sidednessArg.GetString().c_str());
+            }
+
+            UsdMayaTranslatorGprim::Write(GetMayaObject(), gprim, nullptr, sidedness);
         }
 
         // Only write class inherits once at default time.

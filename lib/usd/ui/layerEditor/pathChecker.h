@@ -51,37 +51,6 @@ bool saveSubLayer(
     const std::string&     in_absolutePath,
     const std::string&     in_formatTag);
 
-// convert path string to use forward slashes
-inline std::string toForwardSlashes(const std::string& in_path)
-{
-    // it works better on windows if all the paths have forward slashes
-    auto path = in_path;
-    std::replace(path.begin(), path.end(), '\\', '/');
-    return path;
-}
-
-// contains the logic to get the right path to use for SdfLayer:::FindOrOpen
-// from a sublayerpath.
-// this path could be absolute, relative, or be an anon layer
-inline std::string computePathToLoadSublayer(
-    const std::string&  subLayerPath,
-    const std::string&  anchor,
-    PXR_NS::ArResolver& resolver)
-{
-    std::string actualPath = subLayerPath;
-    if (resolver.IsRelativePath(subLayerPath)) {
-        auto subLayer = PXR_NS::SdfLayer::Find(subLayerPath); // note: finds in the cache
-        if (subLayer) {
-            if (!resolver.IsRelativePath(subLayer->GetIdentifier())) {
-                actualPath = toForwardSlashes(subLayer->GetRealPath());
-            }
-        } else {
-            actualPath = resolver.AnchorRelativePath(anchor, subLayerPath);
-        }
-    }
-    return actualPath;
-}
-
 } // namespace UsdLayerEditor
 
 #endif // PATHCHECKER_H

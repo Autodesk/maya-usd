@@ -243,7 +243,7 @@ void setPrimvar(
     }
 }
 
-void createUVPrimVar(
+UsdGeomPrimvar createUVPrimVar(
     UsdGeomGprim&              primSchema,
     const TfToken&             name,
     const UsdTimeCode&         usdTime,
@@ -254,7 +254,7 @@ void createUVPrimVar(
 {
     const unsigned int numValues = data.size();
     if (numValues == 0) {
-        return;
+        return UsdGeomPrimvar();
     }
 
     TfToken interp = interpolation;
@@ -270,6 +270,8 @@ void createUVPrimVar(
 
     setPrimvar(
         primVar, assignmentIndices, VtValue(data), VtValue(UnauthoredUV), usdTime, valueWriter);
+
+    return primVar;
 }
 
 // This function condenses distinct indices that point to the same color values
@@ -940,16 +942,27 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
             continue;
         }
 
-        // Rename "map1" as "st" to follow Pixar/USD convention if requested.
-        TfToken setName(uvSetNames[i].asChar());
-        if (setName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()
-            && UsdMayaWriteUtil::WriteMap1AsST()) {
-            setName = UsdUtilsGetPrimaryUVSetName();
+        // All UV sets now get renamed st, st1, st2 in the order returned by getUVSetNames
+        MString setName("st");
+        if (i) {
+            setName += i;
         }
 
         // create UV PrimVar
-        createUVPrimVar(
-            primSchema, setName, usdTime, uvValues, interpolation, assignmentIndices, valueWriter);
+        UsdGeomPrimvar primVar = createUVPrimVar(
+            primSchema,
+            TfToken(setName.asChar()),
+            usdTime,
+            uvValues,
+            interpolation,
+            assignmentIndices,
+            valueWriter);
+
+        // Save the original name for roundtripping:
+        if (primVar) {
+            UsdMayaRoundTripUtil::SetPrimVarMayaName(
+                primVar.GetAttr(), TfToken(uvSetNames[i].asChar()));
+        }
     }
 
     return true;

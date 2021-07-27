@@ -28,7 +28,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (selection)
 
 #define HDVP2_TOKENS \
-    (displayColorAndOpacity)
+    (displayColorAndOpacity) \
+    (glslfx) \
+    (mtlx)
 
 // clang-format on
 

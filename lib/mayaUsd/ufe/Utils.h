@@ -50,7 +50,7 @@ namespace ufe {
 // Helper functions
 //------------------------------------------------------------------------------
 
-//! Get USD stage corresponding to argument Maya Dag path.
+//! Get USD stage corresponding to argument UFE path.
 MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdStageWeakPtr getStage(const Ufe::Path& path);
 

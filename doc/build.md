@@ -31,7 +31,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | release: [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) or [v20.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.11) or [v21.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.02) or [v21.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.05)<br> dev: [2095f6c](https://github.com/PixarAnimationStudios/USD/commit/2095f6cc5ac08b19d6a00308f33c0bbd27cffc35) |
+|  CommitID/Tags | release: [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) or [v20.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.11) or [v21.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.02) or [v21.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v21.05)<br> dev: [2095f6c](https://github.com/PixarAnimationStudios/USD/commit/2095f6cc5ac08b19d6a00308f33c0bbd27cffc35) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -235,7 +235,26 @@ To allow your tests to run, you can inject LD_LIBRARY_PATH into any of the mayaU
 
 There is a related ADDITIONAL_PXR_PLUGINPATH_NAME cmake var which can be used if schemas are installed in a non-standard location
 
+##### Devtoolset-6:
 
+Devtoolset-6, which includes GCC 6 on CentOS has been retired from the main repo and moved into the vault. Follow instructions below for installing devtoolset-6 on CentOS:
+
+```
+# download the packages, install may fail with "no public key found"
+sudo yum-config-manager --add-repo=http://vault.centos.org/7.6.1810/sclo/x86_64/rh/
+
+# to fix "no public key found"
+cd /etc/pki/rpm-gpg
+ls # confirm RPM-GPG-KEY-CentOS-SIG-SCLo exists
+sudo rpm --import RPM-GPG-KEY-CentOS-SIG-SCLo
+rpm -qa gpg* # confirm key with substring f2ee9d55 exists
+
+# to install devtoolset-6
+sudo yum install devtoolset-6
+
+# disable the vault after successful install
+sudo yum-config-manager --disable vault.centos.org_7.6.1810_sclo_x86_64_rh_
+```
 
 # How to Load Plug-ins in Maya 
 

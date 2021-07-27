@@ -240,8 +240,8 @@ class testUsdExportUserTaggedAttributes(unittest.TestCase):
         }
         expectedPrimvarNames = set(expectedPrimvars.keys())
         # Getting all primvars will also include the built-in displayColor,
-        # displayOpacity, and the Maya default "map1" UV set.
-        expectedPrimvarNames.update(['displayColor', 'displayOpacity', 'map1'])
+        # displayOpacity, and the USD default "st" UV set.
+        expectedPrimvarNames.update(['displayColor', 'displayOpacity', 'st'])
 
         gprim = UsdGeom.Gprim(prim)
         self.assertTrue(gprim)

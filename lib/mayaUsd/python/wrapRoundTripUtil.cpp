@@ -45,5 +45,8 @@ void wrapRoundTripUtil()
               .staticmethod("IsPrimvarClamped")
 
               .def("MarkPrimvarAsClamped", This::MarkPrimvarAsClamped)
-              .staticmethod("MarkPrimvarAsClamped");
+              .staticmethod("MarkPrimvarAsClamped")
+
+              .def("GetPrimVarMayaName", This::GetPrimVarMayaName)
+              .staticmethod("GetPrimVarMayaName");
 }

@@ -43,6 +43,12 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     )
 endif()
 
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+        testUngroupCmd.py
+    )
+endif()
+
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
     list(APPEND TEST_SCRIPT_FILES
         testCamera.py

@@ -47,6 +47,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
         $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:WANT_MATERIALX_BUILD>
         $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${BUILD_HDMAYA}>:BUILD_HDMAYA>
 
@@ -61,17 +62,19 @@ if(DEFINED UFE_PREVIEW_VERSION_NUM)
     )
 endif()
 
-if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100 AND MAYA_API_VERSION VERSION_LESS 20230000)
+message(STATUS "MAYA_HAS_DEFAULT_MATERIAL_API is ${MAYA_HAS_DEFAULT_MATERIAL_API}")
+if (MAYA_HAS_DEFAULT_MATERIAL_API)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
             HAS_DEFAULT_MATERIAL_SUPPORT_API=1
     )
 endif()
 
-if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230000 AND UFE_VERSION VERSION_GREATER_EQUAL 2.0.3)
+message(STATUS "MAYA_NEW_POINT_SNAPPING_SUPPORT is ${MAYA_NEW_POINT_SNAPPING_SUPPORT}")
+if (MAYA_NEW_POINT_SNAPPING_SUPPORT)
     target_compile_definitions(${PROJECT_NAME}
-        PRIVATE
-            HAS_DEFAULT_MATERIAL_SUPPORT_API=1
+    PRIVATE
+        MAYA_NEW_POINT_SNAPPING_SUPPORT=1
     )
 endif()
 
@@ -96,6 +99,15 @@ target_compile_definitions(${PROJECT_NAME}
         MAYAUSD_VERSION=${MAYAUSD_VERSION}
         MAYA_PY_VERSION=${MAYA_PY_VERSION}
 )
+
+if(CMAKE_WANT_MATERIALX_BUILD)
+# Path where MaterialX was found. Allows loading the required libraries.
+string(REPLACE "\\" "/" Forward_MaterialX_DIR ${MaterialX_DIR})
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        MaterialX_DIR="${Forward_MaterialX_DIR}"
+)
+endif()
 
 mayaUsd_compile_config(${PROJECT_NAME})
 
@@ -141,6 +153,11 @@ target_link_libraries(${PROJECT_NAME}
         mayaUsdUtils
     PRIVATE
         ghc_filesystem
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXCore>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXFormat>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXRender>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenOgsXml>
 )
 
 # -----------------------------------------------------------------------------

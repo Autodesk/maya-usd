@@ -220,15 +220,19 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
         = UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
     if (cmd) {
         cmd->execute();
-        createdItem = cmd->group();
+        createdItem = cmd->insertedChild();
     }
 
     return createdItem;
 }
 
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
-    const Ufe::Selection&     selection,
-    const Ufe::PathComponent& name) const
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
+Ufe::InsertChildCommand::Ptr
+#else
+Ufe::UndoableCommand::Ptr
+#endif
+ProxyShapeHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name)
+    const
 {
     auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 
@@ -255,6 +259,14 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 }
 
 #endif // UFE_V2_FEATURES_AVAILABLE
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::ungroupCmd() const
+{
+    // pseudo root can not be ungrouped.
+    return nullptr;
+}
+#endif // UFE_V3_FEATURES_AVAILABLE
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

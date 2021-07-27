@@ -48,6 +48,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     Float4ToFloat3.xml
     Float4ToFloat4.xml
     NwFaceCameraIfNAN.xml
+    UsdDrawModeCards.xml
     UsdPrimvarColor.xml
     UsdPrimvarReader_color.xml
     UsdPrimvarReader_float.xml
@@ -59,6 +60,13 @@ list(APPEND SHADERFRAGMENTS_XMLS
     # USD plug info
     plugInfo.json
 )
+
+if(CMAKE_WANT_MATERIALX_BUILD)
+    list(APPEND SHADERFRAGMENTS_XMLS
+        # MaterialX
+        materialXTw.xml
+    )
+endif()
 
 set(HEADERS
     shaderFragments.h

@@ -39,8 +39,13 @@ AL_usd_ModelAPI AL_usd_ModelAPI::Get(const UsdStagePtr& stage, const SdfPath& pa
     return AL_usd_ModelAPI(stage->GetPrimAtPath(path));
 }
 
+#if PXR_VERSION >= 2108
+/* virtual */
+UsdSchemaKind AL_usd_ModelAPI::_GetSchemaKind() const { return AL_usd_ModelAPI::schemaKind; }
+#else
 /* virtual */
 UsdSchemaType AL_usd_ModelAPI::_GetSchemaType() const { return AL_usd_ModelAPI::schemaType; }
+#endif
 
 /* static */
 const TfType& AL_usd_ModelAPI::_GetStaticTfType()

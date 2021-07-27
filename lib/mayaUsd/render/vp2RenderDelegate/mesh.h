@@ -17,6 +17,7 @@
 #define HD_VP2_MESH
 
 #include "draw_item.h"
+#include "mayaPrimCommon.h"
 #include "meshViewportCompute.h"
 #include "primvarInfo.h"
 
@@ -68,7 +69,7 @@ struct HdVP2MeshSharedData
 
     //! Map from the original topology faceId to the void* pointer to
     //! the MRenderItem that face is a part of
-    std::vector<void*> _faceIdToRenderItem;
+    std::vector<SdfPath> _faceIdToGeomSubsetId;
 
     //! The number of vertices in each vertex buffer.
     size_t _numVertices;
@@ -84,9 +85,6 @@ struct HdVP2MeshSharedData
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
     MSharedPtr<MeshViewportCompute> _viewportCompute;
 #endif
-
-    //! Fallback color changed
-    bool _fallbackColorDirty { true };
 };
 
 /*! \brief  VP2 representation of poly-mesh object.
@@ -142,7 +140,8 @@ private:
         HdSceneDelegate*,
         HdVP2DrawItem*,
         HdVP2DrawItem::RenderItemData&,
-        const HdMeshReprDesc& desc);
+        const HdMeshReprDesc& desc,
+        const TfToken&        reprToken);
 
     void _HideAllDrawItems(const TfToken& reprToken);
 
@@ -156,10 +155,22 @@ private:
         const HdDirtyBits& rprimDirtyBits,
         const TfToken&     reprToken);
 
-    void _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem);
+    void
+    _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem, MSubSceneContainer& subSceneContainer);
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MHWRender::MRenderItem* _CreateShadedSelectedInstancesItem(
+        const MString&      name,
+        HdVP2DrawItem&      drawItem,
+        MSubSceneContainer& subSceneContainer,
+        const HdGeomSubset* geomSubset) const;
+#endif
+    HdVP2DrawItem::RenderItemData& _CreateSmoothHullRenderItem(
+        const MString&      name,
+        HdVP2DrawItem&      drawItem,
+        MSubSceneContainer& subSceneContainer,
+        const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
 
@@ -172,13 +183,13 @@ private:
     //! Custom dirty bits used by this mesh
     enum DirtyBits : HdDirtyBits
     {
-        DirtySmoothNormals = HdChangeTracker::CustomBitsBegin,
+        DirtySmoothNormals = MayaPrimCommon::DirtyBitLast,
         DirtyFlatNormals = (DirtySmoothNormals << 1),
-        DirtyIndices = (DirtyFlatNormals << 1),
-        DirtyHullIndices = (DirtyIndices << 1),
-        DirtyPointsIndices = (DirtyHullIndices << 1),
-        DirtySelection = (DirtyPointsIndices << 1),
-        DirtySelectionHighlight = (DirtySelection << 1)
+        //! "Forward" the enumerated types here so we don't have to keep writing MayaPrimCommon in
+        //! the cpp file.
+        DirtySelection = MayaPrimCommon::DirtySelection,
+        DirtySelectionHighlight = MayaPrimCommon::DirtySelectionHighlight,
+        DirtySelectionMode = MayaPrimCommon::DirtySelectionMode
     };
 
     HdVP2RenderDelegate* _delegate {

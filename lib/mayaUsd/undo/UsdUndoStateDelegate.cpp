@@ -22,6 +22,48 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+
+void copySpecAtPath(const SdfAbstractData& src, SdfAbstractData* dst, const SdfPath& path)
+{
+    // create a new spec at a path with the given specType
+    dst->CreateSpec(path, src.GetSpecType(path));
+
+    // get the list of tokens
+    const std::vector<TfToken>& tokens = src.List(path);
+
+    // set the value of dst at the given path and a fieldName
+    for (const auto& token : tokens) {
+        dst->Set(path, token, src.Get(path, token));
+    }
+}
+
+// This class is used to copy specs from source SdfAbstractData container
+// to the destination SdfAbstractData container.
+class SpecCopier : public SdfAbstractDataSpecVisitor
+{
+public:
+    SpecCopier(SdfAbstractData* dst)
+        : _dst(dst)
+    {
+    }
+
+    bool VisitSpec(const SdfAbstractData& src, const SdfPath& path) override
+    {
+        copySpecAtPath(src, _dst, path);
+        return true;
+    }
+
+    void Done(const SdfAbstractData&) override
+    {
+        // Do nothing
+    }
+
+    SdfAbstractData* const _dst;
+};
+
+} // namespace
+
 namespace MAYAUSD_NS_DEF {
 
 UsdUndoStateDelegate::UsdUndoStateDelegate()
@@ -92,6 +134,13 @@ void UsdUndoStateDelegate::invertDeleteSpec(
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Inverting deleting spec at '%s'\n", path.GetText());
 
     CreateSpec(path, deletedSpecType, inert);
+
+    auto layerDataPtr = get_pointer(_GetLayerData());
+    TF_AXIOM(layerDataPtr);
+
+    // copy back every spec(s) with the given visitor
+    SpecCopier specCopier(layerDataPtr);
+    deletedData->VisitSpecs(&specCopier);
 
     _setMessageAlreadyShowed = false;
 }
@@ -327,7 +376,15 @@ void UsdUndoStateDelegate::_OnDeleteSpec(const SdfPath& path, bool inert)
         return;
     }
 
-    SdfDataRefPtr     deletedData = TfCreateRefPtr(new SdfData());
+    SdfDataRefPtr deletedData = TfCreateRefPtr(new SdfData());
+
+    // traverse the hierarchy and call copySpecAtPath on each spec
+    auto layerDataPtr = std::cref(*get_pointer(_GetLayerData()));
+    auto deleteDataPtr = get_pointer(deletedData);
+
+    _GetLayer()->Traverse(
+        path, [&](const SdfPath& path) { copySpecAtPath(layerDataPtr, deleteDataPtr, path); });
+
     const SdfSpecType deletedSpecType = _GetLayer()->GetSpecType(path);
 
     UsdUndoManager::instance().addInverse(std::bind(

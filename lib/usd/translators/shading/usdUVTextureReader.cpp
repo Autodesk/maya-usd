@@ -13,10 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shadingTokens.h"
+
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -63,80 +66,6 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdUVTexture, PxrMayaUsdUVTexture_Reader)
 
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya "file" node attribute names
-    (file)
-    (alphaGain)
-    (alphaOffset)
-    (colorGain)
-    (colorOffset)
-    (colorSpace)
-    (defaultColor)
-    (fileTextureName)
-    (outAlpha)
-    (outColor)
-    (outColorR)
-    (outColorG)
-    (outColorB)
-    (place2dTexture)
-    (coverage)
-    (translateFrame)
-    (rotateFrame)
-    (mirrorU)
-    (mirrorV)
-    (stagger)
-    (wrapU)
-    (wrapV)
-    (repeatUV)
-    (offset)
-    (rotateUV)
-    (noiseUV)
-    (vertexUvOne)
-    (vertexUvTwo)
-    (vertexUvThree)
-    (vertexCameraOne)
-
-    // UsdUVTexture Input Names
-    (bias)
-    (fallback)
-    (scale)
-    (wrapS)
-    (wrapT)
-
-    // uv connections:
-    (outUvFilterSize)
-    (uvFilterSize)
-    (outUV)
-    (uvCoord)
-
-    // Values for wrapS and wrapT
-    (black)
-    (mirror)
-    (repeat)
-
-    // UsdUVTexture Output Names
-    ((RGBOutputName, "rgb"))
-    ((RedOutputName, "r"))
-    ((GreenOutputName, "g"))
-    ((BlueOutputName, "b"))
-    ((AlphaOutputName, "a"))
-
-    // UDIM detection
-    ((UDIMTag, "<UDIM>"))
-    (uvTilingMode)
-);
-// clang-format on
-
-static const TfTokenVector _Place2dTextureConnections = {
-    _tokens->coverage,    _tokens->translateFrame, _tokens->rotateFrame,   _tokens->mirrorU,
-    _tokens->mirrorV,     _tokens->stagger,        _tokens->wrapU,         _tokens->wrapV,
-    _tokens->repeatUV,    _tokens->offset,         _tokens->rotateUV,      _tokens->noiseUV,
-    _tokens->vertexUvOne, _tokens->vertexUvTwo,    _tokens->vertexUvThree, _tokens->vertexCameraOne
-};
-
 PxrMayaUsdUVTexture_Reader::PxrMayaUsdUVTexture_Reader(const UsdMayaPrimReaderArgs& readArgs)
     : UsdMayaShaderReader(readArgs)
 {
@@ -156,7 +85,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     MFnDependencyNode depFn;
     if (!(UsdMayaTranslatorUtil::CreateShaderNode(
               MString(prim.GetName().GetText()),
-              _tokens->file.GetText(),
+              TrMayaTokens->file.GetText(),
               UsdMayaShadingNodeType::Texture,
               &status,
               &mayaObject)
@@ -164,7 +93,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
             "Could not create node of type '%s' for shader '%s'.\n",
-            _tokens->file.GetText(),
+            TrMayaTokens->file.GetText(),
             prim.GetPath().GetText());
         return false;
     }
@@ -172,44 +101,12 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     // Create place2dTexture:
-    MObject           uvObj;
-    MFnDependencyNode uvDepFn;
-    if (!(UsdMayaTranslatorUtil::CreateShaderNode(
-              _tokens->place2dTexture.GetText(),
-              _tokens->place2dTexture.GetText(),
-              UsdMayaShadingNodeType::Utility,
-              &status,
-              &uvObj)
-          && uvDepFn.setObject(uvObj))) {
-        // we need to make sure assumes those types are loaded..
-        TF_RUNTIME_ERROR(
-            "Could not create node of type '%s' for shader '%s'.\n",
-            _tokens->place2dTexture.GetText(),
-            prim.GetPath().GetText());
-        return false;
-    }
-
-    // Connect manually (fileTexturePlacementConnect is not available in batch):
-    {
-        MPlug uvPlug = uvDepFn.findPlug(_tokens->outUV.GetText(), true, &status);
-        MPlug filePlug = depFn.findPlug(_tokens->uvCoord.GetText(), true, &status);
-        UsdMayaUtil::Connect(uvPlug, filePlug, false);
-    }
-    {
-        MPlug uvPlug = uvDepFn.findPlug(_tokens->outUvFilterSize.GetText(), true, &status);
-        MPlug filePlug = depFn.findPlug(_tokens->uvFilterSize.GetText(), true, &status);
-        UsdMayaUtil::Connect(uvPlug, filePlug, false);
-    }
-    MString connectCmd;
-    for (const TfToken& uvName : _Place2dTextureConnections) {
-        MPlug uvPlug = uvDepFn.findPlug(uvName.GetText(), true, &status);
-        MPlug filePlug = depFn.findPlug(uvName.GetText(), true, &status);
-        UsdMayaUtil::Connect(uvPlug, filePlug, false);
-    }
+    MObject           uvObj = UsdMayaShadingUtil::CreatePlace2dTextureAndConnectTexture(mayaObject);
+    MFnDependencyNode uvDepFn(uvObj);
 
     VtValue       val;
     MPlug         mayaAttr;
-    UsdShadeInput usdInput = shaderSchema.GetInput(_tokens->file);
+    UsdShadeInput usdInput = shaderSchema.GetInput(TrUsdTokens->file);
     if (usdInput && usdInput.Get(&val) && val.IsHolding<SdfAssetPath>()) {
         std::string filePath = val.UncheckedGet<SdfAssetPath>().GetResolvedPath();
         if (!filePath.empty() && !ArIsPackageRelativePath(filePath)) {
@@ -223,7 +120,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         }
         // Re-fetch the file name in case it is UDIM-tagged
         std::string unresolvedFilePath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
-        mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
+        mayaAttr = depFn.findPlug(TrMayaTokens->fileTextureName.GetText(), true, &status);
         if (status != MS::kSuccess) {
             TF_RUNTIME_ERROR(
                 "Could not find the built-in attribute fileTextureName on a Maya file node: %s! "
@@ -232,9 +129,10 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             return false;
         }
         // Handle UDIM texture files:
-        std::string::size_type udimPos = unresolvedFilePath.rfind(_tokens->UDIMTag.GetString());
+        std::string::size_type udimPos
+            = unresolvedFilePath.rfind(TrMayaTokens->UDIMTag.GetString());
         if (udimPos != std::string::npos) {
-            MPlug tilingAttr = depFn.findPlug(_tokens->uvTilingMode.GetText(), true, &status);
+            MPlug tilingAttr = depFn.findPlug(TrMayaTokens->uvTilingMode.GetText(), true, &status);
             if (status == MS::kSuccess) {
                 tilingAttr.setInt(3);
 
@@ -243,8 +141,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 // other ones.
                 std::string udimPath(unresolvedFilePath.substr(0, udimPos));
                 udimPath += "1001";
-                udimPath
-                    += unresolvedFilePath.substr(udimPos + _tokens->UDIMTag.GetString().size());
+                udimPath += unresolvedFilePath.substr(
+                    udimPos + TrMayaTokens->UDIMTag.GetString().size());
 
                 Usd_Resolver res(&prim.GetPrimIndex());
                 for (; res.IsValid(); res.NextLayer()) {
@@ -398,7 +296,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         // colorSpace:
         if (usdInput.GetAttr().HasColorSpace()) {
             MString colorSpace = usdInput.GetAttr().GetColorSpace().GetText();
-            mayaAttr = depFn.findPlug(_tokens->colorSpace.GetText(), true, &status);
+            mayaAttr = depFn.findPlug(TrMayaTokens->colorSpace.GetText(), true, &status);
             if (status == MS::kSuccess) {
                 mayaAttr.setString(colorSpace);
             }
@@ -407,16 +305,16 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the
     // UsdUVTexture's scale input.
-    usdInput = shaderSchema.GetInput(_tokens->scale);
+    usdInput = shaderSchema.GetInput(TrUsdTokens->scale);
     if (usdInput) {
         if (usdInput.Get(&val) && val.IsHolding<GfVec4f>()) {
             GfVec4f scale = val.UncheckedGet<GfVec4f>();
-            mayaAttr = depFn.findPlug(_tokens->colorGain.GetText(), true, &status);
+            mayaAttr = depFn.findPlug(TrMayaTokens->colorGain.GetText(), true, &status);
             if (status == MS::kSuccess) {
                 val = GfVec3f(scale[0], scale[1], scale[2]);
                 UsdMayaReadUtil::SetMayaAttr(mayaAttr, val, /*unlinearizeColors*/ false);
             }
-            mayaAttr = depFn.findPlug(_tokens->alphaGain.GetText(), true, &status);
+            mayaAttr = depFn.findPlug(TrMayaTokens->alphaGain.GetText(), true, &status);
             if (status == MS::kSuccess) {
                 val = scale[3];
                 UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
@@ -426,16 +324,16 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
 
     // The Maya file node's 'colorOffset' and 'alphaOffset' attributes map to
     // the UsdUVTexture's bias input.
-    usdInput = shaderSchema.GetInput(_tokens->bias);
+    usdInput = shaderSchema.GetInput(TrUsdTokens->bias);
     if (usdInput) {
         if (usdInput.Get(&val) && val.IsHolding<GfVec4f>()) {
             GfVec4f bias = val.UncheckedGet<GfVec4f>();
-            mayaAttr = depFn.findPlug(_tokens->colorOffset.GetText(), true, &status);
+            mayaAttr = depFn.findPlug(TrMayaTokens->colorOffset.GetText(), true, &status);
             if (status == MS::kSuccess) {
                 val = GfVec3f(bias[0], bias[1], bias[2]);
                 UsdMayaReadUtil::SetMayaAttr(mayaAttr, val, /*unlinearizeColors*/ false);
             }
-            mayaAttr = depFn.findPlug(_tokens->alphaOffset.GetText(), true, &status);
+            mayaAttr = depFn.findPlug(TrMayaTokens->alphaOffset.GetText(), true, &status);
             if (status == MS::kSuccess) {
                 // The alpha is not scaled
                 val = bias[3];
@@ -445,8 +343,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     }
 
     // Default color
-    usdInput = shaderSchema.GetInput(_tokens->fallback);
-    mayaAttr = depFn.findPlug(_tokens->defaultColor.GetText(), true, &status);
+    usdInput = shaderSchema.GetInput(TrUsdTokens->fallback);
+    mayaAttr = depFn.findPlug(TrMayaTokens->defaultColor.GetText(), true, &status);
     if (usdInput && status == MS::kSuccess) {
         if (usdInput.Get(&val) && val.IsHolding<GfVec4f>()) {
             GfVec4f fallback = val.UncheckedGet<GfVec4f>();
@@ -456,8 +354,10 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     }
 
     // Wrap U/V
-    const TfToken wrapMirrorTriples[2][3] { { _tokens->wrapU, _tokens->mirrorU, _tokens->wrapS },
-                                            { _tokens->wrapV, _tokens->mirrorV, _tokens->wrapT } };
+    const TfToken wrapMirrorTriples[2][3] {
+        { TrMayaTokens->wrapU, TrMayaTokens->mirrorU, TrUsdTokens->wrapS },
+        { TrMayaTokens->wrapV, TrMayaTokens->mirrorV, TrUsdTokens->wrapT }
+    };
     for (auto wrapMirrorTriple : wrapMirrorTriples) {
         auto wrapUVToken = wrapMirrorTriple[0];
         auto mirrorUVToken = wrapMirrorTriple[1];
@@ -469,10 +369,10 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 TfToken wrapVal = val.UncheckedGet<TfToken>();
                 TfToken plugName;
 
-                if (wrapVal == _tokens->repeat) {
+                if (wrapVal == TrUsdTokens->repeat) {
                     // do nothing - will repeat by default
                     continue;
-                } else if (wrapVal == _tokens->mirror) {
+                } else if (wrapVal == TrUsdTokens->mirror) {
                     plugName = mirrorUVToken;
                     val = true;
                 } else {
@@ -499,16 +399,16 @@ TfToken PxrMayaUsdUVTexture_Reader::GetMayaNameForUsdAttrName(const TfToken& usd
     std::tie(usdOutputName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 
     if (attrType == UsdShadeAttributeType::Output) {
-        if (usdOutputName == _tokens->RGBOutputName) {
-            return _tokens->outColor;
-        } else if (usdOutputName == _tokens->RedOutputName) {
-            return _tokens->outColorR;
-        } else if (usdOutputName == _tokens->GreenOutputName) {
-            return _tokens->outColorG;
-        } else if (usdOutputName == _tokens->BlueOutputName) {
-            return _tokens->outColorB;
-        } else if (usdOutputName == _tokens->AlphaOutputName) {
-            return _tokens->outAlpha;
+        if (usdOutputName == TrUsdTokens->RGBOutputName) {
+            return TrMayaTokens->outColor;
+        } else if (usdOutputName == TrUsdTokens->RedOutputName) {
+            return TrMayaTokens->outColorR;
+        } else if (usdOutputName == TrUsdTokens->GreenOutputName) {
+            return TrMayaTokens->outColorG;
+        } else if (usdOutputName == TrUsdTokens->BlueOutputName) {
+            return TrMayaTokens->outColorB;
+        } else if (usdOutputName == TrUsdTokens->AlphaOutputName) {
+            return TrMayaTokens->outAlpha;
         }
     }
 

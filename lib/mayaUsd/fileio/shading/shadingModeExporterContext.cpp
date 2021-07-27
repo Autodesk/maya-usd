@@ -521,51 +521,39 @@ public:
                 "stringArrayToString(`uvLink -q -t \"^1s\"`, \" \");", nodeName.GetText());
             std::string uvLinkResult = MGlobal::executeCommandStringResult(uvLinkCmd).asChar();
             for (std::string uvSetRef : TfStringTokenize(uvLinkResult)) {
-                TfToken shapeName(uvSetRef.substr(0, uvSetRef.find('.')).c_str());
+                // NOTE: If the mesh shape has the same name as the transform, then we will get a
+                //       complete path like
+                //           |mesh|mesh.uvSet[0].uvSetName
+                //       the best way to prevent confusion is to move to the object model
+                //       immediately and process from there.
+                MSelectionList selList;
+                selList.add(uvSetRef.c_str());
+                MPlug uvNamePlug;
+                selList.getPlug(0, uvNamePlug);
+
+                MFnMesh meshFn(uvNamePlug.node());
+
+                TfToken shapeName(meshFn.name().asChar());
                 if (!exportedShapes.count(shapeName)) {
                     continue;
                 }
-                MString getAttrCmd;
-                getAttrCmd.format("getAttr \"^1s\";", uvSetRef.c_str());
-                MCommandResult mayaCmdResult;
-                TfToken        getAttrResult;
-                MGlobal::executeCommand(getAttrCmd, mayaCmdResult, false, false);
-                // NOTE: (yliangsiew) We do this because if you have a mesh shape in Maya named the
-                // same as its parent transform, you get back the result `map1 map1` instead of just
-                // `map1`. Why? Refer to the issue here:
-                // https://github.com/Autodesk/maya-usd/issues/1079
-                switch (mayaCmdResult.resultType()) {
-                case MCommandResult::kStringArray: {
-                    MStringArray cmdResult;
-                    mayaCmdResult.getResult(cmdResult);
-                    if (cmdResult.length() == 0) {
-                        TF_RUNTIME_ERROR(
-                            "No valid UV set names could be determined! The command run was: %s",
-                            getAttrCmd.asChar());
-                        continue;
+
+                MString uvSetName = uvNamePlug.asString();
+
+                // All UV sets now get renamed st, st1, st2 in the order returned by getUVSetNames
+                MStringArray uvSets;
+                meshFn.getUVSetNames(uvSets);
+                for (unsigned int i = 0; i < uvSets.length(); i++) {
+                    if (uvSets[i] == uvSetName) {
+                        uvSetName = "st";
+                        if (i) {
+                            uvSetName += i;
+                        }
+                        break;
                     }
-                    getAttrResult = TfToken(cmdResult[0].asChar());
-                    break;
-                }
-                case MCommandResult::kString: {
-                    MString cmdResult;
-                    mayaCmdResult.getResult(cmdResult);
-                    getAttrResult = TfToken(cmdResult.asChar());
-                    break;
-                }
-                default:
-                    TF_RUNTIME_ERROR(
-                        "The UV set name could not be determined; the result was of an "
-                        "unrecognized type! The command run was: %s",
-                        getAttrCmd.asChar());
-                    continue;
-                }
-                // Check if map1 should export as st:
-                if (getAttrResult == _tokens->map1 && UsdMayaWriteUtil::WriteMap1AsST()) {
-                    getAttrResult = UsdUtilsGetPrimaryUVSetName();
                 }
 
-                _shapeNameToUVNames[shapeName].push_back(getAttrResult);
+                _shapeNameToUVNames[shapeName].push_back(TfToken(uvSetName.asChar()));
             }
         }
 
@@ -597,7 +585,11 @@ public:
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
                 UsdShadeInput materialInput = material.GetInput(inputName);
                 TF_VERIFY(itName != largestSet.cend());
-                materialInput.Set(*itName);
+                if (materialInput.GetTypeName() == SdfValueTypeNames->Token) {
+                    materialInput.Set(*itName);
+                } else if (materialInput.GetTypeName() == SdfValueTypeNames->String) {
+                    materialInput.Set((*itName).GetString());
+                }
             }
             _uvNamesToMaterial[largestSet] = material;
         }
@@ -640,7 +632,11 @@ public:
                 TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
             UsdShadeInput materialInput
                 = newMaterial.CreateInput(inputName, SdfValueTypeNames->Token);
-            materialInput.Set(*itName);
+            if (materialInput.GetTypeName() == SdfValueTypeNames->Token) {
+                materialInput.Set(*itName);
+            } else if (materialInput.GetTypeName() == SdfValueTypeNames->String) {
+                materialInput.Set((*itName).GetString());
+            }
         }
         auto insertResult
             = _uvNamesToMaterial.insert(MaterialMappings::value_type { uvNames, newMaterial });

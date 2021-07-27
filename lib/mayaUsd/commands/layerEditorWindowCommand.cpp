@@ -38,9 +38,11 @@ DEF_FLAG(sl, isSessionLayer)
 DEF_FLAG(dl, isLayerDirty)
 DEF_FLAG(su, isSubLayer)
 DEF_FLAG(al, isAnonymousLayer)
+DEF_FLAG(in, isIncomingLayer)
 DEF_FLAG(ns, layerNeedsSaving)
 DEF_FLAG(am, layerAppearsMuted)
 DEF_FLAG(mu, layerIsMuted)
+DEF_FLAG(r, layerIsReadOnly)
 
 // edit flags
 DEF_FLAG(rs, removeSubLayer)
@@ -118,9 +120,11 @@ MSyntax LayerEditorWindowCommand::createSyntax()
     ADD_FLAG(isLayerDirty);
     ADD_FLAG(isSubLayer);
     ADD_FLAG(isAnonymousLayer);
+    ADD_FLAG(isIncomingLayer);
     ADD_FLAG(layerNeedsSaving);
     ADD_FLAG(layerAppearsMuted);
     ADD_FLAG(layerIsMuted);
+    ADD_FLAG(layerIsReadOnly);
 
     ADD_FLAG(removeSubLayer);
     ADD_FLAG(saveEdits);
@@ -308,9 +312,15 @@ MStatus LayerEditorWindowCommand::handleQueries(
     HANDLE_Q_FLAG(isLayerDirty)
     HANDLE_Q_FLAG(isSubLayer)
     HANDLE_Q_FLAG(isAnonymousLayer)
+    HANDLE_Q_FLAG(isIncomingLayer);
     HANDLE_Q_FLAG(layerNeedsSaving)
     HANDLE_Q_FLAG(layerAppearsMuted)
     HANDLE_Q_FLAG(layerIsMuted)
+    HANDLE_Q_FLAG(layerIsReadOnly)
+
+    if (argParser.isFlagSet(FLAG(proxyShape)) && argParser.isQuery()) {
+        setResult(layerEditor->proxyShapeName().c_str());
+    }
 
     return MS::kSuccess;
 }

@@ -40,17 +40,12 @@
 #include <ufe/observer.h>
 #endif
 
-// The new Maya point snapping support doesn't require point snapping items any more.
-#if MAYA_API_VERSION >= 20230000
-// The new Maya point snapping support has some known issues. Disable it for now.
-// #define MAYA_NEW_POINT_SNAPPING_SUPPORT
-#endif
-
 // Conditional compilation due to Maya API gap.
 #if MAYA_API_VERSION >= 20200000
 #define MAYA_ENABLE_UPDATE_FOR_SELECTION
 #endif
 
+#if PXR_VERSION < 2008
 #define ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
 /*  In USD v20.05 and earlier when the purpose of an rprim changes the visibility gets dirtied,
     and that doesn't update the render tag version.
@@ -61,6 +56,7 @@
     Logged as:
     https://github.com/PixarAnimationStudios/USD/issues/1243
 */
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -171,6 +167,14 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool DrawRenderTag(const TfToken& renderTag) const;
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MAYAUSD_CORE_PUBLIC
+    bool SnapToSelectedObjects() const;
+
+    MAYAUSD_CORE_PUBLIC
+    bool SnapToPoints() const;
+#endif
+
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;
@@ -252,8 +256,15 @@ private:
     bool _isPopulated {
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
-    bool   _selectionChanged { true }; //!< Whether there is any selection change or not
-    MColor _wireframeColor;            //!< Wireframe color assigned to the proxy shape
+    bool _selectionChanged { true }; //!< Whether there is any selection change or not
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed
+    bool _snapToPoints { false };        //!< Whether point snapping is enabled or not
+    bool _snapToSelectedObjects {
+        false
+    }; //!< Whether point snapping should snap to selected objects
+#endif
+    MColor _wireframeColor; //!< Wireframe color assigned to the proxy shape
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;

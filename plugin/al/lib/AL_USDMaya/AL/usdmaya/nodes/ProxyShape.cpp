@@ -1320,6 +1320,7 @@ void ProxyShape::loadStage()
 
             const MString assetResolverConfig = inputStringValue(dataBlock, m_assetResolverConfig);
 
+#if AR_VERSION == 1
             if (assetResolverConfig.length() == 0) {
                 // Initialise the asset resolver with the filepath
                 PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
@@ -1327,6 +1328,8 @@ void ProxyShape::loadStage()
                 // Initialise the asset resolver with the resolverConfig string
                 PXR_NS::ArGetResolver().ConfigureResolverForAsset(assetResolverConfig.asChar());
             }
+#endif
+
             AL_END_PROFILE_SECTION();
 
             AL_BEGIN_PROFILE_SECTION(UpdateGlobalVariantFallbacks);
@@ -1393,11 +1396,11 @@ void ProxyShape::loadStage()
         }
     }
 
-    // Get the prim
+    // Get the prim, if the stage is valid.
     // If no primPath string specified, then use the pseudo-root.
     const SdfPath rootPath(std::string("/"));
     MString       primPathStr = inputStringValue(dataBlock, primPath());
-    if (primPathStr.length()) {
+    if (m_stage && primPathStr.length()) {
         m_path = SdfPath(AL::maya::utils::convert(primPathStr));
         UsdPrim prim = m_stage->GetPrimAtPath(m_path);
         if (!prim) {

@@ -20,7 +20,7 @@
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
@@ -48,45 +48,13 @@ public:
     std::vector<std::string> _paths;
 };
 
-std::string toForwardSlashes(const std::string& in_path)
-{
-    // it works better on windows if all the paths have forward slashes
-    auto path = in_path;
-    std::replace(path.begin(), path.end(), '\\', '/');
-    return path;
-}
-
-// contains the logic to get the right path to use for SdfLayer:::FindOrOpen
-// from a sublayerpath.
-// this path could be absolute, relative, or be an anon layer
-std::string computePathToLoadSublayer(
-    const std::string&  subLayerPath,
-    const std::string&  anchor,
-    PXR_NS::ArResolver& resolver)
-{
-    std::string actualPath = subLayerPath;
-    if (resolver.IsRelativePath(subLayerPath)) {
-        auto subLayer = PXR_NS::SdfLayer::Find(subLayerPath); // note: finds in the cache
-        if (subLayer) {
-            if (!resolver.IsRelativePath(subLayer->GetIdentifier())) {
-                actualPath = toForwardSlashes(subLayer->GetRealPath());
-            }
-        } else {
-            actualPath = resolver.AnchorRelativePath(anchor, subLayerPath);
-        }
-    }
-    return actualPath;
-}
-
 void populateChildren(
     SdfLayerRefPtr                                                       layer,
     RecursionDetector*                                                   recursionDetector,
     std::vector<std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent>>& anonLayersToSave,
     std::vector<SdfLayerRefPtr>&                                         dirtyLayersToSave)
 {
-    auto  subPaths = layer->GetSubLayerPaths();
-    auto& resolver = PXR_NS::ArGetResolver();
-    auto  anchor = toForwardSlashes(layer->GetRealPath());
+    auto subPaths = layer->GetSubLayerPaths();
 
     RecursionDetector defaultDetector;
     if (!recursionDetector) {
@@ -95,7 +63,7 @@ void populateChildren(
     recursionDetector->push(layer->GetRealPath());
 
     for (auto const path : subPaths) {
-        std::string actualPath = computePathToLoadSublayer(path, anchor, resolver);
+        std::string actualPath = PXR_NS::SdfComputeAssetPathRelativeToLayer(layer, path);
         auto        subLayer = PXR_NS::SdfLayer::FindOrOpen(actualPath);
         if (subLayer && !recursionDetector->contains(subLayer->GetRealPath())) {
             populateChildren(subLayer, recursionDetector, anonLayersToSave, dirtyLayersToSave);
