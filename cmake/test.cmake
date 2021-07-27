@@ -115,17 +115,22 @@ main(module=${MODULE_NAME})
         set(PYTEST_CODE "${PREFIX_PYTHON_COMMAND}")
     elseif(PREFIX_PYTHON_SCRIPT)
         if (PREFIX_INTERACTIVE)
+            if(WIN32)
+                set(QUOTE "'")
+            else()
+                set(QUOTE "\\\"")
+            endif()
             set(MEL_PY_EXEC_COMMAND "python(\"\\n\
 import os\\n\
 import sys\\n\
 import time\\n\
 import traceback\\n\
-file = '${PREFIX_PYTHON_SCRIPT}'\\n\
+file = ${QUOTE}${PREFIX_PYTHON_SCRIPT}${QUOTE}\\n\
 if not os.path.isabs(file):\\n\
-    file = os.path.join('${WORKING_DIR}', file)\\n\
-openMode = 'rb'\\n\
-compileMode = 'exec'\\n\
-globals = {'__file__': file, '__name__': '__main__'}\\n\
+    file = os.path.join(${QUOTE}${WORKING_DIR}${QUOTE}, file)\\n\
+openMode = ${QUOTE}rb${QUOTE}\\n\
+compileMode = ${QUOTE}exec${QUOTE}\\n\
+globals = {${QUOTE}__file__${QUOTE}: file, ${QUOTE}__name__${QUOTE}: ${QUOTE}__main__${QUOTE}}\\n\
 try:\\n\
     exec(compile(open(file, openMode).read(), file, compileMode), globals)\\n\
 except Exception:\\n\
