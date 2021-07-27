@@ -61,7 +61,15 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoReorderCommand.cpp
             UsdUndoSetKindCommand.cpp
             UsdUndoVisibleCommand.cpp
+            UsdUndoUngroupCommand.cpp
             XformOpUtils.cpp
+    )
+endif()
+
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdUndoUngroupCommand.cpp
     )
 endif()
 
@@ -127,6 +135,12 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
         XformOpUtils.h
+    )
+endif()
+
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    list(APPEND HEADERS
+        UsdUndoUngroupCommand.h
     )
 endif()
 

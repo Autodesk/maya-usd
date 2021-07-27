@@ -17,11 +17,13 @@
 
 from maya import cmds
 from maya import standalone
+from pxr import Usd, Sdf
 
 import fixturesUtils
 
 import os
 import unittest
+import tempfile
 
 import usdUtils, mayaUtils, ufeUtils
 
@@ -178,6 +180,262 @@ class testProxyShapeBase(unittest.TestCase):
         # confirm that edits are shared. Both source and duplicated proxyShapes have no children now.
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(treebaseItem).children()))
+
+    def testShareStage(self):
+        '''
+        Verify share/unshare stage workflow works properly
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootIdentifier = stage.GetRootLayer().identifier
+
+        # check that the stage is shared and the root is the right one
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
+
+        # unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # check that the stage is now unshared and the root is the anon layer
+        # and the old root is now sublayered under that
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(rootLayer.GetDisplayName(), "unshareableLayer")
+        self.assertEqual(rootLayer.subLayerPaths, [rootIdentifier])
+
+        # re-share the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # check that the stage is now shared again and the layer is the same
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
+
+    def testSerializationShareStage(self):
+        '''
+        Verify share/unshare stage works with serialization and complex heirharchies
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        originalRootIdentifier = stage.GetRootLayer().identifier
+
+        # check that the stage is shared and the root is the right one
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
+
+        # unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # check that the stage is now unshared and the root is the anon layer
+        # and the old root is now sublayered under that
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(rootLayer.GetDisplayName(), "unshareableLayer")
+        self.assertEqual(rootLayer.subLayerPaths, [originalRootIdentifier])
+
+        middleLayer = Sdf.Layer.CreateAnonymous("middleLayer")
+        middleLayer.subLayerPaths = [originalRootIdentifier]
+        rootLayer.subLayerPaths  = [middleLayer.identifier]
+
+        # Save and re-open
+        testDir = tempfile.mkdtemp(prefix='ProxyShapeBase')
+        tempMayaFile = os.path.join(testDir, 'ShareStageSerializationTest.ma')
+        cmds.file(rename=tempMayaFile)
+        # make the USD layer absolute otherwise it won't be found
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"filePath"), originalRootIdentifier, type='string')
+        cmds.file(save=True, force=True)
+        cmds.file(new=True, force=True)
+        cmds.file(tempMayaFile, open=True)
+
+        # get the stage again (since we opened a new file)
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # make sure the middle layer is back (only one)
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        middleLayer = Sdf.Layer.Find(rootLayer.subLayerPaths[0])
+        self.assertEqual(middleLayer.GetDisplayName(), "middleLayer")
+
+        # make sure the middle layer still contains the original root only
+        self.assertEqual(len(middleLayer.subLayerPaths), 1)
+        self.assertEqual(middleLayer.subLayerPaths[0], originalRootIdentifier)
+
+        # re-share the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # check that the stage is now shared again and the identifier is correct
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetRootLayer().identifier, originalRootIdentifier)
+
+    def testShareStageComplexHierarchyToggle(self):
+        '''
+        Verify share/unshare stage toggle works with complex heirharchies
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        originalRootIdentifier = stage.GetRootLayer().identifier
+
+        # check that the stage is shared and the root is the right one
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
+
+        # unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # check that the stage is now unshared and the root is the anon layer
+        # and the old root is now sublayered under that
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(rootLayer.GetDisplayName(), "unshareableLayer")
+        self.assertEqual(rootLayer.subLayerPaths, [originalRootIdentifier])
+
+        middleLayer = Sdf.Layer.CreateAnonymous("middleLayer")
+        middleLayer.subLayerPaths = [originalRootIdentifier]
+        rootLayer.subLayerPaths  = [middleLayer.identifier]
+
+         # Save and re-open
+        testDir = tempfile.mkdtemp(prefix='ProxyShapeBase')
+        tempMayaFile = os.path.join(testDir, 'ShareStageComplexHierarchyToggle.ma')
+        cmds.file(rename=tempMayaFile)
+        # make the USD layer absolute otherwise it won't be found
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"filePath"), originalRootIdentifier, type='string')
+        cmds.file(save=True, force=True)
+        cmds.file(new=True, force=True)
+        cmds.file(tempMayaFile, open=True)
+
+        # get the stage again (since we opened a new file)
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # make sure the middle layer is back (only one)
+        self.assertEqual(len(rootLayer.subLayerPaths), 1)
+        middleLayer = Sdf.Layer.Find(rootLayer.subLayerPaths[0])
+        self.assertEqual(middleLayer.GetDisplayName(), "middleLayer")
+
+        # re-share the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # check that the stage is now shared again and the identifier is correct
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(stage.GetRootLayer().identifier, originalRootIdentifier)
+
+        # unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        # check that the stage is now shared and the root is the anon layer
+        # and the old root is now sublayered under that
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+        self.assertEqual(rootLayer.GetDisplayName(), "unshareableLayer")
+        self.assertEqual(rootLayer.subLayerPaths, [middleLayer.identifier])
+
+    @unittest.skip("Skipping since we found a bigger issue with stage connection")
+    def testShareStageSourceChange(self):
+        '''
+        Verify the stage source change maintains the position in the hierarchy
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the proxy shape path
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapeA = proxyShapes[0]
+
+        # create another proxyshape (B)
+        import mayaUsd_createStageWithNewLayer
+        proxyShapeB = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapeB = proxyShapeB.split("|")[-1]
+
+        # Connect them using stage data
+        cmds.connectAttr('{}.outStageData'.format(proxyShapeA),
+                         '{}.inStageData'.format(proxyShapeB))
+
+        # get the stage
+        stageB = mayaUsd.lib.GetPrim(proxyShapeB).GetStage()
+        originalRootIdentifierB = stageB.GetRootLayer().identifier
+
+        # check that the stage is shared and the root is the right one
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapeB,"shareStage")))
+        self.assertEqual(stageB.GetRootLayer().GetDisplayName(), "cylinder.usda")
+
+        # unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapeB,"shareStage"), False)
+        stageB = mayaUsd.lib.GetPrim(proxyShapeB).GetStage()
+        rootLayerB = stageB.GetRootLayer()
+
+        # check that the stage is now unshared and the root is the anon layer
+        # and the old root is now sublayered under that
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapeB,"shareStage")))
+        self.assertEqual(rootLayerB.GetDisplayName(), "unshareableLayer")
+        self.assertEqual(rootLayerB.subLayerPaths, [originalRootIdentifierB])
+
+        # Add complex hierarchy
+        middleLayerB = Sdf.Layer.CreateAnonymous("middleLayer")
+        middleLayerB.subLayerPaths = [originalRootIdentifierB]
+        rootLayerB.subLayerPaths  = [middleLayerB.identifier]
+
+        # unshare the stage from the first proxy
+        cmds.setAttr('{}.{}'.format(proxyShapeA, "shareStage"), False)
+        stageA = mayaUsd.lib.GetPrim(proxyShapeA).GetStage()
+        rootLayerA = stageA.GetRootLayer()
+        stageB = mayaUsd.lib.GetPrim(proxyShapeB).GetStage()
+        rootLayerB = stageB.GetRootLayer()
+
+        # check that the stage is now unshared and the entire hierachy is good (A)
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapeA,"shareStage")))
+        self.assertEqual(rootLayerA.GetDisplayName(), "unshareableLayer")
+        self.assertEqual(len(rootLayerA.subLayerPaths), 1)
+        self.assertEqual(rootLayerA.subLayerPaths[0], originalRootIdentifierB)
+
+        # Make sure the hierachy is good (B)
+        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapeB,"shareStage")))
+        self.assertEqual(rootLayerB.GetDisplayName(), "unshareableLayer")
+        self.assertEqual(len(rootLayerB.subLayerPaths), 1)
+        middleLayer = Sdf.Layer.Find(rootLayerB.subLayerPaths[0])
+        self.assertEqual(middleLayer.GetDisplayName(), "middleLayer")
+        self.assertEqual(len(middleLayer.subLayerPaths), 1)
+        unshareableLayerFromA = Sdf.Layer.Find(middleLayer.subLayerPaths[0])
+        self.assertEqual(unshareableLayerFromA.GetDisplayName(), "unshareableLayer")
+        self.assertEqual(len(unshareableLayerFromA.subLayerPaths), 1)
+        self.assertEqual(unshareableLayerFromA.subLayerPaths[0], originalRootIdentifierB)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

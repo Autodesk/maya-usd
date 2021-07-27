@@ -9,6 +9,7 @@ target_sources(${PROJECT_NAME}
         draw_item.cpp
         instancer.cpp
         material.cpp
+        mayaPrimCommon.cpp
         mesh.cpp
         meshViewportCompute.cpp
         proxyRenderDelegate.cpp

@@ -92,6 +92,8 @@ global proc mayaUSDRegisterStrings() {
     register("kSaveOptionNoPromptAnn", "You can re-enable this prompt under File|Save Scene Options.");
     register("kSaveOptionTitle", "Save USD Options");
     register("kSaveOptionUnsavedEdits", "You have unsaved USD edits. How would you like to proceed?");
+    register("kShareStageShareable", "Shareable");
+    register("kShareStageAnn", "Toggle sharable on and off to sandbox your changes and create a new stage");
     register("kShowArrayAttributes", "Show Array Attributes");
     register("kUSDSelectionMode", "USD Selection Mode");
     register("kUSDSelectionModeAnn", "Choose a selection mode to reflect changes when you select prims in the Viewport and Outliner. Note: Default fallback selection mode is by prim.");

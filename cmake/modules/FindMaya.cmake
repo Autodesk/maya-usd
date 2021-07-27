@@ -12,6 +12,9 @@
 # MAYA_API_VERSION    Maya version (6-8 digits)
 # MAYA_APP_VERSION    Maya app version (4 digits)
 # MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2)
+# MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
+# MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
+# MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
 #
 
 #=============================================================================
@@ -260,6 +263,15 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
     endif()
 endif()
 
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MDefines.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MDefines.h MAYA_PREVIEW_RELEASE_VERSION REGEX "#define MAYA_PREVIEW_RELEASE_VERSION.*$")
+    if(MAYA_PREVIEW_RELEASE_VERSION)
+        string(REGEX MATCHALL "[0-9]+" MAYA_PREVIEW_RELEASE_VERSION ${MAYA_PREVIEW_RELEASE_VERSION})
+    else()
+        set(MAYA_PREVIEW_RELEASE_VERSION 0)
+    endif()
+endif()
+
 # Determine the Python version and switch between mayapy and mayapy2.
 set(MAYAPY_EXE mayapy)
 set(MAYA_PY_VERSION 2)
@@ -323,14 +335,31 @@ find_file(MAYA_OGSDEVICES_LIBRARY
     # Maya's Foundation library and OSX's framework.
     NO_CMAKE_SYSTEM_PATH
 )
-message(INFO " Got MAYA_OGSDEVICES_LIBRARY = ${MAYA_OGSDEVICES_LIBRARY}")
 if (MAYA_OGSDEVICES_LIBRARY)
     file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_2 REGEX "InitializeLightShader")
     if (HAS_LIGHTAPI_2)
         set(MAYA_LIGHTAPI_VERSION 2)
     endif()
 endif()
-message(INFO " Got MAYA_LIGHTAPI_VERSION = ${MAYA_LIGHTAPI_VERSION}")
+message(STATUS "Using Maya Light API Version ${MAYA_LIGHTAPI_VERSION}")
+
+set(MAYA_HAS_DEFAULT_MATERIAL_API FALSE CACHE INTERNAL "setDefaultMaterialHandling")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h MAYA_HAS_API REGEX "setDefaultMaterialHandling")
+    if(MAYA_HAS_API)
+        set(MAYA_HAS_DEFAULT_MATERIAL_API TRUE CACHE INTERNAL "setDefaultMaterialHandling")
+        message(STATUS "Maya has setDefaultMaterialHandling API")
+    endif()
+endif()
+
+set(MAYA_NEW_POINT_SNAPPING_SUPPORT FALSE CACHE INTERNAL "snapToActive")
+if (MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MSelectionContext.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MSelectionContext.h MAYA_HAS_API REGEX "snapToActive")
+    if(MAYA_HAS_API)
+        set(MAYA_NEW_POINT_SNAPPING_SUPPORT TRUE CACHE INTERNAL "snapToActive")
+        message(STATUS "Maya has new point snapping API")
+    endif()
+endif()
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE

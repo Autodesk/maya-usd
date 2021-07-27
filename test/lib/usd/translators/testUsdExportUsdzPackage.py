@@ -43,7 +43,7 @@ class testUsdExportPackage(unittest.TestCase):
         Tests that the exported usdz file is self contained, such that it's valid for AR QuickLook on iOS
         """
 
-        maya_file = os.path.join(self.temp_dir, "UsdExportPackage", "asset.ma")
+        maya_file = os.path.join(self.temp_dir, "UsdExportUsdzPackage", "asset.ma")
         cmds.file(maya_file, force=True, open=True)
 
         # Write the file out

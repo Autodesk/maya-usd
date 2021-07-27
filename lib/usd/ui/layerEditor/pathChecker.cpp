@@ -21,6 +21,7 @@
 
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/fileFormat.h>
+#include <pxr/usd/sdf/layerUtils.h>
 
 #include <maya/MQtUtil.h>
 
@@ -79,15 +80,12 @@ bool checkPathRecursive(
         return false;
     }
 
-    auto& resolver = PXR_NS::ArGetResolver();
-    auto  anchor = toForwardSlashes(testLayer->GetRealPath());
-
     // now check all children of the testLayer recursivly down for conflicts with any of the parents
     parentHandles.push_back(testLayer);
 
     auto proxy = testLayer->GetSubLayerPaths();
     for (const auto path : proxy) {
-        auto actualpath = computePathToLoadSublayer(path, anchor, resolver);
+        auto actualpath = PXR_NS::SdfComputeAssetPathRelativeToLayer(testLayer, path);
 
         auto childLayer = PXR_NS::SdfLayer::FindOrOpen(actualpath);
         if (childLayer != nullptr) {
@@ -120,15 +118,13 @@ bool checkIfPathIsSafeToAdd(
     // parent. At this point I think it's safe to go the route of actually loading the layer and
     // checking if the handles were already loaded
 
-    auto  parentLayer = in_parentItem->layer();
-    auto& resolver = PXR_NS::ArGetResolver();
+    auto parentLayer = in_parentItem->layer();
 
     // first check if the path is already in the stack
     auto proxy = parentLayer->GetSubLayerPaths();
     if (proxy.Find(in_pathToAdd) == size_t(-1)) {
 
-        std::string anchor = toForwardSlashes(in_parentItem->layer()->GetRealPath());
-        auto        pathToAdd = computePathToLoadSublayer(in_pathToAdd, anchor, resolver);
+        auto pathToAdd = PXR_NS::SdfComputeAssetPathRelativeToLayer(parentLayer, in_pathToAdd);
 
         // now we're going to check if the layer is already in the stack, through
         // another path
@@ -139,7 +135,8 @@ bool checkIfPathIsSafeToAdd(
         } else {
             // check the layer stack again, this time comparing handles
             for (const auto path : proxy) {
-                std::string actualpath = computePathToLoadSublayer(path, anchor, resolver);
+                std::string actualpath
+                    = PXR_NS::SdfComputeAssetPathRelativeToLayer(parentLayer, path);
 
                 auto childLayer = PXR_NS::SdfLayer::FindOrOpen(actualpath);
                 if (childLayer == subLayer) {

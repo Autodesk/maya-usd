@@ -46,6 +46,11 @@ struct HdVP2ShaderCache
     //! Shader registry
     std::unordered_map<TfToken, HdVP2ShaderUniquePtr, TfToken::HashFunctor> _map;
 
+#ifdef WANT_MATERIALX_BUILD
+    //! Primvars registry
+    std::unordered_map<TfToken, TfTokenVector, TfToken::HashFunctor> _primvars;
+#endif
+
     //! Synchronization used to protect concurrent read from serial writes
     tbb::spin_rw_mutex _mutex;
 };

@@ -31,6 +31,12 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
         testVP2RenderDelegatePerInstanceInheritedData.py
         testVP2RenderDelegateBasisCurves.py
     )
+
+    if (PXR_VERSION GREATER_EQUAL 2105)
+        list(APPEND TEST_SCRIPT_FILES
+            testVP2RenderDelegateDrawModes.py
+        )
+    endif()
 endif()
 
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
@@ -39,6 +45,12 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
             testVP2RenderDelegateUsdCamera.py
         )
     endif()
+endif()
+
+if (CMAKE_WANT_MATERIALX_BUILD)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateMaterialX.py
+    )
 endif()
 
 add_custom_target(${TARGET_NAME} ALL)

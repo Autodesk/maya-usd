@@ -16,6 +16,7 @@
 #include "UsdUndoAddNewPrimCommand.h"
 
 #include "private/UfeNotifGuard.h"
+#include "private/Utils.h"
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -62,6 +63,9 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
         if (name != newPrimName) {
             _newUfePath = appendToPath(ufePath, newPrimName);
         }
+
+        ufe::applyCommandRestriction(
+            usdSceneItem->prim(), "add new [" + _newUfePath.back().string() + "] under ");
 
         // Build (and store) the usd path for the new prim with the unique name.
         PXR_NS::SdfPath usdItemPath = usdSceneItem->prim().GetPath();

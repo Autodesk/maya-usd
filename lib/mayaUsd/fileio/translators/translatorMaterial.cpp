@@ -19,6 +19,8 @@
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeImporter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -199,7 +201,10 @@ _GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderCo
     return retVal;
 }
 
-static void _BindUVs(const MDagPath& shapeDagPath, const _UVBindings& uvBindings)
+static void _BindUVs(
+    const UsdGeomGprim& primSchema,
+    const MDagPath&     shapeDagPath,
+    const _UVBindings&  uvBindings)
 {
     if (uvBindings.empty()) {
         return;
@@ -213,6 +218,28 @@ static void _BindUVs(const MDagPath& shapeDagPath, const _UVBindings& uvBindings
 
     MStringArray uvSets;
     meshFn.getUVSetNames(uvSets);
+
+    // We need the UV set names as they were in the USD scene, not the roundtripped original names:
+    UsdGeomMesh mesh(primSchema.GetPrim());
+    if (mesh) {
+        const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
+        for (const UsdGeomPrimvar& primvar : primvars) {
+            const SdfValueTypeName typeName = primvar.GetTypeName();
+            if (typeName == SdfValueTypeNames->TexCoord2fArray
+                || (UsdMayaReadUtil::ReadFloat2AsUV()
+                    && typeName == SdfValueTypeNames->Float2Array)) {
+                TfToken originalName = UsdMayaRoundTripUtil::GetPrimVarMayaName(primvar);
+                if (!originalName.IsEmpty()) {
+                    for (unsigned int uvSetIndex = 1; uvSetIndex < uvSets.length(); uvSetIndex++) {
+                        if (uvSets[uvSetIndex] == originalName.GetText()) {
+                            uvSets[uvSetIndex] = primvar.GetPrimvarName().GetText();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     // We explicitly skip uvSet[0] since it is the default in Maya and does not require explicit
     // linking:
@@ -235,10 +262,11 @@ static void _BindUVs(const MDagPath& shapeDagPath, const _UVBindings& uvBindings
 } // namespace
 
 static bool _AssignMaterialFaceSet(
-    const MObject&     shadingEngine,
-    const MDagPath&    shapeDagPath,
-    const VtIntArray&  faceIndices,
-    const _UVBindings& faceUVBindings)
+    const MObject&      shadingEngine,
+    const UsdGeomGprim& primSchema,
+    const MDagPath&     shapeDagPath,
+    const VtIntArray&   faceIndices,
+    const _UVBindings&  faceUVBindings)
 {
     MStatus status;
 
@@ -263,7 +291,7 @@ static bool _AssignMaterialFaceSet(
                 "Could not add component to shadingEngine %s.", seFnSet.name().asChar());
             return false;
         }
-        _BindUVs(shapeDagPath, faceUVBindings);
+        _BindUVs(primSchema, shapeDagPath, faceUVBindings);
     }
 
     return true;
@@ -315,7 +343,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 TF_RUNTIME_ERROR(
                     "Could not add shadingEngine for '%s'.", shapeDagPath.fullPathName().asChar());
             }
-            _BindUVs(shapeDagPath, uvBindings);
+            _BindUVs(primSchema, shapeDagPath, uvBindings);
         }
 
         return true;
@@ -350,7 +378,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
             VtIntArray unassignedIndices
                 = UsdGeomSubset::GetUnassignedIndices(faceSubsets, faceCount);
             if (!_AssignMaterialFaceSet(
-                    shadingEngine, shapeDagPath, unassignedIndices, uvBindings)) {
+                    shadingEngine, primSchema, shapeDagPath, unassignedIndices, uvBindings)) {
                 return false;
             }
         }
@@ -379,7 +407,11 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 subset.GetIndicesAttr().Get(&indices, UsdTimeCode::EarliestTime());
 
                 if (!_AssignMaterialFaceSet(
-                        faceSubsetShadingEngine, shapeDagPath, indices, faceUVBindings)) {
+                        faceSubsetShadingEngine,
+                        primSchema,
+                        shapeDagPath,
+                        indices,
+                        faceUVBindings)) {
                     return false;
                 }
             }

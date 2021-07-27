@@ -156,6 +156,8 @@ their own purposes, similar to the Alembic export chaser example.
 | `-selection`                     | `-sl`      | noarg            | false               | When set, only selected nodes (and their descendants) will be exported |
 | `-stripNamespaces`               | `-sn`      | bool             | false               | Remove namespaces during export. By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1 |
 | `-staticSingleSample`            | `-sss`     | bool             | false               | Converts animated values with a single time sample to be static instead |
+| `-geomSidedness`                   | `-gs`     | string           | derived                | Determines how geometry sidedness is defined. Valid values are: `derived` - Value is taken from the shapes doubleSided attribute, `single` - Export single sided, `double` - Export double sided |
+
 | `-verbose`                       | `-v`       | noarg            | false               | Make the command output more verbose |
 
 #### Frame Samples
@@ -238,17 +240,8 @@ further `kind`/model inference optional. The current behavior is:
 #### UV Set Names
 
 Currently, for Mesh export (and similarly for NurbsPatch, also),
-the UV set names will be preserved.
-
-A previous version renamed the UV sets. To get back this old behavior,
-set the `MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET` on export or
-`MAYAUSD_IMPORT_PRIMARY_UV_SET_AS_MAP1` when importing. The old
-renaming behavior worked as follow: we renamed the UV set `map1` to `st`.
-`st` is the primary UV set for RenderMan, so this was very convenient
-for a Renderman-based pipeline. The translation is reversed on
-importing USD into Maya, when the environment variable shown above
-is set. We understand this behavior was not desirable for all,
-so this translation is now off by default.
+the UV set names will be renamed st, st1, st2,... based on ordering of the
+primitive. The original name will be preserved in custom data for roundtripping.
 
 
 ### Custom Attributes and Tagging for USD
@@ -495,12 +488,14 @@ The purpose of this command is to control the layer editor window.
 | `-isLayerDirty`         | `-dl`      | Query if the layer has been modified          |
 | `-isInvalidLayer`       | `-il`      | Query if the layer is not found or invalid    |
 | `-isSubLayer`           | `-su`      | Query if the layer is a sub-layer             |
+| `-isIncomingLayer`      | `-in`      | Query if the layer is incoming (connection)   |
 | `-layerAppearsMuted`    | `-am`      | Query if the layer or any parent is muted     |
 | `-layerIsMuted`         | `-mu`      | Query if the layer itself is muted            |
+| `-layerIsReadOnly`      | `-r`       | Query if the layer or any parent is read only |
 | `-muteLayer`            | `-mt`      | Toggle the muting of a layer                  |
 | `-layerNeedsSaving`     | `-ns`      | Query if the layer is dirty or anonymous      |
 | `-printLayer`           | `-pl`      | Print the layer to the script editor output   |
-| `-proxyShape`           | `-ps`      | Sets the selected shape by its path. Takes the path as argument |
+| `-proxyShape`           | `-ps`      | Query the proxyShape path or sets the selected shape by its path. Takes the path as argument |
 | `-reload`               | `-rl`      | Open or show the editor window                |
 | `-selectionLength`      | `-se`      | Query the number of items selected            |
 | `-isSessionLayer`       | `-sl`      | Query if the layer is a session layer         |

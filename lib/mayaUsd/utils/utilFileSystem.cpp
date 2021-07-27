@@ -55,7 +55,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 std::string UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
 {
     ArResolver& resolver = ArGetResolver();
+#if AR_VERSION == 1
     resolver.ConfigureResolverForAsset(filePath);
+#endif
     return resolver.Resolve(filePath);
 }
 
@@ -192,6 +194,15 @@ bool UsdMayaUtilFileSystem::pathAppendPath(std::string& a, const std::string& b)
     aPath /= b;
     a.assign(aPath.string());
     return true;
+}
+
+std::string UsdMayaUtilFileSystem::appendPaths(const std::string& a, const std::string& b)
+{
+    ghc::filesystem::path aPath(a);
+    ghc::filesystem::path bPath(b);
+    aPath /= b;
+
+    return aPath.string();
 }
 
 size_t

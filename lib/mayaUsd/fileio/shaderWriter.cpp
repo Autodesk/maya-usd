@@ -42,7 +42,9 @@ TfToken UsdMayaShaderWriter::GetShadingAttributeNameForMayaAttrName(const TfToke
 }
 
 /* virtual */
-UsdAttribute UsdMayaShaderWriter::GetShadingAttributeForMayaAttrName(const TfToken& mayaAttrName)
+UsdAttribute UsdMayaShaderWriter::GetShadingAttributeForMayaAttrName(
+    const TfToken& mayaAttrName,
+    const SdfValueTypeName&)
 {
     const TfToken attrName = GetShadingAttributeNameForMayaAttrName(mayaAttrName);
     if (attrName.IsEmpty()) {

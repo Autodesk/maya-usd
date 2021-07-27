@@ -15,6 +15,7 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include "mayaPrimCommon.h"
 #include "render_delegate.h"
 #include "tokens.h"
 
@@ -295,6 +296,11 @@ void _ConfigureReprs()
     // Special token for selection update and no need to create repr. Adding
     // the null desc to remove Hydra warning.
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->selection, HdBasisCurvesGeomStyleInvalid);
+
+#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
+    // Wire for default material:
+    HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->defaultMaterial, HdBasisCurvesGeomStyleWire);
+#endif
 }
 
 #if defined(WANT_UFE_BUILD)
@@ -471,7 +477,9 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
     // reset any version ids or dirty information that doesn't make sense if we clear
     // the render index.
     _renderTagVersion = 0;
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     _visibilityVersion = 0;
+#endif
     _taskRenderTagsValid = false;
     _isPopulated = false;
 }
@@ -517,11 +525,7 @@ void ProxyRenderDelegate::_InitRenderDelegate()
     if (!_renderIndex) {
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
-#if PXR_VERSION > 2002
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
-#else
-        _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get()));
-#endif
 
         // Add additional configurations after render index creation.
         static std::once_flag reprsOnce;
@@ -720,6 +724,19 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     constexpr bool inPointSnapping = false;
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass)) {
+        _UpdateSelectionStates();
+        _selectionChanged = false;
+        _selectionModeChanged = false;
+    }
+#else
+    if (_selectionChanged && !inSelectionPass) {
+        _UpdateSelectionStates();
+        _selectionChanged = false;
+    }
+#endif
+
     if (inSelectionPass) {
         // The new Maya point snapping support doesn't require point snapping items any more.
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
@@ -728,11 +745,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
 #endif
     } else {
-        if (_selectionChanged) {
-            _UpdateSelectionStates();
-            _selectionChanged = false;
-        }
-
         const unsigned int displayStyle = frameContext.getDisplayStyle();
 
         // Query the wireframe color assigned to proxy shape.
@@ -790,6 +802,31 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     // Without a proxy shape we can't do anything
     if (_proxyShapeData->ProxyShape() == nullptr)
         return;
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    const MSelectionInfo* selectionInfo = frameContext.getSelectionInfo();
+    if (selectionInfo) {
+        bool oldSnapToPoints = _snapToPoints;
+#if MAYA_API_VERSION >= 20220000
+        _snapToPoints = selectionInfo->pointSnapping();
+#else
+        _snapToPoints = pointSnappingActive();
+#endif
+        if (_snapToPoints != oldSnapToPoints) {
+            _selectionModeChanged = true;
+        }
+    }
+
+    MStatus status;
+    if (selectionInfo) {
+        bool oldSnapToSelectedObjects = _snapToSelectedObjects;
+        _snapToSelectedObjects = selectionInfo->snapToActive(&status);
+        TF_VERIFY(status == MStatus::kSuccess);
+        if (_snapToSelectedObjects != oldSnapToSelectedObjects) {
+            _selectionModeChanged = true;
+        }
+    }
+#endif
 
     _ClearInvalidData(container);
 
@@ -862,6 +899,15 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // improve draw performance in Maya 2020 and before.
     const int drawInstID = intersection.instanceID();
     int       instanceIndex = (drawInstID > 0) ? drawInstID - 1 : UsdImagingDelegate::ALL_INSTANCES;
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    // Get the custom data from the MRenderItem and map the instance index to the USD instance index
+    auto mayaToUsd = MayaUsdCustomData::Get(renderItem);
+    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES
+        && ((int)mayaToUsd.size()) > instanceIndex) {
+        instanceIndex = mayaToUsd[instanceIndex];
+    }
+#endif
 
     SdfPath topLevelPath;
     int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
@@ -1081,6 +1127,17 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     }
 
     if (!rootPaths.empty()) {
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+        // When the selection mode changes then we have to update all the selected render
+        // items. Set a dirty flag on each of the rprims so they know what to update.
+        if (_selectionModeChanged) {
+            HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+            for (auto path : rootPaths) {
+                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
+            }
+        }
+#endif
+
         HdRprimCollection collection(HdTokens->geometry, kSelectionReprSelector);
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
@@ -1286,6 +1343,11 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
         return true;
     }
 }
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+bool ProxyRenderDelegate::SnapToSelectedObjects() const { return _snapToSelectedObjects; }
+bool ProxyRenderDelegate::SnapToPoints() const { return _snapToPoints; }
+#endif
 
 // ProxyShapeData
 ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(

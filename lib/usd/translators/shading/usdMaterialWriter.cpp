@@ -15,6 +15,8 @@
 //
 #include "usdMaterialWriter.h"
 
+#include "shadingTokens.h"
+
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -50,15 +52,6 @@
 using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// clang-format off
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // Maya material nodes attribute names
-    (outColor)
-);
-// clang-format on
 
 UsdMayaShaderWriter::ContextSupport
 PxrUsdTranslators_MaterialWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
@@ -195,7 +188,7 @@ bool PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAtt
 TfToken PxrUsdTranslators_MaterialWriter::GetShadingAttributeNameForMayaAttrName(
     const TfToken& mayaAttrName)
 {
-    if (mayaAttrName == _tokens->outColor) {
+    if (mayaAttrName == TrMayaTokens->outColor) {
         return UsdShadeUtils::GetFullName(UsdShadeTokens->surface, UsdShadeAttributeType::Output);
     }
 

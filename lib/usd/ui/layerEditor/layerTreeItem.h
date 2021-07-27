@@ -71,6 +71,9 @@ public:
         PXR_NS::SdfLayerRefPtr in_usdLayer,
         LayerType              in_layerType = LayerType::SubLayer,
         std::string            in_subLayerPath = "",
+        std::set<std::string>* in_incomingLayers = nullptr,
+        bool                   in_sharedStage = false,
+        std::set<std::string>* in_sharedLayers = nullptr,
         RecursionDetector*     in_recursionDetector = nullptr);
 
     // refresh our data from the USD Layer
@@ -96,12 +99,16 @@ public:
     bool isMuted() const;
     // check if this layer is muted, or any of its parent
     bool appearsMuted() const;
+    // check if this layer is readonly
+    bool isReadOnly() const;
     // true if dirty, but look at needsSaving for UI feedback
     bool isDirty() const { return _layer ? _layer->IsDirty() : false; }
     // need to indicate visually that layer has something to save
     bool needsSaving() const;
     // for drag and drop
     bool isMovable() const;
+    // check if the layer is incoming (from a connection)
+    bool isIncoming() const;
 
     // used by draw delegate: returns how deep in the hierarchy we are
     int depth() const;
@@ -146,6 +153,11 @@ protected:
     bool                   _isTargetLayer = false;
     LayerType              _layerType = LayerType::SubLayer;
     std::string            _subLayerPath; // name of the layer as it was found in the parent's stack
+    bool                   _isIncomingLayer;
+    std::set<std::string>  _incomingLayers;
+    bool                   _isSharedStage;
+    bool                   _isSharedLayer;
+    std::set<std::string>  _sharedLayers;
 
     static std::vector<LayerActionInfo> _actionButtons;
 
@@ -156,6 +168,9 @@ protected:
     void populateChildren(RecursionDetector* in_recursionDetector);
     // helper to save anon layers called by saveEdits()
     void saveAnonymousLayer();
+
+private:
+    bool sublayerOfShared() const;
 };
 
 class RecursionDetector
