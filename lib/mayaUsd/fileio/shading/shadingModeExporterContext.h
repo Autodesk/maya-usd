@@ -50,7 +50,6 @@ public:
     const UsdMayaJobExportArgs& GetExportArgs() const { return _writeJobContext.GetArgs(); }
 
     bool GetMergeTransformAndShape() const { return GetExportArgs().mergeTransformAndShape; }
-    const SdfPath& GetOverrideRootPath() const { return GetExportArgs().usdModelRootOverridePath; }
     const SdfPathSet& GetBindableRoots() const { return _bindableRoots; }
 
     MAYAUSD_CORE_PUBLIC

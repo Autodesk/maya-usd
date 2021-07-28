@@ -15,6 +15,7 @@
 # MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
 # MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
+# MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
 #
 
 #=============================================================================
@@ -358,6 +359,15 @@ if (MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MSelectionContext.h")
     if(MAYA_HAS_API)
         set(MAYA_NEW_POINT_SNAPPING_SUPPORT TRUE CACHE INTERNAL "snapToActive")
         message(STATUS "Maya has new point snapping API")
+    endif()
+endif()
+
+set(MAYA_CURRENT_UFE_CAMERA_SUPPORT FALSE CACHE INTERNAL "getCurrentUfeCameraPath")
+if (MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFrameContext.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MFrameContext.h MAYA_HAS_API REGEX "getCurrentUfeCameraPath")
+    if(MAYA_HAS_API)
+        set(MAYA_CURRENT_UFE_CAMERA_SUPPORT TRUE CACHE INTERNAL "getCurrentUfeCameraPath")
+        message(STATUS "Maya has getCurrentUfeCameraPath")
     endif()
 endif()
 

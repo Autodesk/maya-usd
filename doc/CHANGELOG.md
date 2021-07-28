@@ -1,5 +1,63 @@
 # Changelog
 
+## [0.11.0] - 2021-07-27
+
+**Build:**
+
+- Remove deprecated UsdRi schemas [#1585](https://github.com/Autodesk/maya-usd/pull/1585)
+- Bump USD min version to 20.05 [#1568](https://github.com/Autodesk/maya-usd/pull/1568)
+- Fixed two tests with the same name [#1562](https://github.com/Autodesk/maya-usd/pull/1562)
+- Pxr tests will use build area for temporary files [#1443](https://github.com/Autodesk/maya-usd/pull/1443)
+
+**Translation Framework:**
+
+- Review all standard surface default values [#1560](https://github.com/Autodesk/maya-usd/pull/1560)
+- Remove calls to configure resolver for asset under ar2 [#1530](https://github.com/Autodesk/maya-usd/pull/1530)
+- UV set renamed to st, st1, st2 [#1528](https://github.com/Autodesk/maya-usd/pull/1528)
+- Add geomSidedness flag to exporter [#1499](https://github.com/Autodesk/maya-usd/pull/1499)
+- Fixed bug with visibility determination [#1479](https://github.com/Autodesk/maya-usd/pull/1479)
+
+**Workflow:**
+
+- Crash when transforming multiple objects with duplicate stage [#1554](https://github.com/Autodesk/maya-usd/pull/1554)
+- Add restriction for grouping [#1550](https://github.com/Autodesk/maya-usd/pull/1550)
+- Stage to be created without the proxyShape being capitalized [#1526](https://github.com/Autodesk/maya-usd/pull/1526)
+- Handle multiple deferred notifs for single path [#1519](https://github.com/Autodesk/maya-usd/pull/1519)
+- Use SdfComputeAssetPathRelativeToLayer to compute sublayer paths [#1515](https://github.com/Autodesk/maya-usd/pull/1515)
+- Deleting assembly nodes that contained child assemblies crashes Maya [#1504](https://github.com/Autodesk/maya-usd/pull/1504)
+- Add support for ungroup command [#1469](https://github.com/Autodesk/maya-usd/pull/1469)
+- New unshareable stage workflow [#1455](https://github.com/Autodesk/maya-usd/pull/1455)
+  - Disable save for unshared layer root [#1584](https://github.com/Autodesk/maya-usd/pull/1584)
+  - Disable "Revert File" for read-only files [#1579](https://github.com/Autodesk/maya-usd/pull/1579)
+- On drag and drop of a layer with an editTarget, the edit target moves to the root layer [#1444](https://github.com/Autodesk/maya-usd/pull/1444)
+
+**Render:**
+
+- MaterialX
+  - Fix MaterialX import errors found by testing [#1553](https://github.com/Autodesk/maya-usd/pull/1553)
+  - Handle UDIM in MaterialX shaders [#1582](https://github.com/Autodesk/maya-usd/pull/1582)
+  - MaterialX UV0 defaultgeomprop to st primvar [#1533](https://github.com/Autodesk/maya-usd/pull/1533)
+  - MaterialX build instructions [#1524](https://github.com/Autodesk/maya-usd/pull/1524)
+  - MaterialX import export [#1478](https://github.com/Autodesk/maya-usd/pull/1478)
+  - Show USD MaterialX in VP2 render delegate [#1433](https://github.com/Autodesk/maya-usd/pull/1433)
+- Do not crash on invalid materials [#1573](https://github.com/Autodesk/maya-usd/pull/1573)
+- Show patch curves as wireframe in default material mode [#1570](https://github.com/Autodesk/maya-usd/pull/1570)
+- Don't normalize point instancer quaternions [#1563](https://github.com/Autodesk/maya-usd/pull/1563)
+- Pixar fixed render tag issue in v20.08 so only enable env for earlier versions [#1561](https://github.com/Autodesk/maya-usd/pull/1561)
+- Detect and save a pointer to the cardsUv primvar reader [#1558](https://github.com/Autodesk/maya-usd/pull/1558)
+- Restore preview purpose material binding [#1555](https://github.com/Autodesk/maya-usd/pull/1555)
+- Make sure we leave default material mode when the test ends [#1552](https://github.com/Autodesk/maya-usd/pull/1552)
+- Build a proper index buffer for the default material render item [#1522](https://github.com/Autodesk/maya-usd/pull/1522)
+- Point snapping to similar instances [#1521](https://github.com/Autodesk/maya-usd/pull/1521)
+- UsdUVTexture works with Maya color management prefs [#1516](https://github.com/Autodesk/maya-usd/pull/1516)
+- Handle source color space in Vp2 render delegate [#1508](https://github.com/Autodesk/maya-usd/pull/1508)
+- Add kSelectPointsForGravity to all selected render items when we should be snapping to active objects [#1502](https://github.com/Autodesk/maya-usd/pull/1502)
+- Add support to Vp2RenderDelegate for the "cards" drawing mode [#1463](https://github.com/Autodesk/maya-usd/pull/1463)
+
+**Documentation:**
+
+- Instruction for installing devtoolset-6 on CentOS [#1482](https://github.com/Autodesk/maya-usd/pull/1482)
+
 ## [0.10.0] - 2021-06-11
 
 **Build:**
