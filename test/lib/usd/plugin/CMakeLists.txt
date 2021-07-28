@@ -203,3 +203,54 @@ foreach(plugName ${PLUGPLUGIN_NAMES})
                    "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/${plugName}/plugInfo.json"
 )
 endforeach()
+
+set(TARGET_NAME usdTestApiWriter)
+add_library(${TARGET_NAME} SHARED)
+
+# -----------------------------------------------------------------------------
+# sources
+# -----------------------------------------------------------------------------
+target_sources(${TARGET_NAME}
+    PRIVATE
+        plugin.cpp
+        nullApiExporter.cpp
+)
+mayaUsd_compile_config(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${TARGET_NAME}
+    PRIVATE
+        mayaUsd
+)
+
+# -----------------------------------------------------------------------------
+# properties
+# -----------------------------------------------------------------------------
+maya_set_plugin_properties(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# run-time search paths
+# -----------------------------------------------------------------------------
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "plugin")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+    endif()
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${TARGET_NAME})
+endif()
+
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/nullApiExporter_plugInfo.json"
+                "${CMAKE_CURRENT_BINARY_DIR}/nullApiExporter/plugInfo.json"
+)

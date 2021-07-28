@@ -11,7 +11,7 @@
         }
       },
       "Name": "usdTestApiWriter",
-      "LibraryPath": "@CMAKE_CURRENT_BINARY_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@usdTestApiWriter@CMAKE_SHARED_LIBRARY_SUFFIX@",
+      "LibraryPath": "@CMAKE_CURRENT_BINARY_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@usdTestApiWriter@MAYA_PLUGIN_SUFFIX@",
       "Type": "library"
     }
   ]
