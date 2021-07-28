@@ -964,6 +964,13 @@ HdMayaSceneDelegate::GetInstanceIndices(const SdfPath& instancerId, const SdfPat
         _shapeAdapters);
 }
 
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 39
+SdfPathVector HdMayaSceneDelegate::GetInstancerPrototypes(SdfPath const& instancerId)
+{
+    return { instancerId.GetPrimPath() };
+}
+#endif
+
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
 SdfPath HdMayaSceneDelegate::GetInstancerId(const SdfPath& primId)
 {

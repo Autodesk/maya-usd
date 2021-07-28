@@ -16,6 +16,7 @@
 #include "UsdTransform3dMatrixOp.h"
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/UsdSetXformOpUndoableCommandBase.h>
 #include <mayaUsd/ufe/UsdTransform3dSetObjectMatrix.h>
 #include <mayaUsd/ufe/UsdUndoableCommand.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -39,13 +40,6 @@ namespace {
 
 using namespace MayaUsd;
 using namespace MayaUsd::ufe;
-
-VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
-{
-    VtValue value;
-    attr.Get(&value, time);
-    return value;
-}
 
 const char* getMatrixOp() { return std::getenv("MAYA_USD_MATRIX_XFORM_OP_NAME"); }
 
@@ -128,105 +122,64 @@ private:
     const Ufe::Matrix4d _newM;
 };
 
-// Helper class to factor out common code for translate, rotate, scale
-// undoable commands.
-class UsdTRSUndoableCmdBase
+// Factor out common code for translate, rotate, scale undoable commands.
+class MatrixOpUndoableCmdBase : public UsdSetXformOpUndoableCommandBase<GfMatrix4d>
 {
-private:
-    UsdGeomXformOp    fOp;
-    const UsdTimeCode fReadTime;
-    const UsdTimeCode fWriteTime;
-    const VtValue     fPrevOpValue;
+    UsdGeomXformOp _op;
 
 public:
-    UsdTRSUndoableCmdBase(
+    MatrixOpUndoableCmdBase(
         const Ufe::Path&      path,
         const UsdGeomXformOp& op,
-        const UsdTimeCode&    writeTime_)
-        : fOp(op)
-        ,
-        // Always read from proxy shape time.
-        fReadTime(getTime(path))
-        , fWriteTime(writeTime_)
-        , fPrevOpValue(getValue(op.GetAttr(), readTime()))
-        , fNewOpValue(fPrevOpValue)
+        const UsdTimeCode&    writeTime)
+        : UsdSetXformOpUndoableCommandBase(path, writeTime)
+        , _op(op)
     {
     }
 
-    void undo() { fOp.GetAttr().Set(fPrevOpValue, fWriteTime); }
-    void redo() { fOp.GetAttr().Set(fNewOpValue, fWriteTime); }
-
-    UsdTimeCode readTime() const { return fReadTime; }
-    UsdTimeCode writeTime() const { return fWriteTime; }
-
-protected:
-    VtValue fNewOpValue;
+    void setValue(const GfMatrix4d& m) override
+    {
+        VtValue v;
+        v = m; // Can assign to VtValue, but can't construct.
+        _op.GetAttr().Set(v, writeTime());
+    }
 };
 
 // Command to set the translation on a scene item by setting a matrix transform
 // op at an arbitrary position in the transform op stack.
-class UsdTranslateUndoableCmd
-    : public Ufe::TranslateUndoableCommand
-    , public UsdTRSUndoableCmdBase
+class MatrixOpTranslateUndoableCmd : public MatrixOpUndoableCmdBase
 {
 public:
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    UsdTranslateUndoableCmd(
+    MatrixOpTranslateUndoableCmd(
         const Ufe::Path&      path,
         const UsdGeomXformOp& op,
         const UsdTimeCode&    writeTime)
-        : Ufe::TranslateUndoableCommand(path)
-        , UsdTRSUndoableCmdBase(path, op, writeTime)
-#else
-    UsdTranslateUndoableCmd(
-        const UsdSceneItem::Ptr& item,
-        const UsdGeomXformOp&    op,
-        const UsdTimeCode&       writeTime)
-        : Ufe::TranslateUndoableCommand(item)
-        , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
-#endif
+        : MatrixOpUndoableCmdBase(path, op, writeTime)
+        , _opTransform(op.GetOpTransform(readTime()))
     {
-        fOpTransform = op.GetOpTransform(readTime());
     }
-
-    void undo() override { UsdTRSUndoableCmdBase::undo(); }
-    void redo() override { UsdTRSUndoableCmdBase::redo(); }
 
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
-        fOpTransform.SetTranslateOnly(GfVec3d(x, y, z));
-        fNewOpValue = fOpTransform;
-
-        redo();
+        _opTransform.SetTranslateOnly(GfVec3d(x, y, z));
+        handleSet(_opTransform);
         return true;
     }
 
 private:
-    GfMatrix4d fOpTransform;
+    GfMatrix4d _opTransform;
 };
 
-class UsdRotateUndoableCmd
-    : public Ufe::RotateUndoableCommand
-    , public UsdTRSUndoableCmdBase
+class MatrixOpRotateUndoableCmd : public MatrixOpUndoableCmdBase
 {
 
 public:
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    UsdRotateUndoableCmd(
+    MatrixOpRotateUndoableCmd(
         const Ufe::Path&      path,
         const UsdGeomXformOp& op,
         const UsdTimeCode&    writeTime)
-        : Ufe::RotateUndoableCommand(path)
-        , UsdTRSUndoableCmdBase(path, op, writeTime)
-#else
-    UsdRotateUndoableCmd(
-        const UsdSceneItem::Ptr& item,
-        const UsdGeomXformOp&    op,
-        const UsdTimeCode&       writeTime)
-        : Ufe::RotateUndoableCommand(item)
-        , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
-#endif
+        : MatrixOpUndoableCmdBase(path, op, writeTime)
     {
         GfMatrix4d opTransform = op.GetOpTransform(readTime());
 
@@ -242,9 +195,6 @@ public:
         fS = GfMatrix4d(GfVec4d(s[0], s[1], s[2], 1.0));
     }
 
-    void undo() override { UsdTRSUndoableCmdBase::undo(); }
-    void redo() override { UsdTRSUndoableCmdBase::redo(); }
-
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
@@ -256,9 +206,7 @@ public:
         fU.SetRotate(r);
 
         GfMatrix4d opTransform = (fS * fU).SetTranslateOnly(fT);
-        fNewOpValue = opTransform;
-
-        redo();
+        handleSet(opTransform);
         return true;
     }
 
@@ -267,27 +215,15 @@ private:
     GfMatrix4d fS, fU;
 };
 
-class UsdScaleUndoableCmd
-    : public Ufe::ScaleUndoableCommand
-    , public UsdTRSUndoableCmdBase
+class MatrixOpScaleUndoableCmd : public MatrixOpUndoableCmdBase
 {
 
 public:
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    UsdScaleUndoableCmd(
+    MatrixOpScaleUndoableCmd(
         const Ufe::Path&      path,
         const UsdGeomXformOp& op,
         const UsdTimeCode&    writeTime)
-        : Ufe::ScaleUndoableCommand(path)
-        , UsdTRSUndoableCmdBase(path, op, writeTime)
-#else
-    UsdScaleUndoableCmd(
-        const UsdSceneItem::Ptr& item,
-        const UsdGeomXformOp&    op,
-        const UsdTimeCode&       writeTime)
-        : Ufe::ScaleUndoableCommand(item)
-        , UsdTRSUndoableCmdBase(item->path(), op, writeTime)
-#endif
+        : MatrixOpUndoableCmdBase(path, op, writeTime)
     {
         GfMatrix4d opTransform = op.GetOpTransform(readTime());
 
@@ -301,16 +237,11 @@ public:
         }
     }
 
-    void undo() override { UsdTRSUndoableCmdBase::undo(); }
-    void redo() override { UsdTRSUndoableCmdBase::redo(); }
-
-    // Executes the command by setting the rotation onto the transform op.
+    // Executes the command by setting the scale onto the transform op.
     bool set(double x, double y, double z) override
     {
         GfMatrix4d opTransform = (GfMatrix4d(GfVec4d(x, y, z, 1.0)) * fU).SetTranslateOnly(fT);
-        fNewOpValue = opTransform;
-
-        redo();
+        handleSet(opTransform);
         return true;
     }
 
@@ -352,14 +283,7 @@ UsdTransform3dMatrixOp::translateCmd(double x, double y, double z)
         return nullptr;
     }
 
-    return std::make_shared<UsdTranslateUndoableCmd>(
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        path(),
-#else
-        usdSceneItem(),
-#endif
-        _op,
-        UsdTimeCode::Default());
+    return std::make_shared<MatrixOpTranslateUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, double y, double z)
@@ -368,14 +292,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMatrixOp::rotateCmd(double x, doub
         return nullptr;
     }
 
-    return std::make_shared<UsdRotateUndoableCmd>(
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        path(),
-#else
-        usdSceneItem(),
-#endif
-        _op,
-        UsdTimeCode::Default());
+    return std::make_shared<MatrixOpRotateUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double y, double z)
@@ -384,14 +301,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double
         return nullptr;
     }
 
-    return std::make_shared<UsdScaleUndoableCmd>(
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        path(),
-#else
-        usdSceneItem(),
-#endif
-        _op,
-        UsdTimeCode::Default());
+    return std::make_shared<MatrixOpScaleUndoableCmd>(path(), _op, UsdTimeCode::Default());
 }
 
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dMatrixOp::setMatrixCmd(const Ufe::Matrix4d& m)
@@ -527,12 +437,8 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
     // support pivot edits, a fallback Maya stack will be added, and from that
     // point on the fallback Maya stack must be used.  Also, pass pivot edits
     // on to the next handler, since we can't handle them.
-    return (findNonMatrix(i, xformOps)
-#ifdef UFE_V2_FEATURES_AVAILABLE
-            || (hint.type() == Ufe::EditTransform3dHint::RotatePivot)
-            || (hint.type() == Ufe::EditTransform3dHint::ScalePivot)
-#endif
-                )
+    return (findNonMatrix(i, xformOps) || (hint.type() == Ufe::EditTransform3dHint::RotatePivot)
+            || (hint.type() == Ufe::EditTransform3dHint::ScalePivot))
         ? _nextHandler->editTransform3d(item UFE_V2(, hint))
         : UsdTransform3dMatrixOp::create(usdItem, *i);
 }
