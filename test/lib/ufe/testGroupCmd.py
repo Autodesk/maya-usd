@@ -418,7 +418,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertFalse(spherePrim.HasAttribute('xformOp:rotateXYZ'))
         self.assertFalse(spherePrim.HasAttribute('xformOp:scale'))
 
-        # create a group with absolute flag set to True
+        # create a group with relative flag set to True
         cmds.group(ufe.PathString.string(spherePath), relative=True)
 
         # verify that groupItem has 1 child
