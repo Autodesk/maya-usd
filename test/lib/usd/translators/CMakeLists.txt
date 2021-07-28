@@ -36,6 +36,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportRenderLayerMode.py
     ## XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdExportRfMLight.py
+    testUsdExportRoots.py
     testUsdExportSelection.py
     testUsdExportSelectionHierarchy.py
     testUsdExportShadingInstanced.py

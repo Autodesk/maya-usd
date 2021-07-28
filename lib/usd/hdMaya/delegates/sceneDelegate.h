@@ -194,6 +194,11 @@ protected:
     HDMAYA_API
     VtIntArray GetInstanceIndices(const SdfPath& instancerId, const SdfPath& prototypeId) override;
 
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 39
+    HDMAYA_API
+    SdfPathVector GetInstancerPrototypes(SdfPath const& instancerId) override;
+#endif
+
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
     HDMAYA_API
     SdfPath GetInstancerId(const SdfPath& primId) override;
