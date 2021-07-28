@@ -369,8 +369,7 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
 
         int dialogResult = true;
 
-        if (MGlobal::kInteractive == MGlobal::mayaState()
-            && !isCrashing()
+        if (MGlobal::kInteractive == MGlobal::mayaState() && !isCrashing()
             && LayerDatabase::instance().saveInteractionRequired()) {
             MGlobal::executeCommand(kSaveOptionUICmd, dialogResult);
         }
