@@ -237,6 +237,24 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ND_swizzle_vector4_vector2)
     (ND_swizzle_vector4_vector3)
     (ND_swizzle_vector4_vector4)
+    // Conversion nodes:
+    (ND_convert_float_color3)
+    (ND_convert_float_color4)
+    (ND_convert_float_vector2)
+    (ND_convert_float_vector3)
+    (ND_convert_float_vector4)
+    (ND_convert_vector2_vector3)
+    (ND_convert_vector3_color3)
+    (ND_convert_vector3_vector2)
+    (ND_convert_vector3_vector4)
+    (ND_convert_vector4_color4)
+    (ND_convert_vector4_vector3)
+    (ND_convert_color3_vector3)
+    (ND_convert_color4_vector4)
+    (ND_convert_color3_color4)
+    (ND_convert_color4_color3)
+    (ND_convert_boolean_float)
+    (ND_convert_integer_float)
 );
 // clang-format on
 
@@ -1876,6 +1894,8 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
 
         // Add automatic tangent generation:
         shaderInstance->addInputFragment("materialXTw", "Tw", "Tw");
+
+        shaderInstance->setIsTransparent(ogsFragment.isTransparent());
 
     } catch (mx::Exception& e) {
         TF_RUNTIME_ERROR(
