@@ -78,6 +78,14 @@ if (MAYA_NEW_POINT_SNAPPING_SUPPORT)
     )
 endif()
 
+message(STATUS "MAYA_HAS_CRASH_DETECTION is ${MAYA_HAS_CRASH_DETECTION}")
+if (MAYA_HAS_CRASH_DETECTION)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        MAYA_HAS_CRASH_DETECTION=1
+    )
+endif()
+
 if (MAYA_LIGHTAPI_VERSION EQUAL 2)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
