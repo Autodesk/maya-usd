@@ -1133,7 +1133,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
         // Avoid trying to set dirty the absolute root as it is not a Rprim.
         if (_selectionModeChanged) {
             HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-            const SdfPath& absRoot = SdfPath::AbsoluteRootPath();
+            const SdfPath&   absRoot = SdfPath::AbsoluteRootPath();
             for (auto path : rootPaths) {
                 if (path != absRoot) {
                     changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
