@@ -17,6 +17,7 @@
 
 from pxr import Gf
 from pxr import Sdf
+from pxr import Tf
 from pxr import Usd
 from pxr import UsdShade
 from pxr import UsdUtils
@@ -65,6 +66,10 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         """
         Tests that a usdPreviewSurface exports and imports correctly.
         """
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+        self.assertTrue(mark.IsClean())
+
         mayaUsdPluginName = "mayaUsdPlugin"
         if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
             cmds.loadPlugin(mayaUsdPluginName)
@@ -199,10 +204,16 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         full_texture_path = os.path.join(usd_dir, rel_texture_path)
         self.assertTrue(os.path.isfile(full_texture_path))
 
+        self.assertTrue(mark.IsClean())
+
     def testShadingRoundtrip(self):
         """
         Test that shading group and surface node names will survive a roundtrip
         """
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+        self.assertTrue(mark.IsClean())
+
         mayaUsdPluginName = "mayaUsdPlugin"
         if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
             cmds.loadPlugin(mayaUsdPluginName)
@@ -280,11 +291,17 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                 cmds.connectionInfo(final_surf+".outColor", dfs=True),
                 [final_sg+".surfaceShader"])
 
+        self.assertTrue(mark.IsClean())
+
     def testDisplayColorLossyRoundtrip(self):
         """
         Test that shading group names created for display color import are in
         sync with their surface shaders.
         """
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+        self.assertTrue(mark.IsClean())
+
         mayaUsdPluginName = "mayaUsdPlugin"
         if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
             cmds.loadPlugin(mayaUsdPluginName)
@@ -331,6 +348,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                     cmds.connectionInfo(final_surf+".outColor", dfs=True),
                     [final_sg+".surfaceShader"])
 
+        self.assertTrue(mark.IsClean())
 
 
 if __name__ == '__main__':

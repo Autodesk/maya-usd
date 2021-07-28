@@ -21,6 +21,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/fileUtils.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
@@ -596,8 +597,7 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaJobImportArgsTokens->preferredMaterial,
           UsdMayaPreferredMaterialTokens->none,
           UsdMayaPreferredMaterialTokens->allTokens))
-    , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(
-          _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath)))
+    , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(userArgs))
     , importUSDZTextures(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
     , importInstances(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(_Boolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
@@ -661,10 +661,15 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
     return d;
 }
 
-const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std::string& userArg)
+const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const VtDictionary& userArgs)
 {
+    if (!_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
+        return ""; // Not importing textures. File path stays empty.
+
+    const std::string pathArg
+        = _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath);
     std::string importTexturesRootDirPath;
-    if (userArg.size() == 0) { // NOTE: (yliangsiew) If the user gives an empty argument, we'll try
+    if (pathArg.size() == 0) { // NOTE: (yliangsiew) If the user gives an empty argument, we'll try
                                // to determine the best directory to write to instead.
         MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
         MString currentMayaSceneFilePath = UsdMayaUtil::GetCurrentSceneFilePath();
@@ -704,9 +709,11 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std:
                     currentMayaWorkspacePath.asChar());
                 return "";
             }
+            // Make sure the sourceimage folder is created in the project:
+            TfMakeDirs(importTexturesRootDirPath);
         }
     } else {
-        importTexturesRootDirPath.assign(userArg);
+        importTexturesRootDirPath.assign(pathArg);
     }
 
     if (!ghc::filesystem::is_directory(importTexturesRootDirPath)) {
