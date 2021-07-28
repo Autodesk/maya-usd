@@ -173,7 +173,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vector2)
 );
 
-std::set<std::string> _mtlxTopoNodeSet = {
+const std::set<std::string> _mtlxTopoNodeSet = {
     // Topo affecting nodes due to object/model/world space parameter
     "position",
     "normal",
