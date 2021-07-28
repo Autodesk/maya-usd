@@ -117,8 +117,8 @@ void MenuBuilder::Menu::generate(
                 nameWithNoSpaces[i] = '_';
         }
         os << "if(`menu -exists " << nameWithNoSpaces << "`) return;\n";
-        os << "menu -tearOff true -parent $gMainWindow -l \"" << m_name << "\" -aob 1 " << nameWithNoSpaces
-           << ";\n";
+        os << "menu -tearOff true -parent $gMainWindow -l \"" << m_name << "\" -aob 1 "
+           << nameWithNoSpaces << ";\n";
         kill << nameWithNoSpaces << " ";
     } else {
         os << "menuItem -subMenu true -l \"" << m_name << "\";\n";
