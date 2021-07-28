@@ -22,6 +22,7 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/pcp/mapFunction.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MString.h>
@@ -67,6 +68,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportMaterialCollections) \
     (exportReferenceObjects) \
     (exportRefsAsInstanceable) \
+    (exportRoots) \
     (exportSkels) \
     (exportSkin) \
     (exportUVs) \
@@ -216,6 +218,11 @@ struct UsdMayaJobExportArgs
     // where a _BaseModel_ root path is used instead of
     // the model path. This to allow a proper internal reference.
     SdfPath usdModelRootOverridePath; // XXX can we make this const?
+
+    // When using export roots feature we will leverage map function to
+    // override the sdfpath generated from source DAG path. Will be empty
+    // if export roots is not used.
+    const PcpMapFunction rootMapFunction;
 
     /// Creates a UsdMayaJobExportArgs from the given \p dict, overlaid on
     /// top of the default dictionary given by GetDefaultDictionary().
