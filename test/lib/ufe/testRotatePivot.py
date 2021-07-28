@@ -115,7 +115,7 @@ class RotatePivotTestCase(unittest.TestCase):
 
         t3d.rotatePivot(pivot[0], pivot[1], pivot[2])
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), pivot)
+        self.assertAlmostEqual(v3dToMPoint(usdPivot), pivot)
 
         t3d.rotate(degrees(rot[0]), degrees(rot[1]), degrees(rot[2]))
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
@@ -123,7 +123,7 @@ class RotatePivotTestCase(unittest.TestCase):
 
         t3d.rotatePivot(0, 0, 0)
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
+        self.assertAlmostEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
 
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
         self.checkPos(sphereMatrix, [10, 0, 0])
@@ -133,7 +133,7 @@ class RotatePivotTestCase(unittest.TestCase):
         rotatePivotCmd.set(pivot[0], pivot[1], pivot[2])
 
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), pivot)
+        self.assertAlmostEqual(v3dToMPoint(usdPivot), pivot)
 
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
 
@@ -142,7 +142,7 @@ class RotatePivotTestCase(unittest.TestCase):
         rotatePivotCmd.undo()
 
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
+        self.assertAlmostEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
 
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
         self.checkPos(sphereMatrix, [10, 0, 0])
@@ -177,7 +177,7 @@ class RotatePivotTestCase(unittest.TestCase):
         # correct result through an unintended code path.
         t3d.rotatePivot(2, 0, 0)
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(2, 0, 0))
+        self.assertAlmostEqual(v3dToMPoint(usdPivot), om.MPoint(2, 0, 0))
         t3d.rotatePivot(0, 0, 0)
 
         # Start with a non-zero initial rotation. This is required to test
@@ -191,21 +191,21 @@ class RotatePivotTestCase(unittest.TestCase):
 
         cmds.move(-10, 0, 0, relative=True, ufeRotatePivot=True)
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), pivot)
+        self.assertAlmostEqual(v3dToMPoint(usdPivot), pivot)
         usdRotatePivotTranslation = t3d.rotatePivotTranslation()
-        self.assertEqual(v3dToMPoint(usdRotatePivotTranslation), pivotTranslate)
+        self.assertAlmostEqual(v3dToMPoint(usdRotatePivotTranslation), pivotTranslate)
 
         cmds.undo()
 
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
+        self.assertAlmostEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
         usdRotatePivotTranslation = t3d.rotatePivotTranslation()
-        self.assertEqual(v3dToMPoint(usdRotatePivotTranslation), om.MPoint(0, 0, 0))
+        self.assertAlmostEqual(v3dToMPoint(usdRotatePivotTranslation), om.MPoint(0, 0, 0))
 
         cmds.redo()
 
         usdPivot = t3d.rotatePivot()
-        self.assertEqual(v3dToMPoint(usdPivot), pivot)
+        self.assertAlmostEqual(v3dToMPoint(usdPivot), pivot)
 
         cmds.rotate(degrees(rot[0]), degrees(rot[1]), degrees(rot[2]))
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
