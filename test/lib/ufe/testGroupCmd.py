@@ -195,8 +195,8 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(newGroupPath not in childPathsUndo)
         self.assertTrue(ball5Path in childPathsUndo)
         self.assertTrue(ball3Path in childPathsUndo)
-        
-        if ufeUtils.ufeFeatureSetVersion() >= 3:
+
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
             cmds.redo()
         else:
             groupCmd.redo()
