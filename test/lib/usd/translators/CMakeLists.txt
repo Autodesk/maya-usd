@@ -17,6 +17,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportGeomSubset.py
     testUsdExportInstances.py
     testUsdExportLayerAttributes.py
+    testUsdExportLight.py
     testUsdExportLocator.py
     testUsdExportMayaInstancer.py
     testUsdExportMesh.py
@@ -57,6 +58,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportFrameRange.py
     testUsdImportFramerates.py
     testUsdImportInstances.py
+    testUsdImportLight.py
     testUsdImportMayaReference.py
     testUsdImportMesh.py
     testUsdImportPreviewSurface.py
