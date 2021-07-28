@@ -72,7 +72,7 @@ This one is more complex and requires knowledge of how to build USD.
 **Requires Maya 2022.1 or PR126**
 
 1. Build MaterialX using the [Autodesk fork of MaterialX](https://github.com/autodesk-forks/MaterialX)
-    - Requires version [v1.38.1_adsk](https://github.com/autodesk-forks/MaterialX/releases/tag/v1.38.1_adsk) or later
+    - Requires a version later than [PR 1285](https://github.com/autodesk-forks/MaterialX/pull/1285) for proper transparency support.
     - Requires at minimum MATERIALX_BUILD_CONTRIB, MATERIALX_BUILD_GEN_OGSXML, and MATERIALX_BUILD_SHARED_LIBS options to be enabled
     - We only require the OGS XML shadergen part (and USD requires the GLSL shadergen), so you can turn off all complex options like Viewer, OIIO, OSL, or Python support
 2. Install that freshly built MaterialX in the `install` location where you intend to build USD next
