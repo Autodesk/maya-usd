@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}
         translatorCamera.cpp
         translatorCurves.cpp
         translatorGprim.cpp
+        translatorLight.cpp
         translatorMaterial.cpp
         translatorMayaReference.cpp
         translatorMesh.cpp
@@ -24,6 +25,7 @@ set(HEADERS
     translatorCamera.h
     translatorCurves.h
     translatorGprim.h
+    translatorLight.h
     translatorMaterial.h
     translatorMayaReference.h
     translatorMesh.h

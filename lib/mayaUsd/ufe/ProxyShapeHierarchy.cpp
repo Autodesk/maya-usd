@@ -209,6 +209,21 @@ ProxyShapeHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::Sc
     return insertChildCommand->insertedChild();
 }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 3005)
+Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
+{
+    Ufe::SceneItem::Ptr createdItem;
+
+    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+    UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(usdItem, name.string());
+    if (cmd) {
+        cmd->execute();
+        createdItem = cmd->insertedChild();
+    }
+
+    return createdItem;
+}
+#else
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
     const Ufe::Selection&     selection,
     const Ufe::PathComponent& name) const
@@ -220,20 +235,35 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(
         = UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
     if (cmd) {
         cmd->execute();
-        createdItem = cmd->group();
+        createdItem = cmd->insertedChild();
     }
 
     return createdItem;
 }
+#endif
 
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
-    const Ufe::Selection&     selection,
-    const Ufe::PathComponent& name) const
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
+Ufe::InsertChildCommand::Ptr
+#else
+Ufe::UndoableCommand::Ptr
+#endif
+
+#if (UFE_PREVIEW_VERSION_NUM >= 3005)
+ProxyShapeHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
+{
+    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+
+    return UsdUndoCreateGroupCommand::create(usdItem, name.string());
+}
+#else
+ProxyShapeHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name)
+    const
 {
     auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 
     return UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
 }
+#endif
 
 Ufe::UndoableCommand::Ptr
 ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const

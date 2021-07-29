@@ -31,6 +31,7 @@
 #include <cstring>
 #include <functional>
 #include <map>
+#include <typeinfo>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -58,6 +59,13 @@ VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
     VtValue value;
     attr.Get(&value, time);
     return value;
+}
+
+// This utility function is used to avoid the TF_VERIFY message thrown up
+// when GetAttribute() is called with an empty token.
+UsdAttribute getUsdPrimAttribute(const UsdPrim& prim, const TfToken& attrName)
+{
+    return !attrName.IsEmpty() ? prim.GetAttribute(attrName) : UsdAttribute();
 }
 
 // UsdMayaXformStack::FindOpIndex() requires an inconvenient isInvertedTwin
@@ -164,7 +172,6 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
 class UsdTRSUndoableCmdBase : public Ufe::SetVector3dUndoableCommand
 {
 private:
-    const UsdTimeCode _readTime;
     const UsdTimeCode _writeTime;
     VtValue           _newOpValue;
     UsdGeomXformOp    _op;
@@ -174,23 +181,23 @@ private:
 public:
     struct State
     {
-        virtual const char* name() const = 0;
-        virtual void        handleUndo(UsdTRSUndoableCmdBase*)
+        virtual void handleUndo(UsdTRSUndoableCmdBase*)
         {
             TF_CODING_ERROR(
-                "Illegal handleUndo() call in UsdTRSUndoableCmdBase for state '%s'.", name());
+                "Illegal handleUndo() call in UsdTRSUndoableCmdBase for state '%s'.",
+                typeid(*this).name());
         }
         virtual void handleSet(UsdTRSUndoableCmdBase*, const VtValue&)
         {
             TF_CODING_ERROR(
-                "Illegal handleSet() call in UsdTRSUndoableCmdBase for state '%s'.", name());
+                "Illegal handleSet() call in UsdTRSUndoableCmdBase for state '%s'.",
+                typeid(*this).name());
         }
     };
 
     struct InitialState : public State
     {
-        const char* name() const override { return "initial"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
+        void handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
             // Maya triggers an undo on command creation, ignore it.
             cmd->_state = &UsdTRSUndoableCmdBase::_initialUndoCalledState;
@@ -202,7 +209,6 @@ public:
 
             // Going from initial to executing / executed state, save value.
             cmd->_op = cmd->_opFunc(*cmd);
-            cmd->_newOpValue = v;
             cmd->setValue(v);
             cmd->_state = &UsdTRSUndoableCmdBase::_executeState;
         }
@@ -210,8 +216,7 @@ public:
 
     struct InitialUndoCalledState : public State
     {
-        const char* name() const override { return "initial undo called"; }
-        void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
+        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
         {
             // Maya triggers a redo on command creation, ignore it.
             cmd->_state = &UsdTRSUndoableCmdBase::_initialState;
@@ -220,24 +225,18 @@ public:
 
     struct ExecuteState : public State
     {
-        const char* name() const override { return "execute"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
+        void handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
             // Undo
             cmd->_undoableItem.undo();
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
         }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
-        {
-            cmd->_newOpValue = v;
-            cmd->setValue(v);
-        }
+        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override { cmd->setValue(v); }
     };
 
     struct UndoneState : public State
     {
-        const char* name() const override { return "undone"; }
-        void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
+        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
         {
             // Redo
             cmd->_undoableItem.redo();
@@ -247,8 +246,7 @@ public:
 
     struct RedoneState : public State
     {
-        const char* name() const override { return "redone"; }
-        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
+        void handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
             // Undo
             cmd->_undoableItem.undo();
@@ -260,23 +258,16 @@ public:
         // single drag, the Maya move command repeatedly calls undo, then redo,
         // setting new values after the redo.  Treat such events identically to
         // the Execute state.
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
-        {
-            cmd->_newOpValue = v;
-            cmd->setValue(v);
-        }
+        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override { cmd->setValue(v); }
     };
 
     UsdTRSUndoableCmdBase(
         const VtValue&     newOpValue,
         const Ufe::Path&   path,
         OpFunc             opFunc,
-        const UsdTimeCode& writeTime_)
+        const UsdTimeCode& writeTime)
         : Ufe::SetVector3dUndoableCommand(path)
-        ,
-        // Always read from proxy shape time.
-        _readTime(getTime(path))
-        , _writeTime(writeTime_)
+        , _writeTime(writeTime)
         , _newOpValue(newOpValue)
         , _op()
         , _opFunc(std::move(opFunc))
@@ -294,12 +285,10 @@ public:
     {
         auto attr = _op.GetAttr();
         if (attr) {
+            _newOpValue = v;
             _op.GetAttr().Set(v, _writeTime);
         }
     }
-
-    UsdTimeCode readTime() const { return _readTime; }
-    UsdTimeCode writeTime() const { return _writeTime; }
 
     static InitialState           _initialState;
     static InitialUndoCalledState _initialUndoCalledState;
@@ -433,7 +422,6 @@ UsdTransform3dMayaXformStack::translateCmd(double x, double y, double z)
 Ufe::RotateUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 {
-    GfVec3f        v(x, y, z);
     UsdGeomXformOp op;
     TfToken        attrName;
     const bool     hasRotate = hasOp(NdxRotate);
@@ -441,49 +429,44 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
         op = getOp(NdxRotate);
         attrName = op.GetOpName();
     }
+
+    // Return null command if the attribute edit is not allowed.
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
     // If there is no rotate transform op, we will create a RotXYZ.
+    GfVec3f           v(x, y, z);
     CvtRotXYZToAttrFn cvt = hasRotate ? getCvtRotXYZToAttrFn(op.GetOpName()) : toXYZ;
-    OpFunc            f = hasRotate
-        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              auto attr = usdSceneItem->prim().GetAttribute(attrName);
 
-              // return an invalid XformOp if the attribute edit is not allowed.
-              std::string errMsg;
-              if (!MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
-                  MGlobal::displayError(errMsg.c_str());
-                  return UsdGeomXformOp();
-              }
+    auto f = OpFunc(
+        [attrName, opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
+            const BaseUndoableCommand& cmd) {
+            auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+            TF_AXIOM(usdSceneItem);
 
-              return UsdGeomXformOp(attr);
-          })
-        : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const BaseUndoableCommand& cmd) {
-              // Use notification guard, otherwise will generate one notification
-              // for the xform op add, and another for the reorder.
-              InTransform3dChange guard(cmd.path());
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              UsdGeomXformable xformable(usdSceneItem->prim());
+            auto attr = getUsdPrimAttribute(usdSceneItem->prim(), attrName);
+            if (attr) {
+                return UsdGeomXformOp(attr);
+            } else {
+                // Use notification guard, otherwise will generate one notification
+                // for the xform op add, and another for the reorder.
+                InTransform3dChange guard(cmd.path());
+                auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+                TF_AXIOM(usdSceneItem);
+                UsdGeomXformable xformable(usdSceneItem->prim());
 
-              // At this point we already know that writing to attribute is going
-              // to succeed but we do not know if writing to "transform op order" succeed since
-              // we could be a weaker layer.
-              std::string errMsg;
-              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-                  MGlobal::displayError(errMsg.c_str());
-                  return UsdGeomXformOp();
-              }
+                auto r = xformable.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
+                TF_AXIOM(r);
+                r.Set(v);
+                auto result = setXformOpOrderFn(xformable);
+                TF_AXIOM(result);
 
-              auto r = xformable.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
-              TF_AXIOM(r);
-              r.Set(v);
-              auto result = setXformOpOrderFn(xformable);
-              TF_AXIOM(result);
-
-              return r;
-          });
+                return r;
+            }
+        });
 
     return std::make_shared<UsdRotateOpUndoableCmd>(
         v, path(), std::move(f), cvt, UsdTimeCode::Default());
@@ -491,53 +474,46 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, double y, double z)
 {
-    GfVec3f        v(x, y, z);
     UsdGeomXformOp op;
     TfToken        attrName;
-    const bool     hasScale = hasOp(NdxScale);
-    if (hasScale) {
+    if (hasOp(NdxScale)) {
         op = getOp(NdxScale);
         attrName = op.GetOpName();
     }
-    OpFunc f = hasScale
-        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              auto attr = usdSceneItem->prim().GetAttribute(attrName);
 
-              // return an invalid XformOp if the attribute edit is not allowed.
-              std::string errMsg;
-              if (!MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
-                  MGlobal::displayError(errMsg.c_str());
-                  return UsdGeomXformOp();
-              }
+    // Return null command if the attribute edit is not allowed.
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
 
-              return UsdGeomXformOp(attr);
-          })
-        : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const BaseUndoableCommand& cmd) {
-              InTransform3dChange guard(cmd.path());
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              UsdGeomXformable xformable(usdSceneItem->prim());
+    GfVec3f v(x, y, z);
+    auto    f = OpFunc(
+        [attrName, opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
+            const BaseUndoableCommand& cmd) {
+            auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+            TF_AXIOM(usdSceneItem);
 
-              // At this point we already know that writing to attribute is going
-              // to succeed but we do not know if writing to "transform op order" succeed since
-              // we could be a weaker layer.
-              std::string errMsg;
-              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-                  MGlobal::displayError(errMsg.c_str());
-                  return UsdGeomXformOp();
-              }
+            auto attr = getUsdPrimAttribute(usdSceneItem->prim(), attrName);
+            if (attr) {
+                return UsdGeomXformOp(attr);
+            } else {
 
-              auto s = xformable.AddScaleOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
-              TF_AXIOM(s);
-              s.Set(v);
-              auto result = setXformOpOrderFn(xformable);
-              TF_AXIOM(result);
+                InTransform3dChange guard(cmd.path());
+                auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+                TF_AXIOM(usdSceneItem);
+                UsdGeomXformable xformable(usdSceneItem->prim());
 
-              return s;
-          });
+                auto s = xformable.AddScaleOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
+                TF_AXIOM(s);
+                s.Set(v);
+                auto result = setXformOpOrderFn(xformable);
+                TF_AXIOM(result);
+
+                return s;
+            }
+        });
 
     return std::make_shared<UsdVecOpUndoableCmd<GfVec3f>>(
         v, path(), std::move(f), UsdTimeCode::Default());
@@ -618,45 +594,30 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
     const TfToken& attrName,
     const TfToken& opSuffix)
 {
-    auto   attr = prim().GetAttribute(attrName);
-    auto   setXformOpOrderFn = getXformOpOrderFn();
-    OpFunc f = attr
-        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              auto attr = usdSceneItem->prim().GetAttribute(attrName);
+    // Return null command if the attribute edit is not allowed.
+    std::string errMsg;
+    if (!isAttributeEditAllowed(attrName, errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
 
-              // return an invalid XformOp if the attribute edit is not allowed.
-              std::string errMsg;
-              if (!MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
-                  MGlobal::displayError(errMsg.c_str());
-                  return UsdGeomXformOp();
-              }
+    auto setXformOpOrderFn = getXformOpOrderFn();
+    auto f = OpFunc(
+        // MAYA-108612: generalized lambda capture below is incorrect with
+        // gcc 6.3.1 on Linux.  Call to getXformOpOrderFn() is non-virtual;
+        // work around by calling in function body.  PPT, 11-Jan-2021.
+        // [opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](const BaseUndoableCommand&
+        // cmd) {
+        [attrName, opSuffix, setXformOpOrderFn, v](const BaseUndoableCommand& cmd) {
+            auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+            TF_AXIOM(usdSceneItem);
 
-              return UsdGeomXformOp(attr);
-          })
-        : OpFunc(
-            // MAYA-108612: generalized lambda capture below is incorrect with
-            // gcc 6.3.1 on Linux.  Call to getXformOpOrderFn() is non-virtual;
-            // work around by calling in function body.  PPT, 11-Jan-2021.
-            // [opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](const BaseUndoableCommand&
-            // cmd) {
-            [opSuffix, setXformOpOrderFn, v](const BaseUndoableCommand& cmd) {
+            auto attr = getUsdPrimAttribute(usdSceneItem->prim(), attrName);
+            if (attr) {
+                return UsdGeomXformOp(attr);
+            } else {
                 InTransform3dChange guard(cmd.path());
-                auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-                TF_AXIOM(usdSceneItem);
-                UsdGeomXformable xformable(usdSceneItem->prim());
-
-                // At this point we already know that writing to attribute is going
-                // to succeed but we do not know if writing to "transform op order" succeed
-                // since we could be a weaker layer.
-                std::string errMsg;
-                if (!MayaUsd::ufe::isAttributeEditAllowed(
-                        xformable.GetXformOpOrderAttr(), &errMsg)) {
-                    MGlobal::displayError(errMsg.c_str());
-                    return UsdGeomXformOp();
-                }
-
+                UsdGeomXformable    xformable(usdSceneItem->prim());
                 auto op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
                 TF_AXIOM(op);
                 op.Set(v);
@@ -664,7 +625,8 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
                 TF_AXIOM(result);
 
                 return op;
-            });
+            }
+        });
 
     return std::make_shared<UsdVecOpUndoableCmd<V>>(
         v, path(), std::move(f), UsdTimeCode::Default());
@@ -675,55 +637,46 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 {
     auto pvtAttrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, pvtOpSuffix);
 
+    // Return null command if the attribute edit is not allowed.
+    std::string errMsg;
+    if (!isAttributeEditAllowed(pvtAttrName, errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
     GfVec3f v(x, y, z);
-    auto    attr = prim().GetAttribute(pvtAttrName);
-    OpFunc  f = attr
-        ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
+    auto    f = OpFunc([pvtAttrName, pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
+                        const BaseUndoableCommand& cmd) {
+        auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+        TF_AXIOM(usdSceneItem);
 
-              // return an invalid XformOp if the attribute edit is not allowed.
-              std::string errMsg;
-              if (!MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
-                  MGlobal::displayError(errMsg.c_str());
-                  return UsdGeomXformOp();
-              }
+        auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
+        if (attr) {
+            auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
+            return UsdGeomXformOp(attr);
+        } else {
+            // Without a notification guard each operation (each transform op
+            // addition, setting the attribute value, and setting the transform
+            // op order) will notify.  Observers would see an object in an
+            // inconsistent state, especially after pivot is added but before
+            // its inverse is added --- this does not match the Maya transform
+            // stack.  Use of SdfChangeBlock is discouraged when calling USD
+            // APIs above Sdf, so use our own guard.
+            InTransform3dChange guard(cmd.path());
+            auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+            TF_AXIOM(usdSceneItem);
+            UsdGeomXformable xformable(usdSceneItem->prim());
+            auto p = xformable.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, pvtOpSuffix);
 
-              return UsdGeomXformOp(attr);
-          })
-        : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const BaseUndoableCommand& cmd) {
-              // Without a notification guard each operation (each transform op
-              // addition, setting the attribute value, and setting the transform
-              // op order) will notify.  Observers would see an object in an
-              // inconsistent state, especially after pivot is added but before
-              // its inverse is added --- this does not match the Maya transform
-              // stack.  Use of SdfChangeBlock is discouraged when calling USD
-              // APIs above Sdf, so use our own guard.
-              InTransform3dChange guard(cmd.path());
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              UsdGeomXformable xformable(usdSceneItem->prim());
-              auto p = xformable.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, pvtOpSuffix);
-
-              // At this point we already know that writing to attribute is going
-              // to succeed but we do not know if writing to "transform op order" succeed since
-              // we could be a weaker layer.
-              std::string errMsg;
-              if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
-                  MGlobal::displayError(errMsg.c_str());
-                  return UsdGeomXformOp();
-              }
-
-              auto pInv = xformable.AddTranslateOp(
-                  UsdGeomXformOp::PrecisionFloat, pvtOpSuffix, /* isInverseOp */ true);
-              TF_AXIOM(p && pInv);
-              p.Set(v);
-              auto result = setXformOpOrderFn(xformable);
-              TF_AXIOM(result);
-              return p;
-          });
+            auto pInv = xformable.AddTranslateOp(
+                UsdGeomXformOp::PrecisionFloat, pvtOpSuffix, /* isInverseOp */ true);
+            TF_AXIOM(p && pInv);
+            p.Set(v);
+            auto result = setXformOpOrderFn(xformable);
+            TF_AXIOM(result);
+            return p;
+        }
+    });
 
     return std::make_shared<UsdVecOpUndoableCmd<GfVec3f>>(
         v, path(), std::move(f), UsdTimeCode::Default());
@@ -806,6 +759,24 @@ UsdTransform3dMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName) const
     }; // FIXME, unsupported.
 
     return cvt.at(opName);
+}
+
+bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(
+    const PXR_NS::TfToken attrName,
+    std::string&          errMsg) const
+{
+    UsdAttribute attr;
+    if (!attrName.IsEmpty())
+        attr = prim().GetAttribute(attrName);
+    if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
+        return false;
+    } else if (!attr) {
+        UsdGeomXformable xformable(prim());
+        if (!MayaUsd::ufe::isAttributeEditAllowed(xformable.GetXformOpOrderAttr(), &errMsg)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------

@@ -36,6 +36,8 @@
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/tokens.h>
+#include <pxr/imaging/hgi/hgi.h>
+#include <pxr/imaging/hgi/tokens.h>
 #include <pxr/pxr.h>
 
 #include <maya/M3dView.h>
@@ -54,15 +56,16 @@
 #include <exception>
 #include <limits>
 
-#if PXR_VERSION > 2002
-#include <pxr/imaging/hgi/hgi.h>
-#include <pxr/imaging/hgi/tokens.h>
-#endif
-
 #if WANT_UFE_BUILD
+#include <mayaUsd/ufe/Global.h>
+
 #include <maya/MFileIO.h>
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
+#include <ufe/path.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
 #include <ufe/selectionNotification.h>
 #endif // WANT_UFE_BUILD
 
@@ -196,19 +199,13 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText())
     , _rendererDesc(desc)
     , _globals(MtohRenderGlobals::GetInstance())
-    ,
-#if PXR_VERSION > 2002
 #if PXR_VERSION > 2005
-    _hgi(Hgi::CreatePlatformDefaultHgi())
-    ,
+    , _hgi(Hgi::CreatePlatformDefaultHgi())
 #else
-    _hgi(Hgi::GetPlatformDefaultHgi())
-    ,
+    , _hgi(Hgi::GetPlatformDefaultHgi())
 #endif
-    _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
-    ,
-#endif
-    _selectionTracker(new HdxSelectionTracker)
+    , _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
+    , _selectionTracker(new HdxSelectionTracker)
     , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin)
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
@@ -590,11 +587,17 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         MStatus  status;
         MDagPath camPath = getFrameContext()->getCurrentCameraPath(&status);
         if (status == MStatus::kSuccess) {
-            // FIXME: This is what a USD camera selected in the viewport returns.
+#ifdef MAYA_CURRENT_UFE_CAMERA_SUPPORT
+            MString   ufeCameraPathString = getFrameContext()->getCurrentUfeCameraPath(&status);
+            Ufe::Path ufeCameraPath = Ufe::PathString::path(ufeCameraPathString.c_str());
+            bool      isUsdCamera = ufeCameraPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId();
+#else
             static const MString defaultUfeProxyCameraShape(
                 "|defaultUfeProxyCameraTransformParent|defaultUfeProxyCameraTransform|"
                 "defaultUfeProxyCameraShape");
-            if (defaultUfeProxyCameraShape != camPath.fullPathName()) {
+            bool isUsdCamera = defaultUfeProxyCameraShape == camPath.fullPathName();
+#endif
+            if (!isUsdCamera) {
                 for (auto& delegate : _delegates) {
                     if (HdMayaSceneDelegate* mayaScene
                         = dynamic_cast<HdMayaSceneDelegate*>(delegate.get())) {
@@ -715,11 +718,7 @@ void MtohRenderOverride::_InitHydraResources()
     if (!renderDelegate)
         return;
 
-#if PXR_VERSION > 2002
     _renderIndex = HdRenderIndex::New(renderDelegate, { &_hgiDriver });
-#else
-    _renderIndex = HdRenderIndex::New(renderDelegate);
-#endif
     if (!_renderIndex)
         return;
 
@@ -853,11 +852,7 @@ void MtohRenderOverride::_SelectionChanged()
         return;
     }
     SdfPathVector selectedPaths;
-#if PXR_VERSION > 2002
-    auto selection = std::make_shared<HdSelection>();
-#else
-    auto selection = boost::make_shared<HdSelection>();
-#endif // PXR_VERSION > 2002
+    auto          selection = std::make_shared<HdSelection>();
 
 #if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();

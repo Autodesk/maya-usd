@@ -61,7 +61,7 @@ vec4 UsdUVTexture(
     vec2 stFlipped = stScaleOffset * vec2(1, -1) + vec2(0, 1);
     vec4 outColor = texture(fileSampler, stFlipped);
     if (isColorSpaceSRGB) {
-        // sRGB to linear:
+        // sRGB to scene-linear Rec 709/sRGB:
         vec4 breakPnt = vec4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);
         vec4 slope = vec4(0.07738015800714493, 0.07738015800714493, 0.07738015800714493, 1.);
         vec4 scale = vec4(0.9478672742843628, 0.9478672742843628, 0.9478672742843628, 0.9999989867210388);
@@ -71,7 +71,7 @@ vec4 UsdUVTexture(
         vec4 linSeg = outColor * slope;
         vec4 powSeg = pow( max( vec4(0., 0., 0., 0.), scale * outColor + offset), gamma);
         outColor = isAboveBreak * powSeg + ( vec4(1., 1., 1., 1.) - isAboveBreak ) * linSeg;
-        // linear to Maya working space:
+        // scene-linear Rec 709/sRGB to Maya working space:
         TO_MAYA_COLOR_SPACE_GLSL
     }
     return outColor * scale + bias;
@@ -98,7 +98,7 @@ float4 UsdUVTexture(
     float2 stFlipped = stScaleOffset * float2(1, -1) + float2(0, 1);
     float4 outColor = file.Sample(fileSampler, stFlipped);
     if (isColorSpaceSRGB) {
-        // sRGB to linear:
+        // sRGB to scene-linear Rec 709/sRGB:
         float4 breakPnt = float4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);
         float4 slope = float4(0.07738015800714493, 0.07738015800714493, 0.07738015800714493, 1.);
         float4 scale = float4(0.9478672742843628, 0.9478672742843628, 0.9478672742843628, 0.9999989867210388);
@@ -108,7 +108,7 @@ float4 UsdUVTexture(
         float4 linSeg = outColor * slope;
         float4 powSeg = pow( max( float4(0., 0., 0., 0.), scale * outColor + offset), gamma);
         outColor = isAboveBreak * powSeg + ( float4(1., 1., 1., 1.) - isAboveBreak ) * linSeg;
-        // linear to Maya working space:
+        // scene-linear Rec 709/sRGB to Maya working space:
         TO_MAYA_COLOR_SPACE_HLSL
     }
     return outColor * scale + bias;
@@ -135,7 +135,7 @@ float4 UsdUVTexture(
     float2 stFlipped = stScaleOffset * float2(1, -1) + float2(0, 1);
     float4 outColor = tex2D(fileSampler, stFlipped);
     if (isColorSpaceSRGB) {
-        // sRGB to linear
+        // sRGB to scene-linear Rec 709/sRGB
         float4 breakPnt = float4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);
         float4 slope = float4(0.07738015800714493, 0.07738015800714493, 0.07738015800714493, 1.);
         float4 scale = float4(0.9478672742843628, 0.9478672742843628, 0.9478672742843628, 0.9999989867210388);
@@ -145,7 +145,7 @@ float4 UsdUVTexture(
         float4 linSeg = outColor * slope;
         float4 powSeg = pow( max( float4(0., 0., 0., 0.), scale * outColor + offset), gamma);
         outColor = isAboveBreak * powSeg + ( float4(1., 1., 1., 1.) - isAboveBreak ) * linSeg;
-        // linear to Maya working space:
+        // scene-linear Rec 709/sRGB to Maya working space:
         TO_MAYA_COLOR_SPACE_CG
     }
     return outColor * scale + bias;

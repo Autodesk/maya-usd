@@ -1426,6 +1426,10 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
             outNode.identifier = TfToken(
                 HdVP2ShaderFragments::getUsdUVTextureFragmentName(mayaWorkingColorSpace).asChar());
         } else {
+            if (!sdrNode) {
+                TF_WARN("Could not find a shader node for <%s>", node.path.GetText());
+                return;
+            }
             outNode.identifier = TfToken(sdrNode->GetName());
         }
 
@@ -2237,12 +2241,22 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                         }
                         status = _surfaceShader->setParameter(paramName, isSRGB);
                     }
+                    // These parameters allow scaling texcoords into the proper coordinates of the
+                    // Maya UDIM texture atlas:
                     if (status) {
+#ifdef WANT_MATERIALX_BUILD
+                        paramName = nodeName + (isMaterialXNode ? "uv_scale" : "stScale");
+#else
                         paramName = nodeName + "stScale";
+#endif
                         status = _surfaceShader->setParameter(paramName, info._stScale.data());
                     }
                     if (status) {
+#ifdef WANT_MATERIALX_BUILD
+                        paramName = nodeName + (isMaterialXNode ? "uv_offset" : "stOffset");
+#else
                         paramName = nodeName + "stOffset";
+#endif
                         status = _surfaceShader->setParameter(paramName, info._stOffset.data());
                     }
                 }

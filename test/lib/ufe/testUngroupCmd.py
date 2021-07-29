@@ -110,13 +110,16 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2Path = sphereGen.createSphere()
 
         # create a group
-        cmds.group(ufe.PathString.string(sphere1Path), 
-                   ufe.PathString.string(sphere2Path))
+        groupName = cmds.group(ufe.PathString.string(sphere1Path), 
+                               ufe.PathString.string(sphere2Path))
 
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        if ufe.VersionInfo.getPatchLevel() >= 1:
+            self.assertEqual(groupItem.nodeName(), groupName)
+        else:
+            self.assertEqual(groupItem.nodeName(), "group1")
 
         # verify that groupItem has 2 children
         groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
@@ -203,8 +206,8 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2T3d.translate(-2.0, 0.0, 0.0)
 
         # create a group
-        cmds.group(ufe.PathString.string(sphere1Path), 
-                   ufe.PathString.string(sphere2Path))
+        groupName = cmds.group(ufe.PathString.string(sphere1Path), 
+                               ufe.PathString.string(sphere2Path))
 
         # move the group 
         cmds.move(7.0, 8.0, 12.0, r=True)
@@ -212,7 +215,11 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+
+        if ufe.VersionInfo.getPatchLevel() >= 1:
+            self.assertEqual(groupItem.nodeName(), groupName)
+        else:
+            self.assertEqual(groupItem.nodeName(), "group1")
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.
@@ -243,8 +250,8 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2T3d.translate(-2.0, 0.0, 0.0)
 
         # create a group
-        cmds.group(ufe.PathString.string(sphere1Path), 
-                   ufe.PathString.string(sphere2Path))
+        groupName = cmds.group(ufe.PathString.string(sphere1Path), 
+                               ufe.PathString.string(sphere2Path))
 
         # move the group 
         cmds.move(20.0, 8.0, 12.0, r=True)
@@ -252,7 +259,10 @@ class UngroupCmdTestCase(unittest.TestCase):
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        if ufe.VersionInfo.getPatchLevel() >= 1:
+            self.assertEqual(groupItem.nodeName(), groupName)
+        else:
+            self.assertEqual(groupItem.nodeName(), "group1")
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.
@@ -348,7 +358,8 @@ class UngroupCmdTestCase(unittest.TestCase):
             # ungroup
             cmds.ungroup(ufe.PathString.string(sphere1Path))
 
-    def testUngroupAfterUndoRedo(self):
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3004', 'testUngroupSelectionAfterUndoRedo is only available in UFE preview version 0.3.4 and greater')
+    def testUngroupSelectionAfterUndoRedo(self):
         ''' '''
         # create a sphere generator
         sphereGen = SphereGenerator(2, self.contextOp, self.proxyShapePathStr)
@@ -358,17 +369,25 @@ class UngroupCmdTestCase(unittest.TestCase):
         sphere2Path = sphereGen.createSphere()
 
         # create a group
-        cmds.group(ufe.PathString.string(sphere1Path), 
-                   ufe.PathString.string(sphere2Path))
+        groupName = cmds.group(ufe.PathString.string(sphere1Path), 
+                               ufe.PathString.string(sphere2Path))
 
         # verify selected item is "group1"
         self.assertEqual(len(self.globalSn), 1)
         groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        if ufe.VersionInfo.getPatchLevel() >= 1:
+            self.assertEqual(groupItem.nodeName(), groupName)
+        else:
+            self.assertEqual(groupItem.nodeName(), "group1")
 
         # remove group1 from the hierarchy. What should remain
         # is /Sphere1, /Sphere2.
         cmds.ungroup("{},/group1".format(self.proxyShapePathStr))
+
+        # verify that Sphere1 and Sphere2 are selected
+        self.assertEqual(len(self.globalSn), 2)
+        self.assertEqual(self.globalSn.front().nodeName(), "Sphere1")
+        self.assertEqual(self.globalSn.back().nodeName(), "Sphere2")
 
         # undo again
         cmds.undo()
@@ -376,19 +395,11 @@ class UngroupCmdTestCase(unittest.TestCase):
         # redo again
         cmds.redo()
 
-        # verify that group1 is in global selection list
-        self.assertEqual(len(self.globalSn), 1)
-        groupItem = self.globalSn.front()
-        self.assertEqual(groupItem.nodeName(), "group1")
+        # verify that Sphere1 and Sphere2 are selected
+        self.assertEqual(len(self.globalSn), 2)
+        self.assertEqual(self.globalSn.front().nodeName(), "Sphere1")
+        self.assertEqual(self.globalSn.back().nodeName(), "Sphere2")
 
-        # Hmmm, looks like we have a bug here. HS, June 21, 2021
-        # verify that group hierarchy has 2 children
-        # groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
-        # self.assertEqual(len(groupHierarchy.children()), 2)
-
-        # remove group1 from the hierarchy. What should remain
-        # is /Sphere1, /Sphere2.
-        # cmds.ungroup("|stage1|stageShape1,/group1")
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

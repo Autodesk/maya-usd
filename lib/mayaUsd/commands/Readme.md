@@ -128,6 +128,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-exportInstances`               | `-ein`     | bool             | true                | Enable or disable the export of instances |
 | `-exportReferenceObjects`        | `-ero`     | bool             | false               | Whether to export reference objects for meshes. The reference object's points are exported as a primvar on the mesh object; the primvar name is determined by querying `UsdUtilsGetPrefName()`, which defaults to `pref`. |
 | `-exportRefsAsInstanceable`      | `-eri`     | bool             | false               | Will cause all references created by USD reference assembly nodes or explicitly tagged reference nodes to be set to be instanceable (`UsdPrim::SetInstanceable(true)`). |
+| `-exportRoots`                   | `-ert`     | string           | none                | Multi-flag that allows export of any DAG subtree without including parents |
 | `-exportSkels`                   | `-skl`     | string           | none                | Determines how to export skeletons. Valid values are: `none` - No skeleton are exported, `auto` - All skeletons will be exported, SkelRoots may be created, `explicit` - only those under SkelRoots |
 | `-exportSkin`                    | `-skn`     | string           | none                | Determines how to export skinClusters via the UsdSkel schema. On any mesh where skin bindings are exported, the geometry data is the pre-deformation data. On any mesh where skin bindings are not exported, the geometry data is the final (post-deformation) data. Valid values are: `none` - No skinClusters are exported, `auto` - All skinClusters will be exported for non-root prims. The exporter errors on skinClusters on any root prims. The rootmost prim containing any skinned mesh will automatically be promoted into a SkelRoot, e.g. if `</Model/Mesh>` has skinning, then `</Model>` will be promoted to a SkelRoot, `explicit` - Only skinClusters under explicitly-tagged SkelRoot prims will be exported. The exporter errors if there are nested SkelRoots. To explicitly tag a prim as a SkelRoot, specify a `USD_typeName`attribute on a Maya node. |
 | `-exportUVs`                     | `-uvs`     | bool             | true                | Enable or disable the export of UV sets |
@@ -488,12 +489,14 @@ The purpose of this command is to control the layer editor window.
 | `-isLayerDirty`         | `-dl`      | Query if the layer has been modified          |
 | `-isInvalidLayer`       | `-il`      | Query if the layer is not found or invalid    |
 | `-isSubLayer`           | `-su`      | Query if the layer is a sub-layer             |
+| `-isIncomingLayer`      | `-in`      | Query if the layer is incoming (connection)   |
 | `-layerAppearsMuted`    | `-am`      | Query if the layer or any parent is muted     |
 | `-layerIsMuted`         | `-mu`      | Query if the layer itself is muted            |
+| `-layerIsReadOnly`      | `-r`       | Query if the layer or any parent is read only |
 | `-muteLayer`            | `-mt`      | Toggle the muting of a layer                  |
 | `-layerNeedsSaving`     | `-ns`      | Query if the layer is dirty or anonymous      |
 | `-printLayer`           | `-pl`      | Print the layer to the script editor output   |
-| `-proxyShape`           | `-ps`      | Sets the selected shape by its path. Takes the path as argument |
+| `-proxyShape`           | `-ps`      | Query the proxyShape path or sets the selected shape by its path. Takes the path as argument |
 | `-reload`               | `-rl`      | Open or show the editor window                |
 | `-selectionLength`      | `-se`      | Query the number of items selected            |
 | `-isSessionLayer`       | `-sl`      | Query if the layer is a session layer         |

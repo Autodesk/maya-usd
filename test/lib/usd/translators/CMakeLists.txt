@@ -17,13 +17,14 @@ set(TEST_SCRIPT_FILES
     testUsdExportGeomSubset.py
     testUsdExportInstances.py
     testUsdExportLayerAttributes.py
+    testUsdExportLight.py
     testUsdExportLocator.py
     testUsdExportMayaInstancer.py
     testUsdExportMesh.py
     testUsdExportNurbsCurve.py
     testUsdExportOpenLayer.py
     testUsdExportOverImport.py
-    testUsdExportPackage.py
+    testUsdExportUsdzPackage.py
     testUsdExportParentScope.py
     # To investigate: following test asserts in MFnParticleSystem, but passes.
     # PPT, 17-Jun-20.
@@ -36,6 +37,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportRenderLayerMode.py
     ## XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdExportRfMLight.py
+    testUsdExportRoots.py
     testUsdExportSelection.py
     testUsdExportSelectionHierarchy.py
     testUsdExportShadingInstanced.py
@@ -56,6 +58,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportFrameRange.py
     testUsdImportFramerates.py
     testUsdImportInstances.py
+    testUsdImportLight.py
     testUsdImportMayaReference.py
     testUsdImportMesh.py
     testUsdImportPreviewSurface.py

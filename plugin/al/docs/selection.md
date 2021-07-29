@@ -15,13 +15,13 @@ Selectability can be configured on a per-prim basis by setting the selectability
 
 ```
 from pxr import Usd
-from AL.usd import schemas
+from AL.usd.schemas import maya as maya_schemas
 
 stage = Usd.Stage.CreateInMemory()
 prim = stage.DefinePrim("/DontSelectMe")
 
-alUsdModelShot = schemas.ModelAPI(prim)
-alUsdModelShot.SetSelectability(schemas.Tokens.selectability_unselectable)
+alUsdModelShot = maya_schemas.ModelAPI(prim)
+alUsdModelShot.SetSelectability(maya_schemas.Tokens.selectability_unselectable)
 ```
 
 ## Commands

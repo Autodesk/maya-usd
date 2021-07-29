@@ -148,6 +148,20 @@ MayaUsd::LayerManager* findNode()
     return nullptr;
 }
 
+MayaUsd::LayerManager* findOrCreateNode()
+{
+    MayaUsd::LayerManager* lm = findNode();
+    if (!lm) {
+        MDGModifier modifier;
+        MObject     manager = modifier.createNode(MayaUsd::LayerManager::typeId);
+        modifier.doIt();
+
+        lm = static_cast<MayaUsd::LayerManager*>(MFnDependencyNode(manager).userNode());
+    }
+
+    return lm;
+}
+
 void convertAnonymousLayersRecursive(
     SdfLayerRefPtr     layer,
     const std::string& basename,
@@ -183,6 +197,15 @@ void convertAnonymousLayersRecursive(
     }
 }
 
+bool isCrashing()
+{
+#ifdef MAYA_HAS_CRASH_DETECTION
+    return MGlobal::isInCrashHandler();
+#else
+    return false;
+#endif
+}
+
 constexpr auto kSaveOptionUICmd = "usdFileSaveOptions(true);";
 
 } // namespace
@@ -204,7 +227,8 @@ public:
     static void           cleanUpNewScene(void*);
     static void           removeManagerNode(MayaUsd::LayerManager* lm = nullptr);
 
-    bool getStagesToSave(bool isExport);
+    bool getProxiesToSave(bool isExport);
+    bool saveInteractionRequired();
     bool supportedNodeType(MTypeId type);
     void addSupportForNodeType(MTypeId type);
     void removeSupportForNodeType(MTypeId type);
@@ -226,12 +250,13 @@ private:
     BatchSaveResult saveUsdToMayaFile();
     BatchSaveResult saveUsdToUsdFiles();
     void            convertAnonymousLayers(MayaUsdProxyShapeBase* pShape, UsdStageRefPtr stage);
-    void            saveSessionLayer(MayaUsdProxyShapeBase* pShape, UsdStageRefPtr stage);
+    void            saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous);
 
     std::map<std::string, SdfLayerRefPtr> _idToLayer;
     TfNotice::Key                         _onStageSetKey;
     std::set<unsigned int>                _supportedTypes;
     MDagPathArray                         _proxiesToSave;
+    MDagPathArray                         _internalProxiesToSave;
     static MCallbackId                    preSaveCallbackId;
     static MCallbackId                    preExportCallbackId;
     static MCallbackId                    postNewCallbackId;
@@ -340,11 +365,12 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
 {
     cleanUpNewScene(nullptr);
 
-    if (LayerDatabase::instance().getStagesToSave(isExport)) {
+    if (LayerDatabase::instance().getProxiesToSave(isExport)) {
 
         int dialogResult = true;
 
-        if (MGlobal::kInteractive == MGlobal::mayaState()) {
+        if (MGlobal::kInteractive == MGlobal::mayaState() && !isCrashing()
+            && LayerDatabase::instance().saveInteractionRequired()) {
             MGlobal::executeCommand(kSaveOptionUICmd, dialogResult);
         }
 
@@ -358,28 +384,59 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
     }
 }
 
-bool LayerDatabase::getStagesToSave(bool isExport)
+bool LayerDatabase::getProxiesToSave(bool isExport)
 {
-    auto allStages = MayaUsd::ufe::getAllStages();
     bool checkSelection = isExport && (MFileIO::kExportTypeSelected == MFileIO::exportType());
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
 
     _proxiesToSave.clear();
-    for (const auto& stage : allStages) {
-        auto stagePath = MayaUsd::ufe::stagePath(stage);
-        if (!stagePath.empty()) {
+    _internalProxiesToSave.clear();
+
+    MFnDependencyNode  fn;
+    MItDependencyNodes iter(MFn::kPluginDependNode);
+    for (; !iter.isDone(); iter.next()) {
+        MObject mobj = iter.item();
+        fn.setObject(mobj);
+        if (!fn.isFromReferencedFile() && supportedNodeType(fn.typeId())) {
+            MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+            UsdStageRefPtr         stage = pShape ? pShape->getUsdStage() : nullptr;
+            if (!stage) {
+                continue;
+            }
+
+            auto stagePath = MayaUsd::ufe::stagePath(stage);
             if (!checkSelection
                 || (ufeSelection->contains(stagePath)
                     || ufeSelection->containsAncestor(stagePath))) {
-                // Remove the leading "|world| component.
-                std::string       strStagePath = stagePath.popHead().string();
-                MDagPath          proxyDagPath = UsdMayaUtil::nameToDagPath(strStagePath);
-                MFnDependencyNode fn(proxyDagPath.node());
-                if (!fn.isFromReferencedFile() && supportedNodeType(fn.typeId())) {
+                // Should we save the stage?
+                // 1) Shareable Stage : In this case we case we only care about saving if the
+                // input is not an incoming connection, since in that case the node that "owns" the
+                // stage (upstream node) is responsible for saving. For example if you have multiple
+                // proxy shapes daisy chained one's out_stage feeding the other's in_stage. In that
+                // case only one proxy is responsible for saving (the first one).
+                // 2) Unshareable Stage: Similarly but in this case if the stage is unshared, it
+                // means we are responsible for saving the root layer (and stubs for the sublayers
+                // so we can put them back in the same spot). So doesn't matter if its incoming or
+                // not, we need to save.
+                if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
                     SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
                     for (auto layer : allLayers) {
                         if (layer->IsDirty()) {
-                            _proxiesToSave.append(proxyDagPath);
+                            MDagPath proxyDagPath;
+                            MDagPath::getAPathTo(mobj, proxyDagPath);
+                            // Where should we save the stage?
+                            // We handle unshared composition internally in Maya USD file
+                            // The reason we have this distinction now is that some Layers are
+                            // special case layers that should be saved to the maya file only.
+                            // There are two examples currently of this, the session layer and
+                            // unshared root layer. So since we have batchSave and a delegate which
+                            // handles saving externally, we need to manage some proxies ourselves
+                            // and control where they save
+                            if (pShape->isShareableStage()) {
+                                _proxiesToSave.append(proxyDagPath);
+                            } else {
+                                _internalProxiesToSave.append(proxyDagPath);
+                            }
                             break;
                         }
                     }
@@ -388,8 +445,10 @@ bool LayerDatabase::getStagesToSave(bool isExport)
         }
     }
 
-    return (0 != _proxiesToSave.length());
+    return ((_proxiesToSave.length() + _internalProxiesToSave.length()) > 0);
 }
+
+bool LayerDatabase::saveInteractionRequired() { return _proxiesToSave.length() > 0; }
 
 bool LayerDatabase::saveUsd(bool isExport)
 {
@@ -398,7 +457,13 @@ bool LayerDatabase::saveUsd(bool isExport)
     auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();
 
     if (MayaUsd::utils::kIgnoreUSDEdits != opt) {
-        if (_batchSaveDelegate) {
+        // When Maya is crashing, we don't want to save the the USD file to avoid
+        // overwriting them with possibly unwanted data. Instead, we will save the
+        // USD data inside the temporary crash recovery Maya file.
+        if (isCrashing()) {
+            result = kPartiallyCompleted;
+            opt = MayaUsd::utils::kSaveToMayaSceneFile;
+        } else if (_batchSaveDelegate && _proxiesToSave.length() > 0) {
             result = _batchSaveDelegate(_proxiesToSave);
         }
 
@@ -414,40 +479,142 @@ bool LayerDatabase::saveUsd(bool isExport)
 
         if (result == kAbort) {
             return false;
-        } else if (result == kCompleted) {
+        } else if (result == kCompleted && _internalProxiesToSave.length() == 0) {
             return true;
-        } else if (result == kPartiallyCompleted) {
-            if (!getStagesToSave(isExport)) {
-                return true;
-            }
+        } else if (result == kPartiallyCompleted && !getProxiesToSave(isExport)) {
+            return true;
         }
 
-        if (MayaUsd::kAbort != result) {
-            if (MayaUsd::utils::kSaveToUSDFiles == opt) {
-                result = saveUsdToUsdFiles();
-            } else {
-                result = saveUsdToMayaFile();
-            }
+        if (MayaUsd::utils::kSaveToUSDFiles == opt) {
+            result = saveUsdToUsdFiles();
+        } else {
+            result = saveUsdToMayaFile();
         }
     } else {
         result = MayaUsd::kCompleted;
     }
 
     _proxiesToSave.clear();
+    _internalProxiesToSave.clear();
     return (MayaUsd::kCompleted == result);
+}
+
+MStatus addLayerToBuilder(
+    MayaUsd::LayerManager* lm,
+    MArrayDataBuilder&     builder,
+    SdfLayerHandle         layer,
+    bool                   isAnon,
+    bool                   stubOnly = false,
+    bool                   exportOnlyIfDirty = false)
+{
+    if (!lm)
+        return MS::kFailure;
+
+    MStatus     status = MS::kSuccess;
+    MDataHandle layersElemHandle = builder.addLast(&status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    MDataHandle idHandle = layersElemHandle.child(lm->identifier);
+    MDataHandle serializedHandle = layersElemHandle.child(lm->serialized);
+    MDataHandle anonHandle = layersElemHandle.child(lm->anonymous);
+
+    idHandle.setString(UsdMayaUtil::convert(layer->GetIdentifier()));
+    anonHandle.setBool(isAnon);
+
+    std::string temp;
+    if (!stubOnly && ((exportOnlyIfDirty && layer->IsDirty()) || !exportOnlyIfDirty)) {
+        if (!layer->ExportToString(&temp)) {
+            status = MS::kFailure;
+        }
+    }
+
+    serializedHandle.setString(UsdMayaUtil::convert(temp));
+
+    return status;
+}
+
+MStatus setValueForAttr(const MObject& node, const MObject& attribute, const std::string& value)
+{
+    MString val = UsdMayaUtil::convert(value);
+    MPlug   attrPlug(node, attribute);
+    return attrPlug.setValue(val);
+}
+
+struct SaveStageToMayaResult
+{
+    bool _saveSuceeded { false };
+    bool _stageHasDirtyLayers { false };
+};
+
+SaveStageToMayaResult saveStageToMayaFile(
+    MayaUsd::LayerManager* lm,
+    MArrayDataBuilder&     builder,
+    const MObject&         proxyNode,
+    UsdStageRefPtr         stage)
+{
+    SaveStageToMayaResult result;
+
+    if (!lm) {
+        return result;
+    }
+
+    const MFnDependencyNode depNodeFn(proxyNode);
+    MayaUsdProxyShapeBase*  pShape = static_cast<MayaUsdProxyShapeBase*>(depNodeFn.userNode());
+
+    SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
+    for (auto layer : allLayers) {
+        addLayerToBuilder(
+            lm,
+            builder,
+            layer,
+            layer->IsAnonymous(),
+            pShape->isIncomingLayer(layer->GetIdentifier()),
+            true);
+        if (layer->IsDirty()) {
+            result._stageHasDirtyLayers = true;
+        }
+    }
+
+    if (result._stageHasDirtyLayers) {
+        setValueForAttr(
+            proxyNode,
+            MayaUsdProxyShapeBase::sessionLayerNameAttr,
+            stage->GetSessionLayer()->GetIdentifier());
+
+        setValueForAttr(
+            proxyNode,
+            MayaUsdProxyShapeBase::rootLayerNameAttr,
+            stage->GetRootLayer()->GetIdentifier());
+    }
+
+    result._saveSuceeded = true;
+    return result;
+}
+
+SaveStageToMayaResult saveStageToMayaFile(const MObject& proxyNode, UsdStageRefPtr stage)
+{
+    SaveStageToMayaResult  result;
+    MayaUsd::LayerManager* lm = findOrCreateNode();
+    if (!lm)
+        return result;
+
+    MStatus           status;
+    MDataBlock        dataBlock = lm->_forceCache();
+    MArrayDataHandle  layersHandle = dataBlock.outputArrayValue(lm->layers, &status);
+    MArrayDataBuilder builder(&dataBlock, lm->layers, 1 /*maybe nb stages?*/, &status);
+
+    result = saveStageToMayaFile(lm, builder, proxyNode, stage);
+
+    layersHandle.set(builder);
+
+    layersHandle.setAllClean();
+    dataBlock.setClean(lm->layers);
+
+    return result;
 }
 
 BatchSaveResult LayerDatabase::saveUsdToMayaFile()
 {
-    MayaUsd::LayerManager* lm = findNode();
-    if (!lm) {
-        MDGModifier modifier;
-        MObject     manager = modifier.createNode(MayaUsd::LayerManager::typeId);
-        modifier.doIt();
-
-        lm = static_cast<MayaUsd::LayerManager*>(MFnDependencyNode(manager).userNode());
-    }
-
+    MayaUsd::LayerManager* lm = findOrCreateNode();
     if (!lm) {
         return MayaUsd::kNotHandled;
     }
@@ -459,10 +626,15 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
 
     bool atLeastOneDirty = false;
 
-    MFnDependencyNode  fn;
-    MItDependencyNodes iter(MFn::kPluginDependNode);
-    for (; !iter.isDone(); iter.next()) {
-        MObject mobj = iter.item();
+    MFnDependencyNode fn;
+    for (size_t i = 0; i < _proxiesToSave.length() + _internalProxiesToSave.length(); i++) {
+        MDagPath dagPath;
+        if (i < _proxiesToSave.length()) {
+            dagPath = _proxiesToSave[i];
+        } else {
+            dagPath = _internalProxiesToSave[i - _proxiesToSave.length()];
+        }
+        MObject mobj = dagPath.node();
         fn.setObject(mobj);
         if (!fn.isFromReferencedFile()
             && LayerDatabase::instance().supportedNodeType(fn.typeId())) {
@@ -472,47 +644,18 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
                 continue;
             }
 
-            bool thisStageHasDirtyLayer = false;
-
-            std::string          temp;
-            SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
-            for (auto layer : allLayers) {
-                MDataHandle layersElemHandle = builder.addLast(&status);
-                MDataHandle idHandle = layersElemHandle.child(lm->identifier);
-                MDataHandle serializedHandle = layersElemHandle.child(lm->serialized);
-                MDataHandle anonHandle = layersElemHandle.child(lm->anonymous);
-
-                idHandle.setString(UsdMayaUtil::convert(layer->GetIdentifier()));
-                anonHandle.setBool(layer->IsAnonymous());
-
-                if (layer->IsDirty()) {
+            // Here if its unshared or not an incoming connection we save otherwise skip
+            if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
+                auto result = saveStageToMayaFile(lm, builder, mobj, stage);
+                if (result._stageHasDirtyLayers) {
                     atLeastOneDirty = true;
-                    thisStageHasDirtyLayer = true;
-                    layer->ExportToString(&temp);
-                } else {
-                    temp.clear();
                 }
-                serializedHandle.setString(UsdMayaUtil::convert(temp));
-            }
-            layersHandle.set(builder);
-
-            if (thisStageHasDirtyLayer) {
-                auto    sessionLayer = stage->GetSessionLayer();
-                auto    usdIdentifier = sessionLayer->GetIdentifier();
-                MString idString = UsdMayaUtil::convert(usdIdentifier);
-
-                MPlug sessionLayerNamePlug(mobj, MayaUsdProxyShapeBase::sessionLayerNameAttr);
-                sessionLayerNamePlug.setValue(idString);
-
-                auto rootLayer = stage->GetRootLayer();
-                usdIdentifier = rootLayer->GetIdentifier();
-                idString = UsdMayaUtil::convert(usdIdentifier);
-
-                MPlug rootLayerNamePlug(mobj, MayaUsdProxyShapeBase::rootLayerNameAttr);
-                rootLayerNamePlug.setValue(idString);
+                layersHandle.set(builder);
             }
         }
     }
+    _proxiesToSave.clear();
+    _internalProxiesToSave.clear();
     layersHandle.setAllClean();
     dataBlock.setClean(lm->layers);
 
@@ -527,10 +670,16 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
 
 BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
 {
-    MFnDependencyNode  fn;
-    MItDependencyNodes iter(MFn::kPluginDependNode);
-    for (; !iter.isDone(); iter.next()) {
-        MObject mobj = iter.item();
+    MFnDependencyNode fn;
+    for (size_t i = 0; i < _proxiesToSave.length() + _internalProxiesToSave.length(); i++) {
+        MDagPath dagPath;
+        if (i < _proxiesToSave.length()) {
+            dagPath = _proxiesToSave[i];
+        } else {
+            dagPath = _internalProxiesToSave[i - _proxiesToSave.length()];
+        }
+
+        MObject mobj = dagPath.node();
         fn.setObject(mobj);
         if (!fn.isFromReferencedFile()
             && LayerDatabase::instance().supportedNodeType(fn.typeId())) {
@@ -540,16 +689,27 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
                 continue;
             }
 
-            convertAnonymousLayers(pShape, stage);
-
-            SdfLayerHandleVector allLayers = stage->GetLayerStack(false);
-            for (auto layer : allLayers) {
-                if (layer->PermissionToSave()) {
-                    layer->Save();
+            // Unshared Composition Saves to MayaFile Always
+            if (!pShape->isShareableStage()) {
+                saveStageToMayaFile(mobj, stage);
+            } else {
+                // No need to save stages from external sources
+                if (pShape->isStageIncoming()) {
+                    continue;
+                }
+                convertAnonymousLayers(pShape, stage);
+                SdfLayerHandleVector allLayers = stage->GetLayerStack(false);
+                for (auto layer : allLayers) {
+                    if (layer->PermissionToSave()) {
+                        layer->Save();
+                    }
                 }
             }
         }
     }
+
+    _proxiesToSave.clear();
+    _internalProxiesToSave.clear();
 
     return MayaUsd::kCompleted;
 }
@@ -574,21 +734,13 @@ void LayerDatabase::convertAnonymousLayers(MayaUsdProxyShapeBase* pShape, UsdSta
     if (!session->IsEmpty()) {
         convertAnonymousLayersRecursive(session, proxyName, stage);
 
-        saveSessionLayer(pShape, stage);
+        saveUsdLayerToMayaFile(session, true);
     }
 }
 
-void LayerDatabase::saveSessionLayer(MayaUsdProxyShapeBase* pShape, UsdStageRefPtr stage)
+void LayerDatabase::saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous)
 {
-    MayaUsd::LayerManager* lm = findNode();
-    if (!lm) {
-        MDGModifier modifier;
-        MObject     manager = modifier.createNode(MayaUsd::LayerManager::typeId);
-        modifier.doIt();
-
-        lm = static_cast<MayaUsd::LayerManager*>(MFnDependencyNode(manager).userNode());
-    }
-
+    MayaUsd::LayerManager* lm = findOrCreateNode();
     if (!lm)
         return;
 
@@ -597,20 +749,7 @@ void LayerDatabase::saveSessionLayer(MayaUsdProxyShapeBase* pShape, UsdStageRefP
     MArrayDataHandle  layersHandle = dataBlock.outputArrayValue(lm->layers, &status);
     MArrayDataBuilder builder(&dataBlock, lm->layers, 1 /*maybe nb stages?*/, &status);
 
-    std::string    temp;
-    SdfLayerHandle session = stage->GetSessionLayer();
-
-    MDataHandle layersElemHandle = builder.addLast(&status);
-    MDataHandle idHandle = layersElemHandle.child(lm->identifier);
-    MDataHandle serializedHandle = layersElemHandle.child(lm->serialized);
-    MDataHandle anonHandle = layersElemHandle.child(lm->anonymous);
-
-    idHandle.setString(UsdMayaUtil::convert(session->GetIdentifier()));
-    anonHandle.setBool(true);
-
-    session->ExportToString(&temp);
-
-    serializedHandle.setString(UsdMayaUtil::convert(temp));
+    addLayerToBuilder(lm, builder, layer, asAnonymous);
 
     layersHandle.set(builder);
 

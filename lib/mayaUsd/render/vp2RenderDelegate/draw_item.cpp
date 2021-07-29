@@ -48,27 +48,31 @@ HdVP2DrawItem::~HdVP2DrawItem()
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
         if (subSceneContainer) {
             for (const auto& renderItemData : _renderItems) {
-                subSceneContainer->remove(renderItemData._renderItemName);
+                TF_VERIFY(renderItemData._renderItemName == renderItemData._renderItem->name());
+                subSceneContainer->remove(renderItemData._renderItem->name());
             }
         }
     }
 }
 
-void HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
+HdVP2DrawItem::RenderItemData&
+HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset)
 {
+    TF_VERIFY(item);
+
     _renderItems.emplace_back();
     RenderItemData& renderItemData = _renderItems.back();
 
     renderItemData._renderItem = item;
-    renderItemData._renderItemName = _drawItemName;
+    renderItemData._renderItemName = item->name();
     if (geomSubset) {
         renderItemData._geomSubset = *geomSubset;
-        renderItemData._renderItemName += std::string(1, VP2_RENDER_DELEGATE_SEPARATOR).c_str();
-        renderItemData._renderItemName += geomSubset->id.GetString().c_str();
     }
 
     renderItemData._indexBuffer.reset(
         new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
+
+    return renderItemData;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

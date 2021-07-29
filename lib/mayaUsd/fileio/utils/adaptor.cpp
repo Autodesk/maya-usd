@@ -91,16 +91,7 @@ TfToken UsdMayaAdaptor::GetUsdTypeName() const
     }
 
     const TfType ty = GetUsdType();
-#if PXR_VERSION > 2002
     return UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
-#else
-    const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance().GetPrimDefinition(ty);
-    if (!primDef) {
-        return TfToken();
-    }
-
-    return primDef->GetNameToken();
-#endif
 }
 
 TfType UsdMayaAdaptor::GetUsdType() const
@@ -144,13 +135,7 @@ TfTokenVector UsdMayaAdaptor::GetAppliedSchemas() const
 
 UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::GetSchema(const TfType& ty) const
 {
-#if PXR_VERSION > 2002
     const TfToken usdTypeName = UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
-#else
-    const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance().GetPrimDefinition(ty);
-    const TfToken           usdTypeName = bool(primDef) ? primDef->GetNameToken() : TfToken();
-#endif
-
     if (usdTypeName.IsEmpty()) {
         return SchemaAdaptor();
     }
@@ -164,7 +149,6 @@ UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::GetSchemaByName(const TfToken& sch
         return SchemaAdaptor();
     }
 
-#if PXR_VERSION > 2002
     // Is this an API schema?
     const UsdSchemaRegistry& schemaReg = UsdSchemaRegistry::GetInstance();
     if (const UsdPrimDefinition* primDef = schemaReg.FindAppliedAPIPrimDefinition(schemaName)) {
@@ -192,44 +176,6 @@ UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::GetSchemaByName(const TfToken& sch
             return SchemaAdaptor();
         }
     }
-#else
-    // Get the schema definition. If it's registered, there should be a def.
-    SdfPrimSpecHandle primSpec;
-
-    // Get the schema's TfType; its name should be registered as an alias.
-    const TfType schemaType = TfType::Find<UsdSchemaBase>().FindDerivedByName(schemaName);
-
-    // Is this an API schema?
-    if (schemaType.IsA<UsdAPISchemaBase>()) {
-        primSpec = UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
-    }
-    // Is this a typed schema?
-    else if (schemaType.IsA<UsdSchemaBase>()) {
-        // XXX
-        // We currently require an exact type match instead of the polymorphic
-        // behavior that actual USD schema classes implement. This is because
-        // we can't currently get the prim definition from the schema registry
-        // for non-concrete schemas like Imageable (see bug 160436). Ideally,
-        // once that's resolved, we would cache a mapping of Maya types to all
-        // compatible USD type names based on schema inheritance.
-        // (In that future world, we'll also want to special case some schemas
-        // like UsdGeomImageable to be "compatible" with all Maya nodes.)
-        const TfToken objectTypeName = GetUsdTypeName();
-        if (schemaName == objectTypeName) {
-            // There's an exact MFn::Type match? Easy-peasy.
-            primSpec = UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
-        } else {
-            // If no match, do not allow usage of the typed-schema adaptor
-            // mechanism. The importer/exporter have not declared that they
-            // will use the adaptor mechanism to handle this type.
-            return SchemaAdaptor();
-        }
-    }
-
-    if (primSpec) {
-        return SchemaAdaptor(_handle.object(), primSpec);
-    }
-#endif
 
     return SchemaAdaptor();
 }
@@ -262,13 +208,7 @@ UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::ApplySchema(const TfType& ty)
 
 UsdMayaAdaptor::SchemaAdaptor UsdMayaAdaptor::ApplySchema(const TfType& ty, MDGModifier& modifier)
 {
-#if PXR_VERSION > 2002
     const TfToken usdTypeName = UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
-#else
-    const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance().GetPrimDefinition(ty);
-    const TfToken           usdTypeName = bool(primDef) ? primDef->GetNameToken() : TfToken();
-#endif
-
     if (usdTypeName.IsEmpty()) {
         TF_CODING_ERROR("Can't find schema definition for type '%s'", ty.GetTypeName().c_str());
         return SchemaAdaptor();
@@ -291,7 +231,6 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
         return SchemaAdaptor();
     }
 
-#if PXR_VERSION > 2002
     // Get the "apply" schema definition. If it's registered, there should be a
     // def.
     const UsdPrimDefinition* primDef
@@ -310,40 +249,6 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
     }
 
     return SchemaAdaptor(_handle.object(), schemaName, primDef);
-
-#else
-    // Get the schema's TfType; its name should be registered as an alias.
-    const TfType schemaType = TfType::Find<UsdSchemaBase>().FindDerivedByName(schemaName);
-
-    // Make sure that this is an API schema. Only API schemas can be applied.
-    if (!schemaType.IsA<UsdAPISchemaBase>()) {
-        TF_CODING_ERROR("'%s' is not a registered API schema", schemaName.GetText());
-        return SchemaAdaptor();
-    }
-
-    // Make sure that this is an "apply" schema.
-    if (!UsdSchemaRegistry::GetInstance().IsAppliedAPISchema(schemaType)) {
-        TF_CODING_ERROR("'%s' is not an applied API schema", schemaName.GetText());
-        return SchemaAdaptor();
-    }
-
-    // Get the schema definition. If it's registered, there should be a def.
-    SdfPrimSpecHandle primSpec = UsdSchemaRegistry::GetInstance().GetPrimDefinition(schemaName);
-    if (!primSpec) {
-        TF_CODING_ERROR("Can't find schema definition for name '%s'", schemaName.GetText());
-        return SchemaAdaptor();
-    }
-
-    // Add to schema list (if not yet present).
-    TfTokenVector currentSchemas = GetAppliedSchemas();
-    if (std::find(currentSchemas.begin(), currentSchemas.end(), schemaName)
-        == currentSchemas.end()) {
-        currentSchemas.push_back(schemaName);
-        SetMetadata(UsdTokens->apiSchemas, _GetListOpForTokenVector(currentSchemas), modifier);
-    }
-
-    return SchemaAdaptor(_handle.object(), primSpec);
-#endif
 }
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty)
@@ -354,13 +259,7 @@ void UsdMayaAdaptor::UnapplySchema(const TfType& ty)
 
 void UsdMayaAdaptor::UnapplySchema(const TfType& ty, MDGModifier& modifier)
 {
-#if PXR_VERSION > 2002
     const TfToken usdTypeName = UsdSchemaRegistry::GetInstance().GetSchemaTypeName(ty);
-#else
-    const SdfPrimSpecHandle primDef = UsdSchemaRegistry::GetInstance().GetPrimDefinition(ty);
-    const TfToken           usdTypeName = bool(primDef) ? primDef->GetNameToken() : TfToken();
-#endif
-
     if (usdTypeName.IsEmpty()) {
         TF_CODING_ERROR("Can't find schema definition for type '%s'", ty.GetTypeName().c_str());
         return;
@@ -538,13 +437,7 @@ template <typename T> static TfToken::Set _GetRegisteredSchemas()
 
     const UsdSchemaRegistry& registry = UsdSchemaRegistry::GetInstance();
     for (const TfType& ty : derivedTypes) {
-#if PXR_VERSION > 2002
         const TfToken usdTypeName = registry.GetSchemaTypeName(ty);
-#else
-        const SdfPrimSpecHandle primDef = registry.GetPrimDefinition(ty);
-        const TfToken           usdTypeName = bool(primDef) ? primDef->GetNameToken() : TfToken();
-#endif
-
         if (usdTypeName.IsEmpty()) {
             continue;
         }
@@ -625,7 +518,6 @@ UsdMayaAdaptor::SchemaAdaptor::SchemaAdaptor()
 {
 }
 
-#if PXR_VERSION > 2002
 UsdMayaAdaptor::SchemaAdaptor::SchemaAdaptor(
     const MObjectHandle&     handle,
     const TfToken&           schemaName,
@@ -635,16 +527,6 @@ UsdMayaAdaptor::SchemaAdaptor::SchemaAdaptor(
     , _schemaName(schemaName)
 {
 }
-#else
-UsdMayaAdaptor::SchemaAdaptor::SchemaAdaptor(
-    const MObjectHandle& handle,
-    SdfPrimSpecHandle schemaDef)
-    : _handle(handle)
-    , _schemaDef(schemaDef)
-    , _schemaName(schemaDef->GetNameToken())
-{
-}
-#endif
 
 UsdMayaAdaptor::SchemaAdaptor::operator bool() const
 {
@@ -709,19 +591,11 @@ TfToken UsdMayaAdaptor::SchemaAdaptor::GetName() const
     return _schemaName;
 }
 
-#if PXR_VERSION > 2002
 static SdfAttributeSpecHandle
 _GetAttributeSpec(const UsdPrimDefinition* primDef, const TfToken& attrName)
 {
     return primDef->GetSchemaAttributeSpec(attrName);
 }
-#else
-static SdfAttributeSpecHandle
-_GetAttributeSpec(const SdfPrimSpecHandle& primSpec, const TfToken& attrName)
-{
-    return primSpec->GetAttributes()[attrName];
-}
-#endif
 
 UsdMayaAdaptor::AttributeAdaptor
 UsdMayaAdaptor::SchemaAdaptor::GetAttribute(const TfToken& attrName) const
@@ -839,7 +713,6 @@ TfTokenVector UsdMayaAdaptor::SchemaAdaptor::GetAuthoredAttributeNames() const
 
     MFnDependencyNode node(_handle.object());
     TfTokenVector     result;
-#if PXR_VERSION > 2002
     for (const TfToken& propName : _schemaDef->GetPropertyNames()) {
         if (_schemaDef->GetSpecType(propName) == SdfSpecTypeAttribute) {
             std::string mayaAttrName = _GetMayaAttrNameOrAlias(propName);
@@ -848,14 +721,6 @@ TfTokenVector UsdMayaAdaptor::SchemaAdaptor::GetAuthoredAttributeNames() const
             }
         }
     }
-#else
-    for (const SdfAttributeSpecHandle& attr : _schemaDef->GetAttributes()) {
-        std::string mayaAttrName = _GetMayaAttrNameOrAlias(attr->GetNameToken());
-        if (node.hasAttribute(mayaAttrName.c_str())) {
-            result.push_back(attr->GetNameToken());
-        }
-    }
-#endif
 
     return result;
 }
@@ -867,32 +732,19 @@ TfTokenVector UsdMayaAdaptor::SchemaAdaptor::GetAttributeNames() const
     }
 
     TfTokenVector attrNames;
-#if PXR_VERSION > 2002
     for (const TfToken& propName : _schemaDef->GetPropertyNames()) {
         if (_schemaDef->GetSpecType(propName) == SdfSpecTypeAttribute) {
             attrNames.push_back(propName);
         }
     }
-#else
-    for (const SdfAttributeSpecHandle attr : _schemaDef->GetAttributes()) {
-        attrNames.push_back(attr->GetNameToken());
-    }
-#endif
 
     return attrNames;
 }
 
-#if PXR_VERSION > 2002
 const UsdPrimDefinition* UsdMayaAdaptor::SchemaAdaptor::GetSchemaDefinition() const
 {
     return _schemaDef;
 }
-#else
-const SdfPrimSpecHandle UsdMayaAdaptor::SchemaAdaptor::GetSchemaDefinition() const
-{
-    return _schemaDef;
-}
-#endif
 
 UsdMayaAdaptor::AttributeAdaptor::AttributeAdaptor()
     : _plug()

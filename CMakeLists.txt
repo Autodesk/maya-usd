@@ -108,7 +108,7 @@ if (CMAKE_WANT_MATERIALX_BUILD)
         message(FATAL_ERROR "MaterialX option requires USD binaries compiled with -DPXR_ENABLE_MATERIALX_SUPPORT=ON and recent enough to have the hdMtlx module")
     endif()
 else()
-    find_package(USD 0.20.02 REQUIRED)
+    find_package(USD 0.20.05 REQUIRED)
 endif()
 include(cmake/usd.cmake)
 

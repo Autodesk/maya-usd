@@ -18,6 +18,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <ufe/hierarchy.h>
 #include <ufe/pathComponent.h>
 #include <ufe/selection.h>
 #include <ufe/undoableCommand.h>
@@ -26,14 +27,16 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief UsdUndoCreateGroupCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::CompositeUndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::InsertChildCommand
 {
 public:
     typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
 
     UsdUndoCreateGroupCommand(
-        const UsdSceneItem::Ptr&  parentItem,
-        const Ufe::Selection&     selection,
+        const UsdSceneItem::Ptr& parentItem,
+#if (UFE_PREVIEW_VERSION_NUM < 3005)
+        const Ufe::Selection& selection,
+#endif
         const Ufe::PathComponent& name);
     ~UsdUndoCreateGroupCommand() override;
 
@@ -45,19 +48,27 @@ public:
 
     //! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
     static UsdUndoCreateGroupCommand::Ptr create(
-        const UsdSceneItem::Ptr&  parentItem,
-        const Ufe::Selection&     selection,
+        const UsdSceneItem::Ptr& parentItem,
+#if (UFE_PREVIEW_VERSION_NUM < 3005)
+        const Ufe::Selection& selection,
+#endif
         const Ufe::PathComponent& name);
-    Ufe::SceneItem::Ptr group() const;
 
-    // UsdUndoCreateGroupCommand overrides
+    Ufe::SceneItem::Ptr insertedChild() const override;
+
     void execute() override;
+    void undo() override;
+    void redo() override;
 
 private:
     UsdSceneItem::Ptr  _parentItem;
     Ufe::PathComponent _name;
-    UsdSceneItem::Ptr  _group;
-    Ufe::Selection     _selection;
+    UsdSceneItem::Ptr  _groupItem;
+#if (UFE_PREVIEW_VERSION_NUM < 3005)
+    Ufe::Selection _selection;
+#endif
+
+    std::shared_ptr<Ufe::CompositeUndoableCommand> _groupCompositeCmd;
 
 }; // UsdUndoCreateGroupCommand
 

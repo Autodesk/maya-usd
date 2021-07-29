@@ -220,6 +220,20 @@ UsdHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem
 }
 
 // Create a transform.
+#if (UFE_PREVIEW_VERSION_NUM >= 3005)
+Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
+{
+    Ufe::SceneItem::Ptr createdItem = nullptr;
+
+    UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(fItem, name.string());
+    if (cmd) {
+        cmd->execute();
+        createdItem = cmd->insertedChild();
+    }
+
+    return createdItem;
+}
+#else
 Ufe::SceneItem::Ptr
 UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
@@ -229,17 +243,30 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
         = UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
     if (cmd) {
         cmd->execute();
-        createdItem = cmd->group();
+        createdItem = cmd->insertedChild();
     }
 
     return createdItem;
 }
+#endif
 
+#if (UFE_PREVIEW_VERSION_NUM >= 3001)
+Ufe::InsertChildCommand::Ptr
+#else
 Ufe::UndoableCommand::Ptr
+#endif
+
+#if (UFE_PREVIEW_VERSION_NUM >= 3005)
+UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
+{
+    return UsdUndoCreateGroupCommand::create(fItem, name.string());
+}
+#else
 UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
     return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
 }
+#endif
 
 Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
 {

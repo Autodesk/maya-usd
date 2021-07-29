@@ -44,7 +44,7 @@ def _AddShadingToBall(stage):
     texDir =  os.path.join(ASSET_BASE, 'Ball/tex')
     mesh = stage.OverridePrim('/Ball/mesh')
 
-    ballTextureNode = UsdRi.RisObject(stage.OverridePrim(
+    ballTextureNode = UsdShade.Shader(stage.OverridePrim(
         model.GetPath().AppendPath('Looks/BallMaterial/BallTexture')))
 
     # now we'll show adding some shading variants to the ball as well.
