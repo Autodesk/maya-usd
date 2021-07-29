@@ -33,8 +33,10 @@ public:
     typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
 
     UsdUndoCreateGroupCommand(
-        const UsdSceneItem::Ptr&  parentItem,
-        const Ufe::Selection&     selection,
+        const UsdSceneItem::Ptr& parentItem,
+#if (UFE_PREVIEW_VERSION_NUM < 3005)
+        const Ufe::Selection& selection,
+#endif
         const Ufe::PathComponent& name);
     ~UsdUndoCreateGroupCommand() override;
 
@@ -46,8 +48,10 @@ public:
 
     //! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
     static UsdUndoCreateGroupCommand::Ptr create(
-        const UsdSceneItem::Ptr&  parentItem,
-        const Ufe::Selection&     selection,
+        const UsdSceneItem::Ptr& parentItem,
+#if (UFE_PREVIEW_VERSION_NUM < 3005)
+        const Ufe::Selection& selection,
+#endif
         const Ufe::PathComponent& name);
 
     Ufe::SceneItem::Ptr insertedChild() const override;
@@ -60,7 +64,9 @@ private:
     UsdSceneItem::Ptr  _parentItem;
     Ufe::PathComponent _name;
     UsdSceneItem::Ptr  _groupItem;
-    Ufe::Selection     _selection;
+#if (UFE_PREVIEW_VERSION_NUM < 3005)
+    Ufe::Selection _selection;
+#endif
 
     std::shared_ptr<Ufe::CompositeUndoableCommand> _groupCompositeCmd;
 

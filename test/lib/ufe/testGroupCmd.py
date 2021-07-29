@@ -24,8 +24,7 @@ import usdUtils
 
 import mayaUsd.ufe
 
-from pxr import Kind
-from pxr import Usd
+from pxr import Kind, Usd, UsdGeom, Vt
 
 from maya import cmds
 from maya import standalone
@@ -35,6 +34,38 @@ import ufe
 import os
 import unittest
 
+def createStage():
+    ''' create a simple stage '''
+    cmds.file(new=True, force=True)
+    import mayaUsd_createStageWithNewLayer
+    proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+    proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+    proxyShapePath = proxyShapes[0]
+    proxyShapeItem = ufe.Hierarchy.createItem(ufe.PathString.path(proxyShapePath))
+    proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+    stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+    return (stage, proxyShapePathStr, proxyShapeItem, proxyShapeContextOps)
+
+class SphereGenerator():
+    ''' simple sphere generator '''
+    def __init__(self, num, contextOp, proxyShapePathStr):
+        self.gen = self.__generate(num)
+        self.num = num
+        self.contextOp = contextOp
+        self.proxyShapePathStr = proxyShapePathStr
+
+    def createSphere(self):
+        return next(self.gen)
+
+    def __addPrimSphere(self, increment):
+        self.contextOp.doOp(['Add New Prim', 'Sphere'])
+        return ufe.PathString.path('{},/Sphere{}'.format(self.proxyShapePathStr, increment))
+
+    def __generate(self, num):
+        increment = 0
+        while increment < self.num:
+            increment += 1
+            yield self.__addPrimSphere(increment)
 
 class GroupCmdTestCase(unittest.TestCase):
     '''Verify the Maya group command, for multiple runtimes.
@@ -91,8 +122,6 @@ class GroupCmdTestCase(unittest.TestCase):
         parentChildrenPre = parentHierarchy.children()
         self.assertEqual(len(parentChildrenPre), 6)
 
-        newGroupName = ufe.PathComponent("newGroup")
-
         # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
@@ -101,13 +130,24 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertEqual("ballset.usda", layer.GetDisplayName())
         stage.SetEditTarget(layer)
 
-        ufeSelectionList = ufe.Selection()
-        ufeSelectionList.append(ball5Item)
-        ufeSelectionList.append(ball3Item)
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
 
-        groupCmd = parentHierarchy.createGroupCmd(
-            ufeSelectionList, newGroupName)
-        groupCmd.execute()
+            globalSn = ufe.GlobalSelection.get()
+            globalSn.append(ball5Item)
+            globalSn.append(ball3Item)
+
+            # group
+            groupName = cmds.group(ufe.PathString.string(ball5Path), 
+                                   ufe.PathString.string(ball3Path), n="newGroup")
+        else:
+            newGroupName = ufe.PathComponent("newGroup")
+
+            ufeSelectionList = ufe.Selection()
+            ufeSelectionList.append(ball5Item)
+            ufeSelectionList.append(ball3Item)
+
+            groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList, newGroupName)
+            groupCmd.execute()
 
         # Group object (a.k.a parent) will be added to selection list. This behavior matches the native Maya group command.
         globalSelection = ufe.GlobalSelection.get()
@@ -120,7 +160,10 @@ class GroupCmdTestCase(unittest.TestCase):
 
         # The command will now append a number 1 at the end to match the naming
         # convention in Maya.
-        newGroupPath = parentPath + ufe.PathComponent("newGroup1")
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
+            newGroupPath = parentPath + ufe.PathComponent(groupName)
+        else:
+            newGroupPath = parentPath + ufe.PathComponent("newGroup1")
 
         # Make sure the new group item has the correct Usd type
         newGroupItem = ufe.Hierarchy.createItem(newGroupPath)
@@ -133,11 +176,17 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(newGroupPath in childPaths)
         self.assertTrue(ball5Path not in childPaths)
         self.assertTrue(ball3Path not in childPaths)
-
-        groupCmd.undo()
+        
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
+            cmds.undo()
+        else:
+            groupCmd.undo()
 
         # gloabl selection should not be empty after undo.
-        self.assertEqual(len(globalSelection), 1)
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3004'):
+            self.assertEqual(len(globalSelection), 2)
+        else:
+            self.assertEqual(len(globalSelection), 1)
 
         parentChildrenUndo = parentHierarchy.children()
         self.assertEqual(len(parentChildrenUndo), 6)
@@ -147,7 +196,10 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(ball5Path in childPathsUndo)
         self.assertTrue(ball3Path in childPathsUndo)
 
-        groupCmd.redo()
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
+            cmds.redo()
+        else:
+            groupCmd.redo()
 
         # global selection should still have the group path.
         self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(groupPath))
@@ -309,6 +361,166 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/Ball_set/Props/Ball_5"),
             stage.GetPrimAtPath("/Ball_set/Props/Ball_6"),
             stage.GetPrimAtPath("/Sphere1")])
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupAbsolute is only available in UFE preview version 0.3.5 and greater')
+    def testGroupAbsolute(self):
+        '''Verify -absolute flag.'''
+
+        cmds.file(new=True, force=True)
+
+         # create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(1, contextOp, proxyShapePathStr)
+
+        spherePath = sphereGen.createSphere()
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(spherePath))
+
+        # no TRS attributes
+        self.assertFalse(spherePrim.HasAttribute('xformOp:translate'))
+        self.assertFalse(spherePrim.HasAttribute('xformOp:rotateXYZ'))
+        self.assertFalse(spherePrim.HasAttribute('xformOp:scale'))
+
+        # create a group with absolute flag set to True
+        cmds.group(ufe.PathString.string(spherePath), absolute=True)
+
+        # verify that groupItem has 1 child
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 1)
+
+        # verify XformOpOrderAttr exist after grouping
+        newspherePrim = stage.GetPrimAtPath("/group1/Sphere1")
+        sphereXformable = UsdGeom.Xformable(newspherePrim)
+
+        self.assertEqual(
+            sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale")))
+
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupRelative is only available in UFE preview version 0.3.5 and greater')
+    def testGroupRelative(self):
+        '''Verify -relative flag.'''
+        cmds.file(new=True, force=True)
+
+         # create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(1, contextOp, proxyShapePathStr)
+
+        spherePath = sphereGen.createSphere()
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(spherePath))
+
+        # no TRS attributes
+        self.assertFalse(spherePrim.HasAttribute('xformOp:translate'))
+        self.assertFalse(spherePrim.HasAttribute('xformOp:rotateXYZ'))
+        self.assertFalse(spherePrim.HasAttribute('xformOp:scale'))
+
+        # create a group with relative flag set to True
+        cmds.group(ufe.PathString.string(spherePath), relative=True)
+
+        # verify that groupItem has 1 child
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 1)
+
+        # verify XformOpOrderAttr exist after grouping
+        newspherePrim = stage.GetPrimAtPath("/group1/Sphere1")
+
+        # no TRS attributes
+        self.assertFalse(newspherePrim.HasAttribute('xformOp:translate'))
+        self.assertFalse(newspherePrim.HasAttribute('xformOp:rotateXYZ'))
+        self.assertFalse(newspherePrim.HasAttribute('xformOp:scale'))
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupWorld is only available in UFE preview version 0.3.5 and greater')
+    def testGroupWorld(self):
+        '''Verify -world flag.'''
+        cmds.file(new=True, force=True)
+
+         # create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
+
+        sphere1Path = sphereGen.createSphere()
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+
+        sphere2Path = sphereGen.createSphere()
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+
+        sphere3Path = sphereGen.createSphere()
+        sphere3Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere3Path))
+
+        # group Sphere1, Sphere2, and Sphere3
+        groupName = cmds.group(ufe.PathString.string(sphere1Path),
+                               ufe.PathString.string(sphere2Path),
+                               ufe.PathString.string(sphere3Path))
+
+        # verify that groupItem has 3 children
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 3)
+
+        # group Sphere2 and Sphere3 with world flag enabled.
+        # world flag puts the new group under the world
+        cmds.group("{},/group1/Sphere2".format(proxyShapePathStr), 
+                   "{},/group1/Sphere3".format(proxyShapePathStr), world=True)
+
+        # verify group2 was created under the proxyshape
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/group1"),
+            stage.GetPrimAtPath("/group1/Sphere1"), 
+            stage.GetPrimAtPath("/group2"),
+            stage.GetPrimAtPath("/group2/Sphere2"),
+            stage.GetPrimAtPath("/group2/Sphere3")])
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupUndoRedo is only available in UFE preview version 0.3.5 and greater')
+    def testGroupUndoRedo(self):
+        '''Verify grouping after multiple undo/redo.'''
+        cmds.file(new=True, force=True)
+
+         # create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
+
+        sphere1Path = sphereGen.createSphere()
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+
+        sphere2Path = sphereGen.createSphere()
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+
+        sphere3Path = sphereGen.createSphere()
+        sphere3Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere3Path))
+
+        # group Sphere1, Sphere2, and Sphere3
+        groupName = cmds.group(ufe.PathString.string(sphere1Path),
+                               ufe.PathString.string(sphere2Path),
+                               ufe.PathString.string(sphere3Path))
+
+        # verify that groupItem has 3 children
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 3)
+
+        cmds.undo()
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/Sphere3"), 
+            stage.GetPrimAtPath("/Sphere2"),
+            stage.GetPrimAtPath("/Sphere1")])
+
+        cmds.redo()
+
+        self.assertEqual([item for item in stage.Traverse()],
+            [stage.GetPrimAtPath("/group1"),
+            stage.GetPrimAtPath("/group1/Sphere1"), 
+            stage.GetPrimAtPath("/group1/Sphere2"),
+            stage.GetPrimAtPath("/group1/Sphere3")])
 
 
 if __name__ == '__main__':
