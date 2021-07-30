@@ -286,6 +286,8 @@ MStatus AnimationCheckTransformAttributes::initialise()
     AL_MAYA_CHECK_ERROR(status, errorString);
     m_commonTransformAttributes[12] = transformNodeClass.attribute("rotateOrder", &status);
     AL_MAYA_CHECK_ERROR(status, errorString);
+    m_commonTransformAttributes[13] = transformNodeClass.attribute("offsetParentMatrix", &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
 
     m_inheritTransformAttribute = transformNodeClass.attribute("inheritsTransform", &status);
     AL_MAYA_CHECK_ERROR(status, errorString);

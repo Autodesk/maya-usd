@@ -310,7 +310,7 @@ protected:
 class AnimationCheckTransformAttributes
 {
 private:
-    constexpr static int transformAttributesCount { 13 };
+    constexpr static int transformAttributesCount { 14 };
 
 public:
     AL_USDMAYA_UTILS_PUBLIC

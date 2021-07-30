@@ -60,6 +60,8 @@ static constexpr const char* const kDuplicateInstances
     = "Duplicate Instances"; ///< export instances option name
 static constexpr const char* const kMergeTransforms
     = "Merge Transforms"; ///< export by merging transforms and shapes option name
+static constexpr const char* const kMergeOffsetParentMatrix
+    = "Merge Offset Parent Matrix"; ///< export by merging offset parent matrix
 static constexpr const char* const kAnimation = "Animation"; ///< export animation data option name
 static constexpr const char* const kUseTimelineRange
     = "Use Timeline Range"; ///< export using the timeline range option name
@@ -102,6 +104,8 @@ static MStatus specifyOptions(AL::maya::utils::FileTranslatorOptions& options)
     if (!options.addBool(kDuplicateInstances, defaultValues.m_duplicateInstances))
         return MS::kFailure;
     if (!options.addBool(kMergeTransforms, defaultValues.m_mergeTransforms))
+        return MS::kFailure;
+    if (!options.addBool(kMergeOffsetParentMatrix, defaultValues.m_mergeOffsetParentMatrix))
         return MS::kFailure;
     if (!options.addBool(kAnimation, defaultValues.m_animation))
         return MS::kFailure;

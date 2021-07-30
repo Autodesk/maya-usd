@@ -53,6 +53,9 @@ struct ExporterParams
     bool m_mergeTransforms
         = true; ///< if true, shapes will be merged into their parent transforms in the exported
                 ///< data. If false, the transform and shape will be exported seperately
+    bool m_mergeOffsetParentMatrix
+        = false; ///< if true, offset parent matrix would be merged to produce local space matrix;
+                 ///< if false, offset parent matrix would be exported separately in USD.
     bool m_animation = false;        ///< if true, animation will be exported.
     bool m_useTimelineRange = false; ///< if true, then the export uses Maya's timeline range.
     bool m_filterSample = false; ///< if true, duplicate sample of attribute will be filtered out

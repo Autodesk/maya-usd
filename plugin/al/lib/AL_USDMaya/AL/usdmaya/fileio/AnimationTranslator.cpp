@@ -60,15 +60,20 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
                 ///         maya::Dg
                 ///         usdmaya::Dg
                 ///         usdmaya::fileio::translator::Dg
-                translators::DgNodeTranslator::copyAttributeValue(it->first, it->second, timeCode);
+                translators::TransformTranslator::copyAttributeValue(
+                    it->first, it->second, timeCode, params.m_mergeOffsetParentMatrix);
             }
             for (auto it = startAttribScaled; it != endAttribScaled; ++it) {
                 /// \todo This feels wrong. Split the DgNodeTranslator class into 3 ...
                 ///         maya::Dg
                 ///         usdmaya::Dg
                 ///         usdmaya::fileio::translator::Dg
-                translators::DgNodeTranslator::copyAttributeValue(
-                    it->first, it->second.attr, it->second.scale, timeCode);
+                translators::TransformTranslator::copyAttributeValue(
+                    it->first,
+                    it->second.attr,
+                    it->second.scale,
+                    timeCode,
+                    params.m_mergeOffsetParentMatrix);
             }
             for (auto it = startTransformAttrib; it != endTransformAttrib; ++it) {
                 translators::TransformTranslator::copyAttributeValue(

@@ -100,6 +100,32 @@ public:
         MObject&           attribute,
         double&            conversionFactor);
 
+    /// \brief  helper method to copy attributes from the UsdPrim to the Maya node
+    /// \param  attr the maya node to copy the data from
+    /// \param  usdAttr the UsdPrim to copy the data to
+    /// \param  timeCode Usd timecode to copy to
+    /// \param  mergeOffsetMatrix flag if needs to merge offset parent matrix
+    AL_USDMAYA_PUBLIC
+    static void copyAttributeValue(
+        const MPlug&       attr,
+        UsdAttribute&      usdAttr,
+        const UsdTimeCode& timeCode,
+        bool               mergeOffsetMatrix);
+
+    /// \brief  helper method to copy attributes from the UsdPrim to the Maya node
+    /// \param  attr the maya node to copy the data from
+    /// \param  usdAttr the UsdPrim to copy the data to
+    /// \param  scale additional scale value to apply before copying to USD
+    /// \param  timeCode Usd timecode to copy to
+    /// \param  mergeOffsetMatrix flag if needs to merge offset parent matrix
+    AL_USDMAYA_PUBLIC
+    static void copyAttributeValue(
+        const MPlug&       attr,
+        UsdAttribute&      usdAttr,
+        float              scale,
+        const UsdTimeCode& timeCode,
+        bool               mergeOffsetMatrix);
+
 private:
     static MStatus processMetaData(const UsdPrim& from, MObject& to, const ImporterParams& params);
 

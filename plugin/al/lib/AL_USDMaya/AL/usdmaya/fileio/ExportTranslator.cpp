@@ -54,6 +54,7 @@ MStatus ExportTranslator::writer(
     params.m_dynamicAttributes = options.getBool(kDynamicAttributes);
     params.m_duplicateInstances = options.getBool(kDuplicateInstances);
     params.m_mergeTransforms = options.getBool(kMergeTransforms);
+    params.m_mergeOffsetParentMatrix = options.getBool(kMergeOffsetParentMatrix);
     params.m_fileName = file.fullName();
     params.m_selected = mode == MPxFileTranslator::kExportActiveAccessMode;
     params.m_animation = options.getBool(kAnimation);
