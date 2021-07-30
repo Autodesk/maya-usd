@@ -21,6 +21,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/fileUtils.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
@@ -280,6 +281,51 @@ static TfToken _GetMaterialsScopeName(const std::string& materialsScopeName)
     return defaultMaterialsScopeName;
 }
 
+static PcpMapFunction::PathMap _ExportRootsMap(
+    const VtDictionary&             userArgs,
+    const TfToken&                  key,
+    bool                            stripNamespaces,
+    const UsdMayaUtil::MDagPathSet& dagPaths)
+{
+    PcpMapFunction::PathMap pathMap;
+
+    auto addExportRootPathPairFn = [&pathMap, stripNamespaces](const MDagPath& rootDagPath) {
+        if (!rootDagPath.isValid())
+            return;
+
+        SdfPath rootSdfPath = UsdMayaUtil::MDagPathToUsdPath(rootDagPath, false, stripNamespaces);
+
+        if (rootSdfPath.IsEmpty())
+            return;
+
+        SdfPath newRootSdfPath
+            = rootSdfPath.ReplacePrefix(rootSdfPath.GetParentPath(), SdfPath::AbsoluteRootPath());
+
+        pathMap[rootSdfPath] = newRootSdfPath;
+    };
+
+    bool includeEntireSelection = false;
+
+    const std::vector<std::string> exportRoots = _Vector<std::string>(userArgs, key);
+    for (const std::string& rootPath : exportRoots) {
+        if (!rootPath.empty()) {
+            MDagPath rootDagPath;
+            UsdMayaUtil::GetDagPathByName(rootPath, rootDagPath);
+            addExportRootPathPairFn(rootDagPath);
+        } else {
+            includeEntireSelection = true;
+        }
+    }
+
+    if (includeEntireSelection) {
+        for (const MDagPath& dagPath : dagPaths) {
+            addExportRootPathPairFn(dagPath);
+        }
+    }
+
+    return pathMap;
+}
+
 UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary&             userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
@@ -368,10 +414,15 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , melPostCallback(_String(userArgs, UsdMayaJobExportArgsTokens->melPostCallback))
     , pythonPerFrameCallback(_String(userArgs, UsdMayaJobExportArgsTokens->pythonPerFrameCallback))
     , pythonPostCallback(_String(userArgs, UsdMayaJobExportArgsTokens->pythonPostCallback))
-    ,
-
-    dagPaths(dagPaths)
+    , dagPaths(dagPaths)
     , timeSamples(timeSamples)
+    , rootMapFunction(PcpMapFunction::Create(
+          _ExportRootsMap(
+              userArgs,
+              UsdMayaJobExportArgsTokens->exportRoots,
+              stripNamespaces,
+              dagPaths),
+          SdfLayerOffset()))
 {
 }
 
@@ -446,6 +497,8 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         }
     }
 
+    out << "exportRootMapFunction (" << exportArgs.rootMapFunction.GetString() << ")" << std::endl;
+
     return out;
 }
 
@@ -480,6 +533,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
         d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = false;
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
+        d[UsdMayaJobExportArgsTokens->exportRoots] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->exportSkin] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportSkels] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportBlendShapes] = false;
@@ -596,8 +650,7 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaJobImportArgsTokens->preferredMaterial,
           UsdMayaPreferredMaterialTokens->none,
           UsdMayaPreferredMaterialTokens->allTokens))
-    , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(
-          _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath)))
+    , importUSDZTexturesFilePath(UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(userArgs))
     , importUSDZTextures(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
     , importInstances(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(_Boolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
@@ -661,10 +714,15 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
     return d;
 }
 
-const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std::string& userArg)
+const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const VtDictionary& userArgs)
 {
+    if (!_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
+        return ""; // Not importing textures. File path stays empty.
+
+    const std::string pathArg
+        = _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath);
     std::string importTexturesRootDirPath;
-    if (userArg.size() == 0) { // NOTE: (yliangsiew) If the user gives an empty argument, we'll try
+    if (pathArg.size() == 0) { // NOTE: (yliangsiew) If the user gives an empty argument, we'll try
                                // to determine the best directory to write to instead.
         MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
         MString currentMayaSceneFilePath = UsdMayaUtil::GetCurrentSceneFilePath();
@@ -704,9 +762,11 @@ const std::string UsdMayaJobImportArgs::GetImportUSDZTexturesFilePath(const std:
                     currentMayaWorkspacePath.asChar());
                 return "";
             }
+            // Make sure the sourceimage folder is created in the project:
+            TfMakeDirs(importTexturesRootDirPath);
         }
     } else {
-        importTexturesRootDirPath.assign(userArg);
+        importTexturesRootDirPath.assign(pathArg);
     }
 
     if (!ghc::filesystem::is_directory(importTexturesRootDirPath)) {
