@@ -163,13 +163,17 @@ void PxrUsdTranslators_StandardSurfaceReader::_OnBeforeReadAttribute(
     if (mayaAttrName == TrMayaTokens->baseColor) {
         MColor color(surfaceFn.baseColor());
         float  scale(surfaceFn.base());
-        color /= scale;
+        if (scale != 0.0f) {
+            color /= scale;
+        }
         surfaceFn.setBaseColor(color);
         surfaceFn.setBase(1.0f);
     } else if (mayaAttrName == TrMayaTokens->emissionColor) {
         MColor color(surfaceFn.emissionColor());
         float  scale(surfaceFn.emission());
-        color /= scale;
+        if (scale != 0.0f) {
+            color /= scale;
+        }
         surfaceFn.setEmissionColor(color);
         surfaceFn.setEmission(1.0f);
     } else {
@@ -183,7 +187,9 @@ MPlug PxrUsdTranslators_StandardSurfaceReader::GetMayaPlugForUsdAttrName(
 {
     MPlug retVal = _BaseClass::GetMayaPlugForUsdAttrName(usdAttrName, mayaObject);
 
-    if (usdAttrName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName) {
+    TfToken usdInputName = UsdShadeUtils::GetBaseNameAndType(usdAttrName).first;
+
+    if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName) {
         // Remember so we can fixup values/connections.
         const_cast<PxrUsdTranslators_StandardSurfaceReader*>(this)->_standardSurfaceObj
             = mayaObject;

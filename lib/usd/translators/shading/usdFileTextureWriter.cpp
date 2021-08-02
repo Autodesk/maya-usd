@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "fileTextureUtil.h"
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/shaderWriter.h>
@@ -26,7 +27,6 @@
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
-#include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
@@ -49,11 +49,6 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <ghc/filesystem.hpp>
-
-#include <regex>
-#include <system_error>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
@@ -68,7 +63,9 @@ public:
 
     void Write(const UsdTimeCode& usdTime) override;
 
-    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
+    UsdAttribute GetShadingAttributeForMayaAttrName(
+        const TfToken&          mayaAttrName,
+        const SdfValueTypeName& typeName) override;
 
     void WriteTransform2dNode(const UsdTimeCode& usdTime, const UsdShadeShader& texShaderSchema);
 };
@@ -168,12 +165,6 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
         .ConnectToSource(primvarReaderOutput);
 }
 
-namespace {
-// Match UDIM pattern, from 1001 to 1999
-const std::regex
-    _udimRegex(".*[^\\d](1(?:[0-9][0-9][1-9]|[1-9][1-9]0|0[1-9]0|[1-9]00))(?:[^\\d].*|$)");
-} // namespace
-
 /* virtual */
 void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 {
@@ -208,36 +199,14 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    // WARNING: This extremely minimal attempt at making the file path relative
-    //          to the USD stage is a stopgap measure intended to provide
-    //          minimal interop. It will be replaced by proper use of Maya and
-    //          USD asset resolvers. For package files, the exporter needs full
-    //          paths.
+    const MPlug tilingAttr
+        = depNodeFn.findPlug(TrMayaTokens->uvTilingMode.GetText(), true, &status);
+    const bool isUDIM = (status == MS::kSuccess && tilingAttr.asInt() == 3);
 
     // We use the ExportArgs fileName here instead of the USD root layer path
     // to make sure that we are basing logic of the final export location
-    const std::string fileName = _GetExportArgs().GetResolvedFileName();
-    TfToken           fileExt(TfGetExtension(fileName));
-    if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-        ghc::filesystem::path usdDir(fileName);
-        usdDir = usdDir.parent_path();
-        std::error_code       ec;
-        ghc::filesystem::path relativePath = ghc::filesystem::relative(fileTextureName, usdDir, ec);
-        if (!ec && !relativePath.empty()) {
-            fileTextureName = relativePath.generic_string();
-        }
-    }
-
-    // Update filename in case of UDIM
-    const MPlug tilingAttr
-        = depNodeFn.findPlug(TrMayaTokens->uvTilingMode.GetText(), true, &status);
-    if (status == MS::kSuccess && tilingAttr.asInt() == 3) {
-        std::smatch match;
-        if (std::regex_search(fileTextureName, match, _udimRegex) && match.size() == 2) {
-            fileTextureName = std::string(match[0].first, match[1].first)
-                + TrMayaTokens->UDIMTag.GetString() + std::string(match[1].second, match[0].second);
-        }
-    }
+    FileTextureUtil::MakeUsdTextureFileName(
+        fileTextureName, _GetExportArgs().GetResolvedFileName(), isUDIM);
 
     UsdShadeInput fileInput = shaderSchema.CreateInput(TrUsdTokens->file, SdfValueTypeNames->Asset);
     fileInput.Set(SdfAssetPath(fileTextureName.c_str()), usdTime);
@@ -608,15 +577,49 @@ void PxrUsdTranslators_FileTextureWriter::WriteTransform2dNode(
 }
 
 /* virtual */
-TfToken PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
-    const TfToken& mayaAttrName)
+UsdAttribute PxrUsdTranslators_FileTextureWriter::GetShadingAttributeForMayaAttrName(
+    const TfToken&          mayaAttrName,
+    const SdfValueTypeName& typeName)
 {
+    UsdAttribute     usdAttr;
     TfToken          usdAttrName;
     SdfValueTypeName usdTypeName = SdfValueTypeNames->Float;
 
     if (mayaAttrName == TrMayaTokens->outColor) {
-        usdAttrName = TrUsdTokens->RGBOutputName;
-        usdTypeName = SdfValueTypeNames->Float3;
+        if (typeName == SdfValueTypeNames->Color3f) {
+            usdAttrName = TrUsdTokens->RGBOutputName;
+            usdTypeName = SdfValueTypeNames->Float3;
+        } else {
+            // Float input detected. Happens when connecting outColor to opacity and requires an
+            // alpha channel or a monochrome texture
+            const MFnDependencyNode depNodeFn(GetMayaObject());
+            const MPlug             fileTextureNamePlug = depNodeFn.findPlug(
+                TrMayaTokens->fileTextureName.GetText(),
+                /* wantNetworkedPlug = */ true);
+            std::string fileTextureName(fileTextureNamePlug.asString().asChar());
+
+            FileTextureUtil::MakeUsdTextureFileName(
+                fileTextureName, _GetExportArgs().GetResolvedFileName(), false);
+            int numChannels = FileTextureUtil::GetNumberOfChannels(fileTextureName);
+            if (numChannels == 1) {
+                usdAttrName = TrUsdTokens->RedOutputName;
+            } else if (numChannels == 2) {
+                // Mono texture with alpha channel. Corner case. Should it connect to the second
+                // channel G or should it always connect on the A channel?
+                usdAttrName = TrUsdTokens->AlphaOutputName;
+            } else if (numChannels == 4) {
+                usdAttrName = TrUsdTokens->AlphaOutputName;
+            } else {
+                // Impossible to read the user's mind here. Use the red channel by default.
+                usdAttrName = TrUsdTokens->RedOutputName;
+                TF_WARN(
+                    "Arbitrarily connecting the red channel of %s on %s might result in unexpected "
+                    "opacity results. Try a monochrome texture, a texture with an alpha channel, "
+                    "or explicit connections.",
+                    fileTextureName.c_str(),
+                    depNodeFn.name().asChar());
+            }
+        }
     } else if (mayaAttrName == TrMayaTokens->outColorR) {
         usdAttrName = TrUsdTokens->RedOutputName;
     } else if (mayaAttrName == TrMayaTokens->outColorG) {
@@ -634,15 +637,13 @@ TfToken PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrN
     if (!usdAttrName.IsEmpty()) {
         UsdShadeShader shaderSchema(_usdPrim);
         if (!shaderSchema) {
-            return TfToken();
+            return usdAttr;
         }
 
-        shaderSchema.CreateOutput(usdAttrName, usdTypeName);
-
-        usdAttrName = UsdShadeUtils::GetFullName(usdAttrName, UsdShadeAttributeType::Output);
+        usdAttr = shaderSchema.CreateOutput(usdAttrName, usdTypeName);
     }
 
-    return usdAttrName;
+    return usdAttr;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

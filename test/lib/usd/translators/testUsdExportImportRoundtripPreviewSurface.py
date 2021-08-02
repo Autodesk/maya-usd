@@ -15,12 +15,9 @@
 # limitations under the License.
 #
 
-from pxr import Gf
-from pxr import Sdf
 from pxr import Tf
 from pxr import Usd
 from pxr import UsdShade
-from pxr import UsdUtils
 
 import os
 import unittest
@@ -34,13 +31,14 @@ try:
 except ImportError:
     pass
 
+
 class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        inputPath = fixturesUtils.setUpClass(__file__)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
-        test_dir = os.path.join(inputPath,
+        test_dir = os.path.join(cls.inputPath,
                                 "UsdExportImportRoundtripPreviewSurface")
         if not os.path.isdir(test_dir):
             os.mkdir(test_dir)
@@ -58,7 +56,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
     @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.previewReleaseVersion() >= 126 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
     def testUsdPreviewSurfaceRoundtripMaterialX(self):
-        self.__testUsdPreviewSurfaceRoundtrip(metallic=True, convertTo="MaterialX")
+        self.__testUsdPreviewSurfaceRoundtrip(metallic=True,
+                                              convertTo="MaterialX")
 
     def __testUsdPreviewSurfaceRoundtrip(self,
                                          metallic=True,
@@ -349,6 +348,89 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                     [final_sg+".surfaceShader"])
 
         self.assertTrue(mark.IsClean())
+
+    def testOpacityRoundtrip(self):
+        """
+        Test that opacity roundtrips as expected.
+        """
+        filePath = os.path.join(self.inputPath,
+                                "UsdExportImportRoundtripPreviewSurfaceTest",
+                                "OpacityTests.ma")
+        cmds.file(filePath, force=True, open=True)
+
+        usd_path = os.path.abspath('OpacityRoundtripTest.usda')
+        cmds.usdExport(mergeTransformAndShape=True,
+                       file=usd_path,
+                       shadingMode='useRegistry')
+
+        stage = Usd.Stage.Open(usd_path)
+
+        # We have 7 materials that are named:
+        #    /pPlane6/Looks/standardSurface7SG/standardSurface7
+        surf_base = "/pPlane{0}/Looks/standardSurface{1}SG/standardSurface{1}"
+        # results for opacity are mostly connections to:
+        #    /pPlane6/Looks/standardSurface7SG/file6.outputs:a
+        cnx_base = "/pPlane{0}/Looks/standardSurface{1}SG/file{0}"
+        # so we only need to expect a channel name:
+        expected = ["r", "a", "r", "a", "g", "a", 0.4453652]
+
+        for i, val in enumerate(expected):
+            surf_path = surf_base.format(i+1, i+2)
+            surf_prim = stage.GetPrimAtPath(surf_path)
+            self.assertTrue(surf_prim)
+            surf_shade = UsdShade.Shader(surf_prim)
+            self.assertTrue(surf_shade)
+            opacity = surf_shade.GetInput("opacity")
+            self.assertTrue(opacity)
+            if (isinstance(val, float)):
+                self.assertAlmostEqual(opacity.Get(), val)
+            else:
+                (connect_api, out_name, _) = opacity.GetConnectedSource()
+                self.assertEqual(out_name, val)
+                cnx_string = cnx_base.format(i+1, i+2)
+                self.assertEqual(connect_api.GetPath(), cnx_string)
+
+        cmds.file(f=True, new=True)
+
+        # Re-import for a full roundtrip:
+        # Import back:
+        import_options = ("shadingMode=[[useRegistry,UsdPreviewSurface]]",
+                          "preferredMaterial=standardSurface",
+                          "primPath=/")
+        cmds.file(usd_path, i=True, type="USD Import",
+                  ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
+                  namespace="Test", pr=True, importTimeRange="combine",
+                  options=";".join(import_options))
+
+        # The roundtrip is not perfect. We use explicit connections everywhere
+        # on import:
+        #
+        # We expect the following connections:
+        #      {'standardSurface2.opacityR': 'file1.outColorR',
+        #       'standardSurface2.opacityG': 'file1.outColorR',
+        #       'standardSurface2.opacityB': 'file1.outColorR'}
+        #
+        port_names = {"r": "outColorR", "g": "outColorG",
+                      "b": "outColorB", "a": "outAlpha"}
+        opacity_names = ["opacityR", "opacityG", "opacityB"]
+        for i, val in enumerate(expected):
+            if (isinstance(val, float)):
+                for v in cmds.getAttr("standardSurface8.opacity")[0]:
+                    self.assertAlmostEqual(v, val)
+            else:
+                cnx = cmds.listConnections("standardSurface{}".format(i+2),
+                                           d=False, c=True, p=True)
+                self.assertEqual(len(cnx), 6)
+                for j in range(int(len(cnx)/2)):
+                    k = cnx[2*j].split(".")
+                    v = cnx[2*j+1].split(".")
+                    self.assertEqual(len(k), 2)
+                    self.assertEqual(len(v), 2)
+                    self.assertTrue(k[1] in opacity_names)
+                    self.assertEqual(v[0], "file{}".format(i+1))
+                    self.assertEqual(v[1], port_names[val])
+
+        cmds.file(f=True, new=True)
 
 
 if __name__ == '__main__':

@@ -166,11 +166,9 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn.attribute(TrMayaTokens->opacity.GetText()),
         /* wantNetworkedPlug = */ true,
         &status);
-    // Since we want to connect a "float" plug on UsdPreviewSurface, we need to find a connection
-    // on one of the child plugs of the standardSurface opacity and skip any direct connection on
-    // the Float3 opacity port:
-    if ((UsdMayaUtil::IsAuthored(opacityPlug) || opacityPlug.numConnectedChildren())
-        && !opacityPlug.isDestination()) {
+
+    if (UsdMayaUtil::IsAuthored(opacityPlug) || opacityPlug.numConnectedChildren()
+        || opacityPlug.isDestination()) {
         UsdShadeInput opacityInput = shaderSchema.CreateInput(
             PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName, SdfValueTypeNames->Float);
 
@@ -222,8 +220,8 @@ TfToken PxrUsdTranslators_StandardSurfaceWriter::GetShadingAttributeNameForMayaA
     } else if (mayaAttrName == TrMayaTokens->coatRoughness) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName;
     } else if (
-        mayaAttrName == TrMayaTokens->opacityR || mayaAttrName == TrMayaTokens->opacityG
-        || mayaAttrName == TrMayaTokens->opacityB) {
+        mayaAttrName == TrMayaTokens->opacity || mayaAttrName == TrMayaTokens->opacityR
+        || mayaAttrName == TrMayaTokens->opacityG || mayaAttrName == TrMayaTokens->opacityB) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName;
     } else if (mayaAttrName == TrMayaTokens->normalCamera) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->NormalAttrName;
