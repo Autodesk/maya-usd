@@ -322,6 +322,11 @@ MStatus initializePlugin(MObject obj)
     UsdMayaSceneResetNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
 
+
+    MString pluginPath = plugin.loadPath(&status);
+    pluginPath += "/plugInfo.json";
+    PlugRegistry::GetInstance().RegisterPlugins(pluginPath.asChar());
+
     return status;
 }
 
