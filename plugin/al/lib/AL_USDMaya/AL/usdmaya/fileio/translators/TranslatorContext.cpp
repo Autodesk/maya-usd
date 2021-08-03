@@ -498,7 +498,7 @@ void TranslatorContext::preRemoveEntry(
     // (which will guarentee the the itemsToRemove will be ordered such that the child prims will be
     // destroyed before their parents).
     auto iter = range_end;
-    itemsToRemove.reserve(itemsToRemove.size() + range_end - range_begin);
+    itemsToRemove.reserve(itemsToRemove.size() + (range_end - range_begin));
     while (iter != range_begin) {
         --iter;
         PrimLookup& node = *iter;
@@ -542,6 +542,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
             continue;
         }
         bool isInTransformChain = isPrimInTransformChain(path);
+        auto primMappingSize = m_primMapping.size();
 
         TF_DEBUG(ALUSDMAYA_TRANSLATORS)
             .Msg("TranslatorContext::removeEntries removing: %s\n", iter->GetText());
@@ -550,7 +551,7 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
         }
 
         // The item might already have been removed by a translator...
-        if (node != m_primMapping.end() && node->path() == path) {
+        if (primMappingSize == m_primMapping.size()) {
             // remove nodes from map
             m_primMapping.erase(node);
         }
