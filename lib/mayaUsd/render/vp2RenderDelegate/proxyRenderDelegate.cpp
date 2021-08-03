@@ -1012,6 +1012,19 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
 
+    // TODO DEBUG REMOVE: crude selectability metadata for testing in viewport.
+    //
+    // TODO: create token only once, check ancestor, declare text only once, maybe use an enum or a TfToken for value?
+    TfToken selectability;
+    if (prim.GetMetadata(TfToken("maya_selectability"), &selectability))
+    {
+        if (selectability == TfToken("unselectable"))
+        {
+            dagPath = MDagPath();
+            return true;
+        }
+    }
+
     // Resolve the selection based on the point instances pick mode.
     // Note that in all cases except for "Instances" when the picked
     // PointInstancer is *not* an instance proxy, we reset the instanceIndex to

@@ -1,0 +1,18 @@
+# plugInfo.json
+{
+    "Plugins": [
+        {
+            "Info": {
+                "SdfMetadata": {
+                    "maya_selectability": {
+                        "type": "token",
+                        "appliesTo": "prims"
+                    }
+                }
+            },
+            "Name": "MayaUsdMetadata",
+            "Type": "resource"
+        }
+    ]
+}
+
