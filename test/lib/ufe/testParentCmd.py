@@ -192,7 +192,6 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() == 122, 'Test broken in Maya Preview Release 122.')
     def testParentAbsolute(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
@@ -258,8 +257,10 @@ class ParentCmdTestCase(unittest.TestCase):
         # Cube world y coordinate is currently 0.
         self.assertAlmostEqual(cubeWorld.matrix[3][1], 0)
 
-        # Move the parent
-        ufe.GlobalSelection.get().append(cylinderItem)
+        # Move only the parent.
+        sn = ufe.Selection()
+        sn.append(cylinderItem)
+        ufe.GlobalSelection.get().replaceWith(sn)
 
         cmds.move(0, 10, 0, relative=True)
 
@@ -798,7 +799,6 @@ class ParentCmdTestCase(unittest.TestCase):
 
         checkParentDone()
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() == 122, 'Test broken in Maya Preview Release 122.')
     def testParentToProxyShape(self):
 
         # Load a file with a USD hierarchy at least 2-levels deep.
