@@ -276,10 +276,13 @@ private:
                 UsdAttribute dstAttribute = dstShaderInfo->GetShadingAttributeForMayaAttrName(
                     dstPlugName, MayaUsd::Converter::getUsdTypeName(srcPlug));
 
-                const TfToken srcPlugName
-                    = TfToken(UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
-                UsdAttribute srcAttribute = srcShaderInfo->GetShadingAttributeForMayaAttrName(
-                    srcPlugName, dstAttribute.GetTypeName());
+                UsdAttribute srcAttribute;
+                if (dstAttribute) {
+                    const TfToken srcPlugName
+                        = TfToken(UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
+                    srcAttribute = srcShaderInfo->GetShadingAttributeForMayaAttrName(
+                        srcPlugName, dstAttribute.GetTypeName());
+                }
 
                 if (srcAttribute && dstAttribute) {
                     if (UsdShadeInput::IsInput(srcAttribute)) {
