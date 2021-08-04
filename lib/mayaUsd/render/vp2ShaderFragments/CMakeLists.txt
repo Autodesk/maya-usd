@@ -56,6 +56,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     UsdPrimvarReader_float3.xml
     UsdPrimvarReader_float4.xml
     UsdPrimvarReader_vector.xml
+    UsdTransform2d.xml
     UsdUVTexture.xml
     # USD plug info
     plugInfo.json
