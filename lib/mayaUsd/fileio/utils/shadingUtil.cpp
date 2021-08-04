@@ -17,19 +17,26 @@
 
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 
+#include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/imaging/hio/image.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
+#include <ghc/filesystem.hpp>
+
+#include <regex>
 #include <string>
+#include <system_error>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -37,6 +44,8 @@ namespace {
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+
+    ((UDIMTag, "<UDIM>"))
 
     (place2dTexture)
     (coverage)
@@ -178,4 +187,56 @@ MObject UsdMayaShadingUtil::CreatePlace2dTextureAndConnectTexture(MObject textur
     }
 
     return uvObj;
+}
+
+namespace {
+// Match UDIM pattern, from 1001 to 1999
+const std::regex
+    _udimRegex(".*[^\\d](1(?:[0-9][0-9][1-9]|[1-9][1-9]0|0[1-9]0|[1-9]00))(?:[^\\d].*|$)");
+} // namespace
+
+void UsdMayaShadingUtil::ResolveUsdTextureFileName(
+    std::string&       fileTextureName,
+    const std::string& usdFileName,
+    bool               isUDIM)
+{
+    // WARNING: This extremely minimal attempt at making the file path relative
+    //          to the USD stage is a stopgap measure intended to provide
+    //          minimal interop. It will be replaced by proper use of Maya and
+    //          USD asset resolvers. For package files, the exporter needs full
+    //          paths.
+
+    TfToken fileExt(TfGetExtension(usdFileName));
+    if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
+        ghc::filesystem::path usdDir(usdFileName);
+        usdDir = usdDir.parent_path();
+        std::error_code       ec;
+        ghc::filesystem::path relativePath = ghc::filesystem::relative(fileTextureName, usdDir, ec);
+        if (!ec && !relativePath.empty()) {
+            fileTextureName = relativePath.generic_string();
+        }
+    }
+
+    // Update filename in case of UDIM
+    if (isUDIM) {
+        std::smatch match;
+        if (std::regex_search(fileTextureName, match, _udimRegex) && match.size() == 2) {
+            fileTextureName = std::string(match[0].first, match[1].first)
+                + _tokens->UDIMTag.GetString() + std::string(match[1].second, match[0].second);
+        }
+    }
+}
+
+int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
+{
+    // Using Hio because the Maya texture node does not provide the information:
+    HioImageSharedPtr image = HioImage::OpenForReading(fileTextureName.c_str());
+
+    HioFormat imageFormat = image ? image->GetFormat() : HioFormat::HioFormatUNorm8Vec4;
+
+    // In case of unknown, use 4 channel image:
+    if (imageFormat == HioFormat::HioFormatInvalid) {
+        imageFormat = HioFormat::HioFormatUNorm8Vec4;
+    }
+    return HioGetComponentCount(imageFormat);
 }

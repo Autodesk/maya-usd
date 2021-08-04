@@ -180,6 +180,8 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
 
             // Need the luminance since we have a single float to populate on the USD side.
             // This is the ACEScg luminance formula. Should we infer lin_rec709 instead?
+            //
+            // TODO: OCIO v2: Ask Maya for work colorspace, then ask OCIO for getDefaultLumaCoefs()
             float luminance = _ACEScgRgbToLuma(opacityValue.UncheckedGet<GfVec3f>());
 
             opacityInput.Set(luminance, usdTime);

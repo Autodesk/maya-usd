@@ -657,6 +657,8 @@ private:
             UsdMayaUtil::Connect(srcAttr, mayaAttr, false);
         }
 
+        shaderReader.PostConnectSubtree(_context->GetPrimReaderContext());
+
         return shaderObj;
     }
 

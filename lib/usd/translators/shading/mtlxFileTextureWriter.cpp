@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "fileTextureUtil.h"
 #include "mtlxBaseWriter.h"
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -123,10 +123,10 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     std::string filename(texNamePlug.asString().asChar());
 
     // Not resolving UDIM tags. We want to actually open one of these files:
-    FileTextureUtil::MakeUsdTextureFileName(
+    UsdMayaShadingUtil::ResolveUsdTextureFileName(
         filename, _GetExportArgs().GetResolvedFileName(), false);
 
-    _numChannels = FileTextureUtil::GetNumberOfChannels(filename);
+    _numChannels = UsdMayaShadingUtil::GetNumberOfChannels(filename);
     switch (_numChannels) {
     case 1:
         texSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_image_float));
@@ -227,7 +227,7 @@ void MtlxUsd_FileWriter::Write(const UsdTimeCode& usdTime)
         = depNodeFn.findPlug(TrMayaTokens->uvTilingMode.GetText(), true, &status);
     const bool isUDIM = (status == MS::kSuccess && tilingAttr.asInt() == 3);
 
-    FileTextureUtil::MakeUsdTextureFileName(
+    UsdMayaShadingUtil::ResolveUsdTextureFileName(
         fileTextureName, _GetExportArgs().GetResolvedFileName(), isUDIM);
 
     UsdShadeInput fileInput

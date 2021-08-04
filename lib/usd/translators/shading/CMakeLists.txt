@@ -3,7 +3,6 @@
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME}
     PRIVATE
-        fileTextureUtil.cpp
         shadingTokens.cpp
         usdBlinnReader.cpp
         usdBlinnWriter.cpp

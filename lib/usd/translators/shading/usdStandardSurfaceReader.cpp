@@ -54,16 +54,16 @@ class PxrUsdTranslators_StandardSurfaceReader : public PxrUsdTranslators_Materia
 public:
     PxrUsdTranslators_StandardSurfaceReader(const UsdMayaPrimReaderArgs&);
 
-    ~PxrUsdTranslators_StandardSurfaceReader();
-
     static ContextSupport CanImport(const UsdMayaJobImportArgs& importArgs);
 
     /// Get the name of the Maya shading attribute that corresponds to the
     /// USD attribute named \p usdAttrName.
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 
-    MPlug
-    GetMayaPlugForUsdAttrName(const TfToken& usdAttrName, const MObject& mayaObject) const override;
+    bool Read(UsdMayaPrimReaderContext* context) override;
+
+    // Called after all connections are made to this node
+    void PostConnectSubtree(UsdMayaPrimReaderContext* context) override;
 
 protected:
     /// What is the Maya node type name we want to convert to:
@@ -73,9 +73,6 @@ protected:
     /// setting back values in \p shaderFn that were lost during the export phase.
     void
     _OnBeforeReadAttribute(const TfToken& mayaAttrName, MFnDependencyNode& shaderFn) const override;
-
-    /// Kept in order to fixup Opacity param when import is done.
-    MObject _standardSurfaceObj;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrUsdTranslators_StandardSurfaceReader);
@@ -86,12 +83,50 @@ PxrUsdTranslators_StandardSurfaceReader::PxrUsdTranslators_StandardSurfaceReader
 {
 }
 
-PxrUsdTranslators_StandardSurfaceReader::~PxrUsdTranslators_StandardSurfaceReader()
+bool PxrUsdTranslators_StandardSurfaceReader::Read(UsdMayaPrimReaderContext* context)
 {
+    bool success = _BaseClass::Read(context);
+
+    MObject mayaObject = context->GetMayaNode(_GetArgs().GetUsdPrim().GetPath(), false);
+
     // Expand Opacity from R to RGB if necessary.
-    if (!_standardSurfaceObj.isNull()) {
+    MStatus                  status;
+    MFnStandardSurfaceShader surfaceFn(mayaObject, &status);
+    if (status == MS::kSuccess) {
+        MPlug opacityRPlug = surfaceFn.findPlug(
+            surfaceFn.attribute(TrMayaTokens->opacityR.GetText()),
+            /* wantNetworkedPlug = */ true,
+            &status);
+        if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(opacityRPlug)) {
+            // Propagate R value to G and B channels:
+            float opacityValue = opacityRPlug.asFloat();
+            MPlug opacityGPlug = surfaceFn.findPlug(
+                surfaceFn.attribute(TrMayaTokens->opacityG.GetText()),
+                /* wantNetworkedPlug = */ true,
+                &status);
+            if (status == MS::kSuccess) {
+                opacityGPlug.setFloat(opacityValue);
+            }
+            MPlug opacityBPlug = surfaceFn.findPlug(
+                surfaceFn.attribute(TrMayaTokens->opacityB.GetText()),
+                /* wantNetworkedPlug = */ true,
+                &status);
+            if (status == MS::kSuccess) {
+                opacityBPlug.setFloat(opacityValue);
+            }
+        }
+    }
+    return success;
+}
+
+void PxrUsdTranslators_StandardSurfaceReader::PostConnectSubtree(UsdMayaPrimReaderContext* context)
+{
+    MObject mayaObject = context->GetMayaNode(_GetArgs().GetUsdPrim().GetPath(), false);
+
+    // Expand Opacity from R to RGB if necessary.
+    if (!mayaObject.isNull()) {
         MStatus                  status;
-        MFnStandardSurfaceShader surfaceFn(_standardSurfaceObj, &status);
+        MFnStandardSurfaceShader surfaceFn(mayaObject, &status);
         if (status != MS::kSuccess) {
             return;
         }
@@ -117,23 +152,6 @@ PxrUsdTranslators_StandardSurfaceReader::~PxrUsdTranslators_StandardSurfaceReade
                 &status);
             if (status == MS::kSuccess) {
                 UsdMayaUtil::Connect(opacitySrc, opacityBPlug, false);
-            }
-        } else {
-            // Propagate R value to G and B channels:
-            float opacityValue = opacityRPlug.asFloat();
-            MPlug opacityGPlug = surfaceFn.findPlug(
-                surfaceFn.attribute(TrMayaTokens->opacityG.GetText()),
-                /* wantNetworkedPlug = */ true,
-                &status);
-            if (status == MS::kSuccess) {
-                opacityGPlug.setFloat(opacityValue);
-            }
-            MPlug opacityBPlug = surfaceFn.findPlug(
-                surfaceFn.attribute(TrMayaTokens->opacityB.GetText()),
-                /* wantNetworkedPlug = */ true,
-                &status);
-            if (status == MS::kSuccess) {
-                opacityBPlug.setFloat(opacityValue);
             }
         }
     }
@@ -179,23 +197,6 @@ void PxrUsdTranslators_StandardSurfaceReader::_OnBeforeReadAttribute(
     } else {
         _BaseClass::_OnBeforeReadAttribute(mayaAttrName, shaderFn);
     }
-}
-
-MPlug PxrUsdTranslators_StandardSurfaceReader::GetMayaPlugForUsdAttrName(
-    const TfToken& usdAttrName,
-    const MObject& mayaObject) const
-{
-    MPlug retVal = _BaseClass::GetMayaPlugForUsdAttrName(usdAttrName, mayaObject);
-
-    TfToken usdInputName = UsdShadeUtils::GetBaseNameAndType(usdAttrName).first;
-
-    if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName) {
-        // Remember so we can fixup values/connections.
-        const_cast<PxrUsdTranslators_StandardSurfaceReader*>(this)->_standardSurfaceObj
-            = mayaObject;
-    }
-
-    return retVal;
 }
 
 /* virtual */

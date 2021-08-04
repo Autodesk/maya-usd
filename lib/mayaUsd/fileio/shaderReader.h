@@ -84,6 +84,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     virtual TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const;
 
+    /// Callback after the shading context reader is done connecting all inputs
+    MAYAUSD_CORE_PUBLIC
+    virtual void PostConnectSubtree(UsdMayaPrimReaderContext* context);
+
     /// Is this a converter importer.
     ///
     /// Converters do not create any Maya object. They represent a UsdShade node which functions as

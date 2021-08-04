@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "fileTextureUtil.h"
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -205,7 +205,7 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 
     // We use the ExportArgs fileName here instead of the USD root layer path
     // to make sure that we are basing logic of the final export location
-    FileTextureUtil::MakeUsdTextureFileName(
+    UsdMayaShadingUtil::ResolveUsdTextureFileName(
         fileTextureName, _GetExportArgs().GetResolvedFileName(), isUDIM);
 
     UsdShadeInput fileInput = shaderSchema.CreateInput(TrUsdTokens->file, SdfValueTypeNames->Asset);
@@ -598,9 +598,9 @@ UsdAttribute PxrUsdTranslators_FileTextureWriter::GetShadingAttributeForMayaAttr
                 /* wantNetworkedPlug = */ true);
             std::string fileTextureName(fileTextureNamePlug.asString().asChar());
 
-            FileTextureUtil::MakeUsdTextureFileName(
+            UsdMayaShadingUtil::ResolveUsdTextureFileName(
                 fileTextureName, _GetExportArgs().GetResolvedFileName(), false);
-            int numChannels = FileTextureUtil::GetNumberOfChannels(fileTextureName);
+            int numChannels = UsdMayaShadingUtil::GetNumberOfChannels(fileTextureName);
             if (numChannels == 1) {
                 usdAttrName = TrUsdTokens->RedOutputName;
             } else if (numChannels == 2) {
