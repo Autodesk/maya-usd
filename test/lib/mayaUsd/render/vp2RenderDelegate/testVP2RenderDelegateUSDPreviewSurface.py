@@ -108,6 +108,18 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         else:
             self.assertSnapshotClose("testMetallicResponseLightAPI1.png")
 
+    def testUsdTexture2d(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.xform("persp", t=(0, 0, 2))
+        cmds.xform("persp", ro=[0, 0, 0], ws=True)
+
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "UsdTransform2dTest.usda")
+        mayaUtils.createProxyFromFile(testFile)
+
+        self.assertSnapshotClose('UsdTransform2dTest.png')
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
