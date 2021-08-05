@@ -237,18 +237,64 @@ int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
 {
     // Using Hio because the Maya texture node does not provide the information:
     HioImageSharedPtr image = HioImage::OpenForReading(fileTextureName.c_str());
-
-    HioFormat imageFormat = image ? image->GetFormat() : HioFormat::HioFormatUNorm8Vec4;
+    HioFormat         imageFormat = image ? image->GetFormat() : HioFormat::HioFormatUNorm8Vec4;
 
     // In case of unknown, use 4 channel image:
     if (imageFormat == HioFormat::HioFormatInvalid) {
         imageFormat = HioFormat::HioFormatUNorm8Vec4;
     }
+
     return HioGetComponentCount(imageFormat);
 }
-#else
+#elif PXR_VERSION >= 2011
+int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
+{
+    GlfImageSharedPtr image = GlfImage::OpenForReading(fileTextureName.c_str());
+
+    if (!image) {
+        return 4;
+    }
+
+    // Inlined HioGetComponentCount from USD 21.02:
+    switch (image->GetHioFormat()) {
+    case HioFormatUNorm8:
+    case HioFormatSNorm8:
+    case HioFormatFloat16:
+    case HioFormatFloat32:
+    case HioFormatDouble64:
+    case HioFormatUInt16:
+    case HioFormatInt16:
+    case HioFormatUInt32:
+    case HioFormatInt32:
+    case HioFormatUNorm8srgb: return 1;
+    case HioFormatUNorm8Vec2:
+    case HioFormatSNorm8Vec2:
+    case HioFormatFloat16Vec2:
+    case HioFormatFloat32Vec2:
+    case HioFormatDouble64Vec2:
+    case HioFormatUInt16Vec2:
+    case HioFormatInt16Vec2:
+    case HioFormatUInt32Vec2:
+    case HioFormatInt32Vec2:
+    case HioFormatUNorm8Vec2srgb: return 2;
+    case HioFormatUNorm8Vec3:
+    case HioFormatSNorm8Vec3:
+    case HioFormatFloat16Vec3:
+    case HioFormatFloat32Vec3:
+    case HioFormatDouble64Vec3:
+    case HioFormatUInt16Vec3:
+    case HioFormatInt16Vec3:
+    case HioFormatUInt32Vec3:
+    case HioFormatInt32Vec3:
+    case HioFormatUNorm8Vec3srgb:
+    case HioFormatBC6FloatVec3:
+    case HioFormatBC6UFloatVec3: return 3;
+    default: return 4;
+    }
+}
+#else // 20.08
 // Not including the OpenGL headers just for 3 constants, especially since this code
-// will be removed in the near future.
+// is going to be retired soon.
 
 // From glcorearb.h:
 #define GL_RED 0x1903
