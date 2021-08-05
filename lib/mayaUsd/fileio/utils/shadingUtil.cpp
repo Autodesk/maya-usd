@@ -20,7 +20,6 @@
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/imaging/hio/image.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/input.h>
@@ -28,6 +27,12 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
+
+#if PXR_VERSION >= 2102
+#include <pxr/imaging/hio/image.h>
+#else
+#include <pxr/imaging/glf/image.h>
+#endif
 
 #include <maya/MPlug.h>
 #include <maya/MString.h>
@@ -227,6 +232,7 @@ void UsdMayaShadingUtil::ResolveUsdTextureFileName(
     }
 }
 
+#if PXR_VERSION >= 2102
 int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
 {
     // Using Hio because the Maya texture node does not provide the information:
@@ -240,3 +246,29 @@ int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
     }
     return HioGetComponentCount(imageFormat);
 }
+#else
+// Not including the OpenGL headers just for 3 constants, especially since this code
+// will be removed in the near future.
+
+// From glcorearb.h:
+#define GL_RED 0x1903
+#define GL_RG  0x8227
+#define GL_RGB 0x1907
+
+int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
+{
+    // Using Glf because the Maya texture node does not provide the information:
+    GlfImageSharedPtr image = GlfImage::OpenForReading(fileTextureName.c_str());
+
+    if (!image) {
+        return 4;
+    }
+
+    switch (image->GetFormat()) {
+    case GL_RED: return 1;
+    case GL_RG: return 2;
+    case GL_RGB: return 3;
+    default: return 4;
+    }
+}
+#endif

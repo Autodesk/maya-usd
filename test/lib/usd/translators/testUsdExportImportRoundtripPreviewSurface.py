@@ -349,6 +349,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         self.assertTrue(mark.IsClean())
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2020, 'Requires standardSurface node which appeared in 2020.')
     def testOpacityRoundtrip(self):
         """
         Test that opacity roundtrips as expected.
