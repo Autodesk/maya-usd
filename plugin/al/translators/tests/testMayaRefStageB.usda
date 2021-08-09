@@ -1,0 +1,14 @@
+#usda 1.0
+
+def Xform "world"
+{
+    def Xform "newGroup"
+    {
+        def ALMayaReference "mayaRefPrim"
+        {
+            string mayaNamespace = "cube"
+            asset mayaReference = @./cube.ma@
+        }
+    }
+}
+

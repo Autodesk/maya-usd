@@ -52,7 +52,8 @@ struct UsdMayaTranslatorMayaReference
         const UsdPrim& prim,
         MObject&       parent,
         MString&       mayaReferencePath,
-        MString&       rigNamespaceM);
+        MString&       rigNamespaceM,
+        const bool     createNsAttr);
 
     MAYAUSD_CORE_PUBLIC
     static MStatus UnloadMayaReference(const MObject& parent);
@@ -65,6 +66,8 @@ private:
 
     static const TfToken m_namespaceName;
     static const TfToken m_referenceName;
+
+    static const char* const m_primNSAttr;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

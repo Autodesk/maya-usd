@@ -137,14 +137,16 @@ const MObject getMessageAttr()
 }
 } // namespace
 
-const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
-const TfToken UsdMayaTranslatorMayaReference::m_referenceName = TfToken("mayaReference");
+const TfToken     UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
+const TfToken     UsdMayaTranslatorMayaReference::m_referenceName = TfToken("mayaReference");
+const char* const UsdMayaTranslatorMayaReference::m_primNSAttr = "usdPrimNamespace";
 
 MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     const UsdPrim& prim,
     MObject&       parent,
     MString&       mayaReferencePath,
-    MString&       rigNamespaceM)
+    MString&       rigNamespaceM,
+    const bool     createNsAttr)
 {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
         .Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
@@ -236,6 +238,33 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
         prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
     }
 
+    if (createNsAttr) {
+        // Add attribute to the reference node to track the namespace the prim was
+        // trying to use, since the actual namespace might be different.
+        MObject primNSAttr = refDependNode.attribute(MString(m_primNSAttr), &status);
+        if (status == MS::kInvalidParameter) {
+            // Need to create the attribute
+            MFnTypedAttribute fnAttr;
+            primNSAttr = fnAttr.create(m_primNSAttr, "upns", MFnData::kString);
+            // Temporarily unlock reference node (will be locked by default).
+            refDependNode.setLocked(false);
+            status = refDependNode.addAttribute(primNSAttr);
+            refDependNode.setLocked(true);
+            CHECK_MSTATUS_AND_RETURN_IT(status)
+        } else if (status == MS::kFailure) {
+            // Something very wrong. Deal with this later
+            TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("failed to query usdPrimNamespace attribute\n");
+        }
+
+        if (status == MS::kSuccess) {
+            MDGModifier attrMod;
+            status = attrMod.newPlugValueString(MPlug(referenceObject, primNSAttr), rigNamespaceM);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            status = attrMod.doIt();
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+        }
+    }
+
     return MS::kSuccess;
 }
 
@@ -325,13 +354,18 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
 
     // Get required namespace attribute from prim
     std::string rigNamespace;
+    bool        createNsAttr(false);
     if (UsdAttribute rigNamespaceAttribute = prim.GetAttribute(m_namespaceName)) {
         TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
             .Msg(
                 "MayaReferenceLogic::update Checking namespace on prim \"%s\".\n",
                 prim.GetPath().GetText());
 
-        if (!rigNamespaceAttribute.Get<std::string>(&rigNamespace)) {
+        if (rigNamespaceAttribute.Get<std::string>(&rigNamespace)) {
+            // If an explicit maya namespace attribute exists on the prim, we add
+            // it to the reference node for matching later.
+            createNsAttr = true;
+        } else {
             TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
                 .Msg(
                     "MayaReferenceLogic::update Missing namespace on prim \"%s\". Will create one "
@@ -365,27 +399,33 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     }
 
     // Check to see whether we have previously created a reference node for this
-    // prim.  If so, we can just reuse it.
+    // prim.  If so, we want to reuse it.
     //
-    // The check is based on comparing the prim's full path and the name of the
-    // reference node, which we had originally created from the prim's full
-    // path.  (Because of this, if the name or parentage of the prim has changed
-    // since we created the reference, we won't find the old reference node.
-    // The old one will be left orphaned, a new one will be created, and we will
-    // lose any reference edits we had made.  Ideally, this won't happen often.
-    // To prevent the problem, we could store the name of the reference node in
-    // an attribute on the prim node.  The reference node would never be renamed
-    // by the user, since it's locked.  If the user were to rename the prim
-    // node, we could update the reference node's name too, for consistency,
-    // when the two nodes got reattached.  Not doing this currently, but can
-    // revisit if renaming/reparenting of prims with reference nodes turns out
-    // to be a common thing in the workflow.)
+    // By default, the check is based on comparing the reference node name to an
+    // expected name which is constructed from the full dag path to the
+    // "prim maya node". That path includes the proxy's dag path + prim's usd path.
     //
+    // (Because of this, if the name or parentage of the prim has changed
+    // since we created the reference and the associatedNode plug is no longer
+    // connected, we won't find the old reference node. The old one will be left orphaned,
+    // a new one will be created, and we will lose any reference edits we had made.
+    // Ideally, this would not happen often.)
+    //
+    // To prevent a mismatch when the usd hierarchy changes, you can make use
+    // of the mayaNamespace attribute. That will use a more flexible matching,
+    // where only the ns attr and the proxyShapes dag path are used.
+    //
+
+    // What reference node name is the prim expecting?
+    MString expectedRefName = refNameFromPath(parentDag);
+
     if (refNode.isNull()) {
         for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
             MObject      tempRefNode = refIter.item();
             MFnReference tempRefFn(tempRefNode);
             if (!tempRefFn.isFromReferencedFile()) {
+                // See if this reference node is a match for our prim.
+                bool match(false);
 
                 // Get the name of the reference node so we can check if this node
                 // matches the prim we are processing.  Strip off the "_RN" suffix.
@@ -393,13 +433,43 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                 MString refNodeName = tempRefFn.name();
                 MString refName(refNodeName.asChar(), refNodeName.numChars() - 3);
 
-                // What reference node name is the prim expecting?
-                MString expectedRefName = refNameFromPath(parentDag);
+                TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+                    .Msg(
+                        "MayaReferenceLogic::update checking for existing ref match: prim=%s "
+                        "referenceNode=%s\n",
+                        prim.GetPath().GetText(),
+                        refNodeName.asChar());
+
+                MPlug primNSPlug = tempRefFn.findPlug(MString(m_primNSAttr), true, &status);
+                if (status != MS::kInvalidParameter && primNSPlug.asString().length() != 0) {
+                    // If usdPrimNamespace attribute exists and is not empty, then this
+                    // reference is linked to a prim with an explicit ns so we require
+                    // that the ns matches the stored attribute value.
+                    if (primNSPlug.asString() != rigNamespaceM) {
+                        continue;
+                    }
+
+                    // We also want to protect against cross-proxyShape matching so
+                    // we check that the first part of the reference node name matches
+                    // the proxy's dag path.
+                    // i.e. prefix in brackets: "{a_b_proxyShapeXform}_usdRoot_c_d_mayaRefPrim"
+                    unsigned int prefixLength(
+                        expectedRefName.numChars() - prim.GetPath().GetString().length());
+                    MString expectedRefNamePrefix(expectedRefName.asChar(), prefixLength);
+
+                    match = (refName.substring(0, prefixLength - 1) == expectedRefNamePrefix);
+                } else {
+                    // By default, if no specific ns attr is on prim, we match reference node
+                    // name to full prim path.
+                    match = (refName == expectedRefName);
+                }
 
                 // If found a match, reconnect the reference node's `associatedNode`
                 // attr before loading it, since the previous connection may be gone.
                 //
-                if (refName == expectedRefName) {
+                if (match) {
+                    TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+                        .Msg("MayaReferenceLogic::update found matching ref node.\n");
                     // Reconnect the reference node's `associatedNode` attr before
                     // loading it, since the previous connection may be gone.
                     connectReferenceAssociatedNode(parentDag, tempRefFn);
@@ -411,9 +481,9 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     }
 
     // If no reference found, we'll need to create it. This may be the first time we are
-    // bring in the reference or it may have been imported or removed directly in maya.
+    // bringing in the reference or it may have been imported or removed directly in maya.
     if (refNode.isNull()) {
-        return LoadMayaReference(prim, parent, mayaReferencePath, rigNamespaceM);
+        return LoadMayaReference(prim, parent, mayaReferencePath, rigNamespaceM, createNsAttr);
     }
 
     if (status) {
@@ -456,35 +526,56 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                             "MayaReferenceLogic::update prim=%s loadReferenceByNode\n",
                             prim.GetPath().GetText());
                     MString s = MFileIO::loadReferenceByNode(refNode, &status);
+                    CHECK_MSTATUS_AND_RETURN_IT(status);
                 }
+            }
 
-                if (!rigNamespace.empty()) {
-                    // check to see if the namespace has changed
-                    MString refNamespace = fnReference.associatedNamespace(true);
+            // Perform housekeeping on loaded references to keep them updated.
+            if (!rigNamespace.empty()) {
+                // Check to see if the namespace has changed
+                MString refNamespace = fnReference.associatedNamespace(true);
+                TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+                    .Msg(
+                        "MayaReferenceLogic::update prim=%s, namespace was: %s\n",
+                        prim.GetPath().GetText(),
+                        refNamespace.asChar());
+                if (refNamespace != rigNamespace.c_str()) {
+                    command = "file -e -ns \"";
+                    command += rigNamespace.c_str();
+                    command += "\" \"";
+                    command += filepath;
+                    command += "\"";
                     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
                         .Msg(
-                            "MayaReferenceLogic::update prim=%s, namespace was: %s\n",
+                            "MayaReferenceLogic::update prim=%s execute %s\n",
                             prim.GetPath().GetText(),
-                            refNamespace.asChar());
-                    if (refNamespace != rigNamespace.c_str()) {
-                        command = "file -e -ns \"";
-                        command += rigNamespace.c_str();
-                        command += "\" \"";
-                        command += filepath;
-                        command += "\"";
-                        TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
-                            .Msg(
-                                "MayaReferenceLogic::update prim=%s execute %s\n",
-                                prim.GetPath().GetText(),
-                                command.asChar());
-                        if (!MGlobal::executeCommand(command)) {
-                            MGlobal::displayError(
-                                MString(
-                                    "Failed to update reference with new namespace. refNS:"
-                                    + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ")
-                                + mayaReferencePath);
-                        }
+                            command.asChar());
+                    if (!MGlobal::executeCommand(command)) {
+                        MGlobal::displayError(
+                            MString(
+                                "Failed to update reference with new namespace. refNS:"
+                                + refNamespace + "rigNs: " + rigNamespace.c_str() + ": ")
+                            + mayaReferencePath);
                     }
+                }
+            }
+            if (expectedRefName.length()) {
+                // Check if expected ref node name has changed. (We may need to update
+                // if the prim hierarchy has changed and we matched on ns + dag path
+                // rather than on full reference node name.)
+                //
+                MString      uniqueRefNodeName = expectedRefName + "_RN";
+                MFnReference refDependNode(refNode);
+                if (refDependNode.name() != uniqueRefNodeName) {
+                    TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+                        .Msg(
+                            "MayaReferenceLogic::update prim=%s rename reference node %s->%s\n",
+                            prim.GetPath().GetText(),
+                            refDependNode.name().asChar(),
+                            uniqueRefNodeName.asChar());
+                    refDependNode.setLocked(false);
+                    refDependNode.setName(uniqueRefNodeName);
+                    refDependNode.setLocked(true);
                 }
             }
         } else {
