@@ -18,7 +18,6 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdShade/connectableAPI.h>
 
 #include <maya/MObject.h>
