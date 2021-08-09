@@ -15,6 +15,8 @@
 //
 #include "translatorRfMLight.h"
 
+#include "pxr/usd/sdf/types.h"
+
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
@@ -29,9 +31,9 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/base/tf/type.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/assetPath.h>
-#include "pxr/usd/sdf/types.h"
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
@@ -46,7 +48,7 @@
 #include <pxr/usd/usdLux/shapingAPI.h>
 #include <pxr/usd/usdLux/sphereLight.h>
 #include <pxr/usd/usdShade/tokens.h>
-#include <pxr/base/tf/type.h>
+
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -545,33 +547,33 @@ static bool _ReadLightTextureFile(const UsdLuxLight& lightSchema, MFnDependencyN
     return (status == MS::kSuccess);
 }
 
-static inline 
-TfToken
-_ShaderAttrName(const std::string& shaderParamName)
+static inline TfToken _ShaderAttrName(const std::string& shaderParamName)
 {
-   return TfToken(UsdShadeTokens->inputs.GetString() + shaderParamName);
+    return TfToken(UsdShadeTokens->inputs.GetString() + shaderParamName);
 }
 
 // Adapted from UsdSchemaBase::_CreateAttr
-static UsdAttribute _SetLightPrimAttr(UsdPrim &lightPrim,
-    TfToken const &attrName, SdfValueTypeName const & typeName,
-    bool custom, SdfVariability variability, VtValue const & defaultValue, 
-    bool writeSparsely) {
+static UsdAttribute _SetLightPrimAttr(
+    UsdPrim&                lightPrim,
+    TfToken const&          attrName,
+    SdfValueTypeName const& typeName,
+    bool                    custom,
+    SdfVariability          variability,
+    VtValue const&          defaultValue,
+    bool                    writeSparsely)
+{
 
     const TfToken& attrToken = _ShaderAttrName(attrName);
 
-    if (writeSparsely && !custom){
+    if (writeSparsely && !custom) {
         UsdAttribute attr = lightPrim.GetAttribute(attrToken);
-        VtValue fallback;
-        if (defaultValue.IsEmpty() ||
-            (!attr.HasAuthoredValue()
-             && attr.Get(&fallback)
-             && fallback == defaultValue)){
+        VtValue      fallback;
+        if (defaultValue.IsEmpty()
+            || (!attr.HasAuthoredValue() && attr.Get(&fallback) && fallback == defaultValue)) {
             return attr;
         }
     }
-    UsdAttribute attr(lightPrim.CreateAttribute(attrToken, typeName, custom,
-                variability));
+    UsdAttribute attr(lightPrim.CreateAttribute(attrToken, typeName, custom, variability));
     if (attr && !defaultValue.IsEmpty()) {
         attr.Set(defaultValue);
     }
@@ -582,15 +584,13 @@ static UsdAttribute _SetLightPrimAttr(UsdPrim &lightPrim,
 // AOV LIGHT
 static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    //Early out
-    UsdPrim lightPrim = lightSchema.GetPrim();
-    static const TfType& usdSchemaBase = 
-        TfType::FindByName(_tokens->UsdSchemaBase);
-    static const TfType& pxrAovLightType = 
-        usdSchemaBase.FindDerivedByName(_tokens->AovLightMayaTypeName);
+    // Early out
+    UsdPrim              lightPrim = lightSchema.GetPrim();
+    static const TfType& usdSchemaBase = TfType::FindByName(_tokens->UsdSchemaBase);
+    static const TfType& pxrAovLightType
+        = usdSchemaBase.FindDerivedByName(_tokens->AovLightMayaTypeName);
 
-    const TfType& lightType = 
-        usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
+    const TfType& lightType = usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
     if (!lightType.IsA(pxrAovLightType)) {
         return false;
     }
@@ -609,9 +609,14 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
         if (status != MS::kSuccess) {
             return false;
         }
-        _SetLightPrimAttr(lightPrim, _tokens->AovNamePlugName, 
-                SdfValueTypeNames->String, /* custom */ false, 
-                SdfVariabilityVarying, VtValue(mayaAovName.asChar()), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->AovNamePlugName,
+            SdfValueTypeNames->String,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaAovName.asChar()),
+            true);
     }
 
     // In Primary Hit.
@@ -626,9 +631,14 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
         if (status != MS::kSuccess) {
             return false;
         }
-        _SetLightPrimAttr(lightPrim, _tokens->InPrimaryHitPlugName, 
-                SdfValueTypeNames->Bool, /* custom */ false, 
-                SdfVariabilityVarying, VtValue(mayaInPrimaryHit), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->InPrimaryHitPlugName,
+            SdfValueTypeNames->Bool,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaInPrimaryHit),
+            true);
     }
 
     // In Reflection.
@@ -643,9 +653,14 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
         if (status != MS::kSuccess) {
             return false;
         }
-        _SetLightPrimAttr(lightPrim, _tokens->InReflectionPlugName, 
-                SdfValueTypeNames->Bool, /* custom */ false, 
-                SdfVariabilityVarying, VtValue(mayaInReflection), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->InReflectionPlugName,
+            SdfValueTypeNames->Bool,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaInReflection),
+            true);
     }
 
     // In Refraction.
@@ -661,9 +676,14 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->InRefractionPlugName, 
-            SdfValueTypeNames->Bool, /* custom */ false, SdfVariabilityVarying,
-            VtValue(mayaInRefraction), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->InRefractionPlugName,
+            SdfValueTypeNames->Bool,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaInRefraction),
+            true);
     }
 
     // Invert.
@@ -679,9 +699,14 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->InvertPlugName, 
-                SdfValueTypeNames->Bool, /* custom */ false, 
-                SdfVariabilityVarying, VtValue(mayaInvert), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->InvertPlugName,
+            SdfValueTypeNames->Bool,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaInvert),
+            true);
     }
 
     // On Volume Boundaries.
@@ -698,9 +723,14 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->OnVolumeBoundariesPlugName, 
-                SdfValueTypeNames->Bool, /* custom */ false, 
-                SdfVariabilityVarying, VtValue(mayaOnVolumeBoundaries), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->OnVolumeBoundariesPlugName,
+            SdfValueTypeNames->Bool,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaOnVolumeBoundaries),
+            true);
     }
 
     // Use Color.
@@ -716,9 +746,14 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->UseColorPlugName, SdfValueTypeNames->Bool, 
-                /* custom */ false, SdfVariabilityVarying, 
-                VtValue(mayaUseColor), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->UseColorPlugName,
+            SdfValueTypeNames->Bool,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaUseColor),
+            true);
     }
 
     // Use Throughput.
@@ -734,9 +769,14 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->UseThroughputPlugName, 
-                SdfValueTypeNames->Bool, /* custom */ false, 
-                SdfVariabilityVarying, VtValue(mayaUseThroughput), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->UseThroughputPlugName,
+            SdfValueTypeNames->Bool,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaUseThroughput),
+            true);
     }
 
     return true;
@@ -745,14 +785,12 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
 static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     // Early out
-    const UsdPrim& lightPrim = lightSchema.GetPrim();
-    static const TfType& usdSchemaBase = 
-        TfType::FindByName(_tokens->UsdSchemaBase);
-    static const TfType& pxrAovLightType = 
-        usdSchemaBase.FindDerivedByName(_tokens->AovLightMayaTypeName);
+    const UsdPrim&       lightPrim = lightSchema.GetPrim();
+    static const TfType& usdSchemaBase = TfType::FindByName(_tokens->UsdSchemaBase);
+    static const TfType& pxrAovLightType
+        = usdSchemaBase.FindDerivedByName(_tokens->AovLightMayaTypeName);
 
-    const TfType& lightType = 
-        usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
+    const TfType& lightType = usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
     if (!lightType.IsA(pxrAovLightType)) {
         return false;
     }
@@ -765,8 +803,10 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     std::string lightAovName;
-    lightPrim.GetAttribute(TfToken(UsdShadeTokens->inputs.GetString() + 
-                _tokens->AovNamePlugName.GetString())).Get(&lightAovName);
+    lightPrim
+        .GetAttribute(
+            TfToken(UsdShadeTokens->inputs.GetString() + _tokens->AovNamePlugName.GetString()))
+        .Get(&lightAovName);
     status = lightAovNamePlug.setValue(MString(lightAovName.c_str()));
     if (status != MS::kSuccess) {
         return false;
@@ -778,8 +818,7 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightInPrimaryHit = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InPrimaryHitPlugName))
-        .Get(&lightInPrimaryHit);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InPrimaryHitPlugName)).Get(&lightInPrimaryHit);
     status = lightInPrimaryHitPlug.setValue(lightInPrimaryHit);
     if (status != MS::kSuccess) {
         return false;
@@ -791,8 +830,7 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightInReflection = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InReflectionPlugName))
-        .Get(&lightInReflection);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InReflectionPlugName)).Get(&lightInReflection);
     status = lightInReflectionPlug.setValue(lightInReflection);
     if (status != MS::kSuccess) {
         return false;
@@ -804,8 +842,7 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightInRefraction = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InRefractionPlugName))
-        .Get(&lightInRefraction);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InRefractionPlugName)).Get(&lightInRefraction);
     status = lightInRefractionPlug.setValue(lightInRefraction);
     if (status != MS::kSuccess) {
         return false;
@@ -817,8 +854,7 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightInvert = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InvertPlugName))
-        .Get(&lightInvert);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InvertPlugName)).Get(&lightInvert);
     status = lightInvertPlug.setValue(lightInvert);
     if (status != MS::kSuccess) {
         return false;
@@ -844,8 +880,7 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightUseColor = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->UseColorPlugName))
-        .Get(&lightUseColor);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->UseColorPlugName)).Get(&lightUseColor);
     status = lightUseColorPlug.setValue(lightUseColor);
     if (status != MS::kSuccess) {
         return false;
@@ -867,15 +902,13 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
 // ENVDAY LIGHT
 static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    //Early out
-    UsdPrim lightPrim = lightSchema.GetPrim();
-    static const TfType& usdSchemaBase = 
-        TfType::FindByName(_tokens->UsdSchemaBase);
-    static const TfType& pxrEnvDayLightType = 
-        usdSchemaBase.FindDerivedByName(_tokens->EnvDayLightMayaTypeName);
+    // Early out
+    UsdPrim              lightPrim = lightSchema.GetPrim();
+    static const TfType& usdSchemaBase = TfType::FindByName(_tokens->UsdSchemaBase);
+    static const TfType& pxrEnvDayLightType
+        = usdSchemaBase.FindDerivedByName(_tokens->EnvDayLightMayaTypeName);
 
-    const TfType& lightType = 
-        usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
+    const TfType& lightType = usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
     if (!lightType.IsA(pxrEnvDayLightType)) {
         return false;
     }
@@ -894,9 +927,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
         if (status != MS::kSuccess) {
             return false;
         }
-        _SetLightPrimAttr(lightPrim, _tokens->DayPlugName, 
-                SdfValueTypeNames->Int, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaDay), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->DayPlugName,
+            SdfValueTypeNames->Int,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaDay),
+            true);
     }
 
     // Haziness.
@@ -912,9 +950,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->HazinessPlugName, 
-                SdfValueTypeNames->Float, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaHaziness), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->HazinessPlugName,
+            SdfValueTypeNames->Float,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaHaziness),
+            true);
     }
 
     // Hour.
@@ -930,9 +973,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->HourPlugName, 
-                SdfValueTypeNames->Float, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaHour), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->HourPlugName,
+            SdfValueTypeNames->Float,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaHour),
+            true);
     }
 
     // Latitude.
@@ -948,9 +996,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->LatitudePlugName, 
-                SdfValueTypeNames->Float, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaLatitude), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->LatitudePlugName,
+            SdfValueTypeNames->Float,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaLatitude),
+            true);
     }
 
     // Longitude.
@@ -966,9 +1019,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->LongitudePlugName, 
-                SdfValueTypeNames->Float, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaLongitude), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->LongitudePlugName,
+            SdfValueTypeNames->Float,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaLongitude),
+            true);
     }
 
     // Month.
@@ -984,9 +1042,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->MonthPlugName, 
-                SdfValueTypeNames->Int, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaMonth), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->MonthPlugName,
+            SdfValueTypeNames->Int,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaMonth),
+            true);
     }
 
     // Sky tint.
@@ -1001,9 +1064,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             skyTintPlug.child(1).asFloat(),
             skyTintPlug.child(2).asFloat());
 
-        _SetLightPrimAttr(lightPrim, _tokens->SkyTintPlugName, 
-                SdfValueTypeNames->Color3f, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaSkyTint), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->SkyTintPlugName,
+            SdfValueTypeNames->Color3f,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaSkyTint),
+            true);
     }
 
     // Sun direction.
@@ -1018,9 +1086,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             sunDirectionPlug.child(1).asFloat(),
             sunDirectionPlug.child(2).asFloat());
 
-        _SetLightPrimAttr(lightPrim, _tokens->SunDirectionPlugName, 
-                SdfValueTypeNames->Vector3f, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaSunDirection), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->SunDirectionPlugName,
+            SdfValueTypeNames->Vector3f,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaSunDirection),
+            true);
     }
 
     // Sun size.
@@ -1036,9 +1109,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->SunSizePlugName, 
-                SdfValueTypeNames->Float, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaSunSize), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->SunSizePlugName,
+            SdfValueTypeNames->Float,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaSunSize),
+            true);
     }
 
     // Sun tint.
@@ -1053,9 +1131,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             sunTintPlug.child(1).asFloat(),
             sunTintPlug.child(2).asFloat());
 
-        _SetLightPrimAttr(lightPrim, _tokens->SunTintPlugName, 
-                SdfValueTypeNames->Color3f, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaSunTint), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->SunTintPlugName,
+            SdfValueTypeNames->Color3f,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaSunTint),
+            true);
     }
 
     // Year.
@@ -1071,9 +1154,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->YearPlugName, 
-                SdfValueTypeNames->Int, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaYear), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->YearPlugName,
+            SdfValueTypeNames->Int,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaYear),
+            true);
     }
 
     // Zone.
@@ -1089,9 +1177,14 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
             return false;
         }
 
-        _SetLightPrimAttr(lightPrim, _tokens->ZonePlugName, 
-                SdfValueTypeNames->Float, /* custom */ false,
-                SdfVariabilityVarying, VtValue(mayaZone), true);
+        _SetLightPrimAttr(
+            lightPrim,
+            _tokens->ZonePlugName,
+            SdfValueTypeNames->Float,
+            /* custom */ false,
+            SdfVariabilityVarying,
+            VtValue(mayaZone),
+            true);
     }
 
     return true;
@@ -1099,14 +1192,12 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
 
 static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
-    const UsdPrim& lightPrim = lightSchema.GetPrim();
-    static const TfType& usdSchemaBase = 
-        TfType::FindByName(_tokens->UsdSchemaBase);
-    static const TfType& pxrEnvDayLightType = 
-        usdSchemaBase.FindDerivedByName(_tokens->EnvDayLightMayaTypeName);
+    const UsdPrim&       lightPrim = lightSchema.GetPrim();
+    static const TfType& usdSchemaBase = TfType::FindByName(_tokens->UsdSchemaBase);
+    static const TfType& pxrEnvDayLightType
+        = usdSchemaBase.FindDerivedByName(_tokens->EnvDayLightMayaTypeName);
 
-    const TfType& lightType = 
-        usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
+    const TfType& lightType = usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
     if (!lightType.IsA(pxrEnvDayLightType)) {
         return false;
     }
@@ -1119,8 +1210,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     int lightDay = 1;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->DayPlugName))
-        .Get(&lightDay);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->DayPlugName)).Get(&lightDay);
     status = lightDayPlug.setValue(lightDay);
     if (status != MS::kSuccess) {
         return false;
@@ -1132,8 +1222,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightHaziness = 2.0f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->HazinessPlugName))
-        .Get(&lightHaziness);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->HazinessPlugName)).Get(&lightHaziness);
     status = lightHazinessPlug.setValue(lightHaziness);
     if (status != MS::kSuccess) {
         return false;
@@ -1145,8 +1234,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightHour = 14.633333f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->HourPlugName))
-        .Get(&lightHour);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->HourPlugName)).Get(&lightHour);
     status = lightHourPlug.setValue(lightHour);
     if (status != MS::kSuccess) {
         return false;
@@ -1158,8 +1246,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightLatitude = 47.602f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->LatitudePlugName))
-        .Get(&lightLatitude);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->LatitudePlugName)).Get(&lightLatitude);
     status = lightLatitudePlug.setValue(lightLatitude);
     if (status != MS::kSuccess) {
         return false;
@@ -1171,8 +1258,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightLongitude = -122.332f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->LongitudePlugName))
-        .Get(&lightLongitude);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->LongitudePlugName)).Get(&lightLongitude);
     status = lightLongitudePlug.setValue(lightLongitude);
     if (status != MS::kSuccess) {
         return false;
@@ -1184,8 +1270,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     int lightMonth = 0;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->MonthPlugName))
-        .Get(&lightMonth);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->MonthPlugName)).Get(&lightMonth);
     status = lightMonthPlug.setValue(lightMonth);
     if (status != MS::kSuccess) {
         return false;
@@ -1197,8 +1282,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     GfVec3f lightSkyTint(1.0f);
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SkyTintPlugName))
-        .Get(&lightSkyTint);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SkyTintPlugName)).Get(&lightSkyTint);
     status = lightSkyTintPlug.child(0).setValue(lightSkyTint[0]);
     status = lightSkyTintPlug.child(1).setValue(lightSkyTint[1]);
     status = lightSkyTintPlug.child(2).setValue(lightSkyTint[2]);
@@ -1212,8 +1296,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     GfVec3f lightSunDirection(0.0f, 0.0f, 1.0f);
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunDirectionPlugName))
-        .Get(&lightSunDirection);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunDirectionPlugName)).Get(&lightSunDirection);
     status = lightSunDirectionPlug.child(0).setValue(lightSunDirection[0]);
     status = lightSunDirectionPlug.child(1).setValue(lightSunDirection[1]);
     status = lightSunDirectionPlug.child(2).setValue(lightSunDirection[2]);
@@ -1227,8 +1310,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightSunSize = 1.0f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunSizePlugName))
-        .Get(&lightSunSize);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunSizePlugName)).Get(&lightSunSize);
     status = lightSunSizePlug.setValue(lightSunSize);
     if (status != MS::kSuccess) {
         return false;
@@ -1240,8 +1322,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     GfVec3f lightSunTint(1.0f);
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunTintPlugName))
-        .Get(&lightSunTint);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunTintPlugName)).Get(&lightSunTint);
     status = lightSunTintPlug.child(0).setValue(lightSunTint[0]);
     status = lightSunTintPlug.child(1).setValue(lightSunTint[1]);
     status = lightSunTintPlug.child(2).setValue(lightSunTint[2]);
@@ -1255,8 +1336,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     int lightYear = 2015;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->YearPlugName))
-        .Get(&lightYear);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->YearPlugName)).Get(&lightYear);
     status = lightYearPlug.setValue(lightYear);
     if (status != MS::kSuccess) {
         return false;
@@ -1268,8 +1348,7 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightZone = -8.0f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->ZonePlugName))
-        .Get(&lightZone);
+    lightPrim.GetAttribute(_ShaderAttrName(_tokens->ZonePlugName)).Get(&lightZone);
     status = lightZonePlug.setValue(lightZone);
     return status == MS::kSuccess;
 }
@@ -1694,8 +1773,7 @@ _DefineUsdLuxLightForMayaLight(const MFnDependencyNode& depFn, UsdMayaPrimWriter
     const TfToken mayaLightTypeToken(mayaLightTypeName.asChar());
 
     if (mayaLightTypeToken == _tokens->AovLightMayaTypeName) {
-        lightSchema = UsdLuxLight(stage->DefinePrim(authorPath, 
-                _tokens->AovLightMayaTypeName));
+        lightSchema = UsdLuxLight(stage->DefinePrim(authorPath, _tokens->AovLightMayaTypeName));
     } else if (mayaLightTypeToken == _tokens->CylinderLightMayaTypeName) {
         lightSchema = UsdLuxCylinderLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->DiskLightMayaTypeName) {
@@ -1705,8 +1783,7 @@ _DefineUsdLuxLightForMayaLight(const MFnDependencyNode& depFn, UsdMayaPrimWriter
     } else if (mayaLightTypeToken == _tokens->DomeLightMayaTypeName) {
         lightSchema = UsdLuxDomeLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
-        lightSchema = UsdLuxLight(stage->DefinePrim(authorPath, 
-                _tokens->EnvDayLightMayaTypeName));
+        lightSchema = UsdLuxLight(stage->DefinePrim(authorPath, _tokens->EnvDayLightMayaTypeName));
     } else if (mayaLightTypeToken == _tokens->GeometryLightMayaTypeName) {
         lightSchema = UsdLuxGeometryLight::Define(stage, authorPath);
     } else if (mayaLightTypeToken == _tokens->RectLightMayaTypeName) {
@@ -1770,15 +1847,13 @@ static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
 {
     const UsdPrim& lightPrim = lightSchema.GetPrim();
 
-    static const TfType& usdSchemaBase = 
-        TfType::FindByName(_tokens->UsdSchemaBase);
-    static const TfType& pxrAovLightType = 
-        usdSchemaBase.FindDerivedByName(_tokens->AovLightMayaTypeName);
-    static const TfType& pxrEnvDayLightType = 
-        usdSchemaBase.FindDerivedByName(_tokens->EnvDayLightMayaTypeName);
+    static const TfType& usdSchemaBase = TfType::FindByName(_tokens->UsdSchemaBase);
+    static const TfType& pxrAovLightType
+        = usdSchemaBase.FindDerivedByName(_tokens->AovLightMayaTypeName);
+    static const TfType& pxrEnvDayLightType
+        = usdSchemaBase.FindDerivedByName(_tokens->EnvDayLightMayaTypeName);
 
-    const TfType& lightType = 
-        usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
+    const TfType& lightType = usdSchemaBase.FindDerivedByName(lightPrim.GetTypeName());
 
     if (lightType.IsA(pxrAovLightType)) {
         return _tokens->AovLightMayaTypeName;

@@ -114,12 +114,12 @@ struct UsdMayaPrimReaderRegistry
 // TfType system but have no corresponding C++ code.
 #define PXRUSDMAYA_DEFINE_READER(T, argsVarName, ctxVarName)                                     \
     static bool UsdMaya_PrimReader_##T(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext*); \
-    TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, T)                                              \
+    TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, T)                                  \
     {                                                                                            \
-        if (TfType t = TfType::FindByName(#T)) {                                          \
+        if (TfType t = TfType::FindByName(#T)) {                                                 \
             UsdMayaPrimReaderRegistry::RegisterRaw(t, UsdMaya_PrimReader_##T);                   \
         } else {                                                                                 \
-            TF_CODING_ERROR("Cannot register unknown TfType: %s.", #T);                   \
+            TF_CODING_ERROR("Cannot register unknown TfType: %s.", #T);                          \
         }                                                                                        \
     }                                                                                            \
     bool UsdMaya_PrimReader_##T(                                                                 \
