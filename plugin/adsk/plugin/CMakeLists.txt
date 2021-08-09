@@ -84,11 +84,6 @@ endif()
 # -----------------------------------------------------------------------------
 maya_set_plugin_properties(${TARGET_NAME})
 
-configure_file(
-    plugInfo.json
-    ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-)
-
 # -----------------------------------------------------------------------------
 # run-time search paths
 # -----------------------------------------------------------------------------
@@ -123,7 +118,3 @@ install(TARGETS
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
 endif()
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
-)
