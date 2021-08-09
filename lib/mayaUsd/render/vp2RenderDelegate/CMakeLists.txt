@@ -16,12 +16,14 @@ target_sources(${PROJECT_NAME}
         render_delegate.cpp
         render_param.cpp
         sampler.cpp
+        selectability.cpp
         shader.cpp
         tokens.cpp
 )
 
 set(HEADERS
     proxyRenderDelegate.h
+    selectability.h
 )
 
 set(PLUGINFO

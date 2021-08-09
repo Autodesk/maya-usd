@@ -4,6 +4,9 @@
         {
             "Info": {
                 "SdfMetadata": {
+                    # Selectability controls Maya viewport selectability with the mouse.
+                    # It is enforced via the ProxyRenderDelegate via its getInstancedSelectionPath()
+                    # function.
                     "maya_selectability": {
                         "type": "token",
                         "appliesTo": "prims"

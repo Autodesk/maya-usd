@@ -17,6 +17,7 @@
 
 #include "mayaPrimCommon.h"
 #include "render_delegate.h"
+#include "selectability.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
@@ -965,17 +966,11 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
 
-    // TODO DEBUG REMOVE: crude selectability metadata for testing in viewport.
-    //
-    // TODO: create token only once, check ancestor, declare text only once, maybe use an enum or a TfToken for value?
-    TfToken selectability;
-    if (prim.GetMetadata(TfToken("maya_selectability"), &selectability))
+    // Enforce selectability metadata.
+    if (!Selectability::isSelectable(prim))
     {
-        if (selectability == TfToken("unselectable"))
-        {
             dagPath = MDagPath();
             return true;
-        }
     }
 
     // Resolve the selection based on the point instances pick mode.
