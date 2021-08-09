@@ -27,8 +27,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_DEFINE_READER(UsdGeomCamera, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return UsdMayaTranslatorCamera::Read(UsdGeomCamera(usdPrim), parentNode, args, context);
+    MObject        parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    return UsdMayaTranslatorCamera::Read(UsdGeomCamera(usdPrim), parentNode, args, &context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

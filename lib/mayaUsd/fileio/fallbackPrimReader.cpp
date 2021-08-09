@@ -26,7 +26,7 @@ UsdMaya_FallbackPrimReader::UsdMaya_FallbackPrimReader(const UsdMayaPrimReaderAr
 {
 }
 
-bool UsdMaya_FallbackPrimReader::Read(UsdMayaPrimReaderContext* context)
+bool UsdMaya_FallbackPrimReader::Read(UsdMayaPrimReaderContext& context)
 {
     const UsdPrim& usdPrim = _GetArgs().GetUsdPrim();
     if (usdPrim.HasAuthoredTypeName() && !usdPrim.IsA<UsdGeomImageable>()) {
@@ -35,7 +35,7 @@ bool UsdMaya_FallbackPrimReader::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    MObject parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
 
     MStatus status;
     MObject mayaNode;
@@ -44,7 +44,7 @@ bool UsdMaya_FallbackPrimReader::Read(UsdMayaPrimReaderContext* context)
         parentNode,
         /*importTypeName*/ false,
         _GetArgs(),
-        context,
+        &context,
         &status,
         &mayaNode);
 }

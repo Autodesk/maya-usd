@@ -45,14 +45,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasMayaReference, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    MObject        parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
     return UsdMayaTranslatorMayaReference::update(usdPrim, parentNode);
 }
 
 PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasALMayaReference, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    MObject        parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
     return UsdMayaTranslatorMayaReference::update(usdPrim, parentNode);
 }
 

@@ -44,7 +44,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomScope, args, context)
         return false;
     }
 
-    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    MObject parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
 
     MStatus status;
     MObject mayaNode;
@@ -53,7 +53,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomScope, args, context)
         parentNode,
         /*importTypeName*/ true,
         args,
-        context,
+        &context,
         &status,
         &mayaNode);
 }

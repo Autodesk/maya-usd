@@ -58,7 +58,7 @@ PxrMayaUsdPreviewSurface_Reader::PxrMayaUsdPreviewSurface_Reader(
 }
 
 /* virtual */
-bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
+bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext& context)
 {
     const UsdPrim& prim = _GetArgs().GetUsdPrim();
     UsdShadeShader shaderSchema = UsdShadeShader(prim);
@@ -85,7 +85,7 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
+    context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         TfToken baseName = GetMayaNameForUsdAttrName(input.GetFullName());

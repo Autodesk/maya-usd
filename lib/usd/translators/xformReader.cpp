@@ -27,12 +27,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_DEFINE_READER(UsdGeomXform, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    MObject        parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
 
     MStatus status;
     MObject mayaNode;
     return UsdMayaTranslatorUtil::CreateTransformNode(
-        usdPrim, parentNode, args, context, &status, &mayaNode);
+        usdPrim, parentNode, args, &context, &status, &mayaNode);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

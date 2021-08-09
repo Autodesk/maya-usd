@@ -47,7 +47,7 @@ public:
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 
     /// Generic read function that traverses a schema and reads everything.
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
 protected:
     /// What is the Maya node type name we want to convert to:

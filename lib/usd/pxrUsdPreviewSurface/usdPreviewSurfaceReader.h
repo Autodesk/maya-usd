@@ -33,7 +33,7 @@ class PxrMayaUsdPreviewSurface_Reader : public UsdMayaShaderReader
 public:
     PxrMayaUsdPreviewSurface_Reader(const UsdMayaPrimReaderArgs&, const TfToken& mayaTypeName);
 
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 };
