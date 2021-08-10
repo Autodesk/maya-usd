@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    subLayers = [
+        @e:/Dev/Autodesk/Maya/repro/maya-112769-usd-prim-selectability/cone-layer-selectable-2.usda@
+    ]
+)
+
+over "Cone1" (
+    maya_selectability = "selectable"
+)
+{
+}
+
