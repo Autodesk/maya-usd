@@ -59,11 +59,11 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxRectLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Read(args, context);
 }
-/*
+
 PXRUSDMAYA_DEFINE_READER(UsdLuxSphereLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Read(args, context);
-}*/
+}
 #endif
 
 PXRUSDMAYA_DEFINE_READER(UsdRiPxrAovLight, args, context)
