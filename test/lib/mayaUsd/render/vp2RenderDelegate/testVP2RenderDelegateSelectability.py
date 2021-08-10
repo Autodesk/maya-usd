@@ -21,6 +21,8 @@ from maya.api import OpenMayaUI as OMUI
 from pxr import Usd, Sdf
 
 import fixturesUtils
+import mayaUtils
+import testUtils
 
 import os
 import unittest
@@ -45,9 +47,15 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
         pass
 
     def _processViewEvents(self, timeout=10):
+        '''
+        Helper that forces Maya to process events.
+        '''
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents, timeout)
 
     def _dragSelectActiveView(self):
+        '''
+        Helper that drags-select (region-select) the whole viewport.
+        '''
         view = OMUI.M3dView.active3dView()
         viewWidget = wrapInstance(int(view.widget()), QWidget)
 
@@ -61,6 +69,9 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
             QtCore.Qt.NoModifier, viewWidget.rect().bottomRight() - QtCore.QPoint(1, 1))
 
     def _createLayer(self):
+        '''
+        Helper that creates a layer and return the item of its shape item.
+        '''
         import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         proxyShapePath = ufe.PathString.path(proxyShape)
@@ -69,6 +80,9 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
         return proxyShapeItem
 
     def _createPrim(self, underItem, primType, expectedPath):
+        '''
+        Helper that creates a prim of the given type under the given item, and return its item.
+        '''
         # create a proxy shape and add a Cone prim
 
         proxyShapeContextOps = ufe.ContextOps.contextOps(underItem)
@@ -86,7 +100,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
     def testSelectability(self):
         '''
-        Verify that a prim can still be selectable and detected as such.
+        Verify that a prim is selectable and detected as such when its selectability is set to "selectable".
         '''
         cmds.file(new=True, force=True)
 
@@ -105,7 +119,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
     def testUnselectability(self):
         '''
-        Verify that a prim can be made unselectable and detected as such.
+        Verify that a prim is *not* selectable and detected as such when its selectability is set to "unselectable".
         '''
         cmds.file(new=True, force=True)
 
@@ -120,7 +134,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
     def testSelectabilityUnderUnselectability(self):
         '''
-        Verify that a prim can still be selectable and detected as such.
+        Verify that a selectable prim under a non-selectable prim is selectable.
         '''
         cmds.file(new=True, force=True)
 
@@ -141,7 +155,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
     def testUnselectabilityUnderSelectability(self):
         '''
-        Verify that a prim can still be selectable and detected as such.
+        Verify that a unselectable prim under a selectable prim is unselectable.
         '''
         cmds.file(new=True, force=True)
 
@@ -162,7 +176,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
     def testInheritUnderUnselectability(self):
         '''
-        Verify that a prim can still be selectable and detected as such.
+        Verify that a inherit prim under a non-selectable prim is unselectable.
         '''
         cmds.file(new=True, force=True)
 
@@ -177,6 +191,44 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
         # verify there is the cone in the selection
         sel = ufe.GlobalSelection.get()
         self.assertEqual(0, len(list(iter(sel))))
+
+    def testLayerSelectable(self):
+        '''
+        Verify that a higher priority layer can make an unselectable prim selectable.
+        '''
+        cmds.file(new=True, force=True)
+
+        testFile = testUtils.getTestScene("selectability", "cone-layer-selectable-3.usda")
+        mayaUtils.createProxyFromFile(testFile)
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.clear()
+
+        self._dragSelectActiveView()
+
+        # verify there is the cone in the selection
+        sel = ufe.GlobalSelection.get()
+        self.assertEqual(1, len(list(iter(sel))))
+        snIter = iter(sel)
+        coneItem = next(snIter)
+        self.assertEqual(str(coneItem.nodeName()), "Cone1")
+
+    def testLayerUnselectable(self):
+        '''
+        Verify that a higher priority layer can make an selectable prim unselectable.
+        '''
+        cmds.file(new=True, force=True)
+
+        testFile = testUtils.getTestScene("selectability", "cone-layer-unselectable-3.usda")
+        mayaUtils.createProxyFromFile(testFile)
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.clear()
+
+        self._dragSelectActiveView()
+
+        # verify there is the cone in the selection
+        sel = ufe.GlobalSelection.get()
+        self.assertEqual(0, len(list(iter(sel))))
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
