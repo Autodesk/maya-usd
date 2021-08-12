@@ -21,10 +21,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /*! \brief  The tokens used in the selectability metadata.
  */
-TfToken Selectability::Metadata("maya_selectability");
+TfToken Selectability::MetadataToken("maya_selectability");
 TfToken Selectability::InheritToken("inherit");
-TfToken Selectability::SelectableToken("selectable");
-TfToken Selectability::UnselectableToken("unselectable");
+TfToken Selectability::OnToken("on");
+TfToken Selectability::OffToken("off");
 
 namespace
 {
@@ -50,8 +50,8 @@ namespace
     {
         const Selectability::State state = Selectability::getLocalState(prim);
         switch (state) {
-        case Selectability::kSelectable: return true;
-        case Selectability::kUnselectable: return false;
+        case Selectability::kOn: return true;
+        case Selectability::kOff: return false;
         default: return Selectability::isSelectable(prim.GetParent());
         }
     }
@@ -92,13 +92,13 @@ bool Selectability::isSelectable(UsdPrim prim)
 Selectability::State Selectability::getLocalState(const UsdPrim& prim)
 {
     TfToken selectability;
-    if (!prim.GetMetadata(Metadata, &selectability))
+    if (!prim.GetMetadata(MetadataToken, &selectability))
         return kInherit;
 
-    if (selectability == UnselectableToken) {
-        return kUnselectable;
-    } else if (selectability == SelectableToken) {
-        return kSelectable;
+    if (selectability == OffToken) {
+        return kOff;
+    } else if (selectability == OnToken) {
+        return kOn;
     } else {
         // Invalid values will be treated as inherit.
         return kInherit;

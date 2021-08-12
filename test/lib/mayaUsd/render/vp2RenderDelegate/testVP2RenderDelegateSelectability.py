@@ -38,6 +38,11 @@ from shiboken2 import wrapInstance
 
 class testVP2RenderDelegateSelectability(unittest.TestCase):
 
+    selectabilityToken = "maya_selectability"
+    onToken = "on"
+    offToken = "off"
+    inheritToken = "inherit"
+
     @classmethod
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__, initializeStandalone=False)
@@ -100,13 +105,13 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
     def testSelectability(self):
         '''
-        Verify that a prim is selectable and detected as such when its selectability is set to "selectable".
+        Verify that a prim is selectable and detected as such when its selectability is set to self.onToken.
         '''
         cmds.file(new=True, force=True)
 
         layerItem = self._createLayer()
         conePrim, _ = self._createPrim(layerItem, 'Cone', 'Cone1')
-        conePrim.SetMetadata("maya_selectability", "selectable")
+        conePrim.SetMetadata(self.selectabilityToken, self.onToken)
 
         self._dragSelectActiveView()
 
@@ -119,13 +124,13 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
     def testUnselectability(self):
         '''
-        Verify that a prim is *not* selectable and detected as such when its selectability is set to "unselectable".
+        Verify that a prim is *not* selectable and detected as such when its selectability is set to self.offToken.
         '''
         cmds.file(new=True, force=True)
 
         layerItem = self._createLayer()
         conePrim, _ = self._createPrim(layerItem, 'Cone', 'Cone1')
-        conePrim.SetMetadata("maya_selectability", "unselectable")
+        conePrim.SetMetadata(self.selectabilityToken, self.offToken)
 
         self._dragSelectActiveView()
 
@@ -140,9 +145,9 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         layerItem = self._createLayer()
         conePrim, coneItem = self._createPrim(layerItem, 'Cone', 'Cone1')
-        conePrim.SetMetadata("maya_selectability", "unselectable")
+        conePrim.SetMetadata(self.selectabilityToken, self.offToken)
         cubePrim, _ = self._createPrim(coneItem, 'Cube', 'Cone1/Cube1')
-        cubePrim.SetMetadata("maya_selectability", "selectable")
+        cubePrim.SetMetadata(self.selectabilityToken, self.onToken)
 
         self._dragSelectActiveView()
 
@@ -161,9 +166,9 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         layerItem = self._createLayer()
         conePrim, coneItem = self._createPrim(layerItem, 'Cone', 'Cone1')
-        conePrim.SetMetadata("maya_selectability", "selectable")
+        conePrim.SetMetadata(self.selectabilityToken, self.onToken)
         cubePrim, _ = self._createPrim(coneItem, 'Cube', 'Cone1/Cube1')
-        cubePrim.SetMetadata("maya_selectability", "unselectable")
+        cubePrim.SetMetadata(self.selectabilityToken, self.offToken)
 
         self._dragSelectActiveView()
 
@@ -182,9 +187,9 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         layerItem = self._createLayer()
         conePrim, coneItem = self._createPrim(layerItem, 'Cone', 'Cone1')
-        conePrim.SetMetadata("maya_selectability", "unselectable")
+        conePrim.SetMetadata(self.selectabilityToken, self.offToken)
         cubePrim, _ = self._createPrim(coneItem, 'Cube', 'Cone1/Cube1')
-        cubePrim.SetMetadata("maya_selectability", "inherit")
+        cubePrim.SetMetadata(self.selectabilityToken, self.inheritToken)
 
         self._dragSelectActiveView()
 

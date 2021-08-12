@@ -6,7 +6,7 @@
 )
 
 over "Cone1" (
-    maya_selectability = "selectable"
+    maya_selectability = "on"
 )
 {
 }
