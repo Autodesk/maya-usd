@@ -43,6 +43,10 @@ public:
     static TfToken SelectableToken;
     static TfToken UnselectableToken;
 
+    /*! \brief  Prepare any internal data needed for selection prior to selection queries.
+     */
+    static void prepareForSelection();
+
     /*! \brief  Compute the selectability of a prim, considering inheritence.
      */
     static bool isSelectable(UsdPrim prim);

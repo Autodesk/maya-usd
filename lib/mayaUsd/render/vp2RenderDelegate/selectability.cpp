@@ -15,6 +15,8 @@
 //
 #include "selectability.h"
 
+#include <pxr/base/tf/hashmap.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /*! \brief  The tokens used in the selectability metadata.
@@ -24,29 +26,65 @@ TfToken Selectability::InheritToken("inherit");
 TfToken Selectability::SelectableToken("selectable");
 TfToken Selectability::UnselectableToken("unselectable");
 
+namespace
+{
+    // Very simple selectability cache for prims to avoid rechecking the metadata.
+    using Data = bool;
+    using SelectabilityCache = TfHashMap<UsdPrim, Data, boost::hash<UsdPrim> >;
+
+    // Use a function to retrieve the cache, as this exploits the C++ guaranteed
+    // initialization of static in funtions.
+    SelectabilityCache& getCache()
+    {
+        static SelectabilityCache cache;
+        return cache;
+    }
+
+    void clearCache()
+    {
+        getCache().clear();
+    }
+
+    // Check selectability for a prim and recurse to parent if inheriting.
+    bool isSelectableUncached(UsdPrim prim)
+    {
+        const Selectability::State state = Selectability::getLocalState(prim);
+        switch (state) {
+        case Selectability::kSelectable: return true;
+        case Selectability::kUnselectable: return false;
+        default: return Selectability::isSelectable(prim.GetParent());
+        }
+    }
+}
+
+/*! \brief  Do any internal preparation for selection needed.
+ */
+void Selectability::prepareForSelection()
+{
+    clearCache();
+}
+
 /*! \brief  Compute the selectability of a prim, considering inheritence.
  */
 bool Selectability::isSelectable(UsdPrim prim)
 {
-    while (true) {
-        // The reason we treat invalid prim as selectable is two-fold:
-        //
-        // - We don't want to influence selectability of things that are not prim that are being
-        //   tested by accident.
-        // - We loop inheritence until we reach an invalid parent prim, and prim are selectable
-        //   by default.
-        if (!prim.IsValid())
-            return true;
+    // The reason we treat invalid prim as selectable is two-fold:
+    //
+    // - We don't want to influence selectability of things that are not prim that are being
+    //   tested by accident.
+    // - We loop inheritence until we reach an invalid parent prim, and prim are selectable
+    //   by default.
+    if (!prim.IsValid())
+        return true;
 
-        const State state = getLocalState(prim);
-        switch (state) {
-        case kSelectable: return true;
-        case kUnselectable: return false;
-        default: break;
-        }
+    auto& cache = getCache();
+    const auto pos = cache.find(prim);
+    if (pos != cache.end())
+        return pos->second;
 
-        prim = prim.GetParent();
-    }
+    const bool selectable = isSelectableUncached(prim);
+    cache[prim] = selectable;
+    return selectable;
 }
 
 /*! \brief  Retrieve the local selectability state of a prim, without any inheritence.
