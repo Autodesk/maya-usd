@@ -897,6 +897,8 @@ void ProxyRenderDelegate::updateSelectionGranularity(
     const MDagPath&               path,
     MHWRender::MSelectionContext& selectionContext)
 {
+    Selectability::prepareForSelection();
+
     // The component level is coarse-grain, causing Maya to produce undesired face/edge selection
     // hits, as well as vertex selection hits that are required for point snapping. Switch to the
     // new vertex selection level if available in order to produce vertex selection hits only.
@@ -1014,10 +1016,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
 
     // Enforce selectability metadata.
-    if (!Selectability::isSelectable(prim))
-    {
-            dagPath = MDagPath();
-            return true;
+    if (!Selectability::isSelectable(prim)) {
+        dagPath = MDagPath();
+        return true;
     }
 
     // Resolve the selection based on the point instances pick mode.

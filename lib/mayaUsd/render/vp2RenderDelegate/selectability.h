@@ -32,16 +32,20 @@ public:
     enum State
     {
         kInherit,
-        kSelectable,
-        kUnselectable
+        kOn,
+        kOff
     };
 
     /*! \brief  The tokens used in the selectability metadata.
      */
-    static TfToken Metadata;
+    static TfToken MetadataToken;
     static TfToken InheritToken;
-    static TfToken SelectableToken;
-    static TfToken UnselectableToken;
+    static TfToken OnToken;
+    static TfToken OffToken;
+
+    /*! \brief  Prepare any internal data needed for selection prior to selection queries.
+     */
+    static void prepareForSelection();
 
     /*! \brief  Compute the selectability of a prim, considering inheritence.
      */
