@@ -13,7 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from . import _ufe
 from pxr import Tf
-Tf.PrepareModule(_ufe, locals())
-del _ufe, Tf
+if hasattr(Tf, 'PreparePythonModule'):
+    Tf.PreparePythonModule('_ufe')
+else:
+    from . import _ufe
+    Tf.PrepareModule(_ufe, locals())
+    del _ufe
+del Tf

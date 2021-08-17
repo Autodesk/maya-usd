@@ -1,6 +1,9 @@
 from pxr import Tf
-from . import _AL_USDTransaction
-Tf.PrepareModule(_AL_USDTransaction, locals())
+if hasattr(Tf, 'PreparePythonModule'):
+    Tf.PreparePythonModule('_AL_USDTransaction')
+else:
+    from . import _AL_USDTransaction
+    Tf.PrepareModule(_AL_USDTransaction, locals())
 del Tf
 
 try:
