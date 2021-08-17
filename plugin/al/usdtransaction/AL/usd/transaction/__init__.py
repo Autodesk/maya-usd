@@ -22,7 +22,7 @@ except Exception:
 class ScopedTransaction(object):
 
     def __init__(self, stage, layer):
-        self.transaction = _AL_USDTransaction.Transaction(stage, layer)
+        self.transaction = Transaction(stage, layer)
 
     def __enter__(self):
         return self.transaction.Open()

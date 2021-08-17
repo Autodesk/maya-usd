@@ -112,6 +112,11 @@ class PythonWrappersTestCase(unittest.TestCase):
         self.assertTrue(usdRtid > 0)
         self.assertNotEqual(mayaRtid, usdRtid)
 
+        # Added this File|New to command to fix a crash when this test
+        # exists (after upgrading to USD v21.08). The crash is coming
+        # from USD when it tries to destroy the layer data by creating
+        # a worker thread.
+        cmds.file(new=True, force=True)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
