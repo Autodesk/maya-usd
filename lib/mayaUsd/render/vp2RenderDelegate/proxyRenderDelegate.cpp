@@ -1191,9 +1191,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Update Purpose");
 
         // Build the list of render tags which were added or removed (changed)
-        // and the list of render tags which were removed. Enable any purpose which
-        // is being modified so that _GetFilteredRprims will find prims with that
-        // purpose.
+        // and the list of render tags which were removed.
         if (renderPurposeChanged) {
             changedRenderTags.push_back(HdRenderTagTokens->render);
         }
