@@ -512,9 +512,7 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
         ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
         return retStatus;
     } else if (plug == outStageDataAttr) {
-        in_compute++;
         auto ret = computeOutStageData(dataBlock);
-        in_compute--;
         return ret;
     } else if (plug == outStageCacheIdAttr) {
         return computeOutStageCacheId(dataBlock);
@@ -914,6 +912,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
 MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 {
+    struct in_computeGuard
+    {
+        in_computeGuard() { in_compute++; }
+        ~in_computeGuard() { in_compute--; }
+    } in_computeGuard;
+
     MStatus retValue = MS::kSuccess;
 
     const bool isNormalContext = dataBlock.context().isNormal();
