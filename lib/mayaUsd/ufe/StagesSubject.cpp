@@ -62,15 +62,15 @@ namespace {
 // Prevent re-entrant stage set.
 std::atomic_bool stageSetGuardCount { false };
 
+bool isTransformChange(const TfToken& nameToken)
+{
+    return nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken);
+}
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // The attribute change notification guard is not meant to be nested, but
 // use a counter nonetheless to provide consistent behavior in such cases.
 std::atomic_int attributeChangedNotificationGuardCount { 0 };
-
-bool inAttributeChangedNotificationGuard()
-{
-    return attributeChangedNotificationGuardCount.load() > 0;
-}
 
 // Keep an array of the pending attribute change notifications. Using a vector
 // for two main reasons:
@@ -78,6 +78,11 @@ bool inAttributeChangedNotificationGuard()
 // 2) Allow notif with same path, but different token. At worst the check is linear
 //    in the size of the vector (which is the same as an unordered_multimap).
 std::vector<std::pair<Ufe::Path, TfToken>> pendingAttributeChangedNotifications;
+
+bool inAttributeChangedNotificationGuard()
+{
+    return attributeChangedNotificationGuardCount.load() > 0;
+}
 
 void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
@@ -247,7 +252,7 @@ void StagesSubject::stageChanged(
             const TfToken nameToken = changedPath.GetNameToken();
             auto          usdPrimPathStr = changedPath.GetPrimPath().GetString();
             auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
-            if (nameToken == UsdGeomTokens->xformOpOrder) {
+            if (isTransformChange(nameToken)) {
                 if (!InTransform3dChange::inTransform3dChange()) {
                     Ufe::Transform3d::notify(ufePath);
                 }
@@ -359,7 +364,7 @@ void StagesSubject::stageChanged(
             // Is the change a Transform3d change?
             const UsdPrim prim = stage->GetPrimAtPath(changedPath.GetPrimPath());
             const TfToken nameToken = changedPath.GetNameToken();
-            if (nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken)) {
+            if (isTransformChange(nameToken)) {
                 Ufe::Transform3d::notify(ufePath);
                 UFE_V2(sendValueChangedFallback = false;)
             } else if (prim && prim.IsA<UsdGeomPointInstancer>()) {

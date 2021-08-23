@@ -65,6 +65,13 @@ PxrUsdTranslators_StandardSurfaceWriter::PxrUsdTranslators_StandardSurfaceWriter
 {
 }
 
+namespace {
+static inline float _ACEScgRgbToLuma(const GfVec3f& rgb)
+{
+    return GfDot(rgb, GfVec3f(0.2722287, 0.6740818, 0.0536895));
+}
+} // namespace
+
 /* virtual */
 void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
 {
@@ -155,18 +162,30 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName,
         usdTime);
 
-    MPlug transmissionPlug = depNodeFn.findPlug(
-        depNodeFn.attribute(TrMayaTokens->transmission.GetText()),
+    MPlug opacityPlug = depNodeFn.findPlug(
+        depNodeFn.attribute(TrMayaTokens->opacity.GetText()),
         /* wantNetworkedPlug = */ true,
         &status);
-    if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(transmissionPlug)) {
-        // Need a solution if the transmission is textured, but in the
-        // meantime, we go 1 - transmission.
-        float transmissionValue = transmissionPlug.asFloat();
 
-        shaderSchema
-            .CreateInput(PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName, SdfValueTypeNames->Float)
-            .Set(1.0f - transmissionValue, usdTime);
+    if (UsdMayaUtil::IsAuthored(opacityPlug) || opacityPlug.numConnectedChildren()
+        || opacityPlug.isDestination()) {
+        UsdShadeInput opacityInput = shaderSchema.CreateInput(
+            PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName, SdfValueTypeNames->Float);
+
+        if (!opacityPlug.numConnectedChildren()) {
+            VtValue opacityValue = UsdMayaWriteUtil::GetVtValue(
+                opacityPlug,
+                SdfValueTypeNames->Color3f,
+                /* linearizeColors = */ false);
+
+            // Need the luminance since we have a single float to populate on the USD side.
+            // This is the ACEScg luminance formula. Should we infer lin_rec709 instead?
+            //
+            // TODO: OCIO v2: Ask Maya for work colorspace, then ask OCIO for getDefaultLumaCoefs()
+            float luminance = _ACEScgRgbToLuma(opacityValue.UncheckedGet<GfVec3f>());
+
+            opacityInput.Set(luminance, usdTime);
+        }
     }
 
     // Exported, but unsupported in hdStorm.
@@ -202,6 +221,10 @@ TfToken PxrUsdTranslators_StandardSurfaceWriter::GetShadingAttributeNameForMayaA
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName;
     } else if (mayaAttrName == TrMayaTokens->coatRoughness) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName;
+    } else if (
+        mayaAttrName == TrMayaTokens->opacity || mayaAttrName == TrMayaTokens->opacityR
+        || mayaAttrName == TrMayaTokens->opacityG || mayaAttrName == TrMayaTokens->opacityB) {
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName;
     } else if (mayaAttrName == TrMayaTokens->normalCamera) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->NormalAttrName;
     } else {

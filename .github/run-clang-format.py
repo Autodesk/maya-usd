@@ -15,6 +15,7 @@ import os
 import re
 import stat
 import sys
+import platform
 import time
 
 from subprocess import check_call, check_output
@@ -71,11 +72,21 @@ def regex_from_file(path, glob=False):
     regex = '({})'.format('|'.join(patterns))
     return re.compile(regex)
 
-
-def canonicalpath(path):
-    path = os.path.abspath(os.path.realpath(os.path.normpath(os.path.normcase(path))))
-    return path.replace('\\', '/')
-
+if platform.system() == "Windows" and sys.version_info >= (3, 6):
+    import pathlib  # Python 3.6 is required for pathlib.Path
+    def canonicalpath(path):
+        path = os.path.abspath(os.path.realpath(os.path.normpath(os.path.normcase(path))))
+        realpath = str(pathlib.Path(path).resolve())  # To get a properly cased path ie: from r'C:\WiNdOwS\SyStEm32\DeSkToP.iNi' get r'C:\Windows\System32\desktop.ini'
+        if len(path) == len(realpath): # This is to avoid following symbolic links, there is still the possibility that they could be equal.
+            path = realpath
+        if os.path.isabs(path) and path[0].upper() != path[0]:
+            path = path[0].upper() +path[1:] # path.capitalize()
+        path = path.replace('\\', '/')
+        return path
+else:
+    def canonicalpath(path):
+        path = os.path.abspath(os.path.realpath(os.path.normpath(os.path.normcase(path))))
+        return path.replace('\\', '/')
 
 def run_clang_format(paths=(), verbose=False, commit=None):
     """Runs clang-format in-place on repo files

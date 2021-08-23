@@ -1,0 +1,77 @@
+#usda 1.0
+(
+    defaultPrim = "pPlane1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Mesh "pPlane1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane1/Looks/usdPreviewSurface1SG>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    float3 xformOp:rotateXYZ = (90, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+
+    def Scope "Looks"
+    {
+        def Material "usdPreviewSurface1SG"
+        {
+            token inputs:file1:varname = "st"
+            token outputs:surface.connect = </pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1.outputs:surface>
+
+            def Shader "usdPreviewSurface1"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </pPlane1/Looks/usdPreviewSurface1SG/file1.outputs:rgb>
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file1"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @grid.png@
+                token inputs:sourceColorSpace = "sRGB"
+                float2 inputs:st.connect = </pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </pPlane1/Looks/usdPreviewSurface1SG.inputs:file1:varname>
+                    float2 outputs:result
+                }
+
+                def Shader "UsdTransform2d"
+                {
+                    uniform token info:id = "UsdTransform2d"
+                    float2 inputs:in.connect = </pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader.outputs:result>
+                    float inputs:rotation = 13
+                    float2 inputs:scale = (0.3, 0.5)
+                    float2 inputs:translation = (0.1777373, 0.117708534)
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+}
+

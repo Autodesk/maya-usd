@@ -11,7 +11,7 @@ Run the following commands in Maya's script editor with the AL_USDMaya plugin lo
 Create a proxy shape pointing to our test file
 
 ```
-cmds.AL_usdmaya_ProxyShapeImport(file="<PATH_TO_ASSETS_FOLDER?/lock_hierarchy.usda")
+cmds.AL_usdmaya_ProxyShapeImport(file="<PATH_TO_ASSETS_FOLDER>/lock_hierarchy.usda")
 ```
 
 You should notice that "transA" and "camB" have their transform attributes locked and "pushToPrim" attributes disabled. Their descendants "transC" and "camD" are unlocked by "unlocked" metadata defined on "transC". And "transE" and "camF" are unlocked due to "inherited" by default.
@@ -24,11 +24,11 @@ Now let's lock "transC" and "camD" through ModelAPI.
 
 ``` 
 from AL import usdmaya
-from AL.usd import schemas
+from AL.usd.schemas import maya as maya_schemas
 stageCache = usdmaya.StageCache.Get()
 stage = stageCache.GetAllStages()[0]
 transC = stage.GetPrimAtPath('/transA/camB/transC')
-transCApi = schemas.ModelAPI(transC)
+transCApi = maya_schemas.ModelAPI(transC)
 transCApi.SetLock("inherited")
 ```
 "tranC" and "camD" are locked now because they inherit lock from ancestors. 
@@ -38,7 +38,8 @@ transCApi.SetLock("inherited")
 Now let's unlock all nodes under "transA" hierarchy
 
 ```
-transAApi = schemas.ModelAPI(transA)
+transA = stage.GetPrimAtPath('/transA')
+transAApi = maya_schemas.ModelAPI(transA)
 transAApi.SetLock("unlocked")
 ```
 
