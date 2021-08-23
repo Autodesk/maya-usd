@@ -68,12 +68,12 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxSphereLight, args, context)
 
 PXRUSDMAYA_DEFINE_READER(UsdRiPxrAovLight, args, context)
 {
-    return UsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, &context);
 }
 
 PXRUSDMAYA_DEFINE_READER(UsdRiPxrEnvDayLight, args, context)
 {
-    return UsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, &context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

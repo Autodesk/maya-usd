@@ -37,7 +37,7 @@ class UsdMaya_FunctorPrimReader final : public UsdMayaPrimReader
 public:
     UsdMaya_FunctorPrimReader(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderRegistry::ReaderFn);
 
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
     static UsdMayaPrimReaderSharedPtr
     Create(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderRegistry::ReaderFn readerFn);

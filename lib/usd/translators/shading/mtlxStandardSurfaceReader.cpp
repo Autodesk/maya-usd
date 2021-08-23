@@ -49,7 +49,7 @@ class MtlxUsd_StandardSurfaceWriter : public UsdMayaShaderReader
 public:
     MtlxUsd_StandardSurfaceWriter(const UsdMayaPrimReaderArgs&);
 
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 };
@@ -136,7 +136,7 @@ bool _ReadFromMaterial(const UsdShadeInput& input, VtValue& inputVal)
 
 } // namespace
 /* virtual */
-bool MtlxUsd_StandardSurfaceWriter::Read(UsdMayaPrimReaderContext* context)
+bool MtlxUsd_StandardSurfaceWriter::Read(UsdMayaPrimReaderContext& context)
 {
     const UsdPrim& prim = _GetArgs().GetUsdPrim();
     UsdShadeShader shaderSchema = UsdShadeShader(prim);
@@ -161,7 +161,7 @@ bool MtlxUsd_StandardSurfaceWriter::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
+    context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         TfToken baseName = GetMayaNameForUsdAttrName(input.GetFullName());

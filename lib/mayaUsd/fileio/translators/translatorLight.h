@@ -84,7 +84,7 @@ struct UsdMayaTranslatorLight
     /// Import a UsdLuxLight schema as a corresponding Maya light.
     /// Return true if the maya light was properly created and imported
     MAYAUSD_CORE_PUBLIC
-    static bool Read(const UsdMayaPrimReaderArgs& args, UsdMayaPrimReaderContext* context);
+    static bool Read(const UsdMayaPrimReaderArgs& args, UsdMayaPrimReaderContext& context);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -56,7 +56,7 @@ struct UsdMayaPrimReaderRegistry
     /// Reader function, i.e. a function that reads a prim. This is the
     /// signature of the function declared in the PXRUSDMAYA_DEFINE_READER
     /// macro.
-    typedef std::function<bool(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext*)> ReaderFn;
+    typedef std::function<bool(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&)> ReaderFn;
 
     /// \brief Register \p fn as a reader provider for \p type.
     MAYAUSD_CORE_PUBLIC
@@ -122,13 +122,13 @@ struct UsdMayaPrimReaderRegistry
 };
 
 #define PXRUSDMAYA_DEFINE_READER(T, argsVarName, ctxVarName)                                     \
-    static bool UsdMaya_PrimReader_##T(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext*); \
+    static bool UsdMaya_PrimReader_##T(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&); \
     TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, T)                                  \
     {                                                                                            \
         UsdMayaPrimReaderRegistry::RegisterRaw<T>(UsdMaya_PrimReader_##T);                       \
     }                                                                                            \
     bool UsdMaya_PrimReader_##T(                                                                 \
-        const UsdMayaPrimReaderArgs& argsVarName, UsdMayaPrimReaderContext* ctxVarName)
+        const UsdMayaPrimReaderArgs& argsVarName, UsdMayaPrimReaderContext& ctxVarName)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

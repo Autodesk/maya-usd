@@ -25,9 +25,8 @@ UsdMaya_FunctorPrimReader::UsdMaya_FunctorPrimReader(
 {
 }
 
-bool UsdMaya_FunctorPrimReader::Read(UsdMayaPrimReaderContext* context)
+bool UsdMaya_FunctorPrimReader::Read(UsdMayaPrimReaderContext& context)
 {
-    TF_VERIFY(context);
     return _readerFn(_GetArgs(), context);
 }
 

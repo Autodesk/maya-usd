@@ -60,7 +60,7 @@ public:
     /// USD attribute named \p usdAttrName.
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
     // Called after all connections are made to this node
     void PostConnectSubtree(UsdMayaPrimReaderContext* context) override;
@@ -83,11 +83,11 @@ PxrUsdTranslators_StandardSurfaceReader::PxrUsdTranslators_StandardSurfaceReader
 {
 }
 
-bool PxrUsdTranslators_StandardSurfaceReader::Read(UsdMayaPrimReaderContext* context)
+bool PxrUsdTranslators_StandardSurfaceReader::Read(UsdMayaPrimReaderContext& context)
 {
     bool success = _BaseClass::Read(context);
 
-    MObject mayaObject = context->GetMayaNode(_GetArgs().GetUsdPrim().GetPath(), false);
+    MObject mayaObject = context.GetMayaNode(_GetArgs().GetUsdPrim().GetPath(), false);
 
     // Expand Opacity from R to RGB if necessary.
     MStatus                  status;
