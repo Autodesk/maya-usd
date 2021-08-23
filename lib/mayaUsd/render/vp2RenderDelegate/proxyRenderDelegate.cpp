@@ -1183,6 +1183,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     bool             renderPurposeChanged = false;
     bool             proxyPurposeChanged = false;
     bool             guidePurposeChanged = false;
+    TfTokenVector    changedRenderTags;
     _proxyShapeData->UpdatePurpose(
         &renderPurposeChanged, &proxyPurposeChanged, &guidePurposeChanged);
     if (renderPurposeChanged || proxyPurposeChanged || guidePurposeChanged) {
@@ -1191,7 +1192,6 @@ void ProxyRenderDelegate::_UpdateRenderTags()
 
         // Build the list of render tags which were added or removed (changed)
         // and the list of render tags which were removed.
-        TfTokenVector changedRenderTags;
         if (renderPurposeChanged) {
             changedRenderTags.push_back(HdRenderTagTokens->render);
         }
@@ -1228,10 +1228,9 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // When an rprim has it's renderTag changed the global render tag version
     // id will change.
     if (rprimRenderTagChanged) {
-        TfTokenVector renderTags = { HdRenderTagTokens->geometry,
-                                     HdRenderTagTokens->render,
-                                     HdRenderTagTokens->proxy,
-                                     HdRenderTagTokens->guide };
+        TfTokenVector renderTags
+            = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
+        renderTags.insert(renderTags.end(), changedRenderTags.begin(), changedRenderTags.end());
         _taskController->SetRenderTags(renderTags);
         _taskRenderTagsValid = false;
     }
@@ -1253,6 +1252,14 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         _taskController->SetRenderTags(renderTags);
         _taskRenderTagsValid = true;
     }
+
+    // TODO: UsdImagingDelegate is purpose-aware. There are methods
+    // SetDisplayRender, SetDisplayProxy and SetDisplayGuides which inform the
+    // scene delegate of what is displayed, and changes the behavior of
+    // UsdImagingDelegate::GetRenderTag(). So far I don't see an advantage of
+    // using this feature for MayaUSD, but it may be useful at some point in
+    // the future.
+
     _renderTagVersion = changeTracker.GetRenderTagVersion();
 #ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     _visibilityVersion = changeTracker.GetVisibilityChangeCount();
