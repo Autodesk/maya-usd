@@ -232,6 +232,12 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         // Handle usdModelRootOverridePath for USD Variants
         MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
         if (mRenderLayerObjs.length() > 1) {
+            if (!mJobCtx.mArgs.rootMapFunction.IsNull()) {
+                MGlobal::displayError("Export roots can't be used together with export to modeling"
+                                      " variant; export aborting");
+                return false;
+            }
+
             mJobCtx.mArgs.usdModelRootOverridePath = SdfPath("/_BaseModel_");
         }
     }
@@ -377,6 +383,17 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                     itDag.prune();
                 }
             }
+        }
+    }
+
+    if (!mJobCtx.mArgs.rootMapFunction.IsNull()) {
+        // Check if there was no intersection between export roots and given selection.
+        // We achieve this by checking if any valid prim writer was executed and populated
+        // the mDagPathToUsdPathMap map.
+        if (mDagPathToUsdPathMap.size() == 0) {
+            MGlobal::displayError("Given export root was neither a parent or child of"
+                                  " any of the items to export; export aborting");
+            return false;
         }
     }
 

@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 
+#include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -25,11 +26,22 @@
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
+
+#if PXR_VERSION >= 2102
+#include <pxr/imaging/hio/image.h>
+#else
+#include <pxr/imaging/glf/image.h>
+#endif
 
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
+#include <ghc/filesystem.hpp>
+
+#include <regex>
 #include <string>
+#include <system_error>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -37,6 +49,8 @@ namespace {
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+
+    ((UDIMTag, "<UDIM>"))
 
     (place2dTexture)
     (coverage)
@@ -179,3 +193,128 @@ MObject UsdMayaShadingUtil::CreatePlace2dTextureAndConnectTexture(MObject textur
 
     return uvObj;
 }
+
+namespace {
+// Match UDIM pattern, from 1001 to 1999
+const std::regex
+    _udimRegex(".*[^\\d](1(?:[0-9][0-9][1-9]|[1-9][1-9]0|0[1-9]0|[1-9]00))(?:[^\\d].*|$)");
+} // namespace
+
+void UsdMayaShadingUtil::ResolveUsdTextureFileName(
+    std::string&       fileTextureName,
+    const std::string& usdFileName,
+    bool               isUDIM)
+{
+    // WARNING: This extremely minimal attempt at making the file path relative
+    //          to the USD stage is a stopgap measure intended to provide
+    //          minimal interop. It will be replaced by proper use of Maya and
+    //          USD asset resolvers. For package files, the exporter needs full
+    //          paths.
+
+    TfToken fileExt(TfGetExtension(usdFileName));
+    if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
+        ghc::filesystem::path usdDir(usdFileName);
+        usdDir = usdDir.parent_path();
+        std::error_code       ec;
+        ghc::filesystem::path relativePath = ghc::filesystem::relative(fileTextureName, usdDir, ec);
+        if (!ec && !relativePath.empty()) {
+            fileTextureName = relativePath.generic_string();
+        }
+    }
+
+    // Update filename in case of UDIM
+    if (isUDIM) {
+        std::smatch match;
+        if (std::regex_search(fileTextureName, match, _udimRegex) && match.size() == 2) {
+            fileTextureName = std::string(match[0].first, match[1].first)
+                + _tokens->UDIMTag.GetString() + std::string(match[1].second, match[0].second);
+        }
+    }
+}
+
+#if PXR_VERSION >= 2102
+int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
+{
+    // Using Hio because the Maya texture node does not provide the information:
+    HioImageSharedPtr image = HioImage::OpenForReading(fileTextureName.c_str());
+    HioFormat         imageFormat = image ? image->GetFormat() : HioFormat::HioFormatUNorm8Vec4;
+
+    // In case of unknown, use 4 channel image:
+    if (imageFormat == HioFormat::HioFormatInvalid) {
+        imageFormat = HioFormat::HioFormatUNorm8Vec4;
+    }
+
+    return HioGetComponentCount(imageFormat);
+}
+#elif PXR_VERSION >= 2011
+int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
+{
+    GlfImageSharedPtr image = GlfImage::OpenForReading(fileTextureName.c_str());
+
+    if (!image) {
+        return 4;
+    }
+
+    // Inlined HioGetComponentCount from USD 21.02:
+    switch (image->GetHioFormat()) {
+    case HioFormatUNorm8:
+    case HioFormatSNorm8:
+    case HioFormatFloat16:
+    case HioFormatFloat32:
+    case HioFormatDouble64:
+    case HioFormatUInt16:
+    case HioFormatInt16:
+    case HioFormatUInt32:
+    case HioFormatInt32:
+    case HioFormatUNorm8srgb: return 1;
+    case HioFormatUNorm8Vec2:
+    case HioFormatSNorm8Vec2:
+    case HioFormatFloat16Vec2:
+    case HioFormatFloat32Vec2:
+    case HioFormatDouble64Vec2:
+    case HioFormatUInt16Vec2:
+    case HioFormatInt16Vec2:
+    case HioFormatUInt32Vec2:
+    case HioFormatInt32Vec2:
+    case HioFormatUNorm8Vec2srgb: return 2;
+    case HioFormatUNorm8Vec3:
+    case HioFormatSNorm8Vec3:
+    case HioFormatFloat16Vec3:
+    case HioFormatFloat32Vec3:
+    case HioFormatDouble64Vec3:
+    case HioFormatUInt16Vec3:
+    case HioFormatInt16Vec3:
+    case HioFormatUInt32Vec3:
+    case HioFormatInt32Vec3:
+    case HioFormatUNorm8Vec3srgb:
+    case HioFormatBC6FloatVec3:
+    case HioFormatBC6UFloatVec3: return 3;
+    default: return 4;
+    }
+}
+#else // 20.08
+// Not including the OpenGL headers just for 3 constants, especially since this code
+// is going to be retired soon.
+
+// From glcorearb.h:
+#define GL_RED 0x1903
+#define GL_RG  0x8227
+#define GL_RGB 0x1907
+
+int UsdMayaShadingUtil::GetNumberOfChannels(const std::string& fileTextureName)
+{
+    // Using Glf because the Maya texture node does not provide the information:
+    GlfImageSharedPtr image = GlfImage::OpenForReading(fileTextureName.c_str());
+
+    if (!image) {
+        return 4;
+    }
+
+    switch (image->GetFormat()) {
+    case GL_RED: return 1;
+    case GL_RG: return 2;
+    case GL_RGB: return 3;
+    default: return 4;
+    }
+}
+#endif

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,54 +13,209 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "lightWriter.h"
+
 #include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/translators/translatorRfMLight.h>
+#include <mayaUsd/fileio/translators/translatorLight.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+
+#include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/light.h>
+
+#include <maya/MFnDirectionalLight.h>
+#include <maya/MGlobal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_DEFINE_WRITER(PxrAovLight, args, context)
+/// directionalLight
+PXRUSDMAYA_REGISTER_WRITER(directionalLight, PxrUsdTranslators_DirectionalLightWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(directionalLight, UsdLuxDistantLight);
+
+PxrUsdTranslators_DirectionalLightWriter::PxrUsdTranslators_DirectionalLightWriter(
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    return UsdMayaTranslatorRfMLight::Write(args, context);
+    UsdLuxDistantLight distantLight = UsdLuxDistantLight::Define(GetUsdStage(), GetUsdPath());
+    _usdPrim = distantLight.GetPrim();
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdLuxDistantLight at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
 }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrCylinderLight, args, context)
+/* virtual */
+void PxrUsdTranslators_DirectionalLightWriter::Write(const UsdTimeCode& usdTime)
 {
-    return UsdMayaTranslatorRfMLight::Write(args, context);
+    MStatus status;
+    UsdMayaPrimWriter::Write(usdTime);
+    // Since write() above will take care of any animation on the light's
+    // transform, we only want to proceed here if:
+    // - We are at the default time and NO attributes on the shape are animated.
+    //    OR
+    // - We are at a non-default time and some attribute on the shape IS animated.
+    if (usdTime.IsDefault() == _HasAnimCurves()) {
+        return;
+    }
+    UsdLuxDistantLight  primSchema(_usdPrim);
+    MFnDirectionalLight lightFn(GetDagPath(), &status);
+    if (!status) {
+        // Do this just to get the print
+        CHECK_MSTATUS(status);
+        return;
+    }
+
+    // First write the base light attributes
+    UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+    // Then write the specialized attributes for directional lights
+    UsdMayaTranslatorLight::WriteDirectionalLightAttrs(
+        usdTime, primSchema, lightFn, _GetSparseValueWriter());
 }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrDiskLight, args, context)
+/// pointLight
+PXRUSDMAYA_REGISTER_WRITER(pointLight, PxrUsdTranslators_PointLightWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(pointLight, UsdLuxSphereLight);
+
+PxrUsdTranslators_PointLightWriter::PxrUsdTranslators_PointLightWriter(
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    return UsdMayaTranslatorRfMLight::Write(args, context);
+    UsdLuxSphereLight sphereLight = UsdLuxSphereLight::Define(GetUsdStage(), GetUsdPath());
+    _usdPrim = sphereLight.GetPrim();
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdLuxSphereLight at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
 }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrDistantLight, args, context)
+/* virtual */
+void PxrUsdTranslators_PointLightWriter::Write(const UsdTimeCode& usdTime)
 {
-    return UsdMayaTranslatorRfMLight::Write(args, context);
+    MStatus status;
+    UsdMayaPrimWriter::Write(usdTime);
+    // Since write() above will take care of any animation on the light's
+    // transform, we only want to proceed here if:
+    // - We are at the default time and NO attributes on the shape are animated.
+    //    OR
+    // - We are at a non-default time and some attribute on the shape IS animated.
+    if (usdTime.IsDefault() == _HasAnimCurves()) {
+        return;
+    }
+    UsdLuxSphereLight primSchema(_usdPrim);
+    MFnPointLight     lightFn(GetDagPath(), &status);
+    if (!status) {
+        // Do this just to get the print
+        CHECK_MSTATUS(status);
+        return;
+    }
+
+    // First write the base light attributes
+    UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+    // Then write the specialized attributes for point lights
+    UsdMayaTranslatorLight::WritePointLightAttrs(
+        usdTime, primSchema, lightFn, _GetSparseValueWriter());
 }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrDomeLight, args, context)
+/// spotLight
+PXRUSDMAYA_REGISTER_WRITER(spotLight, PxrUsdTranslators_SpotLightWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(spotLight, UsdLuxSphereLight);
+
+PxrUsdTranslators_SpotLightWriter::PxrUsdTranslators_SpotLightWriter(
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    return UsdMayaTranslatorRfMLight::Write(args, context);
+    UsdLuxSphereLight sphereLight = UsdLuxSphereLight::Define(GetUsdStage(), GetUsdPath());
+    _usdPrim = sphereLight.GetPrim();
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdLuxSphereLight at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
 }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrEnvDayLight, args, context)
+/* virtual */
+void PxrUsdTranslators_SpotLightWriter::Write(const UsdTimeCode& usdTime)
 {
-    return UsdMayaTranslatorRfMLight::Write(args, context);
+    MStatus status;
+    UsdMayaPrimWriter::Write(usdTime);
+    // Since write() above will take care of any animation on the light's
+    // transform, we only want to proceed here if:
+    // - We are at the default time and NO attributes on the shape are animated.
+    //    OR
+    // - We are at a non-default time and some attribute on the shape IS animated.
+    if (usdTime.IsDefault() == _HasAnimCurves()) {
+        return;
+    }
+    UsdLuxSphereLight primSchema(_usdPrim);
+    MFnSpotLight      lightFn(GetDagPath(), &status);
+    if (!status) {
+        // Do this just to get the print
+        CHECK_MSTATUS(status);
+        return;
+    }
+    // First write the base light attributes
+    UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+    // Then write the specialized attributes for spot lights
+    UsdMayaTranslatorLight::WriteSpotLightAttrs(
+        usdTime, primSchema, lightFn, _GetSparseValueWriter());
 }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrMeshLight, args, context)
+/// areaLight
+PXRUSDMAYA_REGISTER_WRITER(areaLight, PxrUsdTranslators_AreaLightWriter);
+PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(areaLight, UsdLuxRectLight);
+
+PxrUsdTranslators_AreaLightWriter::PxrUsdTranslators_AreaLightWriter(
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    return UsdMayaTranslatorRfMLight::Write(args, context);
+    UsdLuxRectLight rectLight = UsdLuxRectLight::Define(GetUsdStage(), GetUsdPath());
+    _usdPrim = rectLight.GetPrim();
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdLuxSphereLight at path '%s'\n",
+            GetUsdPath().GetText())) {
+        return;
+    }
 }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrRectLight, args, context)
+/* virtual */
+void PxrUsdTranslators_AreaLightWriter::Write(const UsdTimeCode& usdTime)
 {
-    return UsdMayaTranslatorRfMLight::Write(args, context);
-}
+    MStatus status;
+    UsdMayaPrimWriter::Write(usdTime);
+    // Since write() above will take care of any animation on the light's
+    // transform, we only want to proceed here if:
+    // - We are at the default time and NO attributes on the shape are animated.
+    //    OR
+    // - We are at a non-default time and some attribute on the shape IS animated.
+    if (usdTime.IsDefault() == _HasAnimCurves()) {
+        return;
+    }
+    UsdLuxRectLight primSchema(_usdPrim);
+    MFnAreaLight    lightFn(GetDagPath(), &status);
+    if (!status) {
+        // Do this just to get the print
+        CHECK_MSTATUS(status);
+        return;
+    }
 
-PXRUSDMAYA_DEFINE_WRITER(PxrSphereLight, args, context)
-{
-    return UsdMayaTranslatorRfMLight::Write(args, context);
+    // First write the base light attributes
+    UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+    // Then write the specialized attributes for spot lights
+    UsdMayaTranslatorLight::WriteAreaLightAttrs(
+        usdTime, primSchema, lightFn, _GetSparseValueWriter());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

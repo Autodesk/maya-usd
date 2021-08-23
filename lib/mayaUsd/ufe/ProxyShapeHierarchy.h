@@ -64,15 +64,23 @@ public:
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 3005)
+    Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
+#else
     Ufe::SceneItem::Ptr
     createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
+#endif
 
 #if (UFE_PREVIEW_VERSION_NUM >= 3001)
     Ufe::InsertChildCommand::Ptr
 #else
     Ufe::UndoableCommand::Ptr
 #endif
+#if (UFE_PREVIEW_VERSION_NUM >= 3005)
+    createGroupCmd(const Ufe::PathComponent& name) const override;
+#else
     createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
+#endif
 
     Ufe::SceneItem::Ptr defaultParent() const override;
 

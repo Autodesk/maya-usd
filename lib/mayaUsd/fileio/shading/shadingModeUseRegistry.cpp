@@ -271,16 +271,18 @@ private:
 
                 // We pass in the type of the plug on the other side to allow the export code to
                 // add conversion nodes as required.
-
-                const TfToken srcPlugName
-                    = TfToken(UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
-                UsdAttribute srcAttribute = srcShaderInfo->GetShadingAttributeForMayaAttrName(
-                    srcPlugName, MayaUsd::Converter::getUsdTypeName(dstPlug));
-
                 const TfToken dstPlugName
                     = TfToken(UsdMayaShadingUtil::GetStandardAttrName(dstPlug, false));
                 UsdAttribute dstAttribute = dstShaderInfo->GetShadingAttributeForMayaAttrName(
                     dstPlugName, MayaUsd::Converter::getUsdTypeName(srcPlug));
+
+                UsdAttribute srcAttribute;
+                if (dstAttribute) {
+                    const TfToken srcPlugName
+                        = TfToken(UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
+                    srcAttribute = srcShaderInfo->GetShadingAttributeForMayaAttrName(
+                        srcPlugName, dstAttribute.GetTypeName());
+                }
 
                 if (srcAttribute && dstAttribute) {
                     if (UsdShadeInput::IsInput(srcAttribute)) {
@@ -654,6 +656,8 @@ private:
 
             UsdMayaUtil::Connect(srcAttr, mayaAttr, false);
         }
+
+        shaderReader.PostConnectSubtree(_context->GetPrimReaderContext());
 
         return shaderObj;
     }

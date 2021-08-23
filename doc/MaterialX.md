@@ -26,7 +26,7 @@ We currently support exporting to MaterialX-compatible UsdShade networks:
 
 ### To enable:
 
-- Rebuild the MayaUsd plugin for Maya PR126 using tip of the dev branch or any commit that includes [PR 1478](https://github.com/Autodesk/maya-usd/pull/1478)
+- Rebuild the MayaUsd plugin for Maya 2022.1 or PR126 using tip of the dev branch or any commit that includes [PR 1478](https://github.com/Autodesk/maya-usd/pull/1478)
 - Look for a new "MaterialX shading" option in the `Materials` dropdown of the export options
 
 ## Import
@@ -43,7 +43,7 @@ We can import MaterialX networks.
 
 ### To enable:
 
-- Rebuild the MayaUsd plugin for Maya PR126 using tip of the dev branch or any commit that includes [PR 1478](https://github.com/Autodesk/maya-usd/pull/1478)
+- Rebuild the MayaUsd plugin for Maya 2022.1 or PR126 using tip of the dev branch or any commit that includes [PR 1478](https://github.com/Autodesk/maya-usd/pull/1478)
 - The import code will discover MaterialX shading networks and attempt to import them automatically
 
 ## USD stage support in viewport
@@ -69,10 +69,10 @@ The same spheres exported with MaterialX shading and loaded as a USD stage: ![al
 
 This one is more complex and requires knowledge of how to build USD.
 
-**Requires Maya PR126**
+**Requires Maya 2022.1 or PR126**
 
 1. Build MaterialX using the [Autodesk fork of MaterialX](https://github.com/autodesk-forks/MaterialX)
-    - Requires version [v1.38.1_adsk](https://github.com/autodesk-forks/MaterialX/releases/tag/v1.38.1_adsk) or later
+    - Requires a version later than [PR 1285](https://github.com/autodesk-forks/MaterialX/pull/1285) for proper transparency support.
     - Requires at minimum MATERIALX_BUILD_CONTRIB, MATERIALX_BUILD_GEN_OGSXML, and MATERIALX_BUILD_SHARED_LIBS options to be enabled
     - We only require the OGS XML shadergen part (and USD requires the GLSL shadergen), so you can turn off all complex options like Viewer, OIIO, OSL, or Python support
 2. Install that freshly built MaterialX in the `install` location where you intend to build USD next

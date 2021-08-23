@@ -173,98 +173,28 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vector2)
 );
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _mtlxTopoNodeTokens,
-
+const std::set<std::string> _mtlxTopoNodeSet = {
     // Topo affecting nodes due to object/model/world space parameter
-    (ND_position_vector3)
-    (ND_normal_vector3)
-    (ND_tangent_vector3)
-    (ND_bitangent_vector3)
+    "position",
+    "normal",
+    "tangent",
+    "bitangent",
     // Topo affecting nodes due to channel index. We remap to geomprop in _AddMissingTexcoordReaders
-    (ND_texcoord_vector2)
-    (ND_texcoord_vector3)
+    "texcoord",
     // Color at vertices also affect topo, but we have not locked a naming scheme to go from index
     // based to name based as we did for UV sets. We will mark them as topo-affecting, but there is
     // nothing we can do to link them correctly to a primvar without specifying a naming scheme.
-    (ND_geomcolor_float)
-    (ND_geomcolor_color3)
-    (ND_geomcolor_color4)
+    "geomcolor",
     // Geompropvalue are the best way to reference a primvar by name. The primvar name is
     // topo-affecting. Note that boolean and string are not supported by the GLSL codegen.
-    (ND_geompropvalue_integer)
-    (ND_geompropvalue_boolean)
-    (ND_geompropvalue_string)
-    (ND_geompropvalue_float)
-    (ND_geompropvalue_color3)
-    (ND_geompropvalue_color4)
-    (ND_geompropvalue_vector2)
-    (ND_geompropvalue_vector3)
-    (ND_geompropvalue_vector4)
+    "geompropvalue",
     // Swizzles are inlined into the codegen and affect topology.
-    (ND_swizzle_float_color3)
-    (ND_swizzle_float_color4)
-    (ND_swizzle_float_vector2)
-    (ND_swizzle_float_vector3)
-    (ND_swizzle_float_vector4)
-    (ND_swizzle_color3_float)
-    (ND_swizzle_color3_color3)
-    (ND_swizzle_color3_color4)
-    (ND_swizzle_color3_vector2)
-    (ND_swizzle_color3_vector3)
-    (ND_swizzle_color3_vector4)
-    (ND_swizzle_color4_float)
-    (ND_swizzle_color4_color3)
-    (ND_swizzle_color4_color4)
-    (ND_swizzle_color4_vector2)
-    (ND_swizzle_color4_vector3)
-    (ND_swizzle_color4_vector4)
-    (ND_swizzle_vector2_float)
-    (ND_swizzle_vector2_color3)
-    (ND_swizzle_vector2_color4)
-    (ND_swizzle_vector2_vector2)
-    (ND_swizzle_vector2_vector3)
-    (ND_swizzle_vector2_vector4)
-    (ND_swizzle_vector3_float)
-    (ND_swizzle_vector3_color3)
-    (ND_swizzle_vector3_color4)
-    (ND_swizzle_vector3_vector2)
-    (ND_swizzle_vector3_vector3)
-    (ND_swizzle_vector3_vector4)
-    (ND_swizzle_vector4_float)
-    (ND_swizzle_vector4_color3)
-    (ND_swizzle_vector4_color4)
-    (ND_swizzle_vector4_vector2)
-    (ND_swizzle_vector4_vector3)
-    (ND_swizzle_vector4_vector4)
-);
+    "swizzle",
+    // Conversion nodes:
+    "convert"
+};
+
 // clang-format on
-
-static const std::set<TfToken> _mtlxTopoNodeTokenSet(
-    _mtlxTopoNodeTokens->allTokens.cbegin(),
-    _mtlxTopoNodeTokens->allTokens.cend());
-
-//! Return true if that node parameter has topological impact on the generated code.
-//
-// Swizzle and geompropvalue nodes are known to have an attribute that affects
-// shader topology. The "channels" and "geomprop" attributes will have effects at the codegen level,
-// not at runtime. Yes, this is forbidden internal knowledge of the MaterialX shader generator and
-// we might get other nodes like this one in a future update.
-//
-// The index input of the texcoord and geomcolor nodes affect which stream to read and is topo
-// affecting.
-//
-// Any geometric input that can specify model/object/world space is also topo affecting.
-//
-// Things to look out for are parameters of type "string" and parameters with the "uniform"
-// metadata. These need to be reviewed against the code used in their registered
-// implementations (see registerImplementation calls in the GlslShaderGenerator CTOR). Sadly
-// we can not make that a rule because the filename of an image node is both a "string" and
-// has the "uniform" metadata, yet is not affecting topology.
-bool _IsTopologicalNode(const HdMaterialNode2& inNode)
-{
-    return _mtlxTopoNodeTokenSet.find(inNode.nodeTypeId) != _mtlxTopoNodeTokenSet.cend();
-}
 
 struct _MaterialXData
 {
@@ -307,6 +237,33 @@ _MaterialXData& _GetMaterialXData()
     std::call_once(once, []() { materialXData.reset(new _MaterialXData()); });
 
     return *materialXData;
+}
+
+//! Return true if that node parameter has topological impact on the generated code.
+//
+// Swizzle and geompropvalue nodes are known to have an attribute that affects
+// shader topology. The "channels" and "geomprop" attributes will have effects at the codegen level,
+// not at runtime. Yes, this is forbidden internal knowledge of the MaterialX shader generator and
+// we might get other nodes like this one in a future update.
+//
+// The index input of the texcoord and geomcolor nodes affect which stream to read and is topo
+// affecting.
+//
+// Any geometric input that can specify model/object/world space is also topo affecting.
+//
+// Things to look out for are parameters of type "string" and parameters with the "uniform"
+// metadata. These need to be reviewed against the code used in their registered
+// implementations (see registerImplementation calls in the GlslShaderGenerator CTOR). Sadly
+// we can not make that a rule because the filename of an image node is both a "string" and
+// has the "uniform" metadata, yet is not affecting topology.
+bool _IsTopologicalNode(const HdMaterialNode2& inNode)
+{
+    mx::NodeDefPtr nodeDef
+        = _GetMaterialXData()._mtlxLibrary->getNodeDef(inNode.nodeTypeId.GetString());
+    if (nodeDef) {
+        return _mtlxTopoNodeSet.find(nodeDef->getCategory()) != _mtlxTopoNodeSet.cend();
+    }
+    return false;
 }
 
 bool _IsMaterialX(const HdMaterialNode& node)
@@ -472,8 +429,7 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
                 }
             }
             // Check if it is an explicit texcoord reader:
-            if (nodeDef->getName() == _mtlxTopoNodeTokens->ND_texcoord_vector2
-                || nodeDef->getName() == _mtlxTopoNodeTokens->ND_texcoord_vector3) {
+            if (nodeDef->getCategory() == "texcoord") {
                 // Switch it with a geompropvalue of the same name:
                 std::string nodeName = node->getName();
                 std::string oldName = nodeName + "_toDelete";
@@ -1876,6 +1832,8 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
 
         // Add automatic tangent generation:
         shaderInstance->addInputFragment("materialXTw", "Tw", "Tw");
+
+        shaderInstance->setIsTransparent(ogsFragment.isTransparent());
 
     } catch (mx::Exception& e) {
         TF_RUNTIME_ERROR(

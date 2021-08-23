@@ -99,6 +99,12 @@ function(mayaUsd_compile_config TARGET)
             PRIVATE
                 ${GNU_CLANG_FLAGS}
         )
+        if(IS_LINUX)
+            target_compile_definitions(${TARGET}
+                PRIVATE
+                    _GLIBCXX_USE_CXX11_ABI=0 # USD is built with old ABI
+            )
+        endif()
     elseif(IS_MSVC)
         target_compile_options(${TARGET} 
             PRIVATE

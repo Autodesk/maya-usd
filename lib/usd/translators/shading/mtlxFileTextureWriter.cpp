@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -30,7 +31,6 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
-#include <pxr/imaging/hio/image.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/path.h>
@@ -71,8 +71,6 @@ public:
         const SdfValueTypeName& typeName) override;
 
 private:
-    void _GetResolvedTextureName(std::string&);
-
     int _numChannels = 4;
 };
 
@@ -124,18 +122,11 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     MPlug       texNamePlug = depNodeFn.findPlug("fileTextureName");
     std::string filename(texNamePlug.asString().asChar());
 
-    _GetResolvedTextureName(filename);
+    // Not resolving UDIM tags. We want to actually open one of these files:
+    UsdMayaShadingUtil::ResolveUsdTextureFileName(
+        filename, _GetExportArgs().GetResolvedFileName(), false);
 
-    // Using Hio because the Maya texture node does not provide the information:
-    HioImageSharedPtr image = HioImage::OpenForReading(filename.c_str());
-
-    HioFormat imageFormat = image ? image->GetFormat() : HioFormat::HioFormatUNorm8Vec4;
-
-    // In case of unknown, use 4 channel image:
-    if (imageFormat == HioFormat::HioFormatInvalid) {
-        imageFormat = HioFormat::HioFormatUNorm8Vec4;
-    }
-    _numChannels = HioGetComponentCount(imageFormat);
+    _numChannels = UsdMayaShadingUtil::GetNumberOfChannels(filename);
     switch (_numChannels) {
     case 1:
         texSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_image_float));
@@ -232,24 +223,12 @@ void MtlxUsd_FileWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    _GetResolvedTextureName(fileTextureName);
+    const MPlug tilingAttr
+        = depNodeFn.findPlug(TrMayaTokens->uvTilingMode.GetText(), true, &status);
+    const bool isUDIM = (status == MS::kSuccess && tilingAttr.asInt() == 3);
 
-    // WARNING: This extremely minimal attempt at making the file path relative
-    //          to the USD stage is a stopgap measure intended to provide
-    //          minimal interop. It will be replaced by proper use of Maya and
-    //          USD asset resolvers. For package files, the exporter needs full
-    //          paths.
-    const std::string fileName = _GetExportArgs().GetResolvedFileName();
-    TfToken           fileExt(TfGetExtension(fileName));
-    if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-        ghc::filesystem::path usdDir(fileName);
-        usdDir = usdDir.parent_path();
-        std::error_code       ec;
-        ghc::filesystem::path relativePath = ghc::filesystem::relative(fileTextureName, usdDir, ec);
-        if (!ec && !relativePath.empty()) {
-            fileTextureName = relativePath.generic_string();
-        }
-    }
+    UsdMayaShadingUtil::ResolveUsdTextureFileName(
+        fileTextureName, _GetExportArgs().GetResolvedFileName(), isUDIM);
 
     UsdShadeInput fileInput
         = shaderSchema.CreateInput(TrMtlxTokens->file, SdfValueTypeNames->Asset);
@@ -441,26 +420,6 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
     }
 
     return UsdAttribute();
-}
-
-void MtlxUsd_FileWriter::_GetResolvedTextureName(std::string& fileTextureName)
-{
-    // WARNING: This extremely minimal attempt at making the file path relative
-    //          to the USD stage is a stopgap measure intended to provide
-    //          minimal interop. It will be replaced by proper use of Maya and
-    //          USD asset resolvers. For package files, the exporter needs full
-    //          paths.
-    const std::string fileName = _GetExportArgs().GetResolvedFileName();
-    TfToken           fileExt(TfGetExtension(fileName));
-    if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
-        ghc::filesystem::path usdDir(fileName);
-        usdDir = usdDir.parent_path();
-        std::error_code       ec;
-        ghc::filesystem::path relativePath = ghc::filesystem::relative(fileTextureName, usdDir, ec);
-        if (!ec && !relativePath.empty()) {
-            fileTextureName = relativePath.generic_string();
-        }
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

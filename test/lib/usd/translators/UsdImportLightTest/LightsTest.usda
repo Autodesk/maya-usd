@@ -1,0 +1,131 @@
+#usda 1.0
+(
+    defaultPrim = "LightsTest"
+    endTimeCode = 5
+    framesPerSecond = 24
+    metersPerUnit = 0.01
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Xform "LightsTest" (
+    kind = "component"
+)
+{
+    def DistantLight "directionalLight1" (
+        prepend apiSchemas = ["ShadowAPI"]
+        kind = "assembly"
+    )
+    {
+        float inputs:angle.timeSamples = {
+            1: 1.5,
+            2: 1.578125,
+            3: 1.75,
+            4: 1.921875,
+            5: 2,
+        }
+        color3f inputs:color.timeSamples = {
+            1: (1, 0.9, 0.8),
+        }
+        float inputs:intensity = 2
+
+        color3f inputs:shadow:color = (0.1, 0.2, 0.3)
+        
+        bool inputs:shadow:enable
+        float3 xformOp:rotateXYZ = (-20, -40, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+
+    def SphereLight "pointLight1" (
+        prepend apiSchemas = ["ShadowAPI"]
+        kind = "assembly"
+    )
+    {
+        color3f inputs:color = (1, 0.5, 0.1)
+
+        float inputs:intensity.timeSamples = {
+            1: 0.5,
+            2: 0.734375,
+            3: 1.25,
+            4: 1.765625,
+            5: 2,
+        }
+        float inputs:radius.timeSamples = {
+            1: 0,
+        }
+        color3f inputs:shadow:color
+        bool inputs:shadow:enable
+        float inputs:specular = 0
+
+        bool treatAsPoint = 1
+
+        double3 xformOp:translate = (-10, 10, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def SphereLight "spotLight1" (
+        prepend apiSchemas = ["ShadowAPI", "ShapingAPI"]
+        kind = "assembly"
+    )
+    {
+        color3f inputs:color.timeSamples = {
+            1: (0.3, 1, 0.2),
+            2: (0.253125, 0.875, 0.184375),
+            3: (0.15, 0.6, 0.15),
+            4: (0.046875, 0.325, 0.115625),
+            5: (0, 0.2, 0.1),
+        }
+        float inputs:diffuse = 0
+
+        float inputs:intensity = 0.8
+        float inputs:radius =  0
+        
+        color3f inputs:shadow:color
+        bool inputs:shadow:enable
+    
+        float inputs:shaping:cone:angle.timeSamples = {
+            1: 25,
+        }
+        float inputs:shaping:cone:softness.timeSamples = {
+            1: 0.4,
+        }
+        float inputs:shaping:focus.timeSamples = {
+            1: 8,
+        }
+    
+
+
+        bool treatAsPoint = 1
+        float3 xformOp:rotateXYZ = (-45, 90, -5)
+        double3 xformOp:translate.timeSamples = {
+            1: (10, 7, -8),
+            2: (9.21875, 6.375, -5.500000000000001),
+            3: (7.5, 5, -1.7763568394002505e-15),
+            4: (5.781250000000001, 3.625000000000001, 5.4999999999999964),
+            5: (5, 3, 8),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def RectLight "areaLight1" (
+        prepend apiSchemas = ["ShadowAPI"]
+        kind = "assembly"
+    )
+    {
+        color3f inputs:color = (0.8, 0.7, 0.6)
+        float inputs:intensity = 1.2
+        bool inputs:normalize = 0
+        color3f inputs:shadow:color
+        bool inputs:shadow:enable
+        float3 xformOp:rotateXYZ = (0, 23, 0)
+        float3 xformOp:scale.timeSamples = {
+            1: (4, 3, 2),
+        }
+        double3 xformOp:translate.timeSamples = {
+            1: (8, 0, 10),
+        }
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+
+}
