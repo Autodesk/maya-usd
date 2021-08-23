@@ -278,9 +278,10 @@ Ufe::Transform3d::Ptr
 UsdTransform3dCommonAPIHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-#if !defined(NDEBUG)
-    assert(usdItem);
-#endif
+
+    if (!usdItem) {
+        return nullptr;
+    }
 
     // If the prim supports the common transform API, create a common API
     // interface for it, otherwise delegate to the next handler in the chain of
@@ -294,11 +295,10 @@ Ufe::Transform3d::Ptr UsdTransform3dCommonAPIHandler::editTransform3d(
     const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-#if !defined(NDEBUG)
+
     if (!usdItem) {
-        TF_FATAL_ERROR("Could not create common API Transform3d interface for null item.");
+        return nullptr;
     }
-#endif
 
     // If the prim supports the common transform API, create a common API
     // interface for it, otherwise delegate to the next handler in the chain of
