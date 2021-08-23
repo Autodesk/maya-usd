@@ -108,6 +108,41 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
         else:
             self.assertSnapshotClose("testMetallicResponseLightAPI1.png")
 
+    def testShadowsAndSSAO(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.xform("persp", t=(10, 10, 10))
+        cmds.xform("persp", ro=[-30, 45, 0], ws=True)
+
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "LightAPI_Test.usda")
+        mayaUtils.createProxyFromFile(testFile)
+
+        white_light = cmds.directionalLight(rgb=(1, 1, 1))
+        white_transform = cmds.listRelatives(white_light, parent=True)[0]
+        cmds.xform(white_transform, ro=(-35, 0, 0), ws=True)
+
+        if int(os.getenv("MAYA_LIGHTAPI_VERSION")) == 2:
+            light_api = "V2"
+        else:
+            light_api = "V1"
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="all")
+        cmds.setAttr("hardwareRenderingGlobals.ssaoEnable", False)
+        cmds.modelEditor(panel, edit=True, shadows=False)
+
+        self.assertSnapshotClose('LightAPI_{}.png'.format(light_api))
+
+        cmds.setAttr("hardwareRenderingGlobals.ssaoEnable", True)
+        self.assertSnapshotClose('SSAO_LightAPI_{}.png'.format(light_api))
+
+        cmds.modelEditor(panel, edit=True, shadows=True)
+        self.assertSnapshotClose('Shadow_LightAPI_{}.png'.format(light_api))
+
+        cmds.setAttr("hardwareRenderingGlobals.ssaoEnable", False)
+        cmds.modelEditor(panel, edit=True, shadows=False)
+
     def testUsdTexture2d(self):
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
