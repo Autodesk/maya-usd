@@ -155,6 +155,18 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
 
         self.assertSnapshotClose('UsdTransform2dTest.png')
 
+    def testUseSpecularWorkflow(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.xform("persp", t=(0, 0, 10))
+        cmds.xform("persp", ro=[0, 0, 0], ws=True)
+
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "UseSpecularWorkflowTest.usda")
+        mayaUtils.createProxyFromFile(testFile)
+
+        self.assertSnapshotClose('UseSpecularWorkflowTest.png')
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

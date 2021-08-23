@@ -33,10 +33,9 @@ public:
 
     /// Reads the USD prim given by the prim reader args into a Maya shape,
     /// modifying the prim reader context as a result.
-    /// Callers must ensure \p context is non-null.
     /// Returns true if successful.
     MAYAUSD_CORE_PUBLIC
-    virtual bool Read(UsdMayaPrimReaderContext* context) = 0;
+    virtual bool Read(UsdMayaPrimReaderContext& context) = 0;
 
     /// Whether this prim reader specifies a PostReadSubtree step.
     MAYAUSD_CORE_PUBLIC
@@ -44,13 +43,12 @@ public:
 
     /// An additional import step that runs after all descendants of this prim
     /// have been processed.
-    /// Callers must ensure \p context is non-null.
     /// For example, if we have prims /A, /A/B, and /C, then the import steps
     /// are run in the order:
     /// (1) Read A (2) Read B (3) PostReadSubtree B (4) PostReadSubtree A,
     /// (5) Read C (6) PostReadSubtree C
     MAYAUSD_CORE_PUBLIC
-    virtual void PostReadSubtree(UsdMayaPrimReaderContext* context);
+    virtual void PostReadSubtree(UsdMayaPrimReaderContext& context);
 
 protected:
     /// Input arguments. Read data about the input USD prim from here.

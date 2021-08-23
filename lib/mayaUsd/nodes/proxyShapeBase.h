@@ -379,6 +379,10 @@ private:
 
     // Keep track of the incoming layers
     std::set<std::string> _incomingLayers;
+
+public:
+    // Counter for the number of times compute is re-entered
+    static std::atomic<int> in_compute;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

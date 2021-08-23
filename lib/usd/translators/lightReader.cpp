@@ -16,16 +16,6 @@
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorLight.h>
 
-#include <pxr/usd/usdLux/cylinderLight.h>
-#include <pxr/usd/usdLux/diskLight.h>
-#include <pxr/usd/usdLux/distantLight.h>
-#include <pxr/usd/usdLux/domeLight.h>
-#include <pxr/usd/usdLux/geometryLight.h>
-#include <pxr/usd/usdLux/rectLight.h>
-#include <pxr/usd/usdLux/sphereLight.h>
-#include <pxr/usd/usdRi/pxrAovLight.h>
-#include <pxr/usd/usdRi/pxrEnvDayLight.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Build variable used to import usd builtin
