@@ -12,6 +12,7 @@
 # MAYA_API_VERSION    Maya version (6-8 digits)
 # MAYA_APP_VERSION    Maya app version (4 digits)
 # MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2)
+# MAYA_SHADOWAPI_VERSION Maya shadow API version (1 or 2)
 # MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
 # MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
@@ -312,6 +313,7 @@ find_program(MAYA_PY_EXECUTABLE
 )
 
 set(MAYA_LIGHTAPI_VERSION 1)
+set(MAYA_SHADOWAPI_VERSION 1)
 if(IS_MACOSX)
     set(MAYA_DSO_SUFFIX ".dylib")
     set(MAYA_DSO_PREFIX "lib")
@@ -341,8 +343,12 @@ if (MAYA_OGSDEVICES_LIBRARY)
     if (HAS_LIGHTAPI_2)
         set(MAYA_LIGHTAPI_VERSION 2)
     endif()
+    file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_SHADOWAPI_2 REGEX "mayaAddLightEffectsToColor")
+    if (HAS_SHADOWAPI_2)
+        set(MAYA_SHADOWAPI_VERSION 2)
+    endif()
 endif()
-message(STATUS "Using Maya Light API Version ${MAYA_LIGHTAPI_VERSION}")
+message(STATUS "Using Maya Light API Version ${MAYA_LIGHTAPI_VERSION} and shadow API Version ${MAYA_SHADOWAPI_VERSION}")
 
 set(MAYA_HAS_DEFAULT_MATERIAL_API FALSE CACHE INTERNAL "setDefaultMaterialHandling")
 if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MHWGeometry.h")
@@ -394,6 +400,7 @@ find_package_handle_standard_args(Maya
         MAYA_API_VERSION
         MAYA_APP_VERSION
         MAYA_LIGHTAPI_VERSION
+        MAYA_SHADOWAPI_VERSION
     VERSION_VAR
         MAYA_APP_VERSION
 )

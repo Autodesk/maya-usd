@@ -93,6 +93,13 @@ if (MAYA_LIGHTAPI_VERSION EQUAL 2)
     )
 endif()
 
+if (MAYA_SHADOWAPI_VERSION EQUAL 2)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+            MAYA_SHADOWAPI_VERSION_2=2
+    )
+endif()
+
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(UFE_FOUND AND MSVC)
     target_compile_options(${PROJECT_NAME}

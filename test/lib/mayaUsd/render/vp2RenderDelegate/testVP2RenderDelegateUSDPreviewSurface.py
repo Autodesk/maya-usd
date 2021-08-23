@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import imageUtils
+import unittest
 
 import mayaUtils
 import usdUtils
@@ -107,6 +108,28 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
             self.assertSnapshotClose("testMetallicResponseLightAPI2.png")
         else:
             self.assertSnapshotClose("testMetallicResponseLightAPI1.png")
+
+    @unittest.skipUnless(int(os.getenv("MAYA_SHADOWAPI_VERSION")) == 2, "Requires new Shadow API")
+    def testUseShadowApiV2(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.xform("persp", t=(10, 10, 10))
+        cmds.xform("persp", ro=[-30, 30, 0], ws=True)
+
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "ShadowAPI_V2.usda")
+        mayaUtils.createProxyFromFile(testFile)
+
+        white_light = cmds.directionalLight(rgb=(1, 1, 1))
+        white_transform = cmds.listRelatives(white_light, parent=True)[0]
+        cmds.xform(white_transform, ro=(-1, 5, 5), ws=True)
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="all")
+        self.assertSnapshotClose('LightAPI_V2.png')
+
+        cmds.modelEditor(panel, edit=True, shadows=True)
+        self.assertSnapshotClose('ShadowAPI_V2.png')
 
     def testUsdTexture2d(self):
         cmds.file(force=True, new=True)

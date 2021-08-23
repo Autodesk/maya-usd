@@ -1,0 +1,111 @@
+<!--
+========================================================================
+Copyright 2018 Pixar
+Copyright 2020 Autodesk
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment_graph name="UsdPreviewSurface" ref="UsdPreviewSurface" class="FragmentGraph" version="1.0" feature_level="0">
+    <fragments>
+        <!-- Fragments for extracting computed dot products. -->
+        <fragment_ref name="NwFaceCameraIfNAN" ref="NwFaceCameraIfNAN"/>
+
+        <!-- Fragments for computing material. -->
+        <fragment_ref name="opacityToTransparency" ref="opacityToTransparency"/>
+        <fragment_ref name="usdPreviewSurfaceLightingAPI2" ref="usdPreviewSurfaceLightingAPI2"/>
+
+        <!-- Maya fragments for computing the output surface values. -->
+        <fragment_ref name="maya_FogDepthSurface" ref="maya_FogDepthSurface"/>
+        <fragment_ref name="mayaComputeSurfaceFinal" ref="mayaComputeSurfaceFinal"/>
+        <fragment_ref name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput"/>
+
+        <!-- Light effects fragment in case we want PCF shadows -->
+        <fragment_ref name="usdPreviewSurfaceShadowAPI2" ref="usdPreviewSurfaceShadowAPI2"/>
+    </fragments>
+    <connections>
+        <connect from="NwFaceCameraIfNAN.output" to="usdPreviewSurfaceLightingAPI2.Nw" name="Nw"/>
+        <connect from="opacityToTransparency.transparency" to="usdPreviewSurfaceLightingAPI2.transparency" name="transparency"/>
+        <connect from="usdPreviewSurfaceLightingAPI2.surfaceShader" to="mayaComputeSurfaceFinal.input" name="input"/>
+        <connect from="maya_FogDepthSurface.maya_FogDepthSurface" to="mayaComputeSurfaceFinal.maya_FogDepthSurface" name="maya_FogDepthSurface"/>
+        <connect from="mayaComputeSurfaceFinal.mayaComputeSurfaceFinal" to="usdPreviewSurfaceShadowAPI2.inSurface" name="usdPreviewSurfaceShadowAPI2"/>
+        <connect from="usdPreviewSurfaceShadowAPI2.outSurface" to="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput" name="mayaSurfaceShaderOutput"/>
+    </connections>
+    <properties>
+        <!-- UsdPreviewSurface Parameters -->
+        <float name="clearcoat" ref="usdPreviewSurfaceLightingAPI2.clearcoatAmount"/>
+        <float name="clearcoatRoughness" ref="usdPreviewSurfaceLightingAPI2.clearcoatRoughness"/>
+        <float3 name="diffuseColor" ref="usdPreviewSurfaceLightingAPI2.diffuseColor" flags="multiDraw"/>
+        <float3 name="emissiveColor" ref="usdPreviewSurfaceLightingAPI2.emissiveColor"/>
+        <float name="ior" ref="usdPreviewSurfaceLightingAPI2.ior"/>
+        <float name="metallic" ref="usdPreviewSurfaceLightingAPI2.metallic"/>
+        <float name="occlusion" ref="usdPreviewSurfaceLightingAPI2.occlusion"/>
+        <float name="roughness" ref="usdPreviewSurfaceLightingAPI2.specularRoughness"/>
+        <float3 name="specularColor" ref="usdPreviewSurfaceLightingAPI2.specularColor"/>
+        <float name="opacity" ref="opacityToTransparency.opacity"/>
+        <bool name="useSpecularWorkflow" ref="usdPreviewSurfaceLightingAPI2.useSpecularWorkflow"/>
+
+        <!-- Maya Parameters for Lighting -->
+        <float3 name="u_viewPosition" semantic="WorldCameraPosition" flags="isRequirementOnly" ref="usdPreviewSurfaceLightingAPI2.u_viewPosition"/>
+        <int name="mayaExternalLightFunctions" flags="isRequirementOnly" ref="usdPreviewSurfaceLightingAPI2.mayaExternalLightFunctions"/>
+        <undefined name="GPUStage" ref="mayaComputeSurfaceFinal.GPUStage" semantic="GPUStage"/>
+        <float3 name="Nw" ref="NwFaceCameraIfNAN.Nw" flags="varyingInputParam"/>
+        <float3 name="Pw" ref="usdPreviewSurfaceLightingAPI2.Pw" semantic="Pw"/>
+        <float name="extraOpacity" ref="mayaComputeSurfaceFinal.extraOpacity"/>
+        <bool name="fogEnabled" ref="mayaComputeSurfaceFinal.fogEnabled"/>
+        <float4x4 name="ViewProj" ref="maya_FogDepthSurface.ViewProj" semantic="viewprojection"/>
+        <float name="fogStart" ref="maya_FogDepthSurface.fogStart"/>
+        <float name="fogEnd" ref="maya_FogDepthSurface.fogEnd"/>
+        <int name="fogMode" ref="maya_FogDepthSurface.fogMode"/>
+        <float name="fogDensity" ref="maya_FogDepthSurface.fogDensity"/>
+        <float4 name="fogColor" ref="mayaComputeSurfaceFinal.fogColor"/>
+        <float name="fogMultiplier" ref="mayaComputeSurfaceFinal.fogMultiplier"/>
+
+        <!-- The parameter is a workaround for VP2 to execute transparency test. For more details
+             see PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(). -->
+        <float name="dummyTransparency" ref="opacityToTransparency.dummyTransparency"/>
+    </properties>
+    <values>
+        <!-- UsdPreviewSurface Parameter Default Values -->
+        <float name="clearcoat" value="0.0"/>
+        <float name="clearcoatRoughness" value="0.01"/>
+        <float3 name="diffuseColor" value="0.18,0.18,0.18"/>
+        <float3 name="emissiveColor" value="0.0,0.0,0.0"/>
+        <float name="ior" value="1.5"/>
+        <float name="metallic" value="0.0"/>
+        <float name="occlusion" value="1.0"/>
+        <float name="roughness" value="0.5"/>
+        <float3 name="specularColor" value="0.0,0.0,0.0"/>
+        <!-- The shader computes transparency from its "opacity" attribute. -->
+        <float name="opacity" value="1.0"/>
+        <bool name="useSpecularWorkflow" value="false"/>
+
+        <!-- Default values for Maya-provided parameters. -->
+        <float name="extraOpacity" value="1.0"/>
+        <bool name="fogEnabled" value="false"/>
+        <float name="fogStart" value="0.0"/>
+        <float name="fogEnd" value="92.0"/>
+        <int name="fogMode" value="0"/>
+        <float name="fogDensity" value="0.1"/>
+        <float4 name="fogColor" value="0.5,0.5,0.5,1.0"/>
+        <float name="fogMultiplier" value="1.0"/>
+
+
+        <!-- The parameter is a workaround for VP2 to execute transparency test. For more details
+             see PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(). -->
+        <float name="dummyTransparency" value="0.0" />
+    </values>
+    <outputs>
+        <struct name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput"/>
+    </outputs>
+</fragment_graph>

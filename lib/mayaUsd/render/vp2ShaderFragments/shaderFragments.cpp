@@ -39,6 +39,11 @@ TF_DEFINE_ENV_SETTING(
     false,
     "This env flag allows enabling the new shading code based on the V2 light API of Maya.");
 
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_VP2_KEEP_V1_LIGHTING_SHADER,
+    false,
+    "This env flag allows keeping the old shading code based on the V1 light API of Maya.");
+
 TF_DEFINE_PUBLIC_TOKENS(HdVP2ShaderFragmentsTokens, MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS);
 
 // clang-format off
@@ -79,6 +84,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdDrawModeCards)
     (usdPreviewSurfaceLightingAPI1)
     (usdPreviewSurfaceLightingAPI2)
+    (usdPreviewSurfaceShadowAPI2)
     (usdPreviewSurfaceCombiner)
 
     (UsdPrimvarColor)
@@ -96,6 +102,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Graph:
     (UsdPreviewSurfaceLightAPI1)
     (UsdPreviewSurfaceLightAPI2)
+    (UsdPreviewSurfaceLightShadowAPI2)
 );
 // clang-format on
 
@@ -138,6 +145,7 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
                                               _tokens->UsdDrawModeCards,
                                               _tokens->usdPreviewSurfaceLightingAPI1,
                                               _tokens->usdPreviewSurfaceLightingAPI2,
+                                              _tokens->usdPreviewSurfaceShadowAPI2,
                                               _tokens->usdPreviewSurfaceCombiner };
 
 static const TfTokenVector _FragmentGraphNames
@@ -358,7 +366,20 @@ MStatus HdVP2ShaderFragments::registerFragments()
     // Register a UsdPreviewSurface shader graph:
     {
         const MString fragGraphName(HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText());
-#ifdef MAYA_LIGHTAPI_VERSION_2
+#if defined(MAYA_SHADOWAPI_VERSION_2)
+        // The point instancer shadowing is now fixed, and we had time to fix other issues
+        // discovered with lighting. Use V2 API unless the user explicitly requests V1.
+        const bool    useV1Lighting = TfGetEnvSetting(MAYAUSD_VP2_KEEP_V1_LIGHTING_SHADER);
+        const MString fragGraphFileName(
+            useV1Lighting ? _tokens->UsdPreviewSurfaceLightAPI1.GetText()
+                          : _tokens->UsdPreviewSurfaceLightShadowAPI2.GetText());
+        MString shadingInfo
+            = (useV1Lighting ? "Using V1 Lighting API" : "Using V2 Lighting and Shadowing API");
+        shadingInfo += " for UsdPreviewSurface shading.";
+        MGlobal::displayInfo(shadingInfo);
+#elif defined(MAYA_LIGHTAPI_VERSION_2)
+        // Maya 2022.1 only supports this, and shadowing is broken for point instancers. We will
+        // keep the V1 light API unless V2 is explicitly requested.
         const bool    useV2Lighting = TfGetEnvSetting(MAYAUSD_VP2_ENABLE_V2_LIGHTING_SHADER);
         const MString fragGraphFileName(
             useV2Lighting ? _tokens->UsdPreviewSurfaceLightAPI2.GetText()
