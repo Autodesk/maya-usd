@@ -111,10 +111,8 @@ public:
 protected:
     void onOpenBrowser();
     void onTextChanged(const QString& text);
-    void onRelativeButtonChecked(bool checked);
 
 public:
-    QString                                                _initialStartFolder;
     QString                                                _absolutePath;
     SaveLayersDialog*                                      _parent { nullptr };
     std::pair<SdfLayerRefPtr, MayaUsd::utils::LayerParent> _layerPair;
@@ -146,7 +144,6 @@ SaveLayerPathRow::SaveLayerPathRow(
     _label->setToolTip(in_parent->buildTooltipForLayer(_layerPair.first));
     gridLayout->addWidget(_label, 0, 0);
 
-    _initialStartFolder = MayaUsd::utils::getSceneFolder().c_str();
     _absolutePath = MayaUsd::utils::generateUniqueFileName(stageName).c_str();
 
     QFileInfo fileInfo(_absolutePath);
@@ -188,20 +185,6 @@ void SaveLayerPathRow::onOpenBrowser()
 }
 
 void SaveLayerPathRow::onTextChanged(const QString& text) { _absolutePath = text; }
-
-void SaveLayerPathRow::onRelativeButtonChecked(bool checked)
-{
-    if (checked) {
-        QDir dir(_initialStartFolder);
-
-        QString relativePath = dir.relativeFilePath(_absolutePath);
-        _pathEdit->setText(relativePath);
-        _pathEdit->setEnabled(false);
-    } else {
-        _pathEdit->setEnabled(true);
-        _pathEdit->setText(_absolutePath);
-    }
-}
 
 class SaveLayerPathRowArea : public QScrollArea
 {
@@ -490,6 +473,14 @@ void SaveLayersDialog::onSaveAll()
                 auto sdfLayer = row->_layerPair.first;
                 auto parent = row->_layerPair.second;
                 auto qFileName = row->absolutePath();
+
+                // If the qFileName is a relative path, compute the absolute path from the scene
+                // folder otherwise, USD will use a path relative the current working directory.
+                if (QDir::isRelativePath(qFileName)) {
+                    QDir dir(MayaUsd::utils::getSceneFolder().c_str());
+                    qFileName = dir.absoluteFilePath(qFileName);
+                }
+
                 auto sFileName = qFileName.toStdString();
 
                 auto newLayer = MayaUsd::utils::saveAnonymousLayer(sdfLayer, sFileName, parent);
