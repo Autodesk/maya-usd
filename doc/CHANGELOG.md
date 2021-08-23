@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.12.0] - 2021-08-23
+
+**Build:**
+
+- Implement HdMayaSceneDelegate::GetInstancerPrototypes [#1604](https://github.com/Autodesk/maya-usd/pull/1604)
+- Fix unit tests to run in Debug builds [#1593](https://github.com/Autodesk/maya-usd/pull/1593)
+
+**Translation Framework:**
+
+- Export opacity of standardSurface to usdPreviewSurface and back [#1611](https://github.com/Autodesk/maya-usd/pull/1611)
+- Avoid TF_Verify message when USD attribute is empty [#1599](https://github.com/Autodesk/maya-usd/pull/1599)
+- Export roots [#1592](https://github.com/Autodesk/maya-usd/pull/1592)
+- Fix warnings from USDZ texture import [#1589](https://github.com/Autodesk/maya-usd/pull/1589)
+- Add support for light translators [#1577](https://github.com/Autodesk/maya-usd/pull/1577)
+- ProxyShape: add pauseUpdate attr to pause evaluation [#1511](https://github.com/Autodesk/maya-usd/pull/1511)
+
+**Workflow:**
+
+- No USD prompt during crash [#1601](https://github.com/Autodesk/maya-usd/pull/1601)
+- Add grouping with absolute, relative, world flags [#1600](https://github.com/Autodesk/maya-usd/pull/1600)
+- Fix crash on scene item creation [#1596](https://github.com/Autodesk/maya-usd/pull/1596)
+- Matrix op, common API undo/redo [#1586](https://github.com/Autodesk/maya-usd/pull/1586)
+- Make USD menu tear-off-able [#1575](https://github.com/Autodesk/maya-usd/pull/1575)
+
+**Render:**
+
+- Revert to using shading with the V1 lighting API  [#1626](https://github.com/Autodesk/maya-usd/pull/1626)
+- Implement UsdTexture2d support in VP2 render delegate [#1617](https://github.com/Autodesk/maya-usd/pull/1617)
+- Maya 2022.1 has the Light loop API V2 and is compatible with MaterialX [#1609](https://github.com/Autodesk/maya-usd/pull/1609)
+- Fix rprim state assertions [#1607](https://github.com/Autodesk/maya-usd/pull/1607)
+- Remove hardcode camera name string [#1598](https://github.com/Autodesk/maya-usd/pull/1598)
+- Store the correct render item name in HdVP2DrawItem [#1597](https://github.com/Autodesk/maya-usd/pull/1597)
+
+**Documentation:**
+
+- Fix minor typos in "lock" and "selectability" tutorials [#1574](https://github.com/Autodesk/maya-usd/pull/1574)
+
 ## [0.11.0] - 2021-07-27
 
 **Build:**
