@@ -26,43 +26,36 @@ TfToken Selectability::InheritToken("inherit");
 TfToken Selectability::OnToken("on");
 TfToken Selectability::OffToken("off");
 
-namespace
+namespace {
+// Very simple selectability cache for prims to avoid rechecking the metadata.
+using Data = bool;
+using SelectabilityCache = TfHashMap<UsdPrim, Data, boost::hash<UsdPrim>>;
+
+// Use a function to retrieve the cache, as this exploits the C++ guaranteed
+// initialization of static in funtions.
+SelectabilityCache& getCache()
 {
-    // Very simple selectability cache for prims to avoid rechecking the metadata.
-    using Data = bool;
-    using SelectabilityCache = TfHashMap<UsdPrim, Data, boost::hash<UsdPrim> >;
+    static SelectabilityCache cache;
+    return cache;
+}
 
-    // Use a function to retrieve the cache, as this exploits the C++ guaranteed
-    // initialization of static in funtions.
-    SelectabilityCache& getCache()
-    {
-        static SelectabilityCache cache;
-        return cache;
-    }
+void clearCache() { getCache().clear(); }
 
-    void clearCache()
-    {
-        getCache().clear();
-    }
-
-    // Check selectability for a prim and recurse to parent if inheriting.
-    bool isSelectableUncached(UsdPrim prim)
-    {
-        const Selectability::State state = Selectability::getLocalState(prim);
-        switch (state) {
-        case Selectability::kOn: return true;
-        case Selectability::kOff: return false;
-        default: return Selectability::isSelectable(prim.GetParent());
-        }
+// Check selectability for a prim and recurse to parent if inheriting.
+bool isSelectableUncached(UsdPrim prim)
+{
+    const Selectability::State state = Selectability::getLocalState(prim);
+    switch (state) {
+    case Selectability::kOn: return true;
+    case Selectability::kOff: return false;
+    default: return Selectability::isSelectable(prim.GetParent());
     }
 }
+} // namespace
 
 /*! \brief  Do any internal preparation for selection needed.
  */
-void Selectability::prepareForSelection()
-{
-    clearCache();
-}
+void Selectability::prepareForSelection() { clearCache(); }
 
 /*! \brief  Compute the selectability of a prim, considering inheritence.
  */
@@ -77,7 +70,7 @@ bool Selectability::isSelectable(UsdPrim prim)
     if (!prim.IsValid())
         return true;
 
-    auto& cache = getCache();
+    auto&      cache = getCache();
     const auto pos = cache.find(prim);
     if (pos != cache.end())
         return pos->second;

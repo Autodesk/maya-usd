@@ -969,10 +969,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
 
     // Enforce selectability metadata.
-    if (!Selectability::isSelectable(prim))
-    {
-            dagPath = MDagPath();
-            return true;
+    if (!Selectability::isSelectable(prim)) {
+        dagPath = MDagPath();
+        return true;
     }
 
     // Resolve the selection based on the point instances pick mode.
