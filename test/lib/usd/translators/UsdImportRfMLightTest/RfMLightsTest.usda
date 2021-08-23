@@ -201,14 +201,14 @@ def Xform "RfMLightsTest" (
             prepend apiSchemas = ["ShapingAPI", "ShadowAPI"]
         )
         {
-            string aovName = "testAovName"
-            bool inPrimaryHit = 0
-            bool inReflection = 1
-            bool inRefraction = 1
-            bool invert = 1
-            bool onVolumeBoundaries = 0
-            bool useColor = 1
-            bool useThroughput = 0
+            string inputs:aovName = "testAovName"
+            bool inputs:inPrimaryHit = 0
+            bool inputs:inReflection = 1
+            bool inputs:inRefraction = 1
+            bool inputs:invert = 1
+            bool inputs:onVolumeBoundaries = 0
+            bool inputs:useColor = 1
+            bool inputs:useThroughput = 0
             double3 xformOp:translate = (8, 8, 8)
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }
@@ -217,24 +217,24 @@ def Xform "RfMLightsTest" (
             prepend apiSchemas = ["ShapingAPI", "ShadowAPI"]
         )
         {
-            int day = 9
-            float haziness = 1.9
-            float hour = 9.9
+            int inputs:day = 9
+            float inputs:haziness = 1.9
+            float inputs:hour = 9.9
             float inputs:diffuse = 1.9
             float inputs:exposure = 0.9
             float inputs:intensity = 1.9
             float inputs:specular = 1.9
-            float latitude = 90
-            float longitude = -90
-            int month = 9
-            color3f skyTint = (0.9, 0.9, 0.9)
-            vector3f sunDirection = (0, 0, 0.9)
-            float sunSize = 0.9
-            color3f sunTint = (0.9, 0.9, 0.9)
+            float inputs:latitude = 90
+            float inputs:longitude = -90
+            int inputs:month = 9
+            color3f inputs:skyTint = (0.9, 0.9, 0.9)
+            vector3f inputs:sunDirection = (0, 0, 0.9)
+            float inputs:sunSize = 0.9
+            color3f inputs:sunTint = (0.9, 0.9, 0.9)
             double3 xformOp:translate = (9, 9, 9)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            int year = 2019
-            float zone = 9
+            int inputs:year = 2019
+            float inputs:zone = 9
         }
     }
 

@@ -59,7 +59,7 @@ class MtlxUsd_ImageReader : public UsdMayaShaderReader
 public:
     MtlxUsd_ImageReader(const UsdMayaPrimReaderArgs&);
 
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 
@@ -78,7 +78,7 @@ MtlxUsd_ImageReader::MtlxUsd_ImageReader(const UsdMayaPrimReaderArgs& readArgs)
 }
 
 /* virtual */
-bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext* context)
+bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
 {
     const auto&    prim = _GetArgs().GetUsdPrim();
     UsdShadeShader shaderSchema = UsdShadeShader(prim);
@@ -104,7 +104,7 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
+    context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     // Create place2dTexture:
     MObject           uvObj = UsdMayaShadingUtil::CreatePlace2dTextureAndConnectTexture(mayaObject);

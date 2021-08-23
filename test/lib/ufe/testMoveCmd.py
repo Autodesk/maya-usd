@@ -394,5 +394,37 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestOpUndo(createCommonAPI, 'xformOp:translate')
 
+    def testBadSceneItem(self):
+        '''Improperly constructed scene item should not crash Maya.'''
+
+        # MAYA-112601 / GitHub #1169: improperly constructed Python scene item
+        # should not cause a crash.
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+
+        spherePath = ufe.PathString.path('%s,/Sphere1' % proxyShape)
+        # The proper way to create a scene item is the following:
+        #
+        # sphereItem = ufe.Hierarchy.createItem(spherePath)
+        #
+        # A naive user can create a scene item as the following.  The resulting
+        # scene item is not a USD scene item: it is a Python base class scene
+        # item, which has a path but nothing else.  This should not a crash
+        # when using the move command.
+        sphereItem = ufe.SceneItem(spherePath)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(sphereItem)
+
+        cmds.move(0, 10, 0, relative=True, os=True, wd=True)
+        
 if __name__ == '__main__':
     unittest.main(verbosity=2)

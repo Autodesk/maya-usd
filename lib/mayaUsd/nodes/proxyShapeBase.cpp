@@ -512,7 +512,8 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
         ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
         return retStatus;
     } else if (plug == outStageDataAttr) {
-        return computeOutStageData(dataBlock);
+        auto ret = computeOutStageData(dataBlock);
+        return ret;
     } else if (plug == outStageCacheIdAttr) {
         return computeOutStageCacheId(dataBlock);
     } else if (plug.isDynamic()) {
@@ -911,6 +912,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
 MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 {
+    struct in_computeGuard
+    {
+        in_computeGuard() { in_compute++; }
+        ~in_computeGuard() { in_compute--; }
+    } in_computeGuard;
+
     MStatus retValue = MS::kSuccess;
 
     const bool isNormalContext = dataBlock.context().isNormal();
@@ -1747,5 +1754,7 @@ Ufe::Path MayaUsdProxyShapeBase::ufePath() const
 #endif
 }
 #endif
+
+std::atomic<int> MayaUsdProxyShapeBase::in_compute { 0 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -469,6 +469,10 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
     }
 #endif
 
+    // Handle re-entrant MayaUsdProxyShapeBase::compute; allow update only on first compute call.
+    if (MayaUsdProxyShapeBase::in_compute > 1)
+        return;
+
     // Handle re-entrant onStageSet
     bool expectedState = false;
     if (stageSetGuardCount.compare_exchange_strong(expectedState, true)) {

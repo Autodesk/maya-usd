@@ -33,6 +33,7 @@
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
+
 #ifdef WANT_MATERIALX_BUILD
 #include <pxr/imaging/hdMtlx/hdMtlx.h>
 #endif
@@ -106,6 +107,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (file)
     (opacity)
+    (useSpecularWorkflow)
     (st)
     (varname)
     (result)
@@ -2220,7 +2222,12 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 }
             } else if (value.IsHolding<int>()) {
                 const int& val = value.UncheckedGet<int>();
-                status = _surfaceShader->setParameter(paramName, val);
+                if (node.identifier == UsdImagingTokens->UsdPreviewSurface
+                    && token == _tokens->useSpecularWorkflow) {
+                    status = _surfaceShader->setParameter(paramName, val != 0);
+                } else {
+                    status = _surfaceShader->setParameter(paramName, val);
+                }
             } else if (value.IsHolding<bool>()) {
                 const bool& val = value.UncheckedGet<bool>();
                 status = _surfaceShader->setParameter(paramName, val);

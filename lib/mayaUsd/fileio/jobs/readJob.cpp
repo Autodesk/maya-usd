@@ -360,7 +360,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
         // specified one.
         auto primReaderIt = primReaderMap.find(prim.GetPath());
         if (primReaderIt != primReaderMap.end()) {
-            primReaderIt->second->PostReadSubtree(&readCtx);
+            primReaderIt->second->PostReadSubtree(readCtx);
         }
     } else {
         // This is the normal Read step (pre-visit).
@@ -374,7 +374,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
             = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
-                primReader->Read(&readCtx);
+                primReader->Read(readCtx);
                 if (primReader->HasPostReadSubtree()) {
                     primReaderMap[prim.GetPath()] = primReader;
                 }

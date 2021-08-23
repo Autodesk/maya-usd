@@ -602,7 +602,8 @@ private:
     {
         // UsdMayaPrimReader::Read is a function that works by indirect effect. It will return
         // "true" on success, and the resulting changes will be found in the _context object.
-        if (!shaderReader.Read(_context->GetPrimReaderContext())) {
+        UsdMayaPrimReaderContext* context = _context->GetPrimReaderContext();
+        if (context == nullptr || !shaderReader.Read(*context)) {
             return MObject();
         }
 

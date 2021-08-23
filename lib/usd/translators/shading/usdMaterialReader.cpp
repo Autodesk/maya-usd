@@ -51,7 +51,7 @@ PxrUsdTranslators_MaterialReader::PxrUsdTranslators_MaterialReader(
 }
 
 /* virtual */
-bool PxrUsdTranslators_MaterialReader::Read(UsdMayaPrimReaderContext* context)
+bool PxrUsdTranslators_MaterialReader::Read(UsdMayaPrimReaderContext& context)
 {
     const auto&    prim = _GetArgs().GetUsdPrim();
     UsdShadeShader shaderSchema = UsdShadeShader(prim);
@@ -77,7 +77,7 @@ bool PxrUsdTranslators_MaterialReader::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
+    context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         if (input.GetBaseName() == PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName) {

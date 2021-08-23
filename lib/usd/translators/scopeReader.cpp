@@ -18,7 +18,6 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdShade/connectableAPI.h>
 
 #include <maya/MObject.h>
@@ -44,7 +43,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomScope, args, context)
         return false;
     }
 
-    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    MObject parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
 
     MStatus status;
     MObject mayaNode;
@@ -53,7 +52,7 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomScope, args, context)
         parentNode,
         /*importTypeName*/ true,
         args,
-        context,
+        &context,
         &status,
         &mayaNode);
 }

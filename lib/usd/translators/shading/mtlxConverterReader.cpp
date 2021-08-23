@@ -145,7 +145,7 @@ public:
         return MObject();
     }
 
-    bool Read(UsdMayaPrimReaderContext* context) override
+    bool Read(UsdMayaPrimReaderContext& context) override
     {
         if (_downstreamReader) {
             return _downstreamReader->Read(context);

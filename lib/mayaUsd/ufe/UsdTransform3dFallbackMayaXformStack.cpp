@@ -159,12 +159,10 @@ Ufe::Transform3d::Ptr createEditTransform3dImp(
     std::vector<UsdGeomXformOp>::const_iterator& firstFallbackOp)
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-#if !defined(NDEBUG)
+
     if (!usdItem) {
-        TF_FATAL_ERROR(
-            "Could not create fallback Maya transform stack Transform3d interface for null item.");
+        return nullptr;
     }
-#endif
 
     // If the prim isn't transformable, can't create a Transform3d interface
     // for it.

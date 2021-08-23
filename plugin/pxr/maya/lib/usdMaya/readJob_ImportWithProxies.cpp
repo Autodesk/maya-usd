@@ -254,7 +254,7 @@ bool UsdMaya_ReadJobWithSceneAssembly::_ProcessCameraPrims(const std::vector<Usd
             = UsdMayaPrimReaderRegistry::Find(cameraPrim.GetTypeName())) {
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
-                primReader->Read(&ctx);
+                primReader->Read(ctx);
             }
         }
     }
