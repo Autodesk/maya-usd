@@ -513,10 +513,10 @@ void SaveLayersDialog::onCancel() { reject(); }
 
 bool SaveLayersDialog::okToSave()
 {
-    // Files can have the same file names in complicated ways, with one files having two copies,
+    // Files can have the same file names in complicated ways, with one file having two copies,
     // another three, so we keep the exact number of copies per file path.
-    std::map<QString, int> alreadySeenPaths;
-    QStringList            existingFiles;
+    QMap<QString, int> alreadySeenPaths;
+    QStringList        existingFiles;
 
     // The anonymous layer section in the dialog can be empty.
     if (nullptr != _anonLayersWidget) {
@@ -543,10 +543,11 @@ bool SaveLayersDialog::okToSave()
 
     QStringList identicalFiles;
     int         identicalCount = 0;
-    for (const auto& pathAndCount : alreadySeenPaths) {
-        if (pathAndCount.second > 1) {
-            identicalFiles.append(pathAndCount.first);
-            identicalCount += pathAndCount.second;
+    for (const auto& path : alreadySeenPaths.keys()) {
+        const int count = alreadySeenPaths[path];
+        if (count > 1) {
+            identicalFiles.append(path);
+            identicalCount += count;
         }
     }
 
