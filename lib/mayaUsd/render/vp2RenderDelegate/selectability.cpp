@@ -48,7 +48,10 @@ bool isSelectableUncached(UsdPrim prim)
     switch (state) {
     case Selectability::kOn: return true;
     case Selectability::kOff: return false;
-    default: return Selectability::isSelectable(prim.GetParent());
+    case Selectability::kInherit: return Selectability::isSelectable(prim.GetParent());
+    default:
+        TF_CODING_ERROR("Unsupported selectability enum value: %d", (int)state);
+        return Selectability::isSelectable(prim.GetParent());
     }
 }
 } // namespace
@@ -63,10 +66,10 @@ bool Selectability::isSelectable(UsdPrim prim)
 {
     // The reason we treat invalid prim as selectable is two-fold:
     //
-    // - We don't want to influence selectability of things that are not prim that are being
-    //   tested by accident.
     // - We loop inheritence until we reach an invalid parent prim, and prim are selectable
     //   by default.
+    // - We don't want to influence selectability of things that are not prim that are being
+    //   tested by accident.
     if (!prim.IsValid())
         return true;
 
@@ -92,8 +95,12 @@ Selectability::State Selectability::getLocalState(const UsdPrim& prim)
         return kOff;
     } else if (selectability == OnToken) {
         return kOn;
+    } else if (selectability == InheritToken) {
+        return kInherit;
     } else {
-        // Invalid values will be treated as inherit.
+        TF_WARN(
+            "Invalid token value for maya_selectability will be treated as inherit: %s",
+            selectability.data());
         return kInherit;
     }
 }
