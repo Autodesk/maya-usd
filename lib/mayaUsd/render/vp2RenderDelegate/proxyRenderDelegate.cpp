@@ -342,6 +342,44 @@ void SelectionChangedCB(void* data)
 
 // Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the
 // rprimIds, I don't want to go all the way to draw items.
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 42
+struct _FilterParam
+{
+    const TfTokenVector& renderTags;
+    const HdRenderIndex* renderIndex;
+};
+
+bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam)
+{
+    const _FilterParam* filterParam = static_cast<const _FilterParam*>(predicateParam);
+
+    const TfTokenVector& renderTags = filterParam->renderTags;
+    const HdRenderIndex* renderIndex = filterParam->renderIndex;
+
+    //
+    // Render Tag Filter
+    //
+    if (renderTags.empty()) {
+        // An empty render tag set means everything passes the filter
+        // Primary user is tests, but some single task render delegates
+        // that don't support render tags yet also use it.
+        return true;
+    } else {
+        // As the number of tags is expected to be low (<10)
+        // use a simple linear search.
+        TfToken primRenderTag = renderIndex->GetRenderTag(rprimID);
+        size_t  numRenderTags = renderTags.size();
+        size_t  tagNum = 0;
+        while (tagNum < numRenderTags) {
+            if (renderTags[tagNum] == primRenderTag) {
+                return true;
+            }
+            ++tagNum;
+        }
+    }
+    return false;
+}
+#else
 struct _FilterParam
 {
     const HdRprimCollection& collection;
@@ -397,6 +435,7 @@ bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam
 
     return (passedRenderTagFilter && passedMaterialTagFilter);
 }
+#endif
 
 } // namespace
 
@@ -1275,8 +1314,12 @@ SdfPathVector ProxyRenderDelegate::_GetFilteredRprims(
     const SdfPathVector& paths = _renderIndex->GetRprimIds();
     const SdfPathVector& includePaths = collection.GetRootPaths();
     const SdfPathVector& excludePaths = collection.GetExcludePaths();
-    _FilterParam         filterParam = { collection, renderTags, _renderIndex.get() };
-    HdPrimGather         gather;
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 42
+    _FilterParam filterParam = { renderTags, _renderIndex.get() };
+#else
+    _FilterParam filterParam = { collection, renderTags, _renderIndex.get() };
+#endif
+    HdPrimGather gather;
     gather.PredicatedFilter(
         paths, includePaths, excludePaths, _DrawItemFilterPredicate, &filterParam, &rprimIds);
 
