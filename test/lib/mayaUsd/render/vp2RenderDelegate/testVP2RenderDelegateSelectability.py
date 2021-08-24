@@ -98,8 +98,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
             ufe.PathSegment(expectedPath, mayaUsd.ufe.getUsdRunTimeId(), "/")
             ])
         primItem = ufe.Hierarchy.createItem(primPath)
-        primRawItem = primItem.getRawAddress()
-        prim = mayaUsd.ufe.getPrimFromRawItem(primRawItem)
+        prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(primPath))
 
         return prim, primItem
 
@@ -117,9 +116,8 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         # verify there is the cone in the selection
         sel = ufe.GlobalSelection.get()
-        self.assertEqual(1, len(list(iter(sel))))
-        snIter = iter(sel)
-        coneItem = next(snIter)
+        self.assertEqual(1, len(sel))
+        coneItem = sel.front()
         self.assertEqual(str(coneItem.nodeName()), "Cone1")
 
     def testUnselectability(self):
@@ -135,7 +133,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
         self._dragSelectActiveView()
 
         # verify there is nothing in the selection
-        self.assertEqual(0, len(list(iter(ufe.GlobalSelection.get()))))
+        self.assertTrue(ufe.GlobalSelection.get().empty())
 
     def testSelectabilityUnderUnselectability(self):
         '''
@@ -153,9 +151,8 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         # verify there is the cone in the selection
         sel = ufe.GlobalSelection.get()
-        self.assertEqual(1, len(list(iter(sel))))
-        snIter = iter(sel)
-        coneItem = next(snIter)
+        self.assertEqual(1, len(sel))
+        coneItem = sel.front()
         self.assertEqual(str(coneItem.nodeName()), "Cube1")
 
     def testUnselectabilityUnderSelectability(self):
@@ -174,9 +171,8 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         # verify there is the cone in the selection
         sel = ufe.GlobalSelection.get()
-        self.assertEqual(1, len(list(iter(sel))))
-        snIter = iter(sel)
-        coneItem = next(snIter)
+        self.assertEqual(1, len(sel))
+        coneItem = sel.front()
         self.assertEqual(str(coneItem.nodeName()), "Cone1")
 
     def testInheritUnderUnselectability(self):
@@ -195,7 +191,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         # verify there is the cone in the selection
         sel = ufe.GlobalSelection.get()
-        self.assertEqual(0, len(list(iter(sel))))
+        self.assertTrue(sel.empty())
 
     def testLayerSelectable(self):
         '''
@@ -212,9 +208,8 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         # verify there is the cone in the selection
         sel = ufe.GlobalSelection.get()
-        self.assertEqual(1, len(list(iter(sel))))
-        snIter = iter(sel)
-        coneItem = next(snIter)
+        self.assertEqual(1, len(sel))
+        coneItem = sel.front()
         self.assertEqual(str(coneItem.nodeName()), "Cone1")
 
     def testLayerUnselectable(self):
@@ -232,7 +227,7 @@ class testVP2RenderDelegateSelectability(unittest.TestCase):
 
         # verify there is the cone in the selection
         sel = ufe.GlobalSelection.get()
-        self.assertEqual(0, len(list(iter(sel))))
+        self.assertTrue(sel.empty())
 
 
 if __name__ == '__main__':

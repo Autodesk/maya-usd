@@ -11,6 +11,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
     	testVP2RenderDelegateDuplicateProxy.py
         testVP2RenderDelegateSelectability.py
+        testVP2RenderDelegateSelectabilityPointInstanceSelection.py
 	testVP2RenderDelegateInteractiveWorkflows.py
     )
 endif()
