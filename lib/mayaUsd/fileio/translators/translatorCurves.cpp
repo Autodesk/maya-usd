@@ -108,6 +108,11 @@ bool UsdMayaTranslatorCurves::Create(
         nurbsSchema.GetOrderAttr().Get(&curveOrder);   // not animatable
         nurbsSchema.GetKnotsAttr().Get(&curveKnots);   // not animatable
         nurbsSchema.GetRangesAttr().Get(&curveRanges); // not animatable
+        // Remove front and back knots to match Maya representation. See
+        // "Managing different knot representations in external applications"
+        // section in MFnNurbsCurve documentation.
+        curveKnots.resize(curveKnots.size() - 1);
+        curveKnots.erase(curveKnots.begin());
     } else {
 
         // Handle basis curves originally modelled in Maya as nurbs.
