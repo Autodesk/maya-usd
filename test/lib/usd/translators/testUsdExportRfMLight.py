@@ -216,35 +216,35 @@ class testUsdExportRfMLight(unittest.TestCase):
         self.assertTrue(aovLight)
 
         expectedAovName = 'testAovName'
-        self.assertEqual(aovLight.GetAttribute("inputs:aovName").Get(), 
+        self.assertEqual(aovLight.GetAttribute("inputs:ri:light:aovName").Get(), 
                 expectedAovName)
 
         expectedInPrimaryHit = False
-        self.assertEqual(aovLight.GetAttribute("inputs:inPrimaryHit").Get(),
+        self.assertEqual(aovLight.GetAttribute("inputs:ri:light:inPrimaryHit").Get(),
             expectedInPrimaryHit)
 
         expectedInReflection = True
-        self.assertEqual(aovLight.GetAttribute("inputs:inReflection").Get(),
+        self.assertEqual(aovLight.GetAttribute("inputs:ri:light:inReflection").Get(),
             expectedInReflection)
 
         expectedInRefraction = True
-        self.assertEqual(aovLight.GetAttribute("inputs:inRefraction").Get(),
+        self.assertEqual(aovLight.GetAttribute("inputs:ri:light:inRefraction").Get(),
             expectedInRefraction)
 
         expectedInvert = True
-        self.assertEqual(aovLight.GetAttribute("inputs:invert").Get(), 
+        self.assertEqual(aovLight.GetAttribute("inputs:ri:light:invert").Get(), 
                 expectedInvert)
 
         expectedOnVolumeBoundaries = False
-        self.assertEqual(aovLight.GetAttribute("inputs:onVolumeBoundaries").Get(),
+        self.assertEqual(aovLight.GetAttribute("inputs:ri:light:onVolumeBoundaries").Get(),
             expectedOnVolumeBoundaries)
 
         expectedUseColor = True
-        self.assertEqual(aovLight.GetAttribute("inputs:useColor").Get(), 
+        self.assertEqual(aovLight.GetAttribute("inputs:ri:light:useColor").Get(), 
                 expectedUseColor)
 
         expectedUseThroughput = False
-        self.assertEqual(aovLight.GetAttribute("inputs:useThroughput").Get(),
+        self.assertEqual(aovLight.GetAttribute("inputs:ri:light:useThroughput").Get(),
             expectedUseThroughput)
 
     def _ValidateUsdRiPxrEnvDayLight(self):
@@ -256,49 +256,49 @@ class testUsdExportRfMLight(unittest.TestCase):
         self.assertTrue(envDayLight)
 
         expectedDay = 9
-        self.assertEqual(envDayLight.GetAttribute("inputs:day").Get(), 
+        self.assertEqual(envDayLight.GetAttribute("inputs:ri:light:day").Get(), 
                 expectedDay)
 
         expectedHaziness = 1.9
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:haziness").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:haziness").Get(),
             expectedHaziness, 1e-6))
 
         expectedHour = 9.9
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:hour").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:hour").Get(),
             expectedHour, 1e-6))
 
         expectedLatitude = 90.0
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:latitude").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:latitude").Get(),
             expectedLatitude, 1e-6))
 
         expectedLongitude = -90.0
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:longitude").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:longitude").Get(),
             expectedLongitude, 1e-6))
 
         expectedMonth = 9
-        self.assertEqual(envDayLight.GetAttribute("inputs:month").Get(), expectedMonth)
+        self.assertEqual(envDayLight.GetAttribute("inputs:ri:light:month").Get(), expectedMonth)
 
         expectedSkyTint = Gf.Vec3f(0.9)
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:skyTint").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:skyTint").Get(),
             expectedSkyTint, 1e-6))
 
         expectedSunDirection = Gf.Vec3f(0.0, 0.0, 0.9)
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:sunDirection").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:sunDirection").Get(),
             expectedSunDirection, 1e-6))
 
         expectedSunSize = 0.9
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:sunSize").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:sunSize").Get(),
             expectedSunSize, 1e-6))
 
         expectedSunTint = Gf.Vec3f(0.9)
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:sunTint").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:sunTint").Get(),
             expectedSunTint, 1e-6))
 
         expectedYear = 2019
-        self.assertEqual(envDayLight.GetAttribute("inputs:year").Get(), expectedYear)
+        self.assertEqual(envDayLight.GetAttribute("inputs:ri:light:year").Get(), expectedYear)
 
         expectedZone = 9.0
-        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:zone").Get(),
+        self.assertTrue(Gf.IsClose(envDayLight.GetAttribute("inputs:ri:light:zone").Get(),
             expectedZone, 1e-6))
 
     def _ValidateUsdLuxShapingAPI(self):
