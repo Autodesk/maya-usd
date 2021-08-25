@@ -87,8 +87,9 @@ class UFEObservableSceneTest(unittest.TestCase):
         itemC = ufe.SceneItem(c)
         # End Setup
 
-        # No observers yet.
-        self.assertEqual(ufe.Scene.nbObservers(), 0)
+        # No observers from the test yet, but Maya could have observers
+        # created on startup
+        initialNbObservers = ufe.Scene.nbObservers()
 
         snObs = TestObserver()
 
@@ -98,7 +99,7 @@ class UFEObservableSceneTest(unittest.TestCase):
         # Order of expected notifications. No notifications yet.
         self.checkNotifications(snObs, [0,0,0,0,0,0])
 
-        self.assertEqual(ufe.Scene.nbObservers(), 1)
+        self.assertEqual(ufe.Scene.nbObservers() - initialNbObservers, 1)
         self.assertTrue(ufe.Scene.hasObserver(snObs))
 
         ufe.Scene.notify(ufe.ObjectAdd(itemA))
