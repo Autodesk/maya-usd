@@ -15,8 +15,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(FORCE_SHARED_CRT "")
+set(FORCE_OLD_ABI "")
 if(MSVC)
   set(FORCE_SHARED_CRT "-DFORCE_SHARED_CRT=OFF")
+elseif(UNIX AND NOT APPLE)
+  set(FORCE_OLD_ABI "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0")
 endif()
 
 ExternalProject_Add(googletest
@@ -37,4 +40,5 @@ ExternalProject_Add(googletest
                     "-DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}"
                     "-DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}"
                     "-DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}"
+                    "${FORCE_OLD_ABI}"
 )

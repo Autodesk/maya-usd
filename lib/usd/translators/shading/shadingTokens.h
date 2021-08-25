@@ -128,6 +128,9 @@ TF_DECLARE_PUBLIC_TOKENS(TrUsdTokens, , TR_USD_COMMON TR_USD_TEXTURE TR_USD_PRIM
     (emission) \
     (emissionColor) \
     (opacity) \
+    (opacityR) \
+    (opacityG) \
+    (opacityB) \
     (thinWalled) \
     (tangentUCamera)
 

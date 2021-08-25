@@ -271,16 +271,18 @@ private:
 
                 // We pass in the type of the plug on the other side to allow the export code to
                 // add conversion nodes as required.
-
-                const TfToken srcPlugName
-                    = TfToken(UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
-                UsdAttribute srcAttribute = srcShaderInfo->GetShadingAttributeForMayaAttrName(
-                    srcPlugName, MayaUsd::Converter::getUsdTypeName(dstPlug));
-
                 const TfToken dstPlugName
                     = TfToken(UsdMayaShadingUtil::GetStandardAttrName(dstPlug, false));
                 UsdAttribute dstAttribute = dstShaderInfo->GetShadingAttributeForMayaAttrName(
                     dstPlugName, MayaUsd::Converter::getUsdTypeName(srcPlug));
+
+                UsdAttribute srcAttribute;
+                if (dstAttribute) {
+                    const TfToken srcPlugName
+                        = TfToken(UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
+                    srcAttribute = srcShaderInfo->GetShadingAttributeForMayaAttrName(
+                        srcPlugName, dstAttribute.GetTypeName());
+                }
 
                 if (srcAttribute && dstAttribute) {
                     if (UsdShadeInput::IsInput(srcAttribute)) {
@@ -600,7 +602,8 @@ private:
     {
         // UsdMayaPrimReader::Read is a function that works by indirect effect. It will return
         // "true" on success, and the resulting changes will be found in the _context object.
-        if (!shaderReader.Read(_context->GetPrimReaderContext())) {
+        UsdMayaPrimReaderContext* context = _context->GetPrimReaderContext();
+        if (context == nullptr || !shaderReader.Read(*context)) {
             return MObject();
         }
 
@@ -654,6 +657,8 @@ private:
 
             UsdMayaUtil::Connect(srcAttr, mayaAttr, false);
         }
+
+        shaderReader.PostConnectSubtree(_context->GetPrimReaderContext());
 
         return shaderObj;
     }

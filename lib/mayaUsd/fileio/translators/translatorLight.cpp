@@ -143,7 +143,7 @@ static bool _ReadLightAttrs(
     const UsdLuxLight&           lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context)
+    UsdMayaPrimReaderContext&    context)
 {
     MStatus status;
     bool    success = true;
@@ -155,10 +155,10 @@ static bool _ReadLightAttrs(
 
     // ReadUsdAttribute will read a Usd attribute, accounting for eventual animations
     success &= UsdMayaReadUtil::ReadUsdAttribute(
-        lightSchema.GetIntensityAttr(), depFn, _tokens->IntensityPlugName, args, context);
+        lightSchema.GetIntensityAttr(), depFn, _tokens->IntensityPlugName, args, &context);
 
     success &= UsdMayaReadUtil::ReadUsdAttribute(
-        lightSchema.GetColorAttr(), depFn, _tokens->ColorPlugName, args, context);
+        lightSchema.GetColorAttr(), depFn, _tokens->ColorPlugName, args, &context);
 
     // For diffuse & specular, the USD value is a [0,1] float, but it's a boolean in Maya.
     // We can't really import this properly, but at least we're enabling the maya attibute
@@ -191,9 +191,9 @@ static bool _ReadLightAttrs(
             depFn,
             _tokens->UseRayTraceShadowsPlugName,
             args,
-            context);
+            &context);
         success &= UsdMayaReadUtil::ReadUsdAttribute(
-            shadowAPI.GetShadowColorAttr(), depFn, _tokens->ShadowColorPlugName, args, context);
+            shadowAPI.GetShadowColorAttr(), depFn, _tokens->ShadowColorPlugName, args, &context);
     }
     return success;
 }
@@ -220,7 +220,7 @@ static bool _ReadDirectionalLight(
     const UsdLuxLight&           lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context)
+    UsdMayaPrimReaderContext&    context)
 {
     MStatus            status;
     bool               success = true;
@@ -230,7 +230,7 @@ static bool _ReadDirectionalLight(
         return false;
     }
     success &= UsdMayaReadUtil::ReadUsdAttribute(
-        distantLight.GetAngleAttr(), depFn, _tokens->LightAnglePlugName, args, context);
+        distantLight.GetAngleAttr(), depFn, _tokens->LightAnglePlugName, args, &context);
     return success;
 }
 
@@ -261,7 +261,7 @@ static bool _ReadPointLight(
     const UsdLuxLight&           lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context)
+    UsdMayaPrimReaderContext&    context)
 {
     MStatus           status;
     bool              success = true;
@@ -271,7 +271,7 @@ static bool _ReadPointLight(
         return false;
     }
     success &= UsdMayaReadUtil::ReadUsdAttribute(
-        sphereLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, context);
+        sphereLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, &context);
     return success;
 }
 
@@ -329,7 +329,7 @@ static bool _ReadSpotLight(
     const UsdLuxLight&           lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context)
+    UsdMayaPrimReaderContext&    context)
 {
 
     MStatus           status;
@@ -340,7 +340,7 @@ static bool _ReadSpotLight(
         return false;
     }
     success &= UsdMayaReadUtil::ReadUsdAttribute(
-        sphereLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, context);
+        sphereLight.GetRadiusAttr(), depFn, _tokens->LightRadiusPlugName, args, &context);
 
     UsdLuxShapingAPI shapingAPI(prim);
     if (!shapingAPI) {
@@ -353,7 +353,7 @@ static bool _ReadSpotLight(
     // We need some magic conversions between maya dropOff, coneAngle, penumbraAngle,
     // and Usd shapingFocus, shapingConeAngle, shapingConeSoftness
     success &= UsdMayaReadUtil::ReadUsdAttribute(
-        shapingAPI.GetShapingFocusAttr(), depFn, _tokens->DropoffPlugName, args, context);
+        shapingAPI.GetShapingFocusAttr(), depFn, _tokens->DropoffPlugName, args, &context);
 
     float UsdConeAngle = 1.f;
     shapingAPI.GetShapingConeAngleAttr().Get(&UsdConeAngle, timeCode);
@@ -408,7 +408,7 @@ static bool _ReadAreaLight(
     const UsdLuxLight&           lightSchema,
     MFnDependencyNode&           depFn,
     const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context)
+    UsdMayaPrimReaderContext&    context)
 {
     MStatus         status;
     bool            success = true;
@@ -419,7 +419,7 @@ static bool _ReadAreaLight(
     }
 
     success &= UsdMayaReadUtil::ReadUsdAttribute(
-        rectLight.GetNormalizeAttr(), depFn, _tokens->normalizeAttrName, args, context);
+        rectLight.GetNormalizeAttr(), depFn, _tokens->normalizeAttrName, args, &context);
 
     return success;
 }
@@ -427,7 +427,7 @@ static bool _ReadAreaLight(
 /* static */
 bool UsdMayaTranslatorLight::Read(
     const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context)
+    UsdMayaPrimReaderContext&    context)
 {
     // Get the Usd primitive we're reading
     const UsdPrim& usdPrim = args.GetUsdPrim();
@@ -465,12 +465,12 @@ bool UsdMayaTranslatorLight::Read(
     }
 
     // Find which maya node needs to be our light's parent
-    MObject parentNode = context->GetMayaNode(lightSchema.GetPath().GetParentPath(), false);
+    MObject parentNode = context.GetMayaNode(lightSchema.GetPath().GetParentPath(), false);
     MStatus status;
     MObject mayaNodeTransformObj;
     // First create the transform node
     if (!UsdMayaTranslatorUtil::CreateTransformNode(
-            usdPrim, parentNode, args, context, &status, &mayaNodeTransformObj)) {
+            usdPrim, parentNode, args, &context, &status, &mayaNodeTransformObj)) {
         TF_RUNTIME_ERROR("Failed to create transform node for %s", lightSchema.GetPath().GetText());
         return false;
     }
@@ -494,7 +494,7 @@ bool UsdMayaTranslatorLight::Read(
 
     const std::string nodePath
         = lightSchema.GetPath().AppendChild(TfToken(nodeName.asChar())).GetString();
-    context->RegisterNewMayaNode(nodePath, lightObj);
+    context.RegisterNewMayaNode(nodePath, lightObj);
 
     MFnDependencyNode depFn(lightObj, &status);
     if (status != MS::kSuccess) {

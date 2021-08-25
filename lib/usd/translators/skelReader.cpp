@@ -43,7 +43,7 @@ public:
 
     ~UsdMayaPrimReaderSkeleton() override { }
 
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
 private:
     // TODO: Ideally, we'd share the cache across different models
@@ -71,11 +71,11 @@ public:
 
     ~UsdMayaPrimReaderSkelRoot() override { }
 
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
     bool HasPostReadSubtree() const override { return true; }
 
-    void PostReadSubtree(UsdMayaPrimReaderContext* context) override;
+    void PostReadSubtree(UsdMayaPrimReaderContext& context) override;
 
 private:
     // TODO: Ideally, we'd share the cache across different models
@@ -90,7 +90,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, UsdSkelRoot)
     });
 }
 
-bool UsdMayaPrimReaderSkeleton::Read(UsdMayaPrimReaderContext* context)
+bool UsdMayaPrimReaderSkeleton::Read(UsdMayaPrimReaderContext& context)
 {
     UsdSkelSkeleton skel(_GetArgs().GetUsdPrim());
     if (!TF_VERIFY(skel))
@@ -98,12 +98,12 @@ bool UsdMayaPrimReaderSkeleton::Read(UsdMayaPrimReaderContext* context)
 
     if (UsdSkelSkeletonQuery skelQuery = _cache.GetSkelQuery(skel)) {
 
-        MObject parentNode = context->GetMayaNode(skel.GetPrim().GetPath().GetParentPath(), true);
+        MObject parentNode = context.GetMayaNode(skel.GetPrim().GetPath().GetParentPath(), true);
 
         // Build out a joint hierarchy.
         VtArray<MObject> joints;
         if (UsdMayaTranslatorSkel::CreateJointHierarchy(
-                skelQuery, parentNode, _GetArgs(), context, &joints)) {
+                skelQuery, parentNode, _GetArgs(), &context, &joints)) {
 
             // Add a dagPose node to hold the rest pose.
             // This is not necessary for skinning to function in Maya, but is
@@ -111,7 +111,7 @@ bool UsdMayaPrimReaderSkeleton::Read(UsdMayaPrimReaderContext* context)
             // restTransforms, and is a requirement of some exporters.
             // The dagPose command also will not work without this.
             MObject bindPose;
-            if (UsdMayaTranslatorSkel::CreateBindPose(skelQuery, joints, context, &bindPose)) {
+            if (UsdMayaTranslatorSkel::CreateBindPose(skelQuery, joints, &context, &bindPose)) {
                 return true;
             }
         }
@@ -119,7 +119,7 @@ bool UsdMayaPrimReaderSkeleton::Read(UsdMayaPrimReaderContext* context)
     return false;
 }
 
-bool UsdMayaPrimReaderSkelRoot::Read(UsdMayaPrimReaderContext* context)
+bool UsdMayaPrimReaderSkelRoot::Read(UsdMayaPrimReaderContext& context)
 {
     UsdSkelRoot skelRoot(_GetArgs().GetUsdPrim());
     if (!TF_VERIFY(skelRoot))
@@ -128,17 +128,17 @@ bool UsdMayaPrimReaderSkelRoot::Read(UsdMayaPrimReaderContext* context)
     // First pass through:
     // The skel root itself is a transform, so produce a transform.
     // Skeletal bindings will be handled as a post sub-tree process.
-    MObject parentNode = context->GetMayaNode(
+    MObject parentNode = context.GetMayaNode(
         skelRoot.GetPrim().GetPath().GetParentPath(),
         /*findAncestors*/ true);
 
     MStatus status;
     MObject obj;
     return UsdMayaTranslatorUtil::CreateTransformNode(
-        skelRoot.GetPrim(), parentNode, _GetArgs(), context, &status, &obj);
+        skelRoot.GetPrim(), parentNode, _GetArgs(), &context, &status, &obj);
 }
 
-void UsdMayaPrimReaderSkelRoot::PostReadSubtree(UsdMayaPrimReaderContext* context)
+void UsdMayaPrimReaderSkelRoot::PostReadSubtree(UsdMayaPrimReaderContext& context)
 {
     UsdSkelRoot skelRoot(_GetArgs().GetUsdPrim());
     if (!TF_VERIFY(skelRoot))
@@ -171,7 +171,7 @@ void UsdMayaPrimReaderSkelRoot::PostReadSubtree(UsdMayaPrimReaderContext* contex
         if (const UsdSkelSkeletonQuery& skelQuery = _cache.GetSkelQuery(binding.GetSkeleton())) {
 
             VtArray<MObject> joints;
-            if (!UsdMayaTranslatorSkel::GetJoints(skelQuery, context, &joints)) {
+            if (!UsdMayaTranslatorSkel::GetJoints(skelQuery, &context, &joints)) {
                 continue;
             }
 
@@ -208,7 +208,7 @@ void UsdMayaPrimReaderSkelRoot::PostReadSubtree(UsdMayaPrimReaderContext* contex
                     }
                 }
 
-                MObject bindPose = UsdMayaTranslatorSkel::GetBindPose(skelQuery, context);
+                MObject bindPose = UsdMayaTranslatorSkel::GetBindPose(skelQuery, &context);
 
                 // Add a skin cluster to skin this prim.
                 UsdMayaTranslatorSkel::CreateSkinCluster(
@@ -217,7 +217,7 @@ void UsdMayaPrimReaderSkelRoot::PostReadSubtree(UsdMayaPrimReaderContext* contex
                     skinningJoints,
                     skinnedPrim,
                     _GetArgs(),
-                    context,
+                    &context,
                     bindPose);
             }
         }

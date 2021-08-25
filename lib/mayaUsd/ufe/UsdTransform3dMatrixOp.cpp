@@ -360,7 +360,10 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
     // We must create a Transform3d interface to edit the whole object,
     // e.g. setting the local transformation matrix for the complete object.
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-    TF_AXIOM(usdItem);
+
+    if (!usdItem) {
+        return nullptr;
+    }
 
     UsdGeomXformable xformable(usdItem->prim());
     bool             unused;
@@ -405,7 +408,10 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
     const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-    TF_AXIOM(usdItem);
+
+    if (!usdItem) {
+        return nullptr;
+    }
 
     // Beware: the default UsdGeomXformOp constructor
     // https://github.com/PixarAnimationStudios/USD/blob/71b4baace2044ea4400ba802e91667f9ebe342f0/pxr/usd/usdGeom/xformOp.h#L148

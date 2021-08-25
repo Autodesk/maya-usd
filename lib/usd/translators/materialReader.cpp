@@ -27,11 +27,11 @@ PXRUSDMAYA_DEFINE_READER(UsdShadeMaterial, args, context)
     if (importUnboundShaders) {
         const UsdPrim& usdPrim = args.GetUsdPrim();
         UsdMayaTranslatorMaterial::Read(
-            args.GetJobArguments(), UsdShadeMaterial(usdPrim), UsdGeomGprim(), context);
+            args.GetJobArguments(), UsdShadeMaterial(usdPrim), UsdGeomGprim(), &context);
     }
     // Always prune materials' namespace descendants - assume that it's just
     // part of the material's shading network.
-    context->SetPruneChildren(true);
+    context.SetPruneChildren(true);
     return true;
 }
 

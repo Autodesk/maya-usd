@@ -18,8 +18,6 @@
                 "UsdLuxGeometryLight",
                 "UsdLuxRectLight",
                 "UsdLuxSphereLight",
-                "UsdRiPxrAovLight",
-                "UsdRiPxrEnvDayLight",
                 "UsdShadeMaterial",
                 "UsdSkelRoot",
                 "UsdSkelSkeleton",

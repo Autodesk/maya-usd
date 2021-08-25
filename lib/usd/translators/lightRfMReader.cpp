@@ -23,8 +23,6 @@
 #include <pxr/usd/usdLux/geometryLight.h>
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/sphereLight.h>
-#include <pxr/usd/usdRi/pxrAovLight.h>
-#include <pxr/usd/usdRi/pxrEnvDayLight.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -59,21 +57,25 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxRectLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Read(args, context);
 }
-/*
+
 PXRUSDMAYA_DEFINE_READER(UsdLuxSphereLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Read(args, context);
-}*/
+}
 #endif
 
-PXRUSDMAYA_DEFINE_READER(UsdRiPxrAovLight, args, context)
+// Moving to use PXRUSDMAYA_DEFINE_READER_FOR_USD_TYPE in anticipation of
+// codeless schemas for UsdRi types to be available soon!
+PXRUSDMAYA_DEFINE_READER_FOR_USD_TYPE(PxrAovLight, args, context)
 {
-    return UsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, &context);
 }
 
-PXRUSDMAYA_DEFINE_READER(UsdRiPxrEnvDayLight, args, context)
+// Moving to use PXRUSDMAYA_DEFINE_READER_FOR_USD_TYPE in anticipation of
+// codeless schemas for UsdRi types to be available soon!
+PXRUSDMAYA_DEFINE_READER_FOR_USD_TYPE(PxrEnvDayLight, args, context)
 {
-    return UsdMayaTranslatorRfMLight::Read(args, context);
+    return UsdMayaTranslatorRfMLight::Read(args, &context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
