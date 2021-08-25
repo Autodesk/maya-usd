@@ -112,8 +112,18 @@ bool UsdMayaTranslatorCurves::Create(
         // "Managing different knot representations in external applications"
         // section in MFnNurbsCurve documentation.
         if (curveKnots.size() > 2) {
+#if PXR_VERSION > 2005
             curveKnots.resize(curveKnots.size() - 1);
             curveKnots.erase(curveKnots.begin());
+#else
+            // Not making it efficient as this code will disappear very soon.
+            VtArray<double>::const_iterator firstKnot = curveKnots.cbegin();
+            ++firstKnot;
+            VtArray<double>::const_iterator lastKnot = curveKnots.cend();
+            --lastKnot;
+            VtArray<double> mayaKnots(firstKnot, lastKnot);
+            mayaKnots.swap(curveKnots);
+#endif
         }
     } else {
 
