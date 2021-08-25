@@ -13,10 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from . import _schemas
 from pxr import Tf
-Tf.PrepareModule(_schemas, locals())
-del _schemas, Tf
+if hasattr(Tf, 'PreparePythonModule'):
+    Tf.PreparePythonModule('_schemas')
+else:
+    from . import _schemas
+    Tf.PrepareModule(_schemas, locals())
+    del _schemas
+del Tf
 
 try:
     import __DOC
