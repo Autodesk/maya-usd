@@ -504,25 +504,58 @@ void SaveLayersDialog::onCancel() { reject(); }
 
 bool SaveLayersDialog::okToSave()
 {
-    int         i, count;
-    QStringList existingFiles;
+    // Files can have the same file names in complicated ways, with one file having two copies,
+    // another three, so we keep the exact number of copies per file path.
+    QMap<QString, int> alreadySeenPaths;
+    QStringList        existingFiles;
 
     // The anonymous layer section in the dialog can be empty.
     if (nullptr != _anonLayersWidget) {
         QLayout* anonLayout = _anonLayersWidget->layout();
-        for (i = 0, count = anonLayout->count(); i < count; ++i) {
+        for (int i = 0, count = anonLayout->count(); i < count; ++i) {
             auto row = dynamic_cast<SaveLayerPathRow*>(anonLayout->itemAt(i)->widget());
             if (nullptr == row)
                 continue;
 
             QString path = row->pathToSaveAs();
             if (!path.isEmpty()) {
+                if (alreadySeenPaths.count(path) > 0) {
+                    alreadySeenPaths[path] += 1;
+                } else {
+                    alreadySeenPaths[path] = 1;
+                }
                 QFileInfo fInfo(path);
                 if (fInfo.exists()) {
                     existingFiles.append(path);
                 }
             }
         }
+    }
+
+    QStringList identicalFiles;
+    int         identicalCount = 0;
+    for (const auto& path : alreadySeenPaths.keys()) {
+        const int count = alreadySeenPaths[path];
+        if (count > 1) {
+            identicalFiles.append(path);
+            identicalCount += count;
+        }
+    }
+
+    if (identicalCount > 0) {
+        MString errorMsg;
+        MString count;
+        count = identicalCount;
+        errorMsg.format(
+            StringResources::getAsMString(StringResources::kSaveAnonymousIdenticalFiles), count);
+
+        warningDialog(
+            StringResources::getAsQString(StringResources::kSaveAnonymousIdenticalFilesTitle),
+            MQtUtil::toQString(errorMsg),
+            &identicalFiles,
+            QMessageBox::Icon::Critical);
+
+        return false;
     }
 
     if (!existingFiles.isEmpty()) {

@@ -21,6 +21,7 @@
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 
+#include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/pxr.h>
 
@@ -109,9 +110,7 @@ struct UsdMayaPrimReaderRegistry
 };
 
 // Lookup TfType by name instead of static C++ type when
-// registering prim reader functions. This allows readers to be
-// registered for codeless schemas, which are declared in the
-// TfType system but have no corresponding C++ code.
+// registering prim reader functions.
 #define PXRUSDMAYA_DEFINE_READER(T, argsVarName, ctxVarName)                                     \
     static bool UsdMaya_PrimReader_##T(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&); \
     TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, T)                                  \
@@ -120,6 +119,24 @@ struct UsdMayaPrimReaderRegistry
             UsdMayaPrimReaderRegistry::RegisterRaw(t, UsdMaya_PrimReader_##T);                   \
         } else {                                                                                 \
             TF_CODING_ERROR("Cannot register unknown TfType: %s.", #T);                          \
+        }                                                                                        \
+    }                                                                                            \
+    bool UsdMaya_PrimReader_##T(                                                                 \
+        const UsdMayaPrimReaderArgs& argsVarName, UsdMayaPrimReaderContext& ctxVarName)
+
+// Lookup TfType by name instead of static C++ type when
+// registering prim reader functions. This allows readers to be
+// registered for codeless schemas, which are declared in the
+// TfType system but have no corresponding C++ code.
+#define PXRUSDMAYA_DEFINE_READER_FOR_USD_TYPE(T, argsVarName, ctxVarName)                        \
+    static bool UsdMaya_PrimReader_##T(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&); \
+    TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, T)                                  \
+    {                                                                                            \
+        const TfType& tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(#T);           \
+        if (tfType) {                                                                            \
+            UsdMayaPrimReaderRegistry::RegisterRaw(tfType, UsdMaya_PrimReader_##T);              \
+        } else {                                                                                 \
+            TF_CODING_ERROR("Cannot register unknown TfType for usdType: %s.", #T);              \
         }                                                                                        \
     }                                                                                            \
     bool UsdMaya_PrimReader_##T(                                                                 \

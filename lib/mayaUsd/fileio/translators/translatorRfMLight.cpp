@@ -63,7 +63,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    
+
     ((UsdSchemaBase, "UsdSchemaBase"))
 
     // RenderMan for Maya light types.
@@ -552,6 +552,12 @@ static inline TfToken _ShaderAttrName(const std::string& shaderParamName)
     return TfToken(UsdShadeTokens->inputs.GetString() + shaderParamName);
 }
 
+static inline std::string _PrefixRiLightAttrNamespace(const std::string& shaderParamName)
+{
+    static const std::string& riLightNS = "ri:light:";
+    return riLightNS + shaderParamName;
+}
+
 // Adapted from UsdSchemaBase::_CreateAttr
 static UsdAttribute _SetLightPrimAttr(
     UsdPrim&                lightPrim,
@@ -563,7 +569,7 @@ static UsdAttribute _SetLightPrimAttr(
     bool                    writeSparsely)
 {
 
-    const TfToken& attrToken = _ShaderAttrName(attrName);
+    const TfToken& attrToken = _ShaderAttrName(_PrefixRiLightAttrNamespace(attrName));
 
     if (writeSparsely && !custom) {
         UsdAttribute attr = lightPrim.GetAttribute(attrToken);
@@ -803,9 +809,7 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     std::string lightAovName;
-    lightPrim
-        .GetAttribute(
-            TfToken(UsdShadeTokens->inputs.GetString() + _tokens->AovNamePlugName.GetString()))
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->AovNamePlugName)))
         .Get(&lightAovName);
     status = lightAovNamePlug.setValue(MString(lightAovName.c_str()));
     if (status != MS::kSuccess) {
@@ -818,7 +822,9 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightInPrimaryHit = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InPrimaryHitPlugName)).Get(&lightInPrimaryHit);
+    lightPrim
+        .GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->InPrimaryHitPlugName)))
+        .Get(&lightInPrimaryHit);
     status = lightInPrimaryHitPlug.setValue(lightInPrimaryHit);
     if (status != MS::kSuccess) {
         return false;
@@ -830,7 +836,9 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightInReflection = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InReflectionPlugName)).Get(&lightInReflection);
+    lightPrim
+        .GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->InReflectionPlugName)))
+        .Get(&lightInReflection);
     status = lightInReflectionPlug.setValue(lightInReflection);
     if (status != MS::kSuccess) {
         return false;
@@ -842,7 +850,9 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightInRefraction = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InRefractionPlugName)).Get(&lightInRefraction);
+    lightPrim
+        .GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->InRefractionPlugName)))
+        .Get(&lightInRefraction);
     status = lightInRefractionPlug.setValue(lightInRefraction);
     if (status != MS::kSuccess) {
         return false;
@@ -854,7 +864,8 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightInvert = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->InvertPlugName)).Get(&lightInvert);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->InvertPlugName)))
+        .Get(&lightInvert);
     status = lightInvertPlug.setValue(lightInvert);
     if (status != MS::kSuccess) {
         return false;
@@ -867,7 +878,9 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightOnVolumeBoundaries = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->OnVolumeBoundariesPlugName))
+    lightPrim
+        .GetAttribute(
+            _ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->OnVolumeBoundariesPlugName)))
         .Get(&lightOnVolumeBoundaries);
     status = lightOnVolumeBoundariesPlug.setValue(lightOnVolumeBoundaries);
     if (status != MS::kSuccess) {
@@ -880,7 +893,8 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightUseColor = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->UseColorPlugName)).Get(&lightUseColor);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->UseColorPlugName)))
+        .Get(&lightUseColor);
     status = lightUseColorPlug.setValue(lightUseColor);
     if (status != MS::kSuccess) {
         return false;
@@ -893,7 +907,8 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
         return false;
     }
     bool lightUseThroughput = true;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->UseThroughputPlugName))
+    lightPrim
+        .GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->UseThroughputPlugName)))
         .Get(&lightUseThroughput);
     status = lightUseThroughputPlug.setValue(lightUseThroughput);
     return status == MS::kSuccess;
@@ -1210,7 +1225,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     int lightDay = 1;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->DayPlugName)).Get(&lightDay);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->DayPlugName)))
+        .Get(&lightDay);
     status = lightDayPlug.setValue(lightDay);
     if (status != MS::kSuccess) {
         return false;
@@ -1222,7 +1238,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightHaziness = 2.0f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->HazinessPlugName)).Get(&lightHaziness);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->HazinessPlugName)))
+        .Get(&lightHaziness);
     status = lightHazinessPlug.setValue(lightHaziness);
     if (status != MS::kSuccess) {
         return false;
@@ -1234,7 +1251,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightHour = 14.633333f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->HourPlugName)).Get(&lightHour);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->HourPlugName)))
+        .Get(&lightHour);
     status = lightHourPlug.setValue(lightHour);
     if (status != MS::kSuccess) {
         return false;
@@ -1246,7 +1264,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightLatitude = 47.602f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->LatitudePlugName)).Get(&lightLatitude);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->LatitudePlugName)))
+        .Get(&lightLatitude);
     status = lightLatitudePlug.setValue(lightLatitude);
     if (status != MS::kSuccess) {
         return false;
@@ -1258,7 +1277,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightLongitude = -122.332f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->LongitudePlugName)).Get(&lightLongitude);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->LongitudePlugName)))
+        .Get(&lightLongitude);
     status = lightLongitudePlug.setValue(lightLongitude);
     if (status != MS::kSuccess) {
         return false;
@@ -1270,7 +1290,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     int lightMonth = 0;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->MonthPlugName)).Get(&lightMonth);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->MonthPlugName)))
+        .Get(&lightMonth);
     status = lightMonthPlug.setValue(lightMonth);
     if (status != MS::kSuccess) {
         return false;
@@ -1282,7 +1303,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     GfVec3f lightSkyTint(1.0f);
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SkyTintPlugName)).Get(&lightSkyTint);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->SkyTintPlugName)))
+        .Get(&lightSkyTint);
     status = lightSkyTintPlug.child(0).setValue(lightSkyTint[0]);
     status = lightSkyTintPlug.child(1).setValue(lightSkyTint[1]);
     status = lightSkyTintPlug.child(2).setValue(lightSkyTint[2]);
@@ -1296,7 +1318,9 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     GfVec3f lightSunDirection(0.0f, 0.0f, 1.0f);
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunDirectionPlugName)).Get(&lightSunDirection);
+    lightPrim
+        .GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->SunDirectionPlugName)))
+        .Get(&lightSunDirection);
     status = lightSunDirectionPlug.child(0).setValue(lightSunDirection[0]);
     status = lightSunDirectionPlug.child(1).setValue(lightSunDirection[1]);
     status = lightSunDirectionPlug.child(2).setValue(lightSunDirection[2]);
@@ -1310,7 +1334,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightSunSize = 1.0f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunSizePlugName)).Get(&lightSunSize);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->SunSizePlugName)))
+        .Get(&lightSunSize);
     status = lightSunSizePlug.setValue(lightSunSize);
     if (status != MS::kSuccess) {
         return false;
@@ -1322,7 +1347,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     GfVec3f lightSunTint(1.0f);
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->SunTintPlugName)).Get(&lightSunTint);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->SunTintPlugName)))
+        .Get(&lightSunTint);
     status = lightSunTintPlug.child(0).setValue(lightSunTint[0]);
     status = lightSunTintPlug.child(1).setValue(lightSunTint[1]);
     status = lightSunTintPlug.child(2).setValue(lightSunTint[2]);
@@ -1336,7 +1362,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     int lightYear = 2015;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->YearPlugName)).Get(&lightYear);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->YearPlugName)))
+        .Get(&lightYear);
     status = lightYearPlug.setValue(lightYear);
     if (status != MS::kSuccess) {
         return false;
@@ -1348,7 +1375,8 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
         return false;
     }
     float lightZone = -8.0f;
-    lightPrim.GetAttribute(_ShaderAttrName(_tokens->ZonePlugName)).Get(&lightZone);
+    lightPrim.GetAttribute(_ShaderAttrName(_PrefixRiLightAttrNamespace(_tokens->ZonePlugName)))
+        .Get(&lightZone);
     status = lightZonePlug.setValue(lightZone);
     return status == MS::kSuccess;
 }

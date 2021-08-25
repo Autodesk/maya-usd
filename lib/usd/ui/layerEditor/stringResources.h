@@ -99,6 +99,8 @@ const auto kSaveAnonymousLayersErrorsMsg { create("kSaveAnonymousLayersErrorsMsg
 const auto kSaveAnonymousLayersErrors    { create("kSaveAnonymousLayersErrors", "Layer ^1s could not be saved to: ^2s")};
 const auto kSaveAnonymousConfirmOverwriteTitle { create("kSaveAnonymousConfirmOverwriteTitle", "Confirm Overwrite")};
 const auto kSaveAnonymousConfirmOverwrite { create("kSaveAnonymousConfirmOverwrite", "^1s file(s) already exist and will be overwritten.  Do you want to continue?")};
+const auto kSaveAnonymousIdenticalFilesTitle { create("kSaveAnonymousIdenticalFilesTitle", "Identical Names Error")};
+const auto kSaveAnonymousIdenticalFiles { create("kSaveAnonymousIdenticalFiles", "^1s files have identical file names and prevent correct saving.  Please select different file names for each layer. Here is the list of identical file names:<br>")};
 
 const auto kSaveLayerUsdFileFormatAnn    { create("kSaveLayerUsdFileFormatAnn", "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary) or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.") };
 const auto kSaveLayerUsdFileFormatSbm    { create("kSaveLayerUsdFileFormatSbm", "Select whether the .usd file is written out in binary or ASCII") };
