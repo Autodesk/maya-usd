@@ -134,28 +134,27 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         ufePath = testVP2RenderDelegateSelectabilityPointInstanceSelection._GetUfePath(
             instanceIndex)
         ufeItem = ufe.Hierarchy.createItem(ufePath)
-        return ufeItem
+        prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(ufePath))
+        return ufeItem, prim
 
     def _RunTest(self, expectedCount):
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
-        self.assertEqual(0, len(list(iter(globalSelection))))
+        self.assertTrue(globalSelection.empty())
 
         self._dragSelectActiveView()
 
         globalSelection = ufe.GlobalSelection.get()
-        self.assertEqual(expectedCount, len(list(iter(globalSelection))))
+        self.assertEqual(expectedCount, len(globalSelection))
 
         # Make the instancer unselectable.
-        sceneItem = self._GetSceneItem(0)
-        sceneRawItem = sceneItem.getRawAddress()
-        prim = mayaUsdUfe.getPrimFromRawItem(sceneRawItem)
+        sceneItem, prim = self._GetSceneItem(0)
         prim.SetMetadata(self.selectabilityToken, self.offToken)
 
         self._dragSelectActiveView()
 
         globalSelection = ufe.GlobalSelection.get()
-        self.assertEqual(0, len(list(iter(globalSelection))))
+        self.assertTrue(globalSelection.empty())
 
     def testInstancesGrid14(self):
         mayaUtils.openPointInstancesGrid14Scene()
@@ -183,8 +182,8 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         cmds.optionVar(stringValue=(
             testVP2RenderDelegateSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'PointInstancer'))
 
-        # The in USD versions before 21.05, the point instancer pick mode did not exists.
-        # For those version we end-up selecting the prototypes, which there are 7 of.
+        # In USD versions before 21.05, the point instancer pick mode did not exists.
+        # For those version we end-up selecting the prototypes, of which there are 7.
         expectedCount = 1 if Usd.GetVersion() >= (0, 21, 5) else 7
 
         self._RunTest(expectedCount)
@@ -197,8 +196,8 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         cmds.optionVar(stringValue=(
             testVP2RenderDelegateSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'PointInstancer'))
 
-        # The in USD versions before 21.05, the point instancer pick mode did not exists.
-        # For those version we end-up selecting the prototypes, which there are 7 of.
+        # In USD versions before 21.05, the point instancer pick mode did not exists.
+        # For those version we end-up selecting the prototypes, of which there are 7.
         expectedCount = 1 if Usd.GetVersion() >= (0, 21, 5) else 7
         
         self._RunTest(expectedCount)

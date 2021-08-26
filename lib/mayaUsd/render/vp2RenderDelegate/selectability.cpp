@@ -60,13 +60,13 @@ bool isSelectableUncached(UsdPrim prim)
  */
 void Selectability::prepareForSelection() { clearCache(); }
 
-/*! \brief  Compute the selectability of a prim, considering inheritence.
+/*! \brief  Compute the selectability of a prim, considering inheritance.
  */
 bool Selectability::isSelectable(UsdPrim prim)
 {
     // The reason we treat invalid prim as selectable is two-fold:
     //
-    // - We loop inheritence until we reach an invalid parent prim, and prim are selectable
+    // - We loop inheritance until we reach an invalid parent prim, and prim are selectable
     //   by default.
     // - We don't want to influence selectability of things that are not prim that are being
     //   tested by accident.
@@ -83,7 +83,7 @@ bool Selectability::isSelectable(UsdPrim prim)
     return selectable;
 }
 
-/*! \brief  Retrieve the local selectability state of a prim, without any inheritence.
+/*! \brief  Retrieve the local selectability state of a prim, without any inheritance.
  */
 Selectability::State Selectability::getLocalState(const UsdPrim& prim)
 {

@@ -47,11 +47,11 @@ public:
      */
     static void prepareForSelection();
 
-    /*! \brief  Compute the selectability of a prim, considering inheritence.
+    /*! \brief  Compute the selectability of a prim, considering inheritance.
      */
     static bool isSelectable(UsdPrim prim);
 
-    /*! \brief  Retrieve the local selectability state of a prim, without any inheritence.
+    /*! \brief  Retrieve the local selectability state of a prim, without any inheritance.
      */
     static State getLocalState(const UsdPrim& prim);
 };
