@@ -1909,7 +1909,7 @@ static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
 /* static */
 bool UsdMayaTranslatorRfMLight::Read(
     const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context)
+    UsdMayaPrimReaderContext&    context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     if (!usdPrim) {
@@ -1927,12 +1927,12 @@ bool UsdMayaTranslatorRfMLight::Read(
             "Could not determine Maya light type for UsdLuxLight prim", lightSchema.GetPath());
     }
 
-    MObject parentNode = context->GetMayaNode(lightSchema.GetPath().GetParentPath(), false);
+    MObject parentNode = context.GetMayaNode(lightSchema.GetPath().GetParentPath(), false);
 
     MStatus status;
     MObject mayaNodeTransformObj;
     if (!UsdMayaTranslatorUtil::CreateTransformNode(
-            usdPrim, parentNode, args, context, &status, &mayaNodeTransformObj)) {
+            usdPrim, parentNode, args, &context, &status, &mayaNodeTransformObj)) {
         return _ReportError("Failed to create transform node", lightSchema.GetPath());
     }
 
@@ -1953,7 +1953,7 @@ bool UsdMayaTranslatorRfMLight::Read(
 
     const std::string nodePath
         = lightSchema.GetPath().AppendChild(TfToken(nodeName.asChar())).GetString();
-    context->RegisterNewMayaNode(nodePath, lightObj);
+    context.RegisterNewMayaNode(nodePath, lightObj);
 
     MFnDependencyNode depFn(lightObj, &status);
     if (status != MS::kSuccess) {
