@@ -25,6 +25,8 @@ from mayaUsd import ufe as mayaUsdUfe
 from maya import cmds
 from maya.api import OpenMayaUI as OMUI
 
+from pxr import Usd
+
 import ufe
 
 import os
@@ -177,7 +179,12 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         # the instancer and not point instances during the test.
         cmds.optionVar(stringValue=(
             testVP2RenderDelegateSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'PointInstancer'))
-        self._RunTest(1)
+
+        # The in USD versions before 21.05, the point instancer pick mode did not exists.
+        # For those version we end-up selecting the prototypes, which there are 7 of.
+        expectedCount = 1 if Usd.GetVersion() >= (0, 21, 5) else 7
+
+        self._RunTest(expectedCount)
 
     def testPointInstancerGrid7k(self):
         mayaUtils.openPointInstancesGrid7kScene()
@@ -185,7 +192,12 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         # the instancer and not point instances instances during the test.
         cmds.optionVar(stringValue=(
             testVP2RenderDelegateSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'PointInstancer'))
-        self._RunTest(1)
+
+        # The in USD versions before 21.05, the point instancer pick mode did not exists.
+        # For those version we end-up selecting the prototypes, which there are 7 of.
+        expectedCount = 1 if Usd.GetVersion() >= (0, 21, 5) else 7
+        
+        self._RunTest(expectedCount)
 
 
 if __name__ == '__main__':
