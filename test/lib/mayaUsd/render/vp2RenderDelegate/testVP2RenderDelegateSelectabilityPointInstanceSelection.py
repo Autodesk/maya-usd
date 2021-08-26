@@ -159,6 +159,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
 
     def testInstancesGrid14(self):
         mayaUtils.openPointInstancesGrid14Scene()
+        cmds.FrameAllInAllViews()
         # Set the USD point instances pick mode to "Instances" so that we pick
         # individual point instances during the test.
         cmds.optionVar(stringValue=(
@@ -167,6 +168,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
 
     def testInstancesGrid7k(self):
         mayaUtils.openPointInstancesGrid7kScene()
+        cmds.FrameAllInAllViews()
         # Set the USD point instances pick mode to "Instances" so that we pick
         # individual point instances during the test.
         cmds.optionVar(stringValue=(
@@ -175,6 +177,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
 
     def testPointInstancerGrid14(self):
         mayaUtils.openPointInstancesGrid14Scene()
+        cmds.FrameAllInAllViews()
         # Set the USD point instances pick mode to "PointInstancer" so that we pick
         # the instancer and not point instances during the test.
         cmds.optionVar(stringValue=(
@@ -188,6 +191,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
 
     def testPointInstancerGrid7k(self):
         mayaUtils.openPointInstancesGrid7kScene()
+        cmds.FrameAllInAllViews()
         # Set the USD point instances pick mode to "PointInstancer" so that we pick
         # the instancer and not point instances instances during the test.
         cmds.optionVar(stringValue=(
