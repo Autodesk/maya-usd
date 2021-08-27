@@ -60,6 +60,18 @@ struct UsdMaya_RegistryHelper
     /// usdMaya will try to load the "mayaPlugin" when shading modes are first accessed.
     static void LoadShadingModePlugins();
 
+    /// Searches the plugInfos and looks for ExportContextPlugin.
+    ///
+    /// "UsdMaya" : {
+    ///     "ExportContextPlugin" : {
+    ///         "mayaPlugin" : "arnoldExporterContext"
+    ///     }
+    /// }
+    ///
+    /// At that scope, it expects a dictionary with one key: "mayaPlugin".
+    /// usdMaya will try to load the "mayaPlugin" when exporter contexts are first accessed.
+    static void LoadExportContextPlugins();
+
     /// Searches the plugInfos for metadata dictionaries at the given \p scope,
     /// and composes them together.
     /// The scope are the nested keys to search through in the plugInfo (for

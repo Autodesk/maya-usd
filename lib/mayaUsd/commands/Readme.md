@@ -113,6 +113,7 @@ their own purposes, similar to the Alembic export chaser example.
 
 | Long flag                        | Short flag | Type             | Default             | Description |
 | -------------------------------- | ---------- | ---------------- | ------------------- | ----------- |
+| `-apiSchema`                     | `-api`     | string (multi)   | none                | Exports the given API schema. Requires registering schema exporters for the API. |
 | `-append`                        | `-a`       | bool             | false               | Appends into an existing USD file |
 | `-chaser`                        | `-chr`     | string(multi)    | none                | Specify the export chasers to execute as part of the export. See "Export Chasers" below. |
 | `-chaserArgs`                    | `-cha`     | string[3](multi) | none                | Pass argument names and values to export chasers. Each argument to `-chaserArgs` should be a triple of the form: (`<chaser name>`, `<argument name>`, `<argument value>`). See "Export Chasers" below. |
@@ -121,6 +122,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-defaultCameras`                | `-dc`      | noarg            | false               | Export the four Maya default cameras |
 | `-defaultMeshScheme`             | `-dms`     | string           | `catmullClark`      | Sets the default subdivision scheme for exported Maya meshes, if the `USD_subdivisionScheme` attribute is not present on the Mesh. Valid values are: `none`, `catmullClark`, `loop`, `bilinear` |
 | `-exportDisplayColor`            | `-dsp`     | bool             | false               | Export display color |
+| `-extraContext`                  | `-xc`      | string (multi)   | none                | Specifies an additional export context to handle. These usually contains extra schemas, primitives, and materials that are to be exported for a specific task, a target renderer for example. |
 | `-defaultUSDFormat`              | `-duf`     | string           | `usdc`              | The exported USD file format, can be `usdc` for binary format or `usda` for ASCII format. |
 | `-exportBlendShapes`             | `-ebs`     | bool             | false               | Enable or disable export of blend shapes |
 | `-exportCollectionBasedBindings` | `-cbb`     | bool             | false               | Enable or disable export of collection-based material assigments. If this option is enabled, export of material collections (`-mcs`) is also enabled, which causes collections representing sets of geometry with the same material binding to be exported. Materials are bound to the created collections on the prim at `materialCollectionsPath` (specfied via the `-mcp` option). Direct (or per-gprim) bindings are not authored when collection-based bindings are enabled. |

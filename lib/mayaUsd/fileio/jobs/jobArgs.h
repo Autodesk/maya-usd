@@ -53,6 +53,7 @@ TF_DECLARE_PUBLIC_TOKENS(
 // clang-format off
 #define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
+    (apiSchema) \
     (chaser) \
     (chaserArgs) \
     (compatibility) \
@@ -73,6 +74,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportSkin) \
     (exportUVs) \
     (exportVisibility) \
+    (extraContext) \
     (file) \
     (ignoreWarnings) \
     (kind) \
@@ -189,14 +191,16 @@ struct UsdMayaJobExportArgs
 
     /// This is the path of the USD prim under which *all* prims will be
     /// authored.
-    const SdfPath parentScope;
-    const TfToken renderLayerMode;
-    const TfToken rootKind;
-    const TfToken shadingMode;
-    const TfToken convertMaterialsTo;
-    const bool    verbose;
-    const bool    staticSingleSample;
-    const TfToken geomSidedness;
+    const SdfPath      parentScope;
+    const TfToken      renderLayerMode;
+    const TfToken      rootKind;
+    const TfToken      shadingMode;
+    const TfToken      convertMaterialsTo;
+    const bool         verbose;
+    const bool         staticSingleSample;
+    const TfToken      geomSidedness;
+    const TfToken::Set includeAPINames;
+    const TfToken::Set includeContextNames;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;

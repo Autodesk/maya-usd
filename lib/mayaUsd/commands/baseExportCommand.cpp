@@ -16,10 +16,12 @@
 //
 #include "baseExportCommand.h"
 
+#include <mayaUsd/fileio/exportContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 
+#include <pxr/base/tf/debug.h>
 #include <pxr/pxr.h>
 
 #include <maya/MArgDatabase.h>
@@ -67,6 +69,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kMaterialsScopeNameFlag,
         UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),
         MSyntax::kString);
+    syntax.addFlag(
+        kApiSchemaFlag, UsdMayaJobExportArgsTokens->apiSchema.GetText(), MSyntax::kString);
+    syntax.addFlag(
+        kExtraContextFlag, UsdMayaJobExportArgsTokens->extraContext.GetText(), MSyntax::kString);
     syntax.addFlag(
         kExportUVsFlag, UsdMayaJobExportArgsTokens->exportUVs.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
@@ -233,8 +239,29 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         }
 
         // Read all of the dictionary args first.
-        const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
+        VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
             argData, UsdMayaJobExportArgs::GetDefaultDictionary());
+
+        // Run all export context callbacks to get the final userArgs:
+        const TfToken& xcKey = UsdMayaJobExportArgsTokens->extraContext;
+        if (VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, xcKey)) {
+            std::vector<VtValue> vals = VtDictionaryGet<std::vector<VtValue>>(userArgs, xcKey);
+            for (const VtValue& v : vals) {
+                if (v.IsHolding<std::string>()) {
+                    const TfToken exportContext(v.UncheckedGet<std::string>());
+                    const UsdMayaExportContextRegistry::ContextInfo& ci
+                        = UsdMayaExportContextRegistry::GetExportContextInfo(exportContext);
+                    if (ci.enablerCallback) {
+                        ci.enablerCallback(userArgs);
+                    } else {
+                        MGlobal::displayWarning(
+                            TfStringPrintf(
+                                "Ignoring unknown export context '%s'.", exportContext.GetText())
+                                .c_str());
+                    }
+                }
+            }
+        }
 
         // Now read all of the other args that are specific to this command.
         bool        append = false;

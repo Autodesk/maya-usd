@@ -3,6 +3,7 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        exportContextRegistry.cpp
         fallbackPrimReader.cpp
         functorPrimReader.cpp
         functorPrimWriter.cpp
@@ -31,6 +32,7 @@ target_sources(${PROJECT_NAME}
 )
 
 set(HEADERS
+    exportContextRegistry.h
     fallbackPrimReader.h
     functorPrimReader.h
     functorPrimWriter.h

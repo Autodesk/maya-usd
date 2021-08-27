@@ -406,6 +406,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaJobExportArgsTokens->geomSidedness,
           UsdMayaJobExportArgsTokens->derived,
           { UsdMayaJobExportArgsTokens->single, UsdMayaJobExportArgsTokens->double_ }))
+    , includeAPINames(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->apiSchema))
+    , includeContextNames(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->extraContext))
     , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
     ,
@@ -450,8 +452,16 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportBlendShapes: " << TfStringify(exportArgs.exportBlendShapes) << std::endl
         << "exportVisibility: " << TfStringify(exportArgs.exportVisibility) << std::endl
         << "file: " << exportArgs.file << std::endl
-        << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl
-        << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
+        << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl;
+    out << "includeAPINames (" << exportArgs.includeAPINames.size() << ")" << std::endl;
+        for (const std::string& includeAPIName : exportArgs.includeAPINames) {
+            out << "    " << includeAPIName << std::endl;
+        }
+    out << "includeContextNames (" << exportArgs.includeContextNames.size() << ")" << std::endl;
+        for (const std::string& includeContextName : exportArgs.includeContextNames) {
+            out << "    " << includeContextName << std::endl;
+        }
+    out << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
         << "materialsScopeName: " << exportArgs.materialsScopeName << std::endl
         << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl
         << "normalizeNurbs: " << TfStringify(exportArgs.normalizeNurbs) << std::endl
@@ -559,6 +569,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
             = UsdMayaShadingModeTokens->useRegistry.GetString();
         d[UsdMayaJobExportArgsTokens->convertMaterialsTo]
             = UsdImagingTokens->UsdPreviewSurface.GetString();
+        d[UsdMayaJobExportArgsTokens->apiSchema] = std::vector<VtValue>();
+        d[UsdMayaJobExportArgsTokens->extraContext] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
