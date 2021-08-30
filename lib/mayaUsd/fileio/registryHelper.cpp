@@ -253,7 +253,7 @@ void UsdMaya_RegistryHelper::LoadExportContextPlugins()
                 if (!mayaPlugin.empty()) {
                     TF_DEBUG(PXRUSDMAYA_REGISTRY)
                         .Msg(
-                            "Found shading mode plugin %s: Loading via Maya API %s.\n",
+                            "Found export context plugin %s: Loading via Maya API %s.\n",
                             plug->GetName().c_str(),
                             mayaPlugin.c_str());
                     std::string loadPluginCmd
@@ -269,7 +269,7 @@ void UsdMaya_RegistryHelper::LoadExportContextPlugins()
                 } else {
                     TF_DEBUG(PXRUSDMAYA_REGISTRY)
                         .Msg(
-                            "Found shading mode plugin %s: Loading via USD API.\n",
+                            "Found export context plugin %s: Loading via USD API.\n",
                             plug->GetName().c_str());
                     plug->Load();
                 }

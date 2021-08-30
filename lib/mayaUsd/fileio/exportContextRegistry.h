@@ -82,13 +82,13 @@ public:
     /// All the information registered for a specific export context.
     struct ContextInfo
     {
-        TfToken   niceName;
-        TfToken   description;
-        EnablerFn enablerCallback;
+        std::string niceName;
+        std::string description;
+        EnablerFn   enablerCallback;
 
         ContextInfo() = default;
 
-        ContextInfo(TfToken nn, TfToken dsc, EnablerFn ef)
+        ContextInfo(const std::string& nn, const std::string& dsc, EnablerFn ef)
             : niceName(nn)
             , description(dsc)
             , enablerCallback(ef)
@@ -114,10 +114,10 @@ public:
     /// The \p enablerFct will be called after option parsing to enable context specific options.
     MAYAUSD_CORE_PUBLIC
     void RegisterExportContext(
-        const TfToken& exportContext,
-        const TfToken& niceName,
-        const TfToken& description,
-        EnablerFn      enablerFct);
+        const std::string& exportContext,
+        const std::string& niceName,
+        const std::string& description,
+        EnablerFn          enablerFct);
 
     MAYAUSD_CORE_PUBLIC
     static UsdMayaExportContextRegistry& GetInstance();
@@ -137,6 +137,15 @@ private:
         UsdMayaExportContextRegistry::GetInstance().RegisterExportContext( \
             name, niceName, description, enablerFct);                      \
     }
+
+#define REGISTER_EXPORT_CONTEXT_FCT(name, niceName, description, userArgsName) \
+    static bool _ExportContextEnabler_##name(VtDictionary&);                   \
+    TF_REGISTRY_FUNCTION(UsdMayaExportContextRegistry)                         \
+    {                                                                          \
+        UsdMayaExportContextRegistry::GetInstance().RegisterExportContext(     \
+            #name, niceName, description, &_ExportContextEnabler_##name);      \
+    }                                                                          \
+    bool _ExportContextEnabler_##name(VtDictionary& userArgsName)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

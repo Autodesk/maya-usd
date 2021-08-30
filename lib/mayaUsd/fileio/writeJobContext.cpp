@@ -619,6 +619,9 @@ UsdMayaWriteJobContext::CreateSchemaApiWriters(const UsdMayaPrimWriterSharedPtr&
     // TODO: Apply filtering based on export options and the SchemaAPI this writer supports. TBD.
     for (const auto& writerEntry : _FindSchemaApiWriters(mayaTypeName)) {
         UsdMayaSchemaApiWriterRegistry::WriterFactoryFn factoryFn = writerEntry.second;
+        if (mArgs.includeAPINames.find(TfToken(writerEntry.first)) == mArgs.includeAPINames.end()) {
+            continue;
+        }
         if (UsdMayaSchemaApiWriterSharedPtr schemaWriter = factoryFn(primWriter, *this)) {
             // We found a registered user schema API writer that handles this node
             // type, add it to the returned list.

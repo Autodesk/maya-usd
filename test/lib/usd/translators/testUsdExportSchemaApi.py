@@ -25,7 +25,7 @@ from pxr import Tf
 
 import fixturesUtils
 
-class testUsdExportMesh(unittest.TestCase):
+class testUsdExportSchemaApi(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -43,7 +43,7 @@ class testUsdExportMesh(unittest.TestCase):
 
         cmds.polySphere(r=1)
         usdFilePath = os.path.abspath('UsdExportSchemaApiTest.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath)
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, extraContext=["NullAPI",])
 
         self.assertFalse(mark.IsClean())
 
@@ -52,6 +52,7 @@ class testUsdExportMesh(unittest.TestCase):
         for e in errors:
             messages.add(e.commentary)
         expected = set([
+            "Missing implementation for NullAPIChaser::ExportDefault",
             "Missing implementation for TestSchemaExporter::Write",
             "Missing implementation for TestSchemaExporter::PostExport"])
         self.assertEqual(messages, expected)

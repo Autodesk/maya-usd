@@ -24,8 +24,8 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -35,21 +35,19 @@ using _ExportContextRegistry
 static _ExportContextRegistry _exportContextReg;
 
 void UsdMayaExportContextRegistry::RegisterExportContext(
-    const TfToken& exportContext,
-    const TfToken& niceName,
-    const TfToken& description,
-    EnablerFn      enablerFct)
+    const std::string& exportContext,
+    const std::string& niceName,
+    const std::string& description,
+    EnablerFn          enablerFct)
 {
-    TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering export context %s.\n", exportContext.GetText());
-
-    std::pair<_ExportContextRegistry::iterator, bool> insertStatus
-        = _exportContextReg.insert(_ExportContextRegistry::value_type(
-            exportContext, ContextInfo { niceName, description, enablerFct }));
+    TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering export context %s.\n", exportContext.c_str());
+    TfToken                                           key(exportContext);
+    std::pair<_ExportContextRegistry::iterator, bool> insertStatus = _exportContextReg.insert(
+        _ExportContextRegistry::value_type(key, ContextInfo { niceName, description, enablerFct }));
     if (insertStatus.second) {
-        UsdMaya_RegistryHelper::AddUnloader(
-            [exportContext]() { _exportContextReg.erase(exportContext); });
+        UsdMaya_RegistryHelper::AddUnloader([key]() { _exportContextReg.erase(key); });
     } else {
-        TF_CODING_ERROR("Multiple enablers for export context %s", exportContext.GetText());
+        TF_CODING_ERROR("Multiple enablers for export context %s", exportContext.c_str());
     }
 }
 

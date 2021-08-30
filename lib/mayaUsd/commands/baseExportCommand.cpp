@@ -71,8 +71,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         MSyntax::kString);
     syntax.addFlag(
         kApiSchemaFlag, UsdMayaJobExportArgsTokens->apiSchema.GetText(), MSyntax::kString);
+    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->apiSchema.GetText());
     syntax.addFlag(
         kExtraContextFlag, UsdMayaJobExportArgsTokens->extraContext.GetText(), MSyntax::kString);
+    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->extraContext.GetText());
     syntax.addFlag(
         kExportUVsFlag, UsdMayaJobExportArgsTokens->exportUVs.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
@@ -245,6 +247,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         // Run all export context callbacks to get the final userArgs:
         const TfToken& xcKey = UsdMayaJobExportArgsTokens->extraContext;
         if (VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, xcKey)) {
+            // Making a copy. Required because userArgs can be modified by callbacks.
             std::vector<VtValue> vals = VtDictionaryGet<std::vector<VtValue>>(userArgs, xcKey);
             for (const VtValue& v : vals) {
                 if (v.IsHolding<std::string>()) {

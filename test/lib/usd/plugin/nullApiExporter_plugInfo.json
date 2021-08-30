@@ -3,6 +3,7 @@
     {
       "Info": {
         "UsdMaya": {
+          "ExportContextPlugin": {},
           "SchemaApiWriter": {
             "providesTranslator": [
               "mesh"
