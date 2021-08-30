@@ -147,6 +147,9 @@ public:
         MDagPath&            dagPath) const override;
 
     MAYAUSD_CORE_PUBLIC
+    SdfPath GetScenePrimPath(const SdfPath& rprimId, int instanceIndex, HdInstancerContext* instancerContext = nullptr) const;
+
+    MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
     MAYAUSD_CORE_PUBLIC
@@ -197,9 +200,9 @@ private:
     /*! \brief  Hold all data related to the proxy shape.
 
         In addition to holding data read from the proxy shape, ProxyShapeData tracks when data read
-       from the proxy shape changes. For simple numeric types cache the last value read from
-       _proxyShape & compare to the current value. For complicated types we keep a version number of
-       the last value we read to make fast comparisons.
+        from the proxy shape changes. For simple numeric types cache the last value read from
+        _proxyShape & compare to the current value. For complicated types we keep a version number
+        of the last value we read to make fast comparisons.
     */
     class ProxyShapeData
     {

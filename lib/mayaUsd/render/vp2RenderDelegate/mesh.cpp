@@ -93,6 +93,8 @@ struct CommitState
     //! Color array to support per-instance color and selection highlight.
     MFloatArray _instanceColors;
 
+    MStringArray _ufeIdentifiers;
+
     //! If valid, new shader instance to set
     MHWRender::MShaderInstance* _shader { nullptr };
 
@@ -429,6 +431,14 @@ HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const Sdf
     _meshSharedData = std::make_shared<HdVP2MeshSharedData>();
     // HdChangeTracker::IsVarying() can check dirty bits to tell us if an object is animated or not.
     // Not sure if it is correct on file load
+
+    // Store a string version of the Cache Path to be used to tag MRenderItems. The CachePath is
+    // equivalent to the USD segment of the items full Ufe::Path.
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    _PrimSegmentString.append(
+        drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES).GetString().c_str());
+
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
     static std::once_flag initGPUComputeOnce;
     std::call_once(initGPUComputeOnce, _InitGPUCompute);
@@ -2037,7 +2047,8 @@ void HdVP2Mesh::_UpdateDrawItem(
                 unsigned char info = instanceInfo[i];
                 if (info == invalid)
                     continue;
-
+                stateToCommit._ufeIdentifiers.append(
+                    drawScene.GetScenePrimPath(GetId(), i).GetString().c_str());
                 transforms[i].Get(instanceMatrix.matrix);
                 stateToCommit._instanceTransforms.append(worldMatrix * instanceMatrix);
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
@@ -2292,6 +2303,11 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
 
         oldInstanceCount = newInstanceCount;
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+        if (stateToCommit._ufeIdentifiers.length() > 0) {
+            drawScene.setUfeIdentifiers(*renderItem, stateToCommit._ufeIdentifiers);
+        }
+#endif
     });
 
     // Reset dirty bits because we've prepared commit state for this render item.
@@ -2582,6 +2598,11 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
     MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
     selectionMask.addMask(MSelectionMask::kSelectMeshVerts);
     renderItem->setSelectionMask(selectionMask);
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
@@ -2613,6 +2634,11 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& nam
 #else
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 #endif
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
@@ -2635,6 +2661,11 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(const MString& n
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
@@ -2687,6 +2718,11 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
     renderItem->castsShadows(true);
     renderItem->receivesShadows(true);
     renderItem->setShader(_delegate->GetFallbackShader(kOpaqueGray));
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
@@ -2727,6 +2763,11 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask());
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
 
 #if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);

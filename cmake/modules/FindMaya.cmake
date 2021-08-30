@@ -16,7 +16,7 @@
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
 # MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
 # MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
-#
+# MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT Present of MRenderItem::setUfeIdentifier.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -371,14 +371,16 @@ if (MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFrameContext.h")
     endif()
 endif()
 
-set(MAYA_HAS_CRASH_DETECTION FALSE CACHE INTERNAL "isInCrashHandler")
-if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MGlobal.h")
-    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MGlobal.h MAYA_HAS_API REGEX "isInCrashHandler")
+set(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT FALSE CACHE INTERNAL "setUfeIdentifiers")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h MAYA_HAS_API REGEX "setUfeIdentifiers")
     if(MAYA_HAS_API)
-        set(MAYA_HAS_CRASH_DETECTION TRUE CACHE INTERNAL "isInCrashHandler")
-        message(STATUS "Maya has isInCrashHandler API")
+        set(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT TRUE CACHE INTERNAL "setUfeIdentifiers")
+        message(STATUS "Maya has setUfeIdentifiers API")
     endif()
 endif()
+
+
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE
