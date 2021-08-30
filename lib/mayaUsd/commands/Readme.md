@@ -439,6 +439,18 @@ names and annotations for various elements passed to the other commands.
 | `-importOptions`       | `-io`      | string         | Retrieve the a pair of names that completely define a shading mode, as used by the import `shadingMode` option |
 | `-importAnnotation`    | `-ia`      | string         | Retrieve the description of the import shading mode option |
 
+## `mayaUSDListIOContextsCommand`
+
+The purpose of this command is to find the names and annotations for registered import and export contexts.
+
+### Command Flags
+
+| Long flag              | Short flag | Type           | Description |
+| ---------------------- | ---------- | -------------- | ----------- |
+| `-export`              | `-ex`      | noarg          | Retrieve the list of export context nice names. |
+| `-exportOption`        | `-eo`      | noarg          | Retrieve the export option associated with a nice name. |
+| `-exportAnnotation`    | `-ea`      | string         | Retrieve the description of the export context option nice name passed as parameter. |
+
 
 ## `EditTargetCommand`
 

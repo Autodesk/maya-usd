@@ -16,6 +16,7 @@
 #include "ProxyShape.h"
 #include "adskExportCommand.h"
 #include "adskImportCommand.h"
+#include "adskListIOContextsCommand.h"
 #include "adskListShadingModesCommand.h"
 #include "adskStageLoadUnloadCommands.h"
 #include "base/api.h"
@@ -258,6 +259,7 @@ MStatus initializePlugin(MObject obj)
         MayaUsdProxyShapePlugin::getProxyShapeClassification());
     CHECK_MSTATUS(status);
 
+    registerCommandCheck<MayaUsd::ADSKMayaUSDListIOContextsCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDListShadingModesCommand>(plugin);
 
     status = UsdMayaUndoHelperCommand::initialize(plugin);
@@ -345,6 +347,7 @@ MStatus uninitializePlugin(MObject obj)
     }
 
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDListShadingModesCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ADSKMayaUSDListIOContextsCommand>(plugin);
 
 #if defined(WANT_QT_BUILD)
     status = MayaUsd::USDImportDialogCmd::finalize(plugin);

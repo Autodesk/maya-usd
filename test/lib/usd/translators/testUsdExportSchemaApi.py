@@ -57,6 +57,14 @@ class testUsdExportSchemaApi(unittest.TestCase):
             "Missing implementation for TestSchemaExporter::PostExport"])
         self.assertEqual(messages, expected)
 
+        modes = cmds.mayaUSDListIOContexts(export=True)
+        self.assertEqual(len(modes), 1)
+        self.assertEqual(modes[0], "Null API Export")
+
+        self.assertEqual(cmds.mayaUSDListIOContexts(exportOption="Null API Export"), "NullAPI")
+        self.assertEqual(cmds.mayaUSDListIOContexts(exportAnnotation="Null API Export"),
+                         "Exports an empty API for testing purpose")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
