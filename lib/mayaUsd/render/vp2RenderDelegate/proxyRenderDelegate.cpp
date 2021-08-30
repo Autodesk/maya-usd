@@ -566,13 +566,13 @@ void ProxyRenderDelegate::_InitRenderDelegate()
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 
-        // Set the _renderTagVersion and _visibilityVersion so that we don't trigger a 
+        // Set the _renderTagVersion and _visibilityVersion so that we don't trigger a
         // needlessly large update them on the first frame.
         HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
         _renderTagVersion = changeTracker.GetRenderTagVersion();
-    #ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
         _visibilityVersion = changeTracker.GetVisibilityChangeCount();
-    #endif
+#endif
 
         // Add additional configurations after render index creation.
         static std::once_flag reprsOnce;
@@ -1238,9 +1238,9 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         = rprimRenderTagChanged || (_visibilityVersion != changeTracker.GetVisibilityChangeCount());
 #endif
 
-    bool             renderPurposeChanged = false;
-    bool             proxyPurposeChanged = false;
-    bool             guidePurposeChanged = false;
+    bool renderPurposeChanged = false;
+    bool proxyPurposeChanged = false;
+    bool guidePurposeChanged = false;
     _proxyShapeData->UpdatePurpose(
         &renderPurposeChanged, &proxyPurposeChanged, &guidePurposeChanged);
     bool anyPurposeChanged = renderPurposeChanged || proxyPurposeChanged || guidePurposeChanged;
@@ -1248,7 +1248,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Update Purpose");
 
-        TfTokenVector    changedRenderTags;
+        TfTokenVector changedRenderTags;
 
         // Build the list of render tags which were added or removed (changed)
         // and the list of render tags which were removed.
@@ -1281,9 +1281,9 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // When an rprim has it's renderTag changed the global render tag version
     // id will change.
     if (rprimRenderTagChanged) {
-        // Sync every rprim, no matter what it's tag is. We don't know the tag(s) of 
-        // the rprim that changed, so the only way we can be sure to sync it is by 
-        // syncing everything. 
+        // Sync every rprim, no matter what it's tag is. We don't know the tag(s) of
+        // the rprim that changed, so the only way we can be sure to sync it is by
+        // syncing everything.
         TfTokenVector renderTags = { HdRenderTagTokens->geometry,
                                      HdRenderTagTokens->render,
                                      HdRenderTagTokens->proxy,
