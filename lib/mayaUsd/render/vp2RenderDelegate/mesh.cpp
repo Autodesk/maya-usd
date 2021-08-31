@@ -2518,7 +2518,8 @@ void HdVP2Mesh::_UpdatePrimvarSources(
                 // erase the unused primvar so we don't hold onto stale data
                 _meshSharedData->_primvarInfo.erase(pv.name);
             } else {
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name) || instancerDirty) {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)
+                    || instancerDirty) {
                     const VtValue value = sceneDelegate->Get(instancerId, pv.name);
                     updatePrimvarInfo(pv.name, value, HdInterpolationInstance);
                 }
