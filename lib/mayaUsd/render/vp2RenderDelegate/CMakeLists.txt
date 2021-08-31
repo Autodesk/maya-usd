@@ -16,18 +16,13 @@ target_sources(${PROJECT_NAME}
         render_delegate.cpp
         render_param.cpp
         sampler.cpp
-        selectability.cpp
         shader.cpp
         tokens.cpp
 )
 
 set(HEADERS
     proxyRenderDelegate.h
-    selectability.h
 )
-
-set(PLUGINFO
-    plugInfo.json)
 
 # -----------------------------------------------------------------------------
 # promote headers
@@ -43,8 +38,3 @@ install(FILES ${HEADERS}
 
 set(PYTHON_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME})
 install(FILES analyticMayaUsdPerformance.py DESTINATION ${PYTHON_INSTALL_PREFIX})
-
-install(FILES ${PLUGINFO}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUSD_RenderDelegate/resources
-)
-

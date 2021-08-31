@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HD_VP2_SELECTABILITY_H
-#define HD_VP2_SELECTABILITY_H
+#ifndef MAYAUSD_SELECTABILITY_H
+#define MAYAUSD_SELECTABILITY_H
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/prim.h>
@@ -58,4 +58,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HD_VP2_SELECTABILITY_H
+#endif // MAYAUSD_SELECTABILITY_H

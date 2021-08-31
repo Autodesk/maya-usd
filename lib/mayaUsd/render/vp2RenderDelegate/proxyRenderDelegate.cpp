@@ -17,12 +17,12 @@
 
 #include "mayaPrimCommon.h"
 #include "render_delegate.h"
-#include "selectability.h"
 #include "tokens.h"
 
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/selectability.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
