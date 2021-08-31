@@ -337,7 +337,9 @@ find_file(MAYA_OGSDEVICES_LIBRARY
     NO_CMAKE_SYSTEM_PATH
 )
 if (MAYA_OGSDEVICES_LIBRARY)
-    file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_2 REGEX "InitializeLightShader")
+    # Delaying the activation of Light API V2 until the shadow and SSAO issues are fixed. The
+    # update, to be found in a future PR, will contain this keyword, which is not present in 2022.1:
+    file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_2 REGEX "ConnectColorInFragments")
     if (HAS_LIGHTAPI_2)
         set(MAYA_LIGHTAPI_VERSION 2)
     endif()

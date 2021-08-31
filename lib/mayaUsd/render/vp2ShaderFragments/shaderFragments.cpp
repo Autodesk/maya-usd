@@ -34,10 +34,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// In a near future, light API v2 will be reactivated in an oncoming PR. Still allow going back to
+// light API V1 in case the results are different enough to cause a regression.
 TF_DEFINE_ENV_SETTING(
-    MAYAUSD_VP2_ENABLE_V2_LIGHTING_SHADER,
+    MAYAUSD_VP2_USE_V1_LIGHT_API,
     false,
-    "This env flag allows enabling the new shading code based on the V2 light API of Maya.");
+    "This env flag allows going back to the old shading code based on the V1 light API of Maya.");
 
 TF_DEFINE_PUBLIC_TOKENS(HdVP2ShaderFragmentsTokens, MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS);
 
@@ -359,11 +361,11 @@ MStatus HdVP2ShaderFragments::registerFragments()
     {
         const MString fragGraphName(HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText());
 #ifdef MAYA_LIGHTAPI_VERSION_2
-        const bool    useV2Lighting = TfGetEnvSetting(MAYAUSD_VP2_ENABLE_V2_LIGHTING_SHADER);
+        const bool    useV1Lighting = TfGetEnvSetting(MAYAUSD_VP2_USE_V1_LIGHT_API);
         const MString fragGraphFileName(
-            useV2Lighting ? _tokens->UsdPreviewSurfaceLightAPI2.GetText()
-                          : _tokens->UsdPreviewSurfaceLightAPI1.GetText());
-        MString shadingInfo = (useV2Lighting ? "Using V2 Lighting API" : "Using V1 Lighting API");
+            useV1Lighting ? _tokens->UsdPreviewSurfaceLightAPI1.GetText()
+                          : _tokens->UsdPreviewSurfaceLightAPI2.GetText());
+        MString shadingInfo = (useV1Lighting ? "Using V1 Lighting API" : "Using V2 Lighting API");
         shadingInfo += " for UsdPreviewSurface shading.";
         MGlobal::displayInfo(shadingInfo);
 #else
