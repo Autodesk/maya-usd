@@ -44,7 +44,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
     instances of a PointInstancer.
     """
 
-    selectabilityToken = "maya_selectability"
+    selectabilityToken = "mayaSelectability"
     onToken = "on"
     offToken = "off"
     inheritToken = "inherit"

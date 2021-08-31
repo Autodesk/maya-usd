@@ -38,7 +38,7 @@ from shiboken2 import wrapInstance
 
 class testVP2RenderDelegateSelectability(unittest.TestCase):
 
-    selectabilityToken = "maya_selectability"
+    selectabilityToken = "mayaSelectability"
     onToken = "on"
     offToken = "off"
     inheritToken = "inherit"

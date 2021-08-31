@@ -21,7 +21,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /*! \brief  The tokens used in the selectability metadata.
  */
-TfToken Selectability::MetadataToken("maya_selectability");
+TfToken Selectability::MetadataToken("mayaSelectability");
 TfToken Selectability::InheritToken("inherit");
 TfToken Selectability::OnToken("on");
 TfToken Selectability::OffToken("off");
@@ -99,7 +99,7 @@ Selectability::State Selectability::getLocalState(const UsdPrim& prim)
         return kInherit;
     } else {
         TF_WARN(
-            "Invalid token value for maya_selectability will be treated as inherit: %s",
+            "Invalid token value for maya selectability will be treated as inherit: %s",
             selectability.data());
         return kInherit;
     }
