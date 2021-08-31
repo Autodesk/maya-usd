@@ -147,7 +147,10 @@ public:
         MDagPath&            dagPath) const override;
 
     MAYAUSD_CORE_PUBLIC
-    SdfPath GetScenePrimPath(const SdfPath& rprimId, int instanceIndex, HdInstancerContext* instancerContext = nullptr) const;
+    SdfPath GetScenePrimPath(
+        const SdfPath&      rprimId,
+        int                 instanceIndex,
+        HdInstancerContext* instancerContext = nullptr) const;
 
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();

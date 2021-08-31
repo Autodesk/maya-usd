@@ -905,7 +905,11 @@ void ProxyRenderDelegate::updateSelectionGranularity(
 // This version works against all the older versions of USD we care about. Once those old
 // versions go away, and we only support USD_IMAGING_API_VERSION >= 14 then we can remove
 // this function.
-SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instanceIndex, HdInstancerContext* instancerContext) const {
+SdfPath ProxyRenderDelegate::GetScenePrimPath(
+    const SdfPath&      rprimId,
+    int                 instanceIndex,
+    HdInstancerContext* instancerContext) const
+{
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
 #elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
@@ -988,7 +992,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
 
     HdInstancerContext instancerContext;
-    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+    SdfPath            usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
 
     if (!instancerContext.empty()) {
         // Store the top-level instancer and instance index if the Rprim is the
