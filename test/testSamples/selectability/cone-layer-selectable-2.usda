@@ -1,0 +1,7 @@
+#usda 1.0
+(
+    subLayers = [
+        @./cone-layer-selectable-1.usda@
+    ]
+)
+

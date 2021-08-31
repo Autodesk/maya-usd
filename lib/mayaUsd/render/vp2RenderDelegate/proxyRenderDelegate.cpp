@@ -22,6 +22,7 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/selectability.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -896,6 +897,8 @@ void ProxyRenderDelegate::updateSelectionGranularity(
     const MDagPath&               path,
     MHWRender::MSelectionContext& selectionContext)
 {
+    Selectability::prepareForSelection();
+
     // The component level is coarse-grain, causing Maya to produce undesired face/edge selection
     // hits, as well as vertex selection hits that are required for point snapping. Switch to the
     // new vertex selection level if available in order to produce vertex selection hits only.
@@ -1034,6 +1037,12 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
+
+    // Enforce selectability metadata.
+    if (!Selectability::isSelectable(prim)) {
+        dagPath = MDagPath();
+        return true;
+    }
 
     // Resolve the selection based on the point instances pick mode.
     // Note that in all cases except for "Instances" when the picked
