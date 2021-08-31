@@ -905,10 +905,14 @@ void ProxyRenderDelegate::updateSelectionGranularity(
 // This version works against all the older versions of USD we care about. Once those old
 // versions go away, and we only support USD_IMAGING_API_VERSION >= 14 then we can remove
 // this function.
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
 SdfPath ProxyRenderDelegate::GetScenePrimPath(
     const SdfPath&      rprimId,
     int                 instanceIndex,
     HdInstancerContext* instancerContext) const
+#else
+SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instanceIndex) const
+#endif
 {
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
@@ -991,6 +995,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     SdfPath topLevelPath;
     int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
 
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     HdInstancerContext instancerContext;
     SdfPath            usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
 
@@ -1001,6 +1006,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelPath = instancerContext.front().first;
         topLevelInstanceIndex = instancerContext.front().second;
     }
+#else
+    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex);
+#endif
 
     // If update for selection is enabled, we can query the Maya selection list
     // adjustment, USD selection kind, and USD point instances pick mode once
