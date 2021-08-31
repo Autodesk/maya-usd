@@ -942,9 +942,18 @@ void HdVP2Mesh::Sync(
     _UpdateInstancer(delegate, dirtyBits);
 #endif
 
+    // if the instancer is dirty then any streams with instance interpolation need to be updated.
+    // We don't necessarily know if there ARE any streams with instance interpolation, so call
+    // _UpdatePrimvarSources to check.
+    bool instancerDirty
+        = ((*dirtyBits
+            & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyInstancer
+               | HdChangeTracker::DirtyInstanceIndex))
+           != 0);
+
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
-        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
+        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar) || instancerDirty) {
 
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
@@ -2498,12 +2507,19 @@ void HdVP2Mesh::_UpdatePrimvarSources(
     if (!instancerId.IsEmpty()) {
         HdPrimvarDescriptorVector instancerPrimvars
             = sceneDelegate->GetPrimvarDescriptors(instancerId, HdInterpolationInstance);
+        bool instancerDirty
+            = ((dirtyBits
+                & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyInstancer
+                   | HdChangeTracker::DirtyInstanceIndex))
+               != 0);
+
         for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
             if (std::find(begin, end, pv.name) == end) {
                 // erase the unused primvar so we don't hold onto stale data
                 _meshSharedData->_primvarInfo.erase(pv.name);
             } else {
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)) {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)
+                    || instancerDirty) {
                     const VtValue value = sceneDelegate->Get(instancerId, pv.name);
                     updatePrimvarInfo(pv.name, value, HdInterpolationInstance);
                 }
