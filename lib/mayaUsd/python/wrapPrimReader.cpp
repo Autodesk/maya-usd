@@ -63,7 +63,6 @@ public:
 
     virtual ~PrimReaderWrapper() 
     {
-//        UsdMayaPrimReaderRegistry::Unregister( _registredType );
     }
 
     bool Read(UsdMayaPrimReaderContext& context) override
@@ -94,7 +93,6 @@ public:
             type,
             [=](const UsdMayaPrimReaderArgs& args) {
                 auto sptr = std::make_shared<PrimReaderWrapper>(args);
-                sptr->_registredType = type;
                 TfPyLock pyLock;
                 boost::python::object instance = cl((uintptr_t)(PrimReaderWrapper*)sptr.get());
                 boost::python::incref(instance.ptr());
@@ -103,8 +101,6 @@ public:
             });
         UsdMaya_RegistryHelper::g_pythonRegistry = false;
     }
-
-    TfType _registredType;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -41,12 +41,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void ArchTest(void);
 
-ARCH_CONSTRUCTOR(ArchTest, TF_REGISTRY_PRIORITY);
-_ARCH_ENSURE_PER_LIB_INIT(Tf_RegistryStaticInit, _tfRegistryInit);
-
-void ArchTest(void)
-{}
-
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  boost python binding for the UsdMayaPrimWriter
 //----------------------------------------------------------------------------------------------------------------------
