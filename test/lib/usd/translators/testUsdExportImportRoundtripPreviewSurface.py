@@ -381,6 +381,9 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             self.assertTrue(surf_prim)
             surf_shade = UsdShade.Shader(surf_prim)
             self.assertTrue(surf_shade)
+            # useSpecularWorkflow is not exported anymore:
+            use_specular_workflow = surf_shade.GetInput("useSpecularWorkflow")
+            self.assertFalse(use_specular_workflow)
             opacity = surf_shade.GetInput("opacity")
             self.assertTrue(opacity)
             if (isinstance(val, float)):

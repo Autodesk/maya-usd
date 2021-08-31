@@ -1,0 +1,21 @@
+# plugInfo.json
+{
+    "Plugins": [
+        {
+            "Info": {
+                "SdfMetadata": {
+                    # Selectability controls Maya viewport selectability with the mouse.
+                    # It is enforced via the ProxyRenderDelegate via its getInstancedSelectionPath()
+                    # function.
+                    "mayaSelectability": {
+                        "type": "token",
+                        "appliesTo": "prims"
+                    }
+                }
+            },
+            "Name": "MayaUsdRenderMetadata",
+            "Type": "resource"
+        }
+    ]
+}
+

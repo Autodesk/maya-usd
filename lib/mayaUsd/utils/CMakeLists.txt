@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME}
         diagnosticDelegate.cpp
         query.cpp
         plugRegistryHelper.cpp
+        selectability.cpp
         stageCache.cpp
         undoHelperCommand
         util.cpp
@@ -23,15 +24,19 @@ set(HEADERS
     customLayerData.h
     converter.h
     diagnosticDelegate.h
+    hash.h
     query.h
     plugRegistryHelper.h
+    selectability.h
     stageCache.h
     undoHelperCommand.h
     util.h
     utilFileSystem.h
     utilSerialization.h
-    hash.h
 )
+
+set(PLUGINFO
+    plugInfo.json)
 
 # -----------------------------------------------------------------------------
 # promote headers
@@ -44,3 +49,8 @@ mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR utils)
 install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/utils/
 )
+
+install(FILES ${PLUGINFO}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_Utils/resources
+)
+
