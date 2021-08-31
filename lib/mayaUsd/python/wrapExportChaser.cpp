@@ -16,7 +16,6 @@
 
 #include <mayaUsd/fileio/chaser/exportChaser.h>
 #include <mayaUsd/fileio/chaser/exportChaserRegistry.h>
-
 #include <mayaUsd/fileio/registryHelper.h>
 
 #include <pxr/base/tf/makePyConstructor.h>
@@ -59,19 +58,24 @@ public:
     }
 
     bool default_ExportFrame(const UsdTimeCode& time) { return base_t::ExportFrame(time); }
-    bool ExportFrame(const UsdTimeCode& time) override { return this->CallVirtual<>("ExportFrame", &This::default_ExportFrame)(time); }
+    bool ExportFrame(const UsdTimeCode& time) override
+    {
+        return this->CallVirtual<>("ExportFrame", &This::default_ExportFrame)(time);
+    }
 
     bool default_PostExport() { return base_t::PostExport(); }
-    bool PostExport() override { return this->CallVirtual<>("PostExport", &This::default_PostExport)(); }
+    bool PostExport() override
+    {
+        return this->CallVirtual<>("PostExport", &This::default_PostExport)();
+    }
 
     static void Register(boost::python::object cl, const std::string& mayaTypeName)
     {
         UsdMaya_RegistryHelper::g_pythonRegistry = true;
         UsdMayaExportChaserRegistry::GetInstance().RegisterFactory(
-            mayaTypeName,
-            [=](const UsdMayaExportChaserRegistry::FactoryContext& contextArgName) {
-                auto chaser = new ExportChaserWrapper();
-                TfPyLock pyLock;
+            mayaTypeName, [=](const UsdMayaExportChaserRegistry::FactoryContext& contextArgName) {
+                auto                  chaser = new ExportChaserWrapper();
+                TfPyLock              pyLock;
                 boost::python::object instance = cl((uintptr_t)chaser);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), chaser);
@@ -89,12 +93,14 @@ void wrapExportChaser()
     boost::python::class_<ExportChaserWrapper, boost::noncopyable>(
         "ExportChaser", boost::python::no_init)
         .def("__init__", make_constructor(&ExportChaserWrapper::New))
-        .def("ExportDefault", &UsdMayaExportChaser::ExportDefault, &ExportChaserWrapper::ExportDefault)
+        .def(
+            "ExportDefault",
+            &UsdMayaExportChaser::ExportDefault,
+            &ExportChaserWrapper::ExportDefault)
         .def("ExportFrame", &UsdMayaExportChaser::ExportFrame, &ExportChaserWrapper::ExportFrame)
         .def(
             "Register",
             &ExportChaserWrapper::Register,
             (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
-        .staticmethod("Register")
-        ;
+        .staticmethod("Register");
 }

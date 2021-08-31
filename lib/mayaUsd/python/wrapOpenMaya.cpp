@@ -19,11 +19,11 @@
 #undef OPENMAYA_PRIVATE
 #define OPENMAYA_PRIVATE public
 
-#include <maya/MPlug.h>
-#include <maya/MDagPath.h>
-#include <maya/MDGModifier.h>
-
 #include <pxr/usd/usdGeom/camera.h>
+
+#include <maya/MDGModifier.h>
+#include <maya/MDagPath.h>
+#include <maya/MPlug.h>
 
 #include <boost/python.hpp>
 #include <boost/python/args.hpp>
@@ -33,9 +33,9 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-    // Required because MObject::classname does not exists
-    template <class MayaClass> const char* classname() { return MayaClass::className(); }
-    template <>                const char* classname<MObject>() { return "MObject"; }
+// Required because MObject::classname does not exists
+template <class MayaClass> const char* classname() { return MayaClass::className(); }
+template <> const char*                classname<MObject>() { return "MObject"; }
 
 /* Should be detectable detecting maya_useNewAPI in plugin
 
@@ -45,64 +45,63 @@ def maya_useNewAPI():
 */
 
 #ifdef PYTHON_API_V1
-    typedef void *(*swig_converter_func)(void *, int *);
-    typedef struct swig_type_info *(*swig_dycast_func)(void **);
-    typedef struct {
-        PyObject_HEAD
-        void *ptr;
-        swig_type_info *ty;
-        int own;
-        PyObject *next;
-        PyObject *dict;
-    } SwigPyObject;
+typedef void* (*swig_converter_func)(void*, int*);
+typedef struct swig_type_info* (*swig_dycast_func)(void**);
+typedef struct
+{
+    PyObject_HEAD void* ptr;
+    swig_type_info*     ty;
+    int                 own;
+    PyObject*           next;
+    PyObject*           dict;
+} SwigPyObject;
 
-    template <class MayaClass>
-    struct MayaClassConverter
+template <class MayaClass> struct MayaClassConverter
+{
+    // to-python conversion of const MayaClass.
+    static PyObject* convert(const MayaClass& object)
     {
-        // to-python conversion of const MayaClass.
-        static PyObject* convert(const MayaClass& object)
-        {
-            TfPyLock lock;
-            boost::python::object classInstance = boost::python::import("maya.OpenMaya").attr(classname<MayaClass>())();
-            boost::python::object theSwigObject = classInstance.attr("this");
-            SwigPyObject* theSwigPyObject = (SwigPyObject*)theSwigObject.ptr();
-            *((MayaClass*)(theSwigPyObject->ptr)) = object;
-            return boost::python::incref(classInstance.ptr());
-        }
-    };
+        TfPyLock              lock;
+        boost::python::object classInstance
+            = boost::python::import("maya.OpenMaya").attr(classname<MayaClass>())();
+        boost::python::object theSwigObject = classInstance.attr("this");
+        SwigPyObject*         theSwigPyObject = (SwigPyObject*)theSwigObject.ptr();
+        *((MayaClass*)(theSwigPyObject->ptr)) = object;
+        return boost::python::incref(classInstance.ptr());
+    }
+};
 #else
-    enum MPyObjectLifetimeMode
-    {
-        kNone,
-        kOwned,
-        kShared,
-        kWeak
-    };
+enum MPyObjectLifetimeMode
+{
+    kNone,
+    kOwned,
+    kShared,
+    kWeak
+};
 
-    template <class M>
-    struct MPyObject : public PyObject
-    {
-    public:
-        typedef M MayaType;
-        M* fPtr;
-        MPyObjectLifetimeMode fLifetime;
-    };
+template <class M> struct MPyObject : public PyObject
+{
+public:
+    typedef M             MayaType;
+    M*                    fPtr;
+    MPyObjectLifetimeMode fLifetime;
+};
 
-    template <class MayaClass>
-    struct MayaClassConverter
+template <class MayaClass> struct MayaClassConverter
+{
+    // to-python conversion of const MayaClass.
+    static PyObject* convert(const MayaClass& object)
     {
-        // to-python conversion of const MayaClass.
-        static PyObject* convert(const MayaClass& object)
-        {
-            TfPyLock lock;
-            boost::python::object classInstance = boost::python::import("maya.api.OpenMaya").attr(classname<MayaClass>())();
-            MPyObject<MayaClass>* thePyObject = (MPyObject<MayaClass>*)classInstance.ptr();
-            *((MayaClass*)(thePyObject->fPtr)) = object;
-            return boost::python::incref(classInstance.ptr());
-        }
-    };
+        TfPyLock              lock;
+        boost::python::object classInstance
+            = boost::python::import("maya.api.OpenMaya").attr(classname<MayaClass>())();
+        MPyObject<MayaClass>* thePyObject = (MPyObject<MayaClass>*)classInstance.ptr();
+        *((MayaClass*)(thePyObject->fPtr)) = object;
+        return boost::python::incref(classInstance.ptr());
+    }
+};
 #endif
-}
+} // namespace
 
 void wrapOpenMaya()
 {

@@ -283,7 +283,7 @@ VtDictionary UsdMaya_RegistryHelper::GetComposedInfoDictionary(const std::vector
 /* static */
 void UsdMaya_RegistryHelper::AddUnloader(const std::function<void()>& func)
 {
-    if(g_pythonRegistry)
+    if (g_pythonRegistry)
         return;
 
     if (TfRegistryManager::GetInstance().AddFunctionForUnload(func)) {

@@ -16,7 +16,6 @@
 
 #include <mayaUsd/fileio/chaser/importChaser.h>
 #include <mayaUsd/fileio/chaser/importChaserRegistry.h>
-
 #include <mayaUsd/fileio/registryHelper.h>
 
 #include <pxr/base/tf/makePyConstructor.h>
@@ -55,25 +54,18 @@ public:
     virtual ~ImportChaserWrapper() { }
 
     bool default_Redo() { return base_t::Redo(); }
-    bool Redo() override
-    {
-        return this->CallVirtual<>("Redo", &This::default_Redo)();
-    }
+    bool Redo() override { return this->CallVirtual<>("Redo", &This::default_Redo)(); }
 
     bool default_Undo() { return base_t::Undo(); }
-    bool Undo() override
-    {
-        return this->CallVirtual<>("Undo", &This::default_Undo)();
-    }
+    bool Undo() override { return this->CallVirtual<>("Undo", &This::default_Undo)(); }
 
     static void Register(boost::python::object cl, const char* name)
     {
         UsdMaya_RegistryHelper::g_pythonRegistry = true;
         UsdMayaImportChaserRegistry::GetInstance().RegisterFactory(
-            name,
-            [=](const UsdMayaImportChaserRegistry::FactoryContext& context) {
-                auto chaser = new ImportChaserWrapper();
-                TfPyLock pyLock;
+            name, [=](const UsdMayaImportChaserRegistry::FactoryContext& context) {
+                auto                  chaser = new ImportChaserWrapper();
+                TfPyLock              pyLock;
                 boost::python::object instance = cl((uintptr_t)(ImportChaserWrapper*)chaser);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), chaser);
@@ -97,6 +89,5 @@ void wrapImportChaser()
             "Register",
             &ImportChaserWrapper::Register,
             (boost::python::arg("class"), boost::python::arg("type")))
-        .staticmethod("Register")
-        ;
+        .staticmethod("Register");
 }
