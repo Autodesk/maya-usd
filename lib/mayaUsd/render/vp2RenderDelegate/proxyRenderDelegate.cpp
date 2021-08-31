@@ -908,6 +908,50 @@ void ProxyRenderDelegate::updateSelectionGranularity(
     }
 }
 
+// Resolves an rprimId and instanceIndex back to the original USD gprim and instance index.
+// see UsdImagingDelegate::GetScenePrimPath.
+// This version works against all the older versions of USD we care about. Once those old
+// versions go away, and we only support USD_IMAGING_API_VERSION >= 14 then we can remove
+// this function.
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+SdfPath ProxyRenderDelegate::GetScenePrimPath(
+    const SdfPath&      rprimId,
+    int                 instanceIndex,
+    HdInstancerContext* instancerContext) const
+#else
+SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instanceIndex) const
+#endif
+{
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
+#else
+    SdfPath indexPath;
+    if (drawInstID > 0) {
+        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, instanceIndex, nullptr);
+    } else {
+        indexPath = rprimId;
+    }
+
+    SdfPath usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
+
+    // Examine the USD path. If it is not a valid prim path, the selection hit is from a single
+    // instance Rprim and indexPath is actually its instancer Rprim id. In this case we should
+    // call GetPathForInstanceIndex() using 0 as the instance index.
+    if (!usdPath.IsPrimPath()) {
+        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, 0, nullptr);
+        usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
+    }
+
+    // The "Instances" point instances pick mode is not supported for
+    // USD_IMAGING_API_VERSION < 14 (core USD versions earlier than 20.08), so
+    // no using instancerContext here.
+#endif
+
+    return usdPath;
+}
+
 //! \brief  Selection for both instanced and non-instanced cases.
 bool ProxyRenderDelegate::getInstancedSelectionPath(
     const MHWRender::MRenderItem&   renderItem,
@@ -961,7 +1005,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     HdInstancerContext instancerContext;
-    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+    SdfPath            usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
 
     if (!instancerContext.empty()) {
         // Store the top-level instancer and instance index if the Rprim is the
@@ -970,29 +1014,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelPath = instancerContext.front().first;
         topLevelInstanceIndex = instancerContext.front().second;
     }
-#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
-    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
 #else
-    SdfPath indexPath;
-    if (drawInstID > 0) {
-        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, instanceIndex, nullptr);
-    } else {
-        indexPath = rprimId;
-    }
-
-    SdfPath usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
-
-    // Examine the USD path. If it is not a valid prim path, the selection hit is from a single
-    // instance Rprim and indexPath is actually its instancer Rprim id. In this case we should
-    // call GetPathForInstanceIndex() using 0 as the instance index.
-    if (!usdPath.IsPrimPath()) {
-        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, 0, nullptr);
-        usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
-    }
-
-    // The "Instances" point instances pick mode is not supported for
-    // USD_IMAGING_API_VERSION < 14 (core USD versions earlier than 20.08), so
-    // no setting of topLevelPath or topLevelInstanceIndex here.
+    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex);
 #endif
 
     // If update for selection is enabled, we can query the Maya selection list
