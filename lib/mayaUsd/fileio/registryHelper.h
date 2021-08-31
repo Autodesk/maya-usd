@@ -16,6 +16,8 @@
 #ifndef PXRUSDMAYA_REGISTRYHELPER_H
 #define PXRUSDMAYA_REGISTRYHELPER_H
 
+#include <mayaUsd/base/api.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/pxr.h>
@@ -74,6 +76,10 @@ struct UsdMaya_RegistryHelper
     static VtDictionary GetComposedInfoDictionary(const std::vector<TfToken>& scope);
 
     static void AddUnloader(const std::function<void()>& func);
+
+    // Temporary flag avoid errors when doing Python registry
+    MAYAUSD_CORE_PUBLIC
+    static bool g_pythonRegistry;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

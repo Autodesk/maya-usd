@@ -157,6 +157,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     const UsdPrim& GetUsdPrim() const;
 
+    /// Sets the destination USD prim to which we are writing.
+    MAYAUSD_CORE_PUBLIC
+    void SetUsdPrim(UsdPrim& usdPrim);
+
     /// Gets the USD stage that we're writing to.
     MAYAUSD_CORE_PUBLIC
     const UsdStageRefPtr& GetUsdStage() const;

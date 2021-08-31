@@ -283,6 +283,9 @@ VtDictionary UsdMaya_RegistryHelper::GetComposedInfoDictionary(const std::vector
 /* static */
 void UsdMaya_RegistryHelper::AddUnloader(const std::function<void()>& func)
 {
+    if(g_pythonRegistry)
+        return;
+
     if (TfRegistryManager::GetInstance().AddFunctionForUnload(func)) {
         // It is likely that the registering plugin library is opened/closed
         // by Maya and not via TfDlopen/TfDlclose. This means that the
@@ -294,5 +297,7 @@ void UsdMaya_RegistryHelper::AddUnloader(const std::function<void()>& func)
                         "outside a TF_REGISTRY_FUNCTION block?)");
     }
 }
+
+bool UsdMaya_RegistryHelper::g_pythonRegistry = false;
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,4 +36,15 @@ TF_WRAP_MODULE
     TF_WRAP(UserTaggedAttribute);
     TF_WRAP(WriteUtil);
     TF_WRAP(XformStack);
+
+    TF_WRAP(OpenMaya);
+    TF_WRAP(PrimReaderContext);
+    TF_WRAP(PrimReaderArgs);
+    TF_WRAP(PrimReader);
+    TF_WRAP(JobExportArgs);
+    TF_WRAP(PrimWriter);
+    TF_WRAP(ShaderWriter);
+    TF_WRAP(ShaderReader);
+    TF_WRAP(ExportChaser);
+    TF_WRAP(ImportChaser);
 }
