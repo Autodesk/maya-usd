@@ -222,6 +222,12 @@ void wrapPrimReaderContext()
         .def("SetTimeSampleMultiplier", &UsdMayaPrimReaderContext::SetTimeSampleMultiplier);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+void wrapJobImportArgs()
+{
+    boost::python::class_<UsdMayaJobImportArgs>("JobImportArgs", boost::python::no_init);
+}
+
 void wrapPrimReaderArgs()
 {
     boost::python::class_<UsdMayaPrimReaderArgs>("PrimReaderArgs", boost::python::no_init)

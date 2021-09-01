@@ -42,6 +42,7 @@ TF_WRAP_MODULE
     TF_WRAP(PrimReaderArgs);
     TF_WRAP(PrimReader);
     TF_WRAP(JobExportArgs);
+    TF_WRAP(JobImportArgs);
     TF_WRAP(PrimWriter);
     TF_WRAP(ShaderWriter);
     TF_WRAP(ShaderReader);

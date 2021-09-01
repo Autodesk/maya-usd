@@ -23,6 +23,7 @@
 
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MPlug.h>
 
 #include <boost/python.hpp>
@@ -107,6 +108,7 @@ void wrapOpenMaya()
 {
     boost::python::to_python_converter<MObject, MayaClassConverter<MObject>>();
     boost::python::to_python_converter<MDagPath, MayaClassConverter<MDagPath>>();
+    boost::python::to_python_converter<MDagPathArray, MayaClassConverter<MDagPathArray>>();
     boost::python::to_python_converter<MPlug, MayaClassConverter<MPlug>>();
     boost::python::to_python_converter<MDGModifier, MayaClassConverter<MDGModifier>>();
 }

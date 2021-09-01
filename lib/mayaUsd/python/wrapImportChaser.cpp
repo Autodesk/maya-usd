@@ -53,6 +53,26 @@ public:
 
     virtual ~ImportChaserWrapper() { }
 
+    bool default_PostImport(
+        Usd_PrimFlagsPredicate&     returnPredicate,
+        const UsdStagePtr&          stage,
+        const MDagPathArray&        dagPaths,
+        const SdfPathVector&        sdfPaths,
+        const UsdMayaJobImportArgs& jobArgs)
+    {
+        return base_t::PostImport(returnPredicate, stage, dagPaths, sdfPaths, jobArgs);
+    }
+    bool PostImport(
+        Usd_PrimFlagsPredicate&     returnPredicate,
+        const UsdStagePtr&          stage,
+        const MDagPathArray&        dagPaths,
+        const SdfPathVector&        sdfPaths,
+        const UsdMayaJobImportArgs& jobArgs) override
+    {
+        return this->CallVirtual<bool>("PostImport", &This::default_PostImport)(
+            returnPredicate, stage, dagPaths, sdfPaths, jobArgs);
+    }
+
     bool default_Redo() { return base_t::Redo(); }
     bool Redo() override { return this->CallVirtual<>("Redo", &This::default_Redo)(); }
 
@@ -83,8 +103,12 @@ void wrapImportChaser()
     boost::python::class_<ImportChaserWrapper, boost::noncopyable>(
         "ImportChaser", boost::python::no_init)
         .def("__init__", make_constructor(&ImportChaserWrapper::New))
-        .def("Redo", &UsdMayaImportChaser::Redo, &ImportChaserWrapper::Redo)
-        .def("Undo", &UsdMayaImportChaser::Undo, &ImportChaserWrapper::Undo)
+        .def(
+            "PostImport",
+            &ImportChaserWrapper::PostImport,
+            &ImportChaserWrapper::default_PostImport)
+        .def("Redo", &ImportChaserWrapper::Redo, &ImportChaserWrapper::default_Redo)
+        .def("Undo", &ImportChaserWrapper::Undo, &ImportChaserWrapper::default_Undo)
         .def(
             "Register",
             &ImportChaserWrapper::Register,

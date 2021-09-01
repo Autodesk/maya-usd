@@ -95,9 +95,16 @@ void wrapExportChaser()
         .def("__init__", make_constructor(&ExportChaserWrapper::New))
         .def(
             "ExportDefault",
-            &UsdMayaExportChaser::ExportDefault,
-            &ExportChaserWrapper::ExportDefault)
-        .def("ExportFrame", &UsdMayaExportChaser::ExportFrame, &ExportChaserWrapper::ExportFrame)
+            &ExportChaserWrapper::ExportDefault,
+            &ExportChaserWrapper::default_ExportDefault)
+        .def(
+            "ExportFrame",
+            &ExportChaserWrapper::ExportFrame,
+            &ExportChaserWrapper::default_ExportFrame)
+        .def(
+            "PostExport",
+            &ExportChaserWrapper::PostExport,
+            &ExportChaserWrapper::default_PostExport)
         .def(
             "Register",
             &ExportChaserWrapper::Register,
