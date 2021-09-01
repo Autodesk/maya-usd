@@ -39,7 +39,7 @@ struct UsdMayaTranslatorRfMLight
     ///
     /// Returns true if this succeeds in creating a RenderMan for Maya light.
     MAYAUSD_CORE_PUBLIC
-    static bool Read(const UsdMayaPrimReaderArgs& args, UsdMayaPrimReaderContext* context);
+    static bool Read(const UsdMayaPrimReaderArgs& args, UsdMayaPrimReaderContext& context);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

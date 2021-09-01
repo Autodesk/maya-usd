@@ -22,6 +22,7 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/selectability.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -566,6 +567,14 @@ void ProxyRenderDelegate::_InitRenderDelegate()
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 
+        // Set the _renderTagVersion and _visibilityVersion so that we don't trigger a
+        // needlessly large update them on the first frame.
+        HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+        _renderTagVersion = changeTracker.GetRenderTagVersion();
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+        _visibilityVersion = changeTracker.GetVisibilityChangeCount();
+#endif
+
         // Add additional configurations after render index creation.
         static std::once_flag reprsOnce;
         std::call_once(reprsOnce, _ConfigureReprs);
@@ -888,6 +897,8 @@ void ProxyRenderDelegate::updateSelectionGranularity(
     const MDagPath&               path,
     MHWRender::MSelectionContext& selectionContext)
 {
+    Selectability::prepareForSelection();
+
     // The component level is coarse-grain, causing Maya to produce undesired face/edge selection
     // hits, as well as vertex selection hits that are required for point snapping. Switch to the
     // new vertex selection level if available in order to produce vertex selection hits only.
@@ -898,6 +909,50 @@ void ProxyRenderDelegate::updateSelectionGranularity(
         selectionContext.setSelectionLevel(MHWRender::MSelectionContext::kComponent);
 #endif
     }
+}
+
+// Resolves an rprimId and instanceIndex back to the original USD gprim and instance index.
+// see UsdImagingDelegate::GetScenePrimPath.
+// This version works against all the older versions of USD we care about. Once those old
+// versions go away, and we only support USD_IMAGING_API_VERSION >= 14 then we can remove
+// this function.
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+SdfPath ProxyRenderDelegate::GetScenePrimPath(
+    const SdfPath&      rprimId,
+    int                 instanceIndex,
+    HdInstancerContext* instancerContext) const
+#else
+SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instanceIndex) const
+#endif
+{
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
+#else
+    SdfPath indexPath;
+    if (drawInstID > 0) {
+        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, instanceIndex, nullptr);
+    } else {
+        indexPath = rprimId;
+    }
+
+    SdfPath usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
+
+    // Examine the USD path. If it is not a valid prim path, the selection hit is from a single
+    // instance Rprim and indexPath is actually its instancer Rprim id. In this case we should
+    // call GetPathForInstanceIndex() using 0 as the instance index.
+    if (!usdPath.IsPrimPath()) {
+        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, 0, nullptr);
+        usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
+    }
+
+    // The "Instances" point instances pick mode is not supported for
+    // USD_IMAGING_API_VERSION < 14 (core USD versions earlier than 20.08), so
+    // no using instancerContext here.
+#endif
+
+    return usdPath;
 }
 
 //! \brief  Selection for both instanced and non-instanced cases.
@@ -953,7 +1008,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     HdInstancerContext instancerContext;
-    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+    SdfPath            usdPath = GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
 
     if (!instancerContext.empty()) {
         // Store the top-level instancer and instance index if the Rprim is the
@@ -962,29 +1017,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelPath = instancerContext.front().first;
         topLevelInstanceIndex = instancerContext.front().second;
     }
-#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
-    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
 #else
-    SdfPath indexPath;
-    if (drawInstID > 0) {
-        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, instanceIndex, nullptr);
-    } else {
-        indexPath = rprimId;
-    }
-
-    SdfPath usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
-
-    // Examine the USD path. If it is not a valid prim path, the selection hit is from a single
-    // instance Rprim and indexPath is actually its instancer Rprim id. In this case we should
-    // call GetPathForInstanceIndex() using 0 as the instance index.
-    if (!usdPath.IsPrimPath()) {
-        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, 0, nullptr);
-        usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
-    }
-
-    // The "Instances" point instances pick mode is not supported for
-    // USD_IMAGING_API_VERSION < 14 (core USD versions earlier than 20.08), so
-    // no setting of topLevelPath or topLevelInstanceIndex here.
+    SdfPath usdPath = GetScenePrimPath(rprimId, instanceIndex);
 #endif
 
     // If update for selection is enabled, we can query the Maya selection list
@@ -1003,6 +1037,12 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
     UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
     const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
+
+    // Enforce selectability metadata.
+    if (!Selectability::isSelectable(prim)) {
+        dagPath = MDagPath();
+        return true;
+    }
 
     // Resolve the selection based on the point instances pick mode.
     // Note that in all cases except for "Instances" when the picked
@@ -1219,15 +1259,28 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // marked dirty. This will ensure the upcoming execute call will update
     // the visibility of the MRenderItems in MPxSubSceneOverride.
     HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-    bool             renderPurposeChanged = false;
-    bool             proxyPurposeChanged = false;
-    bool             guidePurposeChanged = false;
-    TfTokenVector    changedRenderTags;
+
+    // The renderTagsVersion increments when the render tags on an rprim are marked dirty,
+    // or when the global render tags are set. Check to see if the render tags version has
+    // changed since the last time we set the render tags so we know if there is a change
+    // to an individual rprim or not.
+    bool rprimRenderTagChanged = (_renderTagVersion != changeTracker.GetRenderTagVersion());
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+    rprimRenderTagChanged
+        = rprimRenderTagChanged || (_visibilityVersion != changeTracker.GetVisibilityChangeCount());
+#endif
+
+    bool renderPurposeChanged = false;
+    bool proxyPurposeChanged = false;
+    bool guidePurposeChanged = false;
     _proxyShapeData->UpdatePurpose(
         &renderPurposeChanged, &proxyPurposeChanged, &guidePurposeChanged);
-    if (renderPurposeChanged || proxyPurposeChanged || guidePurposeChanged) {
+    bool anyPurposeChanged = renderPurposeChanged || proxyPurposeChanged || guidePurposeChanged;
+    if (anyPurposeChanged) {
         MProfilingScope subProfilingScope(
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Update Purpose");
+
+        TfTokenVector changedRenderTags;
 
         // Build the list of render tags which were added or removed (changed)
         // and the list of render tags which were removed.
@@ -1245,19 +1298,12 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         SdfPathVector rprimsToDirty = _GetFilteredRprims(*_defaultCollection, changedRenderTags);
 
         for (auto& id : rprimsToDirty) {
+            // this call to MarkRprimDirty will increment the change tracker render
+            // tag version. We don't want this to cause rprimRenderTagChanged to be
+            // true when a tag hasn't actually changed.
             changeTracker.MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
         }
     }
-
-    // The renderTagsVersion increments when the render tags on an rprim changes, or when the
-    // global render tags are set. Check to see if the render tags version has changed since
-    // the last time we set the render tags so we know if there is a change to an individual
-    // rprim or not.
-    bool rprimRenderTagChanged = (_renderTagVersion != changeTracker.GetRenderTagVersion());
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    rprimRenderTagChanged
-        = rprimRenderTagChanged || (_visibilityVersion != changeTracker.GetVisibilityChangeCount());
-#endif
 
     // Vp2RenderDelegate implements render tags as a per-render item setting.
     // To handle cases when an rprim changes from a displayed tag to a hidden tag
@@ -1267,29 +1313,37 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // When an rprim has it's renderTag changed the global render tag version
     // id will change.
     if (rprimRenderTagChanged) {
-        TfTokenVector renderTags
-            = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
-        renderTags.insert(renderTags.end(), changedRenderTags.begin(), changedRenderTags.end());
+        // Sync every rprim, no matter what it's tag is. We don't know the tag(s) of
+        // the rprim that changed, so the only way we can be sure to sync it is by
+        // syncing everything.
+        TfTokenVector renderTags = { HdRenderTagTokens->geometry,
+                                     HdRenderTagTokens->render,
+                                     HdRenderTagTokens->proxy,
+                                     HdRenderTagTokens->guide };
         _taskController->SetRenderTags(renderTags);
         _taskRenderTagsValid = false;
     }
     // When the render tag on an rprim changes we do a pass over all rprims to update
     // their visibility. The frame after we do the pass over all the tags, set the tags back to
     // the minimum set of tags.
-    else if (!_taskRenderTagsValid) {
+    else if (anyPurposeChanged || !_taskRenderTagsValid) {
         TfTokenVector renderTags
             = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
-        if (_proxyShapeData->DrawRenderPurpose()) {
+        if (_proxyShapeData->DrawRenderPurpose() || renderPurposeChanged) {
             renderTags.push_back(HdRenderTagTokens->render);
         }
-        if (_proxyShapeData->DrawProxyPurpose()) {
+        if (_proxyShapeData->DrawProxyPurpose() || proxyPurposeChanged) {
             renderTags.push_back(HdRenderTagTokens->proxy);
         }
-        if (_proxyShapeData->DrawGuidePurpose()) {
+        if (_proxyShapeData->DrawGuidePurpose() || guidePurposeChanged) {
             renderTags.push_back(HdRenderTagTokens->guide);
         }
         _taskController->SetRenderTags(renderTags);
-        _taskRenderTagsValid = true;
+        // if the changedRenderTags is not empty then we could have some tags
+        // in the _taskController just so that we get one sync to hide the render
+        // items. In that case we need to leave _taskRenderTagsValid false, so that
+        // we get a chance to remove that tag next frame.
+        _taskRenderTagsValid = !anyPurposeChanged;
     }
 
     // TODO: UsdImagingDelegate is purpose-aware. There are methods

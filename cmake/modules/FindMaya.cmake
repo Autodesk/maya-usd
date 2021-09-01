@@ -16,7 +16,7 @@
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
 # MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
 # MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
-#
+# MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT Present of MRenderItem::setUfeIdentifier.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -337,7 +337,9 @@ find_file(MAYA_OGSDEVICES_LIBRARY
     NO_CMAKE_SYSTEM_PATH
 )
 if (MAYA_OGSDEVICES_LIBRARY)
-    file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_2 REGEX "InitializeLightShader")
+    # Delaying the activation of Light API V2 until the shadow and SSAO issues are fixed. The
+    # update, to be found in a future PR, will contain this keyword, which is not present in 2022.1:
+    file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_2 REGEX "ConnectColorInFragments")
     if (HAS_LIGHTAPI_2)
         set(MAYA_LIGHTAPI_VERSION 2)
     endif()
@@ -379,6 +381,17 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MGlobal.h")
         message(STATUS "Maya has isInCrashHandler API")
     endif()
 endif()
+
+set(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT FALSE CACHE INTERNAL "setUfeIdentifiers")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h MAYA_HAS_API REGEX "setUfeIdentifiers")
+    if(MAYA_HAS_API)
+        set(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT TRUE CACHE INTERNAL "setUfeIdentifiers")
+        message(STATUS "Maya has setUfeIdentifiers API")
+    endif()
+endif()
+
+
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE

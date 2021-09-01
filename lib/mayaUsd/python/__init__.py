@@ -1,4 +1,8 @@
-from . import _mayaUsd
 from pxr import Tf
-Tf.PrepareModule(_mayaUsd, locals())
-del _mayaUsd, Tf
+if hasattr(Tf, 'PreparePythonModule'):
+    Tf.PreparePythonModule('_mayaUsd')
+else:
+    from . import _mayaUsd
+    Tf.PrepareModule(_mayaUsd, locals())
+    del _mayaUsd
+del Tf
