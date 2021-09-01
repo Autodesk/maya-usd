@@ -43,7 +43,6 @@ class importChaserTest(mayaUsdLib.ImportChaser):
         self.editsRecord = []
 
     def PostImport(self, returnPredicate, stage, dagPaths, sdfPaths, jobArgs):
-        print("importChaserTest.PostImport called")
         sdfPathsStr = "SdfPaths imported: "
         for sdfPath in sdfPaths:
             sdfPathsStr += str(sdfPath) + "\n"

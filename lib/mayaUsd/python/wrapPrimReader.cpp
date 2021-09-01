@@ -280,50 +280,53 @@ void wrapPrimReader()
         .staticmethod("Register");
 }
 
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdMayaShaderReader::ContextSupport::Supported, "Supported");
+    TF_ADD_ENUM_NAME(UsdMayaShaderReader::ContextSupport::Fallback, "Fallback");
+    TF_ADD_ENUM_NAME(UsdMayaShaderReader::ContextSupport::Unsupported, "Unsupported");
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShaderReader()
 {
-    typedef ShaderReaderWrapper* ShaderReaderWrapperPtr;
-
-    boost::python::enum_<UsdMayaShaderReader::ContextSupport>("ContextSupport")
-        .value("Supported", UsdMayaShaderReader::ContextSupport::Supported)
-        .value("Fallback", UsdMayaShaderReader::ContextSupport::Fallback)
-        .value("Unsupported", UsdMayaShaderReader::ContextSupport::Unsupported);
-
     boost::python::
-        class_<ShaderReaderWrapper, boost::python::bases<PrimReaderWrapper<>>, boost::noncopyable>(
-            "ShaderReader", boost::python::no_init)
-            .def("__init__", make_constructor(&ShaderReaderWrapper::New))
-            .def("CanImport", &UsdMayaShaderReader::CanImport)
-            .staticmethod("CanImport")
-            .def(
-                "GetMayaPlugForUsdAttrName",
-                &ShaderReaderWrapper::GetMayaPlugForUsdAttrName,
-                &ShaderReaderWrapper::default_GetMayaPlugForUsdAttrName)
-            .def(
-                "GetMayaNameForUsdAttrName",
-                &ShaderReaderWrapper::GetMayaNameForUsdAttrName,
-                &ShaderReaderWrapper::default_GetMayaNameForUsdAttrName)
-            .def(
-                "PostConnectSubtree",
-                &ShaderReaderWrapper::PostConnectSubtree,
-                &ShaderReaderWrapper::default_PostConnectSubtree)
-            .def(
-                "IsConverter",
-                &ShaderReaderWrapper::IsConverter,
-                &ShaderReaderWrapper::default_IsConverter)
-            .def(
-                "SetDownstreamReader",
-                &ShaderReaderWrapper::SetDownstreamReader,
-                &ShaderReaderWrapper::default_SetDownstreamReader)
-            .def(
-                "GetCreatedObject",
-                &ShaderReaderWrapper::GetCreatedObject,
-                &ShaderReaderWrapper::default_GetCreatedObject)
+        class_<ShaderReaderWrapper, boost::python::bases<PrimReaderWrapper<>>, boost::noncopyable>
+            c("ShaderReader", boost::python::no_init);
 
-            .def(
-                "Register",
-                &ShaderReaderWrapper::Register,
-                (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
-            .staticmethod("Register");
+    boost::python::scope s(c);
+
+    TfPyWrapEnum<UsdMayaShaderReader::ContextSupport>();
+
+    c.def("__init__", make_constructor(&ShaderReaderWrapper::New))
+        .def(
+            "GetMayaPlugForUsdAttrName",
+            &ShaderReaderWrapper::GetMayaPlugForUsdAttrName,
+            &ShaderReaderWrapper::default_GetMayaPlugForUsdAttrName)
+        .def(
+            "GetMayaNameForUsdAttrName",
+            &ShaderReaderWrapper::GetMayaNameForUsdAttrName,
+            &ShaderReaderWrapper::default_GetMayaNameForUsdAttrName)
+        .def(
+            "PostConnectSubtree",
+            &ShaderReaderWrapper::PostConnectSubtree,
+            &ShaderReaderWrapper::default_PostConnectSubtree)
+        .def(
+            "IsConverter",
+            &ShaderReaderWrapper::IsConverter,
+            &ShaderReaderWrapper::default_IsConverter)
+        .def(
+            "SetDownstreamReader",
+            &ShaderReaderWrapper::SetDownstreamReader,
+            &ShaderReaderWrapper::default_SetDownstreamReader)
+        .def(
+            "GetCreatedObject",
+            &ShaderReaderWrapper::GetCreatedObject,
+            &ShaderReaderWrapper::default_GetCreatedObject)
+
+        .def(
+            "Register",
+            &ShaderReaderWrapper::Register,
+            (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
+        .staticmethod("Register");
 }

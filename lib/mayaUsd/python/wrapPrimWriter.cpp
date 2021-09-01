@@ -65,6 +65,10 @@ public:
 
     const UsdStage& GetUsdStage() const { return *get_pointer(base_t::GetUsdStage()); }
 
+    // This is the pattern inspired from USD/pxr/base/tf/wrapTestTfPython.cpp
+    // It would have been simpler to call 'this->CallVirtual<>("Write",
+    // &base_t::default_Write)(usdTime);' But it is not allowed Instead of having to create a
+    // function 'default_Write(...)' to call the base class when there is no Python implementation.
     void default_Write(const UsdTimeCode& usdTime) { base_t::Write(usdTime); }
     void Write(const UsdTimeCode& usdTime) override
     {
@@ -91,6 +95,8 @@ public:
     {
         return this->CallVirtual<bool>("_HasAnimCurves", &This::default__HasAnimCurves)();
     }
+
+    void _SetUsdPrim(const UsdPrim& usdPrim) { base_t::_SetUsdPrim(usdPrim); }
 
     const UsdMayaJobExportArgs& _GetExportArgs() const { return base_t::_GetExportArgs(); }
     boost::python::object       _GetSparseValueWriter()
@@ -297,7 +303,7 @@ void wrapPrimWriter()
             "GetUsdPrim",
             &PrimWriterWrapper<>::GetUsdPrim,
             boost::python::return_internal_reference<>())
-        .def("SetUsdPrim", &UsdMayaPrimWriter::SetUsdPrim)
+        .def("_SetUsdPrim", &PrimWriterWrapper<>::_SetUsdPrim)
         .def(
             "MakeSingleSamplesStatic",
             static_cast<void (PrimWriterWrapper<>::*)()>(
@@ -337,26 +343,36 @@ void wrapPrimWriter()
         .staticmethod("Register");
 }
 
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    TF_ADD_ENUM_NAME(UsdMayaShaderWriter::ContextSupport::Supported, "Supported");
+    TF_ADD_ENUM_NAME(UsdMayaShaderWriter::ContextSupport::Fallback, "Fallback");
+    TF_ADD_ENUM_NAME(UsdMayaShaderWriter::ContextSupport::Unsupported, "Unsupported");
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShaderWriter()
 {
-    typedef ShaderWriterWrapper* ShaderWriterWrapperPtr;
-
     boost::python::
-        class_<ShaderWriterWrapper, boost::python::bases<PrimWriterWrapper<>>, boost::noncopyable>(
-            "ShaderWriter", boost::python::no_init)
-            .def("__init__", make_constructor(&ShaderWriterWrapper::New))
-            .def(
-                "GetShadingAttributeNameForMayaAttrName",
-                &UsdMayaShaderWriter::GetShadingAttributeNameForMayaAttrName,
-                &ShaderWriterWrapper::default_GetShadingAttributeNameForMayaAttrName)
-            .def(
-                "GetShadingAttributeForMayaAttrName",
-                &UsdMayaShaderWriter::GetShadingAttributeForMayaAttrName,
-                &ShaderWriterWrapper::default_GetShadingAttributeForMayaAttrName)
-            .def(
-                "Register",
-                &ShaderWriterWrapper::Register,
-                (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
-            .staticmethod("Register");
+        class_<ShaderWriterWrapper, boost::python::bases<PrimWriterWrapper<>>, boost::noncopyable>
+            c("ShaderWriter", boost::python::no_init);
+
+    boost::python::scope s(c);
+
+    TfPyWrapEnum<UsdMayaShaderWriter::ContextSupport>();
+
+    c.def("__init__", make_constructor(&ShaderWriterWrapper::New))
+        .def(
+            "GetShadingAttributeNameForMayaAttrName",
+            &ShaderWriterWrapper::GetShadingAttributeNameForMayaAttrName,
+            &ShaderWriterWrapper::default_GetShadingAttributeNameForMayaAttrName)
+        .def(
+            "GetShadingAttributeForMayaAttrName",
+            &ShaderWriterWrapper::GetShadingAttributeForMayaAttrName,
+            &ShaderWriterWrapper::default_GetShadingAttributeForMayaAttrName)
+        .def(
+            "Register",
+            &ShaderWriterWrapper::Register,
+            (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
+        .staticmethod("Register");
 }

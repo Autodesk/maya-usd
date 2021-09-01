@@ -77,7 +77,10 @@ struct UsdMaya_RegistryHelper
 
     static void AddUnloader(const std::function<void()>& func);
 
-    // Temporary flag avoid errors when doing Python registry
+    // 2021-09-01 Temporary flag to avoid errors when using registry to Python classes
+    // AddUnloader is not supported for Python Bindings
+    // Still need to implement a way of automatically unregister when a python module is unloaded.
+    // Or provide UnRegister functions.
     MAYAUSD_CORE_PUBLIC
     static bool g_pythonRegistry;
 };

@@ -50,7 +50,7 @@ class primWriterTest(mayaUsdLib.PrimWriter):
         if (usdPrim == None):
             print("Could not get UsdPrim for primSchema at path '{}'\n".format(primSchema.GetPath().GetText()))
             return
-        self.SetUsdPrim(usdPrim)
+        self._SetUsdPrim(usdPrim)
         primWriterTest.InitCalled = True
 
     def Write(self, usdTime):

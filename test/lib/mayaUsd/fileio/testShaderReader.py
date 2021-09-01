@@ -32,9 +32,14 @@ import fixturesUtils, os
 import unittest
 
 class shaderReaderTest(mayaUsdLib.ShaderReader):
+    @classmethod
+    def CanImport(self):
+        print("shaderReaderTest.CanImport called")
+        return self.ContextSupport.Fallback
+
     def HasPostReadSubtree(self):
-         print("shaderReaderTest.HasPostReadSubtree called")
-         return False
+        print("shaderReaderTest.HasPostReadSubtree called")
+        return False
 
 class testShaderReader(unittest.TestCase):
     @classmethod
