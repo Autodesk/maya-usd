@@ -57,9 +57,39 @@ class testUsdExportSchemaApi(unittest.TestCase):
             "Missing implementation for TestSchemaExporter::PostExport"])
         self.assertEqual(messages, expected)
 
-        modes = cmds.mayaUSDListIOContexts(export=True)
-        self.assertEqual(len(modes), 1)
-        self.assertEqual(modes[0], "Null API Export")
+        cmds.file(f=True, new=True)
+
+    def testExportSchemaApiViaFileAPI(self):
+        """Testing that a custom Schema API exporter is created and called with file command"""
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+        self.assertTrue(mark.IsClean())
+
+        cmds.polySphere(r=1)
+        usdFilePath = os.path.abspath('UsdExportSchemaApiTestFile.usda')
+        cmds.file(usdFilePath, force=True,
+                  options="mergeTransformAndShape=1;extraContext=Thierry,NullAPI",
+                  typ="USD Export", pr=True, ea=True)
+
+        self.assertFalse(mark.IsClean())
+
+        errors = mark.GetErrors()
+        messages = set()
+        for e in errors:
+            messages.add(e.commentary)
+        expected = set([
+            "Missing implementation for NullAPIChaser::ExportDefault",
+            "Missing implementation for TestSchemaExporter::Write",
+            "Missing implementation for TestSchemaExporter::PostExport"])
+        self.assertEqual(messages, expected)
+
+        cmds.file(f=True, new=True)
+
+    def testIOContextLister(self):
+        """Testing that we can enumerate export contexts"""
+
+        modes = set(cmds.mayaUSDListIOContexts(export=True))
+        self.assertEqual(modes, set(["Null API Export", "Thierry", "Scene Grinder"]))
 
         self.assertEqual(cmds.mayaUSDListIOContexts(exportOption="Null API Export"), "NullAPI")
         self.assertEqual(cmds.mayaUSDListIOContexts(exportAnnotation="Null API Export"),

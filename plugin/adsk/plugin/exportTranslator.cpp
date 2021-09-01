@@ -16,6 +16,7 @@
 //
 #include "exportTranslator.h"
 
+#include <mayaUsd/fileio/exportContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -129,6 +130,30 @@ MStatus UsdMayaExportTranslator::writer(
                         userArgVals.push_back(VtValue(exportRootPath));
                     } else {
                         userArgVals.push_back(VtValue(""));
+                    }
+                }
+                userArgs[argName] = userArgVals;
+            } else if (argName == UsdMayaJobExportArgsTokens->extraContext.GetText()) {
+                MStringArray exportContexts;
+                theOption[1].split(',', exportContexts);
+
+                std::vector<VtValue> userArgVals;
+
+                unsigned int nbContexts = exportContexts.length();
+                for (unsigned int idxContext = 0; idxContext < nbContexts; ++idxContext) {
+                    const std::string exportContext = exportContexts[idxContext].asChar();
+                    userArgVals.push_back(VtValue(exportContext));
+
+                    const UsdMayaExportContextRegistry::ContextInfo& ci
+                        = UsdMayaExportContextRegistry::GetExportContextInfo(
+                            TfToken(exportContext.c_str()));
+                    if (ci.enablerCallback) {
+                        ci.enablerCallback(userArgs);
+                    } else {
+                        MGlobal::displayWarning(
+                            TfStringPrintf(
+                                "Ignoring unknown export context '%s'.", exportContext.c_str())
+                                .c_str());
                     }
                 }
                 userArgs[argName] = userArgVals;

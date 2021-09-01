@@ -31,6 +31,21 @@ proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, string $widget) {
     }
 }
 
+proc mayaUsdTranslatorExport_SetExtraContextCheckboxes(string $arg) {
+    string $enabledContexts[] = stringToStringArray($arg, ",");
+    string $contexts[] = `mayaUSDListIOContexts -export`;
+    for ($context in $contexts) {
+        string $opt = `mayaUSDListIOContexts -eo $context`;
+        string $widget = $opt + "_ExportContextCheckBox";
+
+        if(stringArrayFind($opt, 0, $enabledContexts) != -1) {
+            checkBoxGrp -e -v1 true $widget;
+        } else {
+            checkBoxGrp -e -v1 false $widget;
+        }
+    }
+}
+
 proc mayaUsdTranslatorExport_SetTextField(string $arg, string $widget) {
     textFieldGrp -e -text $arg $widget;
 }
@@ -75,6 +90,22 @@ proc string mayaUsdTranslatorExport_AppendFromCheckbox(string $currentOptions, s
     } else {
         return $currentOptions + ";" + $arg + "=0";
     }
+}
+
+proc string mayaUsdTranslatorExport_AppendExportContexts(string $currentOptions, string $arg) {
+    string $contexts[] = `mayaUSDListIOContexts -export`;
+    string $enabledContexts[];
+    for ($context in $contexts) {
+        string $opt = `mayaUSDListIOContexts -eo $context`;
+        string $widget = $opt + "_ExportContextCheckBox";
+        if (`checkBoxGrp -q -v1 $widget` == 1) {
+            stringArrayInsertAtIndex(255, $enabledContexts, $opt);
+        }
+    }
+    if (size($enabledContexts) > 0) {
+        return $currentOptions + ";" + $arg + "=" + stringArrayToString($enabledContexts, ",");
+    }
+    return $currentOptions;
 }
 
 proc string mayaUsdTranslatorExport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
@@ -254,6 +285,20 @@ global proc int mayaUsdTranslatorExport (string $parent,
             separator -style "none";
         setParent ..;
 
+        string $contexts[] = `mayaUSDListIOContexts -export`;
+        if (size($contexts) > 0) {
+            frameLayout -label "Export Contexts" -collapsable true -collapse true;
+                separator -style "none";
+                for ($context in $contexts) {
+                    string $ann = `mayaUSDListIOContexts -ea $context`;
+                    string $opt = `mayaUSDListIOContexts -eo $context`;
+                    string $widgetName = $opt + "_ExportContextCheckBox";
+                    checkBoxGrp -l $context -annotation $ann $widgetName;
+                }
+                separator -style "none";
+            setParent ..;
+        }
+
         frameLayout -label "Geometry" -collapsable true -collapse false;
             separator -style "none";
             optionMenuGrp -l "Subdivision Method:" -annotation $subdMethodAnn defaultMeshSchemePopup;
@@ -354,6 +399,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportBlendShapesCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
+                } else if ($optionBreakDown[0] == "extraContext") {
+                    mayaUsdTranslatorExport_SetExtraContextCheckboxes($optionBreakDown[1]);
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                     mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
                 } else if ($optionBreakDown[0] == "defaultUSDFormat") {
@@ -442,6 +489,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
+        $currentOptions = mayaUsdTranslatorExport_AppendExportContexts($currentOptions, "extraContext");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

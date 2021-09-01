@@ -47,6 +47,25 @@ REGISTER_EXPORT_CONTEXT_FCT(
     return true;
 }
 
+
+REGISTER_EXPORT_CONTEXT_FCT(
+    Thierry,
+    "Thierry",
+    "Exports for Thierry renderer",
+    userArgs)
+{
+    return true;
+}
+
+REGISTER_EXPORT_CONTEXT_FCT(
+    SceneGrinder,
+    "Scene Grinder",
+    "Exports to Scene Grinder",
+    userArgs)
+{
+    return true;
+}
+
 class TestSchemaExporter : public UsdMayaSchemaApiWriter
 {
     bool _isValid = false;
