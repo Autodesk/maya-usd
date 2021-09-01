@@ -11,6 +11,14 @@
                         "type": "token",
                         "appliesTo": "prims"
                     }
+                    # Editability controls the editability or properties.
+                    # If set, can be "on" (editable) or "off" (locked).
+                    # If missing, defaults to "on" (editable).
+                    "mayaEditability": {
+                        "type": "token",
+                        "appliesTo": "properties",
+                        "default": "on"
+                    }
                 }
             },
             "Name": "MayaUsdRenderMetadata",
