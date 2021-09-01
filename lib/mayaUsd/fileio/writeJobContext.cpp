@@ -616,7 +616,6 @@ UsdMayaWriteJobContext::CreateSchemaApiWriters(const UsdMayaPrimWriterSharedPtr&
     // backwards until we find a prim writer plugin.
     const MFnDependencyNode depNodeFn(primWriter->GetMayaObject());
     const std::string       mayaTypeName(depNodeFn.typeName().asChar());
-    // TODO: Apply filtering based on export options and the SchemaAPI this writer supports. TBD.
     for (const auto& writerEntry : _FindSchemaApiWriters(mayaTypeName)) {
         UsdMayaSchemaApiWriterRegistry::WriterFactoryFn factoryFn = writerEntry.second;
         if (mArgs.includeAPINames.find(TfToken(writerEntry.first)) == mArgs.includeAPINames.end()) {

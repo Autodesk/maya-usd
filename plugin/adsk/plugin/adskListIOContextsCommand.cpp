@@ -19,9 +19,6 @@ namespace MAYAUSD_NS_DEF {
 
 const MString ADSKMayaUSDListIOContextsCommand::commandName("mayaUSDListIOContexts");
 
-void* ADSKMayaUSDListIOContextsCommand::creator()
-{
-    return new ADSKMayaUSDListIOContextsCommand();
-}
+void* ADSKMayaUSDListIOContextsCommand::creator() { return new ADSKMayaUSDListIOContextsCommand(); }
 
 } // namespace MAYAUSD_NS_DEF

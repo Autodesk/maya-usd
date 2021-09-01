@@ -454,13 +454,13 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "file: " << exportArgs.file << std::endl
         << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl;
     out << "includeAPINames (" << exportArgs.includeAPINames.size() << ")" << std::endl;
-        for (const std::string& includeAPIName : exportArgs.includeAPINames) {
-            out << "    " << includeAPIName << std::endl;
-        }
+    for (const std::string& includeAPIName : exportArgs.includeAPINames) {
+        out << "    " << includeAPIName << std::endl;
+    }
     out << "includeContextNames (" << exportArgs.includeContextNames.size() << ")" << std::endl;
-        for (const std::string& includeContextName : exportArgs.includeContextNames) {
-            out << "    " << includeContextName << std::endl;
-        }
+    for (const std::string& includeContextName : exportArgs.includeContextNames) {
+        out << "    " << includeContextName << std::endl;
+    }
     out << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
         << "materialsScopeName: " << exportArgs.materialsScopeName << std::endl
         << "mergeTransformAndShape: " << TfStringify(exportArgs.mergeTransformAndShape) << std::endl

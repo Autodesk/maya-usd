@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -47,21 +47,12 @@ REGISTER_EXPORT_CONTEXT_FCT(
     return true;
 }
 
-
-REGISTER_EXPORT_CONTEXT_FCT(
-    Thierry,
-    "Thierry",
-    "Exports for Thierry renderer",
-    userArgs)
+REGISTER_EXPORT_CONTEXT_FCT(Thierry, "Thierry", "Exports for Thierry renderer", userArgs)
 {
     return true;
 }
 
-REGISTER_EXPORT_CONTEXT_FCT(
-    SceneGrinder,
-    "Scene Grinder",
-    "Exports to Scene Grinder",
-    userArgs)
+REGISTER_EXPORT_CONTEXT_FCT(SceneGrinder, "Scene Grinder", "Exports to Scene Grinder", userArgs)
 {
     return true;
 }
