@@ -55,6 +55,11 @@ if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
     )
 endif()
 
+if(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testSetsCmd.py
+    )
+endif()
 
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
 add_custom_target(${TARGET_NAME} ALL)
