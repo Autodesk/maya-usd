@@ -37,7 +37,7 @@ class primWriterTest(mayaUsdLib.PrimWriter):
     WriteCalled = False
     PostExportCalled = False
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.GetDagPath().isValid():
             print("Invalid DagPath '{}'\n".format(self.GetDagPath()))

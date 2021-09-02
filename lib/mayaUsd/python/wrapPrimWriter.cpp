@@ -72,28 +72,28 @@ public:
     void default_Write(const UsdTimeCode& usdTime) { base_t::Write(usdTime); }
     void Write(const UsdTimeCode& usdTime) override
     {
-        this->CallVirtual<>("Write", &This::default_Write)(usdTime);
+        this->template CallVirtual<>("Write", &This::default_Write)(usdTime);
     }
 
     void default_PostExport() { base_t::PostExport(); }
-    void PostExport() override { this->CallVirtual<>("PostExport", &This::default_PostExport)(); }
+    void PostExport() override { this->template CallVirtual<>("PostExport", &This::default_PostExport)(); }
 
     bool default_ExportsGprims() const { return base_t::ExportsGprims(); }
     bool ExportsGprims() const override
     {
-        return this->CallVirtual<bool>("ExportsGprims", &This::default_ExportsGprims)();
+        return this->template CallVirtual<bool>("ExportsGprims", &This::default_ExportsGprims)();
     }
 
     bool default_ShouldPruneChildren() const { return base_t::ShouldPruneChildren(); };
     bool ShouldPruneChildren() const override
     {
-        return this->CallVirtual<bool>("ShouldPruneChildren", &This::default_ShouldPruneChildren)();
+        return this->template CallVirtual<bool>("ShouldPruneChildren", &This::default_ShouldPruneChildren)();
     }
 
     bool default__HasAnimCurves() const { return base_t::_HasAnimCurves(); };
     bool _HasAnimCurves() const override
     {
-        return this->CallVirtual<bool>("_HasAnimCurves", &This::default__HasAnimCurves)();
+        return this->template CallVirtual<bool>("_HasAnimCurves", &This::default__HasAnimCurves)();
     }
 
     void _SetUsdPrim(const UsdPrim& usdPrim) { base_t::_SetUsdPrim(usdPrim); }

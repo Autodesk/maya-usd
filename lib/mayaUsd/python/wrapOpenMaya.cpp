@@ -72,20 +72,11 @@ template <class MayaClass> struct MayaClassConverter
     }
 };
 #else
-enum MPyObjectLifetimeMode
-{
-    kNone,
-    kOwned,
-    kShared,
-    kWeak
-};
-
 template <class M> struct MPyObject : public PyObject
 {
 public:
     typedef M             MayaType;
     M*                    fPtr;
-    MPyObjectLifetimeMode fLifetime;
 };
 
 template <class MayaClass> struct MayaClassConverter

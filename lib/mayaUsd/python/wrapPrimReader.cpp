@@ -63,13 +63,13 @@ public:
 
     bool Read(UsdMayaPrimReaderContext& context) override
     {
-        return this->CallPureVirtual<bool>("Read")(context);
+        return this->template CallPureVirtual<bool>("Read")(context);
     }
 
     bool default_HasPostReadSubtree() const { return base_t::HasPostReadSubtree(); }
     bool HasPostReadSubtree() const override
     {
-        return this->CallVirtual<bool>("HasPostReadSubtree", &This::default_HasPostReadSubtree)();
+        return this->template CallVirtual<bool>("HasPostReadSubtree", &This::default_HasPostReadSubtree)();
     }
 
     void default_PostReadSubtree(UsdMayaPrimReaderContext& context)
@@ -78,7 +78,7 @@ public:
     }
     void PostReadSubtree(UsdMayaPrimReaderContext& context) override
     {
-        this->CallVirtual<>("PostReadSubtree", &This::default_PostReadSubtree)(context);
+        this->template CallVirtual<>("PostReadSubtree", &This::default_PostReadSubtree)(context);
     }
 
     // Must be declared for python to be able to call the protected function _GetArgs in
