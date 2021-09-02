@@ -76,7 +76,10 @@ public:
     }
 
     void default_PostExport() { base_t::PostExport(); }
-    void PostExport() override { this->template CallVirtual<>("PostExport", &This::default_PostExport)(); }
+    void PostExport() override
+    {
+        this->template CallVirtual<>("PostExport", &This::default_PostExport)();
+    }
 
     bool default_ExportsGprims() const { return base_t::ExportsGprims(); }
     bool ExportsGprims() const override
@@ -87,7 +90,8 @@ public:
     bool default_ShouldPruneChildren() const { return base_t::ShouldPruneChildren(); };
     bool ShouldPruneChildren() const override
     {
-        return this->template CallVirtual<bool>("ShouldPruneChildren", &This::default_ShouldPruneChildren)();
+        return this->template CallVirtual<bool>(
+            "ShouldPruneChildren", &This::default_ShouldPruneChildren)();
     }
 
     bool default__HasAnimCurves() const { return base_t::_HasAnimCurves(); };

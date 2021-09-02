@@ -75,8 +75,8 @@ template <class MayaClass> struct MayaClassConverter
 template <class M> struct MPyObject : public PyObject
 {
 public:
-    typedef M             MayaType;
-    M*                    fPtr;
+    typedef M MayaType;
+    M*        fPtr;
 };
 
 template <class MayaClass> struct MayaClassConverter

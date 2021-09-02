@@ -69,7 +69,8 @@ public:
     bool default_HasPostReadSubtree() const { return base_t::HasPostReadSubtree(); }
     bool HasPostReadSubtree() const override
     {
-        return this->template CallVirtual<bool>("HasPostReadSubtree", &This::default_HasPostReadSubtree)();
+        return this->template CallVirtual<bool>(
+            "HasPostReadSubtree", &This::default_HasPostReadSubtree)();
     }
 
     void default_PostReadSubtree(UsdMayaPrimReaderContext& context)
