@@ -38,7 +38,7 @@ import unittest
 
 class importChaserTest(mayaUsdLib.ImportChaser):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(importChaserTest, self).__init__(*args, **kwargs)
         self.undoRecord = OpenMaya.MDGModifier()
         self.editsRecord = []
 
