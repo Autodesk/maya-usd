@@ -16,7 +16,7 @@
 
 #include <pxr/usd/usdGeom/camera.h>
 
-#include <maya/MApiNamespace.h>
+#include <maya/MTypes.h>
 
 // Hack because MDGModifier assign operator is not public.
 // For 2019, the hack is different see MDGModifier2019 in this file
