@@ -14,12 +14,16 @@
 // limitations under the License.
 //
 
-// Hack because MDGModifier copy constructor and = operator are not public.
+#include <pxr/usd/usdGeom/camera.h>
+
 #include <maya/MApiNamespace.h>
+
+// Hack because MDGModifier assign operator is not public.
+// For 2019, the hack is different see MDGModifier2019 in this file
+#if MAYA_API_VERSION >= 20200000
 #undef OPENMAYA_PRIVATE
 #define OPENMAYA_PRIVATE public
-
-#include <pxr/usd/usdGeom/camera.h>
+#endif
 
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
@@ -37,6 +41,28 @@ namespace {
 // Required because MObject::classname does not exists
 template <class MayaClass> const char* classname() { return MayaClass::className(); }
 template <> const char*                classname<MObject>() { return "MObject"; }
+
+template <class MayaClass> void copyOperator(void* dst, const MayaClass& object)
+{
+    *((MayaClass*)(dst)) = object;
+}
+
+// Hack to have access at MDGModifier assign operator from OpenMaya 2019
+#if MAYA_API_VERSION < 20200000
+class MDGModifier2019 : public MDGModifier
+{
+public:
+    MDGModifier2019& operator=(const MDGModifier2019& rhs)
+    {
+        MDGModifier::operator=(rhs);
+        return *this;
+    }
+};
+template <> void copyOperator(void* dst, const MDGModifier& object)
+{
+    *((MDGModifier2019*)(dst)) = (MDGModifier2019&)object;
+}
+#endif
 
 /* Should be detectable detecting maya_useNewAPI in plugin
 
@@ -67,7 +93,7 @@ template <class MayaClass> struct MayaClassConverter
             = boost::python::import("maya.OpenMaya").attr(classname<MayaClass>())();
         boost::python::object theSwigObject = classInstance.attr("this");
         SwigPyObject*         theSwigPyObject = (SwigPyObject*)theSwigObject.ptr();
-        *((MayaClass*)(theSwigPyObject->ptr)) = object;
+        copyOperator(theSwigPyObject->ptr, object);
         return boost::python::incref(classInstance.ptr());
     }
 };
@@ -88,7 +114,7 @@ template <class MayaClass> struct MayaClassConverter
         boost::python::object classInstance
             = boost::python::import("maya.api.OpenMaya").attr(classname<MayaClass>())();
         MPyObject<MayaClass>* thePyObject = (MPyObject<MayaClass>*)classInstance.ptr();
-        *((MayaClass*)(thePyObject->fPtr)) = object;
+        copyOperator(thePyObject->fPtr, object);
         return boost::python::incref(classInstance.ptr());
     }
 };
