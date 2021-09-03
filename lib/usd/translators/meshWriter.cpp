@@ -124,30 +124,26 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
             MPlug outputGeomPlug = itDg.thisPlug();
             TF_VERIFY(outputGeomPlug.isElement() == true);
 
+            // Find the corresponding "inputGeometry" plug:
+            MFnDependencyNode blendShapeNode(curBlendShape);
+            MPlug inputGeomPlug(curBlendShape, blendShapeNode.attribute("inputGeometry"));
+            inputGeomPlug.selectAncestorLogicalIndex(
+                outputGeomPlug.logicalIndex(), blendShapeNode.attribute("input"));
             MItDependencyGraph itDgBS(
-                curBlendShape,
+                inputGeomPlug,
                 MFn::kInvalid,
                 MItDependencyGraph::kUpstream,
                 MItDependencyGraph::kDepthFirst,
-                MItDependencyGraph::kPlugLevel,
+                MItDependencyGraph::kNodeLevel,
                 &stat);
-            for (; !itDgBS.isDone(); itDgBS.next()) {
-                MItDependencyGraph itDgBS(
-                    curBlendShape,
-                    MFn::kInvalid,
-                    MItDependencyGraph::kUpstream,
-                    MItDependencyGraph::kDepthFirst,
-                    MItDependencyGraph::kNodeLevel,
-                    &stat);
-                for (itDgBS.next(); !itDgBS.isDone();
-                     itDgBS.next()) { // NOTE: (yliangsiew) Skip the first node which starts at the
-                    // root, which is the blendshape deformer itself.
-                    MObject curNode = itDgBS.thisNode();
-                    if (curNode.hasFn(MFn::kMesh)) {
-                        return curNode;
-                    }
-                    intermediates->append(curNode);
+            for (itDgBS.next(); !itDgBS.isDone();
+                 itDgBS.next()) { // NOTE: (yliangsiew) Skip the first node which starts at the
+                // root, which is the blendshape deformer itself.
+                MObject curNode = itDgBS.thisNode();
+                if (curNode.hasFn(MFn::kMesh)) {
+                    return curNode;
                 }
+                intermediates->append(curNode);
             }
         }
     }
