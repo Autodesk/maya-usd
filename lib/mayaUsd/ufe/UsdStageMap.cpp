@@ -42,17 +42,21 @@ MObjectHandle nameLookup(const Ufe::Path& path)
     return handle;
 }
 
+Ufe::Path firstPath(const MObject& object)
+{
+    MDagPath dagPath;
+    auto status = MFnDagNode(object).getPath(dagPath);
+    CHECK_MSTATUS(status);
+    return MayaUsd::ufe::dagPathToUfe(dagPath);
+}
+
 // Assuming proxy shape nodes cannot be instanced, simply return the first path.
 Ufe::Path firstPath(const MObjectHandle& handle)
 {
     if (!TF_VERIFY(handle.isValid(), "Cannot get path from invalid object handle")) {
         return Ufe::Path();
     }
-
-    MDagPath dagPath;
-    auto     status = MFnDagNode(handle.object()).getPath(dagPath);
-    CHECK_MSTATUS(status);
-    return MayaUsd::ufe::dagPathToUfe(dagPath);
+    return firstPath(handle.object());
 }
 
 UsdStageWeakPtr objToStage(MObject& obj)
@@ -138,7 +142,12 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
 
     auto iter = fPathToObject.find(singleSegmentPath);
     if (iter != std::end(fPathToObject)) {
-        return iter->second.object();
+        // If the proxyShape has been re-parented in Maya & the stage lookup
+        // is being made using the old path, then we could have the cache
+        // key path not match the DAG path of the proxy shape.
+        auto object = iter->second.object();
+        if (firstPath(object) == iter->first)
+            return iter->second.object();
     }
 
     // Caches are invalidated by DG dirtying, but not by renaming or
