@@ -45,7 +45,7 @@ MObjectHandle nameLookup(const Ufe::Path& path)
 Ufe::Path firstPath(const MObject& object)
 {
     MDagPath dagPath;
-    auto status = MFnDagNode(object).getPath(dagPath);
+    auto     status = MFnDagNode(object).getPath(dagPath);
     CHECK_MSTATUS(status);
     return MayaUsd::ufe::dagPathToUfe(dagPath);
 }
@@ -153,7 +153,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
         = nbPathSegments(path) == 1 ? path : Ufe::Path(path.getSegments()[0]);
 
     auto iter = fPathToObject.find(singleSegmentPath);
-    
+
     if (iter == std::end(fPathToObject)) {
         // When we don't find an entry in the cache then we are in scenerio 1.
         // MObjects stay valid even when re-parented or re-named, so we can

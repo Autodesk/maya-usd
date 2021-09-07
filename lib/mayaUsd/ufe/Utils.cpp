@@ -331,7 +331,7 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath)
 {
     MStatus status;
     // The Ufe path includes a prepended "world" that the dag path doesn't have
-    size_t numUfeComponents = dagPath.length(&status) + 1;
+    size_t                       numUfeComponents = dagPath.length(&status) + 1;
     Ufe::PathSegment::Components components;
     components.resize(numUfeComponents);
     components[0] = Ufe::PathComponent("world");
@@ -341,10 +341,10 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath)
     // position in the components vector as we go. Use i>0 as the stopping
     // condition because we've already written to element 0 of the components
     // vector.
-    for(int i=numUfeComponents-1; i>0; i--) {
+    for (int i = numUfeComponents - 1; i > 0; i--) {
         MObject node = path.node(&status);
 
-        if(MS::kSuccess != status)
+        if (MS::kSuccess != status)
             return Ufe::PathSegment("", g_MayaRtid, '|');
 
         std::string componentString(MFnDependencyNode(node).name(&status).asChar());
