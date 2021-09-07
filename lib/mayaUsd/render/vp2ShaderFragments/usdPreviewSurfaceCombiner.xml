@@ -36,6 +36,8 @@ limitations under the License.
         <float name="metallic"/>
         <bool name="useSpecularWorkflow"/>
         <float name="ior"/>
+        <float name="occlusion"/>
+
         <!--  Note that VdotH is referred to as EdotH in the fragments below.
               This is intentional where V represents View and E represents Eye-->
         <float name="VdotH"/>
@@ -87,6 +89,7 @@ usdPreviewSurfaceCombiner(
         float metallic,
         bool useSpecularWorkflow,
         float ior,
+        float occlusion,
         float EdotH,
         float3 transparency)
 {
@@ -129,6 +132,9 @@ usdPreviewSurfaceCombiner(
         // // ... finally get the color based on the fresnel value
         result.outColor  += mix(F0, F90, fresnel)  * specularEnv * metallic;
     }
+
+    // Modulate light contributions by occlusion:
+    result.outColor *= occlusion;
 
     // Emissive
     result.outColor += emissiveColor;
@@ -170,6 +176,7 @@ usdPreviewSurfaceCombiner(
         float metallic,
         bool useSpecularWorkflow,
         float ior,
+        float occlusion,
         float EdotH,
         float3 transparency)
 {
@@ -213,6 +220,9 @@ usdPreviewSurfaceCombiner(
         result.outColor  += mix(F0, F90, fresnel)  * specularEnv * metallic;
     }
 
+    // Modulate light contributions by occlusion:
+    result.outColor *= occlusion;
+
     // Emissive
     result.outColor += emissiveColor;
 
@@ -251,6 +261,7 @@ usdPreviewSurfaceCombiner(
         float metallic,
         bool useSpecularWorkflow,
         float ior,
+        float occlusion,
         float EdotH,
         float3 transparency)
 {
@@ -293,6 +304,9 @@ usdPreviewSurfaceCombiner(
         // // ... finally get the color based on the fresnel value
         result.outColor  += lerp(F0, F90, fresnel)  * specularEnv * metallic;
     }
+
+    // Modulate light contributions by occlusion:
+    result.outColor *= occlusion;
 
     // Emissive
     result.outColor += emissiveColor;
@@ -332,6 +346,7 @@ usdPreviewSurfaceCombiner(
         float metallic,
         bool useSpecularWorkflow,
         float ior,
+        float occlusion,
         float EdotH,
         float3 transparency)
 {
@@ -374,6 +389,9 @@ usdPreviewSurfaceCombiner(
         // // ... finally get the color based on the fresnel value
         result.outColor  += lerp(F0, F90, fresnel)  * specularEnv * metallic;
     }
+
+    // Modulate light contributions by occlusion:
+    result.outColor *= occlusion;
 
     // Emissive
     result.outColor += emissiveColor;
