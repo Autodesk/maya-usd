@@ -16,6 +16,8 @@
 #ifndef PXRUSDMAYA_REGISTRYHELPER_H
 #define PXRUSDMAYA_REGISTRYHELPER_H
 
+#include <mayaUsd/base/api.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/pxr.h>
@@ -74,6 +76,13 @@ struct UsdMaya_RegistryHelper
     static VtDictionary GetComposedInfoDictionary(const std::vector<TfToken>& scope);
 
     static void AddUnloader(const std::function<void()>& func);
+
+    // 2021-09-01 Temporary flag to avoid errors when using registry to Python classes
+    // AddUnloader is not supported for Python Bindings
+    // Still need to implement a way of automatically unregister when a python module is unloaded.
+    // Or provide UnRegister functions.
+    MAYAUSD_CORE_PUBLIC
+    static bool g_pythonRegistry;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
