@@ -137,43 +137,63 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
 {
     rebuildIfDirty();
 
+    // In additional to the explicit dirty system it is possible that
+    // the cache is in an invalid state and needs to be refreshed. See
+    // the class comment in UsdStageMap.h for details.
+    // There are two scenerios which signal a cache refresh is required:
+    // 1. A path is searched for which cannot be found. This indicates that
+    //    the stage has been reparented and the new path has been used to search
+    //    for the stage and the stage is not present in the cache.
+    // 2. The DAG path of a cached MObject doesn't match the key path used to
+    //    find that MObject. This indicates that the stage has been reparented
+    //    and the old path has been used to search for the stage. In this case
+    //    there is a cache hit when there should not be.
+
     const auto& singleSegmentPath
         = nbPathSegments(path) == 1 ? path : Ufe::Path(path.getSegments()[0]);
 
     auto iter = fPathToObject.find(singleSegmentPath);
-    if (iter != std::end(fPathToObject)) {
-        // If the proxyShape has been re-parented in Maya & the stage lookup
-        // is being made using the old path, then we could have the cache
-        // key path not match the DAG path of the proxy shape.
-        auto object = iter->second.object();
-        if (firstPath(object) == iter->first)
-            return iter->second.object();
-    }
+    
+    if (iter == std::end(fPathToObject)) {
+        // When we don't find an entry in the cache then we are in scenerio 1.
+        // MObjects stay valid even when re-parented or re-named, so we can
+        // scan through all the entries in the cache and validate that the current
+        // DAG path to the MObject matches the key Ufe::Path for the MObject in
+        // the cache. When the don't match, update fPathToObject so that the key and
+        // the MObject are in sync again.
+        auto pathToObject = fPathToObject;
+        for (const auto& entry : pathToObject) {
+            const auto& cachedPath = entry.first;
+            const auto& cachedObject = entry.second;
+            // Get the UFE path from the map value.
+            auto newPath = firstPath(cachedObject);
+            if (newPath != cachedPath) {
+                // Key is stale.  Remove it from our cache, and add the new entry.
+                auto count = fPathToObject.erase(cachedPath);
+                TF_AXIOM(count);
+                fPathToObject[newPath] = cachedObject;
+            }
+        }
 
-    // Caches are invalidated by DG dirtying, but not by renaming or
-    // reparenting.  We have not found the object in the PathToObject cache,
-    // either because the cache is stale, or because the object does not exist.
-    // MObjectHandle values in the caches are stable against rename or
-    // reparent, so StageToObject is unchanged.  We can iterate on the
-    // MObjectHandle values and refresh the stale Ufe::Path in PathToObject.
-    // Iterate on a copy of the map, as we may be updating some entries.
-    auto pathToObject = fPathToObject;
-    for (const auto& entry : pathToObject) {
-        const auto& cachedPath = entry.first;
-        const auto& cachedObject = entry.second;
-        // Get the UFE path from the map value.
-        auto newPath = firstPath(cachedObject);
-        if (newPath != cachedPath) {
-            // Key is stale.  Remove it from our cache, and add the new entry.
-            auto count = fPathToObject.erase(cachedPath);
-            TF_AXIOM(count);
-            fPathToObject[newPath] = cachedObject;
+        // Now that the cache is in a good state, attempt to find the searched for
+        // proxyShape again.
+        iter = fPathToObject.find(singleSegmentPath);
+    } else {
+        auto object = iter->second;
+        auto objectPath = firstPath(object);
+        if (objectPath != iter->first) {
+            // When we hit the cache and the key path doesn't match the current object path
+            // we are in scenerio 2. Update the entry in fPathToObject so that the key path
+            // is the current object path.
+            fPathToObject.erase(singleSegmentPath);
+            fPathToObject[objectPath] = object;
+            TF_VERIFY(std::end(fPathToObject) == fPathToObject.find(singleSegmentPath));
+            return MObject();
         }
     }
 
     // At this point the cache is rebuilt, so lookup failure means the object
     // doesn't exist.
-    iter = fPathToObject.find(singleSegmentPath);
     return iter == std::end(fPathToObject) ? MObject() : iter->second.object();
 }
 
