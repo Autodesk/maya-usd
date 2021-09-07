@@ -245,6 +245,8 @@ const SdfPath& UsdMayaPrimWriter::GetUsdPath() const { return _usdPath; }
 
 const UsdPrim& UsdMayaPrimWriter::GetUsdPrim() const { return _usdPrim; }
 
+void UsdMayaPrimWriter::_SetUsdPrim(const UsdPrim& usdPrim) { _usdPrim = usdPrim; }
+
 const UsdStageRefPtr& UsdMayaPrimWriter::GetUsdStage() const { return _writeJobCtx.GetUsdStage(); }
 
 const UsdMayaJobExportArgs& UsdMayaPrimWriter::_GetExportArgs() const

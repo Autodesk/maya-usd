@@ -185,7 +185,7 @@ usdPreviewSurfaceLightingAPI1(
         if (!useSpecularWorkflow) {
             float R = (1.0 - ior) / (1.0 + ior);
             float3 specColor = mix(float3(1.0, 1.0, 1.0), diffuseColor, metallic);
-            F0  = R * R * specColor;
+            F0 = mix(R * R * specColor, specColor, metallic);
             F90 = specColor;
 
             // For metallic workflows, pure metals have no diffuse
@@ -342,7 +342,7 @@ usdPreviewSurfaceLightingAPI1(
         if (!useSpecularWorkflow) {
             float R = (1.0 - ior) / (1.0 + ior);
             float3 specColor = mix(float3(1.0, 1.0, 1.0), diffuseColor, metallic);
-            F0  = R * R * specColor;
+            F0 = mix(R * R * specColor, specColor, metallic);
             F90 = specColor;
 
             // For metallic workflows, pure metals have no diffuse
@@ -499,7 +499,7 @@ usdPreviewSurfaceLightingAPI1(
         if (!useSpecularWorkflow) {
             float R = (1.0 - ior) / (1.0 + ior);
             float3 specColor = lerp(float3(1.0, 1.0, 1.0), diffuseColor, metallic);
-            F0  = R * R * specColor;
+            F0 = lerp(R * R * specColor, specColor, metallic);
             F90 = specColor;
 
             // For metallic workflows, pure metals have no diffuse
@@ -656,7 +656,7 @@ usdPreviewSurfaceLightingAPI1(
         if (!useSpecularWorkflow) {
             float R = (1.0 - ior) / (1.0 + ior);
             float3 specColor = lerp(float3(1.0, 1.0, 1.0), diffuseColor, metallic);
-            F0  = R * R * specColor;
+            F0 = lerp(R * R * specColor, specColor, metallic);
             F90 = specColor;
 
             // For metallic workflows, pure metals have no diffuse

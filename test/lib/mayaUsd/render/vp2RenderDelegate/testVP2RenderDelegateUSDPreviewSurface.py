@@ -167,6 +167,33 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
 
         self.assertSnapshotClose('UseSpecularWorkflowTest.png')
 
+    def testMetallicF0(self):
+        """Tests that the specular F0 of a metallic surface is equal to its base color
+        See Pixar USD commit https://github.com/PixarAnimationStudios/USD/commit/f11ab360"""
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.xform("persp", t=(24, 16, 0), ws=True)
+        cmds.xform("persp", ro=[-35, 90, 0], ws=True)
+
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "F0_is_base.usda")
+        mayaUtils.createProxyFromFile(testFile)
+
+        # Need a point light at (0.36, 7.625, 8.111)
+        white_light = cmds.pointLight(rgb=(1, 1, 1))
+        white_transform = cmds.listRelatives(white_light, parent=True)[0]
+        cmds.xform(white_transform, t=(0.36, 7.625, 8.111), ws=True)
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="all")
+
+        if int(os.getenv("MAYA_LIGHTAPI_VERSION")) == 2:
+            light_api = "V2"
+        else:
+            light_api = "V1"
+
+        self.assertSnapshotClose('F0_is_base_{}.png'.format(light_api))
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
