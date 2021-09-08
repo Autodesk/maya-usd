@@ -23,7 +23,7 @@ import unittest
 from maya import cmds
 from AL.usdmaya import ProxyShape
 
-from pxr import Sdf, Usd
+from pxr import Sdf, Usd, UsdUtils
 
 class TestLayerManagerSerialisation(unittest.TestCase):
     """Test cases for layer manager serialisation and deserialisation"""
@@ -206,6 +206,70 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         _initialiseLayers(self._usdFilePath)
         proxyName = _buildAndEditAndSaveScene(self._usdFilePath)
         _reloadAndAssert(self._usdFilePath, proxyName)
+
+    def test_anonymousLayerSerialisation(self):
+        """Tests multiple anonymous sublayers can be saved and restored.
+            
+        """
+
+        def _setupStage():
+            # Create a prim at root layer
+            rootLayer = self._stage.GetRootLayer()
+            Sdf.CreatePrimInLayer(rootLayer, "/root")
+
+            # Create session layer with prim
+            sessionLayer = self._stage.GetSessionLayer()
+            Sdf.CreatePrimInLayer(sessionLayer, "/root/prim01")
+
+            # Create anonymous sublayers
+            sublayer01 = Sdf.Layer.CreateAnonymous()
+            Sdf.CreatePrimInLayer(sublayer01, "/root/subprim01")
+            sublayer02 = Sdf.Layer.CreateAnonymous()
+            Sdf.CreatePrimInLayer(sublayer02, "/root/subprim02")
+
+            # TODO easy way to add testing for recursive restoration
+            # sublayer03 = Sdf.Layer.CreateAnonymous()
+            # Sdf.CreatePrimInLayer(sublayer02, "/root/subprim02/subsubprim03")
+            # sublayer02.subLayerPaths = [sublayer03.identifier]
+
+            # Add sublayers to session layer
+            sessionLayer.subLayerPaths = [
+                sublayer01.identifier,
+                sublayer02.identifier
+            ]
+        
+        def _saveScene():
+            # Save Maya scene to temp file and close
+            cmds.file(rename=self._mayaFilePath)
+            cmds.file(save=True, force=True, type="mayaAscii")
+            return self._mayaFilePath
+        
+        def _reloadScene(filename):
+            # Reopen the Maya scene file
+            cmds.file(new=True, force=True)
+            cmds.file(filename, open=True)
+            self._stage = ProxyShape.getByName('AL_usdmaya_Proxy').getUsdStage()
+        
+        _setupStage()
+        file = _saveScene()
+        _reloadScene(file)
+
+        # Assert reloaded state of anonymous sublayers
+        sessionLayer = self._stage.GetSessionLayer()
+        self.assertEqual(len(sessionLayer.subLayerPaths), 2)
+
+        sublayer01 = Sdf.Find(sessionLayer.subLayerPaths[0])
+        sublayer02 = Sdf.Find(sessionLayer.subLayerPaths[1])
+
+        self.assertIsNotNone(sublayer01)
+        self.assertIsNotNone(sublayer02)
+        self.assertIsNotNone(sublayer01.GetPrimAtPath('/root/subprim01'))
+        self.assertIsNotNone(sublayer02.GetPrimAtPath('/root/subprim02'))
+
+        # TODO easy way to add testing for recursive restoration
+        # self.assertEqual(len(sublayer02.subLayerPaths), 1)
+        # sublayer03 = Sdf.Find(sublayer02.subLayerPaths[0])
+        # self.assertIsNone(sublayer03.GetPrimAtPath('/root/subprim02/subsubprim03'))
 
 
 if __name__ == "__main__":
