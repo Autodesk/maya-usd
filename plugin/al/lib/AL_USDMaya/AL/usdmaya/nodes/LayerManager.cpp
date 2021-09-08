@@ -19,6 +19,7 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/TypeIDs.h"
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/textFileFormat.h>
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
@@ -451,17 +452,19 @@ MStatus LayerManager::clearSerialisationAttributes()
 void LayerManager::loadAllLayers()
 {
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::loadAllLayers\n");
-    const char*    errorString = "LayerManager::loadAllLayers";
-    const char*    identifierTempSuffix = "_tmp";
-    MStatus        status;
-    MPlug          allLayersPlug = layersPlug();
-    MPlug          singleLayerPlug;
-    MPlug          idPlug;
-    MPlug          anonymousPlug;
-    MPlug          serializedPlug;
-    std::string    identifierVal;
-    std::string    serializedVal;
-    SdfLayerRefPtr layer;
+    const char*                        errorString = "LayerManager::loadAllLayers";
+    const char*                        identifierTempSuffix = "_tmp";
+    MStatus                            status;
+    MPlug                              allLayersPlug = layersPlug();
+    MPlug                              singleLayerPlug;
+    MPlug                              idPlug;
+    MPlug                              anonymousPlug;
+    MPlug                              serializedPlug;
+    std::string                        identifierVal;
+    std::string                        serializedVal;
+    std::string                        sessionLayerIdentifier;
+    std::map<std::string, std::string> sessionSublayerNames;
+    SdfLayerRefPtr                     layer;
     // We DON'T want to use evaluate num elements, because we don't want to trigger
     // a compute - we want the value(s) as read from the file!
     const unsigned int numElements = allLayersPlug.numElements();
@@ -496,8 +499,20 @@ void LayerManager::loadAllLayers()
         if (isAnon) {
             // Note that the new identifier will not match the old identifier - only the "tag" will
             // be retained
+            // if this layer is an anonymous sublayer of the session layer, these will be replaced
+            // with the new identifier
             layer
                 = SdfLayer::CreateAnonymous(SdfLayer::GetDisplayNameFromIdentifier(identifierVal));
+
+            // store old:new name so we can replace the session layers anonymous subLayers
+            sessionSublayerNames[identifierVal] = layer->GetIdentifier().c_str();
+
+            // Check if this is the session layer
+            // Used later to update the session layers anonymous subLayer naming
+            if (sessionLayerIdentifier.empty() && TfStringEndsWith(identifierVal, "session.usda")) {
+                sessionLayerIdentifier = layer->GetIdentifier().c_str();
+            }
+
         } else {
             SdfLayerHandle layerHandle = SdfLayer::Find(identifierVal);
             if (layerHandle) {
@@ -562,6 +577,23 @@ void LayerManager::loadAllLayers()
             .Msg("Import result: success!\n"
                  "################################################\n");
         addLayer(layer, identifierVal);
+    }
+
+    // Update the name of any anonymous sublayers in the session layer
+    SdfLayerHandle sessionLayer = SdfLayer::Find(sessionLayerIdentifier);
+
+    if (sessionLayer) {
+        // TODO drill down and apply through session sublayers to enable recursive anonymous
+        // sublayers
+        auto subLayerPaths = sessionLayer->GetSubLayerPaths();
+
+        typedef std::map<std::string, std::string>::const_iterator MapIterator;
+        for (MapIterator iter = sessionSublayerNames.begin(); iter != sessionSublayerNames.end();
+             iter++) {
+            std::replace(subLayerPaths.begin(), subLayerPaths.end(), iter->first, iter->second);
+        }
+
+        sessionLayer->SetSubLayerPaths(subLayerPaths);
     }
 }
 
