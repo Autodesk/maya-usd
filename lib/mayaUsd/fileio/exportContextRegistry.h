@@ -72,9 +72,8 @@ public:
     /// Maya. Otherwise, the plugin at LibraryPath will be loaded via the regular USD plugin loading
     /// mechanism.
 
-    /// Enabler function, i.e. a function that enables a render context by modifying the options
-    /// dictionary passed as argument. Returns true on success.
-    typedef std::function<bool(VtDictionary&)> EnablerFn;
+    /// Enabler function, returns a dictionary containing all the options for the context.
+    typedef std::function<VtDictionary()> EnablerFn;
 
     /// Get all registered export conversions:
     static TfTokenVector ListExportContexts() { return GetInstance()._ListExportContexts(); }
@@ -138,14 +137,14 @@ private:
             name, niceName, description, enablerFct);                      \
     }
 
-#define REGISTER_EXPORT_CONTEXT_FCT(name, niceName, description, userArgsName) \
-    static bool _ExportContextEnabler_##name(VtDictionary&);                   \
-    TF_REGISTRY_FUNCTION(UsdMayaExportContextRegistry)                         \
-    {                                                                          \
-        UsdMayaExportContextRegistry::GetInstance().RegisterExportContext(     \
-            #name, niceName, description, &_ExportContextEnabler_##name);      \
-    }                                                                          \
-    bool _ExportContextEnabler_##name(VtDictionary& userArgsName)
+#define REGISTER_EXPORT_CONTEXT_FCT(name, niceName, description)           \
+    static VtDictionary _ExportContextEnabler_##name();                    \
+    TF_REGISTRY_FUNCTION(UsdMayaExportContextRegistry)                     \
+    {                                                                      \
+        UsdMayaExportContextRegistry::GetInstance().RegisterExportContext( \
+            #name, niceName, description, &_ExportContextEnabler_##name);  \
+    }                                                                      \
+    VtDictionary _ExportContextEnabler_##name()
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

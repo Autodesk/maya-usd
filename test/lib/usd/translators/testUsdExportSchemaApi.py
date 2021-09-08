@@ -43,7 +43,8 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         cmds.polySphere(r=1)
         usdFilePath = os.path.abspath('UsdExportSchemaApiTest.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, extraContext=["NullAPI",])
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+                           extraContext=["NullAPI", "Moe"])
 
         self.assertFalse(mark.IsClean())
 
@@ -68,7 +69,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
         cmds.polySphere(r=1)
         usdFilePath = os.path.abspath('UsdExportSchemaApiTestFile.usda')
         cmds.file(usdFilePath, force=True,
-                  options="mergeTransformAndShape=1;extraContext=Thierry,NullAPI",
+                  options="mergeTransformAndShape=1;extraContext=Thierry,NullAPI,Moe",
                   typ="USD Export", pr=True, ea=True)
 
         self.assertFalse(mark.IsClean())
@@ -89,11 +90,39 @@ class testUsdExportSchemaApi(unittest.TestCase):
         """Testing that we can enumerate export contexts"""
 
         modes = set(cmds.mayaUSDListIOContexts(export=True))
-        self.assertEqual(modes, set(["Null API Export", "Thierry", "Scene Grinder"]))
+        self.assertEqual(modes, set([
+            "Null API Export", "Thierry", "Scene Grinder", "Curly's special",
+            "Moe's special", "Larry's special"]))
 
         self.assertEqual(cmds.mayaUSDListIOContexts(exportOption="Null API Export"), "NullAPI")
         self.assertEqual(cmds.mayaUSDListIOContexts(exportAnnotation="Null API Export"),
                          "Exports an empty API for testing purpose")
+
+    def testExportContextConflicts(self):
+        """Testing that merging incompatible contexts generates errors"""
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+        self.assertTrue(mark.IsClean())
+
+        cmds.polySphere(r=1)
+        usdFilePath = os.path.abspath('UsdExportSchemaApiTestBasic.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, 
+                           extraContext=["Larry", "Curly", "Moe"])
+
+        self.assertFalse(mark.IsClean())
+
+        errors = mark.GetErrors()
+        messages = set()
+        for e in errors:
+            messages.add(e.commentary)
+
+        expected = set([
+            "Arguments for context 'Larry' can not include extra contexts.",
+            "Context 'Curly' and context 'Larry' do not agree on type of argument 'apiSchema'.",
+            "Context 'Moe' and context 'Larry' do not agree on argument 'convertMaterialsTo'."])
+        self.assertEqual(messages, expected)
+
+        cmds.file(f=True, new=True)
 
 
 if __name__ == '__main__':

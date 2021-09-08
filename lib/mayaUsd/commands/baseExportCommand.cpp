@@ -16,7 +16,6 @@
 //
 #include "baseExportCommand.h"
 
-#include <mayaUsd/fileio/exportContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
@@ -241,30 +240,8 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         }
 
         // Read all of the dictionary args first.
-        VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
+        const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
             argData, UsdMayaJobExportArgs::GetDefaultDictionary());
-
-        // Run all export context callbacks to get the final userArgs:
-        const TfToken& xcKey = UsdMayaJobExportArgsTokens->extraContext;
-        if (VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, xcKey)) {
-            // Making a copy. Required because userArgs can be modified by callbacks.
-            std::vector<VtValue> vals = VtDictionaryGet<std::vector<VtValue>>(userArgs, xcKey);
-            for (const VtValue& v : vals) {
-                if (v.IsHolding<std::string>()) {
-                    const TfToken exportContext(v.UncheckedGet<std::string>());
-                    const UsdMayaExportContextRegistry::ContextInfo& ci
-                        = UsdMayaExportContextRegistry::GetExportContextInfo(exportContext);
-                    if (ci.enablerCallback) {
-                        ci.enablerCallback(userArgs);
-                    } else {
-                        MGlobal::displayWarning(
-                            TfStringPrintf(
-                                "Ignoring unknown export context '%s'.", exportContext.GetText())
-                                .c_str());
-                    }
-                }
-            }
-        }
 
         // Now read all of the other args that are specific to this command.
         bool        append = false;

@@ -26,58 +26,98 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-REGISTER_EXPORT_CONTEXT_FCT(
-    NullAPI,
-    "Null API Export",
-    "Exports an empty API for testing purpose",
-    userArgs)
+REGISTER_EXPORT_CONTEXT_FCT(NullAPI, "Null API Export", "Exports an empty API for testing purpose")
 {
-    auto addToVector = [](VtDictionary& userArgs, const TfToken& key, const std::string& val) {
-        std::vector<VtValue> vals;
-        if (VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, key)) {
-            vals = VtDictionaryGet<std::vector<VtValue>>(userArgs, key);
-        }
-        vals.push_back(VtValue(val));
-        userArgs[key] = VtValue(vals);
-    };
-
-    addToVector(userArgs, UsdMayaJobExportArgsTokens->apiSchema, "testApi");
-    addToVector(userArgs, UsdMayaJobExportArgsTokens->chaser, "NullAPIChaser");
-
-    return true;
+    VtDictionary extraArgs;
+    extraArgs[UsdMayaJobExportArgsTokens->apiSchema]
+        = VtValue(std::vector<VtValue> { VtValue(std::string("testApi")) });
+    extraArgs[UsdMayaJobExportArgsTokens->chaser]
+        = VtValue(std::vector<VtValue> { VtValue(std::string("NullAPIChaser")) });
+    VtValue chaserArg(std::vector<VtValue> { VtValue(std::string("NullAPIChaser")),
+                                             VtValue(std::string("life")),
+                                             VtValue(std::string("42")) });
+    extraArgs[UsdMayaJobExportArgsTokens->chaserArgs] = VtValue(std::vector<VtValue> { chaserArg });
+    return extraArgs;
 }
 
-REGISTER_EXPORT_CONTEXT_FCT(Thierry, "Thierry", "Exports for Thierry renderer", userArgs)
+REGISTER_EXPORT_CONTEXT_FCT(Thierry, "Thierry", "Exports for Thierry renderer")
 {
-    return true;
+    return VtDictionary();
 }
 
-REGISTER_EXPORT_CONTEXT_FCT(SceneGrinder, "Scene Grinder", "Exports to Scene Grinder", userArgs)
+REGISTER_EXPORT_CONTEXT_FCT(SceneGrinder, "Scene Grinder", "Exports to Scene Grinder")
 {
-    return true;
+    return VtDictionary();
+}
+
+REGISTER_EXPORT_CONTEXT_FCT(Larry, "Larry's special", "Test coverage of error handling part uno")
+{
+    VtDictionary extraArgs;
+    // Correct:
+    extraArgs[UsdMayaJobExportArgsTokens->apiSchema]
+        = VtValue(std::vector<VtValue> { VtValue(std::string("testApi")) });
+    extraArgs[UsdMayaJobExportArgsTokens->convertMaterialsTo] = VtValue(std::string("MaterialX"));
+    // Referencing another context:
+    extraArgs[UsdMayaJobExportArgsTokens->extraContext]
+        = VtValue(std::vector<VtValue> { VtValue(std::string("Curly")) });
+    return extraArgs;
+}
+
+REGISTER_EXPORT_CONTEXT_FCT(Curly, "Curly's special", "Test coverage of error handling part deux")
+{
+    VtDictionary extraArgs;
+    // Incorrect type:
+    extraArgs[UsdMayaJobExportArgsTokens->apiSchema] = VtValue(std::string("testApi"));
+    return extraArgs;
+}
+
+REGISTER_EXPORT_CONTEXT_FCT(Moe, "Moe's special", "Test coverage of error handling part funf")
+{
+    VtDictionary extraArgs;
+    // Moe is conflicting on value with Larry, but merges nicely with NullAPI:
+    extraArgs[UsdMayaJobExportArgsTokens->convertMaterialsTo]
+        = VtValue(std::string("rendermanForMaya"));
+    VtValue chaserArg(std::vector<VtValue> { VtValue(std::string("NullAPIChaser")),
+                                             VtValue(std::string("genre")),
+                                             VtValue(std::string("slapstick")) });
+    extraArgs[UsdMayaJobExportArgsTokens->chaserArgs] = VtValue(std::vector<VtValue> { chaserArg });
+    return extraArgs;
 }
 
 class TestSchemaExporter : public UsdMayaSchemaApiWriter
 {
-    bool _isValid = false;
+    bool _isValidChaser = false;
+    bool _isValidChaserArgs = false;
+    bool _isValidMaterialConversion = false;
 
 public:
     TestSchemaExporter(const UsdMayaPrimWriterSharedPtr& primWriter, UsdMayaWriteJobContext& jobCtx)
         : UsdMayaSchemaApiWriter(primWriter, jobCtx)
     {
         const UsdMayaJobExportArgs& jobArgs = jobCtx.GetArgs();
-        for (const std::string& chaserName : jobArgs.chaserNames) {
-            if (chaserName == "NullAPIChaser") {
-                _isValid = true;
-                break;
-            }
-        }
+        _isValidChaser
+            = jobArgs.chaserNames.size() == 1 && jobArgs.chaserNames.front() == "NullAPIChaser";
+
+        // Default value of "UsdPreviewsurface" overwritten by stronger context:
+        _isValidMaterialConversion = jobArgs.convertMaterialsTo == "rendermanForMaya";
+
+        // Validate chaser args were merged:
+        std::map<std::string, std::string> myArgs;
+        TfMapLookup(jobArgs.allChaserArgs, "NullAPIChaser", &myArgs);
+        _isValidChaserArgs = myArgs.count("life") > 0 && myArgs["life"] == "42"
+            && myArgs.count("genre") > 0 && myArgs["genre"] == "slapstick";
     }
 
     void Write(const UsdTimeCode&) override
     {
-        if (!_isValid) {
+        if (!_isValidChaser) {
             TF_RUNTIME_ERROR("Missing chaser name NullAPIChaser in job arguments");
+        }
+        if (!_isValidMaterialConversion) {
+            TF_RUNTIME_ERROR("Incorrect material conversion in job arguments");
+        }
+        if (!_isValidChaserArgs) {
+            TF_RUNTIME_ERROR("Incorrect chaser args in job arguments");
         }
         TF_RUNTIME_ERROR("Missing implementation for TestSchemaExporter::Write");
     }

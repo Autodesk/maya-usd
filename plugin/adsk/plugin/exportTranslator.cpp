@@ -16,7 +16,6 @@
 //
 #include "exportTranslator.h"
 
-#include <mayaUsd/fileio/exportContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -143,18 +142,6 @@ MStatus UsdMayaExportTranslator::writer(
                 for (unsigned int idxContext = 0; idxContext < nbContexts; ++idxContext) {
                     const std::string exportContext = exportContexts[idxContext].asChar();
                     userArgVals.push_back(VtValue(exportContext));
-
-                    const UsdMayaExportContextRegistry::ContextInfo& ci
-                        = UsdMayaExportContextRegistry::GetExportContextInfo(
-                            TfToken(exportContext.c_str()));
-                    if (ci.enablerCallback) {
-                        ci.enablerCallback(userArgs);
-                    } else {
-                        MGlobal::displayWarning(
-                            TfStringPrintf(
-                                "Ignoring unknown export context '%s'.", exportContext.c_str())
-                                .c_str());
-                    }
                 }
                 userArgs[argName] = userArgVals;
             } else {

@@ -15,6 +15,7 @@
 //
 #include "jobArgs.h"
 
+#include <mayaUsd/fileio/exportContextRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -186,6 +187,31 @@ static TfToken::Set _TokenSet(const VtDictionary& userArgs, const TfToken& key)
         result.insert(TfToken(s));
     }
     return result;
+}
+
+/// Convenience function to compare two vectors as used for chaser arguments and shading modes.
+static bool _EqualVectors(const VtValue& a, const VtValue& b)
+{
+    bool aIsVector = a.IsHolding<std::vector<VtValue>>();
+    bool bIsVector = b.IsHolding<std::vector<VtValue>>();
+    if (aIsVector != bIsVector) {
+        return false;
+    }
+    if (!aIsVector) {
+        return true;
+    }
+    const std::vector<VtValue>& aVector = a.UncheckedGet<std::vector<VtValue>>();
+    const std::vector<VtValue>& bVector = b.UncheckedGet<std::vector<VtValue>>();
+    if (aVector.size() != bVector.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < aVector.size(); ++i) {
+        // Let VtValue do the string comparison:
+        if (aVector[i] != bVector[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // The chaser args are stored as vectors of vectors (since this is how you
@@ -518,8 +544,125 @@ UsdMayaJobExportArgs UsdMayaJobExportArgs::CreateFromDictionary(
     const UsdMayaUtil::MDagPathSet& dagPaths,
     const std::vector<double>&      timeSamples)
 {
-    return UsdMayaJobExportArgs(
-        VtDictionaryOver(userArgs, GetDefaultDictionary()), dagPaths, timeSamples);
+    VtDictionary allUserArgs = VtDictionaryOver(userArgs, GetDefaultDictionary());
+
+    std::vector<VtDictionary> contextArgs;
+
+    bool canMergeContexts = true;
+
+    // Run all export context callbacks to get the extra userArgs:
+    const TfToken& xcKey = UsdMayaJobExportArgsTokens->extraContext;
+    if (VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, xcKey)) {
+        for (const VtValue& v : VtDictionaryGet<std::vector<VtValue>>(userArgs, xcKey)) {
+            if (v.IsHolding<std::string>()) {
+                const TfToken exportContext(v.UncheckedGet<std::string>());
+                const UsdMayaExportContextRegistry::ContextInfo& ci
+                    = UsdMayaExportContextRegistry::GetExportContextInfo(exportContext);
+                if (ci.enablerCallback) {
+                    VtDictionary extraArgs = ci.enablerCallback();
+                    // Add the export context name to the args (for reference when merging):
+                    VtDictionary::iterator extraContextNamesIt = extraArgs.find(xcKey);
+                    if (extraContextNamesIt != extraArgs.end()) {
+                        // We already have a vector. Ensure it is of size 1 and contains only the
+                        // current context name:
+                        const std::vector<VtValue>& currContextNames
+                            = VtDictionaryGet<std::vector<VtValue>>(extraArgs, xcKey);
+                        if ((currContextNames.size() == 1 && currContextNames.front() != v)
+                            || currContextNames.size() > 1) {
+                            TF_RUNTIME_ERROR(TfStringPrintf(
+                                "Arguments for context '%s' can not include extra contexts.",
+                                exportContext.GetText()));
+                            canMergeContexts = false;
+                        }
+                    }
+                    std::vector<VtValue> extraContextNames;
+                    extraContextNames.push_back(v);
+                    extraArgs[xcKey] = extraContextNames;
+                    contextArgs.push_back(extraArgs);
+                } else {
+                    MGlobal::displayWarning(
+                        TfStringPrintf(
+                            "Ignoring unknown export context '%s'.", exportContext.GetText())
+                            .c_str());
+                }
+            }
+        }
+    }
+
+    // Validate that the args can be merged:
+    VtDictionary                       allContextArgs;
+    std::map<std::string, std::string> argInitialSource;
+    for (auto const& dict : contextArgs) {
+        // We made sure the value exists in the above loop, so we can fetch without fear:
+        const std::string& sourceName = VtDictionaryGet<std::vector<VtValue>>(dict, xcKey)
+                                            .front()
+                                            .UncheckedGet<std::string>();
+        for (auto const& dictTuple : dict) {
+            const std::string& k = dictTuple.first;
+            const VtValue&     v = dictTuple.second;
+
+            auto allContextIt = allContextArgs.find(k);
+            if (allContextIt == allContextArgs.end()) {
+                allContextArgs[k] = v;
+                argInitialSource[k] = sourceName;
+            } else {
+                const VtValue& allContextValue = allContextIt->second;
+
+                if (allContextValue.IsHolding<std::vector<VtValue>>()) {
+                    if (v.IsHolding<std::vector<VtValue>>()) {
+                        // We merge arrays:
+                        std::vector<VtValue> mergedValues
+                            = allContextValue.UncheckedGet<std::vector<VtValue>>();
+                        for (const VtValue& element : v.UncheckedGet<std::vector<VtValue>>()) {
+                            if (element.IsHolding<std::vector<VtValue>>()) {
+                                // vector<vector<string>> is common for chaserArgs and shadingModes
+                                auto findElement = [&element](const VtValue& a) {
+                                    return _EqualVectors(element, a);
+                                };
+                                if (std::find_if(
+                                        mergedValues.begin(), mergedValues.end(), findElement)
+                                    == mergedValues.end()) {
+                                    mergedValues.push_back(element);
+                                }
+                            } else {
+                                if (std::find(mergedValues.begin(), mergedValues.end(), element)
+                                    == mergedValues.end()) {
+                                    mergedValues.push_back(element);
+                                }
+                            }
+                        }
+                        allContextArgs[k] = mergedValues;
+                    } else {
+                        TF_RUNTIME_ERROR(TfStringPrintf(
+                            "Context '%s' and context '%s' do not agree on type of argument '%s'.",
+                            sourceName.c_str(),
+                            argInitialSource[k].c_str(),
+                            k.c_str()));
+                        canMergeContexts = false;
+                    }
+                } else {
+                    // Single value already exists. Check for conflicts:
+                    if (allContextValue != v) {
+                        TF_RUNTIME_ERROR(TfStringPrintf(
+                            "Context '%s' and context '%s' do not agree on argument '%s'.",
+                            sourceName.c_str(),
+                            argInitialSource[k].c_str(),
+                            k.c_str()));
+                        canMergeContexts = false;
+                    }
+                }
+            }
+        }
+    }
+
+    if (canMergeContexts) {
+        allUserArgs = VtDictionaryOver(allContextArgs, allUserArgs);
+    } else {
+        MGlobal::displayWarning(
+            "Errors while processing export contexts. Using base export options.");
+    }
+
+    return UsdMayaJobExportArgs(allUserArgs, dagPaths, timeSamples);
 }
 
 /* static */
