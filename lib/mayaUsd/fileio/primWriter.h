@@ -176,6 +176,11 @@ protected:
     MAYAUSD_CORE_PUBLIC
     virtual bool _HasAnimCurves() const;
 
+    /// Sets the destination USD prim to which we are writing. (Should only be used once in the
+    /// constructor)
+    MAYAUSD_CORE_PUBLIC
+    void _SetUsdPrim(const UsdPrim& usdPrim);
+
     /// Gets the current global export args in effect.
     MAYAUSD_CORE_PUBLIC
     const UsdMayaJobExportArgs& _GetExportArgs() const;

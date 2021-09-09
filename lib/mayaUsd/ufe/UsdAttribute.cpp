@@ -74,6 +74,9 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     // Therefore, we have implemented an attribute change block notification of
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
+    if (!attr.IsValid())
+        return false;
+
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
     std::string                                     errMsg;
     bool isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
@@ -96,7 +99,7 @@ PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
 std::string
 getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
-    if (!attr.HasValue())
+    if (!attr.IsValid() || !attr.HasValue())
         return std::string();
 
     PXR_NS::VtValue v;
@@ -118,7 +121,7 @@ getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::Usd
 template <typename T, typename U>
 U getUsdAttributeVectorAsUfe(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
-    if (!attr.HasValue())
+    if (!attr.IsValid() || !attr.HasValue())
         return U();
 
     PXR_NS::VtValue vt;
