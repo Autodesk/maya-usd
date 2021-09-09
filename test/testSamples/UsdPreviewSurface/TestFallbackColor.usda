@@ -1,0 +1,222 @@
+#usda 1.0
+(
+    defaultPrim = "pPlane1"
+    endTimeCode = 1
+    framesPerSecond = 24
+    metersPerUnit = 0.01
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+def Mesh "pPlane1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane1/Looks/usdPreviewSurface1SG>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    float3 xformOp:rotateXYZ = (90, 0, 0)
+    double3 xformOp:translate = (-1.5, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+    def Scope "Looks"
+    {
+        def Material "usdPreviewSurface1SG"
+        {
+            token inputs:file1:varname = "st"
+            token outputs:surface.connect = </pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1.outputs:surface>
+
+            def Shader "usdPreviewSurface1"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </pPlane1/Looks/usdPreviewSurface1SG/file1.outputs:rgb>
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file1"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0, 1, 0, 1)
+                asset inputs:file = @grid.png@
+                token inputs:sourceColorSpace = "sRGB"
+                float2 inputs:st.connect = </pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d.outputs:result>
+                token inputs:wrapS = "black"
+                token inputs:wrapT = "black"
+                float3 outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </pPlane1/Looks/usdPreviewSurface1SG.inputs:file1:varname>
+                    float2 outputs:result
+                }
+
+                def Shader "UsdTransform2d"
+                {
+                    uniform token info:id = "UsdTransform2d"
+                    float2 inputs:in.connect = </pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader.outputs:result>
+                    float inputs:rotation = 45
+                    float2 inputs:scale = (1, 1)
+                    float2 inputs:translation = (0.49999997, -0.20710683)
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+}
+
+def Mesh "pPlane2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane2/Looks/usdPreviewSurface3SG>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    float3 xformOp:rotateXYZ = (90, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+
+    def Scope "Looks"
+    {
+        def Material "usdPreviewSurface3SG"
+        {
+            token inputs:file3:varname = "st"
+            token outputs:surface.connect = </pPlane2/Looks/usdPreviewSurface3SG/usdPreviewSurface3.outputs:surface>
+
+            def Shader "usdPreviewSurface3"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </pPlane2/Looks/usdPreviewSurface3SG/file3.outputs:rgb>
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file3"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (1, 1, 0, 1)
+                asset inputs:file = @does_not_exist.png@
+                token inputs:sourceColorSpace = "sRGB"
+                float2 inputs:st.connect = </pPlane2/Looks/usdPreviewSurface3SG/file3/UsdTransform2d.outputs:result>
+                token inputs:wrapS = "black"
+                token inputs:wrapT = "black"
+                float3 outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </pPlane2/Looks/usdPreviewSurface3SG.inputs:file3:varname>
+                    float2 outputs:result
+                }
+
+                def Shader "UsdTransform2d"
+                {
+                    uniform token info:id = "UsdTransform2d"
+                    float2 inputs:in.connect = </pPlane2/Looks/usdPreviewSurface3SG/file3/TexCoordReader.outputs:result>
+                    float inputs:rotation = 45
+                    float2 inputs:scale = (1, 1)
+                    float2 inputs:translation = (0.49999997, -0.20710683)
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+}
+
+def Mesh "pPlane3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4]
+    int[] faceVertexIndices = [0, 1, 3, 2]
+    rel material:binding = </pPlane3/Looks/usdPreviewSurface4SG>
+    point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+    texCoord2f[] primvars:st = [(0, 0), (1, 0), (0, 1), (1, 1)] (
+        customData = {
+            dictionary Maya = {
+                token name = "map1"
+            }
+        }
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 3, 2]
+    float3 xformOp:rotateXYZ = (90, 0, 0)
+    double3 xformOp:translate = (1.5, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+    def Scope "Looks"
+    {
+        def Material "usdPreviewSurface4SG"
+        {
+            token inputs:file4:varname = "st"
+            token outputs:surface.connect = </pPlane3/Looks/usdPreviewSurface4SG/usdPreviewSurface4.outputs:surface>
+
+            def Shader "usdPreviewSurface4"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </pPlane3/Looks/usdPreviewSurface4SG/file4.outputs:rgb>
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file4"
+            {
+                uniform token info:id = "UsdUVTexture"
+                asset inputs:file = @neither_does_this_one.png@
+                token inputs:sourceColorSpace = "sRGB"
+                float2 inputs:st.connect = </pPlane3/Looks/usdPreviewSurface4SG/file4/UsdTransform2d.outputs:result>
+                token inputs:wrapS = "black"
+                token inputs:wrapT = "black"
+                float3 outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname.connect = </pPlane3/Looks/usdPreviewSurface4SG.inputs:file4:varname>
+                    float2 outputs:result
+                }
+
+                def Shader "UsdTransform2d"
+                {
+                    uniform token info:id = "UsdTransform2d"
+                    float2 inputs:in.connect = </pPlane3/Looks/usdPreviewSurface4SG/file4/TexCoordReader.outputs:result>
+                    float inputs:rotation = 45
+                    float2 inputs:scale = (1, 1)
+                    float2 inputs:translation = (0.49999997, -0.20710683)
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+}
+
