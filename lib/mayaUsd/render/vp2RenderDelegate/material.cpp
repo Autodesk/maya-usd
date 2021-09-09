@@ -105,6 +105,7 @@ namespace {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
+    (fallback)
     (file)
     (opacity)
     (useSpecularWorkflow)
@@ -641,6 +642,28 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
     MHWRender::MSamplerStateDesc desc;
     desc.filter = MHWRender::MSamplerState::kMinMagMipLinear;
 
+    auto it = node.parameters.find(_tokens->file);
+    bool useFallback = true;
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<SdfAssetPath>()) {
+            const SdfAssetPath& assetValue = value.UncheckedGet<SdfAssetPath>();
+            const std::string&  resolvedPath = assetValue.GetResolvedPath();
+            useFallback = !resolvedPath.empty();
+        }
+    }
+    if(useFallback) {
+        auto it = node.parameters.find(_tokens->fallback);
+        if (it != node.parameters.end()) {
+            const VtValue& value = it->second;
+            if (value.IsHolding<GfVec4f>()) {
+                const GfVec4f& fallbackValue = value.UncheckedGet<GfVec4f>();
+                float const* value = fallbackValue.data();
+                std::copy(value, value+4, desc.borderColor);
+            }
+        }
+    }
+    
 #ifdef WANT_MATERIALX_BUILD
     const bool isMaterialXNode = _IsMaterialX(node);
     auto       it
