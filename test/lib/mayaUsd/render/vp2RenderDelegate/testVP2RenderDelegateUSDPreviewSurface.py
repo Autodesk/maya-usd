@@ -194,6 +194,18 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
 
         self.assertSnapshotClose('F0_is_base_{}.png'.format(light_api))
 
+    def testFallbackColor(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.xform("persp", t=(0, 0, 5))
+        cmds.xform("persp", ro=[0, 0, 0], ws=True)
+
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "TestFallbackColor.usda")
+        mayaUtils.createProxyFromFile(testFile)
+
+        self.assertSnapshotClose('TestFallbackColor.png')
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
