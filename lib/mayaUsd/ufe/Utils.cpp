@@ -407,10 +407,10 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
 
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
 {
-    if (!Editability::isEditable(attr)) {
+    if (Editability::isLocked(attr)) {
         if (errMsg) {
             *errMsg = TfStringPrintf(
-                "Cannot edit [%s] attribute because its maya-editability metadata is set to off.",
+                "Cannot edit [%s] attribute because its lock metadata is [on].",
                 attr.GetBaseName().GetText());
         }
         return false;

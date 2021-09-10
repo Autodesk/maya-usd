@@ -462,10 +462,10 @@ void StagesSubject::stageChanged(
         if (changedPath.IsPropertyPath()) {
             if (hasAttributeValueChanged(it.base()->second)) {
                 const UsdAttribute attr = stage->GetAttributeAtPath(changedPath);
-                if (!Editability::isEditable(attr)) {
+                if (Editability::isLocked(attr)) {
                     std::string msg = TfStringPrintf(
-                        "The [%s] attribute of [%s] was modified even though its maya-editability "
-                        "metadata is set to off.",
+                        "The [%s] attribute of [%s] was modified even though its lock "
+                        "metadata is [on].",
                         attr.GetBaseName().GetText(),
                         attr.GetPrimPath().GetName().c_str());
                     MGlobal::displayWarning(msg.c_str());

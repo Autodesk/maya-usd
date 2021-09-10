@@ -17,25 +17,25 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/*! \brief  The tokens used in the editability metadata.
+/*! \brief  The tokens used in the lock metadata.
  */
-TfToken Editability::MetadataToken("mayaEditability");
+TfToken Editability::MetadataToken("mayaLock");
 TfToken Editability::OnToken("on");
 TfToken Editability::OffToken("off");
 
-/*! \brief  Retrieve the editability of a property.
+/*! \brief  Verify if a property is locked.
  */
-bool Editability::isEditable(UsdProperty property)
+bool Editability::isLocked(UsdProperty property)
 {
     // The reason we treat invalid property as editable is because we don't want
     // to influence editability of things that are not property that are being
     // tested by accident.
     if (!property.IsValid())
-        return true;
+        return false;
 
     TfToken editability;
     if (!property.GetMetadata(MetadataToken, &editability))
-        return true;
+        return false;
 
     if (editability == OffToken) {
         return false;
@@ -43,9 +43,9 @@ bool Editability::isEditable(UsdProperty property)
         return true;
     } else {
         TF_WARN(
-            "Invalid token value for maya editability will be treated as on: %s",
+            "Invalid token value [%s] for maya lock will be treated as [off].",
             editability.data());
-        return true;
+        return false;
     }
 }
 
