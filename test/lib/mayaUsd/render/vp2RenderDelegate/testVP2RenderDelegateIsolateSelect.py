@@ -57,10 +57,13 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
         cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
 
     def assertSnapshotClose(self, imageName):
+        cmds.undoInfo(stateWithoutFlush=False) # disable the undo queue during the snapshot
         baselineImage = os.path.join(self._baselineDir, imageName)
         snapshotImage = os.path.join(self._testDir, imageName)
         imageUtils.snapshot(snapshotImage, width=960, height=540)
-        return self.assertImagesClose(baselineImage, snapshotImage)
+        retVal = self.assertImagesClose(baselineImage, snapshotImage)
+        cmds.undoInfo(stateWithoutFlush=True)
+        return retVal
 
     def testIsolateSelect(self):
         cmds.file(force=True, new=True)
@@ -103,6 +106,9 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
         # Undo, Redo
         cmds.undo() # Undo remove capsule from isolate select
         self.assertSnapshotClose('undoCapsuleRemove.png')
+        cmds.redo() # Redo remove capsule from isolate select
+        self.assertSnapshotClose('redoCapsuleRemove.png')
+        cmds.undo() # Undo remove capsule from isolate select
         cmds.undo() # Undo add capsule to isolate select
         self.assertSnapshotClose('undoCapsuleAdd.png')
 
