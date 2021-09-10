@@ -42,7 +42,11 @@
 #include <pxr/usd/usdLux/distantLight.h>
 #include <pxr/usd/usdLux/domeLight.h>
 #include <pxr/usd/usdLux/geometryLight.h>
+#if PXR_VERSION < 2111
 #include <pxr/usd/usdLux/light.h>
+#else
+#include <pxr/usd/usdLux/lightAPI.h>
+#endif
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/shadowAPI.h>
 #include <pxr/usd/usdLux/shapingAPI.h>
@@ -143,7 +147,11 @@ static bool _ReportError(const std::string& msg, const SdfPath& primPath = SdfPa
 
 // INTENSITY
 
+#if PXR_VERSION < 2111
 static bool _WriteLightIntensity(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightIntensity(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     MStatus     status;
     const MPlug lightIntensityPlug = depFn.findPlug(_tokens->IntensityPlugName.GetText(), &status);
@@ -162,7 +170,11 @@ static bool _WriteLightIntensity(const MFnDependencyNode& depFn, UsdLuxLight& li
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightIntensity(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightIntensity(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     MStatus status;
     MPlug   lightIntensityPlug = depFn.findPlug(_tokens->IntensityPlugName.GetText(), &status);
@@ -180,7 +192,11 @@ static bool _ReadLightIntensity(const UsdLuxLight& lightSchema, MFnDependencyNod
 
 // EXPOSURE
 
+#if PXR_VERSION < 2111
 static bool _WriteLightExposure(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightExposure(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     MStatus     status;
     const MPlug lightExposurePlug = depFn.findPlug(_tokens->ExposurePlugName.GetText(), &status);
@@ -199,7 +215,11 @@ static bool _WriteLightExposure(const MFnDependencyNode& depFn, UsdLuxLight& lig
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightExposure(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightExposure(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     MStatus status;
     MPlug   lightExposurePlug = depFn.findPlug(_tokens->ExposurePlugName.GetText(), &status);
@@ -217,7 +237,11 @@ static bool _ReadLightExposure(const UsdLuxLight& lightSchema, MFnDependencyNode
 
 // DIFFUSE
 
+#if PXR_VERSION < 2111
 static bool _WriteLightDiffuse(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightDiffuse(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     MStatus     status;
     const MPlug lightDiffusePlug
@@ -237,7 +261,11 @@ static bool _WriteLightDiffuse(const MFnDependencyNode& depFn, UsdLuxLight& ligh
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightDiffuse(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightDiffuse(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     MStatus status;
     MPlug   lightDiffusePlug = depFn.findPlug(_tokens->DiffuseAmountPlugName.GetText(), &status);
@@ -255,7 +283,11 @@ static bool _ReadLightDiffuse(const UsdLuxLight& lightSchema, MFnDependencyNode&
 
 // SPECULAR
 
+#if PXR_VERSION < 2111
 static bool _WriteLightSpecular(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightSpecular(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     MStatus     status;
     const MPlug lightSpecularPlug
@@ -275,7 +307,11 @@ static bool _WriteLightSpecular(const MFnDependencyNode& depFn, UsdLuxLight& lig
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightSpecular(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightSpecular(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     MStatus status;
     MPlug   lightSpecularPlug = depFn.findPlug(_tokens->SpecularAmountPlugName.GetText(), &status);
@@ -293,7 +329,11 @@ static bool _ReadLightSpecular(const UsdLuxLight& lightSchema, MFnDependencyNode
 
 // NORMALIZE POWER
 
+#if PXR_VERSION < 2111
 static bool _WriteLightNormalizePower(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightNormalizePower(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     MStatus     status;
     const MPlug lightNormalizePowerPlug
@@ -313,7 +353,11 @@ static bool _WriteLightNormalizePower(const MFnDependencyNode& depFn, UsdLuxLigh
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightNormalizePower(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightNormalizePower(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     MStatus status;
     MPlug   lightNormalizePowerPlug
@@ -332,7 +376,11 @@ static bool _ReadLightNormalizePower(const UsdLuxLight& lightSchema, MFnDependen
 
 // COLOR
 
+#if PXR_VERSION < 2111
 static bool _WriteLightColor(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightColor(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     MStatus     status;
     const MPlug lightColorPlug = depFn.findPlug(_tokens->ColorPlugName.GetText(), &status);
@@ -349,7 +397,11 @@ static bool _WriteLightColor(const MFnDependencyNode& depFn, UsdLuxLight& lightS
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightColor(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightColor(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     MStatus status;
     MPlug   lightColorPlug = depFn.findPlug(_tokens->ColorPlugName.GetText(), &status);
@@ -369,7 +421,11 @@ static bool _ReadLightColor(const UsdLuxLight& lightSchema, MFnDependencyNode& d
 
 // TEMPERATURE
 
+#if PXR_VERSION < 2111
 static bool _WriteLightTemperature(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightTemperature(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     MStatus     status;
     const MPlug lightEnableTemperaturePlug
@@ -402,7 +458,11 @@ static bool _WriteLightTemperature(const MFnDependencyNode& depFn, UsdLuxLight& 
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightTemperature(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightTemperature(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     MStatus status;
     MPlug   lightEnableTemperaturePlug
@@ -437,7 +497,11 @@ static bool _ReadLightTemperature(const UsdLuxLight& lightSchema, MFnDependencyN
 
 // DISTANT LIGHT ANGLE
 
+#if PXR_VERSION < 2111
 static bool _WriteDistantLightAngle(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteDistantLightAngle(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     UsdLuxDistantLight distantLightSchema(lightSchema);
     if (!distantLightSchema) {
@@ -462,7 +526,11 @@ static bool _WriteDistantLightAngle(const MFnDependencyNode& depFn, UsdLuxLight&
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadDistantLightAngle(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadDistantLightAngle(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     const UsdLuxDistantLight distantLightSchema(lightSchema);
     if (!distantLightSchema) {
@@ -485,7 +553,11 @@ static bool _ReadDistantLightAngle(const UsdLuxLight& lightSchema, MFnDependency
 
 // LIGHT TEXTURE FILE
 
+#if PXR_VERSION < 2111
 static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     UsdLuxRectLight rectLightSchema(lightSchema);
     UsdLuxDomeLight domeLightSchema(lightSchema);
@@ -520,7 +592,11 @@ static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLight& 
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightTextureFile(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightTextureFile(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     const UsdLuxRectLight rectLightSchema(lightSchema);
     const UsdLuxDomeLight domeLightSchema(lightSchema);
@@ -588,7 +664,11 @@ static UsdAttribute _SetLightPrimAttr(
 }
 
 // AOV LIGHT
+#if PXR_VERSION < 2111
 static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     // Early out
     UsdPrim              lightPrim = lightSchema.GetPrim();
@@ -788,7 +868,11 @@ static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSch
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadAovLight(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     // Early out
     const UsdPrim&       lightPrim = lightSchema.GetPrim();
@@ -915,7 +999,11 @@ static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& dep
 }
 
 // ENVDAY LIGHT
+#if PXR_VERSION < 2111
 static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     // Early out
     UsdPrim              lightPrim = lightSchema.GetPrim();
@@ -1205,7 +1293,11 @@ static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& light
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadEnvDayLight(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     const UsdPrim&       lightPrim = lightSchema.GetPrim();
     static const TfType& usdSchemaBase = TfType::FindByName(_tokens->UsdSchemaBase);
@@ -1383,7 +1475,11 @@ static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& 
 
 // SHAPING API
 
+#if PXR_VERSION < 2111
 static bool _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     UsdLuxShapingAPI shapingAPI
         = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(lightSchema.GetPrim());
@@ -1494,7 +1590,11 @@ static bool _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& l
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightShapingAPI(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     const UsdLuxShapingAPI shapingAPI(lightSchema);
     if (!shapingAPI) {
@@ -1591,7 +1691,11 @@ static bool _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNo
 
 // SHADOW API
 
+#if PXR_VERSION < 2111
 static bool _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+#else
+static bool _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLightAPI& lightSchema)
+#endif
 {
     UsdLuxShadowAPI shadowAPI
         = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(lightSchema.GetPrim());
@@ -1693,7 +1797,11 @@ static bool _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& li
     return true;
 }
 
+#if PXR_VERSION < 2111
 static bool _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+#else
+static bool _ReadLightShadowAPI(const UsdLuxLightAPI& lightSchema, MFnDependencyNode& depFn)
+#endif
 {
     const UsdLuxShadowAPI shadowAPI(lightSchema);
     if (!shadowAPI) {
@@ -1783,6 +1891,7 @@ static bool _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNod
     return status == MS::kSuccess;
 }
 
+#if PXR_VERSION < 2111
 static UsdLuxLight
 _DefineUsdLuxLightForMayaLight(const MFnDependencyNode& depFn, UsdMayaPrimWriterContext* context)
 {
@@ -1824,6 +1933,50 @@ _DefineUsdLuxLightForMayaLight(const MFnDependencyNode& depFn, UsdMayaPrimWriter
 
     return lightSchema;
 }
+#else
+static UsdLuxLightAPI
+_DefineUsdLuxLightForMayaLight(const MFnDependencyNode& depFn, UsdMayaPrimWriterContext* context)
+{
+    UsdLuxLightAPI lightSchema;
+
+    UsdStageRefPtr stage = context->GetUsdStage();
+    const SdfPath& authorPath = context->GetAuthorPath();
+
+    MStatus       status;
+    const MString mayaLightTypeName = depFn.typeName(&status);
+    if (status != MS::kSuccess) {
+        _ReportError("Failed to get Maya light type name", authorPath);
+        return lightSchema;
+    }
+
+    const TfToken mayaLightTypeToken(mayaLightTypeName.asChar());
+
+    if (mayaLightTypeToken == _tokens->AovLightMayaTypeName) {
+        lightSchema = UsdLuxLightAPI(stage->DefinePrim(authorPath, _tokens->AovLightMayaTypeName));
+    } else if (mayaLightTypeToken == _tokens->CylinderLightMayaTypeName) {
+        lightSchema = UsdLuxCylinderLight::Define(stage, authorPath).LightAPI();
+    } else if (mayaLightTypeToken == _tokens->DiskLightMayaTypeName) {
+        lightSchema = UsdLuxDiskLight::Define(stage, authorPath).LightAPI();
+    } else if (mayaLightTypeToken == _tokens->DistantLightMayaTypeName) {
+        lightSchema = UsdLuxDistantLight::Define(stage, authorPath).LightAPI();
+    } else if (mayaLightTypeToken == _tokens->DomeLightMayaTypeName) {
+        lightSchema = UsdLuxDomeLight::Define(stage, authorPath).LightAPI();
+    } else if (mayaLightTypeToken == _tokens->EnvDayLightMayaTypeName) {
+        lightSchema
+            = UsdLuxLightAPI(stage->DefinePrim(authorPath, _tokens->EnvDayLightMayaTypeName));
+    } else if (mayaLightTypeToken == _tokens->GeometryLightMayaTypeName) {
+        lightSchema = UsdLuxGeometryLight::Define(stage, authorPath).LightAPI();
+    } else if (mayaLightTypeToken == _tokens->RectLightMayaTypeName) {
+        lightSchema = UsdLuxRectLight::Define(stage, authorPath).LightAPI();
+    } else if (mayaLightTypeToken == _tokens->SphereLightMayaTypeName) {
+        lightSchema = UsdLuxSphereLight::Define(stage, authorPath).LightAPI();
+    } else {
+        _ReportError("Could not determine UsdLux schema for Maya light", authorPath);
+    }
+
+    return lightSchema;
+}
+#endif
 
 /* static */
 bool UsdMayaTranslatorRfMLight::Write(
@@ -1839,9 +1992,13 @@ bool UsdMayaTranslatorRfMLight::Write(
         return _ReportError("Failed to get Maya light", authorPath);
     }
 
+#if PXR_VERSION < 2111
     UsdLuxLight lightSchema = _DefineUsdLuxLightForMayaLight(depFn, context);
+#else
+    UsdLuxLightAPI lightSchema = _DefineUsdLuxLightForMayaLight(depFn, context);
+#endif
     if (!lightSchema) {
-        return _ReportError("Failed to create UsdLuxLight prim", authorPath);
+        return _ReportError("Failed to create UsdLuxLightAPI prim", authorPath);
     }
 
     _WriteLightIntensity(depFn, lightSchema);
@@ -1871,7 +2028,11 @@ bool UsdMayaTranslatorRfMLight::Write(
     return true;
 }
 
+#if PXR_VERSION < 2111
 static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
+#else
+static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLightAPI& lightSchema)
+#endif
 {
     const UsdPrim& lightPrim = lightSchema.GetPrim();
 
@@ -1916,15 +2077,19 @@ bool UsdMayaTranslatorRfMLight::Read(
         return false;
     }
 
+#if PXR_VERSION < 2111
     const UsdLuxLight lightSchema(usdPrim);
+#else
+    const UsdLuxLightAPI lightSchema(usdPrim);
+#endif
     if (!lightSchema) {
-        return _ReportError("Failed to read UsdLuxLight prim", usdPrim.GetPath());
+        return _ReportError("Failed to read UsdLuxLightAPI prim", usdPrim.GetPath());
     }
 
     const TfToken mayaLightTypeToken = _GetMayaTypeTokenForUsdLuxLight(lightSchema);
     if (mayaLightTypeToken.IsEmpty()) {
         return _ReportError(
-            "Could not determine Maya light type for UsdLuxLight prim", lightSchema.GetPath());
+            "Could not determine Maya light type for UsdLuxLightAPI prim", lightSchema.GetPath());
     }
 
     MObject parentNode = context.GetMayaNode(lightSchema.GetPath().GetParentPath(), false);
