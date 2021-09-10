@@ -51,7 +51,6 @@ MStatus UsdMayaExportTranslator::writer(
     double       frameStride = 1.0;
     bool         append = false;
 
-    MStringArray filteredTypes;
     // Get the options
     if (optionsString.length() > 0) {
         MStringArray optionList;
@@ -81,7 +80,15 @@ MStatus UsdMayaExportTranslator::writer(
             } else if (argName == "frameStride") {
                 frameStride = theOption[1].asDouble();
             } else if (argName == "filterTypes") {
+                std::vector<VtValue> userArgVals;
+                MStringArray         filteredTypes;
                 theOption[1].split(',', filteredTypes);
+                unsigned int nbTypes = filteredTypes.length();
+                for (unsigned int idxType = 0; idxType < nbTypes; ++idxType) {
+                    const std::string filteredType = filteredTypes[idxType].asChar();
+                    userArgVals.emplace_back(filteredType);
+                }
+                userArgs[UsdMayaJobExportArgsTokens->filterTypes] = userArgVals;
             } else if (argName == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
                 MStringArray exportRootStrings;
                 theOption[1].split(',', exportRootStrings);
@@ -166,9 +173,6 @@ MStatus UsdMayaExportTranslator::writer(
         = UsdMayaWriteUtil::GetTimeSamples(timeInterval, std::set<double>(), frameStride);
     UsdMayaJobExportArgs jobArgs
         = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
-    for (unsigned int i = 0; i < filteredTypes.length(); ++i) {
-        jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
-    }
 
     UsdMaya_WriteJob writeJob(jobArgs);
     if (!writeJob.Write(fileName, append)) {
