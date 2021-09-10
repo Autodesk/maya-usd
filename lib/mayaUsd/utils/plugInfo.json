@@ -5,19 +5,21 @@
             "Info": {
                 "SdfMetadata": {
                     # Selectability controls Maya viewport selectability with the mouse.
+                    # If set, can be "on" (selectable) or "off" (unselectable).
+                    # If missing, defaults to "on" (selectable).
                     # It is enforced via the ProxyRenderDelegate via its getInstancedSelectionPath()
                     # function.
                     "mayaSelectability": {
                         "type": "token",
                         "appliesTo": "prims"
                     },
-                    # Editability controls the editability or properties.
-                    # If set, can be "on" (editable) or "off" (locked).
-                    # If missing, defaults to "on" (editable).
-                    "mayaEditability": {
+                    # Lock on properties.
+                    # If set, can be "off" (editable) or "on" (locked).
+                    # If missing, defaults to "off" (editable).
+                    "mayaLock": {
                         "type": "token",
                         "appliesTo": "properties",
-                        "default": "on"
+                        "default": "off"
                     }
                 }
             },
