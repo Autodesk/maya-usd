@@ -43,10 +43,6 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
 
     @classmethod
     def setUpClass(cls):
-        # The test USD data is authored Z-up, so make sure Maya is configured
-        # that way too.
-        # cmds.upAxis(axis='z')
-
         inputPath = fixturesUtils.setUpClass(__file__,
             initializeStandalone=False, loadPlugin=False)
 
@@ -103,6 +99,12 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
         # Remove capsule from isolate select
         cmds.isolateSelect("modelPanel4", removeSelected=True)
         self.assertSnapshotClose('cylinderAfterCapsuleRemove.png')
+
+        # Undo, Redo
+        cmds.undo() # Undo remove capsule from isolate select
+        self.assertSnapshotClose('undoCapsuleRemove.png')
+        cmds.undo() # Undo add capsule to isolate select
+        self.assertSnapshotClose('undoCapsuleAdd.png')
 
         # Turn off isolate select
         cmds.isolateSelect("modelPanel4", state=0)

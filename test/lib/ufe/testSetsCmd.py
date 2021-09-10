@@ -19,19 +19,10 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
-import ufeUtils
-import usdUtils
-
-import mayaUsd.ufe
-
-from pxr import Kind, Usd, UsdGeom, Vt
 
 from maya import cmds
 from maya import standalone
 
-import ufe
-
-import os
 import unittest
 
 
@@ -86,15 +77,21 @@ class SetsCmdTestCase(unittest.TestCase):
 
         # union of the sets
         self.assertEqual([usdCube, usdCylinder], sorted(cmds.sets( set2, un=set1 )))
-        cmds.sets( set2, ii=set1 ) # do the sets have common members
+        self.assertFalse(cmds.sets( set2, ii=set1 )) # do the sets have common members
 
         # query set contents, remove from set, add to set
         self.assertTrue(cmds.sets( usdCube, im=set1 )) # Test if Cube1 is in set1
         self.assertFalse(cmds.sets( usdCube, im=set2 )) # Test if Cube1 is in set2
         cmds.sets( usdCube, rm=set1 ) # Remove Cube1 from set1
         self.assertFalse(cmds.sets( usdCube, im=set1 )) # Test if Cube1 is in set1
-        cmds.sets( usdCube, add=set1 ) # Add if Cube1 to set1
+        cmds.sets( usdCube, add=set1 ) # Add Cube1 to set1
         self.assertTrue(cmds.sets( usdCube, im=set1 )) # Test if Cube1 is in set1
+
+        # Undo, Redo
+        cmds.undo() # Undo Add Cube1 to set1
+        self.assertFalse(cmds.sets( usdCube, im=set1 ))
+        cmds.undo() # Undo Remove Cube1 from set1
+        self.assertTrue(cmds.sets( usdCube, im=set1 ))
 
         #reparent Cube1 under Xform1
         cmds.parent(usdCube, usdXform, relative=True)
