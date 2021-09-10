@@ -52,7 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((PointInstancerTypeName, "PxPointInstancer"))
+    ((PointInstancerTypeName, "PointInstancer"))
     ((XformTypeName, "Xform"))
     ((GeomRootName, "Geom"))
     ((ScopePrimTypeName, "Scope"))
