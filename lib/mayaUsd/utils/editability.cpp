@@ -43,8 +43,7 @@ bool Editability::isLocked(UsdProperty property)
         return true;
     } else {
         TF_WARN(
-            "Invalid token value [%s] for maya lock will be treated as [off].",
-            editability.data());
+            "Invalid token value [%s] for maya lock will be treated as [off].", editability.data());
         return false;
     }
 }
