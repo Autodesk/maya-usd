@@ -331,10 +331,9 @@ bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
         }
     }
 
-    if (!mArgs.GetFilteredTypeIds().empty()) {
+    if (!mArgs.filteredTypeIds.empty()) {
         MFnDependencyNode mfnNode(ob);
-        if (mArgs.GetFilteredTypeIds().find(mfnNode.typeId().id())
-            != mArgs.GetFilteredTypeIds().end()) {
+        if (mArgs.filteredTypeIds.find(mfnNode.typeId().id()) != mArgs.filteredTypeIds.end()) {
             return false;
         }
     }
