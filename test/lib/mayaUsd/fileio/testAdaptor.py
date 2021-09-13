@@ -31,15 +31,7 @@ import fixturesUtils, os
 
 import unittest
 
-class shaderWriterTest(mayaUsdLib.ShaderWriter):
-    def Write(self, usdTime):
-         print("shaderWriterTest.Write called")
-
-    def PostExport(self):
-         print("shaderWriterTest.PostExport called")
-         return False
-
-class testShaderWriter(unittest.TestCase):
+class testAdaptor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.setUpClass(__file__)
@@ -51,8 +43,9 @@ class testShaderWriter(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    def testSimpleShaderWriter(self):
-        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "test")
+    def testSimpleAdaptor(self):
+        mayaUsdLib.Adaptor.RegisterTypedSchemaConversion("mesh", UsdGeom.Sphere)
+        mayaUsdLib.Adaptor.RegisterAttributeAlias(UsdGeom.Tokens.subdivisionScheme,"USD_subdivisionScheme")
 
 
 if __name__ == '__main__':
