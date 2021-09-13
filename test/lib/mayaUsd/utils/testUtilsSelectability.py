@@ -36,7 +36,10 @@ from PySide2.QtWidgets import QWidget
 
 from shiboken2 import wrapInstance
 
-class testVP2RenderDelegateSelectability(unittest.TestCase):
+class testUtilsSelectability(unittest.TestCase):
+    """
+    Tests selectability when selecting prims in the viewport.
+    """
 
     selectabilityToken = "mayaSelectability"
     onToken = "on"
