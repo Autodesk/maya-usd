@@ -28,7 +28,7 @@
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoManager.h>
 #endif
-#include <mayaUsd/utils/Editability.h>
+#include <mayaUsd/utils/editability.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>

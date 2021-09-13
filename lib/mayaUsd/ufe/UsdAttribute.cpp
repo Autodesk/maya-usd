@@ -81,8 +81,7 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     std::string                                     errMsg;
     bool isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
     if (!isSetAttrAllowed) {
-        MGlobal::displayError(errMsg.c_str());
-        return false;
+        throw std::runtime_error(errMsg);
     }
 
     return attr.Set<T>(value);
