@@ -3,6 +3,7 @@ set(TARGET_NAME MAYAUSD_UTILS_TEST)
 set(TEST_SCRIPT_FILES
     testBlockSceneModificationContext.py
     testDiagnosticDelegate.py
+    testUtilsEditability.py
 )
 
 set(INTERACTIVE_TEST_SCRIPT_FILES "")
