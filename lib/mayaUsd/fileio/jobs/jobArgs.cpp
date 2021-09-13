@@ -326,6 +326,55 @@ static PcpMapFunction::PathMap _ExportRootsMap(
     return pathMap;
 }
 
+static void _AddFilteredTypeName(const MString& typeName, std::set<unsigned int>& filteredTypeIds)
+{
+    MNodeClass   cls(typeName);
+    unsigned int id = cls.typeId().id();
+    if (id == 0) {
+        TF_WARN("Given excluded node type '%s' does not exist; ignoring", typeName.asChar());
+        return;
+    }
+    filteredTypeIds.insert(id);
+    // We also insert all inherited types - only way to query this is through mel,
+    // which is slower, but this should be ok, as these queries are only done
+    // "up front" when the export starts, not per-node
+    MString queryCommand("nodeType -isTypeName -derived ");
+    queryCommand += typeName;
+    MStringArray inheritedTypes;
+    MStatus      status = MGlobal::executeCommand(queryCommand, inheritedTypes, false, false);
+    if (!status) {
+        TF_WARN(
+            "Error querying derived types for '%s': %s",
+            typeName.asChar(),
+            status.errorString().asChar());
+        return;
+    }
+
+    for (unsigned int i = 0; i < inheritedTypes.length(); ++i) {
+        if (inheritedTypes[i].length() == 0)
+            continue;
+        id = MNodeClass(inheritedTypes[i]).typeId().id();
+        if (id == 0) {
+            // Unfortunately, the returned list will often include weird garbage, like
+            // "THconstraint" for "constraint", which cannot be converted to a MNodeClass,
+            // so just ignore these...
+            continue;
+        }
+        filteredTypeIds.insert(id);
+    }
+}
+
+static std::set<unsigned int> _FilteredTypeIds(const VtDictionary& userArgs)
+{
+    const std::vector<std::string> vec
+        = _Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->filterTypes);
+    std::set<unsigned int> result;
+    for (const std::string& s : vec) {
+        _AddFilteredTypeName(s.c_str(), result);
+    }
+    return result;
+}
+
 UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary&             userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,
@@ -423,6 +472,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
               stripNamespaces,
               dagPaths),
           SdfLayerOffset()))
+    , filteredTypeIds(_FilteredTypeIds(userArgs))
 {
 }
 
@@ -476,9 +526,9 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         out << "    " << dagPath.fullPathName().asChar() << std::endl;
     }
 
-    out << "_filteredTypeIds (" << exportArgs.GetFilteredTypeIds().size() << ")" << std::endl;
-    for (unsigned int id : exportArgs.GetFilteredTypeIds()) {
-        out << "    " << id << ": " << MNodeClass(MTypeId(id)).className() << std::endl;
+    out << "filteredTypeIds (" << exportArgs.filteredTypeIds.size() << ")" << std::endl;
+    for (unsigned int id : exportArgs.filteredTypeIds) {
+        out << "    " << id << ": " << MNodeClass(MTypeId(id)).typeName() << std::endl;
     }
 
     out << "chaserNames (" << exportArgs.chaserNames.size() << ")" << std::endl;
@@ -540,6 +590,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportUVs] = true;
         d[UsdMayaJobExportArgsTokens->exportVisibility] = true;
         d[UsdMayaJobExportArgsTokens->file] = std::string();
+        d[UsdMayaJobExportArgsTokens->filterTypes] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = false;
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
@@ -574,44 +625,6 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
     });
 
     return d;
-}
-
-void UsdMayaJobExportArgs::AddFilteredTypeName(const MString& typeName)
-{
-    MNodeClass   cls(typeName);
-    unsigned int id = cls.typeId().id();
-    if (id == 0) {
-        TF_WARN("Given excluded node type '%s' does not exist; ignoring", typeName.asChar());
-        return;
-    }
-    _filteredTypeIds.insert(id);
-    // We also insert all inherited types - only way to query this is through mel,
-    // which is slower, but this should be ok, as these queries are only done
-    // "up front" when the export starts, not per-node
-    MString queryCommand("nodeType -isTypeName -derived ");
-    queryCommand += typeName;
-    MStringArray inheritedTypes;
-    MStatus      status = MGlobal::executeCommand(queryCommand, inheritedTypes, false, false);
-    if (!status) {
-        TF_WARN(
-            "Error querying derived types for '%s': %s",
-            typeName.asChar(),
-            status.errorString().asChar());
-        return;
-    }
-
-    for (unsigned int i = 0; i < inheritedTypes.length(); ++i) {
-        if (inheritedTypes[i].length() == 0)
-            continue;
-        id = MNodeClass(inheritedTypes[i]).typeId().id();
-        if (id == 0) {
-            // Unfortunately, the returned list will often include weird garbage, like
-            // "THconstraint" for "constraint", which cannot be converted to a MNodeClass,
-            // so just ignore these...
-            continue;
-        }
-        _filteredTypeIds.insert(id);
-    }
 }
 
 std::string UsdMayaJobExportArgs::GetResolvedFileName() const
