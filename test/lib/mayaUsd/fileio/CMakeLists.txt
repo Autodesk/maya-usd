@@ -1,7 +1,6 @@
 set(TARGET_NAME MAYAUSD_FILEIO_TEST)
 
 set(TEST_SCRIPT_FILES
-    testAdaptor.py
     testPrimReader.py
     testPrimWriter.py
     testShaderReader.py
