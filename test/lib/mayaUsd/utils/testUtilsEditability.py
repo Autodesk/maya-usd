@@ -57,19 +57,13 @@ class testUtilsEditability(unittest.TestCase):
     def resetScene(self):
         cmds.file(new=True, force=True)
 
-    def createStageWithNewLayer(self):
-        shapeNode = cmds.createNode('mayaUsdProxyShape', skipSelect=True, name='stageShape1')
-        cmds.connectAttr('time1.outTime', shapeNode+'.time')
-        cmds.select(shapeNode, replace=True)
-        fullPath = cmds.ls(shapeNode, long=True)
-        return fullPath[0]
-
     def createLayer(self):
         '''
         Helper that creates a stage and layer and return the item of its shape item.
         '''
-        proxyShapePath = self.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path(proxyShapePath)
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
 
         return proxyShapeItem, proxyShapePath

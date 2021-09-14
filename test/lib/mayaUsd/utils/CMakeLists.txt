@@ -3,16 +3,21 @@ set(TARGET_NAME MAYAUSD_UTILS_TEST)
 set(TEST_SCRIPT_FILES
     testBlockSceneModificationContext.py
     testDiagnosticDelegate.py
-    testUtilsEditability.py
 )
+
+if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+        testUtilsEditability.py
+    )
+endif()
 
 set(INTERACTIVE_TEST_SCRIPT_FILES "")
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND INTERACTIVE_TEST_SCRIPT_FILES
         testUtilsSelectability.py
         testUtilsSelectabilityPointInstanceSelection.py
-        )
-        endif()
+    )
+endif()
         
 add_custom_target(${TARGET_NAME} ALL)
 
