@@ -15,13 +15,9 @@
 //
 #include "editability.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <mayaUsd/base/tokens.h>
 
-/*! \brief  The tokens used in the lock metadata.
- */
-TfToken Editability::MetadataToken("mayaLock");
-TfToken Editability::OnToken("on");
-TfToken Editability::OffToken("off");
+PXR_NAMESPACE_OPEN_SCOPE
 
 /*! \brief  Verify if a property is locked.
  */
@@ -33,17 +29,17 @@ bool Editability::isLocked(UsdProperty property)
     if (!property.IsValid())
         return false;
 
-    TfToken editability;
-    if (!property.GetMetadata(MetadataToken, &editability))
+    TfToken lock;
+    if (!property.GetMetadata(MayaUsdMetadata->Lock, &lock))
         return false;
 
-    if (editability == OffToken) {
+    if (lock == MayaUsdMetadata->Off) {
         return false;
-    } else if (editability == OnToken) {
+    } else if (lock == MayaUsdMetadata->On) {
         return true;
     } else {
         TF_WARN(
-            "Invalid token value [%s] for maya lock will be treated as [off].", editability.data());
+            "Invalid token value [%s] for maya lock will be treated as [off].", lock.data());
         return false;
     }
 }

@@ -24,4 +24,5 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapTokens()
 {
     TF_PY_WRAP_PUBLIC_TOKENS("OptionVarTokens", MayaUsdOptionVars, MAYA_USD_OPTIONVAR_TOKENS);
+    TF_PY_WRAP_PUBLIC_TOKENS("MetadataTokens", MayaUsdMetadata, MAYA_USD_METADATA_TOKENS);
 }

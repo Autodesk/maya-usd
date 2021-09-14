@@ -43,10 +43,10 @@ class testUtilsSelectabilityPointInstanceSelection(unittest.TestCase):
     Tests selectability when selecting of a PointInstancer.
     """
 
-    selectabilityToken = "mayaSelectability"
-    onToken = "on"
-    offToken = "off"
-    inheritToken = "inherit"
+    selectabilityToken = mayaUsdLib.MetadataTokens.Selectability
+    onToken = mayaUsdLib.MetadataTokens.On
+    offToken = mayaUsdLib.MetadataTokens.Off
+    inheritToken = mayaUsdLib.MetadataTokens.Inherit
 
     @classmethod
     def setUpClass(cls):

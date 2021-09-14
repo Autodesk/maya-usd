@@ -29,6 +29,7 @@ import unittest
 
 import ufe
 import mayaUsd.ufe
+import mayaUsd.lib 
 
 from PySide2 import QtCore
 from PySide2.QtTest import QTest
@@ -41,10 +42,10 @@ class testUtilsSelectability(unittest.TestCase):
     Tests selectability when selecting prims in the viewport.
     """
 
-    selectabilityToken = "mayaSelectability"
-    onToken = "on"
-    offToken = "off"
-    inheritToken = "inherit"
+    selectabilityToken = mayaUsd.lib.MetadataTokens.Selectability
+    onToken = mayaUsd.lib.MetadataTokens.On
+    offToken = mayaUsd.lib.MetadataTokens.Off
+    inheritToken = mayaUsd.lib.MetadataTokens.Inherit
 
     @classmethod
     def setUpClass(cls):

@@ -26,12 +26,6 @@
 namespace MAYAUSD_NS_DEF {
 namespace CustomLayerData {
 
-// Token for referenced layers
-const std::string kReferencedLayersToken = "maya_shared_layers";
-
-// Token for export file path
-const std::string kExportFilePathToken = "maya_export_file_path";
-
 /**
  * Get the String Array custom data on the layer
  *

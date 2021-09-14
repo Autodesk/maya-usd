@@ -27,12 +27,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Editability
 {
 public:
-    /*! \brief  The tokens used in the lock metadata.
-     */
-    static TfToken MetadataToken;
-    static TfToken OnToken;
-    static TfToken OffToken;
-
     /*! \brief  Verify if a property is locked.
      */
     static bool isLocked(UsdProperty property);

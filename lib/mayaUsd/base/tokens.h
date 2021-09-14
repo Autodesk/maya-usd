@@ -68,6 +68,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
 
+// Tokens that are used as metadata on prim and attributes in MayaUSD
+//
+// clang-format off
+#define MAYA_USD_METADATA_TOKENS                         \
+    /* Selectability metadata to be used on prims     */ \
+    ((Selectability, "mayaSelectability"))               \
+    /* Locking attribute metadata. A locked attribute */ \
+    /* value cannot be changed.                       */ \
+    ((Lock, "mayaLock"))                                 \
+    /* Metadata value to inherit the value from a     */ \
+    /* parent prim. Used in selectability.            */ \
+    ((Inherit, "inherit"))                               \
+    /* Metadata value to turn on or off a feature.    */ \
+    /* Used in selectability and lock, for example.   */ \
+    ((On, "on"))                                         \
+    ((Off, "off"))                                       \
+    /* Referenced layers.                             */ \
+    ((ReferencedLayers, "maya_shared_layers"))           \
+    /* Export file path.                              */ \
+    ((ExportFilePathToken, "maya_export_file_path"))     \
+// clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(MayaUsdMetadata, MAYAUSD_CORE_PUBLIC, MAYA_USD_METADATA_TOKENS);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
