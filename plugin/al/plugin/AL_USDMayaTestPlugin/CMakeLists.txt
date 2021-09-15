@@ -26,6 +26,7 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/fileio/export_nonlinear.cpp
         AL/usdmaya/fileio/export_unmerged.cpp
         AL/usdmaya/fileio/import_instances.cpp
+        AL/usdmaya/fileio/import_playback_range.cpp
         AL/usdmaya/fileio/test_activeInActiveTranslators.cpp
         AL/usdmaya/nodes/proxy/test_PrimFilter.cpp
         AL/usdmaya/nodes/test_ActiveInactive.cpp

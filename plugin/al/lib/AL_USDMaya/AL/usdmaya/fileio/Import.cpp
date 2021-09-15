@@ -124,7 +124,7 @@ void Import::doImport()
 
     if (stage != UsdStageRefPtr()) {
         // set timeline range if animation is enabled
-        if (m_params.m_animations) {
+        if (m_params.m_animations && stage->HasAuthoredTimeCodeRange()) {
             const char* const timeError = "ALUSDImport: error setting time range";
             const MTime       startTimeCode = stage->GetStartTimeCode();
             const MTime       endTimeCode = stage->GetEndTimeCode();
