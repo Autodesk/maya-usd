@@ -89,11 +89,11 @@ Selectability::State Selectability::getLocalState(const UsdPrim& prim)
     if (!prim.GetMetadata(MayaUsdMetadata->Selectability, &selectability))
         return kInherit;
 
-    if (selectability == MayaUsdMetadata->Off) {
+    if (selectability == MayaUsdTokens->Off) {
         return kOff;
-    } else if (selectability == MayaUsdMetadata->On) {
+    } else if (selectability == MayaUsdTokens->On) {
         return kOn;
-    } else if (selectability == MayaUsdMetadata->Inherit) {
+    } else if (selectability == MayaUsdTokens->Inherit) {
         return kInherit;
     } else {
         TF_WARN(

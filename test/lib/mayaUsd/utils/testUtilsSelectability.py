@@ -43,9 +43,9 @@ class testUtilsSelectability(unittest.TestCase):
     """
 
     selectabilityToken = mayaUsd.lib.MetadataTokens.Selectability
-    onToken = mayaUsd.lib.MetadataTokens.On
-    offToken = mayaUsd.lib.MetadataTokens.Off
-    inheritToken = mayaUsd.lib.MetadataTokens.Inherit
+    onToken = mayaUsd.lib.Tokens.On
+    offToken = mayaUsd.lib.Tokens.Off
+    inheritToken = mayaUsd.lib.Tokens.Inherit
 
     @classmethod
     def setUpClass(cls):

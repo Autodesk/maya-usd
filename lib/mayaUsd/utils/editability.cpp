@@ -17,11 +17,14 @@
 
 #include <mayaUsd/base/tokens.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAUSD_NS_DEF {
+namespace Editability {
+
+using namespace PXR_NS;
 
 /*! \brief  Verify if a property is locked.
  */
-bool Editability::isLocked(UsdProperty property)
+bool isLocked(PXR_NS::UsdProperty property)
 {
     // The reason we treat invalid property as editable is because we don't want
     // to influence editability of things that are not property that are being
@@ -29,13 +32,13 @@ bool Editability::isLocked(UsdProperty property)
     if (!property.IsValid())
         return false;
 
-    TfToken lock;
+    PXR_NS::TfToken lock;
     if (!property.GetMetadata(MayaUsdMetadata->Lock, &lock))
         return false;
 
-    if (lock == MayaUsdMetadata->Off) {
+    if (lock == MayaUsdTokens->Off) {
         return false;
-    } else if (lock == MayaUsdMetadata->On) {
+    } else if (lock == MayaUsdTokens->On) {
         return true;
     } else {
         TF_WARN("Invalid token value [%s] for maya lock will be treated as [off].", lock.data());
@@ -43,4 +46,5 @@ bool Editability::isLocked(UsdProperty property)
     }
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace Editability
+} // namespace MAYAUSD_NS_DEF

@@ -31,20 +31,14 @@ import ufe
 import mayaUsd.ufe
 import mayaUsd.lib
 
-from PySide2 import QtCore
-from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QWidget
-
-from shiboken2 import wrapInstance
-
 class testUtilsEditability(unittest.TestCase):
     """
     Tests editability of attributes.
     """
 
     lockToken = mayaUsd.lib.MetadataTokens.Lock
-    onToken = mayaUsd.lib.MetadataTokens.On
-    offToken = mayaUsd.lib.MetadataTokens.Off
+    onToken = mayaUsd.lib.Tokens.On
+    offToken = mayaUsd.lib.Tokens.Off
 
     @classmethod
     def setUpClass(cls):
@@ -143,7 +137,7 @@ class testUtilsEditability(unittest.TestCase):
 
     def testEditabilityMetadatUndo(self):
         '''
-        Verify that setting the metadata on a an attribute can be undone when using undo blocks.
+        Verify that setting the metadata on an attribute can be undone when using undo blocks.
         '''
         prop, ufeProp = self.prepareProperty()
 

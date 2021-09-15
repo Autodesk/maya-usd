@@ -28,7 +28,6 @@
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoManager.h>
 #endif
-#include <mayaUsd/utils/editability.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
@@ -36,7 +35,6 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 
-#include <maya/MGlobal.h>
 #include <maya/MMessage.h>
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchy.h>
@@ -67,25 +65,6 @@ std::atomic_bool stageSetGuardCount { false };
 bool isTransformChange(const TfToken& nameToken)
 {
     return nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken);
-}
-
-// Verify if a change list refers to an attribute changing value.
-//
-// We currently support two changes: to the default value (what we mostly think of as the value) or
-// to the value time-sampled values.
-bool hasAttributeValueChanged(const std::vector<const SdfChangeList::Entry*>& entries)
-{
-    for (const auto& entry : entries) {
-        if (entry->flags.didChangeAttributeTimeSamples)
-            return true;
-
-        for (const auto& info : entry->infoChanged) {
-            if (UsdGeomTokens->default_ == info.first)
-                return true;
-        }
-    }
-
-    return false;
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -456,22 +435,6 @@ void StagesSubject::stageChanged(
             }
         }
 #endif
-
-        // Warn if a locked attribute value has been changed, probably through
-        // the USD API.
-        if (changedPath.IsPropertyPath()) {
-            if (hasAttributeValueChanged(it.base()->second)) {
-                const UsdAttribute attr = stage->GetAttributeAtPath(changedPath);
-                if (Editability::isLocked(attr)) {
-                    std::string msg = TfStringPrintf(
-                        "The [%s] attribute of [%s] was modified even though its lock "
-                        "metadata is [on].",
-                        attr.GetBaseName().GetText(),
-                        attr.GetPrimPath().GetName().c_str());
-                    MGlobal::displayWarning(msg.c_str());
-                }
-            }
-        }
     }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE

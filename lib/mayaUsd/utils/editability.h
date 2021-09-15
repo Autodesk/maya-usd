@@ -19,19 +19,18 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/property.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+namespace MAYAUSD_NS_DEF {
 
 /*! \brief  Determine the editability status of a property.
  */
 
-class Editability
+namespace Editability
 {
-public:
     /*! \brief  Verify if a property is locked.
      */
-    static bool isLocked(UsdProperty property);
-};
+    bool isLocked(PXR_NS::UsdProperty property);
+}
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace MAYAUSD_NS_DEF
 
 #endif // MAYA_USD_EDITABILITY_H
