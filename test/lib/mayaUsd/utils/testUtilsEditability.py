@@ -137,7 +137,8 @@ class testUtilsEditability(unittest.TestCase):
         # Make sure non-editable attribute with lock "on" cannot be changed.
         prop.SetMetadata(self.lockToken, self.onToken)
         value = ufeProp.get()
-        self.assertIsNone(ufeProp.setCmd(value + 1.0))
+        with self.assertRaises(RuntimeError):
+            ufeProp.setCmd(value + 1.0).execute()
         self.assertEqual(ufeProp.get(), value)
 
     def testEditabilityMetadatUndo(self):
