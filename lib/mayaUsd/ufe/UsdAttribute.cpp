@@ -276,6 +276,10 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
     auto self = std::dynamic_pointer_cast<UsdAttributeEnumString>(shared_from_this());
     if (!TF_VERIFY(self, kErrorMsgInvalidType))
         return nullptr;
+
+    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, nullptr))
+        return nullptr;
+
     return std::make_shared<SetUndoableCommand<std::string, UsdAttributeEnumString>>(self, value);
 }
 
@@ -308,6 +312,9 @@ TypedUsdAttribute<T>::TypedUsdAttribute(
 
 template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(const T& value)
 {
+    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, nullptr))
+        return nullptr;
+
     // See
     // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
     // for explanation of this->shared_from_this() in templated class.
