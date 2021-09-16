@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 #include <mayaUsd/utils/util.h>
@@ -173,6 +174,20 @@ static std::string _AttributeAdaptor__repr__(const UsdMayaAdaptor::AttributeAdap
     }
 }
 
+static void RegisterTypedSchemaConversion(const std::string& nodeTypeName, const TfType& usdType)
+{
+    UsdMaya_RegistryHelper::g_pythonRegistry = true;
+    UsdMayaAdaptor::RegisterTypedSchemaConversion(nodeTypeName, usdType);
+    UsdMaya_RegistryHelper::g_pythonRegistry = false;
+}
+
+static void RegisterAttributeAlias(const TfToken& attributeName, const std::string& alias)
+{
+    UsdMaya_RegistryHelper::g_pythonRegistry = true;
+    UsdMayaAdaptor::RegisterAttributeAlias(attributeName, alias);
+    UsdMaya_RegistryHelper::g_pythonRegistry = false;
+}
+
 void wrapAdaptor()
 {
     typedef UsdMayaAdaptor This;
@@ -216,10 +231,12 @@ void wrapAdaptor()
                   &This::GetRegisteredTypedSchemas,
                   return_value_policy<TfPySequenceToList>())
               .staticmethod("GetRegisteredTypedSchemas")
-              .def("RegisterAttributeAlias", &This::RegisterAttributeAlias)
+              .def("RegisterAttributeAlias", &::RegisterAttributeAlias)
               .staticmethod("RegisterAttributeAlias")
               .def("GetAttributeAliases", &This::GetAttributeAliases)
-              .staticmethod("GetAttributeAliases");
+              .staticmethod("GetAttributeAliases")
+              .def("RegisterTypedSchemaConversion", &::RegisterTypedSchemaConversion)
+              .staticmethod("RegisterTypedSchemaConversion");
 
     class_<This::SchemaAdaptor>("SchemaAdaptor")
         .def(!self)
