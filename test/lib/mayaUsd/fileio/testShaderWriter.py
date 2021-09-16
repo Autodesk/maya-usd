@@ -39,11 +39,6 @@ class shaderWriterTest(mayaUsdLib.ShaderWriter):
          print("shaderWriterTest.PostExport called")
          return False
 
-class shaderReaderTest(mayaUsdLib.ShaderReader):
-    def HasPostReadSubtree(self):
-         print("shaderReaderTest.HasPostReadSubtree called")
-         return False
-
 class testShaderWriter(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

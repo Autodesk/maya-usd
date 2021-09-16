@@ -302,5 +302,17 @@ class testUsdMayaAdaptor(unittest.TestCase):
                 mayaUsdLib.Adaptor.GetAttributeAliases("subdivisionScheme"),
                 ["USD_ATTR_subdivisionScheme", "USD_subdivisionScheme"])
 
+    def testAdaptorRegistration(self):
+        """Tests Registration Python functions."""
+        mayaUsdLib.Adaptor.RegisterTypedSchemaConversion("polySphere", UsdGeom.Sphere)
+        mayaUsdLib.Adaptor.RegisterAttributeAlias(UsdGeom.Tokens.faceVaryingLinearInterpolation,"USD_RegTest")
+        cmds.file(new=True, force=True)
+        cmds.createNode("polySphere", name="TestSphere")
+        self.assertTrue(
+                mayaUsdLib.Adaptor("TestSphere").GetSchema(UsdGeom.Sphere))
+        self.assertEqual(
+                mayaUsdLib.Adaptor.GetAttributeAliases("faceVaryingLinearInterpolation"),
+                ["USD_ATTR_faceVaryingLinearInterpolation", "USD_RegTest", "USD_faceVaryingLinearInterpolation"])
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
