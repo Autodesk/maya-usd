@@ -16,8 +16,6 @@
 #
 
 from maya import cmds
-from maya import standalone
-from maya.api import OpenMayaUI as OMUI
 from pxr import Usd, Sdf
 
 import fixturesUtils
@@ -98,7 +96,7 @@ class testUtilsEditability(unittest.TestCase):
         ufeProp.set(value + 1.0)
         self.assertEqual(ufeProp.get(), value + 1.0)
 
-        # Make sure it is editable when lock is explicitely off.
+        # Make sure it is editable when lock is explicitly off.
         prop.SetMetadata(self.lockToken, self.offToken) 
         value = ufeProp.get()
         ufeProp.set(value + 1.0)
@@ -134,7 +132,7 @@ class testUtilsEditability(unittest.TestCase):
         self.assertIsNone(ufeProp.setCmd(value + 1.0))
         self.assertEqual(ufeProp.get(), value)
 
-    def testEditabilityMetadatUndo(self):
+    def testEditabilityMetadataUndo(self):
         '''
         Verify that setting the metadata on an attribute can be undone when using undo blocks.
         '''
