@@ -18,7 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 
-#include "pxr/base/tf/token.h"
+#include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>

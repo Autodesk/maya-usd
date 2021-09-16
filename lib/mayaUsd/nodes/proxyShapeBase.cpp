@@ -673,9 +673,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
             if (!updatedReferences.empty()) {
                 MayaUsd::CustomLayerData::setStringArray(
-                    updatedReferences,
-                    _unsharedStageRootLayer,
-                    MayaUsdMetadata->ReferencedLayers);
+                    updatedReferences, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             }
         }
     }
@@ -860,9 +858,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Add the incoming root layer as a subpath
             VtArray<std::string> referencedLayers { inRootLayer->GetIdentifier() };
             MayaUsd::CustomLayerData::setStringArray(
-                referencedLayers,
-                _unsharedStageRootLayer,
-                MayaUsdMetadata->ReferencedLayers);
+                referencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             _unsharedStageRootLayer->SetSubLayerPaths({ inRootLayer->GetIdentifier() });
         } else {
             // Check if we need to remap the source
@@ -892,9 +888,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Remember layers referenced from source
             const VtArray<std::string> newReferencedLayers { inRootLayer->GetIdentifier() };
             MayaUsd::CustomLayerData::setStringArray(
-                newReferencedLayers,
-                _unsharedStageRootLayer,
-                MayaUsdMetadata->ReferencedLayers);
+                newReferencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
         }
 
         stageData->stage = UsdStage::UsdStage::Open(_unsharedStageRootLayer);

@@ -24,12 +24,11 @@ namespace MAYAUSD_NS_DEF {
 /*! \brief  Determine the editability status of a property.
  */
 
-namespace Editability
-{
-    /*! \brief  Verify if a property is locked.
-     */
-    bool isLocked(PXR_NS::UsdProperty property);
-}
+namespace Editability {
+/*! \brief  Verify if a property is locked.
+ */
+bool isLocked(PXR_NS::UsdProperty property);
+} // namespace Editability
 
 } // namespace MAYAUSD_NS_DEF
 
