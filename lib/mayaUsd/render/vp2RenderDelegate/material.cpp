@@ -264,7 +264,7 @@ bool _IsTopologicalNode(const HdMaterialNode2& inNode)
     mx::NodeDefPtr nodeDef
         = _GetMaterialXData()._mtlxLibrary->getNodeDef(inNode.nodeTypeId.GetString());
     if (nodeDef) {
-        return _mtlxTopoNodeSet.find(nodeDef->getCategory()) != _mtlxTopoNodeSet.cend();
+        return _mtlxTopoNodeSet.find(nodeDef->getNodeString()) != _mtlxTopoNodeSet.cend();
     }
     return false;
 }

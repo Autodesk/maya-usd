@@ -53,17 +53,6 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-#ifndef MAYA_MSTRINGARRAY_ITERATOR_CATEGORY
-// MStringArray::Iterator is not standard-compliant in Maya 2019, needs the
-// following workaround.  Fixed in Maya 2020.  PPT, 20-Jun-2019.
-namespace std {
-template <> struct iterator_traits<MStringArray::Iterator>
-{
-    typedef std::bidirectional_iterator_tag iterator_category;
-};
-} // namespace std
-#endif
-
 namespace {
 
 constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
@@ -313,8 +302,7 @@ bool isAGatewayType(const std::string& mayaNodeType)
     cmd.format("nodeType -inherited -isTypeName ^1s", mayaNodeType.c_str());
     if (MS::kSuccess == MGlobal::executeCommand(cmd, inherited)) {
         MString gatewayNodeType(ProxyShapeHandler::gatewayNodeType().c_str());
-        auto    iter2 = std::find(inherited.begin(), inherited.end(), gatewayNodeType);
-        isInherited = (iter2 != inherited.end());
+        isInherited = inherited.indexOf(gatewayNodeType) != -1;
         g_GatewayType[mayaNodeType] = isInherited;
     }
     return isInherited;
