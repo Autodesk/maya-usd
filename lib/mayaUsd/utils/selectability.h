@@ -36,13 +36,6 @@ public:
         kOff
     };
 
-    /*! \brief  The tokens used in the selectability metadata.
-     */
-    static TfToken MetadataToken;
-    static TfToken InheritToken;
-    static TfToken OnToken;
-    static TfToken OffToken;
-
     /*! \brief  Prepare any internal data needed for selection prior to selection queries.
      */
     static void prepareForSelection();

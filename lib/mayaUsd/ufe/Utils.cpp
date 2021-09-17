@@ -21,6 +21,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
+#include <mayaUsd/utils/editability.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/hashset.h>
@@ -394,6 +395,15 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
 
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
 {
+    if (Editability::isLocked(attr)) {
+        if (errMsg) {
+            *errMsg = TfStringPrintf(
+                "Cannot edit [%s] attribute because its lock metadata is [on].",
+                attr.GetBaseName().GetText());
+        }
+        return false;
+    }
+
     // get the property spec in the edit target's layer
     const auto& prim = attr.GetPrim();
     const auto& stage = prim.GetStage();
@@ -426,12 +436,10 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
         // compare the calculated index between the "attr" and "edit target" layers.
         if (findLayerIndex(prim, strongestLayer) < targetLayerIndex) {
             if (errMsg) {
-                std::string err = TfStringPrintf(
+                *errMsg = TfStringPrintf(
                     "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
                     attr.GetBaseName().GetText(),
                     strongestLayer->GetDisplayName().c_str());
-
-                *errMsg = err;
             }
 
             return false;

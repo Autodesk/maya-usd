@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         converter.cpp
         customLayerData.cpp
         diagnosticDelegate.cpp
+        editability.cpp
         query.cpp
         plugRegistryHelper.cpp
         selectability.cpp
@@ -24,6 +25,7 @@ set(HEADERS
     customLayerData.h
     converter.h
     diagnosticDelegate.h
+    editability.h
     hash.h
     query.h
     plugRegistryHelper.h

@@ -270,7 +270,7 @@ void LayerTreeModel::rebuildModel()
             _sessionState->stageEntry()._proxyShapePath);
         if (!sharedStage) {
             auto layers = MayaUsd::CustomLayerData::getStringArray(
-                rootLayer, MayaUsd::CustomLayerData::kReferencedLayersToken);
+                rootLayer, MayaUsdMetadata->ReferencedLayers);
             std::vector<std::string> layerIds;
             std::move(layers.begin(), layers.end(), inserter(layerIds, layerIds.begin()));
             sharedLayers = UsdMayaUtil::getAllSublayers(layerIds, true);
