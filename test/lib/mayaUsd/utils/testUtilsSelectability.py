@@ -1,6 +1,6 @@
 #!/usr/bin/env mayapy
 #
-# Copyright 2016 Pixar
+# Copyright 2021 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import unittest
 
 import ufe
 import mayaUsd.ufe
+import mayaUsd.lib 
 
 from PySide2 import QtCore
 from PySide2.QtTest import QTest
@@ -36,12 +37,15 @@ from PySide2.QtWidgets import QWidget
 
 from shiboken2 import wrapInstance
 
-class testVP2RenderDelegateSelectability(unittest.TestCase):
+class testUtilsSelectability(unittest.TestCase):
+    """
+    Tests selectability when selecting prims in the viewport.
+    """
 
-    selectabilityToken = "mayaSelectability"
-    onToken = "on"
-    offToken = "off"
-    inheritToken = "inherit"
+    selectabilityToken = mayaUsd.lib.MetadataTokens.Selectability
+    onToken = mayaUsd.lib.Tokens.On
+    offToken = mayaUsd.lib.Tokens.Off
+    inheritToken = mayaUsd.lib.Tokens.Inherit
 
     @classmethod
     def setUpClass(cls):

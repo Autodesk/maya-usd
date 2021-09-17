@@ -657,7 +657,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         if (_unsharedStageRootLayer) {
             // Anon layers when loaded will have difference identifiers, remap them
             auto referencedLayers = MayaUsd::CustomLayerData::getStringArray(
-                _unsharedStageRootLayer, MayaUsd::CustomLayerData::kReferencedLayersToken);
+                _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             VtArray<std::string> updatedReferences;
             for (const auto& identifier : referencedLayers) {
                 // Update the identifier reference in the customer layer data
@@ -673,9 +673,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
             if (!updatedReferences.empty()) {
                 MayaUsd::CustomLayerData::setStringArray(
-                    updatedReferences,
-                    _unsharedStageRootLayer,
-                    MayaUsd::CustomLayerData::kReferencedLayersToken);
+                    updatedReferences, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             }
         }
     }
@@ -860,16 +858,14 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Add the incoming root layer as a subpath
             VtArray<std::string> referencedLayers { inRootLayer->GetIdentifier() };
             MayaUsd::CustomLayerData::setStringArray(
-                referencedLayers,
-                _unsharedStageRootLayer,
-                MayaUsd::CustomLayerData::kReferencedLayersToken);
+                referencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             _unsharedStageRootLayer->SetSubLayerPaths({ inRootLayer->GetIdentifier() });
         } else {
             // Check if we need to remap the source
             // At the moment we remap the old root with the new root  and we assumne that the root
             // is the first item in the referenced layers
             auto referencedLayers = MayaUsd::CustomLayerData::getStringArray(
-                _unsharedStageRootLayer, MayaUsd::CustomLayerData::kReferencedLayersToken);
+                _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             auto oldRootIdentifer = referencedLayers.empty() ? "" : referencedLayers[0];
 
             if (!oldRootIdentifer.empty() && oldRootIdentifer != inRootLayer->GetIdentifier()) {
@@ -892,9 +888,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             // Remember layers referenced from source
             const VtArray<std::string> newReferencedLayers { inRootLayer->GetIdentifier() };
             MayaUsd::CustomLayerData::setStringArray(
-                newReferencedLayers,
-                _unsharedStageRootLayer,
-                MayaUsd::CustomLayerData::kReferencedLayersToken);
+                newReferencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
         }
 
         stageData->stage = UsdStage::UsdStage::Open(_unsharedStageRootLayer);

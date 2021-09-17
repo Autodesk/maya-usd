@@ -422,7 +422,7 @@ void StagesSubject::stageChanged(
         if (sendValueChangedFallback) {
 
             // check to see if there is an entry which Ufe should notify about.
-            std::vector<const SdfChangeList::Entry*> entries = it.base()->second;
+            const std::vector<const SdfChangeList::Entry*>& entries = it.base()->second;
             for (const auto& entry : entries) {
                 // Adding an inert prim means we created a primSpec for an ancestor of
                 // a prim which has a real change to it.

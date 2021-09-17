@@ -13,17 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#ifndef MAYA_USD_EDITABILITY_H
+#define MAYA_USD_EDITABILITY_H
 
-#include <mayaUsd/base/tokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/usd/property.h>
 
-#include <pxr/base/tf/pyStaticTokens.h>
-#include <pxr/pxr.h>
+namespace MAYAUSD_NS_DEF {
 
-PXR_NAMESPACE_USING_DIRECTIVE
+/*! \brief  Determine the editability status of a property.
+ */
 
-void wrapTokens()
-{
-    TF_PY_WRAP_PUBLIC_TOKENS("OptionVarTokens", MayaUsdOptionVars, MAYA_USD_OPTIONVAR_TOKENS);
-    TF_PY_WRAP_PUBLIC_TOKENS("MetadataTokens", MayaUsdMetadata, MAYA_USD_METADATA_TOKENS);
-    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", MayaUsdTokens, MAYA_USD_GENERIC_TOKENS);
-}
+namespace Editability {
+/*! \brief  Verify if a property is locked.
+ */
+bool isLocked(PXR_NS::UsdProperty property);
+} // namespace Editability
+
+} // namespace MAYAUSD_NS_DEF
+
+#endif // MAYA_USD_EDITABILITY_H

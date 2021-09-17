@@ -68,6 +68,46 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
 
+// Tokens that are used as metadata on prim and attributes in MayaUSD
+//
+// The convention used for metadata is:
+//    - "maya" prefix to avoid conflicts with future USD metadata.
+//    - All words following "maya" are capitalized. This falls in line
+//      with how Maya convert the metadata names to UI labels in the
+//      attribute editor: spaces are inserted before isolated capital
+//      letters, tjhen everything is lower-cases, then the whole label
+//      is title-case. So, for example, "mayaLock" becomes "Maya lock".
+//
+// clang-format off
+#define MAYA_USD_METADATA_TOKENS                         \
+    /* Selectability metadata to be used on prims     */ \
+    ((Selectability, "mayaSelectability"))               \
+    /* Locking attribute metadata. A locked attribute */ \
+    /* value cannot be changed.                       */ \
+    ((Lock, "mayaLock"))                                 \
+    /* Referenced layers.                             */ \
+    ((ReferencedLayers, "mayaSharedLayers"))             \
+    /* Export file path.                              */ \
+    ((ExportFilePathToken, "mayaExportFilePath"))        \
+// clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(MayaUsdMetadata, MAYAUSD_CORE_PUBLIC, MAYA_USD_METADATA_TOKENS);
+
+// geeric tokens in MayaUSD
+//
+// clang-format off
+#define MAYA_USD_GENERIC_TOKENS                          \
+    /* Metadata value to inherit the value from a     */ \
+    /* parent prim. Used in selectability.            */ \
+    ((Inherit, "inherit"))                               \
+    /* Metadata value to turn on or off a feature.    */ \
+    /* Used in selectability and lock, for example.   */ \
+    ((On, "on"))                                         \
+    ((Off, "off"))                                       \
+// clang-format on
+
+TF_DECLARE_PUBLIC_TOKENS(MayaUsdTokens, MAYAUSD_CORE_PUBLIC, MAYA_USD_GENERIC_TOKENS);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

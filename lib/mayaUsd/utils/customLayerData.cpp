@@ -19,13 +19,13 @@ namespace MAYAUSD_NS_DEF {
 namespace CustomLayerData {
 
 PXR_NS::VtArray<std::string>
-getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const std::string& token)
+getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token)
 {
     if (!layer->HasCustomLayerData())
         return {};
 
     const PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
-    const auto                 it = customData.find(token);
+    const auto                 it = customData.find(token.GetString());
     if (it == customData.end())
         return {};
 
@@ -36,13 +36,13 @@ getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const std::string& token)
     return array.UncheckedGet<PXR_NS::VtArray<std::string>>();
 }
 
-std::string getString(const PXR_NS::SdfLayerRefPtr& layer, const std::string& token)
+std::string getString(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token)
 {
     if (!layer->HasCustomLayerData())
         return "";
 
     const PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
-    const auto                 it = customData.find(token);
+    const auto                 it = customData.find(token.GetString());
     if (it == customData.end())
         return "";
 
@@ -56,10 +56,10 @@ std::string getString(const PXR_NS::SdfLayerRefPtr& layer, const std::string& to
 void setStringArray(
     const PXR_NS::VtArray<std::string>& data,
     const PXR_NS::SdfLayerRefPtr&       layer,
-    const std::string&                  token)
+    const PXR_NS::TfToken&              token)
 {
     PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
-    customData[token] = data;
+    customData[token.GetString()] = data;
 
     layer->SetCustomLayerData(customData);
 }
@@ -67,10 +67,10 @@ void setStringArray(
 void setString(
     const std::string&            data,
     const PXR_NS::SdfLayerRefPtr& layer,
-    const std::string&            token)
+    const PXR_NS::TfToken&        token)
 {
     PXR_NS::VtDictionary customData = layer->GetCustomLayerData();
-    customData[token] = data;
+    customData[token.GetString()] = data;
 
     layer->SetCustomLayerData(customData);
 }
