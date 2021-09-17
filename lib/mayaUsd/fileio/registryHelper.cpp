@@ -282,6 +282,7 @@ VtDictionary UsdMaya_RegistryHelper::GetComposedInfoDictionary(const std::vector
     return result;
 }
 
+// Vector of Python unloaders
 std::vector<std::function<void()>> g_pythonUnloaders;
 
 static void PythonUnload(size_t unloaderIndex)
@@ -289,8 +290,6 @@ static void PythonUnload(size_t unloaderIndex)
     g_pythonUnloaders[unloaderIndex]();
     // No destruction to keep the order, there should not be a lot of elements
 }
-
-static bool g_pythonRegistry = false;
 
 /* static */
 void UsdMaya_RegistryHelper::AddUnloader(const std::function<void()>& func, bool fromPython)
