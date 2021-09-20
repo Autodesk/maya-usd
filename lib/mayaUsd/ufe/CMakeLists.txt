@@ -56,6 +56,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdTransform3dSetObjectMatrix.cpp
             UsdTransform3dUndoableCommands.cpp
             UsdUIInfoHandler.cpp
+            UsdUIUfeObserver.cpp
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
@@ -129,6 +130,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdTransform3dSetObjectMatrix.h
         UsdTransform3dUndoableCommands.h
         UsdUIInfoHandler.h
+        UsdUIUfeObserver.h
         UsdUndoableCommand.h
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
