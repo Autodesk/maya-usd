@@ -61,7 +61,7 @@ struct UsdMayaPrimReaderRegistry
 
     /// \brief Register \p fn as a reader provider for \p type.
     MAYAUSD_CORE_PUBLIC
-    static void Register(const TfType& type, ReaderFactoryFn fn);
+    static void Register(const TfType& type, ReaderFactoryFn fn, bool fromPython = false);
 
     /// \brief Register \p fn as a reader provider for \p T.
     ///
@@ -76,10 +76,10 @@ struct UsdMayaPrimReaderRegistry
     ///     UsdMayaPrimReaderRegistry::Register<MyType>(MyReader::Create);
     /// }
     /// \endcode
-    template <typename T> static void Register(ReaderFactoryFn fn)
+    template <typename T> static void Register(ReaderFactoryFn fn, bool fromPython = false)
     {
         if (TfType t = TfType::Find<T>()) {
-            Register(t, fn);
+            Register(t, fn, fromPython);
         } else {
             TF_CODING_ERROR("Cannot register unknown TfType: %s.", ArchGetDemangled<T>().c_str());
         }

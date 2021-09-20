@@ -51,12 +51,15 @@ TF_INSTANTIATE_SINGLETON(UsdMayaExportChaserRegistry);
 
 std::map<std::string, UsdMayaExportChaserRegistry::FactoryFn> _factoryRegistry;
 
-bool UsdMayaExportChaserRegistry::RegisterFactory(const std::string& name, FactoryFn fn)
+bool UsdMayaExportChaserRegistry::RegisterFactory(
+    const std::string& name,
+    FactoryFn          fn,
+    bool               fromPython)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering chaser '%s'.\n", name.c_str());
     auto ret = _factoryRegistry.insert(std::make_pair(name, fn));
     if (ret.second) {
-        UsdMaya_RegistryHelper::AddUnloader([name]() { _factoryRegistry.erase(name); });
+        UsdMaya_RegistryHelper::AddUnloader([name]() { _factoryRegistry.erase(name); }, fromPython);
     }
     return ret.second;
 }

@@ -458,7 +458,15 @@ void TranslatorContext::deserialise(const MString& string)
             lookup.createdNodes().push_back(obj);
         }
 
-        m_primMapping.push_back(lookup);
+        // Check for any prim lookup duplicates.
+        // This assumes lookups have 1:1 mapping of prim to translator, and that
+        // multiple translators can not be registered against the same prim type.
+        auto iter
+            = std::find_if(m_primMapping.begin(), m_primMapping.end(), [&](const PrimLookup& p) {
+                  return p.path() == lookup.path();
+              });
+        if (iter == m_primMapping.end())
+            m_primMapping.push_back(lookup);
     }
 
     SdfPathVector vec = m_proxyShape->getPrimPathsFromCommaJoinedString(

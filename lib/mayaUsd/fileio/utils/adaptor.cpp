@@ -463,12 +463,13 @@ TfToken::Set UsdMayaAdaptor::GetRegisteredTypedSchemas()
 /* static */
 void UsdMayaAdaptor::RegisterTypedSchemaConversion(
     const std::string& nodeTypeName,
-    const TfType&      usdType)
+    const TfType&      usdType,
+    bool               fromPython)
 {
     const auto iterAndInserted = _schemaLookup.insert(std::make_pair(nodeTypeName, usdType));
     if (iterAndInserted.second) {
         UsdMaya_RegistryHelper::AddUnloader(
-            [nodeTypeName]() { _schemaLookup.erase(nodeTypeName); });
+            [nodeTypeName]() { _schemaLookup.erase(nodeTypeName); }, fromPython);
     } else {
         TF_CODING_ERROR(
             "Typed schema conversion already registered for Maya "
@@ -478,15 +479,20 @@ void UsdMayaAdaptor::RegisterTypedSchemaConversion(
 }
 
 /* static */
-void UsdMayaAdaptor::RegisterAttributeAlias(const TfToken& attributeName, const std::string& alias)
+void UsdMayaAdaptor::RegisterAttributeAlias(
+    const TfToken&     attributeName,
+    const std::string& alias,
+    bool               fromPython)
 {
     std::vector<std::string>& aliases = _attributeAliases[attributeName];
     if (std::find(aliases.begin(), aliases.end(), alias) == aliases.end()) {
         aliases.push_back(alias);
-        UsdMaya_RegistryHelper::AddUnloader([attributeName, alias]() {
-            std::vector<std::string>& aliases = _attributeAliases[attributeName];
-            aliases.erase(std::remove(aliases.begin(), aliases.end(), alias), aliases.end());
-        });
+        UsdMaya_RegistryHelper::AddUnloader(
+            [attributeName, alias]() {
+                std::vector<std::string>& aliases = _attributeAliases[attributeName];
+                aliases.erase(std::remove(aliases.begin(), aliases.end(), alias), aliases.end());
+            },
+            fromPython);
     } else {
         TF_CODING_ERROR(
             "Attribute alias '%s' (='%s') already registered",

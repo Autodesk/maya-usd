@@ -102,7 +102,11 @@ struct UsdMayaShaderReaderRegistry
     /// }
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static void Register(TfToken usdInfoId, ContextPredicateFn pred, ReaderFactoryFn fn);
+    static void Register(
+        TfToken            usdInfoId,
+        ContextPredicateFn pred,
+        ReaderFactoryFn    fn,
+        bool               fromPython = false);
 
     /// \brief Finds a reader if one exists for \p usdInfoId. The returned reader will have declared
     /// support given the current \p importArgs.
