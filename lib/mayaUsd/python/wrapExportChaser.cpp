@@ -71,17 +71,17 @@ public:
 
     static void Register(boost::python::object cl, const std::string& mayaTypeName)
     {
-        UsdMaya_RegistryHelper::g_pythonRegistry = true;
         UsdMayaExportChaserRegistry::GetInstance().RegisterFactory(
-            mayaTypeName, [=](const UsdMayaExportChaserRegistry::FactoryContext& contextArgName) {
+            mayaTypeName,
+            [=](const UsdMayaExportChaserRegistry::FactoryContext& contextArgName) {
                 auto                  chaser = new ExportChaserWrapper();
                 TfPyLock              pyLock;
                 boost::python::object instance = cl((uintptr_t)chaser);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), chaser);
                 return chaser;
-            });
-        UsdMaya_RegistryHelper::g_pythonRegistry = false;
+            },
+            true);
     }
 };
 

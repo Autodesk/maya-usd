@@ -176,16 +176,12 @@ static std::string _AttributeAdaptor__repr__(const UsdMayaAdaptor::AttributeAdap
 
 static void RegisterTypedSchemaConversion(const std::string& nodeTypeName, const TfType& usdType)
 {
-    UsdMaya_RegistryHelper::g_pythonRegistry = true;
-    UsdMayaAdaptor::RegisterTypedSchemaConversion(nodeTypeName, usdType);
-    UsdMaya_RegistryHelper::g_pythonRegistry = false;
+    UsdMayaAdaptor::RegisterTypedSchemaConversion(nodeTypeName, usdType, true);
 }
 
 static void RegisterAttributeAlias(const TfToken& attributeName, const std::string& alias)
 {
-    UsdMaya_RegistryHelper::g_pythonRegistry = true;
-    UsdMayaAdaptor::RegisterAttributeAlias(attributeName, alias);
-    UsdMaya_RegistryHelper::g_pythonRegistry = false;
+    UsdMayaAdaptor::RegisterAttributeAlias(attributeName, alias, true);
 }
 
 void wrapAdaptor()

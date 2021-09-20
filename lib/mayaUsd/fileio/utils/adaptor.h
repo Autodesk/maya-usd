@@ -533,8 +533,10 @@ public:
     /// the same Maya type again will overwrite the previous registration.
     /// However, multiple Maya types may map to the same TfType.
     MAYAUSD_CORE_PUBLIC
-    static void
-    RegisterTypedSchemaConversion(const std::string& nodeTypeName, const TfType& usdType);
+    static void RegisterTypedSchemaConversion(
+        const std::string& nodeTypeName,
+        const TfType&      usdType,
+        bool               fromPython = false);
 
     /// For backwards compatibility only: when upgrading any pre-existing code
     /// to use the adaptor mechanism, you can instruct the adaptor to recognize
@@ -551,7 +553,10 @@ public:
     /// it always uses the generated name.
     /// \sa UsdMayaAdaptor::SchemaAdaptor::CreateAttribute()
     MAYAUSD_CORE_PUBLIC
-    static void RegisterAttributeAlias(const TfToken& attributeName, const std::string& alias);
+    static void RegisterAttributeAlias(
+        const TfToken&     attributeName,
+        const std::string& alias,
+        bool               fromPython = false);
 
     /// Gets the name of all possible Maya attribute names for the given USD
     /// schema \p attributeName, in the order in which the aliases were
