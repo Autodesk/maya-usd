@@ -90,6 +90,10 @@ class SetsCmdTestCase(unittest.TestCase):
         # Undo, Redo
         cmds.undo() # Undo Add Cube1 to set1
         self.assertFalse(cmds.sets( usdCube, im=set1 ))
+        cmds.redo() # Redo Add Cube1 to set1
+        self.assertTrue(cmds.sets( usdCube, im=set1 ))
+        cmds.undo() # Undo Add Cube1 to set1
+        self.assertFalse(cmds.sets( usdCube, im=set1 ))
         cmds.undo() # Undo Remove Cube1 from set1
         self.assertTrue(cmds.sets( usdCube, im=set1 ))
 
