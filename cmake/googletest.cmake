@@ -24,6 +24,13 @@ macro(fetch_googletest)
         # Attempting to do so in execute_process fails with string invalid escape
         # sequence parsing errors.  PPT, 22-Nov-2018.
         file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
+
+        # Force the use of ABI version 0 on Linux.
+        # This is what Maya has been using for 2019...2023
+        if(UNIX AND NOT APPLE)
+            set(FORCE_OLD_ABI "-D_GLIBCXX_USE_CXX11_ABI=0")
+        endif()
+ 
         if (GOOGLETEST_SRC_DIR)
             configure_file(cmake/googletest_src.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
         else()
