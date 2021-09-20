@@ -750,7 +750,9 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     HdReprSelector reprSelector;
 
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
+#if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT) || defined(WANT_UFE_BUILD)
     const bool inPointSnapping = pointSnappingActive();
+#endif
 
 #if defined(WANT_UFE_BUILD)
     // Query selection adjustment and kind only if the update is triggered in a selection pass.
@@ -769,7 +771,9 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     HdReprSelector reprSelector = kPointsReprSelector;
 
     constexpr bool inSelectionPass = false;
+#if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
     constexpr bool inPointSnapping = false;
+#endif    
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
