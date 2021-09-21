@@ -2009,8 +2009,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                     for (const auto index : indexArray) {
                         // This bounds check is necessary because of Pixar USD Issue 1516
                         // Logged as MAYA-113682
-                        if (index >= 0 && index < (const int)instanceCount)
-                        {
+                        if (index >= 0 && index < (const int)instanceCount) {
                             instanceInfo[index] = modeActive;
                         }
                     }
@@ -2023,8 +2022,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                     for (const auto index : indexArray) {
                         // This bounds check is necessary because of Pixar USD Issue 1516
                         // Logged as MAYA-113682
-                        if (index >= 0 && index < (const int)instanceCount)
-                        {
+                        if (index >= 0 && index < (const int)instanceCount) {
                             instanceInfo[index] = modeLead;
                         }
                     }
