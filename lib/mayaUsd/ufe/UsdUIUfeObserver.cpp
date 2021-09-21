@@ -72,14 +72,15 @@ void UsdUIUfeObserver::operator()(const Ufe::Notification& notification)
 {
     if (auto ac = dynamic_cast<const Ufe::AttributeValueChanged*>(&notification)) {
         if (ac->name() == UsdGeomTokens->xformOpOrder) {
-            MString cmd("if (`channelBox -exists mainChannelBox`) channelBox -q -mainObjectList "
-                        "mainChannelBox;");
+            static const MString mainObjListCmd(
+                "if (`channelBox -exists mainChannelBox`) channelBox -q -mainObjectList "
+                "mainChannelBox;");
             MStringArray paths;
-            if (MGlobal::executeCommand(cmd, paths) && (paths.length() > 0)) {
+            if (MGlobal::executeCommand(mainObjListCmd, paths) && (paths.length() > 0)) {
                 auto ufePath = Ufe::PathString::path(paths[0].asChar());
                 if (ufePath.startsWith(ac->path())) {
-                    cmd = "channelBox -e -update mainChannelBox;";
-                    MGlobal::executeCommand(cmd);
+                    static const MString updateCBCmd("channelBox -e -update mainChannelBox;");
+                    MGlobal::executeCommand(updateCBCmd);
                 }
             }
         }
