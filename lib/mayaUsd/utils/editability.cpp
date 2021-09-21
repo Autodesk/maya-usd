@@ -20,7 +20,7 @@
 namespace MAYAUSD_NS_DEF {
 namespace Editability {
 
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 /*! \brief  Verify if a property is locked.
  */
