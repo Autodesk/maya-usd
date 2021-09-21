@@ -54,6 +54,9 @@ public:
     /// callback used to flush the USD caches after a file new
     static AL::event::CallbackId fileNew() { return m_fileNew; }
 
+    /// callback used to flush the USD caches on exit
+    static AL::event::CallbackId mayaExit() { return m_mayaExit; }
+
     static void openingFile(bool val);
 
 private:
@@ -64,7 +67,8 @@ private:
     static AL::event::CallbackId m_postRead; ///< callback executed after opening a maya file -
                                              ///< needed to re-hook up the UsdPrims
     static AL::event::CallbackId
-        m_fileNew; ///< callback used to flush the USD caches after a file new
+                                 m_fileNew; ///< callback used to flush the USD caches after a file new
+    static AL::event::CallbackId m_mayaExit; ///< callback used to flush the USD caches on exit
     static AL::event::CallbackId
                                  m_preExport; ///< callback prior to exporting the scene (so we can store the session layer)
     static AL::event::CallbackId m_postExport; ///< callback after exporting

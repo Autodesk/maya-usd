@@ -200,6 +200,9 @@ bool TransactionManager::Close(const UsdStageWeakPtr& stage, const SdfLayerHandl
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void TransactionManager::CloseAll() { GetManagers().clear(); }
+
+//----------------------------------------------------------------------------------------------------------------------
 } // namespace transaction
 } // namespace usd
 } // namespace AL
