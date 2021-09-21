@@ -27,7 +27,7 @@ macro(fetch_googletest)
 
         # Force the use of ABI version 0 on Linux.
         # This is what Maya has been using for 2019...2023
-        if(UNIX AND NOT APPLE)
+        if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
             set(FORCE_OLD_ABI "-D_GLIBCXX_USE_CXX11_ABI=0")
         endif()
  
