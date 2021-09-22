@@ -30,7 +30,6 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdLux/distantLight.h>
-#include <pxr/usd/usdLux/light.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnDirectionalLight.h>

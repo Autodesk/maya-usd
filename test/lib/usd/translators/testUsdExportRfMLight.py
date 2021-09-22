@@ -102,7 +102,11 @@ class testUsdExportRfMLight(unittest.TestCase):
         else:
             raise NotImplementedError('Invalid light type %s' % lightTypeName)
 
-        lightSchema = UsdLux.Light(lightPrim)
+        usdVersion = Usd.GetVersion()
+        if usdVersion < (0, 21, 11):
+            lightSchema = UsdLux.Light(lightPrim)
+        else:
+            lightSchema = UsdLux.LightAPI(lightPrim)
         self.assertTrue(lightSchema)
 
         if lightTypeName == 'AovLight':
