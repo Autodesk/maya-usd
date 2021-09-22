@@ -50,6 +50,7 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 
 #include <pxr/base/plug/plugin.h>
@@ -164,6 +165,9 @@ global proc AL_usdmaya_meshAnimImport()
   }
 }
 )";
+
+// Type name for registration of USD preview surface
+const MString AL_USDMAYA_PREVIEW_SURFACE_TYPENAME("alUsdPreviewSurface");
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  This method is basically the main initializePlugin routine. The reason for it being a
@@ -281,6 +285,13 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
     AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
+    CHECK_MSTATUS(status);
+
+    status = PxrMayaUsdPreviewSurfacePlugin::initialize(
+        plugin,
+        AL_USDMAYA_PREVIEW_SURFACE_TYPENAME,
+        AL_USDMAYA_USDPREVIEWSURFACE,
+        AL_USDMAYA_PLUGIN_REGISTRANT_ID);
     CHECK_MSTATUS(status);
 
     if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
@@ -480,6 +491,13 @@ template <typename AFnPlugin> MStatus unregisterPlugin(AFnPlugin& plugin)
     AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
     AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
     AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
+
+    status = PxrMayaUsdPreviewSurfacePlugin::finalize(
+        plugin,
+        AL_USDMAYA_PREVIEW_SURFACE_TYPENAME,
+        AL_USDMAYA_USDPREVIEWSURFACE,
+        AL_USDMAYA_PLUGIN_REGISTRANT_ID);
+    CHECK_MSTATUS(status);
 
     status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);

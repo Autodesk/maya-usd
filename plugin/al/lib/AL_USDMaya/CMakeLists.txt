@@ -214,6 +214,7 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
     mayaUsd
+    basePxrUsdPreviewSurface
     $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
     ghc_filesystem
 )
@@ -282,6 +283,16 @@ set(PLUG_INFO_LIBRARY_PATH "../../${libFile}")
 configure_file(
     plugInfo.json
     ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
+)
+
+# Copy across formatted USD Preview Surface AE template to Maya scripts directory
+set(PREVIEWSURFACE_MAYA_TYPE_NAME "alUsdPreviewSurface")
+configure_file("${PROJECT_SOURCE_DIR}/../../lib/usd/pxrUsdPreviewSurface/AEusdPreviewSurfaceTemplate.mel"
+               "${CMAKE_CURRENT_BINARY_DIR}/AEalUsdPreviewSurfaceTemplate.mel"
+)
+install( FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/AEalUsdPreviewSurfaceTemplate.mel
+        DESTINATION ${AL_INSTALL_PREFIX}/scripts
 )
 
 install(TARGETS ${PYTHON_LIBRARY_NAME}
