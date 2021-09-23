@@ -102,7 +102,7 @@
 - Use new schemaregistry API [#1435](https://github.com/Autodesk/maya-usd/pull/1435)
 - Update Pixar ProxyShape image tests affected from storm wireframe [#1414](https://github.com/Autodesk/maya-usd/pull/1414)
 - Use new usdShade/material vector based API for USD versions beyond 21.05 [#1394](https://github.com/Autodesk/maya-usd/pull/1394)
-- Support building Gulark library locally [#1291](https://github.com/Autodesk/maya-usd/pull/1291)
+- Support building Gulrak library locally [#1291](https://github.com/Autodesk/maya-usd/pull/1291)
 - Center pivot command support test [#1207](https://github.com/Autodesk/maya-usd/pull/1207)
 
 **Translation Framework:**
