@@ -21,7 +21,7 @@ from pxr import Gf
 from pxr import Sdf
 from pxr import Tf
 from pxr import Vt
-from pxr import UsdGeom
+from pxr import Usd
 
 from maya import cmds
 import maya.api.OpenMaya as OpenMaya
@@ -32,9 +32,22 @@ import fixturesUtils, os
 import unittest
 
 class exportChaserTest(mayaUsdLib.ExportChaser):
+    ExportDefaultCalled = False
+    ExportFrameCalled = False
+    PostExportCalled = False
+    NotCalled = False
+
     def ExportDefault(self):
-         print("exportChaserTest.ExportDefault called")
-         return False
+        exportChaserTest.ExportDefaultCalled = True
+        return self.ExportFrame(Usd.TimeCode.Default())
+
+    def ExportFrame(self, frame):
+        exportChaserTest.ExportFrameCalled = True
+        return True
+
+    def PostExport(self):
+        exportChaserTest.PostExportCalled = True
+        return True
 
 class testExportChaser(unittest.TestCase):
     @classmethod
@@ -50,6 +63,18 @@ class testExportChaser(unittest.TestCase):
 
     def testSimpleExportChaser(self):
         mayaUsdLib.ExportChaser.Register(exportChaserTest, "test")
+        cmds.polySphere(r = 3.5, name='apple')
+
+        usdFilePath = os.path.join(os.environ.get('MAYA_APP_DIR'),'testExportChaser.usda')
+        cmds.usdExport(mergeTransformAndShape=True,
+            file=usdFilePath,
+            chaser=['test'],
+            shadingMode='none')
+
+        self.assertTrue(exportChaserTest.ExportDefaultCalled)
+        self.assertTrue(exportChaserTest.ExportFrameCalled)
+        self.assertTrue(exportChaserTest.PostExportCalled)
+        self.assertFalse(exportChaserTest.NotCalled)
 
 
 if __name__ == '__main__':
