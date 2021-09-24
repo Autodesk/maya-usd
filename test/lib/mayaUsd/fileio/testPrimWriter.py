@@ -79,9 +79,6 @@ class testReadWriteUtils(unittest.TestCase):
 
     def setUp(self):
         cmds.file(new=True, force=True)
-        InitCalled = False
-        WriteCalled = False
-        PostExportCalled = False
 
     def testSimplePrimWriter(self):
         mayaUsdLib.PrimWriter.Register(primWriterTest, "mesh")
