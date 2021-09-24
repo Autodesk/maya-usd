@@ -56,7 +56,7 @@ REGISTER_EXPORT_CONTEXT_FCT(Larry, "Larry's special", "Test coverage of error ha
     // Correct:
     extraArgs[UsdMayaJobExportArgsTokens->apiSchema]
         = VtValue(std::vector<VtValue> { VtValue(std::string("testApi")) });
-    extraArgs[UsdMayaJobExportArgsTokens->convertMaterialsTo] = VtValue(std::string("MaterialX"));
+    extraArgs[UsdMayaJobExportArgsTokens->geomSidedness] = VtValue(std::string("single"));
     // Referencing another context:
     extraArgs[UsdMayaJobExportArgsTokens->extraContext]
         = VtValue(std::vector<VtValue> { VtValue(std::string("Curly")) });
@@ -75,8 +75,7 @@ REGISTER_EXPORT_CONTEXT_FCT(Moe, "Moe's special", "Test coverage of error handli
 {
     VtDictionary extraArgs;
     // Moe is conflicting on value with Larry, but merges nicely with NullAPI:
-    extraArgs[UsdMayaJobExportArgsTokens->convertMaterialsTo]
-        = VtValue(std::string("rendermanForMaya"));
+    extraArgs[UsdMayaJobExportArgsTokens->geomSidedness] = VtValue(std::string("double"));
     VtValue chaserArg(std::vector<VtValue> { VtValue(std::string("NullAPIChaser")),
                                              VtValue(std::string("genre")),
                                              VtValue(std::string("slapstick")) });
@@ -88,7 +87,7 @@ class TestSchemaExporter : public UsdMayaSchemaApiWriter
 {
     bool _isValidChaser = false;
     bool _isValidChaserArgs = false;
-    bool _isValidMaterialConversion = false;
+    bool _isValidGeomSidedness = false;
 
 public:
     TestSchemaExporter(const UsdMayaPrimWriterSharedPtr& primWriter, UsdMayaWriteJobContext& jobCtx)
@@ -98,8 +97,8 @@ public:
         _isValidChaser
             = jobArgs.chaserNames.size() == 1 && jobArgs.chaserNames.front() == "NullAPIChaser";
 
-        // Default value of "UsdPreviewsurface" overwritten by stronger context:
-        _isValidMaterialConversion = jobArgs.convertMaterialsTo == "rendermanForMaya";
+        // Default value of "derived" overwritten by stronger context:
+        _isValidGeomSidedness = jobArgs.geomSidedness == "double";
 
         // Validate chaser args were merged:
         std::map<std::string, std::string> myArgs;
@@ -113,8 +112,8 @@ public:
         if (!_isValidChaser) {
             TF_RUNTIME_ERROR("Missing chaser name NullAPIChaser in job arguments");
         }
-        if (!_isValidMaterialConversion) {
-            TF_RUNTIME_ERROR("Incorrect material conversion in job arguments");
+        if (!_isValidGeomSidedness) {
+            TF_RUNTIME_ERROR("Incorrect geom sidedness in job arguments");
         }
         if (!_isValidChaserArgs) {
             TF_RUNTIME_ERROR("Incorrect chaser args in job arguments");

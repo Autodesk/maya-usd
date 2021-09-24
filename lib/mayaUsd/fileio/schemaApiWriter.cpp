@@ -43,6 +43,11 @@ const UsdMayaJobExportArgs& UsdMayaSchemaApiWriter::_GetExportArgs() const
     return _writeJobCtx.GetArgs();
 }
 
+const UsdMayaPrimWriterSharedPtr& UsdMayaSchemaApiWriter::_GetPrimWriter() const
+{
+    return _primWriter;
+}
+
 UsdUtilsSparseValueWriter* UsdMayaSchemaApiWriter::_GetSparseValueWriter() { return &_valueWriter; }
 
 void UsdMayaSchemaApiWriter::MakeSingleSamplesStatic()

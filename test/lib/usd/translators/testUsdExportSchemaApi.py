@@ -119,7 +119,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
         expected = set([
             "Arguments for context 'Larry' can not include extra contexts.",
             "Context 'Curly' and context 'Larry' do not agree on type of argument 'apiSchema'.",
-            "Context 'Moe' and context 'Larry' do not agree on argument 'convertMaterialsTo'."])
+            "Context 'Moe' and context 'Larry' do not agree on argument 'geomSidedness'."])
         self.assertEqual(messages, expected)
 
         cmds.file(f=True, new=True)

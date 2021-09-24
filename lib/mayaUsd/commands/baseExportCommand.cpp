@@ -64,6 +64,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kConvertMaterialsToFlag,
         UsdMayaJobExportArgsTokens->convertMaterialsTo.GetText(),
         MSyntax::kString);
+    syntax.makeFlagMultiUse(kConvertMaterialsToFlag);
     syntax.addFlag(
         kMaterialsScopeNameFlag,
         UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),

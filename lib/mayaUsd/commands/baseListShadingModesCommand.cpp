@@ -149,8 +149,9 @@ MStatus MayaUSDListShadingModesCommand::doIt(const MArgList& args)
         MString options = "shadingMode=";
         options += shadingMode.GetText();
         if (!materialConversion.IsEmpty()) {
-            options += ";convertMaterialsTo=";
+            options += ";convertMaterialsTo=[";
             options += materialConversion.GetText();
+            options += "]";
         }
         setResult(options);
     } else if (argData.isFlagSet("importOptions")) {

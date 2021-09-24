@@ -42,7 +42,8 @@ public:
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx);
 
-    static ContextSupport CanExport(const UsdMayaJobExportArgs&);
+    static ContextSupport
+    CanExport(const UsdMayaJobExportArgs&, const TfToken& currentMaterialConversion);
 
     TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 

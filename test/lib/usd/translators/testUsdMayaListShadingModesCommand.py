@@ -44,10 +44,10 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
 
         preview = "USD Preview Surface"
         preview_option = ";".join(("shadingMode=useRegistry",
-                                   "convertMaterialsTo=UsdPreviewSurface"))
+                                   "convertMaterialsTo=[UsdPreviewSurface]"))
         maya_shaders = "Maya Shaders"
         maya_options = ";".join(("shadingMode=useRegistry",
-                                 "convertMaterialsTo=maya"))
+                                 "convertMaterialsTo=[maya]"))
         none = "None"
         none_options = "shadingMode=none"
 

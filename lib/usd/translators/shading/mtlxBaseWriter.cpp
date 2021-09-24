@@ -72,12 +72,12 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     TrMtlxTokens->niceName,
     TrMtlxTokens->exportDescription);
 
-UsdMayaShaderWriter::ContextSupport
-MtlxUsd_BaseWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
+UsdMayaShaderWriter::ContextSupport MtlxUsd_BaseWriter::CanExport(
+    const UsdMayaJobExportArgs& exportArgs,
+    const TfToken&              currentMaterialConversion)
 {
-    return exportArgs.convertMaterialsTo == TrMtlxTokens->conversionName
-        ? ContextSupport::Supported
-        : ContextSupport::Unsupported;
+    return currentMaterialConversion == TrMtlxTokens->conversionName ? ContextSupport::Supported
+                                                                     : ContextSupport::Unsupported;
 }
 
 MtlxUsd_BaseWriter::MtlxUsd_BaseWriter(

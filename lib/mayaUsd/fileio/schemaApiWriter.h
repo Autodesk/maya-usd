@@ -75,6 +75,10 @@ protected:
     MAYAUSD_CORE_PUBLIC
     const UsdMayaJobExportArgs& _GetExportArgs() const;
 
+    /// Gets the associated prim writer.
+    MAYAUSD_CORE_PUBLIC
+    const UsdMayaPrimWriterSharedPtr& _GetPrimWriter() const;
+
     /// Get the attribute value-writer object to be used when writing
     /// attributes. Access to this is provided so that attribute authoring
     /// happening inside non-member functions can make use of it.

@@ -263,7 +263,7 @@ public:
         UsdMaya_RegistryHelper::g_pythonRegistry = true;
         UsdMayaShaderWriterRegistry::Register(
             mayaType,
-            [=](const UsdMayaJobExportArgs& args) {
+            [=](const UsdMayaJobExportArgs& args, const TfToken& currentMaterialConversion) {
                 return UsdMayaShaderWriter::ContextSupport(0);
             },
             [=](const MFnDependencyNode& depNodeFn,

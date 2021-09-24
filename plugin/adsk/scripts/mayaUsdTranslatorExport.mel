@@ -439,7 +439,17 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         }
                     }
                 } else if ($optionBreakDown[0] == "convertMaterialsTo") {
-                    string $niceName = `mayaUSDListShadingModes -fen $optionBreakDown[1]`;
+                    string $convertTo = $optionBreakDown[1];
+                    if (startsWith($convertTo, "[") && endsWith($convertTo, "]")) {
+                        $convertTo = substring($convertTo, 2, size($convertTo) - 1);
+                    }
+                    // If multi-export, select first item for dropdown, ignore others.
+                    if (size($convertTo) > 1) {
+                        string $tokens[];
+                        tokenize($convertTo, ",", $tokens);
+                        $convertTo = $tokens[0];                    
+                    }
+                    string $niceName = `mayaUSDListShadingModes -fen $convertTo`;
                     if (size($niceName)) {
                         optionMenuGrp -e -value $niceName "shadingModePopup";
                     }

@@ -83,6 +83,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     static ContextSupport CanExport(
         const UsdMayaJobExportArgs& exportArgs,
+        const TfToken&              currentMaterialConversion,
         const TfToken&              materialConversionName = TfToken());
 
     MAYAUSD_CORE_PUBLIC

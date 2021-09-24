@@ -54,7 +54,10 @@ using _Registry = std::unordered_multimap<TfToken, _RegistryEntry, TfToken::Hash
 static _Registry _reg;
 static int       _indexCounter = 0;
 
-_Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobExportArgs& exportArgs)
+_Registry::const_iterator _Find(
+    const TfToken&              usdInfoId,
+    const UsdMayaJobExportArgs& exportArgs,
+    const TfToken&              currentMaterialConversion)
 {
     using ContextSupport = UsdMayaShaderWriter::ContextSupport;
 
@@ -62,7 +65,7 @@ _Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobExport
     _Registry::const_iterator first, last;
     std::tie(first, last) = _reg.equal_range(usdInfoId);
     while (first != last) {
-        ContextSupport support = first->second._pred(exportArgs);
+        ContextSupport support = first->second._pred(exportArgs, currentMaterialConversion);
         if (support == ContextSupport::Supported) {
             ret = first;
             break;
@@ -108,11 +111,12 @@ void UsdMayaShaderWriterRegistry::Register(
 /* static */
 UsdMayaShaderWriterRegistry::WriterFactoryFn UsdMayaShaderWriterRegistry::Find(
     const TfToken&              mayaTypeName,
-    const UsdMayaJobExportArgs& exportArgs)
+    const UsdMayaJobExportArgs& exportArgs,
+    const TfToken&              currentMaterialConversion)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShaderWriterRegistry>();
 
-    _Registry::const_iterator it = _Find(mayaTypeName, exportArgs);
+    _Registry::const_iterator it = _Find(mayaTypeName, exportArgs, currentMaterialConversion);
 
     if (it != _reg.end()) {
         return it->second._writer;
@@ -122,7 +126,7 @@ UsdMayaShaderWriterRegistry::WriterFactoryFn UsdMayaShaderWriterRegistry::Find(
     static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->ShaderWriter };
     UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, mayaTypeName);
 
-    it = _Find(mayaTypeName, exportArgs);
+    it = _Find(mayaTypeName, exportArgs, currentMaterialConversion);
 
     if (it != _reg.end()) {
         return it->second._writer;
@@ -132,7 +136,7 @@ UsdMayaShaderWriterRegistry::WriterFactoryFn UsdMayaShaderWriterRegistry::Find(
         // Nothing registered at all, remember that:
         _reg.insert(std::make_pair(
             mayaTypeName,
-            _RegistryEntry { [](const UsdMayaJobExportArgs&) {
+            _RegistryEntry { [](const UsdMayaJobExportArgs&, const TfToken&) {
                                 return UsdMayaShaderWriter::ContextSupport::Fallback;
                             },
                              nullptr,

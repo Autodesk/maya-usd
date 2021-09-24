@@ -195,7 +195,7 @@ struct UsdMayaJobExportArgs
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
     const TfToken      shadingMode;
-    const TfToken      convertMaterialsTo;
+    const TfToken::Set convertMaterialsTo;
     const bool         verbose;
     const bool         staticSingleSample;
     const TfToken      geomSidedness;

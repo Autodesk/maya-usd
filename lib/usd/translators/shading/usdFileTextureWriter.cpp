@@ -59,7 +59,7 @@ public:
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx);
 
-    static ContextSupport CanExport(const UsdMayaJobExportArgs&);
+    static ContextSupport CanExport(const UsdMayaJobExportArgs&, const TfToken&);
 
     void Write(const UsdTimeCode& usdTime) override;
 
@@ -85,12 +85,18 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-UsdMayaShaderWriter::ContextSupport
-PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
+UsdMayaShaderWriter::ContextSupport PxrUsdTranslators_FileTextureWriter::CanExport(
+    const UsdMayaJobExportArgs& exportArgs,
+    const TfToken&              currentMaterialConversion)
 {
-    return exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface
-        ? ContextSupport::Supported
-        : ContextSupport::Fallback;
+    if (currentMaterialConversion == UsdImagingTokens->UsdPreviewSurface) {
+        return ContextSupport::Supported;
+    }
+    // Only report as fallback if UsdPreviewSurface was not explicitly requested:
+    if (exportArgs.convertMaterialsTo.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
+        ContextSupport::Fallback;
+    }
+    return ContextSupport::Unsupported;
 }
 
 PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(

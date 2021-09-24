@@ -61,7 +61,8 @@ public:
     ///
     /// The prototype is:
     ///
-    /// static ContextSupport CanExport(const UsdMayaJobExportArgs& exportArgs);
+    /// static ContextSupport CanExport(const UsdMayaJobExportArgs& exportArgs,
+    ///                                 const TfToken& currentMaterialConversion);
 
     /// Get the name of the USD shading attribute that corresponds to the
     /// Maya attribute named \p mayaAttrName.
