@@ -49,14 +49,15 @@ static _Registry                                                      _reg;
 /* static */
 void UsdMayaPrimReaderRegistry::Register(
     const TfType&                              t,
-    UsdMayaPrimReaderRegistry::ReaderFactoryFn fn)
+    UsdMayaPrimReaderRegistry::ReaderFactoryFn fn,
+    bool                                       fromPython)
 {
     TfToken tfTypeName(t.GetTypeName());
     TF_DEBUG(PXRUSDMAYA_REGISTRY)
         .Msg("Registering UsdMayaPrimReader for TfType %s.\n", tfTypeName.GetText());
     std::pair<_Registry::iterator, bool> insertStatus = _reg.insert(std::make_pair(tfTypeName, fn));
     if (insertStatus.second) {
-        UsdMaya_RegistryHelper::AddUnloader([tfTypeName]() { _reg.erase(tfTypeName); });
+        UsdMaya_RegistryHelper::AddUnloader([tfTypeName]() { _reg.erase(tfTypeName); }, fromPython);
     } else {
         TF_CODING_ERROR("Multiple readers for type %s", tfTypeName.GetText());
     }

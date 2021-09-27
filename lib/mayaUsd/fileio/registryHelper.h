@@ -87,14 +87,7 @@ struct UsdMaya_RegistryHelper
     /// site-specific, department-specific, show-specific values.
     static VtDictionary GetComposedInfoDictionary(const std::vector<TfToken>& scope);
 
-    static void AddUnloader(const std::function<void()>& func);
-
-    // 2021-09-01 Temporary flag to avoid errors when using registry to Python classes
-    // AddUnloader is not supported for Python Bindings
-    // Still need to implement a way of automatically unregister when a python module is unloaded.
-    // Or provide UnRegister functions.
-    MAYAUSD_CORE_PUBLIC
-    static bool g_pythonRegistry;
+    static void AddUnloader(const std::function<void()>& func, bool fromPython = false);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

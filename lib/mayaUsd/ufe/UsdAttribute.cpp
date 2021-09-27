@@ -81,8 +81,7 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     std::string                                     errMsg;
     bool isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
     if (!isSetAttrAllowed) {
-        MGlobal::displayError(errMsg.c_str());
-        return false;
+        throw std::runtime_error(errMsg);
     }
 
     return attr.Set<T>(value);
@@ -277,6 +276,13 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
     auto self = std::dynamic_pointer_cast<UsdAttributeEnumString>(shared_from_this());
     if (!TF_VERIFY(self, kErrorMsgInvalidType))
         return nullptr;
+
+    std::string errMsg;
+    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
     return std::make_shared<SetUndoableCommand<std::string, UsdAttributeEnumString>>(self, value);
 }
 
@@ -309,6 +315,12 @@ TypedUsdAttribute<T>::TypedUsdAttribute(
 
 template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(const T& value)
 {
+    std::string errMsg;
+    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
     // See
     // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
     // for explanation of this->shared_from_this() in templated class.

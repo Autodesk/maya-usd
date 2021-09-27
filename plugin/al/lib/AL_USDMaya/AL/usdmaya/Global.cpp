@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/Global.h"
 
+#include "AL/usd/transaction/TransactionManager.h"
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
@@ -201,6 +202,7 @@ AL::event::CallbackId Global::m_postSave;
 AL::event::CallbackId Global::m_preRead;
 AL::event::CallbackId Global::m_postRead;
 AL::event::CallbackId Global::m_fileNew;
+AL::event::CallbackId Global::m_mayaExit;
 AL::event::CallbackId Global::m_preExport;
 AL::event::CallbackId Global::m_postExport;
 
@@ -284,6 +286,14 @@ static void onFileNew(void*)
     // Puzzled.
     UsdUtilsStageCache::Get().Clear();
     StageCache::Clear();
+    AL::usd::transaction::TransactionManager::CloseAll();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static void onMayaExit(void*)
+{
+    TF_DEBUG(ALUSDMAYA_EVENTS).Msg("onMayaExit\n");
+    onFileNew(nullptr);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -441,6 +451,7 @@ void Global::onPluginLoad()
 
     auto& manager = AL::maya::event::MayaEventManager::instance();
     m_fileNew = manager.registerCallback(onFileNew, "AfterNew", "usdmaya_onFileNew", 0x1000);
+    m_mayaExit = manager.registerCallback(onMayaExit, "MayaExiting", "usdmaya_onMayaExit", 0x1000);
     m_preSave = manager.registerCallback(preFileSave, "BeforeSave", "usdmaya_preFileSave", 0x1000);
     m_postSave
         = manager.registerCallback(postFileSave, "AfterSave", "usdmaya_postFileSave", 0x1000);

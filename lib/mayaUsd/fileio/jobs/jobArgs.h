@@ -76,6 +76,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportVisibility) \
     (extraContext) \
     (file) \
+    (filterTypes) \
     (ignoreWarnings) \
     (kind) \
     (materialCollectionsPath) \
@@ -228,6 +229,10 @@ struct UsdMayaJobExportArgs
     // if export roots is not used.
     const PcpMapFunction rootMapFunction;
 
+    // Maya type ids to avoid exporting; these are EXACT types, the constructor will also add all
+    // inherited types (so if you exclude "constraint", it will also exclude "parentConstraint")
+    const std::set<unsigned int> filteredTypeIds;
+
     /// Creates a UsdMayaJobExportArgs from the given \p dict, overlaid on
     /// top of the default dictionary given by GetDefaultDictionary().
     /// The values of \p dict are stronger (will override) the values from the
@@ -244,19 +249,9 @@ struct UsdMayaJobExportArgs
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();
 
-    /// Adds type name to filter out during export. This will also add all
-    /// inherited types (so if you exclude "constraint", it will also exclude
-    /// "parentConstraint")
-    MAYAUSD_CORE_PUBLIC
-    void AddFilteredTypeName(const MString& typeName);
-
     /// Returns the resolved file name of the final export location
     MAYAUSD_CORE_PUBLIC
     std::string GetResolvedFileName() const;
-
-    const std::set<unsigned int>& GetFilteredTypeIds() const { return _filteredTypeIds; }
-
-    void ClearFilteredTypeIds() { _filteredTypeIds.clear(); }
 
 private:
     MAYAUSD_CORE_PUBLIC
@@ -264,13 +259,6 @@ private:
         const VtDictionary&             userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
         const std::vector<double>&      timeSamples = std::vector<double>());
-
-    // Maya type ids to avoid exporting; these are
-    // EXACT types, though the only exposed way to modify this,
-    // AddFilteredTypeName, will also add all inherited types
-    // (so if you exclude "constraint", it will also exclude
-    // "parentConstraint")
-    std::set<unsigned int> _filteredTypeIds;
 };
 
 MAYAUSD_CORE_PUBLIC

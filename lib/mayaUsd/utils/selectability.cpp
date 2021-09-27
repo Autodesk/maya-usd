@@ -15,16 +15,14 @@
 //
 #include "selectability.h"
 
+#include <mayaUsd/base/tokens.h>
+
 #include <pxr/base/tf/hashmap.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /*! \brief  The tokens used in the selectability metadata.
  */
-TfToken Selectability::MetadataToken("mayaSelectability");
-TfToken Selectability::InheritToken("inherit");
-TfToken Selectability::OnToken("on");
-TfToken Selectability::OffToken("off");
 
 namespace {
 // Very simple selectability cache for prims to avoid rechecking the metadata.
@@ -88,14 +86,14 @@ bool Selectability::isSelectable(UsdPrim prim)
 Selectability::State Selectability::getLocalState(const UsdPrim& prim)
 {
     TfToken selectability;
-    if (!prim.GetMetadata(MetadataToken, &selectability))
+    if (!prim.GetMetadata(MayaUsdMetadata->Selectability, &selectability))
         return kInherit;
 
-    if (selectability == OffToken) {
+    if (selectability == MayaUsdTokens->Off) {
         return kOff;
-    } else if (selectability == OnToken) {
+    } else if (selectability == MayaUsdTokens->On) {
         return kOn;
-    } else if (selectability == InheritToken) {
+    } else if (selectability == MayaUsdTokens->Inherit) {
         return kInherit;
     } else {
         TF_WARN(

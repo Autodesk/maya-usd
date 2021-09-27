@@ -27,6 +27,8 @@
 
 #include <maya/MGlobal.h>
 
+#include <boost/python.hpp>
+
 #include <map>
 #include <vector>
 
@@ -321,11 +323,27 @@ VtDictionary UsdMaya_RegistryHelper::GetComposedInfoDictionary(const std::vector
     return result;
 }
 
-/* static */
-void UsdMaya_RegistryHelper::AddUnloader(const std::function<void()>& func)
+// Vector of Python unloaders
+std::vector<std::function<void()>> g_pythonUnloaders;
+
+static void PythonUnload(size_t unloaderIndex)
 {
-    if (g_pythonRegistry)
+    g_pythonUnloaders[unloaderIndex]();
+    // No destruction to keep the order, there should not be a lot of elements
+}
+
+/* static */
+void UsdMaya_RegistryHelper::AddUnloader(const std::function<void()>& func, bool fromPython)
+{
+    if (fromPython) {
+        g_pythonUnloaders.emplace_back(func);
+        if (boost::python::import("atexit")
+                .attr("register")(&PythonUnload, g_pythonUnloaders.size() - 1)
+                .is_none()) {
+            TF_CODING_ERROR("Couldn't register unloader to atexit");
+        }
         return;
+    }
 
     if (TfRegistryManager::GetInstance().AddFunctionForUnload(func)) {
         // It is likely that the registering plugin library is opened/closed
@@ -338,7 +356,5 @@ void UsdMaya_RegistryHelper::AddUnloader(const std::function<void()>& func)
                         "outside a TF_REGISTRY_FUNCTION block?)");
     }
 }
-
-bool UsdMaya_RegistryHelper::g_pythonRegistry = false;
 
 PXR_NAMESPACE_CLOSE_SCOPE

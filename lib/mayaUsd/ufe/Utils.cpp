@@ -21,6 +21,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
+#include <mayaUsd/utils/editability.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/hashset.h>
@@ -52,17 +53,6 @@
 #include <unordered_map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-#ifndef MAYA_MSTRINGARRAY_ITERATOR_CATEGORY
-// MStringArray::Iterator is not standard-compliant in Maya 2019, needs the
-// following workaround.  Fixed in Maya 2020.  PPT, 20-Jun-2019.
-namespace std {
-template <> struct iterator_traits<MStringArray::Iterator>
-{
-    typedef std::bidirectional_iterator_tag iterator_category;
-};
-} // namespace std
-#endif
 
 namespace {
 
@@ -313,8 +303,7 @@ bool isAGatewayType(const std::string& mayaNodeType)
     cmd.format("nodeType -inherited -isTypeName ^1s", mayaNodeType.c_str());
     if (MS::kSuccess == MGlobal::executeCommand(cmd, inherited)) {
         MString gatewayNodeType(ProxyShapeHandler::gatewayNodeType().c_str());
-        auto    iter2 = std::find(inherited.begin(), inherited.end(), gatewayNodeType);
-        isInherited = (iter2 != inherited.end());
+        isInherited = inherited.indexOf(gatewayNodeType) != -1;
         g_GatewayType[mayaNodeType] = isInherited;
     }
     return isInherited;
@@ -406,6 +395,15 @@ TfTokenVector getProxyShapePurposes(const Ufe::Path& path)
 
 bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMsg)
 {
+    if (Editability::isLocked(attr)) {
+        if (errMsg) {
+            *errMsg = TfStringPrintf(
+                "Cannot edit [%s] attribute because its lock metadata is [on].",
+                attr.GetBaseName().GetText());
+        }
+        return false;
+    }
+
     // get the property spec in the edit target's layer
     const auto& prim = attr.GetPrim();
     const auto& stage = prim.GetStage();
@@ -438,12 +436,10 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
         // compare the calculated index between the "attr" and "edit target" layers.
         if (findLayerIndex(prim, strongestLayer) < targetLayerIndex) {
             if (errMsg) {
-                std::string err = TfStringPrintf(
+                *errMsg = TfStringPrintf(
                     "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
                     attr.GetBaseName().GetText(),
                     strongestLayer->GetDisplayName().c_str());
-
-                *errMsg = err;
             }
 
             return false;

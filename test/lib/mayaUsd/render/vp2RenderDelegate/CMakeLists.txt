@@ -10,8 +10,6 @@ list(APPEND TEST_SCRIPT_FILES
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
     	testVP2RenderDelegateDuplicateProxy.py
-        testVP2RenderDelegateSelectability.py
-        testVP2RenderDelegateSelectabilityPointInstanceSelection.py
 	testVP2RenderDelegateInteractiveWorkflows.py
     )
 endif()
@@ -52,6 +50,12 @@ endif()
 if (CMAKE_WANT_MATERIALX_BUILD)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegateMaterialX.py
+    )
+endif()
+
+if(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateIsolateSelect.py
     )
 endif()
 

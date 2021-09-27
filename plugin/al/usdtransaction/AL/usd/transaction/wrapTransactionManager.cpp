@@ -44,6 +44,8 @@ static bool CloseStageLayer(const UsdStageWeakPtr& stage, const SdfLayerHandle& 
     return This::Close(stage, layer);
 }
 
+static void CloseAllStage() { This::CloseAll(); }
+
 void wrapTransactionManager()
 {
     {
@@ -56,6 +58,9 @@ void wrapTransactionManager()
             .staticmethod("Open")
 
             .def("Close", CloseStageLayer, (arg("stage"), arg("layer")))
-            .staticmethod("Close");
+            .staticmethod("Close")
+
+            .def("CloseAll", CloseAllStage)
+            .staticmethod("CloseAll");
     }
 }

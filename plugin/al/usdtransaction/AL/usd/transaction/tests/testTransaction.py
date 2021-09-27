@@ -18,6 +18,9 @@ class TestTransaction(unittest.TestCase):
         if sys.version_info[0] >= 3:
             self.assertItemsEqual = self.assertCountEqual
 
+    def tearDown(self):
+        transaction.TransactionManager.CloseAll()
+
     def _openNoticeHandler(self, notice, stage):
         self.assertEqual(stage, self._stage)
         self._opened += 1

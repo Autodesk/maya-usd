@@ -36,6 +36,7 @@
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dPointInstance.h>
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
+#include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #endif
 
 #include <ufe/hierarchyHandler.h>
@@ -150,6 +151,7 @@ MStatus initialize()
     handlers.transform3dHandler = pointInstanceHandler;
 
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
+    MayaUsd::ufe::UsdUIUfeObserver::create();
 #else
     auto usdHierHandler = UsdHierarchyHandler::create();
     auto usdTrans3dHandler = UsdTransform3dHandler::create();
@@ -185,6 +187,8 @@ MStatus finalize()
     if (g_MayaContextOpsHandler)
         Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, g_MayaContextOpsHandler);
     g_MayaContextOpsHandler.reset();
+
+    MayaUsd::ufe::UsdUIUfeObserver::destroy();
 #endif
     Ufe::RunTimeMgr::instance().unregister(g_USDRtid);
     g_MayaHierarchyHandler.reset();

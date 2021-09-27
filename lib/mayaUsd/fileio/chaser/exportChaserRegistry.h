@@ -96,7 +96,7 @@ public:
     /// Please use the \p PXRUSDMAYA_DEFINE_CHASER_FACTORY instead of calling
     /// this directly.
     MAYAUSD_CORE_PUBLIC
-    bool RegisterFactory(const std::string& name, FactoryFn fn);
+    bool RegisterFactory(const std::string& name, FactoryFn fn, bool fromPython = false);
 
     /// \brief Creates a chaser using the factoring registered to \p name.
     MAYAUSD_CORE_PUBLIC

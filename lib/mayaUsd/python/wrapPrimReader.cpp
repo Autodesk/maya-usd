@@ -88,17 +88,18 @@ public:
 
     static void Register(boost::python::object cl, const std::string& typeName)
     {
-        UsdMaya_RegistryHelper::g_pythonRegistry = true;
         auto type = TfType::FindByName(typeName);
-        UsdMayaPrimReaderRegistry::Register(type, [=](const UsdMayaPrimReaderArgs& args) {
-            auto                  sptr = std::make_shared<PrimReaderWrapper>(args);
-            TfPyLock              pyLock;
-            boost::python::object instance = cl((uintptr_t)(PrimReaderWrapper*)sptr.get());
-            boost::python::incref(instance.ptr());
-            initialize_wrapper(instance.ptr(), sptr.get());
-            return sptr;
-        });
-        UsdMaya_RegistryHelper::g_pythonRegistry = false;
+        UsdMayaPrimReaderRegistry::Register(
+            type,
+            [=](const UsdMayaPrimReaderArgs& args) {
+                auto                  sptr = std::make_shared<PrimReaderWrapper>(args);
+                TfPyLock              pyLock;
+                boost::python::object instance = cl((uintptr_t)(PrimReaderWrapper*)sptr.get());
+                boost::python::incref(instance.ptr());
+                initialize_wrapper(instance.ptr(), sptr.get());
+                return sptr;
+            },
+            true);
     }
 };
 
@@ -190,7 +191,6 @@ public:
 
     static void Register(boost::python::object cl, const TfToken& usdInfoId)
     {
-        UsdMaya_RegistryHelper::g_pythonRegistry = true;
         UsdMayaShaderReaderRegistry::Register(
             usdInfoId,
             [=](const UsdMayaJobImportArgs& args) {
@@ -203,8 +203,8 @@ public:
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;
-            });
-        UsdMaya_RegistryHelper::g_pythonRegistry = false;
+            },
+            true);
     }
 };
 

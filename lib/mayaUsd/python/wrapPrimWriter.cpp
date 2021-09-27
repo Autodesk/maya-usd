@@ -187,7 +187,6 @@ public:
 
     static void Register(boost::python::object cl, const std::string& mayaTypeName)
     {
-        UsdMaya_RegistryHelper::g_pythonRegistry = true;
         UsdMayaPrimWriterRegistry::Register(
             mayaTypeName,
             [=](const MFnDependencyNode& depNodeFn,
@@ -199,8 +198,8 @@ public:
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;
-            });
-        UsdMaya_RegistryHelper::g_pythonRegistry = false;
+            },
+            true);
     }
 
 private:
@@ -260,7 +259,6 @@ public:
 
     static void Register(boost::python::object cl, const TfToken& mayaType)
     {
-        UsdMaya_RegistryHelper::g_pythonRegistry = true;
         UsdMayaShaderWriterRegistry::Register(
             mayaType,
             [=](const UsdMayaJobExportArgs& args, const TfToken& currentMaterialConversion) {
@@ -275,8 +273,8 @@ public:
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;
-            });
-        UsdMaya_RegistryHelper::g_pythonRegistry = false;
+            },
+            true);
     }
 };
 

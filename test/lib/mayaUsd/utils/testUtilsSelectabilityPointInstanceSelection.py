@@ -38,16 +38,15 @@ from PySide2.QtWidgets import QWidget
 
 from shiboken2 import wrapInstance
 
-class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase):
+class testUtilsSelectabilityPointInstanceSelection(unittest.TestCase):
     """
-    Tests selectability using the Viewport 2.0 render delegate when selecting
-    instances of a PointInstancer.
+    Tests selectability when selecting of a PointInstancer.
     """
 
-    selectabilityToken = "mayaSelectability"
-    onToken = "on"
-    offToken = "off"
-    inheritToken = "inherit"
+    selectabilityToken = mayaUsdLib.MetadataTokens.Selectability
+    onToken = mayaUsdLib.Tokens.On
+    offToken = mayaUsdLib.Tokens.Off
+    inheritToken = mayaUsdLib.Tokens.Inherit
 
     @classmethod
     def setUpClass(cls):
@@ -58,6 +57,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         inputPath = fixturesUtils.setUpClass(__file__,
             initializeStandalone=False, loadPlugin=False)
 
+        # Re-use the test files from the point instancer tests.
         cls._baselineDir = os.path.join(inputPath,
             'VP2RenderDelegatePointInstanceSelectionTest', 'baseline')
 
@@ -131,7 +131,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
 
     @staticmethod
     def _GetSceneItem(instanceIndex=-1):
-        ufePath = testVP2RenderDelegateSelectabilityPointInstanceSelection._GetUfePath(
+        ufePath = testUtilsSelectabilityPointInstanceSelection._GetUfePath(
             instanceIndex)
         ufeItem = ufe.Hierarchy.createItem(ufePath)
         prim = mayaUsdUfe.ufePathToPrim(ufe.PathString.string(ufePath))
@@ -162,7 +162,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         # Set the USD point instances pick mode to "Instances" so that we pick
         # individual point instances during the test.
         cmds.optionVar(stringValue=(
-            testVP2RenderDelegateSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'Instances'))
+            testUtilsSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'Instances'))
         self._RunTest(14)
 
     def testInstancesGrid7k(self):
@@ -171,7 +171,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         # Set the USD point instances pick mode to "Instances" so that we pick
         # individual point instances during the test.
         cmds.optionVar(stringValue=(
-            testVP2RenderDelegateSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'Instances'))
+            testUtilsSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'Instances'))
         self._RunTest(7000)
 
     def testPointInstancerGrid14(self):
@@ -180,7 +180,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         # Set the USD point instances pick mode to "PointInstancer" so that we pick
         # the instancer and not point instances during the test.
         cmds.optionVar(stringValue=(
-            testVP2RenderDelegateSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'PointInstancer'))
+            testUtilsSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'PointInstancer'))
 
         # In USD versions before 21.05, the point instancer pick mode did not exists.
         # For those version we end-up selecting the prototypes, of which there are 7.
@@ -194,7 +194,7 @@ class testVP2RenderDelegateSelectabilityPointInstanceSelection(unittest.TestCase
         # Set the USD point instances pick mode to "PointInstancer" so that we pick
         # the instancer and not point instances instances during the test.
         cmds.optionVar(stringValue=(
-            testVP2RenderDelegateSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'PointInstancer'))
+            testUtilsSelectabilityPointInstanceSelection._pointInstancesPickModeOptionVarName, 'PointInstancer'))
 
         # In USD versions before 21.05, the point instancer pick mode did not exists.
         # For those version we end-up selecting the prototypes, of which there are 7.

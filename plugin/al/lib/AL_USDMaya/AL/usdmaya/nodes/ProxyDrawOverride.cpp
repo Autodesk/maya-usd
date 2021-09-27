@@ -482,6 +482,14 @@ bool ProxyDrawOverride::userSelect(
 {
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyDrawOverride::userSelect\n");
 
+    // There is some unknown behaviour where this userSelect method is called
+    // multiple times while snapping is active.
+    // Calling AL_usdmaya_ProxyShapeSelect with the -cl flag will cause
+    // a crash while we are snapping. Since we do not want to change
+    // the selection while snapping, we can bail early.
+    if (pointSnappingActive())
+        return false;
+
     MString fullSelPath = objPath.fullPathName();
 
     if (!MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"))
