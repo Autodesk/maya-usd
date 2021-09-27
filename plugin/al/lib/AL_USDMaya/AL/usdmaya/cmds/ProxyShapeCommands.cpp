@@ -14,15 +14,16 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
-#include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/maya/utils/Utils.h"
+#include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
+#include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/M3dView.h>
@@ -1430,30 +1431,23 @@ MStatus ProxyShapeTestIntersection::redoIt()
     uint                     resolution = 10;
     nodes::Engine::HitBatch  hitBatch;
 
-    auto callback = [stage](const SdfPath& a, const SdfPath& b, const int c) {
-        auto p = stage->GetPrimAtPath(a);
-        // if we encounter an instance proxy, select it's parent prim instead!
-        // Modifying an InstanceProxy will cause an exception to be thrown.
-        return p.IsInstanceProxy() ? a.GetParentPath() : a;
-    };
-
     bool hit = engine->TestIntersectionBatch(
         GfMatrix4d(worldViewMatrix.matrix),
         GfMatrix4d(projectionMatrix.matrix),
         GfMatrix4d(1.f),
         rootPath,
         params,
+        HdxPickTokens->resolveNearestToCamera,
         resolution,
-        callback,
         &hitBatch);
 
     if (hit) {
         clearResult();
-        for (auto& kv : hitBatch) {
-            auto worldSpaceHitPosition = kv.second.worldSpaceHitPoint;
-            appendToResult(worldSpaceHitPosition[0]);
-            appendToResult(worldSpaceHitPosition[1]);
-            appendToResult(worldSpaceHitPosition[2]);
+        for (const auto& it : hitBatch) {
+            const double* p = it.second.GetArray();
+            appendToResult(p[0]);
+            appendToResult(p[1]);
+            appendToResult(p[2]);
         }
     } else {
         MGlobal::displayInfo("[AL_usdmaya_ProxyShapeTestIntersection]: No hit points found\n");
