@@ -112,8 +112,11 @@ public:
     typedef ShaderReaderWrapper This;
     typedef UsdMayaShaderReader base_t;
 
-    ShaderReaderWrapper(const UsdMayaPrimReaderArgs& args)
+    const TfToken& _mayaNodeTypeName;
+
+    ShaderReaderWrapper(const UsdMayaPrimReaderArgs& args, const TfToken& mayaNodeTypeName)
         : PrimReaderWrapper<UsdMayaShaderReader>(args)
+        , _mayaNodeTypeName(mayaNodeTypeName)
     {
     }
 
@@ -189,16 +192,26 @@ public:
             context, prim);
     }
 
-    static void Register(boost::python::object cl, const TfToken& usdInfoId)
+    const TfToken& GetmayaNodeTypeName() { return _mayaNodeTypeName; }
+
+    static void Register(
+        boost::python::object cl,
+        const TfToken&        usdShaderId,
+        const TfToken&        mayaNodeTypeName,
+        const TfToken&        materialConversion)
     {
         UsdMayaShaderReaderRegistry::Register(
-            usdInfoId,
+            usdShaderId,
             [=](const UsdMayaJobImportArgs& args) {
-                return UsdMayaShaderReader::ContextSupport(0);
+                TfPyLock              pyLock;
+                boost::python::object CanImport = cl.attr("CanImport");
+                PyObject*             callable = CanImport.ptr();
+                auto res = boost::python::call<int>(callable, args, materialConversion);
+                return UsdMayaShaderReader::ContextSupport(res);
             },
             [=](const UsdMayaPrimReaderArgs& args) {
-                auto                  sptr = std::make_shared<ShaderReaderWrapper>(args);
-                TfPyLock              pyLock;
+                auto     sptr = std::make_shared<ShaderReaderWrapper>(args, mayaNodeTypeName);
+                TfPyLock pyLock;
                 boost::python::object instance = cl((uintptr_t)(ShaderReaderWrapper*)sptr.get());
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
@@ -281,6 +294,31 @@ void wrapPrimReader()
         .staticmethod("Register");
 }
 
+void wrapShadingModeImportContext()
+{
+    boost::python::class_<UsdMayaShadingModeImportContext>(
+        "ShadingModeImportContext", boost::python::no_init)
+        .def("GetCreatedObject", &UsdMayaShadingModeImportContext::GetCreatedObject)
+        //        .def("AddCreatedObject",&UsdMayaShadingModeImportContext::AddCreatedObject) //
+        //        overloads
+        .def("CreateShadingEngine", &UsdMayaShadingModeImportContext::CreateShadingEngine)
+        .def("GetShadingEngineName", &UsdMayaShadingModeImportContext::GetShadingEngineName)
+        .def("GetSurfaceShaderPlugName", &UsdMayaShadingModeImportContext::GetSurfaceShaderPlugName)
+        .def("GetVolumeShaderPlugName", &UsdMayaShadingModeImportContext::GetVolumeShaderPlugName)
+        .def(
+            "GetDisplacementShaderPlugName",
+            &UsdMayaShadingModeImportContext::GetDisplacementShaderPlugName)
+        .def("SetSurfaceShaderPlugName", &UsdMayaShadingModeImportContext::SetSurfaceShaderPlugName)
+        .def("SetVolumeShaderPlugName", &UsdMayaShadingModeImportContext::SetVolumeShaderPlugName)
+        .def(
+            "SetDisplacementShaderPlugName",
+            &UsdMayaShadingModeImportContext::SetDisplacementShaderPlugName)
+        .def(
+            "GetPrimReaderContext",
+            &UsdMayaShadingModeImportContext::GetPrimReaderContext,
+            boost::python::return_value_policy<boost::python::return_by_value>());
+}
+
 TF_REGISTRY_FUNCTION(TfEnum)
 {
     TF_ADD_ENUM_NAME(UsdMayaShaderReader::ContextSupport::Supported, "Supported");
@@ -300,6 +338,7 @@ void wrapShaderReader()
     TfPyWrapEnum<UsdMayaShaderReader::ContextSupport>();
 
     c.def("__init__", make_constructor(&ShaderReaderWrapper::New))
+        .def("Read", boost::python::pure_virtual(&UsdMayaPrimReader::Read))
         .def(
             "GetMayaPlugForUsdAttrName",
             &ShaderReaderWrapper::GetMayaPlugForUsdAttrName,
@@ -324,6 +363,11 @@ void wrapShaderReader()
             "GetCreatedObject",
             &ShaderReaderWrapper::GetCreatedObject,
             &ShaderReaderWrapper::default_GetCreatedObject)
+        .add_property(
+            "_mayaNodeTypeName",
+            make_function(
+                &ShaderReaderWrapper::GetmayaNodeTypeName,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def(
             "Register",

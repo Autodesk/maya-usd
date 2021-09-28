@@ -24,7 +24,7 @@ from pxr import Vt
 from pxr import UsdGeom
 
 from maya import cmds
-import maya.api.OpenMaya as OpenMaya
+from maya.api import OpenMaya
 from maya import standalone
 
 import fixturesUtils, os
@@ -32,17 +32,38 @@ import fixturesUtils, os
 import unittest
 
 class shaderWriterTest(mayaUsdLib.ShaderWriter):
-    def Write(self, usdTime):
-         print("shaderWriterTest.Write called")
+    CanExportCalled = False
+    WriteCalledCount = 0
+    GetShadingAttributeNameForMayaAttrNameCalledWith = ""
+    GetShadingAttributeForMayaAttrNameCalled = False
+    _usdShaderIdLastValue = ""
+    NotCalled = False
 
-    def PostExport(self):
-         print("shaderWriterTest.PostExport called")
-         return False
+    @classmethod
+    def CanExport(cls, exportArgs, materialConversionName):
+        shaderWriterTest.CanExportCalled = True
+        if(materialConversionName=="z"):
+            return mayaUsdLib.ShaderWriter.ContextSupport.Supported
+        else:
+            return mayaUsdLib.ShaderWriter.ContextSupport.Unsupported
+
+    def Write(self, usdTime):
+        shaderWriterTest.WriteCalledCount += 1
+        shaderWriterTest._usdShaderIdLastValue = self._usdShaderId
+
+    def GetShadingAttributeNameForMayaAttrName(self, mayaAttrName):
+        shaderWriterTest.GetShadingAttributeNameForMayaAttrNameCalledWith = mayaAttrName
+        return mayaAttrName
+
+    def GetShadingAttributeForMayaAttrName(self, mayaAttrName, typeName):
+        shaderWriterTest.GetShadingAttributeForMayaAttrNameCalled = True
+        # return default value so that GetShadingAttributeNameForMayaAttrName gets called
+        return mayaUsdLib.ShaderWriter.GetShadingAttributeForMayaAttrName(self, mayaAttrName, typeName)
 
 class testShaderWriter(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.setUpClass(__file__)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
@@ -52,8 +73,25 @@ class testShaderWriter(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testSimpleShaderWriter(self):
-        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "test")
+        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "marble", "x", "y")
+        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "lambert", "x", "z")
 
+        mayaFile = os.path.join(testShaderWriter.inputPath, '..', '..', 'usd', 'translators','UsdExportRfMShadersTest',
+            'MarbleCube.ma')
+        cmds.file(mayaFile, force=True, open=True)
+
+        # Export to USD.
+        usdFilePath = os.path.join(os.environ.get('MAYA_APP_DIR'),'testShaderWriter.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo='rendermanForMaya',
+            materialsScopeName='Materials')
+
+        self.assertTrue(shaderWriterTest.CanExportCalled)
+        self.assertEqual(shaderWriterTest.WriteCalledCount,1)
+        self.assertTrue(shaderWriterTest.GetShadingAttributeForMayaAttrNameCalled)
+        self.assertEqual(shaderWriterTest.GetShadingAttributeNameForMayaAttrNameCalledWith, 'color')
+        self.assertEqual(shaderWriterTest._usdShaderIdLastValue,'x')
+        self.assertFalse(shaderWriterTest.NotCalled)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

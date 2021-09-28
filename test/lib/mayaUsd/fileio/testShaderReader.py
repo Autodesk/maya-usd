@@ -24,7 +24,7 @@ from pxr import Vt
 from pxr import UsdGeom
 
 from maya import cmds
-import maya.api.OpenMaya as OpenMaya
+from maya.api import OpenMaya
 from maya import standalone
 
 import fixturesUtils, os
@@ -32,19 +32,52 @@ import fixturesUtils, os
 import unittest
 
 class shaderReaderTest(mayaUsdLib.ShaderReader):
-    @classmethod
-    def CanImport(self):
-        print("shaderReaderTest.CanImport called")
-        return self.ContextSupport.Fallback
+    CanImportCalled = False
+    IsConverterCalled = False
+    ReadCalled = False
+    GetCreatedObjectCalled = False
+    _mayaNodeTypeNameLastValue = ""
+    NotCalled = False
 
-    def HasPostReadSubtree(self):
-        print("shaderReaderTest.HasPostReadSubtree called")
+    @classmethod
+    def CanImport(cls, args, materialConversion):
+        shaderReaderTest.CanImportCalled = True
+        return cls.ContextSupport.Fallback
+
+    def Read(self, context):
+        shaderReaderTest.ReadCalled = True
+        return True
+
+    def GetMayaPlugForUsdAttrName(self, usdAttrName, mayaObject):
+        print("shaderReaderTest.GetMayaPlugForUsdAttrName called")
+        return OpenMaya.MPlug()
+
+    def GetMayaNameForUsdAttrName(self, usdAttrName):
+        print("shaderReaderTest.GetMayaNameForUsdAttrName called")
+        return ""
+
+    def PostConnectSubtree(self, context):
+        print("shaderReaderTest.PostConnectSubtree called")
+        return
+
+    def IsConverter(self, downstreamSchema, downstreamOutputName):
+        shaderReaderTest.IsConverterCalled = True
         return False
+
+    def SetDownstreamReader(self, downstreamReader):
+        print("shaderReaderTest.SetDownstreamReader called")
+        return
+
+    def GetCreatedObject(self, context, prim):
+        shaderReaderTest.GetCreatedObjectCalled = True
+        shaderReaderTest._mayaNodeTypeNameLastValue = self._mayaNodeTypeName
+        return OpenMaya.MObject()
+
 
 class testShaderReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.setUpClass(__file__)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
@@ -54,8 +87,19 @@ class testShaderReader(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testSimpleShaderReader(self):
-        mayaUsdLib.ShaderReader.Register(shaderReaderTest, "test")
+        mayaUsdLib.ShaderReader.Register(shaderReaderTest, "PxrMayaMarble", "x", "y")
+        
+        usdFilePath = os.path.join(testShaderReader.inputPath, '..', '..', 'usd', 'translators','UsdImportRfMShadersTest',
+            'MarbleCube.usda')
 
+        cmds.usdImport(file=usdFilePath, shadingMode=['useRegistry','rendermanForMaya' ])
+
+        self.assertTrue(shaderReaderTest.CanImportCalled)
+        self.assertTrue(shaderReaderTest.IsConverterCalled)
+        self.assertTrue(shaderReaderTest.ReadCalled)
+        self.assertTrue(shaderReaderTest.GetCreatedObjectCalled)
+        self.assertEqual(shaderReaderTest._mayaNodeTypeNameLastValue,'x')
+        self.assertFalse(shaderReaderTest.NotCalled)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

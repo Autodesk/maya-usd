@@ -215,12 +215,15 @@ class ShaderWriterWrapper : public PrimWriterWrapper<UsdMayaShaderWriter>
 public:
     typedef ShaderWriterWrapper This;
     typedef UsdMayaShaderWriter base_t;
+    const TfToken&              _usdShaderId;
 
     ShaderWriterWrapper(
         const MFnDependencyNode& depNodeFn,
         const SdfPath&           usdPath,
-        UsdMayaWriteJobContext&  jobCtx)
+        UsdMayaWriteJobContext&  jobCtx,
+        const TfToken&           usdShaderId)
         : PrimWriterWrapper<UsdMayaShaderWriter>(depNodeFn, usdPath, jobCtx)
+        , _usdShaderId(usdShaderId)
     {
     }
 
@@ -257,18 +260,29 @@ public:
             &This::default_GetShadingAttributeForMayaAttrName)(mayaAttrName, typeName);
     }
 
-    static void Register(boost::python::object cl, const TfToken& mayaType)
+    const TfToken& GetusdShaderId() { return _usdShaderId; }
+
+    static void Register(
+        boost::python::object cl,
+        const TfToken&        mayaNodeTypeName,
+        const TfToken&        usdShaderId,
+        const TfToken&        materialConversionName)
     {
         UsdMayaShaderWriterRegistry::Register(
-            mayaType,
-            [=](const UsdMayaJobExportArgs& args) {
-                return UsdMayaShaderWriter::ContextSupport(0);
+            mayaNodeTypeName,
+            [=](const UsdMayaJobExportArgs& exportArgs) {
+                TfPyLock              pyLock;
+                boost::python::object CanExport = cl.attr("CanExport");
+                PyObject*             callable = CanExport.ptr();
+                auto res = boost::python::call<int>(callable, exportArgs, materialConversionName);
+                return UsdMayaShaderWriter::ContextSupport(res);
             },
             [=](const MFnDependencyNode& depNodeFn,
                 const SdfPath&           usdPath,
                 UsdMayaWriteJobContext&  jobCtx) {
-                auto     sptr = std::make_shared<ShaderWriterWrapper>(depNodeFn, usdPath, jobCtx);
-                TfPyLock pyLock;
+                auto sptr = std::make_shared<ShaderWriterWrapper>(
+                    depNodeFn, usdPath, jobCtx, usdShaderId);
+                TfPyLock              pyLock;
                 boost::python::object instance = cl((uintptr_t)(ShaderWriterWrapper*)sptr.get());
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
@@ -372,6 +386,12 @@ void wrapShaderWriter()
             "GetShadingAttributeForMayaAttrName",
             &ShaderWriterWrapper::GetShadingAttributeForMayaAttrName,
             &ShaderWriterWrapper::default_GetShadingAttributeForMayaAttrName)
+        .add_property(
+            "_usdShaderId",
+            make_function(
+                &ShaderWriterWrapper::GetusdShaderId,
+                boost::python::return_value_policy<boost::python::return_by_value>()))
+
         .def(
             "Register",
             &ShaderWriterWrapper::Register,
