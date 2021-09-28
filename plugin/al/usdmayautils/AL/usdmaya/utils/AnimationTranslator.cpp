@@ -26,8 +26,19 @@
 #include <maya/MItDependencyGraph.h>
 #include <maya/MMatrix.h>
 #include <maya/MNodeClass.h>
+#include <maya/MProfiler.h>
 
 #include <iostream>
+namespace {
+const int _animationTranslatorProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "AnimationTranslator",
+    "AnimationTranslator"
+#else
+    "AnimationTranslator"
+#endif
+);
+} // namespace
 
 namespace AL {
 namespace usdmaya {

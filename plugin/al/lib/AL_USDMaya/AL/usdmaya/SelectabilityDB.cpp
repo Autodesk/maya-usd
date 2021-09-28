@@ -15,12 +15,27 @@
 //
 #include <AL/usdmaya/SelectabilityDB.h>
 
+#include <maya/MProfiler.h>
+namespace {
+const int _selectabilityProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "SelectabilityDB",
+    "SelectabilityDB"
+#else
+    "SelectabilityDB"
+#endif
+);
+} // namespace
+
 namespace AL {
 namespace usdmaya {
 
 //----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::isPathUnselectable(const SdfPath& path) const
 {
+    MProfilingScope profilerScope(
+        _selectabilityProfilerCategory, MProfiler::kColorE_L3, "Check unselectable paths");
+
     auto begin = m_unselectablePaths.begin();
     auto end = m_unselectablePaths.end();
     auto foundPathEntry = end;
@@ -40,6 +55,9 @@ bool SelectabilityDB::isPathUnselectable(const SdfPath& path) const
 //----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::removePathsAsUnselectable(const SdfPathVector& paths)
 {
+    MProfilingScope profilerScope(
+        _selectabilityProfilerCategory, MProfiler::kColorE_L3, "Remove unselectable paths");
+
     for (SdfPath path : paths) {
         removeUnselectablePath(path);
     }
@@ -66,6 +84,9 @@ void SelectabilityDB::removePathAsUnselectable(const SdfPath& path)
 //----------------------------------------------------------------------------------------------------------------------
 void SelectabilityDB::addPathsAsUnselectable(const SdfPathVector& paths)
 {
+    MProfilingScope profilerScope(
+        _selectabilityProfilerCategory, MProfiler::kColorE_L3, "Add unselectable paths");
+
     auto end = m_unselectablePaths.end();
     auto start = m_unselectablePaths.begin();
     for (auto iter = paths.begin(), last = paths.end(); iter != last; ++iter) {
@@ -89,6 +110,9 @@ void SelectabilityDB::addPathAsUnselectable(const SdfPath& path) { addUnselectab
 //----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::removeUnselectablePath(const SdfPath& path)
 {
+    MProfilingScope profilerScope(
+        _selectabilityProfilerCategory, MProfiler::kColorE_L3, "Remove unselectable path");
+
     auto end = m_unselectablePaths.end();
     auto foundPathEntry = std::lower_bound(m_unselectablePaths.begin(), end, path);
     if (foundPathEntry != end && *foundPathEntry == path) {
@@ -101,6 +125,9 @@ bool SelectabilityDB::removeUnselectablePath(const SdfPath& path)
 //----------------------------------------------------------------------------------------------------------------------
 bool SelectabilityDB::addUnselectablePath(const SdfPath& path)
 {
+    MProfilingScope profilerScope(
+        _selectabilityProfilerCategory, MProfiler::kColorE_L3, "Add unselectable path");
+
     auto end = m_unselectablePaths.end();
     auto iter = std::lower_bound(m_unselectablePaths.begin(), end, path);
     if (iter != end) {

@@ -23,7 +23,6 @@ list(APPEND AL_usdmaya_source
         AL/usdmaya/SelectabilityDB.cpp
         AL/usdmaya/StageCache.cpp
         AL/usdmaya/TransformOperation.cpp
-        AL/usdmaya/CodeTimings.cpp
         AL/usdmaya/moduleDeps.cpp
 )
 

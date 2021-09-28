@@ -481,6 +481,9 @@ void MayaUsdProxyShapeBase::enableProxyAccessor()
 /* virtual */
 void MayaUsdProxyShapeBase::postConstructor()
 {
+    MProfilingScope profilingScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Issue Invalidate Stage Notice");
+
     setRenderable(true);
 
     MayaUsdProxyStageInvalidateNotice(*this).Send();
@@ -495,6 +498,10 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     if (plug == excludePrimPathsAttr || plug == timeAttr || plug == complexityAttr
         || plug == drawRenderPurposeAttr || plug == drawProxyPurposeAttr
         || plug == drawGuidePurposeAttr) {
+        MProfilingScope profilingScope(
+            _shapeBaseProfilerCategory,
+            MProfiler::kColorE_L3,
+            "Call MHWRender::MRenderer::setGeometryDrawDirty from compute");
         // If the attribute that needs to be computed is one of these, then it
         // does not affect the ouput stage data, but it *does* affect imaging
         // the shape. In that case, we notify Maya that the shape needs to be
@@ -596,6 +603,9 @@ void remapSublayerRecursive(
 
 MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 {
+    MProfilingScope profilingScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Compute inStageDataCached plug");
+
     MStatus retValue = MS::kSuccess;
 
     // Background computation is relying on normal context
@@ -768,6 +778,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 if (rootLayer) {
                     SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
 
+                    MProfilingScope profilingScope(
+                        _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Open stage");
+
                     static const MString kSessionLayerOptionVarName(
                         MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen.GetText());
 
@@ -906,6 +919,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
 MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 {
+    MProfilingScope computeOutStageDatacomputeOutStageData(
+        _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Compute outStageData plug");
+
     struct in_computeGuard
     {
         in_computeGuard() { in_compute++; }
@@ -1169,6 +1185,9 @@ void MayaUsdProxyShapeBase::copyInternalData(MPxNode* srcNode)
 MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 {
     TRACE_FUNCTION();
+
+    MProfilingScope profilerScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Compute bounding box");
 
     MStatus status;
 
@@ -1713,6 +1732,9 @@ bool MayaUsdProxyShapeBase::closestPoint(
     bool /*findClosestOnMiss*/,
     double /*tolerance*/)
 {
+    MProfilingScope profilerScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorE_L3, "Compute closest point");
+
     if (_sharedClosestPointDelegate) {
         GfRay ray(
             GfVec3d(raySource.x, raySource.y, raySource.z),
