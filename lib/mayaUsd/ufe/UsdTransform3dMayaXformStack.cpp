@@ -139,7 +139,7 @@ bool hasValidSuffix(const std::vector<UsdGeomXformOp>& xformOps)
     TF_FOR_ALL(iter, xformOps)
     {
         const UsdGeomXformOp& xformOp = *iter;
-        auto ndx = gOpNameToNdx.find(xformOp.GetName());
+        auto                  ndx = gOpNameToNdx.find(xformOp.GetName());
         if (ndx == gOpNameToNdx.end())
             return false;
     }
@@ -170,7 +170,7 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     }
 
     // reject tokens not in gOpNameToNdx
-    if(!hasValidSuffix(xformOps))
+    if (!hasValidSuffix(xformOps))
         return nextTransform3dFn();
 
     // If the prim supports the Maya transform stack, create a Maya transform
