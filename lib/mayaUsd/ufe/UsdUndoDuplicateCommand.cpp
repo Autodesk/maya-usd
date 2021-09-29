@@ -91,8 +91,7 @@ void UsdUndoDuplicateCommand::execute()
             ? UsdLoadPolicy::UsdLoadWithDescendants
             : UsdLoadPolicy::UsdLoadWithoutDescendants;
         stage->Load(_usdDstPath, policy);
-    }
-    else if (primRule == UsdStageLoadRules::NoneRule) {
+    } else if (primRule == UsdStageLoadRules::NoneRule) {
         stage->Unload(_usdDstPath);
     }
 
