@@ -70,18 +70,39 @@ void UsdUndoDuplicateCommand::execute()
     UsdUndoBlock undoBlock(&_undoableItem);
 
     auto prim = ufePathToPrim(_ufeSrcPath);
+    auto path = prim.GetPath();
     auto stage = prim.GetStage();
+
+    // The loaded state of a model is controlled by the load rules of the stage.
+    // When duplicating a node, we want the new node to be in the same loaded
+    // state. Analyze the reason the source node was loaded or unloaded and
+    // replicate them to the destination.
+    //
+    // The case we need to explicitly handle is when the node is not controlled
+    // by a AllRule, that is by an ancestor. Then we need to duplicate the load
+    // or unload rule, which correspond to OnlyRule and NoneRule respectively.
+    //
+    // We cannot rely on simpler APi like IsLoaded() because we need to know
+    // what causes the loaded or unloaded state.
+    auto rules = stage->GetLoadRules();
+    auto primRule = rules.GetEffectiveRuleForPath(path);
+    if (primRule == UsdStageLoadRules::OnlyRule) {
+        auto policy = rules.IsLoadedWithAllDescendants(path)
+            ? UsdLoadPolicy::UsdLoadWithDescendants
+            : UsdLoadPolicy::UsdLoadWithoutDescendants;
+        stage->Load(_usdDstPath, policy);
+    }
+    else if (primRule == UsdStageLoadRules::NoneRule) {
+        stage->Unload(_usdDstPath);
+    }
+
     auto layer = stage->GetEditTarget().GetLayer();
-    bool retVal = PXR_NS::SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
+    bool retVal = PXR_NS::SdfCopySpec(layer, path, layer, _usdDstPath);
     TF_VERIFY(
         retVal,
         "Failed to copy spec data at '%s' to '%s'",
         prim.GetPath().GetText(),
         _usdDstPath.GetText());
-
-    if (retVal) {
-        stage->Load(_usdDstPath, UsdLoadPolicy::UsdLoadWithDescendants);
-    }
 }
 
 void UsdUndoDuplicateCommand::undo()
