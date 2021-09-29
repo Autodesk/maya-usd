@@ -70,13 +70,18 @@ void UsdUndoDuplicateCommand::execute()
     UsdUndoBlock undoBlock(&_undoableItem);
 
     auto prim = ufePathToPrim(_ufeSrcPath);
-    auto layer = prim.GetStage()->GetEditTarget().GetLayer();
+    auto stage = prim.GetStage();
+    auto layer = stage->GetEditTarget().GetLayer();
     bool retVal = PXR_NS::SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
     TF_VERIFY(
         retVal,
         "Failed to copy spec data at '%s' to '%s'",
         prim.GetPath().GetText(),
         _usdDstPath.GetText());
+
+    if (retVal) {
+        stage->Load(_usdDstPath, UsdLoadPolicy::UsdLoadWithDescendants);
+    }
 }
 
 void UsdUndoDuplicateCommand::undo()
