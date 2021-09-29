@@ -16,20 +16,19 @@
 
 #include "meshViewportCompute.h"
 
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+
 #include "mesh.h"
 #include "render_delegate.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <pxr/imaging/hd/vertexAdjacency.h>
+#include <pxr/imaging/pxOsd/refinerFactory.h>
+#include <pxr/imaging/pxOsd/tokens.h>
 #include <pxr/pxr.h>
 
 #include <maya/MProfiler.h>
-
-#ifdef HDVP2_ENABLE_GPU_COMPUTE
-
-#include <pxr/imaging/pxOsd/refinerFactory.h>
-#include <pxr/imaging/pxOsd/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
