@@ -231,6 +231,7 @@ void ProxyShape::constructExcludedPrims()
     auto excludedPaths = getExcludePrimPaths();
     if (m_excludedGeometry != excludedPaths) {
         std::swap(m_excludedGeometry, excludedPaths);
+        _IncreaseExcludePrimPathsVersion();
         constructGLImagingEngine();
     }
 }
@@ -366,6 +367,16 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
     SdfPathVector temp
         = getPrimPathsFromCommaJoinedString(excludedTranslatedGeometryPlug().asString());
     paths.insert(paths.end(), temp.begin(), temp.end());
+
+    const auto& translatedGeo = m_context->excludedGeometry();
+
+    // combine the excluded paths
+    paths.insert(paths.end(), m_excludedTaggedGeometry.begin(), m_excludedTaggedGeometry.end());
+    paths.insert(paths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
+    for (auto& it : translatedGeo) {
+        paths.push_back(it.second);
+    }
+
     return paths;
 }
 
