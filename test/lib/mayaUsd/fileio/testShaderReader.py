@@ -36,7 +36,6 @@ class shaderReaderTest(mayaUsdLib.ShaderReader):
     IsConverterCalled = False
     ReadCalled = False
     GetCreatedObjectCalled = False
-    _mayaNodeTypeNameLastValue = ""
     NotCalled = False
 
     @classmethod
@@ -62,7 +61,14 @@ class shaderReaderTest(mayaUsdLib.ShaderReader):
 
     def IsConverter(self, downstreamSchema, downstreamOutputName):
         shaderReaderTest.IsConverterCalled = True
-        return False
+        if (self._mayaNodeTypeName == "x"):
+            return False
+        else:
+            print("This code path is not Python friendly, need to refactor before activating.")
+            exit(1)
+            downstreamSchema = mayaUsdLib.UsdShadeShader()
+            downstreamOutputName = "?"
+            return True
 
     def SetDownstreamReader(self, downstreamReader):
         print("shaderReaderTest.SetDownstreamReader called")
@@ -70,7 +76,6 @@ class shaderReaderTest(mayaUsdLib.ShaderReader):
 
     def GetCreatedObject(self, context, prim):
         shaderReaderTest.GetCreatedObjectCalled = True
-        shaderReaderTest._mayaNodeTypeNameLastValue = self._mayaNodeTypeName
         return OpenMaya.MObject()
 
 
@@ -88,6 +93,7 @@ class testShaderReader(unittest.TestCase):
 
     def testSimpleShaderReader(self):
         mayaUsdLib.ShaderReader.Register(shaderReaderTest, "PxrMayaMarble", "x", "y")
+#        mayaUsdLib.ShaderReader.Register(shaderReaderTest, "PxrMayaLambert", "w", "y")
         
         usdFilePath = os.path.join(testShaderReader.inputPath, '..', '..', 'usd', 'translators','UsdImportRfMShadersTest',
             'MarbleCube.usda')
@@ -98,7 +104,6 @@ class testShaderReader(unittest.TestCase):
         self.assertTrue(shaderReaderTest.IsConverterCalled)
         self.assertTrue(shaderReaderTest.ReadCalled)
         self.assertTrue(shaderReaderTest.GetCreatedObjectCalled)
-        self.assertEqual(shaderReaderTest._mayaNodeTypeNameLastValue,'x')
         self.assertFalse(shaderReaderTest.NotCalled)
 
 if __name__ == '__main__':
