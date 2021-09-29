@@ -105,6 +105,10 @@ endif()
 #------------------------------------------------------------------------------
 # install
 #------------------------------------------------------------------------------
+install(FILES api.h usdPreviewSurface.h usdPreviewSurfacePlugin.h
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${TARGET_NAME}
+)
+
 install(
     TARGETS ${TARGET_NAME}
     LIBRARY
