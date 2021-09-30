@@ -28,4 +28,10 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomNurbsCurves, args, context)
     return UsdMayaTranslatorCurves::Create(UsdGeomCurves(usdPrim), parentNode, args, &context);
 }
 
+PXRUSDMAYA_DEFINE_READER(UsdGeomBasisCurves, args, context)
+{
+    const UsdPrim& usdPrim = args.GetUsdPrim();
+    MObject        parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    return UsdMayaTranslatorCurves::Create(UsdGeomCurves(usdPrim), parentNode, args, &context);
+}
 PXR_NAMESPACE_CLOSE_SCOPE
