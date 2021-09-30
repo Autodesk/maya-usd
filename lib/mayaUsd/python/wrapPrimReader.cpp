@@ -159,14 +159,43 @@ public:
         this->CallVirtual<>("PostConnectSubtree", &This::default_PostConnectSubtree)(context);
     }
 
-    bool default_IsConverter(UsdShadeShader& downstreamSchema, TfToken& downstreamOutputName)
+    IsConverterResult default_IsConverter() { return base_t::IsConverter(); }
+    IsConverterResult IsConverter() override
     {
-        return base_t::IsConverter(downstreamSchema, downstreamOutputName);
-    }
-    bool IsConverter(UsdShadeShader& downstreamSchema, TfToken& downstreamOutputName) override
-    {
-        return this->CallVirtual<bool>("IsConverter", &This::default_IsConverter)(
-            downstreamSchema, downstreamOutputName);
+        if (Override o = GetOverride("IsConverter")) {
+            auto res = std::function<boost::python::object()>(TfPyCall<boost::python::object>(o))();
+            if (res) {
+                TfPyLock pyLock;
+
+                boost::python::tuple t(res);
+                if (boost::python::len(t) == 2) {
+                    boost::python::extract<UsdShadeShader> downstreamSchema(t[0]);
+                    if (downstreamSchema.check()) {
+                        boost::python::extract<TfToken> downstreamOutputName(t[1]);
+                        if (downstreamOutputName.check()) {
+                            static IsConverterResult   result { downstreamSchema,
+                                                              downstreamOutputName };
+                            boost::python::api::object o = t[0];
+                            boost::python::incref(o.ptr());
+                            boost::python::api::object p = t[1];
+                            boost::python::incref(p.ptr());
+                            boost::python::api::object q = t;
+                            boost::python::incref(q.ptr());
+                            return result;
+                        } else {
+                            TF_CODING_ERROR(
+                                "ShaderReaderWrapper.IsConverter: TfToken key expected, not "
+                                "found!");
+                        }
+                    } else {
+                        TF_CODING_ERROR(
+                            "ShaderReaderWrapper.IsConverter: UsdShadeShader key expected, not "
+                            "found!");
+                    }
+                }
+            }
+        }
+        return This::default_IsConverter();
     }
 
     void default_SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader)

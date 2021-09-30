@@ -20,6 +20,7 @@
 #include <mayaUsd/fileio/primReader.h>
 
 #include <pxr/pxr.h>
+#include <pxr/usd/usdshade/shader.h>
 
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -88,6 +89,18 @@ public:
     MAYAUSD_CORE_PUBLIC
     virtual void PostConnectSubtree(UsdMayaPrimReaderContext* context);
 
+    struct IsConverterResult
+    {
+        IsConverterResult(bool) { }
+        IsConverterResult(UsdShadeShader pdownstreamSchema, TfToken pdownstreamOutputName)
+        {
+            downstreamSchema = pdownstreamSchema;
+            downstreamOutputName = pdownstreamOutputName;
+        }
+        UsdShadeShader downstreamSchema;
+        TfToken        downstreamOutputName;
+    };
+
     /// Is this a converter importer.
     ///
     /// Converters do not create any Maya object. They represent a UsdShade node which functions as
@@ -98,7 +111,7 @@ public:
     /// returned in \p downstreamSchema and the requested output will be in \p downstreamOutputName
     ///
     MAYAUSD_CORE_PUBLIC
-    virtual bool IsConverter(UsdShadeShader& downstreamSchema, TfToken& downstreamOutputName);
+    virtual IsConverterResult IsConverter();
 
     /// Sets a downstream converter to use for caching calls to GetCreatedObject and
     /// GetMayaPlugForUsdAttrName

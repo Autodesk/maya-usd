@@ -21,7 +21,7 @@ from pxr import Gf
 from pxr import Sdf
 from pxr import Tf
 from pxr import Vt
-from pxr import UsdGeom
+from pxr import UsdGeom, UsdShade
 
 from maya import cmds
 from maya.api import OpenMaya
@@ -36,6 +36,7 @@ class shaderReaderTest(mayaUsdLib.ShaderReader):
     IsConverterCalled = False
     ReadCalled = False
     GetCreatedObjectCalled = False
+
     NotCalled = False
 
     @classmethod
@@ -59,16 +60,14 @@ class shaderReaderTest(mayaUsdLib.ShaderReader):
         print("shaderReaderTest.PostConnectSubtree called")
         return
 
-    def IsConverter(self, downstreamSchema, downstreamOutputName):
+    def IsConverter(self):
         shaderReaderTest.IsConverterCalled = True
-        if (self._mayaNodeTypeName == "x"):
-            return False
+        if (self._mayaNodeTypeName == "w"):
+            print("shaderReaderTest.IsConverter " + self._mayaNodeTypeName)
+            return UsdShade.Shader(self._GetArgs().GetUsdPrim()), "sourceOutputName"
         else:
-            print("This code path is not Python friendly, need to refactor before activating.")
-            exit(1)
-            downstreamSchema = mayaUsdLib.UsdShadeShader()
-            downstreamOutputName = "?"
-            return True
+            print("shaderReaderTest.IsConverter not " + self._mayaNodeTypeName)
+            return None
 
     def SetDownstreamReader(self, downstreamReader):
         print("shaderReaderTest.SetDownstreamReader called")
@@ -93,7 +92,7 @@ class testShaderReader(unittest.TestCase):
 
     def testSimpleShaderReader(self):
         mayaUsdLib.ShaderReader.Register(shaderReaderTest, "PxrMayaMarble", "x", "y")
-#        mayaUsdLib.ShaderReader.Register(shaderReaderTest, "PxrMayaLambert", "w", "y")
+        mayaUsdLib.ShaderReader.Register(shaderReaderTest, "PxrMayaLambert", "w", "y")
         
         usdFilePath = os.path.join(testShaderReader.inputPath, '..', '..', 'usd', 'translators','UsdImportRfMShadersTest',
             'MarbleCube.usda')

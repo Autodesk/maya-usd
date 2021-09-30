@@ -59,7 +59,7 @@ public:
     MtlxUsd_ConverterReader(const UsdMayaPrimReaderArgs& readArgs)
         : UsdMayaShaderReader(readArgs) {};
 
-    bool IsConverter(UsdShadeShader& downstreamSchema, TfToken& downstreamOutputName) override
+    IsConverterResult IsConverter() override
     {
         const UsdPrim& prim = _GetArgs().GetUsdPrim();
         UsdShadeShader shaderSchema = UsdShadeShader(prim);
@@ -83,7 +83,7 @@ public:
             return false;
         }
 
-        downstreamSchema = UsdShadeShader(source.GetPrim());
+        UsdShadeShader downstreamSchema = UsdShadeShader(source.GetPrim());
         if (!downstreamSchema) {
             return false;
         }
@@ -126,9 +126,7 @@ public:
             }
         }
         _downstreamPrim = source.GetPrim();
-        downstreamOutputName = sourceOutputName;
-
-        return true;
+        return { downstreamSchema, sourceOutputName };
     }
 
     void SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader) override
