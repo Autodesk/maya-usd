@@ -1,5 +1,6 @@
 + AL_USDMaya ${AL_USDMAYA_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/al
 plug-ins: plugin
+scripts: scripts
 PYTHONPATH+:=lib/python
 ${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd
 ${PXR_OVERRIDE_PLUGINPATH_NAME}+:=plugin
