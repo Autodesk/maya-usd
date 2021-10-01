@@ -207,7 +207,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         # Test helpers
         def getItem(path):
-            '''Get the UFE scene item nad USD prim for an item under a USD path'''
+            '''Get the UFE scene item and USD prim for an item under a USD path'''
             fullPath = ufe.Path([
                 mayaUtils.createUfePathSegment(
                     "|transform1|proxyShape1"),
@@ -217,7 +217,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
             return item, prim
 
         def executeContextCmd(ufeItem, subCmd):
-            '''Execute and context-menu command, supports among other things Load and Unload.'''
+            '''Execute a context-menu command, supports among other things Load and Unload.'''
             contextOps = ufe.ContextOps.contextOps(ufeItem)
             cmd = contextOps.doOpCmd([subCmd])
             self.assertIsNotNone(cmd)
@@ -236,7 +236,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
             executeContextCmd(ufeItem, 'Unload')
 
         def duplicate(ufeItem):
-            '''Duplicate a scene item and return the UFe scene item of the new item.'''
+            '''Duplicate a scene item and return the UFE scene item of the new item.'''
             # Set the edit target to the layer in which Ball_35 is defined (has a
             # primSpec, in USD terminology).  Otherwise, duplication will not find
             # a source primSpec to copy.  Layers are the (anonymous) session layer,
