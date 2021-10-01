@@ -24,6 +24,9 @@ import usdUtils
 
 from maya import cmds
 from maya import standalone
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
+
+import mayaUsd.ufe
 
 import ufe
 
@@ -198,6 +201,133 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         cmds.undo()  # undo duplication
         cmds.undo()  # undo deletion
+
+    def testDuplicateLoadedAndUnloaded(self):
+        '''Duplicate a USD object when the object payload is loaded or unloaded under an unloaded ancestor.'''
+
+        # Test helpers
+        def getItem(path):
+            '''Get the UFE scene item nad USD prim for an item under a USD path'''
+            fullPath = ufe.Path([
+                mayaUtils.createUfePathSegment(
+                    "|transform1|proxyShape1"),
+                usdUtils.createUfePathSegment(path)])
+            item = ufe.Hierarchy.createItem(fullPath)
+            prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(fullPath))
+            return item, prim
+
+        def executeContextCmd(ufeItem, subCmd):
+            '''Execute and context-menu command, supports among other things Load and Unload.'''
+            contextOps = ufe.ContextOps.contextOps(ufeItem)
+            cmd = contextOps.doOpCmd([subCmd])
+            self.assertIsNotNone(cmd)
+            ufeCmd.execute(cmd)
+
+        def loadItem(ufeItem):
+            '''Load the payload of a scene item.'''
+            executeContextCmd(ufeItem, 'Load')
+
+        def loadItemWithDescendants(ufeItem):
+            '''Load the payload of a scene item and its descendants.'''
+            executeContextCmd(ufeItem, 'Load with Descendants')
+
+        def unloadItem(ufeItem):
+            '''Unload the payload of a scene item.'''
+            executeContextCmd(ufeItem, 'Unload')
+
+        def duplicate(ufeItem):
+            '''Duplicate a scene item and return the UFe scene item of the new item.'''
+            # Set the edit target to the layer in which Ball_35 is defined (has a
+            # primSpec, in USD terminology).  Otherwise, duplication will not find
+            # a source primSpec to copy.  Layers are the (anonymous) session layer,
+            # the root layer, then the Assembly_room_set sublayer.  Trying to find
+            # the layer by name is not practical, as it requires the full path
+            # name, which potentially differs per run-time environment.
+            prim = usdUtils.getPrimFromSceneItem(ufeItem)
+            stage = prim.GetStage()
+
+            layer = stage.GetLayerStack()[2]
+            stage.SetEditTarget(layer)
+
+            ufe.GlobalSelection.get().clear()
+            ufe.GlobalSelection.get().append(ufeItem)
+            cmds.duplicate()
+
+            # The duplicate command doesn't return duplicated non-Maya UFE objects.
+            # They are in the selection, in the same order as the sources.
+            sel = ufe.GlobalSelection.get()
+            self.assertEqual(1, len(sel))
+            return sel.front()
+
+        # Retrieve the ancestor props and one child ball item.
+        propsItem, propsPrim = getItem("/Room_set/Props")
+        ball35Item, ball35Prim = getItem("/Room_set/Props/Ball_35")
+        ball7Item, ball7Prim = getItem("/Room_set/Props/Ball_7")
+
+        # Unload the Props and verify everything is unloaded.
+        # Note: items without payload are considered loaded, so only check balls.
+        unloadItem(propsItem)
+
+        self.assertFalse(ball35Prim.IsLoaded())
+        self.assertFalse(ball7Prim.IsLoaded())
+
+        # Duplicate the ball 35 and verify the new ball is unloaded
+        # because the original was unloaded due to the ancestor being unloaded.
+        ball35DupItem = duplicate(ball35Item)
+        ball35DupPath = ball35DupItem.path()
+        ball35DupPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(ball35DupPath))
+
+        self.assertFalse(ball35Prim.IsLoaded())
+        self.assertFalse(ball7Prim.IsLoaded())
+        self.assertFalse(ball35DupPrim.IsLoaded())
+
+        # Explicitly load the ball 35 and verify its load status.
+        loadItem(ball35Item)
+
+        self.assertTrue(ball35Prim.IsLoaded())
+        self.assertFalse(ball7Prim.IsLoaded())
+
+        # Duplicate the ball 35 and verify the new ball is loaded even though
+        # the props ancestor unloaded rule would normally make in unloaded.
+        ball35DupItem = duplicate(ball35Item)
+        ball35DupPath = ball35DupItem.path()
+        ball35DupPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(ball35DupPath))
+
+        self.assertTrue(ball35Prim.IsLoaded())
+        self.assertFalse(ball7Prim.IsLoaded())
+        self.assertTrue(ball35DupPrim.IsLoaded())
+
+        # Load the props items and its descendants and verify the status of the balls.
+        loadItemWithDescendants(propsItem)
+
+        self.assertTrue(ball35Prim.IsLoaded())
+        self.assertTrue(ball7Prim.IsLoaded())
+
+        # Duplicate the ball 35 and verify the new ball is loaded since
+        # everything is marked as loaded.
+        ball35DupItem = duplicate(ball35Item)
+        ball35DupPath = ball35DupItem.path()
+        ball35DupPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(ball35DupPath))
+
+        self.assertTrue(ball35Prim.IsLoaded())
+        self.assertTrue(ball7Prim.IsLoaded())
+        self.assertTrue(ball35DupPrim.IsLoaded())
+
+        # Unload the ball 35 items and verify the status of the balls.
+        unloadItem(ball35Item)
+
+        self.assertFalse(ball35Prim.IsLoaded())
+        self.assertTrue(ball7Prim.IsLoaded())
+
+        # Duplicate the ball 35 and verify the new ball is unloaded even though
+        # normally it would be loaded since the ancestor is loaded.
+        ball35DupItem = duplicate(ball35Item)
+        ball35DupPath = ball35DupItem.path()
+        ball35DupPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(ball35DupPath))
+
+        self.assertFalse(ball35Prim.IsLoaded())
+        self.assertTrue(ball7Prim.IsLoaded())
+        self.assertFalse(ball35DupPrim.IsLoaded())
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Requires Maya fixes only available in Maya 2022 or greater.')
     def testSmartTransformDuplicate(self):
