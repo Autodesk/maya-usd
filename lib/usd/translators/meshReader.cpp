@@ -131,6 +131,9 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext& context)
     // assign invisible faces
     UsdMayaMeshReadUtils::assignInvisibleFaces(mesh, meshRead.meshObject());
 
+    // Read componentTags
+    UsdMayaMeshReadUtils::createComponentTags(mesh, meshRead.meshObject());
+
     // assign material
     assignMaterial(mesh, _GetArgs(), meshRead.meshObject(), &context);
 

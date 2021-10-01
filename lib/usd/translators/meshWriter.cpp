@@ -799,6 +799,10 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             _GetSparseValueWriter());
     }
 
+    if (true /*exportArgs.exportComponentTags*/) {
+        UsdMayaMeshWriteUtils::exportComponentTags(primSchema, GetMayaObject());
+    }
+
     return true;
 }
 

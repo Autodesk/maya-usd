@@ -74,6 +74,9 @@ void assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj);
 MAYAUSD_CORE_PUBLIC
 MStatus assignSubDivTagsToMesh(const UsdGeomMesh&, MObject&, MFnMesh&);
 
+MAYAUSD_CORE_PUBLIC
+MStatus createComponentTags(const UsdGeomMesh& mesh, const MObject& meshObj);
+
 } // namespace UsdMayaMeshReadUtils
 
 PXR_NAMESPACE_CLOSE_SCOPE

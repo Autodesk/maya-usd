@@ -239,6 +239,9 @@ bool getMeshColorSetData(
     MFnMesh::MColorRepresentation* colorSetRep,
     bool*                          clamped);
 
+MAYAUSD_CORE_PUBLIC
+MStatus exportComponentTags(UsdGeomMesh& primSchema, MObject obj);
+
 } // namespace UsdMayaMeshWriteUtils
 
 PXR_NAMESPACE_CLOSE_SCOPE

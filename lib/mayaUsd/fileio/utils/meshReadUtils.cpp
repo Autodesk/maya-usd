@@ -29,15 +29,18 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/subset.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MFloatVector.h>
 #include <maya/MFloatVectorArray.h>
 #include <maya/MFnBlendShapeDeformer.h>
+#include <maya/MFnComponentListData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPartition.h>
 #include <maya/MFnSet.h>
+#include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItMeshEdge.h>
@@ -880,6 +883,68 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
     }
 
     return MS::kSuccess;
+}
+
+MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const MObject& meshObj)
+{
+    if (meshObj.apiType() != MFn::kMesh) {
+        return MS::kFailure;
+    }
+
+    MStatus status { MS::kSuccess };
+
+    MFnDependencyNode depNodeFn;
+    depNodeFn.setObject(meshObj);
+    MPlug ctPlug = depNodeFn.findPlug("componentTags", &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    MObject ctAttr = depNodeFn.attribute("componentTags");
+    MObject ctNameAttr = depNodeFn.attribute("componentTagName");
+    MObject ctContentsAttr = depNodeFn.attribute("componentTagContents");
+
+    MPlug ctName(meshObj, ctNameAttr);
+    MPlug ctContent(meshObj, ctContentsAttr);
+
+    // Find all the prims defining componentTags
+    TfToken componentTagFamilyName("componentTag");
+    unsigned int idx = 0;
+    std::vector<UsdGeomSubset> subsets = UsdGeomSubset::GetGeomSubsets(mesh, UsdGeomTokens->face, componentTagFamilyName);
+    for (auto& ss : subsets) {
+        // Get the tagName out of the subset
+        MString tagName(ss.GetPrim().GetName().GetText());
+
+        // Get the indices out of the subset
+        VtIntArray faceIndices;
+        UsdAttribute indicesAttribute = ss.GetIndicesAttr();
+        indicesAttribute.Get(&faceIndices);
+
+        MFnSingleIndexedComponent compFn;
+        MObject faceComp = compFn.create(MFn::kMeshPolygonComponent, &status);
+        if (!status) {
+            TF_RUNTIME_ERROR("Failed to create face component.");
+            return status;
+        }
+
+        MIntArray mFaces;
+        TF_FOR_ALL(fIdxIt, faceIndices) { mFaces.append(*fIdxIt); }
+        compFn.addElements(mFaces);
+
+        MFnComponentListData componentListFn;
+        MObject componentList = componentListFn.create();
+        status = componentListFn.add(faceComp);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+
+        // Set the attribute values
+        ctName.selectAncestorLogicalIndex (idx, ctAttr);
+        ctContent.selectAncestorLogicalIndex (idx, ctAttr);
+
+        ctName.setValue(tagName);
+        ctContent.setValue(componentList);
+
+        idx++;
+    }
+
+    return status;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
