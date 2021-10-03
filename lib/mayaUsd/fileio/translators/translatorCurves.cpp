@@ -135,7 +135,7 @@ bool UsdMayaTranslatorCurves::Create(
         basisSchema.GetTypeAttr().Get(&typeToken);
         if (typeToken == UsdGeomTokens->linear) {
             curveOrder[0] = 2;
-            curveKnots.resize(points.size());
+            curveKnots.resize(curveVertexCounts[0]);
             for (size_t i = 0; i < curveKnots.size(); ++i) {
                 curveKnots[i] = i;
             }
@@ -145,7 +145,7 @@ bool UsdMayaTranslatorCurves::Create(
             // Cubic curves in Maya have numSpans + 2*3 - 1, and for geometry
             // that came in as basis curves, we have numCV's - 3 spans. See the
             // MFnNurbsCurve documentation for more details.
-            curveKnots.resize(points.size() - 3 + 5);
+            curveKnots.resize(curveVertexCounts[0] - 3 + 5);
             int knotIdx = 0;
             for (size_t i = 0; i < curveKnots.size(); ++i) {
                 if (i < 3) {
@@ -161,7 +161,7 @@ bool UsdMayaTranslatorCurves::Create(
     }
 
     // == Convert data
-    size_t      mayaNumVertices = points.size();
+    size_t      mayaNumVertices = curveVertexCounts[0];
     MPointArray mayaPoints(mayaNumVertices);
     for (size_t i = 0; i < mayaNumVertices; i++) {
         mayaPoints.set(i, points[i][0], points[i][1], points[i][2]);
