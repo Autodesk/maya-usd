@@ -142,11 +142,6 @@ bool UsdMayaTranslatorCurves::Create(
         } else {
             curveOrder[0] = 4;
 
-            // Strip off extra end points; assuming this is non-periodic.
-            VtArray<GfVec3f> tmpPts(points.size() - 2);
-            std::copy(points.begin() + 1, points.end() - 1, tmpPts.begin());
-            points.swap(tmpPts);
-
             // Cubic curves in Maya have numSpans + 2*3 - 1, and for geometry
             // that came in as basis curves, we have numCV's - 3 spans. See the
             // MFnNurbsCurve documentation for more details.
