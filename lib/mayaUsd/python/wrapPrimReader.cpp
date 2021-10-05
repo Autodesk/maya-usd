@@ -37,6 +37,18 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+// This method could be moved to a python binding uility header.
+template <typename T> inline boost::python::object CreatePythonObjectFromCPPClass(T* ptr)
+{
+    if (ptr) {
+        typename boost::python::reference_existing_object::apply<T*>::type converter;
+        boost::python::handle<>                                            handle(converter(ptr));
+        return boost::python::object(handle);
+    } else {
+        return boost::python::object();
+    }
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  boost python binding for the UsdMayaPrimReader
 //----------------------------------------------------------------------------------------------------------------------
@@ -125,13 +137,14 @@ public:
         return (ShaderReaderWrapper*)createdWrapper;
     }
 
-    virtual ~ShaderReaderWrapper() { }
+    virtual ~ShaderReaderWrapper() { _downstreamReader = nullptr; }
 
     MPlug
     default_GetMayaPlugForUsdAttrName(const TfToken& usdAttrName, const MObject& mayaObject) const
     {
         return base_t::GetMayaPlugForUsdAttrName(usdAttrName, mayaObject);
     }
+
     MPlug
     GetMayaPlugForUsdAttrName(const TfToken& usdAttrName, const MObject& mayaObject) const override
     {
@@ -173,15 +186,8 @@ public:
                     if (downstreamSchema.check()) {
                         boost::python::extract<TfToken> downstreamOutputName(t[1]);
                         if (downstreamOutputName.check()) {
-                            static IsConverterResult   result { downstreamSchema,
-                                                              downstreamOutputName };
-                            boost::python::api::object o = t[0];
-                            boost::python::incref(o.ptr());
-                            boost::python::api::object p = t[1];
-                            boost::python::incref(p.ptr());
-                            boost::python::api::object q = t;
-                            boost::python::incref(q.ptr());
-                            return result;
+                            boost::python::incref(t.ptr());
+                            return { downstreamSchema, downstreamOutputName };
                         } else {
                             TF_CODING_ERROR(
                                 "ShaderReaderWrapper.IsConverter: TfToken key expected, not "
@@ -198,15 +204,12 @@ public:
         return This::default_IsConverter();
     }
 
-    void default_SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader)
-    {
-        base_t::SetDownstreamReader(downstreamReader);
-    }
     void SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader) override
     {
-        this->CallVirtual<>("SetDownstreamReader", &This::default_SetDownstreamReader)(
-            downstreamReader);
+        _downstreamReader = downstreamReader;
     }
+
+    const UsdMayaPrimReaderArgs& _GetArgs() { return base_t::_GetArgs(); }
 
     MObject default_GetCreatedObject(
         const UsdMayaShadingModeImportContext& context,
@@ -221,6 +224,11 @@ public:
             context, prim);
     }
 
+    boost::python::object GetDownstreamReader()
+    {
+        return CreatePythonObjectFromCPPClass(_downstreamReader.get());
+    }
+
     const TfToken& GetmayaNodeTypeName() { return _mayaNodeTypeName; }
 
     static void Register(
@@ -232,11 +240,15 @@ public:
         UsdMayaShaderReaderRegistry::Register(
             usdShaderId,
             [=](const UsdMayaJobImportArgs& args) {
-                TfPyLock              pyLock;
-                boost::python::object CanImport = cl.attr("CanImport");
-                PyObject*             callable = CanImport.ptr();
-                auto res = boost::python::call<int>(callable, args, materialConversion);
-                return UsdMayaShaderReader::ContextSupport(res);
+                TfPyLock pyLock;
+                if (PyObject_HasAttrString(cl.ptr(), "CanImport")) {
+                    boost::python::object CanImport = cl.attr("CanImport");
+                    PyObject*             callable = CanImport.ptr();
+                    auto res = boost::python::call<int>(callable, args, materialConversion);
+                    return UsdMayaShaderReader::ContextSupport(res);
+                } else {
+                    return UsdMayaShaderReader::CanImport(args);
+                }
             },
             [=](const UsdMayaPrimReaderArgs& args) {
                 auto     sptr = std::make_shared<ShaderReaderWrapper>(args, mayaNodeTypeName);
@@ -248,6 +260,8 @@ public:
             },
             true);
     }
+
+    std::shared_ptr<UsdMayaShaderReader> _downstreamReader;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -300,17 +314,19 @@ void wrapPrimReaderArgs()
 
 void wrapPrimReader()
 {
+    typedef UsdMayaPrimReader This;
+
     boost::python::class_<PrimReaderWrapper<>, boost::noncopyable>(
         "PrimReader", boost::python::no_init)
         .def("__init__", make_constructor(&PrimReaderWrapper<>::New))
         .def("Read", boost::python::pure_virtual(&UsdMayaPrimReader::Read))
         .def(
             "HasPostReadSubtree",
-            &PrimReaderWrapper<>::HasPostReadSubtree,
+            &This::HasPostReadSubtree,
             &PrimReaderWrapper<>::default_HasPostReadSubtree)
         .def(
             "PostReadSubtree",
-            &PrimReaderWrapper<>::PostReadSubtree,
+            &This::PostReadSubtree,
             &PrimReaderWrapper<>::default_PostReadSubtree)
         .def(
             "_GetArgs",
@@ -358,6 +374,8 @@ TF_REGISTRY_FUNCTION(TfEnum)
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShaderReader()
 {
+    typedef UsdMayaShaderReader This;
+
     boost::python::
         class_<ShaderReaderWrapper, boost::python::bases<PrimReaderWrapper<>>, boost::noncopyable>
             c("ShaderReader", boost::python::no_init);
@@ -370,28 +388,26 @@ void wrapShaderReader()
         .def("Read", boost::python::pure_virtual(&UsdMayaPrimReader::Read))
         .def(
             "GetMayaPlugForUsdAttrName",
-            &ShaderReaderWrapper::GetMayaPlugForUsdAttrName,
+            &This::GetMayaPlugForUsdAttrName,
             &ShaderReaderWrapper::default_GetMayaPlugForUsdAttrName)
         .def(
             "GetMayaNameForUsdAttrName",
-            &ShaderReaderWrapper::GetMayaNameForUsdAttrName,
+            &This::GetMayaNameForUsdAttrName,
             &ShaderReaderWrapper::default_GetMayaNameForUsdAttrName)
         .def(
             "PostConnectSubtree",
-            &ShaderReaderWrapper::PostConnectSubtree,
+            &This::PostConnectSubtree,
             &ShaderReaderWrapper::default_PostConnectSubtree)
-        .def(
-            "IsConverter",
-            &ShaderReaderWrapper::IsConverter,
-            &ShaderReaderWrapper::default_IsConverter)
-        .def(
-            "SetDownstreamReader",
-            &ShaderReaderWrapper::SetDownstreamReader,
-            &ShaderReaderWrapper::default_SetDownstreamReader)
+        .def("IsConverter", &This::IsConverter, &ShaderReaderWrapper::default_IsConverter)
         .def(
             "GetCreatedObject",
-            &ShaderReaderWrapper::GetCreatedObject,
+            &This::GetCreatedObject,
             &ShaderReaderWrapper::default_GetCreatedObject)
+        .def(
+            "_GetArgs",
+            &ShaderReaderWrapper::_GetArgs,
+            boost::python::return_internal_reference<>())
+        .add_property("_downstreamReader", &ShaderReaderWrapper::GetDownstreamReader)
         .add_property(
             "_mayaNodeTypeName",
             make_function(
@@ -401,6 +417,18 @@ void wrapShaderReader()
         .def(
             "Register",
             &ShaderReaderWrapper::Register,
-            (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
+            (boost::python::arg("class"),
+             boost::python::arg("usdShaderId"),
+             boost::python::arg("mayaTypeName"),
+             boost::python::arg("materialConversion")))
         .staticmethod("Register");
+
+    // For wrapping UsdMayaShaderReader created in c++
+    boost::python::class_<This, boost::noncopyable>("ShaderReaderWrapper", boost::python::no_init)
+        .def("Read", boost::python::pure_virtual(&UsdMayaPrimReader::Read))
+        .def("GetMayaPlugForUsdAttrName", &This::GetMayaPlugForUsdAttrName)
+        .def("GetMayaNameForUsdAttrName", &This::GetMayaNameForUsdAttrName)
+        .def("PostConnectSubtree", &This::PostConnectSubtree)
+        .def("IsConverter", &This::IsConverter)
+        .def("GetCreatedObject", &This::GetCreatedObject);
 }

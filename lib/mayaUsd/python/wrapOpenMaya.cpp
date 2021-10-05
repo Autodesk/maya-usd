@@ -119,13 +119,35 @@ template <class MayaClass> struct MayaClassConverter
     }
 };
 #endif
+
+// Register both converters from and to Python for a type T
+template <class T> struct registerConverter
+{
+public:
+    registerConverter()
+    {
+        boost::python::to_python_converter<T, MayaClassConverter<T>>();
+        boost::python::converter::registry::push_back(&convertible, &construct, typeid(T));
+    }
+
+private:
+    static void* convertible(PyObject* obj) { return obj; }
+
+    static void
+    construct(PyObject* obj, boost::python::converter::rvalue_from_python_stage1_data* data)
+    {
+        MPyObject<T>* thePyObject = (MPyObject<T>*)obj;
+        data->convertible = thePyObject->fPtr;
+    }
+};
+
 } // namespace
 
 void wrapOpenMaya()
 {
-    boost::python::to_python_converter<MObject, MayaClassConverter<MObject>>();
-    boost::python::to_python_converter<MDagPath, MayaClassConverter<MDagPath>>();
-    boost::python::to_python_converter<MDagPathArray, MayaClassConverter<MDagPathArray>>();
-    boost::python::to_python_converter<MPlug, MayaClassConverter<MPlug>>();
-    boost::python::to_python_converter<MDGModifier, MayaClassConverter<MDGModifier>>();
+    registerConverter<MObject>();
+    registerConverter<MDagPath>();
+    registerConverter<MDagPathArray>();
+    registerConverter<MPlug>();
+    registerConverter<MDGModifier>();
 }
