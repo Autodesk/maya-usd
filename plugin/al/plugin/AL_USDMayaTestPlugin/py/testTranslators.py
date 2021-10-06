@@ -208,7 +208,7 @@ class UpdateableTranslator(usdmaya.TranslatorBase):
         return True
 
     def generateUniqueKey(self, prim):
-        return hashlib.md5(str(prim.GetPath())).hexdigest()
+        return str(prim.GetPath())
 
     def update(self, prim):
         self.actions.append('update ' + str(prim.GetPath()))
