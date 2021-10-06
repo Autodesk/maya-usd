@@ -27,7 +27,6 @@
 #include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/refPtr.h>
-#include <pxr/usd/usdGeom/camera.h>
 
 #include <boost/python.hpp>
 #include <boost/python/args.hpp>
@@ -56,9 +55,9 @@ public:
     {
     }
 
-    static PrimWriterWrapper* New(uintptr_t createdWrapper)
+    static std::shared_ptr<This> New(uintptr_t createdWrapper)
     {
-        return (PrimWriterWrapper*)createdWrapper;
+        return *((std::shared_ptr<This>*)createdWrapper);
     }
 
     virtual ~PrimWriterWrapper() { }
@@ -192,9 +191,9 @@ public:
             [=](const MFnDependencyNode& depNodeFn,
                 const SdfPath&           usdPath,
                 UsdMayaWriteJobContext&  jobCtx) {
-                auto     sptr = std::make_shared<PrimWriterWrapper>(depNodeFn, usdPath, jobCtx);
-                TfPyLock pyLock;
-                boost::python::object instance = cl((uintptr_t)(PrimWriterWrapper*)sptr.get());
+                auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+                TfPyLock              pyLock;
+                boost::python::object instance = cl((uintptr_t)&sptr);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;
@@ -227,9 +226,9 @@ public:
     {
     }
 
-    static ShaderWriterWrapper* New(uintptr_t createdWrapper)
+    static std::shared_ptr<This> New(uintptr_t createdWrapper)
     {
-        return (ShaderWriterWrapper*)createdWrapper;
+        return *((std::shared_ptr<This>*)createdWrapper);
     }
 
     virtual ~ShaderWriterWrapper() { }
@@ -280,10 +279,9 @@ public:
             [=](const MFnDependencyNode& depNodeFn,
                 const SdfPath&           usdPath,
                 UsdMayaWriteJobContext&  jobCtx) {
-                auto sptr = std::make_shared<ShaderWriterWrapper>(
-                    depNodeFn, usdPath, jobCtx, usdShaderId);
-                TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)(ShaderWriterWrapper*)sptr.get());
+                auto     sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx, usdShaderId);
+                TfPyLock pyLock;
+                boost::python::object instance = cl((uintptr_t)&sptr);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;

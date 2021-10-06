@@ -54,9 +54,9 @@ public:
     {
     }
 
-    static PrimReaderWrapper* New(uintptr_t createdWrapper)
+    static std::shared_ptr<This> New(uintptr_t createdWrapper)
     {
-        return (PrimReaderWrapper*)createdWrapper;
+        return *((std::shared_ptr<This>*)createdWrapper);
     }
 
     virtual ~PrimReaderWrapper() { }
@@ -92,9 +92,9 @@ public:
         UsdMayaPrimReaderRegistry::Register(
             type,
             [=](const UsdMayaPrimReaderArgs& args) {
-                auto                  sptr = std::make_shared<PrimReaderWrapper>(args);
+                auto                  sptr = std::make_shared<This>(args);
                 TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)(PrimReaderWrapper*)sptr.get());
+                boost::python::object instance = cl((uintptr_t)&sptr);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;
@@ -120,9 +120,9 @@ public:
     {
     }
 
-    static ShaderReaderWrapper* New(uintptr_t createdWrapper)
+    static std::shared_ptr<This> New(uintptr_t createdWrapper)
     {
-        return (ShaderReaderWrapper*)createdWrapper;
+        return *((std::shared_ptr<This>*)createdWrapper);
     }
 
     virtual ~ShaderReaderWrapper() { _downstreamReader = nullptr; }
@@ -236,9 +236,9 @@ public:
                 }
             },
             [=](const UsdMayaPrimReaderArgs& args) {
-                auto     sptr = std::make_shared<ShaderReaderWrapper>(args, mayaNodeTypeName);
-                TfPyLock pyLock;
-                boost::python::object instance = cl((uintptr_t)(ShaderReaderWrapper*)sptr.get());
+                auto                  sptr = std::make_shared<This>(args, mayaNodeTypeName);
+                TfPyLock              pyLock;
+                boost::python::object instance = cl((uintptr_t)&sptr);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;
