@@ -183,9 +183,8 @@ class DeleteParentNodeOnPostImport(usdmaya.TranslatorBase):
 
 class UpdateableTranslator(usdmaya.TranslatorBase):
 
-    actions = []
-
     def initialize(self):
+        self.actions = []
         return True
 
     def getTranslatedType(self):
@@ -201,15 +200,18 @@ class UpdateableTranslator(usdmaya.TranslatorBase):
         return True
 
     def importObject(self, prim, parent=None):
-        self.__class__.actions.append('import' + str(prim.GetPath()))
+        self.actions.append('import ' + str(prim.GetPath()))
         return True
 
     def postImport(self, prim):
-        self.__class__.actions.append('postImport' + str(prim.GetPath()))
+        self.actions.append('postImport ' + str(prim.GetPath()))
         return True
 
+    def generateUniqueKey(self, prim):
+        return hashlib.md5(str(prim.GetPath())).hexdigest()
+
     def update(self, prim):
-        self.__class__.actions.append('update' + str(prim.GetPath()))
+        self.actions.append('update ' + str(prim.GetPath()))
         return True
 
     def preTearDown(self, prim):
@@ -400,6 +402,7 @@ class TestPythonTranslators(unittest.TestCase):
 
         # Make a dummy stage that mimics prim path found in test data
         otherHandle = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        otherHandle.close()
 
         # Scope
         if True:
@@ -432,7 +435,7 @@ class TestPythonTranslators(unittest.TestCase):
         self.assertEqual(CubeGenerator.getState()["tearDownCount"], 0)
 
         # Cleanup
-        otherHandle.close()
+        os.remove(otherHandle.name)
 
     # this test is in progress... I cannot make it fail currently but
     # the motion translator in unicorn is definitely crashing Maya
@@ -462,8 +465,8 @@ class TestPythonTranslators(unittest.TestCase):
         '''
         test consistency when called via TranslatePrim, or triggered via onObjectsChanged
         '''
-
-        usdmaya.TranslatorBase.registerTranslator(UpdateableTranslator(), 'test')
+        updateableTranslator = UpdateableTranslator()
+        usdmaya.TranslatorBase.registerTranslator(updateableTranslator, 'test')
 
         stage = Usd.Stage.Open("../test_data/translator_update_postimport.usda")
         stageCache = UsdUtils.StageCache.Get()
@@ -471,6 +474,17 @@ class TestPythonTranslators(unittest.TestCase):
         stageId = stageCache.GetId(stage)
         shapeName = 'updateProxyShape'
         cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name=shapeName)
+
+        # Verify if the methods have been called
+        self.assertTrue("import /root/peter01/rig" in updateableTranslator.actions)
+        self.assertTrue("postImport /root/peter01/rig" in updateableTranslator.actions)
+        # "update()" method should not be called
+        self.assertFalse("update /root/peter01/rig" in updateableTranslator.actions)
+
+        updateableTranslator.actions = []
+        cmds.AL_usdmaya_TranslatePrim(up="/root/peter01/rig", fi=True, proxy=shapeName)
+        # "update()" should have been called
+        self.assertTrue("update /root/peter01/rig" in updateableTranslator.actions)
 
 
 class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
