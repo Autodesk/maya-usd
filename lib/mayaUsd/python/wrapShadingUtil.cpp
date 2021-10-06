@@ -23,13 +23,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 class ShadingUtil
 {
-
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShadingUtil()
 {
     boost::python::class_<ShadingUtil, boost::noncopyable>("ShadingUtil", boost::python::no_init)
-        .def("GetStandardAttrName",&UsdMayaShadingUtil::GetStandardAttrName)
+        .def("GetStandardAttrName", &UsdMayaShadingUtil::GetStandardAttrName)
         .staticmethod("GetStandardAttrName");
 }
