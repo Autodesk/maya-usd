@@ -20,7 +20,7 @@
 #include <mayaUsd/fileio/primReader.h>
 
 #include <pxr/pxr.h>
-#include <pxr/usd/usdshade/shader.h>
+#include <pxr/usd/usdShade/shader.h>
 
 #include <maya/MObject.h>
 #include <maya/MPlug.h>

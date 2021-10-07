@@ -112,11 +112,8 @@ public:
     typedef ShaderReaderWrapper This;
     typedef UsdMayaShaderReader base_t;
 
-    const TfToken& _mayaNodeTypeName;
-
-    ShaderReaderWrapper(const UsdMayaPrimReaderArgs& args, const TfToken& mayaNodeTypeName)
+    ShaderReaderWrapper(const UsdMayaPrimReaderArgs& args)
         : PrimReaderWrapper<UsdMayaShaderReader>(args)
-        , _mayaNodeTypeName(mayaNodeTypeName)
     {
     }
 
@@ -216,7 +213,33 @@ public:
 
     const TfToken& GetmayaNodeTypeName() { return _mayaNodeTypeName; }
 
-    static void Register(
+    static void Register(boost::python::object cl, const TfToken& usdShaderId)
+    {
+        UsdMayaShaderReaderRegistry::Register(
+            usdShaderId,
+            [=](const UsdMayaJobImportArgs& args) {
+                TfPyLock pyLock;
+                if (PyObject_HasAttrString(cl.ptr(), "CanImport")) {
+                    boost::python::object CanImport = cl.attr("CanImport");
+                    PyObject*             callable = CanImport.ptr();
+                    auto                  res = boost::python::call<int>(callable, args);
+                    return UsdMayaShaderReader::ContextSupport(res);
+                } else {
+                    return UsdMayaShaderReader::CanImport(args);
+                }
+            },
+            [=](const UsdMayaPrimReaderArgs& args) {
+                auto                  sptr = std::make_shared<This>(args);
+                TfPyLock              pyLock;
+                boost::python::object instance = cl((uintptr_t)&sptr);
+                boost::python::incref(instance.ptr());
+                initialize_wrapper(instance.ptr(), sptr.get());
+                return sptr;
+            },
+            true);
+    }
+
+    static void RegisterSymmetric(
         boost::python::object cl,
         const TfToken&        usdShaderId,
         const TfToken&        mayaNodeTypeName,
@@ -236,7 +259,8 @@ public:
                 }
             },
             [=](const UsdMayaPrimReaderArgs& args) {
-                auto                  sptr = std::make_shared<This>(args, mayaNodeTypeName);
+                auto sptr = std::make_shared<This>(args);
+                sptr.get()->_mayaNodeTypeName = mayaNodeTypeName;
                 TfPyLock              pyLock;
                 boost::python::object instance = cl((uintptr_t)&sptr);
                 boost::python::incref(instance.ptr());
@@ -247,6 +271,7 @@ public:
     }
 
     std::shared_ptr<UsdMayaShaderReader> _downstreamReader;
+    TfToken                              _mayaNodeTypeName; // Used by RegisterSymmetric only
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -317,10 +342,7 @@ void wrapPrimReader()
             "_GetArgs",
             &PrimReaderWrapper<>::_GetArgs,
             boost::python::return_internal_reference<>())
-        .def(
-            "Register",
-            &PrimReaderWrapper<>::Register,
-            (boost::python::arg("class"), boost::python::arg("type")))
+        .def("Register", &PrimReaderWrapper<>::Register)
         .staticmethod("Register");
 }
 
@@ -399,14 +421,10 @@ void wrapShaderReader()
                 &ShaderReaderWrapper::GetmayaNodeTypeName,
                 boost::python::return_value_policy<boost::python::return_by_value>()))
 
-        .def(
-            "Register",
-            &ShaderReaderWrapper::Register,
-            (boost::python::arg("class"),
-             boost::python::arg("usdShaderId"),
-             boost::python::arg("mayaTypeName"),
-             boost::python::arg("materialConversion")))
-        .staticmethod("Register");
+        .def("Register", &ShaderReaderWrapper::Register)
+        .staticmethod("Register")
+        .def("RegisterSymmetric", &ShaderReaderWrapper::RegisterSymmetric)
+        .staticmethod("RegisterSymmetric");
 
     // For wrapping UsdMayaShaderReader created in c++
     boost::python::class_<This, std::shared_ptr<This>, boost::noncopyable>(

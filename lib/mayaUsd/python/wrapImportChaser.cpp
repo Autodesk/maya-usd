@@ -106,9 +106,6 @@ void wrapImportChaser()
         .def("PostImport", &This::PostImport, &ImportChaserWrapper::default_PostImport)
         .def("Redo", &This::Redo, &ImportChaserWrapper::default_Redo)
         .def("Undo", &This::Undo, &ImportChaserWrapper::default_Undo)
-        .def(
-            "Register",
-            &ImportChaserWrapper::Register,
-            (boost::python::arg("class"), boost::python::arg("type")))
+        .def("Register", &ImportChaserWrapper::Register)
         .staticmethod("Register");
 }

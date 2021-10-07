@@ -96,9 +96,6 @@ void wrapExportChaser()
         .def("ExportDefault", &This::ExportDefault, &ExportChaserWrapper::default_ExportDefault)
         .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
         .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
-        .def(
-            "Register",
-            &ExportChaserWrapper::Register,
-            (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
+        .def("Register", &ExportChaserWrapper::Register)
         .staticmethod("Register");
 }

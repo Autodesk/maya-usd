@@ -39,7 +39,7 @@ class mtlxShaderReaderTest(mayaUsdLib.ShaderReader):
     _setAlphaIsLuminance = False
 
     @classmethod
-    def CanImport(cls, args, materialConversion):
+    def CanImport(cls, args):
         return cls.ContextSupport.Supported
 
     def IsConverter(self):
@@ -148,9 +148,9 @@ class testShaderReader(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testMaterialXShaderReader(self):
-        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_luminance_color3_float", "w", "y")
-        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_swizzle_color3_float", "w", "y")
-        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_convert_color3_vector3", "w", "y")
+        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_luminance_color3_float")
+        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_swizzle_color3_float")
+        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_convert_color3_vector3")
         
         usdFilePath = os.path.join(testShaderReader.inputPath, '..', '..', 'usd', 'translators','UsdImportMaterialX',
             'UsdImportMaterialX.usda')

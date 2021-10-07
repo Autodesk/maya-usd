@@ -29,20 +29,15 @@ class shaderWriterTest(mayaUsdLib.ShaderWriter):
     WriteCalledCount = 0
     GetShadingAttributeNameForMayaAttrNameCalledWith = ""
     GetShadingAttributeForMayaAttrNameCalled = False
-    _usdShaderIdLastValue = ""
     NotCalled = False
 
     @classmethod
-    def CanExport(cls, exportArgs, materialConversionName):
+    def CanExport(cls, exportArgs):
         shaderWriterTest.CanExportCalled = True
-        if(materialConversionName=="z"):
-            return mayaUsdLib.ShaderWriter.ContextSupport.Supported
-        else:
-            return mayaUsdLib.ShaderWriter.ContextSupport.Unsupported
+        return mayaUsdLib.ShaderWriter.ContextSupport.Supported
 
     def Write(self, usdTime):
         shaderWriterTest.WriteCalledCount += 1
-        shaderWriterTest._usdShaderIdLastValue = self._usdShaderId
 
     def GetShadingAttributeNameForMayaAttrName(self, mayaAttrName):
         shaderWriterTest.GetShadingAttributeNameForMayaAttrNameCalledWith = mayaAttrName
@@ -66,8 +61,7 @@ class testShaderWriter(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testSimpleShaderWriter(self):
-        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "marble", "x", "y")
-        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "lambert", "x", "z")
+        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "lambert")
 
         mayaFile = os.path.join(testShaderWriter.inputPath, '..', '..', 'usd', 'translators','UsdExportRfMShadersTest',
             'MarbleCube.ma')
@@ -83,7 +77,6 @@ class testShaderWriter(unittest.TestCase):
         self.assertEqual(shaderWriterTest.WriteCalledCount,1)
         self.assertTrue(shaderWriterTest.GetShadingAttributeForMayaAttrNameCalled)
         self.assertEqual(shaderWriterTest.GetShadingAttributeNameForMayaAttrNameCalledWith, 'color')
-        self.assertEqual(shaderWriterTest._usdShaderIdLastValue,'x')
         self.assertFalse(shaderWriterTest.NotCalled)
 
 if __name__ == '__main__':
