@@ -174,6 +174,24 @@ inline bool compareArray(
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 bool compareArray(
+    const GfHalf* const input0,
+    const GfHalf* const input1,
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps = 1e-5f);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  tests the differences between a pair of arrays.
+/// \param  input0 the first input array to test
+/// \param  input1 the second input array to test
+/// \param  count0 number of elements in the first array
+/// \param  count1 number of elements in the second array
+/// \param  eps and epsilon value for the element comparisons
+/// \return true if the two arrays are similar to each other, false if their sizes don't match,
+///         or the contents of the arrays differ
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+bool compareArray(
     const float* const input0,
     const float* const input1,
     const size_t       count0,

@@ -10,6 +10,8 @@ target_sources(${TARGET_NAME}
         main.cpp
         test_DiffCore.cpp
         test_DiffValues.cpp
+        test_DiffValuesArrays.cpp
+        test_DiffValuesVecs.cpp
         test_DiffAttributes.cpp
         test_DiffPrims.cpp
 )

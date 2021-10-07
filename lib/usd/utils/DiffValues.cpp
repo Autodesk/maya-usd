@@ -16,6 +16,18 @@
 #include "DiffCore.h"
 #include "DiffPrims.h"
 
+#include <pxr/base/gf/vec2d.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec2h.h>
+#include <pxr/base/gf/vec2i.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec3h.h>
+#include <pxr/base/gf/vec3i.h>
+#include <pxr/base/gf/vec4d.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/gf/vec4h.h>
+#include <pxr/base/gf/vec4i.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/value.h>
@@ -43,7 +55,7 @@ using DiffKey = std::pair<std::type_index, std::type_index>;
 using DiffFuncMap = std::map<DiffKey, DiffFunc>;
 
 template <class T1, class T2>
-DiffResult diffTwoTypes(const VtValue& modified, const VtValue& baseline)
+DiffResult diffTwoTypesWithEps(const VtValue& modified, const VtValue& baseline)
 {
     const T1& v1 = modified.Get<T1>();
     const T2& v2 = baseline.Get<T2>();
@@ -51,7 +63,7 @@ DiffResult diffTwoTypes(const VtValue& modified, const VtValue& baseline)
 }
 
 template <class T1, class T2>
-DiffResult diffTwoArrayTypes(const VtValue& modified, const VtValue& baseline)
+DiffResult diffTwoArrayTypesWithEps(const VtValue& modified, const VtValue& baseline)
 {
     const VtArray<T1>& v1 = modified.Get<VtArray<T1>>();
     const VtArray<T2>& v2 = baseline.Get<VtArray<T2>>();
@@ -60,14 +72,39 @@ DiffResult diffTwoArrayTypes(const VtValue& modified, const VtValue& baseline)
         : DiffResult::Differ;
 }
 
-template <class T> DiffResult diffOneType(const VtValue& modified, const VtValue& baseline)
+template <class T> DiffResult diffOneTypeWithEps(const VtValue& modified, const VtValue& baseline)
 {
-    return diffTwoTypes<T, T>(modified, baseline);
+    return diffTwoTypesWithEps<T, T>(modified, baseline);
 }
 
-template <class T> DiffResult diffOneArrayType(const VtValue& modified, const VtValue& baseline)
+template <class T>
+DiffResult diffOneArrayTypeWithEps(const VtValue& modified, const VtValue& baseline)
 {
-    return diffTwoArrayTypes<T, T>(modified, baseline);
+    return diffTwoArrayTypesWithEps<T, T>(modified, baseline);
+}
+
+template <class V1, class V2, int SIZE>
+DiffResult diffTwoVecs(const VtValue& modified, const VtValue& baseline)
+{
+    const V1& v1 = modified.Get<V1>();
+    const V2& v2 = baseline.Get<V2>();
+    return compareArray(v1.data(), v2.data(), SIZE, SIZE) ? DiffResult::Same : DiffResult::Differ;
+}
+
+template <class V1, class V2, int SIZE>
+DiffResult diffTwoVecArrays(const VtValue& modified, const VtValue& baseline)
+{
+    const VtArray<V1>& v1 = modified.Get<VtArray<V1>>();
+    const VtArray<V2>& v2 = baseline.Get<VtArray<V2>>();
+    using V1ValueType = typename V1::ScalarType;
+    using V2ValueType = typename V2::ScalarType;
+    return compareArray(
+               reinterpret_cast<const V1ValueType*>(v1.cdata()),
+               reinterpret_cast<const V2ValueType*>(v2.cdata()),
+               modified.GetArraySize() * SIZE,
+               baseline.GetArraySize() * SIZE)
+        ? DiffResult::Same
+        : DiffResult::Differ;
 }
 
 DiffResult diffIncomparables(const VtValue& /*modified*/, const VtValue& /*baseline*/)
@@ -80,45 +117,77 @@ DiffResult diffEmpties(const VtValue& /*modified*/, const VtValue& /*baseline*/)
     return DiffResult::Same;
 }
 
-#define MAYA_USD_DIFF_FUNC_FOR_TYPE(T)                                       \
-    { DiffKey(typeid(T), typeid(T)), diffOneType<T> },                       \
-    {                                                                        \
-        DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffOneArrayType<T> \
+#define MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(T)                                     \
+    { DiffKey(typeid(T), typeid(T)), diffOneTypeWithEps<T> },                       \
+    {                                                                               \
+        DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffOneArrayTypeWithEps<T> \
     }
 
-#define MAYA_USD_DIFF_FUNC_FOR_TYPES(T1, T2)                                         \
-    { DiffKey(typeid(T1), typeid(T2)), diffTwoTypes<T1, T2> },                       \
-    {                                                                                \
-        DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoArrayTypes<T1, T2> \
+#define MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(T1, T2)                                       \
+    { DiffKey(typeid(T1), typeid(T2)), diffTwoTypesWithEps<T1, T2> },                       \
+    {                                                                                       \
+        DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoArrayTypesWithEps<T1, T2> \
+    }
+
+#define MAYA_USD_DIFF_FUNC_FOR_VEC(T, SIZE)                                           \
+    { DiffKey(typeid(T), typeid(T)), diffTwoVecs<T, T, SIZE> },                       \
+    {                                                                                 \
+        DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffTwoVecArrays<T, T, SIZE> \
+    }
+
+#define MAYA_USD_DIFF_FUNC_FOR_VECS(T1, T2, SIZE)                                         \
+    { DiffKey(typeid(T1), typeid(T2)), diffTwoVecs<T1, T2, SIZE> },                       \
+    {                                                                                     \
+        DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoVecArrays<T1, T2, SIZE> \
     }
 
 const DiffFuncMap& getDiffFuncs()
 {
 
     // Initializing static data inside a function makes it automatically initialization-order safe.
-    static DiffFuncMap diffs = {
-        MAYA_USD_DIFF_FUNC_FOR_TYPES(GfHalf, float),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES(float, GfHalf),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES(GfHalf, double),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES(double, GfHalf),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(float),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(double),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES(double, float),
-        MAYA_USD_DIFF_FUNC_FOR_TYPES(float, double),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(int8_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(uint8_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(int16_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(uint16_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(int32_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(uint32_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(int64_t),
-        MAYA_USD_DIFF_FUNC_FOR_TYPE(uint64_t),
+    static DiffFuncMap diffs
+        = { MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(GfHalf),
+            MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(GfHalf, float),
+            MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(GfHalf, double),
 
-        // TODO: separate U,V vs combined UV diff.
-        // TODO: different integer types, like int_8 to int16_t.
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(float),
+            MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(float, GfHalf),
+            MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(float, double),
 
-        { DiffKey(typeid(void), typeid(void)), diffEmpties }
-    };
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(double),
+            MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(double, GfHalf),
+            MAYA_USD_DIFF_FUNC_FOR_TYPES_WITH_EPS(double, float),
+
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(int8_t),
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint8_t),
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(int16_t),
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint16_t),
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(int32_t),
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint32_t),
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(int64_t),
+            MAYA_USD_DIFF_FUNC_FOR_TYPE_WITH_EPS(uint64_t),
+
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2d, 2),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2f, 2),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2h, 2),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2i, 2),
+
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3d, 3),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3f, 3),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3h, 3),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3i, 3),
+
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4d, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4f, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4h, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4i, 4),
+
+            // TODO: separate U,V vs combined UV diff.
+            // TODO: different integer types, like int_8 to int16_t.
+            // TODO: diff for bool, SdfTimeCode, std::string, TfToken, SdfAssetPath
+            // TODO: diff for GfMatrix2d, GfMatrix3d, GfMatrix4d
+
+            { DiffKey(typeid(void), typeid(void)), diffEmpties } };
 
     return diffs;
 };

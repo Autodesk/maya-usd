@@ -51,6 +51,24 @@ TEST(DiffValues, floatCompareValuesDiff)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
+TEST(DiffValues, gfHalfCompareValuesSame)
+{
+    VtValue baselineValue(GfHalf(1));
+    VtValue modifiedValue(GfHalf(1));
+    DiffResult result = compareValues(modifiedValue, baselineValue);
+
+    EXPECT_EQ(result, DiffResult::Same);
+}
+
+TEST(DiffValues, gfHalfCompareValuesDiff)
+{
+    VtValue baselineValue(GfHalf(1));
+    VtValue modifiedValue(GfHalf(2));
+    DiffResult result = compareValues(modifiedValue, baselineValue);
+
+    EXPECT_EQ(result, DiffResult::Differ);
+}
+
 TEST(DiffValues, doubleFloatCompareValuesSame)
 {
     VtValue baselineValue(double(1));

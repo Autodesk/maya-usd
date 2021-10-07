@@ -838,6 +838,26 @@ bool compareArray(
 
 //----------------------------------------------------------------------------------------------------------------------
 bool compareArray(
+    const GfHalf* const input0,
+    const GfHalf* const input1,
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps)
+{
+    if (count0 != count1) {
+        return false;
+    }
+    // TODO: AVX2 and SSE versions.
+    for (size_t i = 0; i < count0; ++i) {
+        if (std::abs(input0[i] - input1[i]) > eps) {
+            return false;
+        }
+    }
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool compareArray(
     const int8_t* const input0,
     const int8_t* const input1,
     const size_t        count0,
