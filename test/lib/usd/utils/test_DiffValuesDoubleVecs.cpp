@@ -21,7 +21,7 @@ using namespace PXR_NS;
 using namespace MayaUsdUtils;
 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(DiffValuesVecs, vec2dCompareValuesSame)
+TEST(DiffValuesDoubleVecs, vec2dCompareValuesSame)
 {
     VtValue    baselineValue(GfVec2d(1, 12));
     VtValue    modifiedValue(GfVec2d(1, 12));
@@ -30,7 +30,7 @@ TEST(DiffValuesVecs, vec2dCompareValuesSame)
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec2dCompareValuesDiff)
+TEST(DiffValuesDoubleVecs, vec2dCompareValuesDiff)
 {
     VtValue    baselineValue(GfVec2d(1, 12));
     VtValue    modifiedValue(GfVec2d(2, 22));
@@ -39,7 +39,7 @@ TEST(DiffValuesVecs, vec2dCompareValuesDiff)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec2dCompareValueArraysSame)
+TEST(DiffValuesDoubleVecs, vec2dCompareValueArraysSame)
 {
     VtValue    baselineValue(VtArray<GfVec2d>({ GfVec2d(1, 12), GfVec2d(5, 53), GfVec2d(7, 71) }));
     VtValue    modifiedValue(VtArray<GfVec2d>({ GfVec2d(1, 12), GfVec2d(5, 53), GfVec2d(7, 71) }));
@@ -48,7 +48,7 @@ TEST(DiffValuesVecs, vec2dCompareValueArraysSame)
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec2dCompareValueArraysDiff)
+TEST(DiffValuesDoubleVecs, vec2dCompareValueArraysDiff)
 {
     VtValue    baselineValue(VtArray<GfVec2d>({ GfVec2d(1, 12), GfVec2d(5, 53), GfVec2d(7, 71) }));
     VtValue    modifiedValue(VtArray<GfVec2d>({ GfVec2d(1, 12), GfVec2d(3, 38), GfVec2d(4, 46) }));
@@ -57,7 +57,7 @@ TEST(DiffValuesVecs, vec2dCompareValueArraysDiff)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec3dCompareValuesSame)
+TEST(DiffValuesDoubleVecs, vec3dCompareValuesSame)
 {
     VtValue    baselineValue(GfVec3d(1, 12, 21));
     VtValue    modifiedValue(GfVec3d(1, 12, 21));
@@ -66,7 +66,7 @@ TEST(DiffValuesVecs, vec3dCompareValuesSame)
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec3dCompareValuesDiff)
+TEST(DiffValuesDoubleVecs, vec3dCompareValuesDiff)
 {
     VtValue    baselineValue(GfVec3d(1, 12, 21));
     VtValue    modifiedValue(GfVec3d(2, 22, 25));
@@ -75,7 +75,7 @@ TEST(DiffValuesVecs, vec3dCompareValuesDiff)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec3dCompareValueArraysSame)
+TEST(DiffValuesDoubleVecs, vec3dCompareValueArraysSame)
 {
     VtValue    baselineValue(VtArray<GfVec3d>({ GfVec3d(1, 12, 21), GfVec3d(5, 53, 35), GfVec3d(7, 71, 17) }));
     VtValue    modifiedValue(VtArray<GfVec3d>({ GfVec3d(1, 12, 21), GfVec3d(5, 53, 35), GfVec3d(7, 71, 17) }));
@@ -84,7 +84,7 @@ TEST(DiffValuesVecs, vec3dCompareValueArraysSame)
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec3dCompareValueArraysDiff)
+TEST(DiffValuesDoubleVecs, vec3dCompareValueArraysDiff)
 {
     VtValue    baselineValue(VtArray<GfVec3d>({ GfVec3d(1, 12, 21), GfVec3d(5, 53, 35), GfVec3d(7, 71, 17) }));
     VtValue    modifiedValue(VtArray<GfVec3d>({ GfVec3d(1, 12, 21), GfVec3d(3, 38, 83), GfVec3d(4, 46, 64) }));
@@ -93,7 +93,7 @@ TEST(DiffValuesVecs, vec3dCompareValueArraysDiff)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec4dCompareValuesSame)
+TEST(DiffValuesDoubleVecs, vec4dCompareValuesSame)
 {
     VtValue    baselineValue(GfVec4d(1, 12, 21, 32));
     VtValue    modifiedValue(GfVec4d(1, 12, 21, 32));
@@ -102,7 +102,7 @@ TEST(DiffValuesVecs, vec4dCompareValuesSame)
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec4dCompareValuesDiff)
+TEST(DiffValuesDoubleVecs, vec4dCompareValuesDiff)
 {
     VtValue    baselineValue(GfVec4d(1, 12, 21, 32));
     VtValue    modifiedValue(GfVec4d(2, 22, 33, 44));
@@ -111,7 +111,7 @@ TEST(DiffValuesVecs, vec4dCompareValuesDiff)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec4dCompareValueArraysSame)
+TEST(DiffValuesDoubleVecs, vec4dCompareValueArraysSame)
 {
     VtValue    baselineValue(VtArray<GfVec4d>({ GfVec4d(1, 12, 21, 32), GfVec4d(5, 53, 35, 46), GfVec4d(7, 71, 72, 73) }));
     VtValue    modifiedValue(VtArray<GfVec4d>({ GfVec4d(1, 12, 21, 32), GfVec4d(5, 53, 35, 46), GfVec4d(7, 71, 72, 73) }));
@@ -120,7 +120,7 @@ TEST(DiffValuesVecs, vec4dCompareValueArraysSame)
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec4dCompareValueArraysDiff)
+TEST(DiffValuesDoubleVecs, vec4dCompareValueArraysDiff)
 {
     VtValue    baselineValue(VtArray<GfVec4d>({ GfVec4d(1, 12, 21, 32), GfVec4d(5, 53, 35, 46), GfVec4d(7, 71, 72, 73) }));
     VtValue    modifiedValue(VtArray<GfVec4d>({ GfVec4d(1, 12, 21, 32), GfVec4d(3, 38, 83, 37), GfVec4d(4, 46, 47, 48) }));
@@ -130,108 +130,108 @@ TEST(DiffValuesVecs, vec4dCompareValueArraysDiff)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(DiffValuesVecs, vec2fCompareValuesSame)
+TEST(DiffValuesDoubleFloatVecs, vec2dCompareValuesSame)
 {
-    VtValue    baselineValue(GfVec2f(1, 12));
+    VtValue    baselineValue(GfVec2d(1, 12));
     VtValue    modifiedValue(GfVec2f(1, 12));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec2fCompareValuesDiff)
+TEST(DiffValuesDoubleFloatVecs, vec2dCompareValuesDiff)
 {
-    VtValue    baselineValue(GfVec2f(1, 12));
+    VtValue    baselineValue(GfVec2d(1, 12));
     VtValue    modifiedValue(GfVec2f(2, 22));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec2fCompareValueArraysSame)
+TEST(DiffValuesDoubleFloatVecs, vec2dCompareValueArraysSame)
 {
-    VtValue    baselineValue(VtArray<GfVec2f>({ GfVec2f(1, 12), GfVec2f(5, 53), GfVec2f(7, 71) }));
+    VtValue    baselineValue(VtArray<GfVec2d>({ GfVec2d(1, 12), GfVec2d(5, 53), GfVec2d(7, 71) }));
     VtValue    modifiedValue(VtArray<GfVec2f>({ GfVec2f(1, 12), GfVec2f(5, 53), GfVec2f(7, 71) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec2fCompareValueArraysDiff)
+TEST(DiffValuesDoubleFloatVecs, vec2dCompareValueArraysDiff)
 {
-    VtValue    baselineValue(VtArray<GfVec2f>({ GfVec2f(1, 12), GfVec2f(5, 53), GfVec2f(7, 71) }));
+    VtValue    baselineValue(VtArray<GfVec2d>({ GfVec2d(1, 12), GfVec2d(5, 53), GfVec2d(7, 71) }));
     VtValue    modifiedValue(VtArray<GfVec2f>({ GfVec2f(1, 12), GfVec2f(3, 38), GfVec2f(4, 46) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec3fCompareValuesSame)
+TEST(DiffValuesDoubleFloatVecs, vec3dCompareValuesSame)
 {
-    VtValue    baselineValue(GfVec3f(1, 12, 21));
+    VtValue    baselineValue(GfVec3d(1, 12, 21));
     VtValue    modifiedValue(GfVec3f(1, 12, 21));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec3fCompareValuesDiff)
+TEST(DiffValuesDoubleFloatVecs, vec3dCompareValuesDiff)
 {
-    VtValue    baselineValue(GfVec3f(1, 12, 21));
+    VtValue    baselineValue(GfVec3d(1, 12, 21));
     VtValue    modifiedValue(GfVec3f(2, 22, 25));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec3fCompareValueArraysSame)
+TEST(DiffValuesDoubleFloatVecs, vec3dCompareValueArraysSame)
 {
-    VtValue    baselineValue(VtArray<GfVec3f>({ GfVec3f(1, 12, 21), GfVec3f(5, 53, 35), GfVec3f(7, 71, 17) }));
+    VtValue    baselineValue(VtArray<GfVec3d>({ GfVec3d(1, 12, 21), GfVec3d(5, 53, 35), GfVec3d(7, 71, 17) }));
     VtValue    modifiedValue(VtArray<GfVec3f>({ GfVec3f(1, 12, 21), GfVec3f(5, 53, 35), GfVec3f(7, 71, 17) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec3fCompareValueArraysDiff)
+TEST(DiffValuesDoubleFloatVecs, vec3dCompareValueArraysDiff)
 {
-    VtValue    baselineValue(VtArray<GfVec3f>({ GfVec3f(1, 12, 21), GfVec3f(5, 53, 35), GfVec3f(7, 71, 17) }));
+    VtValue    baselineValue(VtArray<GfVec3d>({ GfVec3d(1, 12, 21), GfVec3d(5, 53, 35), GfVec3d(7, 71, 17) }));
     VtValue    modifiedValue(VtArray<GfVec3f>({ GfVec3f(1, 12, 21), GfVec3f(3, 38, 83), GfVec3f(4, 46, 64) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec4fCompareValuesSame)
+TEST(DiffValuesDoubleFloatVecs, vec4dCompareValuesSame)
 {
-    VtValue    baselineValue(GfVec4f(1, 12, 21, 32));
+    VtValue    baselineValue(GfVec4d(1, 12, 21, 32));
     VtValue    modifiedValue(GfVec4f(1, 12, 21, 32));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec4fCompareValuesDiff)
+TEST(DiffValuesDoubleFloatVecs, vec4dCompareValuesDiff)
 {
-    VtValue    baselineValue(GfVec4f(1, 12, 21, 32));
+    VtValue    baselineValue(GfVec4d(1, 12, 21, 32));
     VtValue    modifiedValue(GfVec4f(2, 22, 33, 44));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec4fCompareValueArraysSame)
+TEST(DiffValuesDoubleFloatVecs, vec4dCompareValueArraysSame)
 {
-    VtValue    baselineValue(VtArray<GfVec4f>({ GfVec4f(1, 12, 21, 32), GfVec4f(5, 53, 35, 46), GfVec4f(7, 71, 72, 73) }));
+    VtValue    baselineValue(VtArray<GfVec4d>({ GfVec4d(1, 12, 21, 32), GfVec4d(5, 53, 35, 46), GfVec4d(7, 71, 72, 73) }));
     VtValue    modifiedValue(VtArray<GfVec4f>({ GfVec4f(1, 12, 21, 32), GfVec4f(5, 53, 35, 46), GfVec4f(7, 71, 72, 73) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec4fCompareValueArraysDiff)
+TEST(DiffValuesDoubleFloatVecs, vec4dCompareValueArraysDiff)
 {
-    VtValue    baselineValue(VtArray<GfVec4f>({ GfVec4f(1, 12, 21, 32), GfVec4f(5, 53, 35, 46), GfVec4f(7, 71, 72, 73) }));
+    VtValue    baselineValue(VtArray<GfVec4d>({ GfVec4d(1, 12, 21, 32), GfVec4d(5, 53, 35, 46), GfVec4d(7, 71, 72, 73) }));
     VtValue    modifiedValue(VtArray<GfVec4f>({ GfVec4f(1, 12, 21, 32), GfVec4f(3, 38, 83, 37), GfVec4f(4, 46, 47, 48) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
@@ -239,218 +239,109 @@ TEST(DiffValuesVecs, vec4fCompareValueArraysDiff)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(DiffValuesVecs, vec2hCompareValuesSame)
+TEST(DiffValuesDoubleHalfVecs, vec2dCompareValuesSame)
 {
-    VtValue    baselineValue(GfVec2h(1, 12));
+    VtValue    baselineValue(GfVec2d(1, 12));
     VtValue    modifiedValue(GfVec2h(1, 12));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec2hCompareValuesDiff)
+TEST(DiffValuesDoubleHalfVecs, vec2dCompareValuesDiff)
 {
-    VtValue    baselineValue(GfVec2h(1, 12));
+    VtValue    baselineValue(GfVec2d(1, 12));
     VtValue    modifiedValue(GfVec2h(2, 22));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec2hCompareValueArraysSame)
+TEST(DiffValuesDoubleHalfVecs, vec2dCompareValueArraysSame)
 {
-    VtValue    baselineValue(VtArray<GfVec2h>({ GfVec2h(1, 12), GfVec2h(5, 53), GfVec2h(7, 71) }));
+    VtValue    baselineValue(VtArray<GfVec2d>({ GfVec2d(1, 12), GfVec2d(5, 53), GfVec2d(7, 71) }));
     VtValue    modifiedValue(VtArray<GfVec2h>({ GfVec2h(1, 12), GfVec2h(5, 53), GfVec2h(7, 71) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec2hCompareValueArraysDiff)
+TEST(DiffValuesDoubleHalfVecs, vec2dCompareValueArraysDiff)
 {
-    VtValue    baselineValue(VtArray<GfVec2h>({ GfVec2h(1, 12), GfVec2h(5, 53), GfVec2h(7, 71) }));
+    VtValue    baselineValue(VtArray<GfVec2d>({ GfVec2d(1, 12), GfVec2d(5, 53), GfVec2d(7, 71) }));
     VtValue    modifiedValue(VtArray<GfVec2h>({ GfVec2h(1, 12), GfVec2h(3, 38), GfVec2h(4, 46) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec3hCompareValuesSame)
+TEST(DiffValuesDoubleHalfVecs, vec3dCompareValuesSame)
 {
-    VtValue    baselineValue(GfVec3h(1, 12, 21));
+    VtValue    baselineValue(GfVec3d(1, 12, 21));
     VtValue    modifiedValue(GfVec3h(1, 12, 21));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec3hCompareValuesDiff)
+TEST(DiffValuesDoubleHalfVecs, vec3dCompareValuesDiff)
 {
-    VtValue    baselineValue(GfVec3h(1, 12, 21));
+    VtValue    baselineValue(GfVec3d(1, 12, 21));
     VtValue    modifiedValue(GfVec3h(2, 22, 25));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec3hCompareValueArraysSame)
+TEST(DiffValuesDoubleHalfVecs, vec3dCompareValueArraysSame)
 {
-    VtValue    baselineValue(VtArray<GfVec3h>({ GfVec3h(1, 12, 21), GfVec3h(5, 53, 35), GfVec3h(7, 71, 17) }));
+    VtValue    baselineValue(VtArray<GfVec3d>({ GfVec3d(1, 12, 21), GfVec3d(5, 53, 35), GfVec3d(7, 71, 17) }));
     VtValue    modifiedValue(VtArray<GfVec3h>({ GfVec3h(1, 12, 21), GfVec3h(5, 53, 35), GfVec3h(7, 71, 17) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec3hCompareValueArraysDiff)
+TEST(DiffValuesDoubleHalfVecs, vec3dCompareValueArraysDiff)
 {
-    VtValue    baselineValue(VtArray<GfVec3h>({ GfVec3h(1, 12, 21), GfVec3h(5, 53, 35), GfVec3h(7, 71, 17) }));
+    VtValue    baselineValue(VtArray<GfVec3d>({ GfVec3d(1, 12, 21), GfVec3d(5, 53, 35), GfVec3d(7, 71, 17) }));
     VtValue    modifiedValue(VtArray<GfVec3h>({ GfVec3h(1, 12, 21), GfVec3h(3, 38, 83), GfVec3h(4, 46, 64) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec4hCompareValuesSame)
+TEST(DiffValuesDoubleHalfVecs, vec4dCompareValuesSame)
 {
-    VtValue    baselineValue(GfVec4h(1, 12, 21, 32));
+    VtValue    baselineValue(GfVec4d(1, 12, 21, 32));
     VtValue    modifiedValue(GfVec4h(1, 12, 21, 32));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec4hCompareValuesDiff)
+TEST(DiffValuesDoubleHalfVecs, vec4dCompareValuesDiff)
 {
-    VtValue    baselineValue(GfVec4h(1, 12, 21, 32));
+    VtValue    baselineValue(GfVec4d(1, 12, 21, 32));
     VtValue    modifiedValue(GfVec4h(2, 22, 33, 44));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffValuesVecs, vec4hCompareValueArraysSame)
+TEST(DiffValuesDoubleHalfVecs, vec4dCompareValueArraysSame)
 {
-    VtValue    baselineValue(VtArray<GfVec4h>({ GfVec4h(1, 12, 21, 32), GfVec4h(5, 53, 35, 46), GfVec4h(7, 71, 72, 73) }));
+    VtValue    baselineValue(VtArray<GfVec4d>({ GfVec4d(1, 12, 21, 32), GfVec4d(5, 53, 35, 46), GfVec4d(7, 71, 72, 73) }));
     VtValue    modifiedValue(VtArray<GfVec4h>({ GfVec4h(1, 12, 21, 32), GfVec4h(5, 53, 35, 46), GfVec4h(7, 71, 72, 73) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffValuesVecs, vec4hCompareValueArraysDiff)
+TEST(DiffValuesDoubleHalfVecs, vec4dCompareValueArraysDiff)
 {
-    VtValue    baselineValue(VtArray<GfVec4h>({ GfVec4h(1, 12, 21, 32), GfVec4h(5, 53, 35, 46), GfVec4h(7, 71, 72, 73) }));
+    VtValue    baselineValue(VtArray<GfVec4d>({ GfVec4d(1, 12, 21, 32), GfVec4d(5, 53, 35, 46), GfVec4d(7, 71, 72, 73) }));
     VtValue    modifiedValue(VtArray<GfVec4h>({ GfVec4h(1, 12, 21, 32), GfVec4h(3, 38, 83, 37), GfVec4h(4, 46, 47, 48) }));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Differ);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-TEST(DiffValuesVecs, vec2iCompareValuesSame)
-{
-    VtValue    baselineValue(GfVec2i(1, 12));
-    VtValue    modifiedValue(GfVec2i(1, 12));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Same);
-}
-
-TEST(DiffValuesVecs, vec2iCompareValuesDiff)
-{
-    VtValue    baselineValue(GfVec2i(1, 12));
-    VtValue    modifiedValue(GfVec2i(2, 22));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Differ);
-}
-
-TEST(DiffValuesVecs, vec2iCompareValueArraysSame)
-{
-    VtValue    baselineValue(VtArray<GfVec2i>({ GfVec2i(1, 12), GfVec2i(5, 53), GfVec2i(7, 71) }));
-    VtValue    modifiedValue(VtArray<GfVec2i>({ GfVec2i(1, 12), GfVec2i(5, 53), GfVec2i(7, 71) }));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Same);
-}
-
-TEST(DiffValuesVecs, vec2iCompareValueArraysDiff)
-{
-    VtValue    baselineValue(VtArray<GfVec2i>({ GfVec2i(1, 12), GfVec2i(5, 53), GfVec2i(7, 71) }));
-    VtValue    modifiedValue(VtArray<GfVec2i>({ GfVec2i(1, 12), GfVec2i(3, 38), GfVec2i(4, 46) }));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Differ);
-}
-
-TEST(DiffValuesVecs, vec3iCompareValuesSame)
-{
-    VtValue    baselineValue(GfVec3i(1, 12, 21));
-    VtValue    modifiedValue(GfVec3i(1, 12, 21));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Same);
-}
-
-TEST(DiffValuesVecs, vec3iCompareValuesDiff)
-{
-    VtValue    baselineValue(GfVec3i(1, 12, 21));
-    VtValue    modifiedValue(GfVec3i(2, 22, 25));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Differ);
-}
-
-TEST(DiffValuesVecs, vec3iCompareValueArraysSame)
-{
-    VtValue    baselineValue(VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
-    VtValue    modifiedValue(VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Same);
-}
-
-TEST(DiffValuesVecs, vec3iCompareValueArraysDiff)
-{
-    VtValue    baselineValue(VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
-    VtValue    modifiedValue(VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(3, 38, 83), GfVec3i(4, 46, 64) }));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Differ);
-}
-
-TEST(DiffValuesVecs, vec4iCompareValuesSame)
-{
-    VtValue    baselineValue(GfVec4i(1, 12, 21, 32));
-    VtValue    modifiedValue(GfVec4i(1, 12, 21, 32));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Same);
-}
-
-TEST(DiffValuesVecs, vec4iCompareValuesDiff)
-{
-    VtValue    baselineValue(GfVec4i(1, 12, 21, 32));
-    VtValue    modifiedValue(GfVec4i(2, 22, 33, 44));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Differ);
-}
-
-TEST(DiffValuesVecs, vec4iCompareValueArraysSame)
-{
-    VtValue    baselineValue(VtArray<GfVec4i>({ GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
-    VtValue    modifiedValue(VtArray<GfVec4i>({ GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
-    DiffResult result = compareValues(modifiedValue, baselineValue);
-
-    EXPECT_EQ(result, DiffResult::Same);
-}
-
-TEST(DiffValuesVecs, vec4iCompareValueArraysDiff)
-{
-    VtValue    baselineValue(VtArray<GfVec4i>({ GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
-    VtValue    modifiedValue(VtArray<GfVec4i>({ GfVec4i(1, 12, 21, 32), GfVec4i(3, 38, 83, 37), GfVec4i(4, 46, 47, 48) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);

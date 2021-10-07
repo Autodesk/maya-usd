@@ -13,7 +13,10 @@ target_sources(${TARGET_NAME}
         test_DiffValuesArrays.cpp
         test_DiffValuesGeneric.cpp
         test_DiffValuesMatrices.cpp
-        test_DiffValuesVecs.cpp
+        test_DiffValuesDoubleVecs.cpp
+        test_DiffValuesFloatVecs.cpp
+        test_DiffValuesHalfVecs.cpp
+        test_DiffValuesIntVecs.cpp
         test_DiffAttributes.cpp
         test_DiffPrims.cpp
 )

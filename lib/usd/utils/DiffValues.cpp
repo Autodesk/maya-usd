@@ -185,15 +185,36 @@ const DiffFuncMap& getDiffFuncs()
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2h, 2),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec2i, 2),
 
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2d, GfVec2f, 2),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2d, GfVec2h, 2),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2f, GfVec2d, 2),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2f, GfVec2h, 2),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2h, GfVec2d, 2),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec2h, GfVec2f, 2),
+
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3d, 3),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3f, 3),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3h, 3),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec3i, 3),
 
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3d, GfVec3f, 3),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3d, GfVec3h, 3),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3f, GfVec3d, 3),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3f, GfVec3h, 3),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3h, GfVec3d, 3),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec3h, GfVec3f, 3),
+
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4d, 4),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4f, 4),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4h, 4),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4i, 4),
+
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4d, GfVec4f, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4d, GfVec4h, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4f, GfVec4d, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4f, GfVec4h, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4h, GfVec4d, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VECS(GfVec4h, GfVec4f, 4),
 
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix2d, 4),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix3d, 9),
