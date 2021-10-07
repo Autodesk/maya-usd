@@ -69,7 +69,7 @@ over "GLOBAL" (
 class "ALModelAPI"
 (
 doc = "Data used to import a maya reference."
-  inherits = </ModelAPI>
+  inherits = </APISchemaBase>
   customData = {
         string apiSchemaType = "nonApplied"
         string className = "ModelAPI"
