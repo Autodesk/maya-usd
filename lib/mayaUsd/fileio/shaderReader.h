@@ -91,11 +91,6 @@ public:
 
     struct IsConverterResult
     {
-        IsConverterResult(UsdShadeShader pdownstreamSchema, TfToken pdownstreamOutputName)
-        {
-            downstreamSchema = pdownstreamSchema;
-            downstreamOutputName = pdownstreamOutputName;
-        }
         UsdShadeShader downstreamSchema;
         TfToken        downstreamOutputName;
     };

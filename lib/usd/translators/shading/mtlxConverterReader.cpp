@@ -126,7 +126,7 @@ public:
             }
         }
         _downstreamPrim = source.GetPrim();
-        return IsConverterResult( downstreamSchema, sourceOutputName );
+        return IsConverterResult{ downstreamSchema, sourceOutputName };
     }
 
     void SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader) override
