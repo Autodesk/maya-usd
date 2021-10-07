@@ -38,6 +38,10 @@ class mtlxShaderReaderTest(mayaUsdLib.ShaderReader):
 
     _setAlphaIsLuminance = False
 
+    @classmethod
+    def CanImport(cls, args, materialConversion):
+        return cls.ContextSupport.Supported
+
     def IsConverter(self):
         mtlxShaderReaderTest.IsConverterCalled = True
         self._refinedOutputToken = ''

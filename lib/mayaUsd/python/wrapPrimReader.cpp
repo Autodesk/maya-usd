@@ -160,8 +160,8 @@ public:
         this->CallVirtual<>("PostConnectSubtree", &This::default_PostConnectSubtree)(context);
     }
 
-    IsConverterResult default_IsConverter() { return base_t::IsConverter(); }
-    IsConverterResult IsConverter() override
+    boost::optional<IsConverterResult> default_IsConverter() { return base_t::IsConverter(); }
+    boost::optional<IsConverterResult> IsConverter() override
     {
         if (Override o = GetOverride("IsConverter")) {
             auto res = std::function<boost::python::object()>(TfPyCall<boost::python::object>(o))();
@@ -175,7 +175,7 @@ public:
                         boost::python::extract<TfToken> downstreamOutputName(t[1]);
                         if (downstreamOutputName.check()) {
                             boost::python::incref(t.ptr());
-                            return { downstreamSchema, downstreamOutputName };
+                            return IsConverterResult( downstreamSchema, downstreamOutputName );
                         } else {
                             TF_CODING_ERROR(
                                 "ShaderReaderWrapper.IsConverter: TfToken key expected, not "

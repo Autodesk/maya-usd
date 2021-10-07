@@ -91,7 +91,6 @@ public:
 
     struct IsConverterResult
     {
-        IsConverterResult(bool) { }
         IsConverterResult(UsdShadeShader pdownstreamSchema, TfToken pdownstreamOutputName)
         {
             downstreamSchema = pdownstreamSchema;
@@ -111,7 +110,7 @@ public:
     /// returned in \p downstreamSchema and the requested output will be in \p downstreamOutputName
     ///
     MAYAUSD_CORE_PUBLIC
-    virtual IsConverterResult IsConverter();
+    virtual boost::optional<IsConverterResult> IsConverter();
 
     /// Sets a downstream converter to use for caching calls to GetCreatedObject and
     /// GetMayaPlugForUsdAttrName

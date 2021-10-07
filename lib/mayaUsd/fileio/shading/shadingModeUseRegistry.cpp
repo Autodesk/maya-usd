@@ -538,14 +538,14 @@ private:
 
                 shaderReader = std::dynamic_pointer_cast<UsdMayaShaderReader>(factoryFn(args));
 
-                UsdMayaShaderReader::IsConverterResult converter = shaderReader->IsConverter();
-                if (converter.downstreamSchema) {
+                auto converter = shaderReader->IsConverter();
+                if (converter) {
                     // Recurse downstream:
                     sourcePlug = _GetSourcePlug(
-                        converter.downstreamSchema, converter.downstreamOutputName);
+                        converter.get().downstreamSchema, converter.get().downstreamOutputName);
                     if (!sourcePlug.isNull()) {
                         shaderReader->SetDownstreamReader(
-                            _shaderReaderMap[converter.downstreamSchema.GetPath()]);
+                            _shaderReaderMap[converter.get().downstreamSchema.GetPath()]);
                         sourceObj = sourcePlug.node();
                     } else {
                         // Read failed. Invalidate the reader.
