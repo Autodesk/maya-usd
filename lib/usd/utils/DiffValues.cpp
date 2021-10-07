@@ -107,6 +107,13 @@ DiffResult diffTwoVecArrays(const VtValue& modified, const VtValue& baseline)
         : DiffResult::Differ;
 }
 
+template <class T> DiffResult diffGenericValues(const VtValue& modified, const VtValue& baseline)
+{
+    const T& v1 = modified.Get<T>();
+    const T& v2 = baseline.Get<T>();
+    return v1 == v2 ? DiffResult::Same : DiffResult::Differ;
+}
+
 DiffResult diffIncomparables(const VtValue& /*modified*/, const VtValue& /*baseline*/)
 {
     return DiffResult::Differ;
@@ -139,6 +146,12 @@ DiffResult diffEmpties(const VtValue& /*modified*/, const VtValue& /*baseline*/)
     { DiffKey(typeid(T1), typeid(T2)), diffTwoVecs<T1, T2, SIZE> },                       \
     {                                                                                     \
         DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoVecArrays<T1, T2, SIZE> \
+    }
+
+#define MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(T)                                         \
+    { DiffKey(typeid(T), typeid(T)), diffGenericValues<T> },                           \
+    {                                                                                  \
+        DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffGenericValues<VtArray<T>> \
     }
 
 const DiffFuncMap& getDiffFuncs()
@@ -182,10 +195,18 @@ const DiffFuncMap& getDiffFuncs()
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4h, 4),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfVec4i, 4),
 
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix2d, 4),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix3d, 9),
+            MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix4d, 16),
+
+            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(bool),
+            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(SdfTimeCode),
+            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(std::string),
+            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(TfToken),
+            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(SdfAssetPath),
+
             // TODO: separate U,V vs combined UV diff.
             // TODO: different integer types, like int_8 to int16_t.
-            // TODO: diff for bool, SdfTimeCode, std::string, TfToken, SdfAssetPath
-            // TODO: diff for GfMatrix2d, GfMatrix3d, GfMatrix4d
 
             { DiffKey(typeid(void), typeid(void)), diffEmpties } };
 

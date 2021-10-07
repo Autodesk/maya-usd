@@ -11,6 +11,8 @@ target_sources(${TARGET_NAME}
         test_DiffCore.cpp
         test_DiffValues.cpp
         test_DiffValuesArrays.cpp
+        test_DiffValuesGeneric.cpp
+        test_DiffValuesMatrices.cpp
         test_DiffValuesVecs.cpp
         test_DiffAttributes.cpp
         test_DiffPrims.cpp
