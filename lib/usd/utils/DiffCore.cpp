@@ -1220,7 +1220,7 @@ bool compareArray3Dto4D(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool compareArrayFloat3DtoDouble4D(
+bool compareArray3Dto4D(
     const float* const  input3d,
     const double* const input4d,
     const size_t        count3d,

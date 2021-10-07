@@ -9,6 +9,9 @@ target_sources(${TARGET_NAME}
     PRIVATE
         main.cpp
         test_DiffCore.cpp
+        test_DiffValues.cpp
+        test_DiffAttributes.cpp
+        test_DiffPrims.cpp
 )
 
 # -----------------------------------------------------------------------------

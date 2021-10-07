@@ -8,7 +8,10 @@ add_library(${TARGET_NAME} SHARED)
 target_sources(${TARGET_NAME}
     PRIVATE
         DebugCodes.cpp
+        DiffAttributes.cpp
         DiffCore.cpp
+        DiffPrims.cpp
+        DiffValues.cpp
         util.cpp
 )
 
@@ -53,6 +56,7 @@ set(HEADERS
     Api.h
     DebugCodes.h
     DiffCore.h
+    DiffPrims.h
     ForwardDeclares.h
     SIMD.h
     util.h

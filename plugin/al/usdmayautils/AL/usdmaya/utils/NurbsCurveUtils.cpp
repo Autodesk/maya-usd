@@ -354,7 +354,7 @@ uint32_t diffNurbsCurve(
         const size_t        numPoints = dataPoints.size();
         const float* const  usdPoints = (const float* const)dataPoints.cdata();
         const double* const mayaCVs = (const double* const) & controlVertices[0];
-        if (!MayaUsdUtils::compareArrayFloat3DtoDouble4D(
+        if (!MayaUsdUtils::compareArray3Dto4D(
                 usdPoints, mayaCVs, numPoints, numControlVertices)) {
             result |= kCurvePoints;
         }
