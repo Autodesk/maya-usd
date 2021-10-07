@@ -80,25 +80,44 @@ DiffResult diffEmpties(const VtValue& /*modified*/, const VtValue& /*baseline*/)
     return DiffResult::Same;
 }
 
+#define MAYA_USD_DIFF_FUNC_FOR_TYPE(T)                                       \
+    { DiffKey(typeid(T), typeid(T)), diffOneType<T> },                       \
+    {                                                                        \
+        DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffOneArrayType<T> \
+    }
+
+#define MAYA_USD_DIFF_FUNC_FOR_TYPES(T1, T2)                                         \
+    { DiffKey(typeid(T1), typeid(T2)), diffTwoTypes<T1, T2> },                       \
+    {                                                                                \
+        DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoArrayTypes<T1, T2> \
+    }
+
 const DiffFuncMap& getDiffFuncs()
 {
+
     // Initializing static data inside a function makes it automatically initialization-order safe.
     static DiffFuncMap diffs = {
-        { DiffKey(typeid(void), typeid(void)), diffEmpties },
+        MAYA_USD_DIFF_FUNC_FOR_TYPES(GfHalf, float),
+        MAYA_USD_DIFF_FUNC_FOR_TYPES(float, GfHalf),
+        MAYA_USD_DIFF_FUNC_FOR_TYPES(GfHalf, double),
+        MAYA_USD_DIFF_FUNC_FOR_TYPES(double, GfHalf),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(float),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(double),
+        MAYA_USD_DIFF_FUNC_FOR_TYPES(double, float),
+        MAYA_USD_DIFF_FUNC_FOR_TYPES(float, double),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(int8_t),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(uint8_t),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(int16_t),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(uint16_t),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(int32_t),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(uint32_t),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(int64_t),
+        MAYA_USD_DIFF_FUNC_FOR_TYPE(uint64_t),
 
-        { DiffKey(typeid(double), typeid(double)), diffOneType<double> },
-        { DiffKey(typeid(VtArray<double>), typeid(VtArray<double>)), diffOneArrayType<double> },
+        // TODO: separate U,V vs combined UV diff.
+        // TODO: different integer types, like int_8 to int16_t.
 
-        { DiffKey(typeid(float), typeid(float)), diffOneType<float> },
-        { DiffKey(typeid(VtArray<float>), typeid(VtArray<float>)), diffOneArrayType<float> },
-
-        { DiffKey(typeid(double), typeid(float)), diffTwoTypes<double, float> },
-        { DiffKey(typeid(VtArray<double>), typeid(VtArray<float>)),
-          diffTwoArrayTypes<double, float> },
-
-        { DiffKey(typeid(float), typeid(double)), diffTwoTypes<float, double> },
-        { DiffKey(typeid(VtArray<float>), typeid(VtArray<double>)),
-          diffTwoArrayTypes<float, double> },
+        { DiffKey(typeid(void), typeid(void)), diffEmpties }
     };
 
     return diffs;
