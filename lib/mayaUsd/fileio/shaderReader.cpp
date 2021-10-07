@@ -65,7 +65,10 @@ TfToken UsdMayaShaderReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrNam
 
 void UsdMayaShaderReader::PostConnectSubtree(UsdMayaPrimReaderContext* context) { }
 
-boost::optional<UsdMayaShaderReader::IsConverterResult> UsdMayaShaderReader::IsConverter() { return {}; }
+boost::optional<UsdMayaShaderReader::IsConverterResult> UsdMayaShaderReader::IsConverter()
+{
+    return {};
+}
 
 void UsdMayaShaderReader::SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader)
 {

@@ -175,7 +175,7 @@ public:
                         boost::python::extract<TfToken> downstreamOutputName(t[1]);
                         if (downstreamOutputName.check()) {
                             boost::python::incref(t.ptr());
-                            return IsConverterResult{ downstreamSchema, downstreamOutputName };
+                            return IsConverterResult { downstreamSchema, downstreamOutputName };
                         } else {
                             TF_CODING_ERROR(
                                 "ShaderReaderWrapper.IsConverter: TfToken key expected, not "
