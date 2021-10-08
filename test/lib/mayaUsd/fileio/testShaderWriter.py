@@ -63,14 +63,45 @@ class testShaderWriter(unittest.TestCase):
     def testSimpleShaderWriter(self):
         mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "lambert")
 
-        mayaFile = os.path.join(testShaderWriter.inputPath, '..', '..', 'usd', 'translators','UsdExportRfMShadersTest',
-            'MarbleCube.ma')
-        cmds.file(mayaFile, force=True, open=True)
+        cmds.file(f=True, new=True)
 
-        # Export to USD.
+        sphere_xform = cmds.polySphere()[0]
+
+        # Need a lambert, with something connected to exercise the
+        # full API. The code will survive the test writer not even
+        # creating a UsdShade node for the lambert.
+        material_node = cmds.shadingNode("lambert", asShader=True,
+                                         name="Lanbert42")
+
+        material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
+                                empty=True, name=material_node+"SG")
+        cmds.connectAttr(material_node+".outColor",
+                         material_sg+".surfaceShader", force=True)
+        cmds.sets(sphere_xform, e=True, forceElement=material_sg)
+
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        uv_node = cmds.shadingNode("place2dTexture", asUtility=True)
+
+        for att_name in (".coverage", ".translateFrame", ".rotateFrame",
+                         ".mirrorU", ".mirrorV", ".stagger", ".wrapU",
+                         ".wrapV", ".repeatUV", ".offset", ".rotateUV",
+                         ".noiseUV", ".vertexUvOne", ".vertexUvTwo",
+                         ".vertexUvThree", ".vertexCameraOne"):
+            cmds.connectAttr(uv_node + att_name, file_node + att_name, f=True)
+
+        cmds.connectAttr(file_node + ".outColor",
+                         material_node + ".color", f=True)
+
+        cmds.setAttr(file_node+".fileTextureName", "unknown.png", type="string")
+
+        # Export to USD. We select MaterialX because all the writer
+        # there are reporting "Fallback", which allows our CanExport
+        # to always win with "Supported" (also helps that the current
+        # version of the MaterialX export does not support lambert).
         usdFilePath = os.path.join(os.environ.get('MAYA_APP_DIR'),'testShaderWriter.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='useRegistry', convertMaterialsTo='rendermanForMaya',
+            shadingMode='useRegistry', convertMaterialsTo='MaterialX',
             materialsScopeName='Materials')
 
         self.assertTrue(shaderWriterTest.CanExportCalled)
