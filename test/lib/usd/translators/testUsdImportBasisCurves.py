@@ -35,7 +35,7 @@ class testUsdExportBasisCurves(unittest.TestCase):
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
 
-        filePath = os.path.join(inputPath, "UsdImportBasisCurveTest", "basisCurve.usda")
+        filePath = os.path.join(inputPath, "UsdImportBasisCurvesTest", "basisCurve.usda")
         cmds.file(filePath, force=True, open=True)
 
     @classmethod
