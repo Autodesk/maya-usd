@@ -846,13 +846,13 @@ bool UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
         if (includeAPINames.count(schemaName) == 0) {
             continue;
         }
-        if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor = adaptor.ApplySchemaByName(schemaName)) {
-            for (const TfToken& attrName : schemaAdaptor.GetAttributeNames()) {
+        if (UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.ApplySchemaByName(schemaName)) {
+            for (const TfToken& attrName : schemaAdaptor->GetAttributeNames()) {
                 if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                     VtValue               value;
                     constexpr UsdTimeCode t = UsdTimeCode::EarliestTime();
                     if (attr.HasAuthoredValue() && attr.Get(&value, t)) {
-                        schemaAdaptor.CreateAttribute(attrName).Set(value);
+                        schemaAdaptor->CreateAttribute(attrName).Set(value);
                     }
                 }
             }
@@ -875,13 +875,12 @@ size_t UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
     }
 
     size_t count = 0;
-    if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor
-        = adaptor.GetSchemaOrInheritedSchema(schemaType)) {
+    if (UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.GetSchemaOrInheritedSchema(schemaType)) {
         for (const TfToken& attrName : attributeNames) {
             if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                 VtValue value;
                 if (attr.HasAuthoredValue() && attr.Get(&value, usdTime)) {
-                    if (schemaAdaptor.CreateAttribute(attrName).Set(value)) {
+                    if (schemaAdaptor->CreateAttribute(attrName).Set(value)) {
                         count++;
                     }
                 }

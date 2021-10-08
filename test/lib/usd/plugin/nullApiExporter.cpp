@@ -17,6 +17,8 @@
 #include <mayaUsd/fileio/chaser/exportChaserRegistry.h>
 #include <mayaUsd/fileio/exportContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/schemaApiAdaptor.h>
+#include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
 #include <mayaUsd/fileio/schemaApiWriter.h>
 #include <mayaUsd/fileio/schemaApiWriterRegistry.h>
 #include <mayaUsd/fileio/writeJobContext.h>

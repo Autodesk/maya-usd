@@ -497,11 +497,12 @@ bool UsdMayaMeshWriteUtils::getMeshNormals(
 TfToken UsdMayaMeshWriteUtils::getSubdivScheme(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
-    TfToken schemeToken;
-    UsdMayaAdaptor(mesh.object())
-        .GetSchemaOrInheritedSchema<UsdGeomMesh>()
-        .GetAttribute(UsdGeomTokens->subdivisionScheme)
-        .Get<TfToken>(&schemeToken);
+    TfToken                 schemeToken;
+    UsdMayaSchemaAdaptorPtr meshSchema
+        = UsdMayaAdaptor(mesh.object()).GetSchemaOrInheritedSchema<UsdGeomMesh>();
+    if (meshSchema) {
+        meshSchema->GetAttribute(UsdGeomTokens->subdivisionScheme).Get<TfToken>(&schemeToken);
+    }
 
     // Fall back to the RenderMan for Maya attribute.
     if (schemeToken.IsEmpty()) {
@@ -537,11 +538,13 @@ TfToken UsdMayaMeshWriteUtils::getSubdivScheme(const MFnMesh& mesh)
 TfToken UsdMayaMeshWriteUtils::getSubdivInterpBoundary(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
-    TfToken interpBoundaryToken;
-    UsdMayaAdaptor(mesh.object())
-        .GetSchemaOrInheritedSchema<UsdGeomMesh>()
-        .GetAttribute(UsdGeomTokens->interpolateBoundary)
-        .Get<TfToken>(&interpBoundaryToken);
+    TfToken                 interpBoundaryToken;
+    UsdMayaSchemaAdaptorPtr meshSchema
+        = UsdMayaAdaptor(mesh.object()).GetSchemaOrInheritedSchema<UsdGeomMesh>();
+    if (meshSchema) {
+        meshSchema->GetAttribute(UsdGeomTokens->interpolateBoundary)
+            .Get<TfToken>(&interpBoundaryToken);
+    }
 
     // Fall back to the RenderMan for Maya attr.
     if (interpBoundaryToken.IsEmpty()) {
@@ -575,11 +578,13 @@ TfToken UsdMayaMeshWriteUtils::getSubdivInterpBoundary(const MFnMesh& mesh)
 TfToken UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
-    TfToken sdFVLinearInterpolation;
-    UsdMayaAdaptor(mesh.object())
-        .GetSchemaOrInheritedSchema<UsdGeomMesh>()
-        .GetAttribute(UsdGeomTokens->faceVaryingLinearInterpolation)
-        .Get<TfToken>(&sdFVLinearInterpolation);
+    TfToken                 sdFVLinearInterpolation;
+    UsdMayaSchemaAdaptorPtr meshSchema
+        = UsdMayaAdaptor(mesh.object()).GetSchemaOrInheritedSchema<UsdGeomMesh>();
+    if (meshSchema) {
+        meshSchema->GetAttribute(UsdGeomTokens->faceVaryingLinearInterpolation)
+            .Get<TfToken>(&sdFVLinearInterpolation);
+    }
 
     // If the OpenSubdiv 3-style face varying linear interpolation value
     // wasn't specified, fall back to the old OpenSubdiv 2-style face

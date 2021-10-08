@@ -8,6 +8,11 @@
             "providesTranslator": [
               "mesh"
             ]
+          },
+          "SchemaApiAdaptor": {
+            "providesTranslator": [
+              "mesh"
+            ]
           }
         }
       },

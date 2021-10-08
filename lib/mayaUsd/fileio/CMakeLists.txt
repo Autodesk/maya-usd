@@ -21,6 +21,8 @@ target_sources(${PROJECT_NAME}
         primWriterContext.cpp
         primWriterRegistry.cpp
         registryHelper.cpp
+        schemaApiAdaptor.cpp
+        schemaApiAdaptorRegistry.cpp
         schemaApiWriter.cpp
         schemaApiWriterRegistry.cpp
         shaderReader.cpp
@@ -50,6 +52,8 @@ set(HEADERS
     primWriterContext.h
     primWriterRegistry.h
     registryHelper.h
+    schemaApiAdaptor.h
+    schemaApiAdaptorRegistry.h
     schemaApiWriter.h
     schemaApiWriterRegistry.h
     shaderReader.h

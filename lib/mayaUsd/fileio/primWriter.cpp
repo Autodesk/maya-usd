@@ -202,7 +202,7 @@ void UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
         // We currently only support these at default time.
         UsdMayaWriteUtil::WriteMetadataToPrim(GetMayaObject(), _usdPrim);
         UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
-            GetMayaObject(), _usdPrim, _GetSparseValueWriter());
+            GetMayaObject(), _usdPrim, &_GetExportArgs(), _GetSparseValueWriter());
     }
 
     // Write out user-tagged attributes, which are supported at default time

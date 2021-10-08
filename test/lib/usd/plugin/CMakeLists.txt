@@ -214,6 +214,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
         nullApiExporter.cpp
+        bulletAdaptor.cpp
 )
 mayaUsd_compile_config(${TARGET_NAME})
 

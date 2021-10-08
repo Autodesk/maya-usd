@@ -20,10 +20,19 @@ import unittest
 
 from maya import cmds
 from maya import standalone
+import maya.api.OpenMaya as om
 
-from pxr import Tf
+from pxr import Tf, Gf, UsdMaya
 
 import fixturesUtils
+
+HAS_BULLET = False
+try:
+    import maya.app.mayabullet.BulletUtils as BulletUtils
+    import maya.app.mayabullet.RigidBody as RigidBody
+    HAS_BULLET = True
+except ImportError as ie:
+    pass
 
 class testUsdExportSchemaApi(unittest.TestCase):
 
@@ -123,6 +132,89 @@ class testUsdExportSchemaApi(unittest.TestCase):
         self.assertEqual(messages, expected)
 
         cmds.file(f=True, new=True)
+
+    @unittest.skipUnless(HAS_BULLET, 'Requires the bullet plugin.')  
+    def testPluginSchemaAdaptors(self):
+        """Testing a plugin Schema adaptor in a generic context:"""
+
+        # Build a scene (and exercise the adaptor in a freeform context)
+        cmds.file(f=True, new=True)
+
+        s1T = cmds.polySphere()[0]
+        cmds.loadPlugin("bullet")
+        if not BulletUtils.checkPluginLoaded():
+            return
+        
+        rbT, rbShape = RigidBody.CreateRigidBody().command(
+            autoFit=True,
+            colliderShapeType= RigidBody.eShapeType.kColliderSphere,
+            meshes=[s1T],
+            radius=1.0,
+            mass=5.0,
+            centerOfMass=[0.9, 0.8, 0.7])
+
+        # See if the plugin adaptor can read the bullet shape under the mesh:
+        sl = om.MSelectionList()
+        sl.add(s1T)
+        dagPath = sl.getDagPath(0)
+        dagPath.extendToShape()
+
+        adaptor = UsdMaya.Adaptor(dagPath.fullPathName())
+        self.assertEqual(adaptor.GetUsdType(), Tf.Type.FindByName('UsdGeomMesh'))
+        self.assertEqual(adaptor.GetAppliedSchemas(), ['PhysicsMassAPI'])
+        physicsMass = adaptor.GetSchemaByName("PhysicsMassAPI")
+        self.assertEqual(physicsMass.GetName(), "PhysicsMassAPI")
+        massAttributes = set(['physics:centerOfMass',
+                              'physics:density',
+                              'physics:diagonalInertia',
+                              'physics:mass',
+                              'physics:principalAxes'])
+        self.assertEqual(set(physicsMass.GetAttributeNames()), massAttributes)
+        bulletAttributes = set(['physics:centerOfMass', 'physics:mass'])
+        self.assertEqual(set(physicsMass.GetAuthoredAttributeNames()), bulletAttributes)
+        bulletMass = physicsMass.GetAttribute('physics:mass')
+        self.assertAlmostEqual(bulletMass.Get(), 5.0)
+        bulletMass.Set(12.0)
+
+        sl = om.MSelectionList()
+        sl.add(s1T)
+        bulletPath = sl.getDagPath(0)
+        bulletPath.extendToShape(1)
+        massDepFn = om.MFnDependencyNode(bulletPath.node())
+        plug = om.MPlug(bulletPath.node(), massDepFn.attribute("mass"))
+        self.assertAlmostEqual(plug.asFloat(), 12.0)
+
+        # Create an untranslated attribute:
+        usdDensity = physicsMass.CreateAttribute('physics:density')
+        usdDensity.Set(33.0)
+        self.assertAlmostEqual(usdDensity.Get(), 33.0)
+
+        # This will result in a dynamic attribute on the bulletShape:
+        plug = massDepFn.findPlug("USD_ATTR_physics_density", True)
+        self.assertAlmostEqual(plug.asFloat(), 33.0)
+        bulletAttributes.add('physics:density')
+        self.assertEqual(set(physicsMass.GetAuthoredAttributeNames()), bulletAttributes)
+
+        physicsMass.RemoveAttribute('physics:density')
+        bulletAttributes.remove('physics:density')
+        self.assertEqual(set(physicsMass.GetAuthoredAttributeNames()), bulletAttributes)
+
+        # Try applying the schema on a new sphere:
+        s2T = cmds.polySphere()[0]
+        sl.add(s2T)
+        dagPath = sl.getDagPath(1)
+        dagPath.extendToShape()
+        adaptor = UsdMaya.Adaptor(dagPath.fullPathName())
+        physicsMass = adaptor.ApplySchemaByName("PhysicsMassAPI")
+        self.assertEqual(physicsMass.GetName(), "PhysicsMassAPI")
+        self.assertEqual(adaptor.GetUsdType(), Tf.Type.FindByName('UsdGeomMesh'))
+        self.assertEqual(adaptor.GetAppliedSchemas(), ['PhysicsMassAPI'])
+
+        # Try unapplying the schema:
+        adaptor.UnapplySchemaByName("PhysicsMassAPI")
+        self.assertEqual(adaptor.GetAppliedSchemas(), [])
+
+
 
 
 if __name__ == '__main__':

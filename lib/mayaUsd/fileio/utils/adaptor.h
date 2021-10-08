@@ -32,6 +32,216 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class UsdMayaAdaptor;
+struct UsdMayaJobExportArgs;
+
+/// The UsdMayaAttributeAdaptor stores a mapping between a USD schema attribute and
+/// a Maya plug, enabling conversions between the two.
+///
+/// \note There is not a one-to-one correspondence between USD and Maya
+/// types. For example, USD asset paths, tokens, and strings are all stored
+/// as plain strings in Maya. Thus, it is always important to go through the
+/// UsdMayaAttributeAdaptor when converting between USD and Maya values.
+///
+/// \note One major difference between an UsdMayaAttributeAdaptor and a
+/// UsdAttribute is that there is no Clear() method. Since an
+/// UsdMayaAttributeAdaptor is designed to be a wrapper around some underlying Maya
+/// attribute, and Maya attributes always have values, it's not possible to
+/// Clear() the authored value. You can, however, completely remove the
+/// attribute by using UsdMayaSchemaAdaptor::RemoveAttribute().
+class UsdMayaAttributeAdaptor
+{
+protected:
+    MPlug                  _plug;
+    MObjectHandle          _node;
+    MObjectHandle          _attr;
+    SdfAttributeSpecHandle _attrDef;
+
+public:
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaAttributeAdaptor();
+
+    MAYAUSD_CORE_PUBLIC
+    virtual ~UsdMayaAttributeAdaptor();
+
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaAttributeAdaptor(const MPlug& plug, SdfAttributeSpecHandle attrDef);
+
+    MAYAUSD_CORE_PUBLIC
+    explicit operator bool() const;
+
+    // Note: GetNodeAdaptor assumed the MObject of the referenced plug was the adapted MObject.
+    //       this is not always the case as plugin adaptors can reference plugs on a different
+    //       MObject. If backtracing is required, this object does not hold sufficient information
+    //       to do it. If this feature is requested, we will need to add explicit ownership info.
+
+    /// Gets the name of the attribute in the bound USD schema.
+    /// Returns the empty token if this attribute adaptor is invalid.
+    MAYAUSD_CORE_PUBLIC
+    TfToken GetName() const;
+
+    /// Gets the value of the underlying Maya plug and adapts it back into
+    /// a the requested type. This is simply a convenience function: values
+    /// are retrieved internally as VtValues and then converted into the
+    /// requested type. Returns false if the value could not be converted to
+    /// the requested type, or if this attribute adaptor is invalid.
+    /// \warning Unlike UsdAttribute::Get(), this function never performs
+    /// fallback value resolution, since Maya attributes always have values.
+    template <typename T> bool Get(T* value) const
+    {
+        VtValue v;
+        if (Get(&v) && v.IsHolding<T>()) {
+            *value = v.Get<T>();
+            return true;
+        }
+        return false;
+    }
+
+    /// Gets the value of the underlying Maya plug and adapts it back into
+    /// a VtValue suitable for use with USD. Returns true if the value was
+    /// successfully retrieved. Returns false if the value could not be
+    /// converted to a VtValue, or if this attribute adaptor is invalid.
+    /// \warning Unlike UsdAttribute::Get(), this function never performs
+    /// fallback value resolution, since Maya attributes always have values.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool Get(VtValue* value) const;
+
+    /// Adapts the value to a Maya-compatible representation and sets it on
+    /// the underlying Maya plug. Raises a coding error if the value cannot
+    /// be adapted or is incompatible with this attribute's definition in
+    /// the schema.
+    MAYAUSD_CORE_PUBLIC
+    bool Set(const VtValue& newValue);
+
+    /// Adapts the value to a Maya-compatible representation and sets it on
+    /// the underlying Maya plug. Raises a coding error if the value cannot
+    /// be adapted or is incompatible with this attribute's definition in
+    /// the schema.
+    /// \note This overload will call doIt() on the MDGModifier; thus
+    /// any actions will have been committed when the function returns.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool Set(const VtValue& newValue, MDGModifier& modifier);
+
+    /// Gets the defining spec for this attribute from the schema registry.
+    /// Returns a null handle if this attribute adaptor is invalid.
+    MAYAUSD_CORE_PUBLIC
+    const SdfAttributeSpecHandle GetAttributeDefinition() const;
+};
+
+/// The UsdMayaSchemaAdaptor is a wrapper around a Maya object associated with a
+/// particular USD schema. You can use it to query for adapted attributes
+/// stored on the Maya object, which include attributes previously set
+/// using an adaptor and attributes automatically adapted from USD during
+/// import.
+class UsdMayaSchemaAdaptor
+{
+protected:
+    MObjectHandle            _handle;
+    const UsdPrimDefinition* _schemaDef;
+    TfToken                  _schemaName;
+
+public:
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaSchemaAdaptor();
+
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaSchemaAdaptor(
+        const MObjectHandle&     object,
+        const TfToken&           schemaName,
+        const UsdPrimDefinition* schemaPrimDef);
+
+    MAYAUSD_CORE_PUBLIC
+    virtual ~UsdMayaSchemaAdaptor();
+
+    MAYAUSD_CORE_PUBLIC
+    explicit operator bool() const;
+
+    // Note: GetNodeAdaptor assumed the MObject of the referenced plug was the adapted MObject.
+    //       this is not always the case as plugin adaptors can reference a different one. If
+    //       backtracing is required, this object does not hold sufficient information to do it.
+    //       If this feature is requested, we will need to add explicit ownership info.
+
+    /// Gets the name of the bound schema.
+    /// Returns the empty token if this schema adaptor is invalid.
+    MAYAUSD_CORE_PUBLIC
+    TfToken GetName() const;
+
+    /// Gets the Maya attribute adaptor for the given schema attribute if it
+    /// already exists. Returns an invalid adaptor if \p attrName doesn't
+    /// exist yet on this Maya object, or if this schema adaptor is invalid.
+    /// Raises a coding error if \p attrName does not exist on the schema.
+    /// \warning When dealing with *typed* schema attributes, this function
+    /// won't behave like a \c GetXXXAttr() function. In USD,
+    /// \c GetXXXAttr() returns a valid attribute even if the attribute
+    /// isn't defined in the current edit target (because the attribute is
+    /// already defined by the prim type), but in Maya, you must first
+    /// use CreateAttribute() to define the attribute on the Maya node
+    /// (since the attribute is *not* already defined anywhere in Maya).
+    MAYAUSD_CORE_PUBLIC
+    virtual UsdMayaAttributeAdaptor GetAttribute(const TfToken& attrName) const;
+
+    /// Creates a Maya attribute corresponding to the given schema attribute
+    /// and returns its adaptor. Raises a coding error if \p attrName
+    /// does not exist on the schema, or if this schema adaptor is invalid.
+    /// \note The Maya attribute name used by the adaptor will be
+    /// different from the USD schema attribute name for technical reasons.
+    /// You cannot depend on the Maya attribute having a specific name; this
+    /// is all managed internally by the attribute adaptor.
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaAttributeAdaptor CreateAttribute(const TfToken& attrName);
+
+    /// Creates a Maya attribute corresponding to the given schema attribute
+    /// and returns its adaptor. Raises a coding error if \p attrName
+    /// does not exist on the schema, or if this schema adaptor is invalid.
+    /// \note The Maya attribute name used by the adaptor will be
+    /// different from the USD schema attribute name for technical reasons.
+    /// You cannot depend on the Maya attribute having a specific name; this
+    /// is all managed internally by the attribute adaptor.
+    /// \note This overload will call doIt() on the MDGModifier; thus
+    /// any actions will have been committed when the function returns.
+    MAYAUSD_CORE_PUBLIC
+    virtual UsdMayaAttributeAdaptor CreateAttribute(const TfToken& attrName, MDGModifier& modifier);
+
+    /// Removes the named attribute adaptor from this Maya object. Raises a
+    /// coding error if \p attrName does not exist on the schema, or if
+    /// this schema adaptor is invalid.
+    MAYAUSD_CORE_PUBLIC
+    void RemoveAttribute(const TfToken& attrName);
+
+    /// Removes the named attribute adaptor from this Maya object. Raises a
+    /// coding error if \p attrName does not exist on the schema, or if
+    /// this schema adaptor is invalid.
+    /// \note This overload will call doIt() on the MDGModifier; thus
+    /// any actions will have been committed when the function returns.
+    MAYAUSD_CORE_PUBLIC
+    virtual void RemoveAttribute(const TfToken& attrName, MDGModifier& modifier);
+
+    /// Returns the names of only those schema attributes that are present
+    /// on the Maya object, i.e., have been created via CreateAttribute().
+    /// Returns an empty vector if this schema adaptor is invalid.
+    MAYAUSD_CORE_PUBLIC
+    virtual TfTokenVector GetAuthoredAttributeNames() const;
+
+    /// Returns the name of all schema attributes, including those that are
+    /// unauthored on the Maya object.
+    /// Returns an empty vector if this schema adaptor is invalid.
+    MAYAUSD_CORE_PUBLIC
+    TfTokenVector GetAttributeNames() const;
+
+    /// Gets the prim definition for this schema from the schema registry.
+    /// Returns a null pointer if this schema adaptor is invalid.
+    MAYAUSD_CORE_PUBLIC
+    const UsdPrimDefinition* GetSchemaDefinition() const;
+
+private:
+    /// Gets the name of the adapted Maya attribute for the given attribute
+    /// name. The name may come from the registered aliases if one
+    /// exists and is already present on the node.
+    std::string _GetMayaAttrNameOrAlias(const TfToken& attrName) const;
+};
+
+using UsdMayaSchemaAdaptorPtr = std::shared_ptr<UsdMayaSchemaAdaptor>;
+
 /// \class UsdMayaAdaptor
 /// The UsdMayaAdaptor transparently adapts the interface for a Maya object
 /// to a UsdPrim-like interface, allowing you to get and set Maya attributes as
@@ -124,203 +334,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMayaAdaptor
 {
 public:
-    /// The AttributeAdaptor stores a mapping between a USD schema attribute and
-    /// a Maya plug, enabling conversions between the two.
-    ///
-    /// \note There is not a one-to-one correspondence between USD and Maya
-    /// types. For example, USD asset paths, tokens, and strings are all stored
-    /// as plain strings in Maya. Thus, it is always important to go through the
-    /// AttributeAdaptor when converting between USD and Maya values.
-    ///
-    /// \note One major difference between an AttributeAdaptor and a
-    /// UsdAttribute is that there is no Clear() method. Since an
-    /// AttributeAdaptor is designed to be a wrapper around some underlying Maya
-    /// attribute, and Maya attributes always have values, it's not possible to
-    /// Clear() the authored value. You can, however, completely remove the
-    /// attribute by using UsdMayaAdaptor::SchemaAdaptor::RemoveAttribute().
-    class AttributeAdaptor
-    {
-        MPlug                  _plug;
-        MObjectHandle          _node;
-        MObjectHandle          _attr;
-        SdfAttributeSpecHandle _attrDef;
-
-    public:
-        MAYAUSD_CORE_PUBLIC
-        AttributeAdaptor();
-
-        MAYAUSD_CORE_PUBLIC
-        AttributeAdaptor(const MPlug& plug, SdfAttributeSpecHandle attrDef);
-
-        MAYAUSD_CORE_PUBLIC
-        explicit operator bool() const;
-
-        /// Gets the adaptor for the node that owns this attribute.
-        MAYAUSD_CORE_PUBLIC
-        UsdMayaAdaptor GetNodeAdaptor() const;
-
-        /// Gets the name of the attribute in the bound USD schema.
-        /// Returns the empty token if this attribute adaptor is invalid.
-        MAYAUSD_CORE_PUBLIC
-        TfToken GetName() const;
-
-        /// Gets the value of the underlying Maya plug and adapts it back into
-        /// a the requested type. This is simply a convenience function: values
-        /// are retrieved internally as VtValues and then converted into the
-        /// requested type. Returns false if the value could not be converted to
-        /// the requested type, or if this attribute adaptor is invalid.
-        /// \warning Unlike UsdAttribute::Get(), this function never performs
-        /// fallback value resolution, since Maya attributes always have values.
-        template <typename T> bool Get(T* value) const
-        {
-            VtValue v;
-            if (Get(&v) && v.IsHolding<T>()) {
-                *value = v.Get<T>();
-                return true;
-            }
-            return false;
-        }
-
-        /// Gets the value of the underlying Maya plug and adapts it back into
-        /// a VtValue suitable for use with USD. Returns true if the value was
-        /// successfully retrieved. Returns false if the value could not be
-        /// converted to a VtValue, or if this attribute adaptor is invalid.
-        /// \warning Unlike UsdAttribute::Get(), this function never performs
-        /// fallback value resolution, since Maya attributes always have values.
-        MAYAUSD_CORE_PUBLIC
-        bool Get(VtValue* value) const;
-
-        /// Adapts the value to a Maya-compatible representation and sets it on
-        /// the underlying Maya plug. Raises a coding error if the value cannot
-        /// be adapted or is incompatible with this attribute's definition in
-        /// the schema.
-        MAYAUSD_CORE_PUBLIC
-        bool Set(const VtValue& newValue);
-
-        /// Adapts the value to a Maya-compatible representation and sets it on
-        /// the underlying Maya plug. Raises a coding error if the value cannot
-        /// be adapted or is incompatible with this attribute's definition in
-        /// the schema.
-        /// \note This overload will call doIt() on the MDGModifier; thus
-        /// any actions will have been committed when the function returns.
-        MAYAUSD_CORE_PUBLIC
-        bool Set(const VtValue& newValue, MDGModifier& modifier);
-
-        /// Gets the defining spec for this attribute from the schema registry.
-        /// Returns a null handle if this attribute adaptor is invalid.
-        MAYAUSD_CORE_PUBLIC
-        const SdfAttributeSpecHandle GetAttributeDefinition() const;
-    };
-
-    /// The SchemaAdaptor is a wrapper around a Maya object associated with a
-    /// particular USD schema. You can use it to query for adapted attributes
-    /// stored on the Maya object, which include attributes previously set
-    /// using an adaptor and attributes automatically adapted from USD during
-    /// import.
-    class SchemaAdaptor
-    {
-        MObjectHandle            _handle;
-        const UsdPrimDefinition* _schemaDef;
-        TfToken                  _schemaName;
-
-    public:
-        MAYAUSD_CORE_PUBLIC
-        SchemaAdaptor();
-
-        MAYAUSD_CORE_PUBLIC
-        SchemaAdaptor(
-            const MObjectHandle&     object,
-            const TfToken&           schemaName,
-            const UsdPrimDefinition* schemaPrimDef);
-
-        MAYAUSD_CORE_PUBLIC
-        explicit operator bool() const;
-
-        /// Gets the root adaptor for the underlying Maya node.
-        MAYAUSD_CORE_PUBLIC
-        UsdMayaAdaptor GetNodeAdaptor() const;
-
-        /// Gets the name of the bound schema.
-        /// Returns the empty token if this schema adaptor is invalid.
-        MAYAUSD_CORE_PUBLIC
-        TfToken GetName() const;
-
-        /// Gets the Maya attribute adaptor for the given schema attribute if it
-        /// already exists. Returns an invalid adaptor if \p attrName doesn't
-        /// exist yet on this Maya object, or if this schema adaptor is invalid.
-        /// Raises a coding error if \p attrName does not exist on the schema.
-        /// \warning When dealing with *typed* schema attributes, this function
-        /// won't behave like a \c GetXXXAttr() function. In USD,
-        /// \c GetXXXAttr() returns a valid attribute even if the attribute
-        /// isn't defined in the current edit target (because the attribute is
-        /// already defined by the prim type), but in Maya, you must first
-        /// use CreateAttribute() to define the attribute on the Maya node
-        /// (since the attribute is *not* already defined anywhere in Maya).
-        MAYAUSD_CORE_PUBLIC
-        AttributeAdaptor GetAttribute(const TfToken& attrName) const;
-
-        /// Creates a Maya attribute corresponding to the given schema attribute
-        /// and returns its adaptor. Raises a coding error if \p attrName
-        /// does not exist on the schema, or if this schema adaptor is invalid.
-        /// \note The Maya attribute name used by the adaptor will be
-        /// different from the USD schema attribute name for technical reasons.
-        /// You cannot depend on the Maya attribute having a specific name; this
-        /// is all managed internally by the attribute adaptor.
-        MAYAUSD_CORE_PUBLIC
-        AttributeAdaptor CreateAttribute(const TfToken& attrName);
-
-        /// Creates a Maya attribute corresponding to the given schema attribute
-        /// and returns its adaptor. Raises a coding error if \p attrName
-        /// does not exist on the schema, or if this schema adaptor is invalid.
-        /// \note The Maya attribute name used by the adaptor will be
-        /// different from the USD schema attribute name for technical reasons.
-        /// You cannot depend on the Maya attribute having a specific name; this
-        /// is all managed internally by the attribute adaptor.
-        /// \note This overload will call doIt() on the MDGModifier; thus
-        /// any actions will have been committed when the function returns.
-        MAYAUSD_CORE_PUBLIC
-        AttributeAdaptor CreateAttribute(const TfToken& attrName, MDGModifier& modifier);
-
-        /// Removes the named attribute adaptor from this Maya object. Raises a
-        /// coding error if \p attrName does not exist on the schema, or if
-        /// this schema adaptor is invalid.
-        MAYAUSD_CORE_PUBLIC
-        void RemoveAttribute(const TfToken& attrName);
-
-        /// Removes the named attribute adaptor from this Maya object. Raises a
-        /// coding error if \p attrName does not exist on the schema, or if
-        /// this schema adaptor is invalid.
-        /// \note This overload will call doIt() on the MDGModifier; thus
-        /// any actions will have been committed when the function returns.
-        MAYAUSD_CORE_PUBLIC
-        void RemoveAttribute(const TfToken& attrName, MDGModifier& modifier);
-
-        /// Returns the names of only those schema attributes that are present
-        /// on the Maya object, i.e., have been created via CreateAttribute().
-        /// Returns an empty vector if this schema adaptor is invalid.
-        MAYAUSD_CORE_PUBLIC
-        TfTokenVector GetAuthoredAttributeNames() const;
-
-        /// Returns the name of all schema attributes, including those that are
-        /// unauthored on the Maya object.
-        /// Returns an empty vector if this schema adaptor is invalid.
-        MAYAUSD_CORE_PUBLIC
-        TfTokenVector GetAttributeNames() const;
-
-        /// Gets the prim definition for this schema from the schema registry.
-        /// Returns a null pointer if this schema adaptor is invalid.
-        MAYAUSD_CORE_PUBLIC
-        const UsdPrimDefinition* GetSchemaDefinition() const;
-
-    private:
-        /// Gets the name of the adapted Maya attribute for the given attribute
-        /// name. The name may come from the registered aliases if one
-        /// exists and is already present on the node.
-        std::string _GetMayaAttrNameOrAlias(const TfToken& attrName) const;
-    };
-
     MAYAUSD_CORE_PUBLIC
     UsdMayaAdaptor(const MObject& obj);
+
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs* jobExportArgs);
 
     MAYAUSD_CORE_PUBLIC
     explicit operator bool() const;
@@ -361,7 +379,7 @@ public:
     /// limitation in the future.)
     /// \sa GetSchemaOrInheritedSchema()
     MAYAUSD_CORE_PUBLIC
-    SchemaAdaptor GetSchema(const TfType& ty) const;
+    UsdMayaSchemaAdaptorPtr GetSchema(const TfType& ty) const;
 
     /// Returns a schema adaptor for this Maya object, bound to the named USD
     /// schema. Returns an invalid schema adaptor if this adaptor is
@@ -376,9 +394,9 @@ public:
     /// limitation in the future.)
     /// \sa GetSchemaOrInheritedSchema()
     MAYAUSD_CORE_PUBLIC
-    SchemaAdaptor GetSchemaByName(const TfToken& schemaName) const;
+    UsdMayaSchemaAdaptorPtr GetSchemaByName(const TfToken& schemaName) const;
 
-    template <typename T> SchemaAdaptor GetSchemaOrInheritedSchema() const
+    template <typename T> UsdMayaSchemaAdaptorPtr GetSchemaOrInheritedSchema() const
     {
         return GetSchemaOrInheritedSchema(TfType::Find<T>());
     }
@@ -402,7 +420,7 @@ public:
     /// Once we are able to implement the expected polymorphic behavior for
     /// GetSchema() and GetSchemaByName(), this function will be deprecated.
     MAYAUSD_CORE_PUBLIC
-    SchemaAdaptor GetSchemaOrInheritedSchema(const TfType& ty) const;
+    UsdMayaSchemaAdaptorPtr GetSchemaOrInheritedSchema(const TfType& ty) const;
 
     /// Applies the given API schema type on this Maya object via the adaptor
     /// mechanism. The schema's name is added to the adaptor's apiSchemas
@@ -412,7 +430,7 @@ public:
     /// USD schema, or if it is not an API schema, or if it is a non-applied API
     /// schema, or if the adaptor is invalid.
     MAYAUSD_CORE_PUBLIC
-    SchemaAdaptor ApplySchema(const TfType& ty);
+    UsdMayaSchemaAdaptorPtr ApplySchema(const TfType& ty);
 
     /// Applies the given API schema type on this Maya object via the adaptor
     /// mechanism. The schema's name is added to the adaptor's apiSchemas
@@ -424,7 +442,7 @@ public:
     /// \note This overload will call doIt() on the MDGModifier; thus any
     /// actions will have been committed when the function returns.
     MAYAUSD_CORE_PUBLIC
-    SchemaAdaptor ApplySchema(const TfType& ty, MDGModifier& modifier);
+    UsdMayaSchemaAdaptorPtr ApplySchema(const TfType& ty, MDGModifier& modifier);
 
     /// Applies the named API schema on this Maya object via the adaptor
     /// mechanism. The schema's name is added to the adaptor's apiSchemas
@@ -434,7 +452,7 @@ public:
     /// if it is not an API schema, or if it is a non-applied API schema, or if
     /// the adaptor is invalid.
     MAYAUSD_CORE_PUBLIC
-    SchemaAdaptor ApplySchemaByName(const TfToken& schemaName);
+    UsdMayaSchemaAdaptorPtr ApplySchemaByName(const TfToken& schemaName);
 
     /// Applies the named API schema on this Maya object via the adaptor
     /// mechanism. The schema's name is added to the adaptor's apiSchemas
@@ -445,7 +463,7 @@ public:
     /// \note This overload will call doIt() on the MDGModifier; thus any
     /// actions will have been committed when the function returns.
     MAYAUSD_CORE_PUBLIC
-    SchemaAdaptor ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifier);
+    UsdMayaSchemaAdaptorPtr ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifier);
 
     /// Removes the given API schema from the adaptor's apiSchemas metadata.
     /// Raises a coding error if the adaptor is invalid.
@@ -551,7 +569,7 @@ public:
     /// When the system needs to create a new Maya attribute (because it
     /// cannot find any attributes with the default name or the alias names),
     /// it always uses the generated name.
-    /// \sa UsdMayaAdaptor::SchemaAdaptor::CreateAttribute()
+    /// \sa UsdMayaSchemaAdaptor::CreateAttribute()
     MAYAUSD_CORE_PUBLIC
     static void RegisterAttributeAlias(
         const TfToken&     attributeName,
@@ -574,6 +592,11 @@ private:
 
     /// Attribute aliases for backwards compatibility.
     static std::map<TfToken, std::vector<std::string>> _attributeAliases;
+
+    /// Job args (for import/export/update of schemas):
+
+    /// Write:
+    const UsdMayaJobExportArgs* _jobExportArgs = nullptr;
 };
 
 /// Registers the given \p mayaTypeName with the given USD \p schemaType
