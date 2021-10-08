@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
+#include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
 #include <pxr/base/tf/makePyConstructor.h>
 #include <pxr/base/tf/pyContainerConversions.h>
@@ -256,8 +257,6 @@ public:
             &This::default_GetShadingAttributeForMayaAttrName)(mayaAttrName, typeName);
     }
 
-    const TfToken& GetusdShaderId() { return _usdShaderId; }
-
     static void Register(boost::python::object cl, const TfToken& mayaNodeTypeName)
     {
         UsdMayaShaderWriterRegistry::Register(
@@ -288,30 +287,9 @@ public:
         const TfToken&        usdShaderId,
         const TfToken&        materialConversionName)
     {
-        UsdMayaShaderWriterRegistry::Register(
-            mayaNodeTypeName,
-            [=](const UsdMayaJobExportArgs& exportArgs) {
-                TfPyLock              pyLock;
-                boost::python::object CanExport = cl.attr("CanExport");
-                PyObject*             callable = CanExport.ptr();
-                auto res = boost::python::call<int>(callable, exportArgs, materialConversionName);
-                return UsdMayaShaderWriter::ContextSupport(res);
-            },
-            [=](const MFnDependencyNode& depNodeFn,
-                const SdfPath&           usdPath,
-                UsdMayaWriteJobContext&  jobCtx) {
-                auto sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
-                sptr.get()->_usdShaderId = usdShaderId;
-                TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)&sptr);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), sptr.get());
-                return sptr;
-            },
-            true);
+        UsdMayaSymmetricShaderWriter::RegisterWriter(
+            mayaNodeTypeName, usdShaderId, materialConversionName, true);
     }
-
-    TfToken _usdShaderId; // Used by RegisterSymmetric only
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -405,11 +383,6 @@ void wrapShaderWriter()
             "GetShadingAttributeForMayaAttrName",
             &ShaderWriterWrapper::GetShadingAttributeForMayaAttrName,
             &ShaderWriterWrapper::default_GetShadingAttributeForMayaAttrName)
-        .add_property(
-            "_usdShaderId",
-            make_function(
-                &ShaderWriterWrapper::GetusdShaderId,
-                boost::python::return_value_policy<boost::python::return_by_value>()))
 
         .def("Register", &ShaderWriterWrapper::Register)
         .staticmethod("Register")

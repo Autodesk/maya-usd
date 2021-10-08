@@ -62,7 +62,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 void UsdMayaSymmetricShaderReader::RegisterReader(
     const TfToken& usdShaderId,
     const TfToken& mayaNodeTypeName,
-    const TfToken& materialConversion)
+    const TfToken& materialConversion,
+    bool           fromPython)
 {
     UsdMayaShaderReaderRegistry::Register(
         usdShaderId,
@@ -71,7 +72,8 @@ void UsdMayaSymmetricShaderReader::RegisterReader(
         },
         [mayaNodeTypeName](const UsdMayaPrimReaderArgs& readerArgs) {
             return std::make_shared<UsdMayaSymmetricShaderReader>(readerArgs, mayaNodeTypeName);
-        });
+        },
+        fromPython);
 }
 
 /* static */
