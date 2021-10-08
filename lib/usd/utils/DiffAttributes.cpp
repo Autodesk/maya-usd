@@ -16,10 +16,6 @@
 #include "DiffCore.h"
 #include "DiffPrims.h"
 
-#include <pxr/base/tf/type.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/usd/sdf/valueTypeName.h>
-
 namespace MayaUsdUtils {
 
 using UsdAttribute = PXR_NS::UsdAttribute;
@@ -28,8 +24,40 @@ using UsdTimeCode = PXR_NS::UsdTimeCode;
 
 DiffResult compareAttributes(const UsdAttribute& modified, const UsdAttribute& baseline)
 {
-    // TODO: compare the set of time-code for the time samples, iterate over all time codes.
-    return compareAttributes(modified, baseline, UsdTimeCode::EarliestTime());
+    // We will not compare the set of point-in-times themselves but the overall result
+    // of the animated values. This takes csare of tyring to match time-samples: we
+    // instead only care that the output result are the same.
+    //
+    // Note that the UsdAttribute API to get value automatically interpolates values
+    // where samples are missing when queried.
+    std::vector<double> times;
+    if (!UsdAttribute::GetUnionedTimeSamples({ modified, baseline }, &times))
+        return DiffResult::Differ;
+
+    // If there are no time samples at all in both attributes, we will compare the default values
+    // instead.
+    if (times.size() <= 0) {
+        return compareAttributes(modified, baseline, UsdTimeCode::Default());
+    }
+
+    // The algorithm returns the common result if there is one. Stop as soon as we reach Differ.
+    DiffResult overallResult = DiffResult::Same;
+    for (const double time : times) {
+        const DiffResult sampleResult = compareAttributes(modified, baseline, UsdTimeCode(time));
+        if (sampleResult == DiffResult::Same) {
+            continue;
+        } else if (sampleResult == overallResult) {
+            continue;
+        } else if (overallResult == DiffResult::Same) {
+            overallResult = sampleResult;
+            continue;
+        } else {
+            overallResult = DiffResult::Differ;
+            break;
+        }
+    }
+
+    return overallResult;
 }
 
 DiffResult compareAttributes(
