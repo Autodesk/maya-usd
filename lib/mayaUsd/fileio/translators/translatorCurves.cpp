@@ -105,7 +105,7 @@ bool UsdMayaTranslatorCurves::Create(
     int coffset = 0;
     int mayaDegree = 0;
 
-    for (int curveIndex = 0; curveIndex < curveVertexCounts.size(); ++curveIndex) {
+    for (size_t curveIndex = 0; curveIndex < curveVertexCounts.size(); ++curveIndex) {
 
         if (UsdGeomNurbsCurves nurbsSchema = UsdGeomNurbsCurves(prim)) {
             if (curveKnots.empty()) {
