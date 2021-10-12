@@ -25,7 +25,11 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdLux/distantLight.h>
+#if PXR_VERSION < 2111
 #include <pxr/usd/usdLux/light.h>
+#else
+#include <pxr/usd/usdLux/lightAPI.h>
+#endif
 #include <pxr/usd/usdLux/rectLight.h>
 #include <pxr/usd/usdLux/sphereLight.h>
 
@@ -39,13 +43,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \brief Provides helper functions for translating to/from UsdLux
 struct UsdMayaTranslatorLight
 {
-    /// Exports the UsdLuxLight schema attributes from a generic Maya MFnLight.
+    /// Exports the UsdLuxLightAPI schema attributes from a generic Maya MFnLight.
     /// This function should be called when exporting to any of the specialized light schemas.
     /// Return true if all the parameters were exported properly.
     MAYAUSD_CORE_PUBLIC
     static bool WriteLightAttrs(
-        const UsdTimeCode&         usdTime,
-        UsdLuxLight&               usdLight,
+        const UsdTimeCode& usdTime,
+#if PXR_VERSION < 2111
+        const UsdLuxLight& usdLight,
+#else
+        const UsdLuxLightAPI& usdLight,
+#endif
         MFnLight&                  mayaLight,
         UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
@@ -53,7 +61,7 @@ struct UsdMayaTranslatorLight
     MAYAUSD_CORE_PUBLIC
     static bool WriteDirectionalLightAttrs(
         const UsdTimeCode&         usdTime,
-        UsdLuxDistantLight&        usdLight,
+        const UsdLuxDistantLight&  usdLight,
         MFnDirectionalLight&       mayaLight,
         UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
@@ -61,7 +69,7 @@ struct UsdMayaTranslatorLight
     MAYAUSD_CORE_PUBLIC
     static bool WritePointLightAttrs(
         const UsdTimeCode&         usdTime,
-        UsdLuxSphereLight&         usdLight,
+        const UsdLuxSphereLight&   usdLight,
         MFnPointLight&             mayaLight,
         UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
@@ -69,7 +77,7 @@ struct UsdMayaTranslatorLight
     MAYAUSD_CORE_PUBLIC
     static bool WriteSpotLightAttrs(
         const UsdTimeCode&         usdTime,
-        UsdLuxSphereLight&         usdLight,
+        const UsdLuxSphereLight&   usdLight,
         MFnSpotLight&              mayaLight,
         UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
@@ -77,14 +85,14 @@ struct UsdMayaTranslatorLight
     MAYAUSD_CORE_PUBLIC
     static bool WriteAreaLightAttrs(
         const UsdTimeCode&         usdTime,
-        UsdLuxRectLight&           usdLight,
+        const UsdLuxRectLight&     usdLight,
         MFnAreaLight&              mayaLight,
         UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
-    /// Import a UsdLuxLight schema as a corresponding Maya light.
+    /// Import a UsdLuxLightAPI schema as a corresponding Maya light.
     /// Return true if the maya light was properly created and imported
     MAYAUSD_CORE_PUBLIC
-    static bool Read(const UsdMayaPrimReaderArgs& args, UsdMayaPrimReaderContext* context);
+    static bool Read(const UsdMayaPrimReaderArgs& args, UsdMayaPrimReaderContext& context);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

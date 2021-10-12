@@ -14,10 +14,14 @@
 # limitations under the License.
 #
 
-from . import _AL_USDMaya
 from pxr import Tf
-Tf.PrepareModule(_AL_USDMaya, locals())
-del _AL_USDMaya, Tf
+if hasattr(Tf, 'PreparePythonModule'):
+    Tf.PreparePythonModule('_AL_USDMaya')
+else:
+    from . import _AL_USDMaya
+    Tf.PrepareModule(_AL_USDMaya, locals())
+    del _AL_USDMaya
+del Tf
 
 try:
     import __DOC

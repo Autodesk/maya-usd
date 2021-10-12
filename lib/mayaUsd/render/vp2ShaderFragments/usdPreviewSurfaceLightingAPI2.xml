@@ -347,15 +347,9 @@ evaluateLights(
     }
 
     {
-        // Calculate necessary vector information for lighting
-        vec3 Plight = vec3(0,0,0);
-        vec3 l = normalize(Plight - Peye);
-        vec3 h = normalize(e + l);
-        float EdotH = max(0.0, dot(e, h));
-
         indirectLight = evaluateIndirectLighting(diffuseColor,
                         specularColor, Neye, e,
-                        EdotH, ior, metallic, occlusion,
+                        NdotE, ior, metallic, occlusion,
                         specularRoughness, useSpecularWorkflow,
                         clearcoatAmount, clearcoatColor, 
                         clearcoatRoughness);
@@ -707,15 +701,9 @@ evaluateLights(
     }
 
     {
-        // Calculate necessary vector information for lighting
-        vec3 Plight = vec3(0,0,0);
-        vec3 l = normalize(Plight - Peye);
-        vec3 h = normalize(e + l);
-        float EdotH = max(0.0, dot(e, h));
-
         indirectLight = evaluateIndirectLighting(diffuseColor,
                         specularColor, Neye, e,
-                        EdotH, ior, metallic, occlusion,
+                        NdotE, ior, metallic, occlusion,
                         specularRoughness, useSpecularWorkflow,
                         clearcoatAmount, clearcoatColor, 
                         clearcoatRoughness);
@@ -1067,15 +1055,9 @@ evaluateLights(
     }
 
     {
-        // Calculate necessary vector information for lighting
-        float3 Plight = float3(0,0,0);
-        float3 l = normalize(Plight - Peye);
-        float3 h = normalize(e + l);
-        float EdotH = max(0.0, dot(e, h));
-
         indirectLight = evaluateIndirectLighting(diffuseColor,
                         specularColor, Neye, e,
-                        EdotH, ior, metallic, occlusion,
+                        NdotE, ior, metallic, occlusion,
                         specularRoughness, useSpecularWorkflow,
                         clearcoatAmount, clearcoatColor, 
                         clearcoatRoughness);

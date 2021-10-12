@@ -19,9 +19,21 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
 #include <maya/MFnDagNode.h>
+#include <maya/MProfiler.h>
 #include <maya/MSelectionList.h>
 
 #include <string>
+
+namespace {
+const int _translatorContextProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "TranslatorContext",
+    "TranslatorContext"
+#else
+    "TranslatorContext"
+#endif
+);
+} // namespace
 
 namespace AL {
 namespace usdmaya {
@@ -42,6 +54,9 @@ UsdStageRefPtr TranslatorContext::getUsdStage() const
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::validatePrims()
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Validate prims");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::validatePrims ** VALIDATE PRIMS **\n");
     for (auto it : m_primMapping) {
         if (it.objectHandle().isValid() && it.objectHandle().isAlive()) {
@@ -56,6 +71,9 @@ void TranslatorContext::validatePrims()
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getTransform(const SdfPath& path, MObjectHandle& object)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Get transform from path");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getTransform %s\n", path.GetText());
     auto it = find(path);
     if (it != m_primMapping.end()) {
@@ -73,6 +91,9 @@ bool TranslatorContext::getTransform(const SdfPath& path, MObjectHandle& object)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::updatePrimTypes()
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Update prim types");
+
     auto stage = m_proxyShape->usdStage();
     for (auto it = m_primMapping.begin(); it != m_primMapping.end();) {
         SdfPath path(it->path());
@@ -99,6 +120,9 @@ void TranslatorContext::updatePrimTypes()
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, MTypeId typeId)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Get MObject by typeId");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject '%s' \n", path.GetText());
 
     auto it = find(path);
@@ -144,6 +168,9 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, MFn::Type type)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Get MObject by type");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObject '%s' \n", path.GetText());
 
     auto it = find(path);
@@ -188,6 +215,9 @@ bool TranslatorContext::getMObject(const SdfPath& path, MObjectHandle& object, M
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::getMObjects(const SdfPath& path, MObjectHandleArray& returned)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Get MObjects");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::getMObjects: %s\n", path.GetText());
     auto it = find(path);
     if (it != m_primMapping.end()) {
@@ -200,6 +230,9 @@ bool TranslatorContext::getMObjects(const SdfPath& path, MObjectHandleArray& ret
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Register item");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg(
             "TranslatorContext::registerItem adding entry %s[%s]\n",
@@ -238,6 +271,9 @@ void TranslatorContext::registerItem(const UsdPrim& prim, MObjectHandle object)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Insert item");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg(
             "TranslatorContext::insertItem adding entry %s[%s]\n",
@@ -280,6 +316,9 @@ void TranslatorContext::insertItem(const UsdPrim& prim, MObjectHandle object)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::removeItems(const SdfPath& path)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Remove items");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("TranslatorContext::removeItems remove under primPath=%s\n", path.GetText());
     auto it = find(path);
@@ -383,6 +422,9 @@ MString getNodeName(MObject obj)
 //----------------------------------------------------------------------------------------------------------------------
 MString TranslatorContext::serialise() const
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Serialise");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext:serialise\n");
     std::ostringstream oss;
     for (auto& path : m_excludedGeometry) {
@@ -411,6 +453,9 @@ MString TranslatorContext::serialise() const
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::deserialise(const MString& string)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Deserialise");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext:deserialise\n");
     MStringArray strings;
     string.split(';', strings);
@@ -458,7 +503,15 @@ void TranslatorContext::deserialise(const MString& string)
             lookup.createdNodes().push_back(obj);
         }
 
-        m_primMapping.push_back(lookup);
+        // Check for any prim lookup duplicates.
+        // This assumes lookups have 1:1 mapping of prim to translator, and that
+        // multiple translators can not be registered against the same prim type.
+        auto iter
+            = std::find_if(m_primMapping.begin(), m_primMapping.end(), [&](const PrimLookup& p) {
+                  return p.path() == lookup.path();
+              });
+        if (iter == m_primMapping.end())
+            m_primMapping.push_back(lookup);
     }
 
     SdfPathVector vec = m_proxyShape->getPrimPathsFromCommaJoinedString(
@@ -474,6 +527,9 @@ void TranslatorContext::preRemoveEntry(
     SdfPathVector& itemsToRemove,
     bool           callPreUnload)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Pre remove entry");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("TranslatorContext::preRemoveEntry primPath=%s\n", primPath.GetText());
 
@@ -524,6 +580,9 @@ void TranslatorContext::preRemoveEntry(
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Remove entries");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::removeEntries\n");
     auto stage = m_proxyShape->usdStage();
 
@@ -569,6 +628,9 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::updateUniqueKeys()
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Update unique keys");
+
     auto stage = getUsdStage();
     for (auto& lookup : m_primMapping) {
         const auto& prim = stage->GetPrimAtPath(lookup.path());
@@ -593,6 +655,9 @@ void TranslatorContext::updateUniqueKeys()
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::updateUniqueKey(const UsdPrim& prim)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Update unique key");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKey\n");
 
     const auto path(prim.GetPath());
@@ -623,6 +688,9 @@ void TranslatorContext::updateUniqueKey(const UsdPrim& prim)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Pre unload prim");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("TranslatorContext::preUnloadPrim %s", prim.GetPath().GetText());
     assert(m_proxyShape);
@@ -659,6 +727,9 @@ void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 //----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::unloadPrim(const SdfPath& path, const MObject& primObj)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Unload prim");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::unloadPrim\n");
     assert(m_proxyShape);
     auto stage = m_proxyShape->usdStage();
@@ -724,6 +795,9 @@ bool TranslatorContext::isNodeAncestorOf(
     MObjectHandle ancestorHandle,
     MObjectHandle objectHandleToTest)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Check node ancestor");
+
     if (!ancestorHandle.isValid() || !ancestorHandle.isAlive()) {
         return false;
     }
@@ -774,6 +848,11 @@ bool TranslatorContext::isNodeAncestorOf(
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::isPrimInTransformChain(const SdfPath& path)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Check if prim in transform chain");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("TranslatorContext::isPrimInTransformChain %s\n", path.GetText());
 
@@ -810,6 +889,9 @@ bool TranslatorContext::isPrimInTransformChain(const SdfPath& path)
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorContext::addExcludedGeometry(const SdfPath& newPath)
 {
+    MProfilingScope profilerScope(
+        _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Add excluded geometry");
+
     if (m_proxyShape) {
         auto foundPath = m_excludedGeometry.find(newPath);
         if (foundPath != m_excludedGeometry.end()) {

@@ -24,6 +24,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usdImaging/usdImaging/version.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -146,6 +147,17 @@ public:
         const MIntersection& intersection,
         MDagPath&            dagPath) const override;
 
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+    MAYAUSD_CORE_PUBLIC
+    SdfPath GetScenePrimPath(
+        const SdfPath&      rprimId,
+        int                 instanceIndex,
+        HdInstancerContext* instancerContext = nullptr) const;
+#else
+    MAYAUSD_CORE_PUBLIC
+    SdfPath GetScenePrimPath(const SdfPath& rprimId, int instanceIndex) const;
+#endif
+
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
@@ -197,9 +209,9 @@ private:
     /*! \brief  Hold all data related to the proxy shape.
 
         In addition to holding data read from the proxy shape, ProxyShapeData tracks when data read
-       from the proxy shape changes. For simple numeric types cache the last value read from
-       _proxyShape & compare to the current value. For complicated types we keep a version number of
-       the last value we read to make fast comparisons.
+        from the proxy shape changes. For simple numeric types cache the last value read from
+        _proxyShape & compare to the current value. For complicated types we keep a version number
+        of the last value we read to make fast comparisons.
     */
     class ProxyShapeData
     {

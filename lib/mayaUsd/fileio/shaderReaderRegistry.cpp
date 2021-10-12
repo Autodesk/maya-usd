@@ -81,7 +81,8 @@ _Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobImport
 void UsdMayaShaderReaderRegistry::Register(
     TfToken                                         usdInfoId,
     UsdMayaShaderReaderRegistry::ContextPredicateFn pred,
-    UsdMayaShaderReaderRegistry::ReaderFactoryFn    fn)
+    UsdMayaShaderReaderRegistry::ReaderFactoryFn    fn,
+    bool                                            fromPython)
 {
     int index = _indexCounter++;
     TF_DEBUG(PXRUSDMAYA_REGISTRY)
@@ -94,16 +95,18 @@ void UsdMayaShaderReaderRegistry::Register(
 
     // The unloader uses the index to know which entry to erase when there are
     // more than one for the same usdInfoId.
-    UsdMaya_RegistryHelper::AddUnloader([usdInfoId, index]() {
-        _Registry::const_iterator it, itEnd;
-        std::tie(it, itEnd) = _reg.equal_range(usdInfoId);
-        for (; it != itEnd; ++it) {
-            if (it->second._index == index) {
-                _reg.erase(it);
-                break;
+    UsdMaya_RegistryHelper::AddUnloader(
+        [usdInfoId, index]() {
+            _Registry::const_iterator it, itEnd;
+            std::tie(it, itEnd) = _reg.equal_range(usdInfoId);
+            for (; it != itEnd; ++it) {
+                if (it->second._index == index) {
+                    _reg.erase(it);
+                    break;
+                }
             }
-        }
-    });
+        },
+        fromPython);
 }
 
 /* static */

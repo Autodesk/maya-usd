@@ -91,7 +91,11 @@ struct UsdMayaShaderWriterRegistry
     /// If you can't provide a valid UsdMayaShaderWriter for the given arguments,
     /// return a null pointer from the factory function \p fn.
     MAYAUSD_CORE_PUBLIC
-    static void Register(const TfToken& mayaType, ContextPredicateFn pred, WriterFactoryFn fn);
+    static void Register(
+        const TfToken&     mayaType,
+        ContextPredicateFn pred,
+        WriterFactoryFn    fn,
+        bool               fromPython = false);
 
     /// \brief Finds a writer if one exists for \p mayaTypeName using the context found in
     /// \p exportArgs

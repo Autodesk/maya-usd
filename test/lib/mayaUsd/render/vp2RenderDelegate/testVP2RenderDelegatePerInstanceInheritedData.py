@@ -60,8 +60,14 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
 
-    def assertSnapshotClose(self, imageName):
-        baselineImage = os.path.join(self._baselineDir, imageName)
+    def assertSnapshotClose(self, imageName, usdVersion=None):
+        paths = []
+        if (usdVersion):
+            paths = [usdVersion, imageName]
+        else:
+            paths = [imageName]
+        
+        baselineImage = os.path.join(self._baselineDir, *paths)
         snapshotImage = os.path.join(self._testDir, imageName)
         imageUtils.snapshot(snapshotImage, width=960, height=540)
         return self.assertImagesClose(baselineImage, snapshotImage)
@@ -83,7 +89,8 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
 
         # These tests don't work in earlier versions of USD, the wrong
         # instance index gets selected
-        if Usd.GetVersion() < (0, 20, 8):
+        usdVersion = Usd.GetVersion()
+        if usdVersion < (0, 20, 8):
             return
 
         # Hide and show some instances to make sure it updates correctly
@@ -106,22 +113,26 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
 
         # These tests behave differently before USD version 21.05, so don't run
         # them for those earlier versions.
-        if Usd.GetVersion() < (0, 21, 5):
+        if usdVersion < (0, 21, 5):
             return
 
-        # Modify the purpose of some instances to make sure they update correctly
-        # These should start working correctly when MAYA-110170 is fixed
+        imageVersion = None
+        if usdVersion < (0, 21, 8):
+            imageVersion = 'pre-21_08'
+
+        # Modify the purpose of some instances to make sure they are shown and hidden properly
+        # The selection highlight of the instances is incorrect until MAYA-111508 is fixed by Pixar.
         ball_03_purpose = stage.GetPrimAtPath('/root/group/ball_03').GetAttribute('purpose')
         ball_04_purpose = stage.GetPrimAtPath('/root/group/ball_04').GetAttribute('purpose')
 
         ball_03_purpose.Set('guide')
-        self.assertSnapshotClose('%s_ball_03_guide.png' % self._testName)
+        self.assertSnapshotClose('%s_ball_03_guide.png' % self._testName, imageVersion)
         ball_04_purpose.Set('guide')
-        self.assertSnapshotClose('%s_ball_03_and_04_guide.png' % self._testName)
+        self.assertSnapshotClose('%s_ball_03_and_04_guide.png' % self._testName, imageVersion)
         ball_03_purpose.Set('default')
-        self.assertSnapshotClose('%s_ball_04_guide.png' % self._testName)
-        ball_03_purpose.Set('default')
-        self.assertSnapshotClose('%s_default_after_guide.png' % self._testName)
+        self.assertSnapshotClose('%s_ball_04_guide.png' % self._testName, imageVersion)
+        ball_04_purpose.Set('default')
+        self.assertSnapshotClose('%s_default_after_guide.png' % self._testName, imageVersion)
     
     def testPerInstanceInheritedDataPartialOverridePxrMtls(self):
         self._StartTest('inheritedDisplayColor_noPxrMtls')

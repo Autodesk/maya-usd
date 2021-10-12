@@ -53,6 +53,12 @@ if (CMAKE_WANT_MATERIALX_BUILD)
     )
 endif()
 
+if(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateIsolateSelect.py
+    )
+endif()
+
 add_custom_target(${TARGET_NAME} ALL)
 
 # Copy all the resources and Python scripts to build directory

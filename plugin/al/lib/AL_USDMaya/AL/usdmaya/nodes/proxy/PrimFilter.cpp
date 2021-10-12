@@ -18,6 +18,18 @@
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
+#include <maya/MProfiler.h>
+namespace {
+const int _primFilterProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "PrimFIlter",
+    "PrimFIlter"
+#else
+    "PrimFIlter"
+#endif
+);
+} // namespace
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -34,6 +46,9 @@ PrimFilter::PrimFilter(
     , m_updatablePrimSet()
     , m_removedPrimSet()
 {
+    MProfilingScope profilerScope(
+        _primFilterProfilerCategory, MProfiler::kColorE_L3, "Initialise prim filter");
+
     // copy over original prims
     m_removedPrimSet.assign(previousPrims.begin(), previousPrims.end());
     std::sort(

@@ -211,6 +211,9 @@ private:
     bool _gpuNormalsEnabled { true }; //!< Use GPU Compute for normal calculation, only used
                                       //!< when HDVP2_ENABLE_GPU_COMPUTE is defined
     static size_t _gpuNormalsComputeThreshold;
+
+    //! The string representation of the runtime only path to this object
+    MStringArray _PrimSegmentString;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

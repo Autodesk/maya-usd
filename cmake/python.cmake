@@ -57,7 +57,7 @@ endif()
 
 # Use the Python module to find the python lib.
 if(BUILD_WITH_PYTHON_3)
-    find_package(Python 3.7 EXACT REQUIRED COMPONENTS Interpreter)
+    find_package(Python ${BUILD_WITH_PYTHON_3_VERSION} EXACT REQUIRED COMPONENTS Interpreter)
 else()
     find_package(Python 2.7 EXACT REQUIRED COMPONENTS Interpreter)
 endif()

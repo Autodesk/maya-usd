@@ -1,0 +1,40 @@
+#usda 1.0
+
+reorder rootPrims = ["Capsule1", "Cone1", "Cube1", "Cylinder1", "Sphere1", "Xform1"]
+
+def Capsule "Capsule1"
+{
+    double3 xformOp:translate = (-13.855604588157764, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Cone "Cone1"
+{
+    double3 xformOp:translate = (-8.725335979971176, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Cylinder "Cylinder1"
+{
+    double3 xformOp:translate = (1.7859601980783193, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Sphere "Sphere1"
+{
+    double3 xformOp:translate = (6.180355031854263, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "Xform1"
+{
+}
+
+def Cube "Cube1"
+{
+    float3 xformOp:rotateXYZ = (0, -0, 0)
+    float3 xformOp:scale = (1, 1, 1)
+    double3 xformOp:translate = (-2.1084769730574147, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+}
+

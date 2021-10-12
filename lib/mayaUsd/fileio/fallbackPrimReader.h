@@ -28,7 +28,7 @@ class UsdMaya_FallbackPrimReader : public UsdMayaPrimReader
 public:
     UsdMaya_FallbackPrimReader(const UsdMayaPrimReaderArgs& args);
 
-    virtual bool Read(UsdMayaPrimReaderContext* context);
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
     static UsdMayaPrimReaderRegistry::ReaderFactoryFn CreateFactory();
 };
