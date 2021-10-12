@@ -22,7 +22,7 @@ TEST(DiffPrims, comparePrimsEmpty)
     auto modifiedStage = UsdStage::CreateInMemory();
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
-    DiffPrimsResults results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_TRUE(results.empty());
 }
@@ -42,7 +42,7 @@ TEST(DiffPrims, comparePrimsSameDouble)
 
     baselineAttr.Set(1.0);
     modifiedAttr.Set(1.0);
-    DiffPrimsResults results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testAttrName), results.end());
@@ -66,7 +66,7 @@ TEST(DiffPrims, comparePrimsDiffDouble)
 
     baselineAttr.Set(1.0);
     modifiedAttr.Set(2.0);
-    DiffPrimsResults results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testAttrName), results.end());
@@ -88,7 +88,7 @@ TEST(DiffPrims, comparePrimsAbsentDouble)
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
     baselineAttr.Set(1.0);
-    DiffPrimsResults results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testAttrName), results.end());
@@ -110,7 +110,7 @@ TEST(DiffPrims, comparePrimsCreatedDouble)
     auto modifiedAttr = modifiedPrim.CreateAttribute(testAttrName, doubleType, true);
 
     modifiedAttr.Set(1.0);
-    DiffPrimsResults results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testAttrName), results.end());

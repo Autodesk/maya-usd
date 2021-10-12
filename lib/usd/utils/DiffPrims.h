@@ -38,8 +38,8 @@ enum class DiffResult
     Differ    // The property differs from the baseline in a more complex way.
 };
 
-/// The set of differences for each property that was compared between two prims.
-using DiffPrimsResults = std::map<PXR_NS::TfToken, DiffResult>;
+/// The set of differences for each property or metadata that was compared between two prims.
+using DiffResultMap = std::map<PXR_NS::TfToken, DiffResult>;
 
 // TODO: add versions without timeCodes to compare animated values.
 
@@ -47,12 +47,11 @@ using DiffPrimsResults = std::map<PXR_NS::TfToken, DiffResult>;
 /// \brief  compares all the attributes of a modified prim to a baseline one.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
-/// \param  timeCode the time code at which to compare the prims.
 /// \return the map of attribute names to the result of comparison of that attribute.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffPrimsResults
+DiffResultMap
 comparePrimsAttributes(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -79,6 +78,17 @@ DiffResult compareAttributes(
     const PXR_NS::UsdAttribute& modified,
     const PXR_NS::UsdAttribute& baseline,
     const PXR_NS::UsdTimeCode&  timeCode);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares all the metadatas of a modified object to a baseline one.
+/// \param  modified the potentially modified object that is compared.
+/// \param  baseline the object that is used as the baseline for the comparison.
+/// \return the map of metadata names to the result of comparison of that metadata.
+/// Currently Subset and Superset are never returned.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResultMap
+compareObjectsMetadatas(const PXR_NS::UsdObject& modified, const PXR_NS::UsdObject& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares a modified value to a baseline value.

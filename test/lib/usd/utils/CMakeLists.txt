@@ -45,6 +45,7 @@ add_mayaUsdUtils_test(
     test_DiffValuesArrays.cpp
     test_DiffValuesGeneric.cpp
     test_DiffValuesMatrices.cpp
+    test_DiffValuesQuaternions.cpp
     test_DiffValuesDoubleVecs.cpp
     test_DiffValuesFloatVecs.cpp
     test_DiffValuesHalfVecs.cpp
@@ -59,4 +60,9 @@ add_mayaUsdUtils_test(
 add_mayaUsdUtils_test(
     testDiffPrims
     test_DiffPrims.cpp
+)
+
+add_mayaUsdUtils_test(
+    testDiffMetadatas
+    test_DiffMetadatas.cpp
 )

@@ -10,6 +10,7 @@ target_sources(${TARGET_NAME}
         DebugCodes.cpp
         DiffAttributes.cpp
         DiffCore.cpp
+        DiffMetadatas.cpp
         DiffPrims.cpp
         DiffValues.cpp
         util.cpp

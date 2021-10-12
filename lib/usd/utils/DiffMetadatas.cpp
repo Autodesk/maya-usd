@@ -17,41 +17,41 @@
 
 #include "DiffCore.h"
 
+#include <pxr/base/tf/type.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/sdf/valueTypeName.h>
+
 namespace MayaUsdUtils {
 
-using UsdPrim = PXR_NS::UsdPrim;
+using UsdObject = PXR_NS::UsdObject;
 using TfToken = PXR_NS::TfToken;
+using UsdMetadataValueMap = PXR_NS::UsdMetadataValueMap;
 
-DiffResultMap comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline)
+DiffResultMap compareObjectsMetadatas(const PXR_NS::UsdObject& modified, const PXR_NS::UsdObject& baseline)
 {
     DiffResultMap results;
 
-    // Create a map of baseline attribute indexed by name to rapidly verify
-    // if it exists and be able to compare attributes.
-    std::map<TfToken, UsdAttribute> baselineAttrs;
-    {
-        for (const UsdAttribute& attr : baseline.GetAuthoredAttributes()) {
-            baselineAttrs[attr.GetName()] = attr;
-        }
-    }
+    // Create a map of baseline metadata indexed by name to rapidly verify
+    // if it exists and be able to compare metadatas.
+    const UsdMetadataValueMap baselineMetadatas = baseline.GetAllAuthoredMetadata();
 
-    // Compare the attributes from the new prim.
-    // Baseline attributes map won't change from now on, so cache the end.
+    // Compare the metadatas from the new object.
+    // Baseline metadata map won't change from now on, so cache the end.
     {
-        const auto baselineEnd = baselineAttrs.end();
-        for (const UsdAttribute& attr : modified.GetAuthoredAttributes()) {
-            const TfToken& name = attr.GetName();
-            const auto     iter = baselineAttrs.find(name);
+        const auto baselineEnd = baselineMetadatas.end();
+        for (const auto& nameAndValue : modified.GetAllAuthoredMetadata()) {
+            const TfToken& name = nameAndValue.first;
+            const auto     iter = baselineMetadatas.find(name);
             if (iter == baselineEnd) {
                 results[name] = DiffResult::Created;
             } else {
-                results[name] = compareAttributes(attr, iter->second);
+                results[name] = compareValues(nameAndValue.second, iter->second);
             }
         }
     }
 
-    // Identify attributes that are absent in the new prim.
-    for (const auto& nameAndAttr : baselineAttrs) {
+    // Identify metadatas that are absent in the new object.
+    for (const auto& nameAndAttr : baselineMetadatas) {
         const auto& name = nameAndAttr.first;
         if (results.find(name) == results.end()) {
             results[name] = DiffResult::Absent;

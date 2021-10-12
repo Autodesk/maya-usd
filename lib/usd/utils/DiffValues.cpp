@@ -47,8 +47,6 @@ namespace {
 // always returns DiffResult::Differ.
 //
 // For a duo of empty values, it returns a function that always returns DiffResult::Same.
-//
-// TODO: currently, only double, float and their arrays are supported.
 
 using DiffFunc = std::function<DiffResult(const VtValue& modified, const VtValue& baseline)>;
 using DiffKey = std::pair<std::type_index, std::type_index>;
@@ -107,6 +105,38 @@ DiffResult diffTwoVecArrays(const VtValue& modified, const VtValue& baseline)
         : DiffResult::Differ;
 }
 
+template <class V1, class V2, int SIZE>
+DiffResult diffTwoQuats(const VtValue& modified, const VtValue& baseline)
+{
+    const V1& v1 = modified.Get<V1>();
+    const V2& v2 = baseline.Get<V2>();
+    using V1ValueType = typename V1::ScalarType;
+    using V2ValueType = typename V2::ScalarType;
+    return compareArray(
+               reinterpret_cast<const V1ValueType*>(&v1),
+               reinterpret_cast<const V2ValueType*>(&v2),
+               SIZE,
+               SIZE)
+        ? DiffResult::Same
+        : DiffResult::Differ;
+}
+
+template <class V1, class V2, int SIZE>
+DiffResult diffTwoQuatArrays(const VtValue& modified, const VtValue& baseline)
+{
+    const VtArray<V1>& v1 = modified.Get<VtArray<V1>>();
+    const VtArray<V2>& v2 = baseline.Get<VtArray<V2>>();
+    using V1ValueType = typename V1::ScalarType;
+    using V2ValueType = typename V2::ScalarType;
+    return compareArray(
+               reinterpret_cast<const V1ValueType*>(v1.cdata()),
+               reinterpret_cast<const V2ValueType*>(v2.cdata()),
+               modified.GetArraySize() * SIZE,
+               baseline.GetArraySize() * SIZE)
+        ? DiffResult::Same
+        : DiffResult::Differ;
+}
+
 template <class T> DiffResult diffGenericValues(const VtValue& modified, const VtValue& baseline)
 {
     const T& v1 = modified.Get<T>();
@@ -146,6 +176,18 @@ DiffResult diffEmpties(const VtValue& /*modified*/, const VtValue& /*baseline*/)
     { DiffKey(typeid(T1), typeid(T2)), diffTwoVecs<T1, T2, SIZE> },                       \
     {                                                                                     \
         DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoVecArrays<T1, T2, SIZE> \
+    }
+
+#define MAYA_USD_DIFF_FUNC_FOR_QUAT(T, SIZE)                                           \
+    { DiffKey(typeid(T), typeid(T)), diffTwoQuats<T, T, SIZE> },                       \
+    {                                                                                  \
+        DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffTwoQuatArrays<T, T, SIZE> \
+    }
+
+#define MAYA_USD_DIFF_FUNC_FOR_QUATS(T1, T2, SIZE)                                         \
+    { DiffKey(typeid(T1), typeid(T2)), diffTwoQuats<T1, T2, SIZE> },                       \
+    {                                                                                      \
+        DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoQuatArrays<T1, T2, SIZE> \
     }
 
 #define MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(T)                                         \
@@ -220,14 +262,26 @@ const DiffFuncMap& getDiffFuncs()
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix3d, 9),
             MAYA_USD_DIFF_FUNC_FOR_VEC(GfMatrix4d, 16),
 
+            MAYA_USD_DIFF_FUNC_FOR_QUAT(GfQuatd, 4),
+            MAYA_USD_DIFF_FUNC_FOR_QUAT(GfQuatf, 4),
+            MAYA_USD_DIFF_FUNC_FOR_QUAT(GfQuath, 4),
+
+            MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuatd, GfQuatf, 4),
+            MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuatd, GfQuath, 4),
+            MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuatf, GfQuatd, 4),
+            MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuatf, GfQuath, 4),
+            MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuath, GfQuatd, 4),
+            MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuath, GfQuatf, 4),
+
             MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(bool),
             MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(SdfTimeCode),
             MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(std::string),
             MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(TfToken),
             MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(SdfAssetPath),
+            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(SdfSpecifier),
 
             // TODO: separate U,V vs combined UV diff.
-            // TODO: different integer types, like int_8 to int16_t.
+            // TODO: diff accross different integer types, like int_8 to int16_t.
 
             { DiffKey(typeid(void), typeid(void)), diffEmpties } };
 
