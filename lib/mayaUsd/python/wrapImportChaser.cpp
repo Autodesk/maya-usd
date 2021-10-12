@@ -98,20 +98,14 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapImportChaser()
 {
-    typedef ImportChaserWrapper* ImportChaserWrapperPtr;
+    typedef UsdMayaImportChaser This;
 
     boost::python::class_<ImportChaserWrapper, boost::noncopyable>(
         "ImportChaser", boost::python::no_init)
         .def("__init__", make_constructor(&ImportChaserWrapper::New))
-        .def(
-            "PostImport",
-            &ImportChaserWrapper::PostImport,
-            &ImportChaserWrapper::default_PostImport)
-        .def("Redo", &ImportChaserWrapper::Redo, &ImportChaserWrapper::default_Redo)
-        .def("Undo", &ImportChaserWrapper::Undo, &ImportChaserWrapper::default_Undo)
-        .def(
-            "Register",
-            &ImportChaserWrapper::Register,
-            (boost::python::arg("class"), boost::python::arg("type")))
+        .def("PostImport", &This::PostImport, &ImportChaserWrapper::default_PostImport)
+        .def("Redo", &This::Redo, &ImportChaserWrapper::default_Redo)
+        .def("Undo", &This::Undo, &ImportChaserWrapper::default_Undo)
+        .def("Register", &ImportChaserWrapper::Register)
         .staticmethod("Register");
 }

@@ -127,6 +127,8 @@ public:
     TfTokenVector GetMaterialRenderContexts() const override;
 #endif
 
+    bool IsPrimvarFilteringNeeded() const override { return true; }
+
     MString GetLocalNodeName(const MString& name) const;
 
     MHWRender::MShaderInstance* GetFallbackShader(const MColor& color) const;

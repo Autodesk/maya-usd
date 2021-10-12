@@ -45,7 +45,9 @@ TF_WRAP_MODULE
     TF_WRAP(JobImportArgs);
     TF_WRAP(PrimWriter);
     TF_WRAP(ShaderWriter);
+    TF_WRAP(ShadingModeImportContext);
     TF_WRAP(ShaderReader);
     TF_WRAP(ExportChaser);
     TF_WRAP(ImportChaser);
+    TF_WRAP(ShadingUtil);
 }

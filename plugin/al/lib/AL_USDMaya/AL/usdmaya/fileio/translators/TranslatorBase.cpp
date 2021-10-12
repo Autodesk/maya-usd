@@ -42,6 +42,7 @@ namespace fileio {
 namespace translators {
 
 std::vector<TranslatorRefPtr> TranslatorManufacture::m_pythonTranslators;
+TranslatorContextPtrStack     TranslatorManufacture::m_contextPtrStack;
 std::unordered_map<std::string, TranslatorRefPtr>
     TranslatorManufacture::m_assetTypeToPythonTranslatorsMap;
 
@@ -465,12 +466,11 @@ bool TranslatorManufacture::deletePythonTranslator(const TfType type_name)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void TranslatorManufacture::preparePythonTranslators(TranslatorContext::RefPtr context)
+void TranslatorManufacture::setPythonTranslatorContexts(TranslatorContext::RefPtr context)
 {
     MProfilingScope profilerScope(
         _translatorProfilerCategory, MProfiler::kColorE_L3, "Prepare Python translators");
 
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::preparePythonTranslators\n");
     for (auto it : TranslatorManufacture::m_pythonTranslators) {
         it->setContext(context);
     }
@@ -480,15 +480,41 @@ void TranslatorManufacture::preparePythonTranslators(TranslatorContext::RefPtr c
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::preparePythonTranslators(TranslatorContext::RefPtr context)
+{
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::preparePythonTranslators\n");
+    setPythonTranslatorContexts(context);
+    m_contextPtrStack.push(context);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void TranslatorManufacture::updatePythonTranslators(TranslatorContext::RefPtr context)
 {
     MProfilingScope profilerScope(
         _translatorProfilerCategory, MProfiler::kColorE_L3, "Update Python translators");
 
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::updatePythonTranslators\n");
     m_contextualisedPythonTranslators.clear();
     for (const auto& tr : m_pythonTranslators) {
         m_contextualisedPythonTranslators.push_back(tr);
         m_contextualisedPythonTranslators.back()->setContext(context);
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::popPythonTranslatorContexts()
+{
+    if (m_contextPtrStack.empty()) {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS)
+            .Msg("TranslatorManufacture::popPythonTranslatorContexts(): No contextPtr left in the "
+                 "stack\n");
+        return;
+    }
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::popPythonTranslatorContexts()\n");
+    m_contextPtrStack.pop();
+
+    if (!m_contextPtrStack.empty()) {
+        setPythonTranslatorContexts(m_contextPtrStack.top());
     }
 }
 

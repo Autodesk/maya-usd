@@ -21,10 +21,6 @@
 
 import mayaUsd.lib as mayaUsdLib
 
-from pxr import Gf
-from pxr import Sdf
-from pxr import Tf
-from pxr import Vt
 from pxr import UsdGeom
 from pxr import Usd
 
