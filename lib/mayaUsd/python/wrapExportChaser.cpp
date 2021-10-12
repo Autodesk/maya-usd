@@ -88,26 +88,14 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapExportChaser()
 {
-    typedef ExportChaserWrapper* ExportChaserWrapperPtr;
+    typedef UsdMayaExportChaser This;
 
     boost::python::class_<ExportChaserWrapper, boost::noncopyable>(
         "ExportChaser", boost::python::no_init)
         .def("__init__", make_constructor(&ExportChaserWrapper::New))
-        .def(
-            "ExportDefault",
-            &ExportChaserWrapper::ExportDefault,
-            &ExportChaserWrapper::default_ExportDefault)
-        .def(
-            "ExportFrame",
-            &ExportChaserWrapper::ExportFrame,
-            &ExportChaserWrapper::default_ExportFrame)
-        .def(
-            "PostExport",
-            &ExportChaserWrapper::PostExport,
-            &ExportChaserWrapper::default_PostExport)
-        .def(
-            "Register",
-            &ExportChaserWrapper::Register,
-            (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
+        .def("ExportDefault", &This::ExportDefault, &ExportChaserWrapper::default_ExportDefault)
+        .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
+        .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
+        .def("Register", &ExportChaserWrapper::Register)
         .staticmethod("Register");
 }

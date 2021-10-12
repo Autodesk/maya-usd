@@ -76,7 +76,7 @@ template <typename F> void _RegisterMayaNodes(F _registryFunction)
     for (const std::string& mayaNodeTypeName : mayaNodeTypeNames) {
         const TfToken nodeTypeNameToken(mayaNodeTypeName);
 
-        _registryFunction(nodeTypeNameToken, nodeTypeNameToken, _tokens->conversionName);
+        _registryFunction(nodeTypeNameToken, nodeTypeNameToken, _tokens->conversionName, false);
     }
 }
 } // namespace

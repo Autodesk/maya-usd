@@ -3,11 +3,17 @@ set(TARGET_NAME MAYAUSD_FILEIO_TEST)
 set(TEST_SCRIPT_FILES
     testPrimReader.py
     testPrimWriter.py
-    testShaderReader.py
-    testShaderWriter.py
     testExportChaser.py
     testImportChaser.py
 )
+
+# requires MaterialX support
+if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
+    list(APPEND TEST_SCRIPT_FILES
+        testShaderReader.py
+        testShaderWriter.py
+    )
+endif()
 
 add_custom_target(${TARGET_NAME} ALL)
 
