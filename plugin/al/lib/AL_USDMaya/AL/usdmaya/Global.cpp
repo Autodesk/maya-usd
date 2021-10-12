@@ -354,7 +354,8 @@ static void postFileRead(void*)
             proxy->loadStage();
             auto stage = proxy->getUsdStage();
             proxy->deserialiseTranslatorContext();
-            proxy->translatorManufacture().preparePythonTranslators(proxy->context());
+
+            fileio::translators::TranslatorContextSetterCtx ctxSetter(proxy->context());
             proxy->findPrimsWithMetaData();
             proxy->deserialiseTransformRefs();
         }

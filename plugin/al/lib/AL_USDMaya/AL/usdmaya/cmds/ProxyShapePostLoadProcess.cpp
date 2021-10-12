@@ -380,7 +380,7 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
     // make sure we unload all references prior to reloading them again
     ptrNode->unloadMayaReferences();
     ptrNode->destroyTransformReferences();
-    fileio::translators::TranslatorManufacture::preparePythonTranslators(ptrNode->context());
+    fileio::translators::TranslatorContextSetterCtx ctxSetter(ptrNode->context());
 
     // Now go and delete any child Transforms found directly underneath the shapes parent.
     // These nodes are likely to be driven by the output stage data of the shape.
