@@ -294,7 +294,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertFalse(newGroupPrim.IsModel())
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Grouping restriction is only available in Maya 2022 or greater.')
-    def testGroupRestirction(self):
+    def testGroupRestriction(self):
         ''' Verify group restriction. '''
         mayaPathSegment = mayaUtils.createUfePathSegment(
             "|transform1|proxyShape1")
@@ -522,6 +522,124 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group1/Sphere2"),
             stage.GetPrimAtPath("/group1/Sphere3")])
 
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 128, 'Test requires fix in Maya Preview Release 128 or greater.')
+    def testGroupHierarchy(self):
+        '''Grouping a node and a descendant.'''
+        # MAYA-112957: when grouping a node and its descendant, with the node
+        # selected first, the descendant path becomes stale as soon as its
+        # ancestor gets reparented.  The Maya parent command must deal with
+        # this.  A similar test is done for parenting in testParentCmd.py
+
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        # Create the following hierarchy:
+        #
+        # ps
+        #  |_ A
+        #      |_ B
+        #          |_ C
+        #  |_ D
+        #      |_ E
+        #          |_ F
+        #
+        #  |_ G
+        #
+        # We will select A, B, C, E, F and G, in order, and group.  This will
+        # create a new group under ps, with A, B, C, E, F and G as children.
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/A', 'Xform')
+        stage.DefinePrim('/A/B', 'Xform')
+        stage.DefinePrim('/A/B/C', 'Xform')
+        stage.DefinePrim('/D', 'Xform')
+        stage.DefinePrim('/D/E', 'Xform')
+        stage.DefinePrim('/D/E/F', 'Xform')
+        stage.DefinePrim('/G', 'Xform')
+
+        psPath = ufe.PathString.path(psPathStr)
+        psPathSegment = psPath.segments[0]
+        ps = ufe.Hierarchy.createItem(psPath)
+        psHier = ufe.Hierarchy.hierarchy(ps)
+        dPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/D')])
+        d = ufe.Hierarchy.createItem(dPath)
+        dHier = ufe.Hierarchy.hierarchy(d)
+        groupPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/group1')])
+
+        def hierarchyBefore():
+            aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
+            a = ufe.Hierarchy.createItem(aPath)
+            bPath = aPath + ufe.PathComponent('B')
+            b = ufe.Hierarchy.createItem(bPath)
+            cPath = bPath + ufe.PathComponent('C')
+            c = ufe.Hierarchy.createItem(cPath)
+            ePath = dPath + ufe.PathComponent('E')
+            e = ufe.Hierarchy.createItem(ePath)
+            fPath = ePath + ufe.PathComponent('F')
+            f = ufe.Hierarchy.createItem(fPath)
+            gPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/G')])
+            g = ufe.Hierarchy.createItem(gPath)
+            return [a, b, c, e, f, g]
+
+        def hierarchyAfter():
+            return [ufe.Hierarchy.createItem(groupPath + ufe.PathComponent(pc)) for pc in ['A', 'B', 'C', 'E', 'F', 'G']]
+
+        def checkBefore(a, b, c, e, f, g):
+            psChildren = psHier.children()
+            aHier = ufe.Hierarchy.hierarchy(a)
+            bHier = ufe.Hierarchy.hierarchy(b)
+            cHier = ufe.Hierarchy.hierarchy(c)
+            eHier = ufe.Hierarchy.hierarchy(e)
+            fHier = ufe.Hierarchy.hierarchy(f)
+            gHier = ufe.Hierarchy.hierarchy(g)
+
+            self.assertIn(a, psChildren)
+            self.assertIn(d, psChildren)
+            self.assertIn(g, psChildren)
+            self.assertIn(b, aHier.children())
+            self.assertIn(c, bHier.children())
+            self.assertIn(e, dHier.children())
+            self.assertIn(f, eHier.children())
+            self.assertFalse(gHier.hasChildren())
+
+        def checkAfter(a, b, c, e, f, g):
+            psChildren = psHier.children()
+            self.assertNotIn(a, psChildren)
+            self.assertIn(d, psChildren)
+            self.assertNotIn(g, psChildren)
+
+            group = ufe.Hierarchy.createItem(groupPath)
+            groupHier = ufe.Hierarchy.hierarchy(group)
+            groupChildren = groupHier.children()
+
+            for child in [a, b, c, e, f, g]:
+                hier = ufe.Hierarchy.hierarchy(child)
+                self.assertFalse(hier.hasChildren())
+                self.assertIn(child, groupChildren)
+
+        children = hierarchyBefore()
+        checkBefore(*children)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        for child in children:
+            sn.append(child)
+
+        cmds.group()
+
+        children = hierarchyAfter()
+        checkAfter(*children)
+
+        cmds.undo()
+
+        children = hierarchyBefore()
+        checkBefore(*children)
+
+        cmds.redo()
+
+        children = hierarchyAfter()
+        checkAfter(*children)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

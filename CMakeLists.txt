@@ -33,6 +33,7 @@ option(BUILD_TESTS "Build tests." ON)
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
 option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
+set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)." OFF)
 
@@ -79,7 +80,7 @@ if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_E
     SET(PYTHONLIBS_FOUND TRUE)
     # Use the Python module to find the python lib.
     if(BUILD_WITH_PYTHON_3)
-        find_package(Python 3.7 EXACT REQUIRED COMPONENTS Interpreter)
+        find_package(Python ${BUILD_WITH_PYTHON_3_VERSION} EXACT REQUIRED COMPONENTS Interpreter)
     else()
         find_package(Python 2.7 EXACT REQUIRED COMPONENTS Interpreter)
     endif()

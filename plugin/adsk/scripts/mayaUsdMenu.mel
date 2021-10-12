@@ -110,6 +110,24 @@ proc string mayaUSD_getSelectionKind() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// mayaUSD_setPointInstancesPickMode
+// Helper function to set the point instances pick mode.
+global proc mayaUSD_setPointInstancesPickMode(string $mode) {
+    optionVar -stringValue "mayaUsd_PointInstancesPickMode" $mode;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUSD_getPointInstancesPickMode
+// Helper function to get the point instances pick mode.
+proc string mayaUSD_getPointInstancesPickMode() {
+    string $mode = "";
+    if (`optionVar -exists "mayaUsd_PointInstancesPickMode"`) {
+        $mode = `optionVar -q "mayaUsd_PointInstancesPickMode"`;
+    }
+    return $mode;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // mayaUSD_isSelectionKindValid
 // return true if the current selection kind is valid
 proc int mayaUSD_isSelectionKindValid() {
@@ -179,44 +197,77 @@ proc initRuntimeCommands() {
             mayaUsdSelectKindNone;
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindModel`) {
+        string $lbl = capitalizeString(`python "from pxr import Kind; Kind.Tokens.model"`);
         runTimeCommand -default true -plugin "mayaUsdPlugin"
-            -label      `python "from pxr import Kind; Kind.Tokens.model"`
+            -label      $lbl
             -annotation `getMayaUsdString("kUSDSelectionModeModelAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"model\")")
             mayaUsdSelectKindModel; 
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindGroup`) {
+        string $lbl = capitalizeString(`python "from pxr import Kind; Kind.Tokens.group"`);
         runTimeCommand -default true -plugin "mayaUsdPlugin"
-            -label      `python "from pxr import Kind; Kind.Tokens.group"`
+            -label      $lbl
             -annotation `getMayaUsdString("kUSDSelectionModeGroupAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"group\")")
             mayaUsdSelectKindGroup; 
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindAssembly`) {
+        string $lbl = capitalizeString(`python "from pxr import Kind; Kind.Tokens.assembly"`);
         runTimeCommand -default true -plugin "mayaUsdPlugin"
-            -label      `python "from pxr import Kind; Kind.Tokens.assembly"`
+            -label      $lbl
             -annotation `getMayaUsdString("kUSDSelectionModeAssemblyAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"assembly\")")
             mayaUsdSelectKindAssembly;
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindComponent`) {
+        string $lbl = capitalizeString(`python "from pxr import Kind; Kind.Tokens.component"`);
         runTimeCommand -default true -plugin "mayaUsdPlugin"
-            -label      `python "from pxr import Kind; Kind.Tokens.component"`
+            -label      $lbl
             -annotation `getMayaUsdString("kUSDSelectionModeComponentAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"component\")")
             mayaUsdSelectKindComponent; 
     }
     if (!`runTimeCommand -exists mayaUsdSelectKindSubComponent`) {
+        string $lbl = capitalizeString(`python "from pxr import Kind; Kind.Tokens.subcomponent"`);
         runTimeCommand -default true -plugin "mayaUsdPlugin"
-            -label      `python "from pxr import Kind; Kind.Tokens.subcomponent"`
+            -label      $lbl
             -annotation `getMayaUsdString("kUSDSelectionModeSubComponentAnn")`
             -category   "Menu items.Maya USD"
             -command    ("mayaUSD_setSelectionKind(\"subcomponent\")")
             mayaUsdSelectKindSubComponent; 
+    }
+
+    //
+    // runTimeCommand for Point Instances Pick Mode
+    //
+    if (!`runTimeCommand -exists mayaUsdPointInstancesPickMode_PointInstancer`) {
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
+            -label      `getMayaUsdString("kUSDPointInstancesPickMode_PointInstancer")`
+            -annotation `getMayaUsdString("kUSDPointInstancesPickMode_PointInstancerAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setPointInstancesPickMode(\"PointInstancer\")")
+        mayaUsdPointInstancesPickMode_PointInstancer;
+    }
+    if (!`runTimeCommand -exists mayaUsdPointInstancesPickMode_Instances`) {
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
+            -label      `getMayaUsdString("kUSDPointInstancesPickMode_Instances")`
+            -annotation `getMayaUsdString("kUSDPointInstancesPickMode_InstancesAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setPointInstancesPickMode(\"Instances\")")
+        mayaUsdPointInstancesPickMode_Instances;
+    }
+    if (!`runTimeCommand -exists mayaUsdPointInstancesPickMode_Prototypes`) {
+        runTimeCommand -default true -plugin "mayaUsdPlugin"
+            -label      `getMayaUsdString("kUSDPointInstancesPickMode_Prototypes")`
+            -annotation `getMayaUsdString("kUSDPointInstancesPickMode_PrototypesAnn")`
+            -category   "Menu items.Maya USD"
+            -command    ("mayaUSD_setPointInstancesPickMode(\"Prototypes\")")
+        mayaUsdPointInstancesPickMode_Prototypes;
     }
 
     source "mayaUsd_createStageFromFile.mel";
@@ -264,7 +315,9 @@ global proc mayaUsdMenu_createMenuCallback() {
 // mayaUsd_updateSelectionKindMenuItem
 // Update the menuItem radio button in the Selection Mode menu
 global proc mayaUsd_updateSelectionKindMenuItem() {
-    string $selectionKind = mayaUSD_getSelectionKind();
+    // Note: we do all string compares as case-insenstive (lowercase)
+    //       as the menu labels are capitalized.
+    string $selectionKind = `tolower(mayaUSD_getSelectionKind())`;
     switch($selectionKind) {
         case "":
             menuItem -e -radioButton on selectKindNone;
@@ -274,8 +327,33 @@ global proc mayaUsd_updateSelectionKindMenuItem() {
             global string $gMayaUsdSelectModeSubMenu;
             $menuItems = `menu -q -itemArray $gMayaUsdSelectModeSubMenu`;
             for($i = 0; $i < size($menuItems); $i++) {
-                $label = `menuItem -q -label $menuItems[$i]`;
-                if($label == $selectionKind) {
+                string $label = `menuItem -q -label $menuItems[$i]`;
+                if(`tolower($label)` == $selectionKind) {
+                    menuItem -e -radioButton on $menuItems[$i];
+                    break;
+                }
+            }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUsd_updatePointInstancesPickModeMenuItem
+// Update the menu item radio buttons in the Point Instances Pick Mode menu
+global proc mayaUsd_updatePointInstancesPickModeMenuItem() {
+    // Note: we do all string compares as case-insenstive (lowercase)
+    //       as the menu labels are capitalized.
+    string $pickMode = `tolower(mayaUSD_getPointInstancesPickMode())`;
+    switch($pickMode) {
+        case "":
+            menuItem -e -radioButton on pointInstancesPickMode_PointInstancer;
+            break;
+        default:
+            // Enable the menu item based on the label.
+            global string $gMayaUsdSelectModeSubMenu;
+            $menuItems = `menu -q -itemArray $gMayaUsdSelectModeSubMenu`;
+            for($i = 0; $i < size($menuItems); $i++) {
+                string $label = `menuItem -q -label $menuItems[$i]`;
+                if(`tolower($label)` == $pickMode) {
                     menuItem -e -radioButton on $menuItems[$i];
                     break;
                 }
@@ -302,7 +380,7 @@ global proc mayaUsdMenu_selectMenuCallback() {
         string $ann = `getMayaUsdString("kUSDSelectionModeAnn")`;
         $gMayaUsdSelectModeSubMenu = `menuItem -label $label -annotation $ann -subMenu true -tearOff true -version $mayaVersion`;
 
-        $label = `getMayaUsdString("kKind")`;
+        $label = getMayaUsdString("kKinds");
         menuItem -divider true -dividerLabel $label;
         radioMenuItemCollection;
 
@@ -319,28 +397,40 @@ global proc mayaUsdMenu_selectMenuCallback() {
 
         // sort the kinds in alphabetic order
         $allKinds = `sort $allKinds`;
+        string $strFormat = `getMayaUsdString("kUSDSelectionModeCustom")`;
 
         for($i = 0; $i < size($allKinds); $i++) {
-            $currentKind = $allKinds[$i];
-            $index = stringArrayFind($currentKind, 0, $builtInKinds);
+            string $currentKind = $allKinds[$i];
+            int $index = stringArrayFind($currentKind, 0, $builtInKinds);
             if($index == -1) {
-                $strFormat = `getMayaUsdString("kUSDSelectionModeCustom")`;
                 $ann = `format -stringArg $currentKind $strFormat`;
                 menuItem
-                    -label $currentKind
+                    -label `capitalizeString($currentKind)`
                     -command ("mayaUSD_setSelectionKind " + $currentKind)
                     -annotation $ann
                     -radioButton off;
             }
         }
 
+        $label = getMayaUsdString("kPointInstances");
+        menuItem -divider true -dividerLabel $label;
+
+        // Add the default (built-in) point instances pick mode
+        radioMenuItemCollection;
+        menuItem -radioButton on -runTimeCommand ("mayaUsdPointInstancesPickMode_PointInstancer") pointInstancesPickMode_PointInstancer;
+        menuItem -radioButton off -runTimeCommand ("mayaUsdPointInstancesPickMode_Instances") pointInstancesPickMode_Instances;
+        menuItem -radioButton off -runTimeCommand ("mayaUsdPointInstancesPickMode_Prototypes") pointInstancesPickMode_Prototypes;
+
         // make sure the radio button are sync with the option var.
         mayaUsd_updateSelectionKindMenuItem();
+        mayaUsd_updatePointInstancesPickModeMenuItem();
 
-        // Attach a script job to the mayaUsd_SelectionKind optionVar to update the menu item menuItem radio button state.
+        // Attach a script job to the optionVars to update the menu item menuItem radio button state.
         // This is required because the menu is tearable. So, if the user tear off the menu (menu always visible) we need to
         // update the menu item if the option var change for any reason.
-        // The script job will be delete when the menu is deleted.
+        // The script job will be automatically deleted when the menu is deleted.
+        scriptJob -parent $gMayaUsdSelectModeSubMenu
+            -optionVarChanged "mayaUsd_PointInstancesPickMode" "mayaUsd_updatePointInstancesPickModeMenuItem";
         scriptJob -parent $gMayaUsdSelectModeSubMenu
             -optionVarChanged "mayaUsd_SelectionKind" "mayaUsd_updateSelectionKindMenuItem";
     }

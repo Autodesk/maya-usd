@@ -335,13 +335,6 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         UsdMayaJobExportArgs jobArgs
             = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
 
-        unsigned int numFilteredTypes = argData.numberOfFlagUses(kFilterTypesFlag);
-        for (unsigned int i = 0; i < numFilteredTypes; i++) {
-            MArgList tmpArgList;
-            argData.getFlagArgumentList(kFilterTypesFlag, i, tmpArgList);
-            jobArgs.AddFilteredTypeName(tmpArgList.asString(0));
-        }
-
         std::unique_ptr<UsdMaya_WriteJob> writeJob = initializeWriteJob(jobArgs);
         if (!writeJob || !writeJob->Write(fileName, append)) {
             return MS::kFailure;

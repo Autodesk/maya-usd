@@ -116,6 +116,11 @@ public:
     AL_USD_TRANSACTION_PUBLIC
     static bool Close(const PXR_NS::UsdStageWeakPtr& stage, const PXR_NS::SdfLayerHandle& layer);
 
+    /// \brief  clears the transaction manager of all active transactions, effectively closing them
+    /// all. Intended to be used for File->New and on exit.
+    AL_USD_TRANSACTION_PUBLIC
+    static void CloseAll();
+
 private:
     typedef std::map<PXR_NS::UsdStageWeakPtr, TransactionManager> StageManagerMap;
     static StageManagerMap&                                       GetManagers();

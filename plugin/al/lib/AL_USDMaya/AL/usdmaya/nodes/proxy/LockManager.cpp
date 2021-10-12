@@ -15,6 +15,18 @@
 //
 #include "AL/usdmaya/nodes/proxy/LockManager.h"
 
+#include <maya/MProfiler.h>
+namespace {
+const int _lockManagerProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "LockManager",
+    "LockManager"
+#else
+    "LockManager"
+#endif
+);
+} // namespace
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -23,6 +35,9 @@ namespace proxy {
 //----------------------------------------------------------------------------------------------------------------------
 void LockManager::removeEntries(const SdfPathVector& entries)
 {
+    MProfilingScope profilerScope(
+        _lockManagerProfilerCategory, MProfiler::kColorE_L3, "Remove entries");
+
     auto lockIt = m_lockedPrims.begin();
     auto lockEnd = m_lockedPrims.end();
 
@@ -49,6 +64,9 @@ void LockManager::removeEntries(const SdfPathVector& entries)
 //----------------------------------------------------------------------------------------------------------------------
 void LockManager::removeFromRootPath(const SdfPath& path)
 {
+    MProfilingScope profilerScope(
+        _lockManagerProfilerCategory, MProfiler::kColorE_L3, "Remove from root path");
+
     {
         // find the start of the entries for this path
         auto lb = std::lower_bound(m_lockedPrims.begin(), m_lockedPrims.end(), path);
@@ -113,6 +131,9 @@ void LockManager::setLocked(const SdfPath& path)
 //----------------------------------------------------------------------------------------------------------------------
 void LockManager::setUnlocked(const SdfPath& path)
 {
+    MProfilingScope profilerScope(
+        _lockManagerProfilerCategory, MProfiler::kColorE_L3, "Set unlocked");
+
     auto unlockIter = std::lower_bound(m_unlockedPrims.begin(), m_unlockedPrims.end(), path);
     if (unlockIter != m_unlockedPrims.end()) {
         // lock already in the locked array, so return
@@ -132,6 +153,9 @@ void LockManager::setUnlocked(const SdfPath& path)
 //----------------------------------------------------------------------------------------------------------------------
 void LockManager::setInherited(const SdfPath& path)
 {
+    MProfilingScope profilerScope(
+        _lockManagerProfilerCategory, MProfiler::kColorE_L3, "Set inherited");
+
     if (!m_unlockedPrims.empty()) {
         auto unlockIter = std::lower_bound(m_unlockedPrims.begin(), m_unlockedPrims.end(), path);
         if (unlockIter != m_unlockedPrims.end()) {
@@ -155,6 +179,9 @@ void LockManager::setInherited(const SdfPath& path)
 //----------------------------------------------------------------------------------------------------------------------
 bool LockManager::isLocked(const SdfPath& path) const
 {
+    MProfilingScope profilerScope(
+        _lockManagerProfilerCategory, MProfiler::kColorE_L3, "Check locked state");
+
     if (m_lockedPrims.empty())
         return false;
 

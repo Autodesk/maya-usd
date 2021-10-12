@@ -86,7 +86,7 @@ public:
         const TfToken&               mayaNodeTypeName);
 
     MAYAUSD_CORE_PUBLIC
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 
     MAYAUSD_CORE_PUBLIC
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;

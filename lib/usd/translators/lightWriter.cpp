@@ -20,7 +20,11 @@
 #include <mayaUsd/fileio/utils/adaptor.h>
 
 #include <pxr/usd/usdLux/distantLight.h>
+#if PXR_VERSION < 2111
 #include <pxr/usd/usdLux/light.h>
+#else
+#include <pxr/usd/usdLux/lightAPI.h>
+#endif
 
 #include <maya/MFnDirectionalLight.h>
 #include <maya/MGlobal.h>
@@ -69,7 +73,12 @@ void PxrUsdTranslators_DirectionalLightWriter::Write(const UsdTimeCode& usdTime)
     }
 
     // First write the base light attributes
+#if PXR_VERSION < 2111
     UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+#else
+    UsdMayaTranslatorLight::WriteLightAttrs(
+        usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
+#endif
     // Then write the specialized attributes for directional lights
     UsdMayaTranslatorLight::WriteDirectionalLightAttrs(
         usdTime, primSchema, lightFn, _GetSparseValueWriter());
@@ -117,7 +126,12 @@ void PxrUsdTranslators_PointLightWriter::Write(const UsdTimeCode& usdTime)
     }
 
     // First write the base light attributes
+#if PXR_VERSION < 2111
     UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+#else
+    UsdMayaTranslatorLight::WriteLightAttrs(
+        usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
+#endif
     // Then write the specialized attributes for point lights
     UsdMayaTranslatorLight::WritePointLightAttrs(
         usdTime, primSchema, lightFn, _GetSparseValueWriter());
@@ -164,7 +178,12 @@ void PxrUsdTranslators_SpotLightWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
     // First write the base light attributes
+#if PXR_VERSION < 2111
     UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+#else
+    UsdMayaTranslatorLight::WriteLightAttrs(
+        usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
+#endif
     // Then write the specialized attributes for spot lights
     UsdMayaTranslatorLight::WriteSpotLightAttrs(
         usdTime, primSchema, lightFn, _GetSparseValueWriter());
@@ -212,7 +231,12 @@ void PxrUsdTranslators_AreaLightWriter::Write(const UsdTimeCode& usdTime)
     }
 
     // First write the base light attributes
+#if PXR_VERSION < 2111
     UsdMayaTranslatorLight::WriteLightAttrs(usdTime, primSchema, lightFn, _GetSparseValueWriter());
+#else
+    UsdMayaTranslatorLight::WriteLightAttrs(
+        usdTime, primSchema.LightAPI(), lightFn, _GetSparseValueWriter());
+#endif
     // Then write the specialized attributes for spot lights
     UsdMayaTranslatorLight::WriteAreaLightAttrs(
         usdTime, primSchema, lightFn, _GetSparseValueWriter());

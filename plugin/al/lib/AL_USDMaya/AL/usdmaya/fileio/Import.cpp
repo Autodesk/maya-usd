@@ -16,7 +16,6 @@
 #include "AL/usdmaya/fileio/Import.h"
 
 #include "AL/maya/utils/Utils.h"
-#include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/ImportTranslator.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
@@ -93,9 +92,6 @@ MObject Import::createParentTransform(
 //----------------------------------------------------------------------------------------------------------------------
 void Import::doImport()
 {
-    AL::usdmaya::Profiler::clearAll();
-    AL_BEGIN_PROFILE_SECTION(doImport);
-
     translators::TranslatorContextPtr  context = translators::TranslatorContext::create(nullptr);
     translators::TranslatorManufacture manufacture(context);
     if (m_params.m_activateAllTranslators) {
@@ -115,16 +111,14 @@ void Import::doImport()
     if (m_params.m_rootLayer) {
         // stage = UsdStage::Open(m_params.m_rootLayer, m_params.m_sessionLayer);
     } else {
-        AL_BEGIN_PROFILE_SECTION(OpenStage);
         stage = UsdStage::Open(
             m_params.m_fileName.asChar(),
             m_params.m_stageUnloaded ? UsdStage::LoadNone : UsdStage::LoadAll);
-        AL_END_PROFILE_SECTION();
     }
 
     if (stage != UsdStageRefPtr()) {
         // set timeline range if animation is enabled
-        if (m_params.m_animations) {
+        if (m_params.m_animations && stage->HasAuthoredTimeCodeRange()) {
             const char* const timeError = "ALUSDImport: error setting time range";
             const MTime       startTimeCode = stage->GetStartTimeCode();
             const MTime       endTimeCode = stage->GetEndTimeCode();
@@ -220,20 +214,15 @@ void Import::doImport()
                         fnP.addChild(shape, MFnTransform::kNextPos, true);
                     }
                 } else {
-                    AL_BEGIN_PROFILE_SECTION(ImportingTransform);
                     createParentTransform(prim, it, manufacture);
-                    AL_END_PROFILE_SECTION();
                 }
             }
         }
     }
     m_success = true;
 
-    AL_END_PROFILE_SECTION();
-
     std::stringstream strstr;
     strstr << "Breakdown for file: " << m_params.m_fileName << std::endl;
-    AL::usdmaya::Profiler::printReport(strstr);
     MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
 }
 

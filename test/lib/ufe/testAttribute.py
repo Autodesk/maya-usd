@@ -460,7 +460,9 @@ class AttributeTestCase(unittest.TestCase):
         (ball34Obs, ball35Obs, globalObs) = [TestObserver() for i in range(3)]
 
         # Maya registers a single global observer on startup.
-        self.assertEqual(ufe.Attributes.nbObservers(), 1)
+        # Maya-Usd lib registers a single global observer when it is initialized.
+        kNbGlobalObs = 2
+        self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs)
 
         # No item-specific observers.
         self.assertFalse(ufe.Attributes.hasObservers(ball34.path()))
@@ -478,7 +480,7 @@ class AttributeTestCase(unittest.TestCase):
         # Add a global observer.
         ufe.Attributes.addObserver(globalObs)
 
-        self.assertEqual(ufe.Attributes.nbObservers(), 2)
+        self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs+1)
         self.assertFalse(ufe.Attributes.hasObservers(ball34.path()))
         self.assertFalse(ufe.Attributes.hasObservers(ball35.path()))
         self.assertEqual(ufe.Attributes.nbObservers(ball34), 0)
@@ -489,7 +491,7 @@ class AttributeTestCase(unittest.TestCase):
         # Add item-specific observers.
         ufe.Attributes.addObserver(ball34, ball34Obs)
 
-        self.assertEqual(ufe.Attributes.nbObservers(), 2)
+        self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs+1)
         self.assertTrue(ufe.Attributes.hasObservers(ball34.path()))
         self.assertFalse(ufe.Attributes.hasObservers(ball35.path()))
         self.assertEqual(ufe.Attributes.nbObservers(ball34), 1)
@@ -594,7 +596,7 @@ class AttributeTestCase(unittest.TestCase):
 
         ufe.Attributes.removeObserver(globalObs)
 
-        self.assertEqual(ufe.Attributes.nbObservers(), 1)
+        self.assertEqual(ufe.Attributes.nbObservers(), kNbGlobalObs)
 
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(7, 8, 9)))
 

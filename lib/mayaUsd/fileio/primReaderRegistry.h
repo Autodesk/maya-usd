@@ -21,6 +21,7 @@
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 
+#include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/pxr.h>
 
@@ -56,11 +57,11 @@ struct UsdMayaPrimReaderRegistry
     /// Reader function, i.e. a function that reads a prim. This is the
     /// signature of the function declared in the PXRUSDMAYA_DEFINE_READER
     /// macro.
-    typedef std::function<bool(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext*)> ReaderFn;
+    typedef std::function<bool(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&)> ReaderFn;
 
     /// \brief Register \p fn as a reader provider for \p type.
     MAYAUSD_CORE_PUBLIC
-    static void Register(const TfType& type, ReaderFactoryFn fn);
+    static void Register(const TfType& type, ReaderFactoryFn fn, bool fromPython = false);
 
     /// \brief Register \p fn as a reader provider for \p T.
     ///
@@ -75,10 +76,10 @@ struct UsdMayaPrimReaderRegistry
     ///     UsdMayaPrimReaderRegistry::Register<MyType>(MyReader::Create);
     /// }
     /// \endcode
-    template <typename T> static void Register(ReaderFactoryFn fn)
+    template <typename T> static void Register(ReaderFactoryFn fn, bool fromPython = false)
     {
         if (TfType t = TfType::Find<T>()) {
-            Register(t, fn);
+            Register(t, fn, fromPython);
         } else {
             TF_CODING_ERROR("Cannot register unknown TfType: %s.", ArchGetDemangled<T>().c_str());
         }
@@ -90,19 +91,6 @@ struct UsdMayaPrimReaderRegistry
     /// you probably want to use PXRUSDMAYA_DEFINE_READER directly instead.
     MAYAUSD_CORE_PUBLIC
     static void RegisterRaw(const TfType& type, ReaderFn fn);
-
-    /// \brief Wraps \p fn in a ReaderFactoryFn and registers that factory
-    /// function as a reader provider for \p T.
-    /// This is a helper method for the macro PXRUSDMAYA_DEFINE_READER;
-    /// you probably want to use PXRUSDMAYA_DEFINE_READER directly instead.
-    template <typename T> static void RegisterRaw(ReaderFn fn)
-    {
-        if (TfType t = TfType::Find<T>()) {
-            RegisterRaw(t, fn);
-        } else {
-            TF_CODING_ERROR("Cannot register unknown TfType: %s.", ArchGetDemangled<T>().c_str());
-        }
-    }
 
     // takes a usdType (i.e. prim.GetTypeName())
     /// \brief Finds a reader factory if one exists for \p usdTypeName.
@@ -121,14 +109,38 @@ struct UsdMayaPrimReaderRegistry
     static ReaderFactoryFn FindOrFallback(const TfToken& usdTypeName);
 };
 
+// Lookup TfType by name instead of static C++ type when
+// registering prim reader functions.
 #define PXRUSDMAYA_DEFINE_READER(T, argsVarName, ctxVarName)                                     \
-    static bool UsdMaya_PrimReader_##T(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext*); \
+    static bool UsdMaya_PrimReader_##T(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&); \
     TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, T)                                  \
     {                                                                                            \
-        UsdMayaPrimReaderRegistry::RegisterRaw<T>(UsdMaya_PrimReader_##T);                       \
+        if (TfType t = TfType::FindByName(#T)) {                                                 \
+            UsdMayaPrimReaderRegistry::RegisterRaw(t, UsdMaya_PrimReader_##T);                   \
+        } else {                                                                                 \
+            TF_CODING_ERROR("Cannot register unknown TfType: %s.", #T);                          \
+        }                                                                                        \
     }                                                                                            \
     bool UsdMaya_PrimReader_##T(                                                                 \
-        const UsdMayaPrimReaderArgs& argsVarName, UsdMayaPrimReaderContext* ctxVarName)
+        const UsdMayaPrimReaderArgs& argsVarName, UsdMayaPrimReaderContext& ctxVarName)
+
+// Lookup TfType by name instead of static C++ type when
+// registering prim reader functions. This allows readers to be
+// registered for codeless schemas, which are declared in the
+// TfType system but have no corresponding C++ code.
+#define PXRUSDMAYA_DEFINE_READER_FOR_USD_TYPE(T, argsVarName, ctxVarName)                        \
+    static bool UsdMaya_PrimReader_##T(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&); \
+    TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, T)                                  \
+    {                                                                                            \
+        const TfType& tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(#T);           \
+        if (tfType) {                                                                            \
+            UsdMayaPrimReaderRegistry::RegisterRaw(tfType, UsdMaya_PrimReader_##T);              \
+        } else {                                                                                 \
+            TF_CODING_ERROR("Cannot register unknown TfType for usdType: %s.", #T);              \
+        }                                                                                        \
+    }                                                                                            \
+    bool UsdMaya_PrimReader_##T(                                                                 \
+        const UsdMayaPrimReaderArgs& argsVarName, UsdMayaPrimReaderContext& ctxVarName)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

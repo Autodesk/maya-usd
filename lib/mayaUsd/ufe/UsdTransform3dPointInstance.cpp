@@ -158,7 +158,11 @@ UsdTransform3dPointInstanceHandler::transform3d(const Ufe::SceneItem::Ptr& item)
 {
     UsdSceneItem::Ptr usdItem = downcast(item);
 
-    if (!usdItem || !usdItem->isPointInstance()) {
+    if (!usdItem) {
+        return nullptr;
+    }
+
+    if (!usdItem->isPointInstance()) {
         return _nextHandler->transform3d(item);
     }
 
@@ -171,9 +175,10 @@ Ufe::Transform3d::Ptr UsdTransform3dPointInstanceHandler::editTransform3d(
     const Ufe::EditTransform3dHint& hint) const
 {
     UsdSceneItem::Ptr usdItem = downcast(item);
-#if !defined(NDEBUG)
-    assert(usdItem);
-#endif
+
+    if (!usdItem) {
+        return nullptr;
+    }
 
     if (!usdItem->isPointInstance()) {
         return _nextHandler->editTransform3d(item, hint);

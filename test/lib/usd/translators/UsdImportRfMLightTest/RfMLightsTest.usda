@@ -201,14 +201,14 @@ def Xform "RfMLightsTest" (
             prepend apiSchemas = ["ShapingAPI", "ShadowAPI"]
         )
         {
-            string aovName = "testAovName"
-            bool inPrimaryHit = 0
-            bool inReflection = 1
-            bool inRefraction = 1
-            bool invert = 1
-            bool onVolumeBoundaries = 0
-            bool useColor = 1
-            bool useThroughput = 0
+            string inputs:ri:light:aovName = "testAovName"
+            bool inputs:ri:light:inPrimaryHit = 0
+            bool inputs:ri:light:inReflection = 1
+            bool inputs:ri:light:inRefraction = 1
+            bool inputs:ri:light:invert = 1
+            bool inputs:ri:light:onVolumeBoundaries = 0
+            bool inputs:ri:light:useColor = 1
+            bool inputs:ri:light:useThroughput = 0
             double3 xformOp:translate = (8, 8, 8)
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }
@@ -217,24 +217,24 @@ def Xform "RfMLightsTest" (
             prepend apiSchemas = ["ShapingAPI", "ShadowAPI"]
         )
         {
-            int day = 9
-            float haziness = 1.9
-            float hour = 9.9
+            int inputs:ri:light:day = 9
+            float inputs:ri:light:haziness = 1.9
+            float inputs:ri:light:hour = 9.9
             float inputs:diffuse = 1.9
             float inputs:exposure = 0.9
             float inputs:intensity = 1.9
             float inputs:specular = 1.9
-            float latitude = 90
-            float longitude = -90
-            int month = 9
-            color3f skyTint = (0.9, 0.9, 0.9)
-            vector3f sunDirection = (0, 0, 0.9)
-            float sunSize = 0.9
-            color3f sunTint = (0.9, 0.9, 0.9)
+            float inputs:ri:light:latitude = 90
+            float inputs:ri:light:longitude = -90
+            int inputs:ri:light:month = 9
+            color3f inputs:ri:light:skyTint = (0.9, 0.9, 0.9)
+            vector3f inputs:ri:light:sunDirection = (0, 0, 0.9)
+            float inputs:ri:light:sunSize = 0.9
+            color3f inputs:ri:light:sunTint = (0.9, 0.9, 0.9)
+            int inputs:ri:light:year = 2019
+            float inputs:ri:light:zone = 9
             double3 xformOp:translate = (9, 9, 9)
             uniform token[] xformOpOrder = ["xformOp:translate"]
-            int year = 2019
-            float zone = 9
         }
     }
 

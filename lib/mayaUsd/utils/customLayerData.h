@@ -18,6 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
@@ -25,12 +26,6 @@
 /// General utility functions used when using custom Layer data
 namespace MAYAUSD_NS_DEF {
 namespace CustomLayerData {
-
-// Token for referenced layers
-const std::string kReferencedLayersToken = "maya_shared_layers";
-
-// Token for export file path
-const std::string kExportFilePathToken = "maya_export_file_path";
 
 /**
  * Get the String Array custom data on the layer
@@ -42,7 +37,7 @@ const std::string kExportFilePathToken = "maya_export_file_path";
  */
 MAYAUSD_CORE_PUBLIC
 PXR_NS::VtArray<std::string>
-getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const std::string& token);
+getStringArray(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
 
 /**
  * Set the String Array custom data on the layer
@@ -55,7 +50,7 @@ MAYAUSD_CORE_PUBLIC
 void setStringArray(
     const PXR_NS::VtArray<std::string>& data,
     const PXR_NS::SdfLayerRefPtr&       layer,
-    const std::string&                  token);
+    const PXR_NS::TfToken&              token);
 
 /**
  * Get the String custom data on the layer
@@ -66,7 +61,7 @@ void setStringArray(
  * @return          Returns the string (empty if not found)
  */
 MAYAUSD_CORE_PUBLIC
-std::string getString(const PXR_NS::SdfLayerRefPtr& layer, const std::string& token);
+std::string getString(const PXR_NS::SdfLayerRefPtr& layer, const PXR_NS::TfToken& token);
 
 /**
  * Set the String Array custom data on the layer
@@ -79,7 +74,7 @@ MAYAUSD_CORE_PUBLIC
 void setString(
     const std::string&            data,
     const PXR_NS::SdfLayerRefPtr& layer,
-    const std::string&            token);
+    const PXR_NS::TfToken&        token);
 
 } // namespace CustomLayerData
 } // namespace MAYAUSD_NS_DEF

@@ -16,6 +16,8 @@
 
 #include "meshViewportCompute.h"
 
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+
 #include "mesh.h"
 #include "render_delegate.h"
 
@@ -27,8 +29,6 @@
 #include <pxr/pxr.h>
 
 #include <maya/MProfiler.h>
-
-#ifdef HDVP2_ENABLE_GPU_COMPUTE
 
 PXR_NAMESPACE_OPEN_SCOPE
 

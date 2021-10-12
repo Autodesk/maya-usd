@@ -33,6 +33,7 @@
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
+
 #ifdef WANT_MATERIALX_BUILD
 #include <pxr/imaging/hdMtlx/hdMtlx.h>
 #endif
@@ -106,6 +107,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (file)
     (opacity)
+    (useSpecularWorkflow)
     (st)
     (varname)
     (result)
@@ -114,6 +116,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (sRGB)
     (raw)
     (glslfx)
+    (fallback)
 
     (input)
     (output)
@@ -261,7 +264,7 @@ bool _IsTopologicalNode(const HdMaterialNode2& inNode)
     mx::NodeDefPtr nodeDef
         = _GetMaterialXData()._mtlxLibrary->getNodeDef(inNode.nodeTypeId.GetString());
     if (nodeDef) {
-        return _mtlxTopoNodeSet.find(nodeDef->getCategory()) != _mtlxTopoNodeSet.cend();
+        return _mtlxTopoNodeSet.find(nodeDef->getNodeString()) != _mtlxTopoNodeSet.cend();
     }
     return false;
 }
@@ -679,6 +682,16 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
 #endif
     }
 
+    it = node.parameters.find(_tokens->fallback);
+    if (it != node.parameters.end()) {
+        const VtValue& value = it->second;
+        if (value.IsHolding<GfVec4f>()) {
+            const GfVec4f& fallbackValue = value.UncheckedGet<GfVec4f>();
+            float const*   value = fallbackValue.data();
+            std::copy(value, value + 4, desc.borderColor);
+        }
+    }
+
     return desc;
 }
 
@@ -813,8 +826,11 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
 }
 
 //! Load texture from the specified path
-MHWRender::MTexture*
-_LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
+MHWRender::MTexture* _LoadTexture(
+    const std::string&    path,
+    bool&                 isColorSpaceSRGB,
+    MFloatArray&          uvScaleOffset,
+    const HdMaterialNode& node)
 {
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "LoadTexture", path.c_str());
@@ -842,7 +858,32 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 #endif
 
     if (!TF_VERIFY(image, "Unable to create an image from %s", path.c_str())) {
-        return nullptr;
+        // Create a 1x1 texture of the fallback color, if it was specified:
+        auto it = node.parameters.find(_tokens->fallback);
+        if (it == node.parameters.end()) {
+            return nullptr;
+        }
+        const VtValue& value = it->second;
+        if (!value.IsHolding<GfVec4f>()) {
+            return nullptr;
+        }
+
+        MHWRender::MTextureDescription desc;
+        desc.setToDefault2DTexture();
+        desc.fWidth = 1;
+        desc.fHeight = 1;
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        desc.fBytesPerRow = 4;
+        desc.fBytesPerSlice = desc.fBytesPerRow;
+
+        const GfVec4f&             fallbackValue = value.UncheckedGet<GfVec4f>();
+        std::vector<unsigned char> texels(4);
+        for (size_t i = 0; i < 4; ++i) {
+            float texelValue = std::max(std::min(fallbackValue[i], 1.0f), 0.0f);
+            texels[i] = static_cast<unsigned char>(texelValue * 255.0);
+        }
+        isColorSpaceSRGB = false;
+        return textureMgr->acquireTexture(path.c_str(), desc, texels.data());
     }
 
     // This image is used for loading pixel data from usdz only and should
@@ -2166,7 +2207,7 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 const std::string&  assetPath = val.GetAssetPath();
                 if (_IsUsdUVTexture(node) && token == _tokens->file) {
                     const HdVP2TextureInfo& info
-                        = _AcquireTexture(!resolvedPath.empty() ? resolvedPath : assetPath);
+                        = _AcquireTexture(!resolvedPath.empty() ? resolvedPath : assetPath, node);
 
                     MHWRender::MTextureAssignment assignment;
                     assignment.texture = info._texture.get();
@@ -2220,7 +2261,12 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 }
             } else if (value.IsHolding<int>()) {
                 const int& val = value.UncheckedGet<int>();
-                status = _surfaceShader->setParameter(paramName, val);
+                if (node.identifier == UsdImagingTokens->UsdPreviewSurface
+                    && token == _tokens->useSpecularWorkflow) {
+                    status = _surfaceShader->setParameter(paramName, val != 0);
+                } else {
+                    status = _surfaceShader->setParameter(paramName, val);
+                }
             } else if (value.IsHolding<bool>()) {
                 const bool& val = value.UncheckedGet<bool>();
                 status = _surfaceShader->setParameter(paramName, val);
@@ -2255,7 +2301,8 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 
 /*! \brief  Acquires a texture for the given image path.
  */
-const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(const std::string& path)
+const HdVP2TextureInfo&
+HdVP2Material::_AcquireTexture(const std::string& path, const HdMaterialNode& node)
 {
     const auto it = _textureMap.find(path);
     if (it != _textureMap.end()) {
@@ -2264,7 +2311,7 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(const std::string& path)
 
     bool                 isSRGB = false;
     MFloatArray          uvScaleOffset;
-    MHWRender::MTexture* texture = _LoadTexture(path, isSRGB, uvScaleOffset);
+    MHWRender::MTexture* texture = _LoadTexture(path, isSRGB, uvScaleOffset, node);
 
     HdVP2TextureInfo& info = _textureMap[path];
     info._texture.reset(texture);

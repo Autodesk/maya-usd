@@ -13,11 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from . import _usdMaya
-from pxr import Tf
-from pxr import Usd
-Tf.PrepareModule(_usdMaya, locals())
-del _usdMaya, Tf, Usd
+from pxr import Tf, Usd
+if hasattr(Tf, 'PreparePythonModule'):
+    Tf.PreparePythonModule('_usdMaya')
+else:
+    from . import _usdMaya
+    Tf.PrepareModule(_usdMaya, locals())
+    del _usdMaya
+del Tf, Usd
 
 try:
     import __DOC

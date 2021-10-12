@@ -171,6 +171,9 @@ private:
 
     //! Selection status of the Rprim
     HdVP2SelectionStatus _selectionStatus { kUnselected };
+
+    //! The string representation of the runtime only path to this object
+    MStringArray _PrimSegmentString;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

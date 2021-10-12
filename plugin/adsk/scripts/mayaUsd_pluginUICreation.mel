@@ -7,6 +7,14 @@ global proc mayaUsd_pluginUICreation()
 
     source "mayaUsd_fileOptions.mel";
 
+    // Set the default USD attributes we want to display
+    // in the Channel Box.
+    global string $gChannelBoxName;
+    if (`channelBox -exists $gChannelBoxName`) {
+        // This flag only exists in recent versions of Maya.
+        catchQuiet(`channelBox -e -ufeFixedAttrList "USD" {"xformOp:translate*", "xformOp:rotate*", "xformOp:scale*", "xformOp:*", "visibility"} $gChannelBoxName`);
+    }
+
     int $mjv = `about -majorVersion`;
 
     if (((2021 <= $mjv)) && (!`pluginInfo -q -loaded "ufeSupport"`)) {

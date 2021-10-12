@@ -57,7 +57,7 @@ public:
 
     ~MayaUsdPrimReaderMesh() override { }
 
-    bool Read(UsdMayaPrimReaderContext* context) override;
+    bool Read(UsdMayaPrimReaderContext& context) override;
 };
 
 TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, UsdGeomMesh)
@@ -67,12 +67,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, UsdGeomMesh)
     });
 }
 
-bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
+bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext& context)
 {
-    if (!context) {
-        return false;
-    }
-
     MStatus status { MS::kSuccess };
 
     const auto& prim = _GetArgs().GetUsdPrim();
@@ -81,10 +77,10 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    auto    parentNode = context->GetMayaNode(prim.GetPath().GetParentPath(), true);
+    auto    parentNode = context.GetMayaNode(prim.GetPath().GetParentPath(), true);
     MObject transformObj;
     bool    retStatus = UsdMayaTranslatorUtil::CreateTransformNode(
-        prim, parentNode, _GetArgs(), context, &status, &transformObj);
+        prim, parentNode, _GetArgs(), &context, &status, &transformObj);
     if (!retStatus) {
         return false;
     }
@@ -92,8 +88,8 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
     // get the USD stage node from the context's registry
     MObject stageNode;
     if (_GetArgs().GetUseAsAnimationCache()) {
-        stageNode = context->GetMayaNode(
-            SdfPath(UsdMayaStageNodeTokens->MayaTypeName.GetString()), false);
+        stageNode
+            = context.GetMayaNode(SdfPath(UsdMayaStageNodeTokens->MayaTypeName.GetString()), false);
     }
 
     MayaUsd::TranslatorMeshRead meshRead(
@@ -103,20 +99,20 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
         stageNode,
         _GetArgs().GetTimeInterval(),
         _GetArgs().GetUseAsAnimationCache(),
-        context,
+        &context,
         &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // mesh is a shape, so read Gprim properties
-    UsdMayaTranslatorGprim::Read(mesh, meshRead.meshObject(), context);
+    UsdMayaTranslatorGprim::Read(mesh, meshRead.meshObject(), &context);
 
     // undo/redo mesh object
-    context->RegisterNewMayaNode(meshRead.shapePath().GetString(), meshRead.meshObject());
+    context.RegisterNewMayaNode(meshRead.shapePath().GetString(), meshRead.meshObject());
 
     // undo/redo deformable mesh (blenshape, PointBasedDeformer)
     if (meshRead.pointsNumTimeSamples() > 0) {
         if (_GetArgs().GetUseAsAnimationCache()) {
-            context->RegisterNewMayaNode(
+            context.RegisterNewMayaNode(
                 meshRead.pointBasedDeformerName().asChar(), meshRead.pointBasedDeformerNode());
         } else {
             if (meshRead.blendObject().apiType() == MFn::kBlend) {
@@ -124,7 +120,7 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
             }
 
             MFnBlendShapeDeformer blendFnSet(meshRead.blendObject());
-            context->RegisterNewMayaNode(blendFnSet.name().asChar(), meshRead.blendObject());
+            context.RegisterNewMayaNode(blendFnSet.name().asChar(), meshRead.blendObject());
         }
     }
 
@@ -136,7 +132,7 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
     UsdMayaMeshReadUtils::assignInvisibleFaces(mesh, meshRead.meshObject());
 
     // assign material
-    assignMaterial(mesh, _GetArgs(), meshRead.meshObject(), context);
+    assignMaterial(mesh, _GetArgs(), meshRead.meshObject(), &context);
 
     return true;
 }

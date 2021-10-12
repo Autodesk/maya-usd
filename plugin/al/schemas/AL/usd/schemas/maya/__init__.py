@@ -1,6 +1,9 @@
-from . import _AL_USDMayaSchemas
 from pxr import Tf
-Tf.PrepareModule(_AL_USDMayaSchemas, locals())
+if hasattr(Tf, 'PreparePythonModule'):
+    Tf.PreparePythonModule('_AL_USDMayaSchemas')
+else:
+    from . import _AL_USDMayaSchemas
+    Tf.PrepareModule(_AL_USDMayaSchemas, locals())
 del Tf
 
 try:

@@ -110,7 +110,7 @@ private:
 #endif
     MHWRender::MShaderInstance* _CreateShaderInstance(const HdMaterialNetwork& mat);
     void                        _UpdateShaderInstance(const HdMaterialNetwork& mat);
-    const HdVP2TextureInfo&     _AcquireTexture(const std::string& path);
+    const HdVP2TextureInfo& _AcquireTexture(const std::string& path, const HdMaterialNode& node);
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
     //! Trigger sync on all Rprims which are listening to changes on this material.

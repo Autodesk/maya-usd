@@ -109,30 +109,19 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         usdTime,
         TrMayaTokens->emission);
 
-    MPlug metalnessPlug = depNodeFn.findPlug(
-        depNodeFn.attribute(TrMayaTokens->metalness.GetText()),
-        /* wantNetworkedPlug = */ true,
-        &status);
-    if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(metalnessPlug)) {
-        AuthorShaderInputFromShadingNodeAttr(
-            depNodeFn,
-            TrMayaTokens->metalness,
-            shaderSchema,
-            PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName,
-            usdTime);
-    } else {
-        shaderSchema
-            .CreateInput(
-                PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
-            .Set(1, usdTime);
+    AuthorShaderInputFromShadingNodeAttr(
+        depNodeFn,
+        TrMayaTokens->metalness,
+        shaderSchema,
+        PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName,
+        usdTime);
 
-        AuthorShaderInputFromShadingNodeAttr(
-            depNodeFn,
-            TrMayaTokens->specularColor,
-            shaderSchema,
-            PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
-            usdTime);
-    }
+    AuthorShaderInputFromShadingNodeAttr(
+        depNodeFn,
+        TrMayaTokens->specularColor,
+        shaderSchema,
+        PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
+        usdTime);
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,

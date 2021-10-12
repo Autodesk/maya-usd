@@ -33,6 +33,8 @@ class TestManger(unittest.TestCase):
         self.assertFalse(TransactionManager.InProgress(stageA))
         self.assertFalse(TransactionManager.InProgress(stageB))
 
+        TransactionManager.CloseAll()
+
     ## Test that TransactionManager reports transactions for multiple layers as expected
     def test_InProgress_Layer(self):
         stage = Usd.Stage.CreateInMemory()
@@ -66,6 +68,8 @@ class TestManger(unittest.TestCase):
         self.assertFalse(TransactionManager.InProgress(stage))
         self.assertFalse(TransactionManager.InProgress(stage, layerA))
         self.assertFalse(TransactionManager.InProgress(stage, layerB))
+
+        TransactionManager.CloseAll()
 
 
 if __name__ == '__main__':

@@ -89,7 +89,7 @@ public:
     /// Please use the \p USDMAYA_DEFINE_IMPORT_CHASER_FACTORY instead of calling
     /// this directly.
     MAYAUSD_CORE_PUBLIC
-    bool RegisterFactory(const char* name, FactoryFn fn);
+    bool RegisterFactory(const char* name, FactoryFn fn, bool fromPython = false);
 
     /// \brief Creates an import chaser using the factoring registered to \p name.
     MAYAUSD_CORE_PUBLIC

@@ -96,7 +96,7 @@ struct UsdMayaPrimWriterRegistry
     /// }
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static void Register(const std::string& mayaType, WriterFactoryFn fn);
+    static void Register(const std::string& mayaType, WriterFactoryFn fn, bool fromPython = false);
 
     /// \brief Wraps \p fn in a WriterFactoryFn and registers the wrapped
     /// function as a prim writer provider.

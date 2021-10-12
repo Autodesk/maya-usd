@@ -74,12 +74,14 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     // Therefore, we have implemented an attribute change block notification of
     // our own in the StagesSubject, which we invoke here, so that only a
     // single UFE attribute changed notification is generated.
+    if (!attr.IsValid())
+        return false;
+
     MayaUsd::ufe::AttributeChangedNotificationGuard guard;
     std::string                                     errMsg;
     bool isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
     if (!isSetAttrAllowed) {
-        MGlobal::displayError(errMsg.c_str());
-        return false;
+        throw std::runtime_error(errMsg);
     }
 
     return attr.Set<T>(value);
@@ -96,7 +98,7 @@ PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
 std::string
 getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
-    if (!attr.HasValue())
+    if (!attr.IsValid() || !attr.HasValue())
         return std::string();
 
     PXR_NS::VtValue v;
@@ -118,7 +120,7 @@ getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::Usd
 template <typename T, typename U>
 U getUsdAttributeVectorAsUfe(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
-    if (!attr.HasValue())
+    if (!attr.IsValid() || !attr.HasValue())
         return U();
 
     PXR_NS::VtValue vt;
@@ -274,6 +276,13 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
     auto self = std::dynamic_pointer_cast<UsdAttributeEnumString>(shared_from_this());
     if (!TF_VERIFY(self, kErrorMsgInvalidType))
         return nullptr;
+
+    std::string errMsg;
+    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
     return std::make_shared<SetUndoableCommand<std::string, UsdAttributeEnumString>>(self, value);
 }
 
@@ -306,6 +315,12 @@ TypedUsdAttribute<T>::TypedUsdAttribute(
 
 template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(const T& value)
 {
+    std::string errMsg;
+    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
     // See
     // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
     // for explanation of this->shared_from_this() in templated class.
