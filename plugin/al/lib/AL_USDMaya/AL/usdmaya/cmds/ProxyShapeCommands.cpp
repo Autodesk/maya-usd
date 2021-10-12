@@ -18,6 +18,7 @@
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/maya/utils/Utils.h"
+#include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 
 #include <maya/MArgDatabase.h>
@@ -42,6 +43,19 @@ MSyntax ProxyShapeCommandBase::setUpCommonSyntax()
     syntax.setObjectType(MSyntax::kSelectionList, 0, 1);
     syntax.addFlag("-p", "-proxy", MSyntax::kString);
     return syntax;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MArgDatabase ProxyShapeCommandBase::makeDatabase(const MArgList& args)
+{
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeCommandBase::makeDatabase\n");
+    MStatus      status;
+    MArgDatabase database(syntax(), args, &status);
+    if (!status) {
+        std::cout << status.errorString() << std::endl;
+        throw status;
+    }
+    return database;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -415,13 +429,7 @@ MStatus ProxyShapeFindLoadable::doIt(const MArgList& args)
 {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeFindLoadable::doIt\n");
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         bool loaded = db.isFlagSet("-l");
         bool unloaded = db.isFlagSet("-ul");
@@ -576,13 +584,7 @@ MStatus ProxyShapeImportAllTransforms::redoIt()
 MStatus ProxyShapeImportAllTransforms::doIt(const MArgList& args)
 {
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         bool pushToPrim = false;
         if (db.isFlagSet("-p2p")) {
@@ -676,13 +678,7 @@ MStatus ProxyShapeRemoveAllTransforms::redoIt() { return m_modifier.doIt(); }
 MStatus ProxyShapeRemoveAllTransforms::doIt(const MArgList& args)
 {
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         nodes::ProxyShape* shapeNode = getShapeNode(db);
         MDagPath           shapePath = getShapePath(db);
@@ -748,13 +744,7 @@ MStatus ProxyShapeResync::doIt(const MArgList& args)
 {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeResync::doIt\n");
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         m_shapeNode = getShapeNode(db);
 
@@ -822,13 +812,7 @@ MStatus InternalProxyShapeSelect::doIt(const MArgList& args)
 {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("InternalProxyShapeSelect::doIt\n");
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         m_proxy = getShapeNode(db);
         if (!m_proxy) {
@@ -918,13 +902,7 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
 {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeSelect::doIt\n");
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         nodes::ProxyShape* proxy = getShapeNode(db);
         if (!proxy) {
@@ -1060,13 +1038,7 @@ MStatus ProxyShapePostSelect::doIt(const MArgList& args)
 {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePostSelect::doIt\n");
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         m_proxy = getShapeNode(db);
         if (!m_proxy) {
@@ -1107,13 +1079,7 @@ MStatus ProxyShapeImportPrimPathAsMaya::doIt(const MArgList& args)
 {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeImportPrimPathAsMaya::doIt\n");
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         MDagPath shapePath = getShapePath(db);
         m_transformPath = shapePath;
@@ -1189,13 +1155,7 @@ MStatus TranslatePrim::doIt(const MArgList& args)
 {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::doIt\n");
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
         m_proxy = getShapeNode(db);
 
@@ -1347,20 +1307,35 @@ MStatus TranslatePrim::redoIt()
         m_proxy->processChangedMetaData(SdfPathVector(), newImportPaths);
     }
 
-    auto stage = m_proxy->usdStage();
-    auto manufacture = m_proxy->translatorManufacture();
-    for (auto it : m_updatePaths) {
-        auto prim = stage->GetPrimAtPath(it);
-        if (prim) {
-            auto translator = manufacture.get(prim);
-            if (translator && translator->supportsUpdate()) {
-                translator->update(prim);
+    // construct locks and selectability for imported prims
+    if (m_proxy->isLockPrimFeatureActive()) {
+        m_proxy->removeMetaData(m_teardownPaths);
+        m_proxy->processChangedMetaData(SdfPathVector(), newImportPaths);
+    }
+
+    if (!m_updatePaths.empty()) {
+
+        // check paths refer to valid prims for this stage
+        auto                        stage = m_proxy->usdStage();
+        MayaUsdUtils::UsdPrimVector updatePrims;
+
+        AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
+        for (const SdfPath& path : m_updatePaths) {
+            UsdPrim prim = stage->GetPrimAtPath(path);
+            if (prim.IsValid()) {
+                auto translator = manufacture.get(prim);
+                if (translator && translator->supportsUpdate()) {
+                    translator->update(prim);
+                    updatePrims.push_back(prim);
+                }
             } else {
-                MString err = "Update requested on prim that does not support update: ";
-                err += it.GetText();
-                MGlobal::displayWarning(err);
+                TF_DEBUG(ALUSDMAYA_COMMANDS)
+                    .Msg(
+                        "TranslatePrim::redoIt '%s' resolves to an invalid prim\n", path.GetText());
             }
         }
+        cmds::ProxyShapePostLoadProcess::updateSchemaPrims(m_proxy, updatePrims);
+        cmds::ProxyShapePostLoadProcess::connectSchemaPrims(m_proxy, updatePrims);
     }
 
     return MStatus::kSuccess;
@@ -1521,13 +1496,7 @@ MStatus ProxyShapePrintRefCountState::doIt(const MArgList& args)
 {
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapePrintRefCountState::doIt\n");
     try {
-        MStatus      status;
-        MArgDatabase db(syntax(), args, &status);
-        if (!status) {
-            std::cout << status.errorString() << std::endl;
-            return status;
-        }
-
+        MArgDatabase db = makeDatabase(args);
         AL_MAYA_COMMAND_HELP(db, g_helpText);
 
         /// find the proxy shape node

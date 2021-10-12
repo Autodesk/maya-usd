@@ -60,6 +60,10 @@ public:
     /// \param  args the valid argument data base
     /// \return the stage from the proxy shape specified in the selected command arguments
     UsdStageRefPtr getShapeNodeStage(const MArgDatabase& args);
+
+protected:
+    /// utility func to create the arg database
+    MArgDatabase makeDatabase(const MArgList& args);
 };
 
 //----------------------------------------------------------------------------------------------------------------------
