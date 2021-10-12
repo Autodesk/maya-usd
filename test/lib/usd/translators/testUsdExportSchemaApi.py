@@ -22,7 +22,7 @@ from maya import cmds
 from maya import standalone
 import maya.api.OpenMaya as om
 
-from pxr import Tf, Gf, UsdMaya
+from pxr import Tf, Gf, UsdMaya, Usd
 
 import fixturesUtils
 
@@ -101,7 +101,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
         modes = set(cmds.mayaUSDListIOContexts(export=True))
         self.assertEqual(modes, set([
             "Null API Export", "Thierry", "Scene Grinder", "Curly's special",
-            "Moe's special", "Larry's special"]))
+            "Moe's special", "Larry's special", 'Bullet Physics API Export']))
 
         self.assertEqual(cmds.mayaUSDListIOContexts(exportOption="Null API Export"), "NullAPI")
         self.assertEqual(cmds.mayaUSDListIOContexts(exportAnnotation="Null API Export"),
@@ -151,7 +151,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
             meshes=[s1T],
             radius=1.0,
             mass=5.0,
-            centerOfMass=[0.9, 0.8, 0.7])
+            centerOfMass=(0.9, 0.8, 0.7))
 
         # See if the plugin adaptor can read the bullet shape under the mesh:
         sl = om.MSelectionList()
@@ -175,6 +175,9 @@ class testUsdExportSchemaApi(unittest.TestCase):
         bulletMass = physicsMass.GetAttribute('physics:mass')
         self.assertAlmostEqual(bulletMass.Get(), 5.0)
         bulletMass.Set(12.0)
+
+        bulletCenter = physicsMass.GetAttribute('physics:centerOfMass')
+        bulletCenter.Set(Gf.Vec3f(3, 4, 5))
 
         sl = om.MSelectionList()
         sl.add(s1T)
@@ -210,11 +213,43 @@ class testUsdExportSchemaApi(unittest.TestCase):
         self.assertEqual(adaptor.GetUsdType(), Tf.Type.FindByName('UsdGeomMesh'))
         self.assertEqual(adaptor.GetAppliedSchemas(), ['PhysicsMassAPI'])
 
+        usdDensity = physicsMass.CreateAttribute('physics:density')
+        usdDensity.Set(33.0)
+
+        # Export, but without enabling Bullet:
+        usdFilePath = os.path.abspath('UsdExportSchemaApiTest_NoBullet.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath)
+
+        # Check that there are no Physics API schemas exported:
+        stage = Usd.Stage.Open(usdFilePath)
+        for i in (1,2):
+            spherePrim = stage.GetPrimAtPath('/pSphere{0}/pSphereShape{0}'.format(i))
+            self.assertFalse("PhysicsMassAPI" in spherePrim.GetAppliedSchemas())
+
+        # Export, with Bullet:
+        usdFilePath = os.path.abspath('UsdExportSchemaApiTest_WithBullet.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+                           extraContext=["Bullet"])
+
+        # Check that Physics API schemas did get exported:
+        stage = Usd.Stage.Open(usdFilePath)
+        values = [
+            ("physics:centerOfMass", (Gf.Vec3f(3, 4, 5), Gf.Vec3f(0, 0, 0))),
+            ("physics:mass", (12.0, 1.0)),
+            ("physics:density", (None, 33.0)),
+        ]
+        for i in (1,2):
+            spherePrim = stage.GetPrimAtPath('/pSphere{0}/pSphereShape{0}'.format(i))
+            self.assertTrue("PhysicsMassAPI" in spherePrim.GetAppliedSchemas())
+            for n,v in values:
+                if v[i-1]:
+                    a = spherePrim.GetAttribute(n)
+                    self.assertEqual(a.Get(), v[i-1])
+
+
         # Try unapplying the schema:
         adaptor.UnapplySchemaByName("PhysicsMassAPI")
         self.assertEqual(adaptor.GetAppliedSchemas(), [])
-
-
 
 
 if __name__ == '__main__':

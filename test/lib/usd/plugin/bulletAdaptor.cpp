@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/fileio/exportContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/schemaApiAdaptor.h>
 #include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
@@ -36,6 +37,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // USD
+    (PhysicsMassAPI)
     ((Mass, "physics:mass"))
     ((CenterOfMass, "physics:centerOfMass"))
 
@@ -44,6 +46,17 @@ TF_DEFINE_PRIVATE_TOKENS(
     (centerOfMass)
 );
 // clang-format on
+
+REGISTER_EXPORT_CONTEXT_FCT(
+    Bullet,
+    "Bullet Physics API Export",
+    "Test export of USD Physics APIs on a Bullet simulation")
+{
+    VtDictionary extraArgs;
+    extraArgs[UsdMayaJobExportArgsTokens->apiSchema]
+        = VtValue(std::vector<VtValue> { VtValue(_tokens->PhysicsMassAPI.GetString()) });
+    return extraArgs;
+}
 
 class UsdPrimDefinition;
 
@@ -62,11 +75,29 @@ public:
 
     ~TestBulletMassShemaAdaptor() override { }
 
-    bool CanAdapt() const override { return !GetMayaObjectForSchema().isNull(); }
+    bool CanAdapt() const override
+    {
+        // We do not want to process the bullet node shape itself. It adds nothing of interest.
+        if (!_handle.isValid()) {
+            return false;
+        }
+
+        MFnDependencyNode depFn;
+        if (depFn.setObject(_handle.object()) != MS::kSuccess
+            || depFn.typeName() == "bulletRigidBodyShape") {
+            return false;
+        }
+
+        return !GetMayaObjectForSchema().isNull();
+    }
 
     bool CanAdaptForExport(const UsdMayaJobExportArgs& jobArgs) const override
     {
-        return CanAdapt();
+        if (jobArgs.includeAPINames.find(_tokens->PhysicsMassAPI)
+            != jobArgs.includeAPINames.end()) {
+            return CanAdapt();
+        }
+        return false;
     }
 
     bool ApplySchema(MDGModifier&)

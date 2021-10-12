@@ -764,6 +764,7 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
 
     for (const TfToken& schemaName : adaptor.GetAppliedSchemas()) {
         if (const UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.GetSchemaByName(schemaName)) {
+            prim.AddAppliedSchema(schemaName);
             for (const TfToken& attrName : schemaAdaptor->GetAuthoredAttributeNames()) {
                 if (const UsdMayaAttributeAdaptor attrAdaptor
                     = schemaAdaptor->GetAttribute(attrName)) {
