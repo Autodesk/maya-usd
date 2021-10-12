@@ -321,7 +321,8 @@ std::string LoadLayersDialog::findDirectoryToUse(const std::string& rowText) con
         }
     }
     if (path.empty()) {
-        path = _treeItem->parentModel()->sessionState()->defaultLoadPath();
+        path = QDir::currentPath().toStdString()
+            + "/"; // USD is loading from current working directory when no path is specified.
     }
 
     if (!path.empty()) {
