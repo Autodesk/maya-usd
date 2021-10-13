@@ -24,7 +24,7 @@ import fixturesUtils
 
 import unittest
 
-class testReadWriteUtils(unittest.TestCase):
+class testShadingModeRegistry(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.setUpClass(__file__)
@@ -36,7 +36,7 @@ class testReadWriteUtils(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    def testSimplePrimWriter(self):
+    def testSimpleImportExportRegistration(self):
         mayaUsdLib.ShadingModeRegistry.RegisterImportConversion("MaterialX", "mtlx", "MaterialX shading", "Search for a MaterialX UsdShade network to import.")
         mayaUsdLib.ShadingModeRegistry.RegisterExportConversion("MaterialX", "mtlx", "MaterialX shading", "Exports bound shaders as a MaterialX UsdShade network.")
 
