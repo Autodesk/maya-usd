@@ -33,6 +33,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMayaAdaptor;
+class UsdUtilsSparseValueWriter;
 struct UsdMayaJobExportArgs;
 
 /// The UsdMayaAttributeAdaptor stores a mapping between a USD schema attribute and
@@ -232,6 +233,19 @@ public:
     /// Returns a null pointer if this schema adaptor is invalid.
     MAYAUSD_CORE_PUBLIC
     const UsdPrimDefinition* GetSchemaDefinition() const;
+
+    /// Copies the adapted data to another USD Prim:
+    /// Returns true if CopyToPrim is implemented.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool CopyToPrim(
+        const UsdPrim&             prim,
+        const UsdTimeCode&         usdTime,
+        UsdUtilsSparseValueWriter* valueWriter) const;
+
+    /// Creates and copies the adapted data from another USD Prim:
+    /// Returns true if CopyFromPrim is implemented.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool CopyFromPrim(const UsdPrim& prim);
 
 private:
     /// Gets the name of the adapted Maya attribute for the given attribute

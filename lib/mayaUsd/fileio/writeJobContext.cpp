@@ -260,15 +260,6 @@ UsdMayaWriteJobContext::_FindOrCreateInstanceMaster(const MDagPath& instancePath
 
         for (UsdMayaPrimWriterSharedPtr& primWriter : primWriters) {
             primWriter->Write(UsdTimeCode::Default());
-
-            // See if we have any custom SchemaAPI exporters to run as well:
-            UsdMayaSchemaApiWriterList schemaWriters = CreateSchemaApiWriters(primWriter);
-            if (!schemaWriters.empty()) {
-                mSchemaApiWriterMap[primWriter] = schemaWriters;
-                for (const UsdMayaSchemaApiWriterSharedPtr& schemaWriter : schemaWriters) {
-                    schemaWriter->Write(UsdTimeCode::Default());
-                }
-            }
         }
 
         // For proper instancing, ensure that none of the prims from
@@ -603,71 +594,6 @@ void UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
 
         primWritersOut->push_back(writer);
     }
-}
-
-UsdMayaSchemaApiWriterList
-UsdMayaWriteJobContext::CreateSchemaApiWriters(const UsdMayaPrimWriterSharedPtr& primWriter)
-{
-    UsdMayaSchemaApiWriterList writers;
-
-    // This is either a DG node or a non-instanced DAG node, so try to look up
-    // a writer plugin. We search through the node's type ancestors, working
-    // backwards until we find a prim writer plugin.
-    const MFnDependencyNode depNodeFn(primWriter->GetMayaObject());
-    const std::string       mayaTypeName(depNodeFn.typeName().asChar());
-    for (const auto& writerEntry : _FindSchemaApiWriters(mayaTypeName)) {
-        UsdMayaSchemaApiWriterRegistry::WriterFactoryFn factoryFn = writerEntry.second;
-        if (mArgs.includeAPINames.find(TfToken(writerEntry.first)) == mArgs.includeAPINames.end()) {
-            continue;
-        }
-        if (UsdMayaSchemaApiWriterSharedPtr schemaWriter = factoryFn(primWriter, *this)) {
-            // We found a registered user schema API writer that handles this node
-            // type, add it to the returned list.
-            writers.push_back(schemaWriter);
-        }
-    }
-
-    return writers;
-}
-
-UsdMayaSchemaApiWriterRegistry::WriterFactoryFnMap
-UsdMayaWriteJobContext::_FindSchemaApiWriters(const std::string& mayaNodeType)
-{
-    // Check if type is already cached locally.
-    auto iter = mSchemaApiWriterFactoryCache.find(mayaNodeType);
-    if (iter != mSchemaApiWriterFactoryCache.end()) {
-        return iter->second;
-    }
-
-    UsdMayaSchemaApiWriterRegistry::WriterFactoryFnMap factories;
-
-    // Search up the ancestor hierarchy for a writer plugin.
-    //
-    // We can not stop at an intermediate level in the hierarchy because we might miss a schema
-    // writer for a base class.
-    const std::vector<std::string> ancestorTypes
-        = UsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
-    for (auto i = ancestorTypes.rbegin(); i != ancestorTypes.rend(); ++i) {
-        auto typeFactories = UsdMayaSchemaApiWriterRegistry::Find(*i);
-
-        // Checking for existing schema writers:
-        for (const auto& entry : typeFactories) {
-            if (factories.count(entry.first)) {
-                TF_WARN(
-                    "Ingoring schema API writer for %s and base class %s which collides with "
-                    "another one found in the class hierarchy",
-                    entry.first.c_str(),
-                    i->c_str());
-            }
-        }
-
-        // insert will never overwrite an existing entry
-        factories.insert(typeFactories.begin(), typeFactories.end());
-    }
-
-    // Remember the last result to prevent reloading the plugins
-    mSchemaApiWriterFactoryCache[mayaNodeType] = factories;
-    return factories;
 }
 
 void UsdMayaWriteJobContext::MarkSkelBindings(

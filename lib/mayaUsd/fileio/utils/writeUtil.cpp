@@ -755,6 +755,7 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
     const MObject&              mayaObject,
     const UsdPrim&              prim,
     const UsdMayaJobExportArgs* jobExportArgs,
+    const UsdTimeCode&          usdTime,
     UsdUtilsSparseValueWriter*  valueWriter)
 {
     UsdMayaAdaptor adaptor(mayaObject, jobExportArgs);
@@ -765,6 +766,9 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
     for (const TfToken& schemaName : adaptor.GetAppliedSchemas()) {
         if (const UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.GetSchemaByName(schemaName)) {
             prim.AddAppliedSchema(schemaName);
+            if (schemaAdaptor->CopyToPrim(prim, usdTime, valueWriter)) {
+                continue;
+            }
             for (const TfToken& attrName : schemaAdaptor->GetAuthoredAttributeNames()) {
                 if (const UsdMayaAttributeAdaptor attrAdaptor
                     = schemaAdaptor->GetAttribute(attrName)) {
@@ -776,7 +780,6 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                             attrDef->GetTypeName(),
                             /*custom*/ false,
                             attrDef->GetVariability());
-                        const UsdTimeCode usdTime = UsdTimeCode::Default();
                         SetAttribute(attr, value, usdTime, valueWriter);
                     }
                 }

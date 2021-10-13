@@ -19,8 +19,6 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/schemaApiAdaptor.h>
 #include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
-#include <mayaUsd/fileio/schemaApiWriter.h>
-#include <mayaUsd/fileio/schemaApiWriterRegistry.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -85,52 +83,6 @@ REGISTER_EXPORT_CONTEXT_FCT(Moe, "Moe's special", "Test coverage of error handli
     return extraArgs;
 }
 
-class TestSchemaExporter : public UsdMayaSchemaApiWriter
-{
-    bool _isValidChaser = false;
-    bool _isValidChaserArgs = false;
-    bool _isValidGeomSidedness = false;
-
-public:
-    TestSchemaExporter(const UsdMayaPrimWriterSharedPtr& primWriter, UsdMayaWriteJobContext& jobCtx)
-        : UsdMayaSchemaApiWriter(primWriter, jobCtx)
-    {
-        const UsdMayaJobExportArgs& jobArgs = jobCtx.GetArgs();
-        _isValidChaser
-            = jobArgs.chaserNames.size() == 1 && jobArgs.chaserNames.front() == "NullAPIChaser";
-
-        // Default value of "derived" overwritten by stronger context:
-        _isValidGeomSidedness = jobArgs.geomSidedness == "double";
-
-        // Validate chaser args were merged:
-        std::map<std::string, std::string> myArgs;
-        TfMapLookup(jobArgs.allChaserArgs, "NullAPIChaser", &myArgs);
-        _isValidChaserArgs = myArgs.count("life") > 0 && myArgs["life"] == "42"
-            && myArgs.count("genre") > 0 && myArgs["genre"] == "slapstick";
-    }
-
-    void Write(const UsdTimeCode&) override
-    {
-        if (!_isValidChaser) {
-            TF_RUNTIME_ERROR("Missing chaser name NullAPIChaser in job arguments");
-        }
-        if (!_isValidGeomSidedness) {
-            TF_RUNTIME_ERROR("Incorrect geom sidedness in job arguments");
-        }
-        if (!_isValidChaserArgs) {
-            TF_RUNTIME_ERROR("Incorrect chaser args in job arguments");
-        }
-        TF_RUNTIME_ERROR("Missing implementation for TestSchemaExporter::Write");
-    }
-
-    void PostExport() override
-    {
-        TF_RUNTIME_ERROR("Missing implementation for TestSchemaExporter::PostExport");
-    }
-};
-
-PXRUSDMAYA_REGISTER_SCHEMA_API_WRITER(mesh, testApi, TestSchemaExporter);
-
 // We added this dummy chaser with the export context.
 
 class NullAPIChaser : public UsdMayaExportChaser
@@ -148,31 +100,5 @@ public:
 };
 
 PXRUSDMAYA_DEFINE_EXPORT_CHASER_FACTORY(NullAPIChaser, ctx) { return new NullAPIChaser(); }
-
-// The following exporter gets registered for a schema that is not in the list.
-// It should not execute.
-
-class UnusedSchemaExporter : public UsdMayaSchemaApiWriter
-{
-public:
-    UnusedSchemaExporter(
-        const UsdMayaPrimWriterSharedPtr& primWriter,
-        UsdMayaWriteJobContext&           jobCtx)
-        : UsdMayaSchemaApiWriter(primWriter, jobCtx)
-    {
-    }
-
-    void Write(const UsdTimeCode&) override
-    {
-        TF_RUNTIME_ERROR("SHOULD NOT BE CALLED: UnusedSchemaExporter::Write");
-    }
-
-    void PostExport() override
-    {
-        TF_RUNTIME_ERROR("SHOULD NOT BE CALLED: UnusedSchemaExporter::PostExport");
-    }
-};
-
-PXRUSDMAYA_REGISTER_SCHEMA_API_WRITER(mesh, unusedApi, UnusedSchemaExporter);
 
 PXR_NAMESPACE_CLOSE_SCOPE

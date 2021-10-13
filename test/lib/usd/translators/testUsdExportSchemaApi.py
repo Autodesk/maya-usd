@@ -44,57 +44,6 @@ class testUsdExportSchemaApi(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testExportSchemaApi(self):
-        """Testing that a custom Schema API exporter is created and called"""
-        mark = Tf.Error.Mark()
-        mark.SetMark()
-        self.assertTrue(mark.IsClean())
-
-        cmds.polySphere(r=1)
-        usdFilePath = os.path.abspath('UsdExportSchemaApiTest.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-                           extraContext=["NullAPI", "Moe"])
-
-        self.assertFalse(mark.IsClean())
-
-        errors = mark.GetErrors()
-        messages = set()
-        for e in errors:
-            messages.add(e.commentary)
-        expected = set([
-            "Missing implementation for NullAPIChaser::ExportDefault",
-            "Missing implementation for TestSchemaExporter::Write",
-            "Missing implementation for TestSchemaExporter::PostExport"])
-        self.assertEqual(messages, expected)
-
-        cmds.file(f=True, new=True)
-
-    def testExportSchemaApiViaFileAPI(self):
-        """Testing that a custom Schema API exporter is created and called with file command"""
-        mark = Tf.Error.Mark()
-        mark.SetMark()
-        self.assertTrue(mark.IsClean())
-
-        cmds.polySphere(r=1)
-        usdFilePath = os.path.abspath('UsdExportSchemaApiTestFile.usda')
-        cmds.file(usdFilePath, force=True,
-                  options="mergeTransformAndShape=1;extraContext=Thierry,NullAPI,Moe",
-                  typ="USD Export", pr=True, ea=True)
-
-        self.assertFalse(mark.IsClean())
-
-        errors = mark.GetErrors()
-        messages = set()
-        for e in errors:
-            messages.add(e.commentary)
-        expected = set([
-            "Missing implementation for NullAPIChaser::ExportDefault",
-            "Missing implementation for TestSchemaExporter::Write",
-            "Missing implementation for TestSchemaExporter::PostExport"])
-        self.assertEqual(messages, expected)
-
-        cmds.file(f=True, new=True)
-
     def testIOContextLister(self):
         """Testing that we can enumerate export contexts"""
 
@@ -202,6 +151,10 @@ class testUsdExportSchemaApi(unittest.TestCase):
         bulletAttributes.remove('physics:density')
         self.assertEqual(set(physicsMass.GetAuthoredAttributeNames()), bulletAttributes)
 
+        # Add some animation:
+        cmds.setKeyframe(bulletPath, at="mass", t=0, v=3.0)
+        cmds.setKeyframe(bulletPath, at="mass", t=10, v=30.0)
+
         # Try applying the schema on a new sphere:
         s2T = cmds.polySphere()[0]
         sl.add(s2T)
@@ -229,13 +182,13 @@ class testUsdExportSchemaApi(unittest.TestCase):
         # Export, with Bullet:
         usdFilePath = os.path.abspath('UsdExportSchemaApiTest_WithBullet.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-                           extraContext=["Bullet"])
+                           extraContext=["Bullet"], frameRange=(1, 10))
 
         # Check that Physics API schemas did get exported:
         stage = Usd.Stage.Open(usdFilePath)
         values = [
             ("physics:centerOfMass", (Gf.Vec3f(3, 4, 5), Gf.Vec3f(0, 0, 0))),
-            ("physics:mass", (12.0, 1.0)),
+            ("physics:mass", (3.0, 1.0)),
             ("physics:density", (None, 33.0)),
         ]
         for i in (1,2):
@@ -245,6 +198,11 @@ class testUsdExportSchemaApi(unittest.TestCase):
                 if v[i-1]:
                     a = spherePrim.GetAttribute(n)
                     self.assertEqual(a.Get(), v[i-1])
+            if i == 1:
+                # Is mass animated?
+                a = spherePrim.GetAttribute("physics:mass")
+                self.assertEqual(a.Get(10), 30)
+
 
 
         # Try unapplying the schema:

@@ -856,6 +856,16 @@ TfTokenVector UsdMayaSchemaAdaptor::GetAttributeNames() const
 
 const UsdPrimDefinition* UsdMayaSchemaAdaptor::GetSchemaDefinition() const { return _schemaDef; }
 
+bool UsdMayaSchemaAdaptor::CopyToPrim(
+    const UsdPrim&,
+    const UsdTimeCode&,
+    UsdUtilsSparseValueWriter*) const
+{
+    return false;
+}
+
+bool UsdMayaSchemaAdaptor::CopyFromPrim(const UsdPrim&) { return false; }
+
 UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor()
     : _plug()
     , _node()

@@ -169,6 +169,7 @@ struct UsdMayaWriteUtil
         const MObject&              mayaObject,
         const UsdPrim&              prim,
         const UsdMayaJobExportArgs* jobExportArgs = nullptr,
+        const UsdTimeCode&          usdTime = UsdTimeCode::Default(),
         UsdUtilsSparseValueWriter*  valueWriter = nullptr);
 
     template <typename T>

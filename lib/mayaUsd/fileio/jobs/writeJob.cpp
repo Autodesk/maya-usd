@@ -382,16 +382,6 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                 if (primWriter->ShouldPruneChildren()) {
                     itDag.prune();
                 }
-
-                // See if we have any custom SchemaAPI exporters to run as well:
-                UsdMayaSchemaApiWriterList schemaWriters
-                    = mJobCtx.CreateSchemaApiWriters(primWriter);
-                if (!schemaWriters.empty()) {
-                    mJobCtx.mSchemaApiWriterMap[primWriter] = schemaWriters;
-                    for (const UsdMayaSchemaApiWriterSharedPtr& schemaWriter : schemaWriters) {
-                        schemaWriter->Write(UsdTimeCode::Default());
-                    }
-                }
             }
         }
     }
@@ -451,14 +441,6 @@ bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
         const UsdPrim& usdPrim = primWriter->GetUsdPrim();
         if (usdPrim) {
             primWriter->Write(usdTime);
-
-            // See if we have any custom SchemaAPI exporters to run as well:
-            auto schemaWriterIt = mJobCtx.mSchemaApiWriterMap.find(primWriter);
-            if (schemaWriterIt != mJobCtx.mSchemaApiWriterMap.cend()) {
-                for (const UsdMayaSchemaApiWriterSharedPtr& schemaWriter : schemaWriterIt->second) {
-                    schemaWriter->Write(usdTime);
-                }
-            }
         }
     }
 
@@ -540,14 +522,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
     // Running post export function on all the prim writers.
     for (auto& primWriter : mJobCtx.mMayaPrimWriterList) {
         primWriter->PostExport();
-
-        // See if we have any custom SchemaAPI exporters to run as well:
-        auto schemaWriterIt = mJobCtx.mSchemaApiWriterMap.find(primWriter);
-        if (schemaWriterIt != mJobCtx.mSchemaApiWriterMap.cend()) {
-            for (const UsdMayaSchemaApiWriterSharedPtr& schemaWriter : schemaWriterIt->second) {
-                schemaWriter->PostExport();
-            }
-        }
     }
 
     // Run post export function on the chasers.
@@ -573,7 +547,6 @@ bool UsdMaya_WriteJob::_FinishWriting()
 
     mJobCtx.mStage = UsdStageRefPtr();
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
-    mJobCtx.mSchemaApiWriterMap.clear();
 
     // In the usdz case, the layer at _fileName was just a temp file, so
     // clean it up now. Do this after mJobCtx.mStage is reset to ensure

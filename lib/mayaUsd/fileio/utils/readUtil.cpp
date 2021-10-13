@@ -847,9 +847,13 @@ bool UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
             continue;
         }
         if (UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.ApplySchemaByName(schemaName)) {
+            if (schemaAdaptor->CopyFromPrim(prim)) {
+                continue;
+            }
             for (const TfToken& attrName : schemaAdaptor->GetAttributeNames()) {
                 if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                     VtValue               value;
+                    /// TODO: Read animation!!!!!
                     constexpr UsdTimeCode t = UsdTimeCode::EarliestTime();
                     if (attr.HasAuthoredValue() && attr.Get(&value, t)) {
                         schemaAdaptor->CreateAttribute(attrName).Set(value);

@@ -23,8 +23,6 @@ target_sources(${PROJECT_NAME}
         registryHelper.cpp
         schemaApiAdaptor.cpp
         schemaApiAdaptorRegistry.cpp
-        schemaApiWriter.cpp
-        schemaApiWriterRegistry.cpp
         shaderReader.cpp
         shaderReaderRegistry.cpp
         shaderWriter.cpp
@@ -54,8 +52,6 @@ set(HEADERS
     registryHelper.h
     schemaApiAdaptor.h
     schemaApiAdaptorRegistry.h
-    schemaApiWriter.h
-    schemaApiWriterRegistry.h
     shaderReader.h
     shaderReaderRegistry.h
     shaderWriter.h
