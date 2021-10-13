@@ -92,7 +92,7 @@ class TestUsdExportBlendshapes(unittest.TestCase):
         prim = stage.GetPrimAtPath("/basic_cube_4_blendshapes_no_anim/base")
         blendShapes = prim.GetChildren()
         for bs in blendShapes:
-            self.assertEqual(bs.GetTypeName(), 'BlendShape')
+            self.assertIn.assertEqual(bs.GetTypeName(), ['BlendShape', 'GeomSubset'])
 
         # NOTE: (yliangsiew) Test exporting empty blendshape targets.
         om.MFileIO.open(self.scene_path, None, True)
