@@ -893,6 +893,8 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
 
     MStatus status { MS::kSuccess };
 
+#if MAYA_API_VERSION >= 20220000
+
     MFnDependencyNode depNodeFn;
     depNodeFn.setObject(meshObj);
     MPlug ctPlug = depNodeFn.findPlug("componentTags", &status);
@@ -944,6 +946,8 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
 
         idx++;
     }
+
+#endif
 
     return status;
 }

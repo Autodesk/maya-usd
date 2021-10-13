@@ -1376,6 +1376,8 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
 {
     MStatus status { MS::kSuccess };
 
+#if MAYA_API_VERSION >= 20220000
+
     MFnDependencyNode dNode(obj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
@@ -1390,7 +1392,7 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
         MFnGeometryData fnGeomData(geomObj);
         MStringArray    keys;
         status = fnGeomData.componentTags(keys);
-        for (int i = 0; i < keys.length(); ++i) {
+        for (unsigned int i = 0; i < keys.length(); ++i) {
             MFnGeometryData::ComponentTagCategory ctg
                 = fnGeomData.componentTagCategory(keys[i], &status);
             if (ctg == MFnGeometryData::ComponentTagCategory::kFaces) {
@@ -1413,6 +1415,8 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
             }
         }
     }
+
+#endif
 
     return status;
 }
