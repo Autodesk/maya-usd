@@ -906,20 +906,21 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
     MPlug ctContent(meshObj, ctContentsAttr);
 
     // Find all the prims defining componentTags
-    TfToken componentTagFamilyName("componentTag");
-    unsigned int idx = 0;
-    std::vector<UsdGeomSubset> subsets = UsdGeomSubset::GetGeomSubsets(mesh, UsdGeomTokens->face, componentTagFamilyName);
+    TfToken                    componentTagFamilyName("componentTag");
+    unsigned int               idx = 0;
+    std::vector<UsdGeomSubset> subsets
+        = UsdGeomSubset::GetGeomSubsets(mesh, UsdGeomTokens->face, componentTagFamilyName);
     for (auto& ss : subsets) {
         // Get the tagName out of the subset
         MString tagName(ss.GetPrim().GetName().GetText());
 
         // Get the indices out of the subset
-        VtIntArray faceIndices;
+        VtIntArray   faceIndices;
         UsdAttribute indicesAttribute = ss.GetIndicesAttr();
         indicesAttribute.Get(&faceIndices);
 
         MFnSingleIndexedComponent compFn;
-        MObject faceComp = compFn.create(MFn::kMeshPolygonComponent, &status);
+        MObject                   faceComp = compFn.create(MFn::kMeshPolygonComponent, &status);
         if (!status) {
             TF_RUNTIME_ERROR("Failed to create face component.");
             return status;
@@ -930,13 +931,13 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
         compFn.addElements(mFaces);
 
         MFnComponentListData componentListFn;
-        MObject componentList = componentListFn.create();
+        MObject              componentList = componentListFn.create();
         status = componentListFn.add(faceComp);
         CHECK_MSTATUS_AND_RETURN_IT(status);
 
         // Set the attribute values
-        ctName.selectAncestorLogicalIndex (idx, ctAttr);
-        ctContent.selectAncestorLogicalIndex (idx, ctAttr);
+        ctName.selectAncestorLogicalIndex(idx, ctAttr);
+        ctContent.selectAncestorLogicalIndex(idx, ctAttr);
 
         ctName.setValue(tagName);
         ctContent.setValue(componentList);
