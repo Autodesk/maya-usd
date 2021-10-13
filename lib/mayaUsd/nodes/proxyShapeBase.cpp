@@ -17,6 +17,8 @@
 
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/fileio/primUpdaterRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/customLayerData.h>
@@ -45,6 +47,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -58,6 +61,7 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MDGContext.h>
 #include <maya/MDGContextGuard.h>
+#include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
@@ -68,6 +72,7 @@
 #include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
+#include <maya/MFnMessageAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MFnReference.h>
@@ -75,6 +80,7 @@
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
+#include <maya/MIntArray.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -1022,6 +1028,10 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
             });
 
         MayaUsdProxyStageSetNotice(*this).Send();
+
+        _managedSchemPrimss.clear();
+        SdfPathVector resynchedPaths{ stageData->primPath };
+        _updateSchemaPrims(resynchedPaths);
     }
 
     return MS::kSuccess;
@@ -1658,6 +1668,11 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
 
+    const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
+
+    if (!resyncedPaths.empty())
+        _updateSchemaPrims(SdfPathVector(resyncedPaths));
+
     // This will definitely force a BBox recomputation on "Frame All" or when framing a selected
     // stage. Computing bounds in USD is expensive, so if it pops up in other frequently used
     // scenarios we will have to investigate ways to make this cache clearing less expensive.
@@ -1722,6 +1737,84 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
             }
         }
     }
+}
+
+bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPaths)
+{
+    // Prevent infinite loop when UsdMayaTranslatorMayaReference sets 
+    // a 'maya_associatedReferenceNode' key in the prim custom data,
+    // which emits a USDNotice::StageContentsChanged.
+    if (_inUpdateSchemaPrims)
+        return false;
+
+    _inUpdateSchemaPrims = true;
+
+    MDagPath thisDagPath = MDagPath::getAPathTo(thisMObject());
+    thisDagPath.pop();
+
+    UsdStageRefPtr stage = getUsdStage();
+    UsdMayaPrimUpdaterContext ctx(getTime(), stage);
+
+    for (const auto primInfo : _managedSchemPrimss)
+    {
+        auto primPath = std::get<0>(primInfo);
+        auto primType = std::get<1>(primInfo);
+
+        bool inSync = true;
+
+        for (auto resyncedPath : resyncedPaths)
+        {
+            if (primPath.HasPrefix(resyncedPath) || primPath == resyncedPath)
+            {
+                inSync = false;
+                break;
+            }
+        }
+
+        if (inSync)
+            continue;
+
+        UsdPrim prim = stage->GetPrimAtPath(primPath);
+
+        auto primUpdaterRegisterItem = UsdMayaPrimUpdaterRegistry::Find(primType);
+
+        if (prim.IsValid() && prim.IsActive() && prim.IsDefined())
+            continue;
+
+        if (auto updater = std::get<1>(primUpdaterRegisterItem))
+        {
+            MFnDependencyNode fnNode(thisDagPath.node());
+            updater(fnNode, primPath)->Clear(&ctx);
+        }
+    }
+
+    for (auto resynchedPath : resyncedPaths)
+    {
+        UsdPrimRange primRange(stage->GetPrimAtPath(resynchedPath));
+
+        for (auto prim : primRange)
+        {
+            SdfPath primPath = prim.GetPath();
+            TfToken primType = prim.GetTypeName();
+
+            auto primUpdaterRegisterItem = UsdMayaPrimUpdaterRegistry::Find(primType);
+
+            if (auto updater = std::get<1>(primUpdaterRegisterItem))
+            {
+                MFnDependencyNode fnNode(thisDagPath.node());
+                UsdMayaPrimUpdaterContext ctx(getTime(), stage);
+                bool result = updater(fnNode, primPath)->Pull(&ctx);
+            
+                if (result) {
+                    _managedSchemPrimss.insert(std::pair<SdfPath, TfToken>(SdfPath(primPath), TfToken(primType)));
+                }
+            }
+        }
+    }
+
+    _inUpdateSchemaPrims = false;
+
+    return true;
 }
 
 bool MayaUsdProxyShapeBase::closestPoint(

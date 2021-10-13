@@ -358,6 +358,9 @@ private:
     void _OnStageContentsChanged(const UsdNotice::StageContentsChanged& notice);
     void _OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice);
 
+    bool _updateSchemaPrims(const SdfPathVector& resyncedPaths);
+    bool _inUpdateSchemaPrims { false };
+
     UsdMayaStageNoticeListener _stageNoticeListener;
 
     std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
@@ -379,6 +382,8 @@ private:
 
     // Keep track of the incoming layers
     std::set<std::string> _incomingLayers;
+
+    std::map<SdfPath, TfToken> _managedSchemPrimss;
 
 public:
     // Counter for the number of times compute is re-entered
