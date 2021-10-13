@@ -24,6 +24,7 @@
 #include <pxr/usd/usd/timeCode.h>
 
 #include <map>
+#include <unordered_set>
 
 namespace MayaUsdUtils {
 
@@ -89,6 +90,13 @@ DiffResult compareAttributes(
 MAYA_USD_UTILS_PUBLIC
 DiffResultMap
 compareObjectsMetadatas(const PXR_NS::UsdObject& modified, const PXR_NS::UsdObject& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  retrieves the list of metadata ignored during comparisons.
+/// \return the setp of metadata names that should be ignored.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor>& getIgnoredMetadatas();
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares a modified value to a baseline value.

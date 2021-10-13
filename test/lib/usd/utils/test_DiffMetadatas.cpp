@@ -24,10 +24,7 @@ TEST(DiffMetadatas, compareMetadatasEmpty)
 
     DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
-    // An empty prim still contains a "specifier" metadata containing if it is a "def", "class",
-    // "over", etc.
-    EXPECT_EQ(results.size(), std::size_t(1));
-    EXPECT_NE(results.find(SdfFieldKeys->Specifier), results.end());
+    EXPECT_TRUE(results.empty());
 }
 
 TEST(DiffMetadatas, compareMetadatasSameDouble)
@@ -44,9 +41,7 @@ TEST(DiffMetadatas, compareMetadatasSameDouble)
     modifiedPrim.SetMetadata<std::string>(testMetaName, "1.0");
     DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
-    // An empty prim still contains a "specifier" metadata containing if it is a "def", "class",
-    // "over", etc.
-    EXPECT_EQ(results.size(), std::size_t(2));
+    EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testMetaName), results.end());
 
     DiffResult result = results[testMetaName];
@@ -67,9 +62,7 @@ TEST(DiffMetadatas, compareMetadatasDiffDouble)
     modifiedPrim.SetMetadata<std::string>(testMetaName, "2.0");
     DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
-    // An empty prim still contains a "specifier" metadata containing if it is a "def", "class",
-    // "over", etc.
-    EXPECT_EQ(results.size(), std::size_t(2));
+    EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testMetaName), results.end());
 
     DiffResult result = results[testMetaName];
@@ -89,9 +82,7 @@ TEST(DiffMetadatas, compareMetadatasAbsentDouble)
     baselinePrim.SetMetadata<std::string>(testMetaName, "1.0");
     DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
-    // An empty prim still contains a "specifier" metadata containing if it is a "def", "class",
-    // "over", etc.
-    EXPECT_EQ(results.size(), std::size_t(2));
+    EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testMetaName), results.end());
 
     DiffResult result = results[testMetaName];
@@ -111,9 +102,7 @@ TEST(DiffMetadatas, compareMetadatasCreatedDouble)
     modifiedPrim.SetMetadata<std::string>(testMetaName, "1.0");
     DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
-    // An empty prim still contains a "specifier" metadata containing if it is a "def", "class",
-    // "over", etc.
-    EXPECT_EQ(results.size(), std::size_t(2));
+    EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testMetaName), results.end());
 
     DiffResult result = results[testMetaName];
