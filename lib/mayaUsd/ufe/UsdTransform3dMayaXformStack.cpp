@@ -134,6 +134,18 @@ bool setXformOpOrder(const UsdGeomXformable& xformable)
 
 using NextTransform3dFn = std::function<Ufe::Transform3d::Ptr()>;
 
+bool hasValidSuffix(const std::vector<UsdGeomXformOp>& xformOps)
+{
+    TF_FOR_ALL(iter, xformOps)
+    {
+        const UsdGeomXformOp& xformOp = *iter;
+        auto                  ndx = gOpNameToNdx.find(xformOp.GetName());
+        if (ndx == gOpNameToNdx.end())
+            return false;
+    }
+    return true;
+}
+
 Ufe::Transform3d::Ptr
 createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransform3dFn)
 {
@@ -156,6 +168,10 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     if (xformOps.empty()) {
         return UsdTransform3dMayaXformStack::create(usdItem);
     }
+
+    // reject tokens not in gOpNameToNdx
+    if (!hasValidSuffix(xformOps))
+        return nextTransform3dFn();
 
     // If the prim supports the Maya transform stack, create a Maya transform
     // stack interface for it, otherwise delegate to the next handler in the

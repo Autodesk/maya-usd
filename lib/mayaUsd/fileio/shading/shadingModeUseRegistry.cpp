@@ -565,14 +565,14 @@ private:
 
                 shaderReader = std::dynamic_pointer_cast<UsdMayaShaderReader>(factoryFn(args));
 
-                UsdShadeShader downstreamSchema;
-                TfToken        downstreamName;
-                if (shaderReader->IsConverter(downstreamSchema, downstreamName)) {
+                auto converter = shaderReader->IsConverter();
+                if (converter) {
                     // Recurse downstream:
-                    sourcePlug = _GetSourcePlug(downstreamSchema, downstreamName);
+                    sourcePlug = _GetSourcePlug(
+                        converter.get().downstreamSchema, converter.get().downstreamOutputName);
                     if (!sourcePlug.isNull()) {
                         shaderReader->SetDownstreamReader(
-                            _shaderReaderMap[downstreamSchema.GetPath()]);
+                            _shaderReaderMap[converter.get().downstreamSchema.GetPath()]);
                         sourceObj = sourcePlug.node();
                     } else {
                         // Read failed. Invalidate the reader.

@@ -17,14 +17,9 @@
 
 import mayaUsd.lib as mayaUsdLib
 
-from pxr import Gf
-from pxr import Sdf
-from pxr import Tf
-from pxr import Vt
 from pxr import Usd
 
 from maya import cmds
-import maya.api.OpenMaya as OpenMaya
 from maya import standalone
 
 import fixturesUtils, os

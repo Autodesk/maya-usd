@@ -24,12 +24,25 @@
 #include <pxr/base/tf/type.h>
 #include <pxr/usd/usd/schemaBase.h>
 
+#include <maya/MProfiler.h>
+namespace {
+const int _translatorProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "TranslatorManufacture",
+    "TranslatorManufacture"
+#else
+    "TranslatorManufacture"
+#endif
+);
+} // namespace
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
 namespace translators {
 
 std::vector<TranslatorRefPtr> TranslatorManufacture::m_pythonTranslators;
+TranslatorContextPtrStack     TranslatorManufacture::m_contextPtrStack;
 std::unordered_map<std::string, TranslatorRefPtr>
     TranslatorManufacture::m_assetTypeToPythonTranslatorsMap;
 
@@ -39,6 +52,9 @@ TfToken TranslatorManufacture::TranslatorPrefixSchemaType("schematype:");
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Initialise TranslatorManufacture");
+
     std::set<TfType> loadedTypes;
     std::set<TfType> derivedTypes;
 
@@ -94,6 +110,9 @@ TranslatorManufacture::TranslatorManufacture(TranslatorContextPtr context)
 
 TranslatorRefPtr TranslatorManufacture::get(const UsdPrim& prim)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Get translator from prim");
+
     TranslatorRefPtr translator = TfNullPtr;
 
     // Try metadata first
@@ -114,6 +133,9 @@ TranslatorRefPtr TranslatorManufacture::get(const UsdPrim& prim)
 TranslatorManufacture::RefPtr
 TranslatorManufacture::getTranslatorByAssetTypeMetadata(const std::string& assetTypeValue)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Get translator by assettype metadata");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg(
             "TranslatorManufacture::getTranslatorByAssetTypeMetadata:: looking for type %s\n",
@@ -142,6 +164,9 @@ TranslatorManufacture::getTranslatorByAssetTypeMetadata(const std::string& asset
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::getTranslatorBySchemaType(const TfToken type_name)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Get translator by schema type");
+
     if (auto py = getPythonTranslatorBySchemaType(type_name)) {
         return py;
     }
@@ -171,6 +196,9 @@ TranslatorRefPtr TranslatorManufacture::getTranslatorBySchemaType(const TfToken 
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Get translator from Maya object");
+
     TranslatorRefPtr              base;
     TranslatorManufacture::RefPtr derived;
 
@@ -197,6 +225,9 @@ TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
 
 TranslatorRefPtr TranslatorManufacture::getTranslatorFromId(const std::string& translatorId)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Get translator from id");
+
     TranslatorRefPtr translator;
 
     if (translatorId.find(TranslatorManufacture::TranslatorPrefixAssetType.GetString(), 0) == 0) {
@@ -246,6 +277,11 @@ std::string TranslatorManufacture::generateTranslatorId(const UsdPrim& prim)
 std::vector<TranslatorManufacture::ExtraDataPluginPtr>
 TranslatorManufacture::getExtraDataPlugins(const MObject& mayaObject)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Get extraDataPlugins from Maya object");
+
     std::vector<TranslatorManufacture::ExtraDataPluginPtr> ptrs;
     for (auto plugin : m_extraDataPlugins) {
         MFn::Type type = plugin->getFnType();
@@ -356,6 +392,9 @@ void TranslatorManufacture::clearPythonTranslators()
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::getPythonTranslatorBySchemaType(const TfToken type_name)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Get Python translator by schema type");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg(
             "TranslatorManufacture::getPythonTranslatorBySchemaType looking for translator for "
@@ -383,6 +422,11 @@ TranslatorRefPtr TranslatorManufacture::getPythonTranslatorBySchemaType(const Tf
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::getPythonTranslator(const MObject& mayaObject)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Get Python translator from Maya object");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("TranslatorManufacture::getPythonTranslator %s\n", mayaObject.apiTypeStr());
     TranslatorRefPtr base;
@@ -402,6 +446,9 @@ TranslatorRefPtr TranslatorManufacture::getPythonTranslator(const MObject& mayaO
 //----------------------------------------------------------------------------------------------------------------------
 bool TranslatorManufacture::deletePythonTranslator(const TfType type_name)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Delete Python translator");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::deletePythonTranslator\n");
     for (auto it = TranslatorManufacture::m_pythonTranslators.begin(),
               end = TranslatorManufacture::m_pythonTranslators.end();
@@ -419,9 +466,11 @@ bool TranslatorManufacture::deletePythonTranslator(const TfType type_name)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void TranslatorManufacture::preparePythonTranslators(TranslatorContext::RefPtr context)
+void TranslatorManufacture::setPythonTranslatorContexts(TranslatorContext::RefPtr context)
 {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::preparePythonTranslators\n");
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Prepare Python translators");
+
     for (auto it : TranslatorManufacture::m_pythonTranslators) {
         it->setContext(context);
     }
@@ -431,12 +480,41 @@ void TranslatorManufacture::preparePythonTranslators(TranslatorContext::RefPtr c
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::preparePythonTranslators(TranslatorContext::RefPtr context)
+{
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::preparePythonTranslators\n");
+    setPythonTranslatorContexts(context);
+    m_contextPtrStack.push(context);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void TranslatorManufacture::updatePythonTranslators(TranslatorContext::RefPtr context)
 {
+    MProfilingScope profilerScope(
+        _translatorProfilerCategory, MProfiler::kColorE_L3, "Update Python translators");
+
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::updatePythonTranslators\n");
     m_contextualisedPythonTranslators.clear();
     for (const auto& tr : m_pythonTranslators) {
         m_contextualisedPythonTranslators.push_back(tr);
         m_contextualisedPythonTranslators.back()->setContext(context);
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorManufacture::popPythonTranslatorContexts()
+{
+    if (m_contextPtrStack.empty()) {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS)
+            .Msg("TranslatorManufacture::popPythonTranslatorContexts(): No contextPtr left in the "
+                 "stack\n");
+        return;
+    }
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::popPythonTranslatorContexts()\n");
+    m_contextPtrStack.pop();
+
+    if (!m_contextPtrStack.empty()) {
+        setPythonTranslatorContexts(m_contextPtrStack.top());
     }
 }
 

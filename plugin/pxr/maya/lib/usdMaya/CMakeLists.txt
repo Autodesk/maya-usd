@@ -17,9 +17,11 @@ pxr_shared_library(${PXR_PACKAGE}
         ${MAYA_OpenMayaRender_LIBRARY}
         ${MAYA_OpenMayaUI_LIBRARY}
         mayaUsd
+        $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 
     INCLUDE_DIRS
         ${MAYA_INCLUDE_DIRS}
+        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 
     PUBLIC_HEADERS
         api.h
@@ -63,6 +65,10 @@ pxr_shared_library(${PXR_PACKAGE}
 
     DISABLE_PRECOMPILED_HEADERS
 )
+
+if (UFE_FOUND)
+    target_compile_definitions(${PXR_PACKAGE} PRIVATE WANT_UFE_BUILD)
+endif()
 
 pxr_test_scripts(
         testenv/testUsdExportAssembly.py

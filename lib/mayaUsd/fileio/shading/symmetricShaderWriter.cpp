@@ -48,7 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 void UsdMayaSymmetricShaderWriter::RegisterWriter(
     const TfToken& mayaNodeTypeName,
     const TfToken& usdShaderId,
-    const TfToken& materialConversionName)
+    const TfToken& materialConversionName,
+    bool           fromPython)
 {
     UsdMayaShaderWriterRegistry::Register(
         mayaNodeTypeName,
@@ -63,7 +64,8 @@ void UsdMayaSymmetricShaderWriter::RegisterWriter(
             UsdMayaWriteJobContext&  jobCtx) {
             return std::make_shared<UsdMayaSymmetricShaderWriter>(
                 depNodeFn, usdPath, jobCtx, usdShaderId);
-        });
+        },
+        fromPython);
 }
 
 /* static */

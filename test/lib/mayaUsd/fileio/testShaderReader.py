@@ -17,34 +17,128 @@
 
 import mayaUsd.lib as mayaUsdLib
 
-from pxr import Gf
-from pxr import Sdf
-from pxr import Tf
-from pxr import Vt
-from pxr import UsdGeom
+from pxr import Usd, UsdShade
 
 from maya import cmds
-import maya.api.OpenMaya as OpenMaya
+from maya.api import OpenMaya
 from maya import standalone
 
 import fixturesUtils, os
 
 import unittest
 
-class shaderReaderTest(mayaUsdLib.ShaderReader):
-    @classmethod
-    def CanImport(self):
-        print("shaderReaderTest.CanImport called")
-        return self.ContextSupport.Fallback
+class mtlxShaderReaderTest(mayaUsdLib.ShaderReader):
+    IsConverterCalled = False
+    ReadCalled = False
+    GetCreatedObjectCalled = False
+    GetMayaPlugForUsdAttrNameCalled = 0
+    GetMayaPlugForUsdAttrNameEndCalled = 0
 
-    def HasPostReadSubtree(self):
-        print("shaderReaderTest.HasPostReadSubtree called")
+    NotCalled = False
+
+    _setAlphaIsLuminance = False
+
+    @classmethod
+    def CanImport(cls, args):
+        return cls.ContextSupport.Supported
+
+    def IsConverter(self):
+        mtlxShaderReaderTest.IsConverterCalled = True
+        self._refinedOutputToken = ''
+        prim = self._GetArgs().GetUsdPrim()
+        shaderSchema = UsdShade.Shader(prim)
+        if (not shaderSchema):
+            return None
+
+        shaderId = shaderSchema.GetIdAttr().Get()
+
+        input = shaderSchema.GetInput('in')
+        if (not input):
+            return None
+
+        (source, sourceOutputName, sourceType) = input.GetConnectedSource()
+        if (not source):
+            return None
+
+        downstreamSchema = UsdShade.Shader(source.GetPrim())
+        if (not downstreamSchema):
+            return None
+
+        # No refinement necessary for ND_convert_color3_vector3 and ND_normalmap.
+
+        if ("ND_luminance_" in shaderId):
+            # Luminance is an alpha output.
+            self._setAlphaIsLuminance = True
+            self._refinedOutputToken = 'outAlpha'
+        elif ("ND_swizzle_" in shaderId):
+            channelsAttr = shaderSchema.GetInput('channels')
+            val = channelsAttr.Get(Usd.TimeCode.Default())
+            if(val=='r' or val=='x'):
+                self._refinedOutputToken = 'outColorR'
+            elif(val=='g'):
+                self._refinedOutputToken = 'outColorG'
+            elif(val=='y'):
+                if (shaderSchema.GetOutput('out').GetTypeName() == 'Float'):
+                    self._refinedOutputToken = 'outAlpha'
+                else:
+                    self._refinedOutputToken = 'outColorG'
+            elif(val=='b' or val=='z'):
+                self._refinedOutputToken = 'outColorB'
+            elif(val=='a' or val=='w'):
+                self._refinedOutputToken = 'outAlpha'
+            else:
+                print("Unsupported swizzle" + val)
+                # TF_CODING_ERROR("Unsupported swizzle");
+            
+#            } else if (channels.size() == 3) {
+#                // Triple channel swizzles must go to outColor:
+#                self._refinedOutputToken = 'outColor';
+#            }
+        self._downstreamPrim = source.GetPrim()
+        return downstreamSchema, sourceOutputName
+
+    def GetCreatedObject(self, context, prim):
+        mtlxShaderReaderTest.GetCreatedObjectCalled = True
+        if (self._downstreamReader):
+            return self._downstreamReader.GetCreatedObject(context, self._downstreamPrim)
+        return OpenMaya.MObject()
+
+    def Read(self, context):
+        mtlxShaderReaderTest.ReadCalled = True
+        if (self._downstreamReader):
+            return self._downstreamReader.Read(context)
         return False
+
+    def GetMayaPlugForUsdAttrName(self, usdAttrName, mayaObject):
+        mtlxShaderReaderTest.GetMayaPlugForUsdAttrNameCalled += 1
+        mayaPlug = OpenMaya.MPlug()
+        if (self._downstreamReader):
+            mayaPlug = self._downstreamReader.GetMayaPlugForUsdAttrName(usdAttrName, mayaObject)
+
+            if (mayaPlug.isNull or len(self._refinedOutputToken)==0):
+                # Nothing to refine.
+                return mayaPlug
+
+            if (self._refinedOutputToken != 'outColor' and mayaUsdLib.ShadingUtil.GetStandardAttrName(mayaPlug, False) != 'outColor'):
+                # Already refined. Do not refine twice.
+                return mayaPlug
+
+            depNodeFn = OpenMaya.MFnDependencyNode(mayaPlug.node())
+
+            if (self._setAlphaIsLuminance):
+                alphaIsLuminancePlug = depNodeFn.findPlug('alphaIsLuminance', True)
+                alphaIsLuminancePlug.setValue(True)
+
+            if (len(self._refinedOutputToken)>0):
+                mayaPlug = depNodeFn.findPlug(self._refinedOutputToken, True)
+            mtlxShaderReaderTest.GetMayaPlugForUsdAttrNameEndCalled += 1
+        return mayaPlug
+
 
 class testShaderReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.setUpClass(__file__)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
@@ -53,9 +147,22 @@ class testShaderReader(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    def testSimpleShaderReader(self):
-        mayaUsdLib.ShaderReader.Register(shaderReaderTest, "test")
+    def testMaterialXShaderReader(self):
+        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_luminance_color3_float")
+        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_swizzle_color3_float")
+        mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_convert_color3_vector3")
+        
+        usdFilePath = os.path.join(testShaderReader.inputPath, '..', '..', 'usd', 'translators','UsdImportMaterialX',
+            'UsdImportMaterialX.usda')
 
+        cmds.usdImport(file=usdFilePath, shadingMode=['useRegistry','MaterialX' ])
+
+        self.assertTrue(mtlxShaderReaderTest.IsConverterCalled)
+        self.assertFalse(mtlxShaderReaderTest.ReadCalled)
+        self.assertFalse(mtlxShaderReaderTest.GetCreatedObjectCalled)
+        self.assertEqual(mtlxShaderReaderTest.GetMayaPlugForUsdAttrNameCalled,5)
+        self.assertEqual(mtlxShaderReaderTest.GetMayaPlugForUsdAttrNameEndCalled,3)
+        self.assertFalse(mtlxShaderReaderTest.NotCalled)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
