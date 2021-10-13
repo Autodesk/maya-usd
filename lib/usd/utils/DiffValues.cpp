@@ -137,16 +137,9 @@ DiffResult diffTwoQuatArrays(const VtValue& modified, const VtValue& baseline)
         : DiffResult::Differ;
 }
 
-template <class T> DiffResult diffGenericValues(const VtValue& modified, const VtValue& baseline)
+DiffResult diffByDefault(const VtValue& modified, const VtValue& baseline)
 {
-    const T& v1 = modified.Get<T>();
-    const T& v2 = baseline.Get<T>();
-    return v1 == v2 ? DiffResult::Same : DiffResult::Differ;
-}
-
-DiffResult diffIncomparables(const VtValue& /*modified*/, const VtValue& /*baseline*/)
-{
-    return DiffResult::Differ;
+    return modified == baseline ? DiffResult::Same : DiffResult::Differ;
 }
 
 DiffResult diffEmpties(const VtValue& /*modified*/, const VtValue& /*baseline*/)
@@ -188,12 +181,6 @@ DiffResult diffEmpties(const VtValue& /*modified*/, const VtValue& /*baseline*/)
     { DiffKey(typeid(T1), typeid(T2)), diffTwoQuats<T1, T2, SIZE> },                       \
     {                                                                                      \
         DiffKey(typeid(VtArray<T1>), typeid(VtArray<T2>)), diffTwoQuatArrays<T1, T2, SIZE> \
-    }
-
-#define MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(T)                                         \
-    { DiffKey(typeid(T), typeid(T)), diffGenericValues<T> },                           \
-    {                                                                                  \
-        DiffKey(typeid(VtArray<T>), typeid(VtArray<T>)), diffGenericValues<VtArray<T>> \
     }
 
 const DiffFuncMap& getDiffFuncs()
@@ -273,13 +260,6 @@ const DiffFuncMap& getDiffFuncs()
             MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuath, GfQuatd, 4),
             MAYA_USD_DIFF_FUNC_FOR_QUATS(GfQuath, GfQuatf, 4),
 
-            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(bool),
-            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(SdfTimeCode),
-            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(std::string),
-            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(TfToken),
-            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(SdfAssetPath),
-            MAYA_USD_DIFF_FUNC_FOR_GENERIC_TYPE(SdfSpecifier),
-
             // TODO: separate U,V vs combined UV diff.
             // TODO: diff accross different integer types, like int_8 to int16_t.
 
@@ -294,7 +274,7 @@ DiffFunc getDiffFunction(const VtValue& modified, const VtValue& baseline)
     const DiffKey      typeKey(modified.GetTypeid(), baseline.GetTypeid());
     const auto         func = diffs.find(typeKey);
     if (func == diffs.end())
-        return diffIncomparables;
+        return diffByDefault;
     return func->second;
 }
 
