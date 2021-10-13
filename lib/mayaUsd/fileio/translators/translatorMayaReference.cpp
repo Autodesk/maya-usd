@@ -324,9 +324,14 @@ MStatus UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& paren
             auto referencePlugsLength = referencePlugs.length();
             for (uint32_t i = 0; i < referencePlugsLength; ++i) {
                 MObject temp = referencePlugs[i].node();
-                if (temp.hasFn(MFn::kReference)) {
+                fnReference.setObject(temp);
+                
+                if (temp.hasFn(MFn::kReference) && fnReference.name() == uniqueRefNodeName) {
+                    TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+                        .Msg("MayaReferenceLogic::UnloadMayaReference at '%s'\n", fnReference.name().asChar());
                     MFileIO::unloadReferenceByNode(temp, &status);
                     CHECK_MSTATUS_AND_RETURN_IT(status);
+                    break;
                 }
             }
         }
