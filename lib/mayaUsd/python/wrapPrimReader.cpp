@@ -22,17 +22,13 @@
 #include <mayaUsd/fileio/shading/shadingModeImporter.h>
 #include <mayaUsd/fileio/shading/symmetricShaderReader.h>
 
-#include <pxr/base/tf/makePyConstructor.h>
-#include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
-#include <pxr/base/tf/pyPtrHelpers.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/refPtr.h>
 
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/pure_virtual.hpp>
 #include <boost/python/return_internal_reference.hpp>
 #include <boost/python/wrapper.hpp>
 
@@ -321,31 +317,6 @@ void wrapPrimReader()
             boost::python::return_internal_reference<>())
         .def("Register", &PrimReaderWrapper<>::Register)
         .staticmethod("Register");
-}
-
-void wrapShadingModeImportContext()
-{
-    boost::python::class_<UsdMayaShadingModeImportContext>(
-        "ShadingModeImportContext", boost::python::no_init)
-        .def("GetCreatedObject", &UsdMayaShadingModeImportContext::GetCreatedObject)
-        //        .def("AddCreatedObject",&UsdMayaShadingModeImportContext::AddCreatedObject) //
-        //        overloads
-        .def("CreateShadingEngine", &UsdMayaShadingModeImportContext::CreateShadingEngine)
-        .def("GetShadingEngineName", &UsdMayaShadingModeImportContext::GetShadingEngineName)
-        .def("GetSurfaceShaderPlugName", &UsdMayaShadingModeImportContext::GetSurfaceShaderPlugName)
-        .def("GetVolumeShaderPlugName", &UsdMayaShadingModeImportContext::GetVolumeShaderPlugName)
-        .def(
-            "GetDisplacementShaderPlugName",
-            &UsdMayaShadingModeImportContext::GetDisplacementShaderPlugName)
-        .def("SetSurfaceShaderPlugName", &UsdMayaShadingModeImportContext::SetSurfaceShaderPlugName)
-        .def("SetVolumeShaderPlugName", &UsdMayaShadingModeImportContext::SetVolumeShaderPlugName)
-        .def(
-            "SetDisplacementShaderPlugName",
-            &UsdMayaShadingModeImportContext::SetDisplacementShaderPlugName)
-        .def(
-            "GetPrimReaderContext",
-            &UsdMayaShadingModeImportContext::GetPrimReaderContext,
-            boost::python::return_value_policy<boost::python::return_by_value>());
 }
 
 TF_REGISTRY_FUNCTION(TfEnum)

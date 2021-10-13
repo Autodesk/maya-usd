@@ -47,6 +47,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapExportChaser.cpp
         wrapImportChaser.cpp
         wrapShadingUtil.cpp
+        wrapShadingMode.cpp
 )
 
 # -----------------------------------------------------------------------------

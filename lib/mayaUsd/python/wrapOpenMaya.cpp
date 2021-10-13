@@ -30,10 +30,8 @@
 #include <maya/MDagPathArray.h>
 #include <maya/MPlug.h>
 
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/wrapper.hpp>
+#include <boost/python/import.hpp>
+#include <boost/python/to_python_converter.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

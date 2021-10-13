@@ -18,17 +18,11 @@
 #include <mayaUsd/fileio/chaser/exportChaserRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
 
-#include <pxr/base/tf/makePyConstructor.h>
-#include <pxr/base/tf/pyContainerConversions.h>
-#include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
-#include <pxr/base/tf/pyPtrHelpers.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/refPtr.h>
 
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/make_constructor.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE

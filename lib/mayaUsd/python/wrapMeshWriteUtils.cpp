@@ -26,8 +26,8 @@
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
-#include <boost/python.hpp>
 #include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 
 #include <string>
 

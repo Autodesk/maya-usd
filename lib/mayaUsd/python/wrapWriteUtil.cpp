@@ -23,7 +23,8 @@
 
 #include <maya/MObject.h>
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 
 using namespace boost::python;
 

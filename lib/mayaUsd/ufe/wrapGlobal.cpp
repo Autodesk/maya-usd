@@ -15,7 +15,7 @@
 //
 #include <mayaUsd/ufe/Global.h>
 
-#include <boost/python.hpp>
+#include <boost/python/def.hpp>
 
 using namespace MayaUsd;
 using namespace boost::python;

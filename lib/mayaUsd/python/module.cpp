@@ -50,4 +50,5 @@ TF_WRAP_MODULE
     TF_WRAP(ExportChaser);
     TF_WRAP(ImportChaser);
     TF_WRAP(ShadingUtil);
+    TF_WRAP(ShadingMode);
 }
