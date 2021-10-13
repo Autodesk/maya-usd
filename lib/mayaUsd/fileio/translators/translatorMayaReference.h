@@ -41,6 +41,7 @@
 
 #include <maya/MFnReference.h>
 #include <maya/MObject.h>
+#include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,7 +56,7 @@ struct UsdMayaTranslatorMayaReference
         MString&       rigNamespaceM);
 
     MAYAUSD_CORE_PUBLIC
-    static MStatus UnloadMayaReference(const MObject& parent);
+    static MStatus UnloadMayaReference(const MObject& parent, SdfPath primPath);
 
     MAYAUSD_CORE_PUBLIC
     static MStatus update(const UsdPrim& prim, MObject parent);

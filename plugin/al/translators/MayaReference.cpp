@@ -88,7 +88,7 @@ MStatus MayaReference::tearDown(const SdfPath& primPath)
     MObjectHandle handle;
     context()->getTransform(primPath, handle);
     mayaObject = handle.object();
-    UsdMayaTranslatorMayaReference::UnloadMayaReference(mayaObject);
+    UsdMayaTranslatorMayaReference::UnloadMayaReference(mayaObject, primPath);
     return MS::kSuccess;
 }
 

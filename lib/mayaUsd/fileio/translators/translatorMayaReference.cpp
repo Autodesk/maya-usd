@@ -46,6 +46,7 @@
 #include <maya/MNodeClass.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
+#include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -104,17 +105,31 @@ MStatus connectedOrFirstAvailableIndex(
     return status;
 }
 
-// Given a function set attached to a DAG node, create a string from the
-// node's full path by replacing all the path dividers (|) by underscores
-// and stripping off the first character so the name doesn't start with an
-// underscore.  (We use this for creating unique names for Maya reference
-// nodes created from ALUSD proxy nodes.)
-//
-MString refNameFromPath(const MFnDagNode& nodeFn)
+// Given a function set attached to a DAG node, and the path to the 
+// MayaReferencecreate prim, create the unique name for the reference node.
+// This function is used by both the ALUSD and MayaUSD proxy nodes.
+MString refNameFromPrimPath(const MFnDagNode& nodeFn, SdfPath primPath)
 {
-    MString name = nodeFn.fullPathName();
-    name.substitute("|", "_");
-    name = MString(name.asChar() + 1);
+    MString nodeName = nodeFn.fullPathName();
+    MString primName(primPath.GetText());
+
+    nodeName.substitute("|", "_");
+    primName.substitute("/", "_");
+
+    MString name = MString(nodeName.asChar() + 1);
+
+    if (name.rindexW(primName) == -1)
+        name += primName;
+        
+    name += "_RN";
+
+    TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+    .Msg(
+        "MayaReferenceLogic::refNameFromPrimPath node=%s prim=%s name=%s\n", 
+        nodeFn.fullPathName().asChar(),
+        primPath.GetText(),
+        name.asChar());
+
     return name;
 }
 
@@ -222,7 +237,7 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     // (and append "_RN" to the end, to indicate it's a reference node, just
     // because).
     //
-    MString uniqueRefNodeName = refNameFromPath(parentDag) + "_RN";
+    MString uniqueRefNodeName = refNameFromPrimPath(parentDag, prim.GetPath());
     refDependNode.setName(uniqueRefNodeName);
 
     // Now load the reference to properly trigger the kAfterReferenceLoad callback
@@ -239,11 +254,14 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     return MS::kSuccess;
 }
 
-MStatus UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& parent)
+MStatus UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& parent, SdfPath primPath)
 {
-    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::UnloadMayaReference\n");
+    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::UnloadMayaReference at '%s'\n", primPath.GetText());
     MStatus           status;
-    MFnDependencyNode fnParent(parent, &status);
+    MFnDagNode        fnParent(parent, &status);
+    MFnDependencyNode fnReference;
+    MString uniqueRefNodeName = refNameFromPrimPath(fnParent, primPath);
+    
     if (status) {
         MPlug messagePlug(fnParent.object(), getMessageAttr());
         if (status) {
@@ -331,15 +349,20 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                 "MayaReferenceLogic::update Checking namespace on prim \"%s\".\n",
                 prim.GetPath().GetText());
 
-        if (!rigNamespaceAttribute.Get<std::string>(&rigNamespace)) {
-            TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
-                .Msg(
-                    "MayaReferenceLogic::update Missing namespace on prim \"%s\". Will create one "
-                    "from prim path.\n",
-                    prim.GetPath().GetText());
-            // Creating default namespace from prim path. Converts /a/b/c to a_b_c.
-            rigNamespace = prim.GetPath().GetString();
-            std::replace(rigNamespace.begin() + 1, rigNamespace.end(), '/', '_');
+    MFnReference refDependNode;
+    MFnDagNode parentDag(parent, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    MString uniqueRefNodeName = refNameFromPrimPath(parentDag, prim.GetPath());
+    
+    for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
+        MObject tempRefNode = refIter.item();
+        refDependNode.setObject(tempRefNode);
+
+        if (refDependNode.name() == uniqueRefNodeName)
+        {
+            referencedObject = tempRefNode;
+            break;
         }
     }
 
@@ -394,7 +417,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                 MString refName(refNodeName.asChar(), refNodeName.numChars() - 3);
 
                 // What reference node name is the prim expecting?
-                MString expectedRefName = refNameFromPath(parentDag);
+                MString expectedRefName = refNameFromPrimPath(parentDag, prim.GetPath());
 
                 // If found a match, reconnect the reference node's `associatedNode`
                 // attr before loading it, since the previous connection may be gone.

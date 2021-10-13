@@ -30,6 +30,8 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MObject.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_UPDATER(
@@ -62,9 +64,10 @@ bool PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* con
 /* virtual */
 void PxrUsdTranslators_MayaReferenceUpdater::Clear(UsdMayaPrimUpdaterContext* context)
 {
+    auto usdPath = GetUsdPath();
     const MObject& parentNode = GetMayaObject();
 
-    UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
+    UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode, usdPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
