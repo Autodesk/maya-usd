@@ -1380,29 +1380,35 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     const MFnDependencyNode depNodeFn(obj, &status);
-    MPlug outShp = depNodeFn.findPlug("outMesh", &status);
+    MPlug                   outShp = depNodeFn.findPlug("outMesh", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MDataHandle geomDataHandle = outShp.asMDataHandle();
-    MObject geomObj = geomDataHandle.data();
+    MObject     geomObj = geomDataHandle.data();
     if (geomObj.hasFn(MFn::kGeometryData)) {
-        TfToken componentTagFamilyName("componentTag");
+        TfToken         componentTagFamilyName("componentTag");
         MFnGeometryData fnGeomData(geomObj);
-        MStringArray keys;
+        MStringArray    keys;
         status = fnGeomData.componentTags(keys);
         for (int i = 0; i < keys.length(); ++i) {
-            MFnGeometryData::ComponentTagCategory ctg = fnGeomData.componentTagCategory(keys[i], &status);
+            MFnGeometryData::ComponentTagCategory ctg
+                = fnGeomData.componentTagCategory(keys[i], &status);
             if (ctg == MFnGeometryData::ComponentTagCategory::kFaces) {
                 MObject contents = fnGeomData.componentTagContents(keys[i], &status);
                 if (contents.hasFn(MFn::kSingleIndexedComponent)) {
                     MFnSingleIndexedComponent fnSingleIndexedComponent(contents, &status);
-                    MIntArray curIndices;
+                    MIntArray                 curIndices;
                     status = fnSingleIndexedComponent.getElements(curIndices);
                     VtIntArray indices;
                     indices.reserve(curIndices.length());
                     for (unsigned int j = 0; j < curIndices.length(); ++j)
                         indices.push_back(curIndices[j]);
-                    UsdGeomSubset ss = UsdGeomSubset::CreateGeomSubset(primSchema, TfToken(keys[i].asChar()), UsdGeomTokens->face, indices, componentTagFamilyName);
+                    UsdGeomSubset ss = UsdGeomSubset::CreateGeomSubset(
+                        primSchema,
+                        TfToken(keys[i].asChar()),
+                        UsdGeomTokens->face,
+                        indices,
+                        componentTagFamilyName);
                 }
             }
         }
