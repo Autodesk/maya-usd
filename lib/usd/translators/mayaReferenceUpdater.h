@@ -21,12 +21,13 @@
 #include <pxr/pxr.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfPath;
 
-/// Exports Maya cameras to UsdGeomCamera.
+/// Exports Maya reference to MayaReference.
 class PxrUsdTranslators_MayaReferenceUpdater : public UsdMayaPrimUpdater
 {
 public:

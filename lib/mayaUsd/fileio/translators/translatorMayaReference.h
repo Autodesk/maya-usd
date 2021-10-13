@@ -49,11 +49,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct UsdMayaTranslatorMayaReference
 {
     MAYAUSD_CORE_PUBLIC
+    static MString getMayaReferencePath(const UsdPrim& prim);
+    static MString getMayaReferenceNamespace(const UsdPrim& prim);
+
+    MAYAUSD_CORE_PUBLIC
     static MStatus LoadMayaReference(
         const UsdPrim& prim,
         MObject&       parent,
         MString&       mayaReferencePath,
-        MString&       rigNamespaceM);
+        MString&       rigNamespaceM,
+        MObject&       referenceObject);
 
     MAYAUSD_CORE_PUBLIC
     static MStatus UnloadMayaReference(const MObject& parent, SdfPath primPath);
@@ -61,8 +66,17 @@ struct UsdMayaTranslatorMayaReference
     MAYAUSD_CORE_PUBLIC
     static MStatus update(const UsdPrim& prim, MObject parent);
 
+    MAYAUSD_CORE_PUBLIC
+    static MStatus update(const UsdPrim& prim, MObject parent, MObject &referenceObject);
+
 private:
     static MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode);
+    static MStatus update_reference(
+        const UsdPrim& prim, 
+        MObject parent, 
+        MObject& refNode, 
+        MString mayaReferencePath, 
+        MString rigNamespaceM);
 
     static const TfToken m_namespaceName;
     static const TfToken m_referenceName;
