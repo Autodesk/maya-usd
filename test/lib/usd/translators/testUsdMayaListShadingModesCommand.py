@@ -21,6 +21,8 @@ import unittest
 from maya import cmds
 from maya import standalone
 
+import mayaUsd.lib as mayaUsdLib
+
 import fixturesUtils
 
 
@@ -109,6 +111,26 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
         self.assertEqual(modes(fin="maya"), maya_shaders)
         self.assertTrue(len(modes(ia=maya_shaders)) > 5)
         self.assertEqual(modes(io=maya_shaders), ["useRegistry", "maya"])
+
+    def testShadingModeRegistry(self):
+        """
+        Tests the ShadingModeRegistry.
+        """
+
+        # Alias the long named command:
+        modes = cmds.mayaUSDListShadingModes
+
+        testImport = "Test import"
+        testExport = "Test export"
+
+        mayaUsdLib.ShadingModeRegistry.RegisterImportConversion("Registration Test Import", "Test", testImport, "Test Import description.")
+        mayaUsdLib.ShadingModeRegistry.RegisterExportConversion("Registration Test Export", "Test", testExport, "Test Export description.")
+
+        importers = modes(im=True)
+        self.assertTrue(testImport in importers)
+
+        exporters = modes(ex=True)
+        self.assertTrue(testExport in exporters)
 
 
 if __name__ == '__main__':

@@ -12,7 +12,6 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
     list(APPEND TEST_SCRIPT_FILES
         testShaderReader.py
         testShaderWriter.py
-        testShadingMode.py
     )
 endif()
 

@@ -24,21 +24,25 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 class ShadingModeRegistry
 {
-    public:
-    static void RegisterImportConversion(const TfToken& materialConversion,
-            const TfToken& renderContext,
-            const TfToken& niceName,
-            const TfToken& description)
+public:
+    static void RegisterImportConversion(
+        const TfToken& materialConversion,
+        const TfToken& renderContext,
+        const TfToken& niceName,
+        const TfToken& description)
     {
-        UsdMayaShadingModeRegistry::GetInstance().RegisterImportConversion(materialConversion, renderContext, niceName, description);     
+        UsdMayaShadingModeRegistry::GetInstance().RegisterImportConversion(
+            materialConversion, renderContext, niceName, description);
     }
 
-    static void RegisterExportConversion(const TfToken& materialConversion,
-            const TfToken& renderContext,
-            const TfToken& niceName,
-            const TfToken& description)
+    static void RegisterExportConversion(
+        const TfToken& materialConversion,
+        const TfToken& renderContext,
+        const TfToken& niceName,
+        const TfToken& description)
     {
-        UsdMayaShadingModeRegistry::GetInstance().RegisterExportConversion(materialConversion, renderContext, niceName, description);     
+        UsdMayaShadingModeRegistry::GetInstance().RegisterExportConversion(
+            materialConversion, renderContext, niceName, description);
     }
 };
 
@@ -72,13 +76,8 @@ void wrapShadingModeImportContext()
 void wrapShadingMode()
 {
     boost::python::class_<ShadingModeRegistry>("ShadingModeRegistry", boost::python::no_init)
-        .def(
-            "RegisterImportConversion",
-            &ShadingModeRegistry::RegisterImportConversion)
+        .def("RegisterImportConversion", &ShadingModeRegistry::RegisterImportConversion)
         .staticmethod("RegisterImportConversion")
-        .def(
-            "RegisterExportConversion",
-            &ShadingModeRegistry::RegisterExportConversion)
+        .def("RegisterExportConversion", &ShadingModeRegistry::RegisterExportConversion)
         .staticmethod("RegisterExportConversion");
 }
-
