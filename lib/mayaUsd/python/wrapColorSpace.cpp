@@ -22,7 +22,6 @@
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
 
-#include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
 using namespace std;
