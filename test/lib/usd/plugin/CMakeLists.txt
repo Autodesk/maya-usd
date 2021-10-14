@@ -214,8 +214,14 @@ target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
         nullApiExporter.cpp
+)
+# Requires physics API introduced in 2108
+if (PXR_VERSION VERSION_GREATER 2105)
+target_sources(${TARGET_NAME}
+    PRIVATE
         bulletAdaptor.cpp
 )
+endif()
 mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
@@ -225,6 +231,12 @@ target_link_libraries(${TARGET_NAME}
     PRIVATE
         mayaUsd
 )
+if (PXR_VERSION VERSION_GREATER 2105)
+target_link_libraries(${TARGET_NAME}
+    PRIVATE
+        usdPhysics
+)
+endif()
 
 # -----------------------------------------------------------------------------
 # properties

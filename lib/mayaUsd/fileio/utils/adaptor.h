@@ -25,6 +25,7 @@
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/schemaRegistry.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MDGModifier.h>
 #include <maya/MObjectHandle.h>
@@ -33,7 +34,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMayaAdaptor;
-class UsdUtilsSparseValueWriter;
 struct UsdMayaJobExportArgs;
 
 /// The UsdMayaAttributeAdaptor stores a mapping between a USD schema attribute and

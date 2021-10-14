@@ -110,6 +110,8 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         adaptor = UsdMaya.Adaptor(dagPath.fullPathName())
         self.assertEqual(adaptor.GetUsdType(), Tf.Type.FindByName('UsdGeomMesh'))
+        # NOTICE: PhysicsRigidBodyAPI is not in the list because that API is
+        # supported only on export!!!
         self.assertEqual(adaptor.GetAppliedSchemas(), ['PhysicsMassAPI'])
         physicsMass = adaptor.GetSchemaByName("PhysicsMassAPI")
         self.assertEqual(physicsMass.GetName(), "PhysicsMassAPI")
@@ -154,6 +156,14 @@ class testUsdExportSchemaApi(unittest.TestCase):
         # Add some animation:
         cmds.setKeyframe(bulletPath, at="mass", t=0, v=3.0)
         cmds.setKeyframe(bulletPath, at="mass", t=10, v=30.0)
+
+        # Modify the velocity so it can be exported to the RBD Physics schema.
+        cmds.setKeyframe(bulletPath, at="initialVelocityX", t=0, v=5.0)
+        cmds.setKeyframe(bulletPath, at="initialVelocityX", t=10, v=50.0)
+        cmds.setKeyframe(bulletPath, at="initialVelocityY", t=0, v=6.0)
+        cmds.setKeyframe(bulletPath, at="initialVelocityY", t=10, v=60.0)
+        cmds.setKeyframe(bulletPath, at="initialVelocityZ", t=0, v=7.0)
+        cmds.setKeyframe(bulletPath, at="initialVelocityZ", t=10, v=70.0)
 
         # Try applying the schema on a new sphere:
         s2T = cmds.polySphere()[0]
@@ -202,6 +212,12 @@ class testUsdExportSchemaApi(unittest.TestCase):
                 # Is mass animated?
                 a = spherePrim.GetAttribute("physics:mass")
                 self.assertEqual(a.Get(10), 30)
+            # This got exported even though invisible in interactive:
+            self.assertTrue("PhysicsRigidBodyAPI" in spherePrim.GetAppliedSchemas())
+            a = spherePrim.GetAttribute("physics:velocity")
+            if i == 1:
+                self.assertEqual(a.Get(0), (5, 6, 7))
+                self.assertEqual(a.Get(10), (50, 60, 70))
 
 
 
