@@ -109,6 +109,37 @@ class AttributeTestCase(unittest.TestCase):
         cmds.redo()
         self.assertEqual(attr.get(), newVal)
 
+    def runUndoRedoUsingMayaSetAttr(self, attr, newVal, decimalPlaces=None):
+        # Maya's setAttr command was only made Ufe aware in Maya PR129 and Maya 2022.3
+        if (mayaUtils.previewReleaseVersion() < 129):
+            if (int(cmds.about(apiVersion=True)) >= 20220300):
+                pass    # Maya 2022.3 is okay
+            return
+
+        oldVal = attr.get()
+        assert oldVal != newVal, "Undo / redo testing requires setting a value different from the current value"
+
+        # Get the string we need for setting the Ufe attribute with setAttr command:
+        # "<ufe_path_string>.<ufe_attribute_name>"
+        setAttrPath = "%s.%s" % (ufe.PathString.string(attr.sceneItem().path()), attr.name)
+        if isinstance(newVal, (ufe.Vector3i, ufe.Vector3f, ufe.Vector3d)):
+            cmds.setAttr(setAttrPath, newVal.x(), newVal.y(), newVal.z())
+        elif isinstance(newVal, ufe.Color3f):
+            cmds.setAttr(setAttrPath, newVal.r(), newVal.g(), newVal.b())
+        else:
+            cmds.setAttr(setAttrPath, newVal)
+
+        if decimalPlaces is not None:
+            self.assertAlmostEqual(attr.get(), newVal, decimalPlaces)
+            newVal = attr.get()
+        else:
+            self.assertEqual(attr.get(), newVal)
+
+        cmds.undo()
+        self.assertEqual(attr.get(), oldVal)
+        cmds.redo()
+        self.assertEqual(attr.get(), newVal)
+
     def runTestAttribute(self, path, attrName, ufeAttrClass, ufeAttrType):
         '''Engine method to run attribute test.'''
 
@@ -203,11 +234,14 @@ class AttributeTestCase(unittest.TestCase):
         # Change back to 'inherited' using a command.
         self.runUndoRedo(ufeAttr, UsdGeom.Tokens.inherited)
 
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, UsdGeom.Tokens.invisible)
+
     def testAttributeBool(self):
         '''Test the Bool attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the doubleSided attribute which is
         # an bool type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/mesh',
@@ -228,11 +262,14 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr, not ufeAttr.get())
 
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, not ufeAttr.get())
+
     def testAttributeInt(self):
         '''Test the Int attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the inputAOV attribute which is
         # an integer type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
@@ -253,11 +290,14 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
 
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1)
+
     def testAttributeFloat(self):
         '''Test the Float attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the anisotropic attribute which is
         # an float type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
@@ -281,6 +321,9 @@ class AttributeTestCase(unittest.TestCase):
         # Python value.
         self.runUndoRedo(ufeAttr, ufeAttr.get() + 1.0, decimalPlaces=6)
 
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1.0, decimalPlaces=6)
+
     def _testAttributeDouble(self):
         '''Test the Double attribute type.'''
 
@@ -291,7 +334,7 @@ class AttributeTestCase(unittest.TestCase):
         '''Test the String (String) attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the filename attribute which is
         # an string type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/BallTexture',
@@ -315,11 +358,13 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr, 'potato')
 
+        # Note: Maya's setAttr command does not support Ufe string attributes.
+
     def testAttributeStringToken(self):
         '''Test the String (Token) attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the filter attribute which is
         # an string type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/BallTexture',
@@ -341,11 +386,13 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr, 'Box')
 
+        # Note: Maya's setAttr command does not support Ufe string attributes.
+
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the emitColor attribute which is
         # an ColorFloat3 type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
@@ -372,6 +419,8 @@ class AttributeTestCase(unittest.TestCase):
         newVec = ufe.Color3f(vec.color[0]+1.0, vec.color[1]+2.0, vec.color[2]+3.0)
         self.runUndoRedo(ufeAttr, newVec)
 
+        # Note: Maya's setAttr command does not support Ufe Color3 attributes.
+
     def _testAttributeInt3(self):
         '''Test the Int3 attribute type.'''
 
@@ -382,7 +431,7 @@ class AttributeTestCase(unittest.TestCase):
         '''Test the Float3 attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the bumpNormal attribute which is
         # an Float3 type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
@@ -405,11 +454,16 @@ class AttributeTestCase(unittest.TestCase):
         self.runUndoRedo(ufeAttr,
                          ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
 
+        # Run test using Maya's setAttr command.
+        vec = ufeAttr.get()
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
+                         ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
+
     def testAttributeDouble3(self):
         '''Test the Double3 attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the translate attribute which is
         # an Double3 type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35',
@@ -431,6 +485,9 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr,
                          ufe.Vector3d(vec.x()-1.0, vec.y()-2.0, vec.z()-3.0))
+
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufe.Vector3d(5.5, 6.6, 7.7))
 
     def testObservation(self):
         '''
