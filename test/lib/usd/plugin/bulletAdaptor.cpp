@@ -248,35 +248,6 @@ public:
         return false;
     }
 
-    bool ApplySchema(MDGModifier&)
-    {
-        // Check if already applied:
-        if (!GetMayaObjectForSchema().isNull()) {
-            return true;
-        }
-
-        // Make this object a rigid body:
-        // Need to call some Python as this is the Bullet way...
-        // Which makes the MDGModifier kinda moot...
-        MDagPath path;
-        if (!MDagPath::getAPathTo(_handle.object(), path)) {
-            return false;
-        }
-        if (!path.pop()) {
-            return false;
-        }
-        const char* bulletCmd = "import maya.app.mayabullet.BulletUtils as BulletUtils; "
-                                "BulletUtils.checkPluginLoaded(); "
-                                "import maya.app.mayabullet.RigidBody as RigidBody; "
-                                "RigidBody.CreateRigidBody.command(meshes=['^1s'])";
-
-        MString bulletRigidBody;
-        bulletRigidBody.format(bulletCmd, path.fullPathName());
-        MGlobal::executePythonCommand(bulletRigidBody);
-
-        return !GetMayaObjectForSchema().isNull();
-    }
-
     MObject GetMayaObjectForSchema() const override
     {
         // The bullet shape can be found as another prim colocated with the geometry shape
