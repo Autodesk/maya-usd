@@ -12,6 +12,7 @@ target_sources(${TARGET_NAME}
         DiffCore.cpp
         DiffMetadatas.cpp
         DiffPrims.cpp
+        DiffRelationships.cpp
         DiffValues.cpp
         util.cpp
 )

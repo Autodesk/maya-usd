@@ -95,9 +95,9 @@ std::unordered_set<TfToken, TfToken::HashFunctor>& getIgnoredMetadata()
     return ignored;
 }
 
-DiffResultMap compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline)
+DiffResultPerToken compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline)
 {
-    DiffResultMap results;
+    DiffResultPerToken results;
 
     // Retrieve the list of ignored metadatas and cache its end iterator.
     const auto& ignored = getIgnoredMetadata();

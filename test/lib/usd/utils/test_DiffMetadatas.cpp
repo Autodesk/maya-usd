@@ -22,7 +22,7 @@ TEST(DiffMetadatas, compareMetadatasEmpty)
     auto modifiedStage = UsdStage::CreateInMemory();
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
-    DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_TRUE(results.empty());
 }
@@ -39,7 +39,7 @@ TEST(DiffMetadatas, compareMetadatasSameDouble)
 
     baselinePrim.SetMetadata<std::string>(testMetaName, "1.0");
     modifiedPrim.SetMetadata<std::string>(testMetaName, "1.0");
-    DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testMetaName), results.end());
@@ -60,7 +60,7 @@ TEST(DiffMetadatas, compareMetadatasDiffDouble)
 
     baselinePrim.SetMetadata<std::string>(testMetaName, "1.0");
     modifiedPrim.SetMetadata<std::string>(testMetaName, "2.0");
-    DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testMetaName), results.end());
@@ -80,7 +80,7 @@ TEST(DiffMetadatas, compareMetadatasAbsentDouble)
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
     baselinePrim.SetMetadata<std::string>(testMetaName, "1.0");
-    DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testMetaName), results.end());
@@ -100,7 +100,7 @@ TEST(DiffMetadatas, compareMetadatasCreatedDouble)
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
     modifiedPrim.SetMetadata<std::string>(testMetaName, "1.0");
-    DiffResultMap results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testMetaName), results.end());

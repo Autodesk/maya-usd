@@ -22,9 +22,9 @@ namespace MayaUsdUtils {
 using UsdPrim = PXR_NS::UsdPrim;
 using TfToken = PXR_NS::TfToken;
 
-DiffResultMap comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline)
+DiffResultPerToken comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline)
 {
-    DiffResultMap results;
+    DiffResultPerToken results;
 
     // Create a map of baseline attribute indexed by name to rapidly verify
     // if it exists and be able to compare attributes.
@@ -60,5 +60,46 @@ DiffResultMap comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& bas
 
     return results;
 }
+
+DiffResultPerPathPerToken
+comparePrimsRelationships(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline)
+{
+    DiffResultPerPathPerToken results;
+
+    // Create a map of baseline relationship indexed by name to rapidly verify
+    // if it exists and be able to compare relationships.
+    std::map<TfToken, UsdRelationship> baselineRels;
+    {
+        for (const UsdRelationship& rel : baseline.GetAuthoredRelationships()) {
+            baselineRels[rel.GetName()] = rel;
+        }
+    }
+
+    // Compare the relationships from the new prim.
+    // Baseline relationships map won't change from now on, so cache the end.
+    {
+        const auto baselineEnd = baselineRels.end();
+        for (const UsdRelationship& rel : modified.GetAuthoredRelationships()) {
+            const TfToken& name = rel.GetName();
+            const auto     iter = baselineRels.find(name);
+            if (iter == baselineEnd) {
+                results[name] = compareRelationships(rel, UsdRelationship());
+            } else {
+                results[name] = compareRelationships(rel, iter->second);
+            }
+        }
+    }
+
+    // Identify relationships that are absent in the new prim.
+    for (const auto& nameAndRel : baselineRels) {
+        const auto& name = nameAndRel.first;
+        if (results.find(name) == results.end()) {
+            results[name] = compareRelationships(UsdRelationship(), nameAndRel.second);
+        }
+    }
+
+    return results;
+}
+
 
 } // namespace MayaUsdUtils

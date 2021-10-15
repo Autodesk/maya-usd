@@ -19,8 +19,10 @@
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/relationship.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <map>
@@ -28,21 +30,43 @@
 
 namespace MayaUsdUtils {
 
-/// The possible results from the comparison of single particular property.
+//----------------------------------------------------------------------------------------------------------------------
+/// The possible results from the comparison of single particular item (property, relationship,
+/// etc).
 enum class DiffResult
 {
-    Same,     // The property is identical to the baseline.
-    Absent,   // The property no longer exist compared to the baseline.
-    Created,  // The property does not exist in the baseline.
-    Subset,   // The property is a subset of the baseline property.
-    Superset, // The property is a superset of the baseline property.
-    Differ    // The property differs from the baseline in a more complex way.
+    Same,      // The item is identical to the baseline.
+    Absent,    // The item no longer exist compared to the baseline.
+    Created,   // The item does not exist in the baseline.
+    Prepended, // The item is prepended to the baseline.
+    Appended,  // The item is appended to the baseline.
+    Subset,    // The item is a subset of the baseline item.
+    Superset,  // The item is a superset of the baseline item.
+    Differ     // The item differs from the baseline in a more complex way.
 };
 
-/// The set of differences for each property or metadata that was compared between two prims.
-using DiffResultMap = std::map<PXR_NS::TfToken, DiffResult>;
+//----------------------------------------------------------------------------------------------------------------------
+/// The set of differences for each token. For example:
+///    - For each property that were compared between two prims.
+///    - For each metadata that were compared between two objects.
+using DiffResultPerToken = std::map<PXR_NS::TfToken, DiffResult>;
 
-// TODO: add versions without timeCodes to compare animated values.
+//----------------------------------------------------------------------------------------------------------------------
+/// The set of differences for each path. For example:
+///    - For each target path that were compared between two relationships.
+using DiffResultPerPath = std::map<PXR_NS::SdfPath, DiffResult>;
+
+//----------------------------------------------------------------------------------------------------------------------
+/// The set of differences for each path for each token. For example:
+///    - For each relationship that were compared between two prims.
+using DiffResultPerPathPerToken = std::map<PXR_NS::TfToken, DiffResultPerPath>;
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  analyzes all the sub-results to compte an overall result.
+/// \param  subResults the sub-results to analyze.
+/// \return the overall result, all results are possible.
+//----------------------------------------------------------------------------------------------------------------------
+template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const MAP& subResults);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares all the attributes of a modified prim to a baseline one.
@@ -52,7 +76,7 @@ using DiffResultMap = std::map<PXR_NS::TfToken, DiffResult>;
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResultMap
+DiffResultPerToken
 comparePrimsAttributes(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -81,6 +105,29 @@ DiffResult compareAttributes(
     const PXR_NS::UsdTimeCode&  timeCode);
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares all the relationships of a modified prim to a baseline one.
+/// \param  modified the potentially modified prim that is compared.
+/// \param  baseline the prim that is used as the baseline for the comparison.
+/// \return the map of relationship names to the result of comparison of that relationship.
+/// Currently only Same, Absent, Prepended or Appended are returned.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResultPerPathPerToken
+comparePrimsRelationships(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares all the targets of a modified relationship to a baseline one.
+/// \param  modified the potentially modified relationship that is compared.
+/// \param  baseline the relationship that is used as the baseline for the comparison.
+/// \return the map of target paths to the result of comparison of that target.
+/// Currently only Same, Absent, Prepended or Appended are returned.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResultPerPath compareRelationships(
+    const PXR_NS::UsdRelationship& modified,
+    const PXR_NS::UsdRelationship& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares all the metadatas of a modified object to a baseline one.
 /// \param  modified the potentially modified object that is compared.
 /// \param  baseline the object that is used as the baseline for the comparison.
@@ -88,7 +135,7 @@ DiffResult compareAttributes(
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResultMap
+DiffResultPerToken
 compareObjectsMetadatas(const PXR_NS::UsdObject& modified, const PXR_NS::UsdObject& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -107,5 +154,67 @@ std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor>& getIgnoredMet
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+template <class MAP> inline DiffResult computeOverallResult(const MAP& subResults)
+{
+    // Single pass over items to find what type of sub-results we have.
+    bool hasAbsent = false;
+    bool hasCreated = false;
+    bool hasPrepended = false;
+    bool hasAppended = false;
+    bool hasSame = false;
+
+    for (const auto& keyAndResult : subResults) {
+        switch (keyAndResult.second) {
+        case DiffResult::Same: hasSame = true; break;
+        case DiffResult::Absent: hasAbsent = true; break;
+        case DiffResult::Created: hasCreated = true; break;
+        case DiffResult::Prepended: hasPrepended = true; break;
+        case DiffResult::Appended: hasAppended = true; break;
+
+        // As soon as we find a Differ result, we can return.
+        // Note: superset and subset at a lower-level is not superset or subset at a higher level.
+        case DiffResult::Subset: return DiffResult::Differ;
+        case DiffResult::Superset: return DiffResult::Differ;
+        case DiffResult::Differ: return DiffResult::Differ;
+        }
+    }
+
+    // Analyze combination of results.
+    //
+    //     - All were same: overall is same.
+    //     - No absent, all same or prepended: overall is prepended.
+    //     - No absent, all same or appended: overall is appended.
+    //     - No absent, no same: overall is created.
+    //     - No absent, some same: overall is superset.
+    //     - Some absent, some created, appended or prepended: differ.
+    //     - All absent or same: overall is subset.
+    //     - All absent, no same: overall is absent.
+
+    if (!hasAbsent) {
+        if (!hasCreated && !hasPrepended && !hasAppended)
+            return DiffResult::Same;
+
+        if (!hasSame)
+            return DiffResult::Created;
+
+        if (!hasCreated && hasPrepended && !hasAppended)
+            return DiffResult::Prepended;
+
+        if (!hasCreated && !hasPrepended && hasAppended)
+            return DiffResult::Appended;
+
+        return DiffResult::Superset;
+    } else {
+        if (hasCreated || hasPrepended || hasAppended)
+            return DiffResult::Differ;
+
+        if (hasSame)
+            return DiffResult::Subset;
+
+        return DiffResult::Absent;
+    }
+}
 
 } // namespace MayaUsdUtils

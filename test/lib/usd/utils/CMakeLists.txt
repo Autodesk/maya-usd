@@ -58,8 +58,19 @@ add_mayaUsdUtils_test(
 )
 
 add_mayaUsdUtils_test(
+    testDiffRelationships
+    test_DiffRelationships.cpp
+)
+
+add_mayaUsdUtils_test(
+    testDiffComputeOverall
+    test_DiffComputeOverall.cpp
+)
+
+add_mayaUsdUtils_test(
     testDiffPrims
-    test_DiffPrims.cpp
+    test_DiffPrimsAttributes.cpp
+    test_DiffPrimsRelations.cpp
 )
 
 add_mayaUsdUtils_test(

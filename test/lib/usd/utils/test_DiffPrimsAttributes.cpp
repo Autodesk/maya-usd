@@ -11,10 +11,9 @@ using namespace MayaUsdUtils;
 static TfToken testAttrName("test_attr");
 
 //----------------------------------------------------------------------------------------------------------------------
-TEST(DiffPrims, comparePrimsEmpty)
+TEST(DiffPrimsAttributes, comparePrimsAttributesEmpty)
 {
     SdfPath primPath("/A");
-    auto    doubleType = SdfValueTypeNames->Double;
 
     auto baselineStage = UsdStage::CreateInMemory();
     auto baselinePrim = baselineStage->DefinePrim(SdfPath(primPath));
@@ -22,12 +21,12 @@ TEST(DiffPrims, comparePrimsEmpty)
     auto modifiedStage = UsdStage::CreateInMemory();
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
-    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_TRUE(results.empty());
 }
 
-TEST(DiffPrims, comparePrimsSameDouble)
+TEST(DiffPrimsAttributes, comparePrimsAttributesSameDouble)
 {
     SdfPath primPath("/A");
     auto    doubleType = SdfValueTypeNames->Double;
@@ -42,7 +41,7 @@ TEST(DiffPrims, comparePrimsSameDouble)
 
     baselineAttr.Set(1.0);
     modifiedAttr.Set(1.0);
-    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testAttrName), results.end());
@@ -51,7 +50,7 @@ TEST(DiffPrims, comparePrimsSameDouble)
     EXPECT_EQ(result, DiffResult::Same);
 }
 
-TEST(DiffPrims, comparePrimsDiffDouble)
+TEST(DiffPrimsAttributes, comparePrimsAttributesDiffDouble)
 {
     SdfPath primPath("/A");
     auto    doubleType = SdfValueTypeNames->Double;
@@ -66,7 +65,7 @@ TEST(DiffPrims, comparePrimsDiffDouble)
 
     baselineAttr.Set(1.0);
     modifiedAttr.Set(2.0);
-    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testAttrName), results.end());
@@ -75,7 +74,7 @@ TEST(DiffPrims, comparePrimsDiffDouble)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffPrims, comparePrimsAbsentDouble)
+TEST(DiffPrimsAttributes, comparePrimsAttributesAbsentDouble)
 {
     SdfPath primPath("/A");
     auto    doubleType = SdfValueTypeNames->Double;
@@ -88,7 +87,7 @@ TEST(DiffPrims, comparePrimsAbsentDouble)
     auto modifiedPrim = modifiedStage->DefinePrim(SdfPath(primPath));
 
     baselineAttr.Set(1.0);
-    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testAttrName), results.end());
@@ -97,7 +96,7 @@ TEST(DiffPrims, comparePrimsAbsentDouble)
     EXPECT_EQ(result, DiffResult::Absent);
 }
 
-TEST(DiffPrims, comparePrimsCreatedDouble)
+TEST(DiffPrimsAttributes, comparePrimsAttributesCreatedDouble)
 {
     SdfPath primPath("/A");
     auto    doubleType = SdfValueTypeNames->Double;
@@ -110,7 +109,7 @@ TEST(DiffPrims, comparePrimsCreatedDouble)
     auto modifiedAttr = modifiedPrim.CreateAttribute(testAttrName, doubleType, true);
 
     modifiedAttr.Set(1.0);
-    DiffResultMap results = comparePrimsAttributes(modifiedPrim, baselinePrim);
+    DiffResultPerToken results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(testAttrName), results.end());
