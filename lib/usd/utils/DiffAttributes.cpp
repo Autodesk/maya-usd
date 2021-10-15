@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DiffCore.h"
 #include "DiffPrims.h"
 
 namespace MayaUsdUtils {

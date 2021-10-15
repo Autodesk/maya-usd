@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "DiffCore.h"
 #include "DiffPrims.h"
 
 #include <pxr/base/tf/type.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/sdf/schema.h>
 
 namespace MayaUsdUtils {
 
@@ -30,16 +30,16 @@ std::unordered_set<TfToken, TfToken::HashFunctor>& getIgnoredMetadata()
 {
     // clang-format off
     static std::unordered_set<TfToken, TfToken::HashFunctor> ignored({
-        SdfFieldKeys->Specifier,            // The prim specifier: def, class, over, etc. Must not diff nor copy.
-        SdfFieldKeys->AllowedTokens,        // Tokens allowed on a soecific attribute. We should not mess this up?
-        SdfFieldKeys->Default,              // We should not be modifying defaults. (TODO: right?)
-        SdfFieldKeys->DefaultPrim,          // Prim used for missing payload. We probably don't want to mess this up during merge.
-        SdfFieldKeys->TimeSamples,          // Map of time (double) to data. We already manage time samples, so don't compare them as metadata.
-        SdfFieldKeys->SubLayers,            // List of sub-layers names, we should not to deal with this when merging. (TODO: maybe warn if there are some?)
-        SdfFieldKeys->SubLayerOffsets,      // Time offset and scaling for the sub-layers. We treat animation data at the level it is already applied.
-        SdfFieldKeys->TypeName,             // Property data type. We should not have to copy this over by hand.
-        SdfFieldKeys->VariantSetNames,      // The merge/copy process will take care of copying the selected variant. (TODO: right?)
-        SdfFieldKeys->VariantSelection,     // The merge/copy process will take care of copying the selected variant. (TODO: right?)
+        PXR_NS::SdfFieldKeys->Specifier,            // The prim specifier: def, class, over, etc. Must not diff nor copy.
+        PXR_NS::SdfFieldKeys->AllowedTokens,        // Tokens allowed on a soecific attribute. We should not mess this up?
+        PXR_NS::SdfFieldKeys->Default,              // We should not be modifying defaults. (TODO: right?)
+        PXR_NS::SdfFieldKeys->DefaultPrim,          // Prim used for missing payload. We probably don't want to mess this up during merge.
+        PXR_NS::SdfFieldKeys->TimeSamples,          // Map of time (double) to data. We already manage time samples, so don't compare them as metadata.
+        PXR_NS::SdfFieldKeys->SubLayers,            // List of sub-layers names, we should not to deal with this when merging. (TODO: maybe warn if there are some?)
+        PXR_NS::SdfFieldKeys->SubLayerOffsets,      // Time offset and scaling for the sub-layers. We treat animation data at the level it is already applied.
+        PXR_NS::SdfFieldKeys->TypeName,             // Property data type. We should not have to copy this over by hand.
+        PXR_NS::SdfFieldKeys->VariantSetNames,      // The merge/copy process will take care of copying the selected variant. (TODO: right?)
+        PXR_NS::SdfFieldKeys->VariantSelection,     // The merge/copy process will take care of copying the selected variant. (TODO: right?)
     });
 
     // These other build-in metadata are allowed to be compared and merged:

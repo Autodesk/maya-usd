@@ -27,6 +27,7 @@
 
 #include <map>
 #include <unordered_set>
+#include <vector>
 
 namespace MayaUsdUtils {
 
@@ -154,6 +155,20 @@ std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor>& getIgnoredMet
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares a modified list of items to a baseline list.
+/// \param  modified the potentially modified list of items that is compared.
+/// \param  baseline the list of items that is used as the baseline for the comparison.
+/// \return the result of the comparison for each item in that modified list.
+/// Currently only Same, Absent, Prepended or Appended are returned.
+///
+/// Currently instantiated for the types used in list-op: int, unsigned int, int64_t, uint64_t,
+/// TfToken, std::string, SdfPath, SdfReference and SdfPayload.
+//----------------------------------------------------------------------------------------------------------------------
+template <class ITEM>
+std::map<ITEM, DiffResult>
+compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
 template <class MAP> inline DiffResult computeOverallResult(const MAP& subResults)

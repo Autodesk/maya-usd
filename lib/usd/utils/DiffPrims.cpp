@@ -15,12 +15,14 @@
 //
 #include "DiffPrims.h"
 
-#include "DiffCore.h"
+#include <map>
 
 namespace MayaUsdUtils {
 
 using UsdPrim = PXR_NS::UsdPrim;
 using TfToken = PXR_NS::TfToken;
+using UsdAttribute = PXR_NS::UsdAttribute;
+using UsdRelationship = PXR_NS::UsdRelationship;
 
 DiffResultPerToken comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline)
 {
