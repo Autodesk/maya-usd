@@ -136,12 +136,23 @@ getFileFormatForLayer(const std::string& identifierVal, const std::string& seria
 
 MayaUsd::LayerManager* findNode()
 {
-    MFnDependencyNode  fn;
+    // Check for cached layer manager before searching
+    MFnDependencyNode    fn;
+    static MObjectHandle layerManagerHandle { MObject::kNullObj };
+    if (layerManagerHandle.isValid() && layerManagerHandle.isAlive()) {
+        MObject mobj { layerManagerHandle.object() };
+        if (!mobj.isNull()) {
+            fn.setObject(mobj);
+            return static_cast<MayaUsd::LayerManager*>(fn.userNode());
+        }
+    }
+
     MItDependencyNodes iter(MFn::kPluginDependNode);
     for (; !iter.isDone(); iter.next()) {
         MObject mobj = iter.item();
         fn.setObject(mobj);
         if (fn.typeId() == MayaUsd::LayerManager::typeId && !fn.isFromReferencedFile()) {
+            layerManagerHandle = mobj;
             return static_cast<MayaUsd::LayerManager*>(fn.userNode());
         }
     }
