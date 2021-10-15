@@ -25,14 +25,34 @@
 #include <pxr/base/tf/token.h>
 
 #include <string>
-#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+struct _HashInfo
+{
+    unsigned long operator()(const UsdMayaJobContextRegistry::ContextInfo& info) const
+    {
+        return info.jobContext.Hash();
+    }
+};
+
+struct _EqualInfo
+{
+    bool operator()(
+        const UsdMayaJobContextRegistry::ContextInfo& lhs,
+        const UsdMayaJobContextRegistry::ContextInfo& rhs) const
+    {
+        return rhs.jobContext == lhs.jobContext;
+    }
+};
+
 using _JobContextRegistry
-    = std::unordered_map<TfToken, UsdMayaJobContextRegistry::ContextInfo, TfToken::HashFunctor>;
+    = std::unordered_set<UsdMayaJobContextRegistry::ContextInfo, _HashInfo, _EqualInfo>;
 static _JobContextRegistry _jobContextReg;
+} // namespace
 
 void UsdMayaJobContextRegistry::RegisterExportJobContext(
     const std::string& jobContext,
@@ -41,14 +61,72 @@ void UsdMayaJobContextRegistry::RegisterExportJobContext(
     EnablerFn          enablerFct)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering export job context %s.\n", jobContext.c_str());
-    TfToken                                        key(jobContext);
-    std::pair<_JobContextRegistry::iterator, bool> insertStatus
-        = _jobContextReg.insert(_JobContextRegistry::value_type(
-            key, ContextInfo { niceName, description, enablerFct, {}, {} }));
-    if (insertStatus.second) {
-        UsdMaya_RegistryHelper::AddUnloader([key]() { _jobContextReg.erase(key); });
+    TfToken     key(jobContext);
+    ContextInfo newInfo { key, TfToken(niceName), TfToken(description), enablerFct, {}, {} };
+    auto        itFound = _jobContextReg.find(newInfo);
+    if (itFound == _jobContextReg.end()) {
+        _jobContextReg.insert(newInfo);
+        UsdMaya_RegistryHelper::AddUnloader([key]() {
+            ContextInfo toErase { key, {}, {}, {}, {}, {} };
+            _jobContextReg.erase(toErase);
+        });
     } else {
-        TF_CODING_ERROR("Multiple enablers for export job context %s", jobContext.c_str());
+        if (!itFound->exportEnablerCallback) {
+            if (niceName != itFound->niceName) {
+                TF_CODING_ERROR(
+                    "Export enabler has differing nice name: %s != %s",
+                    niceName.c_str(),
+                    itFound->niceName.GetText());
+            }
+            // Fill the export part:
+            ContextInfo updatedInfo {
+                key,        itFound->niceName,          TfToken(description),
+                enablerFct, itFound->importDescription, itFound->importEnablerCallback
+            };
+            _jobContextReg.erase(updatedInfo);
+            _jobContextReg.insert(updatedInfo);
+        } else {
+            TF_CODING_ERROR("Multiple enablers for export job context %s", jobContext.c_str());
+        }
+    }
+}
+
+void UsdMayaJobContextRegistry::RegisterImportJobContext(
+    const std::string& jobContext,
+    const std::string& niceName,
+    const std::string& description,
+    EnablerFn          enablerFct)
+{
+    TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering import job context %s.\n", jobContext.c_str());
+    TfToken     key(jobContext);
+    ContextInfo newInfo { key, TfToken(niceName), {}, {}, TfToken(description), enablerFct };
+    auto        itFound = _jobContextReg.find(newInfo);
+    if (itFound == _jobContextReg.end()) {
+        _jobContextReg.insert(newInfo);
+        UsdMaya_RegistryHelper::AddUnloader([key]() {
+            ContextInfo toErase { key, {}, {}, {}, {}, {} };
+            _jobContextReg.erase(toErase);
+        });
+    } else {
+        if (!itFound->importEnablerCallback) {
+            if (niceName != itFound->niceName) {
+                TF_CODING_ERROR(
+                    "Import enabler has differing nice name: %s != %s",
+                    niceName.c_str(),
+                    itFound->niceName.GetText());
+            }
+            // Fill the import part:
+            ContextInfo updatedInfo { key,
+                                      itFound->niceName,
+                                      itFound->exportDescription,
+                                      itFound->exportEnablerCallback,
+                                      TfToken(description),
+                                      enablerFct };
+            _jobContextReg.erase(updatedInfo);
+            _jobContextReg.insert(updatedInfo);
+        } else {
+            TF_CODING_ERROR("Multiple enablers for import job context %s", jobContext.c_str());
+        }
     }
 }
 
@@ -59,8 +137,22 @@ TfTokenVector UsdMayaJobContextRegistry::_ListExportJobContexts()
     TfTokenVector ret;
     ret.reserve(_jobContextReg.size());
     for (const auto& e : _jobContextReg) {
-        if (e.second.exportEnablerCallback) {
-            ret.push_back(e.first);
+        if (e.exportEnablerCallback) {
+            ret.push_back(e.jobContext);
+        }
+    }
+    return ret;
+}
+
+TfTokenVector UsdMayaJobContextRegistry::_ListImportJobContexts()
+{
+    UsdMaya_RegistryHelper::LoadJobContextPlugins();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaJobContextRegistry>();
+    TfTokenVector ret;
+    ret.reserve(_jobContextReg.size());
+    for (const auto& e : _jobContextReg) {
+        if (e.importEnablerCallback) {
+            ret.push_back(e.jobContext);
         }
     }
     return ret;
@@ -71,9 +163,10 @@ UsdMayaJobContextRegistry::_GetJobContextInfo(const TfToken& jobContext)
 {
     UsdMaya_RegistryHelper::LoadJobContextPlugins();
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaJobContextRegistry>();
-    auto                     it = _jobContextReg.find(jobContext);
+    ContextInfo              key { jobContext, {}, {}, {}, {}, {} };
+    auto                     it = _jobContextReg.find(key);
     static const ContextInfo _emptyInfo;
-    return it != _jobContextReg.end() ? it->second : _emptyInfo;
+    return it != _jobContextReg.end() ? *it : _emptyInfo;
 }
 
 TF_INSTANTIATE_SINGLETON(UsdMayaJobContextRegistry);

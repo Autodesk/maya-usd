@@ -75,27 +75,33 @@ public:
     /// Enabler function, returns a dictionary containing all the options for the context.
     typedef std::function<VtDictionary()> EnablerFn;
 
-    /// Get all registered job contexts:
+    /// Get all registered export job contexts:
     static TfTokenVector ListExportJobContexts() { return GetInstance()._ListExportJobContexts(); }
+
+    /// Get all registered import job contexts:
+    static TfTokenVector ListImportJobContexts() { return GetInstance()._ListImportJobContexts(); }
 
     /// All the information registered for a specific job context.
     struct ContextInfo
     {
-        std::string niceName;
-        std::string exportDescription;
-        EnablerFn   exportEnablerCallback;
-        std::string importDescription;
-        EnablerFn   importEnablerCallback;
+        TfToken   jobContext;
+        TfToken   niceName;
+        TfToken   exportDescription;
+        EnablerFn exportEnablerCallback;
+        TfToken   importDescription;
+        EnablerFn importEnablerCallback;
 
         ContextInfo() = default;
 
         ContextInfo(
-            const std::string& nn,
-            const std::string& edsc,
-            EnablerFn          eef,
-            const std::string& idsc,
-            EnablerFn          ief)
-            : niceName(nn)
+            const TfToken& jc,
+            const TfToken& nn,
+            const TfToken& edsc,
+            EnablerFn      eef,
+            const TfToken& idsc,
+            EnablerFn      ief)
+            : jobContext(jc)
+            , niceName(nn)
             , exportDescription(edsc)
             , exportEnablerCallback(eef)
             , importDescription(idsc)
@@ -127,11 +133,29 @@ public:
         const std::string& description,
         EnablerFn          enablerFct);
 
+    /// Registers an import job context, with nice name, description and enabler function.
+    ///
+    /// The \p jobContext name will be used directly in the render option string as one of
+    /// the valid values of the job context option.
+    ///
+    /// The \p niceName is the name displayed in the options dialog.
+    ///
+    /// The \p description is displayed as a tooltip in the  options dialog.
+    ///
+    /// The \p enablerFct will be called after option parsing to enable context specific options.
+    MAYAUSD_CORE_PUBLIC
+    void RegisterImportJobContext(
+        const std::string& jobContext,
+        const std::string& niceName,
+        const std::string& description,
+        EnablerFn          enablerFct);
+
     MAYAUSD_CORE_PUBLIC
     static UsdMayaJobContextRegistry& GetInstance();
 
 private:
     MAYAUSD_CORE_PUBLIC TfTokenVector _ListExportJobContexts();
+    MAYAUSD_CORE_PUBLIC TfTokenVector _ListImportJobContexts();
     MAYAUSD_CORE_PUBLIC const ContextInfo& _GetJobContextInfo(const TfToken&);
 
     UsdMayaJobContextRegistry();
@@ -154,6 +178,22 @@ private:
             #name, niceName, description, &_ExportJobContextEnabler_##name); \
     }                                                                        \
     VtDictionary _ExportJobContextEnabler_##name()
+
+#define REGISTER_IMPORT_JOB_CONTEXT(name, niceName, description, enablerFct) \
+    TF_REGISTRY_FUNCTION(UsdMayaJobContextRegistry)                          \
+    {                                                                        \
+        UsdMayaJobContextRegistry::GetInstance().RegisterImportJobContext(   \
+            name, niceName, description, enablerFct);                        \
+    }
+
+#define REGISTER_IMPORT_JOB_CONTEXT_FCT(name, niceName, description)         \
+    static VtDictionary _ImportJobContextEnabler_##name();                   \
+    TF_REGISTRY_FUNCTION(UsdMayaJobContextRegistry)                          \
+    {                                                                        \
+        UsdMayaJobContextRegistry::GetInstance().RegisterImportJobContext(   \
+            #name, niceName, description, &_ImportJobContextEnabler_##name); \
+    }                                                                        \
+    VtDictionary _ImportJobContextEnabler_##name()
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

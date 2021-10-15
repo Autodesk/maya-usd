@@ -448,9 +448,12 @@ The purpose of this command is to find the names and annotations for registered 
 | Long flag              | Short flag | Type           | Description |
 | ---------------------- | ---------- | -------------- | ----------- |
 | `-export`              | `-ex`      | noarg          | Retrieve the list of export job context nice names. |
-| `-exportOption`        | `-eo`      | noarg          | Retrieve the export option associated with a nice name. |
 | `-exportAnnotation`    | `-ea`      | string         | Retrieve the description of the export job context option nice name passed as parameter. |
-| `-exportArguments`     | `-eg`      | string         | Retrieve the export arguments affected by the export job context nice name passed as parameter | 
+| `-exportArguments`     | `-eg`      | string         | Retrieve the export arguments affected by the export job context nice name passed as parameter |
+| `-import`              | `-im`      | noarg          | Retrieve the list of import job context nice names. |
+| `-importAnnotation`    | `-ia`      | string         | Retrieve the description of the import job context option nice name passed as parameter. |
+| `-importArguments`     | `-ig`      | string         | Retrieve the import arguments affected by the import job context nice name passed as parameter |
+| `-jobContext`          | `-jc`      | string         | Retrieve the job context name associated with a nice name. |
 
 
 ## `EditTargetCommand`

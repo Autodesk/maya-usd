@@ -26,10 +26,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-REGISTER_EXPORT_JOB_CONTEXT_FCT(
-    NullAPI,
-    "Null API Export",
-    "Exports an empty API for testing purpose")
+REGISTER_EXPORT_JOB_CONTEXT_FCT(NullAPI, "Null API", "Exports an empty API for testing purpose")
 {
     VtDictionary extraArgs;
     extraArgs[UsdMayaJobExportArgsTokens->apiSchema]
@@ -40,6 +37,20 @@ REGISTER_EXPORT_JOB_CONTEXT_FCT(
                                              VtValue(std::string("life")),
                                              VtValue(std::string("42")) });
     extraArgs[UsdMayaJobExportArgsTokens->chaserArgs] = VtValue(std::vector<VtValue> { chaserArg });
+    return extraArgs;
+}
+
+REGISTER_IMPORT_JOB_CONTEXT_FCT(NullAPI, "Null API", "Imports an empty API for testing purpose")
+{
+    VtDictionary extraArgs;
+    extraArgs[UsdMayaJobImportArgsTokens->apiSchema]
+        = VtValue(std::vector<VtValue> { VtValue(std::string("testApiIn")) });
+    extraArgs[UsdMayaJobImportArgsTokens->chaser]
+        = VtValue(std::vector<VtValue> { VtValue(std::string("NullAPIChaserIn")) });
+    VtValue chaserArg(std::vector<VtValue> { VtValue(std::string("NullAPIChaserIn")),
+                                             VtValue(std::string("universe")),
+                                             VtValue(std::string("42")) });
+    extraArgs[UsdMayaJobImportArgsTokens->chaserArgs] = VtValue(std::vector<VtValue> { chaserArg });
     return extraArgs;
 }
 

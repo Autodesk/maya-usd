@@ -49,15 +49,18 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         modes = set(cmds.mayaUSDListJobContexts(export=True))
         self.assertEqual(modes, set([
-            "Null API Export", "Thierry", "Scene Grinder", "Curly's special",
+            "Null API", "Thierry", "Scene Grinder", "Curly's special",
             "Moe's special", "Larry's special", 'Bullet Physics API Export']))
 
-        self.assertEqual(cmds.mayaUSDListJobContexts(exportOption="Null API Export"), "NullAPI")
-        self.assertEqual(cmds.mayaUSDListJobContexts(exportAnnotation="Null API Export"),
+        self.assertEqual(cmds.mayaUSDListJobContexts(jobContext="Null API"), "NullAPI")
+        self.assertEqual(cmds.mayaUSDListJobContexts(exportAnnotation="Null API"),
                          "Exports an empty API for testing purpose")
-
-        self.assertEqual(cmds.mayaUSDListJobContexts(exportArguments="Null API Export"), 
+        self.assertEqual(cmds.mayaUSDListJobContexts(exportArguments="Null API"), 
             'apiSchema=[testApi];chaser=[NullAPIChaser];chaserArgs=[[NullAPIChaser,life,42]];')
+        self.assertEqual(cmds.mayaUSDListJobContexts(importAnnotation="Null API"),
+                         "Imports an empty API for testing purpose")
+        self.assertEqual(cmds.mayaUSDListJobContexts(importArguments="Null API"), 
+            'apiSchema=[testApiIn];chaser=[NullAPIChaserIn];chaserArgs=[[NullAPIChaserIn,universe,42]];')
 
     def testExportJobContextConflicts(self):
         """Testing that merging incompatible contexts generates errors"""
