@@ -44,19 +44,22 @@ class testUsdExportSchemaApi(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testIOContextLister(self):
+    def testExportJobContextLister(self):
         """Testing that we can enumerate export contexts"""
 
-        modes = set(cmds.mayaUSDListIOContexts(export=True))
+        modes = set(cmds.mayaUSDListJobContexts(export=True))
         self.assertEqual(modes, set([
             "Null API Export", "Thierry", "Scene Grinder", "Curly's special",
             "Moe's special", "Larry's special", 'Bullet Physics API Export']))
 
-        self.assertEqual(cmds.mayaUSDListIOContexts(exportOption="Null API Export"), "NullAPI")
-        self.assertEqual(cmds.mayaUSDListIOContexts(exportAnnotation="Null API Export"),
+        self.assertEqual(cmds.mayaUSDListJobContexts(exportOption="Null API Export"), "NullAPI")
+        self.assertEqual(cmds.mayaUSDListJobContexts(exportAnnotation="Null API Export"),
                          "Exports an empty API for testing purpose")
 
-    def testExportContextConflicts(self):
+        self.assertEqual(cmds.mayaUSDListJobContexts(exportArguments="Null API Export"), 
+            'apiSchema=[testApi];chaser=[NullAPIChaser];chaserArgs=[[NullAPIChaser,life,42]];')
+
+    def testExportJobContextConflicts(self):
         """Testing that merging incompatible contexts generates errors"""
         mark = Tf.Error.Mark()
         mark.SetMark()
@@ -65,7 +68,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
         cmds.polySphere(r=1)
         usdFilePath = os.path.abspath('UsdExportSchemaApiTestBasic.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, 
-                           extraContext=["Larry", "Curly", "Moe"])
+                           jobContext=["Larry", "Curly", "Moe"])
 
         self.assertFalse(mark.IsClean())
 
@@ -75,7 +78,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
             messages.add(e.commentary)
 
         expected = set([
-            "Arguments for context 'Larry' can not include extra contexts.",
+            "Arguments for job context 'Larry' can not include extra contexts.",
             "Context 'Curly' and context 'Larry' do not agree on type of argument 'apiSchema'.",
             "Context 'Moe' and context 'Larry' do not agree on argument 'geomSidedness'."])
         self.assertEqual(messages, expected)
@@ -192,7 +195,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
         # Export, with Bullet:
         usdFilePath = os.path.abspath('UsdExportSchemaApiTest_WithBullet.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-                           extraContext=["Bullet"], frameRange=(1, 10))
+                           jobContext=["Bullet"], frameRange=(1, 10))
 
         # Check that Physics API schemas did get exported:
         stage = Usd.Stage.Open(usdFilePath)

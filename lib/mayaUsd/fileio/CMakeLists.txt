@@ -3,12 +3,12 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        exportContextRegistry.cpp
         fallbackPrimReader.cpp
         functorPrimReader.cpp
         functorPrimWriter.cpp
         importData.cpp
         instancedNodeWriter.cpp
+        jobContextRegistry.cpp
         primReader.cpp
         primReaderArgs.cpp
         primReaderContext.cpp
@@ -32,12 +32,12 @@ target_sources(${PROJECT_NAME}
 )
 
 set(HEADERS
-    exportContextRegistry.h
     fallbackPrimReader.h
     functorPrimReader.h
     functorPrimWriter.h
     importData.h
     instancedNodeWriter.h
+    jobContextRegistry.h
     primReader.h
     primReaderArgs.h
     primReaderContext.h

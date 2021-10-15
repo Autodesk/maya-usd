@@ -15,7 +15,7 @@
 //
 #include <mayaUsd/fileio/chaser/exportChaser.h>
 #include <mayaUsd/fileio/chaser/exportChaserRegistry.h>
-#include <mayaUsd/fileio/exportContextRegistry.h>
+#include <mayaUsd/fileio/jobContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/schemaApiAdaptor.h>
 #include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
@@ -26,7 +26,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-REGISTER_EXPORT_CONTEXT_FCT(NullAPI, "Null API Export", "Exports an empty API for testing purpose")
+REGISTER_EXPORT_JOB_CONTEXT_FCT(
+    NullAPI,
+    "Null API Export",
+    "Exports an empty API for testing purpose")
 {
     VtDictionary extraArgs;
     extraArgs[UsdMayaJobExportArgsTokens->apiSchema]
@@ -40,17 +43,20 @@ REGISTER_EXPORT_CONTEXT_FCT(NullAPI, "Null API Export", "Exports an empty API fo
     return extraArgs;
 }
 
-REGISTER_EXPORT_CONTEXT_FCT(Thierry, "Thierry", "Exports for Thierry renderer")
+REGISTER_EXPORT_JOB_CONTEXT_FCT(Thierry, "Thierry", "Exports for Thierry renderer")
 {
     return VtDictionary();
 }
 
-REGISTER_EXPORT_CONTEXT_FCT(SceneGrinder, "Scene Grinder", "Exports to Scene Grinder")
+REGISTER_EXPORT_JOB_CONTEXT_FCT(SceneGrinder, "Scene Grinder", "Exports to Scene Grinder")
 {
     return VtDictionary();
 }
 
-REGISTER_EXPORT_CONTEXT_FCT(Larry, "Larry's special", "Test coverage of error handling part uno")
+REGISTER_EXPORT_JOB_CONTEXT_FCT(
+    Larry,
+    "Larry's special",
+    "Test coverage of error handling part uno")
 {
     VtDictionary extraArgs;
     // Correct:
@@ -58,12 +64,15 @@ REGISTER_EXPORT_CONTEXT_FCT(Larry, "Larry's special", "Test coverage of error ha
         = VtValue(std::vector<VtValue> { VtValue(std::string("testApi")) });
     extraArgs[UsdMayaJobExportArgsTokens->geomSidedness] = VtValue(std::string("single"));
     // Referencing another context:
-    extraArgs[UsdMayaJobExportArgsTokens->extraContext]
+    extraArgs[UsdMayaJobExportArgsTokens->jobContext]
         = VtValue(std::vector<VtValue> { VtValue(std::string("Curly")) });
     return extraArgs;
 }
 
-REGISTER_EXPORT_CONTEXT_FCT(Curly, "Curly's special", "Test coverage of error handling part deux")
+REGISTER_EXPORT_JOB_CONTEXT_FCT(
+    Curly,
+    "Curly's special",
+    "Test coverage of error handling part deux")
 {
     VtDictionary extraArgs;
     // Incorrect type:
@@ -71,7 +80,7 @@ REGISTER_EXPORT_CONTEXT_FCT(Curly, "Curly's special", "Test coverage of error ha
     return extraArgs;
 }
 
-REGISTER_EXPORT_CONTEXT_FCT(Moe, "Moe's special", "Test coverage of error handling part funf")
+REGISTER_EXPORT_JOB_CONTEXT_FCT(Moe, "Moe's special", "Test coverage of error handling part funf")
 {
     VtDictionary extraArgs;
     // Moe is conflicting on value with Larry, but merges nicely with NullAPI:

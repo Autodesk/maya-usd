@@ -73,8 +73,8 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kApiSchemaFlag, UsdMayaJobExportArgsTokens->apiSchema.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->apiSchema.GetText());
     syntax.addFlag(
-        kExtraContextFlag, UsdMayaJobExportArgsTokens->extraContext.GetText(), MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->extraContext.GetText());
+        kJobContextFlag, UsdMayaJobExportArgsTokens->jobContext.GetText(), MSyntax::kString);
+    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->jobContext.GetText());
     syntax.addFlag(
         kExportUVsFlag, UsdMayaJobExportArgsTokens->exportUVs.GetText(), MSyntax::kBoolean);
     syntax.addFlag(

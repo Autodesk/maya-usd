@@ -13,24 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef ADSK_MAYA_LIST_IO_CONTEXTS_COMMAND_H
-#define ADSK_MAYA_LIST_IO_CONTEXTS_COMMAND_H
-
-#include "base/api.h"
-
-#include <mayaUsd/commands/baseListIOContextsCommand.h>
+#include "adskListJobContextsCommand.h"
 
 namespace MAYAUSD_NS_DEF {
 
-class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDListIOContextsCommand
-    : public MayaUsd::MayaUSDListIOContextsCommand
-{
-public:
-    static const MString commandName;
+const MString ADSKMayaUSDListJobContextsCommand::commandName("mayaUSDListJobContexts");
 
-    static void* creator();
-};
+void* ADSKMayaUSDListJobContextsCommand::creator()
+{
+    return new ADSKMayaUSDListJobContextsCommand();
+}
 
 } // namespace MAYAUSD_NS_DEF
-
-#endif

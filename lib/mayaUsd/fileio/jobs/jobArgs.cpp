@@ -15,7 +15,7 @@
 //
 #include "jobArgs.h"
 
-#include <mayaUsd/fileio/exportContextRegistry.h>
+#include <mayaUsd/fileio/jobContextRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -478,7 +478,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaJobExportArgsTokens->derived,
           { UsdMayaJobExportArgsTokens->single, UsdMayaJobExportArgsTokens->double_ }))
     , includeAPINames(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->apiSchema))
-    , includeContextNames(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->extraContext))
+    , jobContextNames(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->jobContext))
     , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
     ,
@@ -529,9 +529,9 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
     for (const std::string& includeAPIName : exportArgs.includeAPINames) {
         out << "    " << includeAPIName << std::endl;
     }
-    out << "includeContextNames (" << exportArgs.includeContextNames.size() << ")" << std::endl;
-    for (const std::string& includeContextName : exportArgs.includeContextNames) {
-        out << "    " << includeContextName << std::endl;
+    out << "jobContextNames (" << exportArgs.jobContextNames.size() << ")" << std::endl;
+    for (const std::string& jobContextName : exportArgs.jobContextNames) {
+        out << "    " << jobContextName << std::endl;
     }
     out << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
         << "materialsScopeName: " << exportArgs.materialsScopeName << std::endl
@@ -601,18 +601,18 @@ UsdMayaJobExportArgs UsdMayaJobExportArgs::CreateFromDictionary(
     bool canMergeContexts = true;
 
     // Run all export context callbacks to get the extra userArgs:
-    const TfToken& xcKey = UsdMayaJobExportArgsTokens->extraContext;
+    const TfToken& xcKey = UsdMayaJobExportArgsTokens->jobContext;
     if (VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, xcKey)) {
         for (const VtValue& v : VtDictionaryGet<std::vector<VtValue>>(userArgs, xcKey)) {
             if (v.IsHolding<std::string>()) {
-                const TfToken exportContext(v.UncheckedGet<std::string>());
-                const UsdMayaExportContextRegistry::ContextInfo& ci
-                    = UsdMayaExportContextRegistry::GetExportContextInfo(exportContext);
-                if (ci.enablerCallback) {
-                    VtDictionary extraArgs = ci.enablerCallback();
+                const TfToken jobContext(v.UncheckedGet<std::string>());
+                const UsdMayaJobContextRegistry::ContextInfo& ci
+                    = UsdMayaJobContextRegistry::GetJobContextInfo(jobContext);
+                if (ci.exportEnablerCallback) {
+                    VtDictionary extraArgs = ci.exportEnablerCallback();
                     // Add the export context name to the args (for reference when merging):
-                    VtDictionary::iterator extraContextNamesIt = extraArgs.find(xcKey);
-                    if (extraContextNamesIt != extraArgs.end()) {
+                    VtDictionary::iterator jobContextNamesIt = extraArgs.find(xcKey);
+                    if (jobContextNamesIt != extraArgs.end()) {
                         // We already have a vector. Ensure it is of size 1 and contains only the
                         // current context name:
                         const std::vector<VtValue>& currContextNames
@@ -620,19 +620,19 @@ UsdMayaJobExportArgs UsdMayaJobExportArgs::CreateFromDictionary(
                         if ((currContextNames.size() == 1 && currContextNames.front() != v)
                             || currContextNames.size() > 1) {
                             TF_RUNTIME_ERROR(TfStringPrintf(
-                                "Arguments for context '%s' can not include extra contexts.",
-                                exportContext.GetText()));
+                                "Arguments for job context '%s' can not include extra contexts.",
+                                jobContext.GetText()));
                             canMergeContexts = false;
                         }
                     }
-                    std::vector<VtValue> extraContextNames;
-                    extraContextNames.push_back(v);
-                    extraArgs[xcKey] = extraContextNames;
+                    std::vector<VtValue> jobContextNames;
+                    jobContextNames.push_back(v);
+                    extraArgs[xcKey] = jobContextNames;
                     contextArgs.push_back(extraArgs);
                 } else {
                     MGlobal::displayWarning(
                         TfStringPrintf(
-                            "Ignoring unknown export context '%s'.", exportContext.GetText())
+                            "Ignoring unknown export context '%s'.", jobContext.GetText())
                             .c_str());
                 }
             }
@@ -764,7 +764,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->convertMaterialsTo]
             = std::vector<VtValue> { VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) };
         d[UsdMayaJobExportArgsTokens->apiSchema] = std::vector<VtValue>();
-        d[UsdMayaJobExportArgsTokens->extraContext] = std::vector<VtValue>();
+        d[UsdMayaJobExportArgsTokens->jobContext] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;

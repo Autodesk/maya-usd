@@ -42,7 +42,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (providesTranslator)
     (UsdMaya)
     (ShadingModePlugin)
-    (ExportContextPlugin)
+    (JobContextPlugin)
 );
 // clang-format on
 
@@ -241,11 +241,11 @@ void UsdMaya_RegistryHelper::LoadShadingModePlugins()
 }
 
 /* static */
-void UsdMaya_RegistryHelper::LoadExportContextPlugins()
+void UsdMaya_RegistryHelper::LoadJobContextPlugins()
 {
-    static std::once_flag       _exportContextsLoaded;
-    static std::vector<TfToken> scope = { _tokens->UsdMaya, _tokens->ExportContextPlugin };
-    std::call_once(_exportContextsLoaded, []() {
+    static std::once_flag       _jobContextsLoaded;
+    static std::vector<TfToken> scope = { _tokens->UsdMaya, _tokens->JobContextPlugin };
+    std::call_once(_jobContextsLoaded, []() {
         PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
         std::string         mayaPlugin;
         TF_FOR_ALL(plugIter, plugins)
@@ -255,7 +255,7 @@ void UsdMaya_RegistryHelper::LoadExportContextPlugins()
                 if (!mayaPlugin.empty()) {
                     TF_DEBUG(PXRUSDMAYA_REGISTRY)
                         .Msg(
-                            "Found export context plugin %s: Loading via Maya API %s.\n",
+                            "Found job context plugin %s: Loading via Maya API %s.\n",
                             plug->GetName().c_str(),
                             mayaPlugin.c_str());
                     std::string loadPluginCmd
@@ -271,7 +271,7 @@ void UsdMaya_RegistryHelper::LoadExportContextPlugins()
                 } else {
                     TF_DEBUG(PXRUSDMAYA_REGISTRY)
                         .Msg(
-                            "Found export context plugin %s: Loading via USD API.\n",
+                            "Found job context plugin %s: Loading via USD API.\n",
                             plug->GetName().c_str());
                     plug->Load();
                 }

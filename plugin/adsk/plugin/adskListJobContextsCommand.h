@@ -13,25 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef MAYA_LIST_IO_CONTEXTS_COMMAND_H
-#define MAYA_LIST_IO_CONTEXTS_COMMAND_H
+#ifndef ADSK_MAYA_LIST_IO_CONTEXTS_COMMAND_H
+#define ADSK_MAYA_LIST_IO_CONTEXTS_COMMAND_H
 
-#include <mayaUsd/base/api.h>
+#include "base/api.h"
 
-#include <pxr/pxr.h>
-
-#include <maya/MPxCommand.h>
+#include <mayaUsd/commands/baseListJobContextsCommand.h>
 
 namespace MAYAUSD_NS_DEF {
 
-class MAYAUSD_CORE_PUBLIC MayaUSDListIOContextsCommand : public MPxCommand
+class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDListJobContextsCommand
+    : public MayaUsd::MayaUSDListJobContextsCommand
 {
 public:
-    MStatus doIt(const MArgList& args) override;
-    bool    isUndoable() const override { return false; };
+    static const MString commandName;
 
-    static MSyntax createSyntax();
-    static void*   creator();
+    static void* creator();
 };
 
 } // namespace MAYAUSD_NS_DEF

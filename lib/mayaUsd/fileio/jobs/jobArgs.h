@@ -74,7 +74,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportSkin) \
     (exportUVs) \
     (exportVisibility) \
-    (extraContext) \
+    (jobContext) \
     (file) \
     (filterTypes) \
     (ignoreWarnings) \
@@ -201,7 +201,7 @@ struct UsdMayaJobExportArgs
     const bool         staticSingleSample;
     const TfToken      geomSidedness;
     const TfToken::Set includeAPINames;
-    const TfToken::Set includeContextNames;
+    const TfToken::Set jobContextNames;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/exportContextRegistry.h>
+#include <mayaUsd/fileio/jobContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/schemaApiAdaptor.h>
 #include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
@@ -50,7 +50,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-REGISTER_EXPORT_CONTEXT_FCT(
+REGISTER_EXPORT_JOB_CONTEXT_FCT(
     Bullet,
     "Bullet Physics API Export",
     "Test export of USD Physics APIs on a Bullet simulation")

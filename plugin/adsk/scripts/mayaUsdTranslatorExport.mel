@@ -31,12 +31,12 @@ proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, string $widget) {
     }
 }
 
-proc mayaUsdTranslatorExport_SetExtraContextCheckboxes(string $arg) {
+proc mayaUsdTranslatorExport_SetJobContextCheckboxes(string $arg) {
     string $enabledContexts[] = stringToStringArray($arg, ",");
-    string $contexts[] = `mayaUSDListIOContexts -export`;
+    string $contexts[] = `mayaUSDListJobContexts -export`;
     for ($context in $contexts) {
-        string $opt = `mayaUSDListIOContexts -eo $context`;
-        string $widget = $opt + "_ExportContextCheckBox";
+        string $opt = `mayaUSDListJobContexts -eo $context`;
+        string $widget = $opt + "_JobContextCheckBox";
 
         if(stringArrayFind($opt, 0, $enabledContexts) != -1) {
             checkBoxGrp -e -v1 true $widget;
@@ -92,12 +92,12 @@ proc string mayaUsdTranslatorExport_AppendFromCheckbox(string $currentOptions, s
     }
 }
 
-proc string mayaUsdTranslatorExport_AppendExportContexts(string $currentOptions, string $arg) {
-    string $contexts[] = `mayaUSDListIOContexts -export`;
+proc string mayaUsdTranslatorExport_AppendJobContexts(string $currentOptions, string $arg) {
+    string $contexts[] = `mayaUSDListJobContexts -export`;
     string $enabledContexts[];
     for ($context in $contexts) {
-        string $opt = `mayaUSDListIOContexts -eo $context`;
-        string $widget = $opt + "_ExportContextCheckBox";
+        string $opt = `mayaUSDListJobContexts -eo $context`;
+        string $widget = $opt + "_JobContextCheckBox";
         if (`checkBoxGrp -q -v1 $widget` == 1) {
             stringArrayInsertAtIndex(255, $enabledContexts, $opt);
         }
@@ -285,14 +285,14 @@ global proc int mayaUsdTranslatorExport (string $parent,
             separator -style "none";
         setParent ..;
 
-        string $contexts[] = `mayaUSDListIOContexts -export`;
+        string $contexts[] = `mayaUSDListJobContexts -export`;
         if (size($contexts) > 0) {
-            frameLayout -label "Export Contexts" -collapsable true -collapse true;
+            frameLayout -label "Export Job Contexts" -collapsable true -collapse true;
                 separator -style "none";
                 for ($context in $contexts) {
-                    string $ann = `mayaUSDListIOContexts -ea $context`;
-                    string $opt = `mayaUSDListIOContexts -eo $context`;
-                    string $widgetName = $opt + "_ExportContextCheckBox";
+                    string $ann = `mayaUSDListJobContexts -ea $context`;
+                    string $opt = `mayaUSDListJobContexts -eo $context`;
+                    string $widgetName = $opt + "_JobContextCheckBox";
                     checkBoxGrp -l $context -annotation $ann $widgetName;
                 }
                 separator -style "none";
@@ -399,8 +399,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportBlendShapesCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
-                } else if ($optionBreakDown[0] == "extraContext") {
-                    mayaUsdTranslatorExport_SetExtraContextCheckboxes($optionBreakDown[1]);
+                } else if ($optionBreakDown[0] == "jobContext") {
+                    mayaUsdTranslatorExport_SetJobContextCheckboxes($optionBreakDown[1]);
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                     mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
                 } else if ($optionBreakDown[0] == "defaultUSDFormat") {
@@ -499,7 +499,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
-        $currentOptions = mayaUsdTranslatorExport_AppendExportContexts($currentOptions, "extraContext");
+        $currentOptions = mayaUsdTranslatorExport_AppendJobContexts($currentOptions, "jobContext");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

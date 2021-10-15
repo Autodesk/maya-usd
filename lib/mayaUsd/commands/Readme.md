@@ -122,7 +122,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-defaultCameras`                | `-dc`      | noarg            | false               | Export the four Maya default cameras |
 | `-defaultMeshScheme`             | `-dms`     | string           | `catmullClark`      | Sets the default subdivision scheme for exported Maya meshes, if the `USD_subdivisionScheme` attribute is not present on the Mesh. Valid values are: `none`, `catmullClark`, `loop`, `bilinear` |
 | `-exportDisplayColor`            | `-dsp`     | bool             | false               | Export display color |
-| `-extraContext`                  | `-xc`      | string (multi)   | none                | Specifies an additional export context to handle. These usually contains extra schemas, primitives, and materials that are to be exported for a specific task, a target renderer for example. |
+| `-jobContext`                    | `-jc`      | string (multi)   | none                | Specifies an additional export context to handle. These usually contains extra schemas, primitives, and materials that are to be exported for a specific task, a target renderer for example. |
 | `-defaultUSDFormat`              | `-duf`     | string           | `usdc`              | The exported USD file format, can be `usdc` for binary format or `usda` for ASCII format. |
 | `-exportBlendShapes`             | `-ebs`     | bool             | false               | Enable or disable export of blend shapes |
 | `-exportCollectionBasedBindings` | `-cbb`     | bool             | false               | Enable or disable export of collection-based material assigments. If this option is enabled, export of material collections (`-mcs`) is also enabled, which causes collections representing sets of geometry with the same material binding to be exported. Materials are bound to the created collections on the prim at `materialCollectionsPath` (specfied via the `-mcp` option). Direct (or per-gprim) bindings are not authored when collection-based bindings are enabled. |
@@ -439,17 +439,18 @@ names and annotations for various elements passed to the other commands.
 | `-importOptions`       | `-io`      | string         | Retrieve the a pair of names that completely define a shading mode, as used by the import `shadingMode` option |
 | `-importAnnotation`    | `-ia`      | string         | Retrieve the description of the import shading mode option |
 
-## `mayaUSDListIOContextsCommand`
+## `mayaUSDListJobContexts`
 
-The purpose of this command is to find the names and annotations for registered import and export contexts.
+The purpose of this command is to find the names and annotations for registered import and export job contexts.
 
 ### Command Flags
 
 | Long flag              | Short flag | Type           | Description |
 | ---------------------- | ---------- | -------------- | ----------- |
-| `-export`              | `-ex`      | noarg          | Retrieve the list of export context nice names. |
+| `-export`              | `-ex`      | noarg          | Retrieve the list of export job context nice names. |
 | `-exportOption`        | `-eo`      | noarg          | Retrieve the export option associated with a nice name. |
-| `-exportAnnotation`    | `-ea`      | string         | Retrieve the description of the export context option nice name passed as parameter. |
+| `-exportAnnotation`    | `-ea`      | string         | Retrieve the description of the export job context option nice name passed as parameter. |
+| `-exportArguments`     | `-eg`      | string         | Retrieve the export arguments affected by the export job context nice name passed as parameter | 
 
 
 ## `EditTargetCommand`

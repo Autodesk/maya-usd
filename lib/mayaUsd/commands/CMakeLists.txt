@@ -5,8 +5,8 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         baseExportCommand.cpp
         baseImportCommand.cpp
+        baseListJobContextsCommand.cpp
         baseListShadingModesCommand.cpp
-        baseListIOContextsCommand.cpp
         editTargetCommand.cpp
         layerEditorCommand.cpp
         layerEditorWindowCommand.cpp
@@ -16,8 +16,8 @@ set(HEADERS
         abstractLayerEditorWindow.h
         baseExportCommand.h
         baseImportCommand.h
+        baseListJobContextsCommand.h
         baseListShadingModesCommand.h
-        baseListIOContextsCommand.h
         editTargetCommand.h
         layerEditorCommand.h
         layerEditorWindowCommand.h
