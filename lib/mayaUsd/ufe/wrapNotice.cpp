@@ -18,7 +18,7 @@
 
 #include <pxr/base/tf/pyNoticeWrapper.h>
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
 
 using namespace MayaUsd;
 using namespace boost::python;

@@ -29,6 +29,7 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MPlugArray.h>
 #include <maya/MProfiler.h>
 
@@ -43,6 +44,9 @@ const int _layerManagerProfilerCategory = MProfiler::addCategory(
     "LayerManager"
 #endif
 );
+
+MObjectHandle theLayerManagerHandle;
+
 } // namespace
 
 namespace {
@@ -299,12 +303,20 @@ MObject LayerManager::findNode()
 //----------------------------------------------------------------------------------------------------------------------
 MObject LayerManager::_findNode()
 {
+    if (theLayerManagerHandle.isValid() && theLayerManagerHandle.isAlive()) {
+        MObject theManager { theLayerManagerHandle.object() };
+        if (!theManager.isNull()) {
+            return theManager;
+        }
+    }
+
     MFnDependencyNode  fn;
     MItDependencyNodes iter(MFn::kPluginDependNode);
     for (; !iter.isDone(); iter.next()) {
         MObject mobj = iter.item();
         fn.setObject(mobj);
         if (fn.typeId() == kTypeId && !fn.isFromReferencedFile()) {
+            theLayerManagerHandle = mobj;
             return mobj;
         }
     }

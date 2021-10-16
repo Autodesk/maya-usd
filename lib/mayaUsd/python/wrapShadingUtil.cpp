@@ -16,7 +16,7 @@
 
 #include <mayaUsd/fileio/utils/shadingUtil.h>
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
