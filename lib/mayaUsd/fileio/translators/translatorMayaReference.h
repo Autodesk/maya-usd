@@ -64,6 +64,7 @@ struct UsdMayaTranslatorMayaReference
 
 private:
     static MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode);
+    static MObject findReferenceNode(MFnDagNode& dagNode, MString refNodeName);
     static MString getMayaReferencePath(const UsdPrim& prim);
     static MString getMayaReferenceNamespace(const UsdPrim& prim);
     static MStatus updateMayaReference(
