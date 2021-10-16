@@ -53,7 +53,7 @@ PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
 /* virtual */
 bool PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* context)
 {
-    auto usdPath = GetUsdPath();
+    auto           usdPath = GetUsdPath();
     const UsdPrim& usdPrim = context->GetUsdStage()->GetPrimAtPath(usdPath);
     const MObject& parentNode = GetMayaObject();
 
@@ -65,7 +65,7 @@ bool PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* con
 /* virtual */
 void PxrUsdTranslators_MayaReferenceUpdater::Clear(UsdMayaPrimUpdaterContext* context)
 {
-    auto usdPath = GetUsdPath();
+    auto           usdPath = GetUsdPath();
     const MObject& parentNode = GetMayaObject();
 
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode, usdPath);

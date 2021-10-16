@@ -105,7 +105,7 @@ MStatus connectedOrFirstAvailableIndex(
     return status;
 }
 
-// Given a function set attached to a DAG node, and the path to the 
+// Given a function set attached to a DAG node, and the path to the
 // MayaReferencecreate prim, create the unique name for the reference node.
 // This function is used by both the ALUSD and MayaUSD proxy nodes.
 MString refNameFromPrimPath(const MFnDagNode& nodeFn, SdfPath primPath)
@@ -120,15 +120,15 @@ MString refNameFromPrimPath(const MFnDagNode& nodeFn, SdfPath primPath)
 
     if (name.rindexW(primName) == -1)
         name += primName;
-        
+
     name += "_RN";
 
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
-    .Msg(
-        "MayaReferenceLogic::refNameFromPrimPath node=%s prim=%s name=%s\n", 
-        nodeFn.fullPathName().asChar(),
-        primPath.GetText(),
-        name.asChar());
+        .Msg(
+            "MayaReferenceLogic::refNameFromPrimPath node=%s prim=%s name=%s\n",
+            nodeFn.fullPathName().asChar(),
+            primPath.GetText(),
+            name.asChar());
 
     return name;
 }
@@ -155,7 +155,6 @@ const MObject getMessageAttr()
 const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
 const TfToken UsdMayaTranslatorMayaReference::m_referenceName = TfToken("mayaReference");
 
-
 MObject UsdMayaTranslatorMayaReference::findReferenceNode(MFnDagNode& dagNode, MString refNodeName)
 {
     MFnDependencyNode fnNode;
@@ -169,7 +168,7 @@ MObject UsdMayaTranslatorMayaReference::findReferenceNode(MFnDagNode& dagNode, M
     for (uint32_t i = 0; i < referencePlugsLength; ++i) {
         MObject temp = referencePlugs[i].node();
         fnNode.setObject(temp);
-        
+
         if (temp.hasFn(MFn::kReference) && fnNode.name() == refNodeName) {
             refNode = temp;
             break;
@@ -180,7 +179,7 @@ MObject UsdMayaTranslatorMayaReference::findReferenceNode(MFnDagNode& dagNode, M
     // prim.  If so, we can just reuse it.
     //
     // The check is based on comparing the prim's full path and the name of the
-    // reference node, which we had originally created from the prim's full path.  
+    // reference node, which we had originally created from the prim's full path.
     //
     // (Because of this, if the name or parentage of the prim has changed
     // since we created the reference, we won't find the old reference node.
@@ -196,7 +195,7 @@ MObject UsdMayaTranslatorMayaReference::findReferenceNode(MFnDagNode& dagNode, M
     //
     if (refNode.isNull()) {
         for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
-            MObject temp = refIter.item();
+            MObject      temp = refIter.item();
             MFnReference tempRefFn(temp);
 
             if (tempRefFn.isFromReferencedFile())
@@ -214,19 +213,20 @@ MObject UsdMayaTranslatorMayaReference::findReferenceNode(MFnDagNode& dagNode, M
             }
         }
     }
-    
+
     return refNode;
 }
 
 MString UsdMayaTranslatorMayaReference::getMayaReferencePath(const UsdPrim& prim)
 {
-    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::getMayaReferencePath prim=%s\n", prim.GetPath().GetText());
+    TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+        .Msg("MayaReferenceLogic::getMayaReferencePath prim=%s\n", prim.GetPath().GetText());
 
     SdfAssetPath mayaReferenceAssetPath;
     // Check to see if we have a valid Maya reference attribute
     UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
     mayaReferenceAttribute.Get(&mayaReferenceAssetPath);
-    
+
     MString mayaReferencePath(mayaReferenceAssetPath.GetResolvedPath().c_str());
 
     // The resolved path is empty if the maya reference is a full path.
@@ -239,11 +239,15 @@ MString UsdMayaTranslatorMayaReference::getMayaReferencePath(const UsdPrim& prim
 
 MString UsdMayaTranslatorMayaReference::getMayaReferenceNamespace(const UsdPrim& prim)
 {
-    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("UsdMayaTranslatorMayaReference::getMayaReferenceNamespace prim=%s\n", prim.GetPath().GetText());
+    TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+        .Msg(
+            "UsdMayaTranslatorMayaReference::getMayaReferenceNamespace prim=%s\n",
+            prim.GetPath().GetText());
 
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
         .Msg(
-            "MayaReferenceLogic::getMayaReferenceNamespace Looking for attribute on \"%s\".\"%s\"\n",
+            "MayaReferenceLogic::getMayaReferenceNamespace Looking for attribute on "
+            "\"%s\".\"%s\"\n",
             prim.GetTypeName().GetText(),
             m_namespaceName.GetText());
 
@@ -251,7 +255,8 @@ MString UsdMayaTranslatorMayaReference::getMayaReferenceNamespace(const UsdPrim&
     if (UsdAttribute rigNamespaceAttribute = prim.GetAttribute(m_namespaceName)) {
         TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
             .Msg(
-                "MayaReferenceLogic::getMayaReferenceNamespace Checking namespace on prim \"%s\".\n",
+                "MayaReferenceLogic::getMayaReferenceNamespace Checking namespace on prim "
+                "\"%s\".\n",
                 prim.GetPath().GetText());
 
         if (!rigNamespaceAttribute.Get<std::string>(&rigNamespace)) {
@@ -274,12 +279,11 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     MObject&       parent,
     MString&       mayaReferencePath,
     MString&       rigNamespaceM,
-    MObject&       referenceObject
-)
+    MObject&       referenceObject)
 {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
         .Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
-    MStatus       status;
+    MStatus status;
 
     MFnDagNode parentDag(parent, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -360,8 +364,8 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     {
         // To avoid the error that USD complains about editing to same layer simultaneously from
         // different threads, we record it as custom data instead of creating an attribute.
-        MString refDependNodeName = refDependNode.name();
-        VtValue value(std::string(refDependNodeName.asChar(), refDependNodeName.length()));
+        MString       refDependNodeName = refDependNode.name();
+        VtValue       value(std::string(refDependNodeName.asChar(), refDependNodeName.length()));
         const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
         prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
     }
@@ -371,17 +375,17 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
 
 MStatus UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& parent, SdfPath primPath)
 {
-    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::UnloadMayaReference prim path '%s'\n", primPath.GetText());
-    
-    MStatus           status;
-    MFnDagNode        fnParent(parent, &status);
+    TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+        .Msg("MayaReferenceLogic::UnloadMayaReference prim path '%s'\n", primPath.GetText());
+
+    MStatus    status;
+    MFnDagNode fnParent(parent, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MString uniqueRefNodeName = refNameFromPrimPath(fnParent, primPath);
     MObject refNode = findReferenceNode(fnParent, uniqueRefNodeName);
 
-    if (!refNode.isNull())
-    {
+    if (!refNode.isNull()) {
         TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
             .Msg("MayaReferenceLogic::UnloadMayaReference node '%s'\n", uniqueRefNodeName.asChar());
         MFileIO::unloadReferenceByNode(refNode, &status);
@@ -428,7 +432,8 @@ MStatus UsdMayaTranslatorMayaReference::connectReferenceAssociatedNode(
 
 MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
 {
-    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("UsdMayaTranslatorMayaReference::update prim=%s\n", prim.GetPath().GetText());
+    TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+        .Msg("UsdMayaTranslatorMayaReference::update prim=%s\n", prim.GetPath().GetText());
 
     MStatus status;
 
@@ -458,12 +463,16 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     return MS::kSuccess;
 }
 
-
-MStatus UsdMayaTranslatorMayaReference::updateMayaReference(const UsdPrim& prim, MObject parent, MObject& refNode, MString mayaReferencePath, MString rigNamespaceM)
+MStatus UsdMayaTranslatorMayaReference::updateMayaReference(
+    const UsdPrim& prim,
+    MObject        parent,
+    MObject&       refNode,
+    MString        mayaReferencePath,
+    MString        rigNamespaceM)
 {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("UsdMayaTranslatorMayaReference::updateMayaReference.");
 
-    MStatus status;
+    MStatus      status;
     MString      command, filepath;
     MFnReference fnReference(refNode);
     command = MString("referenceQuery -f -withoutCopyNumber \"") + fnReference.name() + "\"";
@@ -546,6 +555,5 @@ MStatus UsdMayaTranslatorMayaReference::updateMayaReference(const UsdPrim& prim,
 
     return status;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

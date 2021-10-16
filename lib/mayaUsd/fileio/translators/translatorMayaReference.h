@@ -68,11 +68,11 @@ private:
     static MString getMayaReferencePath(const UsdPrim& prim);
     static MString getMayaReferenceNamespace(const UsdPrim& prim);
     static MStatus updateMayaReference(
-        const UsdPrim& prim, 
-        MObject parent, 
-        MObject& refNode, 
-        MString mayaReferencePath, 
-        MString rigNamespaceM);
+        const UsdPrim& prim,
+        MObject        parent,
+        MObject&       refNode,
+        MString        mayaReferencePath,
+        MString        rigNamespaceM);
 
     static const TfToken m_namespaceName;
     static const TfToken m_referenceName;
