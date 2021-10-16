@@ -458,7 +458,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     }
 
     if (status) {
-        status = update_reference(prim, parent, refNode, mayaReferencePath, rigNamespaceM);
+        status = updateMayaReference(prim, parent, refNode, mayaReferencePath, rigNamespaceM);
         CHECK_MSTATUS_AND_RETURN_IT(status);
     }
 
@@ -466,9 +466,9 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
 }
 
 
-MStatus UsdMayaTranslatorMayaReference::update_reference(const UsdPrim& prim, MObject parent, MObject& refNode, MString mayaReferencePath, MString rigNamespaceM)
+MStatus UsdMayaTranslatorMayaReference::updateMayaReference(const UsdPrim& prim, MObject parent, MObject& refNode, MString mayaReferencePath, MString rigNamespaceM)
 {
-    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("UsdMayaTranslatorMayaReference::update_reference.");
+    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("UsdMayaTranslatorMayaReference::updateMayaReference.");
 
     MStatus status;
     MString      command, filepath;

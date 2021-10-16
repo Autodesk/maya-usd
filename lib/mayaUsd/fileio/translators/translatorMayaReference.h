@@ -66,7 +66,7 @@ private:
     static MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode);
     static MString getMayaReferencePath(const UsdPrim& prim);
     static MString getMayaReferenceNamespace(const UsdPrim& prim);
-    static MStatus update_reference(
+    static MStatus updateMayaReference(
         const UsdPrim& prim, 
         MObject parent, 
         MObject& refNode, 
