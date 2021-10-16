@@ -1741,14 +1741,6 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
 
 bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPaths)
 {
-    // Prevent infinite loop when UsdMayaTranslatorMayaReference sets
-    // a 'maya_associatedReferenceNode' key in the prim custom data,
-    // which emits a USDNotice::StageContentsChanged.
-    if (_inUpdateSchemaPrims)
-        return false;
-
-    _inUpdateSchemaPrims = true;
-
     MDagPath thisDagPath = MDagPath::getAPathTo(thisMObject());
     thisDagPath.pop();
 
@@ -1805,8 +1797,6 @@ bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPath
             }
         }
     }
-
-    _inUpdateSchemaPrims = false;
 
     return true;
 }

@@ -359,7 +359,6 @@ private:
     void _OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice);
 
     bool _updateSchemaPrims(const SdfPathVector& resyncedPaths);
-    bool _inUpdateSchemaPrims { false };
 
     UsdMayaStageNoticeListener _stageNoticeListener;
 
