@@ -49,10 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct UsdMayaTranslatorMayaReference
 {
     MAYAUSD_CORE_PUBLIC
-    static MString getMayaReferencePath(const UsdPrim& prim);
-    static MString getMayaReferenceNamespace(const UsdPrim& prim);
-
-    MAYAUSD_CORE_PUBLIC
     static MStatus LoadMayaReference(
         const UsdPrim& prim,
         MObject&       parent,
@@ -68,6 +64,8 @@ struct UsdMayaTranslatorMayaReference
 
 private:
     static MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode);
+    static MString getMayaReferencePath(const UsdPrim& prim);
+    static MString getMayaReferenceNamespace(const UsdPrim& prim);
     static MStatus update_reference(
         const UsdPrim& prim, 
         MObject parent, 
