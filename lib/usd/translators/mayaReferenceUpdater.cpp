@@ -57,8 +57,7 @@ bool PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* con
     const UsdPrim& usdPrim = context->GetUsdStage()->GetPrimAtPath(usdPath);
     const MObject& parentNode = GetMayaObject();
 
-    MObject refNode;
-    UsdMayaTranslatorMayaReference::update(usdPrim, parentNode, refNode);
+    UsdMayaTranslatorMayaReference::update(usdPrim, parentNode);
 
     return true;
 }

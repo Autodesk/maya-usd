@@ -374,52 +374,6 @@ MStatus UsdMayaTranslatorMayaReference::connectReferenceAssociatedNode(
     return result;
 }
 
-// TODO: Merge the two update functions
-MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent, MObject& referencedObject)
-{
-    TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("UsdMayaTranslatorMayaReference::update prim=%s\n", prim.GetPath().GetText());
-
-    MStatus status;
-    MString mayaReferencePath = getMayaReferencePath(prim);
-
-    // If the path is still empty return, there is no reference to import
-    if (!mayaReferencePath.length()) {
-        return MS::kFailure;
-    }
-
-    MString rigNamespaceM = getMayaReferenceNamespace(prim);
-
-    MFnReference refDependNode;
-    MFnDagNode parentDag(parent, &status);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-
-    MString uniqueRefNodeName = refNameFromPrimPath(parentDag, prim.GetPath());
-    
-    for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
-        MObject tempRefNode = refIter.item();
-        refDependNode.setObject(tempRefNode);
-
-        if (refDependNode.name() == uniqueRefNodeName)
-        {
-            referencedObject = tempRefNode;
-            break;
-        }
-    }
-
-    if (referencedObject.isNull())
-    {
-        status = LoadMayaReference(prim, parent, mayaReferencePath, rigNamespaceM, referencedObject);
-        CHECK_MSTATUS_AND_RETURN_IT(status);
-
-        refDependNode.setObject(referencedObject);
-        refDependNode.setName(uniqueRefNodeName);
-    } else {
-        status = update_reference(prim, parent, referencedObject, mayaReferencePath, rigNamespaceM);
-    }
-
-    return status;
-}
-
 MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
 {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("UsdMayaTranslatorMayaReference::update prim=%s\n", prim.GetPath().GetText());
@@ -434,21 +388,22 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
 
     MString rigNamespaceM = getMayaReferenceNamespace(prim);
 
-    MFnDagNode parentDag(parent, &status);
+    MFnReference fnDepNode;
+    MFnDagNode fnParent(parent, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MObject refNode;
-
-    // First, see if a reference is already attached
-    MFnDependencyNode fnParent(parent, &status);
+    MString uniqueRefNodeName = refNameFromPrimPath(fnParent, prim.GetPath());
+    
+    // First, search the connected references.
     if (status) {
         MPlug      messagePlug(fnParent.object(), getMessageAttr());
         MPlugArray referencePlugs;
         messagePlug.connectedTo(referencePlugs, false, true);
         for (uint32_t i = 0, n = referencePlugs.length(); i < n; ++i) {
-            MObject temp = referencePlugs[i].node();
-            if (temp.hasFn(MFn::kReference)) {
-                refNode = temp;
+            fnDepNode.setObject(referencePlugs[i].node());
+            if (fnDepNode.object().hasFn(MFn::kReference) && fnDepNode.name() == uniqueRefNodeName) {
+                refNode = fnDepNode.object();
             }
         }
     }
@@ -457,8 +412,9 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     // prim.  If so, we can just reuse it.
     //
     // The check is based on comparing the prim's full path and the name of the
-    // reference node, which we had originally created from the prim's full
-    // path.  (Because of this, if the name or parentage of the prim has changed
+    // reference node, which we had originally created from the prim's full path.  
+    //
+    // (Because of this, if the name or parentage of the prim has changed
     // since we created the reference, we won't find the old reference node.
     // The old one will be left orphaned, a new one will be created, and we will
     // lose any reference edits we had made.  Ideally, this won't happen often.
@@ -477,21 +433,17 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
             if (!tempRefFn.isFromReferencedFile()) {
 
                 // Get the name of the reference node so we can check if this node
-                // matches the prim we are processing.  Strip off the "_RN" suffix.
+                // matches the prim we are processing.
                 //
                 MString refNodeName = tempRefFn.name();
-                MString refName(refNodeName.asChar(), refNodeName.numChars() - 3);
-
-                // What reference node name is the prim expecting?
-                MString expectedRefName = refNameFromPrimPath(parentDag, prim.GetPath());
 
                 // If found a match, reconnect the reference node's `associatedNode`
                 // attr before loading it, since the previous connection may be gone.
                 //
-                if (refName == expectedRefName) {
+                if (refNodeName == uniqueRefNodeName) {
                     // Reconnect the reference node's `associatedNode` attr before
                     // loading it, since the previous connection may be gone.
-                    connectReferenceAssociatedNode(parentDag, tempRefFn);
+                    connectReferenceAssociatedNode(fnParent, tempRefFn);
                     refNode = tempRefNode;
                     break;
                 }

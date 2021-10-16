@@ -66,9 +66,6 @@ struct UsdMayaTranslatorMayaReference
     MAYAUSD_CORE_PUBLIC
     static MStatus update(const UsdPrim& prim, MObject parent);
 
-    MAYAUSD_CORE_PUBLIC
-    static MStatus update(const UsdPrim& prim, MObject parent, MObject &referenceObject);
-
 private:
     static MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode);
     static MStatus update_reference(
