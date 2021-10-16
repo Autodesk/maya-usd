@@ -1,10 +1,10 @@
 #usda 1.0
 (
-    defaultPrim = "CubeAsset"
+    defaultPrim = "Asset"
     upAxis = "Z"
 )
 
-def Xform "CubeAsset" (
+def Xform "Asset" (
     assetInfo = {
         asset identifier = @CubeAsset.usda@
         string name = "CubeAsset"

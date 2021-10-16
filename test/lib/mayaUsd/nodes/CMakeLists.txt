@@ -4,6 +4,7 @@ set(TEST_SCRIPT_FILES
     testLayerManagerSerialization.py
     testPointBasedDeformerNode.py
     testProxyShapeBase.py
+    testProxyShapeMayaReference.py
 )
 
 add_custom_target(${TARGET_NAME} ALL)
