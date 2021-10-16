@@ -1,0 +1,41 @@
+#usda 1.0
+(
+    defaultPrim = "CubeAsset"
+    upAxis = "Z"
+)
+
+def Xform "CubeAsset" (
+    assetInfo = {
+        asset identifier = @CubeAsset.usda@
+        string name = "CubeAsset"
+    }
+    kind = "component"
+    variants = {
+        string Rig = "Off"
+    }
+    prepend variantSets = ["Rig"]
+    payload = @CubeModel.usda@
+)
+{
+    variantSet "Rig" = {
+        "On" {
+            over "Geom" (
+                active = false
+            ) {
+            }
+
+            def MayaReference "Rig"
+            {
+                string mayaNamespace = "rig"
+                asset mayaReference = @CubeRig.ma@
+            }
+        }
+
+        "Off" {
+            over "Geom" (
+                active = true
+            ) {
+            }
+        }
+    }
+}
