@@ -25,6 +25,7 @@
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnNurbsCurve.h>
+#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
@@ -32,6 +33,41 @@
 #include <maya/MTimeArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+/* static */
+bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj, MStatus& status)
+{
+    MFnNurbsCurve curveFn;
+    MFnDagNode    dagFn;
+    MObject curveObj = dagFn.create("bezierCurve", "bezierShape1", mayaNodeTransformObj, &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    status = curveFn.setObject(curveObj);
+    ; // Create a nurbs to bezier converter
+    MFnDependencyNode convFn;
+    convFn.create("nurbsCurveToBezier");
+    // Connect the converter between the nurbs and the bezier
+    MPlug       convIn = convFn.findPlug("inputCurve", false);
+    MPlug       convOut = convFn.findPlug("outputCurve", false);
+    MPlug       nurbsOut = nurbsCurveFn.findPlug("local", false);
+    MPlug       bezIn = dagFn.findPlug("create", false);
+    MDGModifier dgm;
+    dgm.connect(nurbsOut, convIn);
+    dgm.connect(convOut, bezIn);
+    dgm.doIt();
+    // Pull on the bezier output to force computing the values :
+    MPlug   bezOut = dagFn.findPlug("local", false);
+    MObject val = bezOut.asMObject();
+    // Remove the nurbs and converter:
+    MDGModifier dagm;
+    dagm.deleteNode(convFn.object());
+    dagm.deleteNode(nurbsCurveFn.object(), false);
+    dagm.doIt();
+    // replace deleted nurbs node with bezier node
+    nurbsCurveFn.setObject(curveObj);
+    return true;
+}
 
 /* static */
 bool UsdMayaTranslatorCurves::Create(
@@ -101,9 +137,10 @@ bool UsdMayaTranslatorCurves::Create(
 
     curves.GetWidthsAttr().Get(&curveWidths); // not animatable
 
-    int indexOffset = 0;
-    int coffset = 0;
-    int mayaDegree = 0;
+    int  indexOffset = 0;
+    int  coffset = 0;
+    int  mayaDegree = 0;
+    auto curveType = MFn::kNurbsCurve;
 
     for (size_t curveIndex = 0; curveIndex < curveVertexCounts.size(); ++curveIndex) {
 
@@ -127,30 +164,35 @@ bool UsdMayaTranslatorCurves::Create(
 
         } else {
             // Handle basis curves originally modeled in Maya as nurbs.
+            curveType = MFn::kBezierCurve;
 
             curveOrder.resize(1);
             UsdGeomBasisCurves basisSchema = UsdGeomBasisCurves(prim);
             TfToken            typeToken;
             basisSchema.GetTypeAttr().Get(&typeToken);
+            TfToken basisToken;
+
+            basisSchema.GetBasisAttr().Get(&basisToken);
+
             if (typeToken == UsdGeomTokens->linear) {
                 curveOrder[0] = 2;
                 _curveKnots.resize(curveVertexCounts[curveIndex]);
                 for (size_t i = 0; i < _curveKnots.size(); ++i) {
                     _curveKnots[i] = i;
                 }
-            } else {
+
+            } else { // basisToken == UsdGeomTokens->bezier || bspline)
                 curveOrder[0] = 4;
 
-                // Cubic curves in Maya have numSpans + 2*3 - 1, and for geometry
-                // that came in as basis curves, we have numCV's - 3 spans. See the
-                // MFnNurbsCurve documentation for more details.
                 _curveKnots.resize(curveVertexCounts[curveIndex] - 3 + 5);
                 int knotIdx = 0;
                 for (size_t i = 0; i < _curveKnots.size(); ++i) {
                     if (i < 3) {
                         _curveKnots[i] = 0.0;
                     } else {
-                        if (i <= _curveKnots.size() - 3) {
+                        if (i == 3) {
+                            ++knotIdx;
+                        } else if (i == _curveKnots.size() - 3) {
                             ++knotIdx;
                         }
                         _curveKnots[i] = double(knotIdx);
@@ -188,6 +230,13 @@ bool UsdMayaTranslatorCurves::Create(
             &status);
         if (status != MS::kSuccess) {
             return false;
+        }
+        if (curveType != MFn::kNurbsCurve) {
+            // delete curve object and replace with bezier curve object
+            convertToBezier(curveFn, mayaNodeTransformObj, status);
+            if (status != MS::kSuccess) {
+                return false;
+            }
         }
         MString nodeName(prim.GetName().GetText());
         nodeName += "Shape";
@@ -238,6 +287,13 @@ bool UsdMayaTranslatorCurves::Create(
                     if (status != MS::kSuccess) {
                         continue;
                     }
+                    if (curveType == MFn::kBezierCurve) {
+                        convertToBezier(curveFn, mayaNodeTransformObj, status);
+                        if (status != MS::kSuccess) {
+                            continue;
+                        }
+                    }
+
                 } else {
                     // Reuse the already created curve by copying it and then setting the points
                     curveAnimObj = curveFn.copy(curveAnimObj, mayaNodeTransformObj, &status);

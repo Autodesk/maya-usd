@@ -18,6 +18,7 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/nurbsCurves.h>
+#include <pxr/usd/usdGeom/basisCurves.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
