@@ -17,6 +17,8 @@ static TfToken testRes3("test_res3");
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
+// Tests with all results being the same.
+
 TEST(DiffComputeOverall, computeOverallEmpty)
 {
     DiffResultPerToken results;
@@ -121,6 +123,9 @@ TEST(DiffComputeOverall, computeOverallAllDiffer)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// Tests with two types of results: same and another.
+
 TEST(DiffComputeOverall, computeOverallSameAndCreated)
 {
     DiffResultPerToken results = {
@@ -143,30 +148,6 @@ TEST(DiffComputeOverall, computeOverallSameAndAbsent)
     DiffResult result = computeOverallResult(results);
 
     EXPECT_EQ(result, DiffResult::Subset);
-}
-
-TEST(DiffComputeOverall, computeOverallCreatedAAndbsent)
-{
-    DiffResultPerToken results = {
-        { testRes1, DiffResult::Absent },
-        { testRes2, DiffResult::Created },
-        { testRes3, DiffResult::Absent },
-    };
-    DiffResult result = computeOverallResult(results);
-
-    EXPECT_EQ(result, DiffResult::Differ);
-}
-
-TEST(DiffComputeOverall, computeOverallSameCreatedAbsent)
-{
-    DiffResultPerToken results = {
-        { testRes1, DiffResult::Same },
-        { testRes2, DiffResult::Created },
-        { testRes3, DiffResult::Absent },
-    };
-    DiffResult result = computeOverallResult(results);
-
-    EXPECT_EQ(result, DiffResult::Differ);
 }
 
 TEST(DiffComputeOverall, computeOverallSameAndPrepended)
@@ -229,16 +210,31 @@ TEST(DiffComputeOverall, computeOverallSameAndSuperset)
     EXPECT_EQ(result, DiffResult::Differ);
 }
 
-TEST(DiffComputeOverall, computeOverallPrependedAndAppended)
+TEST(DiffComputeOverall, computeOverallSameAndReordered)
 {
     DiffResultPerToken results = {
-        { testRes1, DiffResult::Prepended },
-        { testRes2, DiffResult::Appended },
-        { testRes3, DiffResult::Prepended },
+        { testRes1, DiffResult::Same },
+        { testRes2, DiffResult::Same },
+        { testRes3, DiffResult::Reordered },
     };
     DiffResult result = computeOverallResult(results);
 
-    EXPECT_EQ(result, DiffResult::Created);
+    EXPECT_EQ(result, DiffResult::Reordered);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Tests with two types of results: created and another.
+
+TEST(DiffComputeOverall, computeOverallCreatedAndAbsent)
+{
+    DiffResultPerToken results = {
+        { testRes1, DiffResult::Absent },
+        { testRes2, DiffResult::Created },
+        { testRes3, DiffResult::Absent },
+    };
+    DiffResult result = computeOverallResult(results);
+
+    EXPECT_EQ(result, DiffResult::Differ);
 }
 
 TEST(DiffComputeOverall, computeOverallCreatedAndAppended)
@@ -265,6 +261,21 @@ TEST(DiffComputeOverall, computeOverallCreatedAndPrepended)
     EXPECT_EQ(result, DiffResult::Created);
 }
 
+TEST(DiffComputeOverall, computeOverallCreatedAndReordered)
+{
+    DiffResultPerToken results = {
+        { testRes1, DiffResult::Reordered },
+        { testRes2, DiffResult::Created },
+        { testRes3, DiffResult::Reordered },
+    };
+    DiffResult result = computeOverallResult(results);
+
+    EXPECT_EQ(result, DiffResult::Differ);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Tests with two types of results: absent and another.
+
 TEST(DiffComputeOverall, computeOverallAbsentAndAppended)
 {
     DiffResultPerToken results = {
@@ -287,5 +298,71 @@ TEST(DiffComputeOverall, computeOverallAbsentAndPrepended)
     DiffResult result = computeOverallResult(results);
 
     EXPECT_EQ(result, DiffResult::Differ);
+}
+
+TEST(DiffComputeOverall, computeOverallAbsentAndReordered)
+{
+    DiffResultPerToken results = {
+        { testRes1, DiffResult::Absent },
+        { testRes2, DiffResult::Absent },
+        { testRes3, DiffResult::Reordered },
+    };
+    DiffResult result = computeOverallResult(results);
+
+    EXPECT_EQ(result, DiffResult::Subset);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Tests with two types of results.
+
+TEST(DiffComputeOverall, computeOverallPrependedAndAppended)
+{
+    DiffResultPerToken results = {
+        { testRes1, DiffResult::Prepended },
+        { testRes2, DiffResult::Appended },
+        { testRes3, DiffResult::Prepended },
+    };
+    DiffResult result = computeOverallResult(results);
+
+    EXPECT_EQ(result, DiffResult::Created);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Tests with three types of results.
+
+TEST(DiffComputeOverall, computeOverallSameCreatedAbsent)
+{
+    DiffResultPerToken results = {
+        { testRes1, DiffResult::Same },
+        { testRes2, DiffResult::Created },
+        { testRes3, DiffResult::Absent },
+    };
+    DiffResult result = computeOverallResult(results);
+
+    EXPECT_EQ(result, DiffResult::Differ);
+}
+
+TEST(DiffComputeOverall, computeOverallSameCreatedReordered)
+{
+    DiffResultPerToken results = {
+        { testRes1, DiffResult::Same },
+        { testRes2, DiffResult::Created },
+        { testRes3, DiffResult::Reordered },
+    };
+    DiffResult result = computeOverallResult(results);
+
+    EXPECT_EQ(result, DiffResult::Differ);
+}
+
+TEST(DiffComputeOverall, computeOverallSameAbsentReordered)
+{
+    DiffResultPerToken results = {
+        { testRes1, DiffResult::Same },
+        { testRes2, DiffResult::Reordered },
+        { testRes3, DiffResult::Absent },
+    };
+    DiffResult result = computeOverallResult(results);
+
+    EXPECT_EQ(result, DiffResult::Subset);
 }
 

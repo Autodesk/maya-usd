@@ -63,6 +63,11 @@ add_mayaUsdUtils_test(
 )
 
 add_mayaUsdUtils_test(
+    testDiffLists
+    test_DiffLists.cpp
+)
+
+add_mayaUsdUtils_test(
     testDiffComputeOverall
     test_DiffComputeOverall.cpp
 )

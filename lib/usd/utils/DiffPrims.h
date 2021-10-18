@@ -41,6 +41,7 @@ enum class DiffResult
     Created,   // The item does not exist in the baseline.
     Prepended, // The item is prepended to the baseline.
     Appended,  // The item is appended to the baseline.
+    Reordered, // The item has changed position in a list.
     Subset,    // The item is a subset of the baseline item.
     Superset,  // The item is a superset of the baseline item.
     Differ     // The item differs from the baseline in a more complex way.
@@ -110,7 +111,7 @@ DiffResult compareAttributes(
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
 /// \return the map of relationship names to the result of comparison of that relationship.
-/// Currently only Same, Absent, Prepended or Appended are returned.
+/// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 DiffResultPerPathPerToken
@@ -141,7 +142,7 @@ compareObjectsMetadatas(const PXR_NS::UsdObject& modified, const PXR_NS::UsdObje
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  retrieves the list of metadata ignored during comparisons.
-/// \return the setp of metadata names that should be ignored.
+/// \return the set of metadata names that should be ignored.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor>& getIgnoredMetadatas();
@@ -161,12 +162,13 @@ DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue&
 /// \param  modified the potentially modified list of items that is compared.
 /// \param  baseline the list of items that is used as the baseline for the comparison.
 /// \return the result of the comparison for each item in that modified list.
-/// Currently only Same, Absent, Prepended or Appended are returned.
+/// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
 ///
 /// Currently instantiated for the types used in list-op: int, unsigned int, int64_t, uint64_t,
 /// TfToken, std::string, SdfPath, SdfReference and SdfPayload.
 //----------------------------------------------------------------------------------------------------------------------
 template <class ITEM>
+MAYA_USD_UTILS_PUBLIC
 std::map<ITEM, DiffResult>
 compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baseline);
 
@@ -174,11 +176,12 @@ compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baselin
 template <class MAP> inline DiffResult computeOverallResult(const MAP& subResults)
 {
     // Single pass over items to find what type of sub-results we have.
+    bool hasSame = false;
     bool hasAbsent = false;
     bool hasCreated = false;
     bool hasPrepended = false;
     bool hasAppended = false;
-    bool hasSame = false;
+    bool hasReordered = false;
 
     for (const auto& keyAndResult : subResults) {
         switch (keyAndResult.second) {
@@ -187,6 +190,7 @@ template <class MAP> inline DiffResult computeOverallResult(const MAP& subResult
         case DiffResult::Created: hasCreated = true; break;
         case DiffResult::Prepended: hasPrepended = true; break;
         case DiffResult::Appended: hasAppended = true; break;
+        case DiffResult::Reordered: hasReordered = true; break;
 
         // As soon as we find a Differ result, we can return.
         // Note: superset and subset at a lower-level is not superset or subset at a higher level.
@@ -199,17 +203,29 @@ template <class MAP> inline DiffResult computeOverallResult(const MAP& subResult
     // Analyze combination of results.
     //
     //     - All were same: overall is same.
+    //     - All were same or reordered: overall is reordered.
+    //
+    //     - No absent, some created, appended or prepended and some reordered: overall differ.
+    //     - No absent, no same: overall is created.
     //     - No absent, all same or prepended: overall is prepended.
     //     - No absent, all same or appended: overall is appended.
-    //     - No absent, no same: overall is created.
     //     - No absent, some same: overall is superset.
+    //
     //     - Some absent, some created, appended or prepended: differ.
-    //     - All absent or same: overall is subset.
+    //     - All absent or same or reordered: overall is subset.
     //     - All absent, no same: overall is absent.
 
     if (!hasAbsent) {
-        if (!hasCreated && !hasPrepended && !hasAppended)
-            return DiffResult::Same;
+        if (!hasCreated && !hasPrepended && !hasAppended) {
+            if (hasReordered) {
+                return DiffResult::Reordered;
+            } else {
+                return DiffResult::Same;
+            }
+        }
+
+        if (hasReordered)
+            return DiffResult::Differ;
 
         if (!hasSame)
             return DiffResult::Created;
@@ -225,7 +241,7 @@ template <class MAP> inline DiffResult computeOverallResult(const MAP& subResult
         if (hasCreated || hasPrepended || hasAppended)
             return DiffResult::Differ;
 
-        if (hasSame)
+        if (hasSame || hasReordered)
             return DiffResult::Subset;
 
         return DiffResult::Absent;
