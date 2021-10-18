@@ -111,7 +111,7 @@ class AttributeTestCase(unittest.TestCase):
 
     def runUndoRedoUsingMayaSetAttr(self, attr, newVal, decimalPlaces=None):
         # Maya's setAttr command was only made Ufe aware in Maya PR129 and Maya 2022.3
-        if ((mayaUtils.previewReleaseVersion() < 129) and (int(cmds.about(apiVersion=True)) < 20220300)):
+        if ((int(cmds.about(apiVersion=True)) < 20220300) or (mayaUtils.previewReleaseVersion() < 129)):
             return
 
         oldVal = attr.get()
