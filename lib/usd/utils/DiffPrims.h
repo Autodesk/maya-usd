@@ -19,6 +19,7 @@
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/base/vt/dictionary.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
@@ -57,6 +58,11 @@ using DiffResultPerToken = std::map<PXR_NS::TfToken, DiffResult>;
 /// The set of differences for each path. For example:
 ///    - For each target path that were compared between two relationships.
 using DiffResultPerPath = std::map<PXR_NS::SdfPath, DiffResult>;
+
+//----------------------------------------------------------------------------------------------------------------------
+/// The set of differences for each item in a dictionary. For example:
+///    - For each key that were compared between two dictionaries.
+using DiffResultPerKey = std::map<PXR_NS::VtDictionary::key_type, DiffResult>;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// The set of differences for each path for each token. For example:
@@ -171,6 +177,17 @@ template <class ITEM>
 MAYA_USD_UTILS_PUBLIC
 std::map<ITEM, DiffResult>
 compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares a modified dictionary of items to a baseline dictionary.
+/// \param  modified the potentially modified dictionary of values that is compared.
+/// \param  baseline the dictionary of values that is used as the baseline for the comparison.
+/// \return the result of the comparison for each value in that modified dictionary.
+/// Currently only Same, Differ, Absent and Created are returned.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResultPerKey
+compareDictionaries(const PXR_NS::VtDictionary& modified, const PXR_NS::VtDictionary& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
 template <class MAP> inline DiffResult computeOverallResult(const MAP& subResults)
