@@ -1,17 +1,6 @@
-set(TARGET_NAME MAYAUSD_FILEIO_UTILS_TEST)
-
 set(TEST_SCRIPT_FILES
     testReadWriteUtils.py
     testXformStack.py
-)
-
-add_custom_target(${TARGET_NAME} ALL)
-
-# copy all the resources and Python scripts to build directory
-mayaUsd_copyDirectory(${TARGET_NAME}
-    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-    EXCLUDE "*.txt"
 )
 
 foreach(script ${TEST_SCRIPT_FILES})

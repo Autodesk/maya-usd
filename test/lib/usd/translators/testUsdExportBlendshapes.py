@@ -33,8 +33,9 @@ class TestUsdExportBlendshapes(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.temp_dir = fixturesUtils.setUpClass(__file__)
-        cls.scene_path = os.path.join(cls.temp_dir, "UsdExportBlendShapesTest", "blendShapesExport.ma").replace("\\", "/")
+        cls.input_dir = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
+        cls.scene_path = os.path.join(cls.input_dir, "UsdExportBlendShapesTest", "blendShapesExport.ma").replace("\\", "/")
 
     @classmethod
     def tearDownClass(cls):

@@ -1,5 +1,3 @@
-set(TARGET_NAME MAYAUSD_TEST)
-
 # Unit test scripts.
 set(TEST_SCRIPT_FILES
     testMayaUsdConverter.py
@@ -19,14 +17,6 @@ endif()
 # Interactive Unit test scripts.
 set(INTERACTIVE_TEST_SCRIPT_FILES
     testMayaUsdInteractiveLayerEditorCommands.py
-)
-
-# copy tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
-add_custom_target(${TARGET_NAME} ALL)
-
-mayaUsd_copyFiles(${TARGET_NAME}
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-    FILES ${TEST_SCRIPT_FILES} ${INTERACTIVE_TEST_SCRIPT_FILES}
 )
 
 foreach(script ${TEST_SCRIPT_FILES})
@@ -63,11 +53,6 @@ endforeach()
 # -----------------------------------------------------------------------------
 set(TEST_PLUG_FILES
     testMayaUsdPlugVersionCheck.py
-)
-
-mayaUsd_copyFiles(${TARGET_NAME}
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-    FILES ${TEST_PLUG_FILES}
 )
 
 foreach(script ${TEST_PLUG_FILES})
