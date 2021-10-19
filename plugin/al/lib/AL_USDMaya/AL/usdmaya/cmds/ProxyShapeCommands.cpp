@@ -1428,7 +1428,7 @@ MStatus ProxyShapeTestIntersection::redoIt()
     SdfPathVector rootPath;
     rootPath.push_back(root.GetPath());
     UsdImagingGLRenderParams params;
-    uint                     resolution = 10;
+    unsigned int             resolution = 10;
     nodes::Engine::HitBatch  hitBatch;
 
     bool hit = engine->TestIntersectionBatch(
