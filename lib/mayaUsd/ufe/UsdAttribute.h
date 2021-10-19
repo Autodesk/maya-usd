@@ -23,6 +23,7 @@
 #include <ufe/attribute.h>
 
 // Ufe::Attribute overrides (minus the type method)
+#if (UFE_PREVIEW_VERSION_NUM < 3011)
 #define UFE_ATTRIBUTE_OVERRIDES                                                          \
     bool        hasValue() const override { return UsdAttribute::hasValue(); }           \
     std::string name() const override { return UsdAttribute::name(); }                   \
@@ -31,6 +32,37 @@
     {                                                                                    \
         return UsdAttribute::string(Ufe::Attribute::sceneItem());                        \
     }
+#else
+#define UFE_ATTRIBUTE_OVERRIDES                                                               \
+    bool        hasValue() const override { return UsdAttribute::hasValue(); }                \
+    std::string name() const override { return UsdAttribute::name(); }                        \
+    std::string documentation() const override { return UsdAttribute::documentation(); }      \
+    std::string string() const override                                                       \
+    {                                                                                         \
+        return UsdAttribute::string(Ufe::Attribute::sceneItem());                             \
+    }                                                                                         \
+    Ufe::Value getMetadata(const std::string& key) const override                             \
+    {                                                                                         \
+        return UsdAttribute::getMetadata(key);                                                \
+    }                                                                                         \
+    bool setMetadata(const std::string& key, const Ufe::Value& value) override                \
+    {                                                                                         \
+        return UsdAttribute::setMetadata(key, value);                                         \
+    }                                                                                         \
+    Ufe::UndoableCommand::Ptr setMetadataCmd(const std::string& key, const Ufe::Value& value) \
+        override                                                                              \
+    {                                                                                         \
+        return UsdAttribute::setMetadataCmd(key, value);                                      \
+    }                                                                                         \
+    bool clearMetadata(const std::string& key) override                                       \
+    {                                                                                         \
+        return UsdAttribute::clearMetadata(key);                                              \
+    }                                                                                         \
+    bool hasMetadata(const std::string& key) const override                                   \
+    {                                                                                         \
+        return UsdAttribute::hasMetadata(key);                                                \
+    }
+#endif
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -47,6 +79,13 @@ public:
     std::string name() const;
     std::string documentation() const;
     std::string string(const Ufe::SceneItem::Ptr& item) const;
+#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+    Ufe::Value                getMetadata(const std::string& key) const;
+    bool                      setMetadata(const std::string& key, const Ufe::Value& value);
+    Ufe::UndoableCommand::Ptr setMetadataCmd(const std::string& key, const Ufe::Value& value);
+    bool                      clearMetadata(const std::string& key);
+    bool                      hasMetadata(const std::string& key) const;
+#endif
 
 protected:
     PXR_NS::UsdPrim      fPrim;

@@ -17,6 +17,9 @@
 
 #include "private/Utils.h"
 
+#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+#include <mayaUsd/base/tokens.h>
+#endif
 #include <mayaUsd/ufe/StagesSubject.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
@@ -87,6 +90,49 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     return attr.Set<T>(value);
 }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+bool setUsdAttrMetadata(
+    const PXR_NS::UsdAttribute& attr,
+    const std::string&          key,
+    const Ufe::Value&           value)
+{
+    // Special cases for known Ufe metadata keys.
+
+    // Note: we allow the locking attribute to be changed even if attribute is locked
+    //       since that is how you unlock.
+    if (key == Ufe::Attribute::kLocked) {
+        return attr.SetMetadata(
+            MayaUsdMetadata->Lock, value.get<bool>() ? MayaUsdTokens->On : MayaUsdTokens->Off);
+    }
+
+    // If attribute is locked don't allow setting Metadata.
+    std::string errMsg;
+    const bool  isSetAttrAllowed = MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg);
+    if (!isSetAttrAllowed) {
+        throw std::runtime_error(errMsg);
+    }
+
+    // We must convert the Ufe::Value to VtValue for storage in Usd.
+    // Figure out the type of the input Ufe Value and create proper Usd VtValue.
+    PXR_NS::VtValue usdValue;
+    if (value.type() == typeid(bool))
+        usdValue = value.get<bool>();
+    else if (value.type() == typeid(int))
+        usdValue = value.get<int>();
+    else if (value.type() == typeid(float))
+        usdValue = value.get<float>();
+    else if (value.type() == typeid(double))
+        usdValue = value.get<double>();
+    else if (value.type() == typeid(std::string))
+        usdValue = value.get<std::string>();
+    if (!usdValue.IsEmpty()) {
+        PXR_NS::TfToken tok(key);
+        return attr.SetMetadata(tok, usdValue);
+    }
+    return false;
+}
+#endif
+
 PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
 {
     // Attributes with time samples will fail when calling Get with default time code.
@@ -144,8 +190,30 @@ void setUsdAttributeVectorFromUfe(
     setUsdAttr<T>(attr, vec);
 }
 
+class UsdUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    void execute() override
+    {
+        MayaUsd::UsdUndoBlock undoBlock(&_undoableItem);
+        executeUndoBlock();
+    }
+
+    void undo() override { _undoableItem.undo(); }
+    void redo() override { _undoableItem.redo(); }
+
+protected:
+    // Actual implementation of the execution of the command,
+    // executed "within" a UsdUndoBlock to capture undo data,
+    // to be implemented by the sub-class.
+    virtual void executeUndoBlock() = 0;
+
+private:
+    MayaUsd::UsdUndoableItem _undoableItem;
+};
+
 template <typename T, typename A = MayaUsd::ufe::TypedUsdAttribute<T>>
-class SetUndoableCommand : public Ufe::UndoableCommand
+class SetUndoableCommand : public UsdUndoableCommand
 {
 public:
     SetUndoableCommand(const typename A::Ptr& attr, const T& newValue)
@@ -154,20 +222,35 @@ public:
     {
     }
 
-    void execute() override
-    {
-        MayaUsd::UsdUndoBlock undoBlock(&_undoableItem);
-        _attr->set(_newValue);
-    }
-
-    void undo() override { _undoableItem.undo(); }
-    void redo() override { _undoableItem.redo(); }
+    void executeUndoBlock() override { _attr->set(_newValue); }
 
 private:
-    const typename A::Ptr    _attr;
-    const T                  _newValue;
-    MayaUsd::UsdUndoableItem _undoableItem;
+    const typename A::Ptr _attr;
+    const T               _newValue;
 };
+
+#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+class SetUndoableMetadataCommand : public UsdUndoableCommand
+{
+public:
+    SetUndoableMetadataCommand(
+        const PXR_NS::UsdAttribute& usdAttr,
+        const std::string&          key,
+        const Ufe::Value&           newValue)
+        : _usdAttr(usdAttr)
+        , _key(key)
+        , _newValue(newValue)
+    {
+    }
+
+    void executeUndoBlock() override { setUsdAttrMetadata(_usdAttr, _key, _newValue); }
+
+private:
+    const PXR_NS::UsdAttribute _usdAttr;
+    const std::string          _key;
+    const Ufe::Value           _newValue;
+};
+#endif
 
 } // end namespace
 
@@ -200,6 +283,71 @@ std::string UsdAttribute::string(const Ufe::SceneItem::Ptr& item) const
 {
     return getUsdAttributeValueAsString(fUsdAttr, getCurrentTime(item));
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
+{
+    // Special cases for known Ufe metadata keys.
+    if (key == Ufe::Attribute::kLocked) {
+        PXR_NS::TfToken lock;
+        bool            ret = fUsdAttr.GetMetadata(MayaUsdMetadata->Lock, &lock);
+        if (ret)
+            return Ufe::Value((lock == MayaUsdTokens->On) ? true : false);
+        return Ufe::Value();
+    }
+
+    PXR_NS::TfToken tok(key);
+    PXR_NS::VtValue v;
+    if (fUsdAttr.GetMetadata(tok, &v)) {
+        if (v.IsHolding<bool>())
+            return Ufe::Value(v.Get<bool>());
+        else if (v.IsHolding<int>())
+            return Ufe::Value(v.Get<int>());
+        else if (v.IsHolding<float>())
+            return Ufe::Value(v.Get<float>());
+        else if (v.IsHolding<double>())
+            return Ufe::Value(v.Get<double>());
+        else if (v.IsHolding<std::string>())
+            return Ufe::Value(v.Get<std::string>());
+        else if (v.IsHolding<PXR_NS::TfToken>())
+            return Ufe::Value(v.Get<PXR_NS::TfToken>().GetString());
+    }
+    return Ufe::Value();
+}
+
+bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
+{
+    return setUsdAttrMetadata(fUsdAttr, key, value);
+}
+
+Ufe::UndoableCommand::Ptr
+UsdAttribute::setMetadataCmd(const std::string& key, const Ufe::Value& value)
+{
+    return std::make_shared<SetUndoableMetadataCommand>(fUsdAttr, key, value);
+}
+
+bool UsdAttribute::clearMetadata(const std::string& key)
+{
+    // Special cases for known Ufe metadata keys.
+    if (key == Ufe::Attribute::kLocked) {
+        return fUsdAttr.ClearMetadata(MayaUsdMetadata->Lock);
+    }
+
+    PXR_NS::TfToken tok(key);
+    return fUsdAttr.ClearMetadata(tok);
+}
+
+bool UsdAttribute::hasMetadata(const std::string& key) const
+{
+    // Special cases for known Ufe metadata keys.
+    if (key == Ufe::Attribute::kLocked) {
+        return fUsdAttr.HasMetadata(MayaUsdMetadata->Lock);
+    }
+
+    PXR_NS::TfToken tok(key);
+    return fUsdAttr.HasMetadata(tok);
+}
+#endif
 
 //------------------------------------------------------------------------------
 // UsdAttributeGeneric:
@@ -324,7 +472,8 @@ template <typename T> Ufe::UndoableCommand::Ptr TypedUsdAttribute<T>::setCmd(con
     // See
     // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
     // for explanation of this->shared_from_this() in templated class.
-    return std::make_shared<SetUndoableCommand<T>>(this->shared_from_this(), value);
+    auto self = std::dynamic_pointer_cast<TypedUsdAttribute<T>>(this->shared_from_this());
+    return std::make_shared<SetUndoableCommand<T>>(self, value);
 }
 
 //------------------------------------------------------------------------------
