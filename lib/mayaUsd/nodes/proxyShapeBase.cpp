@@ -861,6 +861,15 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 referencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             _unsharedStageRootLayer->SetSubLayerPaths({ inRootLayer->GetIdentifier() });
         } else {
+
+            // Make a copy of the unshared stage root layer to avoid
+            // a "stageChanged" event from stage in memory that as a reference
+            // to the current unshared stage root layer. This is required when
+            // Maya caching is enable.
+            auto unsharedStageRootLayerCopy = SdfLayer::CreateAnonymous(kUnsharedStageLayerName);
+            unsharedStageRootLayerCopy->TransferContent(_unsharedStageRootLayer);
+            _unsharedStageRootLayer = unsharedStageRootLayerCopy;
+
             // Check if we need to remap the source
             // At the moment we remap the old root with the new root  and we assumne that the root
             // is the first item in the referenced layers
