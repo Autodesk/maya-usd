@@ -16,6 +16,7 @@ target_sources(${TARGET_NAME}
         DiffPrims.cpp
         DiffRelationships.cpp
         DiffValues.cpp
+        MergePrims.cpp
         util.cpp
 )
 

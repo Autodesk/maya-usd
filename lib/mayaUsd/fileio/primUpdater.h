@@ -59,8 +59,10 @@ public:
     // exported by push into the destination dstLayer which is in the scene.
     MAYAUSD_CORE_PUBLIC
     virtual bool pushCopySpecs(
+        UsdStageRefPtr srcStage,
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,
+        UsdStageRefPtr dstStage,
         SdfLayerRefPtr dstLayer,
         const SdfPath& dstSdfPath);
 

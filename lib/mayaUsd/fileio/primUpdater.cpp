@@ -23,6 +23,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/traverseLayer.h>
+#include <usd/utils/MergePrims.h>
 
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/path.h>
@@ -81,75 +82,14 @@ bool UsdMayaPrimUpdater::pushEnd(const UsdMayaPrimUpdaterContext& context)
 }
 
 bool UsdMayaPrimUpdater::pushCopySpecs(
+    UsdStageRefPtr srcStage,
     SdfLayerRefPtr srcLayer,
-    const SdfPath& topSrcPath,
+    const SdfPath& srcSdfPath,
+    UsdStageRefPtr dstStage,
     SdfLayerRefPtr dstLayer,
     const SdfPath& topDstPath)
 {
-    // Copy to the destination layer one primSpec at a time.  The default
-    // SdfCopySpec(srcLayer, topSrcPath, dstLayer, topDstPath) overload
-    // recurses down to children, which doesn't allow for per-primSpec control.
-    // Call the SdfCopySpec overload with a functor that avoids recursing down
-    // to children, so that only the single top-level prim at that point in the
-    // traversal is copied.
-
-    // Capture topSrcPath and topDstPath to pass them into SdfShouldCopyValue().
-    // Since we're copying a single prim and not recursing to children,
-    // topSrcPath and srcPath will be equal, and so will topDstPath and dstPath.
-    auto shouldCopyValueFn = [topSrcPath, topDstPath](
-                                 SdfSpecType               specType,
-                                 const TfToken&            field,
-                                 const SdfLayerHandle&     srcLayer,
-                                 const SdfPath&            srcPath,
-                                 bool                      fieldInSrc,
-                                 const SdfLayerHandle&     dstLayer,
-                                 const SdfPath&            dstPath,
-                                 bool                      fieldInDst,
-                                 boost::optional<VtValue>* valueToCopy) {
-        return SdfShouldCopyValue(
-            topSrcPath,
-            topDstPath,
-            specType,
-            field,
-            srcLayer,
-            srcPath,
-            fieldInSrc,
-            dstLayer,
-            dstPath,
-            fieldInDst,
-            valueToCopy);
-    };
-    auto dontCopyChildrenFn = [](const TfToken& childrenField,
-                                 const SdfLayerHandle&,
-                                 const SdfPath&,
-                                 bool,
-                                 const SdfLayerHandle&,
-                                 const SdfPath&,
-                                 bool,
-                                 boost::optional<VtValue>*,
-                                 boost::optional<VtValue>*) {
-        // There must be an existing list of static children fields.
-        // PPT, 18-Oct-21.
-        static TfToken properties("properties");
-        static TfToken primChildren("primChildren");
-
-        // See traverseLayer() implementation for full list of children field.
-        // Property children must be copied, prim children must not.  What
-        // about other children field?  If we understand the complete list, we
-        // can encode it in a map, rather than a chain of conditionals.  PPT,
-        // 18-Oct-21.
-        if (childrenField == properties) {
-            return true;
-        } else if (childrenField == primChildren) {
-            return false;
-        }
-
-        // Default is copy.
-        return true;
-    };
-
-    return SdfCopySpec(
-        srcLayer, topSrcPath, dstLayer, topDstPath, shouldCopyValueFn, dontCopyChildrenFn);
+    return MayaUsdUtils::mergePrims(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
 }
 
 const MObject& UsdMayaPrimUpdater::getMayaObject() const { return _mayaObject; }
