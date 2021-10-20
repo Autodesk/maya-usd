@@ -72,9 +72,6 @@ void HdMayaCameraAdapter::Populate()
 void HdMayaCameraAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (_isPopulated && dirtyBits != 0) {
-        if (dirtyBits & HdChangeTracker::DirtyTransform) {
-            dirtyBits |= HdCamera::DirtyViewMatrix;
-        }
         dirtyBits = dirtyBits & HdCamera::AllDirty;
         GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
     }
@@ -104,7 +101,7 @@ void HdMayaCameraAdapter::CreateCallbacks()
         dag,
         +[](MObject& transformNode, MDagMessage::MatrixModifiedFlags& modified, void* clientData) {
             auto* adapter = reinterpret_cast<HdMayaCameraAdapter*>(clientData);
-            adapter->MarkDirty(HdCamera::DirtyViewMatrix);
+            adapter->MarkDirty(HdCamera::DirtyTransform);
             adapter->InvalidateTransform();
         },
         reinterpret_cast<void*>(this),
@@ -176,96 +173,6 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
             aspectRatio, apertureX, apertureY, offsetX, offsetY, true, false, true);
     };
 
-    auto projectionMatrix
-        = [&](const MFnCamera& camera, bool isOrtho, const GfVec4d* viewport) -> GfMatrix4d {
-        double left, right, bottom, top, cameraNear = camera.nearClippingPlane(),
-                                         cameraFar = camera.farClippingPlane(),
-                                         cameraFarMinusNear = cameraFar - cameraNear,
-                                         aspectRatio = viewport
-            ? (((*viewport)[2] - (*viewport)[0]) / ((*viewport)[3] - (*viewport)[1]))
-            : camera.aspectRatio();
-
-        status = camera.getViewingFrustum(aspectRatio, left, right, bottom, top, true, false, true);
-
-        if (isOrtho) {
-            // Skip over extraneous double-precision math in the common symmetric case
-            if (right == -left && top == -bottom)
-                return GfMatrix4d(
-                    1.0 / right,
-                    0,
-                    0,
-                    0,
-                    0,
-                    1.0 / top,
-                    0,
-                    0,
-                    0,
-                    0,
-                    -2.0 / cameraFarMinusNear,
-                    0,
-                    0,
-                    0,
-                    -(cameraFar + cameraNear) / cameraFarMinusNear,
-                    1);
-
-            return GfMatrix4d(
-                2.0 / (right - left),
-                0,
-                0,
-                0,
-                0,
-                2.0 / (top - bottom),
-                0,
-                0,
-                0,
-                0,
-                -2.0 / cameraFarMinusNear,
-                0,
-                -(right + left) / (right - left),
-                -(top + bottom) / (top - bottom),
-                -(cameraFar + cameraNear) / cameraFarMinusNear,
-                1);
-        }
-
-        // Skip over extraneous double-precision math in the common symmetric case
-        if (right == -left && top == -bottom)
-            return GfMatrix4d(
-                cameraNear / right,
-                0,
-                0,
-                0,
-                0,
-                cameraNear / top,
-                0,
-                0,
-                0,
-                0,
-                -(cameraFar + cameraNear) / cameraFarMinusNear,
-                -1,
-                0,
-                0,
-                (-2.0 * cameraFar * cameraNear) / cameraFarMinusNear,
-                0);
-
-        return GfMatrix4d(
-            (2.0 * cameraNear) / (right - left),
-            0,
-            0,
-            0,
-            0,
-            (2.0 * cameraNear) / (top - bottom),
-            0,
-            0,
-            (right + left) / (right - left),
-            (top + bottom) / (top - bottom),
-            -(cameraFar + cameraNear) / cameraFarMinusNear,
-            -1,
-            0,
-            0,
-            (2.0 * cameraNear * -cameraFar) / cameraFarMinusNear,
-            0);
-    };
-
     auto hadError = [&](MStatus& status) -> bool {
         if (ARCH_LIKELY(status))
             return false;
@@ -285,15 +192,6 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
         return {};
     }
 
-    if (paramName == HdCameraTokens->projectionMatrix) {
-        const auto projMatrix = projectionMatrix(camera, isOrtho, _viewport.get());
-        if (hadError(status))
-            return {};
-        return VtValue(projMatrix);
-    }
-    if (paramName == HdCameraTokens->worldToViewMatrix) {
-        return VtValue(GetTransform().GetInverse());
-    }
     if (paramName == HdCameraTokens->shutterOpen) {
         // No motion samples, instantaneous shutter
         if (!GetDelegate()->GetParams().motionSamplesEnabled())
@@ -324,10 +222,21 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
         return VtValue(float(focusDistance * mayaInchToHydraCentimeter));
     }
     if (paramName == HdCameraTokens->focalLength) {
-        GfMatrix4d glProjMatrix = projectionMatrix(camera, isOrtho, _viewport.get());
-        const int  index
-            = convertFit(camera) == CameraUtilConformWindowPolicy::CameraUtilMatchVertically;
-        const auto focalLen = glProjMatrix[index][index];
+        const double aspectRatio =
+            _viewport
+                ? (((*_viewport)[2] - (*_viewport)[0]) /
+                   ((*_viewport)[3] - (*_viewport)[1]))
+                : camera.aspectRatio();
+
+        double left, right, bottom, top;
+        status = camera.getViewingFrustum(aspectRatio, left, right, bottom, top, true, false, true);
+
+        const double cameraNear = camera.nearClippingPlane();
+
+        const double focalLen =
+            (convertFit(camera) == CameraUtilConformWindowPolicy::CameraUtilMatchVertically)
+                ? (2.0 * cameraNear) / (top - bottom)
+                : (2.0 * cameraNear) / (right - left);
         return VtValue(float(focalLen * mayaFocaLenToHydra));
     }
     if (paramName == HdCameraTokens->fStop) {
