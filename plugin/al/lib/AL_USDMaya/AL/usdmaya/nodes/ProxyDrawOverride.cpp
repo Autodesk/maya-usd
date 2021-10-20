@@ -653,31 +653,39 @@ bool ProxyDrawOverride::userSelect(
 
     auto selected = false;
 
-    auto addSelection = [&hitBatch, &selectionList, &worldSpaceHitPts, proxyShape, &selected](
-                            const MString& command) {
-        selected = true;
-        MStringArray nodes;
-        MGlobal::executeCommand(command, nodes, false, true);
-
-        for (const auto& it : hitBatch) {
-            // Retarget hit path based on pick mode policy. The retargeted prim must
-            // align with the path used in the 'AL_usdmaya_ProxyShapeSelect' command.
-            const SdfPath hitPath = it.first;
-            const UsdPrim retargetedHitPrim
-                = retargetSelectPrim(proxyShape->getUsdStage()->GetPrimAtPath(hitPath));
-            const MObject obj = proxyShape->findRequiredPath(retargetedHitPrim.GetPath());
-
-            if (obj != MObject::kNullObj) {
-                MFnDagNode dagNode(obj);
-                MDagPath   dg;
-                dagNode.getPath(dg);
-                const double* p = it.second.GetArray();
-
-                selectionList.add(dg);
-                worldSpaceHitPts.append(MPoint(p[0], p[1], p[2]));
-            }
-        }
+    auto transformPath = [proxyShape](const SdfPath& path) {
+        // if we encounter an instance proxy, select it's parent prim instead!
+        // Modifying an InstanceProxy will cause an exception to be thrown.
+        auto prim = proxyShape->getUsdStage()->GetPrimAtPath(path);
+        return prim.IsInstanceProxy() ? path.GetParentPath() : path;
     };
+
+    auto addSelection
+        = [&hitBatch, &selectionList, &worldSpaceHitPts, proxyShape, &selected, transformPath](
+              const MString& command) {
+              selected = true;
+              MStringArray nodes;
+              MGlobal::executeCommand(command, nodes, false, true);
+
+              for (const auto& it : hitBatch) {
+                  // Retarget hit path based on pick mode policy. The retargeted prim must
+                  // align with the path used in the 'AL_usdmaya_ProxyShapeSelect' command.
+                  const SdfPath hitPath = transformPath(it.first);
+                  const UsdPrim retargetedHitPrim
+                      = retargetSelectPrim(proxyShape->getUsdStage()->GetPrimAtPath(hitPath));
+                  const MObject obj = proxyShape->findRequiredPath(retargetedHitPrim.GetPath());
+
+                  if (obj != MObject::kNullObj) {
+                      MFnDagNode dagNode(obj);
+                      MDagPath   dg;
+                      dagNode.getPath(dg);
+                      const double* p = it.second.GetArray();
+
+                      selectionList.add(dg);
+                      worldSpaceHitPts.append(MPoint(p[0], p[1], p[2]));
+                  }
+              }
+          };
 
     // Maya determines the selection list adjustment mode by Ctrl/Shift modifiers.
     int modifiers = 0;
@@ -732,7 +740,7 @@ bool ProxyDrawOverride::userSelect(
         if (!hitBatch.empty()) {
             paths.reserve(hitBatch.size());
             for (const auto& it : hitBatch) {
-                paths.push_back(it.first);
+                paths.push_back(transformPath(it.first));
             }
         }
 
