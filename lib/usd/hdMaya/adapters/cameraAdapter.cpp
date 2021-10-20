@@ -222,21 +222,19 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
         return VtValue(float(focusDistance * mayaInchToHydraCentimeter));
     }
     if (paramName == HdCameraTokens->focalLength) {
-        const double aspectRatio =
-            _viewport
-                ? (((*_viewport)[2] - (*_viewport)[0]) /
-                   ((*_viewport)[3] - (*_viewport)[1]))
-                : camera.aspectRatio();
+        const double aspectRatio = _viewport
+            ? (((*_viewport)[2] - (*_viewport)[0]) / ((*_viewport)[3] - (*_viewport)[1]))
+            : camera.aspectRatio();
 
         double left, right, bottom, top;
         status = camera.getViewingFrustum(aspectRatio, left, right, bottom, top, true, false, true);
 
         const double cameraNear = camera.nearClippingPlane();
 
-        const double focalLen =
-            (convertFit(camera) == CameraUtilConformWindowPolicy::CameraUtilMatchVertically)
-                ? (2.0 * cameraNear) / (top - bottom)
-                : (2.0 * cameraNear) / (right - left);
+        const double focalLen
+            = (convertFit(camera) == CameraUtilConformWindowPolicy::CameraUtilMatchVertically)
+            ? (2.0 * cameraNear) / (top - bottom)
+            : (2.0 * cameraNear) / (right - left);
         return VtValue(float(focalLen * mayaFocaLenToHydra));
     }
     if (paramName == HdCameraTokens->fStop) {

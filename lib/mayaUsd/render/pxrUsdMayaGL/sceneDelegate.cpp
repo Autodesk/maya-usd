@@ -144,14 +144,11 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
 #if PXR_VERSION >= 2102
         cache[HdCameraTokens->projection] = VtValue(HdCamera::Orthographic);
 #endif
-        cache[HdCameraTokens->horizontalAperture] = VtValue(
-            2.0f * float(GfCamera::APERTURE_UNIT));
-        cache[HdCameraTokens->verticalAperture] = VtValue(
-            2.0f * float(GfCamera::APERTURE_UNIT));
+        cache[HdCameraTokens->horizontalAperture] = VtValue(2.0f * float(GfCamera::APERTURE_UNIT));
+        cache[HdCameraTokens->verticalAperture] = VtValue(2.0f * float(GfCamera::APERTURE_UNIT));
         cache[HdCameraTokens->horizontalApertureOffset] = VtValue(0.0f);
         cache[HdCameraTokens->verticalApertureOffset] = VtValue(0.0f);
-        cache[HdCameraTokens->focalLength] = VtValue(
-            5.0f * float(GfCamera::FOCAL_LENGTH_UNIT));
+        cache[HdCameraTokens->focalLength] = VtValue(5.0f * float(GfCamera::FOCAL_LENGTH_UNIT));
         cache[HdCameraTokens->clippingRange] = VtValue(GfRange1f(-1.0f, 1.0f));
         cache[HdCameraTokens->fStop] = VtValue();
         cache[HdCameraTokens->focusDistance] = VtValue();
@@ -241,8 +238,7 @@ PxrMayaHdSceneDelegate::GetCameraParamValue(SdfPath const& cameraId, TfToken con
 }
 
 /*virtual*/
-GfMatrix4d
-PxrMayaHdSceneDelegate::GetTransform(SdfPath const& id)
+GfMatrix4d PxrMayaHdSceneDelegate::GetTransform(SdfPath const& id)
 {
     static const GfMatrix4d fallback(1.0);
     return Get(id, HdTokens->transform).GetWithDefault<GfMatrix4d>(fallback);
@@ -255,20 +251,15 @@ TfTokenVector PxrMayaHdSceneDelegate::GetTaskRenderTags(SdfPath const& taskId)
     return value.Get<TfTokenVector>();
 }
 
-static
-HdCamera::Projection
-_ToHd(const GfCamera::Projection projection)
+static HdCamera::Projection _ToHd(const GfCamera::Projection projection)
 {
-    switch(projection) {
-    case GfCamera::Perspective:
-        return HdCamera::Perspective;
-    case GfCamera::Orthographic:
-        return HdCamera::Orthographic;
+    switch (projection) {
+    case GfCamera::Perspective: return HdCamera::Perspective;
+    case GfCamera::Orthographic: return HdCamera::Orthographic;
     }
     TF_CODING_ERROR("Bad GfCamera::Projection value");
     return HdCamera::Perspective;
 }
-
 
 void PxrMayaHdSceneDelegate::SetCameraState(
     const GfMatrix4d& worldToViewMatrix,
@@ -288,18 +279,17 @@ void PxrMayaHdSceneDelegate::SetCameraState(
 #if PXR_VERSION >= 2102
     cache[HdCameraTokens->projection] = VtValue(_ToHd(cam.GetProjection()));
 #endif
-    cache[HdCameraTokens->horizontalAperture] = VtValue(
-        cam.GetHorizontalAperture() * float(GfCamera::APERTURE_UNIT));
-    cache[HdCameraTokens->verticalAperture] = VtValue(
-        cam.GetVerticalAperture() * float(GfCamera::APERTURE_UNIT));
-    cache[HdCameraTokens->horizontalApertureOffset] = VtValue(
-        cam.GetHorizontalApertureOffset() * float(GfCamera::APERTURE_UNIT));
-    cache[HdCameraTokens->verticalApertureOffset] = VtValue(
-        cam.GetVerticalApertureOffset() * float(GfCamera::APERTURE_UNIT));
-    cache[HdCameraTokens->focalLength] = VtValue(
-        cam.GetFocalLength() * float(GfCamera::FOCAL_LENGTH_UNIT));
-    cache[HdCameraTokens->clippingRange] = VtValue(
-        cam.GetClippingRange());
+    cache[HdCameraTokens->horizontalAperture]
+        = VtValue(cam.GetHorizontalAperture() * float(GfCamera::APERTURE_UNIT));
+    cache[HdCameraTokens->verticalAperture]
+        = VtValue(cam.GetVerticalAperture() * float(GfCamera::APERTURE_UNIT));
+    cache[HdCameraTokens->horizontalApertureOffset]
+        = VtValue(cam.GetHorizontalApertureOffset() * float(GfCamera::APERTURE_UNIT));
+    cache[HdCameraTokens->verticalApertureOffset]
+        = VtValue(cam.GetVerticalApertureOffset() * float(GfCamera::APERTURE_UNIT));
+    cache[HdCameraTokens->focalLength]
+        = VtValue(cam.GetFocalLength() * float(GfCamera::FOCAL_LENGTH_UNIT));
+    cache[HdCameraTokens->clippingRange] = VtValue(cam.GetClippingRange());
     cache[HdCameraTokens->clipPlanes] = VtValue();
     cache[HdCameraTokens->fStop] = VtValue();
     cache[HdCameraTokens->focusDistance] = VtValue();
