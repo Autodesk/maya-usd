@@ -107,7 +107,7 @@ void HdMayaCameraAdapter::CreateCallbacks()
         +[](MObject& transformNode, MDagMessage::MatrixModifiedFlags& modified, void* clientData) {
             auto* adapter = reinterpret_cast<HdMayaCameraAdapter*>(clientData);
 #if PXR_VERSION < 2102
-            adapter->MarkDirty(HdCamera::DirtyTransform | HdCamera::DirtyViewMatrix);
+            adapter->MarkDirty(HdCamera::DirtyViewMatrix);
 #else
             adapter->MarkDirty(HdCamera::DirtyTransform);
 #endif
