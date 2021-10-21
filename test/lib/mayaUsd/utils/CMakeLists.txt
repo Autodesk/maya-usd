@@ -1,5 +1,3 @@
-set(TARGET_NAME MAYAUSD_UTILS_TEST)
-
 set(TEST_SCRIPT_FILES
     testBlockSceneModificationContext.py
     testDiagnosticDelegate.py
@@ -19,15 +17,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     )
 endif()
         
-add_custom_target(${TARGET_NAME} ALL)
-
-# copy all the resources and Python scripts to build directory
-mayaUsd_copyDirectory(${TARGET_NAME}
-    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-    EXCLUDE "*.txt"
-)
-
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}

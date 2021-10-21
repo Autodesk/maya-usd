@@ -19,6 +19,8 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/TypeIDs.h"
 
+#include <mayaUsd/listeners/notice.h>
+
 #include <pxr/usd/sdf/textFileFormat.h>
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
@@ -46,6 +48,27 @@ const int _layerManagerProfilerCategory = MProfiler::addCategory(
 );
 
 MObjectHandle theLayerManagerHandle;
+
+struct _OnSceneResetListener : public TfWeakBase
+{
+    _OnSceneResetListener()
+    {
+        TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Created _OnSceneResetListener\n");
+        TfWeakPtr<_OnSceneResetListener> me(this);
+        TfNotice::Register(me, &_OnSceneResetListener::OnSceneReset);
+    }
+
+    ~_OnSceneResetListener()
+    {
+        TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Destroyed _OnSceneResetListener\n");
+    }
+
+    void OnSceneReset(const UsdMayaSceneResetNotice& notice)
+    {
+        TF_DEBUG(ALUSDMAYA_LAYERS).Msg("_OnSceneResetListener: Clearing LayerManager Cache\n");
+        theLayerManagerHandle = MObject::kNullObj;
+    }
+};
 
 } // namespace
 
@@ -290,6 +313,7 @@ MStatus LayerManager::initialise()
         return status;
     }
     generateAETemplate();
+    static _OnSceneResetListener onSceneResetListener;
     return MS::kSuccess;
 }
 
@@ -307,7 +331,11 @@ MObject LayerManager::_findNode()
         MObject theManager { theLayerManagerHandle.object() };
         if (!theManager.isNull()) {
             return theManager;
+        } else {
+            TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::_findNode cache got null mobject\n");
         }
+    } else {
+        TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::_findNode cache got invalid mobjecthandle\n");
     }
 
     MFnDependencyNode  fn;

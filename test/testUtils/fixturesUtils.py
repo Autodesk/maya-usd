@@ -62,7 +62,7 @@ def setUpClass(modulePathName, suffix='', initializeStandalone=True,
         loadPlugin)
     outputName = os.path.splitext(testFile)[0]+suffix+'Output'
 
-    outputPath = os.path.join(testDir, outputName)
+    outputPath = os.path.join(os.path.abspath('.'), outputName)
     if os.path.exists(outputPath):
         # Remove previous test run output.
         shutil.rmtree(outputPath)

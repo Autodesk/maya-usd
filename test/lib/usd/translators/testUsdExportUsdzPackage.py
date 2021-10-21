@@ -31,7 +31,8 @@ class testUsdExportPackage(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.temp_dir = fixturesUtils.setUpClass(__file__)
+        cls.input_dir = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
 
     @classmethod
     def tearDownClass(cls):
@@ -43,7 +44,7 @@ class testUsdExportPackage(unittest.TestCase):
         Tests that the exported usdz file is self contained, such that it's valid for AR QuickLook on iOS
         """
 
-        maya_file = os.path.join(self.temp_dir, "UsdExportUsdzPackage", "asset.ma")
+        maya_file = os.path.join(self.input_dir, "UsdExportUsdzPackage", "asset.ma")
         cmds.file(maya_file, force=True, open=True)
 
         # Write the file out

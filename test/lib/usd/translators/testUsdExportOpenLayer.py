@@ -29,6 +29,7 @@ class testUsdExportOpenLayer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.inputPath = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
 
     @classmethod
     def tearDownClass(cls):
@@ -42,7 +43,7 @@ class testUsdExportOpenLayer(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.polyCube(name='TestCube')
 
-        filePath = os.path.join(self.inputPath, "UsdExportNurbsCurveTest", "testStage.usda")
+        filePath = os.path.join(self.temp_dir, "UsdExportNurbsCurveTest", "testStage.usda")
 
         stage = Usd.Stage.CreateNew(filePath)
         stage.Save()

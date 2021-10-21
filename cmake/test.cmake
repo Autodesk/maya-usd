@@ -1,3 +1,5 @@
+set(MAYA_USD_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 function(mayaUsd_get_unittest_target unittest_target unittest_basename)
     get_filename_component(unittest_name ${unittest_basename} NAME_WE)
     set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
@@ -127,7 +129,7 @@ import time\\n\
 import traceback\\n\
 file = ${QUOTE}${PREFIX_PYTHON_SCRIPT}${QUOTE}\\n\
 if not os.path.isabs(file):\\n\
-    file = os.path.join(${QUOTE}${WORKING_DIR}${QUOTE}, file)\\n\
+    file = os.path.join(${QUOTE}${CMAKE_CURRENT_SOURCE_DIR}${QUOTE}, file)\\n\
 openMode = ${QUOTE}rb${QUOTE}\\n\
 compileMode = ${QUOTE}exec${QUOTE}\\n\
 globals = {${QUOTE}__file__${QUOTE}: file, ${QUOTE}__name__${QUOTE}: ${QUOTE}__main__${QUOTE}}\\n\
@@ -258,7 +260,10 @@ finally:
     endif()
 
     # Adjust PYTHONPATH to include the path to our test utilities.
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_BINARY_DIR}/test/python")
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${MAYA_USD_DIR}/test/testUtils")
+
+    # Adjust PYTHONPATH to include the path to our test.
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_CURRENT_SOURCE_DIR}")
 
     # Adjust PATH and PYTHONPATH to include USD.
     # These should come last (esp PYTHONPATH, in case another module is overriding

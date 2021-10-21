@@ -28,10 +28,11 @@ class TestUsdExportBindTransform(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.temp_dir = fixturesUtils.setUpClass(__file__)
+        cls.input_dir = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
 
     def setUp(self):
-        scene_path = os.path.join(self.temp_dir, "UsdExportBindTransformsTest", "bindTransformsExport.ma")
+        scene_path = os.path.join(self.input_dir, "UsdExportBindTransformsTest", "bindTransformsExport.ma")
         cmds.file(scene_path, open=True, force=True)
 
     @classmethod
