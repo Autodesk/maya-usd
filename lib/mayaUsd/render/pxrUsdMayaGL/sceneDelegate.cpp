@@ -302,7 +302,7 @@ void PxrMayaHdSceneDelegate::SetCameraState(
         = VtValue(cam.GetFocalLength() * float(GfCamera::FOCAL_LENGTH_UNIT));
     cache[HdCameraTokens->clippingRange] = VtValue(cam.GetClippingRange());
 #else
-    cache[HdTokens->transform] VtValue(worldToViewMatrix.GetInverse());
+    cache[HdTokens->transform] = VtValue(worldToViewMatrix.GetInverse());
     cache[HdCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
     cache[HdCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
     cache[HdCameraTokens->horizontalAperture] = VtValue();
