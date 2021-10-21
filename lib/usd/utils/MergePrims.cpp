@@ -177,18 +177,27 @@ bool isDataAtPathsModified(
 {
     UsdPrim srcPrim = srcStage->GetPrimAtPath(srcPath.GetPrimPath());
     UsdPrim dstPrim = dstStage->GetPrimAtPath(dstPath.GetPrimPath());
+    if (!srcPrim.IsValid() || !dstPrim.IsValid())
+        return srcPrim.IsValid() != dstPrim.IsValid();
+
     if (srcPath.IsPrimPropertyPath()) {
         const UsdProperty srcProp = srcPrim.GetPropertyAtPath(srcPath);
         const UsdProperty dstProp = dstPrim.GetPropertyAtPath(dstPath);
+        if (!srcProp.IsValid() || !dstProp.IsValid())
+            return srcProp.IsValid() != dstProp.IsValid();
+
         if (srcProp.Is<UsdAttribute>()) {
             const UsdAttribute srcAttr = srcProp.As<UsdAttribute>();
             const UsdAttribute dstAttr = dstProp.As<UsdAttribute>();
             return compareAttributes(srcAttr, dstAttr) != DiffResult::Same;
         } else {
-            const UsdRelationship srcRel = srcProp.As<UsdRelationship>();
-            const UsdRelationship dstRel = dstProp.As<UsdRelationship>();
-            return computeOverallResult(compareRelationships(srcRel, dstRel)) != DiffResult::Same;
+            const UsdRelationship   srcRel = srcProp.As<UsdRelationship>();
+            const UsdRelationship   dstRel = dstProp.As<UsdRelationship>();
+            const DiffResultPerPath relDiffs = compareRelationships(srcRel, dstRel);
+            return computeOverallResult(relDiffs) != DiffResult::Same;
         }
+    } else {
+        return comparePrims(srcPrim, dstPrim) != DiffResult::Same;
     }
 
     // If we can't identify the data, we assume it change. TODO: correct?

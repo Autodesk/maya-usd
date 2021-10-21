@@ -18,8 +18,8 @@
 #include <mayaUsdUtils/Api.h>
 
 #include <pxr/base/tf/token.h>
-#include <pxr/base/vt/value.h>
 #include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
@@ -31,6 +31,10 @@
 #include <vector>
 
 namespace MayaUsdUtils {
+
+//----------------------------------------------------------------------------------------------------------------------
+// Comparison result types.
+//----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
 /// The possible results from the comparison of single particular item (property, relationship,
@@ -77,6 +81,30 @@ using DiffResultPerPathPerToken = std::map<PXR_NS::TfToken, DiffResultPerPath>;
 template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const MAP& subResults);
 
 //----------------------------------------------------------------------------------------------------------------------
+// Comparison of prims.
+//----------------------------------------------------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares a modified prim to a baseline one.
+/// Currently compares attributes, relationships and children.
+/// \param  modified the potentially modified prim that is compared.
+/// \param  baseline the prim that is used as the baseline for the comparison.
+/// \return the overall result, all results are possible.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResult comparePrims(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares all the children of a modified prim to a baseline one.
+/// \param  modified the potentially modified prim that is compared.
+/// \param  baseline the prim that is used as the baseline for the comparison.
+/// \return the map of children paths to the result of comparison of that child.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResultPerPath
+comparePrimsChildren(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares all the attributes of a modified prim to a baseline one.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
@@ -86,6 +114,21 @@ template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const
 MAYA_USD_UTILS_PUBLIC
 DiffResultPerToken
 comparePrimsAttributes(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares all the relationships of a modified prim to a baseline one.
+/// \param  modified the potentially modified prim that is compared.
+/// \param  baseline the prim that is used as the baseline for the comparison.
+/// \return the map of relationship names to the result of comparison of that relationship.
+/// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResultPerPathPerToken
+comparePrimsRelationships(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+// Comparison of USD building blocks: attributes, relationships, etc.
+//----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares a modified attribute to a baseline one for all time samples.
@@ -111,17 +154,6 @@ DiffResult compareAttributes(
     const PXR_NS::UsdAttribute& modified,
     const PXR_NS::UsdAttribute& baseline,
     const PXR_NS::UsdTimeCode&  timeCode);
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  compares all the relationships of a modified prim to a baseline one.
-/// \param  modified the potentially modified prim that is compared.
-/// \param  baseline the prim that is used as the baseline for the comparison.
-/// \return the map of relationship names to the result of comparison of that relationship.
-/// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
-//----------------------------------------------------------------------------------------------------------------------
-MAYA_USD_UTILS_PUBLIC
-DiffResultPerPathPerToken
-comparePrimsRelationships(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares all the targets of a modified relationship to a baseline one.
@@ -174,8 +206,7 @@ DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue&
 /// TfToken, std::string, SdfPath, SdfReference and SdfPayload.
 //----------------------------------------------------------------------------------------------------------------------
 template <class ITEM>
-MAYA_USD_UTILS_PUBLIC
-std::map<ITEM, DiffResult>
+MAYA_USD_UTILS_PUBLIC std::map<ITEM, DiffResult>
 compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -188,6 +219,10 @@ compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baselin
 MAYA_USD_UTILS_PUBLIC
 DiffResultPerKey
 compareDictionaries(const PXR_NS::VtDictionary& modified, const PXR_NS::VtDictionary& baseline);
+
+//----------------------------------------------------------------------------------------------------------------------
+// Implementation for overall result computation.
+//----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
 template <class MAP> inline DiffResult computeOverallResult(const MAP& subResults)
