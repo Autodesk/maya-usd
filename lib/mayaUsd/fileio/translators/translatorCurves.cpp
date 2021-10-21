@@ -44,7 +44,7 @@ bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj,
         return false;
     }
     status = curveFn.setObject(curveObj);
-    ; // Create a nurbs to bezier converter
+    // Create a nurbs to bezier converter
     MFnDependencyNode convFn;
     convFn.create("nurbsCurveToBezier");
     // Connect the converter between the nurbs and the bezier
@@ -190,7 +190,7 @@ bool UsdMayaTranslatorCurves::Create(
                     if (i < 3) {
                         _curveKnots[i] = 0.0;
                     } else {
-                        if (i == 3) {
+                        if (i % 3 == 0) {
                             ++knotIdx;
                         } else if (i == _curveKnots.size() - 3) {
                             ++knotIdx;
