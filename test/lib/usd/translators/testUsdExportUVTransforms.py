@@ -44,8 +44,9 @@ class testUsdExportUVTransforms(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.temp_dir = fixturesUtils.setUpClass(__file__)
-        cls.maya_file = os.path.join(cls.temp_dir, "UsdExportUVTransforms", "UsdExportUVTransforms.ma")
+        cls.input_dir = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
+        cls.maya_file = os.path.join(cls.input_dir, "UsdExportUVTransforms", "UsdExportUVTransforms.ma")
         cmds.file(cls.maya_file, force=True, open=True)
 
         usd_file_path = os.path.join(cls.temp_dir, "UsdExportUVTransforms.usda")
