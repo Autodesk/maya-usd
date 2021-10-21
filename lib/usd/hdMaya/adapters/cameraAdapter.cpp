@@ -72,9 +72,11 @@ void HdMayaCameraAdapter::Populate()
 void HdMayaCameraAdapter::MarkDirty(HdDirtyBits dirtyBits)
 {
     if (_isPopulated && dirtyBits != 0) {
+#if PXR_VERSION < 2102
         if (dirtyBits & HdChangeTracker::DirtyTransform) {
             dirtyBits |= HdCamera::DirtyViewMatrix;
         }
+#endif
         dirtyBits = dirtyBits & HdCamera::AllDirty;
         GetDelegate()->GetChangeTracker().MarkSprimDirty(GetID(), dirtyBits);
     }
@@ -104,7 +106,11 @@ void HdMayaCameraAdapter::CreateCallbacks()
         dag,
         +[](MObject& transformNode, MDagMessage::MatrixModifiedFlags& modified, void* clientData) {
             auto* adapter = reinterpret_cast<HdMayaCameraAdapter*>(clientData);
+#if PXR_VERSION < 2102
             adapter->MarkDirty(HdCamera::DirtyViewMatrix);
+#else
+            adapter->MarkDirty(HdCamera::DirtyTransform);
+#endif
             adapter->InvalidateTransform();
         },
         reinterpret_cast<void*>(this),
@@ -175,6 +181,8 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
         return camera.getViewParameters(
             aspectRatio, apertureX, apertureY, offsetX, offsetY, true, false, true);
     };
+
+#if PXR_VERSION < 2102
 
     auto projectionMatrix
         = [&](const MFnCamera& camera, bool isOrtho, const GfVec4d* viewport) -> GfMatrix4d {
@@ -266,6 +274,8 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
             0);
     };
 
+#endif
+
     auto hadError = [&](MStatus& status) -> bool {
         if (ARCH_LIKELY(status))
             return false;
@@ -285,6 +295,7 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
         return {};
     }
 
+#if PXR_VERSION < 2102
     if (paramName == HdCameraTokens->projectionMatrix) {
         const auto projMatrix = projectionMatrix(camera, isOrtho, _viewport.get());
         if (hadError(status))
@@ -294,6 +305,8 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
     if (paramName == HdCameraTokens->worldToViewMatrix) {
         return VtValue(GetTransform().GetInverse());
     }
+#endif
+
     if (paramName == HdCameraTokens->shutterOpen) {
         // No motion samples, instantaneous shutter
         if (!GetDelegate()->GetParams().motionSamplesEnabled())
@@ -324,10 +337,19 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
         return VtValue(float(focusDistance * mayaInchToHydraCentimeter));
     }
     if (paramName == HdCameraTokens->focalLength) {
-        GfMatrix4d glProjMatrix = projectionMatrix(camera, isOrtho, _viewport.get());
-        const int  index
-            = convertFit(camera) == CameraUtilConformWindowPolicy::CameraUtilMatchVertically;
-        const auto focalLen = glProjMatrix[index][index];
+        const double aspectRatio = _viewport
+            ? (((*_viewport)[2] - (*_viewport)[0]) / ((*_viewport)[3] - (*_viewport)[1]))
+            : camera.aspectRatio();
+
+        double left, right, bottom, top;
+        status = camera.getViewingFrustum(aspectRatio, left, right, bottom, top, true, false, true);
+
+        const double cameraNear = camera.nearClippingPlane();
+
+        const double focalLen
+            = (convertFit(camera) == CameraUtilConformWindowPolicy::CameraUtilMatchVertically)
+            ? (2.0 * cameraNear) / (top - bottom)
+            : (2.0 * cameraNear) / (right - left);
         return VtValue(float(focalLen * mayaFocaLenToHydra));
     }
     if (paramName == HdCameraTokens->fStop) {
@@ -373,6 +395,16 @@ VtValue HdMayaCameraAdapter::GetCameraParamValue(const TfToken& paramName)
             return {};
         return VtValue(windowPolicy);
     }
+#if PXR_VERSION >= 2102
+    if (paramName == HdCameraTokens->projection) {
+        if (isOrtho) {
+            return VtValue(HdCamera::Orthographic);
+        } else {
+            return VtValue(HdCamera::Perspective);
+        }
+    }
+
+#endif
 
     return {};
 }
