@@ -498,11 +498,15 @@ MStatus addLayerToBuilder(
     MDataHandle layersElemHandle = builder.addLast(&status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     MDataHandle idHandle = layersElemHandle.child(lm->identifier);
+    MDataHandle fileFormatIdHandle = layersElemHandle.child(lm->fileFormatId);
     MDataHandle serializedHandle = layersElemHandle.child(lm->serialized);
     MDataHandle anonHandle = layersElemHandle.child(lm->anonymous);
 
     idHandle.setString(UsdMayaUtil::convert(layer->GetIdentifier()));
     anonHandle.setBool(isAnon);
+
+    auto fileFormatIdToken = layer->GetFileFormat()->GetFormatId();
+    fileFormatIdHandle.setString(UsdMayaUtil::convert(fileFormatIdToken.GetString()));
 
     std::string temp;
     if (!stubOnly && ((exportOnlyIfDirty && layer->IsDirty()) || !exportOnlyIfDirty)) {
@@ -752,9 +756,11 @@ void LayerDatabase::loadLayersPostRead(void*)
     MPlug                       allLayersPlug(lm->thisMObject(), lm->layers);
     MPlug                       singleLayerPlug;
     MPlug                       idPlug;
+    MPlug                       fileFormatIdPlug;
     MPlug                       anonymousPlug;
     MPlug                       serializedPlug;
     std::string                 identifierVal;
+    std::string                 fileFormatIdVal;
     std::string                 serializedVal;
     SdfLayerRefPtr              layer;
     std::vector<SdfLayerRefPtr> createdLayers;
@@ -765,6 +771,7 @@ void LayerDatabase::loadLayersPostRead(void*)
 
         singleLayerPlug = allLayersPlug.elementByPhysicalIndex(i, &status);
         idPlug = singleLayerPlug.child(lm->identifier, &status);
+        fileFormatIdPlug = singleLayerPlug.child(lm->fileFormatId, &status);
         anonymousPlug = singleLayerPlug.child(lm->anonymous, &status);
         serializedPlug = singleLayerPlug.child(lm->serialized, &status);
 
@@ -773,6 +780,13 @@ void LayerDatabase::loadLayersPostRead(void*)
             MGlobal::displayError(
                 MString("Error - plug ") + idPlug.partialName(true) + "had empty identifier");
             continue;
+        }
+
+        fileFormatIdVal = fileFormatIdPlug.asString(MDGContext::fsNormal, &status).asChar();
+        if (fileFormatIdVal.empty()) {
+            MGlobal::displayInfo(
+                MString("No file format in ") + fileFormatIdPlug.partialName(true)
+                + " plug. Will use identifier to work it out.");
         }
 
         bool layerContainsEdits = true;
@@ -797,13 +811,18 @@ void LayerDatabase::loadLayersPostRead(void*)
                 // identifier, which could cause an error. This seems unlikely, but we have a
                 // discussion with Pixar to find a way to avoid this.
 
-                auto fileFormat
-                    = SdfFileFormat::FindByExtension(ArGetResolver().GetExtension(identifierVal));
-                if (!fileFormat) {
-                    MGlobal::displayError(
-                        MString("Cannot determine file format for identifier '")
-                        + identifierVal.c_str() + "' for plug " + idPlug.partialName(true));
-                    continue;
+                SdfFileFormatConstPtr fileFormat;
+                if (!fileFormatIdVal.empty()) {
+                    fileFormat = SdfFileFormat::FindById(TfToken(fileFormatIdVal));
+                } else {
+                    fileFormat = SdfFileFormat::FindByExtension(
+                        ArGetResolver().GetExtension(identifierVal));
+                    if (!fileFormat) {
+                        MGlobal::displayError(
+                            MString("Cannot determine file format for identifier '")
+                            + identifierVal.c_str() + "' for plug " + idPlug.partialName(true));
+                        continue;
+                    }
                 }
 
                 if (layerContainsEdits) {
@@ -963,6 +982,7 @@ const MTypeId LayerManager::typeId(0x58000097);
 
 MObject LayerManager::layers = MObject::kNullObj;
 MObject LayerManager::identifier = MObject::kNullObj;
+MObject LayerManager::fileFormatId = MObject::kNullObj;
 MObject LayerManager::serialized = MObject::kNullObj;
 MObject LayerManager::anonymous = MObject::kNullObj;
 
@@ -1006,6 +1026,16 @@ MStatus LayerManager::initialize()
         stat = addAttribute(identifier);
         CHECK_MSTATUS_AND_RETURN_IT(stat);
 
+        fileFormatId
+            = fn_str.create("fileFormatId", "fid", MFnData::kString, MObject::kNullObj, &stat);
+        CHECK_MSTATUS_AND_RETURN_IT(stat);
+        fn_str.setCached(true);
+        fn_str.setReadable(true);
+        fn_str.setStorable(true);
+        fn_str.setHidden(true);
+        stat = addAttribute(fileFormatId);
+        CHECK_MSTATUS_AND_RETURN_IT(stat);
+
         serialized = fn_str.create("serialized", "szd", MFnData::kString, MObject::kNullObj, &stat);
         CHECK_MSTATUS_AND_RETURN_IT(stat);
         fn_str.setCached(true);
@@ -1030,6 +1060,9 @@ MStatus LayerManager::initialize()
         CHECK_MSTATUS_AND_RETURN_IT(stat);
 
         stat = fn_cmp.addChild(identifier);
+        CHECK_MSTATUS_AND_RETURN_IT(stat);
+
+        stat = fn_cmp.addChild(fileFormatId);
         CHECK_MSTATUS_AND_RETURN_IT(stat);
 
         stat = fn_cmp.addChild(serialized);
