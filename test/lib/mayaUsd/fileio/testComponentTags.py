@@ -21,10 +21,6 @@ from maya import standalone
 import maya.internal.common.utils.geometry as geo_utils
 import maya.internal.common.utils.componenttag as ctag_utils
 
-import maya.internal.common.utils.geometry as geo_utils
-import maya.internal.common.utils.test as test_utils
-import maya.internal.common.utils.componenttag as ctag_utils
-
 import fixturesUtils, os
 
 import unittest

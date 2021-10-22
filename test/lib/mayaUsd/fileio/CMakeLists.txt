@@ -7,8 +7,12 @@ set(TEST_SCRIPT_FILES
     testShaderWriter.py
     testExportChaser.py
     testImportChaser.py
-    testComponentTags.py
 )
+if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
+    list(APPEND TEST_SCRIPT_FILES
+        testComponentTags.py
+    )
+endif()
 
 add_custom_target(${TARGET_NAME} ALL)
 
