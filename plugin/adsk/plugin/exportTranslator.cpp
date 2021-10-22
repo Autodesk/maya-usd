@@ -50,10 +50,6 @@ MStatus UsdMayaExportTranslator::writer(
     const MString&                    optionsString,
     MPxFileTranslator::FileAccessMode mode)
 {
-    MStatus s = MPxFileTranslator::writer(file, optionsString, mode);
-    if (s != MS::kFailure)
-        return s;
-
     // If we are in neither of these modes then there won't be anything to do
     if (mode != MPxFileTranslator::kExportActiveAccessMode
         && mode != MPxFileTranslator::kExportAccessMode) {

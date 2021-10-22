@@ -226,6 +226,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $eulerFilterAnn = "Exports the euler angle filtering that was performed in Maya.";
         string $staticSingleSampleAnn = "Converts animated values with a single time sample to be static instead.";
         string $visibilityAnn = "Exports Maya visibility attributes as USD metadata.";
+        string $componentTagsAnn = "Exports Maya component tags as USD metadata.";
         string $mergeShapesAnn = "Merges Maya transform and shape nodes into a single USD prim.";
         string $namespacesAnn = "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1";
         string $instancesAnn = "Exports Maya instances as USD instanceable references.";
@@ -323,6 +324,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
             separator -style "none";
 
             checkBoxGrp -l "Visibility:" -annotation $visibilityAnn exportVisibilityCheckBox;
+            checkBoxGrp -l "Component Tags:" -annotation $componentTagsAnn exportComponentTagsCheckBox;
 
             optionMenuGrp -l "Instances:" -annotation $instancesAnn exportInstancesPopup;
                 menuItem -l "Flatten";
@@ -410,6 +412,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], "exportInstancesPopup");
                 } else if ($optionBreakDown[0] == "exportVisibility") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportVisibilityCheckBox");
+                } else if ($optionBreakDown[0] == "exportComponentTags") {
+                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportComponentTagsCheckBox");
                 } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeTransformAndShapeCheckBox");
                 } else if ($optionBreakDown[0] == "stripNamespaces") {
@@ -440,6 +444,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromMaterialPopup($currentOptions);
         $currentOptions = mayaUsdTranslatorExport_AppendFromBoolPopup($currentOptions, "exportInstances", "exportInstancesPopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
+        $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportComponentTags", "exportComponentTagsCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
 

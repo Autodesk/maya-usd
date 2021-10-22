@@ -7,6 +7,7 @@ set(TEST_SCRIPT_FILES
     testShaderWriter.py
     testExportChaser.py
     testImportChaser.py
+    testComponentTags.py
 )
 
 add_custom_target(${TARGET_NAME} ALL)
