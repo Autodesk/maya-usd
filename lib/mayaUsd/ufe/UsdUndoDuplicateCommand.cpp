@@ -78,22 +78,24 @@ void UsdUndoDuplicateCommand::execute()
     // state. Analyze the reason the source node was loaded or unloaded and
     // replicate them to the destination.
     //
-    // The case we need to explicitly handle is when the node is not controlled
-    // by a AllRule, that is by an ancestor. Then we need to duplicate the load
-    // or unload rule, which correspond to OnlyRule and NoneRule respectively.
+    // The case we need to explicitly handle is when the node is controlled
+    // by a rule on itself or a descendent and not from an ancestor. Then we
+    // need to duplicate the load or unload rule.
     //
-    // We cannot rely on simpler APi like IsLoaded() because we need to know
-    // what causes the loaded or unloaded state.
+    // We do this by iterating over all rules and duplicating all rules that
+    // contain the source path to create rule with the destination path.
+
     auto rules = stage->GetLoadRules();
-    auto primRule = rules.GetEffectiveRuleForPath(path);
-    if (primRule == UsdStageLoadRules::OnlyRule) {
-        auto policy = rules.IsLoadedWithAllDescendants(path)
-            ? UsdLoadPolicy::UsdLoadWithDescendants
-            : UsdLoadPolicy::UsdLoadWithoutDescendants;
-        stage->Load(_usdDstPath, policy);
-    } else if (primRule == UsdStageLoadRules::NoneRule) {
-        stage->Unload(_usdDstPath);
+    // Note: get a *copy* of the rules since we are going to insert new rules as we iterate.
+    auto oldRules = rules.GetRules();
+    for (const auto rule : oldRules) {
+        const SdfPath& rulePath = rule.first;
+        if (rulePath.HasPrefix(path)) {
+            const auto newPath = rulePath.ReplacePrefix(path, _usdDstPath);
+            rules.AddRule(newPath, rule.second);
+        }
     }
+    stage->SetLoadRules(rules);
 
     auto layer = stage->GetEditTarget().GetLayer();
     bool retVal = PXR_NS::SdfCopySpec(layer, path, layer, _usdDstPath);
