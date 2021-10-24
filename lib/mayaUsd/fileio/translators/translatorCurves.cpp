@@ -25,7 +25,6 @@
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnNurbsCurve.h>
-#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
@@ -43,7 +42,7 @@ bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj,
     if (status != MS::kSuccess) {
         return false;
     }
-    status = curveFn.setObject(curveObj);
+    curveFn.setObject(curveObj);
     // Create a nurbs to bezier converter
     MFnDependencyNode convFn;
     convFn.create("nurbsCurveToBezier");
@@ -142,6 +141,11 @@ bool UsdMayaTranslatorCurves::Create(
     int  mayaDegree = 0;
     auto curveType = MFn::kNurbsCurve;
 
+    TfToken typeToken;
+    TfToken basisToken;
+
+    UsdGeomBasisCurves basisSchema;
+
     for (size_t curveIndex = 0; curveIndex < curveVertexCounts.size(); ++curveIndex) {
 
         if (UsdGeomNurbsCurves nurbsSchema = UsdGeomNurbsCurves(prim)) {
@@ -167,12 +171,8 @@ bool UsdMayaTranslatorCurves::Create(
             curveType = MFn::kBezierCurve;
 
             curveOrder.resize(1);
-            UsdGeomBasisCurves basisSchema = UsdGeomBasisCurves(prim);
-            TfToken            typeToken;
+            basisSchema = UsdGeomBasisCurves(prim);
             basisSchema.GetTypeAttr().Get(&typeToken);
-            TfToken basisToken;
-
-            basisSchema.GetBasisAttr().Get(&basisToken);
 
             if (typeToken == UsdGeomTokens->linear) {
                 curveOrder[0] = 2;
@@ -181,7 +181,7 @@ bool UsdMayaTranslatorCurves::Create(
                     _curveKnots[i] = i;
                 }
 
-            } else { // basisToken == UsdGeomTokens->bezier || bspline)
+            } else {
                 curveOrder[0] = 4;
 
                 _curveKnots.resize(curveVertexCounts[curveIndex] - 3 + 5);
