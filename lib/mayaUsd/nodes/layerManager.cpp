@@ -25,6 +25,7 @@
 
 #include <pxr/base/tf/instantiateType.h>
 #include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/textFileFormat.h>
 #include <pxr/usd/usd/editTarget.h>
 #include <pxr/usd/usd/usdFileFormat.h>
@@ -105,34 +106,6 @@ MStatus disconnectCompoundArrayPlug(MPlug arrayPlug)
         }
     }
     return dgmod.doIt();
-}
-
-SdfFileFormatConstPtr
-getFileFormatForLayer(const std::string& identifierVal, const std::string& serializedVal)
-{
-    // If there is serialized data and it does not start with "#usda" then the format is Sdf.
-    // Else we look at the file extension to determine what it should be, which could be Sdf, Usd,
-    // Usdc, or Usda.
-
-    SdfFileFormatConstPtr fileFormat;
-
-    if (!serializedVal.empty() && !TfStringStartsWith(serializedVal, "#usda ")) {
-        fileFormat = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
-    } else {
-        // In order to make the layer reloadable by SdfLayer::Reload(), we need the
-        // correct file format from identifier.
-        if (TfStringEndsWith(identifierVal, ".usd")) {
-            fileFormat = SdfFileFormat::FindById(UsdUsdFileFormatTokens->Id);
-        } else if (TfStringEndsWith(identifierVal, ".usdc")) {
-            fileFormat = SdfFileFormat::FindById(UsdUsdcFileFormatTokens->Id);
-        } else if (TfStringEndsWith(identifierVal, ".sdf")) {
-            fileFormat = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
-        } else {
-            fileFormat = SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
-        }
-    }
-
-    return fileFormat;
 }
 
 MayaUsd::LayerManager* findNode()
@@ -824,8 +797,14 @@ void LayerDatabase::loadLayersPostRead(void*)
                 // identifier, which could cause an error. This seems unlikely, but we have a
                 // discussion with Pixar to find a way to avoid this.
 
-                SdfFileFormatConstPtr fileFormat
-                    = getFileFormatForLayer(identifierVal, serializedVal);
+                auto fileFormat
+                    = SdfFileFormat::FindByExtension(ArGetResolver().GetExtension(identifierVal));
+                if (!fileFormat) {
+                    MGlobal::displayError(
+                        MString("Cannot determine file format for identifier '")
+                        + identifierVal.c_str() + "' for plug " + idPlug.partialName(true));
+                    continue;
+                }
 
                 if (layerContainsEdits) {
                     // In order to make the layer reloadable by SdfLayer::Reload(), we hack the
