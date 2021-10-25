@@ -35,11 +35,11 @@ namespace MayaUsdUtils {
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 bool mergePrims(
-    PXR_NS::UsdStageRefPtr       srcStage,
-    const PXR_NS::SdfLayerRefPtr srcLayer,
+    const PXR_NS::UsdStageRefPtr&       srcStage,
+    const PXR_NS::SdfLayerRefPtr& srcLayer,
     const PXR_NS::SdfPath&       srcPath,
-    PXR_NS::UsdStageRefPtr       dstStage,
-    PXR_NS::SdfLayerRefPtr       dstLayer,
+    const PXR_NS::UsdStageRefPtr&       dstStage,
+    const PXR_NS::SdfLayerRefPtr&       dstLayer,
     const PXR_NS::SdfPath&       dstPath);
 
 } // namespace MayaUsdUtils

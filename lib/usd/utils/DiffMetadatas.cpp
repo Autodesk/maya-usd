@@ -17,13 +17,14 @@
 
 #include <pxr/base/tf/type.h>
 #include <pxr/base/vt/array.h>
-#include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/sdf/schema.h>
+#include <pxr/usd/sdf/valueTypeName.h>
 
 namespace MayaUsdUtils {
 
 using UsdObject = PXR_NS::UsdObject;
 using TfToken = PXR_NS::TfToken;
+using VtValue = PXR_NS::VtValue;
 using UsdMetadataValueMap = PXR_NS::UsdMetadataValueMap;
 
 std::unordered_set<TfToken, TfToken::HashFunctor>& getIgnoredMetadata()
@@ -93,6 +94,20 @@ std::unordered_set<TfToken, TfToken::HashFunctor>& getIgnoredMetadata()
     // SdfFieldKeys->Variability,           // Control if the property can be animated.
     // clang-format on
     return ignored;
+}
+
+DiffResult compareMetadatas(
+    const PXR_NS::UsdObject& modified,
+    const PXR_NS::UsdObject& baseline,
+    const PXR_NS::TfToken&   metadata)
+{
+    VtValue modifiedData;
+    modified.GetMetadata(metadata, &modifiedData);
+
+    VtValue baselineData;
+    baseline.GetMetadata(metadata, &baselineData);
+
+    return compareValues(modifiedData, baselineData);
 }
 
 DiffResultPerToken compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline)

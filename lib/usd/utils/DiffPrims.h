@@ -179,6 +179,19 @@ DiffResultPerToken
 compareObjectsMetadatas(const PXR_NS::UsdObject& modified, const PXR_NS::UsdObject& baseline);
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares the given metadata of a modified object to a baseline one.
+/// \param  modified the potentially modified object that is compared.
+/// \param  baseline the object that is used as the baseline for the comparison.
+/// \param  metadata the name of the metadata to compare.
+/// \return the result of comparison of that metadata.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResult compareMetadatas(
+    const PXR_NS::UsdObject& modified,
+    const PXR_NS::UsdObject& baseline,
+    const PXR_NS::TfToken&   metadata);
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  retrieves the list of metadata ignored during comparisons.
 /// \return the set of metadata names that should be ignored.
 //----------------------------------------------------------------------------------------------------------------------

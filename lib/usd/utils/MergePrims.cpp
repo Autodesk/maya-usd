@@ -17,6 +17,7 @@
 
 #include "DiffPrims.h"
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
 
 #include <utility>
@@ -32,19 +33,103 @@ namespace {
 //----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Prints a layer / path/ field to the Maya console if the field exists in the prim.
+/// Verbosity level flags.
+
+enum class Verbosity
+{
+    None = 0,
+    Same = 1 << 0,
+    Differ = 1 << 1,
+    Child = 1 << 2,
+    Children = 1 << 3,
+    Failure = 1 << 4,
+};
+
+Verbosity operator|(Verbosity a, Verbosity b) { return Verbosity(uint32_t(a) | uint32_t(b)); }
+Verbosity operator&(Verbosity a, Verbosity b) { return Verbosity(uint32_t(a) & uint32_t(b)); }
+Verbosity operator^(Verbosity a, Verbosity b) { return Verbosity(uint32_t(a) ^ uint32_t(b)); }
+
+//----------------------------------------------------------------------------------------------------------------------
+// Data used for merging passed to all helper functions.
+struct MergeContext
+{
+    const Verbosity       verbosity;
+    const UsdStageRefPtr& srcStage;
+    const SdfPath&        srcRootPath;
+    const UsdStageRefPtr& dstStage;
+    const SdfPath&        dstRootPath;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// Prints a layer / path / field to the Maya console with some messages.
 void printAboutField(
+    const MergeContext&   ctx,
+    Verbosity             printVerbosity,
     const SdfLayerHandle& layer,
     const SdfPath&        path,
     const TfToken&        field,
-    const char*           message)
+    const char*           message,
+    const char*           message2 = nullptr)
 {
+    if ((printVerbosity & ctx.verbosity) == Verbosity::None)
+        return;
+
     TF_STATUS(
-        "Layer [%s] / Path [%s] / Field [%s]: %s",
+        "Layer [%s] / Path [%s] / Field [%s]: %s%s",
         layer->GetDisplayName().c_str(),
         path.GetText(),
         field.GetText(),
-        message ? message : "");
+        message ? message : "",
+        message2 ? message2 : "");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// Print a layer / path / field when a rare failure occurs.
+void printAboutFailure(
+    const MergeContext&   ctx,
+    const SdfLayerHandle& layer,
+    const SdfPath&        path,
+    const TfToken&        field,
+    const char*           message,
+    const char*           message2 = nullptr)
+{
+    printAboutField(ctx, Verbosity::Failure, layer, path, field, message, message2);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// Prints a layer / path / field to the Maya console with some messages.
+void printAboutChildren(
+    const MergeContext&             ctx,
+    const SdfLayerHandle&           layer,
+    const SdfPath&                  path,
+    const TfToken&                  field,
+    const char*                     message,
+    const std::vector<std::string>& childrenNames)
+{
+    if ((Verbosity::Children & ctx.verbosity) == Verbosity::None)
+        return;
+
+    const std::string allNames = TfStringJoin(childrenNames);
+    printAboutField(ctx, Verbosity::Children, layer, path, field, message, allNames.c_str());
+}
+
+/// Prints a layer / path / field change status.
+void printChangedField(
+    const MergeContext&   ctx,
+    const SdfLayerHandle& layer,
+    const SdfPath&        path,
+    const TfToken&        field,
+    const char*           message,
+    bool                  changed)
+{
+    printAboutField(
+        ctx,
+        changed ? Verbosity::Differ : Verbosity::Same,
+        layer,
+        path,
+        field,
+        message,
+        changed ? ": changed. " : ": same. ");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -70,97 +155,12 @@ auto makeFuncWithRoots(const SdfPath& srcRootPath, const SdfPath& dstRootPath, T
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Creates a functor to a function taking the source and destination root paths as two extra prefix
-/// parameters.
-template <class T>
-auto makeFuncWithStagesAndRoots(
-    UsdStageRefPtr srcStage,
-    const SdfPath& srcRootPath,
-    UsdStageRefPtr dstStage,
-    const SdfPath& dstRootPath,
-    T&&            func)
+/// Creates a functor to a function taking the merge context as a prefix parameter.
+template <class T> auto makeFuncWithContext(const MergeContext& ctx, T&& func)
 {
     namespace ph = std::placeholders;
     return std::bind(
-        func,
-        srcStage,
-        std::cref(srcRootPath),
-        dstStage,
-        std::cref(dstRootPath),
-        ph::_1,
-        ph::_2,
-        ph::_3,
-        ph::_4,
-        ph::_5,
-        ph::_6,
-        ph::_7,
-        ph::_8,
-        ph::_9);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// Copy Full Prims
-//----------------------------------------------------------------------------------------------------------------------
-
-//----------------------------------------------------------------------------------------------------------------------
-/// Copies a prim fully without diff nor merge.
-bool copyEntirePrims(
-    const SdfLayerRefPtr srcLayer,
-    const SdfPath&       srcPath,
-    SdfLayerRefPtr       dstLayer,
-    const SdfPath&       dstPath)
-{
-    return SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// Copy and Print Full Prims
-//----------------------------------------------------------------------------------------------------------------------
-
-//----------------------------------------------------------------------------------------------------------------------
-/// Copies a value while printing its location to the Maya console.
-bool copyAndPrintValue(
-    const SdfPath&            srcRootPath,
-    const SdfPath&            dstRootPath,
-    SdfSpecType               specType,
-    const TfToken&            field,
-    const SdfLayerHandle&     srcLayer,
-    const SdfPath&            srcPath,
-    bool                      fieldInSrc,
-    const SdfLayerHandle&     dstLayer,
-    const SdfPath&            dstPath,
-    bool                      fieldInDst,
-    boost::optional<VtValue>* valueToCopy)
-{
-    if (fieldInSrc)
-        printAboutField(srcLayer, srcPath, field, "modified value. ");
-
-    return SdfShouldCopyValue(
-        srcRootPath,
-        dstRootPath,
-        specType,
-        field,
-        srcLayer,
-        srcPath,
-        fieldInSrc,
-        dstLayer,
-        dstPath,
-        fieldInDst,
-        valueToCopy);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-/// Copies a prim fully without diff nor merge, printing all fields that are copied to the Maya
-/// console.
-bool copyAndPrintPrims(
-    const SdfLayerRefPtr srcLayer,
-    const SdfPath&       srcPath,
-    SdfLayerRefPtr       dstLayer,
-    const SdfPath&       dstPath)
-{
-    auto copyValue = makeFuncWithRoots(srcPath, dstPath, copyAndPrintValue);
-    auto copyChildren = makeFuncWithRoots(srcPath, dstPath, SdfShouldCopyChildren);
-    return SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath, copyValue, copyChildren);
+        func, ctx, ph::_1, ph::_2, ph::_3, ph::_4, ph::_5, ph::_6, ph::_7, ph::_8, ph::_9);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -170,47 +170,69 @@ bool copyAndPrintPrims(
 //----------------------------------------------------------------------------------------------------------------------
 /// Verifies if the data at the given path have been modified.
 bool isDataAtPathsModified(
-    UsdStageRefPtr srcStage,
-    const SdfPath& srcPath,
-    UsdStageRefPtr dstStage,
-    const SdfPath& dstPath)
+    const MergeContext&   ctx,
+    const SdfLayerRefPtr& srcLayer,
+    const SdfPath&        srcPath,
+    const SdfLayerRefPtr& dstLayer,
+    const SdfPath&        dstPath,
+    const TfToken&        field = TfToken())
 {
-    UsdPrim srcPrim = srcStage->GetPrimAtPath(srcPath.GetPrimPath());
-    UsdPrim dstPrim = dstStage->GetPrimAtPath(dstPath.GetPrimPath());
-    if (!srcPrim.IsValid() || !dstPrim.IsValid())
-        return srcPrim.IsValid() != dstPrim.IsValid();
-
-    if (srcPath.IsPrimPropertyPath()) {
-        const UsdProperty srcProp = srcPrim.GetPropertyAtPath(srcPath);
-        const UsdProperty dstProp = dstPrim.GetPropertyAtPath(dstPath);
-        if (!srcProp.IsValid() || !dstProp.IsValid())
-            return srcProp.IsValid() != dstProp.IsValid();
-
-        if (srcProp.Is<UsdAttribute>()) {
-            const UsdAttribute srcAttr = srcProp.As<UsdAttribute>();
-            const UsdAttribute dstAttr = dstProp.As<UsdAttribute>();
-            return compareAttributes(srcAttr, dstAttr) != DiffResult::Same;
-        } else {
-            const UsdRelationship   srcRel = srcProp.As<UsdRelationship>();
-            const UsdRelationship   dstRel = dstProp.As<UsdRelationship>();
-            const DiffResultPerPath relDiffs = compareRelationships(srcRel, dstRel);
-            return computeOverallResult(relDiffs) != DiffResult::Same;
-        }
-    } else {
-        return comparePrims(srcPrim, dstPrim) != DiffResult::Same;
+    UsdPrim srcPrim = ctx.srcStage->GetPrimAtPath(srcPath.GetPrimPath());
+    UsdPrim dstPrim = ctx.dstStage->GetPrimAtPath(dstPath.GetPrimPath());
+    if (!srcPrim.IsValid() || !dstPrim.IsValid()) {
+        const bool changed = (srcPrim.IsValid() != dstPrim.IsValid());
+        printChangedField(ctx, srcLayer, srcPath, field, "invalid prim", changed);
+        return changed;
     }
 
-    // If we can't identify the data, we assume it change. TODO: correct?
-    return false;
+    if (srcPath.ContainsPropertyElements()) {
+        const UsdProperty srcProp = srcPrim.GetPropertyAtPath(srcPath);
+        const UsdProperty dstProp = dstPrim.GetPropertyAtPath(dstPath);
+        if (!srcProp.IsValid() || !dstProp.IsValid()) {
+            const bool changed = (srcProp.IsValid() != dstProp.IsValid());
+            printChangedField(ctx, srcLayer, srcPath, field, "invalid prop", changed);
+            return changed;
+        }
+
+        if (!field.IsEmpty()) {
+            const bool changed = (compareMetadatas(srcProp, dstProp, field) != DiffResult::Same);
+            printChangedField(ctx, srcLayer, srcPath, field, "prop metadata", changed);
+            return changed;
+        } else {
+            // TODO: should we detect more than properties?
+
+            if (srcProp.Is<UsdAttribute>()) {
+                const UsdAttribute srcAttr = srcProp.As<UsdAttribute>();
+                const UsdAttribute dstAttr = dstProp.As<UsdAttribute>();
+                const bool changed = (compareAttributes(srcAttr, dstAttr) != DiffResult::Same);
+                printChangedField(ctx, srcLayer, srcPath, field, "attribute", changed);
+                return changed;
+            } else {
+                const UsdRelationship   srcRel = srcProp.As<UsdRelationship>();
+                const UsdRelationship   dstRel = dstProp.As<UsdRelationship>();
+                const DiffResultPerPath relDiffs = compareRelationships(srcRel, dstRel);
+                const bool changed = (computeOverallResult(relDiffs) != DiffResult::Same);
+                printChangedField(ctx, srcLayer, srcPath, field, "relationship", changed);
+                return changed;
+            }
+        }
+    } else {
+        if (!field.IsEmpty()) {
+            const bool changed = (compareMetadatas(srcPrim, dstPrim, field) != DiffResult::Same);
+            printChangedField(ctx, srcLayer, srcPath, field, "prim metadata", changed);
+            return changed;
+        } else {
+            const bool changed = comparePrims(srcPrim, dstPrim) != DiffResult::Same;
+            printChangedField(ctx, srcLayer, srcPath, field, "prim", changed);
+            return changed;
+        }
+    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 /// Decides if we should merge a value.
 bool shouldMergeValue(
-    UsdStageRefPtr            srcStage,
-    const SdfPath&            srcRootPath,
-    UsdStageRefPtr            dstStage,
-    const SdfPath&            dstRootPath,
+    const MergeContext&       ctx,
     SdfSpecType               specType,
     const TfToken&            field,
     const SdfLayerHandle&     srcLayer,
@@ -222,8 +244,8 @@ bool shouldMergeValue(
     boost::optional<VtValue>* valueToCopy)
 {
     const bool isCopiable = SdfShouldCopyValue(
-        srcRootPath,
-        dstRootPath,
+        ctx.srcRootPath,
+        ctx.dstRootPath,
         specType,
         field,
         srcLayer,
@@ -234,19 +256,18 @@ bool shouldMergeValue(
         fieldInDst,
         valueToCopy);
 
-    if (!isCopiable)
+    if (!isCopiable) {
+        printAboutFailure(ctx, srcLayer, srcPath, field, "USD denies copying value. ");
         return false;
+    }
 
     // TODO: if modified, return a custom data copy method in a SdfCopySpecsValueEdit.
-    return isDataAtPathsModified(srcStage, srcPath, dstStage, dstPath);
+    return isDataAtPathsModified(ctx, srcLayer, srcPath, dstLayer, dstPath, field);
 }
 
 template <class ChildPolicy>
 bool filterTypedChildren(
-    UsdStageRefPtr        srcStage,
-    const SdfPath&        srcRootPath,
-    UsdStageRefPtr        dstStage,
-    const SdfPath&        dstRootPath,
+    const MergeContext&   ctx,
     const TfToken&        childrenField,
     const SdfLayerHandle& srcLayer,
     const SdfPath&        srcPath,
@@ -262,6 +283,7 @@ bool filterTypedChildren(
 
     if (!TF_VERIFY(srcChildrenValue.IsHolding<ChildrenVector>() || srcChildrenValue.IsEmpty())
         || !TF_VERIFY(dstChildrenValue.IsHolding<ChildrenVector>() || dstChildrenValue.IsEmpty())) {
+        printAboutFailure(ctx, srcLayer, srcPath, childrenField, "invalid children vector. ");
         return true;
     }
 
@@ -273,39 +295,75 @@ bool filterTypedChildren(
         ? emptyChildren
         : dstChildrenValue.UncheckedGet<ChildrenVector>();
 
-    ChildrenVector srcFilteredChildren;
-    ChildrenVector dstFilteredChildren;
+    ChildrenVector           srcFilteredChildren;
+    ChildrenVector           dstFilteredChildren;
+    std::vector<std::string> childrenNames;
 
     srcFilteredChildren.reserve(srcChildren.size());
     dstFilteredChildren.reserve(dstChildren.size());
+    childrenNames.reserve(srcChildren.size() + 2);
+    childrenNames.emplace_back("[");
 
     for (size_t i = 0; i < srcChildren.size(); ++i) {
         if (srcChildren[i].IsEmpty() || dstChildren[i].IsEmpty()) {
+            printAboutFailure(ctx, srcLayer, srcPath, childrenField, "empty child. ");
             continue;
         }
 
         const SdfPath srcChildPath = ChildPolicy::GetChildPath(srcPath, srcChildren[i]);
         const SdfPath dstChildPath = ChildPolicy::GetChildPath(dstPath, dstChildren[i]);
 
-        if (isDataAtPathsModified(srcStage, srcChildPath, dstStage, dstChildPath)) {
+        // Note: we cannot drop a children that already has an opinion at the
+        // destination, otherwise SdfCopySpec() will delete that opinion!
+        //
+        // In other words, the list of children that we return is *not* merely
+        // the list of children we want to copy over, but the final list of children
+        // that will be in the destination when the copy is done.
+        //
+        // That is why we first check if the destination layer has a spec (opinion)
+        // about the child.
+        const char* childMessage = nullptr;
+        if (dstLayer->HasSpec(dstChildPath)) {
+            childMessage = "keep child. ";
             srcFilteredChildren.emplace_back(srcChildren[i]);
             dstFilteredChildren.emplace_back(dstChildren[i]);
+            childrenNames.emplace_back(srcChildPath.GetName());
+        } else {
+            if (isDataAtPathsModified(ctx, srcLayer, srcChildPath, dstLayer, dstChildPath)) {
+                childMessage = "create child. ";
+                srcFilteredChildren.emplace_back(srcChildren[i]);
+                dstFilteredChildren.emplace_back(dstChildren[i]);
+                childrenNames.emplace_back(srcChildPath.GetName());
+            } else {
+                childMessage = "drop child. ";
+            }
         }
+        printAboutField(ctx, Verbosity::Child, srcLayer, srcChildPath, childrenField, childMessage);
     }
+    childrenNames.emplace_back("]");
 
-    srcChildrenValue = srcFilteredChildren;
-    dstChildrenValue = dstFilteredChildren;
+    const bool  shouldCopy = (srcFilteredChildren.size() > 0);
+    const char* childrenMsg = nullptr;
+    if (shouldCopy) {
+        if (srcFilteredChildren.size() != srcChildren.size()) {
+            childrenMsg = "subset of children: ";
+            srcChildrenValue = srcFilteredChildren;
+            dstChildrenValue = dstFilteredChildren;
+        } else {
+            childrenMsg = "keep all children: ";
+        }
+    } else {
+        childrenMsg = "no children: ";
+    }
+    printAboutChildren(ctx, srcLayer, srcPath, childrenField, childrenMsg, childrenNames);
 
-    return srcFilteredChildren.size() > 0;
+    return shouldCopy;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 /// Filters the children.
 bool filterChildren(
-    UsdStageRefPtr        srcStage,
-    const SdfPath&        srcRootPath,
-    UsdStageRefPtr        dstStage,
-    const SdfPath&        dstRootPath,
+    const MergeContext&   ctx,
     const TfToken&        childrenField,
     const SdfLayerHandle& srcLayer,
     const SdfPath&        srcPath,
@@ -318,10 +376,7 @@ bool filterChildren(
 {
     if (childrenField == SdfChildrenKeys->ConnectionChildren) {
         return filterTypedChildren<Sdf_AttributeConnectionChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -334,10 +389,7 @@ bool filterChildren(
     }
     if (childrenField == SdfChildrenKeys->MapperChildren) {
         return filterTypedChildren<Sdf_MapperChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -350,10 +402,7 @@ bool filterChildren(
     }
     if (childrenField == SdfChildrenKeys->MapperArgChildren) {
         return filterTypedChildren<Sdf_MapperArgChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -366,10 +415,7 @@ bool filterChildren(
     }
     if (childrenField == SdfChildrenKeys->ExpressionChildren) {
         return filterTypedChildren<Sdf_ExpressionChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -382,10 +428,7 @@ bool filterChildren(
     }
     if (childrenField == SdfChildrenKeys->RelationshipTargetChildren) {
         return filterTypedChildren<Sdf_RelationshipTargetChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -398,10 +441,7 @@ bool filterChildren(
     }
     if (childrenField == SdfChildrenKeys->VariantChildren) {
         return filterTypedChildren<Sdf_VariantChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -414,10 +454,7 @@ bool filterChildren(
     }
     if (childrenField == SdfChildrenKeys->VariantSetChildren) {
         return filterTypedChildren<Sdf_VariantSetChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -430,10 +467,7 @@ bool filterChildren(
     }
     if (childrenField == SdfChildrenKeys->PropertyChildren) {
         return filterTypedChildren<Sdf_PropertyChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -446,10 +480,7 @@ bool filterChildren(
     }
     if (childrenField == SdfChildrenKeys->PrimChildren) {
         return filterTypedChildren<Sdf_PrimChildPolicy>(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
+            ctx,
             childrenField,
             srcLayer,
             srcPath,
@@ -461,17 +492,14 @@ bool filterChildren(
             dstChildren);
     }
 
-    TF_CODING_ERROR("Unknown child field '%s'", childrenField.GetText());
+    printAboutFailure(ctx, srcLayer, srcPath, childrenField, "unknown children field.");
     return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 /// Decides if we should merge children.
 bool shouldMergeChildren(
-    UsdStageRefPtr            srcStage,
-    const SdfPath&            srcRootPath,
-    UsdStageRefPtr            dstStage,
-    const SdfPath&            dstRootPath,
+    const MergeContext&       ctx,
     const TfToken&            childrenField,
     const SdfLayerHandle&     srcLayer,
     const SdfPath&            srcPath,
@@ -482,31 +510,36 @@ bool shouldMergeChildren(
     boost::optional<VtValue>* srcChildren,
     boost::optional<VtValue>* dstChildren)
 {
-    if (!SdfShouldCopyChildren(
-            srcRootPath,
-            dstRootPath,
-            childrenField,
-            srcLayer,
-            srcPath,
-            fieldInSrc,
-            dstLayer,
-            dstPath,
-            fieldInDst,
-            srcChildren,
-            dstChildren))
-        return false;
+    const bool shouldMerge = SdfShouldCopyChildren(
+        ctx.srcRootPath,
+        ctx.dstRootPath,
+        childrenField,
+        srcLayer,
+        srcPath,
+        fieldInSrc,
+        dstLayer,
+        dstPath,
+        fieldInDst,
+        srcChildren,
+        dstChildren);
 
-    *srcChildren = srcLayer->GetField(srcPath, childrenField);
-    *dstChildren = *srcChildren;
-
-    if (!*srcChildren || !*dstChildren)
+    if (!shouldMerge) {
+        printAboutFailure(ctx, srcLayer, srcPath, childrenField, "USD denies copying children. ");
         return false;
+    }
+
+    // Protect against SdfShouldCopyChildren() not filling the children.
+    if (!*srcChildren || !*dstChildren) {
+        *srcChildren = srcLayer->GetField(srcPath, childrenField);
+        *dstChildren = *srcChildren;
+
+        if (!*srcChildren || !*dstChildren) {
+            printAboutFailure(ctx, srcLayer, srcPath, childrenField, "no children to copy. ");
+        }
+    }
 
     return filterChildren(
-        srcStage,
-        srcRootPath,
-        dstStage,
-        dstRootPath,
+        ctx,
         childrenField,
         srcLayer,
         srcPath,
@@ -519,158 +552,43 @@ bool shouldMergeChildren(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Copies a minimal prim using diff and merge.
-bool mergeDiffPrims(
-    UsdStageRefPtr       srcStage,
-    const SdfLayerRefPtr srcLayer,
-    const SdfPath&       srcPath,
-    UsdStageRefPtr       dstStage,
-    SdfLayerRefPtr       dstLayer,
-    const SdfPath&       dstPath)
-{
-    auto copyValue
-        = makeFuncWithStagesAndRoots(srcStage, srcPath, dstStage, dstPath, shouldMergeValue);
-    auto copyChildren
-        = makeFuncWithStagesAndRoots(srcStage, srcPath, dstStage, dstPath, shouldMergeChildren);
-    return SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath, copyValue, copyChildren);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// Merge And Print Prims
-//----------------------------------------------------------------------------------------------------------------------
-
-//----------------------------------------------------------------------------------------------------------------------
-/// Decides if we should merge a value while printing its location to the Maya console.
-bool mergeAndPrintValue(
-    UsdStageRefPtr            srcStage,
-    const SdfPath&            srcRootPath,
-    UsdStageRefPtr            dstStage,
-    const SdfPath&            dstRootPath,
-    SdfSpecType               specType,
-    const TfToken&            field,
-    const SdfLayerHandle&     srcLayer,
-    const SdfPath&            srcPath,
-    bool                      fieldInSrc,
-    const SdfLayerHandle&     dstLayer,
-    const SdfPath&            dstPath,
-    bool                      fieldInDst,
-    boost::optional<VtValue>* valueToCopy)
-{
-    if (!shouldMergeValue(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
-            specType,
-            field,
-            srcLayer,
-            srcPath,
-            fieldInSrc,
-            dstLayer,
-            dstPath,
-            fieldInDst,
-            valueToCopy))
-        return false;
-
-    printAboutField(srcLayer, srcPath, field, "modified value. ");
-    return true;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-/// Decides if we should merge children while printing its location to the Maya console.
-bool mergeAndPrintChildren(
-    UsdStageRefPtr            srcStage,
-    const SdfPath&            srcRootPath,
-    UsdStageRefPtr            dstStage,
-    const SdfPath&            dstRootPath,
-    const TfToken&            childrenField,
-    const SdfLayerHandle&     srcLayer,
-    const SdfPath&            srcPath,
-    bool                      fieldInSrc,
-    const SdfLayerHandle&     dstLayer,
-    const SdfPath&            dstPath,
-    bool                      fieldInDst,
-    boost::optional<VtValue>* srcChildren,
-    boost::optional<VtValue>* dstChildren)
-{
-    if (!shouldMergeChildren(
-            srcStage,
-            srcRootPath,
-            dstStage,
-            dstRootPath,
-            childrenField,
-            srcLayer,
-            srcPath,
-            fieldInSrc,
-            dstLayer,
-            dstPath,
-            fieldInDst,
-            srcChildren,
-            dstChildren))
-        return false;
-
-    printAboutField(srcLayer, srcPath, childrenField, "modified children. ");
-    return true;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 /// Copies a minimal prim using diff and merge, printing all fields that are copied to the Maya
 /// console.
-bool mergeAndPrintPrims(
-    UsdStageRefPtr       srcStage,
-    const SdfLayerRefPtr srcLayer,
-    const SdfPath&       srcPath,
-    UsdStageRefPtr       dstStage,
-    SdfLayerRefPtr       dstLayer,
-    const SdfPath&       dstPath)
+bool mergeDiffPrims(
+    const UsdStageRefPtr& srcStage,
+    const SdfLayerRefPtr& srcLayer,
+    const SdfPath&        srcPath,
+    const UsdStageRefPtr& dstStage,
+    const SdfLayerRefPtr& dstLayer,
+    const SdfPath&        dstPath)
 {
-    auto copyValue
-        = makeFuncWithStagesAndRoots(srcStage, srcPath, dstStage, dstPath, mergeAndPrintValue);
-    auto copyChildren
-        = makeFuncWithStagesAndRoots(srcStage, srcPath, dstStage, dstPath, mergeAndPrintChildren);
+    MergeContext ctx = { Verbosity::Differ | Verbosity::Children | Verbosity::Failure,
+                         srcStage,
+                         srcPath,
+                         dstStage,
+                         dstPath };
+    auto         copyValue = makeFuncWithContext(ctx, shouldMergeValue);
+    auto         copyChildren = makeFuncWithContext(ctx, shouldMergeChildren);
     return SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath, copyValue, copyChildren);
 }
+
+} // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
 // Entrypoint of Merge
 //----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Available methods to merge or copy prims.
-
-enum class MergeMethod
-{
-    FullCopy,
-    FullCopyAndPrint,
-    MergeDiff,
-    MergeDiffAndPrint
-};
-
-MergeMethod mergeMethod = MergeMethod::MergeDiffAndPrint;
-
-} // namespace
-
-//----------------------------------------------------------------------------------------------------------------------
 /// merges prims starting at a source path from a source layer and stage to a destination.
 bool mergePrims(
-    UsdStageRefPtr       srcStage,
-    const SdfLayerRefPtr srcLayer,
-    const SdfPath&       srcRootPath,
-    UsdStageRefPtr       dstStage,
-    SdfLayerRefPtr       dstLayer,
-    const SdfPath&       dstRootPath)
+    const UsdStageRefPtr& srcStage,
+    const SdfLayerRefPtr& srcLayer,
+    const SdfPath&        srcRootPath,
+    const UsdStageRefPtr& dstStage,
+    const SdfLayerRefPtr& dstLayer,
+    const SdfPath&        dstRootPath)
 {
-    switch (mergeMethod) {
-    default:
-    case MergeMethod::FullCopy:
-        return copyEntirePrims(srcLayer, srcRootPath, dstLayer, dstRootPath);
-    case MergeMethod::FullCopyAndPrint:
-        return copyAndPrintPrims(srcLayer, srcRootPath, dstLayer, dstRootPath);
-    case MergeMethod::MergeDiffAndPrint:
-        return mergeAndPrintPrims(srcStage, srcLayer, srcRootPath, dstStage, dstLayer, dstRootPath);
-    case MergeMethod::MergeDiff:
-        return mergeDiffPrims(srcStage, srcLayer, srcRootPath, dstStage, dstLayer, dstRootPath);
-    }
+    return mergeDiffPrims(srcStage, srcLayer, srcRootPath, dstStage, dstLayer, dstRootPath);
 }
 
 } // namespace MayaUsdUtils
