@@ -136,13 +136,11 @@ bool UsdMayaTranslatorCurves::Create(
 
     curves.GetWidthsAttr().Get(&curveWidths); // not animatable
 
-    int  indexOffset = 0;
-    int  coffset = 0;
-    int  mayaDegree = 0;
-    auto curveType = MFn::kNurbsCurve;
-
-    TfToken typeToken;
-    TfToken basisToken;
+    int     indexOffset = 0;
+    int     coffset = 0;
+    int     mayaDegree = 0;
+    auto    curveType = MFn::kNurbsCurve;
+    TfToken typeToken = UsdGeomTokens->linear;
 
     UsdGeomBasisCurves basisSchema;
 
@@ -231,7 +229,7 @@ bool UsdMayaTranslatorCurves::Create(
         if (status != MS::kSuccess) {
             return false;
         }
-        if (curveType != MFn::kNurbsCurve) {
+        if (curveType != MFn::kNurbsCurve && typeToken != UsdGeomTokens->linear) {
             // delete curve object and replace with bezier curve object
             convertToBezier(curveFn, mayaNodeTransformObj, status);
             if (status != MS::kSuccess) {

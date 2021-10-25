@@ -55,7 +55,9 @@ PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(
     MFnNurbsCurve curveFn(GetDagPath(), &status);
     MString       type = curveFn.typeName();
 
-    if (type == "bezierCurve") {
+    isLinear = curveFn.degree() == 1;
+
+    if (type == "bezierCurve" || isLinear) {
         UsdGeomBasisCurves primSchema = UsdGeomBasisCurves::Define(GetUsdStage(), GetUsdPath());
         if (!TF_VERIFY(
                 primSchema,
@@ -201,27 +203,29 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
             GetDagPath().fullPathName().asChar());
     }
 
-    if (curveFn.typeName() == "bezierCurve") {
+    if (curveFn.typeName() == "bezierCurve" || isLinear) {
         UsdGeomBasisCurves primSchemaBasis(_usdPrim);
         size_t             pntCnt = points.size();
         VtVec3fArray       linearArray;
 
-        for (int i = 0; i < pntCnt - 3; i += 3) {
-            // check if out and in handles are coincident
-            GfVec3f h1 = points[i + 1] - points[i];
-            GfVec3f h2 = points[i + 3] - points[i + 2];
+        if (!isLinear) {
+            for (int i = 0; i < pntCnt - 3; i += 3) {
+                // check if out and in handles are coincident
+                GfVec3f h1 = points[i + 1] - points[i];
+                GfVec3f h2 = points[i + 3] - points[i + 2];
 
-            if (GfIsClose(h1, h2, 1e-5)) {
-                if (linearArray.empty())
-                    linearArray.emplace_back(points[i]);
-                linearArray.emplace_back(points[i + 3]);
+                if (GfIsClose(h1, h2, 1e-5)) {
+                    if (linearArray.empty())
+                        linearArray.emplace_back(points[i]);
+                    linearArray.emplace_back(points[i + 3]);
+                }
             }
-        }
-        bool isLinear = false;
-        if (!wrap && linearArray.size() == ((pntCnt - 4) / 3) + 2) {
-            points = linearArray;
-            curveVertexCounts[0] = linearArray.size();
-            isLinear = true;
+
+            if (!wrap && linearArray.size() == ((pntCnt - 4) / 3) + 2) {
+                points = linearArray;
+                curveVertexCounts[0] = linearArray.size();
+                isLinear = true;
+            }
         }
 
         if (isLinear) {

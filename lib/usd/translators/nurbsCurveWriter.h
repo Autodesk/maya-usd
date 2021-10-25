@@ -45,6 +45,7 @@ public:
 
 protected:
     bool writeNurbsCurveAttrs(const UsdTimeCode& usdTime, UsdGeomNurbsCurves& primSchema);
+    bool isLinear;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
