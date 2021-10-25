@@ -17,8 +17,8 @@
 #include <mayaUsd/fileio/translators/translatorCurves.h>
 
 #include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/nurbsCurves.h>
 #include <pxr/usd/usdGeom/basisCurves.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
