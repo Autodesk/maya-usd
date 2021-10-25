@@ -22,9 +22,19 @@ using SdfPath = PXR_NS::SdfPath;
 using SdfReference = PXR_NS::SdfReference;
 using SdfPayload = PXR_NS::SdfPayload;
 
+#define USD_MAYA_RETURN_QUICK_RESULT(result)           \
+    do {                                               \
+        if (quickDiff && result != DiffResult::Same) { \
+            *quickDiff = result;                       \
+            return results;                            \
+        }                                              \
+    } while (false)
+
 template <class ITEM>
-std::map<ITEM, DiffResult>
-compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baseline)
+std::map<ITEM, DiffResult> compareLists(
+    const std::vector<ITEM>& modified,
+    const std::vector<ITEM>& baseline,
+    DiffResult*              quickDiff)
 {
     std::map<ITEM, DiffResult> results;
 
@@ -46,11 +56,13 @@ compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baselin
     // TODO: improve by finding the first baseline target that matches, mark previous ones absent?
     for (; modifiedIter != modifiedEnd; ++modifiedIter) {
         if (baselineIter == baselineEnd) {
+            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Prepended);
             results[*modifiedIter] = DiffResult::Prepended;
             continue;
         } else if (*baselineIter == *modifiedIter) {
             break;
         } else {
+            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Prepended);
             results[*modifiedIter] = DiffResult::Prepended;
         }
     }
@@ -70,6 +82,7 @@ compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baselin
     // Add all final modified targets that didn't match the baseline.
     // These will correspond to append.
     for (; modifiedIter != modifiedEnd; ++modifiedIter) {
+        USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Appended);
         results[*modifiedIter] = DiffResult::Appended;
     }
 
@@ -79,8 +92,10 @@ compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baselin
     // at a different position.
     for (; baselineIter != baselineEnd; ++baselineIter) {
         if (results.find(*baselineIter) == results.end()) {
+            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent);
             results[*baselineIter] = DiffResult::Absent;
         } else {
+            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Reordered);
             results[*baselineIter] = DiffResult::Reordered;
         }
     }
@@ -88,36 +103,49 @@ compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baselin
     return results;
 }
 
-template MAYA_USD_UTILS_PUBLIC std::map<int, DiffResult>
-compareLists<int>(const std::vector<int>& modified, const std::vector<int>& baseline);
+template MAYA_USD_UTILS_PUBLIC std::map<int, DiffResult> compareLists<int>(
+    const std::vector<int>& modified,
+    const std::vector<int>& baseline,
+    DiffResult*             quickDiff);
 
 template MAYA_USD_UTILS_PUBLIC std::map<unsigned int, DiffResult> compareLists<unsigned int>(
     const std::vector<unsigned int>& modified,
-    const std::vector<unsigned int>& baseline);
+    const std::vector<unsigned int>& baseline,
+    DiffResult*                      quickDiff);
 
-template MAYA_USD_UTILS_PUBLIC std::map<int64_t, DiffResult>
-compareLists<int64_t>(const std::vector<int64_t>& modified, const std::vector<int64_t>& baseline);
+template MAYA_USD_UTILS_PUBLIC std::map<int64_t, DiffResult> compareLists<int64_t>(
+    const std::vector<int64_t>& modified,
+    const std::vector<int64_t>& baseline,
+    DiffResult*                 quickDiff);
 
 template MAYA_USD_UTILS_PUBLIC std::map<uint64_t, DiffResult> compareLists<uint64_t>(
     const std::vector<uint64_t>& modified,
-    const std::vector<uint64_t>& baseline);
+    const std::vector<uint64_t>& baseline,
+    DiffResult*                  quickDiff);
 
-template MAYA_USD_UTILS_PUBLIC std::map<TfToken, DiffResult>
-compareLists<TfToken>(const std::vector<TfToken>& modified, const std::vector<TfToken>& baseline);
+template MAYA_USD_UTILS_PUBLIC std::map<TfToken, DiffResult> compareLists<TfToken>(
+    const std::vector<TfToken>& modified,
+    const std::vector<TfToken>& baseline,
+    DiffResult*                 quickDiff);
 
 template MAYA_USD_UTILS_PUBLIC std::map<std::string, DiffResult> compareLists<std::string>(
     const std::vector<std::string>& modified,
-    const std::vector<std::string>& baseline);
+    const std::vector<std::string>& baseline,
+    DiffResult*                     quickDiff);
 
-template MAYA_USD_UTILS_PUBLIC std::map<SdfPath, DiffResult>
-compareLists<SdfPath>(const std::vector<SdfPath>& modified, const std::vector<SdfPath>& baseline);
+template MAYA_USD_UTILS_PUBLIC std::map<SdfPath, DiffResult> compareLists<SdfPath>(
+    const std::vector<SdfPath>& modified,
+    const std::vector<SdfPath>& baseline,
+    DiffResult*                 quickDiff);
 
 template MAYA_USD_UTILS_PUBLIC std::map<SdfReference, DiffResult> compareLists<SdfReference>(
     const std::vector<SdfReference>& modified,
-    const std::vector<SdfReference>& baseline);
+    const std::vector<SdfReference>& baseline,
+    DiffResult*                      quickDiff);
 
 template MAYA_USD_UTILS_PUBLIC std::map<SdfPayload, DiffResult> compareLists<SdfPayload>(
     const std::vector<SdfPayload>& modified,
-    const std::vector<SdfPayload>& baseline);
+    const std::vector<SdfPayload>& baseline,
+    DiffResult*                    quickDiff);
 
 } // namespace MayaUsdUtils

@@ -177,6 +177,8 @@ bool isDataAtPathsModified(
     const SdfPath&        dstPath,
     const TfToken&        field = TfToken())
 {
+    DiffResult quickDiff = DiffResult::Same;
+
     UsdPrim srcPrim = ctx.srcStage->GetPrimAtPath(srcPath.GetPrimPath());
     UsdPrim dstPrim = ctx.dstStage->GetPrimAtPath(dstPath.GetPrimPath());
     if (!srcPrim.IsValid() || !dstPrim.IsValid()) {
@@ -204,14 +206,15 @@ bool isDataAtPathsModified(
             if (srcProp.Is<UsdAttribute>()) {
                 const UsdAttribute srcAttr = srcProp.As<UsdAttribute>();
                 const UsdAttribute dstAttr = dstProp.As<UsdAttribute>();
-                const bool changed = (compareAttributes(srcAttr, dstAttr) != DiffResult::Same);
+                compareAttributes(srcAttr, dstAttr, &quickDiff);
+                const bool changed = (quickDiff != DiffResult::Same);
                 printChangedField(ctx, srcLayer, srcPath, field, "attribute", changed);
                 return changed;
             } else {
                 const UsdRelationship   srcRel = srcProp.As<UsdRelationship>();
                 const UsdRelationship   dstRel = dstProp.As<UsdRelationship>();
-                const DiffResultPerPath relDiffs = compareRelationships(srcRel, dstRel);
-                const bool changed = (computeOverallResult(relDiffs) != DiffResult::Same);
+                compareRelationships(srcRel, dstRel, &quickDiff);
+                const bool changed = (quickDiff != DiffResult::Same);
                 printChangedField(ctx, srcLayer, srcPath, field, "relationship", changed);
                 return changed;
             }
@@ -222,7 +225,8 @@ bool isDataAtPathsModified(
             printChangedField(ctx, srcLayer, srcPath, field, "prim metadata", changed);
             return changed;
         } else {
-            const bool changed = comparePrims(srcPrim, dstPrim) != DiffResult::Same;
+            comparePrims(srcPrim, dstPrim, &quickDiff);
+            const bool changed = (quickDiff != DiffResult::Same);
             printChangedField(ctx, srcLayer, srcPath, field, "prim", changed);
             return changed;
         }

@@ -36,13 +36,15 @@ SdfPathVector GetRelTargets(const UsdRelationship& rel)
 
 } // namespace
 
-DiffResultPerPath
-compareRelationships(const UsdRelationship& modified, const UsdRelationship& baseline)
+DiffResultPerPath compareRelationships(
+    const UsdRelationship& modified,
+    const UsdRelationship& baseline,
+    DiffResult*            quickDiff)
 {
     const SdfPathVector baselineTargets = GetRelTargets(baseline);
     const SdfPathVector modifiedTargets = GetRelTargets(modified);
 
-    return compareLists<SdfPath>(modifiedTargets, baselineTargets);
+    return compareLists<SdfPath>(modifiedTargets, baselineTargets, quickDiff);
 }
 
 } // namespace MayaUsdUtils

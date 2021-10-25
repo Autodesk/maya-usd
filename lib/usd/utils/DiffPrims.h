@@ -89,42 +89,55 @@ template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const
 /// Currently compares attributes, relationships and children.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the overall result, all results are possible.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResult comparePrims(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+DiffResult comparePrims(
+    const PXR_NS::UsdPrim& modified,
+    const PXR_NS::UsdPrim& baseline,
+    DiffResult*            quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares all the children of a modified prim to a baseline one.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the map of children paths to the result of comparison of that child.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResultPerPath
-comparePrimsChildren(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+DiffResultPerPath comparePrimsChildren(
+    const PXR_NS::UsdPrim& modified,
+    const PXR_NS::UsdPrim& baseline,
+    DiffResult*            quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares all the attributes of a modified prim to a baseline one.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the map of attribute names to the result of comparison of that attribute.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResultPerToken
-comparePrimsAttributes(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+DiffResultPerToken comparePrimsAttributes(
+    const PXR_NS::UsdPrim& modified,
+    const PXR_NS::UsdPrim& baseline,
+    DiffResult*            quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares all the relationships of a modified prim to a baseline one.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the map of relationship names to the result of comparison of that relationship.
 /// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResultPerPathPerToken
-comparePrimsRelationships(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline);
+DiffResultPerPathPerToken comparePrimsRelationships(
+    const PXR_NS::UsdPrim& modified,
+    const PXR_NS::UsdPrim& baseline,
+    DiffResult*            quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 // Comparison of USD building blocks: attributes, relationships, etc.
@@ -134,12 +147,15 @@ comparePrimsRelationships(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim
 /// \brief  compares a modified attribute to a baseline one for all time samples.
 /// \param  modified the potentially modified attribute that is compared.
 /// \param  baseline the attribute that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the result of the comparison of that modified attribute.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResult
-compareAttributes(const PXR_NS::UsdAttribute& modified, const PXR_NS::UsdAttribute& baseline);
+DiffResult compareAttributes(
+    const PXR_NS::UsdAttribute& modified,
+    const PXR_NS::UsdAttribute& baseline,
+    DiffResult*                 quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares a modified attribute to a baseline one at a given time code.
@@ -159,24 +175,29 @@ DiffResult compareAttributes(
 /// \brief  compares all the targets of a modified relationship to a baseline one.
 /// \param  modified the potentially modified relationship that is compared.
 /// \param  baseline the relationship that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the map of target paths to the result of comparison of that target.
 /// Currently only Same, Absent, Prepended or Appended are returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 DiffResultPerPath compareRelationships(
     const PXR_NS::UsdRelationship& modified,
-    const PXR_NS::UsdRelationship& baseline);
+    const PXR_NS::UsdRelationship& baseline,
+    DiffResult*                    quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares all the metadatas of a modified object to a baseline one.
 /// \param  modified the potentially modified object that is compared.
 /// \param  baseline the object that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the map of metadata names to the result of comparison of that metadata.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResultPerToken
-compareObjectsMetadatas(const PXR_NS::UsdObject& modified, const PXR_NS::UsdObject& baseline);
+DiffResultPerToken compareObjectsMetadatas(
+    const PXR_NS::UsdObject& modified,
+    const PXR_NS::UsdObject& baseline,
+    DiffResult*              quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares the given metadata of a modified object to a baseline one.
@@ -212,6 +233,7 @@ DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue&
 /// \brief  compares a modified list of items to a baseline list.
 /// \param  modified the potentially modified list of items that is compared.
 /// \param  baseline the list of items that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the result of the comparison for each item in that modified list.
 /// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
 ///
@@ -219,19 +241,24 @@ DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue&
 /// TfToken, std::string, SdfPath, SdfReference and SdfPayload.
 //----------------------------------------------------------------------------------------------------------------------
 template <class ITEM>
-MAYA_USD_UTILS_PUBLIC std::map<ITEM, DiffResult>
-compareLists(const std::vector<ITEM>& modified, const std::vector<ITEM>& baseline);
+MAYA_USD_UTILS_PUBLIC std::map<ITEM, DiffResult> compareLists(
+    const std::vector<ITEM>& modified,
+    const std::vector<ITEM>& baseline,
+    DiffResult*              quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  compares a modified dictionary of items to a baseline dictionary.
 /// \param  modified the potentially modified dictionary of values that is compared.
 /// \param  baseline the dictionary of values that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
 /// \return the result of the comparison for each value in that modified dictionary.
 /// Currently only Same, Differ, Absent and Created are returned.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-DiffResultPerKey
-compareDictionaries(const PXR_NS::VtDictionary& modified, const PXR_NS::VtDictionary& baseline);
+DiffResultPerKey compareDictionaries(
+    const PXR_NS::VtDictionary& modified,
+    const PXR_NS::VtDictionary& baseline,
+    DiffResult*                 quickDiff = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 // Implementation for overall result computation.

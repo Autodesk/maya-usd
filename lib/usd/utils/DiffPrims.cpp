@@ -25,7 +25,16 @@ using SdfPath = PXR_NS::SdfPath;
 using UsdAttribute = PXR_NS::UsdAttribute;
 using UsdRelationship = PXR_NS::UsdRelationship;
 
-DiffResultPerToken comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline)
+#define USD_MAYA_RETURN_QUICK_RESULT(result, results)  \
+    do {                                               \
+        if (quickDiff && result != DiffResult::Same) { \
+            *quickDiff = result;                       \
+            return results;                            \
+        }                                              \
+    } while (false)
+
+DiffResultPerToken
+comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline, DiffResult* quickDiff)
 {
     DiffResultPerToken results;
 
@@ -46,9 +55,12 @@ DiffResultPerToken comparePrimsAttributes(const UsdPrim& modified, const UsdPrim
             const TfToken& name = attr.GetName();
             const auto     iter = baselineAttrs.find(name);
             if (iter == baselineEnd) {
+                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created, results);
                 results[name] = DiffResult::Created;
             } else {
-                results[name] = compareAttributes(attr, iter->second);
+                const DiffResult result = compareAttributes(attr, iter->second, quickDiff);
+                USD_MAYA_RETURN_QUICK_RESULT(result, results);
+                results[name] = result;
             }
         }
     }
@@ -57,6 +69,7 @@ DiffResultPerToken comparePrimsAttributes(const UsdPrim& modified, const UsdPrim
     for (const auto& nameAndAttr : baselineAttrs) {
         const auto& name = nameAndAttr.first;
         if (results.find(name) == results.end()) {
+            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent, results);
             results[name] = DiffResult::Absent;
         }
     }
@@ -65,7 +78,7 @@ DiffResultPerToken comparePrimsAttributes(const UsdPrim& modified, const UsdPrim
 }
 
 DiffResultPerPathPerToken
-comparePrimsRelationships(const UsdPrim& modified, const UsdPrim& baseline)
+comparePrimsRelationships(const UsdPrim& modified, const UsdPrim& baseline, DiffResult* quickDiff)
 {
     DiffResultPerPathPerToken results;
 
@@ -86,9 +99,11 @@ comparePrimsRelationships(const UsdPrim& modified, const UsdPrim& baseline)
             const TfToken& name = rel.GetName();
             const auto     iter = baselineRels.find(name);
             if (iter == baselineEnd) {
-                results[name] = compareRelationships(rel, UsdRelationship());
+                results[name] = compareRelationships(rel, UsdRelationship(), quickDiff);
+                USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
             } else {
-                results[name] = compareRelationships(rel, iter->second);
+                results[name] = compareRelationships(rel, iter->second, quickDiff);
+                USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
             }
         }
     }
@@ -97,14 +112,16 @@ comparePrimsRelationships(const UsdPrim& modified, const UsdPrim& baseline)
     for (const auto& nameAndRel : baselineRels) {
         const auto& name = nameAndRel.first;
         if (results.find(name) == results.end()) {
-            results[name] = compareRelationships(UsdRelationship(), nameAndRel.second);
+            results[name] = compareRelationships(UsdRelationship(), nameAndRel.second, quickDiff);
+            USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
         }
     }
 
     return results;
 }
 
-DiffResultPerPath comparePrimsChildren(const UsdPrim& modified, const UsdPrim& baseline)
+DiffResultPerPath
+comparePrimsChildren(const UsdPrim& modified, const UsdPrim& baseline, DiffResult* quickDiff)
 {
     DiffResultPerPath results;
 
@@ -125,9 +142,11 @@ DiffResultPerPath comparePrimsChildren(const UsdPrim& modified, const UsdPrim& b
             const SdfPath& path = child.GetPath();
             const auto     iter = baselineChildren.find(path);
             if (iter == baselineEnd) {
-                results[path] = comparePrims(child, UsdPrim());
+                results[path] = comparePrims(child, UsdPrim(), quickDiff);
+                USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
             } else {
-                results[path] = comparePrims(child, iter->second);
+                results[path] = comparePrims(child, iter->second, quickDiff);
+                USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
             }
         }
     }
@@ -136,18 +155,27 @@ DiffResultPerPath comparePrimsChildren(const UsdPrim& modified, const UsdPrim& b
     for (const auto& pathAndPrim : baselineChildren) {
         const auto& path = pathAndPrim.first;
         if (results.find(path) == results.end()) {
-            results[path] = comparePrims(UsdPrim(), pathAndPrim.second);
+            results[path] = comparePrims(UsdPrim(), pathAndPrim.second, quickDiff);
+            USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
         }
     }
 
     return results;
 }
 
-DiffResult comparePrims(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& baseline)
+DiffResult comparePrims(
+    const PXR_NS::UsdPrim& modified,
+    const PXR_NS::UsdPrim& baseline,
+    DiffResult*            quickDiff)
 {
     // If either is invalid, just compare validity.
-    if (!modified.IsValid() || !baseline.IsValid())
-        return modified.IsValid() == baseline.IsValid() ? DiffResult::Same : DiffResult::Differ;
+    if (!modified.IsValid() || !baseline.IsValid()) {
+        const DiffResult result
+            = (modified.IsValid() == baseline.IsValid()) ? DiffResult::Same : DiffResult::Differ;
+        if (quickDiff)
+            *quickDiff = result;
+        return result;
+    }
 
     // We need a map to passs to computeOverallResult(), so we create one indexed by some simple
     // arbitrary thing.
@@ -157,26 +185,35 @@ DiffResult comparePrims(const PXR_NS::UsdPrim& modified, const PXR_NS::UsdPrim& 
     // Note: we will short-cut to DifResult::Differ as soon as we detect one such result.
 
     {
-        const DiffResultPerToken attrDiffs = comparePrimsAttributes(modified, baseline);
-        const DiffResult         overall = computeOverallResult(attrDiffs);
+        const DiffResultPerToken attrDiffs = comparePrimsAttributes(modified, baseline, quickDiff);
+        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, DiffResult::Differ);
+
+        const DiffResult overall = computeOverallResult(attrDiffs);
         if (overall == DiffResult::Differ)
             return DiffResult::Differ;
+
         subResults[resultIndex++] = overall;
     }
 
     {
-        const DiffResultPerPathPerToken relDiffs = comparePrimsRelationships(modified, baseline);
+        const DiffResultPerPathPerToken relDiffs
+            = comparePrimsRelationships(modified, baseline, quickDiff);
+        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, DiffResult::Differ);
+
         for (const auto& tokenAndResults : relDiffs) {
             const DiffResult overall = computeOverallResult(tokenAndResults.second);
             if (overall == DiffResult::Differ)
                 return DiffResult::Differ;
+
             subResults[resultIndex++] = overall;
         }
     }
 
     {
-        const DiffResultPerPath childrenDiffs = comparePrimsChildren(modified, baseline);
-        const DiffResult        overall = computeOverallResult(childrenDiffs);
+        const DiffResultPerPath childrenDiffs = comparePrimsChildren(modified, baseline, quickDiff);
+        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, DiffResult::Differ);
+
+        const DiffResult overall = computeOverallResult(childrenDiffs);
         if (overall == DiffResult::Differ)
             return DiffResult::Differ;
         subResults[resultIndex++] = overall;

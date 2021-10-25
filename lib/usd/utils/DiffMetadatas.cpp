@@ -110,7 +110,16 @@ DiffResult compareMetadatas(
     return compareValues(modifiedData, baselineData);
 }
 
-DiffResultPerToken compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline)
+#define USD_MAYA_RETURN_QUICK_RESULT(result)           \
+    do {                                               \
+        if (quickDiff && result != DiffResult::Same) { \
+            *quickDiff = result;                       \
+            return results;                            \
+        }                                              \
+    } while (false)
+
+DiffResultPerToken
+compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline, DiffResult* quickDiff)
 {
     DiffResultPerToken results;
 
@@ -135,9 +144,12 @@ DiffResultPerToken compareObjectsMetadatas(const UsdObject& modified, const UsdO
                 continue;
             const auto iter = baselineMetadatas.find(name);
             if (iter == baselineEnd) {
+                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created);
                 results[name] = DiffResult::Created;
             } else {
-                results[name] = compareValues(nameAndValue.second, iter->second);
+                const DiffResult result = compareValues(nameAndValue.second, iter->second);
+                USD_MAYA_RETURN_QUICK_RESULT(result);
+                results[name] = result;
             }
         }
     }
@@ -148,6 +160,7 @@ DiffResultPerToken compareObjectsMetadatas(const UsdObject& modified, const UsdO
         if (isIgnored(name))
             continue;
         if (results.find(name) == results.end()) {
+            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent);
             results[name] = DiffResult::Absent;
         }
     }

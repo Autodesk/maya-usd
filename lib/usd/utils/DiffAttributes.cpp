@@ -21,7 +21,7 @@ using UsdAttribute = PXR_NS::UsdAttribute;
 using VtValue = PXR_NS::VtValue;
 using UsdTimeCode = PXR_NS::UsdTimeCode;
 
-DiffResult compareAttributes(const UsdAttribute& modified, const UsdAttribute& baseline)
+DiffResult compareAttributes(const UsdAttribute& modified, const UsdAttribute& baseline, DiffResult* quickDiff)
 {
     // We will not compare the set of point-in-times themselves but the overall result
     // of the animated values. This takes csare of tyring to match time-samples: we
@@ -30,13 +30,19 @@ DiffResult compareAttributes(const UsdAttribute& modified, const UsdAttribute& b
     // Note that the UsdAttribute API to get value automatically interpolates values
     // where samples are missing when queried.
     std::vector<double> times;
-    if (!UsdAttribute::GetUnionedTimeSamples({ modified, baseline }, &times))
+    if (!UsdAttribute::GetUnionedTimeSamples({ modified, baseline }, &times)) {
+        if (quickDiff)
+            *quickDiff = DiffResult::Differ;
         return DiffResult::Differ;
+    }
 
     // If there are no time samples at all in both attributes, we will compare the default values
     // instead.
     if (times.size() <= 0) {
-        return compareAttributes(modified, baseline, UsdTimeCode::Default());
+        const DiffResult result = compareAttributes(modified, baseline, UsdTimeCode::Default());
+        if (quickDiff)
+            *quickDiff = result;
+        return result;
     }
 
     // The algorithm returns the common result if there is one. Stop as soon as we reach Differ.
@@ -45,7 +51,14 @@ DiffResult compareAttributes(const UsdAttribute& modified, const UsdAttribute& b
         const DiffResult sampleResult = compareAttributes(modified, baseline, UsdTimeCode(time));
         if (sampleResult == DiffResult::Same) {
             continue;
-        } else if (sampleResult == overallResult) {
+        }
+
+        if (quickDiff) {
+            *quickDiff = sampleResult;
+            return sampleResult;
+        }
+        
+        if (sampleResult == overallResult) {
             continue;
         } else if (overallResult == DiffResult::Same) {
             overallResult = sampleResult;
@@ -56,6 +69,8 @@ DiffResult compareAttributes(const UsdAttribute& modified, const UsdAttribute& b
         }
     }
 
+    if (quickDiff)
+        *quickDiff = overallResult;
     return overallResult;
 }
 

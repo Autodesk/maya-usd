@@ -19,7 +19,15 @@ namespace MayaUsdUtils {
 
 using VtDictionary = PXR_NS::VtDictionary;
 
-DiffResultPerKey compareDictionaries(const VtDictionary& modified, const VtDictionary& baseline)
+#define USD_MAYA_RETURN_QUICK_RESULT(result)           \
+    do {                                               \
+        if (quickDiff && result != DiffResult::Same) { \
+            *quickDiff = result;                       \
+            return results;                            \
+        }                                              \
+    } while (false)
+
+DiffResultPerKey compareDictionaries(const VtDictionary& modified, const VtDictionary& baseline, DiffResult* quickDiff)
 {
     DiffResultPerKey results;
 
@@ -31,9 +39,12 @@ DiffResultPerKey compareDictionaries(const VtDictionary& modified, const VtDicti
             const std::string& key = keyAndValue.first;
             const auto iter = baseline.find(key);
             if (iter == baselineEnd) {
+                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created);
                 results[key] = DiffResult::Created;
             } else {
-                results[key] = compareValues(keyAndValue.second, iter->second);
+                const DiffResult result = compareValues(keyAndValue.second, iter->second);
+                USD_MAYA_RETURN_QUICK_RESULT(result);
+                results[key] = result;
             }
         }
     }
@@ -45,6 +56,7 @@ DiffResultPerKey compareDictionaries(const VtDictionary& modified, const VtDicti
         for (const auto& keyAndAttr : baseline) {
             const auto& key = keyAndAttr.first;
             if (modified.find(key) == modifiedEnd) {
+                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent);
                 results[key] = DiffResult::Absent;
             }
         }
