@@ -88,7 +88,7 @@ void UsdUndoDuplicateCommand::execute()
     auto rules = stage->GetLoadRules();
     // Note: get a *copy* of the rules since we are going to insert new rules as we iterate.
     auto oldRules = rules.GetRules();
-    for (const auto rule : oldRules) {
+    for (const auto& rule : oldRules) {
         const SdfPath& rulePath = rule.first;
         if (rulePath.HasPrefix(path)) {
             const auto newPath = rulePath.ReplacePrefix(path, _usdDstPath);
