@@ -1383,7 +1383,7 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
 
     const MFnDependencyNode depNodeFn(obj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    MPlug                   outShp = depNodeFn.findPlug("outMesh", &status);
+    MPlug outShp = depNodeFn.findPlug("outMesh", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MDataHandle geomDataHandle = outShp.asMDataHandle();
@@ -1404,7 +1404,7 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
                 if (contents.hasFn(MFn::kSingleIndexedComponent)) {
                     MFnSingleIndexedComponent fnSingleIndexedComponent(contents, &status);
                     CHECK_MSTATUS_AND_RETURN_IT(status);
-                    MIntArray                 curIndices;
+                    MIntArray curIndices;
                     status = fnSingleIndexedComponent.getElements(curIndices);
                     CHECK_MSTATUS_AND_RETURN_IT(status);
                     VtIntArray indices;
