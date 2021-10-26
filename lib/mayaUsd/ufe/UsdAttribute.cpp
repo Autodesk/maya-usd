@@ -123,7 +123,11 @@ bool setUsdAttrMetadata(
         usdValue = value.get<float>();
     else if (value.type() == typeid(double))
         usdValue = value.get<double>();
-    else if (value.type() == typeid(std::string))
+    // Workaround a bug on OSX (with Clang) with the type_info not comparing correctly.
+    // For now we know the known types that Ufe::Value supports. So if not one of
+    // the basic types, then it must be std::string. Once Ufe is fixed we can change
+    // this else into else if and assert for unknown type.
+    else /*if (value.type() == typeid(std::string))*/
         usdValue = value.get<std::string>();
     if (!usdValue.IsEmpty()) {
         PXR_NS::TfToken tok(key);
