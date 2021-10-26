@@ -24,6 +24,10 @@ TEST(DiffPrimsAttributes, comparePrimsAttributesEmpty)
     DiffResultPerToken results = comparePrimsAttributes(modifiedPrim, baselinePrim);
 
     EXPECT_TRUE(results.empty());
+
+    DiffResult quickDiff = DiffResult::Differ;
+    comparePrimsAttributes(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrimsAttributes, comparePrimsAttributesSameDouble)
@@ -48,6 +52,10 @@ TEST(DiffPrimsAttributes, comparePrimsAttributesSameDouble)
 
     DiffResult result = results[testAttrName];
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    comparePrimsAttributes(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrimsAttributes, comparePrimsAttributesDiffDouble)
@@ -72,6 +80,10 @@ TEST(DiffPrimsAttributes, comparePrimsAttributesDiffDouble)
 
     DiffResult result = results[testAttrName];
     EXPECT_EQ(result, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    comparePrimsAttributes(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrimsAttributes, comparePrimsAttributesAbsentDouble)
@@ -94,6 +106,10 @@ TEST(DiffPrimsAttributes, comparePrimsAttributesAbsentDouble)
 
     DiffResult result = results[testAttrName];
     EXPECT_EQ(result, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    comparePrimsAttributes(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrimsAttributes, comparePrimsAttributesCreatedDouble)
@@ -116,4 +132,8 @@ TEST(DiffPrimsAttributes, comparePrimsAttributesCreatedDouble)
 
     DiffResult result = results[testAttrName];
     EXPECT_EQ(result, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    comparePrimsAttributes(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }

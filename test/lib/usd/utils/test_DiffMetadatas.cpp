@@ -25,6 +25,14 @@ TEST(DiffMetadatas, compareMetadatasEmpty)
     DiffResultPerToken results = compareObjectsMetadatas(modifiedPrim, baselinePrim);
 
     EXPECT_TRUE(results.empty());
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareObjectsMetadatas(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffMetadatas, compareMetadatasSameDouble)
@@ -46,6 +54,14 @@ TEST(DiffMetadatas, compareMetadatasSameDouble)
 
     DiffResult result = results[testMetaName];
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareObjectsMetadatas(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffMetadatas, compareMetadatasDiffDouble)
@@ -67,6 +83,14 @@ TEST(DiffMetadatas, compareMetadatasDiffDouble)
 
     DiffResult result = results[testMetaName];
     EXPECT_EQ(result, DiffResult::Differ);
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareObjectsMetadatas(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffMetadatas, compareMetadatasAbsentDouble)
@@ -87,6 +111,14 @@ TEST(DiffMetadatas, compareMetadatasAbsentDouble)
 
     DiffResult result = results[testMetaName];
     EXPECT_EQ(result, DiffResult::Absent);
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareObjectsMetadatas(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffMetadatas, compareMetadatasCreatedDouble)
@@ -107,4 +139,12 @@ TEST(DiffMetadatas, compareMetadatasCreatedDouble)
 
     DiffResult result = results[testMetaName];
     EXPECT_EQ(result, DiffResult::Created);
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareObjectsMetadatas(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }

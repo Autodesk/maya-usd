@@ -19,6 +19,10 @@ TEST(DiffDictionaries, compareDictionariesEmpty)
     DiffResultPerKey results = compareDictionaries(modifiedDict, baselineDict);
 
     EXPECT_TRUE(results.empty());
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffDictionaries, compareDictionariesSameDouble)
@@ -38,6 +42,10 @@ TEST(DiffDictionaries, compareDictionariesSameDouble)
 
     DiffResult result = results[keyName];
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffDictionaries, compareDictionariesDiffDouble)
@@ -56,6 +64,10 @@ TEST(DiffDictionaries, compareDictionariesDiffDouble)
 
     DiffResult result = results[keyName];
     EXPECT_EQ(result, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffDictionaries, compareDictionariesAbsentDouble)
@@ -74,6 +86,10 @@ TEST(DiffDictionaries, compareDictionariesAbsentDouble)
 
     DiffResult result = results[keyName];
     EXPECT_EQ(result, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffDictionaries, compareDictionariesCreatedDouble)
@@ -92,6 +108,10 @@ TEST(DiffDictionaries, compareDictionariesCreatedDouble)
 
     DiffResult result = results[keyName];
     EXPECT_EQ(result, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -125,6 +145,10 @@ TEST(DiffDictionaries, compareDictionariesSubset)
 
     DiffResult overall = computeOverallResult(results);
     EXPECT_EQ(overall, DiffResult::Subset);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffDictionaries, compareDictionariesSuperset)
@@ -155,6 +179,10 @@ TEST(DiffDictionaries, compareDictionariesSuperset)
 
     DiffResult overall = computeOverallResult(results);
     EXPECT_EQ(overall, DiffResult::Superset);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffDictionaries, compareDictionariesCreatedAbsent)
@@ -185,6 +213,10 @@ TEST(DiffDictionaries, compareDictionariesCreatedAbsent)
 
     DiffResult overall = computeOverallResult(results);
     EXPECT_EQ(overall, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffDictionaries, compareDictionariesOverallCreated)
@@ -213,6 +245,10 @@ TEST(DiffDictionaries, compareDictionariesOverallCreated)
 
     DiffResult overall = computeOverallResult(results);
     EXPECT_EQ(overall, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffDictionaries, compareDictionariesOverallAbsent)
@@ -241,5 +277,9 @@ TEST(DiffDictionaries, compareDictionariesOverallAbsent)
 
     DiffResult overall = computeOverallResult(results);
     EXPECT_EQ(overall, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareDictionaries(modifiedDict, baselineDict, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 

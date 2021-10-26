@@ -38,6 +38,9 @@ std::map<ITEM, DiffResult> compareLists(
 {
     std::map<ITEM, DiffResult> results;
 
+    if (quickDiff)
+        *quickDiff = DiffResult::Same;
+
     // Note: doing comparisons of two lists would require a general diff algorithm to find the
     // minimal diff. On top of that, the lists in USD are composed and are built from prepend,
     // append, remove and reorder operations on top of lower-level compositions. We assume that

@@ -35,6 +35,10 @@ TEST(DiffPrimsRelationships, comparePrimsRelsEmpty)
     DiffResultPerPathPerToken results = comparePrimsRelationships(modifiedPrim, baselinePrim);
 
     EXPECT_TRUE(results.empty());
+
+    DiffResult quickDiff = DiffResult::Differ;
+    comparePrimsRelationships(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrimsRelationships, comparePrimsRelsSame)
@@ -60,6 +64,10 @@ TEST(DiffPrimsRelationships, comparePrimsRelsSame)
 
     DiffResult result = computeOverallResult(results[testRelName]);
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    comparePrimsRelationships(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrimsRelationships, comparePrimsRelsDiff)
@@ -85,6 +93,10 @@ TEST(DiffPrimsRelationships, comparePrimsRelsDiff)
 
     DiffResult result = computeOverallResult(results[testRelName]);
     EXPECT_EQ(result, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    comparePrimsRelationships(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrimsRelationships, comparePrimsRelsAbsent)
@@ -107,6 +119,10 @@ TEST(DiffPrimsRelationships, comparePrimsRelsAbsent)
 
     DiffResult result = computeOverallResult(results[testRelName]);
     EXPECT_EQ(result, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    comparePrimsRelationships(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrimsRelationships, comparePrimsRelsCreated)
@@ -129,4 +145,8 @@ TEST(DiffPrimsRelationships, comparePrimsRelsCreated)
 
     DiffResult result = computeOverallResult(results[testRelName]);
     EXPECT_EQ(result, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    comparePrimsRelationships(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }

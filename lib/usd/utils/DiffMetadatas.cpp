@@ -123,6 +123,9 @@ compareObjectsMetadatas(const UsdObject& modified, const UsdObject& baseline, Di
 {
     DiffResultPerToken results;
 
+    if (quickDiff)
+        *quickDiff = DiffResult::Same;
+
     // Retrieve the list of ignored metadatas and cache its end iterator.
     const auto& ignored = getIgnoredMetadata();
     const auto  ignoredEnd = ignored.end();

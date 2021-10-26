@@ -38,6 +38,9 @@ comparePrimsAttributes(const UsdPrim& modified, const UsdPrim& baseline, DiffRes
 {
     DiffResultPerToken results;
 
+    if (quickDiff)
+        *quickDiff = DiffResult::Same;
+
     // Create a map of baseline attribute indexed by name to rapidly verify
     // if it exists and be able to compare attributes.
     std::map<TfToken, UsdAttribute> baselineAttrs;
@@ -82,6 +85,9 @@ comparePrimsRelationships(const UsdPrim& modified, const UsdPrim& baseline, Diff
 {
     DiffResultPerPathPerToken results;
 
+    if (quickDiff)
+        *quickDiff = DiffResult::Same;
+
     // Create a map of baseline relationship indexed by name to rapidly verify
     // if it exists and be able to compare relationships.
     std::map<TfToken, UsdRelationship> baselineRels;
@@ -124,6 +130,9 @@ DiffResultPerPath
 comparePrimsChildren(const UsdPrim& modified, const UsdPrim& baseline, DiffResult* quickDiff)
 {
     DiffResultPerPath results;
+
+    if (quickDiff)
+        *quickDiff = DiffResult::Same;
 
     // Create a map of baseline children indexed by name to rapidly verify
     // if it exists and be able to compare children.
@@ -168,6 +177,9 @@ DiffResult comparePrims(
     const PXR_NS::UsdPrim& baseline,
     DiffResult*            quickDiff)
 {
+    if (quickDiff)
+        *quickDiff = DiffResult::Same;
+
     // If either is invalid, just compare validity.
     if (!modified.IsValid() || !baseline.IsValid()) {
         const DiffResult result

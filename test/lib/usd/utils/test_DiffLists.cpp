@@ -19,6 +19,14 @@ TEST(DiffLists, compareIntListsEmpty)
     std::map<int, DiffResult> results = compareLists(modifiedList, baselineList);
 
     EXPECT_TRUE(results.empty());
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareIntListsSame)
@@ -35,6 +43,14 @@ TEST(DiffLists, compareIntListsSame)
     EXPECT_EQ(results[2], DiffResult::Same);
     EXPECT_NE(results.find(3), results.end());
     EXPECT_EQ(results[3], DiffResult::Same);
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareIntListsDiff1)
@@ -61,6 +77,10 @@ TEST(DiffLists, compareIntListsDiff1)
 
     // Reordered + absent + appended: overall differ.
     EXPECT_EQ(overall, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareIntListsDiff2)
@@ -88,6 +108,10 @@ TEST(DiffLists, compareIntListsDiff2)
 
     // Same + Reordered: overall reordered.
     EXPECT_EQ(overall, DiffResult::Reordered);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareIntListsDiff3)
@@ -115,6 +139,10 @@ TEST(DiffLists, compareIntListsDiff3)
 
     // Same + Reordered: overall reordered.
     EXPECT_EQ(overall, DiffResult::Reordered);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareIntListsAbsent)
@@ -135,6 +163,10 @@ TEST(DiffLists, compareIntListsAbsent)
     DiffResult overall = computeOverallResult(results);
 
     EXPECT_EQ(overall, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareIntListsPrepended)
@@ -159,6 +191,10 @@ TEST(DiffLists, compareIntListsPrepended)
     // all-prepended is returned as created as that is the more general term, because
     // all-prepended is equivalent to all-appended.
     EXPECT_EQ(overall, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -172,6 +208,14 @@ TEST(DiffLists, compareStringListsEmpty)
     std::map<std::string, DiffResult> results = compareLists(modifiedList, baselineList);
 
     EXPECT_TRUE(results.empty());
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareStringListsSame)
@@ -188,6 +232,14 @@ TEST(DiffLists, compareStringListsSame)
     EXPECT_EQ(results["2"], DiffResult::Same);
     EXPECT_NE(results.find("3"), results.end());
     EXPECT_EQ(results["3"], DiffResult::Same);
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareStringListsDiff1)
@@ -214,6 +266,10 @@ TEST(DiffLists, compareStringListsDiff1)
 
     // Reordered + absent + appended: overall differ.
     EXPECT_EQ(overall, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareStringListsDiff2)
@@ -241,6 +297,10 @@ TEST(DiffLists, compareStringListsDiff2)
 
     // Same + Reordered: overall reordered.
     EXPECT_EQ(overall, DiffResult::Reordered);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareStringListsDiff3)
@@ -268,6 +328,10 @@ TEST(DiffLists, compareStringListsDiff3)
 
     // Same + Reordered: overall reordered.
     EXPECT_EQ(overall, DiffResult::Reordered);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareStringListsAbsent)
@@ -288,6 +352,10 @@ TEST(DiffLists, compareStringListsAbsent)
     DiffResult overall = computeOverallResult(results);
 
     EXPECT_EQ(overall, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareStringListsPrepended)
@@ -312,6 +380,10 @@ TEST(DiffLists, compareStringListsPrepended)
     // all-prepended is returned as created as that is the more general term, because
     // all-prepended is equivalent to all-appended.
     EXPECT_EQ(overall, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -325,6 +397,10 @@ TEST(DiffLists, compareTokenListsEmpty)
     std::map<TfToken, DiffResult> results = compareLists(modifiedList, baselineList);
 
     EXPECT_TRUE(results.empty());
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareTokenListsSame)
@@ -341,6 +417,14 @@ TEST(DiffLists, compareTokenListsSame)
     EXPECT_EQ(results[TfToken("2")], DiffResult::Same);
     EXPECT_NE(results.find(TfToken("3")), results.end());
     EXPECT_EQ(results[TfToken("3")], DiffResult::Same);
+
+    DiffResult overall = computeOverallResult(results);
+
+    EXPECT_EQ(overall, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareTokenListsDiff1)
@@ -367,6 +451,10 @@ TEST(DiffLists, compareTokenListsDiff1)
 
     // Reordered + absent + appended: overall differ.
     EXPECT_EQ(overall, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareTokenListsDiff2)
@@ -394,6 +482,10 @@ TEST(DiffLists, compareTokenListsDiff2)
 
     // Same + Reordered: overall reordered.
     EXPECT_EQ(overall, DiffResult::Reordered);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareTokenListsDiff3)
@@ -421,6 +513,10 @@ TEST(DiffLists, compareTokenListsDiff3)
 
     // Same + Reordered: overall reordered.
     EXPECT_EQ(overall, DiffResult::Reordered);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareTokenListsAbsent)
@@ -441,6 +537,10 @@ TEST(DiffLists, compareTokenListsAbsent)
     DiffResult overall = computeOverallResult(results);
 
     EXPECT_EQ(overall, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffLists, compareTokenListsPrepended)
@@ -465,4 +565,8 @@ TEST(DiffLists, compareTokenListsPrepended)
     // all-prepended is returned as created as that is the more general term, because
     // all-prepended is equivalent to all-appended.
     EXPECT_EQ(overall, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareLists(modifiedList, baselineList, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }

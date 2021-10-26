@@ -30,6 +30,9 @@ using VtDictionary = PXR_NS::VtDictionary;
 DiffResultPerKey compareDictionaries(const VtDictionary& modified, const VtDictionary& baseline, DiffResult* quickDiff)
 {
     DiffResultPerKey results;
+    
+    if (quickDiff)
+        *quickDiff = DiffResult::Same;
 
     // Compare the values to find created or changed ones.
     // Baseline dictionary map won't change, so cache the end.

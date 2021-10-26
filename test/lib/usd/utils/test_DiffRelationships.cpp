@@ -35,6 +35,10 @@ TEST(DiffRelationships, compareRelationshipsEmpty)
     DiffResultPerPath results = compareRelationships(modifiedRel, baselineRel);
 
     EXPECT_TRUE(results.empty());
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareRelationships(modifiedRel, baselineRel, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffRelationships, compareRelationshipsSame)
@@ -60,6 +64,10 @@ TEST(DiffRelationships, compareRelationshipsSame)
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(targetPath), results.end());
     EXPECT_EQ(results[targetPath], DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareRelationships(modifiedRel, baselineRel, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffRelationships, compareRelationshipsDiff)
@@ -88,6 +96,10 @@ TEST(DiffRelationships, compareRelationshipsDiff)
     EXPECT_NE(results.find(targetPath2), results.end());
     EXPECT_EQ(results[targetPath], DiffResult::Absent);
     EXPECT_EQ(results[targetPath2], DiffResult::Prepended);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareRelationships(modifiedRel, baselineRel, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffRelationships, compareRelationshipsAbsent)
@@ -111,6 +123,10 @@ TEST(DiffRelationships, compareRelationshipsAbsent)
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(targetPath), results.end());
     EXPECT_EQ(results[targetPath], DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareRelationships(modifiedRel, baselineRel, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffRelationships, compareRelationshipsCreated)
@@ -134,4 +150,8 @@ TEST(DiffRelationships, compareRelationshipsCreated)
     EXPECT_EQ(results.size(), std::size_t(1));
     EXPECT_NE(results.find(targetPath), results.end());
     EXPECT_EQ(results[targetPath], DiffResult::Prepended);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareRelationships(modifiedRel, baselineRel, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }

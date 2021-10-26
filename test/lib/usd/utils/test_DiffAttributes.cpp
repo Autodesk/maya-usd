@@ -25,6 +25,10 @@ TEST(DiffAttributes, compareAttributesEmpty)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesSameDefaultDouble)
@@ -46,6 +50,10 @@ TEST(DiffAttributes, compareAttributesSameDefaultDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesDiffDefaultDouble)
@@ -67,6 +75,10 @@ TEST(DiffAttributes, compareAttributesDiffDefaultDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesAbsentDefaultDouble)
@@ -87,6 +99,10 @@ TEST(DiffAttributes, compareAttributesAbsentDefaultDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesCreatedDefaultDouble)
@@ -107,6 +123,10 @@ TEST(DiffAttributes, compareAttributesCreatedDefaultDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -132,6 +152,10 @@ TEST(DiffAttributes, compareAttributesSameSampledDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesSameSampledDoubleAndFloat)
@@ -156,6 +180,10 @@ TEST(DiffAttributes, compareAttributesSameSampledDoubleAndFloat)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesSameInterpolatedSampledDouble)
@@ -182,6 +210,10 @@ TEST(DiffAttributes, compareAttributesSameInterpolatedSampledDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesSameInterpolatedSampledFloatAndDouble)
@@ -209,6 +241,10 @@ TEST(DiffAttributes, compareAttributesSameInterpolatedSampledFloatAndDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesSameDefaultAndSampledDouble)
@@ -234,6 +270,10 @@ TEST(DiffAttributes, compareAttributesSameDefaultAndSampledDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Same);
+
+    DiffResult quickDiff = DiffResult::Differ;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesDiffSampledDouble)
@@ -257,6 +297,10 @@ TEST(DiffAttributes, compareAttributesDiffSampledDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesSingleModDiffSampledDouble)
@@ -283,6 +327,10 @@ TEST(DiffAttributes, compareAttributesSingleModDiffSampledDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesSingleBaseDiffSampledDouble)
@@ -309,6 +357,10 @@ TEST(DiffAttributes, compareAttributesSingleBaseDiffSampledDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Differ);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesAbsentSampledDouble)
@@ -331,6 +383,10 @@ TEST(DiffAttributes, compareAttributesAbsentSampledDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Absent);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffAttributes, compareAttributesCreatedSampledDouble)
@@ -353,5 +409,9 @@ TEST(DiffAttributes, compareAttributesCreatedSampledDouble)
     DiffResult result = compareAttributes(modifiedAttr, baselineAttr);
 
     EXPECT_EQ(result, DiffResult::Created);
+
+    DiffResult quickDiff = DiffResult::Same;
+    compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
+    EXPECT_NE(quickDiff, DiffResult::Same);
 }
 
