@@ -5,6 +5,8 @@ set(TEST_SCRIPT_FILES
     testPrimWriter.py
     testExportChaser.py
     testImportChaser.py
+    testJobContextRegistry.py
+    testSchemaApiAdaptor.py
 )
 
 # requires MaterialX support

@@ -24,8 +24,6 @@
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/attribute.h>
 
-#include <maya/MDGModifier.h>
-#include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 

@@ -49,5 +49,7 @@ TF_WRAP_MODULE
     TF_WRAP(ShaderReader);
     TF_WRAP(ExportChaser);
     TF_WRAP(ImportChaser);
+    TF_WRAP(JobContextRegistry);
+    TF_WRAP(SchemaApiAdaptor);
     TF_WRAP(ShadingUtil);
 }

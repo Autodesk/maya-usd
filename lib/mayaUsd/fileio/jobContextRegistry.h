@@ -131,7 +131,8 @@ public:
         const std::string& jobContext,
         const std::string& niceName,
         const std::string& description,
-        EnablerFn          enablerFct);
+        EnablerFn          enablerFct,
+        bool               fromPython = false);
 
     /// Registers an import job context, with nice name, description and enabler function.
     ///
@@ -148,7 +149,8 @@ public:
         const std::string& jobContext,
         const std::string& niceName,
         const std::string& description,
-        EnablerFn          enablerFct);
+        EnablerFn          enablerFct,
+        bool               fromPython = false);
 
     MAYAUSD_CORE_PUBLIC
     static UsdMayaJobContextRegistry& GetInstance();

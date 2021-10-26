@@ -87,8 +87,11 @@ struct UsdMayaSchemaApiAdaptorRegistry
     /// }
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static void
-    Register(const std::string& mayaType, const std::string& schemaApiName, AdaptorFactoryFn fn);
+    static void Register(
+        const std::string& mayaType,
+        const std::string& schemaApiName,
+        AdaptorFactoryFn   fn,
+        bool               fromPython = false);
 
     /// \brief Finds all the schema api adaptors for a given \p mayaTypeName.
     ///

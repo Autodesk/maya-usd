@@ -58,7 +58,8 @@ void UsdMayaJobContextRegistry::RegisterExportJobContext(
     const std::string& jobContext,
     const std::string& niceName,
     const std::string& description,
-    EnablerFn          enablerFct)
+    EnablerFn          enablerFct,
+    bool               fromPython)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering export job context %s.\n", jobContext.c_str());
     TfToken     key(jobContext);
@@ -66,10 +67,12 @@ void UsdMayaJobContextRegistry::RegisterExportJobContext(
     auto        itFound = _jobContextReg.find(newInfo);
     if (itFound == _jobContextReg.end()) {
         _jobContextReg.insert(newInfo);
-        UsdMaya_RegistryHelper::AddUnloader([key]() {
-            ContextInfo toErase { key, {}, {}, {}, {}, {} };
-            _jobContextReg.erase(toErase);
-        });
+        UsdMaya_RegistryHelper::AddUnloader(
+            [key]() {
+                ContextInfo toErase { key, {}, {}, {}, {}, {} };
+                _jobContextReg.erase(toErase);
+            },
+            fromPython);
     } else {
         if (!itFound->exportEnablerCallback) {
             if (niceName != itFound->niceName) {
@@ -95,7 +98,8 @@ void UsdMayaJobContextRegistry::RegisterImportJobContext(
     const std::string& jobContext,
     const std::string& niceName,
     const std::string& description,
-    EnablerFn          enablerFct)
+    EnablerFn          enablerFct,
+    bool               fromPython)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering import job context %s.\n", jobContext.c_str());
     TfToken     key(jobContext);
@@ -103,10 +107,12 @@ void UsdMayaJobContextRegistry::RegisterImportJobContext(
     auto        itFound = _jobContextReg.find(newInfo);
     if (itFound == _jobContextReg.end()) {
         _jobContextReg.insert(newInfo);
-        UsdMaya_RegistryHelper::AddUnloader([key]() {
-            ContextInfo toErase { key, {}, {}, {}, {}, {} };
-            _jobContextReg.erase(toErase);
-        });
+        UsdMaya_RegistryHelper::AddUnloader(
+            [key]() {
+                ContextInfo toErase { key, {}, {}, {}, {}, {} };
+                _jobContextReg.erase(toErase);
+            },
+            fromPython);
     } else {
         if (!itFound->importEnablerCallback) {
             if (niceName != itFound->niceName) {
