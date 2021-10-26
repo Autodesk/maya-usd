@@ -885,6 +885,8 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
     return MS::kSuccess;
 }
 
+#if MAYA_API_VERSION >= 20220000
+
 MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const MObject& meshObj)
 {
     if (meshObj.apiType() != MFn::kMesh) {
@@ -892,8 +894,6 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
     }
 
     MStatus status { MS::kSuccess };
-
-#if MAYA_API_VERSION >= 20220000
 
     MFnDependencyNode depNodeFn;
     depNodeFn.setObject(meshObj);
@@ -947,9 +947,9 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
         idx++;
     }
 
-#endif
-
     return status;
 }
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -799,9 +799,13 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             _GetSparseValueWriter());
     }
 
+#if MAYA_API_VERSION >= 20220000
+
     if (exportArgs.exportComponentTags) {
         UsdMayaMeshWriteUtils::exportComponentTags(primSchema, GetMayaObject());
     }
+
+#endif
 
     return true;
 }

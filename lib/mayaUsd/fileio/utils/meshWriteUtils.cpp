@@ -1372,16 +1372,17 @@ bool UsdMayaMeshWriteUtils::getMeshColorSetData(
     return true;
 }
 
+#if MAYA_API_VERSION >= 20220000
+
 MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObject obj)
 {
     MStatus status { MS::kSuccess };
-
-#if MAYA_API_VERSION >= 20220000
 
     MFnDependencyNode dNode(obj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     const MFnDependencyNode depNodeFn(obj, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
     MPlug                   outShp = depNodeFn.findPlug("outMesh", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
@@ -1392,15 +1393,20 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
         MFnGeometryData fnGeomData(geomObj);
         MStringArray    keys;
         status = fnGeomData.componentTags(keys);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
         for (unsigned int i = 0; i < keys.length(); ++i) {
             MFnGeometryData::ComponentTagCategory ctg
                 = fnGeomData.componentTagCategory(keys[i], &status);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
             if (ctg == MFnGeometryData::ComponentTagCategory::kFaces) {
                 MObject contents = fnGeomData.componentTagContents(keys[i], &status);
+                CHECK_MSTATUS_AND_RETURN_IT(status);
                 if (contents.hasFn(MFn::kSingleIndexedComponent)) {
                     MFnSingleIndexedComponent fnSingleIndexedComponent(contents, &status);
+                    CHECK_MSTATUS_AND_RETURN_IT(status);
                     MIntArray                 curIndices;
                     status = fnSingleIndexedComponent.getElements(curIndices);
+                    CHECK_MSTATUS_AND_RETURN_IT(status);
                     VtIntArray indices;
                     indices.reserve(curIndices.length());
                     for (unsigned int j = 0; j < curIndices.length(); ++j)
@@ -1416,9 +1422,9 @@ MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObj
         }
     }
 
-#endif
-
     return status;
 }
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
