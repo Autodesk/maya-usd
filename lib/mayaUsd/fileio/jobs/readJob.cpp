@@ -589,8 +589,7 @@ const MDagPath& UsdMaya_ReadJob::GetMayaRootDagPath() const { return mMayaRootDa
 
 double UsdMaya_ReadJob::timeSampleMultiplier() const { return mTimeSampleMultiplier; }
 
-const UsdMayaPrimReaderContext::ObjectRegistry& 
-UsdMaya_ReadJob::GetNewNodeRegistry() const
+const UsdMayaPrimReaderContext::ObjectRegistry& UsdMaya_ReadJob::GetNewNodeRegistry() const
 {
     return mNewNodeRegistry;
 }

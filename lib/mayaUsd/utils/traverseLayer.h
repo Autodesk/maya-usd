@@ -32,10 +32,14 @@ namespace MAYAUSD_NS_DEF {
 class TraversalFailure : public std::runtime_error
 {
 public:
-    TraversalFailure(const std::string& reason, const PXR_NS::SdfPath& path) :
-        std::runtime_error(path.GetAsString()), _reason(reason), _path(path) {}
+    TraversalFailure(const std::string& reason, const PXR_NS::SdfPath& path)
+        : std::runtime_error(path.GetAsString())
+        , _reason(reason)
+        , _path(path)
+    {
+    }
     TraversalFailure(const TraversalFailure&) = default;
-    ~TraversalFailure() override {}
+    ~TraversalFailure() override { }
 
     std::string     reason() const { return _reason; }
     PXR_NS::SdfPath path() const { return _path; }
@@ -45,7 +49,7 @@ private:
     const PXR_NS::SdfPath _path;
 };
 
-//! \brief Type definition for layer traversal function. 
+//! \brief Type definition for layer traversal function.
 //
 // A layer traversal function must return true to continue the traversal, and
 // false to prune traversal to the children of the argument path.  The
@@ -66,8 +70,7 @@ MAYAUSD_CORE_PUBLIC
 bool traverseLayer(
     const PXR_NS::SdfLayerHandle& layer,
     const PXR_NS::SdfPath&        path,
-    const TraverseLayerFn&        fn
-);
+    const TraverseLayerFn&        fn);
 
 } // namespace MAYAUSD_NS_DEF
 

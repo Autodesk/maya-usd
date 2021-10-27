@@ -80,9 +80,9 @@ bool copyBetween(const std::string& srcUfePathString, const std::string& dstUfeP
     Ufe::Path src = Ufe::PathString::path(srcUfePathString);
     Ufe::Path dst = Ufe::PathString::path(dstUfePathString);
 
-    if(src.empty() || dst.empty())
+    if (src.empty() || dst.empty())
         return false;
-    
+
     return PrimUpdaterManager::GetInstance().CopyBetween(src, dst);
 }
 

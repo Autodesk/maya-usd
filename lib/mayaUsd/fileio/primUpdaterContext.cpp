@@ -22,8 +22,7 @@ UsdMayaPrimUpdaterContext::UsdMayaPrimUpdaterContext(
     const UsdTimeCode&            timeCode,
     const UsdStageRefPtr&         stage,
     const VtDictionary&           userArgs,
-    const UsdPathToDagPathMapPtr& pathMap
-)
+    const UsdPathToDagPathMapPtr& pathMap)
     : _timeCode(timeCode)
     , _stage(stage)
     , _pathMap(pathMap)
@@ -32,9 +31,7 @@ UsdMayaPrimUpdaterContext::UsdMayaPrimUpdaterContext(
 {
 }
 
-MDagPath UsdMayaPrimUpdaterContext::MapSdfPathToDagPath(
-    const SdfPath& sdfPath
-) const
+MDagPath UsdMayaPrimUpdaterContext::MapSdfPathToDagPath(const SdfPath& sdfPath) const
 {
     if (!_pathMap || sdfPath.IsEmpty()) {
         return MDagPath();

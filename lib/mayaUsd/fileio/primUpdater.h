@@ -28,7 +28,6 @@
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
-
 #include <ufe/path.h>
 #include <ufe/sceneItem.h>
 

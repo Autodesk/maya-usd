@@ -360,7 +360,7 @@ MDagPath ufeToDagPath(const Ufe::Path& ufePath)
 #else
         ufePath.getSegments().size()
 #endif
-        > 1) {
+            > 1) {
         return MDagPath();
     }
     return UsdMayaUtil::nameToDagPath(

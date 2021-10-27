@@ -18,8 +18,8 @@
 #include "UsdSceneItem.h"
 
 #include <mayaUsd/fileio/primUpdater.h>
-#include <mayaUsd/utils/util.h>
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 

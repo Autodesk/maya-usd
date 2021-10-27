@@ -2115,7 +2115,7 @@ MDagPath UsdMayaUtil::nameToDagPath(const std::string& name)
     MDagPath dag;
     // Not found?  Empty selection list.
     if (!selection.isEmpty()) {
-        MStatus  status = selection.getDagPath(0, dag);
+        MStatus status = selection.getDagPath(0, dag);
         CHECK_MSTATUS(status);
     }
     return dag;

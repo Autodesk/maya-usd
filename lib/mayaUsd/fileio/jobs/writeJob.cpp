@@ -827,8 +827,7 @@ bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath& path, const MDagPath& da
     return true;
 }
 
-const UsdMayaUtil::MDagPathMap<SdfPath>&
-UsdMaya_WriteJob::GetDagPathToUsdPathMap() const
+const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_WriteJob::GetDagPathToUsdPathMap() const
 {
     return mDagPathToUsdPathMap;
 }

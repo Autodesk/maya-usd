@@ -25,11 +25,10 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <maya/MCallbackIdArray.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
-#include <maya/MCallbackIdArray.h>
-
 #include <ufe/path.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,7 +47,7 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     bool PullClear(const Ufe::Path& path);
-    
+
     MAYAUSD_CORE_PUBLIC
     bool CopyBetween(const Ufe::Path& srcPath, const Ufe::Path& dstPath);
 
@@ -83,7 +82,7 @@ private:
     bool _inPushPull { false };
 
     // Initialize pull root MObject to null object.
-    MObject _pullRoot{};
+    MObject _pullRoot {};
 
     // Reset pull root on file new / file open.
     MCallbackIdArray _cbIds;

@@ -88,10 +88,7 @@ UsdMayaPrimUpdater::UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const
 {
 }
 
-bool UsdMayaPrimUpdater::Pull(const UsdMayaPrimUpdaterContext& context)
-{
-    return true;
-}
+bool UsdMayaPrimUpdater::Pull(const UsdMayaPrimUpdaterContext& context) { return true; }
 
 bool UsdMayaPrimUpdater::DiscardEdits(const UsdMayaPrimUpdaterContext& context)
 {
@@ -124,27 +121,42 @@ bool UsdMayaPrimUpdater::PushCopySpecs(
     // Since we're copying a single prim and not recursing to children,
     // topSrcPath and srcPath will be equal, and so will topDstPath and dstPath.
     auto shouldCopyValueFn = [topSrcPath, topDstPath](
-        SdfSpecType specType, const TfToken& field,
-        const SdfLayerHandle& srcLayer, const SdfPath& srcPath, 
-        bool fieldInSrc,
-        const SdfLayerHandle& dstLayer, const SdfPath& dstPath, 
-        bool fieldInDst,
-        boost::optional<VtValue>* valueToCopy
-    ) {
-        return SdfShouldCopyValue(topSrcPath, topDstPath, specType,
-            field, srcLayer, srcPath, fieldInSrc, dstLayer, dstPath,
-            fieldInDst, valueToCopy);
+                                 SdfSpecType               specType,
+                                 const TfToken&            field,
+                                 const SdfLayerHandle&     srcLayer,
+                                 const SdfPath&            srcPath,
+                                 bool                      fieldInSrc,
+                                 const SdfLayerHandle&     dstLayer,
+                                 const SdfPath&            dstPath,
+                                 bool                      fieldInDst,
+                                 boost::optional<VtValue>* valueToCopy) {
+        return SdfShouldCopyValue(
+            topSrcPath,
+            topDstPath,
+            specType,
+            field,
+            srcLayer,
+            srcPath,
+            fieldInSrc,
+            dstLayer,
+            dstPath,
+            fieldInDst,
+            valueToCopy);
     };
-    auto dontCopyChildrenFn = [](
-        const TfToken& childrenField, const SdfLayerHandle&, const SdfPath&, 
-        bool, const SdfLayerHandle&, const SdfPath&,
-        bool, boost::optional<VtValue>*, boost::optional<VtValue>*
-    ) {
+    auto dontCopyChildrenFn = [](const TfToken& childrenField,
+                                 const SdfLayerHandle&,
+                                 const SdfPath&,
+                                 bool,
+                                 const SdfLayerHandle&,
+                                 const SdfPath&,
+                                 bool,
+                                 boost::optional<VtValue>*,
+                                 boost::optional<VtValue>*) {
         // There must be an existing list of static children fields.
         // PPT, 18-Oct-21.
         static TfToken properties("properties");
         static TfToken primChildren("primChildren");
-        
+
         // See traverseLayer() implementation for full list of children field.
         // Property children must be copied, prim children must not.  What
         // about other children field?  If we understand the complete list, we
@@ -152,8 +164,7 @@ bool UsdMayaPrimUpdater::PushCopySpecs(
         // 18-Oct-21.
         if (childrenField == properties) {
             return true;
-        }
-        else if (childrenField == primChildren) {
+        } else if (childrenField == primChildren) {
             return false;
         }
 
@@ -161,8 +172,8 @@ bool UsdMayaPrimUpdater::PushCopySpecs(
         return true;
     };
 
-    return SdfCopySpec(srcLayer, topSrcPath, dstLayer, topDstPath,
-                       shouldCopyValueFn, dontCopyChildrenFn);
+    return SdfCopySpec(
+        srcLayer, topSrcPath, dstLayer, topDstPath, shouldCopyValueFn, dontCopyChildrenFn);
 }
 
 const MObject& UsdMayaPrimUpdater::GetMayaObject() const { return _mayaObject; }

@@ -36,7 +36,8 @@
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/fileio/primUpdater.h>
-#include <ufe/pathString.h>     // In UFE v2 but only needed for primUpdater.
+
+#include <ufe/pathString.h> // In UFE v2 but only needed for primUpdater.
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE

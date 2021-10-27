@@ -18,9 +18,9 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 
@@ -41,17 +41,16 @@ TF_DECLARE_PUBLIC_TOKENS(
 /// \brief Arguments that configure the updater.
 struct UsdMayaPrimUpdaterArgs
 {
-    const bool _copyOperation{false};
+    const bool _copyOperation { false };
 
     MAYAUSD_CORE_PUBLIC
     static UsdMayaPrimUpdaterArgs createFromDictionary(const VtDictionary& userArgs);
-    
+
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& getDefaultDictionary();
-    
+
 private:
     UsdMayaPrimUpdaterArgs(const VtDictionary& userArgs);
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

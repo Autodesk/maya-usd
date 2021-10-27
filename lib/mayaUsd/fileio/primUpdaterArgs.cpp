@@ -33,15 +33,14 @@ static bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
 }
 
 UsdMayaPrimUpdaterArgs::UsdMayaPrimUpdaterArgs(const VtDictionary& userArgs)
- : _copyOperation(_Boolean(userArgs, UsdMayaPrimUpdaterArgsTokens->copyOperation))
+    : _copyOperation(_Boolean(userArgs, UsdMayaPrimUpdaterArgsTokens->copyOperation))
 {
 }
 
 /*static*/
 UsdMayaPrimUpdaterArgs UsdMayaPrimUpdaterArgs::createFromDictionary(const VtDictionary& userArgs)
 {
-    return UsdMayaPrimUpdaterArgs(
-        VtDictionaryOver(userArgs, getDefaultDictionary()));
+    return UsdMayaPrimUpdaterArgs(VtDictionaryOver(userArgs, getDefaultDictionary()));
 }
 
 /*static*/
@@ -49,9 +48,7 @@ const VtDictionary& UsdMayaPrimUpdaterArgs::getDefaultDictionary()
 {
     static VtDictionary   d;
     static std::once_flag once;
-    std::call_once(once, []() {
-        d[UsdMayaPrimUpdaterArgsTokens->copyOperation] = false;
-    });
+    std::call_once(once, []() { d[UsdMayaPrimUpdaterArgsTokens->copyOperation] = false; });
 
     return d;
 }

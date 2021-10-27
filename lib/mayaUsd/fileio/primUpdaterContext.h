@@ -18,17 +18,16 @@
 #define PXRUSDMAYA_PRIMUPDATERCONTEXT_H
 
 #include <mayaUsd/base/api.h>
-
 #include <mayaUsd/fileio/primUpdaterArgs.h>
 
+#include <pxr/base/tf/hashmap.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
-#include <pxr/base/tf/hashmap.h>
 
 #include <maya/MDagPath.h>
 
-#include <memory>               // shared_ptr
+#include <memory> // shared_ptr
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,33 +39,38 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdMayaPrimUpdaterContext
 {
 public:
-
     using UsdPathToDagPathMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
     using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
-    
+
     MAYAUSD_CORE_PUBLIC
-    UsdMayaPrimUpdaterContext(const UsdTimeCode& timeCode, const UsdStageRefPtr& stage, const VtDictionary& userArgs, const UsdPathToDagPathMapPtr& pathMap = nullptr);
+    UsdMayaPrimUpdaterContext(
+        const UsdTimeCode&            timeCode,
+        const UsdStageRefPtr&         stage,
+        const VtDictionary&           userArgs,
+        const UsdPathToDagPathMapPtr& pathMap = nullptr);
 
     /// \brief returns the time frame where data should be edited.
     const UsdTimeCode& GetTimeCode() const { return _timeCode; }
 
     /// \brief returns the usd stage that is being written to.
     UsdStageRefPtr GetUsdStage() const { return _stage; }
-    
-    /// \brief Return dictionary with user defined arguments. Can contain a mix of reader/writer and updater args
+
+    /// \brief Return dictionary with user defined arguments. Can contain a mix of reader/writer and
+    /// updater args
     const VtDictionary& GetUserArgs() const { return _userArgs; }
-    
+
     /// \brief Return updater arguments
     const UsdMayaPrimUpdaterArgs& GetArgs() const { return _args; }
 
-    /// \brief Returns the Maya Dag path corresponding to a pulled USD path.  The Dag path will be empty if no correspondence exists.
+    /// \brief Returns the Maya Dag path corresponding to a pulled USD path.  The Dag path will be
+    /// empty if no correspondence exists.
     MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
 
 private:
     const UsdTimeCode&           _timeCode;
     const UsdStageRefPtr         _stage;
     const UsdPathToDagPathMapPtr _pathMap;
-    
+
     const VtDictionary&          _userArgs;
     const UsdMayaPrimUpdaterArgs _args;
 };
