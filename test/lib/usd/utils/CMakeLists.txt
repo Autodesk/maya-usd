@@ -86,6 +86,11 @@ add_mayaUsdUtils_test(
 )
 
 add_mayaUsdUtils_test(
+    testMergePrims
+    test_MergePrims.cpp
+)
+
+add_mayaUsdUtils_test(
     testDiffMetadatas
     test_DiffMetadatas.cpp
 )

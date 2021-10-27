@@ -62,6 +62,7 @@ set(HEADERS
     DebugCodes.h
     DiffCore.h
     DiffPrims.h
+    MergePrims.h
     ForwardDeclares.h
     SIMD.h
     util.h

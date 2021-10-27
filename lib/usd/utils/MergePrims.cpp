@@ -33,28 +33,10 @@ namespace {
 //----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Verbosity level flags.
-
-enum class Verbosity
-{
-    None = 0,
-    Same = 1 << 0,
-    Differ = 1 << 1,
-    Child = 1 << 2,
-    Children = 1 << 3,
-    Failure = 1 << 4,
-};
-
-Verbosity operator|(Verbosity a, Verbosity b) { return Verbosity(uint32_t(a) | uint32_t(b)); }
-Verbosity operator&(Verbosity a, Verbosity b) { return Verbosity(uint32_t(a) & uint32_t(b)); }
-Verbosity operator^(Verbosity a, Verbosity b) { return Verbosity(uint32_t(a) ^ uint32_t(b)); }
-bool      contains(Verbosity a, Verbosity b) { return (a & b) != Verbosity::None; }
-
-//----------------------------------------------------------------------------------------------------------------------
 // Data used for merging passed to all helper functions.
 struct MergeContext
 {
-    const Verbosity       verbosity;
+    const MergeVerbosity  verbosity;
     const UsdStageRefPtr& srcStage;
     const SdfPath&        srcRootPath;
     const UsdStageRefPtr& dstStage;
@@ -76,7 +58,7 @@ struct MergeLocation
 void printAboutField(
     const MergeContext&  ctx,
     const MergeLocation& loc,
-    Verbosity            printVerbosity,
+    MergeVerbosity       printVerbosity,
     const char*          message,
     const char*          message2 = nullptr)
 {
@@ -100,7 +82,7 @@ void printAboutFailure(
     const char*          message,
     const char*          message2 = nullptr)
 {
-    printAboutField(ctx, loc, Verbosity::Failure, message, message2);
+    printAboutField(ctx, loc, MergeVerbosity::Failure, message, message2);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -111,11 +93,11 @@ void printAboutChildren(
     const char*                     message,
     const std::vector<std::string>& childrenNames)
 {
-    if (!contains(Verbosity::Children, ctx.verbosity))
+    if (!contains(MergeVerbosity::Children, ctx.verbosity))
         return;
 
     const std::string allNames = TfStringJoin(childrenNames);
-    printAboutField(ctx, loc, Verbosity::Children, message, allNames.c_str());
+    printAboutField(ctx, loc, MergeVerbosity::Children, message, allNames.c_str());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -129,7 +111,7 @@ void printChangedField(
     printAboutField(
         ctx,
         loc,
-        changed ? Verbosity::Differ : Verbosity::Same,
+        changed ? MergeVerbosity::Differ : MergeVerbosity::Same,
         message,
         changed ? ": changed. " : ": same. ");
 }
@@ -162,7 +144,7 @@ void printInvalidField(
     printAboutField(
         ctx,
         loc,
-        (srcValid != dstValid) ? Verbosity::Differ : Verbosity::Same,
+        (srcValid != dstValid) ? MergeVerbosity::Differ : MergeVerbosity::Same,
         message,
         validitiesToText(srcValid, dstValid));
 }
@@ -343,21 +325,21 @@ bool filterTypedChildren(
             childMessage = "keep child. ";
             srcFilteredChildren.emplace_back(srcChildren[i]);
             dstFilteredChildren.emplace_back(dstChildren[i]);
-            if (contains(ctx.verbosity, Verbosity::Children))
+            if (contains(ctx.verbosity, MergeVerbosity::Children))
                 childrenNames.emplace_back(srcChildPath.GetName());
         } else {
             if (isDataAtPathsModified(ctx, childSrc, childDst)) {
                 childMessage = "create child. ";
                 srcFilteredChildren.emplace_back(srcChildren[i]);
                 dstFilteredChildren.emplace_back(dstChildren[i]);
-                if (contains(ctx.verbosity, Verbosity::Children))
+                if (contains(ctx.verbosity, MergeVerbosity::Children))
                     childrenNames.emplace_back(srcChildPath.GetName());
             } else {
                 childMessage = "drop child. ";
             }
         }
 
-        printAboutField(ctx, childSrc, Verbosity::Child, childMessage);
+        printAboutField(ctx, childSrc, MergeVerbosity::Child, childMessage);
     }
 
     const bool  shouldCopy = (srcFilteredChildren.size() > 0);
@@ -478,7 +460,7 @@ bool shouldMergeChildren(
 /// Copies a minimal prim using diff and merge, printing all fields that are copied to the Maya
 /// console.
 bool mergeDiffPrims(
-    Verbosity             verbosity,
+    MergeVerbosity        verbosity,
     const UsdStageRefPtr& srcStage,
     const SdfLayerRefPtr& srcLayer,
     const SdfPath&        srcPath,
@@ -506,23 +488,30 @@ bool mergePrims(
     const SdfPath&        srcRootPath,
     const UsdStageRefPtr& dstStage,
     const SdfLayerRefPtr& dstLayer,
-    const SdfPath&        dstRootPath)
+    const SdfPath&        dstRootPath,
+    MergeVerbosity        verbosity)
 {
-    // TODO: only create and transfer layer if: not the top layer (easy) or higher layers have an opinion (might be tricky).
-    auto tmpStage = UsdStage::CreateInMemory();
-    SdfLayerHandle tmpLayer = tmpStage->GetSessionLayer();
+    // TODO: only create and transfer layer if: not the top layer (easy) or higher layers have an
+    // opinion (might be tricky).
+    const bool useTempStage = true;
 
-    tmpLayer->TransferContent(dstLayer);
+    if (useTempStage) {
+        auto           tempStage = UsdStage::CreateInMemory();
+        SdfLayerHandle tempLayer = tempStage->GetSessionLayer();
 
-    const Verbosity verbosity = Verbosity::Differ | Verbosity::Children | Verbosity::Failure;
+        tempLayer->TransferContent(dstLayer);
 
-    const bool success = mergeDiffPrims(
-        verbosity, srcStage, srcLayer, srcRootPath, tmpStage, tmpLayer, dstRootPath);
+        const bool success = mergeDiffPrims(
+            verbosity, srcStage, srcLayer, srcRootPath, tempStage, tempLayer, dstRootPath);
 
-    if (success)
-        dstLayer->TransferContent(tmpLayer);
+        if (success)
+            dstLayer->TransferContent(tempLayer);
 
-    return success;
+        return success;
+    } else {
+        return mergeDiffPrims(
+            verbosity, srcStage, srcLayer, srcRootPath, dstStage, dstLayer, dstRootPath);
+    }
 }
 
 } // namespace MayaUsdUtils
