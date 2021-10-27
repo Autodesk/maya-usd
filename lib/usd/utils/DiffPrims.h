@@ -89,7 +89,7 @@ template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const
 /// Currently compares attributes, relationships and children.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the overall result, all results are possible.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
@@ -102,7 +102,7 @@ DiffResult comparePrims(
 /// \brief  compares all the children of a modified prim to a baseline one.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the map of children paths to the result of comparison of that child.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
@@ -115,7 +115,7 @@ DiffResultPerPath comparePrimsChildren(
 /// \brief  compares all the attributes of a modified prim to a baseline one.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the map of attribute names to the result of comparison of that attribute.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ DiffResultPerToken comparePrimsAttributes(
 /// \brief  compares all the relationships of a modified prim to a baseline one.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the map of relationship names to the result of comparison of that relationship.
 /// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
 //----------------------------------------------------------------------------------------------------------------------
@@ -147,7 +147,7 @@ DiffResultPerPathPerToken comparePrimsRelationships(
 /// \brief  compares a modified attribute to a baseline one for all time samples.
 /// \param  modified the potentially modified attribute that is compared.
 /// \param  baseline the attribute that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the result of the comparison of that modified attribute.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
@@ -175,7 +175,7 @@ DiffResult compareAttributes(
 /// \brief  compares all the targets of a modified relationship to a baseline one.
 /// \param  modified the potentially modified relationship that is compared.
 /// \param  baseline the relationship that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the map of target paths to the result of comparison of that target.
 /// Currently only Same, Absent, Prepended or Appended are returned.
 //----------------------------------------------------------------------------------------------------------------------
@@ -189,7 +189,7 @@ DiffResultPerPath compareRelationships(
 /// \brief  compares all the metadatas of a modified object to a baseline one.
 /// \param  modified the potentially modified object that is compared.
 /// \param  baseline the object that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the map of metadata names to the result of comparison of that metadata.
 /// Currently Subset and Superset are never returned.
 //----------------------------------------------------------------------------------------------------------------------
@@ -233,7 +233,7 @@ DiffResult compareValues(const PXR_NS::VtValue& modified, const PXR_NS::VtValue&
 /// \brief  compares a modified list of items to a baseline list.
 /// \param  modified the potentially modified list of items that is compared.
 /// \param  baseline the list of items that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the result of the comparison for each item in that modified list.
 /// Currently only Same, Absent, Reordered, Prepended or Appended are returned.
 ///
@@ -250,7 +250,7 @@ MAYA_USD_UTILS_PUBLIC std::map<ITEM, DiffResult> compareLists(
 /// \brief  compares a modified dictionary of items to a baseline dictionary.
 /// \param  modified the potentially modified dictionary of values that is compared.
 /// \param  baseline the dictionary of values that is used as the baseline for the comparison.
-/// \param  quickDiff if not null, returns a Differ as soon as a difference is found.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
 /// \return the result of the comparison for each value in that modified dictionary.
 /// Currently only Same, Differ, Absent and Created are returned.
 //----------------------------------------------------------------------------------------------------------------------

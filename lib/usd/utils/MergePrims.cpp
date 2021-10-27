@@ -508,9 +508,21 @@ bool mergePrims(
     const SdfLayerRefPtr& dstLayer,
     const SdfPath&        dstRootPath)
 {
+    // TODO: only create and transfer layer if: not the top layer (easy) or higher layers have an opinion (might be tricky).
+    auto tmpStage = UsdStage::CreateInMemory();
+    SdfLayerHandle tmpLayer = tmpStage->GetSessionLayer();
+
+    tmpLayer->TransferContent(dstLayer);
+
     const Verbosity verbosity = Verbosity::Differ | Verbosity::Children | Verbosity::Failure;
-    return mergeDiffPrims(
-        verbosity, srcStage, srcLayer, srcRootPath, dstStage, dstLayer, dstRootPath);
+
+    const bool success = mergeDiffPrims(
+        verbosity, srcStage, srcLayer, srcRootPath, tmpStage, tmpLayer, dstRootPath);
+
+    if (success)
+        dstLayer->TransferContent(tmpLayer);
+
+    return success;
 }
 
 } // namespace MayaUsdUtils

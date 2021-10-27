@@ -81,6 +81,8 @@ add_mayaUsdUtils_test(
     testDiffPrims
     test_DiffPrimsAttributes.cpp
     test_DiffPrimsRelations.cpp
+    test_DiffPrimsChildren.cpp
+    test_DiffPrims.cpp
 )
 
 add_mayaUsdUtils_test(

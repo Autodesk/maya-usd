@@ -151,8 +151,8 @@ comparePrimsChildren(const UsdPrim& modified, const UsdPrim& baseline, DiffResul
             const SdfPath& path = child.GetPath();
             const auto     iter = baselineChildren.find(path);
             if (iter == baselineEnd) {
-                results[path] = comparePrims(child, UsdPrim(), quickDiff);
-                USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
+                USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created, results);
+                results[path] = DiffResult::Created;
             } else {
                 results[path] = comparePrims(child, iter->second, quickDiff);
                 USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
@@ -164,8 +164,8 @@ comparePrimsChildren(const UsdPrim& modified, const UsdPrim& baseline, DiffResul
     for (const auto& pathAndPrim : baselineChildren) {
         const auto& path = pathAndPrim.first;
         if (results.find(path) == results.end()) {
-            results[path] = comparePrims(UsdPrim(), pathAndPrim.second, quickDiff);
-            USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, results);
+            USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Absent, results);
+            results[path] = DiffResult::Absent;
         }
     }
 
@@ -197,9 +197,11 @@ DiffResult comparePrims(
     // Note: we will short-cut to DifResult::Differ as soon as we detect one such result.
 
     {
-        const DiffResultPerToken attrDiffs = comparePrimsAttributes(modified, baseline, quickDiff);
-        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, DiffResult::Differ);
+        const auto attrDiffs = comparePrimsAttributes(modified, baseline, quickDiff);
+        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
 
+        // Note: no need to quick result when computing overall result as it would already have
+        // returned.
         const DiffResult overall = computeOverallResult(attrDiffs);
         if (overall == DiffResult::Differ)
             return DiffResult::Differ;
@@ -208,10 +210,11 @@ DiffResult comparePrims(
     }
 
     {
-        const DiffResultPerPathPerToken relDiffs
-            = comparePrimsRelationships(modified, baseline, quickDiff);
-        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, DiffResult::Differ);
+        const auto relDiffs = comparePrimsRelationships(modified, baseline, quickDiff);
+        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
 
+        // Note: no need to quick result when computing overall result as it would already have
+        // returned.
         for (const auto& tokenAndResults : relDiffs) {
             const DiffResult overall = computeOverallResult(tokenAndResults.second);
             if (overall == DiffResult::Differ)
@@ -222,9 +225,11 @@ DiffResult comparePrims(
     }
 
     {
-        const DiffResultPerPath childrenDiffs = comparePrimsChildren(modified, baseline, quickDiff);
-        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, DiffResult::Differ);
+        const auto childrenDiffs = comparePrimsChildren(modified, baseline, quickDiff);
+        USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
 
+        // Note: no need to quick result when computing overall result as it would already have
+        // returned.
         const DiffResult overall = computeOverallResult(childrenDiffs);
         if (overall == DiffResult::Differ)
             return DiffResult::Differ;
