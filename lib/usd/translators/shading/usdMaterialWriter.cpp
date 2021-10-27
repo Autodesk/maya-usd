@@ -56,9 +56,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdMayaShaderWriter::ContextSupport
 PxrUsdTranslators_MaterialWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    return exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface
-        ? ContextSupport::Supported
-        : ContextSupport::Fallback;
+    if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
+        return ContextSupport::Supported;
+    }
+    // Only report as fallback if UsdPreviewSurface was not explicitly requested:
+    if (exportArgs.allMaterialConversions.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
+        ContextSupport::Fallback;
+    }
+    return ContextSupport::Unsupported;
 }
 
 PxrUsdTranslators_MaterialWriter::PxrUsdTranslators_MaterialWriter(

@@ -88,9 +88,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 UsdMayaShaderWriter::ContextSupport
 PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    return exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface
-        ? ContextSupport::Supported
-        : ContextSupport::Fallback;
+    if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
+        return ContextSupport::Supported;
+    }
+    // Only report as fallback if UsdPreviewSurface was not explicitly requested:
+    if (exportArgs.allMaterialConversions.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
+        ContextSupport::Fallback;
+    }
+    return ContextSupport::Unsupported;
 }
 
 PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(

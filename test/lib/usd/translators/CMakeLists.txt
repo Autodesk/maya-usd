@@ -210,6 +210,14 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
         # Add a ctest label to these tests for easy filtering.
         set_property(TEST ${target} APPEND PROPERTY LABELS translators)
     endforeach()
+
+    if (BUILD_RFM_TRANSLATORS)
+        mayaUsd_add_test(testUsdExportMultiMaterial
+            PYTHON_MODULE testUsdExportMultiMaterial
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+        set_property(TEST testUsdExportMultiMaterial APPEND PROPERTY LABELS translators)
+    endif()
 endif()
 
 # We are explicitly not setting PXR_PLUGINPATH_NAME here. We want to test

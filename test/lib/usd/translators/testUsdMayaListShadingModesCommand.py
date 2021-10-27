@@ -46,10 +46,10 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
 
         preview = "USD Preview Surface"
         preview_option = ";".join(("shadingMode=useRegistry",
-                                   "convertMaterialsTo=UsdPreviewSurface"))
+                                   "convertMaterialsTo=[UsdPreviewSurface]"))
         maya_shaders = "Maya Shaders"
         maya_options = ";".join(("shadingMode=useRegistry",
-                                 "convertMaterialsTo=maya"))
+                                 "convertMaterialsTo=[maya]"))
         none = "None"
         none_options = "shadingMode=none"
 
@@ -111,6 +111,43 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
         self.assertEqual(modes(fin="maya"), maya_shaders)
         self.assertTrue(len(modes(ia=maya_shaders)) > 5)
         self.assertEqual(modes(io=maya_shaders), ["useRegistry", "maya"])
+
+    def testUsdMayaListUseRegistryShadingModesCommand(self):
+        """
+        Tests the mayaUSDListShadingModes command in useRegistryOnly mode.
+        """
+
+        # Alias the long named command:
+        modes = cmds.mayaUSDListShadingModes
+
+        preview = "USD Preview Surface"
+        preview_option = "UsdPreviewSurface"
+        maya_shaders = "Maya Shaders"
+        maya_options = "maya"
+
+        # The preview surface should always be there:
+        exporters = modes(ex=True, ur=True)
+        self.assertTrue(preview in exporters)
+
+        self.assertFalse("None" in exporters)
+        self.assertFalse("Display Colors" in exporters)
+
+        self.assertEqual(modes(findExportName="UsdPreviewSurface", ur=True), preview)
+        self.assertTrue(len(modes(exportAnnotation=preview, ur=True)) > 5)
+        self.assertEqual(modes(exportOptions=preview, ur=True), preview_option)
+
+        # Check importers:
+        importers = modes(im=True, ur=True)
+        self.assertTrue(preview in importers)
+
+        # Thses two are not useRegistry based:
+        self.assertFalse("None" in importers)
+        self.assertFalse("Display Colors" in importers)
+
+        self.assertEqual(modes(findImportName="UsdPreviewSurface", ur=True), preview)
+        self.assertTrue(len(modes(importAnnotation=preview, ur=True)) > 5)
+        self.assertEqual(modes(importOptions=preview, ur=True), ["useRegistry",
+                                                        "UsdPreviewSurface"])
 
     def testShadingModeRegistry(self):
         """
