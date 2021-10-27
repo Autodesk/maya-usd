@@ -215,19 +215,6 @@ MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj
     return status;
 }
 
-MStatus UsdMayaUtil::GetDagPathByName(const std::string& nodeName, MDagPath& dagPath)
-{
-    MSelectionList selectionList;
-    MStatus        status = selectionList.add(MString(nodeName.c_str()));
-    if (status != MS::kSuccess) {
-        return status;
-    }
-
-    status = selectionList.getDagPath(0, dagPath);
-
-    return status;
-}
-
 UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
 {
     MObject mobj;
@@ -2126,8 +2113,11 @@ MDagPath UsdMayaUtil::nameToDagPath(const std::string& name)
     MSelectionList selection;
     selection.add(MString(name.c_str()));
     MDagPath dag;
-    MStatus  status = selection.getDagPath(0, dag);
-    CHECK_MSTATUS(status);
+    // Not found?  Empty selection list.
+    if (!selection.isEmpty()) {
+        MStatus  status = selection.getDagPath(0, dag);
+        CHECK_MSTATUS(status);
+    }
     return dag;
 }
 

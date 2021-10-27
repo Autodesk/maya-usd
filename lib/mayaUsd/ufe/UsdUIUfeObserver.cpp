@@ -77,11 +77,23 @@ void UsdUIUfeObserver::operator()(const Ufe::Notification& notification)
                 "mainChannelBox;");
             MStringArray paths;
             if (MGlobal::executeCommand(mainObjListCmd, paths) && (paths.length() > 0)) {
+                // Under certain circumstances a USD attribute change causes
+                // the xformOpOrder attribute to change while the channel box
+                // is displaying a Maya object.  This Maya object is returned
+                // without Maya path component separators (e.g. "Xform2"),
+                // which triggers UFE single-segment path construction, but
+                // there is none in Maya for any run-time, so an exception is
+                // thrown and we crash.  Unconditionally refresh the channel
+                // box for now.  PPT, 20-Oct-2021.
+#ifdef SINGLE_SEGMENT_PATH_CRASH
                 auto ufePath = Ufe::PathString::path(paths[0].asChar());
                 if (ufePath.startsWith(ac->path())) {
+#endif
                     static const MString updateCBCmd("channelBox -e -update mainChannelBox;");
                     MGlobal::executeCommand(updateCBCmd);
+#ifdef SINGLE_SEGMENT_PATH_CRASH
                 }
+#endif
             }
         }
     }

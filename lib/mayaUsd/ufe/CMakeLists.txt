@@ -71,6 +71,9 @@ endif()
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            PulledObjectHierarchy.cpp
+            PulledObjectHierarchyHandler.cpp
+            UsdPathMappingHandler.cpp
             UsdUndoUngroupCommand.cpp
     )
 endif()
@@ -144,6 +147,9 @@ endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        PulledObjectHierarchy.h
+        PulledObjectHierarchyHandler.h
+        UsdPathMappingHandler.h
         UsdUndoUngroupCommand.h
     )
 endif()

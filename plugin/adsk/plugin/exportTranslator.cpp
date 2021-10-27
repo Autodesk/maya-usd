@@ -125,8 +125,7 @@ MStatus UsdMayaExportTranslator::writer(
                     const std::string exportRootPath = exportRootStrings[idxRoot].asChar();
 
                     if (!exportRootPath.empty()) {
-                        MDagPath rootDagPath;
-                        UsdMayaUtil::GetDagPathByName(exportRootPath, rootDagPath);
+                        MDagPath rootDagPath = UsdMayaUtil::nameToDagPath(exportRootPath);
                         if (!rootDagPath.isValid()) {
                             MGlobal::displayError(
                                 MString("Invalid dag path provided for export root: ")

@@ -19,6 +19,7 @@
 #include <mayaUsd/base/api.h>
 
 #include <pxr/base/tf/notice.h>
+#include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MObject.h>
@@ -60,6 +61,21 @@ class MayaUsdProxyStageInvalidateNotice : public MayaUsdProxyStageBaseNotice
 {
 public:
     using MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice;
+};
+
+class MayaUsdProxyStageObjectsChangedNotice : public MayaUsdProxyStageBaseNotice
+{
+public:
+    MAYAUSD_CORE_PUBLIC
+    MayaUsdProxyStageObjectsChangedNotice(
+        const MayaUsdProxyShapeBase&     proxy,
+        const UsdNotice::ObjectsChanged& notice);
+
+    MAYAUSD_CORE_PUBLIC
+    const UsdNotice::ObjectsChanged& GetNotice() const;
+
+private:
+    const UsdNotice::ObjectsChanged& _notice;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

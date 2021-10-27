@@ -589,6 +589,12 @@ const MDagPath& UsdMaya_ReadJob::GetMayaRootDagPath() const { return mMayaRootDa
 
 double UsdMaya_ReadJob::timeSampleMultiplier() const { return mTimeSampleMultiplier; }
 
+const UsdMayaPrimReaderContext::ObjectRegistry& 
+UsdMaya_ReadJob::GetNewNodeRegistry() const
+{
+    return mNewNodeRegistry;
+}
+
 double UsdMaya_ReadJob::_setTimeSampleMultiplierFrom(const double layerFPS)
 {
     double sceneFPS = UsdMayaUtil::GetSceneMTimeUnitAsDouble();

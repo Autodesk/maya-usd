@@ -309,8 +309,7 @@ static PcpMapFunction::PathMap _ExportRootsMap(
     const std::vector<std::string> exportRoots = _Vector<std::string>(userArgs, key);
     for (const std::string& rootPath : exportRoots) {
         if (!rootPath.empty()) {
-            MDagPath rootDagPath;
-            UsdMayaUtil::GetDagPathByName(rootPath, rootDagPath);
+            MDagPath rootDagPath = UsdMayaUtil::nameToDagPath(rootPath);
             addExportRootPathPairFn(rootDagPath);
         } else {
             includeEntireSelection = true;

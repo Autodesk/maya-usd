@@ -1,0 +1,50 @@
+// Copyright 2021 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+global proc mayaUsdMenu_pullToDG(string $obj)
+{
+    if (size($obj) == 0) {
+        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
+        $obj = $nonMayaObjs[0];
+    }
+    if (size($obj) != 0) {
+        python("from mayaUsd.lib import PrimUpdaterManager; import ufe; PrimUpdaterManager.pull('" + $obj + "');");
+    }
+}
+
+global proc mayaUsdMenu_copyToDG( string $ufePath )
+{
+    if (size($ufePath) == 0) {
+        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
+        $ufePath = $nonMayaObjs[0];
+    }
+    
+    if (size($ufePath)) {
+        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.copy('" + $ufePath + "', '|world');");
+    }
+}
+global proc USDMenuProc(string $parent, string $obj)
+{
+    int $haveNonMaya = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.hasNonMayaSelectedItems()")`;
+    if ($haveNonMaya)
+    {
+        popupMenu -e -dai $parent;
+        setParent -menu $parent;
+
+        setParent -menu ..;
+        menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_pullToDG \"" + $obj + "\"");
+        menuItem -label "Copy As Maya Data" -command ("mayaUsdMenu_copyToDG \"" + $obj + "\"");
+    }
+}

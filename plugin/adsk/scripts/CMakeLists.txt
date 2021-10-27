@@ -17,6 +17,7 @@ list(APPEND scripts_src
     mayaUsd_pluginBatchLoad.mel
     mayaUsd_pluginBatchUnload.mel
     usdFileSaveOptions.mel
+    USDMenuProc.mel
 )
 
 install(FILES ${scripts_src}

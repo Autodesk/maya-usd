@@ -5,6 +5,14 @@ set(TEST_SCRIPT_FILES
     testImportChaser.py
 )
 
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+        testEditAsMaya.py
+        testMergeToUsd.py
+        testDiscardEdits.py
+    )
+endif()
+
 # requires MaterialX support
 if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
     list(APPEND TEST_SCRIPT_FILES
@@ -18,6 +26,8 @@ foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
     )
 
     # Add a ctest label to these tests for easy filtering.

@@ -38,6 +38,11 @@
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #endif
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#define HAVE_PATH_MAPPING
+#include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
+#include <mayaUsd/ufe/UsdPathMappingHandler.h>
+#endif
 
 #include <ufe/hierarchyHandler.h>
 #include <ufe/runTimeMgr.h>
@@ -108,7 +113,12 @@ MStatus initialize()
 
     g_MayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
     auto proxyShapeHierHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    auto pulledObjectHierHandler = PulledObjectHierarchyHandler::create(proxyShapeHierHandler);
+    Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, pulledObjectHierHandler);
+#else
     Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyShapeHierHandler);
+#endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
     g_MayaContextOpsHandler = Ufe::RunTimeMgr::instance().contextOpsHandler(g_MayaRtid);
@@ -152,6 +162,12 @@ MStatus initialize()
 
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
     MayaUsd::ufe::UsdUIUfeObserver::create();
+
+#ifdef HAVE_PATH_MAPPING
+    auto pathMappingHndlr = UsdPathMappingHandler::create();
+    Ufe::RunTimeMgr::instance().setPathMappingHandler(g_MayaRtid, pathMappingHndlr);
+#endif
+
 #else
     auto usdHierHandler = UsdHierarchyHandler::create();
     auto usdTrans3dHandler = UsdTransform3dHandler::create();
@@ -192,6 +208,11 @@ MStatus finalize()
 #endif
     Ufe::RunTimeMgr::instance().unregister(g_USDRtid);
     g_MayaHierarchyHandler.reset();
+
+#ifdef HAVE_PATH_MAPPING
+    // Remove the Maya path mapping handler that we added above.
+    Ufe::RunTimeMgr::instance().setPathMappingHandler(g_MayaRtid, nullptr);
+#endif
 
     g_StagesSubject.Reset();
 

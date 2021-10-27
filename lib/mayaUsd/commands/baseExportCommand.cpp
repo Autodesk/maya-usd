@@ -319,8 +319,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             std::string rootPath = tmpArgList.asString(0).asChar();
 
             if (!rootPath.empty()) {
-                MDagPath rootDagPath;
-                UsdMayaUtil::GetDagPathByName(rootPath, rootDagPath);
+                MDagPath rootDagPath = UsdMayaUtil::nameToDagPath(rootPath);
                 if (!rootDagPath.isValid()) {
                     MGlobal::displayError(
                         MString("Invalid dag path provided for exportRoot: ")
