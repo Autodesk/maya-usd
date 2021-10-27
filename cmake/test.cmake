@@ -210,6 +210,7 @@ finally:
 
     if(IS_WINDOWS)
         list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+        list(APPEND MAYAUSD_VARNAME_PATH "${MAYA_LOCATION}/bin")
     endif()
 
     # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
@@ -355,12 +356,10 @@ finally:
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
 
-    if(IS_MACOSX AND MAYA_APP_VERSION VERSION_GREATER 2022)
-        # DiffCore is crashing on Big Sur when running test without this environment variable setting!
-        # libboost_python39.dylib is loading system python instead of our python 3.9 resulting in missing symbols.
-        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
-            "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Frameworks"
-        )        
+    if(IS_MACOSX AND EXISTS "${MAYA_LOCATION}/MacOS/mayapy")
+        # DiffCore is crashing since mayapy is not setting all the paths anymore.
+        # libboost_python39.dylib is loading system python instead of our python 3.9 resulting in invalid Python version.
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Frameworks")
     endif()
 
     if (PREFIX_INTERACTIVE)
