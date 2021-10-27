@@ -439,9 +439,9 @@ TEST(DiffLists, compareTokenListsDiff1)
     EXPECT_EQ(results[TfToken("1")], DiffResult::Same);
     EXPECT_NE(results.find(TfToken("2")), results.end());
     EXPECT_EQ(results[TfToken("2")], DiffResult::Absent);
-    // Note: result for TfToken("3") differ because the modified list placed it after the new item 4, but it
-    // is also in the baseline list and needs to be removed from its old positions, so it must both
-    // be deleted and appended.
+    // Note: result for TfToken("3") differ because the modified list placed it after the new item
+    // 4, but it is also in the baseline list and needs to be removed from its old positions, so it
+    // must both be deleted and appended.
     EXPECT_NE(results.find(TfToken("3")), results.end());
     EXPECT_EQ(results[TfToken("3")], DiffResult::Reordered);
     EXPECT_NE(results.find(TfToken("4")), results.end());
@@ -472,9 +472,9 @@ TEST(DiffLists, compareTokenListsDiff2)
     // deleted.
     EXPECT_NE(results.find(TfToken("2")), results.end());
     EXPECT_EQ(results[TfToken("2")], DiffResult::Reordered);
-    // Note: result for TfToken("3") differ because the modified list placed it after item TfToken("1"), but it
-    // was already in the baseline list and had to be removed, so it must both be deleted and
-    // appended.
+    // Note: result for TfToken("3") differ because the modified list placed it after item
+    // TfToken("1"), but it was already in the baseline list and had to be removed, so it must both
+    // be deleted and appended.
     EXPECT_NE(results.find(TfToken("3")), results.end());
     EXPECT_EQ(results[TfToken("3")], DiffResult::Reordered);
 

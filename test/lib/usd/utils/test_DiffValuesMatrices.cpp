@@ -1,7 +1,6 @@
 #include <mayaUsdUtils/DiffPrims.h>
 
 #include <pxr/base/gf/matrix3d.h>
-#include <pxr/base/gf/matrix3d.h>
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/value.h>
@@ -11,23 +10,22 @@
 using namespace PXR_NS;
 using namespace MayaUsdUtils;
 
-namespace
-{
-    GfMatrix2d m2d1(1, 12, 15, 16);
-    GfMatrix2d m2d2(2, 22, 28, 21);
-    GfMatrix2d m2d3(5, 53, 57, 52);
-    GfMatrix2d m2d4(7, 72, 74, 70);
+namespace {
+GfMatrix2d m2d1(1, 12, 15, 16);
+GfMatrix2d m2d2(2, 22, 28, 21);
+GfMatrix2d m2d3(5, 53, 57, 52);
+GfMatrix2d m2d4(7, 72, 74, 70);
 
-    GfMatrix3d m3d1(1, 12, 15, 16, 11, 17, 19, 18, 10);
-    GfMatrix3d m3d2(2, 22, 28, 21, 23, 25, 29, 20, 24);
-    GfMatrix3d m3d3(5, 53, 57, 52, 58, 55, 54, 54, 53);
-    GfMatrix3d m3d4(7, 72, 74, 70, 71, 73, 77, 78, 75);
+GfMatrix3d m3d1(1, 12, 15, 16, 11, 17, 19, 18, 10);
+GfMatrix3d m3d2(2, 22, 28, 21, 23, 25, 29, 20, 24);
+GfMatrix3d m3d3(5, 53, 57, 52, 58, 55, 54, 54, 53);
+GfMatrix3d m3d4(7, 72, 74, 70, 71, 73, 77, 78, 75);
 
-    GfMatrix4d m4d1(1, 12, 15, 16, 11, 17, 19, 18, 10, 12, 15, 16, 11, 17, 19, 18);
-    GfMatrix4d m4d2(2, 22, 28, 21, 23, 25, 29, 20, 24, 22, 28, 21, 23, 25, 29, 20);
-    GfMatrix4d m4d3(5, 53, 57, 52, 58, 55, 54, 54, 53, 53, 57, 52, 58, 55, 54, 54);
-    GfMatrix4d m4d4(7, 72, 74, 70, 71, 73, 77, 78, 75, 72, 74, 70, 71, 73, 77, 78);
-}
+GfMatrix4d m4d1(1, 12, 15, 16, 11, 17, 19, 18, 10, 12, 15, 16, 11, 17, 19, 18);
+GfMatrix4d m4d2(2, 22, 28, 21, 23, 25, 29, 20, 24, 22, 28, 21, 23, 25, 29, 20);
+GfMatrix4d m4d3(5, 53, 57, 52, 58, 55, 54, 54, 53, 53, 57, 52, 58, 55, 54, 54);
+GfMatrix4d m4d4(7, 72, 74, 70, 71, 73, 77, 78, 75, 72, 74, 70, 71, 73, 77, 78);
+} // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
 TEST(DiffValuesMatrices, matrix2dCompareValuesSame)
@@ -139,4 +137,3 @@ TEST(DiffValuesMatrices, matrix4dCompareValueArraysDiff)
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
-

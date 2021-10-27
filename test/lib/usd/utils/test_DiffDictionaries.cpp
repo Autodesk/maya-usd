@@ -282,4 +282,3 @@ TEST(DiffDictionaries, compareDictionariesOverallAbsent)
     compareDictionaries(modifiedDict, baselineDict, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
 }
-

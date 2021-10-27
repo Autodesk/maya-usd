@@ -1,7 +1,6 @@
 #include <mayaUsdUtils/DiffPrims.h>
 
 #include <pxr/base/gf/quatf.h>
-#include <pxr/base/gf/quatf.h>
 #include <pxr/base/gf/quath.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/value.h>
@@ -11,23 +10,22 @@
 using namespace PXR_NS;
 using namespace MayaUsdUtils;
 
-namespace
-{
-    GfQuatd qd1(1, 12, 15, 16);
-    GfQuatd qd2(2, 22, 28, 21);
-    GfQuatd qd3(5, 53, 57, 52);
-    GfQuatd qd4(7, 72, 74, 70);
+namespace {
+GfQuatd qd1(1, 12, 15, 16);
+GfQuatd qd2(2, 22, 28, 21);
+GfQuatd qd3(5, 53, 57, 52);
+GfQuatd qd4(7, 72, 74, 70);
 
-    GfQuatf qf1(1, 12, 15, 16);
-    GfQuatf qf2(2, 22, 28, 21);
-    GfQuatf qf3(5, 53, 57, 52);
-    GfQuatf qf4(7, 72, 74, 70);
+GfQuatf qf1(1, 12, 15, 16);
+GfQuatf qf2(2, 22, 28, 21);
+GfQuatf qf3(5, 53, 57, 52);
+GfQuatf qf4(7, 72, 74, 70);
 
-    GfQuath qh1(1, 12, 15, 16);
-    GfQuath qh2(2, 22, 28, 21);
-    GfQuath qh3(5, 53, 57, 52);
-    GfQuath qh4(7, 72, 74, 70);
-}
+GfQuath qh1(1, 12, 15, 16);
+GfQuath qh2(2, 22, 28, 21);
+GfQuath qh3(5, 53, 57, 52);
+GfQuath qh4(7, 72, 74, 70);
+} // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
 TEST(DiffValuesQuaternions, quatdCompareValuesSame)
@@ -361,4 +359,3 @@ TEST(DiffValuesQuaternions, quathQuatfCompareValueArraysDiff)
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
-

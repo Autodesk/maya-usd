@@ -22,7 +22,7 @@ static TfToken testRes3("test_res3");
 TEST(DiffComputeOverall, computeOverallEmpty)
 {
     DiffResultPerToken results;
-    DiffResult result = computeOverallResult(results);
+    DiffResult         result = computeOverallResult(results);
 
     EXPECT_EQ(result, DiffResult::Same);
 }
@@ -365,4 +365,3 @@ TEST(DiffComputeOverall, computeOverallSameAbsentReordered)
 
     EXPECT_EQ(result, DiffResult::Subset);
 }
-

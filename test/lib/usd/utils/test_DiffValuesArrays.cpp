@@ -8,8 +8,8 @@ using namespace MayaUsdUtils;
 //----------------------------------------------------------------------------------------------------------------------
 TEST(DiffValuesArrays, doubleCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
-    VtValue modifiedValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    modifiedValue(VtArray<double>({ double(1), double(5), double(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -17,8 +17,8 @@ TEST(DiffValuesArrays, doubleCompareValueArraysSame)
 
 TEST(DiffValuesArrays, doubleCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
-    VtValue modifiedValue(VtArray<double>({ double(1), double(3), double(4) }));
+    VtValue    baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    modifiedValue(VtArray<double>({ double(1), double(3), double(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -26,8 +26,8 @@ TEST(DiffValuesArrays, doubleCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, floatCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
-    VtValue modifiedValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    modifiedValue(VtArray<float>({ float(1), float(5), float(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -35,8 +35,8 @@ TEST(DiffValuesArrays, floatCompareValueArraysSame)
 
 TEST(DiffValuesArrays, floatCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
-    VtValue modifiedValue(VtArray<float>({ float(1), float(3), float(4) }));
+    VtValue    baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    modifiedValue(VtArray<float>({ float(1), float(3), float(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -44,8 +44,8 @@ TEST(DiffValuesArrays, floatCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, gfHalfCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
-    VtValue modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -53,8 +53,8 @@ TEST(DiffValuesArrays, gfHalfCompareValueArraysSame)
 
 TEST(DiffValuesArrays, gfHalfCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
-    VtValue modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(3), GfHalf(4) }));
+    VtValue    baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(3), GfHalf(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -62,8 +62,8 @@ TEST(DiffValuesArrays, gfHalfCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, doubleFloatCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
-    VtValue modifiedValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    modifiedValue(VtArray<float>({ float(1), float(5), float(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -71,8 +71,8 @@ TEST(DiffValuesArrays, doubleFloatCompareValueArraysSame)
 
 TEST(DiffValuesArrays, doubleFloatCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
-    VtValue modifiedValue(VtArray<float>({ float(1), float(3), float(4) }));
+    VtValue    baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    modifiedValue(VtArray<float>({ float(1), float(3), float(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -80,8 +80,8 @@ TEST(DiffValuesArrays, doubleFloatCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, doubleGfHalfCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
-    VtValue modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -89,8 +89,8 @@ TEST(DiffValuesArrays, doubleGfHalfCompareValueArraysSame)
 
 TEST(DiffValuesArrays, doubleGfHalfCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
-    VtValue modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(3), GfHalf(4) }));
+    VtValue    baselineValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(3), GfHalf(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -98,8 +98,8 @@ TEST(DiffValuesArrays, doubleGfHalfCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, floatDoubleCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
-    VtValue modifiedValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    modifiedValue(VtArray<double>({ double(1), double(5), double(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -107,8 +107,8 @@ TEST(DiffValuesArrays, floatDoubleCompareValueArraysSame)
 
 TEST(DiffValuesArrays, floatDoubleCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
-    VtValue modifiedValue(VtArray<double>({ double(1), double(3), double(4) }));
+    VtValue    baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    modifiedValue(VtArray<double>({ double(1), double(3), double(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -116,8 +116,8 @@ TEST(DiffValuesArrays, floatDoubleCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, floatGfHalfCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
-    VtValue modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -125,8 +125,8 @@ TEST(DiffValuesArrays, floatGfHalfCompareValueArraysSame)
 
 TEST(DiffValuesArrays, floatGfHalfCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
-    VtValue modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(3), GfHalf(4) }));
+    VtValue    baselineValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    modifiedValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(3), GfHalf(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -134,8 +134,8 @@ TEST(DiffValuesArrays, floatGfHalfCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, gfHalfDoubleCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
-    VtValue modifiedValue(VtArray<double>({ double(1), double(5), double(7) }));
+    VtValue    baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    modifiedValue(VtArray<double>({ double(1), double(5), double(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -143,8 +143,8 @@ TEST(DiffValuesArrays, gfHalfDoubleCompareValueArraysSame)
 
 TEST(DiffValuesArrays, gfHalfDoubleCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
-    VtValue modifiedValue(VtArray<double>({ double(1), double(3), double(4) }));
+    VtValue    baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    modifiedValue(VtArray<double>({ double(1), double(3), double(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -152,8 +152,8 @@ TEST(DiffValuesArrays, gfHalfDoubleCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, gfHalfFloatCompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
-    VtValue modifiedValue(VtArray<float>({ float(1), float(5), float(7) }));
+    VtValue    baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    modifiedValue(VtArray<float>({ float(1), float(5), float(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -161,8 +161,8 @@ TEST(DiffValuesArrays, gfHalfFloatCompareValueArraysSame)
 
 TEST(DiffValuesArrays, gfHalfFloatCompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
-    VtValue modifiedValue(VtArray<float>({ float(1), float(3), float(4) }));
+    VtValue    baselineValue(VtArray<GfHalf>({ GfHalf(1), GfHalf(5), GfHalf(7) }));
+    VtValue    modifiedValue(VtArray<float>({ float(1), float(3), float(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -170,8 +170,8 @@ TEST(DiffValuesArrays, gfHalfFloatCompareValueArraysDiff)
 
 TEST(DiffValuesArrays, int8CompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<int8_t>({ int8_t(1), int8_t(5), int8_t(7) }));
-    VtValue modifiedValue(VtArray<int8_t>({ int8_t(1), int8_t(5), int8_t(7) }));
+    VtValue    baselineValue(VtArray<int8_t>({ int8_t(1), int8_t(5), int8_t(7) }));
+    VtValue    modifiedValue(VtArray<int8_t>({ int8_t(1), int8_t(5), int8_t(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -179,8 +179,8 @@ TEST(DiffValuesArrays, int8CompareValueArraysSame)
 
 TEST(DiffValuesArrays, int8CompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<int8_t>({ int8_t(1), int8_t(5), int8_t(7) }));
-    VtValue modifiedValue(VtArray<int8_t>({ int8_t(1), int8_t(3), int8_t(4) }));
+    VtValue    baselineValue(VtArray<int8_t>({ int8_t(1), int8_t(5), int8_t(7) }));
+    VtValue    modifiedValue(VtArray<int8_t>({ int8_t(1), int8_t(3), int8_t(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -188,8 +188,8 @@ TEST(DiffValuesArrays, int8CompareValueArraysDiff)
 
 TEST(DiffValuesArrays, uint8CompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<uint8_t>({ uint8_t(1), uint8_t(5), uint8_t(7) }));
-    VtValue modifiedValue(VtArray<uint8_t>({ uint8_t(1), uint8_t(5), uint8_t(7) }));
+    VtValue    baselineValue(VtArray<uint8_t>({ uint8_t(1), uint8_t(5), uint8_t(7) }));
+    VtValue    modifiedValue(VtArray<uint8_t>({ uint8_t(1), uint8_t(5), uint8_t(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -197,8 +197,8 @@ TEST(DiffValuesArrays, uint8CompareValueArraysSame)
 
 TEST(DiffValuesArrays, uint8CompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<uint8_t>({ uint8_t(1), uint8_t(5), uint8_t(7) }));
-    VtValue modifiedValue(VtArray<uint8_t>({ uint8_t(1), uint8_t(3), uint8_t(4) }));
+    VtValue    baselineValue(VtArray<uint8_t>({ uint8_t(1), uint8_t(5), uint8_t(7) }));
+    VtValue    modifiedValue(VtArray<uint8_t>({ uint8_t(1), uint8_t(3), uint8_t(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -206,8 +206,8 @@ TEST(DiffValuesArrays, uint8CompareValueArraysDiff)
 
 TEST(DiffValuesArrays, int16CompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<int16_t>({ int16_t(1), int16_t(5), int16_t(7) }));
-    VtValue modifiedValue(VtArray<int16_t>({ int16_t(1), int16_t(5), int16_t(7) }));
+    VtValue    baselineValue(VtArray<int16_t>({ int16_t(1), int16_t(5), int16_t(7) }));
+    VtValue    modifiedValue(VtArray<int16_t>({ int16_t(1), int16_t(5), int16_t(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -215,8 +215,8 @@ TEST(DiffValuesArrays, int16CompareValueArraysSame)
 
 TEST(DiffValuesArrays, int16CompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<int16_t>({ int16_t(1), int16_t(5), int16_t(7) }));
-    VtValue modifiedValue(VtArray<int16_t>({ int16_t(1), int16_t(3), int16_t(4) }));
+    VtValue    baselineValue(VtArray<int16_t>({ int16_t(1), int16_t(5), int16_t(7) }));
+    VtValue    modifiedValue(VtArray<int16_t>({ int16_t(1), int16_t(3), int16_t(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -224,8 +224,8 @@ TEST(DiffValuesArrays, int16CompareValueArraysDiff)
 
 TEST(DiffValuesArrays, uint16CompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<uint16_t>({ uint16_t(1), uint16_t(5), uint16_t(7) }));
-    VtValue modifiedValue(VtArray<uint16_t>({ uint16_t(1), uint16_t(5), uint16_t(7) }));
+    VtValue    baselineValue(VtArray<uint16_t>({ uint16_t(1), uint16_t(5), uint16_t(7) }));
+    VtValue    modifiedValue(VtArray<uint16_t>({ uint16_t(1), uint16_t(5), uint16_t(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -233,8 +233,8 @@ TEST(DiffValuesArrays, uint16CompareValueArraysSame)
 
 TEST(DiffValuesArrays, uint16CompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<uint16_t>({ uint16_t(1), uint16_t(5), uint16_t(7) }));
-    VtValue modifiedValue(VtArray<uint16_t>({ uint16_t(1), uint16_t(3), uint16_t(4) }));
+    VtValue    baselineValue(VtArray<uint16_t>({ uint16_t(1), uint16_t(5), uint16_t(7) }));
+    VtValue    modifiedValue(VtArray<uint16_t>({ uint16_t(1), uint16_t(3), uint16_t(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -242,8 +242,8 @@ TEST(DiffValuesArrays, uint16CompareValueArraysDiff)
 
 TEST(DiffValuesArrays, int32CompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<int32_t>({ int32_t(1), int32_t(5), int32_t(7) }));
-    VtValue modifiedValue(VtArray<int32_t>({ int32_t(1), int32_t(5), int32_t(7) }));
+    VtValue    baselineValue(VtArray<int32_t>({ int32_t(1), int32_t(5), int32_t(7) }));
+    VtValue    modifiedValue(VtArray<int32_t>({ int32_t(1), int32_t(5), int32_t(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -251,8 +251,8 @@ TEST(DiffValuesArrays, int32CompareValueArraysSame)
 
 TEST(DiffValuesArrays, int32CompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<int32_t>({ int32_t(1), int32_t(5), int32_t(7) }));
-    VtValue modifiedValue(VtArray<int32_t>({ int32_t(1), int32_t(3), int32_t(4) }));
+    VtValue    baselineValue(VtArray<int32_t>({ int32_t(1), int32_t(5), int32_t(7) }));
+    VtValue    modifiedValue(VtArray<int32_t>({ int32_t(1), int32_t(3), int32_t(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -260,8 +260,8 @@ TEST(DiffValuesArrays, int32CompareValueArraysDiff)
 
 TEST(DiffValuesArrays, uint32CompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<uint32_t>({ uint32_t(1), uint32_t(5), uint32_t(7) }));
-    VtValue modifiedValue(VtArray<uint32_t>({ uint32_t(1), uint32_t(5), uint32_t(7) }));
+    VtValue    baselineValue(VtArray<uint32_t>({ uint32_t(1), uint32_t(5), uint32_t(7) }));
+    VtValue    modifiedValue(VtArray<uint32_t>({ uint32_t(1), uint32_t(5), uint32_t(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -269,8 +269,8 @@ TEST(DiffValuesArrays, uint32CompareValueArraysSame)
 
 TEST(DiffValuesArrays, uint32CompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<uint32_t>({ uint32_t(1), uint32_t(5), uint32_t(7) }));
-    VtValue modifiedValue(VtArray<uint32_t>({ uint32_t(1), uint32_t(3), uint32_t(4) }));
+    VtValue    baselineValue(VtArray<uint32_t>({ uint32_t(1), uint32_t(5), uint32_t(7) }));
+    VtValue    modifiedValue(VtArray<uint32_t>({ uint32_t(1), uint32_t(3), uint32_t(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -278,8 +278,8 @@ TEST(DiffValuesArrays, uint32CompareValueArraysDiff)
 
 TEST(DiffValuesArrays, int64CompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<int64_t>({ int64_t(1), int64_t(5), int64_t(7) }));
-    VtValue modifiedValue(VtArray<int64_t>({ int64_t(1), int64_t(5), int64_t(7) }));
+    VtValue    baselineValue(VtArray<int64_t>({ int64_t(1), int64_t(5), int64_t(7) }));
+    VtValue    modifiedValue(VtArray<int64_t>({ int64_t(1), int64_t(5), int64_t(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -287,8 +287,8 @@ TEST(DiffValuesArrays, int64CompareValueArraysSame)
 
 TEST(DiffValuesArrays, int64CompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<int64_t>({ int64_t(1), int64_t(5), int64_t(7) }));
-    VtValue modifiedValue(VtArray<int64_t>({ int64_t(1), int64_t(3), int64_t(4) }));
+    VtValue    baselineValue(VtArray<int64_t>({ int64_t(1), int64_t(5), int64_t(7) }));
+    VtValue    modifiedValue(VtArray<int64_t>({ int64_t(1), int64_t(3), int64_t(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -296,8 +296,8 @@ TEST(DiffValuesArrays, int64CompareValueArraysDiff)
 
 TEST(DiffValuesArrays, uint64CompareValueArraysSame)
 {
-    VtValue baselineValue(VtArray<uint64_t>({ uint64_t(1), uint64_t(5), uint64_t(7) }));
-    VtValue modifiedValue(VtArray<uint64_t>({ uint64_t(1), uint64_t(5), uint64_t(7) }));
+    VtValue    baselineValue(VtArray<uint64_t>({ uint64_t(1), uint64_t(5), uint64_t(7) }));
+    VtValue    modifiedValue(VtArray<uint64_t>({ uint64_t(1), uint64_t(5), uint64_t(7) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -305,10 +305,9 @@ TEST(DiffValuesArrays, uint64CompareValueArraysSame)
 
 TEST(DiffValuesArrays, uint64CompareValueArraysDiff)
 {
-    VtValue baselineValue(VtArray<uint64_t>({ uint64_t(1), uint64_t(5), uint64_t(7) }));
-    VtValue modifiedValue(VtArray<uint64_t>({ uint64_t(1), uint64_t(3), uint64_t(4) }));
+    VtValue    baselineValue(VtArray<uint64_t>({ uint64_t(1), uint64_t(5), uint64_t(7) }));
+    VtValue    modifiedValue(VtArray<uint64_t>({ uint64_t(1), uint64_t(3), uint64_t(4) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
-

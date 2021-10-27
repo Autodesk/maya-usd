@@ -414,4 +414,3 @@ TEST(DiffAttributes, compareAttributesCreatedSampledDouble)
     compareAttributes(modifiedAttr, baselineAttr, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
 }
-

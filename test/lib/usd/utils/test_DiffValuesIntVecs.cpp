@@ -77,8 +77,10 @@ TEST(DiffValuesIntVecs, vec3iCompareValuesDiff)
 
 TEST(DiffValuesIntVecs, vec3iCompareValueArraysSame)
 {
-    VtValue    baselineValue(VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
-    VtValue    modifiedValue(VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
+    VtValue baselineValue(
+        VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
+    VtValue modifiedValue(
+        VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -86,8 +88,10 @@ TEST(DiffValuesIntVecs, vec3iCompareValueArraysSame)
 
 TEST(DiffValuesIntVecs, vec3iCompareValueArraysDiff)
 {
-    VtValue    baselineValue(VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
-    VtValue    modifiedValue(VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(3, 38, 83), GfVec3i(4, 46, 64) }));
+    VtValue baselineValue(
+        VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(5, 53, 35), GfVec3i(7, 71, 17) }));
+    VtValue modifiedValue(
+        VtArray<GfVec3i>({ GfVec3i(1, 12, 21), GfVec3i(3, 38, 83), GfVec3i(4, 46, 64) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
@@ -113,8 +117,10 @@ TEST(DiffValuesIntVecs, vec4iCompareValuesDiff)
 
 TEST(DiffValuesIntVecs, vec4iCompareValueArraysSame)
 {
-    VtValue    baselineValue(VtArray<GfVec4i>({ GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
-    VtValue    modifiedValue(VtArray<GfVec4i>({ GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
+    VtValue    baselineValue(VtArray<GfVec4i>(
+        { GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
+    VtValue    modifiedValue(VtArray<GfVec4i>(
+        { GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Same);
@@ -122,10 +128,11 @@ TEST(DiffValuesIntVecs, vec4iCompareValueArraysSame)
 
 TEST(DiffValuesIntVecs, vec4iCompareValueArraysDiff)
 {
-    VtValue    baselineValue(VtArray<GfVec4i>({ GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
-    VtValue    modifiedValue(VtArray<GfVec4i>({ GfVec4i(1, 12, 21, 32), GfVec4i(3, 38, 83, 37), GfVec4i(4, 46, 47, 48) }));
+    VtValue    baselineValue(VtArray<GfVec4i>(
+        { GfVec4i(1, 12, 21, 32), GfVec4i(5, 53, 35, 46), GfVec4i(7, 71, 72, 73) }));
+    VtValue    modifiedValue(VtArray<GfVec4i>(
+        { GfVec4i(1, 12, 21, 32), GfVec4i(3, 38, 83, 37), GfVec4i(4, 46, 47, 48) }));
     DiffResult result = compareValues(modifiedValue, baselineValue);
 
     EXPECT_EQ(result, DiffResult::Differ);
 }
-
