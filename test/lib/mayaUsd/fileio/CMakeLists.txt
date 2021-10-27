@@ -4,6 +4,11 @@ set(TEST_SCRIPT_FILES
     testExportChaser.py
     testImportChaser.py
 )
+if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
+    list(APPEND TEST_SCRIPT_FILES
+        testComponentTags.py
+    )
+endif()
 
 # requires MaterialX support
 if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)

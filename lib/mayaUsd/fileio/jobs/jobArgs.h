@@ -73,6 +73,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportSkin) \
     (exportUVs) \
     (exportVisibility) \
+    (exportComponentTags) \
     (file) \
     (filterTypes) \
     (ignoreWarnings) \
@@ -170,6 +171,7 @@ struct UsdMayaJobExportArgs
     const TfToken     exportSkin;
     const bool        exportBlendShapes;
     const bool        exportVisibility;
+    const bool        exportComponentTags;
     const std::string file;
     const bool        ignoreWarnings;
 
