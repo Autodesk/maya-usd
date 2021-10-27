@@ -356,7 +356,8 @@ finally:
         "MAYA_DISABLE_CER=1")
 
     if(IS_MACOSX)
-        # DiffCore is crashing when running test without this environment variable setting!
+        # DiffCore is crashing on Big Sur when running test without this environment variable setting!
+        # libboost_python39.dylib is loading system python instead of our python 3.9 resulting in missing symbols.
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Frameworks"
         )        
