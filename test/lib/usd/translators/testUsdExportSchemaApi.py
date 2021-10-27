@@ -50,13 +50,15 @@ class testUsdExportSchemaApi(unittest.TestCase):
         modes = set(cmds.mayaUSDListJobContexts(export=True))
         self.assertEqual(modes, set([
             "Null API", "Thierry", "Scene Grinder", "Curly's special",
-            "Moe's special", "Larry's special", 'Bullet Physics API Export']))
-
+            "Moe's special", "Larry's special", 'Bullet Physics API Support']))
         self.assertEqual(cmds.mayaUSDListJobContexts(jobContext="Null API"), "NullAPI")
         self.assertEqual(cmds.mayaUSDListJobContexts(exportAnnotation="Null API"),
                          "Exports an empty API for testing purpose")
         self.assertEqual(cmds.mayaUSDListJobContexts(exportArguments="Null API"), 
             'apiSchema=[testApi];chaser=[NullAPIChaser];chaserArgs=[[NullAPIChaser,life,42]];')
+
+        modes = set(cmds.mayaUSDListJobContexts(im=True))
+        self.assertEqual(modes, set(["Null API", 'Bullet Physics API Support']))
         self.assertEqual(cmds.mayaUSDListJobContexts(importAnnotation="Null API"),
                          "Imports an empty API for testing purpose")
         self.assertEqual(cmds.mayaUSDListJobContexts(importArguments="Null API"), 
@@ -225,11 +227,39 @@ class testUsdExportSchemaApi(unittest.TestCase):
                 self.assertEqual(a.Get(0), (5, 6, 7))
                 self.assertEqual(a.Get(10), (50, 60, 70))
 
-
-
         # Try unapplying the schema:
         adaptor.UnapplySchemaByName("PhysicsMassAPI")
         self.assertEqual(adaptor.GetAppliedSchemas(), [])
+
+        # Test import of USDPhysics without job context:
+        cmds.file(new=True, force=True)
+        cmds.mayaUSDImport(f=usdFilePath)
+
+        import pprint
+        pprint.pprint(cmds.ls())
+
+        sl = om.MSelectionList()
+        # pSphereShape1 is a transform, since the bullet shape prevented merging the mesh and the
+        # transform. The shape will be pSphereShape1Shape...
+        sl.add("pSphereShape1")
+        bulletPath = sl.getDagPath(0)
+        # No bullet shape since we did not put Bullet as jobContext
+        self.assertEqual(bulletPath.numberOfShapesDirectlyBelow(), 1)
+
+        cmds.file(new=True, force=True)
+        cmds.mayaUSDImport(f=usdFilePath, jobContext=["Bullet"])
+
+        pprint.pprint(cmds.ls())
+
+
+        sl = om.MSelectionList()
+        sl.add("pSphereShape1")
+        bulletPath = sl.getDagPath(0)
+        # Finds bullet shape since we did put Bullet as jobContext
+
+        # TODO: Make it work...
+
+        # self.assertEqual(bulletPath.numberOfShapesDirectlyBelow(), 2)
 
 
 if __name__ == '__main__':

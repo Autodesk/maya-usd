@@ -71,10 +71,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         MSyntax::kString);
     syntax.addFlag(
         kApiSchemaFlag, UsdMayaJobExportArgsTokens->apiSchema.GetText(), MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->apiSchema.GetText());
+    syntax.makeFlagMultiUse(kApiSchemaFlag);
     syntax.addFlag(
         kJobContextFlag, UsdMayaJobExportArgsTokens->jobContext.GetText(), MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->jobContext.GetText());
+    syntax.makeFlagMultiUse(kJobContextFlag);
     syntax.addFlag(
         kExportUVsFlag, UsdMayaJobExportArgsTokens->exportUVs.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
@@ -149,7 +149,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kCompatibilityFlag, UsdMayaJobExportArgsTokens->compatibility.GetText(), MSyntax::kString);
 
     syntax.addFlag(kChaserFlag, UsdMayaJobExportArgsTokens->chaser.GetText(), MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->chaser.GetText());
+    syntax.makeFlagMultiUse(kChaserFlag);
 
     syntax.addFlag(
         kChaserArgsFlag,
@@ -157,7 +157,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
         MSyntax::kString,
         MSyntax::kString,
         MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->chaserArgs.GetText());
+    syntax.makeFlagMultiUse(kChaserArgsFlag);
 
     syntax.addFlag(
         kMelPerFrameCallbackFlag,

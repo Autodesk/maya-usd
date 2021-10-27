@@ -381,6 +381,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
                 if (readCtx.GetPruneChildren()) {
                     primIt.PruneChildren();
                 }
+                UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(args, readCtx);
             }
         }
     }

@@ -59,9 +59,15 @@ public:
     /// In this case, the answer is true only if there is sufficient Maya data to export the
     /// requested API.
     ///
-    /// This will be used to answer the GetAppliedSchemas question.
     MAYAUSD_CORE_PUBLIC
     virtual bool CanAdaptForExport(const UsdMayaJobExportArgs&) const;
+
+    /// Can this plugin adapt the provided MObject for import
+    ///
+    /// In this case, the answer is true only if the Maya data can be adapted to the requested API.
+    ///
+    MAYAUSD_CORE_PUBLIC
+    virtual bool CanAdaptForImport(const UsdMayaJobImportArgs&) const;
 
     /// Modify the Maya scene so it supports this schema.
     ///

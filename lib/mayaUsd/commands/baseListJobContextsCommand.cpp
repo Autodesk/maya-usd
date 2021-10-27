@@ -140,7 +140,7 @@ MSyntax MayaUSDListJobContextsCommand::createSyntax()
     syntax.addFlag("-ex", "-export", MSyntax::kNoArg);
     syntax.addFlag("-ea", "-exportAnnotation", MSyntax::kString);
     syntax.addFlag("-eg", "-exportArguments", MSyntax::kString);
-    syntax.addFlag("-ix", "-import", MSyntax::kNoArg);
+    syntax.addFlag("-im", "-import", MSyntax::kNoArg);
     syntax.addFlag("-ia", "-importAnnotation", MSyntax::kString);
     syntax.addFlag("-ig", "-importArguments", MSyntax::kString);
     syntax.addFlag("-jc", "-jobContext", MSyntax::kString);

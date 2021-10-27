@@ -15,9 +15,11 @@
 //
 #include <mayaUsd/fileio/jobContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/schemaApiAdaptor.h>
 #include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
@@ -52,8 +54,20 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 REGISTER_EXPORT_JOB_CONTEXT_FCT(
     Bullet,
-    "Bullet Physics API Export",
+    "Bullet Physics API Support",
     "Test export of USD Physics APIs on a Bullet simulation")
+{
+    VtDictionary extraArgs;
+    extraArgs[UsdMayaJobExportArgsTokens->apiSchema]
+        = VtValue(std::vector<VtValue> { VtValue(_tokens->PhysicsRigidBodyAPI.GetString()),
+                                         VtValue(_tokens->PhysicsMassAPI.GetString()) });
+    return extraArgs;
+}
+
+REGISTER_IMPORT_JOB_CONTEXT_FCT(
+    Bullet,
+    "Bullet Physics API Support",
+    "Test import of USD Physics APIs as a Bullet simulation")
 {
     VtDictionary extraArgs;
     extraArgs[UsdMayaJobExportArgsTokens->apiSchema]
@@ -93,6 +107,11 @@ public:
         }
 
         return !GetMayaObjectForSchema().isNull();
+    }
+
+    bool CanAdaptForImport(const UsdMayaJobImportArgs& jobArgs) const override
+    {
+        return CanAdapt();
     }
 
     bool CanAdaptForExport(const UsdMayaJobExportArgs& jobArgs) const override
@@ -228,9 +247,27 @@ public:
         return false;
     }
 
+    bool CanAdaptForImport(const UsdMayaJobImportArgs& jobArgs) const override
+    {
+        if (!_handle.isValid()) {
+            return false;
+        }
+
+        MFnDependencyNode depFn;
+        if (depFn.setObject(_handle.object()) != MS::kSuccess
+            || depFn.typeName() == "bulletRigidBodyShape") {
+            return false;
+        }
+
+        if (jobArgs.includeAPINames.find(_tokens->PhysicsMassAPI)
+            != jobArgs.includeAPINames.end()) {
+            return !GetMayaObjectForSchema().isNull();
+        }
+        return false;
+    }
+
     bool CanAdaptForExport(const UsdMayaJobExportArgs& jobArgs) const override
     {
-        // This class is specialized for export:
         if (!_handle.isValid()) {
             return false;
         }
@@ -310,5 +347,26 @@ public:
 };
 
 PXRUSDMAYA_REGISTER_SCHEMA_API_ADAPTOR(shape, PhysicsRigidBodyAPI, TestBulletRigidBodyShemaAdaptor);
+
+// Since we export the bulletShape as an API Schema, we must explicitly prevent it from being
+// exported as a transform...
+
+class BulletRigidBodyShapeWriter : public UsdMayaPrimWriter
+{
+public:
+    BulletRigidBodyShapeWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx)
+        : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
+    {
+    }
+
+    void Write(const UsdTimeCode& usdTime)
+    { /* no-op */
+    }
+};
+
+PXRUSDMAYA_REGISTER_WRITER(bulletRigidBodyShape, BulletRigidBodyShapeWriter);
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMayaAdaptor;
 struct UsdMayaJobExportArgs;
+struct UsdMayaJobImportArgs;
 
 /// The UsdMayaAttributeAdaptor stores a mapping between a USD schema attribute and
 /// a Maya plug, enabling conversions between the two.
@@ -355,6 +356,9 @@ public:
     UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs* jobExportArgs);
 
     MAYAUSD_CORE_PUBLIC
+    UsdMayaAdaptor(const MObject& obj, const UsdMayaJobImportArgs* jobImportArgs);
+
+    MAYAUSD_CORE_PUBLIC
     explicit operator bool() const;
 
     /// Gets the full name of the underlying Maya node.
@@ -608,9 +612,8 @@ private:
     static std::map<TfToken, std::vector<std::string>> _attributeAliases;
 
     /// Job args (for import/export/update of schemas):
-
-    /// Write:
     const UsdMayaJobExportArgs* _jobExportArgs = nullptr;
+    const UsdMayaJobImportArgs* _jobImportArgs = nullptr;
 };
 
 /// Registers the given \p mayaTypeName with the given USD \p schemaType

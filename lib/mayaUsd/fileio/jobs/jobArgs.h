@@ -124,6 +124,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (apiSchema) \
     (assemblyRep) \
     (excludePrimvar) \
+    (jobContext) \
     (metadata) \
     (shadingMode) \
     (preferredMaterial) \
@@ -269,6 +270,7 @@ struct UsdMayaJobImportArgs
     const TfToken      assemblyRep;
     const TfToken::Set excludePrimvarNames;
     const TfToken::Set includeAPINames;
+    const TfToken::Set jobContextNames;
     const TfToken::Set includeMetadataKeys;
     struct ShadingMode
     {

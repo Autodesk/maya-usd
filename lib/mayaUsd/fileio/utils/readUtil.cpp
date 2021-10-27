@@ -865,6 +865,49 @@ bool UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
     return true;
 }
 
+bool UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext&    context)
+{
+    const UsdPrim& usdPrim = args.GetUsdPrim();
+    MObject        mayaNode = context.GetMayaNode(usdPrim.GetPath(), false);
+
+    if (mayaNode.isNull()) {
+        return false;
+    }
+
+    UsdMayaAdaptor adaptor(mayaNode, &args.GetJobArguments());
+    if (!adaptor) {
+        return false;
+    }
+
+    for (const TfToken& schemaName : usdPrim.GetAppliedSchemas()) {
+        if (args.GetIncludeAPINames().count(schemaName) == 0) {
+            continue;
+        }
+
+        // TODO: JG: We need a way to find out if new Maya objects got created!!! Vital for
+        // undo/redo and Maya editing...
+
+        if (UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.ApplySchemaByName(schemaName)) {
+            if (schemaAdaptor->CopyFromPrim(usdPrim)) {
+                continue;
+            }
+            for (const TfToken& attrName : schemaAdaptor->GetAttributeNames()) {
+                if (UsdAttribute attr = usdPrim.GetAttribute(attrName)) {
+                    VtValue value;
+                    /// TODO: Read animation!!!!!
+                    constexpr UsdTimeCode t = UsdTimeCode::EarliestTime();
+                    if (attr.HasAuthoredValue() && attr.Get(&value, t)) {
+                        schemaAdaptor->CreateAttribute(attrName).Set(value);
+                    }
+                }
+            }
+        }
+    }
+    return true;
+}
+
 /* static */
 size_t UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
     const UsdPrim&              prim,

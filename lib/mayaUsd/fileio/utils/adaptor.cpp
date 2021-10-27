@@ -94,6 +94,12 @@ UsdMayaAdaptor::UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs* j
 {
 }
 
+UsdMayaAdaptor::UsdMayaAdaptor(const MObject& obj, const UsdMayaJobImportArgs* jobImportArgs)
+    : _handle(obj)
+    , _jobImportArgs(jobImportArgs)
+{
+}
+
 UsdMayaAdaptor::operator bool() const
 {
     if (!_handle.isValid()) {
@@ -172,6 +178,12 @@ TfTokenVector UsdMayaAdaptor::GetAppliedSchemas() const
             continue;
         }
 
+        if (_jobImportArgs
+            && _jobImportArgs->includeAPINames.find(schemaName)
+                == _jobImportArgs->includeAPINames.end()) {
+            continue;
+        }
+
         const UsdPrimDefinition* primDef = _GetPrimDefinition(*this, schemaName);
         if (!primDef) {
             continue;
@@ -187,6 +199,11 @@ TfTokenVector UsdMayaAdaptor::GetAppliedSchemas() const
             if (schemaAdaptor) {
                 if (_jobExportArgs) {
                     if (schemaAdaptor->CanAdaptForExport(*_jobExportArgs)) {
+                        result.push_back(schemaName);
+                        break;
+                    }
+                } else if (_jobImportArgs) {
+                    if (schemaAdaptor->CanAdaptForImport(*_jobImportArgs)) {
                         result.push_back(schemaName);
                         break;
                     }
@@ -239,6 +256,10 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::GetSchemaByName(const TfToken& schemaNam
         if (schemaAdaptor) {
             if (_jobExportArgs) {
                 if (schemaAdaptor->CanAdaptForExport(*_jobExportArgs)) {
+                    return schemaAdaptor;
+                }
+            } else if (_jobImportArgs) {
+                if (schemaAdaptor->CanAdaptForImport(*_jobImportArgs)) {
                     return schemaAdaptor;
                 }
             } else {
@@ -336,7 +357,9 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
         }
         UsdMayaSchemaApiAdaptorPtr schemaAdaptor(schemaFn(_handle, schemaName, primDef));
         if (schemaAdaptor) {
-            // Most probably need a CanApplyForImport or to pass an optional JobImportArgs
+            if (_jobImportArgs && !schemaAdaptor->CanAdaptForImport(*_jobImportArgs)) {
+                continue;
+            }
             if (schemaAdaptor->ApplySchema(modifier)) {
                 return schemaAdaptor;
             }

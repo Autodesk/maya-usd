@@ -159,6 +159,12 @@ struct UsdMayaReadUtil
         const UsdPrim&      prim,
         const MObject&      mayaObject);
 
+    /// Browse the \p context for Schema APIs to apply.
+    MAYAUSD_CORE_PUBLIC
+    static bool ReadAPISchemaAttributesFromPrim(
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext&    readCtx);
+
     /// \}
 
     /// \name Manually importing typed schema data

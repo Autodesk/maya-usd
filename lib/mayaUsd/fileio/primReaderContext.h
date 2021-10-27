@@ -52,6 +52,15 @@ public:
     MAYAUSD_CORE_PUBLIC
     MObject GetMayaNode(const SdfPath& path, bool findAncestors) const;
 
+    /// \brief Finds all extra Maya objects created while reading \p prim.
+    ///
+    /// These object have a pseudo-path that share the same root as prim, but
+    /// are not valid children of the provided UsdPrim
+    ///
+    /// TODO: JG:  NEED SCHEMA API ADAPTOR TO UPDATE CONTEXT WITH EXTRA NODES(BULLETSHAPENODES !!!!!)
+    ///
+    // MAYAUSD_CORE_PUBLIC std::vector<MObject> GetDependentMayaNodes(const UsdPrim& prim) const;
+
     /// \brief Record \p mayaNode prim as being created \p path.
     ///
     /// Calling code may be interested in new objects being created.  Some

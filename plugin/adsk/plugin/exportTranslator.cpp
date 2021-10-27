@@ -139,18 +139,6 @@ MStatus UsdMayaExportTranslator::writer(
                     }
                 }
                 userArgs[argName] = userArgVals;
-            } else if (argName == UsdMayaJobExportArgsTokens->jobContext.GetText()) {
-                MStringArray jobContexts;
-                theOption[1].split(',', jobContexts);
-
-                std::vector<VtValue> userArgVals;
-
-                unsigned int nbContexts = jobContexts.length();
-                for (unsigned int idxContext = 0; idxContext < nbContexts; ++idxContext) {
-                    const std::string jobContext = jobContexts[idxContext].asChar();
-                    userArgVals.push_back(VtValue(jobContext));
-                }
-                userArgs[argName] = userArgVals;
             } else {
                 if (argName == "shadingMode") {
                     TfToken shadingMode(theOption[1].asChar());

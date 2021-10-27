@@ -38,6 +38,8 @@ bool UsdMayaSchemaApiAdaptor::CanAdapt() const { return false; }
 
 bool UsdMayaSchemaApiAdaptor::CanAdaptForExport(const UsdMayaJobExportArgs&) const { return false; }
 
+bool UsdMayaSchemaApiAdaptor::CanAdaptForImport(const UsdMayaJobImportArgs&) const { return false; }
+
 bool UsdMayaSchemaApiAdaptor::ApplySchema(MDGModifier& modifier) { return false; }
 
 bool UsdMayaSchemaApiAdaptor::UnapplySchema(MDGModifier& modifier) { return true; }
