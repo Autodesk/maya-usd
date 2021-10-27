@@ -355,7 +355,7 @@ finally:
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
 
-    if(IS_MACOSX)
+    if(IS_MACOSX AND MAYA_APP_VERSION VERSION_GREATER 2022)
         # DiffCore is crashing on Big Sur when running test without this environment variable setting!
         # libboost_python39.dylib is loading system python instead of our python 3.9 resulting in missing symbols.
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
