@@ -611,7 +611,7 @@ bool PushCustomize(
     } catch (const MayaUsd::TraversalFailure& e) {
         TF_WARN(
             "PushEnd() layer traversal failed for path %s: %s",
-            e.path().GetAsString(),
+            e.path().GetText(),
             e.reason().c_str());
         return false;
     }
