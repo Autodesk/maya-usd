@@ -140,7 +140,7 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
         importers = modes(im=True, ur=True)
         self.assertTrue(preview in importers)
 
-        # Thses two are not useRegistry based:
+        # These two are not useRegistry based:
         self.assertFalse("None" in importers)
         self.assertFalse("Display Colors" in importers)
 

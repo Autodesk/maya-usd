@@ -59,7 +59,7 @@ PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArg
     }
     // Only report as fallback if UsdPreviewSurface was not explicitly requested:
     if (exportArgs.allMaterialConversions.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
-        ContextSupport::Fallback;
+        return ContextSupport::Fallback;
     }
     return ContextSupport::Unsupported;
 }
