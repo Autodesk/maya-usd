@@ -356,12 +356,6 @@ finally:
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
 
-    if(IS_MACOSX AND EXISTS "${MAYA_LOCATION}/MacOS/mayapy")
-        # DiffCore is crashing since mayapy is not setting all the paths anymore.
-        # libboost_python39.dylib is loading system python instead of our python 3.9 resulting in invalid Python version.
-        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Frameworks")
-    endif()
-
     if (PREFIX_INTERACTIVE)
         # Add the "interactive" label to all tests that launch the Maya UI.
         # This allows bypassing them by using the --label-exclude/-LE option to
