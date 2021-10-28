@@ -874,6 +874,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 referencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
             _unsharedStageRootLayer->SetSubLayerPaths({ inRootLayer->GetIdentifier() });
         } else {
+
             // Check if we need to remap the source
             // At the moment we remap the old root with the new root  and we assumne that the root
             // is the first item in the referenced layers
@@ -1424,6 +1425,10 @@ void MayaUsdProxyShapeBase::configCache(const MEvaluationNode& evalNode, MCacheS
     // Out time is not always a dirty plug, but time can be animated. This is why we will
     // store input time and enable quick compute within proxy shape for out time
     schema.add(timeAttr);
+
+    if (evalNode.dirtyPlugExists(inStageDataAttr) || evalNode.dirtyPlugExists(stageCacheIdAttr)) {
+        schema.add(outStageDataAttr);
+    }
 }
 #endif
 
