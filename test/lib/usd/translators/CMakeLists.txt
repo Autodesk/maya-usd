@@ -186,6 +186,7 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
                     "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
                     "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
                     "INPUT_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
+                    "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}"
             )
             set_property(TEST ${target} APPEND PROPERTY LABELS translators)
         endforeach()
