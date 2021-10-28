@@ -15,7 +15,9 @@
 //
 #include <mayaUsd/utils/blockSceneModificationContext.h>
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/return_arg.hpp>
 
 #include <memory>
 

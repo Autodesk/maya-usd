@@ -561,6 +561,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           { UsdMayaJobExportArgsTokens->auto_, UsdMayaJobExportArgsTokens->explicit_ }))
     , exportBlendShapes(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportBlendShapes))
     , exportVisibility(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportVisibility))
+    , exportComponentTags(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportComponentTags))
     , file(_String(userArgs, UsdMayaJobExportArgsTokens->file))
     , ignoreWarnings(_Boolean(userArgs, UsdMayaJobExportArgsTokens->ignoreWarnings))
     , materialCollectionsPath(
@@ -583,7 +584,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaJobExportArgsTokens->shadingMode,
           UsdMayaShadingModeTokens->none,
           UsdMayaShadingModeRegistry::ListExporters()))
-    , convertMaterialsTo(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
+    , allMaterialConversions(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
     , verbose(_Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
     , staticSingleSample(_Boolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))
     , geomSidedness(_Token(
@@ -637,6 +638,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportSkin: " << TfStringify(exportArgs.exportSkin) << std::endl
         << "exportBlendShapes: " << TfStringify(exportArgs.exportBlendShapes) << std::endl
         << "exportVisibility: " << TfStringify(exportArgs.exportVisibility) << std::endl
+        << "exportComponentTags: " << TfStringify(exportArgs.exportComponentTags) << std::endl
         << "file: " << exportArgs.file << std::endl
         << "ignoreWarnings: " << TfStringify(exportArgs.ignoreWarnings) << std::endl;
     out << "includeAPINames (" << exportArgs.includeAPINames.size() << ")" << std::endl;
@@ -655,8 +657,8 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
-        << "convertMaterialsTo: " << std::endl;
-    for (const auto& conv : exportArgs.convertMaterialsTo) {
+        << "allMaterialConversions: " << std::endl;
+    for (const auto& conv : exportArgs.allMaterialConversions) {
         out << "    " << conv << std::endl;
     }
 
@@ -748,6 +750,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportBlendShapes] = false;
         d[UsdMayaJobExportArgsTokens->exportUVs] = true;
         d[UsdMayaJobExportArgsTokens->exportVisibility] = true;
+        d[UsdMayaJobExportArgsTokens->exportComponentTags] = true;
         d[UsdMayaJobExportArgsTokens->file] = std::string();
         d[UsdMayaJobExportArgsTokens->filterTypes] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = false;

@@ -21,17 +21,13 @@
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
-#include <pxr/base/tf/makePyConstructor.h>
-#include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
-#include <pxr/base/tf/pyPtrHelpers.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/refPtr.h>
 
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/return_internal_reference.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -261,12 +257,11 @@ public:
     {
         UsdMayaShaderWriterRegistry::Register(
             mayaNodeTypeName,
-            [=](const UsdMayaJobExportArgs& exportArgs, const TfToken& currentMaterialConversion) {
+            [=](const UsdMayaJobExportArgs& exportArgs) {
                 TfPyLock              pyLock;
                 boost::python::object CanExport = cl.attr("CanExport");
                 PyObject*             callable = CanExport.ptr();
-                auto                  res
-                    = boost::python::call<int>(callable, exportArgs, currentMaterialConversion);
+                auto                  res = boost::python::call<int>(callable, exportArgs);
                 return UsdMayaShaderWriter::ContextSupport(res);
             },
             [=](const MFnDependencyNode& depNodeFn,

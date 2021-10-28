@@ -34,13 +34,16 @@
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdGeom/subset.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MFnAttribute.h>
+#include <maya/MFnGeometryData.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnSet.h>
+#include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItDependencyGraph.h>
@@ -1373,5 +1376,60 @@ bool UsdMayaMeshWriteUtils::getMeshColorSetData(
 
     return true;
 }
+
+#if MAYA_API_VERSION >= 20220000
+
+MStatus UsdMayaMeshWriteUtils::exportComponentTags(UsdGeomMesh& primSchema, MObject obj)
+{
+    MStatus status { MS::kSuccess };
+
+    MFnDependencyNode dNode(obj, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    const MFnDependencyNode depNodeFn(obj, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    MPlug outShp = depNodeFn.findPlug("outMesh", &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    MDataHandle geomDataHandle = outShp.asMDataHandle();
+    MObject     geomObj = geomDataHandle.data();
+    if (geomObj.hasFn(MFn::kGeometryData)) {
+        TfToken         componentTagFamilyName("componentTag");
+        MFnGeometryData fnGeomData(geomObj);
+        MStringArray    keys;
+        status = fnGeomData.componentTags(keys);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+        for (unsigned int i = 0; i < keys.length(); ++i) {
+            MFnGeometryData::ComponentTagCategory ctg
+                = fnGeomData.componentTagCategory(keys[i], &status);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            if (ctg == MFnGeometryData::ComponentTagCategory::kFaces) {
+                MObject contents = fnGeomData.componentTagContents(keys[i], &status);
+                CHECK_MSTATUS_AND_RETURN_IT(status);
+                if (contents.hasFn(MFn::kSingleIndexedComponent)) {
+                    MFnSingleIndexedComponent fnSingleIndexedComponent(contents, &status);
+                    CHECK_MSTATUS_AND_RETURN_IT(status);
+                    MIntArray curIndices;
+                    status = fnSingleIndexedComponent.getElements(curIndices);
+                    CHECK_MSTATUS_AND_RETURN_IT(status);
+                    VtIntArray indices;
+                    indices.reserve(curIndices.length());
+                    for (unsigned int j = 0; j < curIndices.length(); ++j)
+                        indices.push_back(curIndices[j]);
+                    UsdGeomSubset ss = UsdGeomSubset::CreateGeomSubset(
+                        primSchema,
+                        TfToken(keys[i].asChar()),
+                        UsdGeomTokens->face,
+                        indices,
+                        componentTagFamilyName);
+                }
+            }
+        }
+    }
+
+    return status;
+}
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

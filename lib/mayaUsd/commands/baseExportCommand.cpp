@@ -20,7 +20,6 @@
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 
-#include <pxr/base/tf/debug.h>
 #include <pxr/pxr.h>
 
 #include <maya/MArgDatabase.h>
@@ -114,6 +113,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kExportVisibilityFlag,
         UsdMayaJobExportArgsTokens->exportVisibility.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
+        kExportComponentTagsFlag,
+        UsdMayaJobExportArgsTokens->exportComponentTags.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
         kIgnoreWarningsFlag,

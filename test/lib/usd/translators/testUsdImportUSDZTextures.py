@@ -34,8 +34,9 @@ class TestUsdImportUSDZTextures(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.temp_dir = fixturesUtils.setUpClass(__file__)
-        cls.usdz_path = os.path.join(cls.temp_dir, "UsdImportUSDZTexturesTest", "test_cubes.usdz")
+        cls.input_dir = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
+        cls.usdz_path = os.path.join(cls.input_dir, "UsdImportUSDZTexturesTest", "test_cubes.usdz")
 
     @classmethod
     def tearDownClass(cls):
@@ -47,7 +48,7 @@ class TestUsdImportUSDZTextures(unittest.TestCase):
         self.assertTrue(mark.IsClean())
 
         om.MFileIO.newFile(True)
-        write_dir_path = os.path.dirname(self.usdz_path)
+        write_dir_path = self.temp_dir
         cmds.mayaUSDImport(f=self.usdz_path, importUSDZTextures=True, importUSDZTexturesFilePath=write_dir_path)
         self.assertTrue(os.path.isfile(os.path.join(write_dir_path, "clouds_128_128.png")))
         self.assertTrue(os.path.isfile(os.path.join(write_dir_path, "red_128_128.png")))

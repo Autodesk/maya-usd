@@ -27,7 +27,7 @@
 
 #include <maya/MGlobal.h>
 
-#include <boost/python.hpp>
+#include <boost/python/import.hpp>
 
 #include <map>
 #include <vector>

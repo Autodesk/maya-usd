@@ -53,16 +53,15 @@ using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMayaShaderWriter::ContextSupport PxrUsdTranslators_MaterialWriter::CanExport(
-    const UsdMayaJobExportArgs& exportArgs,
-    const TfToken&              currentMaterialConversion)
+UsdMayaShaderWriter::ContextSupport
+PxrUsdTranslators_MaterialWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    if (currentMaterialConversion == UsdImagingTokens->UsdPreviewSurface) {
+    if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
         return ContextSupport::Supported;
     }
     // Only report as fallback if UsdPreviewSurface was not explicitly requested:
-    if (exportArgs.convertMaterialsTo.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
-        ContextSupport::Fallback;
+    if (exportArgs.allMaterialConversions.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
+        return ContextSupport::Fallback;
     }
     return ContextSupport::Unsupported;
 }

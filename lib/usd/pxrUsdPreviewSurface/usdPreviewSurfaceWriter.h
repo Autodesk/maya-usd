@@ -38,7 +38,7 @@ public:
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx);
 
-    static ContextSupport CanExport(const UsdMayaJobExportArgs&, const TfToken&);
+    static ContextSupport CanExport(const UsdMayaJobExportArgs&);
 
     void Write(const UsdTimeCode& usdTime) override;
 

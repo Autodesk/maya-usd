@@ -93,7 +93,6 @@ private:
         const MObject&                         depNode,
         const SdfPath&                         parentPath,
         const UsdMayaShadingModeExportContext& context,
-        const TfToken&                         currentMaterialConversion,
         _NodeHandleToShaderWriterMap&          shaderWriterMap)
     {
         if (depNode.hasFn(MFn::kShadingEngine)) {
@@ -128,9 +127,7 @@ private:
 
         UsdMayaShaderWriterRegistry::WriterFactoryFn primWriterFactory
             = UsdMayaShaderWriterRegistry::Find(
-                TfToken(depNodeFn.typeName().asChar()),
-                context.GetExportArgs(),
-                currentMaterialConversion);
+                TfToken(depNodeFn.typeName().asChar()), context.GetExportArgs());
         if (!primWriterFactory) {
             return nullptr;
         }
@@ -167,8 +164,7 @@ private:
     UsdShadeShader _ExportShadingDepGraph(
         const SdfPath&                         materialExportPath,
         const MPlug&                           rootPlug,
-        const UsdMayaShadingModeExportContext& context,
-        const TfToken&                         currentMaterialConversion)
+        const UsdMayaShadingModeExportContext& context)
     {
         // Maintain a mapping of Maya shading node handles to shader
         // writers so that we only author each shader once, but can still
@@ -242,11 +238,7 @@ private:
             }
 
             auto srcShaderInfo = _GetExportedShaderForNode(
-                srcPlug.node(),
-                materialExportPath,
-                context,
-                currentMaterialConversion,
-                shaderWriterMap);
+                srcPlug.node(), materialExportPath, context, shaderWriterMap);
             if (!srcShaderInfo) {
                 continue;
             }
@@ -263,11 +255,7 @@ private:
                 }
 
                 auto dstShaderInfo = _GetExportedShaderForNode(
-                    dstPlug.node(),
-                    materialExportPath,
-                    context,
-                    currentMaterialConversion,
-                    shaderWriterMap);
+                    dstPlug.node(), materialExportPath, context, shaderWriterMap);
                 if (!dstShaderInfo) {
                     continue;
                 }
@@ -346,38 +334,34 @@ private:
         }
 
         for (const TfToken& currentMaterialConversion :
-             context.GetExportArgs().convertMaterialsTo) {
+             context.GetExportArgs().allMaterialConversions) {
+
+            UsdMayaJobExportArgs& currentIteration
+                = const_cast<UsdMayaJobExportArgs&>(context.GetExportArgs());
+            currentIteration.convertMaterialsTo = currentMaterialConversion;
+
             const TfToken& renderContext
                 = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(currentMaterialConversion)
                       .renderContext;
             SdfPath materialExportPath = materialPrim.GetPath();
 
-            if (context.GetExportArgs().convertMaterialsTo.size() > 1) {
+            if (context.GetExportArgs().allMaterialConversions.size() > 1) {
                 // Write each material in its own scope
                 materialExportPath = materialExportPath.AppendChild(currentMaterialConversion);
             }
 
             UsdShadeShader surfaceShaderSchema = _ExportShadingDepGraph(
-                materialExportPath,
-                context.GetSurfaceShaderPlug(),
-                context,
-                currentMaterialConversion);
+                materialExportPath, context.GetSurfaceShaderPlug(), context);
             UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
                 surfaceShaderSchema, material, UsdShadeTokens->surface, renderContext);
 
             UsdShadeShader volumeShaderSchema = _ExportShadingDepGraph(
-                materialExportPath,
-                context.GetVolumeShaderPlug(),
-                context,
-                currentMaterialConversion);
+                materialExportPath, context.GetVolumeShaderPlug(), context);
             UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
                 volumeShaderSchema, material, UsdShadeTokens->volume, renderContext);
 
             UsdShadeShader displacementShaderSchema = _ExportShadingDepGraph(
-                materialExportPath,
-                context.GetDisplacementShaderPlug(),
-                context,
-                currentMaterialConversion);
+                materialExportPath, context.GetDisplacementShaderPlug(), context);
             UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
                 displacementShaderSchema, material, UsdShadeTokens->displacement, renderContext);
         }

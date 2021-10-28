@@ -22,7 +22,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
 
 #include <memory>
 

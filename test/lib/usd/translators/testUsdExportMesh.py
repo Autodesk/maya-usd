@@ -30,6 +30,7 @@ class testUsdExportMesh(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.inputPath = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
 
         cls.meshTestFile = os.path.join(cls.inputPath, "UsdExportMeshTest", "UsdExportMeshTest.ma")
         cmds.file(cls.meshTestFile, force=True, open=True)
@@ -164,7 +165,7 @@ class testUsdExportMesh(unittest.TestCase):
     def testSidedness(self):
         for sidedness in ('single', 'double', 'derived'):
             for doubleSided in (False, True):
-                output = os.path.join(self.inputPath, 'sidedness_{}_{}.usda'.format(sidedness, doubleSided))
+                output = os.path.join(self.temp_dir, 'sidedness_{}_{}.usda'.format(sidedness, doubleSided))
                 cmds.file(new=True, force=True)
 
                 xform, _ = cmds.polyCube()

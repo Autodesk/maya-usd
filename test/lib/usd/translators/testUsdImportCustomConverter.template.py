@@ -36,7 +36,9 @@ class testUsdImportCustomConverter(unittest.TestCase):
         else:
             suffix = "USD"
 
-        cls.input_path = fixturesUtils.setUpClass(__file__, suffix)
+        fixturesUtils.setUpClass(__file__, suffix)
+
+        cls.input_path = os.getenv("INPUT_PATH")
 
         cls.test_dir = os.path.join(cls.input_path,
                                     "UsdImportCustomConverterTest")

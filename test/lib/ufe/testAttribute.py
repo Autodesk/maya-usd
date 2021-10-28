@@ -109,6 +109,35 @@ class AttributeTestCase(unittest.TestCase):
         cmds.redo()
         self.assertEqual(attr.get(), newVal)
 
+    def runUndoRedoUsingMayaSetAttr(self, attr, newVal, decimalPlaces=None):
+        # Maya's setAttr command was only made Ufe aware in Maya PR129 and Maya 2022.3
+        if ((int(cmds.about(apiVersion=True)) < 20220300) or (mayaUtils.previewReleaseVersion() < 129)):
+            return
+
+        oldVal = attr.get()
+        assert oldVal != newVal, "Undo / redo testing requires setting a value different from the current value"
+
+        # Get the string we need for setting the Ufe attribute with setAttr command:
+        # "<ufe_path_string>.<ufe_attribute_name>"
+        setAttrPath = "%s.%s" % (ufe.PathString.string(attr.sceneItem().path()), attr.name)
+        if isinstance(newVal, (ufe.Vector3i, ufe.Vector3f, ufe.Vector3d)):
+            cmds.setAttr(setAttrPath, newVal.x(), newVal.y(), newVal.z())
+        elif isinstance(newVal, ufe.Color3f):
+            cmds.setAttr(setAttrPath, newVal.r(), newVal.g(), newVal.b())
+        else:
+            cmds.setAttr(setAttrPath, newVal)
+
+        if decimalPlaces is not None:
+            self.assertAlmostEqual(attr.get(), newVal, decimalPlaces)
+            newVal = attr.get()
+        else:
+            self.assertEqual(attr.get(), newVal)
+
+        cmds.undo()
+        self.assertEqual(attr.get(), oldVal)
+        cmds.redo()
+        self.assertEqual(attr.get(), newVal)
+
     def runTestAttribute(self, path, attrName, ufeAttrClass, ufeAttrType):
         '''Engine method to run attribute test.'''
 
@@ -203,11 +232,14 @@ class AttributeTestCase(unittest.TestCase):
         # Change back to 'inherited' using a command.
         self.runUndoRedo(ufeAttr, UsdGeom.Tokens.inherited)
 
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, UsdGeom.Tokens.invisible)
+
     def testAttributeBool(self):
         '''Test the Bool attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the doubleSided attribute which is
         # an bool type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/mesh',
@@ -228,11 +260,14 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr, not ufeAttr.get())
 
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, not ufeAttr.get())
+
     def testAttributeInt(self):
         '''Test the Int attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the inputAOV attribute which is
         # an integer type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
@@ -253,11 +288,14 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr, ufeAttr.get()+1)
 
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1)
+
     def testAttributeFloat(self):
         '''Test the Float attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the anisotropic attribute which is
         # an float type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
@@ -281,6 +319,9 @@ class AttributeTestCase(unittest.TestCase):
         # Python value.
         self.runUndoRedo(ufeAttr, ufeAttr.get() + 1.0, decimalPlaces=6)
 
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1.0, decimalPlaces=6)
+
     def _testAttributeDouble(self):
         '''Test the Double attribute type.'''
 
@@ -291,7 +332,7 @@ class AttributeTestCase(unittest.TestCase):
         '''Test the String (String) attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the filename attribute which is
         # an string type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/BallTexture',
@@ -315,11 +356,13 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr, 'potato')
 
+        # Note: Maya's setAttr command does not support Ufe string attributes.
+
     def testAttributeStringToken(self):
         '''Test the String (Token) attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the filter attribute which is
         # an string type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/BallTexture',
@@ -341,11 +384,13 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr, 'Box')
 
+        # Note: Maya's setAttr command does not support Ufe string attributes.
+
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the emitColor attribute which is
         # an ColorFloat3 type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
@@ -372,6 +417,8 @@ class AttributeTestCase(unittest.TestCase):
         newVec = ufe.Color3f(vec.color[0]+1.0, vec.color[1]+2.0, vec.color[2]+3.0)
         self.runUndoRedo(ufeAttr, newVec)
 
+        # Note: Maya's setAttr command does not support Ufe Color3 attributes.
+
     def _testAttributeInt3(self):
         '''Test the Int3 attribute type.'''
 
@@ -382,7 +429,7 @@ class AttributeTestCase(unittest.TestCase):
         '''Test the Float3 attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the bumpNormal attribute which is
         # an Float3 type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
@@ -405,11 +452,16 @@ class AttributeTestCase(unittest.TestCase):
         self.runUndoRedo(ufeAttr,
                          ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
 
+        # Run test using Maya's setAttr command.
+        vec = ufeAttr.get()
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
+                         ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
+
     def testAttributeDouble3(self):
         '''Test the Double3 attribute type.'''
 
         # Use our engine method to run the bulk of the test (all the stuff from
-        # the Attribute base class). We use the visibility attribute which is
+        # the Attribute base class). We use the translate attribute which is
         # an Double3 type.
         ufeAttr, usdAttr = attrDict = self.runTestAttribute(
             path='/Room_set/Props/Ball_35',
@@ -431,6 +483,9 @@ class AttributeTestCase(unittest.TestCase):
 
         self.runUndoRedo(ufeAttr,
                          ufe.Vector3d(vec.x()-1.0, vec.y()-2.0, vec.z()-3.0))
+
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufe.Vector3d(5.5, 6.6, 7.7))
 
     def testObservation(self):
         '''
@@ -781,6 +836,208 @@ class AttributeTestCase(unittest.TestCase):
 
         # check the "transform op order" stack.
         self.assertEqual(sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray(('xformOp:translate','xformOp:rotateXYZ', 'xformOp:scale')))
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3011', 'testMetadata is only available in UFE preview version 0.3.11 and greater')
+    def testMetadata(self):
+        '''Test attribute metadata.'''
+        cmds.file(new=True, force=True)
+
+        # Create a capsule.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        cmd = proxyShapeContextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+
+        # Create the attributes interface for the item.
+        attrs = ufe.Attributes.attributes(capsuleItem)
+        attr = attrs.attribute('xformOpOrder')
+
+        # Test for non-existing metdata.
+        self.assertFalse(attr.hasMetadata('NotAMetadata'))
+
+        # Verify that this attribute has documentation metadata.
+        self.assertTrue(attr.hasMetadata('documentation'))
+        md = attr.getMetadata('documentation')
+        self.assertIsNotNone(md)
+        self.assertIsNotNone(str(md))
+
+        # Store this original documentation metadata value for testing of the clear.
+        # Note: USD doc has some fallback values, so clearing doc might not actually
+        #       set it to empty.
+        origDocMD = str(md)
+
+        # Change the metadata and make sure it changed
+        self.assertTrue(attr.setMetadata('documentation', 'New doc'))
+        self.assertTrue(attr.hasMetadata('documentation'))
+        md = attr.getMetadata('documentation')
+        self.assertEqual('New doc', str(md))
+
+        # Clear the metadata and make sure it is not equal to what we set it above.
+        self.assertTrue(attr.clearMetadata('documentation'))
+        md = attr.getMetadata('documentation')
+        self.assertEqual(str(md), origDocMD)
+
+        def runMetadataUndoRedo(func, newValue, startValue=None):
+            '''Helper to run metadata command on input value with undo/redo test.'''
+
+            # Clear the metadata and make sure it is gone.
+            if startValue:
+                self.assertTrue(attr.setMetadata('documentation', startValue))
+                self.assertFalse(attr.getMetadata('documentation').empty())
+            else:
+                self.assertTrue(attr.clearMetadata('documentation'))
+                md = attr.getMetadata('documentation')
+                self.assertEqual(str(md), origDocMD)
+
+            # Set metadata using command.
+            cmd = attr.setMetadataCmd('documentation', newValue)
+            self.assertIsNotNone(cmd)
+            cmd.execute()
+            md = attr.getMetadata('documentation')
+            self.assertEqual(ufe.Value(newValue), md)
+            self.assertEqual(newValue, func(md))
+
+            # Test undo/redo.
+            cmd.undo()
+            md = attr.getMetadata('documentation')
+            if startValue:
+                self.assertEqual(ufe.Value(startValue), md)
+                self.assertEqual(startValue, func(md))
+            else:
+                self.assertEqual(str(md), origDocMD)
+            cmd.redo()
+            md = attr.getMetadata('documentation')
+            self.assertEqual(ufe.Value(newValue), md)
+            self.assertEqual(newValue, func(md))
+
+        # Set the metadata using the command and verify undo/redo.
+        # We test all the known ufe.Value types.
+        # First with empty metadata and then with a starting metadata.
+        runMetadataUndoRedo(bool, True)
+        runMetadataUndoRedo(int, 10)
+        runMetadataUndoRedo(float, 65.78)
+        runMetadataUndoRedo(str, 'New doc from command')
+
+        runMetadataUndoRedo(bool, True, False)
+        runMetadataUndoRedo(int, 10, 2)
+        runMetadataUndoRedo(float, 65.78, 0.567)
+        runMetadataUndoRedo(str, 'New doc from command', 'New doc starting value')
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3011', 'testAttributeLock is only available in UFE preview version 0.3.11 and greater')
+    def testAttributeLock(self):
+        '''Test attribute lock/unlock.'''
+        cmds.file(new=True, force=True)
+
+        # Create a capsule.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        cmd = proxyShapeContextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+
+        capsulePath = ufe.PathString.path('%s,/Capsule1' % proxyShape)
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+
+        # Create the attributes interface for the item.
+        attrs = ufe.Attributes.attributes(capsuleItem)
+        attr = attrs.attribute('height')
+
+        # Height attribute should not initially be locked.
+        self.assertFalse(attr.hasMetadata(ufe.Attribute.kLocked))
+
+        #----------------------------------------------------------------------
+        # Test locking modifications to the height using Ufe kLocked key.
+        #----------------------------------------------------------------------
+        self.assertTrue(attr.setMetadata(ufe.Attribute.kLocked, True))
+        self.assertTrue(attr.hasMetadata(ufe.Attribute.kLocked))
+        md = attr.getMetadata(ufe.Attribute.kLocked)
+        self.assertTrue(bool(md))
+
+        # Test that we cannot modify the height now.
+        currValue = attr.get()
+        with self.assertRaises(RuntimeError):
+            attr.set(currValue + 1.0)
+        self.assertEqual(currValue, attr.get())
+
+        # Test that we cannot set other Metadata now.
+        with self.assertRaises(RuntimeError):
+            attr.setMetadata('documentation', 'New Doc')
+
+        # Test unlocking modifications to height.
+        self.assertTrue(attr.setMetadata(ufe.Attribute.kLocked, False))
+        md = attr.getMetadata(ufe.Attribute.kLocked)
+        self.assertFalse(bool(md))
+
+        # Changes to height should now be allowed.
+        currValue = attr.get()
+        newValue = currValue + 1.0
+        attr.set(currValue + 1.0)
+        self.assertEqual(newValue, attr.get())
+
+        # Changes to other Metadata should be allowed now.
+        self.assertTrue(attr.setMetadata('documentation', 'New Doc'))
+
+        # Remove the locking metadata.
+        self.assertTrue(attr.clearMetadata(ufe.Attribute.kLocked))
+        self.assertFalse(attr.hasMetadata(ufe.Attribute.kLocked))
+
+        #----------------------------------------------------------------------
+        # Test locking modifications to the height using command.
+        #----------------------------------------------------------------------
+        cmd = attr.setMetadataCmd(ufe.Attribute.kLocked, True)
+        self.assertIsNotNone(cmd)
+        cmd.execute()
+        self.assertTrue(attr.hasMetadata(ufe.Attribute.kLocked))
+        md = attr.getMetadata(ufe.Attribute.kLocked)
+        self.assertTrue(bool(md))
+
+        # Test that we cannot modify the height now.
+        currValue = attr.get()
+        with self.assertRaises(RuntimeError):
+            attr.set(currValue + 1.0)
+        self.assertEqual(currValue, attr.get())
+
+        # Test that we cannot set other Metadata now.
+        with self.assertRaises(RuntimeError):
+            attr.setMetadata('documentation', 'New Doc')
+
+        # Test undo/redo.
+        cmd.undo()
+        self.assertFalse(attr.hasMetadata(ufe.Attribute.kLocked))
+
+        # Changes to height should now be allowed.
+        currValue = attr.get()
+        newValue = currValue + 1.0
+        attr.set(currValue + 1.0)
+        self.assertEqual(newValue, attr.get())
+
+        # Changes to other Metadata should be allowed now.
+        self.assertTrue(attr.setMetadata('documentation', 'New Doc'))
+
+        cmd.redo()
+        self.assertTrue(attr.hasMetadata(ufe.Attribute.kLocked))
+        md = attr.getMetadata(ufe.Attribute.kLocked)
+        self.assertTrue(bool(md))
+
+        # Test that we cannot modify the height again.
+        currValue = attr.get()
+        with self.assertRaises(RuntimeError):
+            attr.set(currValue + 1.0)
+        self.assertEqual(currValue, attr.get())
+
+        # Test that we cannot set other Metadata again.
+        with self.assertRaises(RuntimeError):
+            attr.setMetadata('documentation', 'New Doc')
+
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

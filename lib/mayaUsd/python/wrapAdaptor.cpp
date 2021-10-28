@@ -26,7 +26,11 @@
 
 #include <maya/MObject.h>
 
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/operators.hpp>
+#include <boost/python/self.hpp>
 
 using namespace boost::python;
 

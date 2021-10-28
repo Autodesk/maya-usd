@@ -32,7 +32,7 @@ public:
         const MFnDependencyNode& depNodeFn,
         const SdfPath&           usdPath,
         UsdMayaWriteJobContext&  jobCtx);
-    static ContextSupport CanExport(const UsdMayaJobExportArgs&, const TfToken&);
+    static ContextSupport CanExport(const UsdMayaJobExportArgs&);
 
 protected:
     // Returns the node graph where all ancillary nodes reside

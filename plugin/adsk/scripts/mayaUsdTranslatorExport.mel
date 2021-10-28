@@ -161,55 +161,38 @@ global proc mayaUsdTranslatorExport_AnimationRangeCB() {
     intFieldGrp -e -v1 $startTime -v2 $endTime framRangeFields;
 }
 
-// Known shading modes, in triplets with the nice name and the annotation:
-proc string[] mayaUsdTranslatorExport_shadingModeData() {
-    string $shadingModeData[] = {
-        "useRegistry",
-        "USD Preview Surface",
-        "Exports the bound shader as a USD preview surface UsdShade network.",
+proc mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes(string $arg) {
+    if (startsWith($arg, "[") && endsWith($arg, "]")) {
+        $arg = substring($arg, 2, size($arg) - 1);
+    }
+    string $enabledConversions[] = stringToStringArray($arg, ",");
+    string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
+    for ($conversion in $conversions) {
+        string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
+        string $widget = $opt + "_ConvertMaterialsToCheckBox";
 
-        "displayColor",
-        "Display Colors",
-        "Exports the diffuse color of the bound shader as a displayColor primvar on the USD mesh.",
-        
-        "none",
-        "None",
-        "No material data gets exported.",
-        
-        "pxrRis",
-        "RfM Shaders",
-        ""
-    };
-    return $shadingModeData;
-}
-
-proc string[] mayaUsdTranslatorExport_shadingModeInfo(string $shadingMode) {
-    string $shadingModeData[] = mayaUsdTranslatorExport_shadingModeData();
-    int $index = stringArrayFind($shadingMode, 0, $shadingModeData);
-    if ($index != -1) {
-        return { $shadingModeData[$index + 1], $shadingModeData[$index + 2] };
-    } else {
-        return { $shadingMode, "" };
+        if(stringArrayFind($opt, 0, $enabledConversions) != -1) {
+            checkBoxGrp -e -v1 true $widget;
+        } else {
+            checkBoxGrp -e -v1 false $widget;
+        }
     }
 }
 
-proc mayaUsdTranslatorExport_SetMaterialOptionMenu(string $shadingMode, string $widget) {
-    string $info[] = mayaUsdTranslatorExport_shadingModeInfo($shadingMode);
-    optionMenuGrp -e -value $info[0] $widget;
-}
-
-proc string mayaUsdTranslatorExport_AppendFromMaterialPopup(string $currentOptions) {
-    string $shadingModeData[] = mayaUsdTranslatorExport_shadingModeData();
-    string $niceName = `optionMenuGrp -q -value "shadingModePopup"`;
-
-    if ($niceName == $shadingModeData[4]) {
-        // Display colors is a geometry option, not a material option:
-        $currentOptions = $currentOptions + ";exportDisplayColor=1;shadingMode=none";
-    } else {
-        string $shadingOptions = `mayaUSDListShadingModes -eo $niceName`;
-        $currentOptions = $currentOptions + ";exportDisplayColor=0;" + $shadingOptions;
+proc string mayaUsdTranslatorExport_AppendConvertMaterialsTo(string $currentOptions, string $arg) {
+    string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
+    string $enabledConversions[];
+    for ($conversion in $conversions) {
+        string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
+        string $widget = $opt + "_ConvertMaterialsToCheckBox";
+        if (`checkBoxGrp -q -v1 $widget` == 1) {
+            stringArrayInsertAtIndex(255, $enabledConversions, $opt);
+        }
     }
-    return $currentOptions;
+    if (size($enabledConversions) > 0) {
+        return $currentOptions + ";shadingMode=useRegistry;" + $arg + "=[" + stringArrayToString($enabledConversions, ",") + "]";
+    }
+    return $currentOptions + ";shadingMode=none";
 }
 
 global proc int mayaUsdTranslatorExport (string $parent,
@@ -251,7 +234,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $skelsAnn = "Exports Maya joints as part of a USD skeleton.";
         string $skinClustersAnn = "Exports Maya skin clusters as part of a USD skeleton.";
         string $blendShapesAnn = "Exports Maya Blend Shapes as USD blendshapes. Requires skeletons to be exported as well.";
-        string $materialsAnn = "Controls whether shading data is exported from the Maya scene and how it is created in USD.";
+        string $displayColorAnn = "If selected, exports the diffuse color of the geometry’s bound shader as a displayColor primvar on the USD mesh.";
+        string $materialsAnn = "Select the material(s) to bind to prims for export. With USD, you can bind multiple materials to prims.";
         string $animDataAnn = "Exports Maya animation data as USD time samples.";
         string $frameStepAnn = "Specifies the increment between USD time sample frames during animation export";
         string $eulerFilterAnn = "Exports the euler angle filtering that was performed in Maya.";
@@ -264,7 +248,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $frameSamplesAnn = "Specifies the value(s) used to multi-sample time frames during animation export. Multiple values separated by a space (-0.1 0.2) are supported.";
         string $defaultFormatAnn = "Select whether the .usd file is written out in binary or ASCII";
         string $defaultFormatStatus = "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary), or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.";
-        string $shadingModeData[] = mayaUsdTranslatorExport_shadingModeData();
 
         setParent $parent;
 
@@ -323,17 +306,25 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
             checkBoxGrp -l "Blend Shapes:" -annotation $blendShapesAnn exportBlendShapesCheckBox;
 
-            string $exporters[] = `mayaUSDListShadingModes -export`;
-            optionMenuGrp -l "Materials:" -ann $materialsAnn shadingModePopup;
-            for ($exporter in $exporters) {
-                string $ann = `mayaUSDListShadingModes -ea $exporter`;
-                menuItem -l $exporter -ann $ann;
-                if ($exporter == "USD Preview Surface") {
-                    // Insert exportDisplayColor geometry option in material menu:
-                    menuItem -l $shadingModeData[4] -ann $shadingModeData[5];
-                }
-            }
+            checkBoxGrp -l "Display Colors:" -annotation $displayColorAnn exportDisplayColorCheckBox;
 
+            separator -style "none";
+        setParent ..;
+
+        frameLayout -label "Materials" -collapsable true -collapse false -ann $materialsAnn;
+            separator -style "none";
+
+            string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
+            for ($conversion in $conversions) {
+                string $ann = `mayaUSDListShadingModes -ea $conversion -useRegistryOnly`;
+                string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
+                string $widgetName = $opt + "_ConvertMaterialsToCheckBox";
+
+                checkBoxGrp -cw 2 240 -numberOfCheckBoxes 1
+                    -label "" -label1 $conversion -annotation $ann
+                    $widgetName;
+            }
+            
             separator -style "none";
         setParent ..;
 
@@ -424,45 +415,10 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], "frameSampleField");
                 } else if ($optionBreakDown[0] == "parentScope") {
                     mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], "parentScopeField");
-                } else if ($optionBreakDown[0] == "shadingMode") {
-                    string $niceName = `mayaUSDListShadingModes -fen $optionBreakDown[1]`;
-                    if (size($niceName)) {
-                        // Everything wins over displayColor except none.
-                        if ($niceName != $shadingModeData[7]) {
-                            optionMenuGrp -e -value $niceName "shadingModePopup";
-                        } else {
-                            string $currentName = `optionMenuGrp -q -value "shadingModePopup"`;
-                            // If not displayColor, then none wins:
-                            if ($currentName != $shadingModeData[4]) {
-                                optionMenuGrp -e -value $niceName "shadingModePopup";
-                            }
-                        }
-                    }
                 } else if ($optionBreakDown[0] == "convertMaterialsTo") {
-                    string $convertTo = $optionBreakDown[1];
-                    if (startsWith($convertTo, "[") && endsWith($convertTo, "]")) {
-                        $convertTo = substring($convertTo, 2, size($convertTo) - 1);
-                    }
-                    // If multi-export, select first item for dropdown, ignore others.
-                    if (size($convertTo) > 1) {
-                        string $tokens[];
-                        tokenize($convertTo, ",", $tokens);
-                        $convertTo = $tokens[0];                    
-                    }
-                    string $niceName = `mayaUSDListShadingModes -fen $convertTo`;
-                    if (size($niceName)) {
-                        optionMenuGrp -e -value $niceName "shadingModePopup";
-                    }
+                    mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1]);
                 } else if ($optionBreakDown[0] == "exportDisplayColor") {
-                    if ("1" == $optionBreakDown[1]) {
-                        optionMenuGrp -e -value $shadingModeData[4] "shadingModePopup";
-                    } else {
-                        // If popup is displayColor, then set to None:
-                        string $niceName = `optionMenuGrp -q -value "shadingModePopup"`;
-                        if ($niceName == $shadingModeData[4]) {
-                            optionMenuGrp -e -value $shadingModeData[7] "shadingModePopup";
-                        }
-                    }
+                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportDisplayColorCheckBox");
                 } else if ($optionBreakDown[0] == "exportInstances") {
                     mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], "exportInstancesPopup");
                 } else if ($optionBreakDown[0] == "exportVisibility") {
@@ -484,6 +440,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "exportSkels", "skelsPopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "exportSkin", "skinClustersPopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportBlendShapes", "exportBlendShapesCheckBox");
+        $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportDisplayColor", "exportDisplayColorCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "defaultUSDFormat", "defaultUSDFormatPopup");
@@ -494,7 +451,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");
         $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "frameSample", "frameSampleField");
         $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
-        $currentOptions = mayaUsdTranslatorExport_AppendFromMaterialPopup($currentOptions);
+        $currentOptions = mayaUsdTranslatorExport_AppendConvertMaterialsTo($currentOptions, "convertMaterialsTo");
         $currentOptions = mayaUsdTranslatorExport_AppendFromBoolPopup($currentOptions, "exportInstances", "exportInstancesPopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");

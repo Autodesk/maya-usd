@@ -51,16 +51,15 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     PxrMayaUsdPreviewSurfaceTokens->niceName,
     PxrMayaUsdPreviewSurfaceTokens->exportDescription);
 
-UsdMayaShaderWriter::ContextSupport PxrMayaUsdPreviewSurface_Writer::CanExport(
-    const UsdMayaJobExportArgs& exportArgs,
-    const TfToken&              currentMaterialConversion)
+UsdMayaShaderWriter::ContextSupport
+PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    if (currentMaterialConversion == UsdImagingTokens->UsdPreviewSurface) {
+    if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
         return ContextSupport::Supported;
     }
     // Only report as fallback if UsdPreviewSurface was not explicitly requested:
-    if (exportArgs.convertMaterialsTo.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
-        ContextSupport::Fallback;
+    if (exportArgs.allMaterialConversions.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
+        return ContextSupport::Fallback;
     }
     return ContextSupport::Unsupported;
 }

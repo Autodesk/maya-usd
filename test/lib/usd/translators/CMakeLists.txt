@@ -1,5 +1,3 @@
-set(TARGET_NAME IMPORT_EXPORT_TEST)
-
 set(TEST_SCRIPT_FILES
     testUsdExportAnimation.py
     testUsdExportAsClip.py
@@ -96,15 +94,6 @@ if (BUILD_RFM_TRANSLATORS)
     )
 endif()
 
-add_custom_target(${TARGET_NAME} ALL)
-
-# copy all the resources and python scripts to build directory
-mayaUsd_copyDirectory(${TARGET_NAME}
-    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-    EXCLUDE "*.txt"
-)
-
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
@@ -196,6 +185,8 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
                 ENV
                     "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
                     "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
+                    "INPUT_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
+                    "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}"
             )
             set_property(TEST ${target} APPEND PROPERTY LABELS translators)
         endforeach()

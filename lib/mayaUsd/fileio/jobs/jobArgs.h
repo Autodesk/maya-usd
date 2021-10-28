@@ -75,6 +75,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportUVs) \
     (exportVisibility) \
     (jobContext) \
+    (exportComponentTags) \
     (file) \
     (filterTypes) \
     (ignoreWarnings) \
@@ -173,6 +174,7 @@ struct UsdMayaJobExportArgs
     const TfToken     exportSkin;
     const bool        exportBlendShapes;
     const bool        exportVisibility;
+    const bool        exportComponentTags;
     const std::string file;
     const bool        ignoreWarnings;
 
@@ -197,7 +199,8 @@ struct UsdMayaJobExportArgs
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
     const TfToken      shadingMode;
-    const TfToken::Set convertMaterialsTo;
+    TfToken            convertMaterialsTo; // Can not be const, iteration variable.
+    const TfToken::Set allMaterialConversions;
     const bool         verbose;
     const bool         staticSingleSample;
     const TfToken      geomSidedness;

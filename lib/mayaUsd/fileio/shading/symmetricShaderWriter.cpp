@@ -53,10 +53,8 @@ void UsdMayaSymmetricShaderWriter::RegisterWriter(
 {
     UsdMayaShaderWriterRegistry::Register(
         mayaNodeTypeName,
-        [materialConversionName](
-            const UsdMayaJobExportArgs& exportArgs, const TfToken& currentMaterialConversion) {
-            return UsdMayaSymmetricShaderWriter::CanExport(
-                exportArgs, currentMaterialConversion, materialConversionName);
+        [materialConversionName](const UsdMayaJobExportArgs& exportArgs) {
+            return UsdMayaSymmetricShaderWriter::CanExport(exportArgs, materialConversionName);
         },
         [usdShaderId](
             const MFnDependencyNode& depNodeFn,
@@ -71,10 +69,10 @@ void UsdMayaSymmetricShaderWriter::RegisterWriter(
 /* static */
 UsdMayaShaderWriter::ContextSupport UsdMayaSymmetricShaderWriter::CanExport(
     const UsdMayaJobExportArgs& exportArgs,
-    const TfToken&              currentMaterialConversion,
     const TfToken&              materialConversionName)
 {
-    if (materialConversionName.IsEmpty() || currentMaterialConversion == materialConversionName) {
+    if (materialConversionName.IsEmpty()
+        || exportArgs.convertMaterialsTo == materialConversionName) {
         return ContextSupport::Supported;
     }
 

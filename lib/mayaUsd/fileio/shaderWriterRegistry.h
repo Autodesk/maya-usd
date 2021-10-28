@@ -83,8 +83,8 @@ struct UsdMayaShaderWriterRegistry
 
     /// Predicate function, i.e. a function that can tell the level of support
     /// the writer function will provide for a given set of export options.
-    using ContextPredicateFn = std::function<
-        UsdMayaShaderWriter::ContextSupport(const UsdMayaJobExportArgs&, const TfToken&)>;
+    using ContextPredicateFn
+        = std::function<UsdMayaShaderWriter::ContextSupport(const UsdMayaJobExportArgs&)>;
 
     /// \brief Register \p fn as a factory function providing a
     /// UsdMayaShaderWriter subclass that can be used to write \p mayaType.
@@ -98,14 +98,12 @@ struct UsdMayaShaderWriterRegistry
         bool               fromPython = false);
 
     /// \brief Finds a writer if one exists for \p mayaTypeName using the context found in
-    /// \p exportArgs while exporting to \p currentMaterialConversion
+    /// \p exportArgs
     ///
     /// If there is no writer plugin for \p mayaTypeName, returns nullptr.
     MAYAUSD_CORE_PUBLIC
-    static WriterFactoryFn Find(
-        const TfToken&              mayaTypeName,
-        const UsdMayaJobExportArgs& exportArgs,
-        const TfToken&              currentMaterialConversion);
+    static WriterFactoryFn
+    Find(const TfToken& mayaTypeName, const UsdMayaJobExportArgs& exportArgs);
 };
 
 /// SFINAE utility class to detect the presence of a CanExport static function
@@ -133,8 +131,7 @@ public:
 /// constructor that takes <tt>(const MFnDependencyNode& depNodeFn,
 /// const SdfPath& usdPath, UsdMayaWriteJobContext& jobCtx)</tt> as arguments.
 /// The shader writer should also be able to declare which rendering contexts it
-/// supports via an implementation of CanExport(const UsdMayaJobExportArgs&,
-///                                             const TfToken&).
+/// supports via an implementation of CanExport(const UsdMayaJobExportArgs&).
 ///
 /// Example:
 /// \code{.cpp}
@@ -145,8 +142,7 @@ public:
 ///             UsdMayaWriteJobContext& jobCtx) {
 ///         // ...
 ///     }
-///     static ContextSupport CanExport(const UsdMayaJobExportArgs& exportArgs,
-///                                     const TfToken& currentMaterialConversion) {
+///     static ContextSupport CanExport(const UsdMayaJobExportArgs& exportArgs) {
 ///         return renderContextIsRight ? ContextSupport::Supported
 ///                                     : ContextSupport::Unsupported
 ///     }

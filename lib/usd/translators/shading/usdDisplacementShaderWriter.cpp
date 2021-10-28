@@ -53,7 +53,7 @@ public:
 
     void Write(const UsdTimeCode& usdTime) override;
 
-    static ContextSupport CanExport(const UsdMayaJobExportArgs&, const TfToken&);
+    static ContextSupport CanExport(const UsdMayaJobExportArgs&);
 
     TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 };
@@ -152,16 +152,15 @@ void PxrUsdTranslators_DisplacementShaderWriter::Write(const UsdTimeCode& usdTim
 }
 
 /* static */
-UsdMayaShaderWriter::ContextSupport PxrUsdTranslators_DisplacementShaderWriter::CanExport(
-    const UsdMayaJobExportArgs& exportArgs,
-    const TfToken&              currentMaterialConversion)
+UsdMayaShaderWriter::ContextSupport
+PxrUsdTranslators_DisplacementShaderWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    if (currentMaterialConversion == UsdImagingTokens->UsdPreviewSurface) {
+    if (exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface) {
         return ContextSupport::Supported;
     }
     // Only report as fallback if UsdPreviewSurface was not explicitly requested:
-    if (exportArgs.convertMaterialsTo.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
-        ContextSupport::Fallback;
+    if (exportArgs.allMaterialConversions.count(UsdImagingTokens->UsdPreviewSurface) == 0) {
+        return ContextSupport::Fallback;
     }
     return ContextSupport::Unsupported;
 }
