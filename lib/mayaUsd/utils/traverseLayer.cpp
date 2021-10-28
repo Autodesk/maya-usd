@@ -124,8 +124,7 @@ bool traverseLayer(
     try {
         _traverseLayer(layer, path, fn);
     } catch (const TraversalFailure& e) {
-        TF_WARN(
-            "Layer traversal failed for path %s: %s", e.path().GetText(), e.reason().c_str());
+        TF_WARN("Layer traversal failed for path %s: %s", e.path().GetText(), e.reason().c_str());
         return false;
     }
     return true;
