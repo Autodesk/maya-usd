@@ -444,11 +444,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaJobExportArgsTokens->shadingMode,
           UsdMayaShadingModeTokens->none,
           UsdMayaShadingModeRegistry::ListExporters()))
-    , convertMaterialsTo(_Token(
-          userArgs,
-          UsdMayaJobExportArgsTokens->convertMaterialsTo,
-          UsdImagingTokens->UsdPreviewSurface,
-          UsdMayaShadingModeRegistry::ListMaterialConversions()))
+    , allMaterialConversions(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
     , verbose(_Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
     , staticSingleSample(_Boolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))
     , geomSidedness(_Token(
@@ -511,8 +507,12 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
-        << "convertMaterialsTo: " << exportArgs.convertMaterialsTo << std::endl
-        << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
+        << "allMaterialConversions: " << std::endl;
+    for (const auto& conv : exportArgs.allMaterialConversions) {
+        out << "    " << conv << std::endl;
+    }
+
+    out << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
         << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
         << "staticSingleSample: " << TfStringify(exportArgs.staticSingleSample) << std::endl
         << "geomSidedness: " << TfStringify(exportArgs.geomSidedness) << std::endl
@@ -612,7 +612,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->shadingMode]
             = UsdMayaShadingModeTokens->useRegistry.GetString();
         d[UsdMayaJobExportArgsTokens->convertMaterialsTo]
-            = UsdImagingTokens->UsdPreviewSurface.GetString();
+            = std::vector<VtValue> { VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) };
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
