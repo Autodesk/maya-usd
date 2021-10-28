@@ -33,7 +33,7 @@ class TraversalFailure : public std::runtime_error
 {
 public:
     TraversalFailure(const std::string& reason, const PXR_NS::SdfPath& path)
-        : std::runtime_error(path.GetAsString())
+        : std::runtime_error(path.GetString())
         , _reason(reason)
         , _path(path)
     {
