@@ -68,9 +68,6 @@ class AttributeTestCase(unittest.TestCase):
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
-        # Open top_layer.ma scene in testSamples
-        mayaUtils.openTopLayerScene()
-
         random.seed()
 
     @classmethod
@@ -189,6 +186,9 @@ class AttributeTestCase(unittest.TestCase):
     def testAttributeGeneric(self):
         '''Test the Generic attribute type.'''
 
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the xformOpOrder attribute which is
         # an unsupported USD type, so it will be a UFE Generic attribute.
@@ -203,6 +203,9 @@ class AttributeTestCase(unittest.TestCase):
 
     def testAttributeEnumString(self):
         '''Test the EnumString attribute type.'''
+
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
 
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the visibility attribute which is
@@ -238,6 +241,9 @@ class AttributeTestCase(unittest.TestCase):
     def testAttributeBool(self):
         '''Test the Bool attribute type.'''
 
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the doubleSided attribute which is
         # an bool type.
@@ -266,6 +272,9 @@ class AttributeTestCase(unittest.TestCase):
     def testAttributeInt(self):
         '''Test the Int attribute type.'''
 
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the inputAOV attribute which is
         # an integer type.
@@ -293,6 +302,9 @@ class AttributeTestCase(unittest.TestCase):
 
     def testAttributeFloat(self):
         '''Test the Float attribute type.'''
+
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
 
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the anisotropic attribute which is
@@ -331,6 +343,9 @@ class AttributeTestCase(unittest.TestCase):
     def testAttributeStringString(self):
         '''Test the String (String) attribute type.'''
 
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the filename attribute which is
         # an string type.
@@ -361,6 +376,9 @@ class AttributeTestCase(unittest.TestCase):
     def testAttributeStringToken(self):
         '''Test the String (Token) attribute type.'''
 
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the filter attribute which is
         # an string type.
@@ -388,6 +406,9 @@ class AttributeTestCase(unittest.TestCase):
 
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
+
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
 
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the emitColor attribute which is
@@ -428,6 +449,9 @@ class AttributeTestCase(unittest.TestCase):
     def testAttributeFloat3(self):
         '''Test the Float3 attribute type.'''
 
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the bumpNormal attribute which is
         # an Float3 type.
@@ -459,6 +483,9 @@ class AttributeTestCase(unittest.TestCase):
 
     def testAttributeDouble3(self):
         '''Test the Double3 attribute type.'''
+
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
 
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the translate attribute which is
@@ -496,7 +523,6 @@ class AttributeTestCase(unittest.TestCase):
         '''
 
         # Start we a clean scene so we can get a consistent number of notifications
-        cmds.file(new=True, force=True)
         mayaUtils.openTopLayerScene()
 
         # Create three observers, one for global attribute observation, and two
@@ -659,8 +685,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ball35Obs.notifications, 3)
         self.assertEqual(globalObs.notifications, 11)
 
-    # Run last to avoid file new disturbing other tests.
-    def testZAttrChangeRedoAfterPrimCreateRedo(self):
+    def testAttrChangeRedoAfterPrimCreateRedo(self):
         '''Redo attribute change after redo of prim creation.'''
         cmds.file(new=True, force=True)
 
