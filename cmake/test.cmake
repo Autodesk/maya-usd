@@ -356,6 +356,12 @@ finally:
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
 
+    if(IS_MACOSX)
+        # Necessary for tests like DiffCore to find python
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "DYLD_LIBRARY_PATH=${MAYA_LOCATION}/MacOS:$ENV{DYLD_LIBRARY_PATH}")
+    endif()
+
     if (PREFIX_INTERACTIVE)
         # Add the "interactive" label to all tests that launch the Maya UI.
         # This allows bypassing them by using the --label-exclude/-LE option to
