@@ -146,7 +146,7 @@ except Exception:\\n\
 \")")
             set(COMMAND_CALL ${MAYA_EXECUTABLE} -c ${MEL_PY_EXEC_COMMAND})
         else()
-            set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/${test_name}.py)
+            set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/runner_${test_name}.py)
             FILE(WRITE ${SCRIPT} "${PREFIX_PYTHON_SCRIPT}")
             set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${SCRIPT})
         endif()
