@@ -91,4 +91,7 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
     _RegisterMayaNodes(UsdMayaSymmetricShaderReader::RegisterReader);
 }
 
+ARCH_EXPORT void dummyfunc() {
+} // This is just to create a .lib file and not re-linking all the time.
+
 PXR_NAMESPACE_CLOSE_SCOPE

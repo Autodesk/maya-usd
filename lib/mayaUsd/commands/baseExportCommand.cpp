@@ -63,6 +63,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kConvertMaterialsToFlag,
         UsdMayaJobExportArgsTokens->convertMaterialsTo.GetText(),
         MSyntax::kString);
+    syntax.makeFlagMultiUse(kConvertMaterialsToFlag);
     syntax.addFlag(
         kMaterialsScopeNameFlag,
         UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),
@@ -106,6 +107,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kExportVisibilityFlag,
         UsdMayaJobExportArgsTokens->exportVisibility.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
+        kExportComponentTagsFlag,
+        UsdMayaJobExportArgsTokens->exportComponentTags.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
         kIgnoreWarningsFlag,

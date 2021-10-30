@@ -13,7 +13,7 @@ target_sources(${PROJECT_NAME}
         plugRegistryHelper.cpp
         selectability.cpp
         stageCache.cpp
-        undoHelperCommand
+        undoHelperCommand.cpp
         util.cpp
         utilFileSystem.cpp
         utilSerialization.cpp

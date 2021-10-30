@@ -19,12 +19,20 @@
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
+#include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
 
+#include <pxr/imaging/hdx/pickTask.h>
+#include <pxr/usd/sdf/path.h>
+
+#include <maya/M3dView.h>
 #include <maya/MArgDatabase.h>
 #include <maya/MArgList.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MMatrix.h>
 #include <maya/MSyntax.h>
 
 namespace {
@@ -1307,12 +1315,6 @@ MStatus TranslatePrim::redoIt()
         m_proxy->processChangedMetaData(SdfPathVector(), newImportPaths);
     }
 
-    // construct locks and selectability for imported prims
-    if (m_proxy->isLockPrimFeatureActive()) {
-        m_proxy->removeMetaData(m_teardownPaths);
-        m_proxy->processChangedMetaData(SdfPathVector(), newImportPaths);
-    }
-
     if (!m_updatePaths.empty()) {
 
         // check paths refer to valid prims for this stage
@@ -1339,6 +1341,113 @@ MStatus TranslatePrim::redoIt()
     }
 
     return MStatus::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+
+AL_MAYA_DEFINE_COMMAND(ProxyShapeTestIntersection, AL_usdmaya);
+
+//----------------------------------------------------------------------------------------------------------------------
+
+MSyntax ProxyShapeTestIntersection::createSyntax()
+{
+    MSyntax syntax = setUpCommonSyntax();
+    syntax.addFlag("-sx", "-screenX", MSyntax::kDouble);
+    syntax.addFlag("-sy", "-screenY", MSyntax::kDouble);
+    return syntax;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus ProxyShapeTestIntersection::doIt(const MArgList& args)
+{
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("ProxyShapeTestIntersection::doIt\n");
+    try {
+        MArgDatabase db = makeDatabase(args);
+        AL_MAYA_COMMAND_HELP(db, g_helpText);
+        MDagPath proxyDagPath;
+        m_proxy = getShapeNode(db);
+        if (!m_proxy || !m_proxy->usdStage()) {
+            throw MS::kFailure;
+        }
+
+        if (!db.isFlagSet("-sx") || !db.isFlagSet("-sy")) {
+            MGlobal::displayError("-sx and -sy are required");
+            return MStatus::kFailure;
+        }
+
+        db.getFlagArgument("-sx", 0, m_sx);
+        db.getFlagArgument("-sy", 0, m_sy);
+    } catch (const MStatus& status) {
+        return status;
+    }
+
+    return redoIt();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShapeTestIntersection::isUndoable() const { return false; }
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus ProxyShapeTestIntersection::redoIt()
+{
+    MStatus status;
+    auto    currentView = M3dView::active3dView(&status);
+
+    MMatrix worldViewMatrix, projectionMatrix;
+    status = currentView.modelViewMatrix(worldViewMatrix);
+    status = currentView.projectionMatrix(projectionMatrix);
+
+    // Compute a pick matrix that, when it is post-multiplied with the projection
+    // matrix, will cause the picking region to fill the entire viewport for
+    // OpenGL selection.
+    {
+        unsigned int view_x, view_y, view_w, view_h;
+        currentView.viewport(view_x, view_y, view_w, view_h);
+
+        MMatrix pickMatrix;
+        pickMatrix[0][0] = view_w;
+        pickMatrix[1][1] = view_h;
+        pickMatrix[3][0] = view_w - 2.0 * (m_sx - view_x);
+        pickMatrix[3][1] = view_h - 2.0 * (m_sy - view_y);
+
+        projectionMatrix *= pickMatrix;
+    }
+
+    auto engine = m_proxy->engine();
+    if (!engine)
+        return MStatus::kFailure;
+
+    auto          stage = m_proxy->getUsdStage();
+    UsdPrim       root = stage->GetPseudoRoot();
+    SdfPathVector rootPath;
+    rootPath.push_back(root.GetPath());
+    UsdImagingGLRenderParams params;
+    unsigned int             resolution = 10;
+    nodes::Engine::HitBatch  hitBatch;
+
+    bool hit = engine->TestIntersectionBatch(
+        GfMatrix4d(worldViewMatrix.matrix),
+        GfMatrix4d(projectionMatrix.matrix),
+        GfMatrix4d(1.f),
+        rootPath,
+        params,
+        HdxPickTokens->resolveNearestToCamera,
+        resolution,
+        &hitBatch);
+
+    if (hit) {
+        clearResult();
+        for (const auto& it : hitBatch) {
+            const double* p = it.second.GetArray();
+            appendToResult(p[0]);
+            appendToResult(p[1]);
+            appendToResult(p[2]);
+        }
+    } else {
+        MGlobal::displayInfo("[AL_usdmaya_ProxyShapeTestIntersection]: No hit points found\n");
+    }
+
+    return status;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1768,6 +1877,15 @@ TranslatePrim Overview:
 
   The ForceImport(-fi) flag will forces the import of the available translator. Used for translators who don't import automatically when
   their corresponding prim type is brought into the scene.
+)";
+//----------------------------------------------------------------------------------------------------------------------
+const char* const ProxyShapeTestIntersection::g_helpText = R"(
+ProxyShapeTestIntersection Overview:
+
+  Used to retrieve the world space location of the point of the closest USD prim hit by ray cast from a selected
+  position.
+
+    AL_usdmaya_ProxyShapeTestIntersection -sx 30 -sy 80;
 )";
 //----------------------------------------------------------------------------------------------------------------------
 } // namespace cmds

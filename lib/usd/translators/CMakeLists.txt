@@ -35,6 +35,7 @@ target_sources(${TARGET_NAME}
         nurbsPatchReader.cpp
         nurbsSurfaceWriter.cpp
         particleWriter.cpp
+        plugin.cpp
         scopeReader.cpp
         skelReader.cpp
         strokeWriter.cpp

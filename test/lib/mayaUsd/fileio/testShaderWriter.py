@@ -52,6 +52,7 @@ class testShaderWriter(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.inputPath = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
 
     @classmethod
     def tearDownClass(cls):
@@ -99,9 +100,9 @@ class testShaderWriter(unittest.TestCase):
         # there are reporting "Fallback", which allows our CanExport
         # to always win with "Supported" (also helps that the current
         # version of the MaterialX export does not support lambert).
-        usdFilePath = os.path.join(os.environ.get('MAYA_APP_DIR'),'testShaderWriter.usda')
+        usdFilePath = os.path.join(self.temp_dir,'testShaderWriter.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='useRegistry', convertMaterialsTo='MaterialX',
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
             materialsScopeName='Materials')
 
         self.assertTrue(shaderWriterTest.CanExportCalled)

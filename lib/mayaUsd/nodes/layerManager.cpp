@@ -58,6 +58,7 @@
 
 namespace {
 static std::recursive_mutex findNodeMutex;
+static MObjectHandle        layerManagerHandle;
 
 // Utility func to disconnect an array plug, and all it's element plugs, and all
 // their child plugs.
@@ -137,8 +138,7 @@ getFileFormatForLayer(const std::string& identifierVal, const std::string& seria
 MayaUsd::LayerManager* findNode()
 {
     // Check for cached layer manager before searching
-    MFnDependencyNode    fn;
-    static MObjectHandle layerManagerHandle { MObject::kNullObj };
+    MFnDependencyNode fn;
     if (layerManagerHandle.isValid() && layerManagerHandle.isAlive()) {
         MObject mobj { layerManagerHandle.object() };
         if (!mobj.isNull()) {
@@ -987,6 +987,20 @@ MObject LayerManager::identifier = MObject::kNullObj;
 MObject LayerManager::serialized = MObject::kNullObj;
 MObject LayerManager::anonymous = MObject::kNullObj;
 
+struct _OnSceneResetListener : public TfWeakBase
+{
+    _OnSceneResetListener()
+    {
+        TfWeakPtr<_OnSceneResetListener> me(this);
+        TfNotice::Register(me, &_OnSceneResetListener::OnSceneReset);
+    }
+
+    void OnSceneReset(const UsdMayaSceneResetNotice& notice)
+    {
+        layerManagerHandle = MObject::kNullObj;
+    }
+};
+
 /* static */
 void LayerManager::SetBatchSaveDelegate(BatchSaveDelegate delegate)
 {
@@ -1060,6 +1074,7 @@ MStatus LayerManager::initialize()
         return status;
     }
 
+    static _OnSceneResetListener onSceneResetListener;
     return MS::kSuccess;
 }
 

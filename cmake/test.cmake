@@ -1,3 +1,5 @@
+set(MAYA_USD_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
 function(mayaUsd_get_unittest_target unittest_target unittest_basename)
     get_filename_component(unittest_name ${unittest_basename} NAME_WE)
     set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
@@ -127,7 +129,7 @@ import time\\n\
 import traceback\\n\
 file = ${QUOTE}${PREFIX_PYTHON_SCRIPT}${QUOTE}\\n\
 if not os.path.isabs(file):\\n\
-    file = os.path.join(${QUOTE}${WORKING_DIR}${QUOTE}, file)\\n\
+    file = os.path.join(${QUOTE}${CMAKE_CURRENT_SOURCE_DIR}${QUOTE}, file)\\n\
 openMode = ${QUOTE}rb${QUOTE}\\n\
 compileMode = ${QUOTE}exec${QUOTE}\\n\
 globals = {${QUOTE}__file__${QUOTE}: file, ${QUOTE}__name__${QUOTE}: ${QUOTE}__main__${QUOTE}}\\n\
@@ -144,7 +146,9 @@ except Exception:\\n\
 \")")
             set(COMMAND_CALL ${MAYA_EXECUTABLE} -c ${MEL_PY_EXEC_COMMAND})
         else()
-            set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${PREFIX_PYTHON_SCRIPT})
+            set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/runner_${test_name}.py)
+            FILE(WRITE ${SCRIPT} "${PREFIX_PYTHON_SCRIPT}")
+            set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${SCRIPT})
         endif()
     else()
         set(COMMAND_CALL ${PREFIX_COMMAND})
@@ -166,9 +170,9 @@ finally:
             )
         endif()
 
-        string(REPLACE ";" "\;" PYTEST_CODE "${PYTEST_CODE}")
-        set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} -c "${PYTEST_CODE}")
-
+        set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/runner_${test_name}.py)
+        FILE(WRITE ${SCRIPT} "${PYTEST_CODE}")
+        set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${SCRIPT})
     endif()
 
     add_test(
@@ -206,6 +210,7 @@ finally:
 
     if(IS_WINDOWS)
         list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+        list(APPEND MAYAUSD_VARNAME_PATH "${MAYA_LOCATION}/bin")
     endif()
 
     # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
@@ -258,7 +263,10 @@ finally:
     endif()
 
     # Adjust PYTHONPATH to include the path to our test utilities.
-    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_BINARY_DIR}/test/python")
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${MAYA_USD_DIR}/test/testUtils")
+
+    # Adjust PYTHONPATH to include the path to our test.
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_CURRENT_SOURCE_DIR}")
 
     # Adjust PATH and PYTHONPATH to include USD.
     # These should come last (esp PYTHONPATH, in case another module is overriding
@@ -348,6 +356,12 @@ finally:
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
 
+    if(IS_MACOSX)
+        # Necessary for tests like DiffCore to find python
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "DYLD_LIBRARY_PATH=${MAYA_LOCATION}/MacOS:$ENV{DYLD_LIBRARY_PATH}")
+    endif()
+
     if (PREFIX_INTERACTIVE)
         # Add the "interactive" label to all tests that launch the Maya UI.
         # This allows bypassing them by using the --label-exclude/-LE option to
@@ -358,6 +372,13 @@ finally:
         # to function correctly. Has no effect when not running remote.
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "MAYA_ALLOW_OPENGL_REMOTE_SESSION=1")
+
+        # Don't want popup when color management fails.
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "MAYA_CM_DISABLE_ERROR_POPUPS=1")
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "MAYA_COLOR_MGT_NO_LOGGING=1")
+            
     else()
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "MAYA_IGNORE_DIALOGS=1")
