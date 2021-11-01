@@ -35,11 +35,11 @@ public:
         const Ufe::Path&         path);
 
     MAYAUSD_CORE_PUBLIC
-    bool DiscardEdits(const UsdMayaPrimUpdaterContext& context) override;
+    bool discardEdits(const UsdMayaPrimUpdaterContext& context) override;
 
 protected:
     MAYAUSD_CORE_PUBLIC
-    bool PushCopySpecs(
+    bool pushCopySpecs(
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,
         SdfLayerRefPtr dstLayer,

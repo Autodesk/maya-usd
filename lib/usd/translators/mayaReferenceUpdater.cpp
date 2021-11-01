@@ -60,7 +60,7 @@ PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
 }
 
 /* virtual */
-bool PxrUsdTranslators_MayaReferenceUpdater::PushCopySpecs(
+bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
     SdfLayerRefPtr srcLayer,
     const SdfPath& srcSdfPath,
     SdfLayerRefPtr dstLayer,
@@ -99,12 +99,12 @@ bool PxrUsdTranslators_MayaReferenceUpdater::PushCopySpecs(
 }
 
 /* virtual */
-bool PxrUsdTranslators_MayaReferenceUpdater::DiscardEdits(const UsdMayaPrimUpdaterContext& context)
+bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
 {
-    const MObject& parentNode = GetMayaObject();
+    const MObject& parentNode = getMayaObject();
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
 
-    return UsdMayaPrimUpdater::DiscardEdits(context);
+    return UsdMayaPrimUpdater::discardEdits(context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

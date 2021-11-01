@@ -51,28 +51,28 @@ bool push(const std::string& nodeName)
         return false;
 
     Ufe::Path path;
-    if (!UsdMayaPrimUpdater::readPullInformation(dagPath, path))
+    if (!PrimUpdaterManager::readPullInformation(dagPath, path))
         return false;
 
-    return PrimUpdaterManager::GetInstance().Push(dagNode, path);
+    return PrimUpdaterManager::getInstance().push(dagNode, path);
 }
 
 bool pull(const std::string& ufePathString)
 {
     Ufe::Path path = Ufe::PathString::path(ufePathString);
 
-    return PrimUpdaterManager::GetInstance().Pull(path);
+    return PrimUpdaterManager::getInstance().pull(path);
 }
 
-bool pullClear(const std::string& nodeName)
+bool discardEdits(const std::string& nodeName)
 {
     auto dagPath = UsdMayaUtil::nameToDagPath(nodeName);
 
     Ufe::Path path;
-    if (!UsdMayaPrimUpdater::readPullInformation(dagPath, path))
+    if (!PrimUpdaterManager::readPullInformation(dagPath, path))
         return false;
 
-    return PrimUpdaterManager::GetInstance().PullClear(path);
+    return PrimUpdaterManager::getInstance().discardEdits(path);
 }
 
 bool copyBetween(const std::string& srcUfePathString, const std::string& dstUfePathString)
@@ -83,7 +83,7 @@ bool copyBetween(const std::string& srcUfePathString, const std::string& dstUfeP
     if (src.empty() || dst.empty())
         return false;
 
-    return PrimUpdaterManager::GetInstance().CopyBetween(src, dst);
+    return PrimUpdaterManager::getInstance().copyBetween(src, dst);
 }
 
 } // namespace
@@ -94,9 +94,9 @@ void wrapPrimUpdaterManager()
     class_<This>("PrimUpdaterManager", no_init)
         .def("push", push)
         .def("pull", pull)
-        .def("pullClear", pullClear)
+        .def("pullClear", discardEdits)
         .def("mergeToUsd", push)
         .def("editAsMaya", pull)
-        .def("discardEdits", pullClear)
+        .def("discardEdits", discardEdits)
         .def("copy", copyBetween);
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,8 +32,7 @@ PulledObjectHierarchy::PulledObjectHierarchy(
     const Ufe::SceneItem::Ptr&        item,
     const Ufe::Path&                  pulledPath)
     : Ufe::Hierarchy()
-    , _mayaHierarchyHandler(mayaHierarchyHandler)
-    , _mayaHierarchy(_mayaHierarchyHandler->hierarchy(item))
+    , _mayaHierarchy(mayaHierarchyHandler->hierarchy(item))
     , _pulledPath(pulledPath)
 {
 }
@@ -82,26 +81,13 @@ PulledObjectHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::
     return nullptr;
 }
 
-Ufe::SceneItem::Ptr PulledObjectHierarchy::createGroup(
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
-    const Ufe::Selection& selection,
-#endif
-    const Ufe::PathComponent& name) const
+Ufe::SceneItem::Ptr PulledObjectHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
     TF_CODING_ERROR("Illegal call to unimplemented %s", __func__);
     return nullptr;
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 3001)
-Ufe::InsertChildCommand::Ptr
-#else
-Ufe::UndoableCommand::Ptr
-#endif
-PulledObjectHierarchy::createGroupCmd(
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
-    const Ufe::Selection& selection,
-#endif
-    const Ufe::PathComponent& name) const
+Ufe::InsertChildCommand::Ptr PulledObjectHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 {
     TF_CODING_ERROR("Illegal call to unimplemented %s", __func__);
     return nullptr;
@@ -114,13 +100,11 @@ PulledObjectHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
     return nullptr;
 }
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::UndoableCommand::Ptr PulledObjectHierarchy::ungroupCmd() const
 {
     TF_CODING_ERROR("Illegal call to unimplemented %s", __func__);
     return nullptr;
 }
-#endif // UFE_V3_FEATURES_AVAILABLE
 
 Ufe::SceneItem::Ptr PulledObjectHierarchy::defaultParent() const
 {

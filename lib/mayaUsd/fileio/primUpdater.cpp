@@ -58,53 +58,29 @@ extern Ufe::Rtid g_MayaRtid;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-// Set name that will be used to hold all pulled objects
-// MOVED
-const std::string kPullSetName("pullStateSet");
-
-// Metadata key used to store pull information on a prim
-// MOVED
-const TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
-
-// Metadata key used to store pull information on a DG node
-// MOVED
-const MString kPullDGMetadataKey("Pull_UfePath");
-
-Ufe::Path usdToMaya(const std::string& pathStr)
-{
-    Ufe::PathSegment seg(
-        Ufe::PathSegment::Components({ Ufe::PathComponent("world"), Ufe::PathComponent(pathStr) }),
-        MayaUsd::ufe::g_MayaRtid,
-        '|');
-    return Ufe::Path(seg);
-}
-
-} // namespace
-
 UsdMayaPrimUpdater::UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const Ufe::Path& path)
     : _mayaObject(depNodeFn.object())
     , _path(path)
 {
 }
 
-bool UsdMayaPrimUpdater::Pull(const UsdMayaPrimUpdaterContext& context) { return true; }
+bool UsdMayaPrimUpdater::pull(const UsdMayaPrimUpdaterContext& context) { return true; }
 
-bool UsdMayaPrimUpdater::DiscardEdits(const UsdMayaPrimUpdaterContext& context)
+bool UsdMayaPrimUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
 {
-    MObject objectToDelete = GetMayaObject();
+    MObject objectToDelete = getMayaObject();
     if (!objectToDelete.isNull()) {
         MGlobal::deleteNode(objectToDelete);
     }
     return true;
 }
 
-bool UsdMayaPrimUpdater::PushEnd(const UsdMayaPrimUpdaterContext& context)
+bool UsdMayaPrimUpdater::pushEnd(const UsdMayaPrimUpdaterContext& context)
 {
-    return DiscardEdits(context);
+    return discardEdits(context);
 }
 
-bool UsdMayaPrimUpdater::PushCopySpecs(
+bool UsdMayaPrimUpdater::pushCopySpecs(
     SdfLayerRefPtr srcLayer,
     const SdfPath& topSrcPath,
     SdfLayerRefPtr dstLayer,
@@ -176,73 +152,13 @@ bool UsdMayaPrimUpdater::PushCopySpecs(
         srcLayer, topSrcPath, dstLayer, topDstPath, shouldCopyValueFn, dontCopyChildrenFn);
 }
 
-const MObject& UsdMayaPrimUpdater::GetMayaObject() const { return _mayaObject; }
+const MObject& UsdMayaPrimUpdater::getMayaObject() const { return _mayaObject; }
 
-const Ufe::Path& UsdMayaPrimUpdater::GetUfePath() const { return _path; }
+const Ufe::Path& UsdMayaPrimUpdater::getUfePath() const { return _path; }
 
-UsdPrim UsdMayaPrimUpdater::GetUsdPrim(const UsdMayaPrimUpdaterContext& context) const
+UsdPrim UsdMayaPrimUpdater::getUsdPrim(const UsdMayaPrimUpdaterContext& context) const
 {
     return MayaUsd::ufe::ufePathToPrim(_path);
-}
-
-/* static */
-bool UsdMayaPrimUpdater::readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
-{
-    auto value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
-    if (!value.IsEmpty() && value.CanCast<std::string>()) {
-        dagPathStr = value.Get<std::string>();
-        return !dagPathStr.empty();
-    }
-    return false;
-}
-
-/* static */
-bool UsdMayaPrimUpdater::readPullInformation(
-    const PXR_NS::UsdPrim& prim,
-    Ufe::SceneItem::Ptr&   dagPathItem)
-{
-    std::string dagPathStr;
-    if (readPullInformation(prim, dagPathStr)) {
-        // Remove leading '|' character.
-        if (dagPathStr[0] == '|')
-            dagPathStr = dagPathStr.substr(1);
-        dagPathItem = Ufe::Hierarchy::createItem(usdToMaya(dagPathStr));
-        return (bool)dagPathItem;
-    }
-    return false;
-}
-
-/* static */
-bool UsdMayaPrimUpdater::readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath)
-{
-    auto        prim = MayaUsd::ufe::ufePathToPrim(ufePath);
-    std::string dagPathStr;
-    if (readPullInformation(prim, dagPathStr)) {
-        MSelectionList sel;
-        sel.add(dagPathStr.c_str());
-        sel.getDagPath(0, dagPath);
-        return dagPath.isValid();
-    }
-    return false;
-}
-
-/* static */
-bool UsdMayaPrimUpdater::readPullInformation(const MDagPath& dagPath, Ufe::Path& ufePath)
-{
-    MStatus status;
-
-    MFnDependencyNode depNode(dagPath.node());
-    MPlug             dgMetadata = depNode.findPlug(kPullDGMetadataKey, &status);
-    if (status == MStatus::kSuccess) {
-        MString pulledUfePathStr;
-        status = dgMetadata.getValue(pulledUfePathStr);
-        if (status) {
-            ufePath = Ufe::PathString::path(pulledUfePathStr.asChar());
-            return !ufePath.empty();
-        }
-    }
-
-    return false;
 }
 
 /* static */

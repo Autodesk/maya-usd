@@ -17,7 +17,7 @@
 
 #include "UsdSceneItem.h"
 
-#include <mayaUsd/fileio/primUpdater.h>
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/utils/util.h>
 
@@ -111,7 +111,7 @@ Ufe::Path UsdPathMappingHandler::fromHost(const Ufe::Path& hostPath) const
         mayaComps.emplace_back(mayaHostPath.back());
         mayaHostPath = mayaHostPath.pop();
         Ufe::Path ufePath;
-        if (PXR_NS::UsdMayaPrimUpdater::readPullInformation(dagPath, ufePath)) {
+        if (PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, ufePath)) {
             // From the pulled info path, we pop only the last component and replace it with
             // the Maya component array.
             std::reverse(mayaComps.begin(), mayaComps.end());

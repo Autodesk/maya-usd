@@ -30,6 +30,7 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <ufe/path.h>
+#include <ufe/sceneItem.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,21 +41,29 @@ public:
     ~PrimUpdaterManager();
 
     MAYAUSD_CORE_PUBLIC
-    bool Push(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath);
+    bool push(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath);
 
     MAYAUSD_CORE_PUBLIC
-    bool Pull(const Ufe::Path& path);
+    bool pull(const Ufe::Path& path);
 
     MAYAUSD_CORE_PUBLIC
-    bool PullClear(const Ufe::Path& path);
+    bool discardEdits(const Ufe::Path& path);
 
     MAYAUSD_CORE_PUBLIC
-    bool CopyBetween(const Ufe::Path& srcPath, const Ufe::Path& dstPath);
+    bool copyBetween(const Ufe::Path& srcPath, const Ufe::Path& dstPath);
 
     /// \brief Returns the singleton prim updater manager
     MAYAUSD_CORE_PUBLIC
-    static PrimUpdaterManager& GetInstance();
+    static PrimUpdaterManager& getInstance();
 
+    MAYAUSD_CORE_PUBLIC
+    static bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr);
+    MAYAUSD_CORE_PUBLIC
+    static bool readPullInformation(const PXR_NS::UsdPrim& prim, Ufe::SceneItem::Ptr& dagPathItem);
+    MAYAUSD_CORE_PUBLIC
+    static bool readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath);
+    MAYAUSD_CORE_PUBLIC
+    static bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
 private:
     PrimUpdaterManager();
 
@@ -62,17 +71,17 @@ private:
 
     //! Ensure the Dag pull root exists.  This is the child of the Maya world
     //! node under which all pulled nodes are created.
-    bool FindOrCreatePullRoot();
+    bool findOrCreatePullRoot();
 
     //! Create the pull parent for the pulled hierarchy.  This is the node
     //! which receives the pulled node's parent transformation.
-    MObject CreatePullParent(const Ufe::Path& pulledPath);
+    MObject createPullParent(const Ufe::Path& pulledPath);
 
     //! Remove the pull parent for the pulled hierarchy.
-    bool RemovePullParent(const MDagPath& pullParent);
+    bool removePullParent(const MDagPath& pullParent);
 
     //! Create the pull parent and set it into the prim updater context.
-    MDagPath SetupPullParent(const Ufe::Path& pulledPath, VtDictionary& args);
+    MDagPath setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args);
 
     //! Maya scene message callback.
     static void beforeNewOrOpenCallback(void* clientData);

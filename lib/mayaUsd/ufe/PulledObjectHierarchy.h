@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,9 +23,14 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief TODOC
+//! \brief Maya hierarchy interface for pulled Maya objects.
 /*!
-    TODOC
+    See PulledObjectHierarchyHandler for pulled object data model details.
+    The hierarchy interface of the pulled sub-hierarchy root is a
+    PulledObjectHierarchy object.  Its children are the normal Maya children;
+    its parent is the USD parent of the pulled prim.  This allows the pulled
+    Maya data to respond correctly to hierarchy viewing (e.g. the Outliner) and
+    navigation (e.g. pick walking).
  */
 class MAYAUSD_CORE_PUBLIC PulledObjectHierarchy : public Ufe::Hierarchy
 {
@@ -56,21 +61,9 @@ public:
     Ufe::SceneItemList  filteredChildren(const ChildFilter&) const override;
     Ufe::SceneItem::Ptr parent() const override;
 
-    Ufe::SceneItem::Ptr createGroup(
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
-        const Ufe::Selection& selection,
-#endif
-        const Ufe::PathComponent& name) const override;
-#if (UFE_PREVIEW_VERSION_NUM >= 3001)
-    Ufe::InsertChildCommand::Ptr
-#else
-    Ufe::UndoableCommand::Ptr
-#endif
-    createGroupCmd(
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
-        const Ufe::Selection& selection,
-#endif
-        const Ufe::PathComponent& name) const override;
+    Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
+
+    Ufe::InsertChildCommand::Ptr createGroupCmd(const Ufe::PathComponent& name) const override;
 
     Ufe::SceneItem::Ptr defaultParent() const override;
 
@@ -81,12 +74,9 @@ public:
 
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
 
-#ifdef UFE_V3_FEATURES_AVAILABLE
     Ufe::UndoableCommand::Ptr ungroupCmd() const override;
-#endif
 
 private:
-    Ufe::HierarchyHandler::Ptr _mayaHierarchyHandler;
     Hierarchy::Ptr             _mayaHierarchy;
     Ufe::Path                  _pulledPath;
 }; // PulledObjectHierarchy

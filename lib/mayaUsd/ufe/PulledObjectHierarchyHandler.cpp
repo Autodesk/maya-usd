@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 //
 #include "PulledObjectHierarchyHandler.h"
 
-#include <mayaUsd/fileio/primUpdater.h>
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/PulledObjectHierarchy.h>
 #include <mayaUsd/utils/util.h>
 
@@ -57,7 +57,7 @@ Ufe::Hierarchy::Ptr PulledObjectHierarchyHandler::hierarchy(const Ufe::SceneItem
     Ufe::Path ufePath;
 
     auto dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(path.getSegments()[nbSegs - 1].string());
-    if (PXR_NS::UsdMayaPrimUpdater::readPullInformation(dagPath, ufePath)) {
+    if (PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, ufePath)) {
         return PulledObjectHierarchy::create(_mayaHierarchyHandler, item, ufePath);
     } else {
         return _mayaHierarchyHandler->hierarchy(item);

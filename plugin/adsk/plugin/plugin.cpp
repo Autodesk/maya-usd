@@ -328,7 +328,7 @@ MStatus initializePlugin(MObject obj)
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
     // Install notifications
-    PrimUpdaterManager::GetInstance();
+    PrimUpdaterManager::getInstance();
 #endif
 
     return status;

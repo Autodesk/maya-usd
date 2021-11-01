@@ -45,7 +45,7 @@
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/fileio/primUpdater.h>
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/UsdUndoUngroupCommand.h>
 
 #include <ufe/pathString.h> // In UFE v2 but only needed for primUpdater.
@@ -146,7 +146,7 @@ Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& r
     UFE_V3(std::string dagPathStr;)
     for (const auto& child : range) {
 #ifdef UFE_V3_FEATURES_AVAILABLE
-        if (PXR_NS::UsdMayaPrimUpdater::readPullInformation(child, dagPathStr)) {
+        if (PXR_NS::PrimUpdaterManager::readPullInformation(child, dagPathStr)) {
             auto item = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
             if (TF_VERIFY(item)) {
                 children.emplace_back(item);

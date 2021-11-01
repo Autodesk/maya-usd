@@ -29,7 +29,6 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <ufe/path.h>
-#include <ufe/sceneItem.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -59,7 +58,7 @@ public:
     // Copy the pushed prim from the temporary srcLayer where it has been
     // exported by push into the destination dstLayer which is in the scene.
     MAYAUSD_CORE_PUBLIC
-    virtual bool PushCopySpecs(
+    virtual bool pushCopySpecs(
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,
         SdfLayerRefPtr dstLayer,
@@ -68,38 +67,30 @@ public:
     /// Customize the pulled prim after pull import.  Default implementation in
     /// this class is a no-op.
     MAYAUSD_CORE_PUBLIC
-    virtual bool Pull(const UsdMayaPrimUpdaterContext& context);
+    virtual bool pull(const UsdMayaPrimUpdaterContext& context);
 
     /// Discard edits done in Maya.  Implementation in this class removes the
     /// Maya node.
     MAYAUSD_CORE_PUBLIC
-    virtual bool DiscardEdits(const UsdMayaPrimUpdaterContext& context);
+    virtual bool discardEdits(const UsdMayaPrimUpdaterContext& context);
 
     /// Clean up Maya data model at end of push.  Implementation in this class
-    /// calls DiscardEdits().
+    /// calls discardEdits().
     MAYAUSD_CORE_PUBLIC
-    virtual bool PushEnd(const UsdMayaPrimUpdaterContext& context);
+    virtual bool pushEnd(const UsdMayaPrimUpdaterContext& context);
 
     /// The MObject for the Maya node being updated by this updater.
     MAYAUSD_CORE_PUBLIC
-    const MObject& GetMayaObject() const;
+    const MObject& getMayaObject() const;
 
     /// The path of the destination USD prim which we are updating.
     MAYAUSD_CORE_PUBLIC
-    const Ufe::Path& GetUfePath() const;
+    const Ufe::Path& getUfePath() const;
 
     /// The destination USD prim which we are updating.
     MAYAUSD_CORE_PUBLIC
-    UsdPrim GetUsdPrim(const UsdMayaPrimUpdaterContext& context) const;
+    UsdPrim getUsdPrim(const UsdMayaPrimUpdaterContext& context) const;
 
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const PXR_NS::UsdPrim& prim, Ufe::SceneItem::Ptr& dagPathItem);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath);
-    MAYAUSD_CORE_PUBLIC
-    static bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
     MAYAUSD_CORE_PUBLIC
     static bool isAnimated(const MDagPath& path);
 

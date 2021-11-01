@@ -81,6 +81,9 @@ const TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
 // Metadata key used to store pull information on a DG node
 const MString kPullDGMetadataKey("Pull_UfePath");
 
+// Name of Dag node under which all pulled sub-hierarchies are rooted.
+const MString kPullRootName("__mayaUsd__");
+
 //! Lock or unlock hierarchy starting at given root.
 void lockNodes(const MDagPath& root, bool state)
 {
@@ -103,7 +106,7 @@ Ufe::Path usdToMaya(const Ufe::Path& usdPath)
         return Ufe::Path();
     }
     std::string dagPathStr;
-    if (!TF_VERIFY(PXR_NS::UsdMayaPrimUpdater::readPullInformation(prim, dagPathStr))) {
+    if (!TF_VERIFY(PXR_NS::PrimUpdaterManager::readPullInformation(prim, dagPathStr))) {
         return Ufe::Path();
     }
 
@@ -369,7 +372,7 @@ bool PullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         // customization step.  This is a frequent difficulty for operations on
         // multiple data, especially since we can't roll back the result of
         // the execution of previous updaters.  Revisit this.  PPT, 15-Sep-2021.
-        if (!updater->Pull(context)) {
+        if (!updater->pull(context)) {
             return false;
         }
     }
@@ -558,8 +561,8 @@ bool PushCustomize(
               auto relativeSrcPath = srcPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
               auto dstPath = dstRootParentPath.AppendPath(relativeSrcPath);
 
-              // Report PushCopySpecs() failure.
-              if (!updater->PushCopySpecs(srcLayer, srcPath, dstLayer, dstPath)) {
+              // Report pushCopySpecs() failure.
+              if (!updater->pushCopySpecs(srcLayer, srcPath, dstLayer, dstPath)) {
                   throw MayaUsd::TraversalFailure(std::string("PushCopySpecs() failed."), srcPath);
               }
 
@@ -598,8 +601,8 @@ bool PushCustomize(
             return;
         }
 
-        // Report PushEnd() failure.
-        if (!updater->PushEnd(context)) {
+        // Report pushEnd() failure.
+        if (!updater->pushEnd(context)) {
             throw MayaUsd::TraversalFailure(std::string("PushEnd() failed."), primSpecPath);
         }
     };
@@ -640,8 +643,6 @@ private:
     bool* _controlingFlag { nullptr };
 };
 
-MString pullRootName("__mayaUsd__");
-
 } // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -671,7 +672,7 @@ PrimUpdaterManager::~PrimUpdaterManager()
     _cbIds.clear();
 }
 
-bool PrimUpdaterManager::Push(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath)
+bool PrimUpdaterManager::push(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
     if (!proxyShape) {
@@ -729,7 +730,7 @@ bool PrimUpdaterManager::Push(const MFnDependencyNode& depNodeFn, const Ufe::Pat
     }
 
     if (!isCopy) {
-        if (!TF_VERIFY(RemovePullParent(pullParentPath))) {
+        if (!TF_VERIFY(removePullParent(pullParentPath))) {
             return false;
         }
     }
@@ -743,7 +744,7 @@ bool PrimUpdaterManager::Push(const MFnDependencyNode& depNodeFn, const Ufe::Pat
     return true;
 }
 
-bool PrimUpdaterManager::Pull(const Ufe::Path& path)
+bool PrimUpdaterManager::pull(const Ufe::Path& path)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(path);
     if (!proxyShape) {
@@ -762,7 +763,7 @@ bool PrimUpdaterManager::Pull(const Ufe::Path& path)
 
     MDagPath pullParentPath;
     if (!updaterArgs._copyOperation
-        && !(pullParentPath = SetupPullParent(path, importArgs)).isValid()) {
+        && !(pullParentPath = setupPullParent(path, importArgs)).isValid()) {
         return false;
     }
 
@@ -799,7 +800,7 @@ bool PrimUpdaterManager::Pull(const Ufe::Path& path)
     return true;
 }
 
-bool PrimUpdaterManager::PullClear(const Ufe::Path& pulledPath)
+bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
     if (!proxyShape) {
@@ -835,13 +836,13 @@ bool PrimUpdaterManager::PullClear(const Ufe::Path& pulledPath)
         dagIt.getPath(curDagPath);
         MFnDependencyNode   depNodeFn(curDagPath.node());
         FallbackPrimUpdater fallback(depNodeFn, Ufe::Path());
-        fallback.DiscardEdits(context);
+        fallback.discardEdits(context);
     }
 
     removePullInformation(pulledPath);
     removeExcludeFromRendering(pulledPath);
 
-    if (!TF_VERIFY(RemovePullParent(pullParent))) {
+    if (!TF_VERIFY(removePullParent(pullParent))) {
         return false;
     }
 
@@ -853,7 +854,7 @@ bool PrimUpdaterManager::PullClear(const Ufe::Path& pulledPath)
     return true;
 }
 
-bool PrimUpdaterManager::CopyBetween(const Ufe::Path& srcPath, const Ufe::Path& dstPath)
+bool PrimUpdaterManager::copyBetween(const Ufe::Path& srcPath, const Ufe::Path& dstPath)
 {
     MayaUsdProxyShapeBase* srcProxyShape = MayaUsd::ufe::getProxyShape(srcPath);
     MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dstPath);
@@ -968,18 +969,18 @@ void PrimUpdaterManager::onProxyContentChanged(
                     = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
                 const Ufe::Path path = proxyNotice.GetProxyShape().ufePath() + pathSegment;
 
-                Pull(path);
+                pull(path);
             }
         }
     }
 }
 
-PrimUpdaterManager& PrimUpdaterManager::GetInstance()
+PrimUpdaterManager& PrimUpdaterManager::getInstance()
 {
     return TfSingleton<PrimUpdaterManager>::GetInstance();
 }
 
-bool PrimUpdaterManager::FindOrCreatePullRoot()
+bool PrimUpdaterManager::findOrCreatePullRoot()
 {
     // If we already found the pull root, good to go.
     if (!_pullRoot.isNull()) {
@@ -993,7 +994,7 @@ bool PrimUpdaterManager::FindOrCreatePullRoot()
     for (unsigned int i = 0; i < nbWorldChildren; ++i) {
         auto              childObj = world.child(i);
         MFnDependencyNode child(childObj);
-        if (child.name() == pullRootName) {
+        if (child.name() == kPullRootName) {
             _pullRoot = childObj;
             return true;
         }
@@ -1006,7 +1007,7 @@ bool PrimUpdaterManager::FindOrCreatePullRoot()
     if (status != MStatus::kSuccess) {
         return false;
     }
-    status = dagMod.renameNode(pullRootObj, pullRootName);
+    status = dagMod.renameNode(pullRootObj, kPullRootName);
     if (status != MStatus::kSuccess) {
         return false;
     }
@@ -1024,7 +1025,7 @@ bool PrimUpdaterManager::FindOrCreatePullRoot()
     return true;
 }
 
-MObject PrimUpdaterManager::CreatePullParent(const Ufe::Path& pulledPath)
+MObject PrimUpdaterManager::createPullParent(const Ufe::Path& pulledPath)
 {
     MDagModifier dagMod;
     MStatus      status;
@@ -1040,7 +1041,7 @@ MObject PrimUpdaterManager::CreatePullParent(const Ufe::Path& pulledPath)
     return (dagMod.doIt() == MStatus::kSuccess) ? pullParentObj : MObject::kNullObj;
 }
 
-bool PrimUpdaterManager::RemovePullParent(const MDagPath& parentDagPath)
+bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
 {
     if (!TF_VERIFY(parentDagPath.isValid())) {
         return false;
@@ -1065,13 +1066,13 @@ bool PrimUpdaterManager::RemovePullParent(const MDagPath& parentDagPath)
     return dgMod.doIt() == MStatus::kSuccess;
 }
 
-MDagPath PrimUpdaterManager::SetupPullParent(const Ufe::Path& pulledPath, VtDictionary& args)
+MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args)
 {
-    if (!FindOrCreatePullRoot()) {
+    if (!findOrCreatePullRoot()) {
         return MDagPath();
     }
 
-    auto pullParent = CreatePullParent(pulledPath);
+    auto pullParent = createPullParent(pulledPath);
     if (pullParent == MObject::kNullObj) {
         return MDagPath();
     }
@@ -1094,4 +1095,62 @@ void PrimUpdaterManager::beforeNewOrOpenCallback(void* clientData)
     auto um = static_cast<PrimUpdaterManager*>(clientData);
     um->_pullRoot = MObject::kNullObj;
 }
+
+/* static */
+bool PrimUpdaterManager::readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
+{
+    auto value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
+    if (!value.IsEmpty() && value.CanCast<std::string>()) {
+        dagPathStr = value.Get<std::string>();
+        return !dagPathStr.empty();
+    }
+    return false;
+}
+
+/* static */
+bool PrimUpdaterManager::readPullInformation(
+    const PXR_NS::UsdPrim& prim,
+    Ufe::SceneItem::Ptr&   dagPathItem)
+{
+    std::string dagPathStr;
+    if (readPullInformation(prim, dagPathStr)) {
+        dagPathItem = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
+        return (bool)dagPathItem;
+    }
+    return false;
+}
+
+/* static */
+bool PrimUpdaterManager::readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath)
+{
+    auto        prim = MayaUsd::ufe::ufePathToPrim(ufePath);
+    std::string dagPathStr;
+    if (readPullInformation(prim, dagPathStr)) {
+        MSelectionList sel;
+        sel.add(dagPathStr.c_str());
+        sel.getDagPath(0, dagPath);
+        return dagPath.isValid();
+    }
+    return false;
+}
+
+/* static */
+bool PrimUpdaterManager::readPullInformation(const MDagPath& dagPath, Ufe::Path& ufePath)
+{
+    MStatus status;
+
+    MFnDependencyNode depNode(dagPath.node());
+    MPlug             dgMetadata = depNode.findPlug(kPullDGMetadataKey, &status);
+    if (status == MStatus::kSuccess) {
+        MString pulledUfePathStr;
+        status = dgMetadata.getValue(pulledUfePathStr);
+        if (status) {
+            ufePath = Ufe::PathString::path(pulledUfePathStr.asChar());
+            return !ufePath.empty();
+        }
+    }
+
+    return false;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
