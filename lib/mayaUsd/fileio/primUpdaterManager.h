@@ -64,6 +64,7 @@ public:
     static bool readPullInformation(const Ufe::Path& ufePath, MDagPath& dagPath);
     MAYAUSD_CORE_PUBLIC
     static bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
+
 private:
     PrimUpdaterManager();
 

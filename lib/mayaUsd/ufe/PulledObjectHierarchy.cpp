@@ -87,7 +87,8 @@ Ufe::SceneItem::Ptr PulledObjectHierarchy::createGroup(const Ufe::PathComponent&
     return nullptr;
 }
 
-Ufe::InsertChildCommand::Ptr PulledObjectHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
+Ufe::InsertChildCommand::Ptr
+PulledObjectHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 {
     TF_CODING_ERROR("Illegal call to unimplemented %s", __func__);
     return nullptr;

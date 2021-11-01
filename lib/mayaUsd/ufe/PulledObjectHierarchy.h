@@ -77,8 +77,8 @@ public:
     Ufe::UndoableCommand::Ptr ungroupCmd() const override;
 
 private:
-    Hierarchy::Ptr             _mayaHierarchy;
-    Ufe::Path                  _pulledPath;
+    Hierarchy::Ptr _mayaHierarchy;
+    Ufe::Path      _pulledPath;
 }; // PulledObjectHierarchy
 
 } // namespace ufe
