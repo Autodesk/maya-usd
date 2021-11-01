@@ -87,7 +87,7 @@ bool UsdMayaPrimUpdater::pushCopySpecs(
     const SdfPath& srcSdfPath,
     UsdStageRefPtr dstStage,
     SdfLayerRefPtr dstLayer,
-    const SdfPath& topDstPath)
+    const SdfPath& dstSdfPath)
 {
     return MayaUsdUtils::mergePrims(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
 }
