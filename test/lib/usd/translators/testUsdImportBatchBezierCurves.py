@@ -29,13 +29,13 @@ from pxr import Vt
 
 import fixturesUtils
 
-class testUsdExportBasisCurves(unittest.TestCase):
+class testUsdExportBatchCurves(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
 
-        filePath = os.path.join(inputPath, "UsdImportBasisCurvesTest", "basisCurve.usda")
+        filePath = os.path.join(inputPath, "UsdImportBasisCurvesTest", "batchBezier.usda")
         cmds.file(filePath, force=True, open=True)
 
     @classmethod
@@ -45,23 +45,34 @@ class testUsdExportBasisCurves(unittest.TestCase):
     def testExport(self):
         #Check the imported Usd.
         selectionList = OpenMaya.MSelectionList()
-        selectionList.add('Curve')
+        selectionList.add('NurbsBatchShape')
         dagPath = OpenMaya.MDagPath()
         selectionList.getDagPath( 0, dagPath )
         MFnNurbsCurve = OpenMaya.MFnNurbsCurve(dagPath)
-        self.assertEqual(MFnNurbsCurve.numCVs(), 7)
+        self.assertEqual(MFnNurbsCurve.numCVs(), 10)
+
+        selectionList.clear()
+        selectionList.add('NurbsBatchShape1')
+        dagPath = OpenMaya.MDagPath()
+        selectionList.getDagPath( 0, dagPath )
+        MFnNurbsCurve = OpenMaya.MFnNurbsCurve(dagPath)
+        self.assertEqual(MFnNurbsCurve.numCVs(), 4)
 
         #Export the Maya file and validate a handful of properties.
-        usdFile = os.path.abspath('UsdExportBasisCurveTest.usda')
+        usdFile = os.path.abspath('UsdExportBatchBezierTest.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none')
 
         stage = Usd.Stage.Open(usdFile)
-        nc = UsdGeom.BasisCurves.Get(stage, '/Curve')
+        nc = UsdGeom.BasisCurves.Get(stage, '/NurbsBatch/NurbsBatchShape')
         self.assertEqual(nc.GetWidthsAttr().Get(), Vt.FloatArray([1.0]))
         self.assertEqual(nc.GetWidthsInterpolation(), UsdGeom.Tokens.constant)
-        self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([7]))
+        self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([10]))
 
+        nc = UsdGeom.BasisCurves.Get(stage, '/NurbsBatch/NurbsBatchShape1')
+        self.assertEqual(nc.GetWidthsAttr().Get(), Vt.FloatArray([1.0]))
+        self.assertEqual(nc.GetWidthsInterpolation(), UsdGeom.Tokens.constant)
+        self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([4]))
 
 
 if __name__ == '__main__':

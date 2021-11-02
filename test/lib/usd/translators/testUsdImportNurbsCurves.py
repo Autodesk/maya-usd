@@ -29,13 +29,13 @@ from pxr import Vt
 
 import fixturesUtils
 
-class testUsdExportBasisCurves(unittest.TestCase):
+class testUsdExportNurbsCurves(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
 
-        filePath = os.path.join(inputPath, "UsdImportBasisCurvesTest", "basisCurve.usda")
+        filePath = os.path.join(inputPath, "UsdImportBasisCurvesTest", "nurbsCurve.usda")
         cmds.file(filePath, force=True, open=True)
 
     @classmethod
@@ -45,20 +45,22 @@ class testUsdExportBasisCurves(unittest.TestCase):
     def testExport(self):
         #Check the imported Usd.
         selectionList = OpenMaya.MSelectionList()
-        selectionList.add('Curve')
+        selectionList.add('Nurbs')
         dagPath = OpenMaya.MDagPath()
         selectionList.getDagPath( 0, dagPath )
         MFnNurbsCurve = OpenMaya.MFnNurbsCurve(dagPath)
         self.assertEqual(MFnNurbsCurve.numCVs(), 7)
 
         #Export the Maya file and validate a handful of properties.
-        usdFile = os.path.abspath('UsdExportBasisCurveTest.usda')
+        usdFile = os.path.abspath('UsdExportNurbsCurveTest.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
             shadingMode='none')
 
         stage = Usd.Stage.Open(usdFile)
-        nc = UsdGeom.BasisCurves.Get(stage, '/Curve')
+        nc = UsdGeom.NurbsCurves.Get(stage, '/Nurbs')
         self.assertEqual(nc.GetWidthsAttr().Get(), Vt.FloatArray([1.0]))
+        self.assertEqual(nc.GetRangesAttr().Get(), Vt.Vec2dArray([Gf.Vec2d(0, 2)]))
+        self.assertEqual(nc.GetOrderAttr().Get(), Vt.IntArray([4]))
         self.assertEqual(nc.GetWidthsInterpolation(), UsdGeom.Tokens.constant)
         self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([7]))
 
