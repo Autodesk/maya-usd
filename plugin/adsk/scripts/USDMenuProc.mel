@@ -45,6 +45,6 @@ global proc USDMenuProc(string $parent, string $obj)
 
         setParent -menu ..;
         menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_pullToDG \"" + $obj + "\"");
-        menuItem -label "Copy As Maya Data" -command ("mayaUsdMenu_copyToDG \"" + $obj + "\"");
+        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_copyToDG \"" + $obj + "\"");
     }
 }

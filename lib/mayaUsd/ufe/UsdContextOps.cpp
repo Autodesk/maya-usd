@@ -108,8 +108,8 @@ static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
 static constexpr char    kEditAsMayaItem[] = "Edit As Maya Data";
 static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
-static constexpr char    kCopyAsMayaItem[] = "Copy As Maya Data";
-static constexpr char    kCopyAsMayaLabel[] = "Copy As Maya Data";
+static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
+static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
 
 #if PXR_VERSION >= 2008
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
@@ -574,7 +574,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         // Top-level items (do not add for gateway type node):
         if (!fIsAGatewayType) {
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
-            items.emplace_back(kCopyAsMayaItem, kCopyAsMayaLabel);
+            items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             items.emplace_back(Ufe::ContextItem::kSeparator);
 
             // Working set management (load and unload):
@@ -783,7 +783,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MString script;
         script.format("mayaUsdMenu_pullToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script);
-    } else if (itemPath[0] == kCopyAsMayaItem) {
+    } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format("mayaUsdMenu_copyToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script);

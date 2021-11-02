@@ -29,6 +29,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/instantiateSingleton.h>
+#include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
 
@@ -257,7 +258,7 @@ bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
 // the prim refer to the same object: the prim is passed in as an
 // optimization to avoid an additional call to ufePathToPrim().
 using PullImportPaths = std::pair<std::vector<MDagPath>, std::vector<Ufe::Path>>;
-PullImportPaths PullImport(
+PullImportPaths pullImport(
     const Ufe::Path&                 ufePulledPath,
     const UsdPrim&                   pulledPrim,
     const UsdMayaPrimUpdaterContext& context)
@@ -352,7 +353,7 @@ PullImportPaths PullImport(
 //------------------------------------------------------------------------------
 //
 // Perform the customization step of the pull (second step).
-bool PullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdaterContext& context)
+bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdaterContext& context)
 {
     TF_AXIOM(importedPaths.first.size() == importedPaths.second.size());
     auto dagPathIt = importedPaths.first.begin();
@@ -388,7 +389,7 @@ using UsdPathToDagPathMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
 using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
 using PushCustomizeSrc = std::tuple<SdfPath, SdfLayerRefPtr, UsdPathToDagPathMapPtr>;
 
-PushCustomizeSrc PushExport(
+PushCustomizeSrc pushExport(
     const Ufe::Path&                 ufePulledPath,
     const MObject&                   mayaObject,
     const UsdMayaPrimUpdaterContext& context)
@@ -518,17 +519,17 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
 // Perform the customization step of the merge to USD (second step).  Traverse
 // the in-memory layer, creating a prim updater for each prim, and call Push
 // for each updater.
-bool PushCustomize(
+bool pushCustomize(
     const Ufe::Path&                 ufePulledPath,
     const PushCustomizeSrc&          src,
     const UsdMayaPrimUpdaterContext& context)
 
 {
     const auto& srcRootPath = std::get<SdfPath>(src);
-    const auto& srcLayer = std::get<SdfLayerRefPtr>(src);
     if (srcRootPath.IsEmpty()) {
         return false;
     }
+    const auto& srcLayer = std::get<SdfLayerRefPtr>(src);
 
     const bool  isCopy = context.GetArgs()._copyOperation;
     const auto& editTarget = context.GetUsdStage()->GetEditTarget();
@@ -714,7 +715,7 @@ bool PrimUpdaterManager::push(const MFnDependencyNode& depNodeFn, const Ufe::Pat
     //    per-prim customization.
 
     // 1) Perform the export to the temporary layer.
-    auto pushCustomizeSrc = PushExport(pulledPath, depNodeFn.object(), context);
+    auto pushCustomizeSrc = pushExport(pulledPath, depNodeFn.object(), context);
 
     // 2) Traverse the in-memory layer, creating a prim updater for each prim,
     // and call Push for each updater.  Build a new context with the USD path
@@ -725,7 +726,7 @@ bool PrimUpdaterManager::push(const MFnDependencyNode& depNodeFn, const Ufe::Pat
         exportArgs,
         std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
 
-    if (!PushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
+    if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
         return false;
     }
 
@@ -780,10 +781,10 @@ bool PrimUpdaterManager::pull(const Ufe::Path& path)
     //    each, for per-prim customization.
 
     // 1) Perform the import
-    PullImportPaths importedPaths = PullImport(path, pulledPrim, context);
+    PullImportPaths importedPaths = pullImport(path, pulledPrim, context);
 
     // 2) Iterate over all imported Dag paths.
-    if (!PullCustomize(importedPaths, context)) {
+    if (!pullCustomize(importedPaths, context)) {
         return false;
     }
 
@@ -860,77 +861,66 @@ bool PrimUpdaterManager::copyBetween(const Ufe::Path& srcPath, const Ufe::Path& 
     MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dstPath);
 
     PushPullScope scopeIt(_inPushPull);
-    bool          ret = false;
 
     // Copy from USD to DG
     if (srcProxyShape && dstProxyShape == nullptr) {
-        SdfPath srcSdfPath = ufeToSdfPath(srcPath);
-        if (srcSdfPath.IsEmpty()) {
+        auto srcPrim = MayaUsd::ufe::ufePathToPrim(srcPath);
+        if (!srcPrim) {
             return false;
         }
-
-        MFnDependencyNode depNodeFn;
-
-        UsdStageRefPtr proxyStage = srcProxyShape->usdPrim().GetStage();
-        UsdPrim        srcPrim = proxyStage->GetPrimAtPath(srcSdfPath);
-        TfToken        typeName = srcPrim.GetTypeName();
-
-        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
-        auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
-        UsdMayaPrimUpdaterSharedPtr updater = factory(depNodeFn, srcPath);
 
         VtDictionary userArgs = UsdMayaJobImportArgs::GetDefaultDictionary();
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
         userArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
 
-        UsdMayaPrimUpdaterContext context(srcProxyShape->getTime(), proxyStage, userArgs);
+        UsdMayaPrimUpdaterContext context(
+            srcProxyShape->getTime(), srcProxyShape->getUsdStage(), userArgs);
 
-        // FIXME  Re-implement with proper traversal.  PPT, 22-Oct-2021.
-#if 0
-        ret = updater->Pull(context);
-#endif
+        pullImport(srcPath, srcPrim, context);
+        return true;
     }
     // Copy from DG to USD
     else if (srcProxyShape == nullptr && dstProxyShape) {
-        // Remove the leading "|world| component.
-        MDagPath dagPath
-            = PXR_NS::UsdMayaUtil::nameToDagPath(srcPath.getSegments()[0].popHead().string());
-        MFnDependencyNode dgNodeFn(dagPath.node());
-
-        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
-
-        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
-        auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
-        UsdMayaPrimUpdaterSharedPtr updater = factory(dgNodeFn, dstPath);
-
+        TF_AXIOM(srcPath.nbSegments() == 1);
+        MDagPath dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(Ufe::PathString::string(srcPath));
+        if (!dagPath.isValid()) {
+            return false;
+        }
         VtDictionary userArgs = UsdMayaJobExportArgs::GetDefaultDictionary();
 
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
         userArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
+        auto                      dstStage = dstProxyShape->getUsdStage();
+        UsdMayaPrimUpdaterContext context(dstProxyShape->getTime(), dstStage, userArgs);
 
-        UsdMayaPrimUpdaterContext context(
-            dstProxyShape->getTime(), dstProxyShape->usdPrim().GetStage(), userArgs);
-
-        // FIXME  Re-implement with proper traversal.  PPT, 22-Oct-2021.
-#if 0
-        ret = updater->Push(context);
-#endif
-
-        if (ret) {
-            auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
-            if (TF_VERIFY(ufeItem)) {
-                Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(ufeItem));
-            }
+        // Export out to a temporary layer.
+        auto        pushExportOutput = pushExport(srcPath, dagPath.node(), context);
+        const auto& srcRootPath = std::get<SdfPath>(pushExportOutput);
+        if (srcRootPath.IsEmpty()) {
+            return false;
         }
-    }
-    // We don't perform copy operations in the same data model in here.
-    else {
-        return false;
+
+        // Copy the temporary layer contents out to the proper destination.
+        const auto& srcLayer = std::get<SdfLayerRefPtr>(pushExportOutput);
+        const auto& editTarget = dstStage->GetEditTarget();
+        auto        dstRootPath = editTarget.MapToSpecPath(srcRootPath);
+        const auto& dstLayer = editTarget.GetLayer();
+
+        if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
+            return false;
+        }
+
+        auto ufeItem = Ufe::Hierarchy::createItem(dstPath);
+        if (TF_VERIFY(ufeItem)) {
+            Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(ufeItem));
+        }
+        return true;
     }
 
-    return ret;
+    // Copy operations to the same data model not supported here.
+    return false;
 }
 
 void PrimUpdaterManager::onProxyContentChanged(
