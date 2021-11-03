@@ -85,6 +85,10 @@ Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
 #endif
 
+#ifdef HAVE_PATH_MAPPING
+Ufe::PathMappingHandler::Ptr g_MayaPathMappingHandler;
+#endif
+
 // Subject singleton for observation of all USD stages.
 StagesSubject::Ptr g_StagesSubject;
 
@@ -164,6 +168,7 @@ MStatus initialize()
     MayaUsd::ufe::UsdUIUfeObserver::create();
 
 #ifdef HAVE_PATH_MAPPING
+    g_MayaPathMappingHandler = Ufe::RunTimeMgr::instance().pathMappingHandler(g_MayaRtid);
     auto pathMappingHndlr = UsdPathMappingHandler::create();
     Ufe::RunTimeMgr::instance().setPathMappingHandler(g_MayaRtid, pathMappingHndlr);
 #endif
@@ -211,7 +216,8 @@ MStatus finalize()
 
 #ifdef HAVE_PATH_MAPPING
     // Remove the Maya path mapping handler that we added above.
-    Ufe::RunTimeMgr::instance().setPathMappingHandler(g_MayaRtid, nullptr);
+    Ufe::RunTimeMgr::instance().setPathMappingHandler(g_MayaRtid, g_MayaPathMappingHandler);
+    g_MayaPathMappingHandler.reset();
 #endif
 
     g_StagesSubject.Reset();

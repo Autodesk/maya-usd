@@ -68,6 +68,7 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
 {
     bool success = false;
 
+    // Prototype code, subject to change shortly.  PPT, 3-Nov-2021.
     // We are looking for a very specific configuration in here
     // i.e. a parent prim with a variant set called "animVariant"
     // and two variants "cache" and "rig"
