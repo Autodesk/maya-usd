@@ -31,19 +31,26 @@ proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, string $widget) {
     }
 }
 
-proc mayaUsdTranslatorExport_SetJobContextCheckboxes(string $arg) {
+proc mayaUsdTranslatorExport_SetJobContextDropdown(string $arg) {
+    if (startsWith($arg, "[") && endsWith($arg, "]")) {
+        $arg = substring($arg, 2, size($arg) - 1);
+    }
     string $enabledContexts[] = stringToStringArray($arg, ",");
-    string $contexts[] = `mayaUSDListJobContexts -export`;
-    for ($context in $contexts) {
-        string $opt = `mayaUSDListJobContexts -eo $context`;
-        string $widget = $opt + "_JobContextCheckBox";
-
-        if(stringArrayFind($opt, 0, $enabledContexts) != -1) {
-            checkBoxGrp -e -v1 true $widget;
-        } else {
-            checkBoxGrp -e -v1 false $widget;
+    if (size($enabledContexts) > 0) {
+        // Pick first element (in case we find many...)
+        string $enabledContext = $enabledContexts[0];
+        string $niceNames[] = `mayaUSDListJobContexts -export`;
+        for ($niceName in $niceNames) {
+            string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
+            if ($jobContext == $enabledContext) {
+                optionMenuGrp -e -value $niceName jobContextPopup;
+                return;
+            }
         }
     }
+
+    // None is the default.
+    optionMenuGrp -e -select 0 jobContextPopup;
 }
 
 proc mayaUsdTranslatorExport_SetTextField(string $arg, string $widget) {
@@ -93,17 +100,12 @@ proc string mayaUsdTranslatorExport_AppendFromCheckbox(string $currentOptions, s
 }
 
 proc string mayaUsdTranslatorExport_AppendJobContexts(string $currentOptions, string $arg) {
-    string $contexts[] = `mayaUSDListJobContexts -export`;
-    string $enabledContexts[];
-    for ($context in $contexts) {
-        string $opt = `mayaUSDListJobContexts -eo $context`;
-        string $widget = $opt + "_JobContextCheckBox";
-        if (`checkBoxGrp -q -v1 $widget` == 1) {
-            stringArrayInsertAtIndex(255, $enabledContexts, $opt);
+    string $niceName = `optionMenuGrp -q -value jobContextPopup`;
+    if ($niceName != "None") {
+        string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
+        if ($jobContext != "") {
+            return $currentOptions + ";" + $arg + "=[" + $jobContext + "]";
         }
-    }
-    if (size($enabledContexts) > 0) {
-        return $currentOptions + ";" + $arg + "=" + stringArrayToString($enabledContexts, ",");
     }
     return $currentOptions;
 }
@@ -248,10 +250,19 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $frameSamplesAnn = "Specifies the value(s) used to multi-sample time frames during animation export. Multiple values separated by a space (-0.1 0.2) are supported.";
         string $defaultFormatAnn = "Select whether the .usd file is written out in binary or ASCII";
         string $defaultFormatStatus = "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary), or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.";
+        string $jobContextAnn = "Select a loaded plug-in configuration to modify export options";
 
         setParent $parent;
 
         columnLayout -adj true usdOptsCol;
+
+        optionMenuGrp -l "Plug-in Configuration:" -annotation $jobContextAnn jobContextPopup;
+            menuItem -l "None" -ann "None";
+            string $contexts[] = `mayaUSDListJobContexts -export`;
+            for ($context in $contexts) {
+                string $ann = `mayaUSDListJobContexts -ea $context`;
+                menuItem -l $context -ann $ann;
+            }
 
         frameLayout -label "Output" -collapsable true -collapse false;
             separator -style "none";
@@ -267,20 +278,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
             separator -style "none";
         setParent ..;
-
-        string $contexts[] = `mayaUSDListJobContexts -export`;
-        if (size($contexts) > 0) {
-            frameLayout -label "Export Job Contexts" -collapsable true -collapse true;
-                separator -style "none";
-                for ($context in $contexts) {
-                    string $ann = `mayaUSDListJobContexts -ea $context`;
-                    string $opt = `mayaUSDListJobContexts -eo $context`;
-                    string $widgetName = $opt + "_JobContextCheckBox";
-                    checkBoxGrp -l $context -annotation $ann $widgetName;
-                }
-                separator -style "none";
-            setParent ..;
-        }
 
         frameLayout -label "Geometry" -collapsable true -collapse false;
             separator -style "none";
@@ -391,7 +388,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 } else if ($optionBreakDown[0] == "exportColorSets") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
                 } else if ($optionBreakDown[0] == "jobContext") {
-                    mayaUsdTranslatorExport_SetJobContextCheckboxes($optionBreakDown[1]);
+                    mayaUsdTranslatorExport_SetJobContextDropdown($optionBreakDown[1]);
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                     mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
                 } else if ($optionBreakDown[0] == "defaultUSDFormat") {

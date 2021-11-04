@@ -146,7 +146,7 @@ except Exception:\\n\
 \")")
             set(COMMAND_CALL ${MAYA_EXECUTABLE} -c ${MEL_PY_EXEC_COMMAND})
         else()
-            set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/${test_name}.py)
+            set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/runner_${test_name}.py)
             FILE(WRITE ${SCRIPT} "${PREFIX_PYTHON_SCRIPT}")
             set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${SCRIPT})
         endif()
@@ -355,6 +355,14 @@ finally:
         "MAYA_NO_MORE_ASSERT=1"
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
+
+    if(IS_MACOSX)
+        # Necessary for tests like DiffCore to find python
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "DYLD_LIBRARY_PATH=${MAYA_LOCATION}/MacOS:$ENV{DYLD_LIBRARY_PATH}")
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Maya.app/Contents/Frameworks")
+    endif()
 
     if (PREFIX_INTERACTIVE)
         # Add the "interactive" label to all tests that launch the Maya UI.

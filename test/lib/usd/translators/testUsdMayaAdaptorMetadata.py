@@ -210,7 +210,10 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
                 apiSchema=['GeomModelAPI', 'MotionAPI'])
 
         newUsdFilePath = os.path.abspath('UsdAttrsNew_TwoAPIs.usda')
-        cmds.usdExport(file=newUsdFilePath, shadingMode='none')
+        # usdExport used to export all API schemas found as dynamic attributes. We now
+        # require the list to be explicit, mirroring the way usdImport works.
+        cmds.usdExport(file=newUsdFilePath, shadingMode='none',
+                       apiSchema=['GeomModelAPI', 'MotionAPI'])
         newUsdStage = Usd.Stage.Open(newUsdFilePath)
 
         world = newUsdStage.GetPrimAtPath('/World')

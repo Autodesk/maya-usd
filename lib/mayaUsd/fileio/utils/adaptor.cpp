@@ -171,7 +171,7 @@ TfTokenVector UsdMayaAdaptor::GetAppliedSchemas() const
         return TfTokenVector();
     }
 
-    if (_jobImportArgs) {
+    if (_jobImportArgs && !_handle.isValid()) {
         TF_CODING_ERROR("An importing adaptor should only use ApplySchema.");
         return TfTokenVector();
     }
@@ -241,7 +241,7 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::GetSchemaByName(const TfToken& schemaNam
         return nullptr;
     }
 
-    if (_jobImportArgs) {
+    if (_jobImportArgs && !_handle.isValid()) {
         TF_CODING_ERROR("An importing adaptor should only use ApplySchema.");
         return nullptr;
     }
