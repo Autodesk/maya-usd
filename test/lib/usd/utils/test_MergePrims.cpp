@@ -27,10 +27,13 @@ const SdfPath targetPath3("/target3");
 const TfToken testAttrName("test_attr");
 const TfToken otherAttrName("other_attr");
 
-static TfToken testRelName("test_rel");
-static TfToken otherRelName("other_rel");
+const TfToken testRelName("test_rel");
+const TfToken otherRelName("other_rel");
 
 const SdfValueTypeName doubleType = SdfValueTypeNames->Double;
+
+const bool mergeChildren = true;
+const bool dontMergeChildren = false;
 
 UsdPrim createPrim(UsdStageRefPtr& stage, const SdfPath& path)
 {
@@ -92,7 +95,7 @@ TEST(MergePrims, mergePrimsEmpty)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -122,7 +125,7 @@ TEST(MergePrims, mergePrimsSameChildren)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -165,7 +168,7 @@ TEST(MergePrims, mergePrimsDiffChildren)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -206,7 +209,7 @@ TEST(MergePrims, mergePrimsAbsentChild)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -244,7 +247,7 @@ TEST(MergePrims, mergePrimsCreatedChild)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -265,6 +268,183 @@ TEST(MergePrims, mergePrimsCreatedChild)
     EXPECT_TRUE(baselineChild2.GetAttribute(testAttrName).IsValid());
     EXPECT_TRUE(baselineChild2.GetAttribute(testAttrName).Get(&value));
     EXPECT_EQ(value, 2.);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+/// Merging prim only: not merging children.
+
+TEST(MergePrims, mergePrimsOnlySameChildren)
+{
+    // Test that prims with no attribute and identical children are untouched.
+
+    auto baselineStage = UsdStage::CreateInMemory();
+    auto baselinePrim = createPrim(baselineStage, primPath);
+    auto baselineChild1 = createChild(baselineStage, childPath1, 1.0);
+    auto baselineChild2 = createChild(baselineStage, childPath2, 1.0);
+
+    auto modifiedStage = UsdStage::CreateInMemory();
+    auto modifiedPrim = createPrim(modifiedStage, primPath);
+    createChild(modifiedStage, childPath1, 1.0);
+    createChild(modifiedStage, childPath2, 1.0);
+
+    const bool result = mergePrims(
+        modifiedStage,
+        modifiedStage->GetRootLayer(),
+        modifiedPrim.GetPath(),
+        baselineStage,
+        baselineStage->GetRootLayer(),
+        baselinePrim.GetPath(),
+        dontMergeChildren,
+        MergeVerbosity::Failure);
+
+    EXPECT_TRUE(result);
+
+    EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
+    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+
+    double value = 0.;
+
+    EXPECT_EQ(baselineChild1.GetAuthoredAttributes().size(), size_t(1));
+    EXPECT_TRUE(baselineChild1.GetAttribute(testAttrName).IsValid());
+    EXPECT_TRUE(baselineChild1.GetAttribute(testAttrName).Get(&value));
+    EXPECT_EQ(value, 1.);
+
+    EXPECT_EQ(baselineChild2.GetAuthoredAttributes().size(), size_t(1));
+    EXPECT_TRUE(baselineChild2.GetAttribute(testAttrName).IsValid());
+    EXPECT_TRUE(baselineChild2.GetAttribute(testAttrName).Get(&value));
+    EXPECT_EQ(value, 1.);
+}
+
+TEST(MergePrims, mergePrimsOnlyDiffChildren)
+{
+    // Test that prims with no attribute and children with different atttribute values are
+    // left unchanged due to ignoring children.
+
+    auto baselineStage = UsdStage::CreateInMemory();
+    auto baselinePrim = createPrim(baselineStage, primPath);
+    auto baselineChild1 = createChild(baselineStage, childPath1, 1.0);
+    auto baselineChild2 = createChild(baselineStage, childPath2, 1.0);
+
+    auto modifiedStage = UsdStage::CreateInMemory();
+    auto modifiedPrim = createPrim(modifiedStage, primPath);
+    createChild(modifiedStage, childPath1, 2.0);
+    createChild(modifiedStage, childPath2, 3.0);
+
+    const bool result = mergePrims(
+        modifiedStage,
+        modifiedStage->GetRootLayer(),
+        modifiedPrim.GetPath(),
+        baselineStage,
+        baselineStage->GetRootLayer(),
+        baselinePrim.GetPath(),
+        dontMergeChildren,
+        MergeVerbosity::Failure);
+
+    EXPECT_TRUE(result);
+
+    // Verify children values have not been merged.
+
+    EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
+    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+
+    double value = 0.;
+
+    EXPECT_EQ(baselineChild1.GetAuthoredAttributes().size(), size_t(1));
+    EXPECT_TRUE(baselineChild1.GetAttribute(testAttrName).IsValid());
+    EXPECT_TRUE(baselineChild1.GetAttribute(testAttrName).Get(&value));
+    EXPECT_EQ(value, 1.);
+
+    EXPECT_EQ(baselineChild2.GetAuthoredAttributes().size(), size_t(1));
+    EXPECT_TRUE(baselineChild2.GetAttribute(testAttrName).IsValid());
+    EXPECT_TRUE(baselineChild2.GetAttribute(testAttrName).Get(&value));
+    EXPECT_EQ(value, 1.);
+}
+
+TEST(MergePrims, mergePrimsOnlyAbsentChild)
+{
+    // Test that prims with no attribute and a mssing child are left unchanged due to ignoring
+    // children.
+
+    auto baselineStage = UsdStage::CreateInMemory();
+    auto baselinePrim = createPrim(baselineStage, primPath);
+    auto baselineChild1 = createChild(baselineStage, childPath1, 1.0);
+    auto baselineChild2 = createChild(baselineStage, childPath2, 1.0);
+
+    auto modifiedStage = UsdStage::CreateInMemory();
+    auto modifiedPrim = createPrim(modifiedStage, primPath);
+    createChild(modifiedStage, childPath1, 1.0);
+
+    const bool result = mergePrims(
+        modifiedStage,
+        modifiedStage->GetRootLayer(),
+        modifiedPrim.GetPath(),
+        baselineStage,
+        baselineStage->GetRootLayer(),
+        baselinePrim.GetPath(),
+        dontMergeChildren,
+        MergeVerbosity::Failure);
+
+    EXPECT_TRUE(result);
+
+    // Verify both children still exist since we did not merge children.
+
+    EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
+    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+
+    double value = 0.;
+
+    EXPECT_EQ(baselineChild1.GetAuthoredAttributes().size(), size_t(1));
+    EXPECT_TRUE(baselineChild1.GetAttribute(testAttrName).IsValid());
+    EXPECT_TRUE(baselineChild1.GetAttribute(testAttrName).Get(&value));
+    EXPECT_EQ(value, 1.);
+
+    EXPECT_EQ(baselineChild2.GetAuthoredAttributes().size(), size_t(1));
+    EXPECT_TRUE(baselineChild2.GetAttribute(testAttrName).IsValid());
+    EXPECT_TRUE(baselineChild2.GetAttribute(testAttrName).Get(&value));
+    EXPECT_EQ(value, 1.);
+}
+
+TEST(MergePrims, mergePrimsOnlyCreatedChild)
+{
+    // Test that prims with no attribute and an extra child are left unchanged due to ignoring
+    // children.
+
+    auto baselineStage = UsdStage::CreateInMemory();
+    auto baselinePrim = createPrim(baselineStage, primPath);
+    auto baselineChild1 = createChild(baselineStage, childPath1, 1.0);
+
+    auto modifiedStage = UsdStage::CreateInMemory();
+    auto modifiedPrim = createPrim(modifiedStage, primPath);
+    createChild(modifiedStage, childPath1, 1.0);
+    createChild(modifiedStage, childPath2, 2.0);
+
+    const bool result = mergePrims(
+        modifiedStage,
+        modifiedStage->GetRootLayer(),
+        modifiedPrim.GetPath(),
+        baselineStage,
+        baselineStage->GetRootLayer(),
+        baselinePrim.GetPath(),
+        dontMergeChildren,
+        MergeVerbosity::Failure);
+
+    EXPECT_TRUE(result);
+
+    // Verify both first child still exist but no other child was added since we did not merge
+    // children.
+
+    EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
+    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(1));
+
+    double value = 0.;
+
+    EXPECT_EQ(baselineChild1.GetAuthoredAttributes().size(), size_t(1));
+    EXPECT_TRUE(baselineChild1.GetAttribute(testAttrName).IsValid());
+    EXPECT_TRUE(baselineChild1.GetAttribute(testAttrName).Get(&value));
+    EXPECT_EQ(value, 1.);
+
+    auto baselineChild2 = baselineStage->GetPrimAtPath(childPath2);
+    EXPECT_FALSE(baselineChild2.IsValid());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -291,7 +471,7 @@ TEST(MergePrims, mergePrimsAbsentChildAttribute)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -331,7 +511,7 @@ TEST(MergePrims, mergePrimsCreatedChildAttribute)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -376,7 +556,7 @@ TEST(MergePrims, mergePrimsAbsentChildRelationship)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -417,7 +597,7 @@ TEST(MergePrims, mergePrimsCreatedChildRelationship)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -463,7 +643,7 @@ TEST(MergePrims, mergePrimsChildRelationshipAddTarget)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        true,
+        mergeChildren,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
