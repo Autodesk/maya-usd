@@ -66,13 +66,6 @@ UsdPrim createChild(UsdStageRefPtr& stage, const SdfPath& path, double value)
     return child;
 }
 
-void addThreeTargetPrims(UsdStageRefPtr stage)
-{
-    createPrim(stage, targetPath1);
-    createPrim(stage, targetPath2);
-    createPrim(stage, targetPath3);
-}
-
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
