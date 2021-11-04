@@ -131,6 +131,13 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext& context)
     // assign invisible faces
     UsdMayaMeshReadUtils::assignInvisibleFaces(mesh, meshRead.meshObject());
 
+#if MAYA_API_VERSION >= 20220000
+
+    // Read componentTags
+    UsdMayaMeshReadUtils::createComponentTags(mesh, meshRead.meshObject());
+
+#endif
+
     // assign material
     assignMaterial(mesh, _GetArgs(), meshRead.meshObject(), &context);
 
