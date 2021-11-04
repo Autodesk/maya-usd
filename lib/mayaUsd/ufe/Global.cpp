@@ -45,7 +45,6 @@
 #endif
 
 #include <maya/MSceneMessage.h>
-
 #include <ufe/hierarchyHandler.h>
 #include <ufe/runTimeMgr.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -57,7 +56,8 @@
 
 namespace {
 
-void exitingCallback(void* /* unusedData */) {
+void exitingCallback(void* /* unusedData */)
+{
     // Maya does not unload plugins on exit.  Make sure we perform an orderly
     // cleanup, otherwise on program exit UFE static data structures may be
     // cleaned up when this plugin is no longer alive.
@@ -67,7 +67,7 @@ void exitingCallback(void* /* unusedData */) {
 int gRegistrationCount = 0;
 
 bool gExitingCbId = 0;
-}
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
