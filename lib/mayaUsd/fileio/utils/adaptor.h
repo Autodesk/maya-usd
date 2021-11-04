@@ -35,7 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMayaAdaptor;
 struct UsdMayaJobExportArgs;
-struct UsdMayaJobImportArgs;
+class UsdMayaPrimReaderArgs;
+class UsdMayaPrimReaderContext;
 
 /// The UsdMayaAttributeAdaptor stores a mapping between a USD schema attribute and
 /// a Maya plug, enabling conversions between the two.
@@ -64,7 +65,7 @@ public:
     UsdMayaAttributeAdaptor();
 
     MAYAUSD_CORE_PUBLIC
-    virtual ~UsdMayaAttributeAdaptor();
+    ~UsdMayaAttributeAdaptor();
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaAttributeAdaptor(const MPlug& plug, SdfAttributeSpecHandle attrDef);
@@ -106,7 +107,7 @@ public:
     /// \warning Unlike UsdAttribute::Get(), this function never performs
     /// fallback value resolution, since Maya attributes always have values.
     MAYAUSD_CORE_PUBLIC
-    virtual bool Get(VtValue* value) const;
+    bool Get(VtValue* value) const;
 
     /// Adapts the value to a Maya-compatible representation and sets it on
     /// the underlying Maya plug. Raises a coding error if the value cannot
@@ -122,7 +123,19 @@ public:
     /// \note This overload will call doIt() on the MDGModifier; thus
     /// any actions will have been committed when the function returns.
     MAYAUSD_CORE_PUBLIC
-    virtual bool Set(const VtValue& newValue, MDGModifier& modifier);
+    bool Set(const VtValue& newValue, MDGModifier& modifier);
+
+    /// Adapts the value to a Maya-compatible representation and sets it on
+    /// the underlying Maya plug. Raises a coding error if the value cannot
+    /// be adapted or is incompatible with this attribute's definition in
+    /// the schema.
+    /// \note This overload will generate an animation curve if the source
+    /// USD attribute is animated.
+    MAYAUSD_CORE_PUBLIC
+    bool
+    Set(const UsdAttribute&          newValue,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext&    context);
 
     /// Gets the defining spec for this attribute from the schema registry.
     /// Returns a null handle if this attribute adaptor is invalid.
@@ -246,7 +259,10 @@ public:
     /// Creates and copies the adapted data from another USD Prim:
     /// Returns true if CopyFromPrim is implemented.
     MAYAUSD_CORE_PUBLIC
-    virtual bool CopyFromPrim(const UsdPrim& prim);
+    virtual bool CopyFromPrim(
+        const UsdPrim&               prim,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext&    context);
 
 private:
     /// Gets the name of the adapted Maya attribute for the given attribute
@@ -356,7 +372,7 @@ public:
     UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs* jobExportArgs);
 
     MAYAUSD_CORE_PUBLIC
-    UsdMayaAdaptor(const MObject& obj, const UsdMayaJobImportArgs* jobImportArgs);
+    UsdMayaAdaptor(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext& context);
 
     MAYAUSD_CORE_PUBLIC
     explicit operator bool() const;
@@ -612,8 +628,9 @@ private:
     static std::map<TfToken, std::vector<std::string>> _attributeAliases;
 
     /// Job args (for import/export/update of schemas):
-    const UsdMayaJobExportArgs* _jobExportArgs = nullptr;
-    const UsdMayaJobImportArgs* _jobImportArgs = nullptr;
+    const UsdMayaJobExportArgs*  _jobExportArgs = nullptr;
+    const UsdMayaPrimReaderArgs* _jobImportArgs = nullptr;
+    UsdMayaPrimReaderContext*    _jobImportContext = nullptr;
 };
 
 /// Registers the given \p mayaTypeName with the given USD \p schemaType

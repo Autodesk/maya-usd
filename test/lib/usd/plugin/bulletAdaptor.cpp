@@ -15,9 +15,12 @@
 //
 #include <mayaUsd/fileio/jobContextRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/schemaApiAdaptor.h>
 #include <mayaUsd/fileio/schemaApiAdaptorRegistry.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
@@ -111,7 +114,8 @@ public:
 
     bool CanAdaptForImport(const UsdMayaJobImportArgs& jobArgs) const override
     {
-        return CanAdapt();
+        return jobArgs.includeAPINames.find(_tokens->PhysicsMassAPI)
+            != jobArgs.includeAPINames.end();
     }
 
     bool CanAdaptForExport(const UsdMayaJobExportArgs& jobArgs) const override
@@ -121,6 +125,35 @@ public:
             return CanAdapt();
         }
         return false;
+    }
+
+    bool ApplySchema(const UsdMayaPrimReaderArgs& primReaderArgs, UsdMayaPrimReaderContext& context)
+    {
+        // Check if already applied:
+        if (!GetMayaObjectForSchema().isNull()) {
+            return true;
+        }
+
+        MDGModifier dummy;
+        bool        retVal = ApplySchema(dummy);
+
+        if (retVal) {
+            MObject newObject = GetMayaObjectForSchema();
+            if (newObject.isNull()) {
+                return false;
+            }
+
+            MFnDependencyNode depFn(newObject);
+
+            // Register the new node:
+            std::string nodePath(primReaderArgs.GetUsdPrim().GetPath().GetText());
+            nodePath += "/";
+            nodePath += depFn.name().asChar();
+
+            context.RegisterNewMayaNode(nodePath, GetMayaObjectForSchema());
+        }
+
+        return retVal;
     }
 
     bool ApplySchema(MDGModifier&)
@@ -143,7 +176,8 @@ public:
         const char* bulletCmd = "import maya.app.mayabullet.BulletUtils as BulletUtils; "
                                 "BulletUtils.checkPluginLoaded(); "
                                 "import maya.app.mayabullet.RigidBody as RigidBody; "
-                                "RigidBody.CreateRigidBody.command(meshes=['^1s'])";
+                                "RigidBody.CreateRigidBody.command(transformName='^1s', "
+                                "bAttachSelected=False)";
 
         MString bulletRigidBody;
         bulletRigidBody.format(bulletCmd, path.fullPathName());
@@ -259,11 +293,8 @@ public:
             return false;
         }
 
-        if (jobArgs.includeAPINames.find(_tokens->PhysicsMassAPI)
-            != jobArgs.includeAPINames.end()) {
-            return !GetMayaObjectForSchema().isNull();
-        }
-        return false;
+        return jobArgs.includeAPINames.find(_tokens->PhysicsMassAPI)
+            != jobArgs.includeAPINames.end();
     }
 
     bool CanAdaptForExport(const UsdMayaJobExportArgs& jobArgs) const override
@@ -283,6 +314,49 @@ public:
             return !GetMayaObjectForSchema().isNull();
         }
         return false;
+    }
+
+    bool ApplySchema(const UsdMayaPrimReaderArgs& primReaderArgs, UsdMayaPrimReaderContext& context)
+    {
+        // Check if already applied:
+        if (!GetMayaObjectForSchema().isNull()) {
+            return true;
+        }
+
+        // Make this object a rigid body:
+        // Need to call some Python as this is the Bullet way...
+        MDagPath path;
+        if (!MDagPath::getAPathTo(_handle.object(), path)) {
+            return false;
+        }
+        if (!path.pop()) {
+            return false;
+        }
+        const char* bulletCmd = "import maya.app.mayabullet.BulletUtils as BulletUtils; "
+                                "BulletUtils.checkPluginLoaded(); "
+                                "import maya.app.mayabullet.RigidBody as RigidBody; "
+                                "RigidBody.CreateRigidBody.command(transformName='^1s', "
+                                "bAttachSelected=False)";
+
+        MString bulletRigidBody;
+        bulletRigidBody.format(bulletCmd, path.fullPathName());
+        MGlobal::executePythonCommand(bulletRigidBody);
+
+        MObject newObject = GetMayaObjectForSchema();
+        if (newObject.isNull()) {
+            return false;
+        }
+
+        MFnDependencyNode depFn(newObject);
+
+        // Register the new node:
+        std::string nodePath(primReaderArgs.GetUsdPrim().GetPath().GetText());
+        nodePath += "/";
+        nodePath += depFn.name().asChar();
+
+        context.RegisterNewMayaNode(nodePath, GetMayaObjectForSchema());
+
+        return true;
     }
 
     MObject GetMayaObjectForSchema() const override
@@ -341,6 +415,32 @@ public:
         GfVec3f velValue(x, y, z);
 
         UsdMayaWriteUtil::SetAttribute(velAttr, velValue, usdTime, valueWriter);
+
+        return true;
+    }
+
+    bool CopyFromPrim(
+        const UsdPrim&               prim,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext&    context) override
+    {
+        // Import one attribute
+        auto rbSchema = UsdPhysicsRigidBodyAPI(prim);
+        if (!rbSchema) {
+            return false;
+        }
+
+        MStatus           status;
+        MFnDependencyNode depFn;
+        if (depFn.setObject(GetMayaObjectForSchema()) != MS::kSuccess) {
+            return false;
+        }
+
+        auto velAttr = rbSchema.GetVelocityAttr();
+        if (velAttr) {
+            UsdMayaReadUtil::ReadUsdAttribute(
+                velAttr, depFn, TfToken("initialVelocity"), args, &context);
+        }
 
         return true;
     }

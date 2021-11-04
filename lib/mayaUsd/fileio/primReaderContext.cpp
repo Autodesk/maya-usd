@@ -45,11 +45,32 @@ MObject UsdMayaPrimReaderContext::GetMayaNode(const SdfPath& path, bool findAnce
                               // for the scene
 }
 
+void UsdMayaPrimReaderContext::StartNewMayaNodeTracking()
+{
+    _trackedNewMayaNodes.reset(new ObjectRegistry);
+}
+
+const UsdMayaPrimReaderContext::ObjectRegistry&
+UsdMayaPrimReaderContext::GetTrackedNewMayaNodes() const
+{
+    if (_trackedNewMayaNodes) {
+        return *_trackedNewMayaNodes;
+    } else {
+        static ObjectRegistry _emptyRegistry;
+        return _emptyRegistry;
+    }
+}
+
+void UsdMayaPrimReaderContext::StopNewMayaNodeTracking() { _trackedNewMayaNodes.reset(); }
+
 void UsdMayaPrimReaderContext::RegisterNewMayaNode(const std::string& path, const MObject& mayaNode)
     const
 {
     if (_pathNodeMap) {
         _pathNodeMap->insert(std::make_pair(path, mayaNode));
+    }
+    if (_trackedNewMayaNodes) {
+        _trackedNewMayaNodes->insert(std::make_pair(path, mayaNode));
     }
 }
 

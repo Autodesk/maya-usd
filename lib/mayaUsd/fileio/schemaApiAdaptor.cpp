@@ -40,6 +40,13 @@ bool UsdMayaSchemaApiAdaptor::CanAdaptForExport(const UsdMayaJobExportArgs&) con
 
 bool UsdMayaSchemaApiAdaptor::CanAdaptForImport(const UsdMayaJobImportArgs&) const { return false; }
 
+bool UsdMayaSchemaApiAdaptor::ApplySchema(
+    const UsdMayaPrimReaderArgs& primReaderArgs,
+    UsdMayaPrimReaderContext&    context)
+{
+    return false;
+}
+
 bool UsdMayaSchemaApiAdaptor::ApplySchema(MDGModifier& modifier) { return false; }
 
 bool UsdMayaSchemaApiAdaptor::UnapplySchema(MDGModifier& modifier) { return true; }

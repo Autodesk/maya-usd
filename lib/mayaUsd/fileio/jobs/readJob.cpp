@@ -374,6 +374,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
             = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
+                readCtx.StartNewMayaNodeTracking();
                 primReader->Read(readCtx);
                 if (primReader->HasPostReadSubtree()) {
                     primReaderMap[prim.GetPath()] = primReader;
@@ -382,6 +383,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
                     primIt.PruneChildren();
                 }
                 UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(args, readCtx);
+                readCtx.StopNewMayaNodeTracking();
             }
         }
     }

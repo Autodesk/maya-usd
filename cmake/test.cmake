@@ -170,7 +170,7 @@ finally:
             )
         endif()
 
-        set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/${test_name}.py)
+        set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/runner_${test_name}.py)
         FILE(WRITE ${SCRIPT} "${PYTEST_CODE}")
         set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${SCRIPT})
     endif()

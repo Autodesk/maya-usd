@@ -20,11 +20,13 @@
 #include <mayaUsd/fileio/utils/adaptor.h>
 
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdMayaJobExportArgs;
+class UsdMayaPrimReaderContext;
 
 /// Base class for plugin schema API adaptors. Allows transparent USD API use on Maya data.
 ///
@@ -74,6 +76,13 @@ public:
     /// Returns true on success, false if schema can not be applied or the application failed.
     MAYAUSD_CORE_PUBLIC
     virtual bool ApplySchema(MDGModifier& modifier);
+
+    /// Modify the Maya scene so it supports this schema.
+    ///
+    /// Returns true on success, false if schema can not be applied or the application failed.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool
+    ApplySchema(const UsdMayaPrimReaderArgs& primReaderArgs, UsdMayaPrimReaderContext& context);
 
     /// Modify the Maya scene so the wrapped Maya object does not support the wrapped schema anymore
     ///

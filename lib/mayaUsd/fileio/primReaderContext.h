@@ -52,14 +52,17 @@ public:
     MAYAUSD_CORE_PUBLIC
     MObject GetMayaNode(const SdfPath& path, bool findAncestors) const;
 
-    /// \brief Finds all extra Maya objects created while reading \p prim.
-    ///
-    /// These object have a pseudo-path that share the same root as prim, but
-    /// are not valid children of the provided UsdPrim
-    ///
-    /// TODO: JG:  NEED SCHEMA API ADAPTOR TO UPDATE CONTEXT WITH EXTRA NODES(BULLETSHAPENODES !!!!!)
-    ///
-    // MAYAUSD_CORE_PUBLIC std::vector<MObject> GetDependentMayaNodes(const UsdPrim& prim) const;
+    /// \brief Start tracking any new created node in a separate list.
+    MAYAUSD_CORE_PUBLIC
+    void StartNewMayaNodeTracking();
+
+    /// \brief Return list of new Maya nodes being tracked.
+    MAYAUSD_CORE_PUBLIC
+    const ObjectRegistry& GetTrackedNewMayaNodes() const;
+
+    /// \brief Stop tracking new Maya nodes.
+    MAYAUSD_CORE_PUBLIC
+    void StopNewMayaNodeTracking();
 
     /// \brief Record \p mayaNode prim as being created \p path.
     ///
@@ -99,6 +102,9 @@ private:
     // used to keep track of prims that are created.
     // for undo/redo
     ObjectRegistry* _pathNodeMap;
+
+    // Tracks new nodes:
+    std::shared_ptr<ObjectRegistry> _trackedNewMayaNodes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

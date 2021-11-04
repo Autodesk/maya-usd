@@ -21,6 +21,7 @@ import unittest
 from maya import cmds
 from maya import standalone
 import maya.api.OpenMaya as om
+import maya.api.OpenMayaAnim as oma
 
 from pxr import Tf, Gf, UsdMaya, Usd
 
@@ -226,6 +227,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
             if i == 1:
                 self.assertEqual(a.Get(0), (5, 6, 7))
                 self.assertEqual(a.Get(10), (50, 60, 70))
+                numberOfExportedKeys = len(a.GetTimeSamples())
 
         # Try unapplying the schema:
         adaptor.UnapplySchemaByName("PhysicsMassAPI")
@@ -234,9 +236,6 @@ class testUsdExportSchemaApi(unittest.TestCase):
         # Test import of USDPhysics without job context:
         cmds.file(new=True, force=True)
         cmds.mayaUSDImport(f=usdFilePath)
-
-        import pprint
-        pprint.pprint(cmds.ls())
 
         sl = om.MSelectionList()
         # pSphereShape1 is a transform, since the bullet shape prevented merging the mesh and the
@@ -247,19 +246,24 @@ class testUsdExportSchemaApi(unittest.TestCase):
         self.assertEqual(bulletPath.numberOfShapesDirectlyBelow(), 1)
 
         cmds.file(new=True, force=True)
-        cmds.mayaUSDImport(f=usdFilePath, jobContext=["Bullet"])
-
-        pprint.pprint(cmds.ls())
-
+        cmds.mayaUSDImport(f=usdFilePath, jobContext=["Bullet"], readAnimData=True)
 
         sl = om.MSelectionList()
         sl.add("pSphereShape1")
         bulletPath = sl.getDagPath(0)
         # Finds bullet shape since we did put Bullet as jobContext
 
-        # TODO: Make it work...
+        self.assertEqual(bulletPath.numberOfShapesDirectlyBelow(), 2)
 
-        # self.assertEqual(bulletPath.numberOfShapesDirectlyBelow(), 2)
+        # The bullet shape has animated mass and initial velocity since we read the animation.
+        bulletPath.extendToShape(1)
+        massDepFn = om.MFnDependencyNode(bulletPath.node())
+        for attrName in ("mass", "initialVelocityX", "initialVelocityY", "initialVelocityZ"):
+            plug = om.MPlug(bulletPath.node(), massDepFn.attribute(attrName))
+            self.assertTrue(plug.isConnected)
+            fcurve = oma.MFnAnimCurve(plug.source().node())
+            self.assertEqual(fcurve.numKeys, numberOfExportedKeys)
+
 
 
 if __name__ == '__main__':

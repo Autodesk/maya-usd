@@ -94,14 +94,20 @@ UsdMayaAdaptor::UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs* j
 {
 }
 
-UsdMayaAdaptor::UsdMayaAdaptor(const MObject& obj, const UsdMayaJobImportArgs* jobImportArgs)
-    : _handle(obj)
-    , _jobImportArgs(jobImportArgs)
+UsdMayaAdaptor::UsdMayaAdaptor(
+    const UsdMayaPrimReaderArgs& jobImportArgs,
+    UsdMayaPrimReaderContext&    context)
+    : _jobImportArgs(&jobImportArgs)
+    , _jobImportContext(&context)
 {
 }
 
 UsdMayaAdaptor::operator bool() const
 {
+    if (_jobImportArgs && _jobImportContext) {
+        return true;
+    }
+
     if (!_handle.isValid()) {
         return false;
     }
@@ -165,6 +171,11 @@ TfTokenVector UsdMayaAdaptor::GetAppliedSchemas() const
         return TfTokenVector();
     }
 
+    if (_jobImportArgs) {
+        TF_CODING_ERROR("An importing adaptor should only use ApplySchema.");
+        return TfTokenVector();
+    }
+
     TfTokenVector result;
 
     // See if we have any plugin adaptors we could use:
@@ -175,12 +186,6 @@ TfTokenVector UsdMayaAdaptor::GetAppliedSchemas() const
         if (_jobExportArgs
             && _jobExportArgs->includeAPINames.find(schemaName)
                 == _jobExportArgs->includeAPINames.end()) {
-            continue;
-        }
-
-        if (_jobImportArgs
-            && _jobImportArgs->includeAPINames.find(schemaName)
-                == _jobImportArgs->includeAPINames.end()) {
             continue;
         }
 
@@ -199,11 +204,6 @@ TfTokenVector UsdMayaAdaptor::GetAppliedSchemas() const
             if (schemaAdaptor) {
                 if (_jobExportArgs) {
                     if (schemaAdaptor->CanAdaptForExport(*_jobExportArgs)) {
-                        result.push_back(schemaName);
-                        break;
-                    }
-                } else if (_jobImportArgs) {
-                    if (schemaAdaptor->CanAdaptForImport(*_jobImportArgs)) {
                         result.push_back(schemaName);
                         break;
                     }
@@ -241,6 +241,11 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::GetSchemaByName(const TfToken& schemaNam
         return nullptr;
     }
 
+    if (_jobImportArgs) {
+        TF_CODING_ERROR("An importing adaptor should only use ApplySchema.");
+        return nullptr;
+    }
+
     // If exporting, see if we have any plugin adaptors we could use:
     const MFnDependencyNode  depNodeFn(_handle.object());
     const std::string        mayaTypeName(depNodeFn.typeName().asChar());
@@ -256,10 +261,6 @@ UsdMayaSchemaAdaptorPtr UsdMayaAdaptor::GetSchemaByName(const TfToken& schemaNam
         if (schemaAdaptor) {
             if (_jobExportArgs) {
                 if (schemaAdaptor->CanAdaptForExport(*_jobExportArgs)) {
-                    return schemaAdaptor;
-                }
-            } else if (_jobImportArgs) {
-                if (schemaAdaptor->CanAdaptForImport(*_jobImportArgs)) {
                     return schemaAdaptor;
                 }
             } else {
@@ -347,21 +348,51 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
     }
 
     // Do we have a plugin adapter for that schema?
-    const MFnDependencyNode depNodeFn(_handle.object());
-    const std::string       mayaTypeName(depNodeFn.typeName().asChar());
-    for (auto&& schemaFn :
-         UsdMayaSchemaApiAdaptorRegistry::Find(mayaTypeName, schemaName.GetString())) {
-        if (!schemaFn) {
-            // factories get nulled when their associated plugin unloads.
-            continue;
+    // On import, we have to select the best MObject for the UsdPrim currently being processed.
+    if (_jobImportArgs) {
+        for (auto&& createdObjectPair : _jobImportContext->GetTrackedNewMayaNodes()) {
+            _handle = createdObjectPair.second;
+            const MFnDependencyNode depNodeFn(_handle.object());
+            const std::string       mayaTypeName(depNodeFn.typeName().asChar());
+            for (auto&& schemaFn :
+                 UsdMayaSchemaApiAdaptorRegistry::Find(mayaTypeName, schemaName.GetString())) {
+                if (!schemaFn) {
+                    // factories get nulled when their associated plugin unloads.
+                    continue;
+                }
+                UsdMayaSchemaApiAdaptorPtr schemaAdaptor(schemaFn(_handle, schemaName, primDef));
+                if (schemaAdaptor) {
+                    if (!schemaAdaptor->CanAdaptForImport(_jobImportArgs->GetJobArguments())) {
+                        continue;
+                    }
+                    if (schemaAdaptor->ApplySchema(*_jobImportArgs, *_jobImportContext)) {
+                        return schemaAdaptor;
+                    }
+                }
+            }
         }
-        UsdMayaSchemaApiAdaptorPtr schemaAdaptor(schemaFn(_handle, schemaName, primDef));
-        if (schemaAdaptor) {
-            if (_jobImportArgs && !schemaAdaptor->CanAdaptForImport(*_jobImportArgs)) {
+        // We did not find a specific plugin adaptor for that API. We need to find the MObject that
+        // will receive the dynamic attributes of the generic adaptor code:
+        const UsdPrim& usdPrim = _jobImportArgs->GetUsdPrim();
+        MObject        directObject = _jobImportContext->GetMayaNode(usdPrim.GetPath(), false);
+        if (directObject.isNull()) {
+            return nullptr;
+        }
+        _handle = directObject;
+    } else {
+        const MFnDependencyNode depNodeFn(_handle.object());
+        const std::string       mayaTypeName(depNodeFn.typeName().asChar());
+        for (auto&& schemaFn :
+             UsdMayaSchemaApiAdaptorRegistry::Find(mayaTypeName, schemaName.GetString())) {
+            if (!schemaFn) {
+                // factories get nulled when their associated plugin unloads.
                 continue;
             }
-            if (schemaAdaptor->ApplySchema(modifier)) {
-                return schemaAdaptor;
+            UsdMayaSchemaApiAdaptorPtr schemaAdaptor(schemaFn(_handle, schemaName, primDef));
+            if (schemaAdaptor) {
+                if (schemaAdaptor->ApplySchema(modifier)) {
+                    return schemaAdaptor;
+                }
             }
         }
     }
@@ -887,7 +918,13 @@ bool UsdMayaSchemaAdaptor::CopyToPrim(
     return false;
 }
 
-bool UsdMayaSchemaAdaptor::CopyFromPrim(const UsdPrim&) { return false; }
+bool UsdMayaSchemaAdaptor::CopyFromPrim(
+    const UsdPrim&,
+    const UsdMayaPrimReaderArgs&,
+    UsdMayaPrimReaderContext&)
+{
+    return false;
+}
 
 UsdMayaAttributeAdaptor::UsdMayaAttributeAdaptor()
     : _plug()
@@ -965,6 +1002,19 @@ bool UsdMayaAttributeAdaptor::Set(const VtValue& newValue, MDGModifier& modifier
     }
 
     return UsdMayaReadUtil::SetMayaAttr(_plug, newValue, modifier);
+}
+
+bool UsdMayaAttributeAdaptor::Set(
+    const UsdAttribute&          newValue,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext&    context)
+{
+    MFnDependencyNode depFn;
+    if (depFn.setObject(_plug.node()) == MS::kSuccess) {
+        return UsdMayaReadUtil::ReadUsdAttribute(
+            newValue, depFn, TfToken(_plug.partialName().asChar()), args, &context);
+    }
+    return false;
 }
 
 const SdfAttributeSpecHandle UsdMayaAttributeAdaptor::GetAttributeDefinition() const
