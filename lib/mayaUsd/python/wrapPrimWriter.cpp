@@ -19,19 +19,15 @@
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
+#include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
-#include <pxr/base/tf/makePyConstructor.h>
-#include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
-#include <pxr/base/tf/pyPtrHelpers.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/refPtr.h>
-#include <pxr/usd/usdGeom/camera.h>
 
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/make_constructor.hpp>
+#include <boost/python/return_internal_reference.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -56,9 +52,9 @@ public:
     {
     }
 
-    static PrimWriterWrapper* New(uintptr_t createdWrapper)
+    static std::shared_ptr<This> New(uintptr_t createdWrapper)
     {
-        return (PrimWriterWrapper*)createdWrapper;
+        return *((std::shared_ptr<This>*)createdWrapper);
     }
 
     virtual ~PrimWriterWrapper() { }
@@ -192,9 +188,9 @@ public:
             [=](const MFnDependencyNode& depNodeFn,
                 const SdfPath&           usdPath,
                 UsdMayaWriteJobContext&  jobCtx) {
-                auto     sptr = std::make_shared<PrimWriterWrapper>(depNodeFn, usdPath, jobCtx);
-                TfPyLock pyLock;
-                boost::python::object instance = cl((uintptr_t)(PrimWriterWrapper*)sptr.get());
+                auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+                TfPyLock              pyLock;
+                boost::python::object instance = cl((uintptr_t)&sptr);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;
@@ -224,9 +220,9 @@ public:
     {
     }
 
-    static ShaderWriterWrapper* New(uintptr_t createdWrapper)
+    static std::shared_ptr<This> New(uintptr_t createdWrapper)
     {
-        return (ShaderWriterWrapper*)createdWrapper;
+        return *((std::shared_ptr<This>*)createdWrapper);
     }
 
     virtual ~ShaderWriterWrapper() { }
@@ -257,24 +253,38 @@ public:
             &This::default_GetShadingAttributeForMayaAttrName)(mayaAttrName, typeName);
     }
 
-    static void Register(boost::python::object cl, const TfToken& mayaType)
+    static void Register(boost::python::object cl, const TfToken& mayaNodeTypeName)
     {
         UsdMayaShaderWriterRegistry::Register(
-            mayaType,
-            [=](const UsdMayaJobExportArgs& args) {
-                return UsdMayaShaderWriter::ContextSupport(0);
+            mayaNodeTypeName,
+            [=](const UsdMayaJobExportArgs& exportArgs) {
+                TfPyLock              pyLock;
+                boost::python::object CanExport = cl.attr("CanExport");
+                PyObject*             callable = CanExport.ptr();
+                auto                  res = boost::python::call<int>(callable, exportArgs);
+                return UsdMayaShaderWriter::ContextSupport(res);
             },
             [=](const MFnDependencyNode& depNodeFn,
                 const SdfPath&           usdPath,
                 UsdMayaWriteJobContext&  jobCtx) {
-                auto     sptr = std::make_shared<ShaderWriterWrapper>(depNodeFn, usdPath, jobCtx);
-                TfPyLock pyLock;
-                boost::python::object instance = cl((uintptr_t)(ShaderWriterWrapper*)sptr.get());
+                auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+                TfPyLock              pyLock;
+                boost::python::object instance = cl((uintptr_t)&sptr);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), sptr.get());
                 return sptr;
             },
             true);
+    }
+
+    static void RegisterSymmetric(
+        boost::python::object cl,
+        const TfToken&        mayaNodeTypeName,
+        const TfToken&        usdShaderId,
+        const TfToken&        materialConversionName)
+    {
+        UsdMayaSymmetricShaderWriter::RegisterWriter(
+            mayaNodeTypeName, usdShaderId, materialConversionName, true);
     }
 };
 
@@ -338,10 +348,7 @@ void wrapPrimWriter()
             &UsdMayaPrimWriter::GetUsdPath,
             boost::python::return_value_policy<boost::python::return_by_value>())
 
-        .def(
-            "Register",
-            &PrimWriterWrapper<>::Register,
-            (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
+        .def("Register", &PrimWriterWrapper<>::Register)
         .staticmethod("Register");
 }
 
@@ -372,9 +379,9 @@ void wrapShaderWriter()
             "GetShadingAttributeForMayaAttrName",
             &ShaderWriterWrapper::GetShadingAttributeForMayaAttrName,
             &ShaderWriterWrapper::default_GetShadingAttributeForMayaAttrName)
-        .def(
-            "Register",
-            &ShaderWriterWrapper::Register,
-            (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
-        .staticmethod("Register");
+
+        .def("Register", &ShaderWriterWrapper::Register)
+        .staticmethod("Register")
+        .def("RegisterSymmetric", &ShaderWriterWrapper::RegisterSymmetric)
+        .staticmethod("RegisterSymmetric");
 }

@@ -78,7 +78,8 @@ public:
     static void RegisterWriter(
         const TfToken& mayaNodeTypeName,
         const TfToken& usdShaderId,
-        const TfToken& materialConversionName = TfToken());
+        const TfToken& materialConversionName = TfToken(),
+        bool           fromPython = false);
 
     MAYAUSD_CORE_PUBLIC
     static ContextSupport CanExport(

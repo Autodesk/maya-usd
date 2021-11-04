@@ -253,6 +253,8 @@ void ProxyShape::translatePrimsIntoMaya(
     // recreating them.
     context()->removeEntries(filter.removedPrimSet());
 
+    fileio::translators::TranslatorContextSetterCtx ctxSetter(context());
+
     cmds::ProxyShapePostLoadProcess::MObjectToPrim objsToCreate;
     if (!filter.transformsToCreate().empty()) {
         cmds::ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(

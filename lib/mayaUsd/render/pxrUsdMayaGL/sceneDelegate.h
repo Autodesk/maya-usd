@@ -75,6 +75,9 @@ public:
     VtValue GetCameraParamValue(SdfPath const& cameraId, TfToken const& paramName) override;
 
     MAYAUSD_CORE_PUBLIC
+    GfMatrix4d GetTransform(SdfPath const& id) override;
+
+    MAYAUSD_CORE_PUBLIC
     TfTokenVector GetTaskRenderTags(SdfPath const& taskId) override;
 
     MAYAUSD_CORE_PUBLIC

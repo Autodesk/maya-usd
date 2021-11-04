@@ -77,7 +77,13 @@ void UsdUIUfeObserver::operator()(const Ufe::Notification& notification)
                 "mainChannelBox;");
             MStringArray paths;
             if (MGlobal::executeCommand(mainObjListCmd, paths) && (paths.length() > 0)) {
-                auto ufePath = Ufe::PathString::path(paths[0].asChar());
+                // Skip any non-absolute Maya paths (we know non-Maya ufe paths will always
+                // start with |
+                MString firstPath = paths[0];
+                if (firstPath.substringW(0, 0) != "|")
+                    return;
+
+                auto ufePath = Ufe::PathString::path(firstPath.asChar());
                 if (ufePath.startsWith(ac->path())) {
                     static const MString updateCBCmd("channelBox -e -update mainChannelBox;");
                     MGlobal::executeCommand(updateCBCmd);
