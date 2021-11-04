@@ -37,15 +37,15 @@ public:
         UsdMayaJobContextRegistry::ContextInfo ctx
             = UsdMayaJobContextRegistry::GetInstance().GetJobContextInfo(jobContext);
         boost::python::dict dict;
-        dict["jobContext"]=ctx.jobContext;
+        dict["jobContext"] = ctx.jobContext;
         dict["niceName"] = ctx.niceName;
         dict["exportDescription"] = ctx.exportDescription;
-//        dict["exportEnablerCallback"] = ctx.exportEnablerCallback;
+        //        dict["exportEnablerCallback"] = ctx.exportEnablerCallback;
         dict["importDescription"] = ctx.importDescription;
-//        dict["importEnablerCallback"] = ctx.importEnablerCallback;
+        //        dict["importEnablerCallback"] = ctx.importEnablerCallback;
         return dict;
     }
-    
+
     static void RegisterImportJobContext(
         const std::string&    jobContext,
         const std::string&    niceName,
@@ -53,7 +53,8 @@ public:
         boost::python::object enablerFct)
     {
         if (!PyCallable_Check(enablerFct.ptr()))
-            TF_CODING_ERROR("Parameter enablerFct should be a callable function returning a dictionary.");
+            TF_CODING_ERROR(
+                "Parameter enablerFct should be a callable function returning a dictionary.");
 
         UsdMayaJobContextRegistry::GetInstance().RegisterImportJobContext(
             jobContext, niceName, description, [=]() { return callEnablerFn(enablerFct); }, true);
@@ -69,15 +70,12 @@ public:
                 "Parameter enablerFct should be a callable function returning a dictionary.");
 
         UsdMayaJobContextRegistry::GetInstance().RegisterExportJobContext(
-            jobContext,
-            niceName,
-            description,
-            [=]() { return callEnablerFn(enablerFct); },
-            true);
+            jobContext, niceName, description, [=]() { return callEnablerFn(enablerFct); }, true);
     }
 
 private:
-    static VtDictionary callEnablerFn(boost::python::object fnc) {
+    static VtDictionary callEnablerFn(boost::python::object fnc)
+    {
         auto res = std::function<boost::python::object()>(TfPyCall<boost::python::object>(fnc))();
         return boost::python::extract<VtDictionary>(res);
     }
