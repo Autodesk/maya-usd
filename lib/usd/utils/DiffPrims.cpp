@@ -225,8 +225,7 @@ static DiffResult comparePrims(
         }
     }
 
-    if (compareChildren)
-    {
+    if (compareChildren) {
         const auto childrenDiffs = comparePrimsChildren(modified, baseline, quickDiff);
         USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
 

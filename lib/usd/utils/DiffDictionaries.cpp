@@ -27,10 +27,13 @@ using VtDictionary = PXR_NS::VtDictionary;
         }                                              \
     } while (false)
 
-DiffResultPerKey compareDictionaries(const VtDictionary& modified, const VtDictionary& baseline, DiffResult* quickDiff)
+DiffResultPerKey compareDictionaries(
+    const VtDictionary& modified,
+    const VtDictionary& baseline,
+    DiffResult*         quickDiff)
 {
     DiffResultPerKey results;
-    
+
     if (quickDiff)
         *quickDiff = DiffResult::Same;
 
@@ -40,7 +43,7 @@ DiffResultPerKey compareDictionaries(const VtDictionary& modified, const VtDicti
         const auto baselineEnd = baseline.end();
         for (const auto& keyAndValue : modified) {
             const std::string& key = keyAndValue.first;
-            const auto iter = baseline.find(key);
+            const auto         iter = baseline.find(key);
             if (iter == baselineEnd) {
                 USD_MAYA_RETURN_QUICK_RESULT(DiffResult::Created);
                 results[key] = DiffResult::Created;
@@ -68,4 +71,4 @@ DiffResultPerKey compareDictionaries(const VtDictionary& modified, const VtDicti
     return results;
 }
 
-} // keyspace MayaUsdUtils
+} // namespace MayaUsdUtils

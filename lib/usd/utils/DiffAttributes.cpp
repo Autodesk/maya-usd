@@ -21,7 +21,8 @@ using UsdAttribute = PXR_NS::UsdAttribute;
 using VtValue = PXR_NS::VtValue;
 using UsdTimeCode = PXR_NS::UsdTimeCode;
 
-DiffResult compareAttributes(const UsdAttribute& modified, const UsdAttribute& baseline, DiffResult* quickDiff)
+DiffResult
+compareAttributes(const UsdAttribute& modified, const UsdAttribute& baseline, DiffResult* quickDiff)
 {
     // We will not compare the set of point-in-times themselves but the overall result
     // of the animated values. This takes csare of tyring to match time-samples: we
@@ -57,7 +58,7 @@ DiffResult compareAttributes(const UsdAttribute& modified, const UsdAttribute& b
             *quickDiff = sampleResult;
             return sampleResult;
         }
-        
+
         if (sampleResult == overallResult) {
             continue;
         } else if (overallResult == DiffResult::Same) {

@@ -387,7 +387,8 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
 // SdfPath will be empty on error.
 using UsdPathToDagPathMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
 using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
-using PushCustomizeSrc = std::tuple<SdfPath, UsdStageRefPtr, SdfLayerRefPtr, UsdPathToDagPathMapPtr>;
+using PushCustomizeSrc
+    = std::tuple<SdfPath, UsdStageRefPtr, SdfLayerRefPtr, UsdPathToDagPathMapPtr>;
 
 PushCustomizeSrc pushExport(
     const Ufe::Path&                 ufePulledPath,
@@ -397,7 +398,7 @@ PushCustomizeSrc pushExport(
     UsdStageRefPtr         srcStage = UsdStage::CreateInMemory();
     SdfLayerRefPtr         srcLayer = srcStage->GetRootLayer();
     UsdPathToDagPathMapPtr pathMapPtr;
-    auto                   pushCustomizeSrc = std::make_tuple(SdfPath(), srcStage, srcLayer, pathMapPtr);
+    auto pushCustomizeSrc = std::make_tuple(SdfPath(), srcStage, srcLayer, pathMapPtr);
 
     // Copy to be able to add the export root.
     VtDictionary userArgs = context.GetUserArgs();
@@ -411,9 +412,9 @@ PushCustomizeSrc pushExport(
     UsdMayaUtil::MDagPathSet dagPaths;
     dagPaths.insert(dagPath);
 
-    GfInterval timeInterval = PXR_NS::UsdMayaPrimUpdater::isAnimated(dagPath)
-        ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
-        : GfInterval();
+    GfInterval       timeInterval = PXR_NS::UsdMayaPrimUpdater::isAnimated(dagPath)
+              ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
+              : GfInterval();
     double           frameStride = 1.0;
     std::set<double> frameSamples;
 
@@ -564,7 +565,8 @@ bool pushCustomize(
               auto dstPath = dstRootParentPath.AppendPath(relativeSrcPath);
 
               // Report PushCopySpecs() failure.
-              if (!updater->pushCopySpecs(srcStage, srcLayer, srcPath, context.GetUsdStage(), dstLayer, dstPath)) {
+              if (!updater->pushCopySpecs(
+                      srcStage, srcLayer, srcPath, context.GetUsdStage(), dstLayer, dstPath)) {
                   throw MayaUsd::TraversalFailure(std::string("PushCopySpecs() failed."), srcPath);
               }
 
