@@ -87,6 +87,14 @@ TEST(DiffPrims, comparePrimsEmpty)
     DiffResult quickDiff = DiffResult::Differ;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_EQ(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Differ;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrims, comparePrimsSameChildren)
@@ -109,6 +117,14 @@ TEST(DiffPrims, comparePrimsSameChildren)
 
     DiffResult quickDiff = DiffResult::Differ;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Differ;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
@@ -134,6 +150,14 @@ TEST(DiffPrims, comparePrimsDiffChildren)
     DiffResult quickDiff = DiffResult::Same;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Same;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrims, comparePrimsAbsentChild)
@@ -156,6 +180,14 @@ TEST(DiffPrims, comparePrimsAbsentChild)
     DiffResult quickDiff = DiffResult::Same;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Same;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrims, comparePrimsCreatedChild)
@@ -178,6 +210,14 @@ TEST(DiffPrims, comparePrimsCreatedChild)
     DiffResult quickDiff = DiffResult::Same;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Same;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -204,6 +244,14 @@ TEST(DiffPrims, comparePrimsAbsentChildAttribute)
     DiffResult quickDiff = DiffResult::Same;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Same;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrims, comparePrimsCreatedChildAttribute)
@@ -227,6 +275,14 @@ TEST(DiffPrims, comparePrimsCreatedChildAttribute)
     DiffResult quickDiff = DiffResult::Same;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Same;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -253,6 +309,14 @@ TEST(DiffPrims, comparePrimsAbsentChildRelationship)
     DiffResult quickDiff = DiffResult::Same;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Same;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }
 
 TEST(DiffPrims, comparePrimsCreatedChildRelationship)
@@ -278,4 +342,12 @@ TEST(DiffPrims, comparePrimsCreatedChildRelationship)
     DiffResult quickDiff = DiffResult::Same;
     comparePrims(modifiedPrim, baselinePrim, &quickDiff);
     EXPECT_NE(quickDiff, DiffResult::Same);
+
+    result = comparePrimsOnly(modifiedPrim, baselinePrim);
+
+    EXPECT_EQ(result, DiffResult::Same);
+
+    quickDiff = DiffResult::Same;
+    comparePrimsOnly(modifiedPrim, baselinePrim, &quickDiff);
+    EXPECT_EQ(quickDiff, DiffResult::Same);
 }

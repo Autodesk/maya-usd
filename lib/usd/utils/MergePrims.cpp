@@ -37,6 +37,7 @@ namespace {
 struct MergeContext
 {
     const MergeVerbosity  verbosity;
+    const bool            mergeChildren;
     const UsdStageRefPtr& srcStage;
     const SdfPath&        srcRootPath;
     const UsdStageRefPtr& dstStage;
@@ -217,7 +218,7 @@ bool isDataAtPathsModified(
             printChangedField(ctx, src, "prim metadata", changed);
             return changed;
         } else {
-            comparePrims(srcPrim, dstPrim, &quickDiff);
+            comparePrimsOnly(srcPrim, dstPrim, &quickDiff);
             const bool changed = (quickDiff != DiffResult::Same);
             printChangedField(ctx, src, "prim", changed);
             return changed;
@@ -400,7 +401,11 @@ bool filterChildren(
             ctx, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->PrimChildren) {
-        return filterTypedChildren<Sdf_PrimChildPolicy>(ctx, src, dst, srcChildren, dstChildren);
+        if (ctx.mergeChildren)
+            return filterTypedChildren<Sdf_PrimChildPolicy>(
+                ctx, src, dst, srcChildren, dstChildren);
+        else
+            return false;
     }
 
     printAboutFailure(ctx, src, "unknown children field.");
@@ -461,6 +466,7 @@ bool shouldMergeChildren(
 /// console.
 bool mergeDiffPrims(
     MergeVerbosity        verbosity,
+    bool                  mergeChildren,
     const UsdStageRefPtr& srcStage,
     const SdfLayerRefPtr& srcLayer,
     const SdfPath&        srcPath,
@@ -468,7 +474,7 @@ bool mergeDiffPrims(
     const SdfLayerRefPtr& dstLayer,
     const SdfPath&        dstPath)
 {
-    MergeContext ctx = { verbosity, srcStage, srcPath, dstStage, dstPath };
+    MergeContext ctx = { verbosity, mergeChildren, srcStage, srcPath, dstStage, dstPath };
     auto         copyValue = makeFuncWithContext(ctx, shouldMergeValue);
     auto         copyChildren = makeFuncWithContext(ctx, shouldMergeChildren);
     return SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath, copyValue, copyChildren);
@@ -485,10 +491,11 @@ bool mergeDiffPrims(
 bool mergePrims(
     const UsdStageRefPtr& srcStage,
     const SdfLayerRefPtr& srcLayer,
-    const SdfPath&        srcRootPath,
+    const SdfPath&        srcPath,
     const UsdStageRefPtr& dstStage,
     const SdfLayerRefPtr& dstLayer,
-    const SdfPath&        dstRootPath,
+    const SdfPath&        dstPath,
+    bool                  mergeChildren,
     MergeVerbosity        verbosity)
 {
     // TODO: only create and transfer layer if: not the top layer (easy) or higher layers have an
@@ -502,7 +509,7 @@ bool mergePrims(
         tempLayer->TransferContent(dstLayer);
 
         const bool success = mergeDiffPrims(
-            verbosity, srcStage, srcLayer, srcRootPath, tempStage, tempLayer, dstRootPath);
+            verbosity, mergeChildren, srcStage, srcLayer, srcPath, tempStage, tempLayer, dstPath);
 
         if (success)
             dstLayer->TransferContent(tempLayer);
@@ -510,7 +517,7 @@ bool mergePrims(
         return success;
     } else {
         return mergeDiffPrims(
-            verbosity, srcStage, srcLayer, srcRootPath, dstStage, dstLayer, dstRootPath);
+            verbosity, mergeChildren, srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath);
     }
 }
 

@@ -85,7 +85,7 @@ template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const
 //----------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  compares a modified prim to a baseline one.
+/// \brief  compares a modified prim to a baseline one, including their children.
 /// Currently compares attributes, relationships and children.
 /// \param  modified the potentially modified prim that is compared.
 /// \param  baseline the prim that is used as the baseline for the comparison.
@@ -94,6 +94,20 @@ template <class MAP> MAYA_USD_UTILS_PUBLIC DiffResult computeOverallResult(const
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 DiffResult comparePrims(
+    const PXR_NS::UsdPrim& modified,
+    const PXR_NS::UsdPrim& baseline,
+    DiffResult*            quickDiff = nullptr);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  compares a modified prim to a baseline one but not their children.
+/// Currently compares attributes, relationships and children.
+/// \param  modified the potentially modified prim that is compared.
+/// \param  baseline the prim that is used as the baseline for the comparison.
+/// \param  quickDiff if not null, returns a result other than Same as soon as a difference is found.
+/// \return the overall result, all results are possible.
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+DiffResult comparePrimsOnly(
     const PXR_NS::UsdPrim& modified,
     const PXR_NS::UsdPrim& baseline,
     DiffResult*            quickDiff = nullptr);

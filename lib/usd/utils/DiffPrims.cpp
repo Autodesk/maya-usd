@@ -172,9 +172,10 @@ comparePrimsChildren(const UsdPrim& modified, const UsdPrim& baseline, DiffResul
     return results;
 }
 
-DiffResult comparePrims(
+static DiffResult comparePrims(
     const PXR_NS::UsdPrim& modified,
     const PXR_NS::UsdPrim& baseline,
+    bool                   compareChildren,
     DiffResult*            quickDiff)
 {
     if (quickDiff)
@@ -224,6 +225,7 @@ DiffResult comparePrims(
         }
     }
 
+    if (compareChildren)
     {
         const auto childrenDiffs = comparePrimsChildren(modified, baseline, quickDiff);
         USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
@@ -237,6 +239,22 @@ DiffResult comparePrims(
     }
 
     return computeOverallResult(subResults);
+}
+
+DiffResult comparePrims(
+    const PXR_NS::UsdPrim& modified,
+    const PXR_NS::UsdPrim& baseline,
+    DiffResult*            quickDiff)
+{
+    return comparePrims(modified, baseline, true, quickDiff);
+}
+
+DiffResult comparePrimsOnly(
+    const PXR_NS::UsdPrim& modified,
+    const PXR_NS::UsdPrim& baseline,
+    DiffResult*            quickDiff)
+{
+    return comparePrims(modified, baseline, false, quickDiff);
 }
 
 } // namespace MayaUsdUtils

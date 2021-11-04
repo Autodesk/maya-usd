@@ -92,6 +92,7 @@ TEST(MergePrims, mergePrimsEmpty)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -121,6 +122,7 @@ TEST(MergePrims, mergePrimsSameChildren)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -163,6 +165,7 @@ TEST(MergePrims, mergePrimsDiffChildren)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -203,6 +206,7 @@ TEST(MergePrims, mergePrimsAbsentChild)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -240,6 +244,7 @@ TEST(MergePrims, mergePrimsCreatedChild)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -286,6 +291,7 @@ TEST(MergePrims, mergePrimsAbsentChildAttribute)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -325,6 +331,7 @@ TEST(MergePrims, mergePrimsCreatedChildAttribute)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -369,6 +376,7 @@ TEST(MergePrims, mergePrimsAbsentChildRelationship)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -409,6 +417,7 @@ TEST(MergePrims, mergePrimsCreatedChildRelationship)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);
@@ -454,6 +463,7 @@ TEST(MergePrims, mergePrimsChildRelationshipAddTarget)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
+        true,
         MergeVerbosity::Failure);
 
     EXPECT_TRUE(result);

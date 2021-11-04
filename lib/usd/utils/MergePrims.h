@@ -59,6 +59,7 @@ bool contains(MergeVerbosity a, MergeVerbosity b) { return (a & b) != MergeVerbo
 /// \param  dstStage the stage containing the baseline prims that receive the modifications.
 /// \param  dstLayer the layer containing the baseline prims that receive the modifications.
 /// \param  dstPath the path to the baseline prims that receive the modifications.
+/// \param  mergeChildren if true, merges children too, otherwise only this prim.
 /// \param  verbosity how much info is printed about the merge in the console.
 /// \return true if the merge was successful.
 //----------------------------------------------------------------------------------------------------------------------
@@ -70,6 +71,7 @@ bool mergePrims(
     const PXR_NS::UsdStageRefPtr& dstStage,
     const PXR_NS::SdfLayerRefPtr& dstLayer,
     const PXR_NS::SdfPath&        dstPath,
+    bool                          mergeChildren = false,
     MergeVerbosity                verbosity = MergeVerbosity::Default);
 
 } // namespace MayaUsdUtils
