@@ -62,7 +62,7 @@ void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr, Us
     VtArray<GfVec3f>   dataPoints(cvCount);
 
     float* const        usdPoints = (float* const)dataPoints.cdata();
-    const double* const mayaCVs = (const double* const) & controlVertices[0];
+    const double* const mayaCVs = (const double* const)&controlVertices[0];
 
     convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, usdPoints, cvCount);
     pointsAttr.Set(dataPoints, time);
@@ -77,7 +77,7 @@ void copyExtent(const MFnNurbsCurve& fnCurve, const UsdAttribute& extentAttr, Us
     VtArray<GfVec3f>   dataPoints(cvCount);
 
     float* const        usdPoints = (float* const)dataPoints.cdata();
-    const double* const mayaCVs = (const double* const) & controlVertices[0];
+    const double* const mayaCVs = (const double* const)&controlVertices[0];
 
     convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, usdPoints, cvCount);
 
@@ -353,9 +353,8 @@ uint32_t diffNurbsCurve(
         const size_t        numControlVertices = controlVertices.length();
         const size_t        numPoints = dataPoints.size();
         const float* const  usdPoints = (const float* const)dataPoints.cdata();
-        const double* const mayaCVs = (const double* const) & controlVertices[0];
-        if (!MayaUsdUtils::compareArray3Dto4D(
-                usdPoints, mayaCVs, numPoints, numControlVertices)) {
+        const double* const mayaCVs = (const double* const)&controlVertices[0];
+        if (!MayaUsdUtils::compareArray3Dto4D(usdPoints, mayaCVs, numPoints, numControlVertices)) {
             result |= kCurvePoints;
         }
     }
@@ -366,7 +365,7 @@ uint32_t diffNurbsCurve(
         const unsigned int  cvCount = controlVertices.length();
         VtArray<GfVec3f>    points(cvCount);
         float* const        dataPoints = (float* const)points.cdata();
-        const double* const mayaCVs = (const double* const) & controlVertices[0];
+        const double* const mayaCVs = (const double* const)&controlVertices[0];
         convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, dataPoints, cvCount);
 
         VtArray<GfVec3f> mayaExtent(2);
@@ -399,7 +398,7 @@ uint32_t diffNurbsCurve(
         const size_t        numKnots = dataKnots.size();
         const size_t        numMayaKnots = knots.length();
         const double* const usdKnots = (const double* const)dataKnots.cdata();
-        const double* const mayaKnots = (const double* const) & knots[0];
+        const double* const mayaKnots = (const double* const)&knots[0];
         if (!MayaUsdUtils::compareArray(usdKnots, mayaKnots, numKnots, numMayaKnots)) {
             result |= kKnots;
         }

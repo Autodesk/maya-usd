@@ -412,9 +412,9 @@ PushCustomizeSrc pushExport(
     UsdMayaUtil::MDagPathSet dagPaths;
     dagPaths.insert(dagPath);
 
-    GfInterval       timeInterval = PXR_NS::UsdMayaPrimUpdater::isAnimated(dagPath)
-              ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
-              : GfInterval();
+    GfInterval timeInterval = PXR_NS::UsdMayaPrimUpdater::isAnimated(dagPath)
+        ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
+        : GfInterval();
     double           frameStride = 1.0;
     std::set<double> frameSamples;
 
