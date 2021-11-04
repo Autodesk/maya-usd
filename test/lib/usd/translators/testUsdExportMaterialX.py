@@ -42,7 +42,7 @@ class testUsdExportMaterialX(unittest.TestCase):
         # Export to USD.
         usdFilePath = os.path.abspath('UsdExportMaterialXTest.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='useRegistry', convertMaterialsTo='MaterialX',
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
             materialsScopeName='Materials')
 
         cls._stage = Usd.Stage.Open(usdFilePath)
