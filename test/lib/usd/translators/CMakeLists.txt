@@ -233,12 +233,12 @@ set_property(TEST testUsdMayaListShadingModesCommand APPEND PROPERTY LABELS tran
 
 # Requires Physics API to test some exporters:
 if (PXR_VERSION VERSION_GREATER 2105)
-mayaUsd_add_test(testUsdExportSchemaApi
-    PYTHON_MODULE testUsdExportSchemaApi
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    ENV
-        "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
-        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/nullApiExporter"
-)
-set_property(TEST testUsdExportSchemaApi APPEND PROPERTY LABELS translators)
+    mayaUsd_add_test(testUsdExportSchemaApi
+        PYTHON_MODULE testUsdExportSchemaApi
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+            "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/nullApiExporter"
+    )
+    set_property(TEST testUsdExportSchemaApi APPEND PROPERTY LABELS translators)
 endif()

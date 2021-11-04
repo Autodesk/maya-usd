@@ -48,7 +48,8 @@ static _Registry                                                                
 void UsdMayaSchemaApiAdaptorRegistry::Register(
     const std::string&                                mayaTypeName,
     const std::string&                                schemaApiName,
-    UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFn fn)
+    UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFn fn,
+    bool                                              fromPython)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY)
         .Msg(
@@ -71,17 +72,19 @@ void UsdMayaSchemaApiAdaptorRegistry::Register(
     size_t fnIndex = schemaNameIt->second.size();
     schemaNameIt->second.push_back(fn);
 
-    UsdMaya_RegistryHelper::AddUnloader([mayaTypeName, schemaApiName, fnIndex]() {
-        auto itMaya = _reg.find(mayaTypeName);
-        if (itMaya != _reg.end()) {
-            auto itSchema = itMaya->second.find(schemaApiName);
-            if (itSchema != itMaya->second.end()) {
-                if (fnIndex < itSchema->second.size()) {
-                    itSchema->second[fnIndex] = nullptr;
+    UsdMaya_RegistryHelper::AddUnloader(
+        [mayaTypeName, schemaApiName, fnIndex]() {
+            auto itMaya = _reg.find(mayaTypeName);
+            if (itMaya != _reg.end()) {
+                auto itSchema = itMaya->second.find(schemaApiName);
+                if (itSchema != itMaya->second.end()) {
+                    if (fnIndex < itSchema->second.size()) {
+                        itSchema->second[fnIndex] = nullptr;
+                    }
                 }
             }
-        }
-    });
+        },
+        fromPython);
 }
 
 /* static */

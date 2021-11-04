@@ -27,7 +27,6 @@
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
-#include <maya/MDGModifier.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 

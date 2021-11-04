@@ -3,6 +3,8 @@ set(TEST_SCRIPT_FILES
     testPrimWriter.py
     testExportChaser.py
     testImportChaser.py
+    testJobContextRegistry.py
+    testSchemaApiAdaptor.py
 )
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     list(APPEND TEST_SCRIPT_FILES
