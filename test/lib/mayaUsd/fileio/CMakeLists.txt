@@ -4,6 +4,11 @@ set(TEST_SCRIPT_FILES
     testExportChaser.py
     testImportChaser.py
 )
+if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
+    list(APPEND TEST_SCRIPT_FILES
+        testComponentTags.py
+    )
+endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES

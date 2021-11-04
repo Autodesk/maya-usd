@@ -70,7 +70,7 @@ void UsdUIUfeObserver::destroy()
 
 void UsdUIUfeObserver::operator()(const Ufe::Notification& notification)
 {
-    try {
+      try {
         if (auto ac = dynamic_cast<const Ufe::AttributeValueChanged*>(&notification)) {
             if (ac->name() == UsdGeomTokens->xformOpOrder) {
                 static const MString mainObjListCmd(
@@ -90,8 +90,9 @@ void UsdUIUfeObserver::operator()(const Ufe::Notification& notification)
                         MGlobal::executeCommand(updateCBCmd);
                     }
                 }
-            }
-        }
+             }
+          }
+       }
     } catch (const std::exception&) {
     }
 }

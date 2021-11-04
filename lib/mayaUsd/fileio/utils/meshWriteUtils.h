@@ -239,6 +239,13 @@ bool getMeshColorSetData(
     MFnMesh::MColorRepresentation* colorSetRep,
     bool*                          clamped);
 
+#if MAYA_API_VERSION >= 20220000
+
+MAYAUSD_CORE_PUBLIC
+MStatus exportComponentTags(UsdGeomMesh& primSchema, MObject obj);
+
+#endif
+
 } // namespace UsdMayaMeshWriteUtils
 
 PXR_NAMESPACE_CLOSE_SCOPE

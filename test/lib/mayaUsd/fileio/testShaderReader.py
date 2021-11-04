@@ -152,8 +152,7 @@ class testShaderReader(unittest.TestCase):
         mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_swizzle_color3_float")
         mayaUsdLib.ShaderReader.Register(mtlxShaderReaderTest, "ND_convert_color3_vector3")
         
-        usdFilePath = os.path.join(testShaderReader.inputPath, '..', '..', 'usd', 'translators','UsdImportMaterialX',
-            'UsdImportMaterialX.usda')
+        usdFilePath = os.path.join(testShaderReader.inputPath, 'UsdImportMaterialX', 'UsdImportMaterialX.usda')
 
         cmds.usdImport(file=usdFilePath, shadingMode=['useRegistry','MaterialX' ])
 

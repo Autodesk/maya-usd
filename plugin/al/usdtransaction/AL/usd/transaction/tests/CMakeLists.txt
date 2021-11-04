@@ -38,6 +38,11 @@ target_link_libraries(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
     ${PTHREAD_LINK}
 )
 
+if(IS_MACOSX)
+    # Create symbolic link to python framework
+    file(CREATE_LINK ${MAYA_LOCATION}/Frameworks ${CMAKE_CURRENT_BINARY_DIR}/../Frameworks SYMBOLIC)
+endif()
+
 target_include_directories(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
   PRIVATE
     ${GTEST_INCLUDE_DIRS}
