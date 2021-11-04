@@ -193,8 +193,6 @@ bool isDataAtPathsModified(
             printChangedField(ctx, src, "prop metadata", changed);
             return changed;
         } else {
-            // TODO: should we detect more than properties?
-
             if (srcProp.Is<UsdAttribute>()) {
                 const UsdAttribute srcAttr = srcProp.As<UsdAttribute>();
                 const UsdAttribute dstAttr = dstProp.As<UsdAttribute>();
@@ -258,8 +256,6 @@ bool shouldMergeValue(
         printAboutFailure(ctx, src, "USD denies copying value. ");
         return false;
     }
-
-    // TODO: if modified, return a custom data copy method in a SdfCopySpecsValueEdit.
 
     const MergeLocation dst = { dstLayer, dstPath, field, fieldInDst };
     return isDataAtPathsModified(ctx, src, dst);
