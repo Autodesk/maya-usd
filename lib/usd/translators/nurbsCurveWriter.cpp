@@ -209,15 +209,15 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
         VtVec3fArray       linearArray;
 
         if (!isLinear) {
-            for (int i = 0; i < pntCnt - 3; i += 3) {
+            for (size_t i = 0; i < pntCnt - 3; i += 3) {
                 // check if out and in handles are coincident
                 GfVec3f h1 = points[i + 1] - points[i];
                 GfVec3f h2 = points[i + 3] - points[i + 2];
 
                 if (GfIsClose(h1, h2, 1e-5)) {
                     if (linearArray.empty())
-                        linearArray.emplace_back(points[i]);
-                    linearArray.emplace_back(points[i + 3]);
+                        linearArray.push_back(points[i]);
+                    linearArray.push_back(points[i + 3]);
                 }
             }
 
