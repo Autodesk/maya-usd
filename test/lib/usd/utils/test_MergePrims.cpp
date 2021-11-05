@@ -10,6 +10,8 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 using namespace PXR_NS;
 using namespace MayaUsdUtils;
 
@@ -68,10 +70,7 @@ UsdPrim createChild(UsdStageRefPtr& stage, const SdfPath& path, double value)
 
 template <class ITER_RANGE> size_t rangeSize(const ITER_RANGE& range)
 {
-    size_t count = 0;
-    for (const auto& data : range)
-        ++count;
-    return count;
+    return size_t(std::distance(range.begin(), range.end()));
 }
 
 } // namespace
