@@ -35,10 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \brief Provides functionality to register and lookup USD updater plugins
 /// for Maya nodes.
 ///
-/// Use PXRUSDMAYA_REGISTER_UPDATER(mayaTypeName, updaterClass) to register a updater
-/// class with the registry.
-///
-/// The plugin is expected to update a prim at <tt>ctx->GetAuthorPath()</tt>.
+/// Use PXRUSDMAYA_REGISTER_UPDATER(usdTypeName, mayaTypeName, updaterClass, supports)
+/// to register a updater class with the registry.
 ///
 /// In order for the core system to discover the plugin, you need a
 /// \c plugInfo.json that contains the Maya type name and the Maya plugin to
@@ -65,12 +63,12 @@ struct UsdMayaPrimUpdaterRegistry
     /// Updater factory function, i.e. a function that creates a prim updater
     /// for the given Maya node/USD paths and context.
     using UpdaterFactoryFn
-        = std::function<UsdMayaPrimUpdaterSharedPtr(const MFnDependencyNode&, const SdfPath&)>;
+        = std::function<UsdMayaPrimUpdaterSharedPtr(const MFnDependencyNode&, const Ufe::Path&)>;
 
     using RegisterItem = std::tuple<UsdMayaPrimUpdater::Supports, UpdaterFactoryFn>;
 
     /// \brief Register \p fn as a factory function providing a
-    /// UsdMayaPrimUpdater subclass that can be used to update \p mayaType.
+    /// UsdMayaPrimUpdater subclass that can be used to update \p tfType \ \p mayaType.
     /// If you can't provide a valid UsdMayaPrimUpdater for the given arguments,
     /// return a null pointer from the factory function \p fn.
     ///
@@ -79,7 +77,7 @@ struct UsdMayaPrimUpdaterRegistry
     /// class MyUpdater : public UsdMayaPrimUpdater {
     ///     static UsdMayaPrimUpdaterSharedPtr Create(
     ///             const MFnDependencyNode& depNodeFn,
-    ///             const SdfPath& usdPath);
+    ///             const Ufe::Path& ufePath);
     /// };
     /// TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimUpdaterRegistry, MyUpdater) {
     ///     UsdMayaPrimUpdaterRegistry::Register(UsdMayaPrimUpdater::Supports,
@@ -87,7 +85,11 @@ struct UsdMayaPrimUpdaterRegistry
     /// }
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static void Register(const TfType& type, UsdMayaPrimUpdater::Supports sup, UpdaterFactoryFn fn);
+    static void Register(
+        const TfType&                tfType,
+        const std::string&           mayaType,
+        UsdMayaPrimUpdater::Supports sup,
+        UpdaterFactoryFn             fn);
 
     /// \brief Register \p fn as a reader provider for \p T.
     ///
@@ -103,49 +105,57 @@ struct UsdMayaPrimUpdaterRegistry
     /// }
     /// \endcode
     template <typename T>
-    static void Register(UsdMayaPrimUpdater::Supports sup, UpdaterFactoryFn fn)
+    static void
+    Register(const std::string& mayaType, UsdMayaPrimUpdater::Supports sup, UpdaterFactoryFn fn)
     {
         if (TfType t = TfType::Find<T>()) {
-            Register(t, sup, fn);
+            Register(t, mayaType, sup, fn);
         } else {
             TF_CODING_ERROR("Cannot register unknown TfType: %s.", ArchGetDemangled<T>().c_str());
         }
     }
 
-    // takes a usdType (i.e. prim.GetTypeName())
-    /// \brief Finds a updater factory if one exists for \p usdTypeName.
+    /// \brief Finds a updater factory if one exists for \p usdTypeName or returns a fallback
+    /// updater.
     ///
     /// \p usdTypeName should be a usd typeName, for example,
     /// \code
     /// prim.GetTypeName()
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static RegisterItem Find(const TfToken& usdTypeName);
+    static RegisterItem FindOrFallback(const TfToken& usdTypeName);
+
+    /// \brief Finds a updater if one exists for \p mayaTypeName or returns a fallback updater.
+    MAYAUSD_CORE_PUBLIC
+    static RegisterItem FindOrFallback(const std::string& mayaTypeName);
 };
 
 /// \brief Registers a pre-existing updater class for the given Maya type;
 /// the updater class should be a subclass of UsdMayaPrimUpdater with a three-place
 /// constructor that takes <tt>(const MFnDependencyNode& depNodeFn,
-/// const SdfPath& usdPath, UsdMayaWriteJobContext& jobCtx)</tt> as arguments.
+/// const Ufe::Path& path,UsdMayaPrimUpdater::Supports sup)</tt> as arguments.
 ///
 /// Example:
 /// \code{.cpp}
 /// class MyUpdater : public UsdMayaPrimUpdater {
 ///     MyUpdater(
 ///             const MFnDependencyNode& depNodeFn,
-///             const SdfPath& usdPath,
+///             const Ufe::Path& path,
 ///             UsdMayaPrimUpdater::Supports sup) {
 ///         // ...
 ///     }
 /// };
-/// PXRUSDMAYA_REGISTER_UPDATER(myUsdTypeName, MyUpdater);
+/// PXRUSDMAYA_REGISTER_UPDATER(myUsdTypeName, myMayaTypeName, MyUpdater,
+///                    (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear)));
 /// \endcode
-#define PXRUSDMAYA_REGISTER_UPDATER(usdTypeName, updaterClass, supports)                    \
+#define PXRUSDMAYA_REGISTER_UPDATER(usdTypeName, mayaTypeName, updaterClass, supports)      \
     TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimUpdaterRegistry, usdTypeName##_##updaterClass) \
     {                                                                                       \
         UsdMayaPrimUpdaterRegistry::Register<usdTypeName>(                                  \
-            supports, [](const MFnDependencyNode& depNodeFn, const SdfPath& usdPath) {      \
-                return std::make_shared<updaterClass>(depNodeFn, usdPath);                  \
+            #mayaTypeName,                                                                  \
+            supports,                                                                       \
+            [](const MFnDependencyNode& depNodeFn, const Ufe::Path& path) {                 \
+                return std::make_shared<updaterClass>(depNodeFn, path);                     \
             });                                                                             \
     }
 

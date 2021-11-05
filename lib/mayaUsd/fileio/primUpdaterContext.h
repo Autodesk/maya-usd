@@ -18,21 +18,36 @@
 #define PXRUSDMAYA_PRIMUPDATERCONTEXT_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primUpdaterArgs.h>
 
+#include <pxr/base/tf/hashmap.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
+
+#include <maya/MDagPath.h>
+
+#include <memory> // shared_ptr
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimUpdaterContext
 /// \brief This class provides an interface for updater plugins to communicate
 /// state back to the core usd maya logic.
+//
+// Gives access to shared state across prim updaters.
 class UsdMayaPrimUpdaterContext
 {
 public:
+    using UsdPathToDagPathMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
+    using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
+
     MAYAUSD_CORE_PUBLIC
-    UsdMayaPrimUpdaterContext(const UsdTimeCode& timeCode, const UsdStageRefPtr& stage);
+    UsdMayaPrimUpdaterContext(
+        const UsdTimeCode&            timeCode,
+        const UsdStageRefPtr&         stage,
+        const VtDictionary&           userArgs,
+        const UsdPathToDagPathMapPtr& pathMap = nullptr);
 
     /// \brief returns the time frame where data should be edited.
     const UsdTimeCode& GetTimeCode() const { return _timeCode; }
@@ -40,12 +55,24 @@ public:
     /// \brief returns the usd stage that is being written to.
     UsdStageRefPtr GetUsdStage() const { return _stage; }
 
-    MAYAUSD_CORE_PUBLIC
-    virtual void Clear(const SdfPath&);
+    /// \brief Return dictionary with user defined arguments. Can contain a mix of reader/writer and
+    /// updater args
+    const VtDictionary& GetUserArgs() const { return _userArgs; }
+
+    /// \brief Return updater arguments
+    const UsdMayaPrimUpdaterArgs& GetArgs() const { return _args; }
+
+    /// \brief Returns the Maya Dag path corresponding to a pulled USD path.  The Dag path will be
+    /// empty if no correspondence exists.
+    MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
 
 private:
-    const UsdTimeCode& _timeCode;
-    UsdStageRefPtr     _stage;
+    const UsdTimeCode&           _timeCode;
+    const UsdStageRefPtr         _stage;
+    const UsdPathToDagPathMapPtr _pathMap;
+
+    const VtDictionary&          _userArgs;
+    const UsdMayaPrimUpdaterArgs _args;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

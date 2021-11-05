@@ -78,6 +78,14 @@ UsdMaya_WriteJob::UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs)
 
 UsdMaya_WriteJob::~UsdMaya_WriteJob() { }
 
+SdfPath UsdMaya_WriteJob::MapDagPathToSdfPath(const MDagPath& dagPath) const
+{
+    SdfPath usdPrimPath;
+    TfMapLookup(mDagPathToUsdPathMap, dagPath, &usdPrimPath);
+
+    return usdPrimPath;
+}
+
 /// Generates a name for a temporary usdc file in \p dir.
 /// Unless you are very, very unlucky, the stage name is unique because it's
 /// generated from a UUID.
@@ -817,6 +825,11 @@ bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath& path, const MDagPath& da
     // mDagPathToUsdPathMap!)
     mUsdPathToDagPathMap[path] = dagPath;
     return true;
+}
+
+const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_WriteJob::GetDagPathToUsdPathMap() const
+{
+    return mDagPathToUsdPathMap;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

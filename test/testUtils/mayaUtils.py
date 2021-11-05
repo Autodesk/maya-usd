@@ -24,6 +24,7 @@ from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
+from maya.api import OpenMaya as om
 
 import ufe
 import ufeUtils, testUtils
@@ -184,6 +185,16 @@ def openCompositionArcsScene():
 
 def openPrimPathScene():
     return openTestScene("primPath", "primPath.ma" )
+
+def setMayaTranslation(aMayaItem, t):
+    '''Set the translation on the argument Maya scene item.'''
+
+    aMayaPath = aMayaItem.path()
+    aMayaPathStr = ufe.PathString.string(aMayaPath)
+    aDagPath = om.MSelectionList().add(aMayaPathStr).getDagPath(0)
+    aFn= om.MFnTransform(aDagPath)
+    aFn.setTranslation(t, om.MSpace.kObject)
+    return (aMayaPath, aMayaPathStr, aFn, aFn.transformation().asMatrix())
 
 def createProxyAndStage():
     """

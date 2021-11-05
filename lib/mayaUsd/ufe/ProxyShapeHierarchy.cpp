@@ -34,6 +34,12 @@
 #include <mayaUsd/ufe/UsdUndoReorderCommand.h>
 #endif
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/fileio/primUpdaterManager.h>
+
+#include <ufe/pathString.h> // In UFE v2 but only needed for primUpdater.
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -170,11 +176,24 @@ Ufe::SceneItemList ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingR
     // single component appended to it.
     auto               parentPath = fItem->path();
     Ufe::SceneItemList children;
+    UFE_V3(std::string dagPathStr;)
     for (const auto& child : range) {
-        children.emplace_back(UsdSceneItem::create(
-            parentPath
-                + Ufe::PathSegment(Ufe::PathComponent(child.GetName().GetString()), g_USDRtid, '/'),
-            child));
+#ifdef UFE_V3_FEATURES_AVAILABLE
+        if (PXR_NS::PrimUpdaterManager::readPullInformation(child, dagPathStr)) {
+            auto item = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
+            if (TF_VERIFY(item, "No item for pulled path '%s'\n", dagPathStr.c_str())) {
+                children.emplace_back(item);
+            }
+        } else {
+#endif
+            children.emplace_back(UsdSceneItem::create(
+                parentPath
+                    + Ufe::PathSegment(
+                        Ufe::PathComponent(child.GetName().GetString()), g_USDRtid, '/'),
+                child));
+#ifdef UFE_V3_FEATURES_AVAILABLE
+        }
+#endif
     }
     return children;
 }

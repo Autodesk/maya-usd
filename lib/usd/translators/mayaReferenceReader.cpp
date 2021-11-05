@@ -31,6 +31,7 @@
 //
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
 
@@ -44,16 +45,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasMayaReference, args, context)
 {
+    MStatus status;
+
     const UsdPrim& usdPrim = args.GetUsdPrim();
     MObject        parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return UsdMayaTranslatorMayaReference::update(usdPrim, parentNode);
+
+    MObject referenceParentNode;
+
+    UsdMayaTranslatorUtil::CreateTransformNode(
+        usdPrim, parentNode, args, &context, &status, &referenceParentNode);
+
+    return UsdMayaTranslatorMayaReference::update(usdPrim, referenceParentNode);
 }
 
 PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasALMayaReference, args, context)
 {
+    MStatus status;
+
     const UsdPrim& usdPrim = args.GetUsdPrim();
     MObject        parentNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return UsdMayaTranslatorMayaReference::update(usdPrim, parentNode);
+
+    MObject referenceParentNode;
+
+    UsdMayaTranslatorUtil::CreateTransformNode(
+        usdPrim, parentNode, args, &context, &status, &referenceParentNode);
+
+    return UsdMayaTranslatorMayaReference::update(usdPrim, referenceParentNode);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
