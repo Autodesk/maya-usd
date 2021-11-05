@@ -69,6 +69,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     double timeSampleMultiplier() const;
 
+    MAYAUSD_CORE_PUBLIC
+    const UsdMayaPrimReaderContext::ObjectRegistry& GetNewNodeRegistry() const;
+
 protected:
     // Types
     using _PrimReaderMap = std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr, SdfPath::Hash>;

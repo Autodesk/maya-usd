@@ -38,7 +38,13 @@
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #include <mayaUsd/ufe/UsdUIUfeObserver.h>
 #endif
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#define HAVE_PATH_MAPPING
+#include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
+#include <mayaUsd/ufe/UsdPathMappingHandler.h>
+#endif
 
+#include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/runTimeMgr.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -49,8 +55,19 @@
 #include <string>
 
 namespace {
-int gRegistrationCount = 0;
+
+void exitingCallback(void* /* unusedData */)
+{
+    // Maya does not unload plugins on exit.  Make sure we perform an orderly
+    // cleanup, otherwise on program exit UFE static data structures may be
+    // cleaned up when this plugin is no longer alive.
+    MayaUsd::ufe::finalize(/* exiting = */ true);
 }
+
+int gRegistrationCount = 0;
+
+bool gExitingCbId = 0;
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -78,6 +95,10 @@ Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 // The normal Maya context ops handler, which we decorate for ProxyShape support.
 // Keep a reference to it to restore on finalization.
 Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
+#endif
+
+#ifdef HAVE_PATH_MAPPING
+Ufe::PathMappingHandler::Ptr g_MayaPathMappingHandler;
 #endif
 
 // Subject singleton for observation of all USD stages.
@@ -108,7 +129,12 @@ MStatus initialize()
 
     g_MayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
     auto proxyShapeHierHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    auto pulledObjectHierHandler = PulledObjectHierarchyHandler::create(proxyShapeHierHandler);
+    Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, pulledObjectHierHandler);
+#else
     Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyShapeHierHandler);
+#endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
     g_MayaContextOpsHandler = Ufe::RunTimeMgr::instance().contextOpsHandler(g_MayaRtid);
@@ -152,6 +178,13 @@ MStatus initialize()
 
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
     MayaUsd::ufe::UsdUIUfeObserver::create();
+
+#ifdef HAVE_PATH_MAPPING
+    g_MayaPathMappingHandler = Ufe::RunTimeMgr::instance().pathMappingHandler(g_MayaRtid);
+    auto pathMappingHndlr = UsdPathMappingHandler::create();
+    Ufe::RunTimeMgr::instance().setPathMappingHandler(g_MayaRtid, pathMappingHndlr);
+#endif
+
 #else
     auto usdHierHandler = UsdHierarchyHandler::create();
     auto usdTrans3dHandler = UsdTransform3dHandler::create();
@@ -171,13 +204,15 @@ MStatus initialize()
     // Register for UFE string to path service using path component separator '/'
     UFE_V2(Ufe::PathString::registerPathComponentSeparator(g_USDRtid, '/');)
 
+    gExitingCbId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, exitingCallback);
+
     return MS::kSuccess;
 }
 
-MStatus finalize()
+MStatus finalize(bool exiting)
 {
     // If more than one plugin still has us registered, do nothing.
-    if (gRegistrationCount-- > 1)
+    if (gRegistrationCount-- > 1 && !exiting)
         return MS::kSuccess;
 
     // Restore the normal Maya hierarchy handler, and unregister.
@@ -193,7 +228,15 @@ MStatus finalize()
     Ufe::RunTimeMgr::instance().unregister(g_USDRtid);
     g_MayaHierarchyHandler.reset();
 
+#ifdef HAVE_PATH_MAPPING
+    // Remove the Maya path mapping handler that we added above.
+    Ufe::RunTimeMgr::instance().setPathMappingHandler(g_MayaRtid, g_MayaPathMappingHandler);
+    g_MayaPathMappingHandler.reset();
+#endif
+
     g_StagesSubject.Reset();
+
+    MMessage::removeCallback(gExitingCbId);
 
     return MS::kSuccess;
 }

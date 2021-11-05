@@ -50,6 +50,7 @@ global proc mayaUSDRegisterStrings() {
     register("kMenuClear", "Clear");
     register("kMenuRevertToFile", "Revert to File");
     register("kMenuLayerEditor", "USD Layer Editor");
+    register("kContextMenuLayerEditor", "USD Layer Editor...");
     register("kMenuLayerEditorAnn", "Organize and edit USD data in layers");
     register("kMenuLoadSublayers", "Load Sublayers...");
     register("kMenuMute", "Mute");

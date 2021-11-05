@@ -1669,6 +1669,7 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
     clearBoundingBoxCache();
 
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
+    MayaUsdProxyStageObjectsChangedNotice(*this, notice).Send();
 
     // Recompute the extents of any UsdGeomBoundable that has authored extents
     const auto& stage = notice.GetStage();
