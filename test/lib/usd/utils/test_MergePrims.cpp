@@ -70,7 +70,11 @@ UsdPrim createChild(UsdStageRefPtr& stage, const SdfPath& path, double value)
 
 template <class ITER_RANGE> size_t rangeSize(const ITER_RANGE& range)
 {
-    return size_t(std::distance(range.begin(), range.end()));
+    size_t count = 0;
+    const auto end = range.end();
+    for (auto iter = range.begin(); iter != end; ++iter)
+        ++count;
+    return count;
 }
 
 } // namespace
