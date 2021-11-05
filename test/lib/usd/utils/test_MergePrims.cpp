@@ -66,8 +66,7 @@ UsdPrim createChild(UsdStageRefPtr& stage, const SdfPath& path, double value)
     return child;
 }
 
-template <class ITER_RANGE>
-size_t rangeSize(const ITER_RANGE& range)
+template <class ITER_RANGE> size_t rangeSize(const ITER_RANGE& range)
 {
     size_t count = 0;
     for (const auto& data : range)
