@@ -601,7 +601,7 @@ bool compareArray(
     if (count0 != count1) {
         return false;
     }
-#ifdef __AVX2__
+#if defined(__AVX2__) && 0
     const f256   eps8 = splat8f(eps);
     const size_t count8 = count0 & ~0x7ULL;
     size_t       i = 0;
@@ -640,7 +640,7 @@ bool compareArray(
 
     return true;
 
-#elif defined(__SSE__)
+#elif defined(__SSE__) && 0
     const f128   eps4 = splat4f(eps);
     const size_t count4 = count0 & ~0x3ULL;
     size_t       i = 0;
