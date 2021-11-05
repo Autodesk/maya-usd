@@ -146,7 +146,9 @@ except Exception:\\n\
 \")")
             set(COMMAND_CALL ${MAYA_EXECUTABLE} -c ${MEL_PY_EXEC_COMMAND})
         else()
-            set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${PREFIX_PYTHON_SCRIPT})
+            set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/runner_${test_name}.py)
+            FILE(WRITE ${SCRIPT} "${PREFIX_PYTHON_SCRIPT}")
+            set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${SCRIPT})
         endif()
     else()
         set(COMMAND_CALL ${PREFIX_COMMAND})
@@ -168,9 +170,9 @@ finally:
             )
         endif()
 
-        string(REPLACE ";" "\;" PYTEST_CODE "${PYTEST_CODE}")
-        set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} -c "${PYTEST_CODE}")
-
+        set(SCRIPT ${CMAKE_BINARY_DIR}/test/Temporary/scripts/runner_${test_name}.py)
+        FILE(WRITE ${SCRIPT} "${PYTEST_CODE}")
+        set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${SCRIPT})
     endif()
 
     add_test(
@@ -208,6 +210,7 @@ finally:
 
     if(IS_WINDOWS)
         list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+        list(APPEND MAYAUSD_VARNAME_PATH "${MAYA_LOCATION}/bin")
     endif()
 
     # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
@@ -353,6 +356,14 @@ finally:
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
 
+    if(IS_MACOSX)
+        # Necessary for tests like DiffCore to find python
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "DYLD_LIBRARY_PATH=${MAYA_LOCATION}/MacOS:$ENV{DYLD_LIBRARY_PATH}")
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "DYLD_FRAMEWORK_PATH=${MAYA_LOCATION}/Maya.app/Contents/Frameworks")
+    endif()
+
     if (PREFIX_INTERACTIVE)
         # Add the "interactive" label to all tests that launch the Maya UI.
         # This allows bypassing them by using the --label-exclude/-LE option to
@@ -363,6 +374,13 @@ finally:
         # to function correctly. Has no effect when not running remote.
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "MAYA_ALLOW_OPENGL_REMOTE_SESSION=1")
+
+        # Don't want popup when color management fails.
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "MAYA_CM_DISABLE_ERROR_POPUPS=1")
+        set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+            "MAYA_COLOR_MGT_NO_LOGGING=1")
+            
     else()
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "MAYA_IGNORE_DIALOGS=1")

@@ -102,7 +102,7 @@ class testShaderWriter(unittest.TestCase):
         # version of the MaterialX export does not support lambert).
         usdFilePath = os.path.join(self.temp_dir,'testShaderWriter.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='useRegistry', convertMaterialsTo='MaterialX',
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
             materialsScopeName='Materials')
 
         self.assertTrue(shaderWriterTest.CanExportCalled)

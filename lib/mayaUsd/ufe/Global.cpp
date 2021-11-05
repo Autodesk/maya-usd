@@ -44,6 +44,7 @@
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
 
+#include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/runTimeMgr.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -54,8 +55,19 @@
 #include <string>
 
 namespace {
-int gRegistrationCount = 0;
+
+void exitingCallback(void* /* unusedData */)
+{
+    // Maya does not unload plugins on exit.  Make sure we perform an orderly
+    // cleanup, otherwise on program exit UFE static data structures may be
+    // cleaned up when this plugin is no longer alive.
+    MayaUsd::ufe::finalize(/* exiting = */ true);
 }
+
+int gRegistrationCount = 0;
+
+bool gExitingCbId = 0;
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -192,13 +204,15 @@ MStatus initialize()
     // Register for UFE string to path service using path component separator '/'
     UFE_V2(Ufe::PathString::registerPathComponentSeparator(g_USDRtid, '/');)
 
+    gExitingCbId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, exitingCallback);
+
     return MS::kSuccess;
 }
 
-MStatus finalize()
+MStatus finalize(bool exiting)
 {
     // If more than one plugin still has us registered, do nothing.
-    if (gRegistrationCount-- > 1)
+    if (gRegistrationCount-- > 1 && !exiting)
         return MS::kSuccess;
 
     // Restore the normal Maya hierarchy handler, and unregister.
@@ -221,6 +235,8 @@ MStatus finalize()
 #endif
 
     g_StagesSubject.Reset();
+
+    MMessage::removeCallback(gExitingCbId);
 
     return MS::kSuccess;
 }

@@ -34,6 +34,11 @@ function(add_mayaUsdUtils_test TARGET_NAME)
     )
 endfunction()
 
+if(IS_MACOSX)
+    # Create symbolic link to python framework
+    file(CREATE_LINK ${MAYA_LOCATION}/Frameworks ${CMAKE_CURRENT_BINARY_DIR}/../Frameworks SYMBOLIC)
+endif()
+
 add_mayaUsdUtils_test(
     testDiffCore
     test_DiffCore.cpp
@@ -94,3 +99,4 @@ add_mayaUsdUtils_test(
     testDiffMetadatas
     test_DiffMetadatas.cpp
 )
+

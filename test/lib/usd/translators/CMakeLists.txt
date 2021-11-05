@@ -47,6 +47,11 @@ set(TEST_SCRIPT_FILES
     testUsdExportVisibilityDefault.py
     testUsdImportAnonymousLayer.py
     testUsdImportCamera.py
+    testUsdImportBasisCurves.py
+    testUsdImportBatchNurbsCurves.py
+    testUsdImportLinearCurves.py
+    testUsdImportNurbsCurves.py
+    testUsdImportBatchBezierCurves.py
     testUsdImportColorSets.py
     testUsdImportDisplacement.py
     testUsdImportExportScope.py
@@ -186,6 +191,7 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
                     "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
                     "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
                     "INPUT_PATH=${CMAKE_CURRENT_SOURCE_DIR}"
+                    "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}"
             )
             set_property(TEST ${target} APPEND PROPERTY LABELS translators)
         endforeach()
@@ -210,6 +216,14 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
         # Add a ctest label to these tests for easy filtering.
         set_property(TEST ${target} APPEND PROPERTY LABELS translators)
     endforeach()
+
+    if (BUILD_RFM_TRANSLATORS)
+        mayaUsd_add_test(testUsdExportMultiMaterial
+            PYTHON_MODULE testUsdExportMultiMaterial
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        )
+        set_property(TEST testUsdExportMultiMaterial APPEND PROPERTY LABELS translators)
+    endif()
 endif()
 
 # We are explicitly not setting PXR_PLUGINPATH_NAME here. We want to test
