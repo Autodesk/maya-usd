@@ -66,6 +66,15 @@ UsdPrim createChild(UsdStageRefPtr& stage, const SdfPath& path, double value)
     return child;
 }
 
+template <class ITER_RANGE>
+size_t rangeSize(const ITER_RANGE& range)
+{
+    size_t count = 0;
+    for (const auto& data : range)
+        ++count;
+    return count;
+}
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -94,7 +103,7 @@ TEST(MergePrims, mergePrimsEmpty)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(0));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(0));
 }
 
 TEST(MergePrims, mergePrimsSameChildren)
@@ -124,7 +133,7 @@ TEST(MergePrims, mergePrimsSameChildren)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(2));
 
     double value = 0.;
 
@@ -167,7 +176,7 @@ TEST(MergePrims, mergePrimsDiffChildren)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(2));
 
     double value = 0.;
 
@@ -208,7 +217,7 @@ TEST(MergePrims, mergePrimsAbsentChild)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(1));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(1));
 
     double value = 0.;
 
@@ -246,7 +255,7 @@ TEST(MergePrims, mergePrimsCreatedChild)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(2));
 
     double value = 0.;
 
@@ -293,7 +302,7 @@ TEST(MergePrims, mergePrimsOnlySameChildren)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(2));
 
     double value = 0.;
 
@@ -338,7 +347,7 @@ TEST(MergePrims, mergePrimsOnlyDiffChildren)
     // Verify children values have not been merged.
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(2));
 
     double value = 0.;
 
@@ -382,7 +391,7 @@ TEST(MergePrims, mergePrimsOnlyAbsentChild)
     // Verify both children still exist since we did not merge children.
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(2));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(2));
 
     double value = 0.;
 
@@ -427,7 +436,7 @@ TEST(MergePrims, mergePrimsOnlyCreatedChild)
     // children.
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(1));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(1));
 
     double value = 0.;
 
@@ -470,7 +479,7 @@ TEST(MergePrims, mergePrimsAbsentChildAttribute)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(1));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(1));
 
     double value = 0.;
 
@@ -510,7 +519,7 @@ TEST(MergePrims, mergePrimsCreatedChildAttribute)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(1));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(1));
 
     double value = 0.;
 
@@ -555,7 +564,7 @@ TEST(MergePrims, mergePrimsAbsentChildRelationship)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(1));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(1));
 
     SdfPathVector targets;
 
@@ -596,7 +605,7 @@ TEST(MergePrims, mergePrimsCreatedChildRelationship)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(1));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(1));
 
     SdfPathVector targets;
 
@@ -642,7 +651,7 @@ TEST(MergePrims, mergePrimsChildRelationshipAddTarget)
     EXPECT_TRUE(result);
 
     EXPECT_EQ(baselinePrim.GetAuthoredProperties().size(), size_t(0));
-    EXPECT_EQ(baselinePrim.GetChildrenNames().size(), size_t(1));
+    EXPECT_EQ(rangeSize(baselinePrim.GetChildren()), size_t(1));
 
     SdfPathVector targets;
 
