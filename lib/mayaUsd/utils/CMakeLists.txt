@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME}
         plugRegistryHelper.cpp
         selectability.cpp
         stageCache.cpp
+        traverseLayer.cpp
         undoHelperCommand.cpp
         util.cpp
         utilFileSystem.cpp
@@ -31,6 +32,7 @@ set(HEADERS
     plugRegistryHelper.h
     selectability.h
     stageCache.h
+    traverseLayer.h
     undoHelperCommand.h
     util.h
     utilFileSystem.h

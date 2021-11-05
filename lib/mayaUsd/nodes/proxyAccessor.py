@@ -31,6 +31,10 @@ import maya.OpenMaya as om
 import ufe
 import re
 
+def isGatewayNode(dagPath):
+    baseProxyShape = 'mayaUsdProxyShapeBase'
+    return baseProxyShape in cmds.nodeType(dagPath, inherited=True)
+
 def getUfeSelection():
     try:
         return ufe.GlobalSelection.get().front()
@@ -48,7 +52,10 @@ def getDagAndPrimFromUfe(ufeObject):
     dagPath = str(ufeObject.path().segments[0])[6:]
     
     if segmentCount == 1:
-        return dagPath, None
+        if isGatewayNode(dagPath):
+            return dagPath, Sdf.Path.absoluteRootPath
+        else:
+            return dagPath, None
     
     primPath = str(ufeObject.path().segments[1])
     
@@ -64,8 +71,12 @@ def getAccessPlugName(sdfPath):
 
 def isUfeUsdPath(ufeObject):
     segmentCount = ufeObject.path().nbSegments()
-    if segmentCount < 2:
+    if segmentCount == 0:
         return False
+        
+    if segmentCount == 1:
+        dagPath = str(ufeObject.path().segments[0])[6:]
+        return isGatewayNode(dagPath)
     
     lastSegment = ufeObject.path().segments[segmentCount-1]
     return Sdf.Path.IsValidPathString(str(lastSegment))

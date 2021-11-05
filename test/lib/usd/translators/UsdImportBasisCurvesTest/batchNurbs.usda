@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    defaultPrim = "NurbsBatch"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def NurbsCurves "NurbsBatch" (
+    kind = "component"
+)
+{
+    int[] curveVertexCounts = [10, 4]
+    double[] knots = [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1]
+    int[] order = [4, 4]
+    point3f[] points = [(-1, 0, 0), (-1, 0, 0), (-2, 0, -1), (-1, 0, -1), (0, 0, -1), (0, 0, -1), (1, 0, -1), (2, 0, -1), (1, 0, 0), (1, 0, 0),(-1, 0, 0), (-1, 0, -1), (1, 0, -1), (1, 0, 0)]
+    double2[] ranges = [(0, 3), (0, 1)]
+    float[] widths = [1, 1] (
+        interpolation = "constant"
+    )
+}
