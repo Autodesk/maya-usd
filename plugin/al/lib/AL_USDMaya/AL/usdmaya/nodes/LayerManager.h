@@ -358,6 +358,7 @@ public:
     // - they only make sense for a particular index of the parent array-attribute... and it taking
     // up the "identifierPlug" name is confusing
     AL_DECL_MULTI_CHILD_ATTRIBUTE(identifier);
+    AL_DECL_MULTI_CHILD_ATTRIBUTE(fileFormatId);
     AL_DECL_MULTI_CHILD_ATTRIBUTE(serialized);
     AL_DECL_MULTI_CHILD_ATTRIBUTE(anonymous);
 
