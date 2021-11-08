@@ -69,7 +69,10 @@ Ufe::SceneItem::Ptr PulledObjectHierarchyHandler::createItem(const Ufe::Path& pa
     return _mayaHierarchyHandler->createItem(path);
 }
 
-Ufe::Hierarchy::ChildFilter PulledObjectHierarchyHandler::childFilter() const { return {}; }
+Ufe::Hierarchy::ChildFilter PulledObjectHierarchyHandler::childFilter() const
+{
+    return _mayaHierarchyHandler->childFilter();
+}
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
