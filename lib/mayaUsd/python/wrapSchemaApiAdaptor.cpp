@@ -31,7 +31,7 @@
 
 #include <pxr/base/tf/pyPolymorphic.h>
 
-//#include <maya/MDGModifier.h>
+#include <maya/MDGModifier.h>
 
 #include <boost/python/args.hpp>
 #include <boost/python/class.hpp>

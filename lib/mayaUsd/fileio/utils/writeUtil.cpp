@@ -765,7 +765,9 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
 
     for (const TfToken& schemaName : adaptor.GetAppliedSchemas()) {
         if (const UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.GetSchemaByName(schemaName)) {
+#if PXR_VERSION > 2005
             prim.AddAppliedSchema(schemaName);
+#endif
             if (schemaAdaptor->CopyToPrim(prim, usdTime, valueWriter)) {
                 continue;
             }
