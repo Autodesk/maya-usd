@@ -128,6 +128,7 @@ public:
     }
 
     bool ApplySchema(const UsdMayaPrimReaderArgs& primReaderArgs, UsdMayaPrimReaderContext& context)
+        override
     {
         // Check if already applied:
         if (!GetMayaObjectForSchema().isNull()) {
@@ -156,7 +157,7 @@ public:
         return retVal;
     }
 
-    bool ApplySchema(MDGModifier&)
+    bool ApplySchema(MDGModifier&) override
     {
         // Check if already applied:
         if (!GetMayaObjectForSchema().isNull()) {
@@ -317,6 +318,7 @@ public:
     }
 
     bool ApplySchema(const UsdMayaPrimReaderArgs& primReaderArgs, UsdMayaPrimReaderContext& context)
+        override
     {
         // Check if already applied:
         if (!GetMayaObjectForSchema().isNull()) {
