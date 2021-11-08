@@ -157,7 +157,7 @@ struct UsdMayaReadUtil
         const UsdPrim&      prim,
         const MObject&      mayaObject);
 
-    /// Iterate on all newly created Maya objects in \p newObjects to see if they can receive one of
+    /// Iterate on all newly created Maya objects in \p readCtx to see if they can receive one of
     /// the API schemas found on the currently processed UsdPrim found in \p args.
     /// This call must also register in \p readCtx any new object created via ApplySchema.
     MAYAUSD_CORE_PUBLIC

@@ -27,7 +27,7 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  boost python binding for the UsdMayaImportChaser
+/// \brief  boost python binding for the UsdMayaJobContextRegistry
 //----------------------------------------------------------------------------------------------------------------------
 class JobContextRegistry
 {
