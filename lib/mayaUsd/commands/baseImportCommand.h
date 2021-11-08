@@ -47,6 +47,7 @@ public:
     static constexpr auto kImportUSDZTexturesFilePathFlag = "itf";
     static constexpr auto kMetadataFlag = "md";
     static constexpr auto kApiSchemaFlag = "api";
+    static constexpr auto kJobContextFlag = "jc";
     static constexpr auto kExcludePrimvarFlag = "epv";
     static constexpr auto kUseAsAnimationCacheFlag = "uac";
     static constexpr auto kImportChaserFlag = "chr";

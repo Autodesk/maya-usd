@@ -201,9 +201,10 @@ void UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
         // Write API schema attributes and strongly-typed metadata.
         // We currently only support these at default time.
         UsdMayaWriteUtil::WriteMetadataToPrim(GetMayaObject(), _usdPrim);
-        UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
-            GetMayaObject(), _usdPrim, _GetSparseValueWriter());
     }
+
+    UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
+        GetMayaObject(), _usdPrim, &_GetExportArgs(), usdTime, _GetSparseValueWriter());
 
     // Write out user-tagged attributes, which are supported at default time
     // and at animated time-samples.

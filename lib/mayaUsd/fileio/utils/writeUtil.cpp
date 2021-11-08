@@ -752,21 +752,26 @@ bool UsdMayaWriteUtil::WriteMetadataToPrim(const MObject& mayaObject, const UsdP
 
 /* static */
 bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
-    const MObject&             mayaObject,
-    const UsdPrim&             prim,
-    UsdUtilsSparseValueWriter* valueWriter)
+    const MObject&              mayaObject,
+    const UsdPrim&              prim,
+    const UsdMayaJobExportArgs* jobExportArgs,
+    const UsdTimeCode&          usdTime,
+    UsdUtilsSparseValueWriter*  valueWriter)
 {
-    UsdMayaAdaptor adaptor(mayaObject);
+    UsdMayaAdaptor adaptor(mayaObject, jobExportArgs);
     if (!adaptor) {
         return false;
     }
 
     for (const TfToken& schemaName : adaptor.GetAppliedSchemas()) {
-        if (const UsdMayaAdaptor::SchemaAdaptor schemaAdaptor
-            = adaptor.GetSchemaByName(schemaName)) {
-            for (const TfToken& attrName : schemaAdaptor.GetAuthoredAttributeNames()) {
-                if (const UsdMayaAdaptor::AttributeAdaptor attrAdaptor
-                    = schemaAdaptor.GetAttribute(attrName)) {
+        if (const UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.GetSchemaByName(schemaName)) {
+            prim.AddAppliedSchema(schemaName);
+            if (schemaAdaptor->CopyToPrim(prim, usdTime, valueWriter)) {
+                continue;
+            }
+            for (const TfToken& attrName : schemaAdaptor->GetAuthoredAttributeNames()) {
+                if (const UsdMayaAttributeAdaptor attrAdaptor
+                    = schemaAdaptor->GetAttribute(attrName)) {
                     VtValue value;
                     if (attrAdaptor.Get(&value)) {
                         const SdfAttributeSpecHandle attrDef = attrAdaptor.GetAttributeDefinition();
@@ -775,7 +780,6 @@ bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                             attrDef->GetTypeName(),
                             /*custom*/ false,
                             attrDef->GetVariability());
-                        const UsdTimeCode usdTime = UsdTimeCode::Default();
                         SetAttribute(attr, value, usdTime, valueWriter);
                     }
                 }
@@ -794,7 +798,7 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
     const UsdTimeCode&          usdTime,
     UsdUtilsSparseValueWriter*  valueWriter)
 {
-    UsdMayaAdaptor::SchemaAdaptor schema;
+    UsdMayaSchemaAdaptorPtr schema;
     if (UsdMayaAdaptor adaptor = UsdMayaAdaptor(object)) {
         schema = adaptor.GetSchemaOrInheritedSchema(schemaType);
     }
@@ -806,7 +810,7 @@ size_t UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
     for (const TfToken& attrName : attributeNames) {
         VtValue                value;
         SdfAttributeSpecHandle attrDef;
-        if (UsdMayaAdaptor::AttributeAdaptor attr = schema.GetAttribute(attrName)) {
+        if (UsdMayaAttributeAdaptor attr = schema->GetAttribute(attrName)) {
             attr.Get(&value);
             attrDef = attr.GetAttributeDefinition();
         }
