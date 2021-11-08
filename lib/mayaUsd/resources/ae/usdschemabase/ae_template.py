@@ -21,7 +21,9 @@ import maya.cmds as cmds
 import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
-from maya.common.ui import LayoutManager
+import maya.internal.ufeSupport.attributes as attributes
+
+from maya.common.ui import LayoutManager, ParentManager
 from maya.common.ui import setClipboardData
 from maya.OpenMaya import MGlobal
 
@@ -209,7 +211,33 @@ class MetaDataCustomControl(object):
 # Custom control for all array attribute.
 class ArrayCustomControl(object):
 
-    def __init__(self, prim, attrName, useNiceName):
+    class ArrayAEPopup(attributes.AEPopupMenu):
+        '''Override the attribute AEPopupMenu so we can add extra menu items.
+        '''
+        def __init__(self, uiControl, ufeAttr, hasValue, values):
+            self.hasValue = hasValue
+            self.values = values
+            super(ArrayCustomControl.ArrayAEPopup, self).__init__(uiControl, ufeAttr)
+
+        def _copyAttributeValue(self):
+            setClipboardData(str(self.values))
+
+        def _printToScriptEditor(self):
+            MGlobal.displayInfo(str(self.values))
+
+        COPY_ACTION  = ('Copy Attribute Value', _copyAttributeValue, [])
+        PRINT_ACTION = ('Print to Script Editor', _printToScriptEditor, [])
+
+        HAS_VALUE_MENU = [COPY_ACTION, PRINT_ACTION]
+
+        def _buildMenu(self, addItemCmd):
+            super(ArrayCustomControl.ArrayAEPopup, self)._buildMenu(addItemCmd)
+            if self.hasValue:
+                cmds.menuItem(divider=True, parent=self.popupMenu)
+                self._buildFromActions(self.HAS_VALUE_MENU, addItemCmd)
+
+    def __init__(self, ufeAttr, prim, attrName, useNiceName):
+        self.ufeAttr = ufeAttr
         self.prim = prim
         self.attrName = attrName
         self.useNiceName = useNiceName
@@ -236,15 +264,28 @@ class ArrayCustomControl(object):
                     cmds.text(nameTxt, al='right', label=attrLabel, annotation=attr.GetDocumentation())
                     cmds.textField(attrTypeFld, editable=False, text=typeNameStr, font='obliqueLabelFont', width=singleWidgetWidth*1.5)
 
-                    if hasValue:
-                        cmds.popupMenu()
-                        cmds.menuItem( label="Copy Attribute Value",   command=lambda *args: setClipboardData(str(values)) )
-                        cmds.menuItem( label="Print to Script Editor", command=lambda *args: MGlobal.displayInfo(str(values)) )
+                pMenu = self.ArrayAEPopup(rl, self.ufeAttr, hasValue, values)
+                self.updateUi(self.ufeAttr, rl)
+                self.attachCallbacks(self.ufeAttr, rl, None)
+
         else:
             cmds.error(self.attrName + " must be an array!")
 
     def onReplace(self, *args):
         pass
+
+    def updateUi(self, attr, uiControlName):
+        with ParentManager(uiControlName):
+            bgClr = attributes.getAttributeColorRGB(self.ufeAttr)
+            if bgClr:
+                isLocked = attributes.isAttributeLocked(self.ufeAttr)
+                cmds.textField(attrTypeFld, edit=True, backgroundColor=bgClr)
+
+    def attachCallbacks(self, ufeAttr, uiControl, changedCommand):
+        # Create change callback for UFE locked/unlock synchronization.
+        cb = attributes.createChangeCb(self.updateUi, ufeAttr, uiControl)
+        cmds.textField(attrTypeFld, edit=True, parent=uiControl, changeCommand=cb)
+
 
 def showEditorForUSDPrim(usdPrimPathStr):
     # Simple helper to open the AE on input prim.
@@ -376,7 +417,8 @@ class AETemplate(object):
                     connectionsCustomControl = ConnectionsCustomControl(self.item, self.prim, c, self.useNiceName)
                     self.defineCustom(connectionsCustomControl, c)
                 elif self.isArrayAttribute(c):
-                    arrayCustomControl = ArrayCustomControl(self.prim, c, self.useNiceName)
+                    ufeAttr = self.attrS.attribute(c)
+                    arrayCustomControl = ArrayCustomControl(ufeAttr, self.prim, c, self.useNiceName)
                     self.defineCustom(arrayCustomControl, c)
                 else:
                     cmds.editorTemplate(addControl=[c])
