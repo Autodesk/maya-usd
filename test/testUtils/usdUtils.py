@@ -21,12 +21,13 @@
 """
 
 import mayaUsd.ufe
+import mayaUsd.lib
+import mayaUsd_createStageWithNewLayer
 
 import ufe
 import ufeUtils
 
-from pxr import Usd
-from pxr import UsdGeom
+from pxr import Usd, UsdGeom, Gf
 
 usdSeparator = '/'
 
@@ -81,3 +82,36 @@ def createAnimatedHierarchy(stage):
     UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,5,0),time2)
     UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((-5,0,0),time2)
     UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,-5),time2)
+
+def createSimpleXformScene():
+    '''Create a simple scene with a trivial hierarchy:
+
+    A    translation (1, 2, 3)
+    |_B  translation (7, 8, 9)
+
+    '''
+
+    psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+    psPath = ufe.PathString.path(psPathStr)
+    ps = ufe.Hierarchy.createItem(psPath)
+    stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+    aPrim = stage.DefinePrim('/A', 'Xform')
+    aXformable = UsdGeom.Xformable(aPrim)
+    aXlateOp = aXformable.AddTranslateOp()
+    aXlation = Gf.Vec3d(1, 2, 3)
+    aXlateOp.Set(aXlation)
+    aUsdUfePathStr = psPathStr + ',/A'
+    aUsdUfePath = ufe.PathString.path(aUsdUfePathStr)
+    aUsdItem = ufe.Hierarchy.createItem(aUsdUfePath)
+
+    bPrim = stage.DefinePrim('/A/B', 'Xform')
+    bXformable = UsdGeom.Xformable(bPrim)
+    bXlateOp = bXformable.AddTranslateOp()
+    bXlation = Gf.Vec3d(7, 8, 9)
+    bXlateOp.Set(bXlation)
+    bUsdUfePathStr = aUsdUfePathStr + '/B'
+    bUsdUfePath = ufe.PathString.path(bUsdUfePathStr)
+    bUsdItem = ufe.Hierarchy.createItem(bUsdUfePath)
+
+    return (ps, aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+            bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem)

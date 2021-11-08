@@ -13,9 +13,6 @@ target_sources(${PROJECT_NAME}
         primReaderArgs.cpp
         primReaderContext.cpp
         primReaderRegistry.cpp
-        primUpdater.cpp
-        primUpdaterContext.cpp
-        primUpdaterRegistry.cpp
         primWriter.cpp
         primWriterArgs.cpp
         primWriterContext.cpp
@@ -31,6 +28,19 @@ target_sources(${PROJECT_NAME}
         writeJobContext.cpp
 )
 
+# Edit as Maya requires UFE path mapping.
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            fallbackPrimUpdater.cpp
+            primUpdater.cpp
+            primUpdaterArgs.cpp
+            primUpdaterContext.cpp
+            primUpdaterRegistry.cpp
+            primUpdaterManager.cpp
+    )
+endif()
+
 set(HEADERS
     fallbackPrimReader.h
     functorPrimReader.h
@@ -42,9 +52,6 @@ set(HEADERS
     primReaderArgs.h
     primReaderContext.h
     primReaderRegistry.h
-    primUpdater.h
-    primUpdaterContext.h
-    primUpdaterRegistry.h
     primWriter.h
     primWriterArgs.h
     primWriterContext.h
@@ -59,6 +66,17 @@ set(HEADERS
     transformWriter.h
     writeJobContext.h
 )
+
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    list(APPEND HEADERS
+        fallbackPrimUpdater.h
+        primUpdater.h
+        primUpdaterArgs.h
+        primUpdaterContext.h
+        primUpdaterRegistry.h
+        primUpdaterManager.h
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # promoted headers

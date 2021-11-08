@@ -26,6 +26,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/basisCurves.h>
 #include <pxr/usd/usdGeom/curves.h>
 #include <pxr/usd/usdGeom/nurbsCurves.h>
 
@@ -50,20 +51,42 @@ PxrUsdTranslators_NurbsCurveWriter::PxrUsdTranslators_NurbsCurveWriter(
     if (!TF_VERIFY(GetDagPath().isValid())) {
         return;
     }
+    MStatus       status = MS::kSuccess;
+    MFnNurbsCurve curveFn(GetDagPath(), &status);
+    MString       type = curveFn.typeName();
 
-    UsdGeomNurbsCurves primSchema = UsdGeomNurbsCurves::Define(GetUsdStage(), GetUsdPath());
-    if (!TF_VERIFY(
-            primSchema,
-            "Could not define UsdGeomNurbsCurves at path '%s'\n",
-            GetUsdPath().GetText())) {
-        return;
-    }
-    _usdPrim = primSchema.GetPrim();
-    if (!TF_VERIFY(
-            _usdPrim,
-            "Could not get UsdPrim for UsdGeomNurbsCurves at path '%s'\n",
-            primSchema.GetPath().GetText())) {
-        return;
+    isLinear = curveFn.degree() == 1;
+
+    if (type == "bezierCurve" || isLinear) {
+        UsdGeomBasisCurves primSchema = UsdGeomBasisCurves::Define(GetUsdStage(), GetUsdPath());
+        if (!TF_VERIFY(
+                primSchema,
+                "Could not define UsdGeomBasisCurves at path '%s'\n",
+                GetUsdPath().GetText())) {
+            return;
+        }
+        _usdPrim = primSchema.GetPrim();
+        if (!TF_VERIFY(
+                _usdPrim,
+                "Could not get UsdPrim for UsdGeomBasisCurves at path '%s'\n",
+                primSchema.GetPath().GetText())) {
+            return;
+        }
+    } else {
+        UsdGeomNurbsCurves primSchema = UsdGeomNurbsCurves::Define(GetUsdStage(), GetUsdPath());
+        if (!TF_VERIFY(
+                primSchema,
+                "Could not define UsdGeomNurbsCurves at path '%s'\n",
+                GetUsdPath().GetText())) {
+            return;
+        }
+        _usdPrim = primSchema.GetPrim();
+        if (!TF_VERIFY(
+                _usdPrim,
+                "Could not get UsdPrim for UsdGeomNurbsCurves at path '%s'\n",
+                primSchema.GetPath().GetText())) {
+            return;
+        }
     }
 }
 
@@ -89,9 +112,7 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     }
 
     MFnDependencyNode fnDepNode(GetDagPath().node(), &status);
-    MString           name = fnDepNode.name();
-
-    MFnNurbsCurve curveFn(GetDagPath(), &status);
+    MFnNurbsCurve     curveFn(GetDagPath(), &status);
     if (!status) {
         TF_RUNTIME_ERROR(
             "MFnNurbsCurve() failed for curve at DAG path: %s",
@@ -182,10 +203,53 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
             GetDagPath().fullPathName().asChar());
     }
 
+    if (curveFn.typeName() == "bezierCurve" || isLinear) {
+        UsdGeomBasisCurves primSchemaBasis(_usdPrim);
+        size_t             pntCnt = points.size();
+        VtVec3fArray       linearArray;
+
+        if (!isLinear) {
+            for (size_t i = 0; i < pntCnt - 3; i += 3) {
+                // check if out and in handles are coincident
+                GfVec3f h1 = points[i + 1] - points[i];
+                GfVec3f h2 = points[i + 3] - points[i + 2];
+
+                if (GfIsClose(h1, h2, 1e-5)) {
+                    if (linearArray.empty())
+                        linearArray.push_back(points[i]);
+                    linearArray.push_back(points[i + 3]);
+                }
+            }
+
+            if (!wrap && linearArray.size() == ((pntCnt - 4) / 3) + 2) {
+                points = linearArray;
+                curveVertexCounts[0] = linearArray.size();
+                isLinear = true;
+            }
+        }
+
+        if (isLinear) {
+            primSchemaBasis.CreateTypeAttr(VtValue(TfToken("linear")));
+        } else {
+            primSchemaBasis.CreateTypeAttr(VtValue(TfToken("cubic")));
+            primSchemaBasis.CreateBasisAttr(VtValue(TfToken("bezier"))); // HARDCODED
+        }
+    } else {
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetOrderAttr(), curveOrder, UsdTimeCode::Default(), _GetSparseValueWriter());
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetKnotsAttr(),
+            &curveKnots,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter()); // not animatable
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetRangesAttr(),
+            &ranges,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter()); // not animatable
+    }
     // Curve
     // not animatable
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetOrderAttr(), curveOrder, UsdTimeCode::Default(), _GetSparseValueWriter());
     UsdMayaWriteUtil::SetAttribute(
         primSchema.GetCurveVertexCountsAttr(),
         &curveVertexCounts,
@@ -193,17 +257,6 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
         _GetSparseValueWriter());
     UsdMayaWriteUtil::SetAttribute(
         primSchema.GetWidthsAttr(), &curveWidths, UsdTimeCode::Default(), _GetSparseValueWriter());
-
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetKnotsAttr(),
-        &curveKnots,
-        UsdTimeCode::Default(),
-        _GetSparseValueWriter()); // not animatable
-    UsdMayaWriteUtil::SetAttribute(
-        primSchema.GetRangesAttr(),
-        &ranges,
-        UsdTimeCode::Default(),
-        _GetSparseValueWriter()); // not animatable
     UsdMayaWriteUtil::SetAttribute(
         primSchema.GetPointsAttr(), &points, usdTime, _GetSparseValueWriter()); // CVs
 

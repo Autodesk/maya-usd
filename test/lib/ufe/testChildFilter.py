@@ -22,9 +22,10 @@ import mayaUtils
 from maya import cmds
 from maya import standalone
 
+import mayaUsd.ufe
+
 import ufe
 
-import os
 import unittest
 
 
@@ -90,6 +91,53 @@ class ChildFilterTestCase(unittest.TestCase):
         self.assertEqual(6, len(children))
         self.assertIn(ball3Hier, children)
 
+    def testProxyShapeFilteredChildren(self):
+        # Check that the proxy shape has a single child, Ball_set.
+        psPath = ufe.PathString.path('|transform1|proxyShape1')
+        psItem = ufe.Hierarchy.createItem(psPath)
+        psHier = ufe.Hierarchy.hierarchy(psItem)
+        psChildren = psHier.children()
+
+        self.assertEqual(len(psChildren), 1)
+        ballSetPathStr = '|transform1|proxyShape1,/Ball_set'
+        ballSetPath = ufe.PathString.path(ballSetPathStr)
+        ballSetItem = ufe.Hierarchy.createItem(ballSetPath)
+        self.assertEqual(ballSetItem, psChildren[0])
+
+        # Get the USD child filter.  We know from testFilteredChildren() that
+        # it has a single filter flag, 'InactivePrims'.
+        rid = ufe.RunTimeMgr.instance().getId('USD')
+        usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
+        cf = usdHierHndlr.childFilter()
+
+        # The filtered children are the same as default children.
+        psFilteredChildren = psHier.filteredChildren(cf)
+        self.assertEqual(len(psFilteredChildren), 1)
+        self.assertEqual(ballSetItem, psFilteredChildren[0])
+
+        # Inactivate Ball_set.  Default children will be empty, filtered
+        # children will remain the same.
+        ballSetPrim = mayaUsd.ufe.ufePathToPrim(ballSetPathStr)
+        ballSetPrim.SetActive(False)
+
+        psChildren = psHier.children()
+        self.assertEqual(len(psChildren), 0)
+
+        psFilteredChildren = psHier.filteredChildren(cf)
+        self.assertEqual(len(psFilteredChildren), 1)
+
+        # Now get the Maya child filter.  Because the proxy shape hierarchy
+        # handler overrides the Maya child filter and adds the 'InactivePrims'
+        # child filter flag, it should be on the Maya child filter.
+        rid = ufe.RunTimeMgr.instance().getId('Maya-DG')
+        mayaHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
+        cf = mayaHierHndlr.childFilter()
+        self.assertEqual(1, len(cf))
+        self.assertEqual('InactivePrims', cf[0].name)
+
+        psFilteredChildren = psHier.filteredChildren(cf)
+        self.assertEqual(len(psFilteredChildren), 1)
+        self.assertEqual(ballSetItem, psFilteredChildren[0])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

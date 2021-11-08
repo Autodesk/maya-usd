@@ -71,6 +71,10 @@
 #include <maya/MPxCommand.h>
 #endif
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/fileio/primUpdaterManager.h>
+#endif
+
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/batchSaveLayersUIDelegate.h>
 #endif
@@ -323,6 +327,11 @@ MStatus initializePlugin(MObject obj)
 
     UsdMayaSceneResetNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    // Install notifications
+    PrimUpdaterManager::getInstance();
+#endif
 
     return status;
 }

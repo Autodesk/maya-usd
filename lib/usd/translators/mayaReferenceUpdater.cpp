@@ -25,8 +25,15 @@
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/pcp/layerStackIdentifier.h>
+#include <pxr/usd/pcp/node.h>
+#include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/payloads.h>
+#include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
@@ -34,37 +41,71 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_UPDATER(
     MayaUsd_SchemasMayaReference,
+    reference,
     PxrUsdTranslators_MayaReferenceUpdater,
-    (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear));
+    (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear
+     | UsdMayaPrimUpdater::Supports::AutoPull));
 PXRUSDMAYA_REGISTER_UPDATER(
     MayaUsd_SchemasALMayaReference,
+    reference,
     PxrUsdTranslators_MayaReferenceUpdater,
-    (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear));
+    (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear
+     | UsdMayaPrimUpdater::Supports::AutoPull));
 
 PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
     const MFnDependencyNode& depNodeFn,
-    const SdfPath&           usdPath)
-    : UsdMayaPrimUpdater(depNodeFn, usdPath)
+    const Ufe::Path&         path)
+    : UsdMayaPrimUpdater(depNodeFn, path)
 {
 }
 
 /* virtual */
-bool PxrUsdTranslators_MayaReferenceUpdater::Pull(UsdMayaPrimUpdaterContext* context)
+bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
+    SdfLayerRefPtr srcLayer,
+    const SdfPath& srcSdfPath,
+    SdfLayerRefPtr dstLayer,
+    const SdfPath& dstSdfPath)
 {
-    const UsdPrim& usdPrim = GetUsdPrim<MayaUsd_SchemasMayaReference>(*context);
-    const MObject& parentNode = GetMayaObject();
+    bool success = false;
 
-    UsdMayaTranslatorMayaReference::update(usdPrim, parentNode);
+    // Prototype code, subject to change shortly.  PPT, 3-Nov-2021.
+    // We are looking for a very specific configuration in here
+    // i.e. a parent prim with a variant set called "animVariant"
+    // and two variants "cache" and "rig"
+    UsdStageRefPtr srcStage = UsdStage::Open(dstLayer);
+    SdfPath        parentSdfPath = dstSdfPath.GetParentPath();
+    UsdPrim        primWithVariant = srcStage->GetPrimAtPath(parentSdfPath);
 
-    return true;
+    // Switching variant to cache to discover payload and where to write the data
+    UsdVariantSet variantSet = primWithVariant.GetVariantSet("animVariant");
+    variantSet.SetVariantSelection("cache");
+
+    // Find the layer and prim to which we need to copy the content of push
+    // There is currently no easy way to query this information at prim level
+    // so we go to pcp and sdf.
+    UsdPrim                 primWithPayload = primWithVariant.GetChildren().front();
+    UsdPrimCompositionQuery query(primWithPayload);
+    for (const auto& arc : query.GetCompositionArcs()) {
+        if (arc.GetArcType() == PcpArcTypePayload) {
+            SdfLayerHandle payloadLayer
+                = arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer;
+            SdfPath payloadPrimPath = arc.GetTargetNode().GetPath();
+            success = SdfCopySpec(srcLayer, srcSdfPath, payloadLayer, payloadPrimPath);
+
+            break;
+        }
+    }
+
+    return success;
 }
 
 /* virtual */
-void PxrUsdTranslators_MayaReferenceUpdater::Clear(UsdMayaPrimUpdaterContext* context)
+bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
 {
-    const MObject& parentNode = GetMayaObject();
-
+    const MObject& parentNode = getMayaObject();
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
+
+    return UsdMayaPrimUpdater::discardEdits(context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
