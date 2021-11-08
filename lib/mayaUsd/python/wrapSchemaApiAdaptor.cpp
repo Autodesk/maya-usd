@@ -187,7 +187,7 @@ public:
     }
 
     MObject default_GetMayaObjectForSchema() const { return base_t::GetMayaObjectForSchema(); }
-    MObject GetMayaObjectForSchema() const
+    MObject GetMayaObjectForSchema() const override
     {
         return this->template CallVirtual<MObject>(
             "GetMayaObjectForSchema", &This::default_GetMayaObjectForSchema)();
@@ -197,7 +197,7 @@ public:
     {
         return base_t::GetMayaNameForUsdAttrName(usdAttrName);
     }
-    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
+    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override
     {
         return this->template CallVirtual<TfToken>(
             "GetMayaNameForUsdAttrName", &This::default_GetMayaNameForUsdAttrName)(usdAttrName);
@@ -207,7 +207,7 @@ public:
     {
         return base_t::GetAdaptedAttributeNames();
     }
-    TfTokenVector GetAdaptedAttributeNames() const
+    TfTokenVector GetAdaptedAttributeNames() const override
     {
         return this->template CallVirtual<TfTokenVector>(
             "TfTokenVector", &This::default_GetAdaptedAttributeNames)();

@@ -43,7 +43,7 @@ public:
         //        dict["exportEnablerCallback"] = ctx.exportEnablerCallback;
         dict["importDescription"] = ctx.importDescription;
         //        dict["importEnablerCallback"] = ctx.importEnablerCallback;
-        return dict;
+        return std::move(dict);
     }
 
     static void RegisterImportJobContext(

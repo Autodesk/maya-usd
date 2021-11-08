@@ -4,11 +4,6 @@
       "Info": {
         "UsdMaya": {
           "JobContextPlugin": {},
-          "SchemaApiWriter": {
-            "providesTranslator": [
-              "mesh"
-            ]
-          },
           "SchemaApiAdaptor": {
             "providesTranslator": [
               "mesh"
