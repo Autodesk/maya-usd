@@ -14,15 +14,6 @@
 // limitations under the License.
 //
 
-#include <maya/MTypes.h>
-
-// Hack because MDGModifier assign operator is not public.
-// For 2019, the hack is different see MDGModifier2019 in this file
-#if MAYA_API_VERSION >= 20200000
-#undef OPENMAYA_PRIVATE
-#define OPENMAYA_PRIVATE public
-#endif
-
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/registryHelper.h>
@@ -31,7 +22,7 @@
 
 #include <pxr/base/tf/pyPolymorphic.h>
 
-#include <maya/MDGModifier.h>
+#include <maya/MTypes.h>
 
 #include <boost/python/args.hpp>
 #include <boost/python/class.hpp>
@@ -120,11 +111,30 @@ public:
     bool default_ApplySchema(MDGModifier& modifier) { return base_t::ApplySchema(modifier); }
     bool ApplySchema(MDGModifier& modifier) override
     {
-        return this->CallVirtual(
-            "ApplySchema", (bool (This::*)(MDGModifier&)) & This::default_ApplySchema)(modifier);
+        // The TfPolymorphic CallVirtual mechanism uses variadic arguments with parameter packs. A
+        // major flaw of this technique is that references and other cv qualifiers are lost in the
+        // parameter pack deduction phase, leading to parameter being passed by copy instead of by
+        // reference. This fails with MDGModifier because the copy semantics are private. Use the
+        // internals of TfPolymorphic::CallVirtual() as a way to preserve the reference on the
+        // "modifier" parameter.
+        TfPyLock pyLock;
+        auto     pyOverride = this->GetOverride("ApplySchema");
+        if (pyOverride) {
+            // Do *not* call through if there's an active python exception.
+            if (!PyErr_Occurred()) {
+                try {
+                    return boost::python::call<bool>(pyOverride.ptr(), modifier);
+                } catch (boost::python::error_already_set const&) {
+                    // Convert any exception to TF_ERRORs.
+                    TfPyConvertPythonExceptionToTfErrors();
+                    PyErr_Clear();
+                }
+            }
+        }
+        return default_ApplySchema(modifier);
     }
 
-    bool default_ApplySchema(
+    bool default_ApplySchemaForImport(
         const UsdMayaPrimReaderArgs& primReaderArgs,
         UsdMayaPrimReaderContext&    context)
     {
@@ -133,17 +143,31 @@ public:
     bool ApplySchema(const UsdMayaPrimReaderArgs& primReaderArgs, UsdMayaPrimReaderContext& context)
         override
     {
-        return this->CallVirtual(
-            "ApplySchema",
-            (bool (This::*)(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&))
-                & This::default_ApplySchema)(primReaderArgs, context);
+        // Note the different function name Python-side. Python does not do overload resolution
+        // based on argument types because every argument is a PyObject.
+        return this->CallVirtual("ApplySchemaForImport", &This::default_ApplySchemaForImport)(
+            primReaderArgs, context);
     }
 
     bool default_UnapplySchema(MDGModifier& modifier) { return base_t::UnapplySchema(modifier); }
     bool UnapplySchema(MDGModifier& modifier) override
     {
-        return this->template CallVirtual<bool>("UnapplySchema", &This::default_UnapplySchema)(
-            modifier);
+        // Not using TfPolymorphic::CallVirtual. See ApplySchema(MDGModifier&) above for details.
+        TfPyLock pyLock;
+        auto     pyOverride = this->GetOverride("UnapplySchema");
+        if (pyOverride) {
+            // Do *not* call through if there's an active python exception.
+            if (!PyErr_Occurred()) {
+                try {
+                    return boost::python::call<bool>(pyOverride.ptr(), modifier);
+                } catch (boost::python::error_already_set const&) {
+                    // Convert any exception to TF_ERRORs.
+                    TfPyConvertPythonExceptionToTfErrors();
+                    PyErr_Clear();
+                }
+            }
+        }
+        return default_UnapplySchema(modifier);
     }
 
     TfTokenVector default_GetAuthoredAttributeNames() const
@@ -172,8 +196,23 @@ public:
     }
     UsdMayaAttributeAdaptor CreateAttribute(const TfToken& attrName, MDGModifier& modifier) override
     {
-        return this->template CallVirtual<UsdMayaAttributeAdaptor>(
-            "CreateAttribute", &This::default_CreateAttribute)(attrName, modifier);
+        // Not using TfPolymorphic::CallVirtual. See ApplySchema(MDGModifier&) above for details.
+        TfPyLock pyLock;
+        auto     pyOverride = this->GetOverride("CreateAttribute");
+        if (pyOverride) {
+            // Do *not* call through if there's an active python exception.
+            if (!PyErr_Occurred()) {
+                try {
+                    return boost::python::call<UsdMayaAttributeAdaptor>(
+                        pyOverride.ptr(), attrName, modifier);
+                } catch (boost::python::error_already_set const&) {
+                    // Convert any exception to TF_ERRORs.
+                    TfPyConvertPythonExceptionToTfErrors();
+                    PyErr_Clear();
+                }
+            }
+        }
+        return default_CreateAttribute(attrName, modifier);
     }
 
     void default_RemoveAttribute(const TfToken& attrName, MDGModifier& modifier)
@@ -182,8 +221,22 @@ public:
     }
     void RemoveAttribute(const TfToken& attrName, MDGModifier& modifier) override
     {
-        this->template CallVirtual<>("RemoveAttribute", &This::default_RemoveAttribute)(
-            attrName, modifier);
+        // Not using TfPolymorphic::CallVirtual. See ApplySchema(MDGModifier&) above for details.
+        TfPyLock pyLock;
+        auto     pyOverride = this->GetOverride("RemoveAttribute");
+        if (pyOverride) {
+            // Do *not* call through if there's an active python exception.
+            if (!PyErr_Occurred()) {
+                try {
+                    return boost::python::call<void>(pyOverride.ptr(), attrName, modifier);
+                } catch (boost::python::error_already_set const&) {
+                    // Convert any exception to TF_ERRORs.
+                    TfPyConvertPythonExceptionToTfErrors();
+                    PyErr_Clear();
+                }
+            }
+        }
+        return default_RemoveAttribute(attrName, modifier);
     }
 
     MObject default_GetMayaObjectForSchema() const { return base_t::GetMayaObjectForSchema(); }
@@ -256,11 +309,10 @@ void wrapSchemaApiAdaptor()
             (bool (This::*)(MDGModifier&)) & This::ApplySchema,
             (bool (This::*)(MDGModifier&)) & SchemaApiAdaptorWrapper::default_ApplySchema)
         .def(
-            "ApplySchema",
+            "ApplySchemaForImport",
             (bool (This::*)(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&))
                 & This::ApplySchema,
-            (bool (This::*)(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext&))
-                & SchemaApiAdaptorWrapper::default_ApplySchema)
+            &SchemaApiAdaptorWrapper::default_ApplySchemaForImport)
         .def("UnapplySchema", &This::UnapplySchema, &SchemaApiAdaptorWrapper::default_UnapplySchema)
         .def(
             "GetAuthoredAttributeNames",
