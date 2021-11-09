@@ -32,15 +32,15 @@ std::unordered_set<TfToken, TfToken::HashFunctor>& getIgnoredMetadata()
     // clang-format off
     static std::unordered_set<TfToken, TfToken::HashFunctor> ignored({
         PXR_NS::SdfFieldKeys->Specifier,            // The prim specifier: def, class, over, etc. Must not diff nor copy.
-        PXR_NS::SdfFieldKeys->AllowedTokens,        // Tokens allowed on a soecific attribute. We should not mess this up?
-        PXR_NS::SdfFieldKeys->Default,              // We should not be modifying defaults. (TODO: right?)
+        PXR_NS::SdfFieldKeys->AllowedTokens,        // Tokens allowed on a specific attribute. We must not mess this up.
+        PXR_NS::SdfFieldKeys->Default,              // We should not be modifying defaults.
         PXR_NS::SdfFieldKeys->DefaultPrim,          // Prim used for missing payload. We probably don't want to mess this up during merge.
         PXR_NS::SdfFieldKeys->TimeSamples,          // Map of time (double) to data. We already manage time samples, so don't compare them as metadata.
-        PXR_NS::SdfFieldKeys->SubLayers,            // List of sub-layers names, we should not to deal with this when merging. (TODO: maybe warn if there are some?)
+        PXR_NS::SdfFieldKeys->SubLayers,            // List of sub-layers names, we should not to deal with this when merging.
         PXR_NS::SdfFieldKeys->SubLayerOffsets,      // Time offset and scaling for the sub-layers. We treat animation data at the level it is already applied.
         PXR_NS::SdfFieldKeys->TypeName,             // Property data type. We should not have to copy this over by hand.
-        PXR_NS::SdfFieldKeys->VariantSetNames,      // The merge/copy process will take care of copying the selected variant. (TODO: right?)
-        PXR_NS::SdfFieldKeys->VariantSelection,     // The merge/copy process will take care of copying the selected variant. (TODO: right?)
+        PXR_NS::SdfFieldKeys->VariantSetNames,      // The merge/copy process will take care of copying the selected variant.
+        PXR_NS::SdfFieldKeys->VariantSelection,     // The merge/copy process will take care of copying the selected variant.
     });
 
     // These other build-in metadata are allowed to be compared and merged:
@@ -56,22 +56,22 @@ std::unordered_set<TfToken, TfToken::HashFunctor>& getIgnoredMetadata()
     // SdfFieldKeys->CustomData,            // User custom metadata on prims, attributes, etc.
     // SdfFieldKeys->CustomLayerData,       // User custom metadata on layers.
     // SdfFieldKeys->DisplayGroup,          // UI hinting to group properties.
-    // SdfFieldKeys->DisplayGroupOrder,     // Order of diplay group? (No docs)
+    // SdfFieldKeys->DisplayGroupOrder,     // Order of display group. (No docs)
     // SdfFieldKeys->DisplayName,           // UI name of a property.
     // SdfFieldKeys->DisplayUnit,           // UI dsplay unit of an attribute.
     // SdfFieldKeys->Documentation,         // User-written documentation for any field.
     // SdfFieldKeys->EndFrame,              // Deprecated end-time of a layer. (Replaced by EndTimeCode)
     // SdfFieldKeys->EndTimeCode,           // End-time of a layer.
-    // SdfFieldKeys->FramePrecision,        // Frame precision (? related to frame rate, but is an integer)
+    // SdfFieldKeys->FramePrecision,        // Frame precision (related to frame rate, but is an integer)
     // SdfFieldKeys->FramesPerSecond,       // Frame per second for playback, superseded by TimeCodesPerSecond. (FPS is advisory)
     // SdfFieldKeys->Hidden,                // If a prim or field is hidden.
     // SdfFieldKeys->HasOwnedSubLayers,     // If a layer sub-layers are owned.
     // SdfFieldKeys->InheritPaths,          // The inherited prim classes. (path list op)
     // SdfFieldKeys->Instanceable,          // Prim is instanceable.
     // SdfFieldKeys->Kind,                  // The prim kind, an extendable taxonomy of prims.
-    // SdfFieldKeys->Owner,                 // Owner of a layer. (Should we disable modifying this? SdfCopySpec copies it...)
+    // SdfFieldKeys->Owner,                 // Owner of a layer.
     // SdfFieldKeys->PrimOrder,             // Order of prim children.
-    // SdfFieldKeys->NoLoadHint,            // Hint to not load a payload? (No docs)
+    // SdfFieldKeys->NoLoadHint,            // Hint to not load a payload. (No docs)
     // SdfFieldKeys->Payload,               // Payload references. (payload list op)
     // SdfFieldKeys->Permission,            // Public / private setting: private prim can only be accessed within the local layer.
     // SdfFieldKeys->Prefix,                // Property prefix. (No docs)

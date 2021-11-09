@@ -601,6 +601,7 @@ bool compareArray(
     if (count0 != count1) {
         return false;
     }
+    // TODO: the AVX2 and SSE version are incorrect. On Linux, these fail. Disable them for now.
 #if defined(__AVX2__) && 0
     const f256   eps8 = splat8f(eps);
     const size_t count8 = count0 & ~0x7ULL;
@@ -847,7 +848,7 @@ bool compareArray(
     if (count0 != count1) {
         return false;
     }
-    // TODO: AVX2 and SSE versions.
+    // TODO: write AVX2 and SSE optimized versions. (We don't expect to see half-floats, not a priority for now.)
     for (size_t i = 0; i < count0; ++i) {
         if (std::abs(input0[i] - input1[i]) > eps) {
             return false;

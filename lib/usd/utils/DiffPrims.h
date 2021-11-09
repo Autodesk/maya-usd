@@ -74,7 +74,7 @@ using DiffResultPerKey = std::map<PXR_NS::VtDictionary::key_type, DiffResult>;
 using DiffResultPerPathPerToken = std::map<PXR_NS::TfToken, DiffResultPerPath>;
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  analyzes all the sub-results to compte an overall result.
+/// \brief  analyzes all the sub-results to compute an overall result.
 /// \param  subResults the sub-results to analyze.
 /// \return the overall result, all results are possible.
 //----------------------------------------------------------------------------------------------------------------------
@@ -228,7 +228,9 @@ DiffResult compareMetadatas(
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  retrieves the list of metadata ignored during comparisons.
-/// \return the set of metadata names that should be ignored.
+/// These are the structural USD metadata that are not authored by the user.
+/// For example, the fact that a prim is a "def" or an "over" or that an attribute can or cannot be
+/// animated. \return the set of metadata names that should be ignored.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 std::unordered_set<PXR_NS::TfToken, PXR_NS::TfToken::HashFunctor>& getIgnoredMetadatas();

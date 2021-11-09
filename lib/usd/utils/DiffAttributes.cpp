@@ -25,7 +25,7 @@ DiffResult
 compareAttributes(const UsdAttribute& modified, const UsdAttribute& baseline, DiffResult* quickDiff)
 {
     // We will not compare the set of point-in-times themselves but the overall result
-    // of the animated values. This takes csare of tyring to match time-samples: we
+    // of the animated values. This takes care of trying to match time-samples: we
     // instead only care that the output result are the same.
     //
     // Note that the UsdAttribute API to get value automatically interpolates values
