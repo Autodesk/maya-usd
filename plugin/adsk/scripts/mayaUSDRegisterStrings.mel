@@ -29,7 +29,7 @@ global proc mayaUSDRegisterStrings() {
     register("kCreateUsdStageFromFile", "Create USD Stage from File");
     register("kCreateUsdStageFromFileOptions", "Create USD Stage from File Options");
     register("kCreateStageFromFile", "Create Stage from File");
-    register("kCreate", "Ok");
+    register("kCreateStage", "Create");
     register("kDefaultPrim", "Default Prim");
     register("kDefaultPrimAnn", "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file.");
     register("kExcludePrimPaths", "Exclude Prim Paths:");
