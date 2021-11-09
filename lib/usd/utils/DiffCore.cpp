@@ -848,7 +848,8 @@ bool compareArray(
     if (count0 != count1) {
         return false;
     }
-    // TODO: write AVX2 and SSE optimized versions. (We don't expect to see half-floats, not a priority for now.)
+    // TODO: write AVX2 and SSE optimized versions. (We don't expect to see half-floats, not a
+    // priority for now.)
     for (size_t i = 0; i < count0; ++i) {
         if (std::abs(input0[i] - input1[i]) > eps) {
             return false;

@@ -71,7 +71,7 @@ void UsdUIUfeObserver::destroy()
 void UsdUIUfeObserver::operator()(const Ufe::Notification& notification)
 {
     // Note: exceptions must not escape from this function, as the caller has no try
-    //       block and woudl crash Maya.
+    //       block and would crash Maya.
     try {
         if (auto ac = dynamic_cast<const Ufe::AttributeValueChanged*>(&notification)) {
             if (ac->name() == UsdGeomTokens->xformOpOrder) {
@@ -96,7 +96,8 @@ void UsdUIUfeObserver::operator()(const Ufe::Notification& notification)
         }
     } catch (const std::exception& ex) {
         // Note: do not let the exception out, it would crash Maya.
-        TF_WARN("Exception during UFE notification about attribute changes in mayaUsd: %s", ex.what());
+        TF_WARN(
+            "Exception during UFE notification about attribute changes in mayaUsd: %s", ex.what());
     }
 }
 
