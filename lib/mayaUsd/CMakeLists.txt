@@ -144,7 +144,6 @@ target_include_directories(${PROJECT_NAME}
         ${PXR_INCLUDE_DIRS}
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
         ${CMAKE_BINARY_DIR}/include
-        ${PROJECT_SOURCE_DIR}/..
 )
 
 # -----------------------------------------------------------------------------

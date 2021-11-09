@@ -23,6 +23,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/traverseLayer.h>
+#include <mayaUsdUtils/MergePrims.h>
 
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/path.h>
@@ -42,8 +43,6 @@
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
-
-#include <usd/utils/MergePrims.h>
 
 #include <string>
 
