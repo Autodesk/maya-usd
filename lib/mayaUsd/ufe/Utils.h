@@ -62,6 +62,10 @@ Ufe::Path stagePath(PXR_NS::UsdStageWeakPtr stage);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::TfHashSet<PXR_NS::UsdStageWeakPtr, PXR_NS::TfHash> getAllStages();
 
+//! calculates the position index for a given layer across all the site's local LayerStacks
+MAYAUSD_CORE_PUBLIC
+uint32_t findLayerIndex(const PXR_NS::UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer);
+
 //! Get the UFE path segment corresponding to the argument USD path.
 //! If an instanceIndex is provided, the path segment for a point instance with
 //! that USD path and index is returned.

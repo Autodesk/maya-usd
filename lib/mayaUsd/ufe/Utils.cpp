@@ -72,6 +72,33 @@ bool stringBeginsWithDigit(const std::string& inputString)
     return false;
 }
 
+} // anonymous namespace
+
+namespace MAYAUSD_NS_DEF {
+namespace ufe {
+
+//------------------------------------------------------------------------------
+// Global variables & macros
+//------------------------------------------------------------------------------
+
+extern UsdStageMap g_StageMap;
+extern Ufe::Rtid   g_MayaRtid;
+
+// Cache of Maya node types we've queried before for inheritance from the
+// gateway node type.
+std::unordered_map<std::string, bool> g_GatewayType;
+
+//------------------------------------------------------------------------------
+// Utility Functions
+//------------------------------------------------------------------------------
+
+UsdStageWeakPtr getStage(const Ufe::Path& path) { return g_StageMap.stage(path); }
+
+Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
+
+TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return g_StageMap.allStages(); }
+
+
 // This function calculates the position index for a given layer across all
 // the site's local LayerStacks
 uint32_t findLayerIndex(const UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer)
@@ -100,32 +127,6 @@ uint32_t findLayerIndex(const UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer
 
     return position;
 }
-
-} // anonymous namespace
-
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
-
-//------------------------------------------------------------------------------
-// Global variables & macros
-//------------------------------------------------------------------------------
-
-extern UsdStageMap g_StageMap;
-extern Ufe::Rtid   g_MayaRtid;
-
-// Cache of Maya node types we've queried before for inheritance from the
-// gateway node type.
-std::unordered_map<std::string, bool> g_GatewayType;
-
-//------------------------------------------------------------------------------
-// Utility Functions
-//------------------------------------------------------------------------------
-
-UsdStageWeakPtr getStage(const Ufe::Path& path) { return g_StageMap.stage(path); }
-
-Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
-
-TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return g_StageMap.allStages(); }
 
 Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
 {
