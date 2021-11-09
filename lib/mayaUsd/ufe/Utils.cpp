@@ -98,7 +98,6 @@ Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
 
 TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return g_StageMap.allStages(); }
 
-
 // This function calculates the position index for a given layer across all
 // the site's local LayerStacks
 uint32_t findLayerIndex(const UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer)
