@@ -64,6 +64,26 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
         retVal = self.assertImagesClose(baselineImage, snapshotImage)
         cmds.undoInfo(stateWithoutFlush=True)
         return retVal
+    
+    def _stringToUfeItem(self, pathString):
+        ufePath = ufe.PathString.path(pathString)
+        ufeItem = ufe.Hierarchy.createItem(ufePath)
+        return ufeItem
+
+    def _createPrim(self, underItem, primType, expectedPath):
+        '''
+        Helper that creates a prim of the given type under the given item, and return its item.
+        '''
+        # create a proxy shape and add a Cone prim
+
+        proxyShapeContextOps = ufe.ContextOps.contextOps(underItem)
+        proxyShapeContextOps.doOp(['Add New Prim', primType])
+
+        primPath = ufe.Path([
+            ufe.PathString.path("|stage|stageShape").segments[0],
+            ufe.PathSegment(expectedPath, mayaUsdUfe.getUsdRunTimeId(), "/")
+            ])
+        return ufe.PathString.string(primPath)
 
     def testIsolateSelect(self):
         cmds.file(force=True, new=True)
@@ -86,21 +106,21 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
 
         # Turn on isolate select for cube
         cmds.select(usdCube)
-        cmds.isolateSelect("modelPanel4", state=1)
+        cmds.isolateSelect(panel, state=1)
         self.assertSnapshotClose('cube.png')
 
         # Replace isolate select cube with cylinder
         cmds.select(usdCylinder)
-        cmds.isolateSelect("modelPanel4", loadSelected=True)
+        cmds.isolateSelect(panel, loadSelected=True)
         self.assertSnapshotClose('cylinder.png')
 
         # Add capsule to isolate select
         cmds.select(usdCapsule)
-        cmds.isolateSelect("modelPanel4", addSelected=True)
+        cmds.isolateSelect(panel, addSelected=True)
         self.assertSnapshotClose('cylinderAndCapsule.png')
 
         # Remove capsule from isolate select
-        cmds.isolateSelect("modelPanel4", removeSelected=True)
+        cmds.isolateSelect(panel, removeSelected=True)
         self.assertSnapshotClose('cylinderAfterCapsuleRemove.png')
 
         # Undo, Redo
@@ -113,14 +133,14 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
         self.assertSnapshotClose('undoCapsuleAdd.png')
 
         # Turn off isolate select
-        cmds.isolateSelect("modelPanel4", state=0)
+        cmds.isolateSelect(panel, state=0)
         self.assertSnapshotClose('isolateSelectOff.png')
 
         # Create an isolate select set, then add something directly to it
-        cmds.isolateSelect("modelPanel4", state=1)
+        cmds.isolateSelect(panel, state=1)
         isolateSelectSet = "modelPanel4ViewSelectedSet"
         cmds.sets(usdCube, add=isolateSelectSet)
-        cmds.isolateSelect("modelPanel4", update=True)
+        cmds.isolateSelect(panel, update=True)
         self.assertSnapshotClose('capsuleAndCube.png')
 
         # The flags addDagObject and removeDagObject don't
@@ -129,7 +149,7 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
         # Add the cone to the isolate select
         # different from addSelected because it filters out components
         cmds.select(usdCone)
-        cmds.isolateSelect("modelPanel4", addSelectedObjects=True)
+        cmds.isolateSelect(panel, addSelectedObjects=True)
         self.assertSnapshotClose('capsuleAndCubeAndCone.png')
 
         # Translate Xform1 and reparent Cube1 under Xform1
@@ -137,13 +157,13 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
         cmds.move( 0, 0, 1, relative=True)
         cmds.select(clear=True)
         cmds.parent(usdCube, usdXform, relative=True)
-        cmds.isolateSelect("modelPanel4", update=True)
+        cmds.isolateSelect(panel, update=True)
         usdCube = usdXform + "/Cube1"
         self.assertSnapshotClose('reparentedCube.png')
 
         # Reparent Cube1 back
         cmds.parent(usdCube, proxyDagPath, relative=True)
-        cmds.isolateSelect("modelPanel4", update=True)
+        cmds.isolateSelect(panel, update=True)
         usdCube = proxyDagPath + ",/Cube1"
         self.assertSnapshotClose('reparentedCubeBack.png')
 
@@ -154,6 +174,83 @@ class testVP2RenderDelegateIsolateSelect(imageUtils.ImageDiffingTestCase):
         cmds.parent("|stage", locator, relative=True)
         usdCube = locator + usdCube
         self.assertSnapshotClose('reparentedProxyShape.png')
+
+        cmds.undo() #undo reparent so that _createPrim works
+        usdCube = proxyDagPath + ",/Cube1"
+
+        #Auto load new objects
+        usdXformItem = self._stringToUfeItem(usdXform)
+        usdXformCone = self._createPrim(usdXformItem, 'Cone', '/Xform1/Cone1')
+        cmds.select(usdXformCone)
+        cmds.move(-8.725, 0, 2)
+        self.assertSnapshotClose('autoLoadNewObjects.png')
+
+        #Auto load selected objects
+        cmds.editor(panel, edit=True, unlockMainConnection=True)
+        self.assertSnapshotClose('autoLoadSelected_xformCone.png')
+        cmds.select(usdCube)
+        self.assertSnapshotClose('autoLoadSelected_cube.png')
+        cmds.select("|stage")
+        self.assertSnapshotClose('autoLoadSelected_stage.png')
+        cmds.select(usdCone)
+        cmds.select(usdCapsule, add=True)
+        cmds.select(usdCylinder, add=True)
+        self.assertSnapshotClose('autoLoadSelected_coneCapsuleCyliner.png')
+        cmds.editor(panel, edit=True, unlockMainConnection=False)
+
+    def testInstancedIsolateSelect(self):
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        panel = mayaUtils.activeModelPanel()
+        usdaFile = testUtils.getTestScene("instances", "perInstanceInheritedData.usda")
+        proxyDagPath, sphereStage = mayaUtils.createProxyFromFile(usdaFile)
+        usdball01 = proxyDagPath + ",/root/group/ball_01"
+        usdball02 = proxyDagPath + ",/root/group/ball_02"
+        usdball03 = proxyDagPath + ",/root/group/ball_03"
+        usdball04 = proxyDagPath + ",/root/group/ball_04"
+        usdball05 = proxyDagPath + ",/root/group/ball_05"
+
+        cmds.move(8.5, -20, 0, "persp")
+        cmds.rotate(90, 0, 0, "persp")
+
+        globalSelection = ufe.GlobalSelection.get()
+        globalSelection.clear()
+
+        # Turn on isolate select for cube
+        cmds.select(usdball01)
+        cmds.isolateSelect(panel, state=1)
+        self.assertSnapshotClose('ball01.png')
+
+        # Add the hidden ball and another ball
+        cmds.select(usdball02)
+        cmds.select(usdball03, add=True)
+        cmds.isolateSelect(panel, addSelectedObjects=True)
+        self.assertSnapshotClose('ball01_ball02_ball03.png')
+
+        # Remove the hidden ball
+        cmds.select(usdball02)
+        cmds.isolateSelect(panel, removeSelected=True)
+        self.assertSnapshotClose('ball01_ball03.png')
+
+        # Remove the first ball
+        cmds.select(usdball01)
+        cmds.isolateSelect(panel, removeSelected=True)
+        self.assertSnapshotClose('ball03.png')
+
+        #Auto load selected objects
+        cmds.editor(panel, edit=True, unlockMainConnection=True)
+        cmds.select(usdball02)
+        self.assertSnapshotClose('autoLoadSelected_ball02.png')
+        cmds.select(usdball01)
+        cmds.select(usdball04, add=True)
+        self.assertSnapshotClose('autoLoadSelected_ball01_ball04.png')
+        cmds.select('|stage')
+        self.assertSnapshotClose('autoLoadSelected_instance_stage.png')
+        cmds.select(usdball05)
+        cmds.select(usdball04, add=True)
+        self.assertSnapshotClose('autoLoadSelected_ball04_ball05.png')
+        cmds.editor(panel, edit=True, unlockMainConnection=False)
+
 
 
 if __name__ == '__main__':
