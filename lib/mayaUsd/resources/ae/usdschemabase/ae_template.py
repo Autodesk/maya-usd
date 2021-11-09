@@ -21,10 +21,13 @@ import maya.cmds as cmds
 import mayaUsd.ufe as mayaUsdUfe
 import mayaUsd.lib as mayaUsdLib
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
-import maya.internal.ufeSupport.attributes as attributes
 
-# This helper class was only added recently to Maya.
-hasAEPopupMenu = 'AEPopupMenu' in dir(attributes)
+try:
+    # This helper class was only added recently to Maya.
+    import maya.internal.ufeSupport.attributes as attributes
+    hasAEPopupMenu = 'AEPopupMenu' in dir(attributes)
+except:
+    hasAEPopupMenu = False
 
 from maya.common.ui import LayoutManager, ParentManager
 from maya.common.ui import setClipboardData
