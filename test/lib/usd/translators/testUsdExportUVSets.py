@@ -119,7 +119,7 @@ class testUsdExportUVSets(unittest.TestCase):
                 uvSetName)
             meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3] * 6, uvSetName)
             (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
-        self.assertEquals(numUVShells, 1)
+        self.assertEqual(numUVShells, 1)
 
         uvSetName = 'PairedFacesSet'
         (uArray, vArray) = meshFn.getUVs(uvSetName)
@@ -134,7 +134,7 @@ class testUsdExportUVSets(unittest.TestCase):
                 uvSetName)
             meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3, 2, 4, 5, 6] * 3, uvSetName)
             (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
-        self.assertEquals(numUVShells, 2)
+        self.assertEqual(numUVShells, 2)
 
         usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
         cmds.usdExport(mergeTransformAndShape=True,
