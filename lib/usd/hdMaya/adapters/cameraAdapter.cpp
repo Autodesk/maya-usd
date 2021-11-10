@@ -92,9 +92,13 @@ void HdMayaCameraAdapter::CreateCallbacks()
         obj,
         +[](MObject& obj, void* clientData) {
             auto* adapter = reinterpret_cast<HdMayaCameraAdapter*>(clientData);
-            // Dirty everything rather than track complex param and fit to projection dependencies.
+        // Dirty everything rather than track complex param and fit to projection dependencies.
+#if HD_API_VERSION >= 43
+            adapter->MarkDirty(HdCamera::DirtyParams | HdCamera::DirtyWindowPolicy);
+#else
             adapter->MarkDirty(
                 HdCamera::DirtyParams | HdCamera::DirtyProjMatrix | HdCamera::DirtyWindowPolicy);
+#endif
         },
         reinterpret_cast<void*>(this),
         &status);
