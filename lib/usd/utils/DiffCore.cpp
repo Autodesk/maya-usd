@@ -601,7 +601,8 @@ bool compareArray(
     if (count0 != count1) {
         return false;
     }
-#ifdef __AVX2__
+    // TODO: the AVX2 and SSE version are incorrect. On Linux, these fail. Disable them for now.
+#if defined(__AVX2__) && 0
     const f256   eps8 = splat8f(eps);
     const size_t count8 = count0 & ~0x7ULL;
     size_t       i = 0;
@@ -640,7 +641,7 @@ bool compareArray(
 
     return true;
 
-#elif defined(__SSE__)
+#elif defined(__SSE__) && 0
     const f128   eps4 = splat4f(eps);
     const size_t count4 = count0 & ~0x3ULL;
     size_t       i = 0;
@@ -834,6 +835,27 @@ bool compareArray(
     }
     return true;
 #endif
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool compareArray(
+    const GfHalf* const input0,
+    const GfHalf* const input1,
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps)
+{
+    if (count0 != count1) {
+        return false;
+    }
+    // TODO: write AVX2 and SSE optimized versions. (We don't expect to see half-floats, not a
+    // priority for now.)
+    for (size_t i = 0; i < count0; ++i) {
+        if (std::abs(input0[i] - input1[i]) > eps) {
+            return false;
+        }
+    }
+    return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1220,7 +1242,7 @@ bool compareArray3Dto4D(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool compareArrayFloat3DtoDouble4D(
+bool compareArray3Dto4D(
     const float* const  input3d,
     const double* const input4d,
     const size_t        count3d,

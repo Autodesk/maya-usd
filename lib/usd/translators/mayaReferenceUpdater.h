@@ -40,8 +40,10 @@ public:
 protected:
     MAYAUSD_CORE_PUBLIC
     bool pushCopySpecs(
+        UsdStageRefPtr srcStage,
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,
+        UsdStageRefPtr dtsStage,
         SdfLayerRefPtr dstLayer,
         const SdfPath& dstSdfPath) override;
 };

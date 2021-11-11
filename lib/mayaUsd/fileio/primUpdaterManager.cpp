@@ -387,7 +387,8 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
 // SdfPath will be empty on error.
 using UsdPathToDagPathMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
 using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
-using PushCustomizeSrc = std::tuple<SdfPath, SdfLayerRefPtr, UsdPathToDagPathMapPtr>;
+using PushCustomizeSrc
+    = std::tuple<SdfPath, UsdStageRefPtr, SdfLayerRefPtr, UsdPathToDagPathMapPtr>;
 
 PushCustomizeSrc pushExport(
     const Ufe::Path&                 ufePulledPath,
@@ -397,7 +398,7 @@ PushCustomizeSrc pushExport(
     UsdStageRefPtr         srcStage = UsdStage::CreateInMemory();
     SdfLayerRefPtr         srcLayer = srcStage->GetRootLayer();
     UsdPathToDagPathMapPtr pathMapPtr;
-    auto                   pushCustomizeSrc = std::make_tuple(SdfPath(), srcLayer, pathMapPtr);
+    auto pushCustomizeSrc = std::make_tuple(SdfPath(), srcStage, srcLayer, pathMapPtr);
 
     // Copy to be able to add the export root.
     VtDictionary userArgs = context.GetUserArgs();
@@ -526,10 +527,11 @@ bool pushCustomize(
 
 {
     const auto& srcRootPath = std::get<SdfPath>(src);
-    if (srcRootPath.IsEmpty()) {
+    const auto& srcLayer = std::get<SdfLayerRefPtr>(src);
+    const auto& srcStage = std::get<UsdStageRefPtr>(src);
+    if (srcRootPath.IsEmpty() || !srcLayer || !srcStage) {
         return false;
     }
-    const auto& srcLayer = std::get<SdfLayerRefPtr>(src);
 
     const bool  isCopy = context.GetArgs()._copyOperation;
     const auto& editTarget = context.GetUsdStage()->GetEditTarget();
@@ -541,7 +543,7 @@ bool pushCustomize(
     // along the way, and call PushCopySpec on the prim.
     using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
     auto pushCopySpecsFn
-        = [&context, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
+        = [&context, srcStage, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
               // We can be called with a primSpec path that is not a prim path
               // (e.g. a property path like "/A.xformOp:translate").  This is not an
               // error, just prune the traversal.  FIXME Is this still true?  We
@@ -562,8 +564,9 @@ bool pushCustomize(
               auto relativeSrcPath = srcPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
               auto dstPath = dstRootParentPath.AppendPath(relativeSrcPath);
 
-              // Report pushCopySpecs() failure.
-              if (!updater->pushCopySpecs(srcLayer, srcPath, dstLayer, dstPath)) {
+              // Report PushCopySpecs() failure.
+              if (!updater->pushCopySpecs(
+                      srcStage, srcLayer, srcPath, context.GetUsdStage(), dstLayer, dstPath)) {
                   throw MayaUsd::TraversalFailure(std::string("PushCopySpecs() failed."), srcPath);
               }
 
