@@ -59,12 +59,12 @@ public:
     MtlxUsd_ConverterReader(const UsdMayaPrimReaderArgs& readArgs)
         : UsdMayaShaderReader(readArgs) {};
 
-    bool IsConverter(UsdShadeShader& downstreamSchema, TfToken& downstreamOutputName) override
+    boost::optional<IsConverterResult> IsConverter() override
     {
         const UsdPrim& prim = _GetArgs().GetUsdPrim();
         UsdShadeShader shaderSchema = UsdShadeShader(prim);
         if (!shaderSchema) {
-            return false;
+            return {};
         }
 
         TfToken shaderId;
@@ -72,7 +72,7 @@ public:
 
         const UsdShadeInput& input = shaderSchema.GetInput(TrMtlxTokens->in);
         if (!input) {
-            return false;
+            return {};
         }
 
         UsdShadeConnectableAPI source;
@@ -80,12 +80,12 @@ public:
         UsdShadeAttributeType  sourceType;
         if (!UsdShadeConnectableAPI::GetConnectedSource(
                 input, &source, &sourceOutputName, &sourceType)) {
-            return false;
+            return {};
         }
 
-        downstreamSchema = UsdShadeShader(source.GetPrim());
+        UsdShadeShader downstreamSchema = UsdShadeShader(source.GetPrim());
         if (!downstreamSchema) {
-            return false;
+            return {};
         }
 
         // No refinement necessary for ND_convert_color3_vector3 and ND_normalmap.
@@ -126,9 +126,7 @@ public:
             }
         }
         _downstreamPrim = source.GetPrim();
-        downstreamOutputName = sourceOutputName;
-
-        return true;
+        return IsConverterResult { downstreamSchema, sourceOutputName };
     }
 
     void SetDownstreamReader(std::shared_ptr<UsdMayaShaderReader> downstreamReader) override

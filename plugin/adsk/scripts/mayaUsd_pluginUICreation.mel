@@ -22,4 +22,6 @@ global proc mayaUsd_pluginUICreation()
             warning ("Error loading ufeSupport.py.");
         }
     }
+
+    source "USDMenuProc.mel";
 }

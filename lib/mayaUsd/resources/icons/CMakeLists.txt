@@ -50,6 +50,9 @@ set(LIB_ICONS
     saveOption1
     saveOption2
     saveOption3
+    discard_edits
+    edit_as_Maya
+    merge_to_USD
 )
 foreach(ICON_BASE ${LIB_ICONS})
     # The _100.png files need to be installed without the _100. This is the

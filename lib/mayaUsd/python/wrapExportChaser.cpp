@@ -18,17 +18,11 @@
 #include <mayaUsd/fileio/chaser/exportChaserRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
 
-#include <pxr/base/tf/makePyConstructor.h>
-#include <pxr/base/tf/pyContainerConversions.h>
-#include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
-#include <pxr/base/tf/pyPtrHelpers.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/refPtr.h>
 
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/make_constructor.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -88,26 +82,14 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapExportChaser()
 {
-    typedef ExportChaserWrapper* ExportChaserWrapperPtr;
+    typedef UsdMayaExportChaser This;
 
     boost::python::class_<ExportChaserWrapper, boost::noncopyable>(
         "ExportChaser", boost::python::no_init)
         .def("__init__", make_constructor(&ExportChaserWrapper::New))
-        .def(
-            "ExportDefault",
-            &ExportChaserWrapper::ExportDefault,
-            &ExportChaserWrapper::default_ExportDefault)
-        .def(
-            "ExportFrame",
-            &ExportChaserWrapper::ExportFrame,
-            &ExportChaserWrapper::default_ExportFrame)
-        .def(
-            "PostExport",
-            &ExportChaserWrapper::PostExport,
-            &ExportChaserWrapper::default_PostExport)
-        .def(
-            "Register",
-            &ExportChaserWrapper::Register,
-            (boost::python::arg("class"), boost::python::arg("mayaTypeName")))
+        .def("ExportDefault", &This::ExportDefault, &ExportChaserWrapper::default_ExportDefault)
+        .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
+        .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
+        .def("Register", &ExportChaserWrapper::Register)
         .staticmethod("Register");
 }

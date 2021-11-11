@@ -195,7 +195,7 @@ class ImageDiffingTestCase(unittest.TestCase):
         return diff
 
     def assertSnapshotClose(self, refImage, maxAvgChannelDiff=AVG_CHANNEL_DIFF):
-        snapDir = self._testMethodName
+        snapDir = os.path.join(os.path.abspath('.'), self._testMethodName)
         if not os.path.isdir(snapDir):
             os.makedirs(snapDir)
         snapImage = os.path.join(snapDir, os.path.basename(refImage))

@@ -1113,6 +1113,12 @@ void HdVP2Mesh::Sync(
             _MakeOtherReprRenderItemsInvisible(delegate, reprToken);
     }
 
+#if PXR_VERSION > 2111
+    // Hydra now manages and caches render tags under the hood and is clearing
+    // the dirty bit prior to calling sync. Unconditionally set the render tag
+    // in the shared data structure based on current Hydra data
+    _meshSharedData->_renderTag = GetRenderTag();
+#else
     if (*dirtyBits
         & (HdChangeTracker::DirtyRenderTag
 #ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
@@ -1121,6 +1127,7 @@ void HdVP2Mesh::Sync(
            )) {
         _meshSharedData->_renderTag = delegate->GetRenderTag(id);
     }
+#endif
 
     *dirtyBits = HdChangeTracker::Clean;
 

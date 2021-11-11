@@ -17,10 +17,6 @@
 
 import mayaUsd.lib as mayaUsdLib
 
-from pxr import Gf
-from pxr import Sdf
-from pxr import Tf
-from pxr import Vt
 from pxr import UsdGeom
 
 from maya import cmds
@@ -72,6 +68,7 @@ class testReadWriteUtils(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
 
     @classmethod
     def tearDownClass(cls):
@@ -85,7 +82,7 @@ class testReadWriteUtils(unittest.TestCase):
 
         cmds.polySphere(r = 3.5, name='apple')
 
-        usdFilePath = os.path.join(os.environ.get('MAYA_APP_DIR'),'testPrimWriterExport.usda')
+        usdFilePath = os.path.join(self.temp_dir,'testPrimWriterExport.usda')
         cmds.usdExport(mergeTransformAndShape=True,
             file=usdFilePath,
             shadingMode='none')

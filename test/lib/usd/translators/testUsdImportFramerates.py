@@ -30,8 +30,9 @@ class testUsdImportFramerates(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.temp_dir = fixturesUtils.setUpClass(__file__)
-        cls.usd_file = os.path.join(cls.temp_dir, "UsdImportFramerates/framerate.usda")
+        cls.input_dir = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
+        cls.usd_file = os.path.join(cls.input_dir, "UsdImportFramerates/framerate.usda")
         cls.stage = Usd.Stage.Open(cls.usd_file)
         cls.base_rate = cls.stage.GetTimeCodesPerSecond()
 

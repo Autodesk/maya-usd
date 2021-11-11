@@ -60,6 +60,10 @@ public:
     /// \param  args the valid argument data base
     /// \return the stage from the proxy shape specified in the selected command arguments
     UsdStageRefPtr getShapeNodeStage(const MArgDatabase& args);
+
+protected:
+    /// utility func to create the arg database
+    MArgDatabase makeDatabase(const MArgList& args);
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -282,6 +286,25 @@ class TranslatePrim : public ProxyShapeCommandBase
     SdfPathVector      m_teardownPaths;
     SdfPathVector      m_updatePaths;
     bool               m_recursive;
+
+public:
+    AL_MAYA_DECLARE_COMMAND();
+
+private:
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
+    MStatus redoIt() override;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  ProxyShapeTestIntersection
+/// \ingroup commands
+//----------------------------------------------------------------------------------------------------------------------
+class ProxyShapeTestIntersection : public ProxyShapeCommandBase
+{
+    nodes::ProxyShape* m_proxy;
+    double             m_sx;
+    double             m_sy;
 
 public:
     AL_MAYA_DECLARE_COMMAND();

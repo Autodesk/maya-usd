@@ -27,17 +27,16 @@ from maya import standalone
 import os
 import unittest
 
+import fixturesUtils
 
 class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.input_dir = fixturesUtils.setUpClass(__file__)
         standalone.initialize('usd')
 
-        testDir = os.path.join(os.path.abspath('.'),
-                               "PxrUsdPreviewSurfaceExportTest")
-
-        cmds.workspace(testDir, o=True)
+        cmds.workspace(os.path.join(cls.input_dir, "PxrUsdPreviewSurfaceExportTest"), o=True)
 
         cmds.file('PxrUsdPreviewSurfaceExportTest.ma', open=True, force=True)
 

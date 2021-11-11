@@ -18,19 +18,11 @@
 #include <mayaUsd/fileio/chaser/importChaserRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
 
-#include <pxr/base/tf/makePyConstructor.h>
-#include <pxr/base/tf/pyContainerConversions.h>
-#include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
-#include <pxr/base/tf/pyPtrHelpers.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/refPtr.h>
 
-#include <maya/MFnDependencyNode.h>
-
-#include <boost/python.hpp>
-#include <boost/python/args.hpp>
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/make_constructor.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -98,20 +90,14 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapImportChaser()
 {
-    typedef ImportChaserWrapper* ImportChaserWrapperPtr;
+    typedef UsdMayaImportChaser This;
 
     boost::python::class_<ImportChaserWrapper, boost::noncopyable>(
         "ImportChaser", boost::python::no_init)
         .def("__init__", make_constructor(&ImportChaserWrapper::New))
-        .def(
-            "PostImport",
-            &ImportChaserWrapper::PostImport,
-            &ImportChaserWrapper::default_PostImport)
-        .def("Redo", &ImportChaserWrapper::Redo, &ImportChaserWrapper::default_Redo)
-        .def("Undo", &ImportChaserWrapper::Undo, &ImportChaserWrapper::default_Undo)
-        .def(
-            "Register",
-            &ImportChaserWrapper::Register,
-            (boost::python::arg("class"), boost::python::arg("type")))
+        .def("PostImport", &This::PostImport, &ImportChaserWrapper::default_PostImport)
+        .def("Redo", &This::Redo, &ImportChaserWrapper::default_Redo)
+        .def("Undo", &This::Undo, &ImportChaserWrapper::default_Undo)
+        .def("Register", &ImportChaserWrapper::Register)
         .staticmethod("Register");
 }
