@@ -39,7 +39,9 @@ class testUsdExportCustomConverter(unittest.TestCase):
         else:
             suffix = "USD"
 
-        cls.input_path = fixturesUtils.setUpClass(__file__, suffix)
+        fixturesUtils.setUpClass(__file__, suffix)
+
+        cls.input_path = os.getenv("INPUT_PATH")
 
         test_dir = os.path.join(cls.input_path,
                                 "UsdExportCustomConverterTest")
@@ -67,7 +69,7 @@ class testUsdExportCustomConverter(unittest.TestCase):
         # Using the "maya" material conversion, which only exists in the test
         # plugin
         options = ["shadingMode=useRegistry",
-                   "convertMaterialsTo=maya",
+                   "convertMaterialsTo=[maya]",
                    "mergeTransformAndShape=1"]
 
         default_ext_setting = cmds.file(q=True, defaultExtensions=True)

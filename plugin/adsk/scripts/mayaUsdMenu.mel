@@ -556,6 +556,150 @@ proc termAEShowMenu()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// initPullMenu
+// Marking menu with USD options for DAG objects
+
+proc int isPulledUsdObject(string $dagObject) {
+    string $pullAttribute = ( $dagObject + ".Pull_UfePath" );
+    if (`attributeExists "Pull_UfePath" $dagObject`) {
+        string $ufePath = `getAttr $pullAttribute`;
+        if ($ufePath != "") {
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
+proc int isObjectSelected(string $obj)
+{
+    if (size($obj)) {
+        string $sel[] = `ls -sl`;
+        return stringArrayContains($obj, $sel);
+    }
+    return 0;
+}
+
+global proc mayaUsdMenu_pushBackToUSD(string $obj)
+{
+    if (size($obj) == 0) {
+        string $sel[] = `ls -sl`;
+        if (size($sel)) {
+            $obj = $sel[0];
+        }
+    }
+    if (size($obj)) {
+        python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.push('" + $obj + "');");
+    }
+}
+
+global proc mayaUsdMenu_pushClear(string $obj)
+{
+    python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.discardEdits('" + $obj + "');");
+}
+
+global proc mayaUsdMenu_copyToUSD( string $proxy, string $obj )
+{
+    if (size($obj) == 0) {
+        string $sel[] = `ls -sl`;
+        if (size($sel)) {
+            $obj = $sel[0];
+        }
+    }
+    string $objLong[] = `ls -l $obj`;
+    string $proxyLong[] = `ls -l $proxy`;
+    if (size($objLong) && size($proxyLong)) {
+        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.copy('" + $objLong[0] + "', '"+ $proxyLong[0] +"');");
+    }
+}
+
+global proc mayaUsdMenu_markingMenuCallback( string $obj )
+{
+    if (isPulledUsdObject($obj)) {
+        string $pushback = `menuItem -label "Merge Maya Edits to USD" -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $obj)`;
+        string $pushclear = `menuItem -label "Discard Maya Edits" -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdMenu_pushClear " + $obj)`;
+        menuItem -divider true -insertAfter $pushclear;
+    }
+    else {
+        string $proxyShapes[] = `ls -type mayaUsdProxyShape`;
+        if (size($proxyShapes) > 0) {
+            menuItem -divider true -insertAfter "";
+            menuItem -label "Copy To" -subMenu true -insertAfter "";
+            for ($proxy in $proxyShapes) {
+                menuItem -label $proxy -command ("mayaUsdMenu_copyToUSD " + $proxy + " " + $obj);
+            }
+        }
+    }
+}
+
+proc initPullMenu()
+{
+    callbacks -addCallback mayaUsdMenu_markingMenuCallback -hook addRMBBakingMenuItems -owner mayaUsdPlugin;
+}
+
+proc tearPullMenu()
+{
+    callbacks -removeCallback mayaUsdMenu_markingMenuCallback -hook addRMBBakingMenuItems -owner mayaUsdPlugin;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Outliner Popup Menu
+//
+proc initOutlinerPopupMenu()
+{
+    callbacks -addCallback mayaUsdMenu_OutlinerPopupCallback -hook addItemsToOutlinerNodePopupMenu -owner mayaUsdPlugin;
+}
+
+proc termOutlinerPopupMenu()
+{
+    callbacks -removeCallback mayaUsdMenu_OutlinerPopupCallback -hook addItemsToOutlinerNodePopupMenu -owner mayaUsdPlugin;
+}
+
+proc int isMayaUsdProxyShape(string $nodeName)
+{
+    if (size($nodeName)) {
+        // We use inherited here to find the proxy shape base so this will
+        // work on other derived proxy shape types.
+        string $inher[] = `nodeType -inherited $nodeName`;
+        if (stringArrayContains("mayaUsdProxyShapeBase", $inher)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+global proc mayaUsdMenu_OutlinerPopupCallback( string $nodeName )
+{
+    if ((size($nodeName) == 0) || !`objExists $nodeName`) {
+        return;
+    }
+
+    int $isProxyNode = 0;
+    if (`nodeType $nodeName` == "transform") {
+        string $shapes[] = `listRelatives -shapes -fullPath $nodeName`;
+        if (`size($shapes)` > 0) {
+            string $shapeNode = $shapes[0];
+            if (isMayaUsdProxyShape($shapeNode)) {
+                $isProxyNode = 1;
+                if (`exists mayaUsdLayerEditorWindow`) {
+                    string $command = "mayaUsdLayerEditorWindow -proxyShape \"" + $shapeNode + "\" mayaUsdLayerEditor";
+                    menuItem -divider true -insertAfter "";
+                    menuItem -enableCommandRepeat false
+                        -label `getMayaUsdString("kContextMenuLayerEditor")`
+                        -insertAfter ""
+                        -command $command openUsdLayerEditor;
+                }
+            }
+        }
+    }
+
+    // Don't add the "Push..." menu items for the proxy node or the shape.
+    if (!$isProxyNode && !isMayaUsdProxyShape($nodeName)) {
+        mayaUsdMenu_markingMenuCallback($nodeName);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // mayaUsdMenu_loadui
 // main entry point on plugin load
 global proc mayaUsdMenu_loadui() {
@@ -572,6 +716,9 @@ global proc mayaUsdMenu_loadui() {
     if(!mayaUSD_isSelectionKindValid()) {
         mayaUsdSelectKindNone();
     }
+
+    initPullMenu();
+    initOutlinerPopupMenu();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -581,6 +728,8 @@ global proc mayaUsdMenu_unloadui() {
     termCreateMenu();
     termSelectMenu();
     termAEShowMenu();
+    tearPullMenu();
+    termOutlinerPopupMenu();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

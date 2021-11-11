@@ -49,6 +49,12 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool Write(const std::string& fileName, bool append);
 
+    MAYAUSD_CORE_PUBLIC
+    SdfPath MapDagPathToSdfPath(const MDagPath& dagPath) const;
+
+    MAYAUSD_CORE_PUBLIC
+    const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdPathMap() const;
+
 private:
     /// Begins constructing the USD stage, writing out the values at the default
     /// time. Returns \c true if the stage can be created successfully.

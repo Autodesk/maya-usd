@@ -16,6 +16,11 @@
 #include <pxr/base/tf/pyModule.h>
 #include <pxr/pxr.h>
 
+// UFE v3 used as an indicator of support for edit as Maya.
+#if defined(WANT_UFE_BUILD)
+#include <ufe/ufe.h>
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
@@ -27,6 +32,9 @@ TF_WRAP_MODULE
     TF_WRAP(ConverterArgs);
     TF_WRAP(DiagnosticDelegate);
     TF_WRAP(MeshWriteUtils);
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    TF_WRAP(PrimUpdaterManager);
+#endif
     TF_WRAP(Query);
     TF_WRAP(ReadUtil);
     TF_WRAP(RoundTripUtil);
@@ -45,7 +53,10 @@ TF_WRAP_MODULE
     TF_WRAP(JobImportArgs);
     TF_WRAP(PrimWriter);
     TF_WRAP(ShaderWriter);
+    TF_WRAP(ShadingModeImportContext);
     TF_WRAP(ShaderReader);
     TF_WRAP(ExportChaser);
     TF_WRAP(ImportChaser);
+    TF_WRAP(ShadingUtil);
+    TF_WRAP(ShadingMode);
 }

@@ -63,6 +63,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kConvertMaterialsToFlag,
         UsdMayaJobExportArgsTokens->convertMaterialsTo.GetText(),
         MSyntax::kString);
+    syntax.makeFlagMultiUse(kConvertMaterialsToFlag);
     syntax.addFlag(
         kMaterialsScopeNameFlag,
         UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),
@@ -106,6 +107,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kExportVisibilityFlag,
         UsdMayaJobExportArgsTokens->exportVisibility.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
+        kExportComponentTagsFlag,
+        UsdMayaJobExportArgsTokens->exportComponentTags.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
         kIgnoreWarningsFlag,
@@ -319,8 +324,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             std::string rootPath = tmpArgList.asString(0).asChar();
 
             if (!rootPath.empty()) {
-                MDagPath rootDagPath;
-                UsdMayaUtil::GetDagPathByName(rootPath, rootDagPath);
+                MDagPath rootDagPath = UsdMayaUtil::nameToDagPath(rootPath);
                 if (!rootDagPath.isValid()) {
                     MGlobal::displayError(
                         MString("Invalid dag path provided for exportRoot: ")

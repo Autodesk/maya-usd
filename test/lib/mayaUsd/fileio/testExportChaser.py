@@ -17,14 +17,9 @@
 
 import mayaUsd.lib as mayaUsdLib
 
-from pxr import Gf
-from pxr import Sdf
-from pxr import Tf
-from pxr import Vt
 from pxr import Usd
 
 from maya import cmds
-import maya.api.OpenMaya as OpenMaya
 from maya import standalone
 
 import fixturesUtils, os
@@ -53,6 +48,7 @@ class testExportChaser(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
 
     @classmethod
     def tearDownClass(cls):
@@ -65,7 +61,7 @@ class testExportChaser(unittest.TestCase):
         mayaUsdLib.ExportChaser.Register(exportChaserTest, "test")
         cmds.polySphere(r = 3.5, name='apple')
 
-        usdFilePath = os.path.join(os.environ.get('MAYA_APP_DIR'),'testExportChaser.usda')
+        usdFilePath = os.path.join(self.temp_dir,'testExportChaser.usda')
         cmds.usdExport(mergeTransformAndShape=True,
             file=usdFilePath,
             chaser=['test'],

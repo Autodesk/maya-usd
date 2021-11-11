@@ -46,7 +46,17 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapPrimWriter.cpp
         wrapExportChaser.cpp
         wrapImportChaser.cpp
+        wrapShadingUtil.cpp
+        wrapShadingMode.cpp
 )
+
+# Edit as Maya requires UFE path mapping.
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    target_sources(${PYTHON_TARGET_NAME}
+        PRIVATE
+            wrapPrimUpdaterManager.cpp
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # compiler configuration

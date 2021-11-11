@@ -26,7 +26,6 @@ target_sources(${TARGET_NAME}
         locatorWriter.cpp
         materialReader.cpp
         mayaReferenceReader.cpp
-        mayaReferenceUpdater.cpp
         meshReader.cpp
         meshWriter.cpp
         meshWriter_BlendShapes.cpp
@@ -35,11 +34,20 @@ target_sources(${TARGET_NAME}
         nurbsPatchReader.cpp
         nurbsSurfaceWriter.cpp
         particleWriter.cpp
+        plugin.cpp
         scopeReader.cpp
         skelReader.cpp
         strokeWriter.cpp
         xformReader.cpp
 )
+
+# Edit as Maya requires UFE path mapping.
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            mayaReferenceUpdater.cpp
+    )
+endif()
 
 add_subdirectory(shading)
 

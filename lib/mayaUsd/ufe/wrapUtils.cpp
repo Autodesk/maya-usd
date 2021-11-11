@@ -30,7 +30,7 @@
 #include <ufe/pathString.h>
 #endif
 
-#include <boost/python.hpp>
+#include <boost/python/def.hpp>
 
 #include <string>
 

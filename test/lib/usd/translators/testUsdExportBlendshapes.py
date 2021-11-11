@@ -33,8 +33,9 @@ class TestUsdExportBlendshapes(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.temp_dir = fixturesUtils.setUpClass(__file__)
-        cls.scene_path = os.path.join(cls.temp_dir, "UsdExportBlendShapesTest", "blendShapesExport.ma").replace("\\", "/")
+        cls.input_dir = fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
+        cls.scene_path = os.path.join(cls.input_dir, "UsdExportBlendShapesTest", "blendShapesExport.ma").replace("\\", "/")
 
     @classmethod
     def tearDownClass(cls):
@@ -92,7 +93,7 @@ class TestUsdExportBlendshapes(unittest.TestCase):
         prim = stage.GetPrimAtPath("/basic_cube_4_blendshapes_no_anim/base")
         blendShapes = prim.GetChildren()
         for bs in blendShapes:
-            self.assertEqual(bs.GetTypeName(), 'BlendShape')
+            self.assertIn(bs.GetTypeName(), ['BlendShape', 'GeomSubset'])
 
         # NOTE: (yliangsiew) Test exporting empty blendshape targets.
         om.MFileIO.open(self.scene_path, None, True)
@@ -102,14 +103,15 @@ class TestUsdExportBlendshapes(unittest.TestCase):
         prim = stage.GetPrimAtPath("/cube_empty_blendshape_targets/base")
         blendShapes = prim.GetChildren()
         for bs in blendShapes:
-            self.assertEqual(bs.GetTypeName(), 'BlendShape')
-            skelBS = UsdSkel.BlendShape(bs)
-            normalsAttr = skelBS.GetNormalOffsetsAttr()
-            offsetsAttr = skelBS.GetOffsetsAttr()
-            normals = normalsAttr.Get()
-            offsets = offsetsAttr.Get()
-            self.assertEqual(len(normals), 0)
-            self.assertEqual(len(offsets), 0)
+            self.assertIn(bs.GetTypeName(), ['BlendShape', 'GeomSubset'])
+            if bs.GetTypeName() == 'BlendShape':
+                skelBS = UsdSkel.BlendShape(bs)
+                normalsAttr = skelBS.GetNormalOffsetsAttr()
+                offsetsAttr = skelBS.GetOffsetsAttr()
+                normals = normalsAttr.Get()
+                offsets = offsetsAttr.Get()
+                self.assertEqual(len(normals), 0)
+                self.assertEqual(len(offsets), 0)
 
         # NOTE: (yliangsiew) Test duplicate shape names across multiple meshes.
         cmds.select("basic_skinned_cube_duplicate_targets_names_across_meshes", r=True)

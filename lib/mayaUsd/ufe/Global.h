@@ -31,7 +31,7 @@ MStatus initialize();
 //! Only intended to be called by the plugin finalization, to
 //! finalize the handlers stage model.
 MAYAUSD_CORE_PUBLIC
-MStatus finalize();
+MStatus finalize(bool exiting = false);
 
 //! Return the run-time ID allocated to USD.
 MAYAUSD_CORE_PUBLIC

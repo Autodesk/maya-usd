@@ -18,7 +18,9 @@
 #include <pxr/pxr.h>
 
 #include <boost/noncopyable.hpp>
-#include <boost/python.hpp>
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/return_arg.hpp>
 
 using namespace boost::python;
 

@@ -124,7 +124,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         export_options = [
             "shadingMode=useRegistry",
-            "convertMaterialsTo={}".format(convertTo),
+            "convertMaterialsTo=[{}]".format(convertTo),
             "mergeTransformAndShape=1"
         ]
 

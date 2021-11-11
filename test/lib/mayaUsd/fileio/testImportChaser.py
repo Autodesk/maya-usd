@@ -21,10 +21,6 @@
 
 import mayaUsd.lib as mayaUsdLib
 
-from pxr import Gf
-from pxr import Sdf
-from pxr import Tf
-from pxr import Vt
 from pxr import UsdGeom
 from pxr import Usd
 
@@ -93,13 +89,14 @@ class testImportChaser(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.setUpClass(__file__)
+        cls.temp_dir = os.path.abspath('.')
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
     def setUp(self):
-        self.stagePath = os.path.join(os.environ.get('MAYA_APP_DIR'), "importChaser.usda")
+        self.stagePath = os.path.join(self.temp_dir, "importChaser.usda")
         stage = Usd.Stage.CreateNew(self.stagePath)
         UsdGeom.Xform.Define(stage, '/a')
         UsdGeom.Sphere.Define(stage, '/a/sphere')

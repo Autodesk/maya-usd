@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -51,6 +51,10 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -346,6 +350,37 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath)
     }
 
     return Ufe::PathSegment(std::move(components), g_MayaRtid, '|');
+}
+
+MDagPath ufeToDagPath(const Ufe::Path& ufePath)
+{
+    if (ufePath.runTimeId() != g_MayaRtid ||
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        ufePath.nbSegments()
+#else
+        ufePath.getSegments().size()
+#endif
+            > 1) {
+        return MDagPath();
+    }
+    return UsdMayaUtil::nameToDagPath(
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        Ufe::PathString::string(ufePath)
+#else
+        // We have a single segment, so no path segment separator to consider.
+        ufePath.popHead().string()
+#endif
+    );
+}
+
+PXR_NS::MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
+{
+    // Path should not be empty.
+    if (!TF_VERIFY(!path.empty())) {
+        return nullptr;
+    }
+
+    return g_StageMap.proxyShapeNode(path);
 }
 
 UsdTimeCode getTime(const Ufe::Path& path)
