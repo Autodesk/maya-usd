@@ -17,7 +17,7 @@
 #
 
 import os
-import tempfile
+import shutil
 import unittest
 
 from maya import cmds
@@ -28,26 +28,39 @@ from pxr import Sdf, Usd
 class TestLayerManagerSerialisation(unittest.TestCase):
     """Test cases for layer manager serialisation and deserialisation"""
 
+    @classmethod
+    def setUpClass(cls):
+        # Reset the output directory
+        cls._outputPath = os.path.join(os.path.abspath('.'), os.path.splitext(__file__)[0] + "Output")
+        if os.path.exists(cls._outputPath):
+            shutil.rmtree(cls._outputPath)
+        os.mkdir(cls._outputPath)
+        cls._mayaFilePath = os.path.join(cls._outputPath, 'LayerManagerSerialisation.ma')
+        cls._usdFilePath = os.path.join(cls._outputPath, 'LayerManagerSerialisation.usda')
+
+        # Load the plugin
+        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        # Unload the plugin
+        cmds.unloadPlugin("AL_USDMayaPlugin", force=True)
+
     app = 'maya'
     def setUp(self):
-        """Export some sphere geometry as .usda, and import into a new Maya scene."""
-
-        cmds.file(force=True, new=True)
-        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
+        
+        # Clear the maya file
+        cmds.file(self._mayaFilePath, force=True, new=True)
 
-        _tmpfile = tempfile.NamedTemporaryFile(delete=False, suffix=".usda")
-        _tmpfile.close()
-
-        self._usdaFile = _tmpfile.name
         # Ensure sphere geometry exists
         self._sphere = cmds.polySphere(constructionHistory=False, name="sphere")[0]
         cmds.select(self._sphere)
 
         # Export, new scene, import
-        cmds.file(self._usdaFile, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(self._usdFilePath, exportSelected=True, force=True, type="AL usdmaya export")
         cmds.file(force=True, new=True)
-        self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self._usdaFile)[0]
+        self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self._usdFilePath)[0]
 
         # Ensure proxy exists
         self.assertIsNotNone(self._proxyName)
@@ -57,16 +70,13 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         self._stage = proxy.getUsdStage()
 
     def tearDown(self):
-        """Unload plugin, new Maya scene, reset class member variables."""
+        """New Maya scene, reset class member variables."""
 
         cmds.file(force=True, new=True)
-        cmds.unloadPlugin("AL_USDMayaPlugin", force=True)
 
         self._stage = None
         self._sphere = None
         self._proxyName = None
-        if os.path.isfile(self._usdaFile):
-            os.remove(self._usdaFile)
 
     def test_editTargetSerialisation(self):
         """ As long as we set an editTarget and it ends updirty, it should be serialised
@@ -78,13 +88,10 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         self._stage.DefinePrim(newPrimPath, "xform")
         self._stage.SetEditTarget(self._stage.GetSessionLayer())
 
-        _tmpMayafile = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
-        _tmpMayafile.close()
-
-        cmds.file(rename=_tmpMayafile.name)
+        cmds.file(rename=self._mayaFilePath)
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
-        cmds.file(_tmpMayafile.name, open=True)
+        cmds.file(self._mayaFilePath, open=True)
         self.assertIsNotNone(self._proxyName)
         ps = ProxyShape.getByName(self._proxyName)
         self.assertTrue(ps)
@@ -93,8 +100,6 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         self.assertTrue(stage.GetPrimAtPath(newPrimPath))
         self.assertTrue(stage.GetRootLayer().Reload())
         self.assertFalse(stage.GetPrimAtPath(newPrimPath))
-
-        os.remove(_tmpMayafile.name)
 
     def test_sessionLayerSerialisation(self):
         """ A clean session layer should not be serialised on Maya scene save, nor we get
@@ -106,15 +111,12 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         self.assertTrue(self._stage)
         self._stage.SetEditTarget(self._stage.GetSessionLayer())
         # Save the scene with clean session layer:
-        _tmpMayafile = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
-        _tmpMayafile.close()
-
-        cmds.file(rename=_tmpMayafile.name)
+        cmds.file(rename=self._mayaFilePath)
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
-        cmds.file(_tmpMayafile.name, open=True)
+        cmds.file(self._mayaFilePath, open=True)
         self.assertFalse(cmds.getAttr('%s.sessionLayerName' % self._proxyName))
-        os.remove(_tmpMayafile.name)
+        os.remove(self._mayaFilePath)
 
         ps = ProxyShape.getByName(self._proxyName)
         self.assertTrue(ps)
@@ -123,13 +125,11 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         stage.SetEditTarget(stage.GetSessionLayer())
         newPrimPath = "/ChangeInSession"
         stage.DefinePrim(newPrimPath, "xform")
-        _tmpMayafile = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
-        _tmpMayafile.close()
 
-        cmds.file(rename=_tmpMayafile.name)
+        cmds.file(rename=self._mayaFilePath)
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
-        cmds.file(_tmpMayafile.name, open=True)
+        cmds.file(self._mayaFilePath, open=True)
         self.assertTrue(cmds.getAttr('%s.sessionLayerName' % self._proxyName))
 
         ps = ProxyShape.getByName(self._proxyName)
@@ -140,24 +140,19 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         self.assertTrue(stage.GetSessionLayer().Reload())
         self.assertFalse(stage.GetPrimAtPath(newPrimPath))
 
-        os.remove(_tmpMayafile.name)
-
-
     def test_multipleFormatsSerialisation(self):
         """Tests multiple dirty layers with various formats can be saved and restored.
 
         """
-        _, rootLayerPath = tempfile.mkstemp(suffix=".usda")
-        _, tmpMayafilePath = tempfile.mkstemp(suffix=".ma")
 
-        def _initialiseLayers(rootLayerPath):
+        def _initialiseLayers(usdFilePath):
             cmds.file(new=True, force=True)
-            rootLayer = Sdf.Layer.CreateNew(rootLayerPath)
+            rootLayer = Sdf.Layer.CreateNew(usdFilePath)
             subLayerPaths = rootLayer.subLayerPaths
             layers = []
             for ext in ["usd", "usda", "usdc"]:
                 _format = Sdf.FileFormat.FindByExtension(ext)
-                _, filePath = tempfile.mkstemp(suffix=".{}".format(ext))
+                filePath = os.path.join(self._outputPath, 'TestLayer.{}'.format(ext))
                 layer = Sdf.Layer.CreateNew(filePath)
                 layer.comment = ext
                 layer.Save()
@@ -166,13 +161,13 @@ class TestLayerManagerSerialisation(unittest.TestCase):
 
             rootLayer.Save()
 
-        def _buildAndEditAndSaveScene(rootLayerPath):
+        def _buildAndEditAndSaveScene(usdFilePath):
             """Add edits to the 3 format layers and scene the maya scene.
 
             """
             cmds.file(new=True, force=True)
-            cmds.file(rename=tmpMayafilePath)
-            proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=rootLayerPath)[0]
+            cmds.file(rename=self._mayaFilePath)
+            proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=usdFilePath)[0]
             ps = ProxyShape.getByName(proxyName)
             self.assertTrue(ps)
             stage = ps.getUsdStage()
@@ -188,12 +183,12 @@ class TestLayerManagerSerialisation(unittest.TestCase):
             cmds.file(save=True, force=True)
             return proxyName
 
-        def _reloadAndAssert(rootLayerPath, proxyName):
+        def _reloadAndAssert(usdFilePath, proxyName):
             """Assert the edits have been restored
             
             """
             cmds.file(new=True, force=True)
-            cmds.file(tmpMayafilePath, open=True)
+            cmds.file(self._mayaFilePath, open=True)
 
             ps = ProxyShape.getByName(proxyName)
             self.assertTrue(ps)
@@ -208,9 +203,9 @@ class TestLayerManagerSerialisation(unittest.TestCase):
 
             stage.Reload()
 
-        _initialiseLayers(rootLayerPath)
-        proxyName = _buildAndEditAndSaveScene(rootLayerPath)
-        _reloadAndAssert(rootLayerPath, proxyName)
+        _initialiseLayers(self._usdFilePath)
+        proxyName = _buildAndEditAndSaveScene(self._usdFilePath)
+        _reloadAndAssert(self._usdFilePath, proxyName)
 
 
 if __name__ == "__main__":
