@@ -86,6 +86,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2022, 'testSelectMayaPathInMel only works starting with Maya 2022.')
     def testSelectMayaPathInMel(self):
         """
         Select multiple Maya items by passing them in an array to a mel command.
@@ -123,6 +124,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 6)
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2022, 'testSelectMayaPathInPython only works starting with Maya 2022.')
     def testSelectMayaPathInPython(self):
         """
         Select multiple Maya items by passing them in an array to a Python command.
