@@ -96,7 +96,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 3)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectUFEInMel only works with fixes available in Maya 2023.')
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() > 130, 'testSelectUFEInMel only works with fixes available in Maya 2023 after PR 130.')
     def testSelectUFEInMel(self):
         """
         Select multiple UFE items by passing them in an array to a mel command.
@@ -107,7 +107,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 3)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectUFEAndMayaInMel only works with fixes available in Maya 2023.')
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() > 130, 'testSelectUFEAndMayaInMel only works with fixes available in Maya 2023 after PR 130.')
     def testSelectUFEAndMayaInMel(self):
         """
         Select a mix of Maya and UFE items by passing them in an array to a mel command.
@@ -133,7 +133,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 3)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectUFEInPython only works with fixes available in Maya 2023.')
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() > 130, 'testSelectUFEInPython only works with fixes available in Maya 2023 after PR 130.')
     def testSelectUFEInPython(self):
         """
         Select multiple UFE items by passing them in an array to a Python command.
@@ -144,7 +144,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 3)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectUFEAndMayaInPython only works with fixes available in Maya 2023.')
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() > 130, 'testSelectUFEAndMayaInPython only works with fixes available in Maya 2023 after PR 130.')
     def testSelectUFEAndMayaInPython(self):
         """
         Select a mix of Maya and UFE items by passing them in an array to a Python command.
