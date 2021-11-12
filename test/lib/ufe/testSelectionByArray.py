@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2020 Autodesk
+# Copyright 2021 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,7 +86,6 @@ class SelectByArrayTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectByArray only works with fixes available in Maya 2023.')
     def testSelectMayaPathInMel(self):
         """
         Select multiple Maya items by passing them in an array to a mel command.
@@ -97,7 +96,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 3)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectByArray only works with fixes available in Maya 2023.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectUFEInMel only works with fixes available in Maya 2023.')
     def testSelectUFEInMel(self):
         """
         Select multiple UFE items by passing them in an array to a mel command.
@@ -108,7 +107,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 3)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectByArray only works with fixes available in Maya 2023.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectUFEAndMayaInMel only works with fixes available in Maya 2023.')
     def testSelectUFEAndMayaInMel(self):
         """
         Select a mix of Maya and UFE items by passing them in an array to a mel command.
@@ -124,7 +123,6 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 6)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectByArray only works with fixes available in Maya 2023.')
     def testSelectMayaPathInPython(self):
         """
         Select multiple Maya items by passing them in an array to a Python command.
@@ -135,7 +133,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 3)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectByArray only works with fixes available in Maya 2023.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectUFEInPython only works with fixes available in Maya 2023.')
     def testSelectUFEInPython(self):
         """
         Select multiple UFE items by passing them in an array to a Python command.
@@ -146,7 +144,7 @@ class SelectByArrayTestCase(unittest.TestCase):
         sn = ufe.GlobalSelection.get()
         self.assertEqual(len(sn), 3)
 
-    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectByArray only works with fixes available in Maya 2023.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'testSelectUFEAndMayaInPython only works with fixes available in Maya 2023.')
     def testSelectUFEAndMayaInPython(self):
         """
         Select a mix of Maya and UFE items by passing them in an array to a Python command.
