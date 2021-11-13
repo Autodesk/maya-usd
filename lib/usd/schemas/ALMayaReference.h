@@ -20,6 +20,7 @@
 
 #include <mayaUsd_Schemas/MayaReference.h>
 #include <mayaUsd_Schemas/api.h>
+#include <mayaUsd_Schemas/tokens.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3d.h>

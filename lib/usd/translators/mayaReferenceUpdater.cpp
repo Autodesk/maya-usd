@@ -105,7 +105,8 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
 bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
 {
     const MObject& parentNode = getMayaObject();
-    UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
+    SdfPath primPath = getUsdPrim(context).GetPath();
+    UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode, primPath);
 
     return UsdMayaPrimUpdater::discardEdits(context);
 }
