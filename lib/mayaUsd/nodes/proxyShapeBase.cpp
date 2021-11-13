@@ -1773,7 +1773,7 @@ bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPath
 
         UsdPrim prim = stage->GetPrimAtPath(primPath);
 
-        auto primUpdaterRegisterItem = UsdMayaPrimUpdaterRegistry::Find(primType);
+        auto primUpdaterRegisterItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(primType);
 
         if (prim.IsValid() && prim.IsActive() && prim.IsDefined())
             continue;
@@ -1791,7 +1791,7 @@ bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPath
             SdfPath primPath = prim.GetPath();
             TfToken primType = prim.GetTypeName();
 
-            auto primUpdaterRegisterItem = UsdMayaPrimUpdaterRegistry::Find(primType);
+            auto primUpdaterRegisterItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(primType);
 
             if (auto updater = std::get<1>(primUpdaterRegisterItem)) {
                 MFnDependencyNode         fnNode(thisDagPath.node());
