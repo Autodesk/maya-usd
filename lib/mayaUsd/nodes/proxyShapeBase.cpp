@@ -104,6 +104,7 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/ufe/Global.h>
 
 #include <ufe/path.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -1751,9 +1752,11 @@ bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPath
     MDagPath thisDagPath = MDagPath::getAPathTo(thisMObject());
     thisDagPath.pop();
 
-    VtDictionary exportArgs;
-    UsdStageRefPtr            stage = getUsdStage();
-    UsdMayaPrimUpdaterContext ctx(getTime(), stage, exportArgs);
+    VtDictionary                    userArgs;
+    UsdStageRefPtr                  stage = getUsdStage();
+    const UsdMayaPrimUpdaterContext ctx(getTime(), stage, userArgs);
+
+    Ufe::Path proxyPath = ufePath();
 
     for (const auto primInfo : _managedSchemPrimss) {
         auto primPath = std::get<0>(primInfo);
@@ -1780,7 +1783,8 @@ bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPath
 
         if (auto updater = std::get<1>(primUpdaterRegisterItem)) {
             MFnDependencyNode fnNode(thisDagPath.node());
-            updater(fnNode, primPath)->Clear(&ctx);
+            Ufe::Path primUfePath = proxyPath + Ufe::PathSegment(primPath.GetString(), MayaUsd::ufe::getUsdRunTimeId(), '/'); 
+            updater(fnNode, primUfePath)->discardEdits(ctx);
         }
     }
 
@@ -1794,9 +1798,11 @@ bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPath
             auto primUpdaterRegisterItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(primType);
 
             if (auto updater = std::get<1>(primUpdaterRegisterItem)) {
-                MFnDependencyNode         fnNode(thisDagPath.node());
-                UsdMayaPrimUpdaterContext ctx(getTime(), stage);
-                bool                      result = updater(fnNode, primPath)->Pull(&ctx);
+                MFnDependencyNode               fnNode(thisDagPath.node());
+                const UsdMayaPrimUpdaterContext ctx(getTime(), stage, userArgs);
+
+                Ufe::Path primUfePath = proxyPath + Ufe::PathSegment(primPath.GetString(), MayaUsd::ufe::getUsdRunTimeId(), '/'); 
+                bool                      result = updater(fnNode, primUfePath)->pull(ctx);
 
                 if (result) {
                     _managedSchemPrimss.insert(
