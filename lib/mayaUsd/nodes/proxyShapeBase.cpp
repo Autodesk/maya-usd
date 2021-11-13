@@ -57,6 +57,7 @@
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/stageCache.h>
+#include <pxr/base/vt/dictionary.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGContext.h>
@@ -1750,8 +1751,9 @@ bool MayaUsdProxyShapeBase::_updateSchemaPrims(const SdfPathVector& resyncedPath
     MDagPath thisDagPath = MDagPath::getAPathTo(thisMObject());
     thisDagPath.pop();
 
+    VtDictionary exportArgs;
     UsdStageRefPtr            stage = getUsdStage();
-    UsdMayaPrimUpdaterContext ctx(getTime(), stage);
+    UsdMayaPrimUpdaterContext ctx(getTime(), stage, exportArgs);
 
     for (const auto primInfo : _managedSchemPrimss) {
         auto primPath = std::get<0>(primInfo);
