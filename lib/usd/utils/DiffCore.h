@@ -87,7 +87,7 @@ MAYA_USD_UTILS_PUBLIC
 bool vec4AreAllTheSame(const double* array, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
@@ -105,7 +105,7 @@ bool compareArray(
     const float         eps = 1e-3f);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
@@ -125,7 +125,7 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
@@ -143,7 +143,7 @@ bool compareArray(
     const double        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
@@ -163,7 +163,25 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
+/// \param  input0 the first input array to test
+/// \param  input1 the second input array to test
+/// \param  count0 number of elements in the first array
+/// \param  count1 number of elements in the second array
+/// \param  eps and epsilon value for the element comparisons
+/// \return true if the two arrays are similar to each other, false if their sizes don't match,
+///         or the contents of the arrays differ
+//----------------------------------------------------------------------------------------------------------------------
+MAYA_USD_UTILS_PUBLIC
+bool compareArray(
+    const GfHalf* const input0,
+    const GfHalf* const input1,
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps = 1e-5f);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
@@ -201,8 +219,19 @@ bool compareArray3Dto4D(
     const float        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  Compares a vector 3 array against a vector 4D array, ignoring the 4d component, and
+/// checking for equality
+///         in all of the remaining 3d components.
+/// \param  input3d the first input array to test
+/// \param  input4d the second input array to test
+/// \param  count3d number of elements in the first array
+/// \param  count4d number of elements in the second array
+/// \param  eps and epsilon value for the element comparisons
+/// \return true if the two arrays are similar to each other, false if their sizes don't match,
+///         or the contents of the arrays differ
+//----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
-bool compareArrayFloat3DtoDouble4D(
+bool compareArray3Dto4D(
     const float* const  input3d,
     const double* const input4d,
     const size_t        count3d,
@@ -210,7 +239,7 @@ bool compareArrayFloat3DtoDouble4D(
     const float         eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
@@ -228,7 +257,7 @@ bool compareArray(
     const double        eps = 1e-5);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
@@ -246,7 +275,7 @@ bool compareArray(
     const float         eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
@@ -266,12 +295,11 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
-/// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
@@ -283,12 +311,11 @@ bool compareArray(
     const size_t        count1);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
-/// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
@@ -302,12 +329,11 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
-/// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
@@ -321,12 +347,11 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
-/// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
@@ -340,12 +365,11 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
-/// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
@@ -357,12 +381,11 @@ bool compareArray(
     const size_t         count1);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
-/// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
@@ -376,12 +399,11 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
-/// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
@@ -395,12 +417,11 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
+/// \brief  tests the differences between a pair of arrays.
 /// \param  input0 the first input array to test
 /// \param  input1 the second input array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
-/// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
@@ -414,9 +435,10 @@ inline bool compareArray(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
-/// \param  input0 the first input array to test
-/// \param  input1 the second input array to test
+/// \brief  tests the differences between a pair of arrays of UV.
+/// \param  u0 the U values of the first input array to test
+/// \param  v0 the V values of the first input array to test
+/// \param  uv1 the second input UV array to test
 /// \param  count0 number of elements in the first array
 /// \param  count1 number of elements in the second array
 /// \param  eps and epsilon value for the element comparisons
@@ -433,11 +455,12 @@ bool compareUvArray(
     const float        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
-/// \param  u0 the first input array to test
-/// \param  v0 the second input array to test
-/// \param  count0 number of elements in the first array
-/// \param  count1 number of elements in the second array
+/// \brief  a simple method to check if an array of UV is all equal to a given UV value.
+/// \param  u0 the U values to test
+/// \param  v0 the V values to test
+/// \param  u1 the U values of the input array to test
+/// \param  v1 the V values of the input array to test
+/// \param  count number of elements in the array
 /// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
@@ -452,11 +475,13 @@ bool compareUvArray(
     const float        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a simple method to check for differences between a pair of arrays.
-/// \param  u0 the first input array to test
-/// \param  v0 the second input array to test
-/// \param  count0 number of elements in the first array
-/// \param  count1 number of elements in the second array
+/// \brief  a simple method to check if an array of RGBA is all equal to a given RGBA value.
+/// \param  r the red values to test
+/// \param  g the green values to test
+/// \param  b the blue values to test
+/// \param  a the alpha values to test
+/// \param  rgba the RGBA values of the input array to test
+/// \param  count number of elements in the array
 /// \param  eps and epsilon value for the element comparisons
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
