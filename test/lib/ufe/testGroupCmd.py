@@ -155,6 +155,12 @@ class GroupCmdTestCase(unittest.TestCase):
         groupPath = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/Props/newGroup1")])
         self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(groupPath))
 
+        # Group object (a.k.a parent) will be added to selection list. This behavior matches the native Maya group command.
+        globalSelection = ufe.GlobalSelection.get()
+
+        groupPath = ufe.Path([mayaPathSegment, usdUtils.createUfePathSegment("/Ball_set/Props/newGroup1")])
+        self.assertEqual(globalSelection.front(), ufe.Hierarchy.createItem(groupPath))
+
         parentChildrenPost = parentHierarchy.children()
         self.assertEqual(len(parentChildrenPost), 5)
 
@@ -182,7 +188,7 @@ class GroupCmdTestCase(unittest.TestCase):
         else:
             groupCmd.undo()
 
-        # gloabl selection should not be empty after undo.
+        # global selection should not be empty after undo.
         if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3004'):
             self.assertEqual(len(globalSelection), 2)
         else:

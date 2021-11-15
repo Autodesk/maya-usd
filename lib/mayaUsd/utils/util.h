@@ -185,10 +185,6 @@ MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
 MAYAUSD_CORE_PUBLIC
 UsdStageRefPtr GetStageByProxyName(const std::string& nodeName);
 
-/// Gets the Maya MDagPath for the node named \p nodeName.
-MAYAUSD_CORE_PUBLIC
-MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
-
 /// Gets the Maya MPlug for the given \p attrPath.
 /// The attribute path should be specified as "nodeName.attrName" (the format
 /// used by MEL).

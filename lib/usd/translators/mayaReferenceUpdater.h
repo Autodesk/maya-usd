@@ -26,18 +26,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfPath;
 
-/// Exports Maya cameras to UsdGeomCamera.
+/// Pull & Push support for MayaReference
 class PxrUsdTranslators_MayaReferenceUpdater : public UsdMayaPrimUpdater
 {
 public:
     PxrUsdTranslators_MayaReferenceUpdater(
         const MFnDependencyNode& depNodeFn,
-        const SdfPath&           usdPath);
+        const Ufe::Path&         path);
 
-    bool Pull(UsdMayaPrimUpdaterContext* context) override;
-    void Clear(UsdMayaPrimUpdaterContext* context) override;
+    MAYAUSD_CORE_PUBLIC
+    bool discardEdits(const UsdMayaPrimUpdaterContext& context) override;
 
 protected:
+    MAYAUSD_CORE_PUBLIC
+    bool pushCopySpecs(
+        UsdStageRefPtr srcStage,
+        SdfLayerRefPtr srcLayer,
+        const SdfPath& srcSdfPath,
+        UsdStageRefPtr dtsStage,
+        SdfLayerRefPtr dstLayer,
+        const SdfPath& dstSdfPath) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

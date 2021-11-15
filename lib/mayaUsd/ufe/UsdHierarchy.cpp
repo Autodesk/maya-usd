@@ -45,7 +45,10 @@
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/UsdUndoUngroupCommand.h>
+
+#include <ufe/pathString.h> // In UFE v2 but only needed for primUpdater.
 #endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -131,17 +134,29 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
 }
 #endif
 
+// Return UFE child list from input USD child list.
 Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range) const
 {
-    // Return UFE child list from input USD child list.
     // Note that the calls to this function are given a range from
     // getUSDFilteredChildren() above, which ensures that when fItem is a
     // point instance of a PointInstancer, it will be child-less. As a result,
-    // we expect to receieve an empty range in that case, and will return an
+    // we expect to receive an empty range in that case, and will return an
     // empty scene item list as a result.
     Ufe::SceneItemList children;
+    UFE_V3(std::string dagPathStr;)
     for (const auto& child : range) {
-        children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+#ifdef UFE_V3_FEATURES_AVAILABLE
+        if (PXR_NS::PrimUpdaterManager::readPullInformation(child, dagPathStr)) {
+            auto item = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
+            if (TF_VERIFY(item)) {
+                children.emplace_back(item);
+            }
+        } else {
+#endif
+            children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+#ifdef UFE_V3_FEATURES_AVAILABLE
+        }
+#endif
     }
     return children;
 }

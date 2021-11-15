@@ -43,6 +43,10 @@ UFE_NS_DEF
     class Selection;
 }
 
+PXR_NAMESPACE_OPEN_SCOPE
+class MayaUsdProxyShapeBase;
+PXR_NAMESPACE_CLOSE_SCOPE
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -118,6 +122,16 @@ Ufe::Path dagPathToUfe(const MDagPath& dagPath);
 
 MAYAUSD_CORE_PUBLIC
 Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
+
+//! Convert a single-segment Maya UFE path to a Dag path.  If the argument path
+//! is not for a Maya object, or if it has more than one segment, returns an
+//! invalid MDagPath.
+MAYAUSD_CORE_PUBLIC
+MDagPath ufeToDagPath(const Ufe::Path& ufePath);
+
+//! Return the gateway node (i.e. proxy shape)
+MAYAUSD_CORE_PUBLIC
+PXR_NS::MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path);
 
 //! Get the time along the argument path.  A gateway node (i.e. proxy shape)
 //! along the path can transform Maya's time (e.g. with scale and offset).
