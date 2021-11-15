@@ -1364,7 +1364,11 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                 // But default material mode does not use geom subsets, so we create the render item
                 MHWRender::MRenderItem* defaultMaterialItem
                     = _CreateSmoothHullRenderItem(
+#if HD_API_VERSION < 35
+                          renderItemName, *drawItem, *subSceneContainer, nullptr)
+#else
                           renderItemName, *drawItem.get(), *subSceneContainer, nullptr)
+#endif
                           ._renderItem;
                 defaultMaterialItem->setDefaultMaterialHandling(
                     MRenderItem::DrawOnlyWhenDefaultMaterialActive);
@@ -1372,7 +1376,11 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
                 if (!GetInstancerId().IsEmpty()) {
                     defaultMaterialItem = _CreateShadedSelectedInstancesItem(
+#if HD_API_VERSION < 35
+                        renderItemName, *drawItem, *subSceneContainer, nullptr);
+#else
                         renderItemName, *drawItem.get(), *subSceneContainer, nullptr);
+#endif
                     defaultMaterialItem->setDefaultMaterialHandling(
                         MRenderItem::DrawOnlyWhenDefaultMaterialActive);
                     defaultMaterialItem->setShader(_delegate->Get3dDefaultMaterialShader());
