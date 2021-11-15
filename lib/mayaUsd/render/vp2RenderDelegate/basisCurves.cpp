@@ -540,13 +540,6 @@ void HdVP2BasisCurves::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
-    // We don't create a repr for the selection token because this token serves
-    // for selection state update only. Return early to reserve dirty bits so
-    // they can be used to sync regular reprs later.
-    if (reprToken == HdVP2ReprTokens->selection) {
-        return;
-    }
-
     // We don't update the repr if it is hidden by the render tags (purpose)
     // of the ProxyRenderDelegate. In additional, we need to hide any already
     // existing render items because they should not be drawn.
@@ -571,6 +564,13 @@ void HdVP2BasisCurves::Sync(
         "HdVP2BasisCurves::Sync");
 
     const SdfPath& id = GetId();
+
+    // Update the selection status if it changed.
+    if (*dirtyBits & DirtySelectionHighlight) {
+        _selectionStatus = drawScene.GetSelectionStatus(id);
+    } else {
+        TF_VERIFY(_selectionStatus == drawScene.GetSelectionStatus(id));
+    }
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         const SdfPath materialId = delegate->GetMaterialId(id);
@@ -1525,11 +1525,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 */
 HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
 {
-    // Visibility and selection result in highlight changes:
-    if ((bits & HdChangeTracker::DirtyVisibility) && (bits & DirtySelection)) {
-        bits |= DirtySelectionHighlight;
-    }
-
     if (bits & HdChangeTracker::AllDirty) {
         // RPrim is dirty, propagate dirty bits to all draw items.
         for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
@@ -1594,26 +1589,19 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    // Update selection state on demand or when it is a new Rprim. DirtySelection
+    // Update selection state on demand or when it is a new Rprim. DirtySelectionHighlight
     // will be propagated to all draw items, to trigger sync for each repr.
-    if (reprToken == HdVP2ReprTokens->selection || _reprs.empty()) {
+    if (_reprs.empty()) {
         const HdVP2SelectionStatus selectionStatus
             = param->GetDrawScene().GetSelectionStatus(GetId());
         if (_selectionStatus != selectionStatus) {
             _selectionStatus = selectionStatus;
-            *dirtyBits |= DirtySelection;
+            *dirtyBits |= DirtySelectionHighlight;
         } else if (_selectionStatus == kPartiallySelected) {
-            *dirtyBits |= DirtySelection;
+            *dirtyBits |= DirtySelectionHighlight;
         }
-
-        // We don't create a repr for the selection token because it serves for
-        // selection state update only. Return from here.
-        if (reprToken == HdVP2ReprTokens->selection)
-            return;
     }
 
-    // If the repr has any draw item with the DirtySelection bit, mark the
-    // DirtySelectionHighlight bit to invoke the synchronization call.
     _ReprVector::iterator it
         = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
     if (it != _reprs.end()) {
@@ -1632,9 +1620,6 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
                     // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
                     // items to ensure proper Sync
                     drawItem->SetDirtyBits(HdChangeTracker::DirtyRepr);
-                }
-                if (drawItem->GetDirtyBits() & DirtySelection) {
-                    *dirtyBits |= DirtySelectionHighlight;
                 }
             }
         }
