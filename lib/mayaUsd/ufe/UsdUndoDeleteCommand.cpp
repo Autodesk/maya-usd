@@ -72,25 +72,18 @@ bool isPrimDeletionAllowed(const PXR_NS::UsdPrim& prim, uint32_t targetidx)
     PXR_NS::PcpPrimIndex primIndex = prim.ComputeExpandedPrimIndex();
 
     if (!prim.IsActive()) {
-        TF_WARN("Cannot edit [%s] prim because it is inactive.", prim.GetPath().GetText());
+        TF_WARN("Cannot remove [%s] prim because it is inactive.", prim.GetPath().GetText());
         return false;
     }
 
-    for (const PcpNodeRef& node : primIndex.GetNodeRange()) {
-        // inspect the edge connecting this node to its parent in the tree
-        if (!node.IsDueToAncestor()) {
-            if (node.GetArcType() == PcpArcTypeVariant
-                || node.GetArcType() == PcpArcTypeReference) {
-                uint32_t intro = node.GetDepthBelowIntroduction();
-                if (intro < targetidx) {
-                    TF_WARN(
-                        "Cannot edit [%s] prim because there is a stronger opinion in layer [%s].",
-                        prim.GetPath().GetText(),
-                        std::to_string(intro).c_str());
-                    return false;
-                }
-            }
-        }
+    SdfPrimSpecHandle spec = prim.GetPrimStack().front();
+    uint32_t          intro = findLayerIndex(prim, spec->GetLayer());
+    if (intro < targetidx) {
+        TF_WARN(
+            "Cannot remove [%s] prim because there is a stronger opinion in layer [%s].",
+            prim.GetPath().GetText(),
+            std::to_string(intro).c_str());
+        return false;
     }
     return true;
 }
@@ -140,6 +133,18 @@ void UsdUndoDeleteCommand::execute()
     }
 
     isAllowed = isPrimDeletionAllowed(_prim, targetidx);
+
+    UsdPrim primToRemove = _prim;
+    // disallow point instancer proxy deletion as it leads to warnings
+    while (primToRemove.GetParent()) {
+        if (primToRemove.GetTypeName().GetString() == "PointInstancer") {
+            TF_WARN(
+                "Cannot remove [%s] prim because its a PointInstancer Proxy.",
+                _prim.GetPath().GetText());
+            isAllowed = false;
+        }
+        primToRemove = primToRemove.GetParent();
+    }
 
     if (isAllowed) {
         std::vector<UsdAttribute> attrs = _prim.GetAttributes();
