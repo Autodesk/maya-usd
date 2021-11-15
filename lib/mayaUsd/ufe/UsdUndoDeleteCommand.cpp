@@ -29,7 +29,7 @@
 
 namespace {
 
-bool hasLayersMuted(const UsdPrim& prim)
+bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
 {
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
 
@@ -88,7 +88,7 @@ bool isPrimDeletionAllowed(const PXR_NS::UsdPrim& prim, uint32_t targetidx)
     return true;
 }
 
-bool _recurseChildren(UsdPrim const& _prim, uint32_t targetidx)
+bool _recurseChildren(const PXR_NS::UsdPrim& _prim, uint32_t targetidx)
 {
     // check down the hierarchy
     UsdPrimSiblingRange children
