@@ -23,6 +23,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportOpenLayer.py
     testUsdExportOverImport.py
     testUsdExportUsdzPackage.py
+    testUsdExportUsdPreviewSurface.py
     testUsdExportParentScope.py
     # To investigate: following test asserts in MFnParticleSystem, but passes.
     # PPT, 17-Jun-20.
