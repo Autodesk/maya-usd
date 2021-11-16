@@ -15,6 +15,8 @@
 //
 #include "primReaderContext.h"
 
+#include <pxr/base/tf/diagnostic.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaPrimReaderContext::UsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap)
@@ -47,17 +49,20 @@ MObject UsdMayaPrimReaderContext::GetMayaNode(const SdfPath& path, bool findAnce
 
 void UsdMayaPrimReaderContext::StartNewMayaNodeTracking()
 {
-    _trackedNewMayaNodes.reset(new ObjectRegistry);
+    if (_trackedNewMayaNodes) {
+        TF_CODING_ERROR("StartNewMayaNodeTracking: tracking already active.");
+    }
+    _trackedNewMayaNodes.reset(new MayaObjectList);
 }
 
-const UsdMayaPrimReaderContext::ObjectRegistry&
+const UsdMayaPrimReaderContext::MayaObjectList&
 UsdMayaPrimReaderContext::GetTrackedNewMayaNodes() const
 {
     if (_trackedNewMayaNodes) {
         return *_trackedNewMayaNodes;
     } else {
-        static ObjectRegistry _emptyRegistry;
-        return _emptyRegistry;
+        static MayaObjectList _emptyList;
+        return _emptyList;
     }
 }
 
@@ -70,7 +75,7 @@ void UsdMayaPrimReaderContext::RegisterNewMayaNode(const std::string& path, cons
         _pathNodeMap->insert(std::make_pair(path, mayaNode));
     }
     if (_trackedNewMayaNodes) {
-        _trackedNewMayaNodes->insert(std::make_pair(path, mayaNode));
+        _trackedNewMayaNodes->push_back(mayaNode);
     }
 }
 

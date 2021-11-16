@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <mayaUsdUtils/DiffPrims.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
@@ -71,8 +72,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+namespace {
 /// Extracts a bool at \p key from \p userArgs, or false if it can't extract.
-static bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
+bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
 {
     if (!VtDictionaryIsHolding<bool>(userArgs, key)) {
         TF_CODING_ERROR(
@@ -85,7 +87,7 @@ static bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
 }
 
 /// Extracts a string at \p key from \p userArgs, or "" if it can't extract.
-static std::string _String(const VtDictionary& userArgs, const TfToken& key)
+std::string _String(const VtDictionary& userArgs, const TfToken& key)
 {
     if (!VtDictionaryIsHolding<std::string>(userArgs, key)) {
         TF_CODING_ERROR(
@@ -100,7 +102,7 @@ static std::string _String(const VtDictionary& userArgs, const TfToken& key)
 /// Extracts a token at \p key from \p userArgs.
 /// If the token value is not either \p defaultToken or one of the
 /// \p otherTokens, then returns \p defaultToken instead.
-static TfToken _Token(
+TfToken _Token(
     const VtDictionary&         userArgs,
     const TfToken&              key,
     const TfToken&              defaultToken,
@@ -128,7 +130,7 @@ static TfToken _Token(
 
 /// Extracts an absolute path at \p key from \p userArgs, or the empty path if
 /// it can't extract.
-static SdfPath _AbsolutePath(const VtDictionary& userArgs, const TfToken& key)
+SdfPath _AbsolutePath(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::string s = _String(userArgs, key);
     // Assume that empty strings are empty paths. (This might be an error case.)
@@ -147,8 +149,7 @@ static SdfPath _AbsolutePath(const VtDictionary& userArgs, const TfToken& key)
 /// Extracts an vector<T> from the vector<VtValue> at \p key in \p userArgs.
 /// Returns an empty vector if it can't convert the entire value at \p key into
 /// a vector<T>.
-template <typename T>
-static std::vector<T> _Vector(const VtDictionary& userArgs, const TfToken& key)
+template <typename T> std::vector<T> _Vector(const VtDictionary& userArgs, const TfToken& key)
 {
     // Check that vector exists.
     if (!VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, key)) {
@@ -179,7 +180,7 @@ static std::vector<T> _Vector(const VtDictionary& userArgs, const TfToken& key)
 
 /// Convenience function that takes the result of _Vector and converts it to a
 /// TfToken::Set.
-static TfToken::Set _TokenSet(const VtDictionary& userArgs, const TfToken& key)
+TfToken::Set _TokenSet(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::string> vec = _Vector<std::string>(userArgs, key);
     TfToken::Set                   result;
@@ -189,35 +190,10 @@ static TfToken::Set _TokenSet(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
-/// Convenience function to compare two vectors as used for chaser arguments and shading modes.
-static bool _EqualVectors(const VtValue& a, const VtValue& b)
-{
-    bool aIsVector = a.IsHolding<std::vector<VtValue>>();
-    bool bIsVector = b.IsHolding<std::vector<VtValue>>();
-    if (aIsVector != bIsVector) {
-        return false;
-    }
-    if (!aIsVector) {
-        return true;
-    }
-    const std::vector<VtValue>& aVector = a.UncheckedGet<std::vector<VtValue>>();
-    const std::vector<VtValue>& bVector = b.UncheckedGet<std::vector<VtValue>>();
-    if (aVector.size() != bVector.size()) {
-        return false;
-    }
-    for (size_t i = 0; i < aVector.size(); ++i) {
-        // Let VtValue do the string comparison:
-        if (aVector[i] != bVector[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
 // The chaser args are stored as vectors of vectors (since this is how you
 // would need to pass them in the Maya Python command API). Convert this to a
 // map of maps.
-static std::map<std::string, UsdMayaJobExportArgs::ChaserArgs>
+std::map<std::string, UsdMayaJobExportArgs::ChaserArgs>
 _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::vector<VtValue>> chaserArgs
@@ -240,7 +216,7 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
 
 // The shadingMode args are stored as vectors of vectors (since this is how you
 // would need to pass them in the Maya Python command API).
-static UsdMayaJobImportArgs::ShadingModes
+UsdMayaJobImportArgs::ShadingModes
 _shadingModesImportArgs(const VtDictionary& userArgs, const TfToken& key)
 {
     const std::vector<std::vector<VtValue>> shadingModeArgs
@@ -283,7 +259,7 @@ _shadingModesImportArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
-static TfToken _GetMaterialsScopeName(const std::string& materialsScopeName)
+TfToken _GetMaterialsScopeName(const std::string& materialsScopeName)
 {
     const TfToken defaultMaterialsScopeName = UsdUtilsGetMaterialsScopeName();
 
@@ -307,7 +283,7 @@ static TfToken _GetMaterialsScopeName(const std::string& materialsScopeName)
     return defaultMaterialsScopeName;
 }
 
-static PcpMapFunction::PathMap _ExportRootsMap(
+PcpMapFunction::PathMap _ExportRootsMap(
     const VtDictionary&             userArgs,
     const TfToken&                  key,
     bool                            stripNamespaces,
@@ -351,7 +327,7 @@ static PcpMapFunction::PathMap _ExportRootsMap(
     return pathMap;
 }
 
-static void _AddFilteredTypeName(const MString& typeName, std::set<unsigned int>& filteredTypeIds)
+void _AddFilteredTypeName(const MString& typeName, std::set<unsigned int>& filteredTypeIds)
 {
     MNodeClass   cls(typeName);
     unsigned int id = cls.typeId().id();
@@ -389,7 +365,7 @@ static void _AddFilteredTypeName(const MString& typeName, std::set<unsigned int>
     }
 }
 
-static std::set<unsigned int> _FilteredTypeIds(const VtDictionary& userArgs)
+std::set<unsigned int> _FilteredTypeIds(const VtDictionary& userArgs)
 {
     const std::vector<std::string> vec
         = _Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->filterTypes);
@@ -400,17 +376,27 @@ static std::set<unsigned int> _FilteredTypeIds(const VtDictionary& userArgs)
     return result;
 }
 
-static bool
-_MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& allContextArgs)
+// Merges all the jobContext arguments dictionaries found while exploring the jobContexts into a
+// single one. Also checks for conflicts and errors.
+//
+// Inputs:
+// isExport: determines if we are calling the import or the export jobContext callback.
+// userArgs: original user arguments, potentially containing jobContexts to merge.
+//
+// Outputs:
+// allContextArgs: dictionary of all extra jobContext arguments merged together.
+// return value: true if the merge was successful, false if a conflict or an error was detected.
+bool _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& allContextArgs)
 {
+    // List of all argument dictionaries found while exploring jobContexts
     std::vector<VtDictionary> contextArgs;
 
     bool canMergeContexts = true;
 
-    // Run all export context callbacks to get the extra userArgs:
-    const TfToken& xcKey = UsdMayaJobExportArgsTokens->jobContext;
-    if (VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, xcKey)) {
-        for (const VtValue& v : VtDictionaryGet<std::vector<VtValue>>(userArgs, xcKey)) {
+    // This first loop gathers all job context argument dictionaries found in the userArgs
+    const TfToken& jcKey = UsdMayaJobExportArgsTokens->jobContext;
+    if (VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, jcKey)) {
+        for (const VtValue& v : VtDictionaryGet<std::vector<VtValue>>(userArgs, jcKey)) {
             if (v.IsHolding<std::string>()) {
                 const TfToken jobContext(v.UncheckedGet<std::string>());
                 const UsdMayaJobContextRegistry::ContextInfo& ci
@@ -420,12 +406,12 @@ _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& all
                 if (enablerCallback) {
                     VtDictionary extraArgs = enablerCallback();
                     // Add the job context name to the args (for reference when merging):
-                    VtDictionary::iterator jobContextNamesIt = extraArgs.find(xcKey);
+                    VtDictionary::iterator jobContextNamesIt = extraArgs.find(jcKey);
                     if (jobContextNamesIt != extraArgs.end()) {
                         // We already have a vector. Ensure it is of size 1 and contains only the
                         // current context name:
                         const std::vector<VtValue>& currContextNames
-                            = VtDictionaryGet<std::vector<VtValue>>(extraArgs, xcKey);
+                            = VtDictionaryGet<std::vector<VtValue>>(extraArgs, jcKey);
                         if ((currContextNames.size() == 1 && currContextNames.front() != v)
                             || currContextNames.size() > 1) {
                             TF_RUNTIME_ERROR(TfStringPrintf(
@@ -436,7 +422,7 @@ _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& all
                     }
                     std::vector<VtValue> jobContextNames;
                     jobContextNames.push_back(v);
-                    extraArgs[xcKey] = jobContextNames;
+                    extraArgs[jcKey] = jobContextNames;
                     contextArgs.push_back(extraArgs);
                 } else {
                     MGlobal::displayWarning(
@@ -447,11 +433,15 @@ _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& all
         }
     }
 
-    // Validate that the args can be merged:
+    // Convenience map holding the jobContext that first introduces an argument to the final
+    // dictionary. Allows printing meaningful error messages.
     std::map<std::string, std::string> argInitialSource;
+
+    // Traverse argument dictionaries and look for merge conflicts while building the returned
+    // allContextArgs.
     for (auto const& dict : contextArgs) {
         // We made sure the value exists in the above loop, so we can fetch without fear:
-        const std::string& sourceName = VtDictionaryGet<std::vector<VtValue>>(dict, xcKey)
+        const std::string& sourceName = VtDictionaryGet<std::vector<VtValue>>(dict, jcKey)
                                             .front()
                                             .UncheckedGet<std::string>();
         for (auto const& dictTuple : dict) {
@@ -460,9 +450,11 @@ _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& all
 
             auto allContextIt = allContextArgs.find(k);
             if (allContextIt == allContextArgs.end()) {
+                // First time we see this argument. Store and remember source.
                 allContextArgs[k] = v;
                 argInitialSource[k] = sourceName;
             } else {
+                // We have already seen this argument from another jobContext. Look for conflicts:
                 const VtValue& allContextValue = allContextIt->second;
 
                 if (allContextValue.IsHolding<std::vector<VtValue>>()) {
@@ -474,7 +466,8 @@ _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& all
                             if (element.IsHolding<std::vector<VtValue>>()) {
                                 // vector<vector<string>> is common for chaserArgs and shadingModes
                                 auto findElement = [&element](const VtValue& a) {
-                                    return _EqualVectors(element, a);
+                                    return MayaUsdUtils::compareValues(element, a)
+                                        == MayaUsdUtils::DiffResult::Same;
                                 };
                                 if (std::find_if(
                                         mergedValues.begin(), mergedValues.end(), findElement)
@@ -490,6 +483,7 @@ _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& all
                         }
                         allContextArgs[k] = mergedValues;
                     } else {
+                        // We have both an array and a scalar under the same argument name.
                         TF_RUNTIME_ERROR(TfStringPrintf(
                             "Context '%s' and context '%s' do not agree on type of argument '%s'.",
                             sourceName.c_str(),
@@ -498,7 +492,7 @@ _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& all
                         canMergeContexts = false;
                     }
                 } else {
-                    // Single value already exists. Check for conflicts:
+                    // Scalar value already exists. Check for value conflicts:
                     if (allContextValue != v) {
                         TF_RUNTIME_ERROR(TfStringPrintf(
                             "Context '%s' and context '%s' do not agree on argument '%s'.",
@@ -514,6 +508,7 @@ _MergeJobContexts(bool isExport, const VtDictionary& userArgs, VtDictionary& all
     return canMergeContexts;
 }
 
+} // namespace
 UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     const VtDictionary&             userArgs,
     const UsdMayaUtil::MDagPathSet& dagPaths,

@@ -364,14 +364,23 @@ using UsdMayaSchemaAdaptorPtr = std::shared_ptr<UsdMayaSchemaAdaptor>;
 class UsdMayaAdaptor
 {
 public:
+    /// Constructs a USD adaptor on \p obj to be used in a generic (interactive)
+    /// context.
     MAYAUSD_CORE_PUBLIC
     UsdMayaAdaptor(const MObject& obj);
 
+    /// Constructs a USD adaptor on \p obj to be used in an export context. Can
+    /// leverage information provided in \p jobExportArgs
     MAYAUSD_CORE_PUBLIC
-    UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs* jobExportArgs);
+    UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs& jobExportArgs);
 
+    /// Constructs a USD adaptor in an import context. We do not yet know which
+    /// Maya object it refers to, but we expect to find it in the new MObject
+    /// list found in the \p context. Any new object created by this adaptor
+    /// should be added via UsdMayaPrimReaderContext::RegisterNewMayaNode().
+    /// Can leverage information provided in \p jobImportArgs
     MAYAUSD_CORE_PUBLIC
-    UsdMayaAdaptor(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext& context);
+    UsdMayaAdaptor(const UsdMayaPrimReaderArgs& jobImportArgs, UsdMayaPrimReaderContext& context);
 
     MAYAUSD_CORE_PUBLIC
     explicit operator bool() const;

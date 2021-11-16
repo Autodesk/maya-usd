@@ -66,6 +66,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+// Simple RAII class to ensure tracking does not extend past the scope.
+struct TempNodeTrackerScope
+{
+    TempNodeTrackerScope(UsdMayaPrimReaderContext& context)
+        : _context(context)
+    {
+        _context.StartNewMayaNodeTracking();
+    }
+
+    ~TempNodeTrackerScope() { _context.StopNewMayaNodeTracking(); }
+
+    UsdMayaPrimReaderContext& _context;
+};
+} // namespace
+
 UsdMaya_ReadJob::UsdMaya_ReadJob(
     const MayaUsd::ImportData&  iImportData,
     const UsdMayaJobImportArgs& iArgs)
@@ -374,7 +390,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
             = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
-                readCtx.StartNewMayaNodeTracking();
+                TempNodeTrackerScope scope(readCtx);
                 primReader->Read(readCtx);
                 if (primReader->HasPostReadSubtree()) {
                     primReaderMap[prim.GetPath()] = primReader;
@@ -383,7 +399,6 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
                     primIt.PruneChildren();
                 }
                 UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(args, readCtx);
-                readCtx.StopNewMayaNodeTracking();
             }
         }
     }

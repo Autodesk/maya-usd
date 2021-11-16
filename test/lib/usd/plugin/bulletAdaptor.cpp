@@ -79,6 +79,69 @@ REGISTER_IMPORT_JOB_CONTEXT_FCT(
     return extraArgs;
 }
 
+namespace {
+MObject _GetBulletShape(MObject mayaShape)
+{
+    // The bullet shape can be found as another prim colocated with the geometry shape
+    MDagPath path;
+    if (!MDagPath::getAPathTo(mayaShape, path)) {
+        return {};
+    }
+
+    if (!path.pop()) {
+        return {};
+    }
+
+    unsigned int numShapes = 0;
+    if (!path.numberOfShapesDirectlyBelow(numShapes)) {
+        return {};
+    }
+
+    for (unsigned int i = 0; i < numShapes; ++i) {
+        path.extendToShapeDirectlyBelow(i);
+
+        MFnDependencyNode depFn(path.node());
+        if (depFn.typeName() == "bulletRigidBodyShape") {
+            return path.node();
+        }
+
+        path.pop();
+    }
+
+    return {};
+}
+
+bool _ApplyBulletSchema(MObject mayaShape)
+{
+    // Check if already applied:
+    if (!_GetBulletShape(mayaShape).isNull()) {
+        return true;
+    }
+
+    // Make this object a rigid body:
+    // Need to call some Python as this is the Bullet way...
+    // Which makes the MDGModifier kinda moot...
+    MDagPath path;
+    if (!MDagPath::getAPathTo(mayaShape, path)) {
+        return false;
+    }
+    if (!path.pop()) {
+        return false;
+    }
+    const char* bulletCmd = "import maya.app.mayabullet.BulletUtils as BulletUtils; "
+                            "BulletUtils.checkPluginLoaded(); "
+                            "import maya.app.mayabullet.RigidBody as RigidBody; "
+                            "RigidBody.CreateRigidBody.command(transformName='^1s', "
+                            "bAttachSelected=False)";
+
+    MString bulletRigidBody;
+    bulletRigidBody.format(bulletCmd, path.fullPathName());
+    MGlobal::executePythonCommand(bulletRigidBody);
+
+    return true;
+}
+} // namespace
+
 class UsdPrimDefinition;
 
 class TestBulletMassShemaAdaptor : public UsdMayaSchemaApiAdaptor
@@ -159,32 +222,10 @@ public:
 
     bool ApplySchema(MDGModifier&) override
     {
-        // Check if already applied:
-        if (!GetMayaObjectForSchema().isNull()) {
-            return true;
+        if (_ApplyBulletSchema(_handle.object())) {
+            return !_GetBulletShape(_handle.object()).isNull();
         }
-
-        // Make this object a rigid body:
-        // Need to call some Python as this is the Bullet way...
-        // Which makes the MDGModifier kinda moot...
-        MDagPath path;
-        if (!MDagPath::getAPathTo(_handle.object(), path)) {
-            return false;
-        }
-        if (!path.pop()) {
-            return false;
-        }
-        const char* bulletCmd = "import maya.app.mayabullet.BulletUtils as BulletUtils; "
-                                "BulletUtils.checkPluginLoaded(); "
-                                "import maya.app.mayabullet.RigidBody as RigidBody; "
-                                "RigidBody.CreateRigidBody.command(transformName='^1s', "
-                                "bAttachSelected=False)";
-
-        MString bulletRigidBody;
-        bulletRigidBody.format(bulletCmd, path.fullPathName());
-        MGlobal::executePythonCommand(bulletRigidBody);
-
-        return !GetMayaObjectForSchema().isNull();
+        return false;
     }
 
     bool UnapplySchema(MDGModifier&) override
@@ -212,36 +253,7 @@ public:
         return GetMayaObjectForSchema().isNull();
     }
 
-    MObject GetMayaObjectForSchema() const override
-    {
-        // The bullet shape can be found as another prim colocated with the geometry shape
-        MDagPath path;
-        if (!MDagPath::getAPathTo(_handle.object(), path)) {
-            return {};
-        }
-
-        if (!path.pop()) {
-            return {};
-        }
-
-        unsigned int numShapes = 0;
-        if (!path.numberOfShapesDirectlyBelow(numShapes)) {
-            return {};
-        }
-
-        for (unsigned int i = 0; i < numShapes; ++i) {
-            path.extendToShapeDirectlyBelow(i);
-
-            MFnDependencyNode depFn(path.node());
-            if (depFn.typeName() == "bulletRigidBodyShape") {
-                return path.node();
-            }
-
-            path.pop();
-        }
-
-        return {};
-    }
+    MObject GetMayaObjectForSchema() const override { return _GetBulletShape(_handle.object()); }
 
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override
     {
@@ -294,7 +306,7 @@ public:
             return false;
         }
 
-        return jobArgs.includeAPINames.find(_tokens->PhysicsMassAPI)
+        return jobArgs.includeAPINames.find(_tokens->PhysicsRigidBodyAPI)
             != jobArgs.includeAPINames.end();
     }
 
@@ -310,7 +322,7 @@ public:
             return false;
         }
 
-        if (jobArgs.includeAPINames.find(_tokens->PhysicsMassAPI)
+        if (jobArgs.includeAPINames.find(_tokens->PhysicsRigidBodyAPI)
             != jobArgs.includeAPINames.end()) {
             return !GetMayaObjectForSchema().isNull();
         }
@@ -320,29 +332,9 @@ public:
     bool ApplySchema(const UsdMayaPrimReaderArgs& primReaderArgs, UsdMayaPrimReaderContext& context)
         override
     {
-        // Check if already applied:
-        if (!GetMayaObjectForSchema().isNull()) {
-            return true;
-        }
-
-        // Make this object a rigid body:
-        // Need to call some Python as this is the Bullet way...
-        MDagPath path;
-        if (!MDagPath::getAPathTo(_handle.object(), path)) {
+        if (!_ApplyBulletSchema(_handle.object())) {
             return false;
         }
-        if (!path.pop()) {
-            return false;
-        }
-        const char* bulletCmd = "import maya.app.mayabullet.BulletUtils as BulletUtils; "
-                                "BulletUtils.checkPluginLoaded(); "
-                                "import maya.app.mayabullet.RigidBody as RigidBody; "
-                                "RigidBody.CreateRigidBody.command(transformName='^1s', "
-                                "bAttachSelected=False)";
-
-        MString bulletRigidBody;
-        bulletRigidBody.format(bulletCmd, path.fullPathName());
-        MGlobal::executePythonCommand(bulletRigidBody);
 
         MObject newObject = GetMayaObjectForSchema();
         if (newObject.isNull()) {
@@ -361,36 +353,7 @@ public:
         return true;
     }
 
-    MObject GetMayaObjectForSchema() const override
-    {
-        // The bullet shape can be found as another prim colocated with the geometry shape
-        MDagPath path;
-        if (!MDagPath::getAPathTo(_handle.object(), path)) {
-            return {};
-        }
-
-        if (!path.pop()) {
-            return {};
-        }
-
-        unsigned int numShapes = 0;
-        if (!path.numberOfShapesDirectlyBelow(numShapes)) {
-            return {};
-        }
-
-        for (unsigned int i = 0; i < numShapes; ++i) {
-            path.extendToShapeDirectlyBelow(i);
-
-            MFnDependencyNode depFn(path.node());
-            if (depFn.typeName() == "bulletRigidBodyShape") {
-                return path.node();
-            }
-
-            path.pop();
-        }
-
-        return {};
-    }
+    MObject GetMayaObjectForSchema() const override { return _GetBulletShape(_handle.object()); }
 
     bool CopyToPrim(
         const UsdPrim&             prim,

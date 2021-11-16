@@ -6,7 +6,7 @@
           "JobContextPlugin": {},
           "SchemaApiAdaptor": {
             "providesTranslator": [
-              "mesh"
+              "shape"
             ]
           }
         }

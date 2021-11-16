@@ -168,7 +168,7 @@ struct UsdMayaWriteUtil
     static bool WriteAPISchemaAttributesToPrim(
         const MObject&              mayaObject,
         const UsdPrim&              prim,
-        const UsdMayaJobExportArgs* jobExportArgs = nullptr,
+        const UsdMayaJobExportArgs& jobExportArgs,
         const UsdTimeCode&          usdTime = UsdTimeCode::Default(),
         UsdUtilsSparseValueWriter*  valueWriter = nullptr);
 

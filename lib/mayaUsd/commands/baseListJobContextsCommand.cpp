@@ -39,7 +39,7 @@ _GetInfo(const MArgDatabase& argData, const char* optionName)
     if (status != MS::kSuccess) {
         return emptyInfo;
     }
-    for (auto const& c : UsdMayaJobContextRegistry::ListExportJobContexts()) {
+    for (auto const& c : UsdMayaJobContextRegistry::ListJobContexts()) {
         auto const& info = UsdMayaJobContextRegistry::GetJobContextInfo(c);
         if (info.niceName == contextName.asChar()) {
             return info;
@@ -67,9 +67,11 @@ MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
     }
 
     if (argData.isFlagSet(_exportStr)) {
-        for (auto const& c : UsdMayaJobContextRegistry::ListExportJobContexts()) {
+        for (auto const& c : UsdMayaJobContextRegistry::ListJobContexts()) {
             auto const& info = UsdMayaJobContextRegistry::GetJobContextInfo(c);
-            appendToResult(info.niceName.GetText());
+            if (info.exportEnablerCallback) {
+                appendToResult(info.niceName.GetText());
+            }
         }
     } else if (argData.isFlagSet(_exportAnnotationStr)) {
         auto const& info = _GetInfo(argData, _exportAnnotationStr);
@@ -96,9 +98,11 @@ MStatus MayaUSDListJobContextsCommand::doIt(const MArgList& args)
             setResult(optionsStream.str().c_str());
         }
     } else if (argData.isFlagSet(_importStr)) {
-        for (auto const& c : UsdMayaJobContextRegistry::ListImportJobContexts()) {
+        for (auto const& c : UsdMayaJobContextRegistry::ListJobContexts()) {
             auto const& info = UsdMayaJobContextRegistry::GetJobContextInfo(c);
-            appendToResult(info.niceName.GetText());
+            if (info.importEnablerCallback) {
+                appendToResult(info.niceName.GetText());
+            }
         }
     } else if (argData.isFlagSet(_importAnnotationStr)) {
         auto const& info = _GetInfo(argData, _importAnnotationStr);

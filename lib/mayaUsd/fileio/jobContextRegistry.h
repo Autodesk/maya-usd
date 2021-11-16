@@ -76,10 +76,7 @@ public:
     typedef std::function<VtDictionary()> EnablerFn;
 
     /// Get all registered export job contexts:
-    static TfTokenVector ListExportJobContexts() { return GetInstance()._ListExportJobContexts(); }
-
-    /// Get all registered import job contexts:
-    static TfTokenVector ListImportJobContexts() { return GetInstance()._ListImportJobContexts(); }
+    static TfTokenVector ListJobContexts() { return GetInstance()._ListJobContexts(); }
 
     /// All the information registered for a specific job context.
     struct ContextInfo
@@ -156,8 +153,7 @@ public:
     static UsdMayaJobContextRegistry& GetInstance();
 
 private:
-    MAYAUSD_CORE_PUBLIC TfTokenVector _ListExportJobContexts();
-    MAYAUSD_CORE_PUBLIC TfTokenVector _ListImportJobContexts();
+    MAYAUSD_CORE_PUBLIC TfTokenVector _ListJobContexts();
     MAYAUSD_CORE_PUBLIC const ContextInfo& _GetJobContextInfo(const TfToken&);
 
     UsdMayaJobContextRegistry();

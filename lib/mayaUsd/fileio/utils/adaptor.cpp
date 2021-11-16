@@ -88,9 +88,9 @@ UsdMayaAdaptor::UsdMayaAdaptor(const MObject& obj)
 {
 }
 
-UsdMayaAdaptor::UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs* jobExportArgs)
+UsdMayaAdaptor::UsdMayaAdaptor(const MObject& obj, const UsdMayaJobExportArgs& jobExportArgs)
     : _handle(obj)
-    , _jobExportArgs(jobExportArgs)
+    , _jobExportArgs(&jobExportArgs)
 {
 }
 
@@ -104,6 +104,9 @@ UsdMayaAdaptor::UsdMayaAdaptor(
 
 UsdMayaAdaptor::operator bool() const
 {
+    // If we are on an import, it is possible that we do not yet know to which MObject this adaptor
+    // should attach to. This is due to the unpacking of the shape and transform that were merged
+    // together at export time. We need to traverse the created nodes to find out.
     if (_jobImportArgs && _jobImportContext) {
         return true;
     }
@@ -350,9 +353,9 @@ UsdMayaAdaptor::ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifi
     // Do we have a plugin adapter for that schema?
     // On import, we have to select the best MObject for the UsdPrim currently being processed.
     if (_jobImportArgs) {
-        for (auto&& createdObjectPair : _jobImportContext->GetTrackedNewMayaNodes()) {
-            _handle = createdObjectPair.second;
-            const MFnDependencyNode depNodeFn(_handle.object());
+        for (auto&& newMayaObject : _jobImportContext->GetTrackedNewMayaNodes()) {
+            _handle = newMayaObject;
+            const MFnDependencyNode depNodeFn(newMayaObject);
             const std::string       mayaTypeName(depNodeFn.typeName().asChar());
             for (auto&& schemaFn :
                  UsdMayaSchemaApiAdaptorRegistry::Find(mayaTypeName, schemaName.GetString())) {

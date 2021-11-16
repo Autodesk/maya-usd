@@ -91,6 +91,28 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         cmds.file(f=True, new=True)
 
+        mark = Tf.Error.Mark()
+        mark.SetMark()
+        self.assertTrue(mark.IsClean())
+
+        cmds.polySphere(r=1)
+        usdFilePath = os.path.abspath('UsdExportSchemaApiTestBasic.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath, 
+                           jobContext=["NullAPI", "Moe"])
+
+        self.assertFalse(mark.IsClean())
+
+        errors = mark.GetErrors()
+        messages = set()
+        for e in errors:
+            messages.add(e.commentary)
+
+        expected = set([
+            "Missing implementation for NullAPIChaser::ExportDefault"])
+        self.assertEqual(messages, expected)
+
+        cmds.file(f=True, new=True)
+
     @unittest.skipUnless(HAS_BULLET, 'Requires the bullet plugin.')  
     def testPluginSchemaAdaptors(self):
         """Testing a plugin Schema adaptor in a generic context:"""

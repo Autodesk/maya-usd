@@ -754,7 +754,7 @@ bool UsdMayaWriteUtil::WriteMetadataToPrim(const MObject& mayaObject, const UsdP
 bool UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
     const MObject&              mayaObject,
     const UsdPrim&              prim,
-    const UsdMayaJobExportArgs* jobExportArgs,
+    const UsdMayaJobExportArgs& jobExportArgs,
     const UsdTimeCode&          usdTime,
     UsdUtilsSparseValueWriter*  valueWriter)
 {

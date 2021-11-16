@@ -40,6 +40,7 @@ class UsdMayaPrimReaderContext
 {
 public:
     typedef std::map<std::string, MObject> ObjectRegistry;
+    typedef TfSmallVector<MObject, 4>      MayaObjectList;
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap);
@@ -58,7 +59,7 @@ public:
 
     /// \brief Return list of new Maya nodes being tracked.
     MAYAUSD_CORE_PUBLIC
-    const ObjectRegistry& GetTrackedNewMayaNodes() const;
+    const MayaObjectList& GetTrackedNewMayaNodes() const;
 
     /// \brief Stop tracking new Maya nodes.
     MAYAUSD_CORE_PUBLIC
@@ -103,8 +104,9 @@ private:
     // for undo/redo
     ObjectRegistry* _pathNodeMap;
 
-    // Tracks new nodes:
-    std::shared_ptr<ObjectRegistry> _trackedNewMayaNodes;
+    // Tracks new nodes. It is possible that a code branch will decide to work on a copy of the
+    // context, so wrap the tracker in a shared pointer.
+    std::shared_ptr<MayaObjectList> _trackedNewMayaNodes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

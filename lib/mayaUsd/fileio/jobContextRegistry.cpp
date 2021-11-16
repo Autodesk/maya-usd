@@ -136,30 +136,14 @@ void UsdMayaJobContextRegistry::RegisterImportJobContext(
     }
 }
 
-TfTokenVector UsdMayaJobContextRegistry::_ListExportJobContexts()
+TfTokenVector UsdMayaJobContextRegistry::_ListJobContexts()
 {
     UsdMaya_RegistryHelper::LoadJobContextPlugins();
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaJobContextRegistry>();
     TfTokenVector ret;
     ret.reserve(_jobContextReg.size());
     for (const auto& e : _jobContextReg) {
-        if (e.exportEnablerCallback) {
-            ret.push_back(e.jobContext);
-        }
-    }
-    return ret;
-}
-
-TfTokenVector UsdMayaJobContextRegistry::_ListImportJobContexts()
-{
-    UsdMaya_RegistryHelper::LoadJobContextPlugins();
-    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaJobContextRegistry>();
-    TfTokenVector ret;
-    ret.reserve(_jobContextReg.size());
-    for (const auto& e : _jobContextReg) {
-        if (e.importEnablerCallback) {
-            ret.push_back(e.jobContext);
-        }
+        ret.push_back(e.jobContext);
     }
     return ret;
 }
