@@ -15,25 +15,29 @@
 // limitations under the License.
 //
 
-proc mayaUsdTranslatorExport_SetCheckbox(string $arg, string $widget) {
+proc mayaUsdTranslatorExport_SetCheckbox(string $arg, int $enable, string $widget) {
     if ($arg == "0") {
-        checkBoxGrp -e -v1 false $widget;
+        checkBoxGrp -e -v1 false -en $enable $widget;
     } else {
-        checkBoxGrp -e -v1 true $widget;
+        checkBoxGrp -e -v1 true -en $enable $widget;
     }
 }
 
-proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, string $widget) {
+proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, int $enable, string $widget) {
     if ($arg == "0") {
-        checkBoxGrp -e -v1 true $widget;
+        checkBoxGrp -e -v1 true -en $enable $widget;
     } else {
-        checkBoxGrp -e -v1 false $widget;
+        checkBoxGrp -e -v1 false -en $enable $widget;
     }
 }
 
 proc mayaUsdTranslatorExport_SetJobContextDropdown(string $arg) {
     if (startsWith($arg, "[") && endsWith($arg, "]")) {
-        $arg = substring($arg, 2, size($arg) - 1);
+        if (size($arg) > 2) {
+            $arg = substring($arg, 2, size($arg) - 1);
+        } else {
+            $arg = "";
+        }
     }
     string $enabledContexts[] = stringToStringArray($arg, ",");
     if (size($enabledContexts) > 0) {
@@ -50,19 +54,19 @@ proc mayaUsdTranslatorExport_SetJobContextDropdown(string $arg) {
     }
 
     // None is the default.
-    optionMenuGrp -e -select 0 jobContextPopup;
+    optionMenuGrp -e -select 1 jobContextPopup;
 }
 
-proc mayaUsdTranslatorExport_SetTextField(string $arg, string $widget) {
-    textFieldGrp -e -text $arg $widget;
+proc mayaUsdTranslatorExport_SetTextField(string $arg, int $enable, string $widget) {
+    textFieldGrp -e -text $arg -en $enable $widget;
 }
 
 proc mayaUsdTranslatorExport_SetOptionMenuByAnnotation(
-        string $ann, string $widget) {
+        string $ann, int $enable, string $widget) {
     int $index = 1; // 1-based indexing.
     for ($i in `optionMenuGrp -q -itemListLong $widget`) {
         if (`menuItem -q -ann $i` == $ann) {
-            optionMenuGrp -e -select $index $widget;
+            optionMenuGrp -e -select $index -en $enable $widget;
             return;
         }
 
@@ -71,7 +75,7 @@ proc mayaUsdTranslatorExport_SetOptionMenuByAnnotation(
 }
 
 proc mayaUsdTranslatorExport_SetOptionMenuByBool (
-        string $ann, string $widget) {
+        string $ann, int $enable, string $widget) {
     // Mapping between a boolean option and an option menu with two choices.
     // False maps to the first menu item, which is index 1.
     // True maps to the second menu item, which is index 2.
@@ -80,7 +84,7 @@ proc mayaUsdTranslatorExport_SetOptionMenuByBool (
     {
         $optionAsBool = 2;
     }
-    optionMenuGrp -e -select $optionAsBool $widget;
+    optionMenuGrp -e -select $optionAsBool -en $enable $widget;
 }
 
 proc string mayaUsdTranslatorExport_AppendOppositeFromCheckbox(string $currentOptions, string $arg, string $widget) {
@@ -163,9 +167,13 @@ global proc mayaUsdTranslatorExport_AnimationRangeCB() {
     intFieldGrp -e -v1 $startTime -v2 $endTime framRangeFields;
 }
 
-proc mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes(string $arg) {
+proc mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes(string $arg, int $enable, int $processJobContext) {
     if (startsWith($arg, "[") && endsWith($arg, "]")) {
-        $arg = substring($arg, 2, size($arg) - 1);
+        if (size($arg) > 2) {
+            $arg = substring($arg, 2, size($arg) - 1);
+        } else {
+            $arg = "";
+        }
     }
     string $enabledConversions[] = stringToStringArray($arg, ",");
     string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
@@ -174,9 +182,12 @@ proc mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes(string $arg) {
         string $widget = $opt + "_ConvertMaterialsToCheckBox";
 
         if(stringArrayFind($opt, 0, $enabledConversions) != -1) {
-            checkBoxGrp -e -v1 true $widget;
+            checkBoxGrp -e -v1 true -en $enable $widget;
         } else {
-            checkBoxGrp -e -v1 false $widget;
+            if ($processJobContext == 0) {
+                // A job context will not turn off selected options.
+                checkBoxGrp -e -v1 false $widget;
+            }
         }
     }
 }
@@ -195,6 +206,121 @@ proc string mayaUsdTranslatorExport_AppendConvertMaterialsTo(string $currentOpti
         return $currentOptions + ";shadingMode=useRegistry;" + $arg + "=[" + stringArrayToString($enabledConversions, ",") + "]";
     }
     return $currentOptions + ";shadingMode=none";
+}
+
+global proc mayaUsdTranslatorExport_EnableAllControls() {
+    // Restore all controls to fully interactive:
+    checkBoxGrp -e -en 1 exportUVsCheckBox;
+    checkBoxGrp -e -en 1 exportBlendShapesCheckBox;
+    checkBoxGrp -e -en 1 exportDisplayColorCheckBox;
+    checkBoxGrp -e -en 1 exportColorSetsCheckBox;
+    checkBoxGrp -e -en 1 animationCheckBox;
+    checkBoxGrp -e -en 1 eulerFilterCheckBox;
+    checkBoxGrp -e -en 1 staticSingleSampleCheckBox;
+    checkBoxGrp -e -en 1 exportVisibilityCheckBox;
+    checkBoxGrp -e -en 1 mergeTransformAndShapeCheckBox;
+    checkBoxGrp -e -en 1 includeNamespacesCheckBox;
+
+    optionMenuGrp -e -en 1 skelsPopup;
+    optionMenuGrp -e -en 1 skinClustersPopup;
+    optionMenuGrp -e -en 1 defaultMeshSchemePopup;
+    optionMenuGrp -e -en 1 defaultUSDFormatPopup;
+    optionMenuGrp -e -en 1 exportInstancesPopup;
+    optionMenuGrp -e -en 1 jobContextPopup;
+
+    intFieldGrp -e -en1 1 -en2 1 framRangeFields;
+
+    floatFieldGrp -e -en1 1 frameStrideField;
+
+    textFieldGrp -e -en 1 frameSampleField;
+    textFieldGrp -e -en 1 parentScopeField;
+
+    string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
+    for ($conversion in $conversions) {
+        string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
+        string $widgetName = $opt + "_ConvertMaterialsToCheckBox";
+        checkBoxGrp -e -en 1 $widgetName;
+    }
+}
+
+global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $enable, int $processJobContext) {
+    string $optionList[];
+    string $optionBreakDown[];
+    string $jobContext = "";
+    int $index;
+
+    if (size($currentOptions) > 0) {
+        tokenize($currentOptions, ";", $optionList);
+        for ($index = 0; $index < size($optionList); $index++) {
+            tokenize($optionList[$index], "=", $optionBreakDown);
+            if ($optionBreakDown[0] == "exportUVs") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportUVsCheckBox");
+            } else if ($optionBreakDown[0] == "exportSkels") {
+                mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "skelsPopup");
+            } else if ($optionBreakDown[0] == "exportSkin") {
+                mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "skinClustersPopup");
+            } else if ($optionBreakDown[0] == "exportBlendShapes") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportBlendShapesCheckBox");
+            } else if ($optionBreakDown[0] == "exportColorSets") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportColorSetsCheckBox");
+            } else if ($optionBreakDown[0] == "jobContext" && $processJobContext == 1) {
+                // Must be kept last, and only done on main options:
+                $jobContext = $optionBreakDown[1];
+            } else if ($optionBreakDown[0] == "defaultMeshScheme") {
+                mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "defaultMeshSchemePopup");
+            } else if ($optionBreakDown[0] == "defaultUSDFormat") {
+                mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "defaultUSDFormatPopup");
+            } else if ($optionBreakDown[0] == "animation") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "animationCheckBox");
+                mayaUsdTranslatorExport_AnimationCB();
+            } else if ($optionBreakDown[0] == "eulerFilter") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "eulerFilterCheckBox");
+            } else if ($optionBreakDown[0] == "staticSingleSample") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "staticSingleSampleCheckBox");
+            } else if ($optionBreakDown[0] == "startTime") {
+                int $startTime=$optionBreakDown[1];
+                intFieldGrp -e -v1 $startTime -en1 $enable framRangeFields;
+            } else if ($optionBreakDown[0] == "endTime") {
+                int $endTime; $endTime=$optionBreakDown[1];
+                intFieldGrp -e -v2 $endTime -en2 $enable framRangeFields;
+            } else if ($optionBreakDown[0] == "frameStride") {
+                float $frameStride = $optionBreakDown[1];
+                floatFieldGrp -e -v1 $frameStride -en1 $enable frameStrideField;
+            } else if ($optionBreakDown[0] == "frameSample") {
+                mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "frameSampleField");
+            } else if ($optionBreakDown[0] == "parentScope") {
+                mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "parentScopeField");
+            } else if ($optionBreakDown[0] == "convertMaterialsTo") {
+                mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1], $enable, $processJobContext);
+            } else if ($optionBreakDown[0] == "exportDisplayColor") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportDisplayColorCheckBox");
+            } else if ($optionBreakDown[0] == "exportInstances") {
+                mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], $enable, "exportInstancesPopup");
+            } else if ($optionBreakDown[0] == "exportVisibility") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportVisibilityCheckBox");
+            } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
+                mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "mergeTransformAndShapeCheckBox");
+            } else if ($optionBreakDown[0] == "stripNamespaces") {
+                mayaUsdTranslatorExport_SetOppositeCheckbox($optionBreakDown[1], $enable, "includeNamespacesCheckBox");
+            }
+        }
+        if ($jobContext != "" && $processJobContext == 1) {
+            mayaUsdTranslatorExport_SetJobContextDropdown($jobContext);
+            mayaUsdTranslatorExport_JobContextCB();
+        }
+    }
+}
+
+global proc mayaUsdTranslatorExport_JobContextCB() {
+    mayaUsdTranslatorExport_EnableAllControls();
+
+    string $niceName = `optionMenuGrp -q -value jobContextPopup`;
+    if ($niceName != "None") {
+        string $affectedOptions = `mayaUSDListJobContexts -eg $niceName`;
+        if ($affectedOptions != "") {
+            mayaUsdTranslatorExport_SetFromOptions($affectedOptions, 0, 0);
+        }
+    }
 }
 
 global proc int mayaUsdTranslatorExport (string $parent,
@@ -225,9 +351,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
 {
     int $bResult;
     string $currentOptions;
-    string $optionList[];
-    string $optionBreakDown[];
-    int $index;
 
     if ($action == "post") {
         string $parentScopAnn = "Name of the USD scope that is the parent of the exported data.";
@@ -236,7 +359,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $skelsAnn = "Exports Maya joints as part of a USD skeleton.";
         string $skinClustersAnn = "Exports Maya skin clusters as part of a USD skeleton.";
         string $blendShapesAnn = "Exports Maya Blend Shapes as USD blendshapes. Requires skeletons to be exported as well.";
-        string $displayColorAnn = "If selected, exports the diffuse color of the geometry’s bound shader as a displayColor primvar on the USD mesh.";
+        string $displayColorAnn = "If selected, exports the diffuse color of the geometry's bound shader as a displayColor primvar on the USD mesh.";
         string $materialsAnn = "Select the material(s) to bind to prims for export. With USD, you can bind multiple materials to prims.";
         string $animDataAnn = "Exports Maya animation data as USD time samples.";
         string $frameStepAnn = "Specifies the increment between USD time sample frames during animation export";
@@ -256,7 +379,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         columnLayout -adj true usdOptsCol;
 
-        optionMenuGrp -l "Plug-in Configuration:" -annotation $jobContextAnn jobContextPopup;
+        optionMenuGrp -l "Plug-in Configuration:" -annotation $jobContextAnn -cc ("mayaUsdTranslatorExport_JobContextCB") jobContextPopup;
             menuItem -l "None" -ann "None";
             string $contexts[] = `mayaUSDListJobContexts -export`;
             for ($context in $contexts) {
@@ -373,63 +496,12 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         // Now set to current settings.
         $currentOptions = $initialSettings;
-        if (size($currentOptions) > 0) {
-            tokenize($currentOptions, ";", $optionList);
-            for ($index = 0; $index < size($optionList); $index++) {
-                tokenize($optionList[$index], "=", $optionBreakDown);
-                if ($optionBreakDown[0] == "exportUVs") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportUVsCheckBox");
-                } else if ($optionBreakDown[0] == "exportSkels") {
-                    mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "skelsPopup");
-                } else if ($optionBreakDown[0] == "exportSkin") {
-                    mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "skinClustersPopup");
-                } else if ($optionBreakDown[0] == "exportBlendShapes") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportBlendShapesCheckBox");
-                } else if ($optionBreakDown[0] == "exportColorSets") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
-                } else if ($optionBreakDown[0] == "jobContext") {
-                    mayaUsdTranslatorExport_SetJobContextDropdown($optionBreakDown[1]);
-                } else if ($optionBreakDown[0] == "defaultMeshScheme") {
-                    mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
-                } else if ($optionBreakDown[0] == "defaultUSDFormat") {
-                    mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultUSDFormatPopup");
-                } else if ($optionBreakDown[0] == "animation") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "animationCheckBox");
-                } else if ($optionBreakDown[0] == "eulerFilter") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "eulerFilterCheckBox");
-                } else if ($optionBreakDown[0] == "staticSingleSample") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "staticSingleSampleCheckBox");
-                } else if ($optionBreakDown[0] == "startTime") {
-                    int $startTime=$optionBreakDown[1];
-                    intFieldGrp -e -v1 $startTime framRangeFields;
-                } else if ($optionBreakDown[0] == "endTime") {
-                    int $endTime; $endTime=$optionBreakDown[1];
-                    intFieldGrp -e -v2 $endTime framRangeFields;
-                } else if ($optionBreakDown[0] == "frameStride") {
-                    float $frameStride = $optionBreakDown[1];
-                    floatFieldGrp -e -v1 $frameStride frameStrideField;
-                } else if ($optionBreakDown[0] == "frameSample") {
-                    mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], "frameSampleField");
-                } else if ($optionBreakDown[0] == "parentScope") {
-                    mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], "parentScopeField");
-                } else if ($optionBreakDown[0] == "convertMaterialsTo") {
-                    mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1]);
-                } else if ($optionBreakDown[0] == "exportDisplayColor") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportDisplayColorCheckBox");
-                } else if ($optionBreakDown[0] == "exportInstances") {
-                    mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], "exportInstancesPopup");
-                } else if ($optionBreakDown[0] == "exportVisibility") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportVisibilityCheckBox");
-                } else if ($optionBreakDown[0] == "mergeTransformAndShape") {
-                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "mergeTransformAndShapeCheckBox");
-                } else if ($optionBreakDown[0] == "stripNamespaces") {
-                    mayaUsdTranslatorExport_SetOppositeCheckbox($optionBreakDown[1], "includeNamespacesCheckBox");
-                }
-            }
-        }
+
+        mayaUsdTranslatorExport_EnableAllControls();
+        mayaUsdTranslatorExport_SetFromOptions($currentOptions, 1, 1);
+
         // Set visibility for anim widgets
         mayaUsdTranslatorExport_AnimationCB();
-
         $bResult = 1;
 
     } else if ($action == "query") {

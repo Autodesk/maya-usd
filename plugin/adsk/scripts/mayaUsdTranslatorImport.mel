@@ -43,6 +43,100 @@ proc mayaUsdTranslatorImport_showInfo()
     }
 }
 
+proc mayaUsdTranslatorImport_SetJobContextDropdown(string $arg) {
+    if (startsWith($arg, "[") && endsWith($arg, "]")) {
+        if (size($arg) > 2) {
+            $arg = substring($arg, 2, size($arg) - 1);
+        } else {
+            $arg = "";
+        }
+    }
+    string $enabledContexts[] = stringToStringArray($arg, ",");
+    if (size($enabledContexts) > 0) {
+        // Pick first element (in case we find many...)
+        string $enabledContext = $enabledContexts[0];
+        string $niceNames[] = `mayaUSDListJobContexts -import`;
+        for ($niceName in $niceNames) {
+            string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
+            if ($jobContext == $enabledContext) {
+                optionMenuGrp -e -value $niceName mayaUsdTranslator_jobContextPopup;
+                return;
+            }
+        }
+    }
+
+    // None is the default.
+    optionMenuGrp -e -select 1 mayaUsdTranslator_jobContextPopup;
+}
+
+global proc mayaUsdTranslatorImport_EnableAllControls() {
+    // Restore all controls to fully interactive:
+    checkBoxGrp -e -en 1 mayaUsdTranslator_MaterialsCheckBox;
+    checkBoxGrp -e -en 1 mayaUsdTranslator_ImportUSDZTexturesCheckBox;
+    checkBoxGrp -e -en 1 mayaUsdTranslator_ImportInstancesCheckBox;
+    checkBoxGrp -e -en 1 mayaUsdTranslator_AnimDataCheckBox;
+    checkBoxGrp -e -en 1 mayaUsdTranslator_CustomFrameRangeCheckBox;
+
+    optionMenuGrp -e -en 1 mayaUsdTranslator_jobContextPopup;
+    optionMenuGrp -e -en 1 mayaUsdTranslator_MaterialsConversionMenu;
+
+    intFieldGrp -e -en1 1 -en2 1 mayaUsdTranslator_CustomFrameRange;
+}
+
+global proc mayaUsdTranslatorImport_SetFromOptions(string $currentOptions, int $enable, int $processJobContext) {
+    string $optionList[];
+    string $optionBreakDown[];
+    string $jobContext = "";
+    int $index;
+
+    if (size($currentOptions) > 0) {
+        tokenize($currentOptions, ";", $optionList);
+        for ($index = 0; $index < size($optionList); $index++) {
+            tokenize($optionList[$index], "=", $optionBreakDown);
+            if ($optionBreakDown[0] == "shadingMode") {
+                mayaUsdTranslatorImport_SetMaterialsCheckBox($optionBreakDown[1], $enable, "mayaUsdTranslator_MaterialsCheckBox");
+            } else if ($optionBreakDown[0] == "jobContext" && $processJobContext == 1) {
+                // Must be kept last, and only done on main options:
+                $jobContext = $optionBreakDown[1];
+            } else if ($optionBreakDown[0] == "preferredMaterial") {
+                mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], $enable, "mayaUsdTranslator_MaterialsConversionMenu");
+            } else if ($optionBreakDown[0] == "readAnimData") {
+                mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_AnimDataCheckBox");
+                mayaUsdTranslatorImport_AnimationCB();
+            } else if ($optionBreakDown[0] == "startTime") {
+                int $startTime = $optionBreakDown[1];
+                intFieldGrp -e -value1 $startTime -en1 $enable mayaUsdTranslator_CustomFrameRange;
+            } else if ($optionBreakDown[0] == "endTime") {
+                int $endTime = $optionBreakDown[1];
+                intFieldGrp -e -value2 $endTime -en2 $enable mayaUsdTranslator_CustomFrameRange;
+            } else if ($optionBreakDown[0] == "useCustomFrameRange") {
+                mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_CustomFrameRangeCheckBox");
+                mayaUsdTranslatorImport_AnimationCB();
+            } else if ($optionBreakDown[0] == "importInstances") {
+                mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportInstancesCheckBox");
+            } else if ($optionBreakDown[0] == "importUSDZTextures") {
+                mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], $enable, "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
+            }
+        }
+        if ($jobContext != "" && $processJobContext == 1) {
+            mayaUsdTranslatorImport_SetJobContextDropdown($jobContext);
+            mayaUsdTranslatorImport_JobContextCB();
+        }
+    }
+}
+
+global proc mayaUsdTranslatorImport_JobContextCB() {
+    mayaUsdTranslatorImport_EnableAllControls();
+
+    string $niceName = `optionMenuGrp -q -value mayaUsdTranslator_jobContextPopup`;
+    if ($niceName != "None") {
+        string $affectedOptions = `mayaUSDListJobContexts -ig $niceName`;
+        if ($affectedOptions != "") {
+            mayaUsdTranslatorImport_SetFromOptions($affectedOptions, 0, 0);
+        }
+    }
+}
+
 global proc int mayaUsdTranslatorImport (string $parent,
                                  string $action,
                                  string $initialSettings,
@@ -76,9 +170,20 @@ global proc int mayaUsdTranslatorImport (string $parent,
     int $bw = 125;
 
     if ($action == "post") {
+        string $jobContextAnn = "Select a loaded plug-in configuration to modify import options";
+
         setParent $parent;
 
         columnLayout -adj true -rs 5 mayaUsdTranslator_OptsCol;
+
+        optionMenuGrp -l "Plug-in Configuration:" -cw 1 $cw1 -annotation $jobContextAnn -cc ("mayaUsdTranslatorImport_JobContextCB") mayaUsdTranslator_jobContextPopup;
+            menuItem -l "None" -ann "None";
+            string $contexts[] = `mayaUSDListJobContexts -import`;
+            for ($context in $contexts) {
+                string $ann = `mayaUSDListJobContexts -ia $context`;
+                menuItem -l $context -ann $ann;
+            }
+
 
         if (`exists usdImportDialog`)
         {
@@ -168,36 +273,10 @@ global proc int mayaUsdTranslatorImport (string $parent,
         intFieldGrp -label "Frame Range Start/End: " -nf 2 -cw 1 $cw2 mayaUsdTranslator_CustomFrameRange;
 
         // Now set to current settings.
-        string $optionList[];
-        string $optionBreakDown[];
-        int $index;
         string $currentOptions = $initialSettings;
 
-        if (size($currentOptions) > 0) {
-            tokenize($currentOptions, ";", $optionList);
-            for ($index = 0; $index < size($optionList); $index++) {
-                tokenize($optionList[$index], "=", $optionBreakDown);
-                if ($optionBreakDown[0] == "shadingMode") {
-                    mayaUsdTranslatorImport_SetMaterialsCheckBox($optionBreakDown[1], "mayaUsdTranslator_MaterialsCheckBox");
-                } else if ($optionBreakDown[0] == "preferredMaterial") {
-                    mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "mayaUsdTranslator_MaterialsConversionMenu");
-                } else if ($optionBreakDown[0] == "readAnimData") {
-                    mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_AnimDataCheckBox");
-                } else if ($optionBreakDown[0] == "startTime") {
-                    int $startTime = $optionBreakDown[1];
-                    intFieldGrp -e -value1 $startTime mayaUsdTranslator_CustomFrameRange;
-                } else if ($optionBreakDown[0] == "endTime") {
-                    int $endTime = $optionBreakDown[1];
-                    intFieldGrp -e -value2 $endTime mayaUsdTranslator_CustomFrameRange;
-                } else if ($optionBreakDown[0] == "useCustomFrameRange") {
-                    mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_CustomFrameRangeCheckBox");
-                } else if ($optionBreakDown[0] == "importInstances") {
-                    mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_ImportInstancesCheckBox");
-                } else if ($optionBreakDown[0] == "importUSDZTextures") {
-                    mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
-                }
-            }
-        }
+        mayaUsdTranslatorImport_EnableAllControls();
+        mayaUsdTranslatorImport_SetFromOptions($currentOptions, 1, 1);
 
         $bResult = 1;
 
@@ -211,6 +290,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "startTime", 1, "mayaUsdTranslator_CustomFrameRange");
         $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "endTime", 2, "mayaUsdTranslator_CustomFrameRange");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importUSDZTextures", "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
+        $currentOptions = mayaUsdTranslatorImport_AppendJobContexts($currentOptions, "jobContext");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
@@ -265,11 +345,11 @@ global proc int mayaUsdTranslatorImport (string $parent,
 }
 
 global proc mayaUsdTranslatorImport_SetOptionMenuByAnnotation(
-        string $ann, string $widget) {
+        string $ann, int $enable, string $widget) {
     int $index = 1; // 1-based indexing.
     for ($i in `optionMenuGrp -q -itemListLong $widget`) {
         if (`menuItem -q -ann $i` == $ann) {
-            optionMenuGrp -e -select $index $widget;
+            optionMenuGrp -e -select $index -en $enable $widget;
             return;
         }
 
@@ -277,14 +357,14 @@ global proc mayaUsdTranslatorImport_SetOptionMenuByAnnotation(
     }
 }
 
-global proc mayaUsdTranslatorImport_SetCheckBoxGrp(string $arg, string $widget)
+global proc mayaUsdTranslatorImport_SetCheckBoxGrp(string $arg, int $enable, string $widget)
 {
-    checkBoxGrp -e -value1 ($arg != "0") $widget;
+    checkBoxGrp -e -value1 ($arg != "0") -en $enable $widget;
 }
 
-global proc mayaUsdTranslatorImport_SetMaterialsCheckBox(string $arg, string $widget)
+global proc mayaUsdTranslatorImport_SetMaterialsCheckBox(string $arg, int $enable, string $widget)
 {
-    checkBoxGrp -e -value1 ($arg != "[[none,default]]") $widget;
+    checkBoxGrp -e -value1 ($arg != "[[none,default]]") -en $enable $widget;
     mayaUsdTranslatorImport_MaterialsCB();
 }
 
@@ -335,6 +415,17 @@ global proc string mayaUsdTranslatorImport_AppendMaterialsFromCheckBoxGrp(string
     } else {
         return $currentOptions + ";" + $arg + "=[[none,default]]";
     }
+}
+
+global proc string mayaUsdTranslatorImport_AppendJobContexts(string $currentOptions, string $arg) {
+    string $niceName = `optionMenuGrp -q -value mayaUsdTranslator_jobContextPopup`;
+    if ($niceName != "None") {
+        string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
+        if ($jobContext != "") {
+            return $currentOptions + ";" + $arg + "=[" + $jobContext + "]";
+        }
+    }
+    return $currentOptions;
 }
 
 global proc string mayaUsdTranslatorImport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
