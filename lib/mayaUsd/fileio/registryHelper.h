@@ -62,6 +62,18 @@ struct UsdMaya_RegistryHelper
     /// usdMaya will try to load the "mayaPlugin" when shading modes are first accessed.
     static void LoadShadingModePlugins();
 
+    /// Searches the plugInfos and looks for JobContextPlugin.
+    ///
+    /// "UsdMaya" : {
+    ///     "JobContextPlugin" : {
+    ///         "mayaPlugin" : "arnoldJobContext"
+    ///     }
+    /// }
+    ///
+    /// At that scope, it expects a dictionary with one key: "mayaPlugin".
+    /// usdMaya will try to load the "mayaPlugin" when job contexts are first accessed.
+    static void LoadJobContextPlugins();
+
     /// Searches the plugInfos for metadata dictionaries at the given \p scope,
     /// and composes them together.
     /// The scope are the nested keys to search through in the plugInfo (for

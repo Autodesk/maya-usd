@@ -7,6 +7,7 @@ resources:
 PYTHONPATH+:=lib/python
 PATH+:=bin
 PATH+:=lib
+PATH+:=plugin/usd
 USD_LOCATION:=
 MAYA_USD_VERSION=${USD_VERSION}
 

@@ -362,6 +362,7 @@ global proc string mayaUsdTranslatorImport_AppendFromDialog(string $currentOptio
             return $currentOptions + ";" + $arg + "=" + $value;
         }
     }
+    return $currentOptions;
 }
 
 global proc mayaUsdTranslatorImport_ViewHierCB()

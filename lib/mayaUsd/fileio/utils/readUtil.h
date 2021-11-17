@@ -24,8 +24,6 @@
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/attribute.h>
 
-#include <maya/MDGModifier.h>
-#include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 
@@ -158,6 +156,14 @@ struct UsdMayaReadUtil
         const TfToken::Set& includeAPINames,
         const UsdPrim&      prim,
         const MObject&      mayaObject);
+
+    /// Iterate on all newly created Maya objects in \p readCtx to see if they can receive one of
+    /// the API schemas found on the currently processed UsdPrim found in \p args.
+    /// This call must also register in \p readCtx any new object created via ApplySchema.
+    MAYAUSD_CORE_PUBLIC
+    static bool ReadAPISchemaAttributesFromPrim(
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext&    readCtx);
 
     /// \}
 
