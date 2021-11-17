@@ -1176,7 +1176,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     const MHWRender::DisplayStatus previousStatus = _displayStatus;
     _displayStatus = MHWRender::MGeometryUtilities::displayStatus(_proxyShapeData->ProxyDagPath());
 
-    SdfPathVector rootPaths;
+    SdfPathVector        rootPaths;
     const SdfPathVector* dirtyPaths = nullptr;
 
     if (_displayStatus == MHWRender::kLead || _displayStatus == MHWRender::kActive) {

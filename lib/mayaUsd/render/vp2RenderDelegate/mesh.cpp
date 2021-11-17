@@ -844,7 +844,7 @@ void HdVP2Mesh::Sync(
     HdDirtyBits*     dirtyBits,
     const TfToken&   reprToken)
 {
-    const SdfPath& id = GetId();
+    const SdfPath&       id = GetId();
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
