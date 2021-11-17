@@ -175,7 +175,8 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     for (const auto& compQueryArc : query.GetCompositionArcs()) {
         if (!primSpec && PcpArcTypeVariant == compQueryArc.GetArcType()) {
             std::string err = TfStringPrintf(
-                "Cannot rename [%s] because it is defined inside the variant composition arc %s.",
+                "Cannot %s [%s] because it is defined inside the variant composition arc %s.",
+                commandName.c_str(),
                 prim.GetName().GetString().c_str(),
                 layerDisplayName.c_str());
             throw std::runtime_error(err.c_str());
@@ -191,6 +192,18 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
             layerDisplayName.c_str());
         throw std::runtime_error(err.c_str());
     }
+}
+
+bool applyCommandRestrictionNoThrow(const UsdPrim& prim, const std::string& commandName)
+{
+    try {
+        applyCommandRestriction(prim, commandName);
+    } catch (const std::exception& e) {
+        std::string errMsg(e.what());
+        TF_WARN(errMsg);
+        return false;
+    }
+    return true;
 }
 
 //------------------------------------------------------------------------------
