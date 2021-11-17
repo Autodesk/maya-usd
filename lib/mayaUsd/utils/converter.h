@@ -25,7 +25,6 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include <maya/MDGModifier.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnNumericAttribute.h>
@@ -36,6 +35,7 @@
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
+#include <maya/MString.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -31,6 +31,28 @@ proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, string $widget) {
     }
 }
 
+proc mayaUsdTranslatorExport_SetJobContextDropdown(string $arg) {
+    if (startsWith($arg, "[") && endsWith($arg, "]")) {
+        $arg = substring($arg, 2, size($arg) - 1);
+    }
+    string $enabledContexts[] = stringToStringArray($arg, ",");
+    if (size($enabledContexts) > 0) {
+        // Pick first element (in case we find many...)
+        string $enabledContext = $enabledContexts[0];
+        string $niceNames[] = `mayaUSDListJobContexts -export`;
+        for ($niceName in $niceNames) {
+            string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
+            if ($jobContext == $enabledContext) {
+                optionMenuGrp -e -value $niceName jobContextPopup;
+                return;
+            }
+        }
+    }
+
+    // None is the default.
+    optionMenuGrp -e -select 0 jobContextPopup;
+}
+
 proc mayaUsdTranslatorExport_SetTextField(string $arg, string $widget) {
     textFieldGrp -e -text $arg $widget;
 }
@@ -75,6 +97,17 @@ proc string mayaUsdTranslatorExport_AppendFromCheckbox(string $currentOptions, s
     } else {
         return $currentOptions + ";" + $arg + "=0";
     }
+}
+
+proc string mayaUsdTranslatorExport_AppendJobContexts(string $currentOptions, string $arg) {
+    string $niceName = `optionMenuGrp -q -value jobContextPopup`;
+    if ($niceName != "None") {
+        string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
+        if ($jobContext != "") {
+            return $currentOptions + ";" + $arg + "=[" + $jobContext + "]";
+        }
+    }
+    return $currentOptions;
 }
 
 proc string mayaUsdTranslatorExport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
@@ -217,10 +250,19 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $frameSamplesAnn = "Specifies the value(s) used to multi-sample time frames during animation export. Multiple values separated by a space (-0.1 0.2) are supported.";
         string $defaultFormatAnn = "Select whether the .usd file is written out in binary or ASCII";
         string $defaultFormatStatus = "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary), or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.";
+        string $jobContextAnn = "Select a loaded plug-in configuration to modify export options";
 
         setParent $parent;
 
         columnLayout -adj true usdOptsCol;
+
+        optionMenuGrp -l "Plug-in Configuration:" -annotation $jobContextAnn jobContextPopup;
+            menuItem -l "None" -ann "None";
+            string $contexts[] = `mayaUSDListJobContexts -export`;
+            for ($context in $contexts) {
+                string $ann = `mayaUSDListJobContexts -ea $context`;
+                menuItem -l $context -ann $ann;
+            }
 
         frameLayout -label "Output" -collapsable true -collapse false;
             separator -style "none";
@@ -345,6 +387,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportBlendShapesCheckBox");
                 } else if ($optionBreakDown[0] == "exportColorSets") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
+                } else if ($optionBreakDown[0] == "jobContext") {
+                    mayaUsdTranslatorExport_SetJobContextDropdown($optionBreakDown[1]);
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                     mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
                 } else if ($optionBreakDown[0] == "defaultUSDFormat") {
@@ -409,6 +453,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendOppositeFromCheckbox($currentOptions, "stripNamespaces", "includeNamespacesCheckBox");
+        $currentOptions = mayaUsdTranslatorExport_AppendJobContexts($currentOptions, "jobContext");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

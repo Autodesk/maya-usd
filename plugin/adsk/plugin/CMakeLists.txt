@@ -25,6 +25,7 @@ target_sources(${TARGET_NAME}
         plugin.cpp
         adskImportCommand.cpp
         adskExportCommand.cpp
+        adskListJobContextsCommand.cpp
         adskListShadingModesCommand.cpp
         adskStageLoadUnloadCommands.cpp
         importTranslator.cpp

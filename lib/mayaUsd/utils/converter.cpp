@@ -19,6 +19,7 @@
 
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MArrayDataHandle.h>
+#include <maya/MDGModifier.h>
 #include <maya/MDataBlock.h>
 #include <maya/MFnData.h>
 #include <maya/MFnIntArrayData.h>

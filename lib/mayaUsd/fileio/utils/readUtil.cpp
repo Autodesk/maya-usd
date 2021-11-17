@@ -846,18 +846,51 @@ bool UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
         if (includeAPINames.count(schemaName) == 0) {
             continue;
         }
-        if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor = adaptor.ApplySchemaByName(schemaName)) {
-            for (const TfToken& attrName : schemaAdaptor.GetAttributeNames()) {
+        if (UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.ApplySchemaByName(schemaName)) {
+            for (const TfToken& attrName : schemaAdaptor->GetAttributeNames()) {
                 if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                     VtValue               value;
                     constexpr UsdTimeCode t = UsdTimeCode::EarliestTime();
                     if (attr.HasAuthoredValue() && attr.Get(&value, t)) {
-                        schemaAdaptor.CreateAttribute(attrName).Set(value);
+                        schemaAdaptor->CreateAttribute(attrName).Set(value);
                     }
                 }
             }
         }
     }
+    return true;
+}
+
+bool UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext&    context)
+{
+    const UsdPrim& usdPrim = args.GetUsdPrim();
+
+    UsdMayaAdaptor adaptor(args, context);
+    if (!adaptor) {
+        return false;
+    }
+
+    for (const TfToken& schemaName : usdPrim.GetAppliedSchemas()) {
+        if (args.GetIncludeAPINames().count(schemaName) == 0) {
+            continue;
+        }
+        if (UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.ApplySchemaByName(schemaName)) {
+            if (schemaAdaptor->CopyFromPrim(usdPrim, args, context)) {
+                continue;
+            }
+            for (const TfToken& attrName : schemaAdaptor->GetAttributeNames()) {
+                if (UsdAttribute attr = usdPrim.GetAttribute(attrName)) {
+                    if (attr.HasAuthoredValue()) {
+                        UsdMayaAttributeAdaptor mayaAttr = schemaAdaptor->CreateAttribute(attrName);
+                        mayaAttr.Set(attr, args, context);
+                    }
+                }
+            }
+        }
+    }
+
     return true;
 }
 
@@ -875,13 +908,12 @@ size_t UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
     }
 
     size_t count = 0;
-    if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor
-        = adaptor.GetSchemaOrInheritedSchema(schemaType)) {
+    if (UsdMayaSchemaAdaptorPtr schemaAdaptor = adaptor.GetSchemaOrInheritedSchema(schemaType)) {
         for (const TfToken& attrName : attributeNames) {
             if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                 VtValue value;
                 if (attr.HasAuthoredValue() && attr.Get(&value, usdTime)) {
-                    if (schemaAdaptor.CreateAttribute(attrName).Set(value)) {
+                    if (schemaAdaptor->CreateAttribute(attrName).Set(value)) {
                         count++;
                     }
                 }

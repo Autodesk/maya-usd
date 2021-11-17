@@ -42,6 +42,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (providesTranslator)
     (UsdMaya)
     (ShadingModePlugin)
+    (JobContextPlugin)
 );
 // clang-format on
 
@@ -120,7 +121,7 @@ static bool _ProvidesForType(
     return provides;
 }
 
-static bool _HasShadingModePlugin(
+static bool _HasMayaPlugin(
     const PlugPluginPtr&        plug,
     const std::vector<TfToken>& scope,
     std::string*                mayaPluginName)
@@ -210,7 +211,7 @@ void UsdMaya_RegistryHelper::LoadShadingModePlugins()
         TF_FOR_ALL(plugIter, plugins)
         {
             PlugPluginPtr plug = *plugIter;
-            if (_HasShadingModePlugin(plug, scope, &mayaPlugin)) {
+            if (_HasMayaPlugin(plug, scope, &mayaPlugin)) {
                 if (!mayaPlugin.empty()) {
                     TF_DEBUG(PXRUSDMAYA_REGISTRY)
                         .Msg(
@@ -231,6 +232,46 @@ void UsdMaya_RegistryHelper::LoadShadingModePlugins()
                     TF_DEBUG(PXRUSDMAYA_REGISTRY)
                         .Msg(
                             "Found shading mode plugin %s: Loading via USD API.\n",
+                            plug->GetName().c_str());
+                    plug->Load();
+                }
+            }
+        }
+    });
+}
+
+/* static */
+void UsdMaya_RegistryHelper::LoadJobContextPlugins()
+{
+    static std::once_flag       _jobContextsLoaded;
+    static std::vector<TfToken> scope = { _tokens->UsdMaya, _tokens->JobContextPlugin };
+    std::call_once(_jobContextsLoaded, []() {
+        PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
+        std::string         mayaPlugin;
+        TF_FOR_ALL(plugIter, plugins)
+        {
+            PlugPluginPtr plug = *plugIter;
+            if (_HasMayaPlugin(plug, scope, &mayaPlugin)) {
+                if (!mayaPlugin.empty()) {
+                    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+                        .Msg(
+                            "Found job context plugin %s: Loading via Maya API %s.\n",
+                            plug->GetName().c_str(),
+                            mayaPlugin.c_str());
+                    std::string loadPluginCmd
+                        = TfStringPrintf("loadPlugin -quiet %s", mayaPlugin.c_str());
+                    if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                        // Need to ensure Python script modules are loaded
+                        // properly for this library (Maya's loadPlugin will not
+                        // load script modules like TfDlopen would).
+                        TfScriptModuleLoader::GetInstance().LoadModules();
+                    } else {
+                        TF_CODING_ERROR("Unable to load mayaplugin %s\n", mayaPlugin.c_str());
+                    }
+                } else {
+                    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+                        .Msg(
+                            "Found job context plugin %s: Loading via USD API.\n",
                             plug->GetName().c_str());
                     plug->Load();
                 }
