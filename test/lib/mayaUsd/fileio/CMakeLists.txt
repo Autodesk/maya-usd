@@ -15,6 +15,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         testEditAsMaya.py
         testMergeToUsd.py
         testDiscardEdits.py
+        testDuplicateAs.py
     )
 endif()
 
