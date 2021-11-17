@@ -603,8 +603,13 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
                         = dynamic_cast<HdMayaSceneDelegate*>(delegate.get())) {
                         params.camera = mayaScene->SetCameraViewport(camPath, _viewport);
                         if (vpDirty)
+#if HD_API_VERSION >= 43
+                            mayaScene->GetChangeTracker().MarkSprimDirty(
+                                params.camera, HdCamera::DirtyParams);
+#else
                             mayaScene->GetChangeTracker().MarkSprimDirty(
                                 params.camera, HdCamera::DirtyParams | HdCamera::DirtyProjMatrix);
+#endif
                         break;
                     }
                 }

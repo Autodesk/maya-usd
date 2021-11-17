@@ -689,7 +689,7 @@ void HdVP2BasisCurves::Sync(
     // Hydra now manages and caches render tags under the hood and is clearing
     // the dirty bit prior to calling sync. Unconditionally set the render tag
     // in the shared data structure based on current Hydra data
-    _meshSharedData->_renderTag = GetRenderTag();
+    _curvesSharedData._renderTag = GetRenderTag();
 #else
     if (*dirtyBits
         & (HdChangeTracker::DirtyRenderTag
