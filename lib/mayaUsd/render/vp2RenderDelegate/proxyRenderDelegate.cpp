@@ -829,7 +829,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _taskController->SetCollection(*_defaultCollection);
     }
 
-    _engine.Execute(_renderIndex.get(), &_dummyTasks);
+    // if there are no repr's to update then don't even call sync.
+    if (reprSelector != HdReprSelector()) {
+        _engine.Execute(_renderIndex.get(), &_dummyTasks);
+    }
 }
 
 //! \brief  Main update entry from subscene override.
