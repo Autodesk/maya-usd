@@ -1177,13 +1177,16 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     _displayStatus = MHWRender::MGeometryUtilities::displayStatus(_proxyShapeData->ProxyDagPath());
 
     SdfPathVector rootPaths;
+    const SdfPathVector* dirtyPaths = nullptr;
 
     if (_displayStatus == MHWRender::kLead || _displayStatus == MHWRender::kActive) {
         if (_displayStatus != previousStatus) {
             rootPaths.push_back(SdfPath::AbsoluteRootPath());
+            dirtyPaths = &_renderIndex->GetRprimIds();
         }
     } else if (previousStatus == MHWRender::kLead || previousStatus == MHWRender::kActive) {
         rootPaths.push_back(SdfPath::AbsoluteRootPath());
+        dirtyPaths = &_renderIndex->GetRprimIds();
         _PopulateSelection();
     } else {
         // Append pre-update lead and active selection.
@@ -1196,6 +1199,8 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
         // Append post-update lead and active selection.
         AppendSelectedPrimPaths(_leadSelection, rootPaths);
         AppendSelectedPrimPaths(_activeSelection, rootPaths);
+
+        dirtyPaths = &rootPaths;
     }
 
     if (!rootPaths.empty()) {
@@ -1210,12 +1215,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
             dirtySelectionBits |= MayaPrimCommon::DirtySelectionMode;
 #endif
         HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-        const SdfPathVector& paths = _renderIndex->GetRprimIds();
-        SdfPathVector pathsToDirty;
-        HdPrimGather gather;
-        gather.Filter(paths, rootPaths, SdfPathVector(), &pathsToDirty);
-
-        for (auto path : pathsToDirty) {
+        for (auto path : *dirtyPaths) {
             changeTracker.MarkRprimDirty(path, dirtySelectionBits);
         }
 
