@@ -858,7 +858,7 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
     return true;
 }
 
-bool PrimUpdaterManager::copyBetween(const Ufe::Path& srcPath, const Ufe::Path& dstPath)
+bool PrimUpdaterManager::duplicate(const Ufe::Path& srcPath, const Ufe::Path& dstPath)
 {
     MayaUsdProxyShapeBase* srcProxyShape = MayaUsd::ufe::getProxyShape(srcPath);
     MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dstPath);

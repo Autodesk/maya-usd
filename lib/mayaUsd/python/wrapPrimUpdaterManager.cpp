@@ -75,7 +75,7 @@ bool discardEdits(const std::string& nodeName)
     return PrimUpdaterManager::getInstance().discardEdits(path);
 }
 
-bool copyBetween(const std::string& srcUfePathString, const std::string& dstUfePathString)
+bool duplicate(const std::string& srcUfePathString, const std::string& dstUfePathString)
 {
     Ufe::Path src = Ufe::PathString::path(srcUfePathString);
     Ufe::Path dst = Ufe::PathString::path(dstUfePathString);
@@ -83,7 +83,7 @@ bool copyBetween(const std::string& srcUfePathString, const std::string& dstUfeP
     if (src.empty() || dst.empty())
         return false;
 
-    return PrimUpdaterManager::getInstance().copyBetween(src, dst);
+    return PrimUpdaterManager::getInstance().duplicate(src, dst);
 }
 
 } // namespace
@@ -98,5 +98,5 @@ void wrapPrimUpdaterManager()
         .def("mergeToUsd", push)
         .def("editAsMaya", pull)
         .def("discardEdits", discardEdits)
-        .def("copy", copyBetween);
+        .def("duplicate", duplicate);
 }

@@ -50,7 +50,7 @@ public:
     bool discardEdits(const Ufe::Path& path);
 
     MAYAUSD_CORE_PUBLIC
-    bool copyBetween(const Ufe::Path& srcPath, const Ufe::Path& dstPath);
+    bool duplicate(const Ufe::Path& srcPath, const Ufe::Path& dstPath);
 
     /// \brief Returns the singleton prim updater manager
     MAYAUSD_CORE_PUBLIC
