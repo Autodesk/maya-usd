@@ -66,8 +66,7 @@ bool editAsMaya(const std::string& ufePathString)
 
 bool canEditAsMaya(const std::string& ufePathString)
 {
-    return PrimUpdaterManager::getInstance().canEditAsMaya(
-        Ufe::PathString::path(ufePathString));
+    return PrimUpdaterManager::getInstance().canEditAsMaya(Ufe::PathString::path(ufePathString));
 }
 
 bool discardEdits(const std::string& nodeName)

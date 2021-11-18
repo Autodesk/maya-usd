@@ -19,8 +19,8 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/traverseLayer.h>

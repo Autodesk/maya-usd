@@ -61,10 +61,7 @@ PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
 }
 
 /* virtual */
-bool PxrUsdTranslators_MayaReferenceUpdater::canEditAsMaya() const
-{
-    return true;
-}
+bool PxrUsdTranslators_MayaReferenceUpdater::canEditAsMaya() const { return true; }
 
 /* virtual */
 bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
