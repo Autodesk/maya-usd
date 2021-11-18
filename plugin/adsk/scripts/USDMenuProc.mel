@@ -36,7 +36,7 @@ global proc mayaUsdMenu_pullToDG(string $obj)
     }
 }
 
-global proc mayaUsdMenu_copyToDG( string $ufePath )
+global proc mayaUsdMenu_duplicateToDG( string $ufePath )
 {
     if (size($ufePath) == 0) {
         string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
@@ -44,7 +44,7 @@ global proc mayaUsdMenu_copyToDG( string $ufePath )
     }
     
     if (size($ufePath)) {
-        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.copy('" + $ufePath + "', '|world');");
+        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.duplicate('" + $ufePath + "', '|world');");
     }
 }
 global proc USDMenuProc(string $parent, string $obj)
@@ -59,6 +59,6 @@ global proc USDMenuProc(string $parent, string $obj)
         if (canEditAsMaya($obj)) {
             menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_pullToDG \"" + $obj + "\"");
         }
-        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_copyToDG \"" + $obj + "\"");
+        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_duplicateToDG \"" + $obj + "\"");
     }
 }

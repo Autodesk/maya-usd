@@ -794,7 +794,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MGlobal::executeCommand(script);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
-        script.format("mayaUsdMenu_copyToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
+        script.format("mayaUsdMenu_duplicateToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script);
     }
 
