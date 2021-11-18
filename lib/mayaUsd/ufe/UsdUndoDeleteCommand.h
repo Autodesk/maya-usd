@@ -53,8 +53,7 @@ public:
     void redo() override;
 
 private:
-    PXR_NS::UsdPrim         _prim;
-    PXR_NS::UsdStageWeakPtr _stage;
+    PXR_NS::UsdPrim _prim;
     UFE_V2(UsdUndoableItem _undoableItem;)
 
 #ifndef UFE_V2_FEATURES_AVAILABLE
