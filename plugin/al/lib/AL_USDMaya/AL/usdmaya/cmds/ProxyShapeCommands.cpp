@@ -1037,10 +1037,8 @@ MStatus TranslatePrim::redoIt()
     TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
     m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp);
 
-    // construct locks and selectability for imported prims
-    if (m_proxy->isLockPrimFeatureActive()) {
-        m_proxy->constructLockPrims();
-    }
+    // construct locks for imported prims
+    m_proxy->constructLockPrims();
 
     if (!m_updatePaths.empty()) {
 

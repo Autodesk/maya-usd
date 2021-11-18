@@ -1064,9 +1064,7 @@ void ProxyShape::processChangedObjects(
         // you need to reselect the proxy before the bounds will be updated).
     }
 
-    if (isLockPrimFeatureActive()) {
-        processChangedMetaData(resyncedPaths, changedOnlyPaths);
-    }
+    processChangedMetaData(resyncedPaths, changedOnlyPaths);
 
     // These paths are subtree-roots representing entire subtrees that may have
     // changed. In this case, we must dump all cached data below these points
@@ -1461,9 +1459,7 @@ void ProxyShape::loadStage()
     if (m_stage && !MFileIO::isReadingFile()) {
         // execute the post load process to import any custom prims
         cmds::ProxyShapePostLoadProcess::initialise(this);
-        if (isLockPrimFeatureActive()) {
-            findPrimsWithMetaData();
-        }
+        findPrimsWithMetaData();
     }
 
     destroyGLImagingEngine();
@@ -2141,6 +2137,13 @@ bool ProxyShape::isPathUnselectable(const SdfPath& path) const
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::isPrimUnselectable(const UsdPrim& prim, UnselectablePrimCache& cache) const
 {
+    // If global optionVar is not enabled, disable selection for all paths
+    if (MGlobal::optionVarExists("AL_usdmaya_selectionEnabled")
+        && !MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled")) {
+        // Return true to indicate the path is not selectable
+        return true;
+    }
+
     return checkPrimMetadata(
         prim, Metadata::selectability, Metadata::unselectable, Metadata::selectable, cache);
 }

@@ -1019,14 +1019,6 @@ private:
     }
 
 public:
-    bool isLockPrimFeatureActive() const
-    {
-        bool ignoreLockPrims = MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims");
-        // The lock Prim functionality is a UI thing - no need to have it on in batch mode
-        // However, this also causes the tests to fail which is bad
-        return (/*(MGlobal::mayaState() == MGlobal::kInteractive) &&*/ !ignoreLockPrims);
-    }
-
     void processChangedMetaData(
         const SdfPathVector& resyncedPaths,
         const SdfPathVector& changedOnlyPaths);

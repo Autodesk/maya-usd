@@ -869,9 +869,7 @@ void SelectionUndoHelper::doIt()
         MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
     }
     m_proxy->m_pleaseIgnoreSelection = false;
-    if (m_proxy->isLockPrimFeatureActive()) {
-        m_proxy->constructLockPrims();
-    }
+    m_proxy->constructLockPrims();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -892,9 +890,7 @@ void SelectionUndoHelper::undoIt()
         MGlobal::setActiveSelectionList(m_previousSelection, MGlobal::kReplaceList);
     }
     m_proxy->m_pleaseIgnoreSelection = false;
-    if (m_proxy->isLockPrimFeatureActive()) {
-        m_proxy->constructLockPrims();
-    }
+    m_proxy->constructLockPrims();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

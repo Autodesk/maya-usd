@@ -212,21 +212,18 @@ void ProxyShape::findPrimsWithMetaData()
     if (!m_stage)
         return;
 
-    if (isLockPrimFeatureActive()) {
-        for (fileio::TransformIterator it(m_stage, parentTransform(), true); !it.done();
-             it.next()) {
-            const auto& prim = it.prim();
-            bool        excludeGeo = false;
-            if (prim.GetMetadata(Metadata::excludeFromProxyShape, &excludeGeo)) {
-                if (excludeGeo) {
-                    m_excludedTaggedGeometry.push_back(prim.GetPrimPath());
-                }
+    for (fileio::TransformIterator it(m_stage, parentTransform(), true); !it.done(); it.next()) {
+        const auto& prim = it.prim();
+        bool        excludeGeo = false;
+        if (prim.GetMetadata(Metadata::excludeFromProxyShape, &excludeGeo)) {
+            if (excludeGeo) {
+                m_excludedTaggedGeometry.push_back(prim.GetPrimPath());
             }
         }
-
-        constructLockPrims();
-        constructExcludedPrims();
     }
+
+    constructLockPrims();
+    constructExcludedPrims();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
