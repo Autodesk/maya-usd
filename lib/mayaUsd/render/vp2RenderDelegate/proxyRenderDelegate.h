@@ -179,6 +179,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool DrawRenderTag(const TfToken& renderTag) const;
 
+    MAYAUSD_CORE_PUBLIC
+    UsdImagingDelegate* GetUsdImagingDelegate() const;
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MAYAUSD_CORE_PUBLIC
     bool SnapToSelectedObjects() const;

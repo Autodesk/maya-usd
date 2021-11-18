@@ -847,6 +847,7 @@ void HdVP2Mesh::Sync(
     const SdfPath&       id = GetId();
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
 
     // Update the selection status if it changed.
     if (*dirtyBits & DirtySelectionHighlight) {
@@ -885,8 +886,7 @@ void HdVP2Mesh::Sync(
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
-                    = dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
-                        geomSubset.materialId);
+                    = usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId);
                 HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
@@ -911,8 +911,7 @@ void HdVP2Mesh::Sync(
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
-                    = dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
-                        geomSubset.materialId);
+                    = usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId);
                 HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
@@ -996,8 +995,7 @@ void HdVP2Mesh::Sync(
 
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             addRequiredPrimvars(
-                dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
-                    geomSubset.materialId));
+                usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId));
         }
 
         // also, we always require points
@@ -1653,6 +1651,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     // We don't need to update the shaded selected instance item when the selection mode is not
@@ -1806,8 +1805,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 SdfPath cachePathMaterialId = drawItemData._geomSubset.materialId;
                 // This is annoying! The saved materialId is a cache path, but to look up the
                 // material in the render index we need the index path.
-                materialId = dynamic_cast<UsdImagingDelegate*>(sceneDelegate)
-                                 ->ConvertCachePathToIndexPath(cachePathMaterialId);
+                materialId = usdImagingDelegate->ConvertCachePathToIndexPath(cachePathMaterialId);
             }
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));

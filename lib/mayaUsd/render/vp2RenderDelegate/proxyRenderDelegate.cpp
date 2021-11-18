@@ -1452,6 +1452,11 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
     }
 }
 
+UsdImagingDelegate* ProxyRenderDelegate::GetUsdImagingDelegate() const
+{
+    return _sceneDelegate.get();
+}
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 bool ProxyRenderDelegate::SnapToSelectedObjects() const { return _snapToSelectedObjects; }
 bool ProxyRenderDelegate::SnapToPoints() const { return _snapToPoints; }
