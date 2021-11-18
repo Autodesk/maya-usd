@@ -76,6 +76,15 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
         throw std::runtime_error(err.c_str());
     }
 
+    // Reparenting directly under an instance prim is disallowed
+    if (parentPrim.IsInstance()) {
+        std::string err = TfStringPrintf(
+            "Parenting geometric prim [%s] under instance prim [%s] is not allowed.",
+            childPrim.GetName().GetString().c_str(),
+            parentPrim.GetName().GetString().c_str());
+        throw std::runtime_error(err.c_str());
+    }
+
     // Apply restriction rules
     ufe::applyCommandRestriction(childPrim, "reparent");
     ufe::applyCommandRestriction(parentPrim, "reparent");
@@ -115,6 +124,7 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
     if (parent->path().startsWith(child->path())) {
         return nullptr;
     }
+
     return std::make_shared<MakeSharedEnabler<UsdUndoInsertChildCommand>>(parent, child, pos);
 }
 
