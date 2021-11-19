@@ -23,6 +23,7 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/make_constructor.hpp>
+#include <boost/python/return_internal_reference.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -41,6 +42,11 @@ public:
     static ImportChaserWrapper* New(uintptr_t createdWrapper)
     {
         return (ImportChaserWrapper*)createdWrapper;
+    }
+
+    ImportChaserWrapper(const UsdMayaImportChaserRegistry::FactoryContext& factoryContext)
+        : _factoryContext(factoryContext)
+    {
     }
 
     virtual ~ImportChaserWrapper() { }
@@ -75,8 +81,8 @@ public:
     {
         UsdMayaImportChaserRegistry::GetInstance().RegisterFactory(
             name,
-            [=](const UsdMayaImportChaserRegistry::FactoryContext& context) {
-                auto                  chaser = new ImportChaserWrapper();
+            [=](const UsdMayaImportChaserRegistry::FactoryContext& factoryContext) {
+                auto                  chaser = new ImportChaserWrapper(factoryContext);
                 TfPyLock              pyLock;
                 boost::python::object instance = cl((uintptr_t)(ImportChaserWrapper*)chaser);
                 boost::python::incref(instance.ptr());
@@ -85,7 +91,50 @@ public:
             },
             true);
     }
+
+    const UsdMayaImportChaserRegistry::FactoryContext& GetFactoryContext()
+    {
+        return _factoryContext;
+    }
+
+    boost::python::object GetChaserArgs()
+    {
+        boost::python::dict editDict;
+        if (!_factoryContext.GetImportJobArgs().allChaserArgs.empty())
+        {
+            std::map<std::string, std::string> myArgs;
+            TfMapLookup(
+                _factoryContext.GetImportJobArgs().allChaserArgs, _factoryContext.GetImportJobArgs().chaserNames[0], &myArgs);
+
+            for (const auto& item : myArgs) {
+                editDict[item.first] = item.second;
+            }
+        }
+        return editDict;
+    }
+
+    std::string GetChaserName() { return _factoryContext.GetImportJobArgs().chaserNames[0]; }
+
+private:
+    const UsdMayaImportChaserRegistry::FactoryContext& _factoryContext;
 };
+
+//----------------------------------------------------------------------------------------------------------------------
+void wrapImportChaserRegistryFactoryContext()
+{
+    boost::python::class_<UsdMayaImportChaserRegistry::FactoryContext>(
+        "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
+        .def("GetStage", &UsdMayaImportChaserRegistry::FactoryContext::GetStage)
+        /*        .def(
+                    "GetDagToUsdMap",
+                    &UsdMayaExportChaserRegistry::FactoryContext::GetDagToUsdMap,
+                    boost::python::return_internal_reference<>())
+                    */
+        .def(
+            "GetImportJobArgs",
+            &UsdMayaImportChaserRegistry::FactoryContext::GetImportJobArgs,
+            boost::python::return_internal_reference<>());
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 void wrapImportChaser()
@@ -98,6 +147,12 @@ void wrapImportChaser()
         .def("PostImport", &This::PostImport, &ImportChaserWrapper::default_PostImport)
         .def("Redo", &This::Redo, &ImportChaserWrapper::default_Redo)
         .def("Undo", &This::Undo, &ImportChaserWrapper::default_Undo)
+        .def(
+            "GetFactoryContext",
+            &ImportChaserWrapper::GetFactoryContext,
+            boost::python::return_internal_reference<>())
+        .def("GetChaserName", &ImportChaserWrapper::GetChaserName)
+        .def("GetChaserArgs", &ImportChaserWrapper::GetChaserArgs)
         .def("Register", &ImportChaserWrapper::Register)
         .staticmethod("Register");
 }

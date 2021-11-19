@@ -288,10 +288,33 @@ public:
     }
 };
 
+namespace {
+    std::vector<std::string> getChaserNames(UsdMayaJobExportArgs& self) 
+    {
+        return self.chaserNames;
+    }
+
+    boost::python::object getChaserArgs(UsdMayaJobExportArgs& self, const std::string& chaser) 
+    {
+        boost::python::dict editDict;
+
+        std::map<std::string, std::string> myArgs;
+        TfMapLookup(self.allChaserArgs, chaser, &myArgs);
+
+        for (const auto& item : myArgs) {
+            editDict[item.first] = item.second;
+        }
+        return editDict;
+    }
+}
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobExportArgs()
 {
-    boost::python::class_<UsdMayaJobExportArgs>("JobExportArgs", boost::python::no_init);
+    boost::python::class_<UsdMayaJobExportArgs>(
+        "JobExportArgs", boost::python::no_init)
+        .def("getChaserNames", &::getChaserNames)
+        .def("getChaserArgs", &::getChaserArgs)
+        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName);
 }
 
 void wrapPrimWriter()

@@ -23,6 +23,7 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/make_constructor.hpp>
+#include <boost/python/return_internal_reference.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -41,6 +42,11 @@ public:
     static ExportChaserWrapper* New(uintptr_t createdWrapper)
     {
         return (ExportChaserWrapper*)createdWrapper;
+    }
+
+    ExportChaserWrapper(const UsdMayaExportChaserRegistry::FactoryContext& factoryContext)
+        : _factoryContext(factoryContext)
+    {
     }
 
     virtual ~ExportChaserWrapper() { }
@@ -67,8 +73,8 @@ public:
     {
         UsdMayaExportChaserRegistry::GetInstance().RegisterFactory(
             mayaTypeName,
-            [=](const UsdMayaExportChaserRegistry::FactoryContext& contextArgName) {
-                auto                  chaser = new ExportChaserWrapper();
+            [=](const UsdMayaExportChaserRegistry::FactoryContext& factoryContext) {
+                auto                  chaser = new ExportChaserWrapper(factoryContext);
                 TfPyLock              pyLock;
                 boost::python::object instance = cl((uintptr_t)chaser);
                 boost::python::incref(instance.ptr());
@@ -77,7 +83,55 @@ public:
             },
             true);
     }
+
+    const UsdMayaExportChaserRegistry::FactoryContext& GetFactoryContext()
+    {
+        return _factoryContext;
+    }
+
+    boost::python::object GetChaserArgs()
+    {
+        boost::python::dict editDict;
+
+        if (!_factoryContext.GetJobArgs().allChaserArgs.empty()) {
+
+            std::map<std::string, std::string> myArgs;
+            TfMapLookup(
+                _factoryContext.GetJobArgs().allChaserArgs,
+                _factoryContext.GetJobArgs().chaserNames[0],
+                &myArgs);
+
+            for (const auto& item : myArgs) {
+                editDict[item.first] = item.second;
+            }
+        }
+        return editDict;
+    }
+
+    std::string GetChaserName() { return _factoryContext.GetJobArgs().chaserNames[0]; }
+
+    private:
+        const UsdMayaExportChaserRegistry::FactoryContext& _factoryContext;
 };
+
+//----------------------------------------------------------------------------------------------------------------------
+void wrapExportChaserRegistryFactoryContext()
+{
+    boost::python::class_<UsdMayaExportChaserRegistry::FactoryContext>(
+        "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
+        .def(
+            "GetStage",
+            &UsdMayaExportChaserRegistry::FactoryContext::GetStage)
+/*        .def(
+            "GetDagToUsdMap",
+            &UsdMayaExportChaserRegistry::FactoryContext::GetDagToUsdMap,
+            boost::python::return_internal_reference<>())
+            */
+        .def(
+            "GetJobArgs",
+            &UsdMayaExportChaserRegistry::FactoryContext::GetJobArgs,
+            boost::python::return_internal_reference<>());
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 void wrapExportChaser()
@@ -90,6 +144,12 @@ void wrapExportChaser()
         .def("ExportDefault", &This::ExportDefault, &ExportChaserWrapper::default_ExportDefault)
         .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
         .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
+        .def(
+            "GetFactoryContext",
+            &ExportChaserWrapper::GetFactoryContext,
+            boost::python::return_internal_reference<>())
+        .def("GetChaserName", &ExportChaserWrapper::GetChaserName)
+        .def("GetChaserArgs", &ExportChaserWrapper::GetChaserArgs)
         .def("Register", &ExportChaserWrapper::Register)
         .staticmethod("Register");
 }
