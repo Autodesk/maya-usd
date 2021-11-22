@@ -69,6 +69,7 @@ class EditAsMayaTestCase(unittest.TestCase):
          _, _, _, _, _) = createSimpleXformScene()
 
         # Edit aPrim as Maya data.
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
         self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
 
         # Test the path mapping services.
@@ -108,6 +109,31 @@ class EditAsMayaTestCase(unittest.TestCase):
         usdValues = [v for row in usdMatrix for v in row]
 
         assertVectorAlmostEqual(self, mayaValues, usdValues)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    def testIllegalEditAsMaya(self):
+        '''Trying to edit as Maya on object that doesn't support it.'''
+        
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        blendShape = stage.DefinePrim('/BlendShape1', 'BlendShape')
+        scope = stage.DefinePrim('/Scope1', 'Scope')
+
+        blendShapePathStr = proxyShapePathStr + ',/BlendShape1'
+        scopePathStr = proxyShapePathStr + ',/Scope1'
+
+        # Blend shape cannot be edited as Maya: it has no importer.
+        self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(blendShapePathStr))
+        self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(blendShapePathStr))
+
+        # Scope cannot be edited as Maya: it has no exporter.
+        # Unfortunately, as of 17-Nov-2021, we cannot determine how a prim will
+        # round-trip, so we cannot use the information that scope has no
+        # exporter.
+        # self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(scopePathStr))
+        # self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(scopePathStr))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

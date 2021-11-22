@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -65,7 +66,18 @@ UsdMayaPrimUpdater::UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const
 {
 }
 
-bool UsdMayaPrimUpdater::pull(const UsdMayaPrimUpdaterContext& context) { return true; }
+bool UsdMayaPrimUpdater::canEditAsMaya() const
+{
+    // To be editable as Maya data we must ensure that there is an importer (to
+    // Maya).  As of 17-Nov-2021 it is not possible to determine how the
+    // prim will round-trip back through export, so we do not check for
+    // exporter (to USD) capability.
+    auto prim = MayaUsd::ufe::ufePathToPrim(_path);
+    TF_AXIOM(prim);
+    return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName()) != nullptr);
+}
+
+bool UsdMayaPrimUpdater::editAsMaya(const UsdMayaPrimUpdaterContext& context) { return true; }
 
 bool UsdMayaPrimUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
 {

@@ -50,6 +50,8 @@
 #include <functional>
 #include <tuple>
 
+using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
+
 // Allow for use of MObjectHandle with std::unordered_map.
 namespace std {
 template <> struct hash<MObjectHandle>
@@ -292,11 +294,14 @@ PullImportPaths pullImport(
         }
     }
 
-    // Execute the command
+    // Execute the command, which can succeed but import nothing.
     bool success = readJob.Read(&addedDagPaths);
+    if (!success || addedDagPaths.size() == 0) {
+        return PullImportPaths({}, {});
+    }
 
     const bool isCopy = context.GetArgs()._copyOperation;
-    if (success && !isCopy) {
+    if (!isCopy) {
         // Quick workaround to reuse some POC code - to rewrite later
         auto ufeChild = MayaUsd::ufe::dagPathToUfe(addedDagPaths[0]);
 
@@ -373,7 +378,7 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         // customization step.  This is a frequent difficulty for operations on
         // multiple data, especially since we can't roll back the result of
         // the execution of previous updaters.  Revisit this.  PPT, 15-Sep-2021.
-        if (!updater->pull(context)) {
+        if (!updater->editAsMaya(context)) {
             return false;
         }
     }
@@ -485,8 +490,6 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     const SdfPath&                   primSpecPath,
     const UsdMayaPrimUpdaterContext& context)
 {
-    using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
-
     // Get the primSpec from the src layer.
     auto primSpec = srcLayer->GetPrimAtPath(primSpecPath);
     if (!TF_VERIFY(primSpec)) {
@@ -541,7 +544,6 @@ bool pushCustomize(
 
     // Traverse the layer, creating a prim updater for each primSpec
     // along the way, and call PushCopySpec on the prim.
-    using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
     auto pushCopySpecsFn
         = [&context, srcStage, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
               // We can be called with a primSpec path that is not a prim path
@@ -676,7 +678,7 @@ PrimUpdaterManager::~PrimUpdaterManager()
     _cbIds.clear();
 }
 
-bool PrimUpdaterManager::push(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath)
+bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
     if (!proxyShape) {
@@ -748,7 +750,7 @@ bool PrimUpdaterManager::push(const MFnDependencyNode& depNodeFn, const Ufe::Pat
     return true;
 }
 
-bool PrimUpdaterManager::pull(const Ufe::Path& path)
+bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(path);
     if (!proxyShape) {
@@ -785,6 +787,9 @@ bool PrimUpdaterManager::pull(const Ufe::Path& path)
 
     // 1) Perform the import
     PullImportPaths importedPaths = pullImport(path, pulledPrim, context);
+    if (importedPaths.first.empty()) {
+        return false;
+    }
 
     // 2) Iterate over all imported Dag paths.
     if (!pullCustomize(importedPaths, context)) {
@@ -802,6 +807,22 @@ bool PrimUpdaterManager::pull(const Ufe::Path& path)
         scene.notify(Ufe::ObjectAdd(ufeItem));
 
     return true;
+}
+
+bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
+{
+    // Create a prim updater for the path, and ask it if the prim can be edited
+    // as Maya.
+    auto prim = MayaUsd::ufe::ufePathToPrim(path);
+    if (!prim) {
+        return false;
+    }
+    auto typeName = prim.GetTypeName();
+    auto regItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
+    auto factory = std::get<UpdaterFactoryFn>(regItem);
+    // No Maya Dag path for the prim updater, so pass in a null MObject.
+    auto updater = factory(MFnDependencyNode(MObject()), path);
+    return updater ? updater->canEditAsMaya() : false;
 }
 
 bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
@@ -962,7 +983,7 @@ void PrimUpdaterManager::onProxyContentChanged(
                     = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
                 const Ufe::Path path = proxyNotice.GetProxyShape().ufePath() + pathSegment;
 
-                pull(path);
+                editAsMaya(path);
             }
         }
     }

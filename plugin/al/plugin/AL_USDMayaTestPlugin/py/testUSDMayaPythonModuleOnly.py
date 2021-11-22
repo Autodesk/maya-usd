@@ -27,8 +27,6 @@
 import unittest
 import tempfile
 
-from pxr import Tf, Usd, UsdGeom, Gf
-
 class TestPythonModule(unittest.TestCase):
 
     def testImport(self):
@@ -60,7 +58,7 @@ class TestPythonModule(unittest.TestCase):
                          AL.usdmaya.ExportFlag.kSupported)
 
 
-tests = unittest.TestLoader().loadTestsFromTestCase(TestPythonModule)
-result = unittest.TextTestRunner(verbosity=2).run(tests)
-
-exit(not result.wasSuccessful())
+if __name__ == "__main__":
+    tests = unittest.TestLoader().loadTestsFromTestCase(TestPythonModule)
+    result = unittest.TextTestRunner(verbosity=2).run(tests)
+    exit(not result.wasSuccessful())

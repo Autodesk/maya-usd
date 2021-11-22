@@ -27,8 +27,6 @@ from AL import usdmaya
 
 from pxr import Usd, UsdUtils, Tf
 
-import fixturesUtils
-
 class CubeGenerator(usdmaya.TranslatorBase):
     '''
     Basic Translator which doesn't support update
@@ -746,5 +744,11 @@ class TestPythonTranslatorsUniqueKey(unittest.TestCase):
         self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
 
 
-if __name__ == '__main__':
-    fixturesUtils.runTests(globals())
+if __name__ == "__main__":
+
+    tests = [unittest.TestLoader().loadTestsFromTestCase(TestPythonTranslators)]
+    tests += [unittest.TestLoader().loadTestsFromTestCase(TestPythonTranslatorsUniqueKey)]
+
+    results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
+    exitCode = int(not all([result.wasSuccessful() for result in results]))
+    cmds.quit(force=True, exitCode=(exitCode))
