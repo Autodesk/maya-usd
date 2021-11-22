@@ -41,6 +41,8 @@
 #include <maya/MSelectionList.h>
 #include <maya/MVector.h>
 
+#include <iostream>
+
 using AL::maya::test::buildTempPath;
 
 // #define TEST(X, Y) void X##Y()
