@@ -41,10 +41,14 @@ public:
     ~PrimUpdaterManager();
 
     MAYAUSD_CORE_PUBLIC
-    bool push(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath);
+    bool mergeToUsd(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath);
 
     MAYAUSD_CORE_PUBLIC
-    bool pull(const Ufe::Path& path);
+    bool editAsMaya(const Ufe::Path& path);
+
+    // Can the prim at the argument path be edited as Maya.
+    MAYAUSD_CORE_PUBLIC
+    bool canEditAsMaya(const Ufe::Path& path) const;
 
     MAYAUSD_CORE_PUBLIC
     bool discardEdits(const Ufe::Path& path);

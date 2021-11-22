@@ -589,7 +589,7 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
         }
     }
     if (size($obj)) {
-        python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.push('" + $obj + "');");
+        python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.mergeToUsd('" + $obj + "');");
     }
 }
 
