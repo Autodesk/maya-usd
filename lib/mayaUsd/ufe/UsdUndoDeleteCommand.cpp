@@ -27,7 +27,7 @@
 #endif
 
 namespace {
-#ifdef MAYA_APP_VERSION >= 2020
+#ifdef UFE_V2_FEATURES_AVAILABLE
 bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
 {
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
