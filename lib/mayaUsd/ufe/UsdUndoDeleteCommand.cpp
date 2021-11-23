@@ -27,7 +27,7 @@
 #endif
 
 namespace {
-
+#ifdef MAYA_APP_VERSION >= 2020
 bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
 {
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
@@ -46,7 +46,7 @@ bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
     }
     return false;
 }
-
+#endif
 } // anonymous namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -77,7 +77,7 @@ void UsdUndoDeleteCommand::execute()
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
     if (hasLayersMuted(_prim)) {
-        TF_WARN("Cannot remove prim because there is muted layers.");
+        TF_WARN("Cannot remove prim because there are muted layers.");
         return;
     }
 
