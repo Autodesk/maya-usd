@@ -48,8 +48,7 @@ struct MayaPrimCommon
 {
     enum DirtyBits : HdDirtyBits
     {
-        DirtySelection = HdChangeTracker::CustomBitsBegin,
-        DirtySelectionHighlight = (DirtySelection << 1),
+        DirtySelectionHighlight = HdChangeTracker::CustomBitsBegin,
         DirtySelectionMode = (DirtySelectionHighlight << 1),
         DirtyBitLast = DirtySelectionMode
     };

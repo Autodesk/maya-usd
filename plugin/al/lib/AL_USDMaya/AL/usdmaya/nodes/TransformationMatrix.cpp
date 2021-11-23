@@ -48,6 +48,17 @@ namespace {
 using AL::usdmaya::utils::UsdDataType;
 
 //----------------------------------------------------------------------------------------------------------------------
+UsdTimeCode getTimeCodeForOp(const UsdGeomXformOp& op, const UsdTimeCode& time)
+{
+    // Return the current time code if xform op has samples, return default time code otherwise
+    // This function could be made as an option in proxy node
+    if (op.GetNumTimeSamples()) {
+        return time;
+    }
+    return UsdTimeCode::Default();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 bool hasEmptyDefaultValue(const UsdGeomXformOp& op, UsdTimeCode time)
 {
     SdfPropertySpecHandleVector propSpecs = op.GetAttr().GetPropertyStack(time);
@@ -284,7 +295,7 @@ bool TransformationMatrix::pushVector(
         GfVec3d oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue) {
-            op.Set(value, timeCode);
+            op.Set(value, getTimeCodeForOp(op, getTimeCodeForOp(op, timeCode)));
         }
     } break;
 
@@ -293,7 +304,7 @@ bool TransformationMatrix::pushVector(
         GfVec3f oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue) {
-            op.Set(value, timeCode);
+            op.Set(value, getTimeCodeForOp(op, getTimeCodeForOp(op, timeCode)));
         }
     } break;
 
@@ -302,7 +313,7 @@ bool TransformationMatrix::pushVector(
         GfVec3h oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue) {
-            op.Set(value, timeCode);
+            op.Set(value, getTimeCodeForOp(op, getTimeCodeForOp(op, timeCode)));
         }
     } break;
 
@@ -311,7 +322,7 @@ bool TransformationMatrix::pushVector(
         GfVec3i oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue) {
-            op.Set(value, timeCode);
+            op.Set(value, getTimeCodeForOp(op, getTimeCodeForOp(op, timeCode)));
         }
     } break;
 
@@ -365,7 +376,7 @@ bool TransformationMatrix::pushShear(
         GfMatrix4d oldValue;
         op.Get(&oldValue, timeCode);
         if (m != oldValue)
-            op.Set(m, timeCode);
+            op.Set(m, getTimeCodeForOp(op, timeCode));
     } break;
 
     default: return false;
@@ -518,7 +529,7 @@ bool TransformationMatrix::pushMatrix(
         GfMatrix4d        oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue) {
-            const bool retValue = op.Set<GfMatrix4d>(value, timeCode);
+            const bool retValue = op.Set<GfMatrix4d>(value, getTimeCodeForOp(op, timeCode));
             if (!retValue) {
                 return false;
             }
@@ -576,7 +587,7 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
             op.GetOpName().GetText());
 
     if (timeCode.IsDefault() && op.GetNumTimeSamples()) {
-        if (!hasEmptyDefaultValue(op, timeCode)) {
+        if (!hasEmptyDefaultValue(op, getTimeCodeForOp(op, timeCode))) {
             return false;
         }
     }
@@ -589,7 +600,7 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
         GfVec3d oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue)
-            op.Set(value, timeCode);
+            op.Set(value, getTimeCodeForOp(op, timeCode));
     } break;
 
     case UsdDataType::kVec3f: {
@@ -597,7 +608,7 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
         GfVec3f oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue)
-            op.Set(value, timeCode);
+            op.Set(value, getTimeCodeForOp(op, timeCode));
     } break;
 
     case UsdDataType::kVec3h: {
@@ -605,7 +616,7 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
         GfVec3h oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue)
-            op.Set(value, timeCode);
+            op.Set(value, getTimeCodeForOp(op, timeCode));
     } break;
 
     case UsdDataType::kVec3i: {
@@ -613,7 +624,7 @@ bool TransformationMatrix::pushPoint(const MPoint& result, UsdGeomXformOp& op, U
         GfVec3i oldValue;
         op.Get(&oldValue, timeCode);
         if (value != oldValue)
-            op.Set(value, timeCode);
+            op.Set(value, getTimeCodeForOp(op, timeCode));
     } break;
 
     default: return false;
@@ -686,28 +697,28 @@ void TransformationMatrix::pushDouble(const double value, UsdGeomXformOp& op, Us
         GfHalf oldValue;
         op.Get(&oldValue);
         if (oldValue != GfHalf(value))
-            op.Set(GfHalf(value), timeCode);
+            op.Set(GfHalf(value), getTimeCodeForOp(op, timeCode));
     } break;
 
     case UsdDataType::kFloat: {
         float oldValue;
         op.Get(&oldValue);
         if (oldValue != float(value))
-            op.Set(float(value), timeCode);
+            op.Set(float(value), getTimeCodeForOp(op, timeCode));
     } break;
 
     case UsdDataType::kDouble: {
         double oldValue;
         op.Get(&oldValue);
         if (oldValue != double(value))
-            op.Set(double(value), timeCode);
+            op.Set(double(value), getTimeCodeForOp(op, timeCode));
     } break;
 
     case UsdDataType::kInt: {
         int32_t oldValue;
         op.Get(&oldValue);
         if (oldValue != int32_t(value))
-            op.Set(int32_t(value), timeCode);
+            op.Set(int32_t(value), getTimeCodeForOp(op, timeCode));
     } break;
 
     default: break;
