@@ -174,11 +174,11 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         cmds.select(clear=True)
 
-        # Delete the even numbered props:
+        # Deactivate the even numbered props:
         evenPropsChildrenPre = propsChildrenPre[0:35:2]
         for propChild in evenPropsChildrenPre:
             ufe.GlobalSelection.get().append(propChild)
-        cmds.delete()
+
 
         worldHierarchy = ufe.Hierarchy.hierarchy(worldItem)
         worldChildren = worldHierarchy.children()
@@ -200,7 +200,6 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertEqual(ballDupName, "Ball_36")
 
         cmds.undo()  # undo duplication
-        cmds.undo()  # undo deletion
 
     def testDuplicateLoadedAndUnloaded(self):
         '''Duplicate a USD object when the object payload is loaded or unloaded under an unloaded ancestor.'''

@@ -68,7 +68,8 @@ class ChildFilterTestCase(unittest.TestCase):
         # Deactivate Ball_3 (which will remove it from children)
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
         ball3Hier = ufe.Hierarchy.createItem(ball3Path)
-        cmds.delete('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
+        ballSetPrim = mayaUsd.ufe.ufePathToPrim('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
+        ballSetPrim.SetActive(False)
 
         # Props should now have 5 children and ball3 should not be one of them.
         children = propsHier.children()
