@@ -66,7 +66,7 @@ void exitingCallback(void* /* unusedData */)
 
 int gRegistrationCount = 0;
 
-bool gExitingCbId = 0;
+MCallbackId gExitingCbId = 0;
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
