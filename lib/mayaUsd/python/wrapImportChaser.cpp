@@ -116,8 +116,8 @@ void wrapImportChaserRegistryFactoryContext()
             &UsdMayaImportChaserRegistry::FactoryContext::GetImportedPrims,
             boost::python::return_internal_reference<>())
         .def(
-            "GetImportJobArgs",
-            &UsdMayaImportChaserRegistry::FactoryContext::GetImportJobArgs,
+            "GetJobArgs",
+            &UsdMayaImportChaserRegistry::FactoryContext::GetJobArgs,
             boost::python::return_internal_reference<>());
 }
 
