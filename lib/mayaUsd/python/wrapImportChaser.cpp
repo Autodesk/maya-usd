@@ -97,24 +97,6 @@ public:
         return _factoryContext;
     }
 
-    boost::python::object GetChaserArgs()
-    {
-        boost::python::dict editDict;
-        if (!_factoryContext.GetImportJobArgs().allChaserArgs.empty())
-        {
-            std::map<std::string, std::string> myArgs;
-            TfMapLookup(
-                _factoryContext.GetImportJobArgs().allChaserArgs, _factoryContext.GetImportJobArgs().chaserNames[0], &myArgs);
-
-            for (const auto& item : myArgs) {
-                editDict[item.first] = item.second;
-            }
-        }
-        return editDict;
-    }
-
-    std::string GetChaserName() { return _factoryContext.GetImportJobArgs().chaserNames[0]; }
-
 private:
     const UsdMayaImportChaserRegistry::FactoryContext& _factoryContext;
 };
@@ -125,11 +107,14 @@ void wrapImportChaserRegistryFactoryContext()
     boost::python::class_<UsdMayaImportChaserRegistry::FactoryContext>(
         "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
         .def("GetStage", &UsdMayaImportChaserRegistry::FactoryContext::GetStage)
-        /*        .def(
-                    "GetDagToUsdMap",
-                    &UsdMayaExportChaserRegistry::FactoryContext::GetDagToUsdMap,
-                    boost::python::return_internal_reference<>())
-                    */
+        .def(
+            "GetImportedDagPaths",
+            &UsdMayaImportChaserRegistry::FactoryContext::GetImportedDagPaths,
+            boost::python::return_internal_reference<>())
+        .def(
+            "GetImportedPrims",
+            &UsdMayaImportChaserRegistry::FactoryContext::GetImportedPrims,
+            boost::python::return_internal_reference<>())
         .def(
             "GetImportJobArgs",
             &UsdMayaImportChaserRegistry::FactoryContext::GetImportJobArgs,
@@ -151,8 +136,6 @@ void wrapImportChaser()
             "GetFactoryContext",
             &ImportChaserWrapper::GetFactoryContext,
             boost::python::return_internal_reference<>())
-        .def("GetChaserName", &ImportChaserWrapper::GetChaserName)
-        .def("GetChaserArgs", &ImportChaserWrapper::GetChaserArgs)
         .def("Register", &ImportChaserWrapper::Register)
         .staticmethod("Register");
 }

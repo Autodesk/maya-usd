@@ -36,10 +36,8 @@ class exportChaserTest(mayaUsdLib.ExportChaser):
 
     def ExportDefault(self):
         exportChaserTest.ExportDefaultCalled = True
-        print(self.GetFactoryContext().GetJobArgs().getChaserNames())
-        print(self.GetFactoryContext().GetJobArgs().getChaserArgs('test'))
-        exportChaserTest.ChaserName = self.GetChaserName() 
-        exportChaserTest.ChaserArgs = self.GetChaserArgs() 
+        exportChaserTest.ChaserName = self.GetFactoryContext().GetJobArgs().getChaserNames()[0] 
+        exportChaserTest.ChaserArgs = self.GetFactoryContext().GetJobArgs().getChaserArgs('test')
         return self.ExportFrame(Usd.TimeCode.Default())
 
     def ExportFrame(self, frame):

@@ -89,27 +89,6 @@ public:
         return _factoryContext;
     }
 
-    boost::python::object GetChaserArgs()
-    {
-        boost::python::dict editDict;
-
-        if (!_factoryContext.GetJobArgs().allChaserArgs.empty()) {
-
-            std::map<std::string, std::string> myArgs;
-            TfMapLookup(
-                _factoryContext.GetJobArgs().allChaserArgs,
-                _factoryContext.GetJobArgs().chaserNames[0],
-                &myArgs);
-
-            for (const auto& item : myArgs) {
-                editDict[item.first] = item.second;
-            }
-        }
-        return editDict;
-    }
-
-    std::string GetChaserName() { return _factoryContext.GetJobArgs().chaserNames[0]; }
-
     private:
         const UsdMayaExportChaserRegistry::FactoryContext& _factoryContext;
 };
@@ -122,11 +101,10 @@ void wrapExportChaserRegistryFactoryContext()
         .def(
             "GetStage",
             &UsdMayaExportChaserRegistry::FactoryContext::GetStage)
-/*        .def(
+        .def(
             "GetDagToUsdMap",
             &UsdMayaExportChaserRegistry::FactoryContext::GetDagToUsdMap,
             boost::python::return_internal_reference<>())
-            */
         .def(
             "GetJobArgs",
             &UsdMayaExportChaserRegistry::FactoryContext::GetJobArgs,
@@ -148,8 +126,6 @@ void wrapExportChaser()
             "GetFactoryContext",
             &ExportChaserWrapper::GetFactoryContext,
             boost::python::return_internal_reference<>())
-        .def("GetChaserName", &ExportChaserWrapper::GetChaserName)
-        .def("GetChaserArgs", &ExportChaserWrapper::GetChaserArgs)
         .def("Register", &ExportChaserWrapper::Register)
         .staticmethod("Register");
 }
