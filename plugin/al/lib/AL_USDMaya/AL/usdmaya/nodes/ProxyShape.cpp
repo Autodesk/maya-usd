@@ -82,6 +82,27 @@ const int _proxyShapeProfilerCategory = MProfiler::addCategory(
     "AL_usdmaya_ProxyShape"
 #endif
 );
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief Verify given Maya node is still valid.
+bool hasNode(const MFnDependencyNode& fn)
+{
+    // Note: Once the actual Maya node has been deleted from the scene,
+    //       accessing the DAG path (`.getPath()`) or user data (`.userNode()`)
+    //       would cause Maya to crash.
+    //       In this function, the validation is done via lookup its uuid.
+    auto nodeUuid = fn.uuid();
+    if (!nodeUuid.valid()) {
+        return false;
+    }
+    MStringArray result;
+    if (MGlobal::executeCommand(MString("ls \"") + nodeUuid.asString() + "\"", result)
+        != MStatus::kSuccess) {
+        return false;
+    }
+    return result.length();
+}
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1789,7 +1810,7 @@ void ProxyShape::serialiseTransformRefs()
 
         if (handle.isAlive() && handle.isValid()) {
             MFnDagNode fn(handle.object(), &status);
-            if (status) {
+            if (status && hasNode(fn)) {
                 MDagPath path;
                 fn.getPath(path);
                 oss << path.fullPathName() << " " << iter.first.GetText() << " "
@@ -1887,7 +1908,7 @@ Scope* ProxyShape::TransformReference::getTransformNode() const
     if (n.isValid() && n.isAlive()) {
         MStatus           status;
         MFnDependencyNode fn(n.object(), &status);
-        if (status == MS::kSuccess) {
+        if (status == MS::kSuccess && hasNode(fn)) {
             Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
             if (transformNode) {
                 TF_DEBUG(ALUSDMAYA_EVALUATION)
