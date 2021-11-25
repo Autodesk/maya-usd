@@ -17,6 +17,9 @@
 
 #include "private/UfeNotifGuard.h"
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/fileio/primUpdaterManager.h>
+#endif
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
@@ -573,7 +576,13 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 
         // Top-level items (do not add for gateway type node):
         if (!fIsAGatewayType) {
-            items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+#ifdef UFE_V3_FEATURES_AVAILABLE
+            if (PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
+#endif
+                items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+#ifdef UFE_V3_FEATURES_AVAILABLE
+            }
+#endif
             items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             items.emplace_back(Ufe::ContextItem::kSeparator);
 
@@ -785,7 +794,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MGlobal::executeCommand(script);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
-        script.format("mayaUsdMenu_copyToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
+        script.format("mayaUsdMenu_duplicateToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script);
     }
 

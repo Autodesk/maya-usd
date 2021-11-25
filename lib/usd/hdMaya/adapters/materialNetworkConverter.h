@@ -26,6 +26,8 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 
+#include <unordered_map>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaShaderParam

@@ -95,9 +95,6 @@ const HdReprSelector kBBoxReprSelector(TfToken(), HdVP2ReprTokens->bbox);
 //! Representation selector for point snapping
 const HdReprSelector kPointsReprSelector(TfToken(), TfToken(), HdReprTokens->points);
 
-//! Representation selector for selection update
-const HdReprSelector kSelectionReprSelector(HdVP2ReprTokens->selection);
-
 #if defined(WANT_UFE_BUILD)
 //! \brief  Query the global selection list adjustment.
 MGlobal::ListAdjustment GetListAdjustment()
@@ -287,16 +284,8 @@ void _ConfigureReprs()
     // Edge desc for bbox display.
     HdMesh::ConfigureRepr(HdVP2ReprTokens->bbox, reprDescEdge);
 
-    // Special token for selection update and no need to create repr. Adding
-    // the empty desc to remove Hydra warning.
-    HdMesh::ConfigureRepr(HdVP2ReprTokens->selection, HdMeshReprDesc());
-
     // Wireframe desc for bbox display.
     HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->bbox, HdBasisCurvesGeomStyleWire);
-
-    // Special token for selection update and no need to create repr. Adding
-    // the null desc to remove Hydra warning.
-    HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->selection, HdBasisCurvesGeomStyleInvalid);
 
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
     // Wire for default material:
@@ -840,7 +829,10 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _taskController->SetCollection(*_defaultCollection);
     }
 
-    _engine.Execute(_renderIndex.get(), &_dummyTasks);
+    // if there are no repr's to update then don't even call sync.
+    if (reprSelector != HdReprSelector()) {
+        _engine.Execute(_renderIndex.get(), &_dummyTasks);
+    }
 }
 
 //! \brief  Main update entry from subscene override.
@@ -1187,14 +1179,17 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     const MHWRender::DisplayStatus previousStatus = _displayStatus;
     _displayStatus = MHWRender::MGeometryUtilities::displayStatus(_proxyShapeData->ProxyDagPath());
 
-    SdfPathVector rootPaths;
+    SdfPathVector        rootPaths;
+    const SdfPathVector* dirtyPaths = nullptr;
 
     if (_displayStatus == MHWRender::kLead || _displayStatus == MHWRender::kActive) {
         if (_displayStatus != previousStatus) {
             rootPaths.push_back(SdfPath::AbsoluteRootPath());
+            dirtyPaths = &_renderIndex->GetRprimIds();
         }
     } else if (previousStatus == MHWRender::kLead || previousStatus == MHWRender::kActive) {
         rootPaths.push_back(SdfPath::AbsoluteRootPath());
+        dirtyPaths = &_renderIndex->GetRprimIds();
         _PopulateSelection();
     } else {
         // Append pre-update lead and active selection.
@@ -1207,25 +1202,29 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
         // Append post-update lead and active selection.
         AppendSelectedPrimPaths(_leadSelection, rootPaths);
         AppendSelectedPrimPaths(_activeSelection, rootPaths);
+
+        dirtyPaths = &rootPaths;
     }
 
     if (!rootPaths.empty()) {
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        // When the selection mode changes then we have to update all the selected render
+        // When the selection changes then we have to update all the selected render
         // items. Set a dirty flag on each of the rprims so they know what to update.
         // Avoid trying to set dirty the absolute root as it is not a Rprim.
-        if (_selectionModeChanged) {
-            HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-            const SdfPath&   absRoot = SdfPath::AbsoluteRootPath();
-            for (auto path : rootPaths) {
-                if (path != absRoot) {
-                    changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtySelectionMode);
-                }
-            }
-        }
+        HdDirtyBits dirtySelectionBits = MayaPrimCommon::DirtySelectionHighlight;
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+        // If the selection mode changes, for example into or out of point snapping,
+        // then we need to do a little extra work.
+        if (_selectionModeChanged)
+            dirtySelectionBits |= MayaPrimCommon::DirtySelectionMode;
 #endif
+        HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+        for (auto path : *dirtyPaths) {
+            changeTracker.MarkRprimDirty(path, dirtySelectionBits);
+        }
 
-        HdRprimCollection collection(HdTokens->geometry, kSelectionReprSelector);
+        // now that the appropriate prims have been marked dirty trigger
+        // a sync so that they all update.
+        HdRprimCollection collection(HdTokens->geometry, kSmoothHullReprSelector);
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
@@ -1454,6 +1453,11 @@ bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
         TF_WARN("Unknown render tag");
         return true;
     }
+}
+
+UsdImagingDelegate* ProxyRenderDelegate::GetUsdImagingDelegate() const
+{
+    return _sceneDelegate.get();
 }
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT

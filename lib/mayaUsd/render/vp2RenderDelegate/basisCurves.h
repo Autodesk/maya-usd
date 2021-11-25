@@ -157,7 +157,6 @@ private:
 
     enum DirtyBits : HdDirtyBits
     {
-        DirtySelection = MayaPrimCommon::DirtySelection,
         DirtySelectionHighlight = MayaPrimCommon::DirtySelectionHighlight
     };
 

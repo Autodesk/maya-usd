@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         functorPrimWriter.cpp
         importData.cpp
         instancedNodeWriter.cpp
+        jobContextRegistry.cpp
         primReader.cpp
         primReaderArgs.cpp
         primReaderContext.cpp
@@ -17,6 +18,8 @@ target_sources(${PROJECT_NAME}
         primWriterContext.cpp
         primWriterRegistry.cpp
         registryHelper.cpp
+        schemaApiAdaptor.cpp
+        schemaApiAdaptorRegistry.cpp
         shaderReader.cpp
         shaderReaderRegistry.cpp
         shaderWriter.cpp
@@ -44,6 +47,7 @@ set(HEADERS
     functorPrimWriter.h
     importData.h
     instancedNodeWriter.h
+    jobContextRegistry.h
     primReader.h
     primReaderArgs.h
     primReaderContext.h
@@ -53,6 +57,8 @@ set(HEADERS
     primWriterContext.h
     primWriterRegistry.h
     registryHelper.h
+    schemaApiAdaptor.h
+    schemaApiAdaptorRegistry.h
     shaderReader.h
     shaderReaderRegistry.h
     shaderWriter.h

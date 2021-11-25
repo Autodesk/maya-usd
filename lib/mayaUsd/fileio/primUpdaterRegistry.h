@@ -91,12 +91,12 @@ struct UsdMayaPrimUpdaterRegistry
         UsdMayaPrimUpdater::Supports sup,
         UpdaterFactoryFn             fn);
 
-    /// \brief Register \p fn as a reader provider for \p T.
+    /// \brief Register \p fn as an updater provider for \p T.
     ///
-    /// Example for registering a reader factory in your custom plugin, assuming
+    /// Example for registering an updater factory in your custom plugin, assuming
     /// that MyType is registered with the TfType system:
     /// \code{.cpp}
-    /// class MyReader : public UsdMayaPrimUpdater {
+    /// class MyUpdater : public UsdMayaPrimUpdater {
     ///     static UsdMayaPrimReaderSharedPtr Create(
     ///             const UsdMayaPrimReaderArgs&);
     /// };

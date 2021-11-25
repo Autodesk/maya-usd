@@ -59,15 +59,23 @@ public:
     // exported by push into the destination dstLayer which is in the scene.
     MAYAUSD_CORE_PUBLIC
     virtual bool pushCopySpecs(
+        UsdStageRefPtr srcStage,
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,
+        UsdStageRefPtr dstStage,
         SdfLayerRefPtr dstLayer,
         const SdfPath& dstSdfPath);
+
+    /// Query to determine if the prim corresponding to this updater can be
+    /// edited as Maya.  The default implementation in this class checks
+    /// whether there is an importer for the prim.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool canEditAsMaya() const;
 
     /// Customize the pulled prim after pull import.  Default implementation in
     /// this class is a no-op.
     MAYAUSD_CORE_PUBLIC
-    virtual bool pull(const UsdMayaPrimUpdaterContext& context);
+    virtual bool editAsMaya(const UsdMayaPrimUpdaterContext& context);
 
     /// Discard edits done in Maya.  Implementation in this class removes the
     /// Maya node.
@@ -96,10 +104,11 @@ public:
 
 private:
     /// The MObject for the Maya node being updated, valid for both DAG and DG
-    /// node prim updaters.
+    /// node prim updaters.  Can be a null object if the updater was created
+    /// only for canEditAsMaya() query purposes.
     const MObject _mayaObject;
 
-    /// The proxy shape and destination sdf path if provided
+    /// The proxy shape and destination Sdf path if provided.
     const Ufe::Path _path;
 };
 

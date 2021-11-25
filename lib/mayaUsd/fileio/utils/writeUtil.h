@@ -42,6 +42,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdUtilsSparseValueWriter;
+struct UsdMayaJobExportArgs;
 
 /// This struct contains helpers for writing USD (thus reading Maya data).
 struct UsdMayaWriteUtil
@@ -165,9 +166,11 @@ struct UsdMayaWriteUtil
     /// \sa UsdMayaAdaptor::GetAppliedSchemas
     MAYAUSD_CORE_PUBLIC
     static bool WriteAPISchemaAttributesToPrim(
-        const MObject&             mayaObject,
-        const UsdPrim&             prim,
-        UsdUtilsSparseValueWriter* valueWriter = nullptr);
+        const MObject&              mayaObject,
+        const UsdPrim&              prim,
+        const UsdMayaJobExportArgs& jobExportArgs,
+        const UsdTimeCode&          usdTime = UsdTimeCode::Default(),
+        UsdUtilsSparseValueWriter*  valueWriter = nullptr);
 
     template <typename T>
     static size_t WriteSchemaAttributesToPrim(

@@ -34,7 +34,7 @@ using namespace boost;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-bool push(const std::string& nodeName)
+bool mergeToUsd(const std::string& nodeName)
 {
     MObject obj;
     MStatus status = UsdMayaUtil::GetMObjectByName(nodeName, obj);
@@ -54,14 +54,19 @@ bool push(const std::string& nodeName)
     if (!PrimUpdaterManager::readPullInformation(dagPath, path))
         return false;
 
-    return PrimUpdaterManager::getInstance().push(dagNode, path);
+    return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path);
 }
 
-bool pull(const std::string& ufePathString)
+bool editAsMaya(const std::string& ufePathString)
 {
     Ufe::Path path = Ufe::PathString::path(ufePathString);
 
-    return PrimUpdaterManager::getInstance().pull(path);
+    return PrimUpdaterManager::getInstance().editAsMaya(path);
+}
+
+bool canEditAsMaya(const std::string& ufePathString)
+{
+    return PrimUpdaterManager::getInstance().canEditAsMaya(Ufe::PathString::path(ufePathString));
 }
 
 bool discardEdits(const std::string& nodeName)
@@ -75,7 +80,7 @@ bool discardEdits(const std::string& nodeName)
     return PrimUpdaterManager::getInstance().discardEdits(path);
 }
 
-bool copyBetween(const std::string& srcUfePathString, const std::string& dstUfePathString)
+bool duplicate(const std::string& srcUfePathString, const std::string& dstUfePathString)
 {
     Ufe::Path src = Ufe::PathString::path(srcUfePathString);
     Ufe::Path dst = Ufe::PathString::path(dstUfePathString);
@@ -83,7 +88,7 @@ bool copyBetween(const std::string& srcUfePathString, const std::string& dstUfeP
     if (src.empty() || dst.empty())
         return false;
 
-    return PrimUpdaterManager::getInstance().copyBetween(src, dst);
+    return PrimUpdaterManager::getInstance().duplicate(src, dst);
 }
 
 } // namespace
@@ -92,11 +97,9 @@ void wrapPrimUpdaterManager()
 {
     using This = PrimUpdaterManager;
     class_<This>("PrimUpdaterManager", no_init)
-        .def("push", push)
-        .def("pull", pull)
-        .def("pullClear", discardEdits)
-        .def("mergeToUsd", push)
-        .def("editAsMaya", pull)
+        .def("mergeToUsd", mergeToUsd)
+        .def("editAsMaya", editAsMaya)
+        .def("canEditAsMaya", canEditAsMaya)
         .def("discardEdits", discardEdits)
-        .def("copy", copyBetween);
+        .def("duplicate", duplicate);
 }
