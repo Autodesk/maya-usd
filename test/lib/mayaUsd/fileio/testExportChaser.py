@@ -34,10 +34,13 @@ class exportChaserTest(mayaUsdLib.ExportChaser):
     ChaserName = {}
     ChaserArgs = {}
 
+    def __init__(self, factoryContext, *args, **kwargs):
+        super(exportChaserTest, self).__init__(factoryContext, *args, **kwargs)
+        exportChaserTest.ChaserName = factoryContext.GetJobArgs().getChaserNames()[0] 
+        exportChaserTest.ChaserArgs = factoryContext.GetJobArgs().getChaserArgs('test')
+
     def ExportDefault(self):
         exportChaserTest.ExportDefaultCalled = True
-        exportChaserTest.ChaserName = self.GetFactoryContext().GetJobArgs().getChaserNames()[0] 
-        exportChaserTest.ChaserArgs = self.GetFactoryContext().GetJobArgs().getChaserArgs('test')
         return self.ExportFrame(Usd.TimeCode.Default())
 
     def ExportFrame(self, frame):

@@ -39,14 +39,10 @@ public:
     typedef ImportChaserWrapper This;
     typedef UsdMayaImportChaser base_t;
 
-    static ImportChaserWrapper* New(uintptr_t createdWrapper)
+    static ImportChaserWrapper*
+    New(const UsdMayaImportChaserRegistry::FactoryContext& factoryContext, uintptr_t createdWrapper)
     {
         return (ImportChaserWrapper*)createdWrapper;
-    }
-
-    ImportChaserWrapper(const UsdMayaImportChaserRegistry::FactoryContext& factoryContext)
-        : _factoryContext(factoryContext)
-    {
     }
 
     virtual ~ImportChaserWrapper() { }
@@ -82,23 +78,15 @@ public:
         UsdMayaImportChaserRegistry::GetInstance().RegisterFactory(
             name,
             [=](const UsdMayaImportChaserRegistry::FactoryContext& factoryContext) {
-                auto                  chaser = new ImportChaserWrapper(factoryContext);
+                auto                  chaser = new ImportChaserWrapper();
                 TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)(ImportChaserWrapper*)chaser);
+                boost::python::object instance = cl(factoryContext, (uintptr_t)chaser);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), chaser);
                 return chaser;
             },
             true);
     }
-
-    const UsdMayaImportChaserRegistry::FactoryContext& GetFactoryContext()
-    {
-        return _factoryContext;
-    }
-
-private:
-    const UsdMayaImportChaserRegistry::FactoryContext& _factoryContext;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -132,10 +120,6 @@ void wrapImportChaser()
         .def("PostImport", &This::PostImport, &ImportChaserWrapper::default_PostImport)
         .def("Redo", &This::Redo, &ImportChaserWrapper::default_Redo)
         .def("Undo", &This::Undo, &ImportChaserWrapper::default_Undo)
-        .def(
-            "GetFactoryContext",
-            &ImportChaserWrapper::GetFactoryContext,
-            boost::python::return_internal_reference<>())
         .def("Register", &ImportChaserWrapper::Register)
         .staticmethod("Register");
 }

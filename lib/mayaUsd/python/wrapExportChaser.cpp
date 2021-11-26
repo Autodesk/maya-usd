@@ -39,14 +39,9 @@ public:
     typedef ExportChaserWrapper This;
     typedef UsdMayaExportChaser base_t;
 
-    static ExportChaserWrapper* New(uintptr_t createdWrapper)
+    static ExportChaserWrapper* New(const UsdMayaExportChaserRegistry::FactoryContext& factoryContext, uintptr_t createdWrapper)
     {
         return (ExportChaserWrapper*)createdWrapper;
-    }
-
-    ExportChaserWrapper(const UsdMayaExportChaserRegistry::FactoryContext& factoryContext)
-        : _factoryContext(factoryContext)
-    {
     }
 
     virtual ~ExportChaserWrapper() { }
@@ -74,23 +69,15 @@ public:
         UsdMayaExportChaserRegistry::GetInstance().RegisterFactory(
             mayaTypeName,
             [=](const UsdMayaExportChaserRegistry::FactoryContext& factoryContext) {
-                auto                  chaser = new ExportChaserWrapper(factoryContext);
+                auto                  chaser = new ExportChaserWrapper();
                 TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)chaser);
+                boost::python::object instance = cl(factoryContext, (uintptr_t)chaser);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), chaser);
                 return chaser;
             },
             true);
     }
-
-    const UsdMayaExportChaserRegistry::FactoryContext& GetFactoryContext()
-    {
-        return _factoryContext;
-    }
-
-    private:
-        const UsdMayaExportChaserRegistry::FactoryContext& _factoryContext;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -122,10 +109,6 @@ void wrapExportChaser()
         .def("ExportDefault", &This::ExportDefault, &ExportChaserWrapper::default_ExportDefault)
         .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
         .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
-        .def(
-            "GetFactoryContext",
-            &ExportChaserWrapper::GetFactoryContext,
-            boost::python::return_internal_reference<>())
         .def("Register", &ExportChaserWrapper::Register)
         .staticmethod("Register");
 }
