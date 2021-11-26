@@ -500,6 +500,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
                 TF_WARN("HdxProgressiveTask not found");
             }
         }
+
         // MAYA-114630
         // https://github.com/PixarAnimationStudios/USD/commit/fc63eaef29
         // removed backing, and restoring of GL_FRAMEBUFFER state.
