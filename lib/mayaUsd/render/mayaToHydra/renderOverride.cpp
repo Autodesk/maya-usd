@@ -33,10 +33,10 @@
 #include <pxr/imaging/hd/camera.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hdx/colorizeSelectionTask.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/tokens.h>
-#include <pxr/imaging/hdx/colorizeSelectionTask.h>
 #include <pxr/imaging/hgi/hgi.h>
 #include <pxr/imaging/hgi/tokens.h>
 #include <pxr/pxr.h>
