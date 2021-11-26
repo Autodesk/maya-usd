@@ -91,6 +91,73 @@ private:
     MtohRenderOverride* _override;
 };
 
+struct HdMayaGLBackup
+{
+    GLint RestoreFramebuffer = 0;
+    GLint RestoreDrawFramebuffer = 0;
+    GLint RestoreReadFramebuffer = 0;
+};
+
+class HdMayaBackupGLStateTask : public HdTask
+{
+    using base = HdTask;
+    static const SdfPath& _Id()
+    {
+        static SdfPath path = SdfPath("HdMayaBackupGLStateTask");
+        return path;
+    }
+
+public:
+    HdMayaGLBackup& _backup;
+
+    HdMayaBackupGLStateTask(HdMayaGLBackup& backup)
+        : base(_Id())
+        , _backup(backup)
+    {
+    }
+    /// Prepare the render pass resources
+    virtual void Prepare(HdTaskContext* ctx, HdRenderIndex* renderIndex) override { }
+
+    /// Execute the task
+    virtual void Execute(HdTaskContext* ctx) override
+    {
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_backup.RestoreFramebuffer);
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &_backup.RestoreDrawFramebuffer);
+        glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &_backup.RestoreReadFramebuffer);
+    }
+    virtual void Sync(HdSceneDelegate* del, HdTaskContext* ctx, HdDirtyBits* dirtyBits) override { }
+};
+
+class HdMayaRestoreGLStateTask : public HdTask
+{
+    using base = HdTask;
+    static const SdfPath& _Id()
+    {
+        static SdfPath path = SdfPath("HdMayaRestoreGLStateTask");
+        return path;
+    }
+
+public:
+    HdMayaGLBackup& _backup;
+
+    HdMayaRestoreGLStateTask(HdMayaGLBackup& backup)
+        : base(_Id())
+        , _backup(backup)
+    {
+    }
+    /// Prepare the render pass resources
+    virtual void Prepare(HdTaskContext* ctx, HdRenderIndex* renderIndex) override { }
+
+    /// Execute the task
+    virtual void Execute(HdTaskContext* ctx) override
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, _backup.RestoreFramebuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, _backup.RestoreDrawFramebuffer);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, _backup.RestoreReadFramebuffer);
+    }
+    virtual void Sync(HdSceneDelegate* del, HdTaskContext* ctx, HdDirtyBits* dirtyBits) override { }
+};
+
 class HdMayaSetRenderGLState
 {
 public:
