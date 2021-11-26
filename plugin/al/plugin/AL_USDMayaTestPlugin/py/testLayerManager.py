@@ -25,26 +25,24 @@ from AL.usdmaya import ProxyShape
 
 from pxr import Sdf, Usd
 
+import fixturesUtils
+
+
 class TestLayerManagerSerialisation(unittest.TestCase):
     """Test cases for layer manager serialisation and deserialisation"""
 
     @classmethod
     def setUpClass(cls):
-        # Reset the output directory
-        cls._outputPath = os.path.join(os.path.abspath('.'), os.path.splitext(__file__)[0] + "Output")
-        if os.path.exists(cls._outputPath):
-            shutil.rmtree(cls._outputPath)
-        os.mkdir(cls._outputPath)
-        cls._mayaFilePath = os.path.join(cls._outputPath, 'LayerManagerSerialisation.ma')
-        cls._usdFilePath = os.path.join(cls._outputPath, 'LayerManagerSerialisation.usda')
-
-        # Load the plugin
-        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
+        # Load the plugin and setup test output
+        fixturesUtils.setUpClass(__file__, pluginName="AL_USDMayaPlugin")
+        className = cls.__name__
+        cls._mayaFilePath = os.path.abspath(className + ".ma")
+        cls._usdFilePath = os.path.abspath(className + ".usda")
 
     @classmethod
     def tearDownClass(cls):
-        # Unload the plugin
-        cmds.unloadPlugin("AL_USDMayaPlugin", force=True)
+        # Unload the plugin and exit test output
+        fixturesUtils.tearDownClass(pluginName="AL_USDMayaPlugin")
 
     app = 'maya'
     def setUp(self):
@@ -152,7 +150,7 @@ class TestLayerManagerSerialisation(unittest.TestCase):
             layers = []
             for ext in ["usd", "usda", "usdc"]:
                 _format = Sdf.FileFormat.FindByExtension(ext)
-                filePath = os.path.join(self._outputPath, 'TestLayer.{}'.format(ext))
+                filePath = 'TestLayer.{}'.format(ext)
                 layer = Sdf.Layer.CreateNew(filePath)
                 layer.comment = ext
                 layer.Save()
@@ -209,8 +207,4 @@ class TestLayerManagerSerialisation(unittest.TestCase):
 
 
 if __name__ == "__main__":
-
-    tests = [unittest.TestLoader().loadTestsFromTestCase(TestLayerManagerSerialisation),]
-    results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
-    exitCode = int(not all([result.wasSuccessful() for result in results]))
-    cmds.quit(exitCode=(exitCode))
+    fixturesUtils.runTests(globals(), verbosity=2)
