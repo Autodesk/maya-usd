@@ -105,7 +105,7 @@ void UsdUndoDeleteCommand::redo()
 void UsdUndoDeleteCommand::perform(bool state)
 {
     MayaUsd::ufe::InAddOrDeleteOperation ad;
- 
+
     const auto& stage = _prim.GetStage();
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
