@@ -301,7 +301,7 @@ boost::python::object getChaserArgs(UsdMayaJobExportArgs& self, const std::strin
     for (const auto& item : myArgs) {
         editDict[item.first] = item.second;
     }
-    return editDict;
+    return boost::python::object(editDict);
 }
 } // namespace
 //----------------------------------------------------------------------------------------------------------------------
