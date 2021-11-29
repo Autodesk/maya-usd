@@ -263,24 +263,21 @@ void wrapPrimReaderContext()
 }
 
 namespace {
-    std::vector<std::string> getChaserNames(UsdMayaJobImportArgs& self) 
-    {
-        return self.chaserNames;
+std::vector<std::string> getChaserNames(UsdMayaJobImportArgs& self) { return self.chaserNames; }
+
+boost::python::object getChaserArgs(UsdMayaJobImportArgs& self, const std::string& chaser)
+{
+    boost::python::dict editDict;
+
+    std::map<std::string, std::string> myArgs;
+    TfMapLookup(self.allChaserArgs, chaser, &myArgs);
+
+    for (const auto& item : myArgs) {
+        editDict[item.first] = item.second;
     }
-
-    boost::python::object getChaserArgs(UsdMayaJobImportArgs& self, const std::string& chaser) 
-    {
-        boost::python::dict editDict;
-
-        std::map<std::string, std::string> myArgs;
-        TfMapLookup(self.allChaserArgs, chaser, &myArgs);
-
-        for (const auto& item : myArgs) {
-            editDict[item.first] = item.second;
-        }
-        return editDict;
-    }
+    return editDict;
 }
+} // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobImportArgs()

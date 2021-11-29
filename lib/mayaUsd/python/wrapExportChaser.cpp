@@ -39,7 +39,8 @@ public:
     typedef ExportChaserWrapper This;
     typedef UsdMayaExportChaser base_t;
 
-    static ExportChaserWrapper* New(const UsdMayaExportChaserRegistry::FactoryContext& factoryContext, uintptr_t createdWrapper)
+    static ExportChaserWrapper*
+    New(const UsdMayaExportChaserRegistry::FactoryContext& factoryContext, uintptr_t createdWrapper)
     {
         return (ExportChaserWrapper*)createdWrapper;
     }
@@ -85,9 +86,7 @@ void wrapExportChaserRegistryFactoryContext()
 {
     boost::python::class_<UsdMayaExportChaserRegistry::FactoryContext>(
         "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
-        .def(
-            "GetStage",
-            &UsdMayaExportChaserRegistry::FactoryContext::GetStage)
+        .def("GetStage", &UsdMayaExportChaserRegistry::FactoryContext::GetStage)
         .def(
             "GetDagToUsdMap",
             &UsdMayaExportChaserRegistry::FactoryContext::GetDagToUsdMap,
