@@ -100,113 +100,6 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() <= 1, 'only available in UFE v1 or less.')
-    def testDeleteUfe1(self):
-        '''Delete Maya and USD objects.'''
-
-        # Create our UFE notification observer
-        ufeObs = TestObserver()
-
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
-
-        # Select two objects, one Maya, one USD.
-        spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
-        sphereItem = ufe.Hierarchy.createItem(spherePath)
-        sphereShapePath = ufe.Path(
-            mayaUtils.createUfePathSegment("|pSphere1|pSphereShape1"))
-        sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
-
-        mayaSegment = mayaUtils.createUfePathSegment(
-            "|transform1|proxyShape1")
-        ball35Path = ufe.Path(
-            [mayaSegment,
-             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
-        ball35Item = ufe.Hierarchy.createItem(ball35Path)
-        propsPath = ufe.Path(
-            [mayaSegment, usdUtils.createUfePathSegment("/Room_set/Props")])
-        propsItem = ufe.Hierarchy.createItem(propsPath)
-
-        sphereShapeName = str(sphereShapeItem.path().back())
-        ball35Name = str(ball35Item.path().back())
-
-        ufe.GlobalSelection.get().append(sphereShapeItem)
-        ufe.GlobalSelection.get().append(ball35Item)
-
-        # Before delete, each item is a child of its parent.
-        sphereHierarchy = ufe.Hierarchy.hierarchy(sphereItem)
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertIn(sphereShapeItem, sphereChildren)
-        self.assertIn(ball35Item, propsChildren)
-        self.assertIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
-
-        ufeObs.reset()
-        cmds.delete()
-
-        # We deleted two items.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
-        self.assertEqual(ufeObs.nbAddNotif(), 0)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertNotIn(sphereShapeName, sphereChildrenNames)
-        self.assertNotIn(ball35Name, propsChildrenNames)
-
-        cmds.undo()
-
-        # After the undo we added two items back.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
-        self.assertEqual(ufeObs.nbAddNotif(), 2)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertIn(sphereShapeItem, sphereChildren)
-        self.assertIn(ball35Item, propsChildren)
-        self.assertIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
-
-        cmds.redo()
-
-        # After the redo we again deleted two items.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 4)
-        self.assertEqual(ufeObs.nbAddNotif(), 2)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertNotIn(sphereShapeName, sphereChildrenNames)
-        self.assertNotIn(ball35Name, propsChildrenNames)
-
-        # undo to restore state to original.
-        cmds.undo()
-
-        # After the undo we again added two items back.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 4)
-        self.assertEqual(ufeObs.nbAddNotif(), 4)
-
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'only available in UFE v2 or more.')
     def testDelete(self):
         '''Delete Maya and USD objects.'''
 
@@ -261,6 +154,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.delete()
 
         # We only deleted the maya object.
+        # because ball_35 is defined inside the variant composition arc
         self.assertEqual(ufeObs.nbDeleteNotif(), 1)
         self.assertEqual(ufeObs.nbAddNotif(), 0)
 
@@ -306,14 +200,6 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertNotIn(sphereShapeName, sphereChildrenNames)
         self.assertIn(ball35Name, propsChildrenNames)
 
-        # undo to restore state to original.
-        cmds.undo()
-
-        # After the undo we again added the sphere item back.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
-        self.assertEqual(ufeObs.nbAddNotif(), 2)
-
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteArgs only available in UFE v2 or greater.')
     def testDeleteArgs(self):
         '''Delete Maya and USD objects passed as command arguments.'''
 
@@ -370,10 +256,10 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         ufeObs.reset()
         
-        cmds.delete(
-            ball35PathString, ball34PathString, "|pSphere1|pSphereShape1")
+        # Cannot delete Ball_34 and Ball_34 because they is defined inside the variant composition arc
+        cmds.delete(ball35PathString, ball34PathString, "|pSphere1|pSphereShape1")
         
-        # We deleted 1 items.
+        # We deleted 1 item the Maya item.
         self.assertEqual(ufeObs.nbDeleteNotif(), 1)
         self.assertEqual(ufeObs.nbAddNotif(), 0)
 
@@ -389,78 +275,8 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertFalse(cmds.objExists("|pSphere1|pSphereShape1"))
 
         cmds.undo()
-        
-        # After the undo we added one item back.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
         self.assertEqual(ufeObs.nbAddNotif(), 1)
 
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertIn(sphereShapeItem, sphereChildren)
-        self.assertIn(ball35Item, propsChildren)
-        self.assertIn(ball34Item, propsChildren)
-        self.assertIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
-        self.assertIn(ball34Name, propsChildrenNames)
-        self.assertTrue(cmds.objExists("|pSphere1|pSphereShape1"))
-        
-        cmds.redo()
-        
-        # After the redo we again deleted one item.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
-        self.assertEqual(ufeObs.nbAddNotif(), 1)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertNotIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
-        self.assertIn(ball34Name, propsChildrenNames)
-        self.assertFalse(cmds.objExists("|pSphere1|pSphereShape1"))
-        
-        cmds.undo()
-
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteProxyShape only available in UFE v2 or greater.') 
-    def testDeleteProxyShape(self):
-        '''Delete proxy shape.'''
-
-        # Create our UFE notification observer
-        ufeObs = TestObserver()
-        ufe.Scene.addObserver(ufeObs)
-
-        mayaSegment = mayaUtils.createUfePathSegment(
-            "|transform1|proxyShape1")
-        usdSegment = usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")
-
-        ball35Path = ufe.Path([mayaSegment, usdSegment])
-        ball35PathStr = ','.join(
-            [str(segment) for segment in ball35Path.segments])
-
-        self.assertEqual(len(cmds.ls('proxyShape1')), 1)
-
-        # delete the proxy shape node itself. 
-        cmds.delete('|transform1|proxyShape1')
-
-        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
-        
-        #restore
-        cmds.undo()
-
-        ufeObs.reset()
-        self.assertEqual(len(cmds.ls('proxyShape1')), 1)
-
-        #cannot be deleted as it has a variant arc
-        cmds.delete(ball35PathStr)
-        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
-
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteProxyShape only available in UFE v2 or greater.') 
     def testDeleteRestrictionSameLayerDef(self):
         '''Restrict deleting USD node. Cannot delete a prim defined on another layer.'''
         
@@ -487,10 +303,8 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         cmds.delete()    
-        
         self.assertEqual(ufeObs.nbDeleteNotif(), 0)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteProxyShape only available in UFE v2 or greater.') 
     def testDeleteRestrictionHasSpecs(self):
         '''Restrict deleting USD node. Cannot delete a node that doesn't contribute to the final composed prim'''
 
@@ -516,43 +330,65 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(len(ufe.GlobalSelection.get()), 1)
 
         cmds.delete()
-        # not deleted
+        # not deleted. It is defined on another layer.
         self.assertEqual(ufeObs.nbDeleteNotif(), 0)
 
         # Clear the selection.
-
         globalSn.clear()
         self.assertTrue(globalSn.empty())
 
-        usdPathSegment = usdUtils.createUfePathSegment('/apple/payload')
-        geoPath = ufe.Path([mayaPathSegment, usdPathSegment])
-        geoItem = ufe.Hierarchy.createItem(geoPath)
+        usdPathSegmentPayload = usdUtils.createUfePathSegment('/apple/payload')
+        geoPathPayload = ufe.Path([mayaPathSegment, usdPathSegmentPayload])
+        geoItemPayload = ufe.Hierarchy.createItem(geoPathPayload)
 
-        globalSn.append(geoItem)
+        globalSn.append(geoItemPayload)
         self.assertEqual(len(ufe.GlobalSelection.get()), 1)
 
         cmds.delete()
-        #deleted
+        # deleted
         self.assertEqual(ufeObs.nbDeleteNotif(), 1)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteProxyShape only available in UFE v2 or greater.') 
-    def testDeleteUniqueName(self):
+        usdPathSegmentApple = usdUtils.createUfePathSegment('/apple')
+        geoPathApple = ufe.Path([mayaPathSegment, usdPathSegmentApple])
+        geoItemApple = ufe.Hierarchy.createItem(geoPathApple)
+        hierarchy = ufe.Hierarchy.hierarchy(geoItemApple)
+        children = hierarchy.children()
+        # check that /apple/payload is not in children
+        self.assertNotIn(geoItemPayload, children)
+        
+		# revert
+        cmds.undo()
 
+        globalSn = ufe.GlobalSelection.get()        
+        globalSn.append(geoItemPayload)
+        # added back
+        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+
+        # check that /apple/payload/geo is in children
+        geoItemPayload = ufe.Hierarchy.createItem(geoPathPayload)
+        hierarchy = ufe.Hierarchy.hierarchy(geoItemPayload)
+        children = hierarchy.children()
+        self.assertIn(geoItem, children)
+
+
+    def testDeleteUniqueName(self):
+        '''Deleting USD prim Maya seletion'''
         cmds.file(new=True, force=True)
 
         # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()
-		
+
         # Create some extra Maya nodes
         cmds.polySphere()
-		
+
         # clear selection to start off
         cmds.select(clear=True)
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
         ufe.Scene.addObserver(ufeObs)
-		
+
         # select a maya object.
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
         sphereItem = ufe.Hierarchy.createItem(spherePath)
@@ -580,8 +416,17 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.delete()
         # deleted two items
         self.assertEqual(ufeObs.nbDeleteNotif() , 2)
+        
+        ufeObs.reset()
+        cmds.undo()
+        # added two items
+        self.assertEqual(ufeObs.nbAddNotif() , 2)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteProxyShape only available in UFE v2 or greater.') 
+        cmds.redo()
+        # deleted two items
+        self.assertEqual(ufeObs.nbDeleteNotif() , 2)
+
+
     def testDeleteRestrictionVariant(self):
         '''Deleting prims inside a variantSet is not allowed.'''
 
@@ -617,10 +462,10 @@ class DeleteCmdTestCase(unittest.TestCase):
         # add Geom to selection list
         ufe.GlobalSelection.get().append(geomItem)
 
-        # get prim spec for Geom prim
+        # get prim spec for geom
         primspecGeom = stage.GetEditTarget().GetPrimSpecForScenePath(geomPrim.GetPath());
 
-        # primSpec is expected to be None
+        # primSpec is expected to be None as its inside a variant
         self.assertIsNone(primspecGeom)
 
         cmds.delete()
@@ -636,16 +481,16 @@ class DeleteCmdTestCase(unittest.TestCase):
         # get prim spec for Small_Potato prim
         primspecSmallPotato = stage.GetEditTarget().GetPrimSpecForScenePath(smallPotatoPrim.GetPath())
 
-        # primSpec is expected to be None
+        # primSpec is expected to be None as its inside a variant
         self.assertIsNone(primspecSmallPotato)
 
-        # delete "/objects/Geom/Small_Potato"
+        # try to delete a child of Geom "/objects/Geom/Small_Potato"
         # expect no delete
         cmds.delete()
         self.assertEqual(ufeObs.nbDeleteNotif() , 0)
 
         # clear selection
-        cmds.select(clear=True)
+        ufe.GlobalSelection.get().clear()
 
         usdPathSegment = usdUtils.createUfePathSegment('/objects')
         geomPath = ufe.Path([mayaPathSegment, usdPathSegment])
@@ -653,8 +498,18 @@ class DeleteCmdTestCase(unittest.TestCase):
         # select objects
         ufe.GlobalSelection.get().append(geomItem)
         cmds.delete()
-        #success
+        # success
         self.assertEqual(ufeObs.nbDeleteNotif() , 1)
+
+        cmds.undo();
+
+        # Clear the selection.
+        ufe.GlobalSelection.get().clear()
+
+        # reselect
+        ufe.GlobalSelection.get().append(smallPotatoItem)
+        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

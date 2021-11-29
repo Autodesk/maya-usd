@@ -178,7 +178,8 @@ class DuplicateCmdTestCase(unittest.TestCase):
         evenPropsChildrenPre = propsChildrenPre[0:35:2]
         for propChild in evenPropsChildrenPre:
             ufe.GlobalSelection.get().append(propChild)
-
+            sceneItem = usdUtils.getPrimFromSceneItem(propChild)
+            sceneItem.SetActive(False)
 
         worldHierarchy = ufe.Hierarchy.hierarchy(worldItem)
         worldChildren = worldHierarchy.children()

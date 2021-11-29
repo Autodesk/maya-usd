@@ -18,16 +18,16 @@
 #include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
 
 namespace {
-#ifdef UFE_V2_FEATURES_AVAILABLE
 bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
 {
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
@@ -46,7 +46,6 @@ bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
     }
     return false;
 }
-#endif
 } // anonymous namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -106,7 +105,22 @@ void UsdUndoDeleteCommand::redo()
 void UsdUndoDeleteCommand::perform(bool state)
 {
     MayaUsd::ufe::InAddOrDeleteOperation ad;
-    _prim.SetActive(state);
+    UsdUndoBlock                         undoBlock(&_undoableItem);
+
+    const auto& stage = _prim.GetStage();
+    auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
+
+    if (hasLayersMuted(_prim)) {
+        TF_WARN("Cannot remove prim because there are muted layers.");
+        return;
+    }
+
+    if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
+        auto retVal = stage->RemovePrim(_prim.GetPath());
+        if (!retVal) {
+            TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());
+        }
+    }
 }
 
 void UsdUndoDeleteCommand::undo() { perform(true); }
