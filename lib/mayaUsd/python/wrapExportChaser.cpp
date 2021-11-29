@@ -45,7 +45,7 @@ public:
         return (ExportChaserWrapper*)createdWrapper;
     }
 
-    virtual ~ExportChaserWrapper() { }
+    virtual ~ExportChaserWrapper() = default;
 
     bool default_ExportDefault() { return base_t::ExportDefault(); }
     bool ExportDefault() override

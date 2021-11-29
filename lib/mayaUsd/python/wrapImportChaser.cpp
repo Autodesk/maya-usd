@@ -45,7 +45,7 @@ public:
         return (ImportChaserWrapper*)createdWrapper;
     }
 
-    virtual ~ImportChaserWrapper() { }
+    virtual ~ImportChaserWrapper() = default;
 
     bool default_PostImport(
         Usd_PrimFlagsPredicate&     returnPredicate,
