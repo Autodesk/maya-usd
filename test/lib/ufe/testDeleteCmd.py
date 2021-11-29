@@ -205,7 +205,12 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObserver(ufeObs)
+
+        if ufeUtils.ufeFeatureSetVersion() < 2:
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
         sphereItem = ufe.Hierarchy.createItem(spherePath)
@@ -282,7 +287,12 @@ class DeleteCmdTestCase(unittest.TestCase):
         
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObserver(ufeObs)
+
+        if ufeUtils.ufeFeatureSetVersion() < 2:
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         # select a USD object.
         mayaPathSegment = mayaUtils.createUfePathSegment('|transform1|proxyShape1')
@@ -315,7 +325,12 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObserver(ufeObs)
+
+        if ufeUtils.ufeFeatureSetVersion() < 2:
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         # clear selection to start off
         cmds.select(clear=True)
@@ -387,7 +402,12 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObserver(ufeObs)
+
+        if ufeUtils.ufeFeatureSetVersion() < 2:
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         # select a maya object.
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
@@ -437,7 +457,12 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObserver(ufeObs)
+
+        if ufeUtils.ufeFeatureSetVersion() < 2:
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         # stage
         mayaPathSegment = mayaUtils.createUfePathSegment('|Variant_usd|Variant_usdShape')
