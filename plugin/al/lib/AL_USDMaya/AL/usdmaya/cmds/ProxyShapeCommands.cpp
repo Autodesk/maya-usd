@@ -928,18 +928,14 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
         }
 
         if (db.isFlagSet("-ls") && db.isQuery()) {
-            MString matchString = MString("|world") + proxyDagPath.fullPathName();
-
             m_helper = nullptr;
             auto         sl = Ufe::GlobalSelection::get();
             MStringArray strings;
             for (auto& item : *sl) {
-                auto path = item->path();
-                auto pathStr = path.string();
-                if (std::strncmp(pathStr.c_str(), matchString.asChar(), matchString.length())
-                    == 0) {
-                    size_t index = pathStr.find_first_of('/');
-                    strings.append(pathStr.c_str() + index);
+                auto pathSegment = item->path().getSegments()[1];
+                auto pathStr = pathSegment.string().c_str();
+                if (proxyDagPath.fullPathName() == pathStr) {
+                    strings.append(pathStr);
                 }
             }
             setResult(strings);

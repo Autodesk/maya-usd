@@ -120,10 +120,8 @@ TEST(ProxyShapeSelect, selectNode1)
             for (auto it : *selection) {
                 bool found = false;
                 for (uint32_t j = 0; j < paths.size(); ++j) {
-                    auto str = it->path().string();
-                    auto index = str.find_first_of('/');
-
-                    if (std::string(str.c_str() + index) == paths[j].GetText()) {
+                    auto segments = it->path().getSegments();
+                    if (segments.size() > 1 && segments[1].string() == paths[j].GetText()) {
                         found = true;
                         break;
                     }
@@ -388,10 +386,8 @@ TEST(ProxyShapeSelect, selectNode2)
             for (auto it : *selection) {
                 bool found = false;
                 for (uint32_t j = 0; j < paths.size(); ++j) {
-                    auto str = it->path().string();
-                    auto index = str.find_first_of('/');
-
-                    if (std::string(str.c_str() + index) == paths[j].GetText()) {
+                    auto segments = it->path().getSegments();
+                    if (segments.size() > 1 && segments[1].string() == paths[j].GetText()) {
                         found = true;
                         break;
                     }
@@ -705,10 +701,8 @@ TEST(ProxyShapeSelect, selectNode3)
             for (auto it : *selection) {
                 bool found = false;
                 for (uint32_t j = 0; j < paths.size(); ++j) {
-                    auto str = it->path().string();
-                    auto index = str.find_first_of('/');
-
-                    if (std::string(str.c_str() + index) == paths[j].GetText()) {
+                    auto segments = it->path().getSegments();
+                    if (segments.size() > 1 && segments[1].string() == paths[j].GetText()) {
                         found = true;
                         break;
                     }
@@ -1355,10 +1349,8 @@ TEST(ProxyShapeSelect, repeatedSelection)
                   auto   selection = Ufe::GlobalSelection::get();
                   size_t pathCount = 0;
                   for (auto it : *selection) {
-                      auto str = it->path().string();
-                      auto index = str.find_first_of('/');
-
-                      if (std::string(str.c_str() + index) == path.GetText()) {
+                      auto segments = it->path().getSegments();
+                      if (segments.size() > 1 && segments[1].string() == path.GetText()) {
                           ++pathCount;
                       }
                   }

@@ -1098,11 +1098,9 @@ void SelectionUndoHelper::doIt()
     else {
         m_proxy->m_selectedPaths.clear();
         for (auto& it : m_newUFESelection) {
-            const auto& path = it->path();
-            const auto& pathStr = path.string();
-            const auto  index = pathStr.find_first_of('/');
-            if (index != std::string::npos) {
-                m_proxy->m_selectedPaths.insert(SdfPath(pathStr.c_str() + index));
+            auto segments = it->path().getSegments();
+            if (segments.size() > 1) {
+                m_proxy->m_selectedPaths.insert(SdfPath(segments[1].string()));
             } else {
                 // Presumably the root node has been selected, but it doesn't appear I
                 // can handle that edge case in UFE?
@@ -1170,11 +1168,9 @@ void SelectionUndoHelper::undoIt()
 
         m_proxy->m_selectedPaths.clear();
         for (auto& it : m_previousUFESelection) {
-            auto&       path = it->path();
-            std::string pathStr = path.string();
-            auto        index = pathStr.find_first_of('/');
-            if (index != std::string::npos) {
-                m_proxy->m_selectedPaths.insert(SdfPath(pathStr.c_str() + index));
+            auto segments = it->path().getSegments();
+            if (segments.size() > 1) {
+                m_proxy->m_selectedPaths.insert(SdfPath(segments[1].string()));
             } else {
                 // UHM. Not sure what to do here?
             }
