@@ -129,7 +129,7 @@ global proc mayaUsdTranslatorImport_JobContextCB() {
     mayaUsdTranslatorImport_EnableAllControls();
 
     string $niceName = `optionMenuGrp -q -value mayaUsdTranslator_jobContextPopup`;
-    if ($niceName != "None") {
+    if ($niceName != `getMayaUsdString("kImportJobContextNoneLbl")`) {
         string $affectedOptions = `mayaUSDListJobContexts -ig $niceName`;
         if ($affectedOptions != "") {
             mayaUsdTranslatorImport_SetFromOptions($affectedOptions, 0, 0);
@@ -170,14 +170,12 @@ global proc int mayaUsdTranslatorImport (string $parent,
     int $bw = 125;
 
     if ($action == "post") {
-        string $jobContextAnn = "Select a loaded plug-in configuration to modify import options";
-
         setParent $parent;
 
         columnLayout -adj true -rs 5 mayaUsdTranslator_OptsCol;
 
-        optionMenuGrp -l "Plug-in Configuration:" -cw 1 $cw1 -annotation $jobContextAnn -cc ("mayaUsdTranslatorImport_JobContextCB") mayaUsdTranslator_jobContextPopup;
-            menuItem -l "None" -ann "None";
+        optionMenuGrp -l  `getMayaUsdString("kImportJobContextLbl")` -cw 1 $cw1 -annotation `getMayaUsdString("kImportJobContextAnn")` -cc ("mayaUsdTranslatorImport_JobContextCB") mayaUsdTranslator_jobContextPopup;
+            menuItem -l `getMayaUsdString("kImportJobContextNoneLbl")` -ann "None";
             string $contexts[] = `mayaUSDListJobContexts -import`;
             for ($context in $contexts) {
                 string $ann = `mayaUSDListJobContexts -ia $context`;
@@ -188,18 +186,15 @@ global proc int mayaUsdTranslatorImport (string $parent,
         if (`exists usdImportDialog`)
         {
             rowLayout -numberOfColumns 4 -cw 1 $cw1 -cat 1 "right" 0;
-                text -label "Scope and Variants: "
+                text -label `getMayaUsdString("kImportScopeVariantsLbl")`
                     -al "right"
-                    -sbm "Select a USD file and click Hierarchy View to open the Hierarchy View window. This window lets you toggle prim checkboxes and non-destructively switch between variants to build the scope of your import."
-                    -ann "Select a USD file and click <strong>Hierarchy View</strong> to build the scope of your import and switch variants.<br><br><strong>Scope</strong>: A USD file consists of prims, the primary container object in USD. Prims can contain any scene element, like meshes, lights, cameras, etc. Use the checkboxes in the <strong>Hierarchy View</strong> to select and deselect prims to build the scope of your import.<br><br><strong>Variant</strong>: A variant is a single, named variation of a variant set. Each variant set is a package of alternatives that users can switch between non-destructively. A variant set has no limits to what it can store. Variants can be used to swap out a material or change the entire hierarchy of an asset. A single prim can have many variants and variant sets, but only one variant from each variant set can be selected for import into Maya."
+                    -sbm `getMayaUsdString("kImportScopeVariantsSbm")`
+                    -ann `getMayaUsdString("kImportScopeVariantsAnn")`
                 ;
-                textField -ed false -nbg true -text "Please select a file to enable this option" -w $cw2 mayaUsdTranslator_SelectFileField;
-                button -label "Hierarchy View" -c "mayaUsdTranslatorImport_ViewHierCB" mayaUsdTranslator_ViewHierBtn;
-                iconTextButton -w 32 -h 32 -command ("mayaUsdTranslatorImport_ClearImportData;") -
-                    style "iconAndTextVertical" -image1 "refresh.png" -label "" mayaUsdTranslator_ResetBtn;
-
-                string $nbPrimsInScopeLabel = "Total Number of Prims in Scope:";
-                string $nbModifiedVariantsLabel = "Variants Switched in Scope:";
+                textField -ed false -nbg true -text `getMayaUsdString("kImportSelectFileTxt")` -w $cw2 mayaUsdTranslator_SelectFileField;
+                button -label `getMayaUsdString("kImportHierarchyViewLbl")` -c "mayaUsdTranslatorImport_ViewHierCB" mayaUsdTranslator_ViewHierBtn;
+                iconTextButton -w 32 -h 32 -command ("mayaUsdTranslatorImport_ClearImportData;") 
+                    -style "iconAndTextVertical" -image1 "refresh.png" -label "" mayaUsdTranslator_ResetBtn;
 
                 // Hide the button by default.
                 button -e -visible false -w 1 mayaUsdTranslator_ViewHierBtn;
@@ -208,12 +203,12 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
             rowLayout -numberOfColumns 3 -cw 1 $cw1 -cat 1 "right" 0 -cal 1 "right" mayaUsd_NBPrimsInScopeRL;
                 text -label "";
-                text -label $nbPrimsInScopeLabel;
+                text -label `getMayaUsdString("kImportPrimsInScopeNumLbl")`;
                 text -label "---" mayaUsd_NBPrimsInScopeLabel;
             setParent ..;
             rowLayout -numberOfColumns 3 -cw 1 $cw1 -cat 1 "right" 0 -cal 1 "right" mayaUsd_NBSwitchedVariantsRL;
                 text -label "";
-                text -label $nbModifiedVariantsLabel;
+                text -label `getMayaUsdString("kImportVariantsInScopeNumLbl")`;
                 text -label "---" mayaUsd_NBSwitchedVariantsLabel;
             setParent ..;
             // We'll start off with the info UI hidden and only make it visible when we come out of 
@@ -228,27 +223,23 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //            menuItem -label "World space";
 //        optionMenuGrp -e -sl 1 mayaUsdTranslator_CoordSystemOptionMenu;
 
-        string $materialsAnn = "If selected, shading data is extracted from the USD file for import";
-        checkBoxGrp -label "Materials: " -cw 1 $cw1 -value1 1 -ann $materialsAnn -cc ("mayaUsdTranslatorImport_MaterialsCB") mayaUsdTranslator_MaterialsCheckBox;
+        checkBoxGrp -label `getMayaUsdString("kImportMaterialsLbl")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportMaterialsAnn")` -cc ("mayaUsdTranslatorImport_MaterialsCB") mayaUsdTranslator_MaterialsCheckBox;
 
         string $apiString = `about -q -apiVersion`;
         $apiString = `substring $apiString 1 4`;
-        string $convertAnn = "Select the preferred conversion method for inbound USD shading data to bind with Maya geometry";
-        optionMenuGrp -l "Convert to:" -cw 1 $cw2 -ann $convertAnn mayaUsdTranslator_MaterialsConversionMenu;
-        menuItem -l "No Conversion" -ann "none";
+        optionMenuGrp -l `getMayaUsdString("kImportMaterialConvLbl")` -cw 1 $cw2 -ann `getMayaUsdString("kImportMaterialConvAnn")` mayaUsdTranslator_MaterialsConversionMenu;
+        menuItem -l `getMayaUsdString("kImportMaterialConvNoneLbl")` -ann "none";
         if ((int)$apiString >= 2020) {
-            menuItem -l "Standard Surface" -ann "standardSurface";
+            menuItem -l `getMayaUsdString("kImportMaterialConvSSLbl")` -ann "standardSurface";
         }
-        menuItem -l "Lambert" -ann "lambert";
-        menuItem -l "USD Preview Surface" -ann "usdPreviewSurface";
-        menuItem -l "Blinn" -ann "blinn";
-        menuItem -l "Phong" -ann "phong";
+        menuItem -l `getMayaUsdString("kImportMaterialConvLamLbl")` -ann "lambert";
+        menuItem -l `getMayaUsdString("kImportMaterialConvPSLbl")` -ann "usdPreviewSurface";
+        menuItem -l `getMayaUsdString("kImportMaterialConvBlnLbl")` -ann "blinn";
+        menuItem -l `getMayaUsdString("kImportMaterialConvPhgLbl")` -ann "phong";
 
-        string $importUSDZTexturesAnn = "When a .usdz file is chosen and this is selected, .usdz texture files are imported and copied to new files on disk. To locate these files, navigate to the current Maya workspace /sourceimages directory.";
-        checkBoxGrp -label "USDZ Texture Import: " -cw 1 $cw2 -ann $importUSDZTexturesAnn mayaUsdTranslator_ImportUSDZTexturesCheckBox;
+        checkBoxGrp -label `getMayaUsdString("kImportUSDZTxtLbl")` -cw 1 $cw2 -ann `getMayaUsdString("kImportUSDZTxtAnn")` mayaUsdTranslator_ImportUSDZTexturesCheckBox;
 
-        string $instancedAnn = "Converts instanced prims to Maya instances. Instanced prims share parts of\nthe USD scenegraph through instancing. Each instanced prim is associated\nwith a master prim that serves as the root of the scenegraph. This hierarchy\nreduces the time needed to load the file. Instanced prims must be manually\ntagged.";
-        checkBoxGrp -label "Instanced Prims: " -label1 "Convert to Instances" -cw 1 $cw1 -value1 1 -ann $instancedAnn mayaUsdTranslator_ImportInstancesCheckBox;
+        checkBoxGrp -label `getMayaUsdString("kImportToInstanceLbl")` -label1 `getMayaUsdString("kImportToInstanceOpt")` -cw 1 $cw1 -value1 1 -ann `getMayaUsdString("kImportToInstanceAnn")` mayaUsdTranslator_ImportInstancesCheckBox;
 
 //        optionMenuGrp -label "Include Metadata: " -cw 1 $cw1 mayaUsdTranslator_IncludeMetadataOptionMenu;
 //            menuItem "All";
@@ -266,11 +257,11 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //            menuItem "Custom";
 //        optionMenuGrp -e -sl 2 mayaUsdTranslator_IncludeCustomAttribOptionMenu;
 
-        checkBoxGrp -label "Animation Data: " -cw 1 $cw1 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_AnimDataCheckBox;
+        checkBoxGrp -label `getMayaUsdString("kImportAnimationDataLbl")` -cw 1 $cw1 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_AnimDataCheckBox;
 
-        checkBoxGrp -label "Custom Frame Range: " -cw 1 $cw2 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_CustomFrameRangeCheckBox;
+        checkBoxGrp -label `getMayaUsdString("kImportCustomFrameRangeLbl")` -cw 1 $cw2 -cc ("mayaUsdTranslatorImport_AnimationCB") mayaUsdTranslator_CustomFrameRangeCheckBox;
 
-        intFieldGrp -label "Frame Range Start/End: " -nf 2 -cw 1 $cw2 mayaUsdTranslator_CustomFrameRange;
+        intFieldGrp -label `getMayaUsdString("kImportFrameRangeLbl")` -nf 2 -cw 1 $cw2 mayaUsdTranslator_CustomFrameRange;
 
         // Now set to current settings.
         string $currentOptions = $initialSettings;
@@ -419,7 +410,7 @@ global proc string mayaUsdTranslatorImport_AppendMaterialsFromCheckBoxGrp(string
 
 global proc string mayaUsdTranslatorImport_AppendJobContexts(string $currentOptions, string $arg) {
     string $niceName = `optionMenuGrp -q -value mayaUsdTranslator_jobContextPopup`;
-    if ($niceName != "None") {
+    if ($niceName != `getMayaUsdString("kImportJobContextNoneLbl")`) {
         string $jobContext = `mayaUSDListJobContexts -jc $niceName`;
         if ($jobContext != "") {
             return $currentOptions + ";" + $arg + "=[" + $jobContext + "]";
