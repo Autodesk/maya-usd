@@ -70,7 +70,7 @@ public:
         const SdfPath& srcSdfPath,
         UsdStageRefPtr dstStage,
         SdfLayerRefPtr dstLayer,
-        const SdfPath& dstSdfPath)
+        const SdfPath& dstSdfPath) override
     {
         return this->CallVirtual<bool>("pushCopySpecs", &This::default_pushCopySpecs)(
             srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
@@ -80,13 +80,13 @@ public:
     {
         return base_t::canEditAsMaya();
     }
-    bool canEditAsMaya() const
+    bool canEditAsMaya() const override
     {
         return this->CallVirtual<bool>("canEditAsMaya", &This::default_canEditAsMaya)();
     }
 
     bool default_editAsMaya(const UsdMayaPrimUpdaterContext& context) { return base_t::editAsMaya(context); }
-    bool editAsMaya(const UsdMayaPrimUpdaterContext& context)
+    bool editAsMaya(const UsdMayaPrimUpdaterContext& context) override
     {
         return this->CallVirtual<bool>("editAsMaya", &This::default_editAsMaya)(context);
     }
@@ -95,7 +95,7 @@ public:
     {
         return base_t::discardEdits(context);
     }
-    bool discardEdits(const UsdMayaPrimUpdaterContext& context)
+    bool discardEdits(const UsdMayaPrimUpdaterContext& context) override
     {
         return this->CallVirtual<bool>("discardEdits", &This::default_discardEdits)(context);
     }
@@ -104,17 +104,18 @@ public:
     {
         return base_t::pushEnd(context);
     }
-    bool pushEnd(const UsdMayaPrimUpdaterContext& context) {
+    bool pushEnd(const UsdMayaPrimUpdaterContext& context) override
+    {
         return this->CallVirtual<bool>("pushEnd", &This::default_pushEnd)(context);
     }
 
     static void Register(
-        boost::python::object        cl,
-        const std::string&           typeName,
-        const std::string&           mayaType,
-        int                          sup)
+        boost::python::object cl,
+        const std::string&    usdTypeName,
+        const std::string&    mayaType,
+        int                   sup)
     {
-        auto type = TfType::FindByName(typeName);
+        auto type = TfType::FindByName(usdTypeName);
 
         UsdMayaPrimUpdaterRegistry::Register(
             type,
@@ -125,7 +126,7 @@ public:
                 TfPyLock              pyLock;
                 boost::python::object instance = cl((uintptr_t)&primUpdater);
                 boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), primUpdater);
+                initialize_wrapper(instance.ptr(), primUpdater.get());
                 return primUpdater;
             },
             true);
