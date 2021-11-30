@@ -23,6 +23,7 @@
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/make_constructor.hpp>
+#include <boost/python/return_internal_reference.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -38,12 +39,13 @@ public:
     typedef ImportChaserWrapper This;
     typedef UsdMayaImportChaser base_t;
 
-    static ImportChaserWrapper* New(uintptr_t createdWrapper)
+    static ImportChaserWrapper*
+    New(const UsdMayaImportChaserRegistry::FactoryContext& factoryContext, uintptr_t createdWrapper)
     {
         return (ImportChaserWrapper*)createdWrapper;
     }
 
-    virtual ~ImportChaserWrapper() { }
+    virtual ~ImportChaserWrapper() = default;
 
     bool default_PostImport(
         Usd_PrimFlagsPredicate&     returnPredicate,
@@ -75,10 +77,10 @@ public:
     {
         UsdMayaImportChaserRegistry::GetInstance().RegisterFactory(
             name,
-            [=](const UsdMayaImportChaserRegistry::FactoryContext& context) {
+            [=](const UsdMayaImportChaserRegistry::FactoryContext& factoryContext) {
                 auto                  chaser = new ImportChaserWrapper();
                 TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)(ImportChaserWrapper*)chaser);
+                boost::python::object instance = cl(factoryContext, (uintptr_t)chaser);
                 boost::python::incref(instance.ptr());
                 initialize_wrapper(instance.ptr(), chaser);
                 return chaser;
@@ -86,6 +88,26 @@ public:
             true);
     }
 };
+
+//----------------------------------------------------------------------------------------------------------------------
+void wrapImportChaserRegistryFactoryContext()
+{
+    boost::python::class_<UsdMayaImportChaserRegistry::FactoryContext>(
+        "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
+        .def("GetStage", &UsdMayaImportChaserRegistry::FactoryContext::GetStage)
+        .def(
+            "GetImportedDagPaths",
+            &UsdMayaImportChaserRegistry::FactoryContext::GetImportedDagPaths,
+            boost::python::return_internal_reference<>())
+        .def(
+            "GetImportedPrims",
+            &UsdMayaImportChaserRegistry::FactoryContext::GetImportedPrims,
+            boost::python::return_internal_reference<>())
+        .def(
+            "GetJobArgs",
+            &UsdMayaImportChaserRegistry::FactoryContext::GetJobArgs,
+            boost::python::return_internal_reference<>());
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 void wrapImportChaser()
