@@ -2033,27 +2033,34 @@ void HdVP2Mesh::_UpdateDrawItem(
             // or not drawing if the item is a selection highlight item.
             instanceInfo.resize(instanceCount, modeDormant);
 
-            // Assign with the index to the active selection highlight color.
-            if (const auto state = drawScene.GetActiveSelectionState(id)) {
-                for (const auto& indexArray : state->instanceIndices) {
-                    for (const auto index : indexArray) {
-                        // This bounds check is necessary because of Pixar USD Issue 1516
-                        // Logged as MAYA-113682
-                        if (index >= 0 && index < (const int)instanceCount) {
-                            instanceInfo[index] = modeActive;
+            // Sometimes the calls to GetActiveSelectionState and GetLeadSelectionState
+            // return instance indices which do not match the current selection, and that
+            // causes incorrect drawing. Only call GetActiveSelectionState and GetLeadSelectionState
+            // when _selectionStatus is kPartiallySelected. If the object is fully lead or active
+            // then we already have the correct values in instanceInfo.
+            if (_selectionStatus == kPartiallySelected) {
+                // Assign with the index to the active selection highlight color.
+                if (const auto state = drawScene.GetActiveSelectionState(id)) {
+                    for (const auto& indexArray : state->instanceIndices) {
+                        for (const auto index : indexArray) {
+                            // This bounds check is necessary because of Pixar USD Issue 1516
+                            // Logged as MAYA-113682
+                            if (index >= 0 && index < (const int)instanceCount) {
+                                instanceInfo[index] = modeActive;
+                            }
                         }
                     }
                 }
-            }
 
-            // Assign with the index to the lead selection highlight color.
-            if (const auto state = drawScene.GetLeadSelectionState(id)) {
-                for (const auto& indexArray : state->instanceIndices) {
-                    for (const auto index : indexArray) {
-                        // This bounds check is necessary because of Pixar USD Issue 1516
-                        // Logged as MAYA-113682
-                        if (index >= 0 && index < (const int)instanceCount) {
-                            instanceInfo[index] = modeLead;
+                // Assign with the index to the lead selection highlight color.
+                if (const auto state = drawScene.GetLeadSelectionState(id)) {
+                    for (const auto& indexArray : state->instanceIndices) {
+                        for (const auto index : indexArray) {
+                            // This bounds check is necessary because of Pixar USD Issue 1516
+                            // Logged as MAYA-113682
+                            if (index >= 0 && index < (const int)instanceCount) {
+                                instanceInfo[index] = modeLead;
+                            }
                         }
                     }
                 }
