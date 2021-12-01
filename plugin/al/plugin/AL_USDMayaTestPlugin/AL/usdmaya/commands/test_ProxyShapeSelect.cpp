@@ -33,6 +33,9 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
 #endif
 
 using AL::maya::test::buildTempPath;
@@ -165,9 +168,15 @@ TEST(ProxyShapeSelect, selectNode1)
     if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
         EXPECT_EQ(MString("|transform1|root|hip1|knee1|ankle1|ltoe1"), results[0]);
     } else {
-        EXPECT_EQ(
-            MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"),
-            results[0]);
+        #ifdef UFE_V2_FEATURES_AVAILABLE
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"),
+                Ufe::PathString::path(results[0].asChar()));
+        #else
+            EXPECT_EQ(
+                MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"),
+                results[0]);
+        #endif
     }
     results.clear();
 
@@ -218,12 +227,21 @@ TEST(ProxyShapeSelect, selectNode1)
         EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[0]);
         EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[1]);
     } else {
-        EXPECT_EQ(
-            MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
-            results[0]);
-        EXPECT_EQ(
-            MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
-            results[1]);
+        #ifdef UFE_V2_FEATURES_AVAILABLE
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
+                Ufe::PathString::path(results[0].asChar()));
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
+                Ufe::PathString::path(results[1].asChar()));
+        #else
+            EXPECT_EQ(
+                MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
+                results[0]);
+            EXPECT_EQ(
+                MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
+                results[1]);
+        #endif
     }
     results.clear();
 
@@ -434,9 +452,15 @@ TEST(ProxyShapeSelect, selectNode2)
     if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
         EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[0]);
     } else {
-        EXPECT_EQ(
-            MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
-            results[0]);
+        #ifdef UFE_V2_FEATURES_AVAILABLE
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
+                Ufe::PathString::path(results[0].asChar()));
+        #else
+            EXPECT_EQ(
+                MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
+                results[0]);
+        #endif
     }
     results.clear();
 
@@ -459,9 +483,15 @@ TEST(ProxyShapeSelect, selectNode2)
     if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
         EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[0]);
     } else {
-        EXPECT_EQ(
-            MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
-            results[0]);
+        #ifdef UFE_V2_FEATURES_AVAILABLE
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
+                Ufe::PathString::path(results[0].asChar()));
+        #else
+            EXPECT_EQ(
+                MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
+                results[0]);
+        #endif
     }
     results.clear();
 
@@ -871,12 +901,21 @@ TEST(ProxyShapeSelect, selectNode3)
         EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|rtoe2"), results[0]);
         EXPECT_EQ(MString("|transform1|root|hip2|knee2|ankle2|ltoe2"), results[1]);
     } else {
-        EXPECT_EQ(
-            MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
-            results[0]);
-        EXPECT_EQ(
-            MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
-            results[1]);
+        #ifdef UFE_V2_FEATURES_AVAILABLE
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
+                Ufe::PathString::path(results[0].asChar()));
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
+                Ufe::PathString::path(results[1].asChar()));
+        #else
+            EXPECT_EQ(
+                MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/rtoe2"),
+                results[0]);
+            EXPECT_EQ(
+                MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2/knee2/ankle2/ltoe2"),
+                results[1]);
+        #endif
     }
     results.clear();
 
@@ -1698,7 +1737,13 @@ TEST(ProxyShapeSelect, pseudoRootSelect)
     if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
         EXPECT_EQ(MString("|transform1|AL_usdmaya_ProxyShape1"), results[0]);
     } else {
-        EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1"), results[0]);
+        #ifdef UFE_V2_FEATURES_AVAILABLE
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1"),
+                Ufe::PathString::path(results[0].asChar()));
+        #else
+            EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1"), results[0]);
+        #endif
     }
     results.clear();
 
@@ -1741,9 +1786,15 @@ TEST(ProxyShapeSelect, pseudoRootSelect)
     if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
         EXPECT_EQ(MString("|transform1|root|hip1|knee1|ankle1|ltoe1"), results[0]);
     } else {
-        EXPECT_EQ(
-            MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"),
-            results[0]);
+        #ifdef UFE_V2_FEATURES_AVAILABLE
+            EXPECT_EQ(
+                Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"),
+                Ufe::PathString::path(results[0].asChar()));
+        #else
+            EXPECT_EQ(
+                MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"),
+                results[0]);
+        #endif
     }
     results.clear();
 
@@ -1779,8 +1830,17 @@ TEST(ProxyShapeSelect, pseudoRootSelect)
             EXPECT_EQ(MString("|transform1|AL_usdmaya_ProxyShape1"), results[0]);
             EXPECT_EQ(MString("|transform1|root|hip2"), results[1]);
         } else {
-            EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1"), results[0]);
-            EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2"), results[1]);
+            #ifdef UFE_V2_FEATURES_AVAILABLE
+                EXPECT_EQ(
+                    Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1"),
+                    Ufe::PathString::path(results[0].asChar()));
+                EXPECT_EQ(
+                    Ufe::PathString::path("|transform1|AL_usdmaya_ProxyShape1/root/hip2"),
+                    Ufe::PathString::path(results[1].asChar()));
+            #else
+                EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1"), results[0]);
+                EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip2"), results[1]);
+            #endif
         }
         results.clear();
 

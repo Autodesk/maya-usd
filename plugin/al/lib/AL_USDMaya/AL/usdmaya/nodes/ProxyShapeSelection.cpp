@@ -36,6 +36,9 @@
 #include <ufe/runTimeMgr.h>
 #include <ufe/sceneItem.h>
 #include <ufe/selection.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
 #endif
 
 namespace AL {
@@ -1704,7 +1707,11 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
         if (helper.m_selectRoot) {
             MDagPath path;
             MDagPath::getAPathTo(thisMObject(), path);
-            newlySelectedPaths.append(MString("|world") + path.fullPathName());
+            #ifdef UFE_V2_FEATURES_AVAILABLE
+                newlySelectedPaths.append(Ufe::PathString::path(path.fullPathName().asChar()).string().c_str());
+            #else
+                newlySelectedPaths.append(MString("|world") + path.fullPathName());
+            #endif
         }
     }
 #endif
