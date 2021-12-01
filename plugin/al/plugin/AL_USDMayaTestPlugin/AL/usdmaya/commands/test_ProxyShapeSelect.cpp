@@ -48,14 +48,11 @@ bool isAlive(AL::usdmaya::nodes::ProxyShape* proxy, SdfPath path)
         return proxy->isRequiredPath(path);
     }
 
-    auto selection = Ufe::GlobalSelection::get();
-    for (auto it : *selection) {
-        auto str = it->path().string();
-        if (str.find(path.GetText()) != std::string::npos)
-            return true;
-    }
-
-    return false;
+    // Look for the specified path or a descendent of it in selection
+    Ufe::PathSegment ps_usd(path.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+    Ufe::Path        ufePath(proxy->ufePath() + ps_usd);
+    auto             selection = Ufe::GlobalSelection::get();
+    return selection->contains(ufePath) || selection->containsDescendant(ufePath);
 }
 
 bool isSelected(AL::usdmaya::nodes::ProxyShape* proxy, SdfPath path)
@@ -68,6 +65,16 @@ bool isSelected(AL::usdmaya::nodes::ProxyShape* proxy, SdfPath path)
     Ufe::PathSegment ps_usd(path.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     auto             selection = Ufe::GlobalSelection::get();
     return selection->contains(proxyShapePath + ps_usd);
+}
+
+bool containsSdfPath(const Ufe::Path& ufePath, const SdfPathVector& paths)
+{
+    // Check if the speficied UFE path has one of the supplied SdfPaths
+    auto it = find_if(paths.begin(), paths.end(), [&ufePath](const SdfPath& sdfPath) {
+        auto segments = ufePath.getSegments();
+        return segments.size() > 1 && segments[1].string() == sdfPath.GetText();
+    });
+    return it != paths.end();
 }
 } // namespace
 
@@ -121,15 +128,7 @@ TEST(ProxyShapeSelect, selectNode1)
         } else {
             auto selection = Ufe::GlobalSelection::get();
             for (auto it : *selection) {
-                bool found = false;
-                for (uint32_t j = 0; j < paths.size(); ++j) {
-                    auto segments = it->path().getSegments();
-                    if (segments.size() > 1 && segments[1].string() == paths[j].GetText()) {
-                        found = true;
-                        break;
-                    }
-                }
-                EXPECT_TRUE(found);
+                EXPECT_TRUE(containsSdfPath(it->path(), paths));
             }
         }
     };
@@ -402,15 +401,7 @@ TEST(ProxyShapeSelect, selectNode2)
         } else {
             auto selection = Ufe::GlobalSelection::get();
             for (auto it : *selection) {
-                bool found = false;
-                for (uint32_t j = 0; j < paths.size(); ++j) {
-                    auto segments = it->path().getSegments();
-                    if (segments.size() > 1 && segments[1].string() == paths[j].GetText()) {
-                        found = true;
-                        break;
-                    }
-                }
-                EXPECT_TRUE(found);
+                EXPECT_TRUE(containsSdfPath(it->path(), paths));
             }
         }
     };
@@ -729,15 +720,7 @@ TEST(ProxyShapeSelect, selectNode3)
         } else {
             auto selection = Ufe::GlobalSelection::get();
             for (auto it : *selection) {
-                bool found = false;
-                for (uint32_t j = 0; j < paths.size(); ++j) {
-                    auto segments = it->path().getSegments();
-                    if (segments.size() > 1 && segments[1].string() == paths[j].GetText()) {
-                        found = true;
-                        break;
-                    }
-                }
-                EXPECT_TRUE(found);
+                EXPECT_TRUE(containsSdfPath(it->path(), paths));
             }
         }
     };
