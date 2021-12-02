@@ -1199,7 +1199,7 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
     if (!pullRoot.isNull()) {
         MFnDagNode pullRootNode(pullRoot);
         auto       nbPullRootChildren = pullRootNode.childCount();
-        if (nbPullRootChildren == 1) {
+        if (nbPullRootChildren == 0) {
             status = NodeDeletionUndoItem::deleteNode("Delete pull root", pullRootNode.absoluteName(), pullRoot, undoInfo);
             if (status != MStatus::kSuccess) {
                 return false;
