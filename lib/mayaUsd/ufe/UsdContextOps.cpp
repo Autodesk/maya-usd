@@ -82,6 +82,9 @@ static constexpr char    kUSDMakeInvisibleLabel[] = "Make Invisible";
 static constexpr char    kUSDToggleActiveStateItem[] = "Toggle Active State";
 static constexpr char    kUSDActivatePrimLabel[] = "Activate Prim";
 static constexpr char    kUSDDeactivatePrimLabel[] = "Deactivate Prim";
+static constexpr char    kUSDToggleInstanceableStateItem[] = "Toggle Instanceable State";
+static constexpr char    kUSDMarkAsInstancebaleLabel[] = "Mark as Instanceable";
+static constexpr char    kUSDUnmarkAsInstanceableLabel[] = "Unmark as Instanceable";
 static constexpr char    kUSDAddNewPrimItem[] = "Add New Prim";
 static constexpr char    kUSDAddNewPrimLabel[] = "Add New Prim";
 static constexpr char    kUSDDefPrimItem[] = "Def";
@@ -302,6 +305,43 @@ private:
     PXR_NS::UsdStageWeakPtr _stage;
     PXR_NS::SdfPath         _primPath;
     bool                    _active;
+};
+
+//! \brief Undoable command for prim instanceable state change
+class ToggleInstanceableStateCommand : public Ufe::UndoableCommand
+{
+public:
+    ToggleInstanceableStateCommand(const UsdPrim& prim)
+    {
+        _stage = prim.GetStage();
+        _primPath = prim.GetPath();
+        _instanceable = prim.IsInstanceable();
+    }
+
+    void undo() override
+    {
+        if (_stage) {
+            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (prim.IsValid()) {
+                prim.SetInstanceable(_instanceable);
+            }
+        }
+    }
+
+    void redo() override
+    {
+        if (_stage) {
+            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (prim.IsValid()) {
+                prim.SetInstanceable(!_instanceable);
+            }
+        }
+    }
+
+private:
+    PXR_NS::UsdStageWeakPtr _stage;
+    PXR_NS::SdfPath         _primPath;
+    bool                    _instanceable;
 };
 
 const char* selectUSDFileScript = R"(
@@ -616,6 +656,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             items.emplace_back(
                 kUSDToggleActiveStateItem,
                 prim().IsActive() ? kUSDDeactivatePrimLabel : kUSDActivatePrimLabel);
+
+            // Instanceable:
+            items.emplace_back(
+                kUSDToggleInstanceableStateItem,
+                prim().IsInstanceable() ? kUSDUnmarkAsInstanceableLabel
+                                        : kUSDMarkAsInstancebaleLabel);
         }
 
         // Top level item - Add New Prim (for all context op types).
@@ -751,6 +797,9 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
         return std::make_shared<ToggleActiveStateCommand>(prim());
     } // ActiveState
+    else if (itemPath[0] == kUSDToggleInstanceableStateItem) {
+        return std::make_shared<ToggleInstanceableStateCommand>(prim());
+    } // InstanceableState
     else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
         // Operation is to create a new prim of the type specified.
         if (itemPath.size() < 2u) {
