@@ -37,13 +37,14 @@ class primUpdaterTest(mayaUsdLib.PrimUpdater):
     pushCopySpecsCalled = False
     discardEditsCalled = False
     editAsMayaCalled = False
+    pushEndCalled = False
 
     def __init__(self, *args, **kwargs):
         super(primUpdaterTest, self).__init__(*args, **kwargs)
 
     def pushCopySpecs(self, srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath):
         primUpdaterTest.pushCopySpecsCalled = True
-        return super(primUpdaterTest, self).pushCopySpecs(self, srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath)
+        return super(primUpdaterTest, self).pushCopySpecs(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath)
 
     def editAsMaya(self,context):
         primUpdaterTest.editAsMayaCalled = True
@@ -52,6 +53,10 @@ class primUpdaterTest(mayaUsdLib.PrimUpdater):
     def discardEdits(self,context):
         primUpdaterTest.discardEditsCalled = True
         return super(primUpdaterTest, self).discardEdits(context)
+
+    def pushEnd(self,context):
+        primUpdaterTest.pushEndCalled = True
+        return super(primUpdaterTest, self).pushEnd(context)
 
 class testPrimUpdater(unittest.TestCase):
     @classmethod
@@ -67,9 +72,9 @@ class testPrimUpdater(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testSimplePrimUpdater(self):
-        mayaUsdLib.PrimUpdater.Register(primUpdaterTest, "Xform", "transform", primUpdaterTest.Supports.All.value) # primUpdaterTest.Supports.Push.value + primUpdaterTest.Supports.Clear.value + primUpdaterTest.Supports.AutoPull.value)
+        mayaUsdLib.PrimUpdater.Register(primUpdaterTest, "UsdGeomXform", "transform", primUpdaterTest.Supports.All.value) # primUpdaterTest.Supports.Push.value + primUpdaterTest.Supports.Clear.value + primUpdaterTest.Supports.AutoPull.value)
 
-        # Edit as Maya first.
+        # Edit as Maya first time.
         (ps, xlateOp, usdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem, _, _, _, _, _) = createSimpleXformScene()
         self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
 
@@ -79,12 +84,22 @@ class testPrimUpdater(unittest.TestCase):
         # Discard Maya edits.
         self.assertTrue(mayaUsdLib.PrimUpdaterManager.discardEdits(aMayaPathStr))
 
+        cmds.file(new=True, force=True)
+
+        # Edit as Maya second time.
+        (ps, xlateOp, usdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem, _, _, _, _, _) = createSimpleXformScene()
+        self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        aMayaItem = ufe.GlobalSelection.get().front()
+        (aMayaPath, aMayaPathStr, _, aMayaMatrix) = setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
+
         # Merge edits back to USD.
 #        self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
 
         self.assertTrue(primUpdaterTest.editAsMayaCalled)
         self.assertFalse(primUpdaterTest.discardEditsCalled)
         self.assertFalse(primUpdaterTest.pushCopySpecsCalled)
+        self.assertFalse(primUpdaterTest.pushEndCalled)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
