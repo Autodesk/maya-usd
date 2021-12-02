@@ -19,6 +19,7 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
+#include <maya/MSelectionList.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -26,17 +27,49 @@ namespace MAYAUSD_NS_DEF {
 // NodeDeletionUndoItem
 //------------------------------------------------------------------------------
 
-MStatus
-NodeDeletionUndoItem::deleteNode(const std::string name, const MString& nodeName, const MObject& node, OpUndoInfo& undoInfo)
+namespace {
+
+MStringArray getDagName(const MObject& node)
+{
+    MStringArray strings;
+
+    MSelectionList sel;
+    sel.add(node);
+    MStatus status = sel.getSelectionStrings(strings);
+
+    return strings;
+}
+
+MString formatCommand(const MString& commandName, const MObject& commandArg)
+{
+    MStringArray arg = getDagName(commandArg);
+
+    MString cmd;
+    cmd.format("^1s \"^2s\"", commandName.asChar(), arg[0].asChar());
+
+    return cmd;
+}
+
+} // namespace
+
+MStatus NodeDeletionUndoItem::deleteNode(
+    const std::string name,
+    const MString&    nodeName,
+    const MObject&    node,
+    OpUndoInfo&       undoInfo)
 {
     // Avoid deleting the same node twice.
     if (undoInfo.isDeleted(node))
         return MS::kSuccess;
 
-    std::string fullName = name + std::string(" \"") + std::string(nodeName.asChar()) + std::string("\"");
+    const MString cmd = formatCommand("delete", node);
+
+    std::string fullName
+        = name + std::string(" \"") + std::string(cmd.asChar()) + std::string("\"");
     auto item = std::make_unique<NodeDeletionUndoItem>(std::move(fullName));
 
-    MStatus status = item->_modifier.deleteNode(node, false);
+    MStatus status = item->_modifier.commandToExecute(cmd);
+    // MStatus status = item->_modifier.deleteNode(node, false);
     if (status != MS::kSuccess)
         return status;
 
