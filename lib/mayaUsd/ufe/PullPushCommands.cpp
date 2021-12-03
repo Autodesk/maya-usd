@@ -235,12 +235,6 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPulledPath))
         return reportError(MS::kInvalidParameter);
 
-    return redoIt();
-}
-
-// MPxCommand API to redo the command.
-MStatus MergeToUsdCommand::redoIt()
-{
     OpUndoInfoRecorder undoRecorder(fUndoInfo);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
@@ -249,6 +243,9 @@ MStatus MergeToUsdCommand::redoIt()
 
     return MS::kSuccess;
 }
+
+// MPxCommand API to redo the command.
+MStatus MergeToUsdCommand::redoIt() { return fUndoInfo.redo() ? MS::kSuccess : MS::kFailure; }
 
 // MPxCommand API to undo the command.
 MStatus MergeToUsdCommand::undoIt() { return fUndoInfo.undo() ? MS::kSuccess : MS::kFailure; }
@@ -297,12 +294,6 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPath))
         return reportError(MS::kInvalidParameter);
 
-    return redoIt();
-}
-
-// MPxCommand API to redo the command.
-MStatus DiscardEditsCommand::redoIt()
-{
     OpUndoInfoRecorder undoRecorder(fUndoInfo);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
@@ -311,6 +302,9 @@ MStatus DiscardEditsCommand::redoIt()
 
     return MS::kSuccess;
 }
+
+// MPxCommand API to redo the command.
+MStatus DiscardEditsCommand::redoIt() { return fUndoInfo.redo() ? MS::kSuccess : MS::kFailure; }
 
 // MPxCommand API to undo the command.
 MStatus DiscardEditsCommand::undoIt() { return fUndoInfo.undo() ? MS::kSuccess : MS::kFailure; }
@@ -358,12 +352,6 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    return redoIt();
-}
-
-// MPxCommand API to redo the command.
-MStatus DuplicateCommand::redoIt()
-{
     OpUndoInfoRecorder undoRecorder(fUndoInfo);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
@@ -372,6 +360,9 @@ MStatus DuplicateCommand::redoIt()
 
     return MS::kSuccess;
 }
+
+// MPxCommand API to redo the command.
+MStatus DuplicateCommand::redoIt() { return fUndoInfo.redo() ? MS::kSuccess : MS::kFailure; }
 
 // MPxCommand API to undo the command.
 MStatus DuplicateCommand::undoIt() { return fUndoInfo.undo() ? MS::kSuccess : MS::kFailure; }
