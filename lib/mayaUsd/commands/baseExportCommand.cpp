@@ -40,7 +40,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
     MSyntax syntax;
 
     // These flags correspond to entries in
-    // UsdMayaJobExportArgs::GetDefaultDictionary.
+    // UsdMayaJobExportArgs::GetGuideDictionary.
     syntax.addFlag(
         kMergeTransformAndShapeFlag,
         UsdMayaJobExportArgsTokens->mergeTransformAndShape.GetText(),
@@ -245,7 +245,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
 
         // Read all of the dictionary args first.
         const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
-            argData, UsdMayaJobExportArgs::GetDefaultDictionary());
+            argData, UsdMayaJobExportArgs::GetGuideDictionary());
 
         // Now read all of the other args that are specific to this command.
         bool        append = false;

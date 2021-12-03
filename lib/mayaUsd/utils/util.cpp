@@ -1937,6 +1937,10 @@ std::pair<bool, std::string> UsdMayaUtil::ValueToArgument(const VtValue& value)
 {
     if (value.IsHolding<bool>()) {
         return std::make_pair(true, std::string(value.Get<bool>() ? "1" : "0"));
+    } else if (value.IsHolding<int>()) {
+        return std::make_pair(true, std::to_string(value.Get<int>()));
+    } else if (value.IsHolding<float>()) {
+        return std::make_pair(true, std::to_string(value.Get<float>()));
     } else if (value.IsHolding<std::string>()) {
         return std::make_pair(true, value.Get<std::string>());
     } else if (value.IsHolding<std::vector<VtValue>>()) {

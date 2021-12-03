@@ -253,6 +253,12 @@ struct UsdMayaJobExportArgs
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();
 
+    /// Gets the guide dictionary for UsdMayaJobExportArgs.
+    ///
+    /// Used in GetDictionaryFromArgDatabase() to deduce the type of an argument.
+    MAYAUSD_CORE_PUBLIC
+    static const VtDictionary& GetGuideDictionary();
+
     /// Returns the resolved file name of the final export location
     MAYAUSD_CORE_PUBLIC
     std::string GetResolvedFileName() const;
@@ -320,6 +326,12 @@ struct UsdMayaJobImportArgs
     /// Gets the default arguments dictionary for UsdMayaJobImportArgs.
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();
+
+    /// Gets the guide dictionary for UsdMayaJobImportArgs.
+    ///
+    /// Used in GetDictionaryFromArgDatabase() to deduce the type of an argument.
+    MAYAUSD_CORE_PUBLIC
+    static const VtDictionary& GetGuideDictionary();
 
     MAYAUSD_CORE_PUBLIC
     static const std::string GetImportUSDZTexturesFilePath(const VtDictionary& userArgs);

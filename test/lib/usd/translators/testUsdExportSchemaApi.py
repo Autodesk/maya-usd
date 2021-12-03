@@ -59,11 +59,28 @@ class testUsdExportSchemaApi(unittest.TestCase):
             'apiSchema=[testApi];chaser=[NullAPIChaser];chaserArgs=[[NullAPIChaser,life,42]];')
 
         modes = set(cmds.mayaUSDListJobContexts(im=True))
-        self.assertEqual(modes, set(["Null API", 'Bullet Physics API Support']))
+        self.assertEqual(modes, set(["Null API", 'Bullet Physics API Support', 'Scene Grinder']))
         self.assertEqual(cmds.mayaUSDListJobContexts(importAnnotation="Null API"),
                          "Imports an empty API for testing purpose")
         self.assertEqual(cmds.mayaUSDListJobContexts(importArguments="Null API"), 
             'apiSchema=[testApiIn];chaser=[NullAPIChaserIn];chaserArgs=[[NullAPIChaserIn,universe,42]];')
+
+        # The job context used for UI debugging have int startTime and float frameStride values to convert:
+        self.assertEqual(set(cmds.mayaUSDListJobContexts(ig="Scene Grinder").strip(";").split(";")), 
+            set(['importUSDZTextures=1',
+                 'preferredMaterial=standardSurface',
+                 'readAnimData=1',
+                 'startTime=12',
+                 'useCustomFrameRange=1']))
+
+        self.assertEqual(set([i.rstrip("0")
+                              for i in cmds.mayaUSDListJobContexts(eg="Scene Grinder").strip(";").split(";")]), 
+            set(['animation=1',
+                 'convertMaterialsTo=[MaterialX,UsdPreviewSurface]',
+                 'exportDisplayColor=1',
+                 'frameStride=1.5',
+                 'shadingMode=useRegistry',
+                 'startTime=12']))
 
     def testExportJobContextConflicts(self):
         """Testing that merging incompatible contexts generates errors"""
