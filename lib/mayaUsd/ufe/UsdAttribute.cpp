@@ -44,6 +44,10 @@ static constexpr char kErrorMsgFailedConvertToString[]
     = "Could not convert the attribute to a string";
 static constexpr char kErrorMsgInvalidType[]
     = "USD attribute does not match created attribute class type";
+#if (UFE_PREVIEW_VERSION_NUM >= 3013)
+static constexpr char kErrorMsgInvalidValueType[]
+    = "Unexpected Ufe::Value type";
+#endif
 
 //------------------------------------------------------------------------------
 // Helper functions
@@ -115,6 +119,21 @@ bool setUsdAttrMetadata(
     // We must convert the Ufe::Value to VtValue for storage in Usd.
     // Figure out the type of the input Ufe Value and create proper Usd VtValue.
     PXR_NS::VtValue usdValue;
+#if (UFE_PREVIEW_VERSION_NUM >= 3013)
+    if (value.isType<bool>())
+        usdValue = value.get<bool>();
+    else if (value.isType<int>())
+        usdValue = value.get<int>();
+    else if (value.isType<float>())
+        usdValue = value.get<float>();
+    else if (value.isType<double>())
+        usdValue = value.get<double>();
+    else if (value.isType<std::string>())
+        usdValue = value.get<std::string>();
+    else {
+        TF_CODING_ERROR(kErrorMsgInvalidValueType);
+    }
+#else
     if (value.type() == typeid(bool))
         usdValue = value.get<bool>();
     else if (value.type() == typeid(int))
@@ -129,6 +148,7 @@ bool setUsdAttrMetadata(
     // this else into else if and assert for unknown type.
     else /*if (value.type() == typeid(std::string))*/
         usdValue = value.get<std::string>();
+#endif
     if (!usdValue.IsEmpty()) {
         PXR_NS::TfToken tok(key);
         return attr.SetMetadata(tok, usdValue);
