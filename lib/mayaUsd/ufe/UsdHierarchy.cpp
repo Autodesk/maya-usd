@@ -54,9 +54,15 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
+
+    // We want to display the unloaded prims, so removed UsdPrimIsLoaded from
+    // the default UsdPrimDefaultPredicate.
+    const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate = UsdPrimIsActive
+        && UsdPrimIsDefined && !UsdPrimIsAbstract;
+
 UsdPrimSiblingRange getUSDFilteredChildren(
     const MayaUsd::ufe::UsdSceneItem::Ptr usdSceneItem,
-    const Usd_PrimFlagsPredicate          pred = UsdPrimDefaultPredicate)
+    const Usd_PrimFlagsPredicate          pred = MayaUsdPrimDefaultPredicate)
 {
     // If the scene item represents a point instance of a PointInstancer prim,
     // we consider it child-less. The namespace children of a PointInstancer
@@ -125,7 +131,7 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
         // See uniqueChildName() for explanation of USD filter predicate.
         Usd_PrimFlagsPredicate flags = childFilter.front().value
             ? UsdPrimIsDefined && !UsdPrimIsAbstract
-            : UsdPrimDefaultPredicate;
+            : MayaUsdPrimDefaultPredicate;
         return createUFEChildList(getUSDFilteredChildren(fItem, flags));
     }
 
