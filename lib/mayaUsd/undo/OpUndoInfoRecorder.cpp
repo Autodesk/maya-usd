@@ -49,7 +49,7 @@ void OpUndoInfoRecorder::endUndoRecording()
 
     // Extract the undo items from the global comtainer
     // into the container we we're given.
-    _undoInfo = std::move(UsdUndoManager::instance().getUndoInfo().extract());
+    _undoInfo = UsdUndoManager::instance().getUndoInfo().extract();
     
 }
 
