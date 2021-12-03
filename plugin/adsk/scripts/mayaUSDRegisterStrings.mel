@@ -122,6 +122,98 @@ global proc mayaUSDRegisterStrings() {
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
     register("kSaveOption2GBWarning", "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.");
 
+    // All strings for export dialog:
+    register("kExportAnimDataAnn", "Exports Maya animation data as USD time samples.");
+    register("kExportAnimDataLbl", "Animation Data: ");
+    register("kExportBlendShapesAnn", "Exports Maya Blend Shapes as USD blendshapes. Requires skeletons to be exported as well.");
+    register("kExportBlendShapesLbl", "Blend Shapes:");
+    register("kExportColorSetsAnn", "Exports Maya Color Sets as USD primvars.");
+    register("kExportColorSetsLbl", "Color Sets:");
+    register("kExportDefaultFormatAnn", "Select whether the .usd file is written out in binary or ASCII");
+    register("kExportDefaultFormatLbl", ".usd File Format:");
+    register("kExportDefaultFormatBinLbl", "Binary");
+    register("kExportDefaultFormatAscLbl", "ASCII");
+    register("kExportDefaultFormatStatus", "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary), or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.");
+    register("kExportDisplayColorAnn", "If selected, exports the diffuse color of the geometry's bound shader as a displayColor primvar on the USD mesh.");
+    register("kExportDisplayColorLbl", "Display Colors:");
+    register("kExportEulerFilterAnn", "Exports the euler angle filtering that was performed in Maya.");
+    register("kExportEulerFilterLbl", "Euler Filter:");
+    register("kExportFrameAdvancedLbl", "Advanced");
+    register("kExportFrameAnimationLbl", "Animation");
+    register("kExportFrameGeometryLbl", "Geometry");
+    register("kExportFrameMaterialsLbl", "Materials");
+    register("kExportFrameOutputLbl", "Output");
+    register("kExportFrameRangeBtn", "Use Animation Range");
+    register("kExportFrameRangeLbl", "Frame Range Start/End:");
+    register("kExportFrameSamplesAnn", "Specifies the value(s) used to multi-sample time frames during animation export. Multiple values separated by a space (-0.1 0.2) are supported.");
+    register("kExportFrameSamplesLbl", "Frame Sample:");
+    register("kExportFrameStepAnn", "Specifies the increment between USD time sample frames during animation export");
+    register("kExportFrameStepLbl", "Frame Step:");
+    register("kExportInstancesAnn", "Exports Maya instances as USD instanceable references.");
+    register("kExportInstancesLbl", "Instances:");
+    register("kExportInstancesFlatLbl", "Flatten");
+    register("kExportInstancesRefLbl", "Convert to USD Instanceable References");
+    register("kExportJobContextAnn", "Select a loaded plug-in configuration to modify export options");
+    register("kExportJobContextLbl", "Plug-in Configuration:");
+    register("kExportJobContextNoneLbl", "None");
+    register("kExportMaterialsAnn", "Select the material(s) to bind to prims for export. With USD, you can bind multiple materials to prims.");
+    register("kExportMergeShapesAnn", "Merges Maya transform and shape nodes into a single USD prim.");
+    register("kExportMergeShapesLbl", "Merge Transform and\nShape Nodes:");
+    register("kExportNamespacesAnn", "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1");
+    register("kExportNamespacesLbl", "Include Namespaces:");
+    register("kExportParentScopAnn", "Name of the USD scope that is the parent of the exported data.");
+    register("kExportParentScopLbl", "Create USD Parent Scope:");
+    register("kExportParentScopPht", "USD Prim Name");
+    register("kExportSkelsAnn", "Exports Maya joints as part of a USD skeleton.");
+    register("kExportSkelsLbl", "Skeletons:");
+    register("kExportSkelsNoneLbl", "None");
+    register("kExportSkelsAllLbl", "All (Automatically Create SkelRoots)");
+    register("kExportSkelsRootLbl", "Only under SkelRoots");
+    register("kExportSkinClustersAnn", "Exports Maya skin clusters as part of a USD skeleton.");
+    register("kExportSkinClustersLbl", "Skin Clusters");
+    register("kExportStaticSingleSampleAnn", "Converts animated values with a single time sample to be static instead.");
+    register("kExportStaticSingleSampleLbl", "Static Single Sample:");
+    register("kExportSubdMethodAnn", "Exports the selected subdivision method as a USD uniform attribute.");
+    register("kExportSubdMethodLbl", "Subdivision Method:");
+    register("kExportSubdMethodCCLbl", "Catmull-Clark");
+    register("kExportSubdMethodBiLbl", "Bilinear");
+    register("kExportSubdMethodLoLbl", "Loop");
+    register("kExportSubdMethodNoLbl", "None (Polygonal Mesh)");
+    register("kExportUVSetsAnn", "Exports Maya UV Sets as USD primvars.");
+    register("kExportUVSetsLbl", "UV Sets:");
+    register("kExportVisibilityAnn", "Exports Maya visibility attributes as USD metadata.");
+    register("kExportVisibilityLbl", "Visibility:");
+
+    // All strings for import dialog:
+    register("kImportAnimationDataLbl", "Animation Data: ");
+    register("kImportCustomFrameRangeLbl", "Custom Frame Range: ");
+    register("kImportFrameRangeLbl", "Frame Range Start/End: ");
+    register("kImportHierarchyViewLbl", "Hierarchy View");
+    register("kImportJobContextAnn", "Select a loaded plug-in configuration to modify import options");
+    register("kImportJobContextLbl", "Plug-in Configuration:");
+    register("kImportJobContextNoneLbl", "None");
+    register("kImportMaterialConvAnn", "Select the preferred conversion method for inbound USD shading data to bind with Maya geometry");
+    register("kImportMaterialConvLbl", "Convert to:");
+    register("kImportMaterialConvNoneLbl", "No Conversion");
+    register("kImportMaterialConvSSLbl","Standard Surface");
+    register("kImportMaterialConvLamLbl", "Lambert");
+    register("kImportMaterialConvPSLbl", "USD Preview Surface");
+    register("kImportMaterialConvBlnLbl", "Blinn");
+    register("kImportMaterialConvPhgLbl", "Phong");
+    register("kImportMaterialsAnn", "If selected, shading data is extracted from the USD file for import");
+    register("kImportMaterialsLbl", "Materials: ");
+    register("kImportPrimsInScopeNumLbl", "Total Number of Prims in Scope:");
+    register("kImportSelectFileTxt", "Please select a file to enable this option");
+    register("kImportScopeVariantsAnn", "Select a USD file and click <strong>Hierarchy View</strong> to build the scope of your import and switch variants.<br><br><strong>Scope</strong>: A USD file consists of prims, the primary container object in USD. Prims can contain any scene element, like meshes, lights, cameras, etc. Use the checkboxes in the <strong>Hierarchy View</strong> to select and deselect prims to build the scope of your import.<br><br><strong>Variant</strong>: A variant is a single, named variation of a variant set. Each variant set is a package of alternatives that users can switch between non-destructively. A variant set has no limits to what it can store. Variants can be used to swap out a material or change the entire hierarchy of an asset. A single prim can have many variants and variant sets, but only one variant from each variant set can be selected for import into Maya.");
+    register("kImportScopeVariantsLbl", "Scope and Variants: ");
+    register("kImportScopeVariantsSbm", "Select a USD file and click Hierarchy View to open the Hierarchy View window. This window lets you toggle prim checkboxes and non-destructively switch between variants to build the scope of your import.");
+    register("kImportToInstanceAnn", "Converts instanced prims to Maya instances. Instanced prims share parts of\nthe USD scenegraph through instancing. Each instanced prim is associated\nwith a master prim that serves as the root of the scenegraph. This hierarchy\nreduces the time needed to load the file. Instanced prims must be manually\ntagged.");
+    register("kImportToInstanceLbl", "Instanced Prims: ");
+    register("kImportToInstanceOpt", "Convert to Instances");
+    register("kImportUSDZTxtAnn", "When a .usdz file is chosen and this is selected, .usdz texture files are imported and copied to new files on disk. To locate these files, navigate to the current Maya workspace /sourceimages directory.");
+    register("kImportUSDZTxtLbl", "USDZ Texture Import: ");
+    register("kImportVariantsInScopeNumLbl", "Variants Switched in Scope:");
+
     // Register the strings from the python equivalent register function.
     // Note: the strings from both the MEL and python register can be loaded
     //       by either MEL or python. They all get registered together under

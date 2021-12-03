@@ -40,7 +40,7 @@ MSyntax MayaUSDImportCommand::createSyntax()
     MSyntax syntax;
 
     // These flags correspond to entries in
-    // UsdMayaJobImportArgs::GetDefaultDictionary.
+    // UsdMayaJobImportArgs::GetGuideDictionary.
     syntax.addFlag(
         kShadingModeFlag,
         UsdMayaJobImportArgsTokens->shadingMode.GetText(),
@@ -136,7 +136,7 @@ MStatus MayaUSDImportCommand::doIt(const MArgList& args)
 
     // Get dictionary values.
     const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
-        argData, UsdMayaJobImportArgs::GetDefaultDictionary());
+        argData, UsdMayaJobImportArgs::GetGuideDictionary());
 
     std::string mFileName;
     if (argData.isFlagSet(kFileFlag)) {
