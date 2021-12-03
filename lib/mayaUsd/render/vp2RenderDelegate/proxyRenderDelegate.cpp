@@ -1137,8 +1137,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     return true;
 }
 
-#if defined(WANT_UFE_BUILD) && defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14 \
-    && defined(MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT)
+#ifdef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
 bool ProxyRenderDelegate::updateUfeIdentifiers(
     MHWRender::MRenderItem& renderItem,
     MStringArray&           ufeIdentifiers)
