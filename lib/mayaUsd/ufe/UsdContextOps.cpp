@@ -838,14 +838,20 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return nullptr;
 
         return std::make_shared<ClearAllReferencesUndoableCommand>(prim());
+#ifdef UFE_V3_FEATURES_AVAILABLE
     } else if (itemPath[0] == kEditAsMayaItem) {
         MString script;
-        script.format("^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
+        script.format(
+            "^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script, true, true);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
-        script.format("^1s \"^2s\" \"|world\"", DuplicateCommand::commandName, Ufe::PathString::string(path()).c_str());
+        script.format(
+            "^1s \"^2s\" \"|world\"",
+            DuplicateCommand::commandName,
+            Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script, true, true);
+#endif
     }
 
     return nullptr;

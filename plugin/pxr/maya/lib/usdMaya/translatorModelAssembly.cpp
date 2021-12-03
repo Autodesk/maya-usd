@@ -25,6 +25,8 @@
 #include <mayaUsd/fileio/primWriterContext.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 
@@ -386,11 +388,12 @@ bool UsdMayaTranslatorModelAssembly::Read(
 
     // Now we get the MObject for the assembly node we just created.
     MObject assemblyObj;
-    status = UsdMayaUtil::GetMObjectByName(newAssemblyName.asChar(), assemblyObj);
+    status = UsdMayaUtil::GetMObjectByName(newAssemblyName, assemblyObj);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Re-parent the assembly node underneath parentNode.
-    MDagModifier& dagMod = MDagModifierUndoItem::create("Assembly reparenting", context->GetUndoInfo())();
+    auto&         undoInfo = MAYAUSD_NS_DEF::UsdUndoManager::instance().getUndoInfo();
+    MDagModifier& dagMod = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Assembly reparenting", undoInfo);
     status = dagMod.reparentNode(assemblyObj, parentNode);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -501,8 +504,9 @@ bool UsdMayaTranslatorModelAssembly::ReadAsProxy(
     }
 
     // Create the proxy shape node.
-    MDagModifier& dagMod = MDagModifierUndoItem::create("Proxy shape creation", context->GetUndoInfo())();
-    MObject      proxyObj
+    auto&         undoInfo = MAYAUSD_NS_DEF::UsdUndoManager::instance().getUndoInfo();
+    MDagModifier& dagMod = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Proxy shape creation", undoInfo);
+    MObject       proxyObj
         = dagMod.createNode(UsdMayaProxyShapeTokens->MayaTypeName.GetText(), transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
