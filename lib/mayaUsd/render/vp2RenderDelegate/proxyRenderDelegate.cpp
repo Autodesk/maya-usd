@@ -15,6 +15,7 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include "draw_item.h"
 #include "mayaPrimCommon.h"
 #include "render_delegate.h"
 #include "tokens.h"
@@ -46,6 +47,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <maya/M3dView.h>
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
@@ -973,13 +975,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     if (handler == nullptr)
         return false;
 
-    // Extract id of the owner Rprim. A SdfPath directly created from the render
-    // item name could be ill-formed if the render item represents instancing:
-    // "/TreePatch/Tree_1.proto_leaves_id0/DrawItem_xxxxxxxx". Thus std::string
-    // is used instead to extract Rprim id.
-    const std::string renderItemName = renderItem.name().asChar();
-    const auto        pos = renderItemName.find_first_of(VP2_RENDER_DELEGATE_SEPARATOR);
-    const SdfPath     rprimId(renderItemName.substr(0, pos));
+    const SdfPath rprimId = HdVP2DrawItem::RenderItemToPrimPath(renderItem);
 
     // If drawInstID is positive, it means the selection hit comes from one instanced render item,
     // in this case its instance transform matrices have been sorted w.r.t. USD instance index, thus
@@ -1140,6 +1136,51 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
     return true;
 }
+
+#if defined(WANT_UFE_BUILD) && defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14 \
+    && defined(MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT)
+bool ProxyRenderDelegate::updateUfeIdentifiers(
+    MHWRender::MRenderItem& renderItem,
+    MStringArray&           ufeIdentifiers)
+{
+
+    if (MayaUsdCustomData::ItemDataDirty(renderItem)) {
+        // Set the custom data clean right away, incase we get a re-entrant call into
+        // updateUfeIdentifiers.
+        MayaUsdCustomData::ItemDataDirty(renderItem, false);
+        const SdfPath rprimId = HdVP2DrawItem::RenderItemToPrimPath(renderItem);
+
+        InstancePrimPaths& instancePrimPaths = MayaUsdCustomData::GetInstancePrimPaths(rprimId);
+
+        auto   mayaToUsd = MayaUsdCustomData::Get(renderItem);
+        size_t instanceCount = mayaToUsd.size();
+        if (instanceCount > 0) {
+            for (size_t mayaInstanceId = 0; mayaInstanceId < instanceCount; mayaInstanceId++) {
+                int usdInstanceId = mayaToUsd[mayaInstanceId];
+                if (usdInstanceId == UsdImagingDelegate::ALL_INSTANCES)
+                    continue;
+
+                // try making a cache of the USD ID to the ufeIdentifier.
+                if (instancePrimPaths[usdInstanceId] == SdfPath()) {
+                    instancePrimPaths[usdInstanceId] = GetScenePrimPath(rprimId, usdInstanceId);
+                }
+#ifdef DEBUG
+                else {
+                    // verify the entry is still correct
+                    TF_VERIFY(
+                        instancePrimPaths[usdInstanceId]
+                        == GetScenePrimPath(rprimId, usdInstanceId));
+                }
+#endif
+
+                ufeIdentifiers.append(instancePrimPaths[usdInstanceId].GetString().c_str());
+            }
+        }
+        return true;
+    }
+    return false;
+}
+#endif
 
 //! \brief  Notify of selection change.
 void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }

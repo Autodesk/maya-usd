@@ -29,7 +29,7 @@ MayaUsdCustomData sMayaUsdCustomData;
 /* static */
 InstanceIdMap& MayaUsdCustomData::Get(const MHWRender::MRenderItem& renderItem)
 {
-    return sMayaUsdCustomData._itemData[renderItem.InternalObjectId()];
+    return sMayaUsdCustomData._itemData[renderItem.InternalObjectId()]._instanceIdMap;
 }
 
 /* static */
@@ -38,6 +38,34 @@ void MayaUsdCustomData::Remove(const MHWRender::MRenderItem& renderItem)
     // not thread safe, so if they are destroyed in parallel this will crash.
     // consider concurrent_hash_map for locking version that can erase
     sMayaUsdCustomData._itemData.unsafe_erase(renderItem.InternalObjectId());
+}
+
+/* static */
+bool MayaUsdCustomData::ItemDataDirty(const MHWRender::MRenderItem& renderItem)
+{
+    // not thread safe, so if they are destroyed in parallel this will crash.
+    // consider concurrent_hash_map for locking version that can erase
+    return sMayaUsdCustomData._itemData[renderItem.InternalObjectId()]._itemDataDirty;
+}
+
+/* static */
+void MayaUsdCustomData::ItemDataDirty(const MHWRender::MRenderItem& renderItem, bool dirty)
+{
+    // not thread safe, so if they are destroyed in parallel this will crash.
+    // consider concurrent_hash_map for locking version that can erase
+    sMayaUsdCustomData._itemData[renderItem.InternalObjectId()]._itemDataDirty = dirty;
+}
+
+/* static */
+InstancePrimPaths& MayaUsdCustomData::GetInstancePrimPaths(const SdfPath& prim)
+{
+    return sMayaUsdCustomData._primData[prim]._instancePrimPaths;
+}
+
+/* static */
+void MayaUsdCustomData::RemoveInstancePrimPaths(const SdfPath& prim)
+{
+    sMayaUsdCustomData._primData.unsafe_erase(prim);
 }
 
 #endif
