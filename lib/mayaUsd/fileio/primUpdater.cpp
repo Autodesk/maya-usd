@@ -29,18 +29,9 @@
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
-#include <maya/MFnDagNode.h>
-#include <maya/MFnSet.h>
-#include <maya/MFnStringData.h>
-#include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
-#include <maya/MPlug.h>
-#include <maya/MSelectionList.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
@@ -116,36 +107,14 @@ UsdPrim UsdMayaPrimUpdater::getUsdPrim(const UsdMayaPrimUpdaterContext& context)
 /* static */
 bool UsdMayaPrimUpdater::isAnimated(const MDagPath& path)
 {
-    auto isDagPathAnimated = [](const MDagPath& dagPath) {
-        int     upstreamDependencies = -1;
-        MString pyCommand;
-        pyCommand.format(
-            "import maya.cmds as cmds\n"
-            "if cmds.evaluationManager( query=True, invalidate=True ):\n"
-            "  upstream = cmds.evaluationManager(ust='^1s')\n"
-            "  for node in upstream:\n"
-            "    if cmds.nodeType(node) == 'mayaUsdProxyShape':\n"
-            "      countNonProxyShape -= 1\n"
-            "  return countNonProxyShape\n"
-            "else:\n"
-            "  return -1\n",
-            dagPath.fullPathName().asChar());
-        MGlobal::executePythonCommand(pyCommand, upstreamDependencies);
-
-        if (upstreamDependencies >= 0)
-            return (upstreamDependencies > 0);
-        else
-            return MAnimUtil::isAnimated(dagPath, true);
-    };
-
-    if (!isDagPathAnimated(path)) {
+    if (!MAnimUtil::isAnimated(path, true)) {
         MItDag dagIt(MItDag::kDepthFirst);
         dagIt.reset(path);
         for (; !dagIt.isDone(); dagIt.next()) {
             MDagPath dagPath;
             dagIt.getPath(dagPath);
 
-            if (isDagPathAnimated(dagPath))
+            if (MAnimUtil::isAnimated(dagPath, true))
                 return true;
         }
     } else {
