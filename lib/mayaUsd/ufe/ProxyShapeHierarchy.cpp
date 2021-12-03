@@ -44,10 +44,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-    // We want to display the unloaded prims, so removed UsdPrimIsLoaded from
-    // the default UsdPrimDefaultPredicate.
-    const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate = UsdPrimIsActive
-        && UsdPrimIsDefined && !UsdPrimIsAbstract;
+// We want to display the unloaded prims, so removed UsdPrimIsLoaded from
+// the default UsdPrimDefaultPredicate.
+const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate
+    = UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract;
 
 UsdPrimSiblingRange getUSDFilteredChildren(
     const UsdPrim&               prim,
