@@ -45,8 +45,7 @@ static constexpr char kErrorMsgFailedConvertToString[]
 static constexpr char kErrorMsgInvalidType[]
     = "USD attribute does not match created attribute class type";
 #if (UFE_PREVIEW_VERSION_NUM >= 3013)
-static constexpr char kErrorMsgInvalidValueType[]
-    = "Unexpected Ufe::Value type";
+static constexpr char kErrorMsgInvalidValueType[] = "Unexpected Ufe::Value type";
 #endif
 
 //------------------------------------------------------------------------------
