@@ -92,7 +92,7 @@ OpUndoInfo OpUndoInfo::extract()
     _deletedMayaObjects.clear();
     extracted._isUndone = _isUndone;
     
-    return std::move(extracted);
+    return extracted;
 }
 
 } // namespace MAYAUSD_NS_DEF

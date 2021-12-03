@@ -35,7 +35,7 @@ MStringArray getDagName(const MObject& node)
 
     MSelectionList sel;
     sel.add(node);
-    MStatus status = sel.getSelectionStrings(strings);
+    sel.getSelectionStrings(strings);
 
     return strings;
 }
@@ -69,13 +69,9 @@ MStatus NodeDeletionUndoItem::deleteNode(
     auto item = std::make_unique<NodeDeletionUndoItem>(std::move(fullName));
 
     MStatus status = item->_modifier.commandToExecute(cmd);
-    // MStatus status = item->_modifier.deleteNode(node, false);
     if (status != MS::kSuccess)
         return status;
 
-    // Note: unfortunately, if this second call fails, we will be in a
-    // semi-deleted state, where one part succeeded and another failed...
-    // but this is how MDGModifier::deleteNode works, we can't avoid it.
     status = item->_modifier.doIt();
     if (status != MS::kSuccess)
         return status;
