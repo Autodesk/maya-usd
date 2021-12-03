@@ -20,6 +20,8 @@
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/undo/OpUndoItems.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/stageCache.h>
 
 #include <pxr/base/tf/staticTokens.h>
@@ -190,8 +192,8 @@ bool UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
         std::string excludePathsString = TfStringJoin(collapsePointPathStrings, ",");
 
         // Set the excludePrimPaths attribute on the node.
-        auto&         undoInfo = UsdUndoManager::instance().getUndoInfo();
-        MDagModifier& dagMod = MDagModifierUndoItem::create("Read job prim exclusion", undoInfo);
+        auto&         undoInfo = MAYAUSD_NS_DEF::UsdUndoManager::instance().getUndoInfo();
+        MDagModifier& dagMod = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Read job prim exclusion", undoInfo);
         MPlug         excludePathsPlug
             = depNodeFn.findPlug(_tokens->ExcludePrimPathsPlugName.GetText(), true, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
