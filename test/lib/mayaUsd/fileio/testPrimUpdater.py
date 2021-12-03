@@ -94,10 +94,14 @@ class testPrimUpdater(unittest.TestCase):
         (aMayaPath, aMayaPathStr, _, aMayaMatrix) = setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
 
         # Merge edits back to USD.
+
+# Memory corruption occurs when running the next line
 #        self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
 
         self.assertTrue(primUpdaterTest.editAsMayaCalled)
+# discardEditsCalled should be True, but only fallback is called right now!
         self.assertFalse(primUpdaterTest.discardEditsCalled)
+# Fix those 2 when activating call to mayaUsdLib.PrimUpdaterManager.mergeToUsd(aMayaPathStr)
         self.assertFalse(primUpdaterTest.pushCopySpecsCalled)
         self.assertFalse(primUpdaterTest.pushEndCalled)
 
