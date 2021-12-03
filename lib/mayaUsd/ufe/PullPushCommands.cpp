@@ -170,12 +170,6 @@ MStatus EditAsMayaCommand::doIt(const MArgList& argList)
     if (!isPrimPath(fPath))
         return reportError(MS::kInvalidParameter);
 
-    return redoIt();
-}
-
-// MPxCommand API to redo the command.
-MStatus EditAsMayaCommand::redoIt()
-{
     OpUndoInfoRecorder undoRecorder(fUndoInfo);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
@@ -184,6 +178,9 @@ MStatus EditAsMayaCommand::redoIt()
 
     return MS::kSuccess;
 }
+
+// MPxCommand API to redo the command.
+MStatus EditAsMayaCommand::redoIt() { return fUndoInfo.redo() ? MS::kSuccess : MS::kFailure; }
 
 // MPxCommand API to undo the command.
 MStatus EditAsMayaCommand::undoIt() { return fUndoInfo.undo() ? MS::kSuccess : MS::kFailure; }

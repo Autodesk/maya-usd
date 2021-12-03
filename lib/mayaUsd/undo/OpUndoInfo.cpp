@@ -40,7 +40,7 @@ bool OpUndoInfo::redo()
 {
     bool overallSuccess = true;
     for (auto& item : _undoItems)
-        overallSuccess &= item->undo();
+        overallSuccess &= item->redo();
 
     _isUndone = false;
 

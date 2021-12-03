@@ -365,10 +365,18 @@ PullImportPaths pullImport(
         // -- end --
 
         // Create the pull set if it does not exists.
+        //
+        // Note: do not use the MfnSet API to create it as it clears the redo stack
+        // and thus prevents redo.
         MObject pullSetObj;
         MStatus status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
-        if (status != MStatus::kSuccess)
-            CreateSetUndoItem::create("Pull import pull set creation", kPullSetName, undoInfo);
+        if (status != MStatus::kSuccess) {
+            MString createSetCmd;
+            createSetCmd.format("sets -em -name \"^1s\";", kPullSetName.asChar());
+            MDGModifier& dgMod = MDGModifierUndoItem::create("Pull import pull set creation", undoInfo);
+            dgMod.commandToExecute(createSetCmd);
+            dgMod.doIt();
+        }
 
         // Finalize the pull.
         FunctionUndoItem::execute(
