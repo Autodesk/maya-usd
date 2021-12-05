@@ -294,18 +294,6 @@
         }                                                                                \
     }
 
-/// a macro to register a custom draw override with maya
-/// \ingroup   mayautils
-#define AL_REGISTER_DRAW_OVERRIDE(plugin, X)                                    \
-    {                                                                           \
-        MStatus status = MHWRender::MDrawRegistry::registerDrawOverrideCreator( \
-            X ::kDrawDbClassification, X ::kDrawRegistrantId, X ::creator);     \
-        if (!status) {                                                          \
-            status.perror("unable to register draw override " #X);              \
-            return status;                                                      \
-        }                                                                       \
-    }
-
 /// a macro to unregister a MEL command from maya
 /// \ingroup   mayautils
 #define AL_UNREGISTER_COMMAND(plugin, X)                         \
@@ -345,15 +333,4 @@
             status.perror("deregisterTranslator AL::usdmaya::" #X); \
             return status;                                          \
         }                                                           \
-    }
-/// a macro to unregister a custom draw override from Maya
-/// \ingroup   mayautils
-#define AL_UNREGISTER_DRAW_OVERRIDE(plugin, X)                                    \
-    {                                                                             \
-        MStatus status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator( \
-            X ::kDrawDbClassification, X ::kDrawRegistrantId);                    \
-        if (!status) {                                                            \
-            status.perror("deregisterDrawOverrideCreator " #X);                   \
-            return status;                                                        \
-        }                                                                         \
     }
