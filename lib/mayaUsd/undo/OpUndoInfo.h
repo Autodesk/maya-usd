@@ -127,10 +127,7 @@ private:
 
     struct MObjectHandleHash
     {
-        size_t operator()(const MObjectHandle obj ) const
-        {
-            return obj.hashCode();
-        }
+        size_t operator()(const MObjectHandle obj) const { return obj.hashCode(); }
     };
 
     using DeletedObjectSet = std::unordered_set<MObjectHandle, MObjectHandleHash>;

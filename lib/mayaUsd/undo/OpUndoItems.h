@@ -46,7 +46,11 @@ class NodeDeletionUndoItem : public OpUndoItem
 public:
     /// \brief delete a node.
     MAYAUSD_CORE_PUBLIC
-    static MStatus deleteNode(const std::string name, const MString& nodeName, const MObject& node, OpUndoInfo& undoInfo);
+    static MStatus deleteNode(
+        const std::string name,
+        const MString&    nodeName,
+        const MObject&    node,
+        OpUndoInfo&       undoInfo);
 
     /// \brief construct a Maya DG modifier recorder.
     MAYAUSD_CORE_PUBLIC

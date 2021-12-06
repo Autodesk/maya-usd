@@ -50,7 +50,6 @@ void OpUndoInfoRecorder::endUndoRecording()
     // Extract the undo items from the global comtainer
     // into the container we we're given.
     _undoInfo = UsdUndoManager::instance().getUndoInfo().extract();
-    
 }
 
 } // namespace MAYAUSD_NS_DEF

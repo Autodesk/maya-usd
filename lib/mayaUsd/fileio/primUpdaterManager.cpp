@@ -373,7 +373,8 @@ PullImportPaths pullImport(
         if (status != MStatus::kSuccess) {
             MString createSetCmd;
             createSetCmd.format("sets -em -name \"^1s\";", kPullSetName.asChar());
-            MDGModifier& dgMod = MDGModifierUndoItem::create("Pull import pull set creation", undoInfo);
+            MDGModifier& dgMod
+                = MDGModifierUndoItem::create("Pull import pull set creation", undoInfo);
             dgMod.commandToExecute(createSetCmd);
             dgMod.doIt();
         }
@@ -832,7 +833,10 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
     for (const MDagPath& curDagPath : toApplyOn) {
         MStatus status = NodeDeletionUndoItem::deleteNode(
-            "Merge to USD Maya scene cleanup", curDagPath.fullPathName(), curDagPath.node(), undoInfo);
+            "Merge to USD Maya scene cleanup",
+            curDagPath.fullPathName(),
+            curDagPath.node(),
+            undoInfo);
         if (status != MS::kSuccess) {
             TF_WARN(
                 "Merge to USD Maya scene cleanup: cannot delete node \"%s\".",
@@ -1208,7 +1212,8 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
         MFnDagNode pullRootNode(pullRoot);
         auto       nbPullRootChildren = pullRootNode.childCount();
         if (nbPullRootChildren == 0) {
-            status = NodeDeletionUndoItem::deleteNode("Delete pull root", pullRootNode.absoluteName(), pullRoot, undoInfo);
+            status = NodeDeletionUndoItem::deleteNode(
+                "Delete pull root", pullRootNode.absoluteName(), pullRoot, undoInfo);
             if (status != MStatus::kSuccess) {
                 return false;
             }

@@ -393,7 +393,8 @@ bool UsdMayaTranslatorModelAssembly::Read(
 
     // Re-parent the assembly node underneath parentNode.
     auto&         undoInfo = MAYAUSD_NS_DEF::UsdUndoManager::instance().getUndoInfo();
-    MDagModifier& dagMod = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Assembly reparenting", undoInfo);
+    MDagModifier& dagMod
+        = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Assembly reparenting", undoInfo);
     status = dagMod.reparentNode(assemblyObj, parentNode);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -505,8 +506,9 @@ bool UsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     // Create the proxy shape node.
     auto&         undoInfo = MAYAUSD_NS_DEF::UsdUndoManager::instance().getUndoInfo();
-    MDagModifier& dagMod = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Proxy shape creation", undoInfo);
-    MObject       proxyObj
+    MDagModifier& dagMod
+        = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Proxy shape creation", undoInfo);
+    MObject proxyObj
         = dagMod.createNode(UsdMayaProxyShapeTokens->MayaTypeName.GetText(), transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
