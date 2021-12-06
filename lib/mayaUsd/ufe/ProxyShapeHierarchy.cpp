@@ -43,9 +43,15 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
+
+// We want to display the unloaded prims, so removed UsdPrimIsLoaded from
+// the default UsdPrimDefaultPredicate.
+const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate
+    = UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract;
+
 UsdPrimSiblingRange getUSDFilteredChildren(
     const UsdPrim&               prim,
-    const Usd_PrimFlagsPredicate pred = UsdPrimDefaultPredicate)
+    const Usd_PrimFlagsPredicate pred = MayaUsdPrimDefaultPredicate)
 {
     // Since the equivalent of GetChildren is
     // GetFilteredChildren( UsdPrimDefaultPredicate ),
@@ -159,7 +165,7 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
         // See uniqueChildName() for explanation of USD filter predicate.
         Usd_PrimFlagsPredicate flags = childFilter.front().value
             ? UsdPrimIsDefined && !UsdPrimIsAbstract
-            : UsdPrimDefaultPredicate;
+            : MayaUsdPrimDefaultPredicate;
         return createUFEChildList(getUSDFilteredChildren(rootPrim, flags));
     }
 
