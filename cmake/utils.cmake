@@ -64,6 +64,11 @@ function(mayaUsd_find_python_module module)
     string(TOUPPER ${module} module_upper)
     set(MODULE_FOUND "${module_upper}_FOUND")
     if(NOT ${MODULE_FOUND})
+        # Check for Python Executable
+        if(NOT DEFINED Python_EXECUTABLE OR Python_EXECUTABLE STREQUAL "")
+            MESSAGE(FATAL_ERROR "Python_EXECUTABLE is not set")
+        endif()
+
         if(ARGC GREATER 1 AND ARGV1 STREQUAL "REQUIRED")
             set(${module}_FIND_REQUIRED TRUE)
         endif()
