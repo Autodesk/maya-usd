@@ -111,11 +111,13 @@ static const std::string kUSDCylinderPrimImage { "out_USD_Cylinder.png" };
 static constexpr char    kUSDSpherePrimItem[] = "Sphere";
 static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
 static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
+#ifdef UFE_V3_FEATURES_AVAILABLE
 static constexpr char    kEditAsMayaItem[] = "Edit As Maya Data";
 static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
 static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
 static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
+#endif
 
 #if PXR_VERSION >= 2008
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
@@ -618,13 +620,11 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         if (!fIsAGatewayType) {
 #ifdef UFE_V3_FEATURES_AVAILABLE
             if (PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
-#endif
                 items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
-#ifdef UFE_V3_FEATURES_AVAILABLE
             }
-#endif
             items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             items.emplace_back(Ufe::ContextItem::kSeparator);
+#endif
 
             // Working set management (load and unload):
             const auto itemLabelPairs = _computeLoadAndUnloadItems(prim());
@@ -837,7 +837,9 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return nullptr;
 
         return std::make_shared<ClearAllReferencesUndoableCommand>(prim());
-    } else if (itemPath[0] == kEditAsMayaItem) {
+    }
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    else if (itemPath[0] == kEditAsMayaItem) {
         MString script;
         script.format("mayaUsdMenu_pullToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script);
@@ -846,6 +848,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         script.format("mayaUsdMenu_duplicateToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script);
     }
+#endif
 
     return nullptr;
 }
