@@ -71,7 +71,7 @@ public:
 
 private:
     PrimUpdaterManager();
-    
+
     PrimUpdaterManager(PrimUpdaterManager&) = delete;
     PrimUpdaterManager(PrimUpdaterManager&&) = delete;
 

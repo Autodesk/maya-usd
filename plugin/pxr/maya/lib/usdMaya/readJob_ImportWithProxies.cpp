@@ -193,8 +193,9 @@ bool UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
 
         // Set the excludePrimPaths attribute on the node.
         auto&         undoInfo = MAYAUSD_NS_DEF::UsdUndoManager::instance().getUndoInfo();
-        MDagModifier& dagMod = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Read job prim exclusion", undoInfo);
-        MPlug         excludePathsPlug
+        MDagModifier& dagMod
+            = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Read job prim exclusion", undoInfo);
+        MPlug excludePathsPlug
             = depNodeFn.findPlug(_tokens->ExcludePrimPathsPlugName.GetText(), true, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
         status = dagMod.newPlugValueString(excludePathsPlug, excludePathsString.c_str());

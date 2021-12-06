@@ -53,14 +53,11 @@ void OpUndoInfo::addItem(OpUndoItem::Ptr&& item)
     _undoItems.emplace_back(std::move(item));
 }
 
-void OpUndoInfo::addDeleted(const MObjectHandle obj)
-{
-    _deletedMayaObjects.insert(obj);
-}
+void OpUndoInfo::addDeleted(const MObjectHandle obj) { _deletedMayaObjects.insert(obj); }
 
 bool OpUndoInfo::isDeleted(const MObjectHandle obj) const
 {
-   return _deletedMayaObjects.count(obj) > 0;
+    return _deletedMayaObjects.count(obj) > 0;
 }
 
 void OpUndoInfo::clear()
@@ -91,7 +88,7 @@ OpUndoInfo OpUndoInfo::extract()
     _undoItems.clear();
     _deletedMayaObjects.clear();
     extracted._isUndone = _isUndone;
-    
+
     return extracted;
 }
 
