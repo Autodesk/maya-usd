@@ -50,7 +50,8 @@ public:
 
     PrimUpdaterWrapper(const MFnDependencyNode& node, const Ufe::Path& path)
         : UsdMayaPrimUpdater(node, path)
-    {}
+    {
+    }
 
     virtual ~PrimUpdaterWrapper() = default;
 
@@ -62,7 +63,8 @@ public:
         SdfLayerRefPtr dstLayer,
         const SdfPath& dstSdfPath)
     {
-        return base_t::pushCopySpecs(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
+        return base_t::pushCopySpecs(
+            srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
     }
     bool pushCopySpecs(
         UsdStageRefPtr srcStage,
@@ -76,16 +78,16 @@ public:
             srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
     }
 
-    bool default_canEditAsMaya() const
-    {
-        return base_t::canEditAsMaya();
-    }
+    bool default_canEditAsMaya() const { return base_t::canEditAsMaya(); }
     bool canEditAsMaya() const override
     {
         return this->CallVirtual<bool>("canEditAsMaya", &This::default_canEditAsMaya)();
     }
 
-    bool default_editAsMaya(const UsdMayaPrimUpdaterContext& context) { return base_t::editAsMaya(context); }
+    bool default_editAsMaya(const UsdMayaPrimUpdaterContext& context)
+    {
+        return base_t::editAsMaya(context);
+    }
     bool editAsMaya(const UsdMayaPrimUpdaterContext& context) override
     {
         return this->CallVirtual<bool>("editAsMaya", &This::default_editAsMaya)(context);
@@ -134,11 +136,10 @@ public:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-void wrapPrimUpdaterArgs() {
+void wrapPrimUpdaterArgs()
+{
     boost::python::class_<UsdMayaPrimUpdaterArgs>("PrimUpdaterArgs", boost::python::no_init)
-        .def(
-            "createFromDictionary",
-            &UsdMayaPrimUpdaterArgs::createFromDictionary)
+        .def("createFromDictionary", &UsdMayaPrimUpdaterArgs::createFromDictionary)
         .staticmethod("createFromDictionary")
         .def(
             "getDefaultDictionary",
@@ -167,9 +168,7 @@ void wrapPrimUpdaterContext()
             "GetArgs",
             &UsdMayaPrimUpdaterContext::GetArgs,
             boost::python::return_internal_reference<>())
-        .def(
-            "MapSdfPathToDagPath",
-            &UsdMayaPrimUpdaterContext::MapSdfPathToDagPath);
+        .def("MapSdfPathToDagPath", &UsdMayaPrimUpdaterContext::MapSdfPathToDagPath);
 }
 
 TF_REGISTRY_FUNCTION(TfEnum)
@@ -187,27 +186,27 @@ void wrapPrimUpdater()
 {
     typedef UsdMayaPrimUpdater This;
 
-    boost::python::class_<PrimUpdaterWrapper, boost::noncopyable>
-        c("PrimUpdater", boost::python::no_init);
+    boost::python::class_<PrimUpdaterWrapper, boost::noncopyable> c(
+        "PrimUpdater", boost::python::no_init);
 
-        boost::python::scope s(c);
+    boost::python::scope s(c);
 
-        TfPyWrapEnum<UsdMayaPrimUpdater::Supports>();
+    TfPyWrapEnum<UsdMayaPrimUpdater::Supports>();
 
-        c.def("__init__", make_constructor(&PrimUpdaterWrapper::New))
-            .def("pushCopySpecs", &This::pushCopySpecs, &PrimUpdaterWrapper::default_pushCopySpecs)
-            .def("canEditAsMaya", &This::canEditAsMaya, &PrimUpdaterWrapper::default_canEditAsMaya)
-            .def("editAsMaya", &This::editAsMaya, &PrimUpdaterWrapper::default_editAsMaya)
-            .def("discardEdits", &This::discardEdits, &PrimUpdaterWrapper::default_discardEdits)
-            .def("pushEnd", &This::pushEnd, &PrimUpdaterWrapper::default_pushEnd)
-            .def(
-                "getMayaObject",
-                &This::getMayaObject,
-                boost::python::return_value_policy<boost::python::return_by_value>())
-            .def("getUfePath", &This::getUfePath, boost::python::return_internal_reference<>())
-            .def("getUsdPrim", &This::getUsdPrim)
-            .def("isAnimated", &This::isAnimated)
-            .staticmethod("isAnimated")
-            .def("Register", &PrimUpdaterWrapper::Register)
-            .staticmethod("Register");
+    c.def("__init__", make_constructor(&PrimUpdaterWrapper::New))
+        .def("pushCopySpecs", &This::pushCopySpecs, &PrimUpdaterWrapper::default_pushCopySpecs)
+        .def("canEditAsMaya", &This::canEditAsMaya, &PrimUpdaterWrapper::default_canEditAsMaya)
+        .def("editAsMaya", &This::editAsMaya, &PrimUpdaterWrapper::default_editAsMaya)
+        .def("discardEdits", &This::discardEdits, &PrimUpdaterWrapper::default_discardEdits)
+        .def("pushEnd", &This::pushEnd, &PrimUpdaterWrapper::default_pushEnd)
+        .def(
+            "getMayaObject",
+            &This::getMayaObject,
+            boost::python::return_value_policy<boost::python::return_by_value>())
+        .def("getUfePath", &This::getUfePath, boost::python::return_internal_reference<>())
+        .def("getUsdPrim", &This::getUsdPrim)
+        .def("isAnimated", &This::isAnimated)
+        .staticmethod("isAnimated")
+        .def("Register", &PrimUpdaterWrapper::Register)
+        .staticmethod("Register");
 }
