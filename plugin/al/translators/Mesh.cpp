@@ -97,7 +97,13 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
     }
 
     AL::usdmaya::utils::MeshImportContext importContext(mesh, parent, dagName, timeCode);
-    importContext.applyVertexNormals();
+    TfToken                               scheme;
+    mesh.GetSubdivisionSchemeAttr().Get(&scheme);
+    bool isSubd = (scheme != UsdGeomTokens->none);
+    // Skip normals for subdiv surfaces
+    if (!isSubd) {
+        importContext.applyVertexNormals();
+    }
     importContext.applyHoleFaces();
     importContext.applyVertexCreases();
     importContext.applyEdgeCreases();
