@@ -212,6 +212,15 @@ public:
         kFull
     };
 
+    enum SubdivisionScheme
+    {
+        kSubdDefault,
+        kSubdCatmull,
+        kSubdNone,
+        kSubdLoop,
+        kSubdBilinear,
+    };
+
     /// \brief  constructor
     /// \param  path the DAG path of the Maya mesh being exported
     /// \param  mesh an intialised USD prim into which the data should be copied
@@ -221,12 +230,13 @@ public:
     /// computing interpolation modes
     AL_USDMAYA_UTILS_PUBLIC
     MeshExportContext(
-        MDagPath        path,
-        UsdGeomMesh&    mesh,
-        UsdTimeCode     timeCode,
-        bool            performDiff = false,
-        CompactionLevel compactionLevel = kFull,
-        bool            reverseNormals = false);
+        MDagPath          path,
+        UsdGeomMesh&      mesh,
+        UsdTimeCode       timeCode,
+        bool              performDiff = false,
+        CompactionLevel   compactionLevel = kFull,
+        bool              reverseNormals = false,
+        SubdivisionScheme subdivisionScheme = kSubdDefault);
 
     /// \brief  returns true if it's ok to continue exporting the data
     operator bool() const { return valid; }
@@ -288,17 +298,18 @@ public:
     UsdTimeCode timeCode() const { return m_timeCode; }
 
 private:
-    MFnMesh         fnMesh;       ///< the maya function set
-    MIntArray       faceCounts;   ///< the number of verts in each face
-    MIntArray       faceConnects; ///< the face-vertex indices
-    UsdTimeCode     m_timeCode;   ///< the time at which to extract the mesh data
-    UsdGeomMesh&    mesh;         ///< the usd geometry
-    uint32_t        diffGeom;     ///< the bit flags for standard geom params
-    uint32_t        diffMesh;     ///< the bit flags for mesh params
-    CompactionLevel compaction;
-    bool            valid;          ///< true if the function set is ok
-    bool            performDiff;    ///< true if performing a diff on export
-    bool            reverseNormals; ///< true if reversing normals on 'opposite' meshes
+    MFnMesh           fnMesh;       ///< the maya function set
+    MIntArray         faceCounts;   ///< the number of verts in each face
+    MIntArray         faceConnects; ///< the face-vertex indices
+    UsdTimeCode       m_timeCode;   ///< the time at which to extract the mesh data
+    UsdGeomMesh&      mesh;         ///< the usd geometry
+    uint32_t          diffGeom;     ///< the bit flags for standard geom params
+    uint32_t          diffMesh;     ///< the bit flags for mesh params
+    CompactionLevel   compaction;
+    SubdivisionScheme subdivisionScheme;
+    bool              valid;          ///< true if the function set is ok
+    bool              performDiff;    ///< true if performing a diff on export
+    bool              reverseNormals; ///< true if reversing normals on 'opposite' meshes
 };
 
 //----------------------------------------------------------------------------------------------------------------------

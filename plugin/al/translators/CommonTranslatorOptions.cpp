@@ -4,6 +4,7 @@
 
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/type.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 namespace AL {
 namespace usdmaya {
@@ -17,6 +18,14 @@ AL::maya::utils::PluginTranslatorOptions* g_importOptions = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
 static const char* const g_compactionLevels[] = { "None", "Basic", "Medium", "Extensive", 0 };
+
+//----------------------------------------------------------------------------------------------------------------------
+static const char* const g_subdivisionSchemes[] = { "default", // Do not author opinion
+                                                    UsdGeomTokens->catmullClark.GetText(),
+                                                    UsdGeomTokens->none.GetText(),
+                                                    UsdGeomTokens->loop.GetText(),
+                                                    UsdGeomTokens->bilinear.GetText(),
+                                                    0 };
 
 //----------------------------------------------------------------------------------------------------------------------
 void registerCommonTranslatorOptions()
@@ -39,6 +48,8 @@ void registerCommonTranslatorOptions()
         g_exportOptions->addBool(GeometryExportOptions::kMeshHoles, true);
         g_exportOptions->addBool(GeometryExportOptions::kNormalsAsPrimvars, false);
         g_exportOptions->addBool(GeometryExportOptions::kReverseOppositeNormals, false);
+        g_exportOptions->addEnum(
+            GeometryExportOptions::kSubdivisionScheme, g_subdivisionSchemes, 0);
         g_exportOptions->addEnum(GeometryExportOptions::kCompactionLevel, g_compactionLevels, 3);
     }
 

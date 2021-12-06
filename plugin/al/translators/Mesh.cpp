@@ -147,13 +147,18 @@ UsdPrim Mesh::exportObject(
     auto compaction = (AL::usdmaya::utils::MeshExportContext::CompactionLevel)params.getInt(
         GeometryExportOptions::kCompactionLevel);
 
+    auto subdivisionScheme
+        = (AL::usdmaya::utils::MeshExportContext::SubdivisionScheme)params.getInt(
+            GeometryExportOptions::kSubdivisionScheme);
+
     AL::usdmaya::utils::MeshExportContext context(
         dagPath,
         mesh,
         params.m_timeCode,
         false,
         compaction,
-        params.getBool(GeometryExportOptions::kReverseOppositeNormals));
+        params.getBool(GeometryExportOptions::kReverseOppositeNormals),
+        subdivisionScheme);
     if (context) {
         UsdAttribute pointsAttr = mesh.GetPointsAttr();
         if (params.m_animTranslator && AnimationTranslator::isAnimatedMesh(dagPath)) {
