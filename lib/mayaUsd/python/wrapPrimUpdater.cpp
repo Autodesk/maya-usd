@@ -41,9 +41,9 @@ public:
     typedef PrimUpdaterWrapper This;
     typedef UsdMayaPrimUpdater base_t;
 
-    static PrimUpdaterWrapper* New(uintptr_t createdWrapper)
+    static std::shared_ptr<This> New(uintptr_t createdWrapper)
     {
-        return (PrimUpdaterWrapper*)createdWrapper;
+        return *((std::shared_ptr<This>*)createdWrapper);
     }
 
     PrimUpdaterWrapper() = default;
