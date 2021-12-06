@@ -13,17 +13,6 @@
 // limitations under the License.
 //
 
-int $_hasPrimUpdater = -1;
-
-global proc int hasPrimUpdater()
-{
-    global int $_hasPrimUpdater;
-    if ($_hasPrimUpdater < 0) {
-        $_hasPrimUpdater = `python("def checkPrimUp():\n  try:\n    from mayaUsd.lib import PrimUpdaterManager;\n    return 1;\n  except:\n    return 0;\ncheckPrimUp()")`;
-    }
-    return $_hasPrimUpdater;
-}
-
 proc int canEditAsMaya(string $obj)
 {
     if (!hasPrimUpdater())
