@@ -1,3 +1,15 @@
+int $gHasPrimUpdater = -1;
+
+global proc int hasPrimUpdater()
+{
+    global int $gHasPrimUpdater;
+    if ($gHasPrimUpdater < 0) {
+        $gHasPrimUpdater = `python("def checkPrimUp():\n  try:\n    from mayaUsd.lib import PrimUpdaterManager;\n    return 1;\n  except:\n    return 0;\ncheckPrimUp()")`;
+    }
+    return $gHasPrimUpdater;
+}
+
+
 global proc mayaUsd_pluginUICreation()
 // Callback registered with the MFnPlugin for when the plugin is loaded.
 // Used to initialize any UI we create.
@@ -22,6 +34,5 @@ global proc mayaUsd_pluginUICreation()
             warning ("Error loading ufeSupport.py.");
         }
     }
-
     source "USDMenuProc.mel";
 }

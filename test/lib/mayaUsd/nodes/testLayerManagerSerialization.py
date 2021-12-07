@@ -22,6 +22,8 @@ from mayaUsd import lib as mayaUsdLib
 
 import fixturesUtils
 
+from pxr import Usd, Sdf
+
 import os
 import tempfile
 import unittest
@@ -289,6 +291,66 @@ class testLayerManagerSerialization(unittest.TestCase):
         # self.assertFalse(stage.GetPrimAtPath(
         #     newSessionsPrimPath).IsValid(), msg)
 
+        cmds.file(new=True, force=True)
+        shutil.rmtree(self._currentTestDir)
+
+    def testMultipleFormatsSerialisation(self):
+        # Test setup
+        self.setupEmptyScene()
+        extensions = ["usd", "usda", "usdc"]
+        usdFilePath = os.path.abspath('MultipleFormatsSerializationTest.usda')
+
+        def createProxyShapeFromFile(filePath):
+            usdNode = cmds.createNode('mayaUsdProxyShape', skipSelect=True, name='UsdStageShape')
+            cmds.setAttr(usdNode + '.filePath', filePath, type='string')
+            return usdNode
+
+        def getStageFromProxyShape(shapeNode):
+            return mayaUsdLib.GetPrim(shapeNode).GetStage()
+
+        # Initialise the sublayers
+        cmds.file(new=True, force=True)
+        cmds.file(rename=self._tempMayaFile)
+        rootLayer = Sdf.Layer.CreateNew(usdFilePath)
+        layers = []
+        for ext in extensions:
+            filePath = os.path.abspath('TestLayer.{}'.format(ext))
+            layer = Sdf.Layer.CreateNew(filePath)
+            layer.comment = ext
+            layer.Save()
+            layers.append(layer)
+            rootLayer.subLayerPaths.append(filePath)
+        rootLayer.Save()
+
+        # Add edits to the 3 format layers and save the maya scene
+        proxyShape = createProxyShapeFromFile(usdFilePath)
+        stage = getStageFromProxyShape(proxyShape)
+        for subLayerPath in stage.GetRootLayer().subLayerPaths:
+            layer = Sdf.Layer.Find(subLayerPath)
+            with Usd.EditContext(stage, layer):
+                stage.DefinePrim("/{}".format(layer.GetFileFormat().primaryFileExtension))
+        self.assertTrue(stage.GetSessionLayer().empty)
+        cmds.file(save=True, force=True)
+
+        # Assert the edits have been restored
+        cmds.file(new=True, force=True)
+        cmds.file(self._tempMayaFile, open=True)
+        stage = getStageFromProxyShape(proxyShape)
+        stageLayers = stage.GetUsedLayers()
+
+        # root + session + 3 format layers
+        self.assertEqual(len(stageLayers), 5)
+        
+        # Check they all exist
+        for layer in layers:
+            self.assertIn(layer, stageLayers)
+        
+        # Check their content exists
+        for ext in extensions:
+            prim = stage.GetPrimAtPath("/{}".format(ext))
+            self.assertTrue(prim.IsValid())
+
+        # Cleanup
         cmds.file(new=True, force=True)
         shutil.rmtree(self._currentTestDir)
 
