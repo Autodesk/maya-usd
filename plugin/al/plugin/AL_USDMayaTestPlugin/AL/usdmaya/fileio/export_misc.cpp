@@ -29,13 +29,15 @@ using AL::maya::test::buildTempPath;
 
 TEST(export_misc, subdivision_scheme)
 {
-    auto geomType = TfToken(TfType::Find<UsdGeomMesh>().GetTypeName());
+    auto geomType = TfType::Find<UsdGeomMesh>();
 #if USD_VERSION_NUM > 2002
-    auto primDef = UsdSchemaRegistry::GetInstance().FindConcretePrimDefinition(geomType);
+    auto geomTypeToken = UsdSchemaRegistry::GetInstance().GetConcreteSchemaTypeName(geomType);
+    auto primDef = UsdSchemaRegistry::GetInstance().FindConcretePrimDefinition(geomTypeToken);
+    ASSERT_TRUE(primDef);
     auto attrSpec = primDef->GetSchemaAttributeSpec(UsdGeomTokens->subdivisionScheme);
 #else
-    auto attrSpec
-        = UsdSchemaRegistry::GetAttributeDefinition(geomType, UsdGeomTokens->subdivisionScheme);
+    auto attrSpec = UsdSchemaRegistry::GetAttributeDefinition(
+        TfToken(geomType.GetTypeName()), UsdGeomTokens->subdivisionScheme);
 #endif
     auto                   defaultToken = attrSpec->GetDefaultValue().UncheckedGet<TfToken>();
     std::map<TfToken, int> subdSchemeMap = { { defaultToken, 0 }, // No value should be authored
