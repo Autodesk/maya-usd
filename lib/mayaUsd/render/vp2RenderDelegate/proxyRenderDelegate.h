@@ -147,6 +147,12 @@ public:
         const MIntersection& intersection,
         MDagPath&            dagPath) const override;
 
+#ifdef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
+    MAYAUSD_CORE_PUBLIC
+    bool
+    updateUfeIdentifiers(MHWRender::MRenderItem& renderItem, MStringArray& ufeIdentifiers) override;
+#endif
+
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     MAYAUSD_CORE_PUBLIC
     SdfPath GetScenePrimPath(

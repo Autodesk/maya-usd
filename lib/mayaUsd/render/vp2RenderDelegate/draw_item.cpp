@@ -75,4 +75,16 @@ HdVP2DrawItem::AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* g
     return renderItemData;
 }
 
+/* static */
+SdfPath HdVP2DrawItem::RenderItemToPrimPath(const MHWRender::MRenderItem& item)
+{
+    // Extract id of the owner Rprim. A SdfPath directly created from the render
+    // item name could be ill-formed if the render item represents instancing:
+    // "/TreePatch/Tree_1.proto_leaves_id0;DrawItem_xxxxxxxx". Thus std::string
+    // is used instead to extract Rprim id.
+    const std::string renderItemName = item.name().asChar();
+    const auto        pos = renderItemName.find_first_of(VP2_RENDER_DELEGATE_SEPARATOR);
+    return SdfPath(renderItemName.substr(0, pos));
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

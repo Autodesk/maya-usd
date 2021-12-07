@@ -15,6 +15,9 @@
 
 proc int canEditAsMaya(string $obj)
 {
+    if (!hasPrimUpdater())
+        return 0;
+
     if (size($obj) == 0) {
         string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
         $obj = $nonMayaObjs[0];
@@ -27,6 +30,9 @@ proc int canEditAsMaya(string $obj)
 
 global proc USDMenuProc(string $parent, string $obj)
 {
+    if (!hasPrimUpdater())
+        return;
+        
     int $haveNonMaya = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.hasNonMayaSelectedItems()")`;
     if ($haveNonMaya)
     {

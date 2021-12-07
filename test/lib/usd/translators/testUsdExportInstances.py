@@ -43,8 +43,11 @@ class testUsdExportInstances(unittest.TestCase):
 
     def testExportInstances(self):
         usdFile = os.path.abspath('UsdExportInstances_instances.usda')
-        cmds.usdExport(mergeTransformAndShape=True, exportInstances=True,
-            shadingMode='none', file=usdFile)
+        cmds.usdExport(mergeTransformAndShape=True,
+                       exportInstances=True,
+                       stripNamespaces=True,
+                       shadingMode='none',
+                       file=usdFile)
 
         stage = Usd.Stage.Open(usdFile)
 
@@ -74,13 +77,16 @@ class testUsdExportInstances(unittest.TestCase):
                     '/MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2'),
             ('/MayaExportedInstanceSources/pCube1_pCube3/pCubeShape2',
                     '/MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2'),
+            # "ns:" should be stripped in usd result:
+            ('/group1', None),
+            ('/group2', None),
+            ('/group1/pCube5', '/MayaExportedInstanceSources/group1_pCube5_pCubeShape5'),
+            ('/group2/pCube6', '/MayaExportedInstanceSources/group1_pCube5_pCubeShape5'),
         ]
 
         layer = stage.GetLayerStack()[1]
 
-        for each in expectedXForm:
-            pp = each[0]
-            i = each[1]
+        for pp, i in expectedXForm:
             x = UsdGeom.Xform.Get(stage, pp)
             p = x.GetPrim()
             self.assertTrue(p.IsValid())

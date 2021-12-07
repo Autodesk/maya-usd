@@ -582,6 +582,9 @@ proc int isObjectSelected(string $obj)
 
 global proc mayaUsdMenu_pushBackToUSD(string $obj)
 {
+    if (!hasPrimUpdater())
+        return;
+
     if (size($obj) == 0) {
         string $sel[] = `ls -sl`;
         if (size($sel)) {
@@ -595,6 +598,9 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
 
 global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
 {
+    if (!hasPrimUpdater())
+        return;
+
     if (size($obj) == 0) {
         string $sel[] = `ls -sl`;
         if (size($sel)) {
@@ -610,6 +616,9 @@ global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
 
 global proc mayaUsdMenu_markingMenuCallback( string $obj )
 {
+    if (!hasPrimUpdater())
+        return;
+
     if (isPulledUsdObject($obj)) {
         string $pushback = `menuItem -label "Merge Maya Edits to USD" -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $obj)`;
         string $pushclear = `menuItem -label "Discard Maya Edits" -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $obj)`;
@@ -629,11 +638,17 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
 
 proc initPullMenu()
 {
+    if (!hasPrimUpdater())
+        return;
+
     callbacks -addCallback mayaUsdMenu_markingMenuCallback -hook addRMBBakingMenuItems -owner mayaUsdPlugin;
 }
 
 proc tearPullMenu()
 {
+    if (!hasPrimUpdater())
+        return;
+
     callbacks -removeCallback mayaUsdMenu_markingMenuCallback -hook addRMBBakingMenuItems -owner mayaUsdPlugin;
 }
 
