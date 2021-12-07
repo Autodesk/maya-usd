@@ -830,7 +830,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _taskController->SetCollection(*_defaultCollection);
 
         // Mark everything "dirty" so that sync is called on everything
-        auto& rprims = _renderIndex->GetRprimIds();
+        auto&            rprims = _renderIndex->GetRprimIds();
         HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
         for (auto path : rprims) {
             changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtyDisplayMode);
