@@ -69,6 +69,7 @@ struct MayaPrimCommon
     {
         DirtySelectionHighlight = HdChangeTracker::CustomBitsBegin,
         DirtySelectionMode = (DirtySelectionHighlight << 1),
+        DirtyDisplayMode = (DirtySelectHighlight << 1),
         DirtyBitLast = DirtySelectionMode
     };
 };
