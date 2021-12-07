@@ -2,9 +2,16 @@ int $gHasPrimUpdater = -1;
 
 global proc int hasPrimUpdater()
 {
-    global int $gHasPrimUpdater;
+    global int $gHasPrimUpdater = -1;
     if ($gHasPrimUpdater < 0) {
-        $gHasPrimUpdater = `python("def checkPrimUp():\n  try:\n    from mayaUsd.lib import PrimUpdaterManager;\n    return 1;\n  except:\n    return 0;\ncheckPrimUp()")`;
+        // Note: we use a convoluted call to exec() in Python because
+        //       try block in Python cannot be one-liners and the MEL
+        //       python() function only returns the computed value when
+        //       the supplied Python code is a one-liner.
+        //
+        //       Putting the Python try block inside exec() allow us to
+        //       makethe Python code look like a one-liner to MEL.
+        $gHasPrimUpdater = `python("res = -1; exec('try:\\n    from mayaUsd.lib import PrimUpdaterManager;\\n    res = 1;\\nexcept:\\n    res = 0;\\n'); res")`;
     }
     return $gHasPrimUpdater;
 }
