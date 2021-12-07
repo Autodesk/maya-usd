@@ -67,9 +67,13 @@ struct MayaPrimCommon
 {
     enum DirtyBits : HdDirtyBits
     {
+        // The rprim has been added, removed or otherwise changed such that the selection highlight
+        // for the item is dirty
         DirtySelectionHighlight = HdChangeTracker::CustomBitsBegin,
+        // Maya's selection mode has changed, for example into point snapping mode
         DirtySelectionMode = (DirtySelectionHighlight << 1),
-        DirtyDisplayMode = (DirtySelectHighlight << 1),
+        // Maya's display mode has changed, for example for shaded to wireframe
+        DirtyDisplayMode = (DirtySelectionMode << 1),
         DirtyBitLast = DirtySelectionMode
     };
 };
