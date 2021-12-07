@@ -2093,39 +2093,78 @@ void HdVP2Mesh::_UpdateDrawItem(
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
             // Create & fill the per-instance data buffers: the transform buffer, the color buffer
             // and the Maya instance id to usd instance id mapping buffer.
-            auto& mayaToUsd = MayaUsdCustomData::Get(*renderItem);
-            mayaToUsd.clear();
+            InstanceIdMap mayaToUsd;
+#endif
+#ifdef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
+            // Mark the Ufe Identifiers on the item dirty. The next time isolate select
+            // updates the Ufe Identifiers will be updated.
+            MayaUsdCustomData::ItemDataDirty(*renderItem, true);
+
+            InstancePrimPaths& instancePrimPaths = MayaUsdCustomData::GetInstancePrimPaths(GetId());
+
+            // The code to invalidate the instancePrimPaths is incomplete. If we had an instance
+            // added and another instance removed between two calls to Sync, then the instanceCount
+            // will match the cached path count, and the cache won't be invalidated. None of the
+            // dirty information I get get out of the instancer seems correct, so I'll use this best
+            // effort version for now, while I wait for a USD side fix.
+            if (instanceCount != instancePrimPaths.size()) {
+                instancePrimPaths.clear();
+                instancePrimPaths.resize(instanceCount);
+            }
 #endif
 
-            for (unsigned int i = 0; i < instanceCount; i++) {
-                unsigned char info = instanceInfo[i];
+            for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
+                unsigned char info = instanceInfo[usdInstanceId];
                 if (info == invalid)
                     continue;
+#ifndef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
                 stateToCommit._ufeIdentifiers.append(
-                    drawScene.GetScenePrimPath(GetId(), i).GetString().c_str());
-                transforms[i].Get(instanceMatrix.matrix);
+                    drawScene.GetScenePrimPath(GetId(), usdInstanceId).GetString().c_str());
+#endif
+                transforms[usdInstanceId].Get(instanceMatrix.matrix);
                 stateToCommit._instanceTransforms.append(worldMatrix * instanceMatrix);
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-                mayaToUsd.push_back(i);
+                mayaToUsd.push_back(usdInstanceId);
 #endif
-
                 if (useWireframeColors) {
                     const MColor& color = wireframeColors[info];
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
                         stateToCommit._instanceColors.append(color[j]);
                     }
                 } else if (shadedColors) {
-                    unsigned int offset = i * kNumColorChannels;
+                    unsigned int offset = usdInstanceId * kNumColorChannels;
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
                         stateToCommit._instanceColors.append((*shadedColors)[offset + j]);
                     }
                 }
             }
+#ifdef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
+            InstanceIdMap& cachedMayaToUsd = MayaUsdCustomData::Get(*renderItem);
+            bool           mayaToUsdChanged = cachedMayaToUsd.size() != mayaToUsd.size();
+            for (unsigned int i = 0; !mayaToUsdChanged && i < mayaToUsd.size(); i++) {
+                mayaToUsdChanged = cachedMayaToUsd[i] != mayaToUsd[i];
+            }
 
+            if (mayaToUsdChanged && drawScene.ufeIdentifiersInUse()) {
+                unsigned int mayaInstanceCount = mayaToUsd.size();
+                for (unsigned int mayaInstanceId = 0; mayaInstanceId < mayaInstanceCount;
+                     mayaInstanceId++) {
+                    unsigned int usdInstanceId = mayaToUsd[mayaInstanceId];
+                    // try making a cache of the USD ID to the ufeIdentifier.
+                    if (instancePrimPaths[usdInstanceId] == SdfPath()) {
+                        instancePrimPaths[usdInstanceId]
+                            = drawScene.GetScenePrimPath(GetId(), usdInstanceId);
+                    }
+                    stateToCommit._ufeIdentifiers.append(
+                        instancePrimPaths[usdInstanceId].GetString().c_str());
+                }
+            }
+            cachedMayaToUsd = std::move(mayaToUsd);
+#else
             TF_VERIFY(
                 stateToCommit._ufeIdentifiers.length()
                 == stateToCommit._instanceTransforms.length());
-
+#endif
             if (stateToCommit._instanceTransforms.length() == 0)
                 instancerWithNoInstances = true;
         }
