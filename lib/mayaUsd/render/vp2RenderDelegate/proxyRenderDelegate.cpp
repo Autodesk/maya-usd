@@ -825,20 +825,22 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
     }
 
-    if (_defaultCollection->GetReprSelector() != reprSelector) {
-        _defaultCollection->SetReprSelector(reprSelector);
-        _taskController->SetCollection(*_defaultCollection);
-
-        // Mark everything "dirty" so that sync is called on everything
-        auto&            rprims = _renderIndex->GetRprimIds();
-        HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-        for (auto path : rprims) {
-            changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtyDisplayMode);
-        }
-    }
-
     // if there are no repr's to update then don't even call sync.
     if (reprSelector != HdReprSelector()) {
+        if (_defaultCollection->GetReprSelector() != reprSelector) {
+            _defaultCollection->SetReprSelector(reprSelector);
+            _taskController->SetCollection(*_defaultCollection);
+
+            // Mark everything "dirty" so that sync is called on everything
+            // If there are multiple views up with different viewport modes then
+            // this is slow.
+            auto&            rprims = _renderIndex->GetRprimIds();
+            HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+            for (auto path : rprims) {
+                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtyDisplayMode);
+            }
+        }
+
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
     }
 }
