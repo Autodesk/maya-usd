@@ -18,6 +18,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         testMergeToUsd.py
         testDiscardEdits.py
         testDuplicateAs.py
+        testPrimUpdater.py
     )
 endif()
 
