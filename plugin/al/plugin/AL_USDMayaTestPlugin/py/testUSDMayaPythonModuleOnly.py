@@ -25,7 +25,7 @@
 # import without error.
 
 import unittest
-import tempfile
+
 
 class TestPythonModule(unittest.TestCase):
 

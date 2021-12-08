@@ -40,7 +40,7 @@ TEST(translators_PythonBindings, import)
     stage->Save();
 
     auto pythonscript
-        = MString("'") + AL_USDMAYA_TEST_DATA + MString("/../py/examplecubetranslator.py'");
+        = MString("'") + AL_USDMAYA_TEST_DATA + MString("/../test_data/examplecubetranslator.py'");
 
     MString pyExecCmd;
     pyExecCmd.format(
