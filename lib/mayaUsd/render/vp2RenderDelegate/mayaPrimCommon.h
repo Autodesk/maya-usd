@@ -74,7 +74,7 @@ struct MayaPrimCommon
         DirtySelectionMode = (DirtySelectionHighlight << 1),
         // Maya's display mode has changed, for example for shaded to wireframe
         DirtyDisplayMode = (DirtySelectionMode << 1),
-        DirtyBitLast = DirtySelectionMode
+        DirtyBitLast = DirtyDisplayMode
     };
 };
 
