@@ -95,8 +95,10 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
             SdfLayerHandle payloadLayer
                 = arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer;
             SdfPath payloadPrimPath = arc.GetTargetNode().GetPath();
+
+            MayaUsdUtils::MergePrimsOptions options;
             success = MayaUsdUtils::mergePrims(
-                srcStage, srcLayer, srcSdfPath, dstStage, payloadLayer, payloadPrimPath);
+                srcStage, srcLayer, srcSdfPath, dstStage, payloadLayer, payloadPrimPath, options);
 
             break;
         }

@@ -84,6 +84,9 @@ void UsdMayaShadingModeExporter::DoExport(
     const UsdMayaJobExportArgs& exportArgs = writeJobContext.GetArgs();
     const UsdStageRefPtr&       stage = writeJobContext.GetUsdStage();
 
+    if (!exportArgs.exportMaterials)
+        return;
+
     MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
 
     const SdfPath& materialCollectionsPath = exportArgs.exportMaterialCollections

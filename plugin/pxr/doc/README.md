@@ -118,6 +118,7 @@ Short flag | Long flag | Type | Default | Description
 `-uvs` | `-exportUVs` | bool | true | Enable or disable the export of UV sets
 `-vis` | `-exportVisibility` | bool | true | Export any state and animation on Maya `visibility` attributes
 `-tag` | `-exportComponentTags` | bool | true | Export component tags
+`-mat` | `-exportMaterials` | bool | true | Export materials
 `-mcs` | `-exportMaterialCollections` | bool | false | Create collections representing sets of Maya geometry with the same material binding. These collections are created in the `material:` namespace on the prim at the specified `materialCollectionsPath` (see export option `-mcp`). These collections are encoded using the UsdCollectionAPI schema and are authored compactly using the API `UsdUtilsCreateCollections()`.
 `-ft` | `-filterTypes` | string (multi) | none | Maya type names to exclude when exporting. If a type is excluded, all inherited types are also excluded, e.g. excluding `surfaceShape` will exclude `mesh` as well. When a node is excluded based on its type name, its subtree hierarchy will be pruned from the export, and its descendants will not be exported.
 `-mcp` | `-materialCollectionsPath` | string | none | Path to the prim where material collections must be exported.

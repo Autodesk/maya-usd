@@ -536,6 +536,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , exportDefaultCameras(_Boolean(userArgs, UsdMayaJobExportArgsTokens->defaultCameras))
     , exportDisplayColor(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportDisplayColor))
     , exportInstances(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportInstances))
+    , exportMaterials(
+          _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterials))
     , exportMaterialCollections(
           _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialCollections))
     , exportMeshUVs(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
@@ -622,6 +624,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
         << "exportDisplayColor: " << TfStringify(exportArgs.exportDisplayColor) << std::endl
         << "exportInstances: " << TfStringify(exportArgs.exportInstances) << std::endl
+        << "exportMaterials: " << TfStringify(exportArgs.exportMaterials)
         << "exportMaterialCollections: " << TfStringify(exportArgs.exportMaterialCollections)
         << std::endl
         << "exportMeshUVs: " << TfStringify(exportArgs.exportMeshUVs) << std::endl
@@ -735,6 +738,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = false;
         d[UsdMayaJobExportArgsTokens->exportInstances] = true;
+        d[UsdMayaJobExportArgsTokens->exportMaterials] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
         d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = false;
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
@@ -810,6 +814,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->exportColorSets] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportInstances] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportMaterials] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = _boolean;

@@ -106,7 +106,9 @@ bool UsdMayaPrimUpdater::pushCopySpecs(
     SdfLayerRefPtr dstLayer,
     const SdfPath& dstSdfPath)
 {
-    return MayaUsdUtils::mergePrims(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
+    MayaUsdUtils::MergePrimsOptions options;
+    return MayaUsdUtils::mergePrims(
+        srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options);
 }
 
 const MObject& UsdMayaPrimUpdater::getMayaObject() const { return _mayaObject; }

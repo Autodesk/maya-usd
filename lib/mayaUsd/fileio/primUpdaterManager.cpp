@@ -754,7 +754,10 @@ PrimUpdaterManager::PrimUpdaterManager()
 
 PrimUpdaterManager::~PrimUpdaterManager() { }
 
-bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath)
+bool PrimUpdaterManager::mergeToUsd(
+    const MFnDependencyNode& depNodeFn,
+    const Ufe::Path&         pulledPath,
+    const VtDictionary&      userArgs)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
     if (!proxyShape) {
@@ -768,12 +771,13 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
 
     PushPullScope scopeIt(_inPushPull);
 
-    VtDictionary exportArgs = UsdMayaJobExportArgs::GetDefaultDictionary();
-    auto         updaterArgs = UsdMayaPrimUpdaterArgs::createFromDictionary(exportArgs);
-    auto         mayaPath = usdToMaya(pulledPath);
-    auto         mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
-    MDagPath     pullParentPath;
-    const bool   isCopy = updaterArgs._copyOperation;
+    auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
+
+    auto       updaterArgs = UsdMayaPrimUpdaterArgs::createFromDictionary(ctxArgs);
+    auto       mayaPath = usdToMaya(pulledPath);
+    auto       mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
+    MDagPath   pullParentPath;
+    const bool isCopy = updaterArgs._copyOperation;
     if (!isCopy) {
         // The pull parent is simply the parent of the pulled path.
         pullParentPath = MayaUsd::ufe::ufeToDagPath(mayaPath.pop());
@@ -788,7 +792,7 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
     SelectionUndoItem::select("Merge to USD selection reset", MSelectionList());
 
     UsdStageRefPtr            proxyStage = proxyShape->usdPrim().GetStage();
-    UsdMayaPrimUpdaterContext context(proxyShape->getTime(), proxyStage, exportArgs);
+    UsdMayaPrimUpdaterContext context(proxyShape->getTime(), proxyStage, ctxArgs);
 
     auto  ufeMayaItem = Ufe::Hierarchy::createItem(mayaPath);
     auto& scene = Ufe::Scene::instance();
@@ -813,7 +817,7 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
     UsdMayaPrimUpdaterContext customizeContext(
         proxyShape->getTime(),
         proxyStage,
-        exportArgs,
+        ctxArgs,
         std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
 
     if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
@@ -851,7 +855,9 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
     return true;
 }
 
-bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path)
+bool PrimUpdaterManager::editAsMaya(
+    const Ufe::Path&    path,
+    const VtDictionary& userArgs)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(path);
     if (!proxyShape) {
@@ -865,16 +871,16 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path)
 
     PushPullScope scopeIt(_inPushPull);
 
-    VtDictionary importArgs = UsdMayaJobImportArgs::GetDefaultDictionary();
-    auto         updaterArgs = UsdMayaPrimUpdaterArgs::createFromDictionary(importArgs);
+    auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobImportArgs::GetDefaultDictionary());
+    auto updaterArgs = UsdMayaPrimUpdaterArgs::createFromDictionary(ctxArgs);
 
     MDagPath pullParentPath;
     if (!updaterArgs._copyOperation
-        && !(pullParentPath = setupPullParent(path, importArgs)).isValid()) {
+        && !(pullParentPath = setupPullParent(path, ctxArgs)).isValid()) {
         return false;
     }
 
-    UsdMayaPrimUpdaterContext context(proxyShape->getTime(), pulledPrim.GetStage(), importArgs);
+    UsdMayaPrimUpdaterContext context(proxyShape->getTime(), pulledPrim.GetStage(), ctxArgs);
 
     auto& scene = Ufe::Scene::instance();
     auto  ufeItem = Ufe::Hierarchy::createItem(path);
@@ -942,9 +948,8 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
     auto mayaPath = usdToMaya(pulledPath);
     auto mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
 
-    VtDictionary              userArgs;
     UsdMayaPrimUpdaterContext context(
-        proxyShape->getTime(), proxyShape->usdPrim().GetStage(), userArgs);
+        proxyShape->getTime(), proxyShape->usdPrim().GetStage(), VtDictionary());
 
     auto  ufeMayaItem = Ufe::Hierarchy::createItem(mayaPath);
     auto& scene = Ufe::Scene::instance();
@@ -1005,7 +1010,10 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
     return true;
 }
 
-bool PrimUpdaterManager::duplicate(const Ufe::Path& srcPath, const Ufe::Path& dstPath)
+bool PrimUpdaterManager::duplicate(
+    const Ufe::Path&    srcPath,
+    const Ufe::Path&    dstPath,
+    const VtDictionary& userArgs)
 {
     MayaUsdProxyShapeBase* srcProxyShape = MayaUsd::ufe::getProxyShape(srcPath);
     MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dstPath);
@@ -1019,13 +1027,14 @@ bool PrimUpdaterManager::duplicate(const Ufe::Path& srcPath, const Ufe::Path& ds
             return false;
         }
 
-        VtDictionary userArgs = UsdMayaJobImportArgs::GetDefaultDictionary();
+        auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobImportArgs::GetDefaultDictionary());
+
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
-        userArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
+        ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
 
         UsdMayaPrimUpdaterContext context(
-            srcProxyShape->getTime(), srcProxyShape->getUsdStage(), userArgs);
+            srcProxyShape->getTime(), srcProxyShape->getUsdStage(), ctxArgs);
 
         pullImport(srcPath, srcPrim, context);
         return true;
@@ -1037,7 +1046,8 @@ bool PrimUpdaterManager::duplicate(const Ufe::Path& srcPath, const Ufe::Path& ds
         if (!dagPath.isValid()) {
             return false;
         }
-        VtDictionary userArgs = UsdMayaJobExportArgs::GetDefaultDictionary();
+
+        auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
         // Record all USD modifications in an undo block and item.
         MAYAUSD_NS::UsdUndoBlock undoBlock(
@@ -1045,9 +1055,9 @@ bool PrimUpdaterManager::duplicate(const Ufe::Path& srcPath, const Ufe::Path& ds
 
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
-        userArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
+        ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
         auto                      dstStage = dstProxyShape->getUsdStage();
-        UsdMayaPrimUpdaterContext context(dstProxyShape->getTime(), dstStage, userArgs);
+        UsdMayaPrimUpdaterContext context(dstProxyShape->getTime(), dstStage, ctxArgs);
 
         // Export out to a temporary layer.
         auto        pushExportOutput = pushExport(srcPath, dagPath.node(), context);

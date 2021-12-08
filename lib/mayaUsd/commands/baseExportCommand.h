@@ -58,6 +58,7 @@ public:
     static constexpr auto kShadingModeFlag = "shd";
     static constexpr auto kConvertMaterialsToFlag = "cmt";
     static constexpr auto kMaterialsScopeNameFlag = "msn";
+    static constexpr auto kExportMaterialsFlag = "mat";
     static constexpr auto kExportMaterialCollectionsFlag = "mcs";
     static constexpr auto kMaterialCollectionsPathFlag = "mcp";
     static constexpr auto kExportCollectionBasedBindingsFlag = "cbb";

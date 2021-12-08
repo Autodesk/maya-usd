@@ -77,6 +77,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kExportUVsFlag, UsdMayaJobExportArgsTokens->exportUVs.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
+        kExportMaterialsFlag,
+        UsdMayaJobExportArgsTokens->exportMaterials.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kExportMaterialCollectionsFlag,
         UsdMayaJobExportArgsTokens->exportMaterialCollections.GetText(),
         MSyntax::kBoolean);
