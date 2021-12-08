@@ -17,6 +17,7 @@ target_sources(${TARGET_NAME}
         DiffRelationships.cpp
         DiffValues.cpp
         MergePrims.cpp
+        MergePrimsOptions.cpp
         util.cpp
 )
 
@@ -63,6 +64,7 @@ set(HEADERS
     DiffCore.h
     DiffPrims.h
     MergePrims.h
+    MergePrimsOptions.h
     ForwardDeclares.h
     SIMD.h
     util.h
