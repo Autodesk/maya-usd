@@ -17,6 +17,7 @@
 
 #include "usdPreviewSurface.h"
 #include "usdPreviewSurfaceReader.h"
+#include "usdPreviewSurfaceShaderOverride.h"
 #include "usdPreviewSurfaceShadingNodeOverride.h"
 #include "usdPreviewSurfaceWriter.h"
 
@@ -71,6 +72,12 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
         drawDbClassification, registrantId, PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
 
+    status = MHWRender::MDrawRegistry::registerShaderOverrideCreator(
+        drawDbClassification,
+        registrantId + "ShaderOverride",
+        PxrMayaUsdPreviewSurfaceShaderOverride::creator);
+    CHECK_MSTATUS(status);
+
     return status;
 }
 
@@ -93,7 +100,11 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(
 
     deregisterFragments();
 
-    MStatus status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
+    MStatus status = MHWRender::MDrawRegistry::deregisterShaderOverrideCreator(
+        drawDbClassification, registrantId);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
         drawDbClassification, registrantId);
     CHECK_MSTATUS(status);
 
