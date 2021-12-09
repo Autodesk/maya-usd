@@ -156,8 +156,7 @@ class EditAsMayaTestCase(unittest.TestCase):
         self.assertFalse(stage.GetSessionLayer().empty)
 
         kPullPrimMetadataKey = "Maya:Pull:DagPath"
-        with Usd.EditContext(stage, stage.GetSessionLayer()):
-            self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), "|__mayaUsd__|AParent|A")
+        self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), "|__mayaUsd__|AParent|A")
 
         # Discard Maya edits, but there is nothing to discard.
         self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits("A"))
@@ -165,8 +164,7 @@ class EditAsMayaTestCase(unittest.TestCase):
         # Now Session Layer should be empty, but it is not, it has an empty content
         self.assertFalse(stage.GetSessionLayer().empty)
 
-        with Usd.EditContext(stage, stage.GetSessionLayer()):
-            self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), None)
+        self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), None)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

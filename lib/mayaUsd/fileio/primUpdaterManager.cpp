@@ -1122,11 +1122,7 @@ void PrimUpdaterManager::beforeNewOrOpenCallback(void* clientData)
 /* static */
 bool PrimUpdaterManager::readPullInformation(const PXR_NS::UsdPrim& prim, std::string& dagPathStr)
 {
-    auto stage = prim.GetStage();
-    if (!stage)
-        return false;
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-    auto           value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
+    auto value = prim.GetCustomDataByKey(kPullPrimMetadataKey);
     if (!value.IsEmpty() && value.CanCast<std::string>()) {
         dagPathStr = value.Get<std::string>();
         return !dagPathStr.empty();
