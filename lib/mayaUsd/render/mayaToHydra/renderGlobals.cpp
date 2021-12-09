@@ -938,7 +938,8 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
                     attr.defaultValue.UncheckedGet<GfVec4f>(),
                     userDefaults);
             } else if (attr.defaultValue.IsHolding<TfToken>()) {
-				bool canCreateAsEnum = false;
+				// If this attribute type has AllowedTokens set, we treat it as an enum instead, so that only valid values are available.```
+				bool createdAsEnum = false;
 				if (auto primDef = UsdRenderSettings().GetSchemaClassPrimDefinition()) {
 					VtTokenArray allowedTokens;
 
@@ -946,11 +947,11 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
 						// Generate dropdown from allowedTokens
 						TfTokenVector tokens(allowedTokens.begin(), allowedTokens.end());
 						_CreateEnumAttribute(node, filter.mayaString(), tokens, attr.defaultValue.UncheckedGet<TfToken>(), userDefaults);
-						canCreateAsEnum = true;
+						createdAsEnum = true;
 					}
 				}
 
-				if (!canCreateAsEnum) {
+				if (!createdAsEnum) {
 					_CreateStringAttribute(
 						node,
 						filter.mayaString(),
