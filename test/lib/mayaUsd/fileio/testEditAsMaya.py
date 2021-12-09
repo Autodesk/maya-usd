@@ -25,7 +25,7 @@ import mayaUsd.lib
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Gf
+from pxr import Usd, UsdGeom, Gf
 
 from maya import cmds
 from maya import standalone
@@ -134,6 +134,39 @@ class EditAsMayaTestCase(unittest.TestCase):
         # exporter.
         # self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(scopePathStr))
         # self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(scopePathStr))
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    def testSessionLayer(self):
+        '''Verify that the edit gets on the sessionLayer instead of the editTarget layer.'''
+        
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        sessionLayer = stage.GetSessionLayer()
+        prim = stage.DefinePrim('/A', 'Xform')
+
+        primPathStr = proxyShapePathStr + ',/A'
+
+        self.assertTrue(stage.GetSessionLayer().empty)
+
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(primPathStr))
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(primPathStr))
+
+        self.assertFalse(stage.GetSessionLayer().empty)
+
+        kPullPrimMetadataKey = "Maya:Pull:DagPath"
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), "|__mayaUsd__|AParent|A")
+
+        # Discard Maya edits, but there is nothing to discard.
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits("A"))
+
+        # Now Session Layer should be empty, but it is not, it has an empty content
+        self.assertFalse(stage.GetSessionLayer().empty)
+
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), None)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
