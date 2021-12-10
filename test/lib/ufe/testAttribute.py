@@ -61,6 +61,11 @@ class AttributeTestCase(unittest.TestCase):
 
     pluginsLoaded = False
 
+    # Note: this variable is computed in the setUpClass method. Therefore
+    #       you cannot use it in a test function decorator (as its value
+    #       has not been computed yet).
+    getAttrSupportsUfe = False
+
     @classmethod
     def setUpClass(cls):
         fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
@@ -69,6 +74,19 @@ class AttributeTestCase(unittest.TestCase):
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
         random.seed()
+
+        # Test if Maya's getAttr command supports ufe.
+        if cls.pluginsLoaded:
+            import mayaUsd_createStageWithNewLayer
+            psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+            stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+            stage.DefinePrim('/A', 'Xform')
+            try:
+                cmds.getAttr('|stage1|stageShape1,/A.visibility')
+                cls.getAttrSupportsUfe = True
+            except:
+                pass
+            cmds.file(new=True, force=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -88,6 +106,11 @@ class AttributeTestCase(unittest.TestCase):
     def assertColorAlmostEqual(self, ufeColor, usdColor):
         for va, vb in zip(ufeColor.color, usdColor):
             self.assertAlmostEqual(va, vb, places=6)
+
+    def getMayaAttrStr(self, ufeAttr):
+        # Get the string we need for using the Ufe attribute with Maya command:
+        # "<ufe_path_string>.<ufe_attribute_name>"
+        return '%s.%s' % (ufe.PathString.string(ufeAttr.sceneItem().path()), ufeAttr.name)
 
     def runUndoRedo(self, attr, newVal, decimalPlaces=None):
         oldVal = attr.get()
@@ -114,9 +137,7 @@ class AttributeTestCase(unittest.TestCase):
         oldVal = attr.get()
         assert oldVal != newVal, "Undo / redo testing requires setting a value different from the current value"
 
-        # Get the string we need for setting the Ufe attribute with setAttr command:
-        # "<ufe_path_string>.<ufe_attribute_name>"
-        setAttrPath = "%s.%s" % (ufe.PathString.string(attr.sceneItem().path()), attr.name)
+        setAttrPath = self.getMayaAttrStr(attr)
         if isinstance(newVal, (ufe.Vector3i, ufe.Vector3f, ufe.Vector3d)):
             cmds.setAttr(setAttrPath, newVal.x(), newVal.y(), newVal.z())
         elif isinstance(newVal, ufe.Color3f):
@@ -134,6 +155,35 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(attr.get(), oldVal)
         cmds.redo()
         self.assertEqual(attr.get(), newVal)
+
+    def runMayaGetAttrTest(self, ufeAttr, decimalPlaces=None):
+        # Not all versions of Maya support getAttr with Ufe attributes.
+        if not self.getAttrSupportsUfe:
+            return
+
+        setAttrPath = self.getMayaAttrStr(ufeAttr)
+
+        ufeAttrType = ufeAttr.type
+        cmds.select(setAttrPath.partition('.')[0])
+        self.assertTrue(cmds.getAttr(setAttrPath, settable=True))
+        self.assertFalse(cmds.getAttr(setAttrPath, lock=True))
+        self.assertEqual(ufeAttrType, cmds.getAttr(setAttrPath, type=True))
+
+        ufeVectorTypes = {ufe.Attribute.kColorFloat3 : ufe.Color3f,
+                          ufe.Attribute.kInt3 : ufe.Vector3i,
+                          ufe.Attribute.kFloat3 : ufe.Vector3f,
+                          ufe.Attribute.kDouble3 : ufe.Vector3d}
+
+        if ufeAttrType == ufe.Attribute.kGeneric:
+            self.assertEqual(cmds.getAttr(setAttrPath), str(ufeAttr))
+        elif ufeAttrType in ufeVectorTypes:
+            getAttrValue = cmds.getAttr(setAttrPath)
+            self.assertEqual(ufeVectorTypes[ufeAttrType](*getAttrValue), ufeAttr.get())
+        else:
+            if decimalPlaces is not None:
+                self.assertAlmostEqual(cmds.getAttr(setAttrPath), ufeAttr.get(), decimalPlaces)
+            else:
+                self.assertEqual(cmds.getAttr(setAttrPath), ufeAttr.get())
 
     def runTestAttribute(self, path, attrName, ufeAttrClass, ufeAttrType):
         '''Engine method to run attribute test.'''
@@ -192,7 +242,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the xformOpOrder attribute which is
         # an unsupported USD type, so it will be a UFE Generic attribute.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35',
             attrName=UsdGeom.Tokens.xformOpOrder,
             ufeAttrClass=ufe.AttributeGeneric,
@@ -200,6 +250,9 @@ class AttributeTestCase(unittest.TestCase):
 
         # Now we test the Generic specific methods.
         self.assertEqual(ufeAttr.nativeType(), usdAttr.GetTypeName().type.typeName)
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
 
     def testAttributeEnumString(self):
         '''Test the EnumString attribute type.'''
@@ -210,7 +263,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the visibility attribute which is
         # an EnumString type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35',
             attrName=UsdGeom.Tokens.visibility,
             ufeAttrClass=ufe.AttributeEnumString,
@@ -238,6 +291,9 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's setAttr command.
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, UsdGeom.Tokens.invisible)
 
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     def testAttributeBool(self):
         '''Test the Bool attribute type.'''
 
@@ -247,7 +303,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the doubleSided attribute which is
         # an bool type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/mesh',
             attrName='doubleSided',
             ufeAttrClass=ufe.AttributeBool,
@@ -269,6 +325,9 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's setAttr command.
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, not ufeAttr.get())
 
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     def testAttributeInt(self):
         '''Test the Int attribute type.'''
 
@@ -278,7 +337,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the inputAOV attribute which is
         # an integer type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
             attrName='inputAOV',
             ufeAttrClass=ufe.AttributeInt,
@@ -300,6 +359,9 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's setAttr command.
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1)
 
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     def testAttributeFloat(self):
         '''Test the Float attribute type.'''
 
@@ -309,7 +371,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the anisotropic attribute which is
         # an float type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
             attrName='anisotropic',
             ufeAttrClass=ufe.AttributeFloat,
@@ -334,6 +396,9 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's setAttr command.
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufeAttr.get()+1.0, decimalPlaces=6)
 
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr, decimalPlaces=6)
+
     def _testAttributeDouble(self):
         '''Test the Double attribute type.'''
 
@@ -349,7 +414,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the filename attribute which is
         # an string type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/BallTexture',
             attrName='filename',
             ufeAttrClass=ufe.AttributeString,
@@ -373,6 +438,9 @@ class AttributeTestCase(unittest.TestCase):
 
         # Note: Maya's setAttr command does not support Ufe string attributes.
 
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     def testAttributeStringToken(self):
         '''Test the String (Token) attribute type.'''
 
@@ -382,7 +450,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the filter attribute which is
         # an string type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/BallTexture',
             attrName='filter',
             ufeAttrClass=ufe.AttributeString,
@@ -404,6 +472,9 @@ class AttributeTestCase(unittest.TestCase):
 
         # Note: Maya's setAttr command does not support Ufe string attributes.
 
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
 
@@ -413,7 +484,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the emitColor attribute which is
         # an ColorFloat3 type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
             attrName='emitColor',
             ufeAttrClass=ufe.AttributeColorFloat3,
@@ -440,6 +511,9 @@ class AttributeTestCase(unittest.TestCase):
 
         # Note: Maya's setAttr command does not support Ufe Color3 attributes.
 
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     def _testAttributeInt3(self):
         '''Test the Int3 attribute type.'''
 
@@ -455,7 +529,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the bumpNormal attribute which is
         # an Float3 type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
             attrName='bumpNormal',
             ufeAttrClass=ufe.AttributeFloat3,
@@ -481,6 +555,9 @@ class AttributeTestCase(unittest.TestCase):
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
                          ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
 
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     def testAttributeDouble3(self):
         '''Test the Double3 attribute type.'''
 
@@ -490,7 +567,7 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the translate attribute which is
         # an Double3 type.
-        ufeAttr, usdAttr = attrDict = self.runTestAttribute(
+        ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35',
             attrName='xformOp:translate',
             ufeAttrClass=ufe.AttributeDouble3,
@@ -513,6 +590,9 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's setAttr command.
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufe.Vector3d(5.5, 6.6, 7.7))
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
 
     def testObservation(self):
         '''
@@ -975,8 +1055,13 @@ class AttributeTestCase(unittest.TestCase):
         attrs = ufe.Attributes.attributes(capsuleItem)
         attr = attrs.attribute('height')
 
+        setAttrPath = self.getMayaAttrStr(attr)
+
         # Height attribute should not initially be locked.
         self.assertFalse(attr.hasMetadata(ufe.Attribute.kLocked))
+        if self.getAttrSupportsUfe:
+            self.assertTrue(cmds.getAttr(setAttrPath, settable=True))
+            self.assertFalse(cmds.getAttr(setAttrPath, lock=True))
 
         #----------------------------------------------------------------------
         # Test locking modifications to the height using Ufe kLocked key.
@@ -985,26 +1070,36 @@ class AttributeTestCase(unittest.TestCase):
         self.assertTrue(attr.hasMetadata(ufe.Attribute.kLocked))
         md = attr.getMetadata(ufe.Attribute.kLocked)
         self.assertTrue(bool(md))
+        if self.getAttrSupportsUfe:
+            self.assertFalse(cmds.getAttr(setAttrPath, settable=True))
+            self.assertTrue(cmds.getAttr(setAttrPath, lock=True))
 
         # Test that we cannot modify the height now.
         currValue = attr.get()
-        with self.assertRaises(RuntimeError):
-            attr.set(currValue + 1.0)
+        self.assertRaises(RuntimeError, attr.set, currValue + 1.0)
         self.assertEqual(currValue, attr.get())
+        self.assertRaises(RuntimeError, cmds.setAttr, setAttrPath, currValue+1.0)
 
         # Test that we cannot set other Metadata now.
-        with self.assertRaises(RuntimeError):
-            attr.setMetadata('documentation', 'New Doc')
+        self.assertRaises(RuntimeError, attr.setMetadata, 'documentation', 'New Doc')
 
         # Test unlocking modifications to height.
         self.assertTrue(attr.setMetadata(ufe.Attribute.kLocked, False))
         md = attr.getMetadata(ufe.Attribute.kLocked)
         self.assertFalse(bool(md))
+        if self.getAttrSupportsUfe:
+            self.assertTrue(cmds.getAttr(setAttrPath, settable=True))
+            self.assertFalse(cmds.getAttr(setAttrPath, lock=True))
 
         # Changes to height should now be allowed.
         currValue = attr.get()
         newValue = currValue + 1.0
-        attr.set(currValue + 1.0)
+        attr.set(newValue)
+        self.assertEqual(newValue, attr.get())
+        # Same test with setAttr command.
+        currValue = attr.get()
+        newValue = currValue + 1.0
+        cmds.setAttr(setAttrPath, newValue)
         self.assertEqual(newValue, attr.get())
 
         # Changes to other Metadata should be allowed now.
@@ -1023,16 +1118,18 @@ class AttributeTestCase(unittest.TestCase):
         self.assertTrue(attr.hasMetadata(ufe.Attribute.kLocked))
         md = attr.getMetadata(ufe.Attribute.kLocked)
         self.assertTrue(bool(md))
+        if self.getAttrSupportsUfe:
+            self.assertFalse(cmds.getAttr(setAttrPath, settable=True))
+            self.assertTrue(cmds.getAttr(setAttrPath, lock=True))
 
         # Test that we cannot modify the height now.
         currValue = attr.get()
-        with self.assertRaises(RuntimeError):
-            attr.set(currValue + 1.0)
+        self.assertRaises(RuntimeError, attr.set, currValue + 1.0)
         self.assertEqual(currValue, attr.get())
+        self.assertRaises(RuntimeError, cmds.setAttr, setAttrPath, currValue+1.0)
 
         # Test that we cannot set other Metadata now.
-        with self.assertRaises(RuntimeError):
-            attr.setMetadata('documentation', 'New Doc')
+        self.assertRaises(RuntimeError, attr.setMetadata, 'documentation', 'New Doc')
 
         # Test undo/redo.
         cmd.undo()
@@ -1043,6 +1140,9 @@ class AttributeTestCase(unittest.TestCase):
         newValue = currValue + 1.0
         attr.set(currValue + 1.0)
         self.assertEqual(newValue, attr.get())
+        if self.getAttrSupportsUfe:
+            self.assertTrue(cmds.getAttr(setAttrPath, settable=True))
+            self.assertFalse(cmds.getAttr(setAttrPath, lock=True))
 
         # Changes to other Metadata should be allowed now.
         self.assertTrue(attr.setMetadata('documentation', 'New Doc'))
@@ -1051,18 +1151,45 @@ class AttributeTestCase(unittest.TestCase):
         self.assertTrue(attr.hasMetadata(ufe.Attribute.kLocked))
         md = attr.getMetadata(ufe.Attribute.kLocked)
         self.assertTrue(bool(md))
+        if self.getAttrSupportsUfe:
+            self.assertFalse(cmds.getAttr(setAttrPath, settable=True))
+            self.assertTrue(cmds.getAttr(setAttrPath, lock=True))
 
         # Test that we cannot modify the height again.
         currValue = attr.get()
-        with self.assertRaises(RuntimeError):
-            attr.set(currValue + 1.0)
+        self.assertRaises(RuntimeError, attr.set, currValue + 1.0)
         self.assertEqual(currValue, attr.get())
+        self.assertRaises(RuntimeError, cmds.setAttr, setAttrPath, currValue+1.0)
 
         # Test that we cannot set other Metadata again.
-        with self.assertRaises(RuntimeError):
-            attr.setMetadata('documentation', 'New Doc')
+        self.assertRaises(RuntimeError, attr.setMetadata, 'documentation', 'New Doc')
 
+    def testMayaGetAttr(self):
+        if not self.getAttrSupportsUfe:
+            self.skipTest('Maya getAttr command does not support Ufe')
 
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
+        pathStr = '|transform1|proxyShape1,/Room_set/Props/Ball_35'
+
+        # No attribute was specified.
+        self.assertRaisesRegex(RuntimeError,
+                               'No attribute was specified\.$',
+                               cmds.getAttr, pathStr)
+
+        # Cannot evaluate more than one attribute.
+        self.assertRaisesRegex(RuntimeError,
+                               'Cannot evaluate more than one attribute\.$',
+                               cmds.getAttr,
+                               pathStr+'.xformOp:translate',
+                               pathStr+'.xformOpOrder')
+
+        # Mixing Maya and non-Maya attributes is an error.
+        self.assertRaisesRegex(RuntimeError,
+                               'Cannot evaluate more than one attribute\.$',
+                               cmds.getAttr,
+                               'proxyShape1.shareStage',pathStr+'.xformOp:translate')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
