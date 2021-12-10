@@ -119,7 +119,8 @@ struct CommitState
     {
         return _indexBufferData == nullptr && _shader == nullptr && _enabled == nullptr
             && !_geometryDirty && _boundingBox == nullptr && !_renderItemData._usingInstancedDraw
-            && _instanceTransforms.length() == 0 && _ufeIdentifiers.length() == 0;
+            && _instanceTransforms.length() == 0 && _ufeIdentifiers.length() == 0
+            && _worldMatrix == nullptr;
     }
 };
 
