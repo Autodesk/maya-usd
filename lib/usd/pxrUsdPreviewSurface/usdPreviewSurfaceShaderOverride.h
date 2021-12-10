@@ -86,6 +86,7 @@ private:
     float m_clearcoatRoughness;
     float m_displacement;
     float m_normal[3];
+    bool  m_displayCPV;
     bool  m_useSpecularWorkflow;
     bool  m_caching;
     bool  m_frozen;

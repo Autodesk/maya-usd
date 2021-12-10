@@ -76,6 +76,7 @@ MStatus PxrMayaUsdPreviewSurface::initialize()
     MObject opacityThresholdAttr;
     MObject roughnessAttr;
     MObject specularColorAttr;
+    MObject displayCPVAttr;
     MObject useSpecularWorkflowAttr;
     MObject outColorAttr;
     MObject outTransparencyAttr;
@@ -290,6 +291,18 @@ MStatus PxrMayaUsdPreviewSurface::initialize()
     status = addAttribute(specularColorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
+    displayCPVAttr = numericAttrFn.create(
+        PxrMayaUsdPreviewSurfaceTokens->DisplayCPVAttrName.GetText(),
+        "cpv",
+        MFnNumericData::kBoolean,
+        0.0,
+        &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = numericAttrFn.setAffectsAppearance(true);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = addAttribute(displayCPVAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
     useSpecularWorkflowAttr = numericAttrFn.create(
         PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName.GetText(),
         "usw",
@@ -382,6 +395,8 @@ MStatus PxrMayaUsdPreviewSurface::initialize()
     status = attributeAffects(roughnessAttr, outColorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = attributeAffects(specularColorAttr, outColorAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    status = attributeAffects(displayCPVAttr, outColorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = attributeAffects(useSpecularWorkflowAttr, outColorAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);

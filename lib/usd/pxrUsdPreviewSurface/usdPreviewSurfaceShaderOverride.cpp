@@ -120,6 +120,7 @@ void PxrMayaUsdPreviewSurfaceShaderOverride::updateDG(MObject obj)
     node.findPlug("normal1", true).getValue(m_normal[1]);
     node.findPlug("normal2", true).getValue(m_normal[2]);
 
+    node.findPlug("displayCPV", true).getValue(m_displayCPV);
     node.findPlug("useSpecularWorkflow", true).getValue(m_useSpecularWorkflow);
     node.findPlug("caching", true).getValue(m_caching);
     node.findPlug("frozen", true).getValue(m_frozen);
@@ -149,7 +150,9 @@ void PxrMayaUsdPreviewSurfaceShaderOverride::updateDevice()
     m_shaderInstance->setParameter("caching", m_caching);
     m_shaderInstance->setParameter("frozen", m_frozen);
 
-    // Set the CPV inputs to the shader instance
+    // Set the CPV inputs to the shader instance if enabled
+    if (!m_displayCPV)
+        return;
     m_shaderInstance->addInputFragment("mayaCPVInput", "outColor", "diffuseColor");
     m_shaderInstance->addInputFragment("mayaCPVInput", "outTransparency", "dummyTransparency");
     m_shaderInstance->setIsTransparent(true);

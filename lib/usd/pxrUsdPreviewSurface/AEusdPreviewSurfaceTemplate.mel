@@ -42,6 +42,7 @@ global proc AE${PREVIEWSURFACE_MAYA_TYPE_NAME}Template(string $nodeName)
     editorTemplate -addControl "occlusion";
     editorTemplate -addControl "opacity";
     editorTemplate -addControl "opacityThreshold";
+    editorTemplate -addControl "displayCPV";
 
     editorTemplate -beginLayout "Specular" -collapse false;
         editorTemplate -addControl "useSpecularWorkflow"
