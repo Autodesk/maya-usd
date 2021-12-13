@@ -148,6 +148,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
+
+    (Unknown)
+    (Computed)
 );
 // clang-format on
 
@@ -1177,6 +1180,41 @@ MHWRender::MTexture* _LoadTexture(
     return texture;
 }
 
+    TfToken MayaDescriptorToToken(const MVertexBufferDescriptor& descriptor) {
+        // Attempt to match an MVertexBufferDescriptor to the corresponding
+        // USD primvar token. The "Computed" token is used for data which 
+        // can be computed by an an rprim. Unknown is used for unsupported
+        // descriptors.
+
+        TfToken token = _tokens->Unknown;
+        switch(descriptor.semantic()){
+            case MGeometry::kPosition:
+                token = HdTokens->points;
+                break;
+            case MGeometry::kNormal:
+                token = HdTokens->normals;
+                break;
+            case MGeometry::kTexture:
+                break;
+            case MGeometry::kColor:
+                token = HdTokens->displayColor;
+                break;
+            case MGeometry::kTangent:
+                token = _tokens->Computed;
+                break;
+            case MGeometry::kBitangent:
+                token = _tokens->Computed;
+                break;
+            case MGeometry::kTangentWithSign:
+                token = _tokens->Computed;
+                break;
+            default:
+                break;
+        }
+
+        return token;
+    }
+
 } // anonymous namespace
 
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
@@ -1326,6 +1364,31 @@ void HdVP2Material::Sync(
 
                     // Store primvar requirements.
                     _requiredPrimvars = std::move(vp2BxdfNet.primvars);
+
+                    // Verify that _requiredPrivars contains all the requiredVertexBuffers() the
+                    // shader instance needs.
+                    MVertexBufferDescriptorList requiredVertexBuffers;
+                    MStatus status = shader->requiredVertexBuffers(requiredVertexBuffers);
+                    if (status) {
+                        for(int reqIndex = 0; reqIndex < requiredVertexBuffers.length(); reqIndex++) {
+                            MVertexBufferDescriptor desc;
+                            requiredVertexBuffers.getDescriptor(reqIndex, desc);
+                            TfToken requiredPrimvar = MayaDescriptorToToken(desc);
+                            // now make sure something matching requiredPrimvar is in _requiredPrimvars
+                            if (requiredPrimvar != _tokens->Unknown && requiredPrimvar != _tokens->Computed) {
+                                bool found = false;
+                                for (TfToken const& primvar : _requiredPrimvars) {
+                                    if (primvar == requiredPrimvar) { 
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    _requiredPrimvars.push_back(requiredPrimvar);
+                                }
+                            }
+                        }
+                    }
 
                     // The token is saved and will be used to determine whether a new shader
                     // instance is needed during the next sync.
@@ -1626,9 +1689,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         // Normal map is not supported yet. For now primvars:normals is used for
         // shading, which is also the current behavior of USD/Hydra.
         // https://groups.google.com/d/msg/usd-interest/7epU16C3eyY/X9mLW9VFEwAJ
-        if (node.identifier == UsdImagingTokens->UsdPreviewSurface) {
-            outNet.primvars.push_back(HdTokens->normals);
-        }
+
         // UsdImagingMaterialAdapter doesn't create primvar requirements as
         // expected. Workaround by manually looking up "varname" parameter.
         // https://groups.google.com/forum/#!msg/usd-interest/z-14AgJKOcU/1uJJ1thXBgAJ
