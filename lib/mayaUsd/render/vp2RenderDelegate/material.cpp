@@ -1180,40 +1180,27 @@ MHWRender::MTexture* _LoadTexture(
     return texture;
 }
 
-    TfToken MayaDescriptorToToken(const MVertexBufferDescriptor& descriptor) {
-        // Attempt to match an MVertexBufferDescriptor to the corresponding
-        // USD primvar token. The "Computed" token is used for data which 
-        // can be computed by an an rprim. Unknown is used for unsupported
-        // descriptors.
+TfToken MayaDescriptorToToken(const MVertexBufferDescriptor& descriptor)
+{
+    // Attempt to match an MVertexBufferDescriptor to the corresponding
+    // USD primvar token. The "Computed" token is used for data which
+    // can be computed by an an rprim. Unknown is used for unsupported
+    // descriptors.
 
-        TfToken token = _tokens->Unknown;
-        switch(descriptor.semantic()){
-            case MGeometry::kPosition:
-                token = HdTokens->points;
-                break;
-            case MGeometry::kNormal:
-                token = HdTokens->normals;
-                break;
-            case MGeometry::kTexture:
-                break;
-            case MGeometry::kColor:
-                token = HdTokens->displayColor;
-                break;
-            case MGeometry::kTangent:
-                token = _tokens->Computed;
-                break;
-            case MGeometry::kBitangent:
-                token = _tokens->Computed;
-                break;
-            case MGeometry::kTangentWithSign:
-                token = _tokens->Computed;
-                break;
-            default:
-                break;
-        }
-
-        return token;
+    TfToken token = _tokens->Unknown;
+    switch (descriptor.semantic()) {
+    case MGeometry::kPosition: token = HdTokens->points; break;
+    case MGeometry::kNormal: token = HdTokens->normals; break;
+    case MGeometry::kTexture: break;
+    case MGeometry::kColor: token = HdTokens->displayColor; break;
+    case MGeometry::kTangent: token = _tokens->Computed; break;
+    case MGeometry::kBitangent: token = _tokens->Computed; break;
+    case MGeometry::kTangentWithSign: token = _tokens->Computed; break;
+    default: break;
     }
+
+    return token;
+}
 
 } // anonymous namespace
 
@@ -1370,15 +1357,18 @@ void HdVP2Material::Sync(
                     MVertexBufferDescriptorList requiredVertexBuffers;
                     MStatus status = shader->requiredVertexBuffers(requiredVertexBuffers);
                     if (status) {
-                        for(int reqIndex = 0; reqIndex < requiredVertexBuffers.length(); reqIndex++) {
+                        for (int reqIndex = 0; reqIndex < requiredVertexBuffers.length();
+                             reqIndex++) {
                             MVertexBufferDescriptor desc;
                             requiredVertexBuffers.getDescriptor(reqIndex, desc);
                             TfToken requiredPrimvar = MayaDescriptorToToken(desc);
-                            // now make sure something matching requiredPrimvar is in _requiredPrimvars
-                            if (requiredPrimvar != _tokens->Unknown && requiredPrimvar != _tokens->Computed) {
+                            // now make sure something matching requiredPrimvar is in
+                            // _requiredPrimvars
+                            if (requiredPrimvar != _tokens->Unknown
+                                && requiredPrimvar != _tokens->Computed) {
                                 bool found = false;
                                 for (TfToken const& primvar : _requiredPrimvars) {
-                                    if (primvar == requiredPrimvar) { 
+                                    if (primvar == requiredPrimvar) {
                                         found = true;
                                         break;
                                     }
