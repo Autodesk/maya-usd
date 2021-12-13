@@ -28,8 +28,8 @@
 #include <pxr/base/gf/vec3i.h>
 #include <pxr/base/gf/vec4d.h>
 #include <pxr/base/gf/vec4f.h>
-#include <pxr/base/gf/vec4i.h>
 #include <pxr/base/gf/vec4h.h>
+#include <pxr/base/gf/vec4i.h>
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/vtBufferSource.h>
 #include <pxr/pxr.h>
