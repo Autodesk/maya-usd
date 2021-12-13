@@ -1762,6 +1762,14 @@ void HdVP2Mesh::_UpdateDrawItem(
             if (alphaArray.size() > 0) {
                 if (alphaInterp == HdInterpolationConstant) {
                     renderItemData._transparent = (alphaArray[0] < 0.999f);
+                } else if (alphaInterp == HdInterpolationUniform) {
+                    int numFaces = topologyToUse.GetNumFaces();
+                    for(int faceId=0; faceId<numFaces; faceId++) {
+                        if (alphaArray[faceId] < 0.999f) {
+                            renderItemData._transparent = true;
+                            break;
+                        }
+                    }
                 } else {
                     for (const auto& triangle : trianglesFaceVertexIndices) {
 
