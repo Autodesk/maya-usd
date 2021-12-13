@@ -178,11 +178,18 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototy
     if (_primvarMap.count(_tokens->rotate) > 0) {
         HdVP2BufferSampler sampler(*_primvarMap[_tokens->rotate]);
         for (size_t i = 0; i < instanceIndices.size(); ++i) {
-            GfVec4f quat;
-            if (sampler.Sample(instanceIndices[i], &quat)) {
+            GfVec4h quath;
+            if (sampler.Sample(instanceIndices[i], &quath)) {
                 GfMatrix4d rotateMat(1);
-                rotateMat.SetRotate(GfQuatd(quat[0], quat[1], quat[2], quat[3]));
+                rotateMat.SetRotate(GfQuatd(quath[0], quath[1], quath[2], quath[3]));
                 transforms[i] = rotateMat * transforms[i];
+            } else {
+                GfVec4f quat;
+                if (sampler.Sample(instanceIndices[i], &quat)) {
+                    GfMatrix4d rotateMat(1);
+                    rotateMat.SetRotate(GfQuatd(quat[0], quat[1], quat[2], quat[3]));
+                    transforms[i] = rotateMat * transforms[i];
+                }
             }
         }
     }
