@@ -23,7 +23,7 @@ const OGS_TYPE_MAP_T& getOgsTypeMap()
 {
     // Data types used by OGS
     // Delayed initialization to survive C++ init order fiasco.
-    // Keyed by string to survive multiple redinitions of global symbols.
+    // Keyed by string to survive multiple redefinitions of global symbols.
     static const OGS_TYPE_MAP_T OGS_TYPE_MAP
         = { { Type::BOOLEAN->getName(), "bool" },     { Type::FLOAT->getName(), "float" },
             { Type::INTEGER->getName(), "int" },      { Type::STRING->getName(), "int" },
