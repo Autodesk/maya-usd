@@ -351,10 +351,8 @@ public:
 
     /// \brief create and execute a select node undo item and keep track of it in the global list.
     MAYAUSD_CORE_PUBLIC
-    static void select(
-        const std::string       name,
-        const MDagPath&         dagPath,
-        MGlobal::ListAdjustment selMode);
+    static void
+    select(const std::string name, const MDagPath& dagPath, MGlobal::ListAdjustment selMode);
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
@@ -366,8 +364,7 @@ public:
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void
-    select(const std::string name, const MSelectionList& selection)
+    static void select(const std::string name, const MSelectionList& selection)
     {
         SelectionUndoItem::select(name, selection, MGlobal::kReplaceList);
     }
@@ -423,10 +420,10 @@ public:
     static void
     lock(const std::string name, const MDagPath& root, bool lock, OpUndoItemList& undoInfo);
 
-    /// \brief create and execute a lock node undo item and keep track of it in the global undo list.
+    /// \brief create and execute a lock node undo item and keep track of it in the global undo
+    /// list.
     MAYAUSD_CORE_PUBLIC
-    static void
-    lock(const std::string name, const MDagPath& root, bool lock);
+    static void lock(const std::string name, const MDagPath& root, bool lock);
 
     MAYAUSD_CORE_PUBLIC
     LockNodesUndoItem(const std::string name, const MDagPath& root, bool lock);
@@ -460,7 +457,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     static MObject create(const std::string name, const MString& setName, OpUndoItemList& undoInfo);
 
-    /// \brief create and execute a set creation undo item and keep track of it in the global undo list.
+    /// \brief create and execute a set creation undo item and keep track of it in the global undo
+    /// list.
     MAYAUSD_CORE_PUBLIC
     static MObject create(const std::string name, const MString& setName);
 

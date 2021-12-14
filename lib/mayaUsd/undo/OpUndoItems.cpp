@@ -410,10 +410,7 @@ void LockNodesUndoItem::lock(
     undoInfo.addItem(std::move(item));
 }
 
-void LockNodesUndoItem::lock(
-    const std::string name,
-    const MDagPath&   root,
-    bool              dolock)
+void LockNodesUndoItem::lock(const std::string name, const MDagPath& root, bool dolock)
 {
     lock(name, root, dolock, OpUndoItemList::instance());
 }

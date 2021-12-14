@@ -71,7 +71,7 @@ private:
     // Make sure callers need to call creator().
     EditAsMayaCommand();
 
-    Ufe::Path  fPath;
+    Ufe::Path      fPath;
     OpUndoItemList fUndoInfo;
 };
 
@@ -116,8 +116,8 @@ private:
     // Make sure callers need to call creator().
     MergeToUsdCommand();
 
-    MFnDagNode fDagNode;
-    Ufe::Path  fPulledPath;
+    MFnDagNode     fDagNode;
+    Ufe::Path      fPulledPath;
     OpUndoItemList fUndoInfo;
 };
 
@@ -162,7 +162,7 @@ private:
     // Make sure callers need to call creator().
     DiscardEditsCommand();
 
-    Ufe::Path  fPath;
+    Ufe::Path      fPath;
     OpUndoItemList fUndoInfo;
 };
 
@@ -207,8 +207,8 @@ private:
     // Make sure callers need to call creator().
     DuplicateCommand();
 
-    Ufe::Path  fSrcPath;
-    Ufe::Path  fDstPath;
+    Ufe::Path      fSrcPath;
+    Ufe::Path      fDstPath;
     OpUndoItemList fUndoInfo;
 };
 
