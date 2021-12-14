@@ -21,7 +21,6 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsd/utils/utilSerialization.h>
@@ -76,8 +75,7 @@ MStatus disconnectCompoundArrayPlug(MPlug arrayPlug)
     MPlug        elemPlug;
     MPlug        srcPlug;
     MPlugArray   destPlugs;
-    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
-    MDGModifier& dgmod = MDGModifierUndoItem::create("Compound array plug disconnection", undoInfo);
+    MDGModifier& dgmod = MDGModifierUndoItem::create("Compound array plug disconnection");
 
     auto disconnectPlug = [&](MPlug plug) -> MStatus {
         MStatus status;
@@ -142,8 +140,7 @@ MayaUsd::LayerManager* findOrCreateNode()
 {
     MayaUsd::LayerManager* lm = findNode();
     if (!lm) {
-        auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
-        MDGModifier& modifier = MDGModifierUndoItem::create("Node find or creation", undoInfo);
+        MDGModifier& modifier = MDGModifierUndoItem::create("Node find or creation");
         MObject      manager = modifier.createNode(MayaUsd::LayerManager::typeId);
         modifier.doIt();
 
@@ -659,9 +656,7 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
     dataBlock.setClean(lm->layers);
 
     if (!atLeastOneDirty) {
-        auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
-        MDGModifier& modifier
-            = MDGModifierUndoItem::create("Save USD to Maya node deletion", undoInfo);
+        MDGModifier& modifier = MDGModifierUndoItem::create("Save USD to Maya node deletion");
         modifier.deleteNode(lm->thisMObject());
         modifier.doIt();
     }
@@ -985,8 +980,7 @@ void LayerDatabase::removeManagerNode(MayaUsd::LayerManager* lm)
     layersArrayHandle.setAllClean();
     dataBlock.setClean(lm->layers);
 
-    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
-    MDGModifier& modifier = MDGModifierUndoItem::create("Manager node removal", undoInfo);
+    MDGModifier& modifier = MDGModifierUndoItem::create("Manager node removal");
     modifier.deleteNode(lm->thisMObject());
     modifier.doIt();
 }

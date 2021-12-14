@@ -22,7 +22,6 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>

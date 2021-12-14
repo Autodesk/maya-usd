@@ -121,6 +121,13 @@ public:
     MAYAUSD_CORE_PUBLIC
     OpUndoItemList extract();
 
+    /// \brief returns the global instance.
+    ///
+    /// The undo list can later be extracted into a command to implement
+    /// its undo and redo. See extract() above.
+    MAYAUSD_CORE_PUBLIC
+    static OpUndoItemList& instance();
+
 private:
     OpUndoItemList(const OpUndoItemList&) = delete;
     OpUndoItemList& operator=(const OpUndoItemList&) = delete;

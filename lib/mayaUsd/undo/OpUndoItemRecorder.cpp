@@ -37,7 +37,7 @@ void OpUndoItemRecorder::startUndoRecording()
     // Clear any previously-generated undo items, both the undo info container
     // and in the global container.
     _undoInfo.clear();
-    UsdUndoManager::instance().getUndoInfo().clear();
+    OpUndoItemList::instance().clear();
 }
 
 void OpUndoItemRecorder::endUndoRecording()
@@ -49,7 +49,7 @@ void OpUndoItemRecorder::endUndoRecording()
 
     // Extract the undo items from the global comtainer
     // into the container we we're given.
-    _undoInfo = UsdUndoManager::instance().getUndoInfo().extract();
+    _undoInfo = OpUndoItemList::instance().extract();
 }
 
 } // namespace MAYAUSD_NS_DEF

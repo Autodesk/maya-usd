@@ -21,7 +21,6 @@
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
@@ -190,8 +189,7 @@ bool UsdMayaTranslatorUtil::CreateNode(
     // their edits to their parents-- if this is indeed the best pattern for
     // this, all Maya*Reader node creation needs to be adjusted accordingly (for
     // much less trivial cases like MFnMesh).
-    auto&         undoInfo = UsdUndoManager::instance().getUndoInfo();
-    MDagModifier& dagMod = MDagModifierUndoItem::create("Generic node creation", undoInfo);
+    MDagModifier& dagMod = MDagModifierUndoItem::create("Generic node creation");
     *mayaNodeObj = dagMod.createNode(nodeTypeName, parentNode, status);
     CHECK_MSTATUS_AND_RETURN(*status, false);
     *status = dagMod.renameNode(*mayaNodeObj, nodeName);

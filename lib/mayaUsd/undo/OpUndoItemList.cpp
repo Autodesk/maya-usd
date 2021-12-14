@@ -92,4 +92,11 @@ OpUndoItemList OpUndoItemList::extract()
     return extracted;
 }
 
+OpUndoItemList& OpUndoItemList::instance()
+{
+    static OpUndoItemList itemList;
+    return itemList;
+}
+
+
 } // namespace MAYAUSD_NS_DEF

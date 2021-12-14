@@ -382,6 +382,9 @@ MPlug GetConnected(const MPlug& plug);
 MAYAUSD_CORE_PUBLIC
 void Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug);
 
+MAYAUSD_CORE_PUBLIC
+void Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug, MDGModifier& dgMod);
+
 /// Get a named child plug of \p plug by name.
 MAYAUSD_CORE_PUBLIC
 MPlug FindChildPlugByName(const MPlug& plug, const MString& name);

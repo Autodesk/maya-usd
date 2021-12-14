@@ -18,7 +18,6 @@
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemRecorder.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MArgParser.h>

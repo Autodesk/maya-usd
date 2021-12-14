@@ -28,7 +28,6 @@
 #include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/traverseLayer.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -269,11 +268,8 @@ PullImportPaths pullImport(
         return PullImportPaths(addedDagPaths, pulledUfePaths);
     }
 
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(
-        &UsdUndoableItemUndoItem::create("Pull import USD data modifications", undoInfo));
+    UsdUndoBlock undoBlock(&UsdUndoableItemUndoItem::create("Pull import USD data modifications"));
 
     const VtDictionary& userArgs = context.GetUserArgs();
 
@@ -311,8 +307,7 @@ PullImportPaths pullImport(
     FunctionUndoItem::create(
         "Edit as Maya USD import",
         [readJob]() { return readJob->Redo(); },
-        [readJob]() { return readJob->Undo(); },
-        undoInfo);
+        [readJob]() { return readJob->Undo(); });
 
     MDagPath addedDagPath = addedDagPaths[0];
 
@@ -351,8 +346,7 @@ PullImportPaths pullImport(
             Ufe::PathString::string(ufeChild).c_str(),
             Ufe::PathString::string(ufeParent).c_str());
 
-        PythonUndoItem::execute(
-            "Pull import proxy accessor parenting", pyCommand, pyUndoCommand, undoInfo);
+        PythonUndoItem::execute("Pull import proxy accessor parenting", pyCommand, pyUndoCommand);
         // -- end --
 
         // Create the pull set if it does not exists.
@@ -364,8 +358,7 @@ PullImportPaths pullImport(
         if (status != MStatus::kSuccess) {
             MString createSetCmd;
             createSetCmd.format("sets -em -name \"^1s\";", kPullSetName.asChar());
-            MDGModifier& dgMod
-                = MDGModifierUndoItem::create("Pull import pull set creation", undoInfo);
+            MDGModifier& dgMod = MDGModifierUndoItem::create("Pull import pull set creation");
             dgMod.commandToExecute(createSetCmd);
             dgMod.doIt();
         }
@@ -379,8 +372,7 @@ PullImportPaths pullImport(
             [ufePulledPath]() {
                 removePullInformation(ufePulledPath);
                 return true;
-            },
-            undoInfo);
+            });
 
         FunctionUndoItem::execute(
             "Pull import rendering exclusion",
@@ -388,10 +380,9 @@ PullImportPaths pullImport(
             [ufePulledPath]() {
                 removeExcludeFromRendering(ufePulledPath);
                 return true;
-            },
-            undoInfo);
+            });
 
-        SelectionUndoItem::select("Pull import select DAG node", addedDagPath, undoInfo);
+        SelectionUndoItem::select("Pull import select DAG node", addedDagPath);
     }
 
     // Invert the new node registry, for MObject to Ufe::Path lookup.
@@ -421,11 +412,9 @@ PullImportPaths pullImport(
 // Perform the customization step of the pull (second step).
 bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdaterContext& context)
 {
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
-        &UsdUndoableItemUndoItem::create("Pull customize USD data modifications", undoInfo));
+        &UsdUndoableItemUndoItem::create("Pull customize USD data modifications"));
 
     TF_AXIOM(importedPaths.first.size() == importedPaths.second.size());
     auto dagPathIt = importedPaths.first.begin();
@@ -523,8 +512,6 @@ PushCustomizeSrc pushExport(
         // maybe it doesn't need to, because the UsdPathToDagPathMap is
         // available in the context.  PPT, 14-Oct-2021.
 
-        auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
         auto mayaPath = usdToMaya(ufePulledPath);
         auto mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
 
@@ -536,8 +523,7 @@ PushCustomizeSrc pushExport(
             },
             [ufePulledPath, mayaDagPath]() {
                 return writePullInformation(ufePulledPath, mayaDagPath);
-            },
-            undoInfo);
+            });
 
         FunctionUndoItem::execute(
             "Merge to Maya rendering inclusion",
@@ -545,8 +531,7 @@ PushCustomizeSrc pushExport(
                 removeExcludeFromRendering(ufePulledPath);
                 return true;
             },
-            [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); },
-            undoInfo);
+            [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); });
     }
 
     return pushCustomizeSrc;
@@ -770,8 +755,6 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
 
     PushPullScope scopeIt(_inPushPull);
 
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     VtDictionary exportArgs = UsdMayaJobExportArgs::GetDefaultDictionary();
     auto         updaterArgs = UsdMayaPrimUpdaterArgs::createFromDictionary(exportArgs);
     auto         mayaPath = usdToMaya(pulledPath);
@@ -784,12 +767,12 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
         if (!TF_VERIFY(pullParentPath.isValid())) {
             return false;
         }
-        LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false, undoInfo);
+        LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false);
     }
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Merge to USD selection reset", MSelectionList(), undoInfo);
+    SelectionUndoItem::select("Merge to USD selection reset", MSelectionList());
 
     UsdStageRefPtr            proxyStage = proxyShape->usdPrim().GetStage();
     UsdMayaPrimUpdaterContext context(proxyShape->getTime(), proxyStage, exportArgs);
@@ -824,10 +807,7 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
     for (const MDagPath& curDagPath : toApplyOn) {
         MStatus status = NodeDeletionUndoItem::deleteNode(
-            "Merge to USD Maya scene cleanup",
-            curDagPath.fullPathName(),
-            curDagPath.node(),
-            undoInfo);
+            "Merge to USD Maya scene cleanup", curDagPath.fullPathName(), curDagPath.node());
         if (status != MS::kSuccess) {
             TF_WARN(
                 "Merge to USD Maya scene cleanup: cannot delete node \"%s\".",
@@ -865,8 +845,6 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path)
 
     PushPullScope scopeIt(_inPushPull);
 
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     VtDictionary importArgs = UsdMayaJobImportArgs::GetDefaultDictionary();
     auto         updaterArgs = UsdMayaPrimUpdaterArgs::createFromDictionary(importArgs);
 
@@ -901,7 +879,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path)
 
     if (!updaterArgs._copyOperation) {
         // Lock pulled nodes starting at the pull parent.
-        LockNodesUndoItem::lock("Edit as Maya node locking", pullParentPath, true, undoInfo);
+        LockNodesUndoItem::lock("Edit as Maya node locking", pullParentPath, true);
     }
 
     // We must recreate the UFE item because it has changed data models (USD -> Maya).
@@ -937,11 +915,9 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
 
     PushPullScope scopeIt(_inPushPull);
 
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
-        &UsdUndoableItemUndoItem::create("Discard edits USD data modifications", undoInfo));
+        &UsdUndoableItemUndoItem::create("Discard edits USD data modifications"));
 
     auto mayaPath = usdToMaya(pulledPath);
     auto mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
@@ -962,11 +938,11 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
     if (!TF_VERIFY(pullParent.isValid())) {
         return false;
     }
-    LockNodesUndoItem::lock("Discard edits node unlocking", pullParent, false, undoInfo);
+    LockNodesUndoItem::lock("Discard edits node unlocking", pullParent, false);
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Discard edits selection reset", MSelectionList(), undoInfo);
+    SelectionUndoItem::select("Discard edits selection reset", MSelectionList());
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
@@ -982,8 +958,7 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
             removePullInformation(pulledPath);
             return true;
         },
-        [pulledPath, mayaDagPath]() { return writePullInformation(pulledPath, mayaDagPath); },
-        undoInfo);
+        [pulledPath, mayaDagPath]() { return writePullInformation(pulledPath, mayaDagPath); });
 
     FunctionUndoItem::execute(
         "Discard edits rendering inclusion",
@@ -991,8 +966,7 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
             removeExcludeFromRendering(pulledPath);
             return true;
         },
-        [pulledPath]() { return addExcludeFromRendering(pulledPath); },
-        undoInfo);
+        [pulledPath]() { return addExcludeFromRendering(pulledPath); });
 
     if (!TF_VERIFY(removePullParent(pullParent))) {
         return false;
@@ -1012,8 +986,6 @@ bool PrimUpdaterManager::duplicate(const Ufe::Path& srcPath, const Ufe::Path& ds
     MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dstPath);
 
     PushPullScope scopeIt(_inPushPull);
-
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
 
     // Copy from USD to DG
     if (srcProxyShape && dstProxyShape == nullptr) {
@@ -1044,7 +1016,7 @@ bool PrimUpdaterManager::duplicate(const Ufe::Path& srcPath, const Ufe::Path& ds
 
         // Record all USD modifications in an undo block and item.
         MAYAUSD_NS::UsdUndoBlock undoBlock(
-            &UsdUndoableItemUndoItem::create("Duplicate USD data modifications", undoInfo));
+            &UsdUndoableItemUndoItem::create("Duplicate USD data modifications"));
 
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
@@ -1136,10 +1108,8 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
     if (!pullRoot.isNull())
         return pullRoot;
 
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     // No pull root in the scene, so create one.
-    MDagModifier& dagMod = MDagModifierUndoItem::create("Create pull root", undoInfo);
+    MDagModifier& dagMod = MDagModifierUndoItem::create("Create pull root");
     MStatus       status;
     MObject       pullRootObj = dagMod.createNode(MString("transform"), MObject::kNullObj, &status);
     if (status != MStatus::kSuccess) {
@@ -1167,9 +1137,7 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
 
 MObject PrimUpdaterManager::createPullParent(const Ufe::Path& pulledPath, MObject pullRoot)
 {
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
-    MDagModifier& dagMod = MDagModifierUndoItem::create("Create pull parent node", undoInfo);
+    MDagModifier& dagMod = MDagModifierUndoItem::create("Create pull parent node");
     MStatus       status;
     MObject       pullParentObj = dagMod.createNode(MString("transform"), pullRoot, &status);
     if (status != MStatus::kSuccess) {
@@ -1189,10 +1157,8 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
         return false;
     }
 
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     MStatus status = NodeDeletionUndoItem::deleteNode(
-        "Delete pull parent node", parentDagPath.fullPathName(), parentDagPath.node(), undoInfo);
+        "Delete pull parent node", parentDagPath.fullPathName(), parentDagPath.node());
     if (status != MStatus::kSuccess)
         return false;
 
@@ -1204,7 +1170,7 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
         auto       nbPullRootChildren = pullRootNode.childCount();
         if (nbPullRootChildren == 0) {
             status = NodeDeletionUndoItem::deleteNode(
-                "Delete pull root", pullRootNode.absoluteName(), pullRoot, undoInfo);
+                "Delete pull root", pullRootNode.absoluteName(), pullRoot);
             if (status != MStatus::kSuccess) {
                 return false;
             }
@@ -1216,11 +1182,9 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
 
 MDagPath PrimUpdaterManager::setupPullParent(const Ufe::Path& pulledPath, VtDictionary& args)
 {
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
-        &UsdUndoableItemUndoItem::create("Setup pull parent USD data modification", undoInfo));
+        &UsdUndoableItemUndoItem::create("Setup pull parent USD data modification"));
 
     MObject pullRoot = findOrCreatePullRoot();
     if (pullRoot.isNull()) {

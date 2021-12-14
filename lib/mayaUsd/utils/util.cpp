@@ -17,7 +17,6 @@
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
@@ -1244,9 +1243,13 @@ MPlug UsdMayaUtil::GetConnected(const MPlug& plug)
 
 void UsdMayaUtil::Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug)
 {
+    MDGModifier& dgMod = MDGModifierUndoItem::create("Generic plug connection");
+    Connect(srcPlug,dstPlug, clearDstPlug, dgMod);
+}
+
+void UsdMayaUtil::Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug, MDGModifier& dgMod)
+{
     MStatus      status;
-    auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
-    MDGModifier& dgMod = MDGModifierUndoItem::create("Generic plug connection", undoInfo);
 
     if (clearDstPlug) {
         MPlugArray plgCons;
