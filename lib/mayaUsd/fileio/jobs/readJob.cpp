@@ -101,7 +101,7 @@ UsdMaya_ReadJob::~UsdMaya_ReadJob() { }
 bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 {
     // Do not use the global undo info recording system.
-    // The read job Undo() / redo() functions will handling all operations.
+    // The read job Undo() / redo() functions will handle all operations.
     OpUndoItemMuting undoMuting;
 
     MStatus status;
@@ -516,7 +516,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
     }
 
     if (buildInstances) {
-        MDGModifier deletePrototypeMod;
+        MDGModifier              deletePrototypeMod;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
 
@@ -555,7 +555,7 @@ bool UsdMaya_ReadJob::SkipRootPrim(bool isImportingPseudoRoot) { return isImport
 bool UsdMaya_ReadJob::Redo()
 {
     // Do not use the global undo info recording system.
-    // The read job Undo() / redo() functions will handling all operations.
+    // The read job Undo() / redo() functions will handle all operations.
     OpUndoItemMuting undoMuting;
 
     // Undo the undo

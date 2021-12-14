@@ -376,7 +376,7 @@ bool UsdMayaTranslatorModelAssembly::Read(
     // seems to be the only way to ensure that the assembly's namespace and
     // container are setup correctly.
     //
-    // TODO UNDO: how to recording this in an OpUndoItem?
+    // TODO UNDO: does this need to be undoable and how to record this in an OpUndoItem?
     const std::string assemblyCmd = TfStringPrintf(
         "import maya.cmds; maya.cmds.assembly(name=\'%s\', type=\'%s\')",
         prim.GetName().GetText(),
