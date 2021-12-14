@@ -21,10 +21,7 @@ namespace MAYAUSD_NS_DEF {
 // OpUndoItemList
 //------------------------------------------------------------------------------
 
-OpUndoItemList::OpUndoItemList(OpUndoItemList&& other)
-{
-    *this = std::move(other);
-}
+OpUndoItemList::OpUndoItemList(OpUndoItemList&& other) { *this = std::move(other); }
 
 OpUndoItemList& OpUndoItemList::operator=(OpUndoItemList&& other)
 {
@@ -59,7 +56,7 @@ bool OpUndoItemList::redo()
 {
     if (!_isUndone)
         return true;
-        
+
     bool overallSuccess = true;
     for (auto& item : _undoItems)
         overallSuccess &= item->redo();
@@ -98,6 +95,5 @@ OpUndoItemList& OpUndoItemList::instance()
     static OpUndoItemList itemList;
     return itemList;
 }
-
 
 } // namespace MAYAUSD_NS_DEF

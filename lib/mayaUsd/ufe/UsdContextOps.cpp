@@ -18,8 +18,8 @@
 #include "private/UfeNotifGuard.h"
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/commands/PullPushCommands.h>
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
