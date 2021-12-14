@@ -21,10 +21,29 @@ namespace MAYAUSD_NS_DEF {
 // OpUndoItemList
 //------------------------------------------------------------------------------
 
+OpUndoItemList::OpUndoItemList(OpUndoItemList&& other)
+{
+    *this = std::move(other);
+}
+
+OpUndoItemList& OpUndoItemList::operator=(OpUndoItemList&& other)
+{
+    _undoItems = std::move(other._undoItems);
+    other._undoItems.clear();
+
+    _isUndone = other._isUndone;
+    other._isUndone = false;
+
+    return *this;
+}
+
 OpUndoItemList::~OpUndoItemList() { clear(); }
 
 bool OpUndoItemList::undo()
 {
+    if (_isUndone)
+        return true;
+
     bool overallSuccess = true;
     // Note: iterate in reverse order since operations might depend on each other.
     const auto end = _undoItems.rend();
@@ -38,6 +57,9 @@ bool OpUndoItemList::undo()
 
 bool OpUndoItemList::redo()
 {
+    if (!_isUndone)
+        return true;
+        
     bool overallSuccess = true;
     for (auto& item : _undoItems)
         overallSuccess &= item->redo();
@@ -51,13 +73,6 @@ void OpUndoItemList::addItem(OpUndoItem::Ptr&& item)
 {
     // Note: OpUndoItem::Ptr are unique_ptr, so we need to take ownership of them.
     _undoItems.emplace_back(std::move(item));
-}
-
-void OpUndoItemList::addDeleted(const MObjectHandle obj) { _deletedMayaObjects.insert(obj); }
-
-bool OpUndoItemList::isDeleted(const MObjectHandle obj) const
-{
-    return _deletedMayaObjects.count(obj) > 0;
 }
 
 void OpUndoItemList::clear()
@@ -75,21 +90,7 @@ void OpUndoItemList::clear()
     }
 
     _undoItems.clear();
-    _deletedMayaObjects.clear();
     _isUndone = false;
-}
-
-OpUndoItemList OpUndoItemList::extract()
-{
-    OpUndoItemList extracted;
-    for (auto&& item : _undoItems)
-        extracted._undoItems.emplace_back(std::move(item));
-
-    _undoItems.clear();
-    _deletedMayaObjects.clear();
-    extracted._isUndone = _isUndone;
-
-    return extracted;
 }
 
 OpUndoItemList& OpUndoItemList::instance()

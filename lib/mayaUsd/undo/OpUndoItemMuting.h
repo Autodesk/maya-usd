@@ -31,8 +31,9 @@ class MAYAUSD_CORE_PUBLIC OpUndoItemMuting
 public:
     //! \brief Constructor extracts all undo info items.
     OpUndoItemMuting()
-        : _preservedUndoInfo(OpUndoItemList::instance().extract())
+        : _preservedUndoInfo(std::move(OpUndoItemList::instance()))
     {
+        OpUndoItemList::instance().clear();
     }
 
     //! \brief Destructor restores all preserved undo info items that were extracted.

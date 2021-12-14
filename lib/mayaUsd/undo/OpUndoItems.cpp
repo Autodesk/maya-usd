@@ -59,7 +59,7 @@ MStatus NodeDeletionUndoItem::deleteNode(
     OpUndoItemList&   undoInfo)
 {
     // Avoid deleting the same node twice.
-    if (undoInfo.isDeleted(node))
+    if (!MObjectHandle(node).isValid())
         return MS::kSuccess;
 
     const MString cmd = formatCommand("delete", node);
@@ -77,7 +77,6 @@ MStatus NodeDeletionUndoItem::deleteNode(
         return status;
 
     undoInfo.addItem(std::move(item));
-    undoInfo.addDeleted(node);
 
     return MS::kSuccess;
 }

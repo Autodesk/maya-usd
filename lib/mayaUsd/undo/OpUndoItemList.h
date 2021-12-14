@@ -84,10 +84,10 @@ public:
     OpUndoItemList() = default;
 
     MAYAUSD_CORE_PUBLIC
-    OpUndoItemList(OpUndoItemList&&) = default;
+    OpUndoItemList(OpUndoItemList&& other);
 
     MAYAUSD_CORE_PUBLIC
-    OpUndoItemList& operator=(OpUndoItemList&&) = default;
+    OpUndoItemList& operator=(OpUndoItemList&& other);
 
     /// \brief destroy the undo info.
     MAYAUSD_CORE_PUBLIC
@@ -105,21 +105,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     void addItem(OpUndoItem::Ptr&& item);
 
-    /// \brief add an object that was deleted, to help avoid deleting an object twice.
-    MAYAUSD_CORE_PUBLIC
-    void addDeleted(const MObjectHandle obj);
-
-    /// \brief verify if an object was already deleted, to help avoid deleting an object twice.
-    MAYAUSD_CORE_PUBLIC
-    bool isDeleted(const MObjectHandle obj) const;
-
     /// \brief clear all undo/redo information contained here.
     MAYAUSD_CORE_PUBLIC
     void clear();
-
-    /// \brief extract all undo/redo information contained here and clear.
-    MAYAUSD_CORE_PUBLIC
-    OpUndoItemList extract();
 
     /// \brief returns the global instance.
     ///
@@ -132,15 +120,7 @@ private:
     OpUndoItemList(const OpUndoItemList&) = delete;
     OpUndoItemList& operator=(const OpUndoItemList&) = delete;
 
-    struct MObjectHandleHash
-    {
-        size_t operator()(const MObjectHandle obj) const { return obj.hashCode(); }
-    };
-
-    using DeletedObjectSet = std::unordered_set<MObjectHandle, MObjectHandleHash>;
-
     std::vector<OpUndoItem::Ptr> _undoItems;
-    DeletedObjectSet             _deletedMayaObjects;
     bool                         _isUndone = false;
 };
 
