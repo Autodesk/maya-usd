@@ -37,8 +37,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-TfToken::Set _registeredTypeNames;
-}
+TfToken::Set          _registeredTypeNames;
+static constexpr char shaderOverrideIdSuffix[] = "ShaderOverride";
+} // namespace
 /* static */
 MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
     MFnPlugin&     plugin,
@@ -74,7 +75,7 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
 
     status = MHWRender::MDrawRegistry::registerShaderOverrideCreator(
         drawDbClassification,
-        registrantId + "ShaderOverride",
+        registrantId + shaderOverrideIdSuffix,
         PxrMayaUsdPreviewSurfaceShaderOverride::creator);
     CHECK_MSTATUS(status);
 
@@ -101,7 +102,7 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(
     deregisterFragments();
 
     MStatus status = MHWRender::MDrawRegistry::deregisterShaderOverrideCreator(
-        drawDbClassification, registrantId);
+        drawDbClassification, registrantId + shaderOverrideIdSuffix);
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(

@@ -48,6 +48,9 @@ public:
 #endif
 
     PXRUSDPREVIEWSURFACE_API
+    MShaderInstance* nonTexturedShaderInstance(bool& monitorNode) const override;
+
+    PXRUSDPREVIEWSURFACE_API
     void updateDG(MObject obj) override;
 
     PXRUSDPREVIEWSURFACE_API
@@ -71,7 +74,11 @@ public:
 private:
     PxrMayaUsdPreviewSurfaceShaderOverride(const MObject& obj);
 
+    void setShaderParams(MShaderInstance*& shaderInstance, bool displayCVP = false);
+
     MShaderInstance* m_shaderInstance = nullptr;
+
+    MShaderInstance* m_shaderInstanceNonTextured = nullptr;
 
     float m_diffuseColor[3];
     float m_emissiveColor[3];
@@ -86,10 +93,11 @@ private:
     float m_clearcoatRoughness;
     float m_displacement;
     float m_normal[3];
-    bool  m_displayCPV;
     bool  m_useSpecularWorkflow;
     bool  m_caching;
     bool  m_frozen;
+    bool  m_displayCPV;
+    bool  m_previousDisplayCPV;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

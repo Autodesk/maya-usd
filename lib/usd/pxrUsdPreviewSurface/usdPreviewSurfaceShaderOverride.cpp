@@ -16,6 +16,8 @@
 
 #include "usdPreviewSurfaceShaderOverride.h"
 
+#include "usdPreviewSurfacePlugin.h"
+
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
 #include <pxr/base/tf/staticTokens.h>
@@ -28,14 +30,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 static MStatus populateShaderManager(const MShaderManager* shaderMgr)
 {
     MRenderer* renderer = MRenderer::theRenderer();
-    if (!renderer)
-        return MS::kFailure;
-    shaderMgr = renderer->getShaderManager();
-    return shaderMgr ? MS::kSuccess : MS::kFailure;
+    if (renderer) {
+        shaderMgr = renderer->getShaderManager();
+        if (shaderMgr)
+            return MS::kSuccess;
+    }
+    TF_RUNTIME_ERROR("Failed to populate shader manager.");
+    return MS::kFailure;
+}
+
+inline static MShaderInstance* getPreviewSurfaceShader(const MShaderManager* shaderMgr)
+{
+    return shaderMgr->getFragmentShader(
+        HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText(), "outSurfaceFinal", true);
+}
+
+inline static MShaderInstance*
+cloneOrCreateInstance(const MShaderManager* shaderMgr, MShaderInstance* instance)
+{
+    // Clone the shader instance or create a new one
+    return instance ? instance->clone() : getPreviewSurfaceShader(shaderMgr);
 }
 
 MPxShaderOverride* PxrMayaUsdPreviewSurfaceShaderOverride::creator(const MObject& obj)
 {
+    // Make sure the shader fragments have been registered before instantiating the override
+    PxrMayaUsdPreviewSurfacePlugin::registerFragments();
     return new PxrMayaUsdPreviewSurfaceShaderOverride(obj);
 }
 
@@ -46,9 +66,17 @@ PxrMayaUsdPreviewSurfaceShaderOverride::PxrMayaUsdPreviewSurfaceShaderOverride(c
 
 PxrMayaUsdPreviewSurfaceShaderOverride::~PxrMayaUsdPreviewSurfaceShaderOverride()
 {
+    // Release and clear all held shader instances
     const MShaderManager* shaderMgr = nullptr;
-    if (m_shaderInstance && populateShaderManager(shaderMgr)) {
-        shaderMgr->releaseShader(m_shaderInstance);
+    if (populateShaderManager(shaderMgr)) {
+        if (m_shaderInstanceNonTextured) {
+            shaderMgr->releaseShader(m_shaderInstanceNonTextured);
+            m_shaderInstanceNonTextured = nullptr;
+        }
+        if (m_shaderInstance) {
+            shaderMgr->releaseShader(m_shaderInstance);
+            m_shaderInstance = nullptr;
+        }
     }
 }
 
@@ -73,16 +101,24 @@ MString PxrMayaUsdPreviewSurfaceShaderOverride::initialize(
     addGeometryRequirement({ {}, MGeometry::kNormal, MGeometry::kFloat, 3 });
     addGeometryRequirement({ {}, MGeometry::kColor, MGeometry::kFloat, 4 });
 
+    // Create instances of the USD preview surface fragment shader
     const MShaderManager* shaderMgr = nullptr;
-    if (!m_shaderInstance && populateShaderManager(shaderMgr)) {
-        // Get an instance of the USD preview surface fragment shader
-        m_shaderInstance = shaderMgr->getFragmentShader(
-            HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText(),
-            "outSurfaceFinal",
-            true);
-    }
+    if (populateShaderManager(shaderMgr)) {
+        if (!m_shaderInstanceNonTextured)
+            m_shaderInstanceNonTextured = getPreviewSurfaceShader(shaderMgr);
 
+        if (!m_shaderInstance) {
+            m_shaderInstance = cloneOrCreateInstance(shaderMgr, m_shaderInstanceNonTextured);
+        }
+    }
     return MPxShaderOverride::initialize(initContext, data);
+}
+
+MShaderInstance*
+PxrMayaUsdPreviewSurfaceShaderOverride::nonTexturedShaderInstance(bool& monitorNode) const
+{
+    monitorNode = true; // TODO why is this not running the update loop??
+    return m_shaderInstanceNonTextured;
 }
 
 void PxrMayaUsdPreviewSurfaceShaderOverride::updateDG(MObject obj)
@@ -120,6 +156,8 @@ void PxrMayaUsdPreviewSurfaceShaderOverride::updateDG(MObject obj)
     node.findPlug("normal1", true).getValue(m_normal[1]);
     node.findPlug("normal2", true).getValue(m_normal[2]);
 
+    // Store previous display value
+    m_previousDisplayCPV = m_displayCPV;
     node.findPlug("displayCPV", true).getValue(m_displayCPV);
     node.findPlug("useSpecularWorkflow", true).getValue(m_useSpecularWorkflow);
     node.findPlug("caching", true).getValue(m_caching);
@@ -128,34 +166,60 @@ void PxrMayaUsdPreviewSurfaceShaderOverride::updateDG(MObject obj)
 
 void PxrMayaUsdPreviewSurfaceShaderOverride::updateDevice()
 {
-    if (!m_shaderInstance)
+    // Recreate the textured shader if the CPV display value changed or does not exist
+    const MShaderManager* shaderMgr = nullptr;
+    if ((m_displayCPV != m_previousDisplayCPV || !m_shaderInstance)
+        && populateShaderManager(shaderMgr)) {
+        if (m_shaderInstance) {
+            shaderMgr->releaseShader(m_shaderInstance);
+            m_shaderInstance = nullptr;
+        }
+
+        // Rebuild the textured shader
+        m_shaderInstance = cloneOrCreateInstance(shaderMgr, m_shaderInstanceNonTextured);
+        if (!m_shaderInstance)
+            TF_RUNTIME_ERROR("Failed to recreate textured shader instance.");
+    }
+
+    // Update the parameters for each shader instance
+    setShaderParams(m_shaderInstanceNonTextured);
+    setShaderParams(m_shaderInstance, m_displayCPV);
+}
+
+void PxrMayaUsdPreviewSurfaceShaderOverride::setShaderParams(
+    MShaderInstance*& shaderInstance,
+    bool              displayCVP)
+{
+    if (!shaderInstance)
         return;
+
+    if (displayCVP) {
+        // Set the CPV inputs to the shader instance
+        shaderInstance->addInputFragment("mayaCPVInput", "outColor", "diffuseColor");
+        shaderInstance->addInputFragment("mayaCPVInput", "outTransparency", "dummyTransparency");
+        shaderInstance->setIsTransparent(true);
+    } else {
+        shaderInstance->setParameter("diffuseColor", &m_diffuseColor[0]);
+        shaderInstance->setParameter("dummyTransparency", 0.f);
+        shaderInstance->setIsTransparent(false);
+    }
 
     // Copy the cached attributes from the node to the shader instance
-    m_shaderInstance->setArrayParameter("diffuseColor", m_diffuseColor, 3);
-    m_shaderInstance->setArrayParameter("emissiveColor", m_emissiveColor, 3);
-    m_shaderInstance->setParameter("occlusion", m_occlusion);
-    m_shaderInstance->setParameter("opacity", m_opacity);
-    m_shaderInstance->setParameter("opacityThreshold", m_opacityThreshold);
-    m_shaderInstance->setParameter("ior", m_ior);
-    m_shaderInstance->setParameter("metallic", m_metallic);
-    m_shaderInstance->setParameter("roughness", m_roughness);
-    m_shaderInstance->setArrayParameter("specularColor", m_specularColor, 3);
-    m_shaderInstance->setParameter("clearcoat", m_clearcoat);
-    m_shaderInstance->setParameter("clearcoatRoughness", m_clearcoatRoughness);
-    m_shaderInstance->setParameter("displacement", m_displacement);
-    m_shaderInstance->setArrayParameter("normal", m_normal, 3);
-
-    m_shaderInstance->setParameter("useSpecularWorkflow", m_useSpecularWorkflow);
-    m_shaderInstance->setParameter("caching", m_caching);
-    m_shaderInstance->setParameter("frozen", m_frozen);
-
-    // Set the CPV inputs to the shader instance if enabled
-    if (!m_displayCPV)
-        return;
-    m_shaderInstance->addInputFragment("mayaCPVInput", "outColor", "diffuseColor");
-    m_shaderInstance->addInputFragment("mayaCPVInput", "outTransparency", "dummyTransparency");
-    m_shaderInstance->setIsTransparent(true);
+    shaderInstance->setParameter("emissiveColor", &m_emissiveColor[0]);
+    shaderInstance->setParameter("occlusion", m_occlusion);
+    shaderInstance->setParameter("opacity", m_opacity);
+    shaderInstance->setParameter("opacityThreshold", m_opacityThreshold);
+    shaderInstance->setParameter("ior", m_ior);
+    shaderInstance->setParameter("metallic", m_metallic);
+    shaderInstance->setParameter("roughness", m_roughness);
+    shaderInstance->setParameter("specularColor", &m_specularColor[0]);
+    shaderInstance->setParameter("clearcoat", m_clearcoat);
+    shaderInstance->setParameter("clearcoatRoughness", m_clearcoatRoughness);
+    shaderInstance->setParameter("displacement", m_displacement);
+    shaderInstance->setParameter("normal", &m_normal[0]);
+    shaderInstance->setParameter("useSpecularWorkflow", m_useSpecularWorkflow);
+    shaderInstance->setParameter("caching", m_caching);
+    shaderInstance->setParameter("frozen", m_frozen);
 }
 
 bool PxrMayaUsdPreviewSurfaceShaderOverride::handlesDraw(MDrawContext& context)
