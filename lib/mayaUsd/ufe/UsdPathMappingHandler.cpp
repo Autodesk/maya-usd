@@ -97,7 +97,7 @@ Ufe::Path UsdPathMappingHandler::fromHost(const Ufe::Path& hostPath) const
 
     // If nothing has been pulled, then there is no mapping to be done.
     if (!PXR_NS::PrimUpdaterManager::getInstance().hasPulledPrims()) {
-        return hostPath;
+        return {};
     }
 
     // Start by getting the dag path from the input host path. The dag path is needed

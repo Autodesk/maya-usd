@@ -1109,8 +1109,10 @@ PrimUpdaterManager& PrimUpdaterManager::getInstance()
 MObject PrimUpdaterManager::findOrCreatePullRoot()
 {
     MObject pullRoot = findPullRoot();
-    if (!pullRoot.isNull())
+    if (!pullRoot.isNull()) {
+        _hasPulledPrims = true;
         return pullRoot;
+    }
 
     // No pull root in the scene, so create one.
     MDagModifier& dagMod = MDagModifierUndoItem::create("Create pull root");
@@ -1135,6 +1137,17 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
     // look necessary.
     MFnDependencyNode pullRootFn(pullRootObj);
     UsdMayaUtil::SetHiddenInOutliner(pullRootFn, true);
+
+    FunctionUndoItem::execute(
+        "Create pull root cache has pulled prims",
+        [self = this]() {
+            self->_hasPulledPrims = true;
+            return true;
+        },
+        [self = this]() {
+            self->_hasPulledPrims = false;
+            return true;
+        });
 
     return pullRootObj;
 }
@@ -1178,6 +1191,16 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
             if (status != MStatus::kSuccess) {
                 return false;
             }
+            FunctionUndoItem::execute(
+                "Delete pull root cache no pulled prims",
+                [self = this]() {
+                    self->_hasPulledPrims = false;
+                    return true;
+                },
+                [self = this]() {
+                    self->_hasPulledPrims = true;
+                    return true;
+                });
         }
     }
 
