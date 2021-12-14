@@ -15,10 +15,9 @@
 //
 #include "PullPushCommands.h"
 
-#include "Utils.h"
-
 #include <mayaUsd/fileio/primUpdaterManager.h>
-#include <mayaUsd/undo/OpUndoInfoRecorder.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/OpUndoItemRecorder.h>
 #include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 
@@ -170,7 +169,7 @@ MStatus EditAsMayaCommand::doIt(const MArgList& argList)
     if (!isPrimPath(fPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoInfoRecorder undoRecorder(fUndoInfo);
+    OpUndoItemRecorder undoRecorder(fUndoInfo);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
     if (!manager.editAsMaya(fPath))
@@ -235,7 +234,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPulledPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoInfoRecorder undoRecorder(fUndoInfo);
+    OpUndoItemRecorder undoRecorder(fUndoInfo);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
     if (!manager.mergeToUsd(fDagNode, fPulledPath))
@@ -294,7 +293,7 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoInfoRecorder undoRecorder(fUndoInfo);
+    OpUndoItemRecorder undoRecorder(fUndoInfo);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
     if (!manager.discardEdits(fPath))
@@ -352,7 +351,7 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    OpUndoInfoRecorder undoRecorder(fUndoInfo);
+    OpUndoItemRecorder undoRecorder(fUndoInfo);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
     if (!manager.duplicate(fSrcPath, fDstPath))

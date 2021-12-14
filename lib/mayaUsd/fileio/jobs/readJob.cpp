@@ -21,7 +21,7 @@
 #include <mayaUsd/fileio/translators/translatorXformable.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
-#include <mayaUsd/undo/OpUndoInfoMuting.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/stageCache.h>
@@ -104,7 +104,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 {
     // Do not use the global undo info recording system.
     // The read job Undo() / redo() functions will handling all operations.
-    OpUndoInfoMuting undoMuting;
+    OpUndoItemMuting undoMuting;
 
     MStatus status;
 
@@ -561,7 +561,7 @@ bool UsdMaya_ReadJob::Redo()
 {
     // Do not use the global undo info recording system.
     // The read job Undo() / redo() functions will handling all operations.
-    OpUndoInfoMuting undoMuting;
+    OpUndoItemMuting undoMuting;
 
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
@@ -582,7 +582,7 @@ bool UsdMaya_ReadJob::Undo()
 {
     // Do not use the global undo info recording system.
     // The read job Undo() / redo() functions will handling all operations.
-    OpUndoInfoMuting undoMuting;
+    OpUndoItemMuting undoMuting;
 
     // NOTE: (yliangsiew) All chasers need to have their Undo run as well.
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {

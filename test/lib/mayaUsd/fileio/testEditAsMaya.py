@@ -124,7 +124,6 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         def getMayaPathStr():
             aMayaItem = ufe.GlobalSelection.get().front()
-            mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(aMayaItem)
             aMayaPath = aMayaItem.path()
             aMayaPathStr = ufe.PathString.string(aMayaPath)
             return aMayaPathStr
@@ -133,7 +132,6 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         def verifyEditedScene():
             aMayaItem = ufe.GlobalSelection.get().front()
-            mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(aMayaItem)
             aMayaPath = aMayaItem.path()
             aMayaPathStr = ufe.PathString.string(aMayaPath)
 

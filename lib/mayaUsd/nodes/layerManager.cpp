@@ -19,7 +19,7 @@
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/OpUndoInfoMuting.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
@@ -345,14 +345,14 @@ void LayerDatabase::setBatchSaveDelegate(BatchSaveDelegate delegate)
 void LayerDatabase::prepareForSaveCheck(bool* retCode, void*)
 {
     // This is called during a Maya notification callback, so no undo supported.
-    OpUndoInfoMuting muting;
+    OpUndoItemMuting muting;
     prepareForWriteCheck(retCode, false);
 }
 
 void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
 {
     // This is called during a Maya notification callback, so no undo supported.
-    OpUndoInfoMuting muting;
+    OpUndoItemMuting muting;
     prepareForWriteCheck(retCode, true);
 }
 
@@ -884,7 +884,7 @@ void LayerDatabase::loadLayersPostRead(void*)
 void LayerDatabase::cleanUpNewScene(void*)
 {
     // This is called during a Maya notification callback, so no undo supported.
-    OpUndoInfoMuting muting;
+    OpUndoItemMuting muting;
     LayerDatabase::instance().removeAllLayers();
     LayerDatabase::removeManagerNode();
 }

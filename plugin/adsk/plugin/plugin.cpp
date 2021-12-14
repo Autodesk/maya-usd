@@ -73,7 +73,7 @@
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/fileio/primUpdaterManager.h>
-#include <mayaUsd/ufe/PullPushCommands.h>
+#include <mayaUsd/commands/PullPushCommands.h>
 #endif
 
 #if defined(WANT_QT_BUILD)

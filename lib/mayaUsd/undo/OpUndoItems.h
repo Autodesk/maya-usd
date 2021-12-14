@@ -16,7 +16,7 @@
 #ifndef MAYAUSD_UNDO_OP_UNDO_ITEMS_H
 #define MAYAUSD_UNDO_OP_UNDO_ITEMS_H
 
-#include "OpUndoInfo.h"
+#include "OpUndoItemList.h"
 
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
@@ -50,7 +50,7 @@ public:
         const std::string name,
         const MString&    nodeName,
         const MObject&    node,
-        OpUndoInfo&       undoInfo);
+        OpUndoItemList&       undoInfo);
 
     /// \brief construct a Maya DG modifier recorder.
     MAYAUSD_CORE_PUBLIC
@@ -88,7 +88,7 @@ class MDagModifierUndoItem : public OpUndoItem
 public:
     /// \brief create a Maya DAG modifier recorder and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static MDagModifier& create(const std::string name, OpUndoInfo& undoInfo);
+    static MDagModifier& create(const std::string name, OpUndoItemList& undoInfo);
 
     /// \brief construct a Maya DAG modifier recorder.
     MAYAUSD_CORE_PUBLIC
@@ -130,7 +130,7 @@ class MDGModifierUndoItem : public OpUndoItem
 public:
     /// \brief create a Maya DG modifier recorder and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static MDGModifier& create(const std::string name, OpUndoInfo& undoInfo);
+    static MDGModifier& create(const std::string name, OpUndoItemList& undoInfo);
 
     /// \brief construct a Maya DG modifier recorder.
     MAYAUSD_CORE_PUBLIC
@@ -169,7 +169,7 @@ class UsdUndoableItemUndoItem : public OpUndoItem
 public:
     /// \brief create a USD undo item recorder and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static MAYAUSD_NS::UsdUndoableItem& create(const std::string name, OpUndoInfo& undoInfo);
+    static MAYAUSD_NS::UsdUndoableItem& create(const std::string name, OpUndoItemList& undoInfo);
 
     /// \brief construct a USD undo item recorder.
     MAYAUSD_CORE_PUBLIC
@@ -209,7 +209,7 @@ public:
     /// \brief create and execute python and and how to undo it and keep track of it.
     MAYAUSD_CORE_PUBLIC
     static void
-    execute(const std::string name, MString pythonDo, MString pythonUndo, OpUndoInfo& undoInfo);
+    execute(const std::string name, MString pythonDo, MString pythonUndo, OpUndoItemList& undoInfo);
 
     /// \brief create a python undo item.
     MAYAUSD_CORE_PUBLIC
@@ -247,7 +247,7 @@ public:
         const std::string     name,
         std::function<bool()> redo,
         std::function<bool()> undo,
-        OpUndoInfo&           undoInfo);
+        OpUndoItemList&           undoInfo);
 
     /// \brief create and execute functions and how to undo it and keep track of it.
     ///        Useful if the item execution has *not* already been done but must done now.
@@ -256,7 +256,7 @@ public:
         const std::string     name,
         std::function<bool()> redo,
         std::function<bool()> undo,
-        OpUndoInfo&           undoInfo);
+        OpUndoItemList&           undoInfo);
 
     /// \brief create a function undo item.
     MAYAUSD_CORE_PUBLIC
@@ -296,7 +296,7 @@ public:
         const std::string       name,
         const MSelectionList&   selection,
         MGlobal::ListAdjustment selMode,
-        OpUndoInfo&             undoInfo);
+        OpUndoItemList&             undoInfo);
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
@@ -304,19 +304,19 @@ public:
         const std::string       name,
         const MDagPath&         dagPath,
         MGlobal::ListAdjustment selMode,
-        OpUndoInfo&             undoInfo);
+        OpUndoItemList&             undoInfo);
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
     static void
-    select(const std::string name, const MSelectionList& selection, OpUndoInfo& undoInfo)
+    select(const std::string name, const MSelectionList& selection, OpUndoItemList& undoInfo)
     {
         SelectionUndoItem::select(name, selection, MGlobal::kReplaceList, undoInfo);
     }
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void select(const std::string name, const MDagPath& dagPath, OpUndoInfo& undoInfo)
+    static void select(const std::string name, const MDagPath& dagPath, OpUndoItemList& undoInfo)
     {
         SelectionUndoItem::select(name, dagPath, MGlobal::kReplaceList, undoInfo);
     }
@@ -355,7 +355,7 @@ class LockNodesUndoItem : public OpUndoItem
 public:
     /// \brief create and execute a lock node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void lock(const std::string name, const MDagPath& root, bool lock, OpUndoInfo& undoInfo);
+    static void lock(const std::string name, const MDagPath& root, bool lock, OpUndoItemList& undoInfo);
 
     MAYAUSD_CORE_PUBLIC
     LockNodesUndoItem(const std::string name, const MDagPath& root, bool lock);
@@ -387,7 +387,7 @@ class CreateSetUndoItem : public OpUndoItem
 public:
     /// \brief create and execute a set creation undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static MObject create(const std::string name, const MString& setName, OpUndoInfo& undoInfo);
+    static MObject create(const std::string name, const MString& setName, OpUndoItemList& undoInfo);
 
     MAYAUSD_CORE_PUBLIC
     CreateSetUndoItem(const std::string name, const MString& setName);
@@ -416,7 +416,7 @@ private:
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using OpUndoInfo = MAYAUSD_NS_DEF::OpUndoInfo;
+using OpUndoItemList = MAYAUSD_NS_DEF::OpUndoItemList;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

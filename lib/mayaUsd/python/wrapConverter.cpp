@@ -108,7 +108,7 @@ static void test_convertUsdAttrToMDGModifier(
     const ConverterArgs& args)
 {
     // Testing function, no need for undo.
-    OpUndoInfo undoInfo;
+    OpUndoItemList undoInfo;
     MPlug      plug;
     if (UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess) {
         MDGModifier& modifier = MDGModifierUndoItem::create("Test USD to DG conversion", undoInfo);
