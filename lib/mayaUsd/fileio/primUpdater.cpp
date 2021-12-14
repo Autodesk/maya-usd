@@ -24,7 +24,6 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/traverseLayer.h>
 #include <mayaUsdUtils/MergePrims.h>
 
@@ -80,15 +79,10 @@ bool UsdMayaPrimUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
     if (objectToDelete.isNull())
         return true;
 
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     MFnDependencyNode depNode(objectToDelete);
 
     MStatus status = NodeDeletionUndoItem::deleteNode(
-        "Discard edits delete individual pulled node",
-        depNode.absoluteName(),
-        objectToDelete,
-        undoInfo);
+        "Discard edits delete individual pulled node", depNode.absoluteName(), objectToDelete);
 
     if (status != MS::kSuccess) {
         TF_WARN("Discard edits: cannot delete node.");
@@ -100,8 +94,7 @@ bool UsdMayaPrimUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
 
 bool UsdMayaPrimUpdater::pushEnd(const UsdMayaPrimUpdaterContext& context)
 {
-    // Nothing. We will rely on the Maya scene cleaup code
-    // to delete the nodes in the correct order.
+    // Nothing. We rely on the PrimUpdaterManager to delete the nodes in the correct order.
     return true;
 }
 

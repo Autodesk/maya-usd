@@ -56,7 +56,7 @@ MStatus NodeDeletionUndoItem::deleteNode(
     const std::string name,
     const MString&    nodeName,
     const MObject&    node,
-    OpUndoItemList&       undoInfo)
+    OpUndoItemList&   undoInfo)
 {
     // Avoid deleting the same node twice.
     if (undoInfo.isDeleted(node))
@@ -82,6 +82,14 @@ MStatus NodeDeletionUndoItem::deleteNode(
     return MS::kSuccess;
 }
 
+MStatus NodeDeletionUndoItem::deleteNode(
+    const std::string name,
+    const MString&    nodeName,
+    const MObject&    node)
+{
+    return deleteNode(name, nodeName, node, OpUndoItemList::instance());
+}
+
 NodeDeletionUndoItem::~NodeDeletionUndoItem() { }
 
 bool NodeDeletionUndoItem::undo() { return _modifier.undoIt() == MS::kSuccess; }
@@ -98,6 +106,11 @@ MDagModifier& MDagModifierUndoItem::create(const std::string name, OpUndoItemLis
     MDagModifier& mod = item->getModifier();
     undoInfo.addItem(std::move(item));
     return mod;
+}
+
+MDagModifier& MDagModifierUndoItem::create(const std::string name)
+{
+    return create(name, OpUndoItemList::instance());
 }
 
 MDagModifierUndoItem::~MDagModifierUndoItem() { }
@@ -118,6 +131,11 @@ MDGModifier& MDGModifierUndoItem::create(const std::string name, OpUndoItemList&
     return mod;
 }
 
+MDGModifier& MDGModifierUndoItem::create(const std::string name)
+{
+    return create(name, OpUndoItemList::instance());
+}
+
 MDGModifierUndoItem::~MDGModifierUndoItem() { }
 
 bool MDGModifierUndoItem::undo() { return _modifier.undoIt() == MS::kSuccess; }
@@ -135,6 +153,11 @@ UsdUndoableItemUndoItem::create(const std::string name, OpUndoItemList& undoInfo
     MAYAUSD_NS::UsdUndoableItem& mod = item->getUndoableItem();
     undoInfo.addItem(std::move(item));
     return mod;
+}
+
+MAYAUSD_NS::UsdUndoableItem& UsdUndoableItemUndoItem::create(const std::string name)
+{
+    return create(name, OpUndoItemList::instance());
 }
 
 UsdUndoableItemUndoItem::~UsdUndoableItemUndoItem() { }
@@ -168,12 +191,17 @@ void PythonUndoItem::execute(
     const std::string name,
     MString           pythonDo,
     MString           pythonUndo,
-    OpUndoItemList&       undoInfo)
+    OpUndoItemList&   undoInfo)
 {
     auto item = std::make_unique<PythonUndoItem>(
         std::move(name), std::move(pythonDo), std::move(pythonUndo));
     item->redo();
     undoInfo.addItem(std::move(item));
+}
+
+void PythonUndoItem::execute(const std::string name, MString pythonDo, MString pythonUndo)
+{
+    return execute(name, pythonDo, pythonUndo, OpUndoItemList::instance());
 }
 
 namespace {
@@ -210,23 +238,39 @@ void FunctionUndoItem::create(
     const std::string     name,
     std::function<bool()> redo,
     std::function<bool()> undo,
-    OpUndoItemList&           undoInfo)
+    OpUndoItemList&       undoInfo)
 {
     auto item
         = std::make_unique<FunctionUndoItem>(std::move(name), std::move(redo), std::move(undo));
     undoInfo.addItem(std::move(item));
 }
 
+void FunctionUndoItem::create(
+    const std::string     name,
+    std::function<bool()> redo,
+    std::function<bool()> undo)
+{
+    create(name, redo, undo, OpUndoItemList::instance());
+}
+
 void FunctionUndoItem::execute(
     const std::string     name,
     std::function<bool()> redo,
     std::function<bool()> undo,
-    OpUndoItemList&           undoInfo)
+    OpUndoItemList&       undoInfo)
 {
     auto item
         = std::make_unique<FunctionUndoItem>(std::move(name), std::move(redo), std::move(undo));
     item->redo();
     undoInfo.addItem(std::move(item));
+}
+
+void FunctionUndoItem::execute(
+    const std::string     name,
+    std::function<bool()> redo,
+    std::function<bool()> undo)
+{
+    execute(name, redo, undo, OpUndoItemList::instance());
 }
 
 bool FunctionUndoItem::undo()
@@ -265,7 +309,7 @@ void SelectionUndoItem::select(
     const std::string       name,
     const MSelectionList&   selection,
     MGlobal::ListAdjustment selMode,
-    OpUndoItemList&             undoInfo)
+    OpUndoItemList&         undoInfo)
 {
     auto item = std::make_unique<SelectionUndoItem>(std::move(name), selection, selMode);
     item->redo();
@@ -274,13 +318,29 @@ void SelectionUndoItem::select(
 
 void SelectionUndoItem::select(
     const std::string       name,
+    const MSelectionList&   selection,
+    MGlobal::ListAdjustment selMode)
+{
+    select(name, selection, selMode, OpUndoItemList::instance());
+}
+
+void SelectionUndoItem::select(
+    const std::string       name,
     const MDagPath&         dagPath,
     MGlobal::ListAdjustment selMode,
-    OpUndoItemList&             undoInfo)
+    OpUndoItemList&         undoInfo)
 {
     MSelectionList selection;
     selection.add(dagPath);
     SelectionUndoItem::select(std::move(name), selection, selMode, undoInfo);
+}
+
+void SelectionUndoItem::select(
+    const std::string       name,
+    const MDagPath&         dagPath,
+    MGlobal::ListAdjustment selMode)
+{
+    select(name, dagPath, selMode, OpUndoItemList::instance());
 }
 
 bool SelectionUndoItem::undo()
@@ -343,12 +403,20 @@ LockNodesUndoItem::~LockNodesUndoItem() { }
 void LockNodesUndoItem::lock(
     const std::string name,
     const MDagPath&   root,
-    bool              lock,
-    OpUndoItemList&       undoInfo)
+    bool              dolock,
+    OpUndoItemList&   undoInfo)
 {
-    auto item = std::make_unique<LockNodesUndoItem>(std::move(name), root, lock);
+    auto item = std::make_unique<LockNodesUndoItem>(std::move(name), root, dolock);
     item->redo();
     undoInfo.addItem(std::move(item));
+}
+
+void LockNodesUndoItem::lock(
+    const std::string name,
+    const MDagPath&   root,
+    bool              dolock)
+{
+    lock(name, root, dolock, OpUndoItemList::instance());
 }
 
 bool LockNodesUndoItem::undo()
@@ -375,13 +443,19 @@ CreateSetUndoItem::CreateSetUndoItem(const std::string name, const MString& setN
 
 CreateSetUndoItem::~CreateSetUndoItem() { }
 
-MObject CreateSetUndoItem::create(std::string name, const MString& setName, OpUndoItemList& undoInfo)
+MObject
+CreateSetUndoItem::create(std::string name, const MString& setName, OpUndoItemList& undoInfo)
 {
     auto item = std::make_unique<CreateSetUndoItem>(std::move(name), setName);
     item->redo();
     MObject obj = item->_setObj;
     undoInfo.addItem(std::move(item));
     return obj;
+}
+
+MObject CreateSetUndoItem::create(std::string name, const MString& setName)
+{
+    return create(name, setName, OpUndoItemList::instance());
 }
 
 bool CreateSetUndoItem::undo()

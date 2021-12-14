@@ -33,7 +33,6 @@
 
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MDGModifier.h>
@@ -293,9 +292,7 @@ MStatus UsdMayaTranslatorMayaReference::connectReferenceAssociatedNode(
 
     result = MS::kFailure;
     if (!srcPlug.isNull() && !destPlug.isNull()) {
-        auto&        undoInfo = MAYAUSD_NS_DEF::UsdUndoManager::instance().getUndoInfo();
-        MDGModifier& dgMod
-            = MAYAUSD_NS_DEF::MDGModifierUndoItem::create("Connect reference node", undoInfo);
+        MDGModifier& dgMod = MAYAUSD_NS_DEF::MDGModifierUndoItem::create("Connect reference node");
         result = dgMod.connect(srcPlug, destPlug);
         CHECK_MSTATUS_AND_RETURN_IT(result);
         result = dgMod.doIt();

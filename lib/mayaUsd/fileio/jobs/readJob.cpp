@@ -22,8 +22,6 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
-#include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -263,9 +261,8 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         std::make_pair(rootPathToRegister.GetString(), mMayaRootDagPath.node()));
 
     if (mArgs.useAsAnimationCache) {
-        auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
-        MDGModifier& dgMod = MDGModifierUndoItem::create("Read job stage node creation", undoInfo);
-        MObject      usdStageNode = dgMod.createNode(UsdMayaStageNode::typeId, &status);
+        MDGModifier dgMod;
+        MObject     usdStageNode = dgMod.createNode(UsdMayaStageNode::typeId, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
         // We only ever create a single stage node per usdImport, so we can
@@ -519,9 +516,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
     }
 
     if (buildInstances) {
-        auto&        undoInfo = UsdUndoManager::instance().getUndoInfo();
-        MDGModifier& deletePrototypeMod
-            = MDGModifierUndoItem::create("Read job delete prototype", undoInfo);
+        MDGModifier deletePrototypeMod;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
         readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
 

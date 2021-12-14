@@ -18,7 +18,6 @@
 #define MAYAUSD_UNDO_OPUNDOINFOMUTING_H
 
 #include <mayaUsd/undo/OpUndoItemList.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -32,12 +31,12 @@ class MAYAUSD_CORE_PUBLIC OpUndoItemMuting
 public:
     //! \brief Constructor extracts all undo info items.
     OpUndoItemMuting()
-        : _preservedUndoInfo(UsdUndoManager::instance()._undoInfo.extract())
+        : _preservedUndoInfo(OpUndoItemList::instance().extract())
     {
     }
 
     //! \brief Destructor restores all preserved undo info items that were extracted.
-    ~OpUndoItemMuting() { UsdUndoManager::instance()._undoInfo = std::move(_preservedUndoInfo); }
+    ~OpUndoItemMuting() { OpUndoItemList::instance() = std::move(_preservedUndoInfo); }
 
 private:
     OpUndoItemList _preservedUndoInfo;

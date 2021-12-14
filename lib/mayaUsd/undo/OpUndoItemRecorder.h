@@ -18,7 +18,6 @@
 #define MAYAUSD_UNDO_OPUNDOINFORECORDER_H
 
 #include <mayaUsd/undo/OpUndoItemList.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -50,7 +49,7 @@ private:
     OpUndoItemRecorder(const OpUndoItemRecorder&) = delete;
     OpUndoItemRecorder operator=(const OpUndoItemRecorder&) = delete;
 
-    bool        _isRecording = false;
+    bool            _isRecording = false;
     OpUndoItemList& _undoInfo;
 };
 

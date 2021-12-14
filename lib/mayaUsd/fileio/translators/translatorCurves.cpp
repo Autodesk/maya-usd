@@ -17,7 +17,6 @@
 
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/undo/OpUndoItems.h>
-#include <mayaUsd/undo/UsdUndoManager.h>
 
 #include <pxr/usd/usdGeom/basisCurves.h>
 #include <pxr/usd/usdGeom/nurbsCurves.h>
@@ -40,8 +39,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /* static */
 bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj, MStatus& status)
 {
-    auto& undoInfo = UsdUndoManager::instance().getUndoInfo();
-
     MFnNurbsCurve curveFn;
     MFnDagNode    dagFn;
     MObject curveObj = dagFn.create("bezierCurve", "bezierShape1", mayaNodeTransformObj, &status);
@@ -57,7 +54,7 @@ bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj,
     MPlug        convOut = convFn.findPlug("outputCurve", false);
     MPlug        nurbsOut = nurbsCurveFn.findPlug("local", false);
     MPlug        bezIn = dagFn.findPlug("create", false);
-    MDGModifier& dgm = MDGModifierUndoItem::create("Nurbs curve connections", undoInfo);
+    MDGModifier& dgm = MDGModifierUndoItem::create("Nurbs curve connections");
     dgm.connect(nurbsOut, convIn);
     dgm.connect(convOut, bezIn);
     dgm.doIt();
@@ -65,7 +62,7 @@ bool convertToBezier(MFnNurbsCurve& nurbsCurveFn, MObject& mayaNodeTransformObj,
     MPlug   bezOut = dagFn.findPlug("local", false);
     MObject val = bezOut.asMObject();
     // Remove the nurbs and converter:
-    MDGModifier& dagm = MDGModifierUndoItem::create("Nurbs curve deletion", undoInfo);
+    MDGModifier& dagm = MDGModifierUndoItem::create("Nurbs curve deletion");
     dagm.deleteNode(convFn.object());
 #if MAYA_API_VERSION >= 20200300
     dagm.deleteNode(nurbsCurveFn.object(), false);

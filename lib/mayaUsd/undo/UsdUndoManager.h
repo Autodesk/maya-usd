@@ -18,7 +18,6 @@
 #define MAYAUSD_UNDO_UNDOMANAGER_H
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/undo/OpUndoItemList.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/sdf/layer.h>
@@ -29,8 +28,6 @@
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
-
-class OpUndoItemMuting;
 
 //! \brief Singleton class to manage layer states.
 /*!
@@ -57,16 +54,10 @@ public:
     // tracks layer states by spawning a new UsdUndoStateDelegate
     void trackLayerStates(const SdfLayerHandle& layer);
 
-    // Retrieve the operation undo info, used to record undo items.
-    // The undo info can later be extracted into a command to implement
-    // its undo and redo. See: OpUndoItemList::extract()
-    OpUndoItemList& getUndoInfo() { return _undoInfo; }
-
 private:
     friend class UsdUndoStateDelegate;
     friend class UsdUndoBlock;
     friend class UsdUndoableItem;
-    friend class OpUndoItemMuting;
 
     UsdUndoManager() = default;
     ~UsdUndoManager() = default;
@@ -76,7 +67,6 @@ private:
 
 private:
     InvertFuncs _invertFuncs;
-    OpUndoItemList  _undoInfo;
 };
 
 } // namespace MAYAUSD_NS_DEF
