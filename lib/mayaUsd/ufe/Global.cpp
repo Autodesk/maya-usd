@@ -43,6 +43,7 @@
 #include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
+#include <mayaUsd/utils/editRouter.h>
 
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchyHandler.h>
@@ -203,6 +204,12 @@ MStatus initialize()
 
     // Register for UFE string to path service using path component separator '/'
     UFE_V2(Ufe::PathString::registerPathComponentSeparator(g_USDRtid, '/');)
+
+    // Initialize edit router registry with default routers.
+    auto defaults = editRouterDefaults();
+    for (const auto& entry : defaults) {
+        registerEditRouter(entry.first, entry.second);
+    }
 
     gExitingCbId = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, exitingCallback);
 

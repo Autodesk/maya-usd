@@ -20,6 +20,7 @@
 #include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
+#include <mayaUsd/utils/editRouter.h>
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/token.h>
@@ -104,8 +105,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
 
     _childLayer = childPrim.GetStage()->GetEditTarget().GetLayer();
-
-    _parentLayer = parentPrim.GetStage()->GetEditTarget().GetLayer();
+    _parentLayer = getEditRouterLayer(PXR_NS::TfToken("parent"), parentPrim);
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand() { }

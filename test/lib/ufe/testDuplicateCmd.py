@@ -26,12 +26,22 @@ from maya import cmds
 from maya import standalone
 from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
+from pxr import Sdf
+
 import mayaUsd.ufe
 
 import ufe
 
 import unittest
 
+def firstSubLayer(context, routingData):
+    prim = context.get('prim')
+    if prim is None:
+        print('Prim not in context')
+        return
+    if len(prim.GetStage().GetRootLayer().subLayerPaths)==0:
+        return 
+    routingData['layer'] = prim.GetStage().GetRootLayer().subLayerPaths[0]
 
 class DuplicateCmdTestCase(unittest.TestCase):
     '''Verify the Maya delete command, for multiple runtimes.
@@ -348,6 +358,46 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         self.assertEqual(correctResult, transVector)
 
+    def testEditRouter(self):
+        '''Test edit router functionality.'''
+
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        # Create the following hierarchy:
+        #
+        # ps
+        #  |_ A
+        #      |_ B
+        #
+        # We A and duplicate it.
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/A', 'Xform')
+        stage.DefinePrim('/A/B', 'Xform')
+
+        psPath = ufe.PathString.path(psPathStr)
+        psPathSegment = psPath.segments[0]
+        aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
+        a = ufe.Hierarchy.createItem(aPath)
+        bPath = aPath + ufe.PathComponent('B')
+        b = ufe.Hierarchy.createItem(bPath)
+
+        # Add a sub-layer, where the parent edit should write to.
+        subLayerId = cmds.mayaUsdLayerEditor(stage.GetRootLayer().identifier, edit=True, addAnonymous="aSubLayer")[0]
+
+        mayaUsd.lib.registerEditRouter('duplicate', firstSubLayer)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(a)
+
+        cmds.duplicate()
+
+        sublayer01 = Sdf.Find(subLayerId)
+        self.assertIsNotNone(sublayer01)
+        self.assertIsNotNone(sublayer01.GetPrimAtPath('/A1/B'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -30,6 +30,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapColorSpace.cpp
         wrapConverter.cpp
         wrapDiagnosticDelegate.cpp
+        wrapEditRouter.cpp
         wrapMeshWriteUtils.cpp
         wrapQuery.cpp
         wrapReadUtil.cpp
