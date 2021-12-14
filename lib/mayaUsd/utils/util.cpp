@@ -1244,12 +1244,16 @@ MPlug UsdMayaUtil::GetConnected(const MPlug& plug)
 void UsdMayaUtil::Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug)
 {
     MDGModifier& dgMod = MDGModifierUndoItem::create("Generic plug connection");
-    Connect(srcPlug,dstPlug, clearDstPlug, dgMod);
+    Connect(srcPlug, dstPlug, clearDstPlug, dgMod);
 }
 
-void UsdMayaUtil::Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug, MDGModifier& dgMod)
+void UsdMayaUtil::Connect(
+    const MPlug& srcPlug,
+    const MPlug& dstPlug,
+    const bool   clearDstPlug,
+    MDGModifier& dgMod)
 {
-    MStatus      status;
+    MStatus status;
 
     if (clearDstPlug) {
         MPlugArray plgCons;
@@ -2038,7 +2042,7 @@ MString UsdMayaUtil::convert(const std::string& str)
     return MString(str.data(), static_cast<int>(str.size()));
 }
 
-std::vector<MDagPath> UsdMayaUtil::getDescendantsStartingWithChildren(const MDagPath& path)
+std::vector<MDagPath> UsdMayaUtil::getDescendants(const MDagPath& path)
 {
     std::vector<MDagPath> descendants;
     {
@@ -2049,9 +2053,13 @@ std::vector<MDagPath> UsdMayaUtil::getDescendantsStartingWithChildren(const MDag
             descendants.emplace_back(curDagPath);
         }
     }
+    return descendants;
+}
 
+std::vector<MDagPath> UsdMayaUtil::getDescendantsStartingWithChildren(const MDagPath& path)
+{
+    std::vector<MDagPath> descendants = getDescendants(path);
     std::reverse(descendants.begin(), descendants.end());
-
     return descendants;
 }
 

@@ -26,7 +26,7 @@ OpUndoItemList::~OpUndoItemList() { clear(); }
 bool OpUndoItemList::undo()
 {
     bool overallSuccess = true;
-    // Note: iterate in reverse order since operations might depends on each other.
+    // Note: iterate in reverse order since operations might depend on each other.
     const auto end = _undoItems.rend();
     for (auto iter = _undoItems.rbegin(); iter != end; ++iter)
         overallSuccess &= (*iter)->undo();
@@ -63,7 +63,7 @@ bool OpUndoItemList::isDeleted(const MObjectHandle obj) const
 void OpUndoItemList::clear()
 {
     // Note: we need to destroy the undo items in reverse order
-    //       since some items might depends on previous ones.
+    //       since some items might depend on previous ones.
     if (_isUndone) {
         const auto end = _undoItems.rend();
         for (auto iter = _undoItems.rbegin(); iter != end; ++iter)

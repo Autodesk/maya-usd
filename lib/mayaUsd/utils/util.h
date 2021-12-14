@@ -383,7 +383,11 @@ MAYAUSD_CORE_PUBLIC
 void Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug);
 
 MAYAUSD_CORE_PUBLIC
-void Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug, MDGModifier& dgMod);
+void Connect(
+    const MPlug& srcPlug,
+    const MPlug& dstPlug,
+    const bool   clearDstPlug,
+    MDGModifier& dgMod);
 
 /// Get a named child plug of \p plug by name.
 MAYAUSD_CORE_PUBLIC
@@ -553,6 +557,10 @@ MString convert(const TfToken& token);
 
 MAYAUSD_CORE_PUBLIC
 std::string convert(const MString&);
+
+/// Retrieve all descendant nodes, including self.
+MAYAUSD_CORE_PUBLIC
+std::vector<MDagPath> getDescendants(const MDagPath& path);
 
 /// Retrieve all descendant nodes, including self, but starting from the most
 /// distant grand-children.
