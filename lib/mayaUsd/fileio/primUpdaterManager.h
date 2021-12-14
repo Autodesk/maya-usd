@@ -69,6 +69,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     static bool readPullInformation(const MDagPath& dagpath, Ufe::Path& ufePath);
 
+    bool hasPulledPrims() const { return _hasPulledPrims; }
+
 private:
     PrimUpdaterManager();
 
@@ -94,6 +96,11 @@ private:
     friend class TfSingleton<PrimUpdaterManager>;
 
     bool _inPushPull { false };
+
+    // Becomes true when there is at least one pulled prim.
+    // The goal is to let code that can be optimized when there is no pull prim
+    // to check rapidly.
+    bool _hasPulledPrims { false };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

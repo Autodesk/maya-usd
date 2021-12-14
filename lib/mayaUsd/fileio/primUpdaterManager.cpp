@@ -791,6 +791,10 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
     if (!isCopy && TF_VERIFY(ufeMayaItem))
         scene.notify(Ufe::ObjectPreDelete(ufeMayaItem));
 
+    // Record all USD modifications in an undo block and item.
+    UsdUndoBlock undoBlock(
+        &UsdUndoableItemUndoItem::create("Merge to Maya USD data modifications"));
+
     // The push is done in two stages:
     // 1) Perform the export into a temporary layer.
     // 2) Traverse the layer and call the prim updater for each prim, for

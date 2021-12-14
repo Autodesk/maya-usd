@@ -47,9 +47,10 @@ void OpUndoItemRecorder::endUndoRecording()
         return;
     _isRecording = false;
 
-    // Extract the undo items from the global comtainer
-    // into the container we we're given.
-    _undoInfo = OpUndoItemList::instance().extract();
+    // Extract the undo items from the global container
+    // into the container we were given.
+    _undoInfo = std::move(OpUndoItemList::instance());
+    OpUndoItemList::instance().clear();
 }
 
 } // namespace MAYAUSD_NS_DEF
