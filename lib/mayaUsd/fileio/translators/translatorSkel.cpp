@@ -999,7 +999,7 @@ bool _CreateRestMesh(
     const MObject& inputMesh,
     const MObject& parent,
     MObject*       restMesh,
-    OpUndoInfo&    undoInfo)
+    OpUndoItemList&    undoInfo)
 {
     MStatus status;
     MFnMesh meshFn(inputMesh, &status);
@@ -1022,7 +1022,7 @@ bool _CreateRestMesh(
 }
 
 /// Clear any incoming connections on \p plug.
-bool _ClearIncomingConnections(MPlug& plug, OpUndoInfo& undoInfo)
+bool _ClearIncomingConnections(MPlug& plug, OpUndoItemList& undoInfo)
 {
     MPlugArray connections;
     if (plug.connectedTo(connections, /*asDst*/ true, /*asSrc*/ false)) {
@@ -1042,7 +1042,7 @@ bool _ClearIncomingConnections(MPlug& plug, OpUndoInfo& undoInfo)
 bool _ConfigureSkinnedObjectTransform(
     const UsdSkelSkinningQuery& skinningQuery,
     const MObject&              transform,
-    OpUndoInfo&                 undoInfo)
+    OpUndoItemList&                 undoInfo)
 {
     MStatus           status;
     MFnDependencyNode transformDep(transform, &status);

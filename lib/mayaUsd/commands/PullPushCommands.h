@@ -20,7 +20,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/mayaUsd.h>
-#include <mayaUsd/undo/OpUndoInfo.h>
+#include <mayaUsd/undo/OpUndoItemList.h>
 
 #include <maya/MFnDagNode.h>
 #include <maya/MPxCommand.h>
@@ -72,7 +72,7 @@ private:
     EditAsMayaCommand();
 
     Ufe::Path  fPath;
-    OpUndoInfo fUndoInfo;
+    OpUndoItemList fUndoInfo;
 };
 
 //------------------------------------------------------------------------------
@@ -118,7 +118,7 @@ private:
 
     MFnDagNode fDagNode;
     Ufe::Path  fPulledPath;
-    OpUndoInfo fUndoInfo;
+    OpUndoItemList fUndoInfo;
 };
 
 //------------------------------------------------------------------------------
@@ -163,7 +163,7 @@ private:
     DiscardEditsCommand();
 
     Ufe::Path  fPath;
-    OpUndoInfo fUndoInfo;
+    OpUndoItemList fUndoInfo;
 };
 
 //------------------------------------------------------------------------------
@@ -209,7 +209,7 @@ private:
 
     Ufe::Path  fSrcPath;
     Ufe::Path  fDstPath;
-    OpUndoInfo fUndoInfo;
+    OpUndoItemList fUndoInfo;
 };
 
 } // namespace ufe

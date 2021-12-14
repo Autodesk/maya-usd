@@ -14,20 +14,20 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/undo/OpUndoInfoRecorder.h>
+#include <mayaUsd/undo/OpUndoItemRecorder.h>
 
 namespace MAYAUSD_NS_DEF {
 
-OpUndoInfoRecorder::OpUndoInfoRecorder(OpUndoInfo& undoInfo)
+OpUndoItemRecorder::OpUndoItemRecorder(OpUndoItemList& undoInfo)
     : _isRecording(false)
     , _undoInfo(undoInfo)
 {
     startUndoRecording();
 }
 
-OpUndoInfoRecorder::~OpUndoInfoRecorder() { endUndoRecording(); }
+OpUndoItemRecorder::~OpUndoItemRecorder() { endUndoRecording(); }
 
-void OpUndoInfoRecorder::startUndoRecording()
+void OpUndoItemRecorder::startUndoRecording()
 {
     // Don't do anything if recording already started.
     if (_isRecording)
@@ -40,7 +40,7 @@ void OpUndoInfoRecorder::startUndoRecording()
     UsdUndoManager::instance().getUndoInfo().clear();
 }
 
-void OpUndoInfoRecorder::endUndoRecording()
+void OpUndoItemRecorder::endUndoRecording()
 {
     // Don't do anything if recording already ended.
     if (!_isRecording)

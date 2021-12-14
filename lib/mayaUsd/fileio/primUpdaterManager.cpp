@@ -25,7 +25,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/undo/OpUndoInfoMuting.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoManager.h>
@@ -1118,7 +1118,7 @@ void PrimUpdaterManager::onProxyContentChanged(
 
                 // TODO UNDO: is it okay to throw away the undo info in the change notification?
                 // What could we do with it anyway?
-                OpUndoInfoMuting muting;
+                OpUndoItemMuting muting;
                 editAsMaya(path);
             }
         }

@@ -17,7 +17,7 @@
 #ifndef MAYAUSD_UNDO_OPUNDOINFOMUTING_H
 #define MAYAUSD_UNDO_OPUNDOINFOMUTING_H
 
-#include <mayaUsd/undo/OpUndoInfo.h>
+#include <mayaUsd/undo/OpUndoItemList.h>
 #include <mayaUsd/undo/UsdUndoManager.h>
 
 namespace MAYAUSD_NS_DEF {
@@ -27,20 +27,20 @@ namespace MAYAUSD_NS_DEF {
 // Useful if code implement their own undo/redo without using the undo info
 // but calls functions that generate undo info items that need to be ignored.
 
-class MAYAUSD_CORE_PUBLIC OpUndoInfoMuting
+class MAYAUSD_CORE_PUBLIC OpUndoItemMuting
 {
 public:
     //! \brief Constructor extracts all undo info items.
-    OpUndoInfoMuting()
+    OpUndoItemMuting()
         : _preservedUndoInfo(UsdUndoManager::instance()._undoInfo.extract())
     {
     }
 
     //! \brief Destructor restores all preserved undo info items that were extracted.
-    ~OpUndoInfoMuting() { UsdUndoManager::instance()._undoInfo = std::move(_preservedUndoInfo); }
+    ~OpUndoItemMuting() { UsdUndoManager::instance()._undoInfo = std::move(_preservedUndoInfo); }
 
 private:
-    OpUndoInfo _preservedUndoInfo;
+    OpUndoItemList _preservedUndoInfo;
 };
 
 } // namespace MAYAUSD_NS_DEF

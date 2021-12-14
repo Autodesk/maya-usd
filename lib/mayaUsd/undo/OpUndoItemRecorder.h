@@ -17,24 +17,24 @@
 #ifndef MAYAUSD_UNDO_OPUNDOINFORECORDER_H
 #define MAYAUSD_UNDO_OPUNDOINFORECORDER_H
 
-#include <mayaUsd/undo/OpUndoInfo.h>
+#include <mayaUsd/undo/OpUndoItemList.h>
 #include <mayaUsd/undo/UsdUndoManager.h>
 
 namespace MAYAUSD_NS_DEF {
 
 //! \brief Record and extract undo item in the scope where it is declared.
 //
-// Useful if code implement their undo/redo using the OpUndoInfo and need
+// Useful if code implement their undo/redo using the OpUndoItemList and need
 // to relieably extract the undo items from the UsdUndoManager.
 
-class MAYAUSD_CORE_PUBLIC OpUndoInfoRecorder
+class MAYAUSD_CORE_PUBLIC OpUndoItemRecorder
 {
 public:
     //! \brief Starts recording undo info in the given container.
-    OpUndoInfoRecorder(OpUndoInfo& undoInfo);
+    OpUndoItemRecorder(OpUndoItemList& undoInfo);
 
     //! \brief Ends recording undo info.
-    ~OpUndoInfoRecorder();
+    ~OpUndoItemRecorder();
 
     //! \brief Starts recording undo info in the given container.
     //
@@ -47,11 +47,11 @@ public:
     void endUndoRecording();
 
 private:
-    OpUndoInfoRecorder(const OpUndoInfoRecorder&) = delete;
-    OpUndoInfoRecorder operator=(const OpUndoInfoRecorder&) = delete;
+    OpUndoItemRecorder(const OpUndoItemRecorder&) = delete;
+    OpUndoItemRecorder operator=(const OpUndoItemRecorder&) = delete;
 
     bool        _isRecording = false;
-    OpUndoInfo& _undoInfo;
+    OpUndoItemList& _undoInfo;
 };
 
 } // namespace MAYAUSD_NS_DEF

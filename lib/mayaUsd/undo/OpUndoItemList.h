@@ -66,38 +66,38 @@ public:
 
 private:
     // Name the undo items to help debugging, tracing and logging.
-    std::string _name;
+    const std::string _name;
 };
 
 //------------------------------------------------------------------------------
-// OpUndoInfo
+// OpUndoItemList
 //------------------------------------------------------------------------------
 
-/// \class OpUndoInfo
+/// \class OpUndoItemList
 /// \brief Record everything needed to undo or redo a complete operation or command.
 
-class OpUndoInfo
+class OpUndoItemList
 {
 public:
     /// \brief construct an undo info.
     MAYAUSD_CORE_PUBLIC
-    OpUndoInfo() = default;
+    OpUndoItemList() = default;
 
     MAYAUSD_CORE_PUBLIC
-    OpUndoInfo(OpUndoInfo&&) = default;
+    OpUndoItemList(OpUndoItemList&&) = default;
 
     MAYAUSD_CORE_PUBLIC
-    OpUndoInfo& operator=(OpUndoInfo&&) = default;
+    OpUndoItemList& operator=(OpUndoItemList&&) = default;
 
     /// \brief destroy the undo info.
     MAYAUSD_CORE_PUBLIC
-    ~OpUndoInfo();
+    ~OpUndoItemList();
 
-    /// \brief undo a complete PrimUpdaterManager operation.
+    /// \brief undo a complete operation.
     MAYAUSD_CORE_PUBLIC
     bool undo();
 
-    /// \brief redo a complete PrimUpdaterManager operation.
+    /// \brief redo a complete operation.
     MAYAUSD_CORE_PUBLIC
     bool redo();
 
@@ -119,11 +119,11 @@ public:
 
     /// \brief extract all undo/redo information contained here and clear.
     MAYAUSD_CORE_PUBLIC
-    OpUndoInfo extract();
+    OpUndoItemList extract();
 
 private:
-    OpUndoInfo(const OpUndoInfo&) = delete;
-    OpUndoInfo& operator=(const OpUndoInfo&) = delete;
+    OpUndoItemList(const OpUndoItemList&) = delete;
+    OpUndoItemList& operator=(const OpUndoItemList&) = delete;
 
     struct MObjectHandleHash
     {
@@ -138,11 +138,5 @@ private:
 };
 
 } // namespace MAYAUSD_NS_DEF
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-using OpUndoInfo = MAYAUSD_NS_DEF::OpUndoInfo;
-
-PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

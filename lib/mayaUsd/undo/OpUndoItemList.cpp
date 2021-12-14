@@ -13,17 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "OpUndoInfo.h"
+#include "OpUndoItemList.h"
 
 namespace MAYAUSD_NS_DEF {
 
 //------------------------------------------------------------------------------
-// OpUndoInfo
+// OpUndoItemList
 //------------------------------------------------------------------------------
 
-OpUndoInfo::~OpUndoInfo() { clear(); }
+OpUndoItemList::~OpUndoItemList() { clear(); }
 
-bool OpUndoInfo::undo()
+bool OpUndoItemList::undo()
 {
     bool overallSuccess = true;
     // Note: iterate in reverse order since operations might depends on each other.
@@ -36,7 +36,7 @@ bool OpUndoInfo::undo()
     return overallSuccess;
 }
 
-bool OpUndoInfo::redo()
+bool OpUndoItemList::redo()
 {
     bool overallSuccess = true;
     for (auto& item : _undoItems)
@@ -47,20 +47,20 @@ bool OpUndoInfo::redo()
     return overallSuccess;
 }
 
-void OpUndoInfo::addItem(OpUndoItem::Ptr&& item)
+void OpUndoItemList::addItem(OpUndoItem::Ptr&& item)
 {
     // Note: OpUndoItem::Ptr are unique_ptr, so we need to take ownership of them.
     _undoItems.emplace_back(std::move(item));
 }
 
-void OpUndoInfo::addDeleted(const MObjectHandle obj) { _deletedMayaObjects.insert(obj); }
+void OpUndoItemList::addDeleted(const MObjectHandle obj) { _deletedMayaObjects.insert(obj); }
 
-bool OpUndoInfo::isDeleted(const MObjectHandle obj) const
+bool OpUndoItemList::isDeleted(const MObjectHandle obj) const
 {
     return _deletedMayaObjects.count(obj) > 0;
 }
 
-void OpUndoInfo::clear()
+void OpUndoItemList::clear()
 {
     // Note: we need to destroy the undo items in reverse order
     //       since some items might depends on previous ones.
@@ -79,9 +79,9 @@ void OpUndoInfo::clear()
     _isUndone = false;
 }
 
-OpUndoInfo OpUndoInfo::extract()
+OpUndoItemList OpUndoItemList::extract()
 {
-    OpUndoInfo extracted;
+    OpUndoItemList extracted;
     for (auto&& item : _undoItems)
         extracted._undoItems.emplace_back(std::move(item));
 

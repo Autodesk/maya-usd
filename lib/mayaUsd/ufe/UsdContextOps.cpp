@@ -19,7 +19,7 @@
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/fileio/primUpdaterManager.h>
-#include <mayaUsd/ufe/PullPushCommands.h>
+#include <mayaUsd/commands/PullPushCommands.h>
 #endif
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
