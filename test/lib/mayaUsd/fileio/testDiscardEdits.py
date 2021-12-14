@@ -122,7 +122,9 @@ class MergeToUsdTestCase(unittest.TestCase):
         def verifyScenesModifications():
             self.assertEqual(aFn.translation(om.MSpace.kObject), mayaXlation)
             mayaToUsd = ufe.PathMappingHandler.pathMappingHandler(aMayaItem)
-            self.assertEqual(mayaToUsd.fromHost(aMayaPath), aUsdUfePath)
+            self.assertEqual(
+                ufe.PathString.string(mayaToUsd.fromHost(aMayaPath)),
+                ufe.PathString.string(aUsdUfePath))
 
         verifyScenesModifications()
 
