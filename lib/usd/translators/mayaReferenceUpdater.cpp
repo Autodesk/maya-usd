@@ -45,7 +45,11 @@ PXRUSDMAYA_REGISTER_UPDATER(
     reference,
     PxrUsdTranslators_MayaReferenceUpdater,
     (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear
-     | UsdMayaPrimUpdater::Supports::AutoPull));
+     // Disable AutoPull pending more granular support for it: MayaReference
+     // prims with no file path should not be auto-pulled.  Must add a virtual
+     // method to the prim updater to encapsulate this.  PPT, 13-Dec-2021.
+     // | UsdMayaPrimUpdater::Supports::AutoPull));
+     ));
 PXRUSDMAYA_REGISTER_UPDATER(
     MayaUsd_SchemasALMayaReference,
     reference,
@@ -64,7 +68,7 @@ PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
 bool PxrUsdTranslators_MayaReferenceUpdater::canEditAsMaya() const { return true; }
 
 /* virtual */
-bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
+UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
     UsdStageRefPtr srcStage,
     SdfLayerRefPtr srcLayer,
     const SdfPath& srcSdfPath,
@@ -95,14 +99,25 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
             SdfLayerHandle payloadLayer
                 = arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer;
             SdfPath payloadPrimPath = arc.GetTargetNode().GetPath();
-            success = MayaUsdUtils::mergePrims(
-                srcStage, srcLayer, srcSdfPath, dstStage, payloadLayer, payloadPrimPath);
+            // The Maya reference is meant as a cache, and therefore fully
+            // overwritten, so we don't call MayaUsdUtils::mergePrims().
+            success = SdfCopySpec(srcLayer, srcSdfPath, payloadLayer, payloadPrimPath);
+
+            // As of 13-Dec-2021 pushEnd() will not be called on the
+            // MayaReferenceUpdater, because the prim updater type information
+            // is not correctly preserved.  Unload the reference here.  PPT.
+            if (success) {
+                const MObject& parentNode = getMayaObject();
+                UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
+            }
 
             break;
         }
     }
 
-    return success;
+    // If we successfully found the payload arc, no further traversal should
+    // take place.
+    return success ? PushCopySpecs::Prune : PushCopySpecs::Failed;
 }
 
 /* virtual */
@@ -112,6 +127,13 @@ bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits(const UsdMayaPrimUpdat
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
 
     return UsdMayaPrimUpdater::discardEdits(context);
+}
+
+/* virtual */
+bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd(const UsdMayaPrimUpdaterContext& context)
+{
+    const MObject& parentNode = getMayaObject();
+    return UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode) == MS::kSuccess;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

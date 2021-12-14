@@ -12,7 +12,6 @@ MAYA_USD_VERSION=${USD_VERSION}
 icons: lib/icons
 plug-ins: 
 presets: 
-scripts: 
 resources: 
 PYTHONPATH+:=lib/python
 ${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd

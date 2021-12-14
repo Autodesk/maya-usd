@@ -128,6 +128,12 @@ SdfPath ufeToSdfPath(const Ufe::Path& usdPath)
     return SdfPath(segments[1].string());
 }
 
+SdfPath makeDstPath(const SdfPath& dstRootParentPath, const SdfPath& srcPath)
+{
+    auto relativeSrcPath = srcPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
+    return dstRootParentPath.AppendPath(relativeSrcPath);
+}
+
 //------------------------------------------------------------------------------
 //
 void select(const MDagPath& dagPath)
@@ -486,25 +492,39 @@ SdfPath getDstSdfPath(const Ufe::Path& ufePulledPath, const SdfPath& srcSdfPath,
 //------------------------------------------------------------------------------
 //
 UsdMayaPrimUpdaterSharedPtr createUpdater(
+    const Ufe::Path&                 ufePulledPath,
     const SdfLayerRefPtr&            srcLayer,
-    const SdfPath&                   primSpecPath,
+    const SdfPath&                   srcPath,
+    const SdfLayerRefPtr&            dstLayer,
+    const SdfPath&                   dstPath,
     const UsdMayaPrimUpdaterContext& context)
 {
-    // Get the primSpec from the src layer.
-    auto primSpec = srcLayer->GetPrimAtPath(primSpecPath);
+    // The root of the pulled hierarchy is crucial for determining push
+    // behavior.  When pulling, we may have created a Maya pull hierarchy root
+    // node whose type does not map to the same prim updater as the original
+    // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
+    // node type (e.g. transform, which is the fallback Maya node type for many
+    // USD prim types).  Therefore, if we're at the root of the src hierarchy,
+    // use the prim at the pulled path to create the prim updater.
+    const bool usePulledPrim = (srcPath.GetPathElementCount() == 1);
+
+    auto primSpec = srcLayer->GetPrimAtPath(srcPath);
     if (!TF_VERIFY(primSpec)) {
         return nullptr;
     }
 
-    TfToken typeName = primSpec->GetTypeName();
-    auto    regItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
-    auto    factory = std::get<UpdaterFactoryFn>(regItem);
+    TfToken typeName = usePulledPrim ? MayaUsd::ufe::ufePathToPrim(ufePulledPath).GetTypeName()
+                                     : primSpec->GetTypeName();
+    auto regItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
+    auto factory = std::get<UpdaterFactoryFn>(regItem);
 
-    // Create the UFE path corresponding to the primSpecPath, as required
-    // by the prim updater factory.
+    // We cannot use the srcPath to create the UFE path, as this path is in the
+    // in-memory stage in the temporary srcLayer and does not exist in UFE.
+    // Use the dstPath instead, which can be validly added to the proxy shape
+    // path to form a proper UFE path.
     auto                psPath = MayaUsd::ufe::stagePath(context.GetUsdStage());
     Ufe::Path::Segments segments { psPath.getSegments()[0],
-                                   MayaUsd::ufe::usdPathToUfePathSegment(primSpecPath) };
+                                   MayaUsd::ufe::usdPathToUfePathSegment(dstPath) };
     Ufe::Path           ufePath(std::move(segments));
 
     // Get the Maya object corresponding to the SdfPath.  As of 19-Oct-2021,
@@ -512,7 +532,7 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     // correspondence, so prims that correspond to Maya DG nodes (e.g. material
     // networks) don't have a corresponding Dag path.  The prim updater
     // receives a null MObject in this case.
-    auto              mayaDagPath = context.MapSdfPathToDagPath(primSpecPath);
+    auto              mayaDagPath = context.MapSdfPathToDagPath(srcPath);
     MFnDependencyNode depNodeFn(mayaDagPath.isValid() ? mayaDagPath.node() : MObject());
 
     return factory(depNodeFn, ufePath);
@@ -545,7 +565,8 @@ bool pushCustomize(
     // Traverse the layer, creating a prim updater for each primSpec
     // along the way, and call PushCopySpec on the prim.
     auto pushCopySpecsFn
-        = [&context, srcStage, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
+        = [&context, &ufePulledPath, srcStage, srcLayer, dstLayer, dstRootParentPath](
+              const SdfPath& srcPath) {
               // We can be called with a primSpec path that is not a prim path
               // (e.g. a property path like "/A.xformOp:translate").  This is not an
               // error, just prune the traversal.  FIXME Is this still true?  We
@@ -554,7 +575,9 @@ bool pushCustomize(
                   return false;
               }
 
-              auto updater = createUpdater(srcLayer, srcPath, context);
+              auto dstPath = makeDstPath(dstRootParentPath, srcPath);
+              auto updater
+                  = createUpdater(ufePulledPath, srcLayer, srcPath, dstLayer, dstPath, context);
               // If we cannot find an updater for the srcPath, prune the traversal.
               if (!updater) {
                   TF_WARN(
@@ -563,17 +586,16 @@ bool pushCustomize(
                       srcPath.GetText());
                   return false;
               }
-              auto relativeSrcPath = srcPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
-              auto dstPath = dstRootParentPath.AppendPath(relativeSrcPath);
 
               // Report PushCopySpecs() failure.
-              if (!updater->pushCopySpecs(
-                      srcStage, srcLayer, srcPath, context.GetUsdStage(), dstLayer, dstPath)) {
+              auto result = updater->pushCopySpecs(
+                  srcStage, srcLayer, srcPath, context.GetUsdStage(), dstLayer, dstPath);
+              if (result == UsdMayaPrimUpdater::PushCopySpecs::Failed) {
                   throw MayaUsd::TraversalFailure(std::string("PushCopySpecs() failed."), srcPath);
               }
 
-              // Continue normal traversal without pruning.
-              return true;
+              // If we don't continue, we prune.
+              return result == UsdMayaPrimUpdater::PushCopySpecs::Continue;
           };
 
     if (!MayaUsd::traverseLayer(srcLayer, srcRootPath, pushCopySpecsFn)) {
@@ -590,26 +612,28 @@ bool pushCustomize(
 
     // SdfLayer::TraversalFn does not return a status, so must report
     // failure through an exception.
-    auto pushEndFn = [&context, srcLayer](const SdfPath& primSpecPath) {
+    auto pushEndFn = [&context, &ufePulledPath, srcLayer, dstLayer, dstRootParentPath](
+                         const SdfPath& srcPath) {
         // We can be called with a primSpec path that is not a prim path
         // (e.g. a property path like "/A.xformOp:translate").  This is not an
         // error, just a no-op.
-        if (!primSpecPath.IsPrimPath()) {
+        if (!srcPath.IsPrimPath()) {
             return;
         }
 
-        auto updater = createUpdater(srcLayer, primSpecPath, context);
+        auto dstPath = makeDstPath(dstRootParentPath, srcPath);
+        auto updater = createUpdater(ufePulledPath, srcLayer, srcPath, dstLayer, dstPath, context);
         if (!updater) {
             TF_WARN(
                 "Could not create a prim updater for path %s during PushEnd() traversal, pruning "
                 "at that point.",
-                primSpecPath.GetText());
+                srcPath.GetText());
             return;
         }
 
         // Report pushEnd() failure.
         if (!updater->pushEnd(context)) {
-            throw MayaUsd::TraversalFailure(std::string("PushEnd() failed."), primSpecPath);
+            throw MayaUsd::TraversalFailure(std::string("PushEnd() failed."), srcPath);
         }
     };
 

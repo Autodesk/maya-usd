@@ -93,7 +93,7 @@ bool UsdMayaPrimUpdater::pushEnd(const UsdMayaPrimUpdaterContext& context)
     return discardEdits(context);
 }
 
-bool UsdMayaPrimUpdater::pushCopySpecs(
+UsdMayaPrimUpdater::PushCopySpecs UsdMayaPrimUpdater::pushCopySpecs(
     UsdStageRefPtr srcStage,
     SdfLayerRefPtr srcLayer,
     const SdfPath& srcSdfPath,
@@ -101,7 +101,9 @@ bool UsdMayaPrimUpdater::pushCopySpecs(
     SdfLayerRefPtr dstLayer,
     const SdfPath& dstSdfPath)
 {
-    return MayaUsdUtils::mergePrims(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
+    return MayaUsdUtils::mergePrims(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath)
+        ? PushCopySpecs::Continue
+        : PushCopySpecs::Failed;
 }
 
 const MObject& UsdMayaPrimUpdater::getMayaObject() const { return _mayaObject; }
