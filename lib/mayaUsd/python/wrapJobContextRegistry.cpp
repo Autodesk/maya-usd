@@ -76,8 +76,8 @@ public:
 private:
     static VtDictionary callEnablerFn(boost::python::object fnc)
     {
-        auto res = std::function<boost::python::object()>(TfPyCall<boost::python::object>(fnc))();
-        return boost::python::extract<VtDictionary>(res);
+        auto res = TfPyCall<VtDictionary>(fnc)();
+        return res;
     }
 };
 
