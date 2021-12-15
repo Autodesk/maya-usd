@@ -25,7 +25,9 @@ namespace MAYAUSD_NS_DEF {
 //
 // Useful if code implement their undo/redo using the OpUndoItemList and need
 // to relieably extract the undo items from the UsdUndoManager.
-
+//
+// It will transfer to the target OpUndoInfo all items generated while it
+// exists. Meant to be used on the stack.
 class MAYAUSD_CORE_PUBLIC OpUndoItemRecorder
 {
 public:
