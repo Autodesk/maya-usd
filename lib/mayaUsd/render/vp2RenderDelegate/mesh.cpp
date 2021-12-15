@@ -1153,11 +1153,11 @@ void HdVP2Mesh::Sync(
 HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const
 {
     constexpr HdDirtyBits bits = HdChangeTracker::InitRepr | HdChangeTracker::DirtyPoints
-        | HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyTransform
-        | HdChangeTracker::DirtyMaterialId | HdChangeTracker::DirtyPrimvar
-        | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyInstancer
-        | HdChangeTracker::DirtyInstanceIndex | HdChangeTracker::DirtyRenderTag
-        | DirtySelectionHighlight;
+        | HdChangeTracker::DirtyNormals | HdChangeTracker::DirtyTopology
+        | HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyMaterialId
+        | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyVisibility
+        | HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyRenderTag | DirtySelectionHighlight;
 
     return bits;
 }
