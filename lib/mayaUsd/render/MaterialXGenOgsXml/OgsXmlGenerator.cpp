@@ -4,6 +4,7 @@
 //
 
 #include "OgsXmlGenerator.h"
+
 #include "PugiXML/pugixml.hpp"
 
 #include <mayaUsd/render/MaterialXGenOgsXml/GlslFragmentGenerator.h>

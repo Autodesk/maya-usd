@@ -27,8 +27,8 @@
 #endif
 
 #ifndef PUGIXML_NO_XPATH
-#include <math.h>
 #include <float.h>
+#include <math.h>
 #endif
 
 #ifndef PUGIXML_NO_STL

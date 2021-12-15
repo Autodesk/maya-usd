@@ -6,23 +6,27 @@
 #ifndef MATERIALX_SURFACENODEMAYA_H
 #define MATERIALX_SURFACENODEMAYA_H
 
-#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
+#include <MaterialXGenGlsl/Nodes/SurfaceNodeGlsl.h>
 
 MATERIALX_NAMESPACE_BEGIN
-
 
 /// Surface node implementation for GLSL
 class SurfaceNodeMaya : public SurfaceNodeGlsl
 {
-  public:
+public:
     SurfaceNodeMaya();
 
     static ShaderNodeImplPtr create();
 
-    void createVariables(const ShaderNode& node, GenContext& context, Shader& shader) const override;
+    void
+    createVariables(const ShaderNode& node, GenContext& context, Shader& shader) const override;
 
-    void emitLightLoop(const ShaderNode& node, GenContext& context, ShaderStage& stage, const string& outColor) const override;
+    void emitLightLoop(
+        const ShaderNode& node,
+        GenContext&       context,
+        ShaderStage&      stage,
+        const string&     outColor) const override;
 };
 
 MATERIALX_NAMESPACE_END
