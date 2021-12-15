@@ -25,7 +25,11 @@ namespace MAYAUSD_NS_DEF {
 //
 // Useful if code implement their own undo/redo without using the undo info
 // but calls functions that generate undo info items that need to be ignored.
-
+//
+// Since all OpUndoItem are added to the UsdUndoManager singleton, for code
+// that don't want to be undoable, we need a way to clear the genarated undo
+// items. That is what the OpUndoInfoMuting class does: it will clear all undo
+// items generated while a muting instance is created.
 class MAYAUSD_CORE_PUBLIC OpUndoItemMuting
 {
 public:
