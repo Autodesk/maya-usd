@@ -33,6 +33,6 @@ OpUndoItemRecorder::~OpUndoItemRecorder()
     // into the container we were given.
     _undoInfo = std::move(OpUndoItemList::instance());
     OpUndoItemList::instance().clear();
- }
+}
 
 } // namespace MAYAUSD_NS_DEF
