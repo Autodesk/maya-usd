@@ -186,6 +186,9 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
             "%s.outColor" % file_node, "%s.diffuseColor" % shading_node, force=True
         )
 
+        # This file node should have stayed "sRGB":
+        self.assertEqual(cmds.getAttr(file_node + ".colorSpace"), "sRGB")
+
         cmds.defaultNavigation(
             createNew=True, destination="%s.roughness" % shading_node
         )
@@ -200,6 +203,9 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         cmds.connectAttr(
             "%s.outColorR" % file_node, "%s.roughness" % shading_node, force=True
         )
+
+        # The monochrome file node should have been set to "Raw" automatically:
+        self.assertEqual(cmds.getAttr(file_node + ".colorSpace"), "Raw")
 
         cmds.defaultNavigation(
             createNew=True, destination="%s.clearcoatRoughness" % shading_node
@@ -222,6 +228,17 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         cmds.connectAttr(
             "%s.outColor" % file_node, "%s.normal" % shading_node, force=True
         )
+
+        # The file node should have been set to "NormalMap" automatically:
+        self.assertEqual(cmds.getAttr(file_node + ".colorSpace"), "Raw")
+        self.assertEqual(cmds.getAttr(file_node + ".colorGainR"), 2)
+        self.assertEqual(cmds.getAttr(file_node + ".colorGainG"), 2)
+        self.assertEqual(cmds.getAttr(file_node + ".colorGainB"), 2)
+        self.assertEqual(cmds.getAttr(file_node + ".colorOffsetR"), -1)
+        self.assertEqual(cmds.getAttr(file_node + ".colorOffsetG"), -1)
+        self.assertEqual(cmds.getAttr(file_node + ".colorOffsetB"), -1)
+        self.assertEqual(cmds.getAttr(file_node + ".alphaGain"), 1)
+        self.assertEqual(cmds.getAttr(file_node + ".alphaOffset"), 0)
 
         shading_engine = "%sSG" % shading_node
         cmds.sets(
