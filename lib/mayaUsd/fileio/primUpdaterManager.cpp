@@ -30,6 +30,7 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
 
@@ -160,8 +161,12 @@ bool writePullInformation(
         fnPullSet.addMember(path);
     }
 
-    // Store metadata on the prim.
-    VtValue value(path.fullPathName().asChar());
+    // Store metadata on the prim in the Session Layer.
+    auto stage = pulledPrim.GetStage();
+    if (!stage)
+        return false;
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    VtValue        value(path.fullPathName().asChar());
     pulledPrim.SetCustomDataByKey(kPullPrimMetadataKey, value);
 
     // Store medata on DG node
@@ -191,6 +196,10 @@ bool writePullInformation(
 void removePullInformation(const Ufe::Path& ufePulledPath)
 {
     UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    auto    stage = prim.GetStage();
+    if (!stage)
+        return;
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
     prim.ClearCustomDataByKey(kPullPrimMetadataKey);
 }
 
