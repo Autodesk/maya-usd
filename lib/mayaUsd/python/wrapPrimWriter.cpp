@@ -57,7 +57,7 @@ public:
         return *((std::shared_ptr<This>*)createdWrapper);
     }
 
-    virtual ~PrimWriterWrapper() { }
+    virtual ~PrimWriterWrapper() = default;
 
     const UsdStage& GetUsdStage() const { return *get_pointer(base_t::GetUsdStage()); }
 
