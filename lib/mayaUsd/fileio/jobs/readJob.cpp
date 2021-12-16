@@ -576,7 +576,7 @@ bool UsdMaya_ReadJob::Redo()
 bool UsdMaya_ReadJob::Undo()
 {
     // Do not use the global undo info recording system.
-    // The read job Undo() / redo() functions will handling all operations.
+    // The read job Undo() / redo() functions will handle all operations.
     OpUndoItemMuting undoMuting;
 
     // NOTE: (yliangsiew) All chasers need to have their Undo run as well.

@@ -102,11 +102,7 @@ MStatus parseUfePathArg(const MArgParser& argParser, int index, Ufe::Path& outpu
     if (MS::kSuccess != status)
         return status;
 
-    status = parseArgAsUfePath(text, outputPath);
-    if (MS::kSuccess != status)
-        return status;
-
-    return MS::kSuccess;
+    return parseArgAsUfePath(text, outputPath);
 }
 
 MStatus parseDagPathArg(const MArgParser& argParser, int index, MDagPath& outputDagPath)
@@ -125,6 +121,19 @@ MStatus parseDagPathArg(const MArgParser& argParser, int index, MDagPath& output
 }
 
 } // namespace
+
+//------------------------------------------------------------------------------
+// PullPushBaseCommand
+//------------------------------------------------------------------------------
+
+// MPxCommand API to specify the command is undoable.
+bool PullPushBaseCommand::isUndoable() const { return true; }
+
+// MPxCommand API to redo the command.
+MStatus PullPushBaseCommand::redoIt() { return fUndoItemList.redo() ? MS::kSuccess : MS::kFailure; }
+
+// MPxCommand API to undo the command.
+MStatus PullPushBaseCommand::undoIt() { return fUndoItemList.undo() ? MS::kSuccess : MS::kFailure; }
 
 //------------------------------------------------------------------------------
 // EditAsMayaCommand
@@ -146,9 +155,6 @@ void* EditAsMayaCommand::creator()
 // MPxCommand API to register the command syntax.
 MSyntax EditAsMayaCommand::createSyntax() { return createSyntaxWithUfeArgs(1); }
 
-// MPxCommand API to specify the command is undoable.
-bool EditAsMayaCommand::isUndoable() const { return true; }
-
 // MPxCommand API to execute the command.
 MStatus EditAsMayaCommand::doIt(const MArgList& argList)
 {
@@ -168,7 +174,7 @@ MStatus EditAsMayaCommand::doIt(const MArgList& argList)
     if (!isPrimPath(fPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoItemRecorder undoRecorder(fUndoInfo);
+    OpUndoItemRecorder undoRecorder(fUndoItemList);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
     if (!manager.editAsMaya(fPath))
@@ -176,12 +182,6 @@ MStatus EditAsMayaCommand::doIt(const MArgList& argList)
 
     return MS::kSuccess;
 }
-
-// MPxCommand API to redo the command.
-MStatus EditAsMayaCommand::redoIt() { return fUndoInfo.redo() ? MS::kSuccess : MS::kFailure; }
-
-// MPxCommand API to undo the command.
-MStatus EditAsMayaCommand::undoIt() { return fUndoInfo.undo() ? MS::kSuccess : MS::kFailure; }
 
 //------------------------------------------------------------------------------
 // MergeToUsdCommand
@@ -202,9 +202,6 @@ void* MergeToUsdCommand::creator()
 
 // MPxCommand API to register the command syntax.
 MSyntax MergeToUsdCommand::createSyntax() { return createSyntaxWithUfeArgs(1); }
-
-// MPxCommand API to specify the command is undoable.
-bool MergeToUsdCommand::isUndoable() const { return true; }
 
 // MPxCommand API to execute the command.
 MStatus MergeToUsdCommand::doIt(const MArgList& argList)
@@ -233,7 +230,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPulledPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoItemRecorder undoRecorder(fUndoInfo);
+    OpUndoItemRecorder undoRecorder(fUndoItemList);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
     if (!manager.mergeToUsd(fDagNode, fPulledPath))
@@ -241,12 +238,6 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
 
     return MS::kSuccess;
 }
-
-// MPxCommand API to redo the command.
-MStatus MergeToUsdCommand::redoIt() { return fUndoInfo.redo() ? MS::kSuccess : MS::kFailure; }
-
-// MPxCommand API to undo the command.
-MStatus MergeToUsdCommand::undoIt() { return fUndoInfo.undo() ? MS::kSuccess : MS::kFailure; }
 
 //------------------------------------------------------------------------------
 // DiscardEditsCommand
@@ -267,9 +258,6 @@ void* DiscardEditsCommand::creator()
 
 // MPxCommand API to register the command syntax.
 MSyntax DiscardEditsCommand::createSyntax() { return createSyntaxWithUfeArgs(1); }
-
-// MPxCommand API to specify the command is undoable.
-bool DiscardEditsCommand::isUndoable() const { return true; }
 
 // MPxCommand API to execute the command.
 MStatus DiscardEditsCommand::doIt(const MArgList& argList)
@@ -292,7 +280,7 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoItemRecorder undoRecorder(fUndoInfo);
+    OpUndoItemRecorder undoRecorder(fUndoItemList);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
     if (!manager.discardEdits(fPath))
@@ -300,12 +288,6 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
 
     return MS::kSuccess;
 }
-
-// MPxCommand API to redo the command.
-MStatus DiscardEditsCommand::redoIt() { return fUndoInfo.redo() ? MS::kSuccess : MS::kFailure; }
-
-// MPxCommand API to undo the command.
-MStatus DiscardEditsCommand::undoIt() { return fUndoInfo.undo() ? MS::kSuccess : MS::kFailure; }
 
 //------------------------------------------------------------------------------
 // DuplicateCommand
@@ -327,9 +309,6 @@ void* DuplicateCommand::creator()
 // MPxCommand API to register the command syntax.
 MSyntax DuplicateCommand::createSyntax() { return createSyntaxWithUfeArgs(2); }
 
-// MPxCommand API to specify the command is undoable.
-bool DuplicateCommand::isUndoable() const { return true; }
-
 // MPxCommand API to execute the command.
 MStatus DuplicateCommand::doIt(const MArgList& argList)
 {
@@ -350,7 +329,7 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    OpUndoItemRecorder undoRecorder(fUndoInfo);
+    OpUndoItemRecorder undoRecorder(fUndoItemList);
 
     auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
     if (!manager.duplicate(fSrcPath, fDstPath))
@@ -358,12 +337,6 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
 
     return MS::kSuccess;
 }
-
-// MPxCommand API to redo the command.
-MStatus DuplicateCommand::redoIt() { return fUndoInfo.redo() ? MS::kSuccess : MS::kFailure; }
-
-// MPxCommand API to undo the command.
-MStatus DuplicateCommand::undoIt() { return fUndoInfo.undo() ? MS::kSuccess : MS::kFailure; }
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

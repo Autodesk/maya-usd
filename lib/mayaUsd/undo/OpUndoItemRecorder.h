@@ -24,9 +24,9 @@ namespace MAYAUSD_NS_DEF {
 //! \brief Record and extract undo item in the scope where it is declared.
 //
 // Useful if code implement their undo/redo using the OpUndoItemList and need
-// to relieably extract the undo items from the UsdUndoManager.
+// to reliably extract the undo items from the UsdUndoManager.
 //
-// It will transfer to the target OpUndoInfo all items generated while it
+// It will transfer to the target OpUndoItemList all items generated while it
 // exists. Meant to be used on the stack.
 class MAYAUSD_CORE_PUBLIC OpUndoItemRecorder
 {
@@ -37,21 +37,10 @@ public:
     //! \brief Ends recording undo info.
     ~OpUndoItemRecorder();
 
-    //! \brief Starts recording undo info in the given container.
-    //
-    // Discard any previously recorded info.
-    void startUndoRecording();
-
-    //! \brief Ends recording undo info immediately.
-    //
-    // No further undo info will be extracted.
-    void endUndoRecording();
-
 private:
     OpUndoItemRecorder(const OpUndoItemRecorder&) = delete;
     OpUndoItemRecorder operator=(const OpUndoItemRecorder&) = delete;
 
-    bool            _isRecording = false;
     OpUndoItemList& _undoInfo;
 };
 

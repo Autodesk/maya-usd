@@ -19,38 +19,20 @@
 namespace MAYAUSD_NS_DEF {
 
 OpUndoItemRecorder::OpUndoItemRecorder(OpUndoItemList& undoInfo)
-    : _isRecording(false)
-    , _undoInfo(undoInfo)
+    : _undoInfo(undoInfo)
 {
-    startUndoRecording();
-}
-
-OpUndoItemRecorder::~OpUndoItemRecorder() { endUndoRecording(); }
-
-void OpUndoItemRecorder::startUndoRecording()
-{
-    // Don't do anything if recording already started.
-    if (_isRecording)
-        return;
-    _isRecording = true;
-
-    // Clear any previously-generated undo items, both the undo info container
+    // Clear anys item that may have been left behind in the given list.
     // and in the global container.
     _undoInfo.clear();
     OpUndoItemList::instance().clear();
 }
 
-void OpUndoItemRecorder::endUndoRecording()
+OpUndoItemRecorder::~OpUndoItemRecorder()
 {
-    // Don't do anything if recording already ended.
-    if (!_isRecording)
-        return;
-    _isRecording = false;
-
     // Extract the undo items from the global container
     // into the container we were given.
     _undoInfo = std::move(OpUndoItemList::instance());
     OpUndoItemList::instance().clear();
-}
+ }
 
 } // namespace MAYAUSD_NS_DEF
