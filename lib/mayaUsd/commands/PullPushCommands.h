@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,12 +31,37 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------
+// PullPushBaseCommand
+//------------------------------------------------------------------------------
+
+//! \brief Base undoable command holding the undo item list.
+
+class PullPushBaseCommand : public MPxCommand
+{
+public:
+    //! \brief MPxCommand API to undo the command.
+    MAYAUSD_CORE_PUBLIC
+    MStatus undoIt() override;
+
+    //! \brief MPxCommand API to redo the command.
+    MAYAUSD_CORE_PUBLIC
+    MStatus redoIt() override;
+
+    //! \brief MPxCommand API to specify the command is undoable.
+    MAYAUSD_CORE_PUBLIC
+    bool isUndoable() const override;
+
+protected:
+    OpUndoItemList fUndoItemList;
+};
+
+//------------------------------------------------------------------------------
 // EditAsMayaCommand
 //------------------------------------------------------------------------------
 
 //! \brief Edit as maya undoable command.
 
-class EditAsMayaCommand : public MPxCommand
+class EditAsMayaCommand : public PullPushBaseCommand
 {
 public:
     //! \brief The edit as maya command name.
@@ -55,24 +80,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     MStatus doIt(const MArgList& argList) override;
 
-    //! \brief MPxCommand API to undo the command.
-    MAYAUSD_CORE_PUBLIC
-    MStatus undoIt() override;
-
-    //! \brief MPxCommand API to redo the command.
-    MAYAUSD_CORE_PUBLIC
-    MStatus redoIt() override;
-
-    //! \brief MPxCommand API to specify the command is undoable.
-    MAYAUSD_CORE_PUBLIC
-    bool isUndoable() const override;
-
 private:
     // Make sure callers need to call creator().
     EditAsMayaCommand();
 
-    Ufe::Path      fPath;
-    OpUndoItemList fUndoInfo;
+    Ufe::Path fPath;
 };
 
 //------------------------------------------------------------------------------
@@ -81,7 +93,7 @@ private:
 
 //! \brief Merge to USD undoable command.
 
-class MergeToUsdCommand : public MPxCommand
+class MergeToUsdCommand : public PullPushBaseCommand
 {
 public:
     //! \brief The merge to USD command name.
@@ -100,25 +112,12 @@ public:
     MAYAUSD_CORE_PUBLIC
     MStatus doIt(const MArgList& argList) override;
 
-    //! \brief MPxCommand API to undo the command.
-    MAYAUSD_CORE_PUBLIC
-    MStatus undoIt() override;
-
-    //! \brief MPxCommand API to redo the command.
-    MAYAUSD_CORE_PUBLIC
-    MStatus redoIt() override;
-
-    //! \brief MPxCommand API to specify the command is undoable.
-    MAYAUSD_CORE_PUBLIC
-    bool isUndoable() const override;
-
 private:
     // Make sure callers need to call creator().
     MergeToUsdCommand();
 
-    MFnDagNode     fDagNode;
-    Ufe::Path      fPulledPath;
-    OpUndoItemList fUndoInfo;
+    MFnDagNode fDagNode;
+    Ufe::Path  fPulledPath;
 };
 
 //------------------------------------------------------------------------------
@@ -127,7 +126,7 @@ private:
 
 //! \brief Discards edits undoable command.
 
-class DiscardEditsCommand : public MPxCommand
+class DiscardEditsCommand : public PullPushBaseCommand
 {
 public:
     //! \brief The edit as maya command name.
@@ -146,24 +145,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     MStatus doIt(const MArgList& argList) override;
 
-    //! \brief MPxCommand API to undo the command.
-    MAYAUSD_CORE_PUBLIC
-    MStatus undoIt() override;
-
-    //! \brief MPxCommand API to redo the command.
-    MAYAUSD_CORE_PUBLIC
-    MStatus redoIt() override;
-
-    //! \brief MPxCommand API to specify the command is undoable.
-    MAYAUSD_CORE_PUBLIC
-    bool isUndoable() const override;
-
 private:
     // Make sure callers need to call creator().
     DiscardEditsCommand();
 
-    Ufe::Path      fPath;
-    OpUndoItemList fUndoInfo;
+    Ufe::Path fPath;
 };
 
 //------------------------------------------------------------------------------
@@ -172,7 +158,7 @@ private:
 
 //! \brief Copy between Maya and USD undoable command.
 
-class DuplicateCommand : public MPxCommand
+class DuplicateCommand : public PullPushBaseCommand
 {
 public:
     //! \brief The copy between Maya and USD command name.
@@ -191,25 +177,12 @@ public:
     MAYAUSD_CORE_PUBLIC
     MStatus doIt(const MArgList& argList) override;
 
-    //! \brief MPxCommand API to undo the command.
-    MAYAUSD_CORE_PUBLIC
-    MStatus undoIt() override;
-
-    //! \brief MPxCommand API to redo the command.
-    MAYAUSD_CORE_PUBLIC
-    MStatus redoIt() override;
-
-    //! \brief MPxCommand API to specify the command is undoable.
-    MAYAUSD_CORE_PUBLIC
-    bool isUndoable() const override;
-
 private:
     // Make sure callers need to call creator().
     DuplicateCommand();
 
-    Ufe::Path      fSrcPath;
-    Ufe::Path      fDstPath;
-    OpUndoItemList fUndoInfo;
+    Ufe::Path fSrcPath;
+    Ufe::Path fDstPath;
 };
 
 } // namespace ufe

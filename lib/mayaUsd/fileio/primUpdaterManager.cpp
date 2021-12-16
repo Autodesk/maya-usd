@@ -1110,7 +1110,6 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
 {
     MObject pullRoot = findPullRoot();
     if (!pullRoot.isNull()) {
-        _hasPulledPrims = true;
         return pullRoot;
     }
 

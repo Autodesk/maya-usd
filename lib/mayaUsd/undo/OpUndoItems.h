@@ -38,9 +38,6 @@ namespace MAYAUSD_NS_DEF {
 
 /// \class NodeDeletionUndoItem
 /// \brief Record data needed to undo or redo a Maya DG sub-operation.
-///
-/// For node deletion, use the specialized undo item that tracks which objects
-/// have already been deleted and avoid double-deletions.
 class NodeDeletionUndoItem : public OpUndoItem
 {
 public:
@@ -411,7 +408,7 @@ private:
 //------------------------------------------------------------------------------
 
 /// \class LockNodesUndoItem
-/// \brief Record data needed to undo or redo lock or unlock nodes sub-operations.
+/// \brief Record data needed to undo / redo the lock / unlock of Maya nodes.
 class LockNodesUndoItem : public OpUndoItem
 {
 public:
