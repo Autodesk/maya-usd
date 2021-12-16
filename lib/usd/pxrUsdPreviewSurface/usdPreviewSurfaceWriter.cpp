@@ -37,6 +37,7 @@
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -50,6 +51,89 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     UsdShadeTokens->universalRenderContext,
     PxrMayaUsdPreviewSurfaceTokens->niceName,
     PxrMayaUsdPreviewSurfaceTokens->exportDescription);
+
+namespace {
+
+void _ValidateRawColorSpace(const MPlug& shadingNodePlug)
+{
+    MPlug otherPlug = shadingNodePlug.source();
+
+    // If the source is not a texture, or is not connected via a color component output, then we do
+    // not need to check the color space.
+    if (!otherPlug.node().hasFn(MFn::kFileTexture)
+        || (otherPlug.partialName() != "ocr" && otherPlug.partialName() != "ocg"
+            && otherPlug.partialName() != "ocb")) {
+        return;
+    }
+
+    MFnDependencyNode otherDepNode(otherPlug.node());
+    MPlug             sourceColorSpace = otherDepNode.findPlug("colorSpace");
+    if (sourceColorSpace.asString() != "Raw") {
+        MString warning("File texture \"");
+        warning += otherDepNode.name() + "\" connected to \"" + shadingNodePlug.name()
+            + "\" should use the \"Raw\" source color space";
+        MGlobal::displayWarning(warning);
+    }
+}
+
+void _ValidateNormalMap(const MPlug& shadingNodePlug)
+{
+    MPlug otherPlug = shadingNodePlug.source();
+
+    // If the source is not a texture, or is not connected via a color output, then we do not need
+    // to check the color space.
+    if (!otherPlug.node().hasFn(MFn::kFileTexture) || otherPlug.partialName() != "oc") {
+        return;
+    }
+
+    MFnDependencyNode otherDepNode(otherPlug.node());
+    MPlug             sourceColorSpace = otherDepNode.findPlug("colorSpace");
+    if (sourceColorSpace.asString() != "Raw") {
+        MString warning("File texture \"");
+        warning += otherDepNode.name() + "\" connected to \"" + shadingNodePlug.name()
+            + "\" should use the \"Raw\" source color space";
+        MGlobal::displayWarning(warning);
+    }
+
+    auto invalidValue = [&otherDepNode](const auto& plugName, const auto& plugValue) {
+        MPlug numericPlug = otherDepNode.findPlug(plugName);
+        if (!numericPlug.isNull()) {
+            if (numericPlug.asDouble() == plugValue) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    if (invalidValue("colorGainR", 2) || invalidValue("colorGainG", 2)
+        || invalidValue("colorGainB", 2)) {
+        MString warning("File texture \"");
+        warning += otherDepNode.name() + "\" connected to \"" + shadingNodePlug.name()
+            + "\" should use a Color Gain of (2, 2, 2)";
+        MGlobal::displayWarning(warning);
+    }
+    if (invalidValue("colorOffsetR", -1) || invalidValue("colorOffsetG", -1)
+        || invalidValue("colorOffsetB", -1)) {
+        MString warning("File texture \"");
+        warning += otherDepNode.name() + "\" connected to \"" + shadingNodePlug.name()
+            + "\" should use a Color Offset of (-1, -1, -1)";
+        MGlobal::displayWarning(warning);
+    }
+    if (invalidValue("alphaGain", 1)) {
+        MString warning("File texture \"");
+        warning += otherDepNode.name() + "\" connected to \"" + shadingNodePlug.name()
+            + "\" should use an Alpha Gain of 1";
+        MGlobal::displayWarning(warning);
+    }
+    if (invalidValue("alphaOffset", 0)) {
+        MString warning("File texture \"");
+        warning += otherDepNode.name() + "\" connected to \"" + shadingNodePlug.name()
+            + "\" should use an Alpha Offset of 0";
+        MGlobal::displayWarning(warning);
+    }
+}
+
+} // namespace
 
 UsdMayaShaderWriter::ContextSupport
 PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)
@@ -152,6 +236,15 @@ static bool _AuthorShaderInputFromShadingNodeAttr(
             }
 
             shaderInput.Set(value, usdTime);
+        } else {
+            // Do some sanity checks for texture-driven attributes:
+            if (shaderInputTypeName == SdfValueTypeNames->Float) {
+                _ValidateRawColorSpace(shadingNodePlug);
+            }
+
+            if (shaderInputTypeName == SdfValueTypeNames->Normal3f) {
+                _ValidateNormalMap(shadingNodePlug);
+            }
         }
     }
 

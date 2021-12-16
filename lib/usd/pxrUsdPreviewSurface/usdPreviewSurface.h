@@ -77,6 +77,9 @@ public:
     PXRUSDPREVIEWSURFACE_API
     MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
 
+    PXRUSDPREVIEWSURFACE_API
+    MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
+
 private:
     PxrMayaUsdPreviewSurface();
     ~PxrMayaUsdPreviewSurface() override;
