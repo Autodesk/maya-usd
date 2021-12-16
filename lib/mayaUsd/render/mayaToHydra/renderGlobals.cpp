@@ -465,18 +465,15 @@ template <> void _GetFromPlug<TfToken>(const MPlug& plug, TfToken& out)
 {
 	MObject attribute = plug.attribute();
 
-	if (attribute.hasFn(MFn::kEnumAttribute))
-	{
+	if (attribute.hasFn(MFn::kEnumAttribute)) {
 		MFnEnumAttribute enumAttr(attribute);
 		MString value = enumAttr.fieldName(plug.asShort());
 		out = TfToken(value.asChar());
 	}
-	else
-	{
+	else {
 		out = TfToken(plug.asString().asChar());
 	}
 }
-
 
 template <typename T> bool _SetOptionVar(const MString& attrName, const T& value)
 {
