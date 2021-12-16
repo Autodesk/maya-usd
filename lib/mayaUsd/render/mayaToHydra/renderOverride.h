@@ -155,6 +155,7 @@ private:
 
     std::mutex                            _lastRenderTimeMutex;
     std::chrono::system_clock::time_point _lastRenderTime;
+    std::atomic<bool>                     _backupFrameBufferWorkaround = { false };
     std::atomic<bool>                     _playBlasting = { false };
     std::atomic<bool>                     _isConverged = { false };
     std::atomic<bool>                     _needsClear = { false };

@@ -22,6 +22,7 @@
 #include <pxr/imaging/hd/geomSubset.h>
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MBoundingBox.h>
@@ -190,6 +191,8 @@ public:
     /*! \brief  Get the dirty bits of the draw items.
      */
     HdDirtyBits GetDirtyBits() const { return GetRenderItemData().GetDirtyBits(); }
+
+    static SdfPath RenderItemToPrimPath(const MHWRender::MRenderItem& item);
 
 private:
     /*

@@ -70,6 +70,9 @@ endif()
 #------------------------------------------------------------------------------
 # modules and definitions
 #------------------------------------------------------------------------------
+include(cmake/utils.cmake)
+find_package(Maya 2018 REQUIRED)
+
 if (BUILD_MAYAUSD_LIBRARY)
     include(cmake/mayausd_version.info)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
@@ -96,11 +99,8 @@ message(STATUS "   PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "   PYTHON_LIBRARIES    = ${PYTHON_LIBRARIES}")
 message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
 
-include(cmake/utils.cmake)
-
 include(cmake/jinja.cmake)
 
-find_package(Maya 2018 REQUIRED)
 if (CMAKE_WANT_MATERIALX_BUILD)
     # Requires USD_SHA1 > 891eef161aeed582b9831584ab7f31ebe4bc52e8 for hdMtlx module
     find_package(USD 0.21.08 REQUIRED)

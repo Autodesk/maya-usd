@@ -73,7 +73,7 @@ public:
 
         /// \brief Returns the arguments used for the import operation.
         MAYAUSD_CORE_PUBLIC
-        const UsdMayaJobImportArgs& GetImportJobArgs() const;
+        const UsdMayaJobImportArgs& GetJobArgs() const;
 
     private:
         UsdStagePtr                 _stage;

@@ -53,6 +53,7 @@ TF_DECLARE_PUBLIC_TOKENS(
 // clang-format off
 #define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
+    (apiSchema) \
     (chaser) \
     (chaserArgs) \
     (compatibility) \
@@ -73,6 +74,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportSkin) \
     (exportUVs) \
     (exportVisibility) \
+    (jobContext) \
     (exportComponentTags) \
     (file) \
     (filterTypes) \
@@ -123,6 +125,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (apiSchema) \
     (assemblyRep) \
     (excludePrimvar) \
+    (jobContext) \
     (metadata) \
     (shadingMode) \
     (preferredMaterial) \
@@ -201,6 +204,8 @@ struct UsdMayaJobExportArgs
     const bool         verbose;
     const bool         staticSingleSample;
     const TfToken      geomSidedness;
+    const TfToken::Set includeAPINames;
+    const TfToken::Set jobContextNames;
 
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
@@ -248,6 +253,12 @@ struct UsdMayaJobExportArgs
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();
 
+    /// Gets the guide dictionary for UsdMayaJobExportArgs.
+    ///
+    /// Used in GetDictionaryFromArgDatabase() to deduce the type of an argument.
+    MAYAUSD_CORE_PUBLIC
+    static const VtDictionary& GetGuideDictionary();
+
     /// Returns the resolved file name of the final export location
     MAYAUSD_CORE_PUBLIC
     std::string GetResolvedFileName() const;
@@ -268,6 +279,7 @@ struct UsdMayaJobImportArgs
     const TfToken      assemblyRep;
     const TfToken::Set excludePrimvarNames;
     const TfToken::Set includeAPINames;
+    const TfToken::Set jobContextNames;
     const TfToken::Set includeMetadataKeys;
     struct ShadingMode
     {
@@ -314,6 +326,12 @@ struct UsdMayaJobImportArgs
     /// Gets the default arguments dictionary for UsdMayaJobImportArgs.
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();
+
+    /// Gets the guide dictionary for UsdMayaJobImportArgs.
+    ///
+    /// Used in GetDictionaryFromArgDatabase() to deduce the type of an argument.
+    MAYAUSD_CORE_PUBLIC
+    static const VtDictionary& GetGuideDictionary();
 
     MAYAUSD_CORE_PUBLIC
     static const std::string GetImportUSDZTexturesFilePath(const VtDictionary& userArgs);

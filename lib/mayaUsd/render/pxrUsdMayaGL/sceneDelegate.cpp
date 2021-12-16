@@ -141,7 +141,7 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         cache[HdTokens->transform] = VtValue(GfMatrix4d(1.0));
         cache[HdCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
         cache[HdCameraTokens->clipPlanes] = VtValue(std::vector<GfVec4d>());
-#if PXR_VERSION >= 2102
+#if HD_API_VERSION >= 43
         cache[HdCameraTokens->projection] = VtValue(HdCamera::Orthographic);
         cache[HdCameraTokens->horizontalAperture] = VtValue(2.0f * float(GfCamera::APERTURE_UNIT));
         cache[HdCameraTokens->verticalAperture] = VtValue(2.0f * float(GfCamera::APERTURE_UNIT));
@@ -153,6 +153,9 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         cache[HdCameraTokens->worldToViewMatrix] = VtValue(GfMatrix4d(1.0));
         cache[HdCameraTokens->projectionMatrix] = VtValue(GfMatrix4d(1.0));
 
+#if PXR_VERSION >= 2102
+        cache[HdCameraTokens->projection] = VtValue();
+#endif
         cache[HdCameraTokens->horizontalAperture] = VtValue();
         cache[HdCameraTokens->verticalAperture] = VtValue();
         cache[HdCameraTokens->horizontalApertureOffset] = VtValue();
@@ -262,7 +265,7 @@ TfTokenVector PxrMayaHdSceneDelegate::GetTaskRenderTags(SdfPath const& taskId)
     return value.Get<TfTokenVector>();
 }
 
-#if PXR_VERSION >= 2102
+#if HD_API_VERSION >= 43
 static HdCamera::Projection _ToHd(const GfCamera::Projection projection)
 {
     switch (projection) {
@@ -284,7 +287,7 @@ void PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
     cache[HdCameraTokens->clipPlanes] = VtValue(std::vector<GfVec4d>());
 
-#if PXR_VERSION >= 2102
+#if HD_API_VERSION >= 43
     GfCamera cam;
     cam.SetFromViewAndProjectionMatrix(worldToViewMatrix, projectionMatrix);
     cache[HdTokens->transform] = VtValue(cam.GetTransform());
@@ -305,6 +308,9 @@ void PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdTokens->transform] = VtValue(worldToViewMatrix.GetInverse());
     cache[HdCameraTokens->worldToViewMatrix] = VtValue(worldToViewMatrix);
     cache[HdCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
+#if PXR_VERSION >= 2102
+    cache[HdCameraTokens->projection] = VtValue();
+#endif
     cache[HdCameraTokens->horizontalAperture] = VtValue();
     cache[HdCameraTokens->verticalAperture] = VtValue();
     cache[HdCameraTokens->horizontalApertureOffset] = VtValue();

@@ -1134,6 +1134,85 @@ TEST(ProxyShape, editTargetChangeAndSave)
     }
 }
 
+// Test round trip of dirty layers serialization and deserialization
+TEST(ProxyShape, roundtripDirtyLayers)
+{
+    MFileIO::newFile(true);
+    std::string   filePath = std::string(AL_USDMAYA_TEST_DATA) + "/multiple_layers.usda";
+    const MString savedFile = buildTempPath("AL_USDMayaTests_roundtripDirtyLayers.ma");
+
+    {
+        UsdStageRefPtr stage = UsdStage::Open(filePath);
+
+        UsdStageCache::Id stageCacheId = AL::usdmaya::StageCache::Get().Insert(stage);
+        EXPECT_TRUE(stageCacheId.IsValid());
+
+        SdfLayerRefPtr layer1;
+        SdfLayerRefPtr layer2;
+        for (auto& layer : stage->GetUsedLayers()) {
+            if (layer->GetIdentifier().find("layer1") != std::string::npos) {
+                layer1 = layer;
+            } else if (layer->GetIdentifier().find("layer2") != std::string::npos) {
+                layer2 = layer;
+            }
+        }
+        ASSERT_TRUE(layer1);
+        ASSERT_TRUE(layer2);
+
+        // Modify layer1 before creating proxy
+        layer1->SetCustomLayerData(
+            { std::make_pair("layer1_key", VtValue(std::string("layer1_value"))) });
+        ASSERT_TRUE(layer1->IsDirty());
+
+        // Load the stage into Maya
+        MString importCommand = MString("AL_usdmaya_ProxyShapeImport  ") + "-name \"testProxy\" "
+            + "-stageId " + stageCacheId.ToLongInt();
+        MStringArray cmdResults;
+        MGlobal::executeCommand(importCommand, cmdResults, true);
+
+        // Modify layer2 after creating the proxy
+        layer2->SetCustomLayerData(
+            { std::make_pair("layer2_key", VtValue(std::string("layer2_value"))) });
+        ASSERT_TRUE(layer2->IsDirty());
+
+        EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::saveAs(savedFile, NULL, true));
+    }
+
+    // Reopen maya scene
+    MFileIO::newFile(true);
+    EXPECT_EQ(MStatus(MS::kSuccess), MFileIO::open(savedFile, NULL, true));
+
+    auto stages = AL::usdmaya::StageCache::Get().GetAllStages();
+    EXPECT_TRUE(!stages.empty());
+
+    auto           stage = stages[0];
+    SdfLayerRefPtr layer1;
+    SdfLayerRefPtr layer2;
+    for (auto& layer : stage->GetUsedLayers()) {
+        if (layer->GetIdentifier().find("layer1") != std::string::npos) {
+            layer1 = layer;
+        } else if (layer->GetIdentifier().find("layer2") != std::string::npos) {
+            layer2 = layer;
+        }
+    }
+    ASSERT_TRUE(layer1);
+    ASSERT_TRUE(layer2);
+
+    auto layer1CustomData(layer1->GetCustomLayerData());
+    EXPECT_EQ(layer1CustomData.size(), unsigned(1));
+    EXPECT_EQ(layer1CustomData.count("layer1_key"), unsigned(1));
+    EXPECT_EQ(layer1CustomData["layer1_key"], VtValue(std::string("layer1_value")));
+
+    auto layer2CustomData(layer2->GetCustomLayerData());
+    EXPECT_EQ(layer2CustomData.size(), unsigned(1));
+    EXPECT_EQ(layer2CustomData.count("layer2_key"), unsigned(1));
+    EXPECT_EQ(layer2CustomData["layer2_key"], VtValue(std::string("layer2_value")));
+
+    // Clear out the scene to avoid crashing in proxy shape code during idle
+    // redraw.
+    MFileIO::newFile(true);
+}
+
 // Test translating a Mesh Prim via the command
 TEST(ManualTranslate, importMeshPrim)
 {

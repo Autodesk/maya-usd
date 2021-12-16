@@ -40,7 +40,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
     MSyntax syntax;
 
     // These flags correspond to entries in
-    // UsdMayaJobExportArgs::GetDefaultDictionary.
+    // UsdMayaJobExportArgs::GetGuideDictionary.
     syntax.addFlag(
         kMergeTransformAndShapeFlag,
         UsdMayaJobExportArgsTokens->mergeTransformAndShape.GetText(),
@@ -68,6 +68,12 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kMaterialsScopeNameFlag,
         UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),
         MSyntax::kString);
+    syntax.addFlag(
+        kApiSchemaFlag, UsdMayaJobExportArgsTokens->apiSchema.GetText(), MSyntax::kString);
+    syntax.makeFlagMultiUse(kApiSchemaFlag);
+    syntax.addFlag(
+        kJobContextFlag, UsdMayaJobExportArgsTokens->jobContext.GetText(), MSyntax::kString);
+    syntax.makeFlagMultiUse(kJobContextFlag);
     syntax.addFlag(
         kExportUVsFlag, UsdMayaJobExportArgsTokens->exportUVs.GetText(), MSyntax::kBoolean);
     syntax.addFlag(
@@ -146,7 +152,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kCompatibilityFlag, UsdMayaJobExportArgsTokens->compatibility.GetText(), MSyntax::kString);
 
     syntax.addFlag(kChaserFlag, UsdMayaJobExportArgsTokens->chaser.GetText(), MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->chaser.GetText());
+    syntax.makeFlagMultiUse(kChaserFlag);
 
     syntax.addFlag(
         kChaserArgsFlag,
@@ -154,7 +160,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
         MSyntax::kString,
         MSyntax::kString,
         MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->chaserArgs.GetText());
+    syntax.makeFlagMultiUse(kChaserArgsFlag);
 
     syntax.addFlag(
         kMelPerFrameCallbackFlag,
@@ -239,7 +245,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
 
         // Read all of the dictionary args first.
         const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
-            argData, UsdMayaJobExportArgs::GetDefaultDictionary());
+            argData, UsdMayaJobExportArgs::GetGuideDictionary());
 
         // Now read all of the other args that are specific to this command.
         bool        append = false;

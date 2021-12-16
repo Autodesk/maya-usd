@@ -187,7 +187,6 @@ private:
         DirtyFlatNormals = (DirtySmoothNormals << 1),
         //! "Forward" the enumerated types here so we don't have to keep writing MayaPrimCommon in
         //! the cpp file.
-        DirtySelection = MayaPrimCommon::DirtySelection,
         DirtySelectionHighlight = MayaPrimCommon::DirtySelectionHighlight,
         DirtySelectionMode = MayaPrimCommon::DirtySelectionMode
     };

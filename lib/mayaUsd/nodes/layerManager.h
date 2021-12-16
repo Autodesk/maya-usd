@@ -114,6 +114,7 @@ public:
 
     static MObject layers;
     static MObject identifier;
+    static MObject fileFormatId;
     static MObject serialized;
     static MObject anonymous;
 

@@ -63,7 +63,7 @@ void UsdMayaPrimUpdaterRegistry::Register(
     TfToken tfTypeName(tfType.GetTypeName());
 
     TF_DEBUG(PXRUSDMAYA_REGISTRY)
-        .Msg("Registering UsdMayaPrimWriter for TfType type %s.\n", tfTypeName.GetText());
+        .Msg("Registering UsdMayaPrimUpdater for TfType type %s.\n", tfTypeName.GetText());
 
     auto insertStatus = _regTfType.insert(std::make_pair(tfTypeName, std::make_tuple(sup, fn)));
     if (insertStatus.second) {
@@ -86,8 +86,8 @@ UsdMayaPrimUpdaterRegistry::FindOrFallback(const TfToken& usdTypeName)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaPrimUpdaterRegistry>();
 
-    // unfortunately, usdTypeName is diff from the tfTypeName which we use to
-    // register.  do the conversion here.
+    // Unfortunately, usdTypeName is diff from the tfTypeName which we use to
+    // register.  Do the conversion here.
     TfType      tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(usdTypeName);
     std::string typeNameStr = tfType.GetTypeName();
     TfToken     typeName(typeNameStr);

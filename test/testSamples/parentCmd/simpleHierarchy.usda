@@ -109,3 +109,23 @@ def Xform "pCylinder1" (
     }
 }
 
+def "hierarchy_instance1" (
+    instanceable = true
+    kind = "component"
+    prepend references = </pCylinder1>
+)
+{
+    double3 xformOp:translate = (9.056107292292669, -3, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def "hierarchy_instance2" (
+    instanceable = true
+    kind = "component"
+    prepend references = </pCylinder1>
+)
+{
+    double3 xformOp:translate = (9.056107292292669, -6, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+

@@ -18,7 +18,6 @@
 
 import json
 import os
-import tempfile
 import shutil
 import unittest
 
@@ -36,6 +35,15 @@ import fixturesUtils
 class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
     """Test cases for static function: AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath"""
 
+    @classmethod
+    def setUpClass(cls):
+        # Setup for tests for output
+        fixturesUtils.setUpClass(__file__, loadPlugin=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        fixturesUtils.tearDownClass(unloadPlugin=False)
+
     def __init__(self, *args, **kwargs):
         super(TestProxyShapeGetUsdPrimFromMayaPath, self).__init__(*args, **kwargs)
 
@@ -50,17 +58,16 @@ class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
 
-        _tmpfile = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        _tmpfile.close()
+        _usdFilePath = os.path.abspath(type(self).__name__ + ".usda")
 
         # Ensure sphere geometry exists
         self._sphere = cmds.polySphere(constructionHistory=False, name="sphere")[0]
         cmds.select(self._sphere)
 
         # Export, new scene, import
-        cmds.file(_tmpfile.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(_usdFilePath, exportSelected=True, force=True, type="AL usdmaya export")
         cmds.file(force=True, new=True)
-        self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=_tmpfile.name)[0]
+        self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=_usdFilePath)[0]
 
         # Ensure proxy exists
         self.assertIsNotNone(self._proxyName)
@@ -69,7 +76,7 @@ class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
         proxy = AL.usdmaya.ProxyShape.getByName(self._proxyName)
         self._stage = proxy.getUsdStage()
 
-        os.remove(_tmpfile.name)
+        os.remove(_usdFilePath)
 
     def tearDown(self):
         """Unload plugin, new Maya scene, reset class member variables."""
@@ -87,7 +94,8 @@ class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
         # Select prim, Maya node(s) created, query path
         cmds.AL_usdmaya_ProxyShapeSelect(proxy=self._proxyName, primPath="/{}".format(self._sphere))
         prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(self._sphere)
-        self.assertTrue(prim.IsValid())
+        if os.getenv('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'):
+            self.assertTrue(prim.IsValid())
 
     def test_getUsdPrimFromMayaPath_invalidPrim(self):
         """Dag paths msut exist and be associated with a prim to return a valid prim."""
@@ -121,10 +129,13 @@ class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
         prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(_sphereShortName)
         self.assertFalse(prim.IsValid())
 
-        # Query long name? Success!
-        _sphereLongName = cmds.ls(self._sphere, type="AL_usdmaya_Transform")[0]
-        prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(_sphereLongName)
-        self.assertTrue(prim.IsValid())
+        if os.getenv('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'):
+            # Query long name? Success!
+            _sphereLongName = cmds.ls(self._sphere, type="AL_usdmaya_Transform")[0]
+            prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(_sphereLongName)
+            self.assertTrue(prim.IsValid())
+        else:
+            print('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE enabled, ignoring VP2 render delegate check')
 
 class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
     """Test cases for member function: AL.usdmaya.ProxyShape().getMayaPathFromUsdPrim"""
@@ -136,6 +147,15 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         proxy = None      # AL_usdmaya_ProxyShape instance
         stage = None      # Imported Usd stage that hosts prim
         prim = None       # Usd prim in stage
+
+    @classmethod
+    def setUpClass(cls):
+        fixturesUtils.setUpClass(__file__, loadPlugin=False)
+        cls._className = cls.__name__
+
+    @classmethod
+    def tearDownClass(cls):
+        fixturesUtils.tearDownClass(unloadPlugin=False)
 
     def __init__(self, *args, **kwargs):
         super(TestProxyShapeGetMayaPathFromUsdPrim, self).__init__(*args, **kwargs)
@@ -154,27 +174,25 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
 
-        stageA_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        stageB_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        stageA_file.close()
-        stageB_file.close()
+        stageA_file = os.path.abspath(self._className + "-StageA" + ".usda")
+        stageB_file = os.path.abspath(self._className + "-StageB" + ".usda")
 
         cube = cmds.polyCube(constructionHistory=False, name="cube")[0]
         sphere = cmds.polySphere(constructionHistory=False, name="cube")[0]
 
         cmds.select(cube, replace=True)
-        cmds.file(stageA_file.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(stageA_file, exportSelected=True, force=True, type="AL usdmaya export")
 
         cmds.select(sphere, replace=True)
-        cmds.file(stageB_file.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(stageB_file, exportSelected=True, force=True, type="AL usdmaya export")
 
         self._stageA.poly = cube
         self._stageB.poly = sphere
 
         cmds.file(force=True, new=True)
 
-        self._stageA.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageA_file.name)[0]
-        self._stageB.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageB_file.name)[0]
+        self._stageA.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageA_file)[0]
+        self._stageB.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageB_file)[0]
 
         self._stageA.proxy = AL.usdmaya.ProxyShape.getByName(self._stageA.proxyName)
         self._stageB.proxy = AL.usdmaya.ProxyShape.getByName(self._stageB.proxyName)
@@ -185,8 +203,8 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         self._stageA.prim = self._stageA.stage.GetPrimAtPath("/{}".format(self._stageA.poly))
         self._stageB.prim = self._stageB.stage.GetPrimAtPath("/{}".format(self._stageB.poly))
 
-        os.remove(stageA_file.name)
-        os.remove(stageB_file.name)
+        os.remove(stageA_file)
+        os.remove(stageB_file)
 
     def tearDown(self):
         """New Maya scene, unload plugin, reset data."""
@@ -200,26 +218,29 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
     def test_getMayaPathFromUsdPrim_success(self):
         """Maya scenes can contain multiple proxies. Query each proxy and test they return the correct Maya nodes."""
 
-        # These are dynamic prims, so select them to bring into Maya
-        cmds.select(clear=True)
-        cmds.AL_usdmaya_ProxyShapeSelect(self._stageA.proxyName, replace=True, primPath=str(self._stageA.prim.GetPath()))
-        cmds.AL_usdmaya_ProxyShapeSelect(self._stageB.proxyName, append=True, primPath=str(self._stageB.prim.GetPath()))
+        if os.getenv('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'):
+            # These are dynamic prims, so select them to bring into Maya
+            cmds.select(clear=True)
+            cmds.AL_usdmaya_ProxyShapeSelect(self._stageA.proxyName, replace=True, primPath=str(self._stageA.prim.GetPath()))
+            cmds.AL_usdmaya_ProxyShapeSelect(self._stageB.proxyName, append=True, primPath=str(self._stageB.prim.GetPath()))
 
-        # Created Maya node names will match the originals
-        self.assertTrue(cmds.objExists(self._stageA.poly))
-        self.assertTrue(cmds.objExists(self._stageB.poly))
+            # Created Maya node names will match the originals
+            self.assertTrue(cmds.objExists(self._stageA.poly))
+            self.assertTrue(cmds.objExists(self._stageB.poly))
 
-        # Fetch the Maya node paths that represent each stage's prims
-        resultA = self._stageA.proxy.getMayaPathFromUsdPrim(self._stageA.prim)
-        resultB = self._stageB.proxy.getMayaPathFromUsdPrim(self._stageB.prim)
+            # Fetch the Maya node paths that represent each stage's prims
+            resultA = self._stageA.proxy.getMayaPathFromUsdPrim(self._stageA.prim)
+            resultB = self._stageB.proxy.getMayaPathFromUsdPrim(self._stageB.prim)
 
-        # Expand to long names
-        expectedA = cmds.ls(self._stageA.poly, long=True)[0]
-        expectedB = cmds.ls(self._stageB.poly, long=True)[0]
+            # Expand to long names
+            expectedA = cmds.ls(self._stageA.poly, long=True)[0]
+            expectedB = cmds.ls(self._stageB.poly, long=True)[0]
 
-        # The paths should match!
-        self.assertEqual(resultA, expectedA)
-        self.assertEqual(resultB, expectedB)
+            # The paths should match!
+            self.assertEqual(resultA, expectedA)
+            self.assertEqual(resultB, expectedB)
+        else:
+            print('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE enabled, ignoring VP2 render delegate check')
 
     def test_getMayaPathFromUsdPrim_failure(self):
         """Query a proxy with an invalid prim."""
@@ -252,22 +273,22 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         result = self._stageA.proxy.getMayaPathFromUsdPrim(self._stageA.prim)
         expected = cmds.ls(self._stageA.poly, long=True)[0]
 
-        self.assertEqual(result, expected)
+        if os.getenv('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'):
+            self.assertEqual(result, expected)
 
     @unittest.skip("Not working")
     def test_getMayaPathFromUsdPrim_reopenImport(self):
         """Saving and reopening a Maya scene with dynamic translated prims should work."""
 
         # Save
-        _file = tempfile.NamedTemporaryFile(delete=False, suffix=".ma")
+        _file = os.path.abspath(self._className + "-reopenImport" + ".ma")
         with _file:
-            cmds.file(rename=_file.name)
+            cmds.file(rename=_file)
             cmds.file(save=True, force=True)
             self.assertFalse(cmds.ls(assemblies=True))
-        _file.close()
 
         # Re-open
-        cmds.file(_file.name, open=True, force=True)
+        cmds.file(_file, open=True, force=True)
 
         # Refresh data, stage wrapper is out of date
         _stageC = self.MayaUsdTestData()
@@ -278,14 +299,14 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         _stageC.prim = _stageC.stage.GetPrimAtPath("/{}".format(_stageC.poly))
 
         # Test
-        cmds.AL_usdmaya_ProxyShapeSelect(_stageC.proxyName, replace=True, primPath=str(_stageC.prim.GetPath()))
-        self.assertTrue(cmds.objExists(_stageC.poly))
-        result = _stageC.proxy.getMayaPathFromUsdPrim(_stageC.prim)
-        expected = cmds.ls(_stageC.poly, long=True)[0]
-        self.assertEqual(result, expected)
-
-        # Cleanup
-        os.remove(_file.name)
+        if os.getenv('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'):
+            cmds.AL_usdmaya_ProxyShapeSelect(_stageC.proxyName, replace=True, primPath=str(_stageC.prim.GetPath()))
+            self.assertTrue(cmds.objExists(_stageC.poly))
+            result = _stageC.proxy.getMayaPathFromUsdPrim(_stageC.prim)
+            expected = cmds.ls(_stageC.poly, long=True)[0]
+            self.assertEqual(result, expected)
+        else:
+            print('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE enabled, ignoring VP2 render delegate check')
 
     @unittest.skip("Not working")
     def test_getMayaPathFromUsdPrim_reopenStaticImport(self):
@@ -294,14 +315,13 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         cmds.AL_usdmaya_ProxyShapeImportPrimPathAsMaya(self._stageA.proxyName, primPath=str(self._stageA.prim.GetPath()))
 
         # Save
-        _file = tempfile.NamedTemporaryFile(delete=False, suffix=".ma")
+        _file = os.path.abspath(self._className + "-reopenStaticImport" + ".ma")
         with _file:
-            cmds.file(rename=_file.name)
+            cmds.file(rename=_file)
             cmds.file(save=True, force=True)
-        _file.close()
 
         # Re-open
-        cmds.file(_file.name, open=True, force=True)
+        cmds.file(_file, open=True, force=True)
 
         # Refresh data, stage wrapper is out of date
         _stageC = self.MayaUsdTestData()
@@ -312,14 +332,14 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         _stageC.prim = _stageC.stage.GetPrimAtPath("/{}".format(_stageC.poly))
 
         # Test
-        cmds.AL_usdmaya_ProxyShapeSelect(_stageC.proxyName, replace=True, primPath=str(_stageC.prim.GetPath()))
-        self.assertTrue(cmds.objExists(_stageC.poly))
-        result = _stageC.proxy.getMayaPathFromUsdPrim(_stageC.prim)
-        expected = cmds.ls(_stageC.poly, long=True)[0]
-        self.assertEqual(result, expected)
-
-        # Cleanup
-        os.remove(_file.name)
+        if os.getenv('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'):
+            cmds.AL_usdmaya_ProxyShapeSelect(_stageC.proxyName, replace=True, primPath=str(_stageC.prim.GetPath()))
+            self.assertTrue(cmds.objExists(_stageC.poly))
+            result = _stageC.proxy.getMayaPathFromUsdPrim(_stageC.prim)
+            expected = cmds.ls(_stageC.poly, long=True)[0]
+            self.assertEqual(result, expected)
+        else:
+            print('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE enabled, ignoring VP2 render delegate check')
 
 
 class TestProxyShapeAnonymousLayer(unittest.TestCase):
@@ -327,9 +347,19 @@ class TestProxyShapeAnonymousLayer(unittest.TestCase):
     fileName = 'foo.ma'
     SC = pxr.UsdUtils.StageCache.Get()
 
+    @classmethod
+    def setUpClass(cls):
+        # Setup for test output
+        fixturesUtils.setUpClass(__file__, loadPlugin=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        fixturesUtils.tearDownClass(unloadPlugin=False)
+
     def setUp(self):
         unittest.TestCase.setUp(self)
-        self.workingDir = tempfile.mkdtemp()
+        self.workingDir = os.path.abspath(type(self).__name__)
+        os.mkdir(self.workingDir)
         cmds.file(new=True, save=False, force=True)
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
@@ -351,9 +381,6 @@ class TestProxyShapeAnonymousLayer(unittest.TestCase):
         self.SC.Clear()
 
     def tearDown(self):
-        if os.path.isdir(self.workingDir):
-            shutil.rmtree(self.workingDir)
-
         self.SC.Clear()
         unittest.TestCase.tearDown(self)
 
@@ -426,5 +453,5 @@ class TestProxyShapeVariantFallbacks(unittest.TestCase):
         self.assertEqual(savedAttrValue, json.dumps(custom))
 
 
-if __name__ == '__main__':
-    fixturesUtils.runTests(globals())
+if __name__ == "__main__":
+    fixturesUtils.runTests(globals(), verbosity=2)

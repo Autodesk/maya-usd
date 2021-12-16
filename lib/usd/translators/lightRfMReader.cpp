@@ -62,7 +62,6 @@ PXRUSDMAYA_DEFINE_READER(UsdLuxSphereLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Read(args, context);
 }
-#endif
 
 // Moving to use PXRUSDMAYA_DEFINE_READER_FOR_USD_TYPE in anticipation of
 // codeless schemas for UsdRi types to be available soon!
@@ -77,5 +76,6 @@ PXRUSDMAYA_DEFINE_READER_FOR_USD_TYPE(PxrEnvDayLight, args, context)
 {
     return UsdMayaTranslatorRfMLight::Read(args, context);
 }
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

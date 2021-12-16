@@ -50,6 +50,8 @@
 #include <functional>
 #include <tuple>
 
+using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
+
 // Allow for use of MObjectHandle with std::unordered_map.
 namespace std {
 template <> struct hash<MObjectHandle>
@@ -292,11 +294,14 @@ PullImportPaths pullImport(
         }
     }
 
-    // Execute the command
+    // Execute the command, which can succeed but import nothing.
     bool success = readJob.Read(&addedDagPaths);
+    if (!success || addedDagPaths.size() == 0) {
+        return PullImportPaths({}, {});
+    }
 
     const bool isCopy = context.GetArgs()._copyOperation;
-    if (success && !isCopy) {
+    if (!isCopy) {
         // Quick workaround to reuse some POC code - to rewrite later
         auto ufeChild = MayaUsd::ufe::dagPathToUfe(addedDagPaths[0]);
 
@@ -373,7 +378,7 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         // customization step.  This is a frequent difficulty for operations on
         // multiple data, especially since we can't roll back the result of
         // the execution of previous updaters.  Revisit this.  PPT, 15-Sep-2021.
-        if (!updater->pull(context)) {
+        if (!updater->editAsMaya(context)) {
             return false;
         }
     }
@@ -387,7 +392,8 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
 // SdfPath will be empty on error.
 using UsdPathToDagPathMap = TfHashMap<SdfPath, MDagPath, SdfPath::Hash>;
 using UsdPathToDagPathMapPtr = std::shared_ptr<UsdPathToDagPathMap>;
-using PushCustomizeSrc = std::tuple<SdfPath, SdfLayerRefPtr, UsdPathToDagPathMapPtr>;
+using PushCustomizeSrc
+    = std::tuple<SdfPath, UsdStageRefPtr, SdfLayerRefPtr, UsdPathToDagPathMapPtr>;
 
 PushCustomizeSrc pushExport(
     const Ufe::Path&                 ufePulledPath,
@@ -397,7 +403,7 @@ PushCustomizeSrc pushExport(
     UsdStageRefPtr         srcStage = UsdStage::CreateInMemory();
     SdfLayerRefPtr         srcLayer = srcStage->GetRootLayer();
     UsdPathToDagPathMapPtr pathMapPtr;
-    auto                   pushCustomizeSrc = std::make_tuple(SdfPath(), srcLayer, pathMapPtr);
+    auto pushCustomizeSrc = std::make_tuple(SdfPath(), srcStage, srcLayer, pathMapPtr);
 
     // Copy to be able to add the export root.
     VtDictionary userArgs = context.GetUserArgs();
@@ -484,8 +490,6 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     const SdfPath&                   primSpecPath,
     const UsdMayaPrimUpdaterContext& context)
 {
-    using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
-
     // Get the primSpec from the src layer.
     auto primSpec = srcLayer->GetPrimAtPath(primSpecPath);
     if (!TF_VERIFY(primSpec)) {
@@ -526,10 +530,11 @@ bool pushCustomize(
 
 {
     const auto& srcRootPath = std::get<SdfPath>(src);
-    if (srcRootPath.IsEmpty()) {
+    const auto& srcLayer = std::get<SdfLayerRefPtr>(src);
+    const auto& srcStage = std::get<UsdStageRefPtr>(src);
+    if (srcRootPath.IsEmpty() || !srcLayer || !srcStage) {
         return false;
     }
-    const auto& srcLayer = std::get<SdfLayerRefPtr>(src);
 
     const bool  isCopy = context.GetArgs()._copyOperation;
     const auto& editTarget = context.GetUsdStage()->GetEditTarget();
@@ -539,9 +544,8 @@ bool pushCustomize(
 
     // Traverse the layer, creating a prim updater for each primSpec
     // along the way, and call PushCopySpec on the prim.
-    using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
     auto pushCopySpecsFn
-        = [&context, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
+        = [&context, srcStage, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
               // We can be called with a primSpec path that is not a prim path
               // (e.g. a property path like "/A.xformOp:translate").  This is not an
               // error, just prune the traversal.  FIXME Is this still true?  We
@@ -562,8 +566,9 @@ bool pushCustomize(
               auto relativeSrcPath = srcPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
               auto dstPath = dstRootParentPath.AppendPath(relativeSrcPath);
 
-              // Report pushCopySpecs() failure.
-              if (!updater->pushCopySpecs(srcLayer, srcPath, dstLayer, dstPath)) {
+              // Report PushCopySpecs() failure.
+              if (!updater->pushCopySpecs(
+                      srcStage, srcLayer, srcPath, context.GetUsdStage(), dstLayer, dstPath)) {
                   throw MayaUsd::TraversalFailure(std::string("PushCopySpecs() failed."), srcPath);
               }
 
@@ -673,7 +678,7 @@ PrimUpdaterManager::~PrimUpdaterManager()
     _cbIds.clear();
 }
 
-bool PrimUpdaterManager::push(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath)
+bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Ufe::Path& pulledPath)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
     if (!proxyShape) {
@@ -745,7 +750,7 @@ bool PrimUpdaterManager::push(const MFnDependencyNode& depNodeFn, const Ufe::Pat
     return true;
 }
 
-bool PrimUpdaterManager::pull(const Ufe::Path& path)
+bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(path);
     if (!proxyShape) {
@@ -782,6 +787,9 @@ bool PrimUpdaterManager::pull(const Ufe::Path& path)
 
     // 1) Perform the import
     PullImportPaths importedPaths = pullImport(path, pulledPrim, context);
+    if (importedPaths.first.empty()) {
+        return false;
+    }
 
     // 2) Iterate over all imported Dag paths.
     if (!pullCustomize(importedPaths, context)) {
@@ -799,6 +807,22 @@ bool PrimUpdaterManager::pull(const Ufe::Path& path)
         scene.notify(Ufe::ObjectAdd(ufeItem));
 
     return true;
+}
+
+bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
+{
+    // Create a prim updater for the path, and ask it if the prim can be edited
+    // as Maya.
+    auto prim = MayaUsd::ufe::ufePathToPrim(path);
+    if (!prim) {
+        return false;
+    }
+    auto typeName = prim.GetTypeName();
+    auto regItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
+    auto factory = std::get<UpdaterFactoryFn>(regItem);
+    // No Maya Dag path for the prim updater, so pass in a null MObject.
+    auto updater = factory(MFnDependencyNode(MObject()), path);
+    return updater ? updater->canEditAsMaya() : false;
 }
 
 bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
@@ -855,7 +879,7 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
     return true;
 }
 
-bool PrimUpdaterManager::copyBetween(const Ufe::Path& srcPath, const Ufe::Path& dstPath)
+bool PrimUpdaterManager::duplicate(const Ufe::Path& srcPath, const Ufe::Path& dstPath)
 {
     MayaUsdProxyShapeBase* srcProxyShape = MayaUsd::ufe::getProxyShape(srcPath);
     MayaUsdProxyShapeBase* dstProxyShape = MayaUsd::ufe::getProxyShape(dstPath);
@@ -959,7 +983,7 @@ void PrimUpdaterManager::onProxyContentChanged(
                     = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
                 const Ufe::Path path = proxyNotice.GetProxyShape().ufePath() + pathSegment;
 
-                pull(path);
+                editAsMaya(path);
             }
         }
     }

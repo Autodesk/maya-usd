@@ -13,30 +13,54 @@
 // limitations under the License.
 //
 
-global proc mayaUsdMenu_pullToDG(string $obj)
+proc int canEditAsMaya(string $obj)
 {
+    if (!hasPrimUpdater())
+        return 0;
+
     if (size($obj) == 0) {
         string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
         $obj = $nonMayaObjs[0];
     }
     if (size($obj) != 0) {
-        python("from mayaUsd.lib import PrimUpdaterManager; import ufe; PrimUpdaterManager.pull('" + $obj + "');");
+        return `python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.canEditAsMaya('" + $obj + "')")`;
+    }
+    return 0;
+}
+
+global proc mayaUsdMenu_pullToDG(string $obj)
+{
+    if (!hasPrimUpdater())
+        return;
+
+    if (size($obj) == 0) {
+        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
+        $obj = $nonMayaObjs[0];
+    }
+    if (size($obj) != 0) {
+        python("from mayaUsd.lib import PrimUpdaterManager; import ufe; PrimUpdaterManager.editAsMaya('" + $obj + "');");
     }
 }
 
-global proc mayaUsdMenu_copyToDG( string $ufePath )
+global proc mayaUsdMenu_duplicateToDG( string $ufePath )
 {
+    if (!hasPrimUpdater())
+        return;
+        
     if (size($ufePath) == 0) {
         string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
         $ufePath = $nonMayaObjs[0];
     }
     
     if (size($ufePath)) {
-        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.copy('" + $ufePath + "', '|world');");
+        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.duplicate('" + $ufePath + "', '|world');");
     }
 }
 global proc USDMenuProc(string $parent, string $obj)
 {
+    if (!hasPrimUpdater())
+        return;
+        
     int $haveNonMaya = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.hasNonMayaSelectedItems()")`;
     if ($haveNonMaya)
     {
@@ -44,7 +68,9 @@ global proc USDMenuProc(string $parent, string $obj)
         setParent -menu $parent;
 
         setParent -menu ..;
-        menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_pullToDG \"" + $obj + "\"");
-        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_copyToDG \"" + $obj + "\"");
+        if (canEditAsMaya($obj)) {
+            menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_pullToDG \"" + $obj + "\"");
+        }
+        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_duplicateToDG \"" + $obj + "\"");
     }
 }

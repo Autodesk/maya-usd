@@ -353,6 +353,9 @@ def Scope "blabla"
         tempNonConst = manager->identifier();
         MPlug idPlug = layersPlug0.child(tempNonConst, &status);
         ASSERT_TRUE(status);
+        tempNonConst = manager->fileFormatId();
+        MPlug fileFormatIdPlug = layersPlug0.child(tempNonConst, &status);
+        ASSERT_TRUE(status);
         tempNonConst = manager->serialized();
         MPlug serializedPlug = layersPlug0.child(tempNonConst, &status);
         ASSERT_TRUE(status);
@@ -363,6 +366,10 @@ def Scope "blabla"
         ASSERT_EQ(
             MString(realLayer->GetIdentifier().c_str()),
             idPlug.asString(MDGContext::fsNormal, &status));
+        ASSERT_TRUE(status);
+        ASSERT_EQ(
+            MString(realLayer->GetFileFormat()->GetFormatId().GetText()),
+            fileFormatIdPlug.asString(MDGContext::fsNormal, &status));
         ASSERT_TRUE(status);
         ASSERT_EQ(MString(LAYER_CONTENTS), serializedPlug.asString(MDGContext::fsNormal, &status));
         ASSERT_TRUE(status);

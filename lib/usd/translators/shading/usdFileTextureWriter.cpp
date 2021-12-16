@@ -591,7 +591,7 @@ UsdAttribute PxrUsdTranslators_FileTextureWriter::GetShadingAttributeForMayaAttr
     SdfValueTypeName usdTypeName = SdfValueTypeNames->Float;
 
     if (mayaAttrName == TrMayaTokens->outColor) {
-        if (typeName == SdfValueTypeNames->Color3f) {
+        if (typeName == SdfValueTypeNames->Color3f || typeName == SdfValueTypeNames->Normal3f) {
             usdAttrName = TrUsdTokens->RGBOutputName;
             usdTypeName = SdfValueTypeNames->Float3;
         } else {
