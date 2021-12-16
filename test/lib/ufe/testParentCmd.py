@@ -939,6 +939,15 @@ class ParentCmdTestCase(unittest.TestCase):
             self.assertIn("pSphere1", childrenNames(children))
             self.assertIn("pCylinderShape1", childrenNames(children))
 
+    def testIllegalInstance(self):
+        '''Parenting an object to an instance must report an error.'''
+
+        with OpenFileCtx("simpleHierarchy.ma"):
+            with self.assertRaises(RuntimeError):
+                cmds.parent(
+                    "|mayaUsdProxy1|mayaUsdProxyShape1,/hierarchy_instance2",
+                    "|mayaUsdProxy1|mayaUsdProxyShape1,/hierarchy_instance1")
+
     def testUnparentUSD(self):
         '''Unparent USD node.'''
 

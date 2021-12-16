@@ -82,6 +82,8 @@ public:
     static constexpr auto kVerboseFlag = "v";
     static constexpr auto kStaticSingleSample = "sss";
     static constexpr auto kGeomSidednessFlag = "gs";
+    static constexpr auto kApiSchemaFlag = "api";
+    static constexpr auto kJobContextFlag = "jc";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";

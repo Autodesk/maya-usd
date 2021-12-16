@@ -17,6 +17,9 @@
 
 #include "private/UfeNotifGuard.h"
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/fileio/primUpdaterManager.h>
+#endif
 #include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
@@ -79,6 +82,9 @@ static constexpr char    kUSDMakeInvisibleLabel[] = "Make Invisible";
 static constexpr char    kUSDToggleActiveStateItem[] = "Toggle Active State";
 static constexpr char    kUSDActivatePrimLabel[] = "Activate Prim";
 static constexpr char    kUSDDeactivatePrimLabel[] = "Deactivate Prim";
+static constexpr char    kUSDToggleInstanceableStateItem[] = "Toggle Instanceable State";
+static constexpr char    kUSDMarkAsInstancebaleLabel[] = "Mark as Instanceable";
+static constexpr char    kUSDUnmarkAsInstanceableLabel[] = "Unmark as Instanceable";
 static constexpr char    kUSDAddNewPrimItem[] = "Add New Prim";
 static constexpr char    kUSDAddNewPrimLabel[] = "Add New Prim";
 static constexpr char    kUSDDefPrimItem[] = "Def";
@@ -105,11 +111,13 @@ static const std::string kUSDCylinderPrimImage { "out_USD_Cylinder.png" };
 static constexpr char    kUSDSpherePrimItem[] = "Sphere";
 static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
 static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
+#ifdef UFE_V3_FEATURES_AVAILABLE
 static constexpr char    kEditAsMayaItem[] = "Edit As Maya Data";
 static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
 static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
 static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
+#endif
 
 #if PXR_VERSION >= 2008
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";
@@ -299,6 +307,43 @@ private:
     PXR_NS::UsdStageWeakPtr _stage;
     PXR_NS::SdfPath         _primPath;
     bool                    _active;
+};
+
+//! \brief Undoable command for prim instanceable state change
+class ToggleInstanceableStateCommand : public Ufe::UndoableCommand
+{
+public:
+    ToggleInstanceableStateCommand(const UsdPrim& prim)
+    {
+        _stage = prim.GetStage();
+        _primPath = prim.GetPath();
+        _instanceable = prim.IsInstanceable();
+    }
+
+    void undo() override
+    {
+        if (_stage) {
+            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (prim.IsValid()) {
+                prim.SetInstanceable(_instanceable);
+            }
+        }
+    }
+
+    void redo() override
+    {
+        if (_stage) {
+            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (prim.IsValid()) {
+                prim.SetInstanceable(!_instanceable);
+            }
+        }
+    }
+
+private:
+    PXR_NS::UsdStageWeakPtr _stage;
+    PXR_NS::SdfPath         _primPath;
+    bool                    _instanceable;
 };
 
 const char* selectUSDFileScript = R"(
@@ -573,9 +618,13 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 
         // Top-level items (do not add for gateway type node):
         if (!fIsAGatewayType) {
-            items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+#ifdef UFE_V3_FEATURES_AVAILABLE
+            if (PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
+                items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+            }
             items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
             items.emplace_back(Ufe::ContextItem::kSeparator);
+#endif
 
             // Working set management (load and unload):
             const auto itemLabelPairs = _computeLoadAndUnloadItems(prim());
@@ -607,6 +656,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             items.emplace_back(
                 kUSDToggleActiveStateItem,
                 prim().IsActive() ? kUSDDeactivatePrimLabel : kUSDActivatePrimLabel);
+
+            // Instanceable:
+            items.emplace_back(
+                kUSDToggleInstanceableStateItem,
+                prim().IsInstanceable() ? kUSDUnmarkAsInstanceableLabel
+                                        : kUSDMarkAsInstancebaleLabel);
         }
 
         // Top level item - Add New Prim (for all context op types).
@@ -742,6 +797,9 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
         return std::make_shared<ToggleActiveStateCommand>(prim());
     } // ActiveState
+    else if (itemPath[0] == kUSDToggleInstanceableStateItem) {
+        return std::make_shared<ToggleInstanceableStateCommand>(prim());
+    } // InstanceableState
     else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
         // Operation is to create a new prim of the type specified.
         if (itemPath.size() < 2u) {
@@ -779,15 +837,18 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return nullptr;
 
         return std::make_shared<ClearAllReferencesUndoableCommand>(prim());
-    } else if (itemPath[0] == kEditAsMayaItem) {
+    }
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    else if (itemPath[0] == kEditAsMayaItem) {
         MString script;
         script.format("mayaUsdMenu_pullToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
-        script.format("mayaUsdMenu_copyToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
+        script.format("mayaUsdMenu_duplicateToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script);
     }
+#endif
 
     return nullptr;
 }

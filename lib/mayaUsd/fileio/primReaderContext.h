@@ -40,6 +40,7 @@ class UsdMayaPrimReaderContext
 {
 public:
     typedef std::map<std::string, MObject> ObjectRegistry;
+    typedef TfSmallVector<MObject, 4>      MayaObjectList;
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap);
@@ -51,6 +52,18 @@ public:
     /// Returns an invalid MObject if no such object exists.
     MAYAUSD_CORE_PUBLIC
     MObject GetMayaNode(const SdfPath& path, bool findAncestors) const;
+
+    /// \brief Start tracking any new created node in a separate list.
+    MAYAUSD_CORE_PUBLIC
+    void StartNewMayaNodeTracking();
+
+    /// \brief Return list of new Maya nodes being tracked.
+    MAYAUSD_CORE_PUBLIC
+    const MayaObjectList& GetTrackedNewMayaNodes() const;
+
+    /// \brief Stop tracking new Maya nodes.
+    MAYAUSD_CORE_PUBLIC
+    void StopNewMayaNodeTracking();
 
     /// \brief Record \p mayaNode prim as being created \p path.
     ///
@@ -90,6 +103,10 @@ private:
     // used to keep track of prims that are created.
     // for undo/redo
     ObjectRegistry* _pathNodeMap;
+
+    // Tracks new nodes. It is possible that a code branch will decide to work on a copy of the
+    // context, so wrap the tracker in a shared pointer.
+    std::shared_ptr<MayaObjectList> _trackedNewMayaNodes;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -103,7 +103,6 @@ void UsdMayaTranslatorPrim::Read(
 
     // Process API schema attributes and strongly-typed metadata.
     UsdMayaReadUtil::ReadMetadataFromPrim(args.GetIncludeMetadataKeys(), prim, mayaNode);
-    UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(args.GetIncludeAPINames(), prim, mayaNode);
 
     // XXX What about all the "user attributes" that PrimWriter exports???
 }

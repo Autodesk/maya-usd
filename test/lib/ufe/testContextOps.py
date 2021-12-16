@@ -104,6 +104,7 @@ class ContextOpsTestCase(unittest.TestCase):
         # - variant sets, for those prims that have them (such as Ball_35)
         # - add new prim (for all prims)
         # - prim activate/deactivate
+        # - prim mark/unmark as instanceable
         contextItems = self.contextOps.getItems([])
         contextItemStrings = [c.item for c in contextItems]
 
@@ -121,6 +122,7 @@ class ContextOpsTestCase(unittest.TestCase):
         else:
             self.assertNotIn('Toggle Visibility', contextItemStrings)
         self.assertIn('Toggle Active State', contextItemStrings)
+        self.assertIn('Toggle Instanceable State', contextItemStrings)
         self.assertIn('Add New Prim', contextItemStrings)
 
         # Ball_35 has a single variant set, which has children.
@@ -183,6 +185,22 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.redo()
         self.assertFalse(self.ball35Prim.IsActive())
+
+        # Mark / Unmark Prim as Instanceable
+        cmd = self.contextOps.doOpCmd(['Toggle Instanceable State'])
+        self.assertIsNotNone(cmd)
+
+        # Initially, Ball_35 should be not instanceable.
+        self.assertFalse(self.ball35Prim.IsInstanceable())
+
+        ufeCmd.execute(cmd)
+        self.assertTrue(self.ball35Prim.IsInstanceable())
+
+        cmds.undo()
+        self.assertFalse(self.ball35Prim.IsInstanceable())
+
+        cmds.redo()
+        self.assertTrue(self.ball35Prim.IsInstanceable())
 
         # Change variant in variant set.
         def shadingVariant():

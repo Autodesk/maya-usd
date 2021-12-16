@@ -582,6 +582,9 @@ proc int isObjectSelected(string $obj)
 
 global proc mayaUsdMenu_pushBackToUSD(string $obj)
 {
+    if (!hasPrimUpdater())
+        return;
+
     if (size($obj) == 0) {
         string $sel[] = `ls -sl`;
         if (size($sel)) {
@@ -589,17 +592,23 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
         }
     }
     if (size($obj)) {
-        python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.push('" + $obj + "');");
+        python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.mergeToUsd('" + $obj + "');");
     }
 }
 
 global proc mayaUsdMenu_pushClear(string $obj)
 {
+    if (!hasPrimUpdater())
+        return;
+
     python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.discardEdits('" + $obj + "');");
 }
 
-global proc mayaUsdMenu_copyToUSD( string $proxy, string $obj )
+global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
 {
+    if (!hasPrimUpdater())
+        return;
+
     if (size($obj) == 0) {
         string $sel[] = `ls -sl`;
         if (size($sel)) {
@@ -609,12 +618,15 @@ global proc mayaUsdMenu_copyToUSD( string $proxy, string $obj )
     string $objLong[] = `ls -l $obj`;
     string $proxyLong[] = `ls -l $proxy`;
     if (size($objLong) && size($proxyLong)) {
-        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.copy('" + $objLong[0] + "', '"+ $proxyLong[0] +"');");
+        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.duplicate('" + $objLong[0] + "', '"+ $proxyLong[0] +"');");
     }
 }
 
 global proc mayaUsdMenu_markingMenuCallback( string $obj )
 {
+    if (!hasPrimUpdater())
+        return;
+
     if (isPulledUsdObject($obj)) {
         string $pushback = `menuItem -label "Merge Maya Edits to USD" -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $obj)`;
         string $pushclear = `menuItem -label "Discard Maya Edits" -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdMenu_pushClear " + $obj)`;
@@ -624,9 +636,9 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
         string $proxyShapes[] = `ls -type mayaUsdProxyShape`;
         if (size($proxyShapes) > 0) {
             menuItem -divider true -insertAfter "";
-            menuItem -label "Copy To" -subMenu true -insertAfter "";
+            menuItem -label "Duplicate As USD Data" -subMenu true -insertAfter "";
             for ($proxy in $proxyShapes) {
-                menuItem -label $proxy -command ("mayaUsdMenu_copyToUSD " + $proxy + " " + $obj);
+                menuItem -label $proxy -command ("mayaUsdMenu_duplicateToUSD " + $proxy + " " + $obj);
             }
         }
     }
@@ -634,11 +646,17 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
 
 proc initPullMenu()
 {
+    if (!hasPrimUpdater())
+        return;
+
     callbacks -addCallback mayaUsdMenu_markingMenuCallback -hook addRMBBakingMenuItems -owner mayaUsdPlugin;
 }
 
 proc tearPullMenu()
 {
+    if (!hasPrimUpdater())
+        return;
+
     callbacks -removeCallback mayaUsdMenu_markingMenuCallback -hook addRMBBakingMenuItems -owner mayaUsdPlugin;
 }
 

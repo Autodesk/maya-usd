@@ -16,7 +16,8 @@
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
 # MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
 # MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
-# MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT Present of MRenderItem::setUfeIdentifier.
+# MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::setUfeIdentifier.
+# MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::updateUfeIdentifier.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -391,7 +392,14 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h"
     endif()
 endif()
 
-
+set(MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT FALSE CACHE INTERNAL "updateUfeIdentifiers")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h MAYA_HAS_API REGEX "updateUfeIdentifiers")
+    if(MAYA_HAS_API)
+        set(MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT TRUE CACHE INTERNAL "updateUfeIdentifiers")
+        message(STATUS "Maya has updateUfeIdentifiers API")
+    endif()
+endif()
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE

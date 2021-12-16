@@ -37,11 +37,18 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool discardEdits(const UsdMayaPrimUpdaterContext& context) override;
 
+    /// Query to determine if the prim corresponding to this updater can be
+    /// edited as Maya.  The implementation in this class returns true.
+    MAYAUSD_CORE_PUBLIC
+    bool canEditAsMaya() const override;
+
 protected:
     MAYAUSD_CORE_PUBLIC
     bool pushCopySpecs(
+        UsdStageRefPtr srcStage,
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,
+        UsdStageRefPtr dtsStage,
         SdfLayerRefPtr dstLayer,
         const SdfPath& dstSdfPath) override;
 };

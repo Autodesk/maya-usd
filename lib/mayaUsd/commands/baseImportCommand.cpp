@@ -40,7 +40,7 @@ MSyntax MayaUSDImportCommand::createSyntax()
     MSyntax syntax;
 
     // These flags correspond to entries in
-    // UsdMayaJobImportArgs::GetDefaultDictionary.
+    // UsdMayaJobImportArgs::GetGuideDictionary.
     syntax.addFlag(
         kShadingModeFlag,
         UsdMayaJobImportArgsTokens->shadingMode.GetText(),
@@ -69,6 +69,9 @@ MSyntax MayaUSDImportCommand::createSyntax()
         kApiSchemaFlag, UsdMayaJobImportArgsTokens->apiSchema.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kApiSchemaFlag);
     syntax.addFlag(
+        kJobContextFlag, UsdMayaJobImportArgsTokens->jobContext.GetText(), MSyntax::kString);
+    syntax.makeFlagMultiUse(kJobContextFlag);
+    syntax.addFlag(
         kExcludePrimvarFlag,
         UsdMayaJobImportArgsTokens->excludePrimvar.GetText(),
         MSyntax::kString);
@@ -81,7 +84,7 @@ MSyntax MayaUSDImportCommand::createSyntax()
     // Import chasers
     syntax.addFlag(
         kImportChaserFlag, UsdMayaJobImportArgsTokens->chaser.GetText(), MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobImportArgsTokens->chaser.GetText());
+    syntax.makeFlagMultiUse(kImportChaserFlag);
 
     syntax.addFlag(
         kImportChaserArgsFlag,
@@ -89,7 +92,7 @@ MSyntax MayaUSDImportCommand::createSyntax()
         MSyntax::kString,
         MSyntax::kString,
         MSyntax::kString);
-    syntax.makeFlagMultiUse(UsdMayaJobImportArgsTokens->chaserArgs.GetText());
+    syntax.makeFlagMultiUse(kImportChaserArgsFlag);
 
     // These are additional flags under our control.
     syntax.addFlag(kFileFlag, kFileFlagLong, MSyntax::kString);
@@ -133,7 +136,7 @@ MStatus MayaUSDImportCommand::doIt(const MArgList& args)
 
     // Get dictionary values.
     const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
-        argData, UsdMayaJobImportArgs::GetDefaultDictionary());
+        argData, UsdMayaJobImportArgs::GetGuideDictionary());
 
     std::string mFileName;
     if (argData.isFlagSet(kFileFlag)) {

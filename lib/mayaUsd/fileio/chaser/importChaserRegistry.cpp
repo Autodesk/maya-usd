@@ -54,7 +54,7 @@ const SdfPathVector& UsdMayaImportChaserRegistry::FactoryContext::GetImportedPri
     return this->_sdfPaths;
 }
 
-const UsdMayaJobImportArgs& UsdMayaImportChaserRegistry::FactoryContext::GetImportJobArgs() const
+const UsdMayaJobImportArgs& UsdMayaImportChaserRegistry::FactoryContext::GetJobArgs() const
 {
     return this->_jobArgs;
 }

@@ -837,6 +837,8 @@ void ProxyShape::serialize(UsdStageRefPtr stage, LayerManager* layerManager)
 
             // Then add in the current edit target
             trackEditTargetLayer(layerManager);
+            // Add all dirty layers
+            trackAllDirtyLayers(layerManager);
         } else {
             MGlobal::displayError(
                 "ProxyShape::serialize was passed a nullptr for the layerManager");

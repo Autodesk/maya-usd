@@ -38,7 +38,7 @@ class testUsdImportCustomConverter(unittest.TestCase):
 
         fixturesUtils.setUpClass(__file__, suffix)
 
-        cls.input_path = os.getenv("INPUT_PATH")
+        cls.input_path = os.path.abspath(os.getenv("INPUT_PATH"))
 
         cls.test_dir = os.path.join(cls.input_path,
                                     "UsdImportCustomConverterTest")

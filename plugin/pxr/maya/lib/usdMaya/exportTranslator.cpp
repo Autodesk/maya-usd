@@ -128,7 +128,7 @@ MStatus UsdMayaExportTranslator::writer(
                     }
                 }
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
-                    argName, theOption[1].asChar(), UsdMayaJobExportArgs::GetDefaultDictionary());
+                    argName, theOption[1].asChar(), UsdMayaJobExportArgs::GetGuideDictionary());
             }
         }
     }

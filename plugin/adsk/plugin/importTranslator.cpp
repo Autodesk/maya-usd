@@ -92,7 +92,7 @@ MStatus UsdMayaImportTranslator::reader(
                 importData.setRootPrimPath(theOption[1].asChar());
             } else {
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
-                    argName, theOption[1].asChar(), UsdMayaJobImportArgs::GetDefaultDictionary());
+                    argName, theOption[1].asChar(), UsdMayaJobImportArgs::GetGuideDictionary());
             }
         }
     }

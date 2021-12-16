@@ -19,6 +19,7 @@
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsdUtils/MergePrims.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
 
@@ -60,9 +61,14 @@ PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
 }
 
 /* virtual */
+bool PxrUsdTranslators_MayaReferenceUpdater::canEditAsMaya() const { return true; }
+
+/* virtual */
 bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
+    UsdStageRefPtr srcStage,
     SdfLayerRefPtr srcLayer,
     const SdfPath& srcSdfPath,
+    UsdStageRefPtr dstStage,
     SdfLayerRefPtr dstLayer,
     const SdfPath& dstSdfPath)
 {
@@ -72,9 +78,8 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
     // We are looking for a very specific configuration in here
     // i.e. a parent prim with a variant set called "animVariant"
     // and two variants "cache" and "rig"
-    UsdStageRefPtr srcStage = UsdStage::Open(dstLayer);
-    SdfPath        parentSdfPath = dstSdfPath.GetParentPath();
-    UsdPrim        primWithVariant = srcStage->GetPrimAtPath(parentSdfPath);
+    SdfPath parentSdfPath = dstSdfPath.GetParentPath();
+    UsdPrim primWithVariant = dstStage->GetPrimAtPath(parentSdfPath);
 
     // Switching variant to cache to discover payload and where to write the data
     UsdVariantSet variantSet = primWithVariant.GetVariantSet("animVariant");
@@ -90,7 +95,8 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
             SdfLayerHandle payloadLayer
                 = arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer;
             SdfPath payloadPrimPath = arc.GetTargetNode().GetPath();
-            success = SdfCopySpec(srcLayer, srcSdfPath, payloadLayer, payloadPrimPath);
+            success = MayaUsdUtils::mergePrims(
+                srcStage, srcLayer, srcSdfPath, dstStage, payloadLayer, payloadPrimPath);
 
             break;
         }

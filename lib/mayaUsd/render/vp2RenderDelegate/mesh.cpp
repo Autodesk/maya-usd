@@ -465,6 +465,12 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
     const HdDirtyBits& rprimDirtyBits,
     const TfToken&     reprToken)
 {
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        _rprimId.asChar(),
+        "HdVP2Mesh::_PrepareSharedVertexBuffers");
+
     // Normals have two possible sources. They could be authored by the scene delegate,
     // in which case we should find them in _primvarInfo, or they could be computed
     // normals. Compute the normal buffer if necessary.
@@ -838,26 +844,22 @@ void HdVP2Mesh::Sync(
     HdDirtyBits*     dirtyBits,
     const TfToken&   reprToken)
 {
-    // We don't create render items for the selection repr. The selection repr
-    // is used when the Sync call is made during a selection pass.
-    // When the selection mode changes, we DO want the chance to update our
-    // shaded render items (to support things like point snapping to similar instances), so make
-    // another call to Sync but with the smoothHull repr.
-    if (reprToken == HdVP2ReprTokens->selection) {
-        if (*dirtyBits & DirtySelectionMode) {
-            Sync(delegate, renderParam, dirtyBits, HdReprTokens->smoothHull);
-        }
-        return;
-    }
+    const SdfPath&       id = GetId();
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
 
-    const SdfPath& id = GetId();
+    // Update the selection status if it changed.
+    if (*dirtyBits & DirtySelectionHighlight) {
+        _selectionStatus = drawScene.GetSelectionStatus(id);
+    } else {
+        TF_VERIFY(_selectionStatus == drawScene.GetSelectionStatus(id));
+    }
 
     // We don't update the repr if it is hidden by the render tags (purpose)
     // of the ProxyRenderDelegate. In additional, we need to hide any already
     // existing render items because they should not be drawn.
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
         _HideAllDrawItems(reprToken);
         *dirtyBits &= ~(
@@ -884,8 +886,7 @@ void HdVP2Mesh::Sync(
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
-                    = dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
-                        geomSubset.materialId);
+                    = usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId);
                 HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
@@ -896,15 +897,21 @@ void HdVP2Mesh::Sync(
         }
 #endif
 
-        _meshSharedData->_topology = GetMeshTopology(delegate);
+        {
+            MProfilingScope profilingScope(
+                HdVP2RenderDelegate::sProfilerCategory,
+                MProfiler::kColorC_L2,
+                _rprimId.asChar(),
+                "HdVP2Mesh::GetMeshTopology");
+            _meshSharedData->_topology = GetMeshTopology(delegate);
+        }
 
         // subscribe to material updates from the new geom subset materials
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             if (!geomSubset.materialId.IsEmpty()) {
                 const SdfPath materialId
-                    = dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
-                        geomSubset.materialId);
+                    = usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId);
                 HdVP2Material* material = static_cast<HdVP2Material*>(
                     renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
@@ -988,8 +995,7 @@ void HdVP2Mesh::Sync(
 
         for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets()) {
             addRequiredPrimvars(
-                dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
-                    geomSubset.materialId));
+                usdImagingDelegate->ConvertCachePathToIndexPath(geomSubset.materialId));
         }
 
         // also, we always require points
@@ -1000,6 +1006,12 @@ void HdVP2Mesh::Sync(
     }
 
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            _rprimId.asChar(),
+            "HdVP2Mesh Create Rendering Topology");
+
         const HdMeshTopology& topology = _meshSharedData->_topology;
         const VtIntArray&     faceVertexIndices = topology.GetFaceVertexIndices();
         const size_t          numFaceVertexIndices = faceVertexIndices.size();
@@ -1208,11 +1220,6 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
         bits |= HdChangeTracker::DirtyExtent;
     }
 
-    // Visibility and selection result in highlight changes:
-    if ((bits & HdChangeTracker::DirtyVisibility) && (bits & DirtySelection)) {
-        bits |= DirtySelectionHighlight;
-    }
-
     if (bits & HdChangeTracker::AllDirty) {
         // RPrim is dirty, propagate dirty bits to all draw items.
         for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
@@ -1281,26 +1288,19 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    // Update selection state on demand or when it is a new Rprim. DirtySelection
+    // Update selection state when it is a new Rprim. DirtySelectionHighlight
     // will be propagated to all draw items, to trigger sync for each repr.
-    if (reprToken == HdVP2ReprTokens->selection || _reprs.empty()) {
+    if (_reprs.empty()) {
         const HdVP2SelectionStatus selectionStatus
             = param->GetDrawScene().GetSelectionStatus(GetId());
         if (_selectionStatus != selectionStatus) {
             _selectionStatus = selectionStatus;
-            *dirtyBits |= DirtySelection;
+            *dirtyBits |= DirtySelectionHighlight;
         } else if (_selectionStatus == kPartiallySelected) {
-            *dirtyBits |= DirtySelection;
+            *dirtyBits |= DirtySelectionHighlight;
         }
-
-        // We don't create a repr for the selection token because it serves for
-        // selection state update only. Return from here.
-        if (reprToken == HdVP2ReprTokens->selection)
-            return;
     }
 
-    // If the repr has any draw item with the DirtySelection bit, mark the
-    // DirtySelectionHighlight bit to invoke the synchronization call.
     _ReprVector::const_iterator it
         = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
     if (it != _reprs.end()) {
@@ -1320,9 +1320,6 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                         // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
                         // items to ensure proper Sync
                         renderItemData.SetDirtyBits(HdChangeTracker::DirtyRepr);
-                    }
-                    if (renderItemData.GetDirtyBits() & DirtySelection) {
-                        *dirtyBits |= DirtySelectionHighlight;
                     }
                 }
             }
@@ -1364,7 +1361,11 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
                 // But default material mode does not use geom subsets, so we create the render item
                 MHWRender::MRenderItem* defaultMaterialItem
                     = _CreateSmoothHullRenderItem(
+#if HD_API_VERSION < 35
+                          renderItemName, *drawItem, *subSceneContainer, nullptr)
+#else
                           renderItemName, *drawItem.get(), *subSceneContainer, nullptr)
+#endif
                           ._renderItem;
                 defaultMaterialItem->setDefaultMaterialHandling(
                     MRenderItem::DrawOnlyWhenDefaultMaterialActive);
@@ -1372,7 +1373,11 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
                 if (!GetInstancerId().IsEmpty()) {
                     defaultMaterialItem = _CreateShadedSelectedInstancesItem(
+#if HD_API_VERSION < 35
+                        renderItemName, *drawItem, *subSceneContainer, nullptr);
+#else
                         renderItemName, *drawItem.get(), *subSceneContainer, nullptr);
+#endif
                     defaultMaterialItem->setDefaultMaterialHandling(
                         MRenderItem::DrawOnlyWhenDefaultMaterialActive);
                     defaultMaterialItem->setShader(_delegate->Get3dDefaultMaterialShader());
@@ -1606,6 +1611,12 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        _rprimId.asChar(),
+        "HdVP2Mesh::_UpdateRepr");
+
     _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
 
     // For each relevant draw item, update dirty buffer sources.
@@ -1648,6 +1659,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     // We don't need to update the shaded selected instance item when the selection mode is not
@@ -1708,6 +1720,12 @@ void HdVP2Mesh::_UpdateDrawItem(
     // Prepare index buffer.
     if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
         const HdMeshTopology& topologyToUse = _meshSharedData->_renderingTopology;
+
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            _rprimId.asChar(),
+            "HdVP2Mesh prepare index buffer");
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
             // _trianglesFaceVertexIndices has the full triangulation calculated in
@@ -1795,8 +1813,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 SdfPath cachePathMaterialId = drawItemData._geomSubset.materialId;
                 // This is annoying! The saved materialId is a cache path, but to look up the
                 // material in the render index we need the index path.
-                materialId = dynamic_cast<UsdImagingDelegate*>(sceneDelegate)
-                                 ->ConvertCachePathToIndexPath(cachePathMaterialId);
+                materialId = usdImagingDelegate->ConvertCachePathToIndexPath(cachePathMaterialId);
             }
             const HdVP2Material* material = static_cast<const HdVP2Material*>(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
@@ -1938,6 +1955,12 @@ void HdVP2Mesh::_UpdateDrawItem(
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
 
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            _rprimId.asChar(),
+            "HdVP2Mesh Update instances");
+
         // Retrieve instance transforms from the instancer.
         HdInstancer*    instancer = renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms
@@ -2010,27 +2033,34 @@ void HdVP2Mesh::_UpdateDrawItem(
             // or not drawing if the item is a selection highlight item.
             instanceInfo.resize(instanceCount, modeDormant);
 
-            // Assign with the index to the active selection highlight color.
-            if (const auto state = drawScene.GetActiveSelectionState(id)) {
-                for (const auto& indexArray : state->instanceIndices) {
-                    for (const auto index : indexArray) {
-                        // This bounds check is necessary because of Pixar USD Issue 1516
-                        // Logged as MAYA-113682
-                        if (index >= 0 && index < (const int)instanceCount) {
-                            instanceInfo[index] = modeActive;
+            // Sometimes the calls to GetActiveSelectionState and GetLeadSelectionState
+            // return instance indices which do not match the current selection, and that
+            // causes incorrect drawing. Only call GetActiveSelectionState and GetLeadSelectionState
+            // when _selectionStatus is kPartiallySelected. If the object is fully lead or active
+            // then we already have the correct values in instanceInfo.
+            if (_selectionStatus == kPartiallySelected) {
+                // Assign with the index to the active selection highlight color.
+                if (const auto state = drawScene.GetActiveSelectionState(id)) {
+                    for (const auto& indexArray : state->instanceIndices) {
+                        for (const auto index : indexArray) {
+                            // This bounds check is necessary because of Pixar USD Issue 1516
+                            // Logged as MAYA-113682
+                            if (index >= 0 && index < (const int)instanceCount) {
+                                instanceInfo[index] = modeActive;
+                            }
                         }
                     }
                 }
-            }
 
-            // Assign with the index to the lead selection highlight color.
-            if (const auto state = drawScene.GetLeadSelectionState(id)) {
-                for (const auto& indexArray : state->instanceIndices) {
-                    for (const auto index : indexArray) {
-                        // This bounds check is necessary because of Pixar USD Issue 1516
-                        // Logged as MAYA-113682
-                        if (index >= 0 && index < (const int)instanceCount) {
-                            instanceInfo[index] = modeLead;
+                // Assign with the index to the lead selection highlight color.
+                if (const auto state = drawScene.GetLeadSelectionState(id)) {
+                    for (const auto& indexArray : state->instanceIndices) {
+                        for (const auto index : indexArray) {
+                            // This bounds check is necessary because of Pixar USD Issue 1516
+                            // Logged as MAYA-113682
+                            if (index >= 0 && index < (const int)instanceCount) {
+                                instanceInfo[index] = modeLead;
+                            }
                         }
                     }
                 }
@@ -2063,35 +2093,78 @@ void HdVP2Mesh::_UpdateDrawItem(
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
             // Create & fill the per-instance data buffers: the transform buffer, the color buffer
             // and the Maya instance id to usd instance id mapping buffer.
-            auto& mayaToUsd = MayaUsdCustomData::Get(*renderItem);
-            mayaToUsd.clear();
+            InstanceIdMap mayaToUsd;
+#endif
+#ifdef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
+            // Mark the Ufe Identifiers on the item dirty. The next time isolate select
+            // updates the Ufe Identifiers will be updated.
+            MayaUsdCustomData::ItemDataDirty(*renderItem, true);
+
+            InstancePrimPaths& instancePrimPaths = MayaUsdCustomData::GetInstancePrimPaths(GetId());
+
+            // The code to invalidate the instancePrimPaths is incomplete. If we had an instance
+            // added and another instance removed between two calls to Sync, then the instanceCount
+            // will match the cached path count, and the cache won't be invalidated. None of the
+            // dirty information I get get out of the instancer seems correct, so I'll use this best
+            // effort version for now, while I wait for a USD side fix.
+            if (instanceCount != instancePrimPaths.size()) {
+                instancePrimPaths.clear();
+                instancePrimPaths.resize(instanceCount);
+            }
 #endif
 
-            for (unsigned int i = 0; i < instanceCount; i++) {
-                unsigned char info = instanceInfo[i];
+            for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
+                unsigned char info = instanceInfo[usdInstanceId];
                 if (info == invalid)
                     continue;
+#ifndef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
                 stateToCommit._ufeIdentifiers.append(
-                    drawScene.GetScenePrimPath(GetId(), i).GetString().c_str());
-                transforms[i].Get(instanceMatrix.matrix);
+                    drawScene.GetScenePrimPath(GetId(), usdInstanceId).GetString().c_str());
+#endif
+                transforms[usdInstanceId].Get(instanceMatrix.matrix);
                 stateToCommit._instanceTransforms.append(worldMatrix * instanceMatrix);
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-                mayaToUsd.push_back(i);
+                mayaToUsd.push_back(usdInstanceId);
 #endif
-
                 if (useWireframeColors) {
                     const MColor& color = wireframeColors[info];
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
                         stateToCommit._instanceColors.append(color[j]);
                     }
                 } else if (shadedColors) {
-                    unsigned int offset = i * kNumColorChannels;
+                    unsigned int offset = usdInstanceId * kNumColorChannels;
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
                         stateToCommit._instanceColors.append((*shadedColors)[offset + j]);
                     }
                 }
             }
+#ifdef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
+            InstanceIdMap& cachedMayaToUsd = MayaUsdCustomData::Get(*renderItem);
+            bool           mayaToUsdChanged = cachedMayaToUsd.size() != mayaToUsd.size();
+            for (unsigned int i = 0; !mayaToUsdChanged && i < mayaToUsd.size(); i++) {
+                mayaToUsdChanged = cachedMayaToUsd[i] != mayaToUsd[i];
+            }
 
+            if (mayaToUsdChanged && drawScene.ufeIdentifiersInUse()) {
+                unsigned int mayaInstanceCount = mayaToUsd.size();
+                for (unsigned int mayaInstanceId = 0; mayaInstanceId < mayaInstanceCount;
+                     mayaInstanceId++) {
+                    unsigned int usdInstanceId = mayaToUsd[mayaInstanceId];
+                    // try making a cache of the USD ID to the ufeIdentifier.
+                    if (instancePrimPaths[usdInstanceId] == SdfPath()) {
+                        instancePrimPaths[usdInstanceId]
+                            = drawScene.GetScenePrimPath(GetId(), usdInstanceId);
+                    }
+                    stateToCommit._ufeIdentifiers.append(
+                        instancePrimPaths[usdInstanceId].GetString().c_str());
+                }
+            }
+            cachedMayaToUsd = std::move(mayaToUsd);
+#else
+            TF_VERIFY(
+                stateToCommit._ufeIdentifiers.length()
+                == stateToCommit._instanceTransforms.length());
+#endif
             if (stateToCommit._instanceTransforms.length() == 0)
                 instancerWithNoInstances = true;
         }
@@ -2512,6 +2585,12 @@ void HdVP2Mesh::_UpdatePrimvarSources(
     HdDirtyBits          dirtyBits,
     const TfTokenVector& requiredPrimvars)
 {
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorC_L2,
+        _rprimId.asChar(),
+        "HdVP2Mesh::_UpdatePrimvarSources");
+
     const SdfPath& id = GetId();
 
     auto updatePrimvarInfo
