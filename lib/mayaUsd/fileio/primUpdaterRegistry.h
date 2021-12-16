@@ -89,7 +89,8 @@ struct UsdMayaPrimUpdaterRegistry
         const TfType&                tfType,
         const std::string&           mayaType,
         UsdMayaPrimUpdater::Supports sup,
-        UpdaterFactoryFn             fn);
+        UpdaterFactoryFn             fn,
+        bool                         fromPython = false);
 
     /// \brief Register \p fn as an updater provider for \p T.
     ///
