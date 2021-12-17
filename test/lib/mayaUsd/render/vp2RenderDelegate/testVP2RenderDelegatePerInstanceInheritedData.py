@@ -94,7 +94,6 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
             return
 
         # Hide and show some instances to make sure it updates correctly
-        # These should start working correctly when MAYA-110508 is fixed
         stage = mayaUsdUfe.getStage("|stage|stageShape")
         ball_03_vis = stage.GetPrimAtPath('/root/group/ball_03').GetAttribute('visibility')
         ball_04_vis = stage.GetPrimAtPath('/root/group/ball_04').GetAttribute('visibility')
@@ -121,7 +120,6 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
             imageVersion = 'pre-21_08'
 
         # Modify the purpose of some instances to make sure they are shown and hidden properly
-        # The selection highlight of the instances is incorrect until MAYA-111508 is fixed by Pixar.
         ball_03_purpose = stage.GetPrimAtPath('/root/group/ball_03').GetAttribute('purpose')
         ball_04_purpose = stage.GetPrimAtPath('/root/group/ball_04').GetAttribute('purpose')
 
