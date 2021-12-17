@@ -17,7 +17,6 @@
 #
 
 import os
-import shutil
 import unittest
 
 from maya import cmds

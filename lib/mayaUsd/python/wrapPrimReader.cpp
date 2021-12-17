@@ -56,7 +56,7 @@ public:
         return *((std::shared_ptr<This>*)createdWrapper);
     }
 
-    virtual ~PrimReaderWrapper() { }
+    virtual ~PrimReaderWrapper() = default;
 
     bool Read(UsdMayaPrimReaderContext& context) override
     {

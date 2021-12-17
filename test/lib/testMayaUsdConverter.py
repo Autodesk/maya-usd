@@ -66,7 +66,7 @@ class MayaUsdConverterTestCase(unittest.TestCase):
     
     def runTypeChecks(self, sdfValueType, value1, value2):
         """
-        Test for Sdf.ValueTypeNames.Bool type, veryfing:
+        Test for Sdf.ValueTypeNames.XXX type, veryfing:
         - we can find the converter of given sdf type name
         - we can find the converter with a pair of maya plug and usd attribute
         - we can convert vtvalue --> maya plug (value1)
@@ -149,6 +149,32 @@ class MayaUsdConverterTestCase(unittest.TestCase):
         value1 = Vt.Bool(True)
         value2 = Vt.Bool(False)
         sdfValueType = Sdf.ValueTypeNames.Bool
+        errSdfValueType = Sdf.ValueTypeNames.String
+        #
+        self.runTypeChecks(sdfValueType,value1,value2)
+        self.runErrorHandlingChecks(sdfValueType,value1,errSdfValueType)
+
+    def testFloatConverter(self):
+        """
+        Test for Sdf.ValueTypeNames.Float
+        """
+        #
+        value1 = Vt.Float(3.14)
+        value2 = Vt.Float(9.98)
+        sdfValueType = Sdf.ValueTypeNames.Float
+        errSdfValueType = Sdf.ValueTypeNames.String
+        #
+        self.runTypeChecks(sdfValueType,value1,value2)
+        self.runErrorHandlingChecks(sdfValueType,value1,errSdfValueType)
+
+    def testDoubleConverter(self):
+        """
+        Test for Sdf.ValueTypeNames.Double
+        """
+        #
+        value1 = Vt.Double(3.14)
+        value2 = Vt.Double(9.98)
+        sdfValueType = Sdf.ValueTypeNames.Double
         errSdfValueType = Sdf.ValueTypeNames.String
         #
         self.runTypeChecks(sdfValueType,value1,value2)
