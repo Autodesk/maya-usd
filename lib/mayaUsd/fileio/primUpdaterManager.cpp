@@ -201,6 +201,11 @@ void removePullInformation(const Ufe::Path& ufePulledPath)
         return;
     UsdEditContext editContext(stage, stage->GetSessionLayer());
     prim.ClearCustomDataByKey(kPullPrimMetadataKey);
+
+    // Session layer cleanup
+    for (const SdfPrimSpecHandle& rootPrimSpec : stage->GetSessionLayer()->GetRootPrims()) {
+        stage->GetSessionLayer()->RemovePrimIfInert(rootPrimSpec);
+    }
 }
 
 //------------------------------------------------------------------------------

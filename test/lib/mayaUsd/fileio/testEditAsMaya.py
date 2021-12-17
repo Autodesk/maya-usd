@@ -161,8 +161,7 @@ class EditAsMayaTestCase(unittest.TestCase):
         # Discard Maya edits, but there is nothing to discard.
         self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits("A"))
 
-        # Now Session Layer should be empty, but it is not, it has an empty content
-        self.assertFalse(stage.GetSessionLayer().empty)
+        self.assertTrue(stage.GetSessionLayer().empty)
 
         self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), None)
 
