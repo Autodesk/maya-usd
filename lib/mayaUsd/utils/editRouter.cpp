@@ -15,10 +15,9 @@
 //
 #include "editRouter.h"
 
-#include <pxr/base/tf/token.h>
-#include <pxr/base/tf/diagnosticLite.h>
 #include <pxr/base/tf/callContext.h>
-
+#include <pxr/base/tf/diagnosticLite.h>
+#include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
@@ -29,10 +28,7 @@ namespace {
 
 MayaUsd::EditRouters editRouters;
 
-void editTargetLayer(
-    const PXR_NS::VtDictionary& context,
-    PXR_NS::VtDictionary&       routingData
-)
+void editTargetLayer(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)
 {
     // We expect a prim in the context.
     auto found = context.find("prim");
@@ -52,14 +48,13 @@ void editTargetLayer(
 
 namespace MAYAUSD_NS_DEF {
 
-EditRouter::~EditRouter() {}
+EditRouter::~EditRouter() { }
 
-CxxEditRouter::~CxxEditRouter() {}
+CxxEditRouter::~CxxEditRouter() { }
 
 void CxxEditRouter::operator()(
     const PXR_NS::VtDictionary& context,
-    PXR_NS::VtDictionary&       routingData
-)
+    PXR_NS::VtDictionary&       routingData)
 {
     _cb(context, routingData);
 }
@@ -68,7 +63,7 @@ EditRouters editRouterDefaults()
 {
     using namespace PXR_NS;
 
-    EditRouters defaultRouters;
+    EditRouters   defaultRouters;
     TfTokenVector defaultOperations = { TfToken("parent"), TfToken("duplicate") };
     for (const auto& o : defaultOperations) {
         defaultRouters[o] = std::make_shared<CxxEditRouter>(editTargetLayer);
@@ -76,21 +71,19 @@ EditRouters editRouterDefaults()
     return defaultRouters;
 }
 
-void registerEditRouter(
-    const PXR_NS::TfToken& operation,
-    const EditRouter::Ptr& editRouter
-)
+void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter)
 {
     editRouters[operation] = editRouter;
 }
 
-PXR_NS::SdfLayerHandle getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim)
+PXR_NS::SdfLayerHandle
+getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim)
 {
     auto foundRouter = editRouters.find(operation);
     if (foundRouter == editRouters.end())
         return nullptr;
 
-    auto dstEditRouter = foundRouter->second;
+    auto                 dstEditRouter = foundRouter->second;
     PXR_NS::VtDictionary context;
     PXR_NS::VtDictionary routingData;
     context["prim"] = PXR_NS::VtValue(prim);
@@ -99,7 +92,7 @@ PXR_NS::SdfLayerHandle getEditRouterLayer(const PXR_NS::TfToken& operation, cons
     auto found = routingData.find("layer");
     if (found != routingData.end()) {
         if (found->second.IsHolding<std::string>()) {
-            std::string layerName = found->second.Get<std::string>();
+            std::string            layerName = found->second.Get<std::string>();
             PXR_NS::SdfLayerRefPtr layer = prim.GetStage()->GetRootLayer()->Find(layerName);
             return layer;
         } else if (found->second.IsHolding<PXR_NS::SdfLayerHandle>()) {

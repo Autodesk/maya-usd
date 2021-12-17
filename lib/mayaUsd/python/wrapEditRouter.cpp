@@ -15,9 +15,10 @@
 //
 #include <mayaUsd/utils/editRouter.h>
 
+#include <pxr/base/tf/pyLock.h>
+
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <pxr/base/tf/pyLock.h>
 
 #include <iostream>
 
@@ -28,15 +29,14 @@ namespace {
 class PyEditRouter : public MayaUsd::EditRouter
 {
 public:
-
-    PyEditRouter(PyObject* pyCallable) : _pyCb(pyCallable)   {     }
+    PyEditRouter(PyObject* pyCallable)
+        : _pyCb(pyCallable)
+    {
+    }
 
     ~PyEditRouter() override { }
 
-    void operator()(
-        const PXR_NS::VtDictionary& context,
-        PXR_NS::VtDictionary&       routingData
-    ) override
+    void operator()(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData) override
     {
         PXR_NS::TfPyLock pyLock;
         if (!PyCallable_Check(_pyCb)) {
@@ -56,11 +56,10 @@ public:
     }
 
 private:
-
     PyObject* _pyCb;
 };
 
-}
+} // namespace
 
 void wrapEditRouter()
 {
@@ -70,8 +69,9 @@ void wrapEditRouter()
     // function pointer for the lambda, which is required for successful Boost
     // Python compilation of the lambda and its argument.
 
-    def("registerEditRouter", +[](const PXR_NS::TfToken& operation, PyObject* editRouter) {
-        return MayaUsd::registerEditRouter(
-            operation, std::make_shared<PyEditRouter>(editRouter));
-    });
+    def(
+        "registerEditRouter", +[](const PXR_NS::TfToken& operation, PyObject* editRouter) {
+            return MayaUsd::registerEditRouter(
+                operation, std::make_shared<PyEditRouter>(editRouter));
+        });
 }

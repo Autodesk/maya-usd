@@ -39,47 +39,41 @@ public:
     // Compute the routing data.  The context is immutable, and is input to
     // the computation of the routing data.  Routing data may be initialized,
     // so that acceptable defaults can be left unchanged.
-    virtual void operator()(
-        const PXR_NS::VtDictionary& context,
-        PXR_NS::VtDictionary&       routingData
-    ) = 0;
+    virtual void operator()(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)
+        = 0;
 };
 
 // Wrap an argument edit router callback for storage in the edit router map.
 class MAYAUSD_CORE_PUBLIC CxxEditRouter : public EditRouter
 {
 public:
+    using EditRouterCb = std::function<
+        void(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData)>;
 
-    using EditRouterCb = std::function<void (
-        const PXR_NS::VtDictionary& context,
-        PXR_NS::VtDictionary&       routingData
-    )>;
-
-    CxxEditRouter(EditRouterCb cb) : _cb(cb) {}
+    CxxEditRouter(EditRouterCb cb)
+        : _cb(cb)
+    {
+    }
 
     ~CxxEditRouter() override;
 
-    void operator()(
-        const PXR_NS::VtDictionary& context,
-        PXR_NS::VtDictionary&       routingData
-    ) override;
+    void
+    operator()(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData) override;
 
 private:
-    
     EditRouterCb _cb;
 };
 
-using EditRouters = PXR_NS::TfHashMap<PXR_NS::TfToken, EditRouter::Ptr, PXR_NS::TfToken::HashFunctor>;
+using EditRouters
+    = PXR_NS::TfHashMap<PXR_NS::TfToken, EditRouter::Ptr, PXR_NS::TfToken::HashFunctor>;
 
 MAYAUSD_CORE_PUBLIC
-PXR_NS::SdfLayerHandle getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim);
+PXR_NS::SdfLayerHandle
+getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim);
 
 // Register an edit router for the argument operation.
 MAYAUSD_CORE_PUBLIC
-void registerEditRouter(
-    const PXR_NS::TfToken& operation,
-    const EditRouter::Ptr& editRouter
-);
+void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter);
 
 // Return built-in default edit routers.
 EditRouters editRouterDefaults();
