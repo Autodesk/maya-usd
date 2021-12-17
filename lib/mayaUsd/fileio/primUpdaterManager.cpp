@@ -960,9 +960,14 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
     for (const MDagPath& curDagPath : toApplyOn) {
-        MFnDependencyNode   depNodeFn(curDagPath.node());
-        FallbackPrimUpdater fallback(depNodeFn, Ufe::Path());
-        fallback.discardEdits(context);
+        MFnDependencyNode dgNodeFn(curDagPath.node());
+        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
+
+        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
+        auto updater = factory(dgNodeFn, Ufe::Path());
+
+        updater->discardEdits(context);
     }
 
     FunctionUndoItem::execute(
