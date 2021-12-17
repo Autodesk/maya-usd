@@ -580,6 +580,16 @@ class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
 
 class TestPythonTranslatorsUniqueKey(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # Setup for test output
+        inputPath = fixturesUtils.setUpClass(__file__, loadPlugin=False)
+        cls._testDataDir = os.path.join(inputPath, '../test_data/')
+
+    @classmethod
+    def tearDownClass(cls):
+        fixturesUtils.tearDownClass(unloadPlugin=False)
+
     def setUp(self):
         cmds.file(force=True, new=True)
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
@@ -589,7 +599,7 @@ class TestPythonTranslatorsUniqueKey(unittest.TestCase):
 
         usdmaya.TranslatorBase.registerTranslator(self.translator, 'beast_bindings')
 
-        self.stage = Usd.Stage.Open('../test_data/rig_bindings.usda')
+        self.stage = Usd.Stage.Open(self._testDataDir + 'rig_bindings.usda')
         self.rootPrim = self.stage.GetPrimAtPath('/root')
 
         self.stageCache = UsdUtils.StageCache.Get()
