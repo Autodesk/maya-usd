@@ -766,14 +766,18 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
+    // Work around for USD issue #1516. We don't know if any instanced object has
+    // had it's instance index change, so re-populate selection every update to
+    // ensure correct selection highlighting of instanced objects.
+    bool instanceIndexChanged = true;
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass)) {
+    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass) || instanceIndexChanged) {
         _UpdateSelectionStates();
         _selectionChanged = false;
         _selectionModeChanged = false;
     }
 #else
-    if (_selectionChanged && !inSelectionPass) {
+    if ((_selectionChanged && !inSelectionPass) || instanceIndexChanged) {
         _UpdateSelectionStates();
         _selectionChanged = false;
     }
