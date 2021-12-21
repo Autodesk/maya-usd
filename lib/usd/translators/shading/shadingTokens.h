@@ -262,6 +262,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (cubic)
 
 #define TR_MTLX_ATTRIBUTES \
+    (varnameStr) \
     (geomprop) \
     (channels) \
     (in) \

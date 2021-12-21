@@ -84,8 +84,8 @@ class testUsdExportMaterialX(unittest.TestCase):
         material_path = mat.GetPath().pathString
         self.assertEqual(material_path, base_path)
 
-        # Needs a resolved inputs:file1:varname attribute:
-        self.assertEqual(mat.GetInput("file1:varname").GetAttr().Get(), "st")
+        # Needs a resolved inputs:file1:varnameStr attribute:
+        self.assertEqual(mat.GetInput("file1:varnameStr").GetAttr().Get(), "st")
 
         # Needs a MaterialX surface source:
         shader = mat.ComputeSurfaceSource("mtlx")[0]
@@ -132,7 +132,7 @@ class testUsdExportMaterialX(unittest.TestCase):
         shader = UsdShade.Shader(cnxTuple[0])
         self.assertEqual(shader.GetIdAttr().Get(), "ND_geompropvalue_vector2")
         self.assertEqual(shader.GetPath(),
-                         ng_path + "/MayaGeomPropValue_file1")
+                         ng_path + "/place2dTexture1")
 
     def testExportTexturedMaterialXNodeTypes(self):
         '''
@@ -146,7 +146,7 @@ class testUsdExportMaterialX(unittest.TestCase):
             (1, 2, "file1", "ND_image_color3"),
             (4, 5, "file4", "ND_image_color4"),
 
-            (1, 2, "MayaGeomPropValue_file1", "ND_geompropvalue_vector2"),
+            (1, 2, "place2dTexture1", "ND_geompropvalue_vector2"),
 
             (4, 5, "MayaSwizzle_file4_rgb", "ND_swizzle_color4_color3"),
             (6, 7, "MayaSwizzle_file6_xxx", "ND_swizzle_vector2_color3"),
@@ -172,6 +172,7 @@ class testUsdExportMaterialX(unittest.TestCase):
             shader = UsdShade.Shader(prim)
             self.assertTrue(shader, prim_path)
             self.assertEqual(shader.GetIdAttr().Get(), id_attr, id_attr)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

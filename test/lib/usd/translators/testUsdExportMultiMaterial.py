@@ -29,7 +29,18 @@ import unittest
 import fixturesUtils
 
 
-class testUsdExportMaterialX(unittest.TestCase):
+def connectUVNode(uv_node, file_node):
+    for att_name in (".coverage", ".translateFrame", ".rotateFrame",
+                    ".mirrorU", ".mirrorV", ".stagger", ".wrapU",
+                    ".wrapV", ".repeatUV", ".offset", ".rotateUV",
+                    ".noiseUV", ".vertexUvOne", ".vertexUvTwo",
+                    ".vertexUvThree", ".vertexCameraOne"):
+        cmds.connectAttr(uv_node + att_name, file_node + att_name, f=True)
+    cmds.connectAttr(uv_node + ".outUV", file_node + ".uvCoord", f=True)
+    cmds.connectAttr(uv_node + ".outUvFilterSize", file_node + ".uvFilterSize", f=True)
+
+
+class testUsdExportMultiMaterial(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -84,6 +95,133 @@ class testUsdExportMaterialX(unittest.TestCase):
             shader = UsdShade.Shader(prim)
             self.assertTrue(shader, prim_path)
             self.assertEqual(shader.GetIdAttr().Get(), id_attr)
+
+    def testVarnameMerging(self):
+        """
+        Test that we produce a minimal number of UV readers and varname/varnameStr and that the
+        connections are properly propagated across nodegraph boundaries.
+        """
+        cmds.file(f=True, new=True)
+
+        sphere_xform = cmds.polySphere()[0]
+
+        material_node = cmds.shadingNode("usdPreviewSurface", asShader=True,
+                                            name="ss01")
+        material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
+                                empty=True, name="ss01SG")
+        cmds.connectAttr(material_node+".outColor",
+                            material_sg+".surfaceShader", force=True)
+        cmds.sets(sphere_xform, e=True, forceElement=material_sg)
+
+        # One file with UVs connected to diffuse:
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        uv_node = cmds.shadingNode("place2dTexture", asUtility=True)
+        cmds.setAttr(uv_node + ".offsetU", 0.125)
+        cmds.setAttr(uv_node + ".offsetV", 0.5)
+        connectUVNode(uv_node, file_node)
+        cmds.connectAttr(file_node + ".outColor",
+                         material_node + ".diffuseColor", f=True)
+
+        # Another file, same UVs, connected to emissiveColor
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        connectUVNode(uv_node, file_node)
+        cmds.connectAttr(file_node + ".outColor",
+                         material_node + ".emissiveColor", f=True)
+
+        # Another file, no UVs, connected to metallic
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        cmds.connectAttr(file_node + ".outColorR",
+                         material_node + ".metallic", f=True)
+
+        # Another file, no UVs, connected to roughness
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        cmds.connectAttr(file_node + ".outColorR",
+                         material_node + ".roughness", f=True)
+        cmds.setAttr(file_node + ".offsetU", 0.25)
+        cmds.setAttr(file_node + ".offsetV", 0.75)
+
+        # Export to USD:
+        usd_path = os.path.abspath('MinimalUVReader.usda')
+        cmds.usdExport(mergeTransformAndShape=True,
+            file=usd_path,
+            shadingMode='useRegistry',
+            convertMaterialsTo=['MaterialX', 'UsdPreviewSurface'])
+
+        # We expect 2 primvar readers, and 2 st transforms:
+        stage = Usd.Stage.Open(usd_path)
+        mat_path = "/pSphere1/Looks/ss01SG"
+
+        # Here are the expected connections in the produced USD file:
+        connections = [
+            # UsdPreviewSurface section
+
+            # Source node, input, destination node:
+            ("/UsdPreviewSurface/ss01", "diffuseColor", "/UsdPreviewSurface/file1"),
+            ("/UsdPreviewSurface/file1", "st", "/UsdPreviewSurface/place2dTexture1_UsdTransform2d"),
+            ("/UsdPreviewSurface/place2dTexture1_UsdTransform2d", "in", "/UsdPreviewSurface/place2dTexture1"),
+
+            ("/UsdPreviewSurface/ss01", "emissiveColor", "/UsdPreviewSurface/file2"),
+            ("/UsdPreviewSurface/file2", "st", "/UsdPreviewSurface/place2dTexture1_UsdTransform2d"), # re-used
+            # Note that the transform name is derived from place2DTexture name.
+
+            ("/UsdPreviewSurface/ss01", "metallic", "/UsdPreviewSurface/file3"),
+            ("/UsdPreviewSurface/file3", "st", "/UsdPreviewSurface/shared_TexCoordReader"), # no UV in Maya.
+
+            ("/UsdPreviewSurface/ss01", "roughness", "/UsdPreviewSurface/file4"),
+            ("/UsdPreviewSurface/file4", "st", "/UsdPreviewSurface/file4_UsdTransform2d"), # xform on file node
+            ("/UsdPreviewSurface/file4_UsdTransform2d", "in", "/UsdPreviewSurface/shared_TexCoordReader"),
+            # Note that the transform name is derived from file node name.
+
+            # MaterialX section
+
+            # Source node, input, destination node:
+            ("/MaterialX/MayaNG_MaterialX", "diffuseColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_file1_rgb"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_file1_rgb", "in", "/MaterialX/MayaNG_MaterialX/file1"),
+            ("/MaterialX/MayaNG_MaterialX/file1", "texcoord", "/MaterialX/MayaNG_MaterialX/place2dTexture1"),
+
+            ("/MaterialX/MayaNG_MaterialX", "emissiveColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_file2_rgb"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_file2_rgb", "in", "/MaterialX/MayaNG_MaterialX/file2"),
+            ("/MaterialX/MayaNG_MaterialX/file2", "texcoord", "/MaterialX/MayaNG_MaterialX/place2dTexture1"), # re-used
+
+            ("/MaterialX/MayaNG_MaterialX", "metallic", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_file3_r"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_file3_r", "in", "/MaterialX/MayaNG_MaterialX/file3"),
+            ("/MaterialX/MayaNG_MaterialX/file3", "texcoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # no UV in Maya.
+
+            ("/MaterialX/MayaNG_MaterialX", "roughness", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_file4_r"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_file4_r", "in", "/MaterialX/MayaNG_MaterialX/file4"),
+            ("/MaterialX/MayaNG_MaterialX/file4", "texcoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # re-used
+
+            # Making sure no NodeGraph boundaries were skipped downstream:
+            ("", "surface", "/UsdPreviewSurface"),
+            ("/UsdPreviewSurface", "surface", "/UsdPreviewSurface/ss01"),
+
+            ("", "mtlx:surface", "/MaterialX"),
+            ("/MaterialX", "surface", "/MaterialX/ss01"),
+
+            # Making sure no NodeGraph boundaries were skipped upstream:
+            ("/UsdPreviewSurface/place2dTexture1", "varname", "/UsdPreviewSurface"),
+            ("/UsdPreviewSurface", "file1:varname", ""),
+
+            ("/MaterialX/MayaNG_MaterialX/place2dTexture1", "geomprop", "/MaterialX/MayaNG_MaterialX"),
+            ("/MaterialX/MayaNG_MaterialX", "file1:varnameStr", "/MaterialX"),
+            ("/MaterialX", "file1:varnameStr", ""),
+        ]
+        for src_name, input_name, dst_name in connections:
+            src_prim = stage.GetPrimAtPath(mat_path + src_name)
+            self.assertTrue(src_prim, mat_path + src_name + " does not exist")
+            src_shade = UsdShade.ConnectableAPI(src_prim)
+            self.assertTrue(src_shade)
+            src_input = src_shade.GetInput(input_name)
+            if not src_input:
+                src_input = src_shade.GetOutput(input_name)
+            self.assertTrue(src_input, input_name + " does not exist on " + mat_path + src_name)
+            self.assertTrue(src_input.HasConnectedSource(), input_name + " does not have source")
+            (connect_api, out_name, _) = src_input.GetConnectedSource()
+            self.assertEqual(connect_api.GetPath(), mat_path + dst_name)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
