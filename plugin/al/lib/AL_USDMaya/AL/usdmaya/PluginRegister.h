@@ -268,7 +268,6 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
-    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeTestIntersection);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
@@ -458,7 +457,6 @@ template <typename AFnPlugin> MStatus unregisterPlugin(AFnPlugin& plugin)
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
-    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeTestIntersection);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
     AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
