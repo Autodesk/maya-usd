@@ -159,8 +159,8 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
         UsdShadeInput varnameInput
             = primvarReaderSchema.CreateInput(TrMtlxTokens->geomprop, SdfValueTypeNames->String);
 
-        TfToken       inputName(TfStringPrintf(
-            "%s:%s", depNodeFn.name().asChar(), TrMtlxTokens->varnameStr.GetText()));
+        TfToken inputName(
+            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), TrMtlxTokens->varnameStr.GetText()));
 
         // We expose the primvar reader varnameStr attribute to the material to allow
         // easy specialization based on UV mappings to geometries:
@@ -201,8 +201,7 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     } else {
         // Re-using an existing primvar reader:
         UsdShadeShader primvarReaderShaderSchema(GetUsdStage()->GetPrimAtPath(primvarReaderPath));
-        UsdShadeOutput primvarReaderOutput
-            = primvarReaderShaderSchema.GetOutput(TrMtlxTokens->out);
+        UsdShadeOutput primvarReaderOutput = primvarReaderShaderSchema.GetOutput(TrMtlxTokens->out);
 
         // TODO: Handle UV SRT with a ND_place2d_vector2 node. Make sure the name derives from the
         //       place2dTexture node if there is one (see usdFileTextureWriter for details)
