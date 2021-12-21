@@ -516,8 +516,14 @@ PxrMayaUsdPreviewSurface::connectionMade(const MPlug& plug, const MPlug& otherPl
     if (plug.partialName() == normalAttrShortName && otherPlug.node().hasFn(MFn::kFileTexture)) {
         MFnDependencyNode otherDepNode(otherPlug.node());
 
+        bool  ignoreColorSpaceFileRules = false;
+        MPlug sourceIgnoreColorSpaceFileRules = otherDepNode.findPlug("ignoreColorSpaceFileRules");
+        if (!sourceIgnoreColorSpaceFileRules.isNull()) {
+            sourceIgnoreColorSpaceFileRules.getValue(ignoreColorSpaceFileRules);
+        }
+
         MPlug sourceColorSpace = otherDepNode.findPlug("colorSpace");
-        if (!sourceColorSpace.isNull()) {
+        if (!sourceColorSpace.isNull() && !ignoreColorSpaceFileRules) {
             sourceColorSpace.setString("Raw");
         }
 
@@ -548,8 +554,16 @@ PxrMayaUsdPreviewSurface::connectionMade(const MPlug& plug, const MPlug& otherPl
         MFnNumericAttribute numericAttrFn(plug.attribute());
         if (numericAttrFn.unitType() == MFnNumericData::kFloat) {
             MFnDependencyNode otherDepNode(otherPlug.node());
-            MPlug             sourceColorSpace = otherDepNode.findPlug("colorSpace");
-            if (!sourceColorSpace.isNull()) {
+
+            bool  ignoreColorSpaceFileRules = false;
+            MPlug sourceIgnoreColorSpaceFileRules
+                = otherDepNode.findPlug("ignoreColorSpaceFileRules");
+            if (!sourceIgnoreColorSpaceFileRules.isNull()) {
+                sourceIgnoreColorSpaceFileRules.getValue(ignoreColorSpaceFileRules);
+            }
+
+            MPlug sourceColorSpace = otherDepNode.findPlug("colorSpace");
+            if (!sourceColorSpace.isNull() && !ignoreColorSpaceFileRules) {
                 sourceColorSpace.setString("Raw");
             }
         }
