@@ -207,15 +207,7 @@ struct _MaterialXData
         _mtlxLibrary = mx::createDocument();
         _mtlxSearchPath = HdMtlxSearchPaths();
 
-        const std::unordered_set<std::string> uniqueLibraryNames {
-            "targets",        "adsklib",        "stdlib", "pbrlib",        "bxdf",
-            "stdlib/genglsl", "pbrlib/genglsl", "lights", "lights/genglsl"
-        };
-
-        mx::loadLibraries(
-            mx::FilePathVec(uniqueLibraryNames.begin(), uniqueLibraryNames.end()),
-            _mtlxSearchPath,
-            _mtlxLibrary);
+        mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
@@ -399,6 +391,13 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
         for (mx::NodePtr node : nodeGraph->getNodes()) {
             // Check the inputs of the node for UV0 default geom properties
             mx::NodeDefPtr nodeDef = node->getNodeDef();
+            // A missing node def is a very bad sign. No need to process further.
+            if (!TF_VERIFY(
+                    nodeDef,
+                    "Could not find MaterialX NodeDef for Node '%s'. Please recheck library paths.",
+                    node->getNamePath().c_str())) {
+                return;
+            }
             for (mx::InputPtr input : nodeDef->getInputs()) {
                 if (input->hasDefaultGeomPropString()
                     && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
