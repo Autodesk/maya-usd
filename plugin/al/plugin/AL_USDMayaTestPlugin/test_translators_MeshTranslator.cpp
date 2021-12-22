@@ -1206,6 +1206,6 @@ TEST(translators_MeshTranslator, vertexNormalsExport)
         EXPECT_EQ(UsdGeomTokens->vertex, mesh.GetNormalsInterpolation());
         VtVec3fArray normals;
         mesh.GetNormalsAttr().Get(&normals);
-        EXPECT_EQ(normals.size(), fn.numNormals());
+        EXPECT_EQ(normals.size(), static_cast<size_t>(fn.numNormals()));
     }
 }
