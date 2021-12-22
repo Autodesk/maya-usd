@@ -30,7 +30,7 @@ using AL::maya::test::buildTempPath;
 TEST(export_misc, subdivision_scheme)
 {
     auto geomType = TfType::Find<UsdGeomMesh>();
-#if USD_VERSION_NUM > 2002
+#if PXR_VERSION > 2002
     auto geomTypeToken = UsdSchemaRegistry::GetInstance().GetConcreteSchemaTypeName(geomType);
     auto primDef = UsdSchemaRegistry::GetInstance().FindConcretePrimDefinition(geomTypeToken);
     ASSERT_TRUE(primDef);
