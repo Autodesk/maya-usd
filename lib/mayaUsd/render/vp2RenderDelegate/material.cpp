@@ -732,6 +732,11 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
         return nullptr;
     }
 
+    MHWRender::MTexture* texture = textureMgr->findTexture(path.c_str());
+    if (texture) {
+        return texture;
+    }
+
     // HdSt sets the tile limit to the max number of textures in an array of 2d textures. OpenGL
     // says the minimum number of layers in 2048 so I'll use that.
     int                                   tileLimit = 2048;
@@ -808,7 +813,7 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
 
     MColor               undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
     MStringArray         failedTilePaths;
-    MHWRender::MTexture* texture = textureMgr->acquireTiledTexture(
+    texture = textureMgr->acquireTiledTexture(
         textureName,
         tilePaths,
         tilePositions,
@@ -849,6 +854,11 @@ MHWRender::MTexture* _LoadTexture(
         = renderer ? renderer->getTextureManager() : nullptr;
     if (!TF_VERIFY(textureMgr)) {
         return nullptr;
+    }
+
+    MHWRender::MTexture* texture = textureMgr->findTexture(path.c_str());
+    if (texture) {
+        return texture;
     }
 
 #if PXR_VERSION >= 2102
@@ -917,8 +927,6 @@ MHWRender::MTexture* _LoadTexture(
     if (!image->Read(spec)) {
         return nullptr;
     }
-
-    MHWRender::MTexture* texture = nullptr;
 
     MHWRender::MTextureDescription desc;
     desc.setToDefault2DTexture();
