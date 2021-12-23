@@ -811,8 +811,8 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
         tilePositions.append(v);
     }
 
-    MColor               undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
-    MStringArray         failedTilePaths;
+    MColor       undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
+    MStringArray failedTilePaths;
     texture = textureMgr->acquireTiledTexture(
         textureName,
         tilePaths,
