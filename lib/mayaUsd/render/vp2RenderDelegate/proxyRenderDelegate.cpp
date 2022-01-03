@@ -1272,7 +1272,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
 
         // now that the appropriate prims have been marked dirty trigger
         // a sync so that they all update.
-        HdRprimCollection collection(HdTokens->geometry, kSmoothHullReprSelector);
+        HdRprimCollection collection(HdTokens->geometry, _defaultCollection->GetReprSelector());
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
