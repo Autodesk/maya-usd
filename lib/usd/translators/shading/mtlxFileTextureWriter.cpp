@@ -150,7 +150,8 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     }
 
     // Now create a geompropvalue reader that the image shader will use.
-    SdfPath primvarReaderPath = _GetPlace2DTexturePath(depNodeFn);
+    SdfPath        primvarReaderPath = _GetPlace2DTexturePath(depNodeFn);
+    UsdShadeOutput primvarReaderOutput;
 
     if (!GetUsdStage()->GetPrimAtPath(primvarReaderPath)) {
         UsdShadeShader primvarReaderSchema
@@ -188,29 +189,20 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
             varnameInput.Set(UsdUtilsGetPrimaryUVSetName());
         }
 
-        UsdShadeOutput primvarReaderOutput
+        primvarReaderOutput
             = primvarReaderSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float2);
-
-        // TODO: Handle UV SRT with a ND_place2d_vector2 node. Make sure the name derives from the
-        //       place2dTexture node if there is one (see usdFileTextureWriter for details)
-
-        // Connect the output of the primvar reader to the texture coordinate
-        // input of the UV texture.
-        texSchema.CreateInput(TrMtlxTokens->texcoord, SdfValueTypeNames->Float2)
-            .ConnectToSource(primvarReaderOutput);
     } else {
         // Re-using an existing primvar reader:
         UsdShadeShader primvarReaderShaderSchema(GetUsdStage()->GetPrimAtPath(primvarReaderPath));
-        UsdShadeOutput primvarReaderOutput = primvarReaderShaderSchema.GetOutput(TrMtlxTokens->out);
-
-        // TODO: Handle UV SRT with a ND_place2d_vector2 node. Make sure the name derives from the
-        //       place2dTexture node if there is one (see usdFileTextureWriter for details)
-
-        // Connect the output of the primvar reader to the texture coordinate
-        // input of the UV texture.
-        texSchema.CreateInput(TrMtlxTokens->texcoord, SdfValueTypeNames->Float2)
-            .ConnectToSource(primvarReaderOutput);
+        primvarReaderOutput = primvarReaderShaderSchema.GetOutput(TrMtlxTokens->out);
     }
+    // TODO: Handle UV SRT with a ND_place2d_vector2 node. Make sure the name derives from the
+    //       place2dTexture node if there is one (see usdFileTextureWriter for details)
+
+    // Connect the output of the primvar reader to the texture coordinate
+    // input of the UV texture.
+    texSchema.CreateInput(TrMtlxTokens->texcoord, SdfValueTypeNames->Float2)
+        .ConnectToSource(primvarReaderOutput);
 }
 
 /* virtual */
