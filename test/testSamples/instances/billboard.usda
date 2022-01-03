@@ -16,46 +16,46 @@ def Xform "GEO"
         float3[] extent = [(-1.5, 0, -1.5), (1.5, 0, 1.5)]
         int[] faceVertexCounts = [4]
         int[] faceVertexIndices = [0, 1, 3, 2]
-        rel material:binding = </GEO/BILLBOARD/Looks/TEXTUREDA>
+        rel material:binding = </GEO/Looks/TEXTUREDA>
         point3f[] points = [(-1.5, 0, 1.5), (1.5, 0, 1.5), (-1.5, 0, -1.5), (1.5, 0, -1.5)]
         texCoord2f[] primvars:map1 = [(0, 0), (1, 0), (0, 1), (1, 1)] (
             interpolation = "faceVarying"
         )
         int[] primvars:map1:indices = [0, 1, 3, 2]
-
-        def Scope "Looks"
-        {
-            def Material "TEXTUREDA"
-            {
-                token inputs:file1:varname = "map1"
-                token outputs:surface.connect = </GEO/BILLBOARD/Looks/TEXTUREDA/TEXTUREDA.outputs:surface>
-
-                def Shader "TEXTUREDA"
-                {
-                    uniform token info:id = "UsdPreviewSurface"
-                    color3f inputs:diffuseColor.connect = </GEO/BILLBOARD/Looks/TEXTUREDA/file1.outputs:rgb>
-                    token outputs:displacement
-                    token outputs:surface
-                }
-
-                def Shader "file1"
-                {
-                    uniform token info:id = "UsdUVTexture"
-                    float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
-                    asset inputs:file = @green_A.png@
-                    float2 inputs:st.connect = </GEO/BILLBOARD/Looks/TEXTUREDA/file1/TexCoordReader.outputs:result>
-                    token inputs:wrapS = "repeat"
-                    token inputs:wrapT = "repeat"
-                    float3 outputs:rgb
-
-                    def Shader "TexCoordReader"
-                    {
-                        uniform token info:id = "UsdPrimvarReader_float2"
-                        token inputs:varname.connect = </GEO/BILLBOARD/Looks/TEXTUREDA.inputs:file1:varname>
-                        float2 outputs:result
-                    }
-                }
-            }
-        }
     }
+
+	def Scope "Looks"
+	{
+		def Material "TEXTUREDA"
+		{
+			token inputs:file1:varname = "map1"
+			token outputs:surface.connect = </GEO/Looks/TEXTUREDA/TEXTUREDA.outputs:surface>
+
+			def Shader "TEXTUREDA"
+			{
+				uniform token info:id = "UsdPreviewSurface"
+				color3f inputs:diffuseColor.connect = </GEO/Looks/TEXTUREDA/file1.outputs:rgb>
+				token outputs:displacement
+				token outputs:surface
+			}
+
+			def Shader "file1"
+			{
+				uniform token info:id = "UsdUVTexture"
+				float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+				asset inputs:file = @green_A.png@
+				float2 inputs:st.connect = </GEO/Looks/TEXTUREDA/TexCoordReader.outputs:result>
+				token inputs:wrapS = "repeat"
+				token inputs:wrapT = "repeat"
+				float3 outputs:rgb
+			}
+
+			def Shader "TexCoordReader"
+			{
+				uniform token info:id = "UsdPrimvarReader_float2"
+				token inputs:varname.connect = </GEO/Looks/TEXTUREDA.inputs:file1:varname>
+				float2 outputs:result
+			}
+		}
+	}
 }
