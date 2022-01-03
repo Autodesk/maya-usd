@@ -615,6 +615,24 @@ VtValue UsdMayaWriteUtil::GetVtValue(
     return VtValue();
 }
 
+namespace {
+bool _IsAnimated(const MPlug& p)
+{
+    if (p.isDestination()) {
+        return true;
+    }
+    if (p.isCompound()) {
+        const unsigned int numChildren = p.numChildren();
+        for (unsigned int i = 0; i < numChildren; ++i) {
+            if (_IsAnimated(p.child(i))) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+} // namespace
+
 bool UsdMayaWriteUtil::SetUsdAttr(
     const MPlug&               attrPlug,
     const UsdAttribute&        usdAttr,
@@ -625,8 +643,7 @@ bool UsdMayaWriteUtil::SetUsdAttr(
         return false;
     }
 
-    bool isAnimated = attrPlug.isDestination();
-    if (usdTime.IsDefault() == isAnimated) {
+    if (!(usdTime.IsDefault() || _IsAnimated(attrPlug))) {
         return true;
     }
 
