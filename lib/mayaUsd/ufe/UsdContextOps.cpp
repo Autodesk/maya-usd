@@ -621,9 +621,9 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 #ifdef UFE_V3_FEATURES_AVAILABLE
             if (PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
                 items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+                items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
+                items.emplace_back(Ufe::ContextItem::kSeparator);
             }
-            items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
-            items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
             // Working set management (load and unload):
