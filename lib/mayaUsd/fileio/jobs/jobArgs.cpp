@@ -936,9 +936,6 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
             = std::vector<VtValue>({ VtValue(SdfFieldKeys->Hidden.GetString()),
                                      VtValue(SdfFieldKeys->Instanceable.GetString()),
                                      VtValue(SdfFieldKeys->Kind.GetString()) });
-        d[UsdMayaJobImportArgsTokens->shadingMode] = std::vector<VtValue> { VtValue(
-            std::vector<VtValue> { VtValue(UsdMayaShadingModeTokens->useRegistry.GetString()),
-                                   VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) }) };
         d[UsdMayaJobImportArgsTokens->preferredMaterial]
             = UsdMayaPreferredMaterialTokens->none.GetString();
         d[UsdMayaJobImportArgsTokens->importInstances] = true;
@@ -955,6 +952,40 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
             = UsdMaya_RegistryHelper::GetComposedInfoDictionary(_usdImportInfoScope->allTokens);
         VtDictionaryOver(site, &d, /*coerceToWeakerOpinionType*/ true);
     });
+
+    // Shading options default value is variable and depends on loaded plugins.
+    // Default priorities for searching for materials, as found in
+    //  lib\mayaUsd\commands\baseListShadingModesCommand.cpp:
+    //    - Specialized importers using registry based import.
+    //    - Specialized importers, non-registry based.
+    //    - UsdPreviewSurface importer.
+    //    - Display colors as last resort
+    std::vector<VtValue> shadingModes;
+    for (const auto& c : UsdMayaShadingModeRegistry::ListMaterialConversions()) {
+        if (c != UsdImagingTokens->UsdPreviewSurface) {
+            auto const& info = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(c);
+            if (info.hasImporter) {
+                shadingModes.emplace_back(std::vector<VtValue> {
+                    VtValue(UsdMayaShadingModeTokens->useRegistry.GetString()),
+                    VtValue(c.GetString()) });
+            }
+        }
+    }
+    for (const auto& s : UsdMayaShadingModeRegistry::ListImporters()) {
+        if (s != UsdMayaShadingModeTokens->useRegistry
+            && s != UsdMayaShadingModeTokens->displayColor) {
+            shadingModes.emplace_back(std::vector<VtValue> {
+                VtValue(s.GetString()), VtValue(UsdMayaShadingModeTokens->none.GetString()) });
+        }
+    }
+    shadingModes.emplace_back(
+        std::vector<VtValue> { VtValue(UsdMayaShadingModeTokens->useRegistry.GetString()),
+                               VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) });
+    shadingModes.emplace_back(
+        std::vector<VtValue> { VtValue(UsdMayaShadingModeTokens->displayColor.GetString()),
+                               VtValue(UsdMayaShadingModeTokens->none.GetString()) });
+
+    d[UsdMayaJobImportArgsTokens->shadingMode] = { VtValue(shadingModes) };
 
     return d;
 }
