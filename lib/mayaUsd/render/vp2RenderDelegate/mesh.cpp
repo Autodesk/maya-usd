@@ -1535,6 +1535,15 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
 
         // now fill in _faceIdToGeomSubsetId at geomSubset.indices with the subset item pointer
         for (auto faceId : geomSubset.indices) {
+            if (faceId >= topology.GetNumFaces()) {
+                MString warning("Skipping faceID(");
+                warning += faceId;
+                warning += ") on GeomSubset \"";
+                warning += geomSubset.id.GetString().c_str();
+                warning += "\": greater than the number of faces in the mesh.";
+                MGlobal::displayWarning(warning);
+                continue;
+            }
             // we expect that material binding geom subsets will not overlap
             TF_VERIFY(SdfPath::EmptyPath() == _meshSharedData->_faceIdToGeomSubsetId[faceId]);
             _meshSharedData->_faceIdToGeomSubsetId[faceId] = geomSubset.id;

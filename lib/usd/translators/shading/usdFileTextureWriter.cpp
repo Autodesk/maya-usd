@@ -137,18 +137,27 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
         UsdShadeInput varnameInput
             = primvarReaderShaderSchema.CreateInput(TrUsdTokens->varname, SdfValueTypeNames->Token);
 
+        TfToken inputName(
+            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), TrUsdTokens->varname.GetText()));
+
         // We expose the primvar reader varname attribute to the material to allow
         // easy specialization based on UV mappings to geometries:
-        SdfPath          materialPath = GetUsdPath().GetParentPath();
-        UsdShadeMaterial materialSchema(GetUsdStage()->GetPrimAtPath(materialPath));
-        while (!materialSchema && !materialPath.IsEmpty()) {
-            materialPath = materialPath.GetParentPath();
-            materialSchema = UsdShadeMaterial(GetUsdStage()->GetPrimAtPath(materialPath));
+        UsdPrim          materialPrim = primvarReaderShaderSchema.GetPrim().GetParent();
+        UsdShadeMaterial materialSchema(materialPrim);
+        while (!materialSchema && materialPrim) {
+            UsdShadeNodeGraph intermediateNodeGraph(materialPrim);
+            if (intermediateNodeGraph) {
+                UsdShadeInput intermediateInput
+                    = intermediateNodeGraph.CreateInput(inputName, SdfValueTypeNames->Token);
+                varnameInput.ConnectToSource(intermediateInput);
+                varnameInput = intermediateInput;
+            }
+
+            materialPrim = materialPrim.GetParent();
+            materialSchema = UsdShadeMaterial(materialPrim);
         }
 
         if (materialSchema) {
-            TfToken inputName(
-                TfStringPrintf("%s:%s", depNodeFn.name().asChar(), TrUsdTokens->varname.GetText()));
             UsdShadeInput materialInput
                 = materialSchema.CreateInput(inputName, SdfValueTypeNames->Token);
             materialInput.Set(UsdUtilsGetPrimaryUVSetName());
