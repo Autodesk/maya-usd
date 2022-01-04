@@ -1750,7 +1750,8 @@ void HdVP2Mesh::_UpdateDrawItem(
             // _updateRepr. Find the triangles which represent faces in the matching
             // geom subset and add those triangles to the index buffer for renderItem.
 
-            VtVec3iArray trianglesFaceVertexIndices; // for this item only!
+            VtVec3iArray     trianglesFaceVertexIndices; // for this item only!
+            std::vector<int> faceIds;
             if (_meshSharedData->_faceIdToGeomSubsetId.size() == 0
                 || reprToken == HdVP2ReprTokens->defaultMaterial) {
                 // If there is no mapping from face to render item or if this is the default
@@ -1764,6 +1765,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                         _meshSharedData->_primitiveParam[triangleId]);
                     if (_meshSharedData->_faceIdToGeomSubsetId[faceId]
                         == renderItemData._geomSubset.id) {
+                        faceIds.push_back(faceId);
                         trianglesFaceVertexIndices.push_back(
                             _meshSharedData->_trianglesFaceVertexIndices[triangleId]);
                     }
@@ -1780,6 +1782,25 @@ void HdVP2Mesh::_UpdateDrawItem(
             if (alphaArray.size() > 0) {
                 if (alphaInterp == HdInterpolationConstant) {
                     renderItemData._transparent = (alphaArray[0] < 0.999f);
+                } else if (alphaInterp == HdInterpolationUniform) {
+                    if (faceIds.size() > 0) {
+                        // it is a geom subset
+                        for (auto& faceId : faceIds) {
+                            if (alphaArray[faceId] < 0.999f) {
+                                renderItemData._transparent = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        // no geom subsets, check every face
+                        int numFaces = topologyToUse.GetNumFaces();
+                        for (int faceId = 0; faceId < numFaces; faceId++) {
+                            if (alphaArray[faceId] < 0.999f) {
+                                renderItemData._transparent = true;
+                                break;
+                            }
+                        }
+                    }
                 } else {
                     for (const auto& triangle : trianglesFaceVertexIndices) {
 
