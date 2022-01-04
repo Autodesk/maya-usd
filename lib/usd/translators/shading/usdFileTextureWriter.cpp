@@ -538,7 +538,9 @@ void PxrUsdTranslators_FileTextureWriter::WriteTransform2dNode(
     std::string usdUvTransformName;
     if (primvarReaderShaderPath.GetName() == _tokens->PrimvarReaderShaderName.GetString()) {
         usdUvTransformName = TfStringPrintf(
-            "%s_%s", depNodeFn.name().asChar(), _tokens->UsdTransform2dShaderName.GetText());
+            "%s_%s",
+            UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()).c_str(),
+            _tokens->UsdTransform2dShaderName.GetText());
 
     } else {
         usdUvTransformName = TfStringPrintf(
@@ -639,7 +641,7 @@ PxrUsdTranslators_FileTextureWriter::getPlace2DTexturePath(const MFnDependencyNo
         MPlug source = plug.source(&status);
         if (status == MS::kSuccess && !source.isNull()) {
             MFnDependencyNode sourceNode(source.node());
-            usdUvTextureName = sourceNode.name().asChar();
+            usdUvTextureName = UsdMayaUtil::SanitizeName(sourceNode.name().asChar());
         }
     }
 

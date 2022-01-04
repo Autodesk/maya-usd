@@ -103,6 +103,10 @@ class testUsdExportMultiMaterial(unittest.TestCase):
         """
         cmds.file(f=True, new=True)
 
+        # Use a namespace, for testing name sanitization...
+        cmds.namespace(add="M")
+        cmds.namespace(set="M")
+
         sphere_xform = cmds.polySphere()[0]
 
         material_node = cmds.shadingNode("usdPreviewSurface", asShader=True,
@@ -153,62 +157,62 @@ class testUsdExportMultiMaterial(unittest.TestCase):
 
         # We expect 2 primvar readers, and 2 st transforms:
         stage = Usd.Stage.Open(usd_path)
-        mat_path = "/pSphere1/Looks/ss01SG"
+        mat_path = "/M_pSphere1/Looks/M_ss01SG"
 
         # Here are the expected connections in the produced USD file:
         connections = [
             # UsdPreviewSurface section
 
             # Source node, input, destination node:
-            ("/UsdPreviewSurface/ss01", "diffuseColor", "/UsdPreviewSurface/file1"),
-            ("/UsdPreviewSurface/file1", "st", "/UsdPreviewSurface/place2dTexture1_UsdTransform2d"),
-            ("/UsdPreviewSurface/place2dTexture1_UsdTransform2d", "in", "/UsdPreviewSurface/place2dTexture1"),
+            ("/UsdPreviewSurface/M_ss01", "diffuseColor", "/UsdPreviewSurface/M_file1"),
+            ("/UsdPreviewSurface/M_file1", "st", "/UsdPreviewSurface/M_place2dTexture1_UsdTransform2d"),
+            ("/UsdPreviewSurface/M_place2dTexture1_UsdTransform2d", "in", "/UsdPreviewSurface/M_place2dTexture1"),
 
-            ("/UsdPreviewSurface/ss01", "emissiveColor", "/UsdPreviewSurface/file2"),
-            ("/UsdPreviewSurface/file2", "st", "/UsdPreviewSurface/place2dTexture1_UsdTransform2d"), # re-used
+            ("/UsdPreviewSurface/M_ss01", "emissiveColor", "/UsdPreviewSurface/M_file2"),
+            ("/UsdPreviewSurface/M_file2", "st", "/UsdPreviewSurface/M_place2dTexture1_UsdTransform2d"), # re-used
             # Note that the transform name is derived from place2DTexture name.
 
-            ("/UsdPreviewSurface/ss01", "metallic", "/UsdPreviewSurface/file3"),
-            ("/UsdPreviewSurface/file3", "st", "/UsdPreviewSurface/shared_TexCoordReader"), # no UV in Maya.
+            ("/UsdPreviewSurface/M_ss01", "metallic", "/UsdPreviewSurface/M_file3"),
+            ("/UsdPreviewSurface/M_file3", "st", "/UsdPreviewSurface/shared_TexCoordReader"), # no UV in Maya.
 
-            ("/UsdPreviewSurface/ss01", "roughness", "/UsdPreviewSurface/file4"),
-            ("/UsdPreviewSurface/file4", "st", "/UsdPreviewSurface/file4_UsdTransform2d"), # xform on file node
-            ("/UsdPreviewSurface/file4_UsdTransform2d", "in", "/UsdPreviewSurface/shared_TexCoordReader"),
+            ("/UsdPreviewSurface/M_ss01", "roughness", "/UsdPreviewSurface/M_file4"),
+            ("/UsdPreviewSurface/M_file4", "st", "/UsdPreviewSurface/M_file4_UsdTransform2d"), # xform on file node
+            ("/UsdPreviewSurface/M_file4_UsdTransform2d", "in", "/UsdPreviewSurface/shared_TexCoordReader"),
             # Note that the transform name is derived from file node name.
 
             # MaterialX section
 
             # Source node, input, destination node:
-            ("/MaterialX/MayaNG_MaterialX", "diffuseColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_file1_rgb"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_file1_rgb", "in", "/MaterialX/MayaNG_MaterialX/file1"),
-            ("/MaterialX/MayaNG_MaterialX/file1", "texcoord", "/MaterialX/MayaNG_MaterialX/place2dTexture1"),
+            ("/MaterialX/MayaNG_MaterialX", "diffuseColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file1_rgb"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file1_rgb", "in", "/MaterialX/MayaNG_MaterialX/M_file1"),
+            ("/MaterialX/MayaNG_MaterialX/M_file1", "texcoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"),
 
-            ("/MaterialX/MayaNG_MaterialX", "emissiveColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_file2_rgb"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_file2_rgb", "in", "/MaterialX/MayaNG_MaterialX/file2"),
-            ("/MaterialX/MayaNG_MaterialX/file2", "texcoord", "/MaterialX/MayaNG_MaterialX/place2dTexture1"), # re-used
+            ("/MaterialX/MayaNG_MaterialX", "emissiveColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file2_rgb"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file2_rgb", "in", "/MaterialX/MayaNG_MaterialX/M_file2"),
+            ("/MaterialX/MayaNG_MaterialX/M_file2", "texcoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"), # re-used
 
-            ("/MaterialX/MayaNG_MaterialX", "metallic", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_file3_r"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_file3_r", "in", "/MaterialX/MayaNG_MaterialX/file3"),
-            ("/MaterialX/MayaNG_MaterialX/file3", "texcoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # no UV in Maya.
+            ("/MaterialX/MayaNG_MaterialX", "metallic", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file3_r"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file3_r", "in", "/MaterialX/MayaNG_MaterialX/M_file3"),
+            ("/MaterialX/MayaNG_MaterialX/M_file3", "texcoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # no UV in Maya.
 
-            ("/MaterialX/MayaNG_MaterialX", "roughness", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_file4_r"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_file4_r", "in", "/MaterialX/MayaNG_MaterialX/file4"),
-            ("/MaterialX/MayaNG_MaterialX/file4", "texcoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # re-used
+            ("/MaterialX/MayaNG_MaterialX", "roughness", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file4_r"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file4_r", "in", "/MaterialX/MayaNG_MaterialX/M_file4"),
+            ("/MaterialX/MayaNG_MaterialX/M_file4", "texcoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # re-used
 
             # Making sure no NodeGraph boundaries were skipped downstream:
             ("", "surface", "/UsdPreviewSurface"),
-            ("/UsdPreviewSurface", "surface", "/UsdPreviewSurface/ss01"),
+            ("/UsdPreviewSurface", "surface", "/UsdPreviewSurface/M_ss01"),
 
             ("", "mtlx:surface", "/MaterialX"),
-            ("/MaterialX", "surface", "/MaterialX/ss01"),
+            ("/MaterialX", "surface", "/MaterialX/M_ss01"),
 
             # Making sure no NodeGraph boundaries were skipped upstream:
-            ("/UsdPreviewSurface/place2dTexture1", "varname", "/UsdPreviewSurface"),
-            ("/UsdPreviewSurface", "file1:varname", ""),
+            ("/UsdPreviewSurface/M_place2dTexture1", "varname", "/UsdPreviewSurface"),
+            ("/UsdPreviewSurface", "M:file1:varname", ""),
 
-            ("/MaterialX/MayaNG_MaterialX/place2dTexture1", "geomprop", "/MaterialX/MayaNG_MaterialX"),
-            ("/MaterialX/MayaNG_MaterialX", "file1:varnameStr", "/MaterialX"),
-            ("/MaterialX", "file1:varnameStr", ""),
+            ("/MaterialX/MayaNG_MaterialX/M_place2dTexture1", "geomprop", "/MaterialX/MayaNG_MaterialX"),
+            ("/MaterialX/MayaNG_MaterialX", "M:file1:varnameStr", "/MaterialX"),
+            ("/MaterialX", "M:file1:varnameStr", ""),
         ]
         for src_name, input_name, dst_name in connections:
             src_prim = stage.GetPrimAtPath(mat_path + src_name)

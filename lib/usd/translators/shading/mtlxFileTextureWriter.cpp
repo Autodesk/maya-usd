@@ -103,7 +103,8 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     }
 
     SdfPath nodegraphPath = nodegraphSchema.GetPath();
-    SdfPath texPath = nodegraphPath.AppendChild(TfToken(depNodeFn.name().asChar()));
+    SdfPath texPath
+        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar())));
 
     // Create a image shader as the "primary" shader for this writer.
     UsdShadeShader texSchema = UsdShadeShader::Define(GetUsdStage(), texPath);
@@ -450,7 +451,7 @@ SdfPath MtlxUsd_FileWriter::_GetPlace2DTexturePath(const MFnDependencyNode& depN
         MPlug source = plug.source(&status);
         if (status == MS::kSuccess && !source.isNull()) {
             MFnDependencyNode sourceNode(source.node());
-            usdUvTextureName = sourceNode.name().asChar();
+            usdUvTextureName = UsdMayaUtil::SanitizeName(sourceNode.name().asChar());
         }
     }
 
