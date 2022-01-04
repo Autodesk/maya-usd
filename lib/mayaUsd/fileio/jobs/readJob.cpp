@@ -453,6 +453,9 @@ void UsdMaya_ReadJob::_DoImportInstanceIt(
         duplicateNode.addChild(childObject, MFnDagNode::kNextPos, true);
     }
 
+    // Add duplicate node to registry.
+    readCtx.RegisterNewMayaNode(primPath.GetString(), duplicateObject);
+
     // Read xformable attributes from the
     // UsdPrim on to the transform node.
     UsdGeomXformable      xformable(prim);
