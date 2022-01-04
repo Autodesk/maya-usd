@@ -356,6 +356,15 @@ finally:
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
 
+    # Set a temporary folder path for the test
+    # Note: replace bad chars in test_name with _.
+    string(REGEX REPLACE "[:<>\|]" "_" SANITIZED_TEST_NAME ${test_name})
+    set(TEST_TEMP_DIR "${CMAKE_BINARY_DIR}/test/Temporary/${SANITIZED_TEST_NAME}")
+    set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+        "TMP=${TEST_TEMP_DIR}"
+        "TEMP=${TEST_TEMP_DIR}")
+    file(MAKE_DIRECTORY ${TEST_TEMP_DIR})
+
     if(IS_MACOSX)
         # Necessary for tests like DiffCore to find python
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
