@@ -101,16 +101,13 @@ message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
 
 include(cmake/jinja.cmake)
 
+find_package(USD 0.20.05 REQUIRED)
 if (CMAKE_WANT_MATERIALX_BUILD)
-    # Requires USD_SHA1 > 891eef161aeed582b9831584ab7f31ebe4bc52e8 for hdMtlx module
-    find_package(USD 0.21.08 REQUIRED)
-    # USD must have been built with MaterialX:
+    # Requires at least USD 21.08 for hdMtlx module and USD must have been built with MaterialX:
     if(NOT TARGET hdMtlx)
         set(CMAKE_WANT_MATERIALX_BUILD OFF)
-        message(WARNING "MaterialX option requires USD binaries compiled with -DPXR_ENABLE_MATERIALX_SUPPORT=ON and recent enough to have the hdMtlx module")
+        message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this USD package.")
     endif()
-else()
-    find_package(USD 0.20.05 REQUIRED)
 endif()
 include(cmake/usd.cmake)
 
@@ -144,7 +141,7 @@ endif()
 if(CMAKE_WANT_MATERIALX_BUILD)
     if (MAYA_LIGHTAPI_VERSION LESS 2)
         set(CMAKE_WANT_MATERIALX_BUILD OFF)
-        message(WARNING "MaterialX option requires a Maya version that implements the light API version 2")
+        message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this version of Maya.")
     else()
         find_package(MaterialX REQUIRED)
         if(TARGET MaterialXCore)
