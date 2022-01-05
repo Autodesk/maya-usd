@@ -829,13 +829,22 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
     }
 
-    if (_defaultCollection->GetReprSelector() != reprSelector) {
-        _defaultCollection->SetReprSelector(reprSelector);
-        _taskController->SetCollection(*_defaultCollection);
-    }
-
     // if there are no repr's to update then don't even call sync.
     if (reprSelector != HdReprSelector()) {
+        if (_defaultCollection->GetReprSelector() != reprSelector) {
+            _defaultCollection->SetReprSelector(reprSelector);
+            _taskController->SetCollection(*_defaultCollection);
+
+            // Mark everything "dirty" so that sync is called on everything
+            // If there are multiple views up with different viewport modes then
+            // this is slow.
+            auto&            rprims = _renderIndex->GetRprimIds();
+            HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+            for (auto path : rprims) {
+                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtyDisplayMode);
+            }
+        }
+
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
     }
 }
@@ -1267,7 +1276,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
 
         // now that the appropriate prims have been marked dirty trigger
         // a sync so that they all update.
-        HdRprimCollection collection(HdTokens->geometry, kSmoothHullReprSelector);
+        HdRprimCollection collection(HdTokens->geometry, _defaultCollection->GetReprSelector());
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
