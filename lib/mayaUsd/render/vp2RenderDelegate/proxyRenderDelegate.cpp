@@ -766,7 +766,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
-
     const unsigned int displayStyle = frameContext.getDisplayStyle();
 
     // Query the wireframe color assigned to proxy shape.
