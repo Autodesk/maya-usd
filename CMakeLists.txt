@@ -143,6 +143,8 @@ if(CMAKE_WANT_MATERIALX_BUILD)
         set(CMAKE_WANT_MATERIALX_BUILD OFF)
         message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this version of Maya.")
     else()
+        # MaterialX can be found alongside USD:
+        list(APPEND CMAKE_PREFIX_PATH "${PXR_USD_LOCATION}")
         find_package(MaterialX REQUIRED)
         if(TARGET MaterialXCore)
             message(STATUS "Found MaterialX")
