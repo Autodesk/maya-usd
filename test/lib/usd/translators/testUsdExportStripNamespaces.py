@@ -49,9 +49,9 @@ class testUsdExportStripNamespaces(unittest.TestCase):
 
         node1 = cmds.polyCube( sx=5, sy=5, sz=5, name="cube1" )
         cmds.namespace(add="foo")
-        cmds.namespace(set="foo");
+        cmds.namespace(set="foo")
         node2 = cmds.polyCube( sx=5, sy=5, sz=5, name="cube1" )
-        cmds.namespace(set=":");
+        cmds.namespace(set=":")
 
         usdFilePath = os.path.abspath('UsdExportStripNamespaces_EXPORTED.usda')
 
@@ -80,11 +80,11 @@ class testUsdExportStripNamespaces(unittest.TestCase):
         cmds.namespace(add=":bar")
 
         node1 = cmds.polyCube( sx=5, sy=5, sz=5, name="cube1" )
-        cmds.namespace(set=":foo");
+        cmds.namespace(set=":foo")
         node2 = cmds.polyCube( sx=5, sy=5, sz=5, name="cube2" )
-        cmds.namespace(set=":bar");
+        cmds.namespace(set=":bar")
         node3 = cmds.polyCube( sx=5, sy=5, sz=5, name="cube3" )
-        cmds.namespace(set=":");
+        cmds.namespace(set=":")
 
         usdFilePath = os.path.abspath('UsdExportStripNamespaces_EXPORTED.usda')
 
@@ -111,11 +111,11 @@ class testUsdExportStripNamespaces(unittest.TestCase):
         cmds.namespace(add=":bar")
 
         node1 = cmds.polyCube( sx=5, sy=5, sz=5, name="cube1" )
-        cmds.namespace(set=":foo");
+        cmds.namespace(set=":foo")
         node2 = cmds.polyCube( sx=5, sy=5, sz=5, name="cube2" )
-        cmds.namespace(set=":bar");
+        cmds.namespace(set=":bar")
         node3 = cmds.polyCube( sx=5, sy=5, sz=5, name="cube3" )
-        cmds.namespace(set=":");
+        cmds.namespace(set=":")
 
         usdFilePath = os.path.abspath('UsdExportStripNamespaces_EXPORTED.usda')
 
