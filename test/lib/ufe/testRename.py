@@ -396,11 +396,17 @@ class RenameTestCase(unittest.TestCase):
         regex = re.compile('[@!#$%^&*()<>?/\|}{~:]')
         self.assertFalse(regex.search(usdPrim.GetName()))
 
-        # prim names are not allowed to start with digits 
+        # rename starting with digits.
         newNameStartingWithDigit = '09123Potato'
         cmds.rename(newNameStartingWithDigit)
 
-        self.assertFalse(usdPrim.GetName()[0].isdigit())
+        # get the prim
+        pSphereItem = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(pSphereItem.path().segments[1]))
+        self.assertTrue(usdPrim)
+
+        # prim names are not allowed to start with digits
+        self.assertEqual(usdPrim.GetName(), 'Potato')
 
     def testRenameNotifications(self):
         '''Rename a USD node and test for the UFE notifications.'''

@@ -109,6 +109,10 @@ std::string uniqueName(const PXR_NS::TfToken::HashSet& existingNames, std::strin
 MAYAUSD_CORE_PUBLIC
 std::string uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name);
 
+//! Sanitize the input by removing/replacing any invalid characters.
+MAYAUSD_CORE_PUBLIC
+std::string sanitizeName(const std::string& name);
+
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
 bool isAGatewayType(const std::string& mayaNodeType);

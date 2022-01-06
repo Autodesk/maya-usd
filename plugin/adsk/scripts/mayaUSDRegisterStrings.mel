@@ -13,16 +13,18 @@
 // limitations under the License.
 //
 
-proc register(string $key, string $value) {
+proc register(string $key, string $value) 
+{
     registerPluginResource("mayaUsdPlugin", $key, $value);
 }
 
-global proc string getMayaUsdString(string $key) {
+global proc string getMayaUsdString(string $key)
+{
     return getPluginResource("mayaUsdPlugin", $key);
 }
 
-global proc mayaUSDRegisterStrings() {
-
+global proc mayaUSDRegisterStrings()
+{
     register("kAllUsdFiles", "All USD Files");
     register("kButtonSave", "Save");
     register("kButtonCancel", "Cancel");
@@ -219,6 +221,10 @@ global proc mayaUSDRegisterStrings() {
     //       by either MEL or python. They all get registered together under
     //       the 'mayaUsdPlugin' plugin.
     python("import mayaUSDRegisterStrings; mayaUSDRegisterStrings.mayaUSDRegisterStrings()");
+
+    // Register the strings from the MayaUsd Lib.
+    mayaUsdLibRegisterStrings();
+    python("import mayaUsdLibRegisterStrings; mayaUsdLibRegisterStrings.mayaUsdLibRegisterStrings()");
 
     // load any localized resources
     loadPluginLanguageResources("mayaUsdPlugin", "mayaUsdPlugin.pres.mel");

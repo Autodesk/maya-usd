@@ -72,20 +72,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     ufe::applyCommandRestriction(prim, "rename");
 
     // handle unique name for _newName
-    _newName = uniqueChildName(prim.GetParent(), newName.string());
-
-    // names are not allowed to start to digit numbers
-    if (std::isdigit(_newName.at(0))) {
-        _newName = prim.GetName();
-    }
-
-    // all special characters are replaced with `_`
-    const std::string specialChars { "~!@#$%^&*()-=+,.?`':{}|<>[]/ " };
-    std::replace_if(
-        _newName.begin(),
-        _newName.end(),
-        [&](auto c) { return std::string::npos != specialChars.find(c); },
-        '_');
+    _newName = sanitizeName(uniqueChildName(prim.GetParent(), newName.string()));
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand() { }

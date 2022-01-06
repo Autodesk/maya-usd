@@ -104,6 +104,13 @@ std::string usdPathToUfePathSegment(
     return ufe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
 }
 
+std::string uniqueChildName(const PXR_NS::UsdPrim& parent, const std::string& name)
+{
+    return ufe::uniqueChildName(parent, name);
+}
+
+std::string sanitizeName(const std::string& name) { return ufe::sanitizeName(name); }
+
 #ifndef UFE_V2_FEATURES_AVAILABLE
 // Helper function for UFE versions before version 2 for converting a path
 // string to a UFE path.
@@ -235,6 +242,8 @@ void wrapUtils()
     def("usdPathToUfePathSegment",
         usdPathToUfePathSegment,
         (arg("usdPath"), arg("instanceIndex") = PXR_NS::UsdImagingDelegate::ALL_INSTANCES));
+    def("uniqueChildName", uniqueChildName);
+    def("sanitizeName", sanitizeName);
     def("getTime", getTime);
     def("stripInstanceIndexFromUfePath", stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", ufePathToPrim);
