@@ -19,7 +19,9 @@
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
+#include <algorithm>
 #include <utility>
 
 namespace MayaUsdUtils {
@@ -160,6 +162,138 @@ template <class T> auto makeFuncWithContext(const MergeContext& ctx, T&& func)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// Special transform attributes handling.
+//
+// The goal is to detect that a prim transform has *not* changed even though its representation
+// might have changed. For example it might use different attributes (RotateX vs RotateXYZ) or
+// different transform operations order. (These are in the xformOpOrder attribute.)
+//----------------------------------------------------------------------------------------------------------------------
+
+const std::set<TfToken>& getTransformAttributeNames()
+{
+    static const std::set<TfToken> trfAttrs = {
+        TfToken("translate"),
+        TfToken("scale"),
+        TfToken("orient"),
+        TfToken("rotateX"),
+        TfToken("rotateY"),
+        TfToken("rotateZ"),
+        TfToken("rotateXYZ"),
+        TfToken("rotateXZY"),
+        TfToken("rotateYXZ"),
+        TfToken("rotateYZX"),
+        TfToken("rotateZXY"),
+        TfToken("rotateZYX"),
+        TfToken("transform"),
+        TfToken("xformOp:translate"),
+        TfToken("xformOp:scale"),
+        TfToken("xformOp:orient"),
+        TfToken("xformOp:rotateX"),
+        TfToken("xformOp:rotateY"),
+        TfToken("xformOp:rotateZ"),
+        TfToken("xformOp:rotateXYZ"),
+        TfToken("xformOp:rotateXZY"),
+        TfToken("xformOp:rotateYXZ"),
+        TfToken("xformOp:rotateYZX"),
+        TfToken("xformOp:rotateZXY"),
+        TfToken("xformOp:rotateZYX"),
+        TfToken("xformOp:transform"),
+        TfToken("xformOpOrder"),
+    };
+
+    return trfAttrs;
+}
+
+bool isTransformProperty(const UsdProperty& prop)
+{
+    const auto& trfAttrNames = getTransformAttributeNames();
+    return trfAttrNames.count(prop.GetBaseName()) > 0;
+}
+
+std::vector<UsdAttribute> getTransformAttributes(const UsdPrim& prim)
+{
+    // To retrieve transform attributes, retrieve all attributes and then
+    // remove the non-transform ones. This is fast because we scan the
+    // attributes only once.
+    std::vector<UsdAttribute> trfAttrs = prim.GetAttributes();
+
+    const auto newEnd
+        = std::remove_if(trfAttrs.begin(), trfAttrs.end(), [](const UsdAttribute& attr) {
+              return !isTransformProperty(attr);
+          });
+    trfAttrs.erase(newEnd, trfAttrs.end());
+
+    return trfAttrs;
+}
+
+GfMatrix4d getLocalTransform(const UsdPrim prim, const UsdTimeCode& timeCode)
+{
+    UsdGeomXformable xformable(prim);
+
+    // Note: we don't check the return of GetLocalTransformation() because prims
+    //       can lack transform, like the root for example.
+    GfMatrix4d primMtx(1);
+    bool       resetParentTrf = true;
+    xformable.GetLocalTransformation(&primMtx, &resetParentTrf, timeCode);
+
+    return primMtx;
+}
+
+GfMatrix4d getPrimLocalTransform(const UsdPrim prim, const UsdTimeCode& timeCode)
+{
+    GfMatrix4d primMtx = getLocalTransform(prim, timeCode);
+
+    UsdPrim parent = prim.GetParent();
+    if (parent.IsValid()) {
+        GfMatrix4d parentMtx = getLocalTransform(parent, timeCode);
+        primMtx = parentMtx.GetInverse() * primMtx;
+    }
+
+    return primMtx;
+}
+
+bool isLocalTransformModified(
+    const UsdPrim&     srcPrim,
+    const UsdPrim&     dstPrim,
+    const UsdTimeCode& timeCode)
+{
+    return getPrimLocalTransform(srcPrim, timeCode) != getPrimLocalTransform(dstPrim, timeCode);
+}
+
+bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
+{
+    // We will not compare the set of point-in-times themselves but the overall result
+    // of the animated values. This takes care of trying to match time-samples: we
+    // instead only care that the output result are the same.
+    //
+    // Note that the UsdAttribute API to get value automatically interpolates values
+    // where samples are missing when queried.
+    std::vector<double> times;
+    {
+        std::vector<UsdAttribute> trfAttrs = getTransformAttributes(srcPrim);
+        std::vector<UsdAttribute> dstTrfAttrs = getTransformAttributes(dstPrim);
+        trfAttrs.insert(trfAttrs.end(), dstTrfAttrs.begin(), dstTrfAttrs.end());
+
+        // If retrieving the time codes somehow fails, be conservative and assume
+        // the transform was modified.
+        if (!UsdAttribute::GetUnionedTimeSamples(trfAttrs, &times))
+            return true;
+    }
+
+    // If there are no time samples, then USD uses the default value.
+    if (times.size() == 0)
+        return isLocalTransformModified(srcPrim, dstPrim, UsdTimeCode::Default());
+
+    for (const double time : times) {
+        if (getPrimLocalTransform(srcPrim, time) != getPrimLocalTransform(dstPrim, time)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // Merge Prims
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -181,6 +315,25 @@ bool isDataAtPathsModified(
 
     if (src.path.ContainsPropertyElements()) {
         const UsdProperty srcProp = srcPrim.GetPropertyAtPath(src.path);
+
+        // Note: we only return early for transform property if the local transform has
+        //       not changed. The reason is that when the transform has changed, we *do*
+        //       want to compare the individual properties in order to author only the
+        //       minimum change.
+        //
+        //       The only reason we are using the local transformation comparison is for
+        //       the somewhat common case where the transform has not changed but how it
+        //       is encoded changed, because the Maya representation and the original
+        //       representation differed, for example for USD data coming from another
+        //       tool that use a different transform operation order.
+        if (isTransformProperty(srcProp)) {
+            const bool changed = isLocalTransformModified(srcPrim, dstPrim);
+            if (!changed) {
+                printChangedField(ctx, src, "transform prop local trf", changed);
+                return changed;
+            }
+        }
+
         const UsdProperty dstProp = dstPrim.GetPropertyAtPath(dst.path);
         if (!srcProp.IsValid() || !dstProp.IsValid()) {
             printInvalidField(ctx, src, "prop", srcProp.IsValid(), dstProp.IsValid());
