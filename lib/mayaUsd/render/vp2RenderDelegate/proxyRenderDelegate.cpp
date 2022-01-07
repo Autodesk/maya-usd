@@ -766,6 +766,15 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
+    const unsigned int displayStyle = frameContext.getDisplayStyle();
+
+    // Query the wireframe color assigned to proxy shape.
+    if (displayStyle
+        & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
+        _wireframeColor
+            = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
+    }
+
     // Work around for USD issue #1516. We don't know if any instanced object has
     // had it's instance index change, so re-populate selection every update to
     // ensure correct selection highlighting of instanced objects.
@@ -791,15 +800,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
 #endif
     } else {
-        const unsigned int displayStyle = frameContext.getDisplayStyle();
-
-        // Query the wireframe color assigned to proxy shape.
-        if (displayStyle
-            & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
-            _wireframeColor
-                = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
-        }
-
         // Update repr selector based on display style of the current viewport
         if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
             if (!reprSelector.Contains(HdVP2ReprTokens->bbox)) {
