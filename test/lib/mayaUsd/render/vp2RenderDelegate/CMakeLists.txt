@@ -4,6 +4,7 @@ set(TEST_SCRIPT_FILES "")
 list(APPEND TEST_SCRIPT_FILES
 	testVP2RenderDelegateGeomSubset.py
     testVP2RenderDelegatePointInstanceOrientation.py
+    testVP2RenderDelegateSelection.py
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
