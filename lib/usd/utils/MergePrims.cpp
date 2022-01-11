@@ -44,7 +44,8 @@ struct MergeContext
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Description of a merge location: layer, path, field and if the field already exists at that location.
+/// Description of a merge location: layer, path, field and if the field already exists at that
+/// location.
 struct MergeLocation
 {
     const SdfLayerHandle& layer;

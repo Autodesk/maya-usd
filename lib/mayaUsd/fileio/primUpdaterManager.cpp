@@ -855,9 +855,7 @@ bool PrimUpdaterManager::mergeToUsd(
     return true;
 }
 
-bool PrimUpdaterManager::editAsMaya(
-    const Ufe::Path&    path,
-    const VtDictionary& userArgs)
+bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& userArgs)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(path);
     if (!proxyShape) {

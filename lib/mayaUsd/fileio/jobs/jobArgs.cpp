@@ -536,8 +536,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , exportDefaultCameras(_Boolean(userArgs, UsdMayaJobExportArgsTokens->defaultCameras))
     , exportDisplayColor(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportDisplayColor))
     , exportInstances(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportInstances))
-    , exportMaterials(
-          _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterials))
+    , exportMaterials(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterials))
     , exportMaterialCollections(
           _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialCollections))
     , exportMeshUVs(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
