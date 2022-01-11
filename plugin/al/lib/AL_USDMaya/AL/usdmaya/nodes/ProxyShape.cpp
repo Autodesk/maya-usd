@@ -65,10 +65,6 @@
 
 #include <ghc/filesystem.hpp>
 
-#if defined(WANT_UFE_BUILD)
-#include "ufe/path.h"
-#endif
-
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -1982,6 +1978,125 @@ MSelectionMask ProxyShape::getShapeSelectionMask() const
 {
     MSelectionMask::SelectionType selType = MSelectionMask::kSelectMeshes;
     return MSelectionMask(selType);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+UsdStageRefPtr ProxyShape::usdStage() const { return m_stage; }
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::isRequiredPath(const SdfPath& path) const
+{
+    return m_requiredPaths.find(path) != m_requiredPaths.end();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject ProxyShape::findRequiredPath(const SdfPath& path) const
+{
+    const auto it = m_requiredPaths.find(path);
+    if (it != m_requiredPaths.end()) {
+        const MObject&      object = it->second.node();
+        const MObjectHandle handle(object);
+        if (handle.isValid() && handle.isAlive()) {
+            return object;
+        }
+    }
+    return MObject::kNullObj;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::destroyTransformReferences() { m_requiredPaths.clear(); }
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::getCounts(SdfPath path, uint32_t& selected, uint32_t& required, uint32_t& refCount)
+{
+    auto it = m_requiredPaths.find(path);
+    if (it != m_requiredPaths.end()) {
+        selected = it->second.selected();
+        required = it->second.required();
+        refCount = it->second.refCount();
+    }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::isSelectedMObject(MObject obj, SdfPath& path)
+{
+    for (auto it : m_requiredPaths) {
+        if (obj == it.second.node()) {
+            path = it.first;
+            if (m_selectedPaths.count(it.first) > 0) {
+                return true;
+            }
+            break;
+        }
+    }
+    return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+fileio::translators::TranslatorManufacture& ProxyShape::translatorManufacture()
+{
+    return m_translatorManufacture;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+fileio::translators::TranslatorContextPtr& ProxyShape::context() { return m_context; }
+
+//----------------------------------------------------------------------------------------------------------------------
+ProxyShape::SdfPathHashSet& ProxyShape::selectedPaths() { return m_selectedPaths; }
+
+//----------------------------------------------------------------------------------------------------------------------
+UsdPrim ProxyShape::getRootPrim()
+{
+    if (m_stage) {
+        if (!m_path.IsEmpty()) {
+            UsdPrim prim = m_stage->GetPrimAtPath(m_path);
+            if (prim)
+                return prim;
+        }
+        return m_stage->GetPseudoRoot();
+    }
+    return UsdPrim();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+std::vector<MObjectHandle>& ProxyShape::GetUnloadedProxyShapes() { return m_unloadedProxyShapes; }
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::primChangedAtPath(const SdfPath& changePath)
+{
+    UsdPrim p = m_stage->GetPrimAtPath(changePath);
+    if (!p.IsValid()) {
+        MGlobal::displayInfo("ProxyShape: Could not change prim at path since there was no valid "
+                             "prim at the passed in path");
+        return;
+    }
+    m_compositionHasChanged = true;
+    m_changedPath = changePath;
+    onPrePrimChanged(m_changedPath, m_variantSwitchedPrims);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::setHaveObjectsChangedAtPath(const bool hasObjectsChanged)
+{
+    m_compositionHasChanged = hasObjectsChanged;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SelectionList& ProxyShape::selectionList() { return m_selectionList; }
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::setChangedSelectionState(const bool hasSelectabilityChanged)
+{
+    m_hasChangedSelection = hasSelectabilityChanged;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+AL::usdmaya::SelectabilityDB& ProxyShape::selectabilityDB() { return m_selectabilityDB; }
+
+//----------------------------------------------------------------------------------------------------------------------
+const AL::usdmaya::SelectabilityDB& ProxyShape::selectabilityDB() const
+{
+    return const_cast<ProxyShape*>(this)->selectabilityDB();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
