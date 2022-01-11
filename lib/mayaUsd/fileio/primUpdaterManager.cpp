@@ -519,36 +519,35 @@ PushCustomizeSrc pushExport(
 
     std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc) = usdPathToDagPathMap;
 
-    const bool isCopy = context.GetArgs()._copyOperation;
-    if (!isCopy) {
-        // FIXME  Is it too early to remove the pull information?  If we remove
-        // it here, the push customize step won't have access to it --- but
-        // maybe it doesn't need to, because the UsdPathToDagPathMap is
-        // available in the context.  PPT, 14-Oct-2021.
-
-        auto mayaPath = usdToMaya(ufePulledPath);
-        auto mayaDagPath = MayaUsd::ufe::ufeToDagPath(mayaPath);
-
-        FunctionUndoItem::execute(
-            "Merge to Maya pull info removal",
-            [ufePulledPath]() {
-                removePullInformation(ufePulledPath);
-                return true;
-            },
-            [ufePulledPath, mayaDagPath]() {
-                return writePullInformation(ufePulledPath, mayaDagPath);
-            });
-
-        FunctionUndoItem::execute(
-            "Merge to Maya rendering inclusion",
-            [ufePulledPath]() {
-                removeExcludeFromRendering(ufePulledPath);
-                return true;
-            },
-            [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); });
-    }
-
     return pushCustomizeSrc;
+}
+
+void removePullInfoAndExclusion(
+    const Ufe::Path&                 ufePulledPath,
+    const MDagPath&                  mayaDagPath,
+    const UsdMayaPrimUpdaterContext& context)
+{
+    const bool isCopy = context.GetArgs()._copyOperation;
+    if (isCopy)
+        return;
+
+    FunctionUndoItem::execute(
+        "Merge to Maya pull info removal",
+        [ufePulledPath]() {
+            removePullInformation(ufePulledPath);
+            return true;
+        },
+        [ufePulledPath, mayaDagPath]() {
+            return writePullInformation(ufePulledPath, mayaDagPath);
+        });
+
+    FunctionUndoItem::execute(
+        "Merge to Maya rendering inclusion",
+        [ufePulledPath]() {
+            removeExcludeFromRendering(ufePulledPath);
+            return true;
+        },
+        [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); });
 }
 
 //------------------------------------------------------------------------------
@@ -820,6 +819,9 @@ bool PrimUpdaterManager::mergeToUsd(const MFnDependencyNode& depNodeFn, const Uf
     if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
         return false;
     }
+
+    // Remove the pull information and node exclusion.
+    removePullInfoAndExclusion(pulledPath, mayaDagPath, context);
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
