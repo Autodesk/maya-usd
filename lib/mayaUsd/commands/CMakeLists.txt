@@ -23,6 +23,16 @@ set(HEADERS
         layerEditorWindowCommand.h
 )
 
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            PullPushCommands.cpp
+    )
+    list(APPEND HEADERS
+        PullPushCommands.h
+    )
+endif()
+
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------

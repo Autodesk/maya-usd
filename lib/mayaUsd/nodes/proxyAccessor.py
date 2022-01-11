@@ -215,7 +215,7 @@ def keyframeAccessPlug(ufeObject, usdAttrName):
     else:
         result = cmds.setKeyframe(proxyDagPath, attribute=plugNameValueAttr)
     
-def parentItems(ufeChildren, ufeParent):
+def parentItems(ufeChildren, ufeParent, connect=True):
     if not isUfeUsdPath(ufeParent):
         print("This method implements parenting under USD prim. Please provide UFE-USD item for ufeParent")
         return
@@ -231,11 +231,19 @@ def parentItems(ufeChildren, ufeParent):
          
         childDagPath = getDagAndPrimFromUfe(ufeChild)[0]
         
-        print('Parenting "{}" to "{}{}"'.format(childDagPath, parentDagPath,parentUsdPrimPath))
+        print('{} "{}" to "{}{}"'.format(
+            ["Unparenting", "Parenting"][connect],
+            childDagPath, parentDagPath, parentUsdPrimPath))
         childConnectionAttr = childDagPath+'.offsetParentMatrix'
-        cmds.connectAttr(parentConnectionAttr, childConnectionAttr)
+        print('{} "{}" to "{}"'.format(
+            ["Disconnecting", "Connecting"][connect],
+            parentConnectionAttr, childConnectionAttr))
+        if connect:
+            cmds.connectAttr(parentConnectionAttr, childConnectionAttr)
+        else:
+            cmds.disconnectAttr(parentConnectionAttr, childConnectionAttr)
 
-def parent():
+def __parent(doParenting):
    ufeSelection = iter(ufe.GlobalSelection.get())
    ufeSelectionList = []
    for ufeItem in ufeSelection:
@@ -252,7 +260,13 @@ def parent():
    ufeParent = ufeSelectionList[-1]
    ufeChildren = ufeSelectionList[:-1]
    
-   parentItems(ufeChildren, ufeParent)
+   parentItems(ufeChildren, ufeParent, doParenting)
+
+def parent():
+    __parent(True)
+
+def unparent():
+    __parent(False)
 
 def connectItems(ufeObjectSrc, ufeObjectDst, attrToConnect):
     connectMayaToUsd = isUfeUsdPath(ufeObjectDst)

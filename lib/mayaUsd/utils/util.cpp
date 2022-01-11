@@ -16,6 +16,7 @@
 #include "util.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/undo/OpUndoItems.h>
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
@@ -38,6 +39,7 @@
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
+#include <maya/MItDag.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MItMeshFaceVertex.h>
@@ -81,6 +83,8 @@
 #include <pxr/usd/sdf/tokens.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/metrics.h>
+
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -202,10 +206,10 @@ MString UsdMayaUtil::GetUniqueNameOfDagNode(const MObject& node)
     return nodeName;
 }
 
-MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
+MStatus UsdMayaUtil::GetMObjectByName(const MString& nodeName, MObject& mObj)
 {
     MSelectionList selectionList;
-    MStatus        status = selectionList.add(MString(nodeName.c_str()));
+    MStatus        status = selectionList.add(nodeName);
     if (status != MS::kSuccess) {
         return status;
     }
@@ -213,6 +217,11 @@ MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj
     status = selectionList.getDependNode(0, mObj);
 
     return status;
+}
+
+MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
+{
+    return GetMObjectByName(MString(nodeName.c_str()), mObj);
 }
 
 UsdStageRefPtr UsdMayaUtil::GetStageByProxyName(const std::string& proxyPath)
@@ -1234,8 +1243,17 @@ MPlug UsdMayaUtil::GetConnected(const MPlug& plug)
 
 void UsdMayaUtil::Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug)
 {
-    MStatus     status;
-    MDGModifier dgMod;
+    MDGModifier& dgMod = MDGModifierUndoItem::create("Generic plug connection");
+    Connect(srcPlug, dstPlug, clearDstPlug, dgMod);
+}
+
+void UsdMayaUtil::Connect(
+    const MPlug& srcPlug,
+    const MPlug& dstPlug,
+    const bool   clearDstPlug,
+    MDGModifier& dgMod)
+{
+    MStatus status;
 
     if (clearDstPlug) {
         MPlugArray plgCons;
@@ -2022,6 +2040,27 @@ std::string UsdMayaUtil::convert(const MString& str)
 MString UsdMayaUtil::convert(const std::string& str)
 {
     return MString(str.data(), static_cast<int>(str.size()));
+}
+
+std::vector<MDagPath> UsdMayaUtil::getDescendants(const MDagPath& path)
+{
+    std::vector<MDagPath> descendants;
+    {
+        MItDag dagIt;
+        for (dagIt.reset(path); !dagIt.isDone(); dagIt.next()) {
+            MDagPath curDagPath;
+            dagIt.getPath(curDagPath);
+            descendants.emplace_back(curDagPath);
+        }
+    }
+    return descendants;
+}
+
+std::vector<MDagPath> UsdMayaUtil::getDescendantsStartingWithChildren(const MDagPath& path)
+{
+    std::vector<MDagPath> descendants = getDescendants(path);
+    std::reverse(descendants.begin(), descendants.end());
+    return descendants;
 }
 
 MDagPath UsdMayaUtil::getDagPath(const MFnDependencyNode& depNodeFn, const bool reportError)

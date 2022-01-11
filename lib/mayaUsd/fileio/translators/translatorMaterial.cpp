@@ -326,7 +326,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
         = UsdMayaTranslatorMaterial::Read(jobArguments, meshMaterial, primSchema, context);
 
     if (shadingEngine.isNull()) {
-        status = UsdMayaUtil::GetMObjectByName("initialShadingGroup", shadingEngine);
+        status = UsdMayaUtil::GetMObjectByName(MString("initialShadingGroup"), shadingEngine);
         if (status != MS::kSuccess) {
             return false;
         }
@@ -397,7 +397,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 _UVBindings faceUVBindings;
                 if (faceSubsetShadingEngine.isNull()) {
                     status = UsdMayaUtil::GetMObjectByName(
-                        "initialShadingGroup", faceSubsetShadingEngine);
+                        MString("initialShadingGroup"), faceSubsetShadingEngine);
                     if (status != MS::kSuccess) {
                         return false;
                     }
