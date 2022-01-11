@@ -33,6 +33,7 @@
 #include <pxr/imaging/hd/camera.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hdx/colorizeSelectionTask.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/tokens.h>
@@ -500,9 +501,27 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
             }
         }
 
+        // MAYA-114630
+        // https://github.com/PixarAnimationStudios/USD/commit/fc63eaef29
+        // removed backing, and restoring of GL_FRAMEBUFFER state.
+        // At the same time HdxColorizeSelectionTask modifies the frame buffer state
+        // Manually backup and restore the state of the frame buffer for now.
+        HdMayaGLBackup backup;
+        if (_backupFrameBufferWorkaround) {
+            HdTaskSharedPtr backupTask(new HdMayaBackupGLStateTask(backup));
+            HdTaskSharedPtr restoreTask(new HdMayaRestoreGLStateTask(backup));
+            tasks.reserve(tasks.size() + 2);
+            for (auto it = tasks.begin(); it != tasks.end(); it++) {
+                if (std::dynamic_pointer_cast<HdxColorizeSelectionTask>(*it)) {
+                    tasks.insert(it, backupTask);
+                    tasks.insert(it + 2, restoreTask);
+                    break;
+                }
+            }
+        }
         _engine.Execute(_renderIndex, &tasks);
 
-        // HdTaskController will query al of the tasks it can for IsConverged.
+        // HdTaskController will query all of the tasks it can for IsConverged.
         // This includes HdRenderPass::IsConverged and HdRenderBuffer::IsConverged (via colorizer).
         //
         _isConverged = _taskController->IsConverged();
@@ -789,7 +808,13 @@ void MtohRenderOverride::_InitHydraResources()
             { _rendererDesc.rendererName, filterRenderer, fallbackToUserDefaults });
         _globals.ApplySettings(renderDelegate, _rendererDesc.rendererName);
     }
-
+    auto tasks = _taskController->GetRenderingTasks();
+    for (auto task : tasks) {
+        if (std::dynamic_pointer_cast<HdxColorizeSelectionTask>(task)) {
+            _backupFrameBufferWorkaround = true;
+            break;
+        }
+    }
     _initializationSucceeded = true;
 }
 

@@ -56,7 +56,7 @@ public:
         return *((std::shared_ptr<This>*)createdWrapper);
     }
 
-    virtual ~PrimReaderWrapper() { }
+    virtual ~PrimReaderWrapper() = default;
 
     bool Read(UsdMayaPrimReaderContext& context) override
     {
@@ -262,10 +262,30 @@ void wrapPrimReaderContext()
         .def("SetTimeSampleMultiplier", &UsdMayaPrimReaderContext::SetTimeSampleMultiplier);
 }
 
+namespace {
+std::vector<std::string> getChaserNames(UsdMayaJobImportArgs& self) { return self.chaserNames; }
+
+boost::python::object getChaserArgs(UsdMayaJobImportArgs& self, const std::string& chaser)
+{
+    boost::python::dict editDict;
+
+    std::map<std::string, std::string> myArgs;
+    TfMapLookup(self.allChaserArgs, chaser, &myArgs);
+
+    for (const auto& item : myArgs) {
+        editDict[item.first] = item.second;
+    }
+    return boost::python::object(editDict);
+}
+} // namespace
+
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobImportArgs()
 {
-    boost::python::class_<UsdMayaJobImportArgs>("JobImportArgs", boost::python::no_init);
+    boost::python::class_<UsdMayaJobImportArgs>("JobImportArgs", boost::python::no_init)
+        .def("getChaserNames", &::getChaserNames)
+        .def("getChaserArgs", &::getChaserArgs)
+        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName);
 }
 
 void wrapPrimReaderArgs()

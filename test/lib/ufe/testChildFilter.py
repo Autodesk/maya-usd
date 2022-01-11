@@ -21,6 +21,7 @@ import mayaUtils
 
 from maya import cmds
 from maya import standalone
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
 
 import mayaUsd.ufe
 
@@ -52,13 +53,10 @@ class ChildFilterTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
-        # Open ballset.ma scene in testSamples
+    def testFilteredChildren(self):
         mayaUtils.openGroupBallsScene()
-
-        # Clear selection to start off
         cmds.select(clear=True)
 
-    def testFilteredChildren(self):
         # Check that we have six balls
         propsPath = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props')
         propsItem = ufe.Hierarchy.createItem(propsPath)
@@ -92,6 +90,9 @@ class ChildFilterTestCase(unittest.TestCase):
         self.assertIn(ball3Hier, children)
 
     def testProxyShapeFilteredChildren(self):
+        mayaUtils.openGroupBallsScene()
+        cmds.select(clear=True)
+
         # Check that the proxy shape has a single child, Ball_set.
         psPath = ufe.PathString.path('|transform1|proxyShape1')
         psItem = ufe.Hierarchy.createItem(psPath)
@@ -138,6 +139,29 @@ class ChildFilterTestCase(unittest.TestCase):
         psFilteredChildren = psHier.filteredChildren(cf)
         self.assertEqual(len(psFilteredChildren), 1)
         self.assertEqual(ballSetItem, psFilteredChildren[0])
+
+    def testUnload(self):
+        mayaUtils.openTopLayerScene()
+
+        propsPath = ufe.PathString.path('|transform1|proxyShape1,/Room_set/Props')
+        propsItem = ufe.Hierarchy.createItem(propsPath)
+        propsHier = ufe.Hierarchy.hierarchy(propsItem)
+
+        # Before unloading it should have 35 children (35 balls).
+        self.assertTrue(propsHier.hasChildren())
+        ball1Children = propsHier.children()
+        self.assertEqual(len(ball1Children), 35)
+
+        # Unload props
+        contextOps = ufe.ContextOps.contextOps(propsItem)
+        cmd = contextOps.doOpCmd(['Unload'])
+        ufeCmd.execute(cmd)
+
+        # After unloading, it should still have 35 children because
+        # the children method returns unloaded prims by default.
+        self.assertTrue(propsHier.hasChildren())
+        ball1Children = propsHier.children()
+        self.assertEqual(len(ball1Children), 35)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -3,6 +3,7 @@ set(TEST_SCRIPT_FILES "")
 
 list(APPEND TEST_SCRIPT_FILES
 	testVP2RenderDelegateGeomSubset.py
+    testVP2RenderDelegatePointInstanceOrientation.py
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -68,6 +69,8 @@ foreach(script ${TEST_SCRIPT_FILES})
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
             "MAYAUSD_VP2_ENABLE_V2_LIGHTING_SHADER=1"
+            "PXR_MTLX_STDLIB_SEARCH_PATHS=${PXR_USD_LOCATION}/libraries"
+            "PXR_MTLX_STDLIB_SEARCH_PATHS=${CMAKE_INSTALL_PREFIX}/libraries"
 
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.

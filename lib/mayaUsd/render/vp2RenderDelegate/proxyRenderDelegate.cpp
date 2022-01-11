@@ -15,6 +15,7 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include "draw_item.h"
 #include "mayaPrimCommon.h"
 #include "render_delegate.h"
 #include "tokens.h"
@@ -765,14 +766,27 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
+    const unsigned int displayStyle = frameContext.getDisplayStyle();
+
+    // Query the wireframe color assigned to proxy shape.
+    if (displayStyle
+        & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
+        _wireframeColor
+            = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
+    }
+
+    // Work around for USD issue #1516. We don't know if any instanced object has
+    // had it's instance index change, so re-populate selection every update to
+    // ensure correct selection highlighting of instanced objects.
+    bool instanceIndexChanged = true;
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass)) {
+    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass) || instanceIndexChanged) {
         _UpdateSelectionStates();
         _selectionChanged = false;
         _selectionModeChanged = false;
     }
 #else
-    if (_selectionChanged && !inSelectionPass) {
+    if ((_selectionChanged && !inSelectionPass) || instanceIndexChanged) {
         _UpdateSelectionStates();
         _selectionChanged = false;
     }
@@ -786,15 +800,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
 #endif
     } else {
-        const unsigned int displayStyle = frameContext.getDisplayStyle();
-
-        // Query the wireframe color assigned to proxy shape.
-        if (displayStyle
-            & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
-            _wireframeColor
-                = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
-        }
-
         // Update repr selector based on display style of the current viewport
         if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
             if (!reprSelector.Contains(HdVP2ReprTokens->bbox)) {
@@ -824,13 +829,22 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
     }
 
-    if (_defaultCollection->GetReprSelector() != reprSelector) {
-        _defaultCollection->SetReprSelector(reprSelector);
-        _taskController->SetCollection(*_defaultCollection);
-    }
-
     // if there are no repr's to update then don't even call sync.
     if (reprSelector != HdReprSelector()) {
+        if (_defaultCollection->GetReprSelector() != reprSelector) {
+            _defaultCollection->SetReprSelector(reprSelector);
+            _taskController->SetCollection(*_defaultCollection);
+
+            // Mark everything "dirty" so that sync is called on everything
+            // If there are multiple views up with different viewport modes then
+            // this is slow.
+            auto&            rprims = _renderIndex->GetRprimIds();
+            HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+            for (auto path : rprims) {
+                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtyDisplayMode);
+            }
+        }
+
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
     }
 }
@@ -973,13 +987,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     if (handler == nullptr)
         return false;
 
-    // Extract id of the owner Rprim. A SdfPath directly created from the render
-    // item name could be ill-formed if the render item represents instancing:
-    // "/TreePatch/Tree_1.proto_leaves_id0/DrawItem_xxxxxxxx". Thus std::string
-    // is used instead to extract Rprim id.
-    const std::string renderItemName = renderItem.name().asChar();
-    const auto        pos = renderItemName.find_first_of(VP2_RENDER_DELEGATE_SEPARATOR);
-    const SdfPath     rprimId(renderItemName.substr(0, pos));
+    const SdfPath rprimId = HdVP2DrawItem::RenderItemToPrimPath(renderItem);
 
     // If drawInstID is positive, it means the selection hit comes from one instanced render item,
     // in this case its instance transform matrices have been sorted w.r.t. USD instance index, thus
@@ -1141,6 +1149,50 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     return true;
 }
 
+#ifdef MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT
+bool ProxyRenderDelegate::updateUfeIdentifiers(
+    MHWRender::MRenderItem& renderItem,
+    MStringArray&           ufeIdentifiers)
+{
+
+    if (MayaUsdCustomData::ItemDataDirty(renderItem)) {
+        // Set the custom data clean right away, incase we get a re-entrant call into
+        // updateUfeIdentifiers.
+        MayaUsdCustomData::ItemDataDirty(renderItem, false);
+        const SdfPath rprimId = HdVP2DrawItem::RenderItemToPrimPath(renderItem);
+
+        InstancePrimPaths& instancePrimPaths = MayaUsdCustomData::GetInstancePrimPaths(rprimId);
+
+        auto   mayaToUsd = MayaUsdCustomData::Get(renderItem);
+        size_t instanceCount = mayaToUsd.size();
+        if (instanceCount > 0) {
+            for (size_t mayaInstanceId = 0; mayaInstanceId < instanceCount; mayaInstanceId++) {
+                int usdInstanceId = mayaToUsd[mayaInstanceId];
+                if (usdInstanceId == UsdImagingDelegate::ALL_INSTANCES)
+                    continue;
+
+                // try making a cache of the USD ID to the ufeIdentifier.
+                if (instancePrimPaths[usdInstanceId] == SdfPath()) {
+                    instancePrimPaths[usdInstanceId] = GetScenePrimPath(rprimId, usdInstanceId);
+                }
+#ifdef DEBUG
+                else {
+                    // verify the entry is still correct
+                    TF_VERIFY(
+                        instancePrimPaths[usdInstanceId]
+                        == GetScenePrimPath(rprimId, usdInstanceId));
+                }
+#endif
+
+                ufeIdentifiers.append(instancePrimPaths[usdInstanceId].GetString().c_str());
+            }
+        }
+        return true;
+    }
+    return false;
+}
+#endif
+
 //! \brief  Notify of selection change.
 void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }
 
@@ -1224,7 +1276,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
 
         // now that the appropriate prims have been marked dirty trigger
         // a sync so that they all update.
-        HdRprimCollection collection(HdTokens->geometry, kSmoothHullReprSelector);
+        HdRprimCollection collection(HdTokens->geometry, _defaultCollection->GetReprSelector());
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
         _engine.Execute(_renderIndex.get(), &_dummyTasks);

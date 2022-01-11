@@ -15,12 +15,14 @@
 //
 #include "usdPreviewSurface.h"
 
+#include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/pxr.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
+#include <maya/MFileIO.h>
 #include <maya/MFloatVector.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNumericAttribute.h>
@@ -41,6 +43,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(
     PxrMayaUsdPreviewSurfaceTokens,
     PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS);
+
+TF_DEFINE_ENV_SETTING(
+    USDMAYA_FIX_PREVIEW_SURFACE_CORRECTNESS_ON_LOAD,
+    false,
+    "If true, Color Space on the file node will be set to Raw when driving normals and "
+    "monochromatic attributes. We will also adjust Color Gain to (2, 2, 2) and Color Offset to "
+    "(-1, -1, -1) on normal maps.");
+
+namespace {
+static const MString normalAttrShortName = "nrm";
+}
 
 /* static */
 void* PxrMayaUsdPreviewSurface::creator() { return new PxrMayaUsdPreviewSurface(); }
@@ -177,7 +190,7 @@ MStatus PxrMayaUsdPreviewSurface::initialize()
 
     normalAttr = numericAttrFn.create(
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName.GetText(),
-        "nrm",
+        normalAttrShortName,
         MFnNumericData::k3Float,
         0.0,
         &status);
@@ -485,6 +498,78 @@ MStatus PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlo
     }
 
     return status;
+}
+
+/* virtual */
+MStatus
+PxrMayaUsdPreviewSurface::connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc)
+{
+    // Skip any adjustements on load, unless explicitly requested.
+    if (MFileIO::isReadingFile()
+        && !TfGetEnvSetting(USDMAYA_FIX_PREVIEW_SURFACE_CORRECTNESS_ON_LOAD)) {
+        return MPxNode::connectionMade(plug, otherPlug, asSrc);
+    }
+
+    // If we receive a connection on the "normal" input, and the connection is from a "file" node,
+    // then we want to adjust the Space, Gain, and Offset of that file node so they match the
+    // expected normal range of UsdPreviewSurface.
+    if (plug.partialName() == normalAttrShortName && otherPlug.node().hasFn(MFn::kFileTexture)) {
+        MFnDependencyNode otherDepNode(otherPlug.node());
+
+        bool  ignoreColorSpaceFileRules = false;
+        MPlug sourceIgnoreColorSpaceFileRules = otherDepNode.findPlug("ignoreColorSpaceFileRules");
+        if (!sourceIgnoreColorSpaceFileRules.isNull()) {
+            sourceIgnoreColorSpaceFileRules.getValue(ignoreColorSpaceFileRules);
+        }
+
+        MPlug sourceColorSpace = otherDepNode.findPlug("colorSpace");
+        if (!sourceColorSpace.isNull() && !ignoreColorSpaceFileRules) {
+            sourceColorSpace.setString("Raw");
+        }
+
+        auto setPlugValue = [&otherDepNode](const auto& plugName, const auto& plugValue) {
+            MPlug numericPlug = otherDepNode.findPlug(plugName);
+            if (!numericPlug.isNull()) {
+                numericPlug.setDouble(plugValue);
+            }
+        };
+
+        setPlugValue("colorGainR", 2);
+        setPlugValue("colorGainG", 2);
+        setPlugValue("colorGainB", 2);
+        setPlugValue("colorOffsetR", -1);
+        setPlugValue("colorOffsetG", -1);
+        setPlugValue("colorOffsetB", -1);
+        setPlugValue("alphaGain", 1);
+        setPlugValue("alphaOffset", 0);
+    }
+
+    // Similarly, if the connection is on a single channel attribute, like metalness, roughness, or
+    // opacity, and the source is a color channel, then we expect the file node to use the "Raw"
+    // colorspace:
+    if (!plug.isChild() && plug.attribute().hasFn(MFn::kNumericAttribute)
+        && otherPlug.node().hasFn(MFn::kFileTexture)
+        && (otherPlug.partialName() == "ocr" || otherPlug.partialName() == "ocg"
+            || otherPlug.partialName() == "ocb")) {
+        MFnNumericAttribute numericAttrFn(plug.attribute());
+        if (numericAttrFn.unitType() == MFnNumericData::kFloat) {
+            MFnDependencyNode otherDepNode(otherPlug.node());
+
+            bool  ignoreColorSpaceFileRules = false;
+            MPlug sourceIgnoreColorSpaceFileRules
+                = otherDepNode.findPlug("ignoreColorSpaceFileRules");
+            if (!sourceIgnoreColorSpaceFileRules.isNull()) {
+                sourceIgnoreColorSpaceFileRules.getValue(ignoreColorSpaceFileRules);
+            }
+
+            MPlug sourceColorSpace = otherDepNode.findPlug("colorSpace");
+            if (!sourceColorSpace.isNull() && !ignoreColorSpaceFileRules) {
+                sourceColorSpace.setString("Raw");
+            }
+        }
+    }
+
+    return MPxNode::connectionMade(plug, otherPlug, asSrc);
 }
 
 PxrMayaUsdPreviewSurface::PxrMayaUsdPreviewSurface()

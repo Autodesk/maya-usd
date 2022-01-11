@@ -139,7 +139,7 @@ public:
 USDMAYA_DEFINE_IMPORT_CHASER_FACTORY(info, ctx)
 {
     std::map<std::string, std::string> myArgs;
-    TfMapLookup(ctx.GetImportJobArgs().allChaserArgs, "info", &myArgs);
+    TfMapLookup(ctx.GetJobArgs().allChaserArgs, "info", &myArgs);
 
     // TODO: (yliangsiew) Figure out why the chaser isn't accessible, or the alembic example chaser
     // as well in a normal Maya session. Needs to have pxrUsd loaded first _then_ mayaUsdPlugin, in

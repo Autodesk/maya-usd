@@ -121,9 +121,11 @@ public:
 
     void CommitResources(HdChangeTracker* tracker) override;
 
-    TfToken GetMaterialBindingPurpose() const override;
-#ifdef WANT_MATERIALX_BUILD
+    TfToken       GetMaterialBindingPurpose() const override;
     TfTokenVector GetShaderSourceTypes() const override;
+#if PXR_VERSION < 2105
+    TfToken GetMaterialNetworkSelector() const override;
+#else
     TfTokenVector GetMaterialRenderContexts() const override;
 #endif
 

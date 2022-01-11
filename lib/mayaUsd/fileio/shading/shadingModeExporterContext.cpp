@@ -68,6 +68,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (volumeShader)
     (displacementShader)
     (varname)
+    (varnameStr)
     (map1)
 );
 // clang-format on
@@ -480,8 +481,8 @@ UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 }
 
 namespace {
-/// We can have multiple mesh with differing UV channel names and we need to make sure the
-/// exported material has varname inputs that match the texcoords exported by the shape
+/// We can have multiple mesh with differing UV channel names and we need to make sure the exported
+/// material has varname or varnameStr inputs that match the texcoords exported by the shape
 class _UVMappingManager
 {
 public:
@@ -496,6 +497,7 @@ public:
         // shader nodes contained in the material that have UV inputs that requires mapping:
         //
         //      token inputs:node_with_uv_input:varname = "st"
+        //      string inputs:node_with_uv_input:varnameStr = "st"
         //
         // The "node_with_uv_input" is a dependency node which is a valid target for the Maya
         // "uvLink" command, which describes UV linkage for all shapes in the scene that reference
@@ -506,7 +508,8 @@ public:
         for (const UsdShadeInput& input : material.GetInputs()) {
             const UsdAttribute&      usdAttr = input.GetAttr();
             std::vector<std::string> splitName = usdAttr.SplitName();
-            if (splitName.back() != _tokens->varname.GetString()) {
+            if (splitName.back() != _tokens->varname.GetString()
+                && splitName.back() != _tokens->varnameStr.GetString()) {
                 continue;
             }
 
@@ -602,13 +605,17 @@ public:
             TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
             TfTokenVector::const_iterator itName = largestSet.cbegin();
             for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
-                TfToken inputName(
-                    TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
-                UsdShadeInput materialInput = material.GetInput(inputName);
                 TF_VERIFY(itName != largestSet.cend());
-                if (materialInput.GetTypeName() == SdfValueTypeNames->Token) {
+                std::string inputName(
+                    TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
+                UsdShadeInput materialInput = material.GetInput(TfToken(inputName.c_str()));
+                if (materialInput) {
                     materialInput.Set(*itName);
-                } else if (materialInput.GetTypeName() == SdfValueTypeNames->String) {
+                }
+                inputName
+                    = TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varnameStr.GetText());
+                materialInput = material.GetInput(TfToken(inputName.c_str()));
+                if (materialInput) {
                     materialInput.Set((*itName).GetString());
                 }
             }
@@ -649,13 +656,15 @@ public:
         TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
         TfTokenVector::const_iterator itName = uvNames.cbegin();
         for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
-            TfToken inputName(
+            std::string inputName(
                 TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
-            UsdShadeInput materialInput
-                = newMaterial.CreateInput(inputName, SdfValueTypeNames->Token);
-            if (materialInput.GetTypeName() == SdfValueTypeNames->Token) {
+            UsdShadeInput materialInput = newMaterial.GetInput(TfToken(inputName.c_str()));
+            if (materialInput) {
                 materialInput.Set(*itName);
-            } else if (materialInput.GetTypeName() == SdfValueTypeNames->String) {
+            }
+            inputName = TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varnameStr.GetText());
+            materialInput = newMaterial.GetInput(TfToken(inputName.c_str()));
+            if (materialInput) {
                 materialInput.Set((*itName).GetString());
             }
         }

@@ -32,15 +32,34 @@ PXR_NAMESPACE_OPEN_SCOPE
 // back to a usd instance id.
 using InstanceIdMap = std::vector<unsigned int>;
 
+using InstancePrimPaths = std::vector<SdfPath>;
+
 // global singleton rather than MUserData, because consolidated world will
 // not consolidate render items with different MUserData objects.
 class MayaUsdCustomData
 {
 public:
-    tbb::concurrent_unordered_map<int, InstanceIdMap> _itemData;
+    struct MayaUsdRenderItemData
+    {
+        InstanceIdMap _instanceIdMap;
+        bool          _itemDataDirty { false };
+    };
+
+    struct MayaUsdPrimData
+    {
+        InstancePrimPaths _instancePrimPaths;
+    };
+
+    tbb::concurrent_unordered_map<int, MayaUsdRenderItemData>              _itemData;
+    tbb::concurrent_unordered_map<SdfPath, MayaUsdPrimData, SdfPath::Hash> _primData;
 
     static InstanceIdMap& Get(const MHWRender::MRenderItem& item);
     static void           Remove(const MHWRender::MRenderItem& item);
+    static bool           ItemDataDirty(const MHWRender::MRenderItem& item);
+    static void           ItemDataDirty(const MHWRender::MRenderItem& item, bool dirty);
+
+    static InstancePrimPaths& GetInstancePrimPaths(const SdfPath& prim);
+    static void               RemoveInstancePrimPaths(const SdfPath& prim);
 };
 #endif
 
@@ -48,9 +67,14 @@ struct MayaPrimCommon
 {
     enum DirtyBits : HdDirtyBits
     {
+        // The rprim has been added, removed or otherwise changed such that the selection highlight
+        // for the item is dirty
         DirtySelectionHighlight = HdChangeTracker::CustomBitsBegin,
+        // Maya's selection mode has changed, for example into point snapping mode
         DirtySelectionMode = (DirtySelectionHighlight << 1),
-        DirtyBitLast = DirtySelectionMode
+        // Maya's display mode has changed, for example for shaded to wireframe
+        DirtyDisplayMode = (DirtySelectionMode << 1),
+        DirtyBitLast = DirtyDisplayMode
     };
 };
 

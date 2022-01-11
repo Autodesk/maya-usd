@@ -57,12 +57,13 @@
 #include <maya/MViewport2Renderer.h>
 
 #ifdef WANT_MATERIALX_BUILD
+#include <mayaUsd/render/MaterialXGenOgsXml/OgsFragment.h>
+#include <mayaUsd/render/MaterialXGenOgsXml/OgsXmlGenerator.h>
+
 #include <MaterialXCore/Document.h>
 #include <MaterialXFormat/File.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
-#include <MaterialXGenOgsXml/OgsFragment.h>
-#include <MaterialXGenOgsXml/OgsXmlGenerator.h>
 #include <MaterialXGenShader/HwShaderGenerator.h>
 #include <MaterialXGenShader/ShaderStage.h>
 #include <MaterialXGenShader/Util.h>
@@ -148,6 +149,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (UsdPrimvarReader_color)
     (UsdPrimvarReader_vector)
+
+    (Unknown)
+    (Computed)
 );
 // clang-format on
 
@@ -204,30 +208,9 @@ struct _MaterialXData
     _MaterialXData()
     {
         _mtlxLibrary = mx::createDocument();
+        _mtlxSearchPath = HdMtlxSearchPaths();
 
-        // In the final product, the libraries will be intalled with the plugin and
-        // will be found in a location that is relative to the plugin load path. We
-        // are not ready for the full installer yet, so use the install paths of the
-        // MaterialX used to build the module just like Pixar does in USD.
-        //
-        // Also, since users are able to provide plug-in libraries, we need a fully
-        // extendable mechanism so they can declare where to search for these.
-        //
-        // The MaterialX_DIR location is most likely the cmake folder for a regular
-        // build of MaterialX:
-        mx::FilePath materialXPath(MaterialX_DIR);
-        materialXPath = materialXPath.getParentPath() / mx::FilePath("libraries");
-        _mtlxSearchPath.append(materialXPath);
-
-        const std::unordered_set<std::string> uniqueLibraryNames {
-            "targets",        "adsklib",        "stdlib", "pbrlib",        "bxdf",
-            "stdlib/genglsl", "pbrlib/genglsl", "lights", "lights/genglsl"
-        };
-
-        mx::loadLibraries(
-            mx::FilePathVec(uniqueLibraryNames.begin(), uniqueLibraryNames.end()),
-            _mtlxSearchPath,
-            _mtlxLibrary);
+        mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
@@ -411,6 +394,13 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
         for (mx::NodePtr node : nodeGraph->getNodes()) {
             // Check the inputs of the node for UV0 default geom properties
             mx::NodeDefPtr nodeDef = node->getNodeDef();
+            // A missing node def is a very bad sign. No need to process further.
+            if (!TF_VERIFY(
+                    nodeDef,
+                    "Could not find MaterialX NodeDef for Node '%s'. Please recheck library paths.",
+                    node->getNamePath().c_str())) {
+                return;
+            }
             for (mx::InputPtr input : nodeDef->getInputs()) {
                 if (input->hasDefaultGeomPropString()
                     && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
@@ -732,6 +722,11 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
         return nullptr;
     }
 
+    MHWRender::MTexture* texture = textureMgr->findTexture(path.c_str());
+    if (texture) {
+        return texture;
+    }
+
     // HdSt sets the tile limit to the max number of textures in an array of 2d textures. OpenGL
     // says the minimum number of layers in 2048 so I'll use that.
     int                                   tileLimit = 2048;
@@ -806,9 +801,9 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
         tilePositions.append(v);
     }
 
-    MColor               undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
-    MStringArray         failedTilePaths;
-    MHWRender::MTexture* texture = textureMgr->acquireTiledTexture(
+    MColor       undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
+    MStringArray failedTilePaths;
+    texture = textureMgr->acquireTiledTexture(
         textureName,
         tilePaths,
         tilePositions,
@@ -849,6 +844,11 @@ MHWRender::MTexture* _LoadTexture(
         = renderer ? renderer->getTextureManager() : nullptr;
     if (!TF_VERIFY(textureMgr)) {
         return nullptr;
+    }
+
+    MHWRender::MTexture* texture = textureMgr->findTexture(path.c_str());
+    if (texture) {
+        return texture;
     }
 
 #if PXR_VERSION >= 2102
@@ -917,8 +917,6 @@ MHWRender::MTexture* _LoadTexture(
     if (!image->Read(spec)) {
         return nullptr;
     }
-
-    MHWRender::MTexture* texture = nullptr;
 
     MHWRender::MTextureDescription desc;
     desc.setToDefault2DTexture();
@@ -1177,6 +1175,28 @@ MHWRender::MTexture* _LoadTexture(
     return texture;
 }
 
+TfToken MayaDescriptorToToken(const MVertexBufferDescriptor& descriptor)
+{
+    // Attempt to match an MVertexBufferDescriptor to the corresponding
+    // USD primvar token. The "Computed" token is used for data which
+    // can be computed by an an rprim. Unknown is used for unsupported
+    // descriptors.
+
+    TfToken token = _tokens->Unknown;
+    switch (descriptor.semantic()) {
+    case MGeometry::kPosition: token = HdTokens->points; break;
+    case MGeometry::kNormal: token = HdTokens->normals; break;
+    case MGeometry::kTexture: break;
+    case MGeometry::kColor: token = HdTokens->displayColor; break;
+    case MGeometry::kTangent: token = _tokens->Computed; break;
+    case MGeometry::kBitangent: token = _tokens->Computed; break;
+    case MGeometry::kTangentWithSign: token = _tokens->Computed; break;
+    default: break;
+    }
+
+    return token;
+}
+
 } // anonymous namespace
 
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
@@ -1326,6 +1346,34 @@ void HdVP2Material::Sync(
 
                     // Store primvar requirements.
                     _requiredPrimvars = std::move(vp2BxdfNet.primvars);
+
+                    // Verify that _requiredPrivars contains all the requiredVertexBuffers() the
+                    // shader instance needs.
+                    MVertexBufferDescriptorList requiredVertexBuffers;
+                    MStatus status = shader->requiredVertexBuffers(requiredVertexBuffers);
+                    if (status) {
+                        for (int reqIndex = 0; reqIndex < requiredVertexBuffers.length();
+                             reqIndex++) {
+                            MVertexBufferDescriptor desc;
+                            requiredVertexBuffers.getDescriptor(reqIndex, desc);
+                            TfToken requiredPrimvar = MayaDescriptorToToken(desc);
+                            // now make sure something matching requiredPrimvar is in
+                            // _requiredPrimvars
+                            if (requiredPrimvar != _tokens->Unknown
+                                && requiredPrimvar != _tokens->Computed) {
+                                bool found = false;
+                                for (TfToken const& primvar : _requiredPrimvars) {
+                                    if (primvar == requiredPrimvar) {
+                                        found = true;
+                                        break;
+                                    }
+                                }
+                                if (!found) {
+                                    _requiredPrimvars.push_back(requiredPrimvar);
+                                }
+                            }
+                        }
+                    }
 
                     // The token is saved and will be used to determine whether a new shader
                     // instance is needed during the next sync.
@@ -1626,9 +1674,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         // Normal map is not supported yet. For now primvars:normals is used for
         // shading, which is also the current behavior of USD/Hydra.
         // https://groups.google.com/d/msg/usd-interest/7epU16C3eyY/X9mLW9VFEwAJ
-        if (node.identifier == UsdImagingTokens->UsdPreviewSurface) {
-            outNet.primvars.push_back(HdTokens->normals);
-        }
+
         // UsdImagingMaterialAdapter doesn't create primvar requirements as
         // expected. Workaround by manually looking up "varname" parameter.
         // https://groups.google.com/forum/#!msg/usd-interest/z-14AgJKOcU/1uJJ1thXBgAJ

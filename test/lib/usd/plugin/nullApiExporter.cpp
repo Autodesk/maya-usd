@@ -61,7 +61,29 @@ REGISTER_EXPORT_JOB_CONTEXT_FCT(Thierry, "Thierry", "Exports for Thierry rendere
 
 REGISTER_EXPORT_JOB_CONTEXT_FCT(SceneGrinder, "Scene Grinder", "Exports to Scene Grinder")
 {
-    return VtDictionary();
+    VtDictionary extraArgs;
+    extraArgs["exportDisplayColor"] = VtValue(true);
+    extraArgs["shadingMode"] = VtValue(std::string("useRegistry"));
+    extraArgs["convertMaterialsTo"] = VtValue(std::vector<VtValue> {
+        VtValue(std::string("MaterialX")), VtValue(std::string("UsdPreviewSurface")) });
+    extraArgs["animation"] = VtValue(true);
+    // The next two are bizarre. They are handled as double internally, but their representation in
+    // the UI are int and float.
+    extraArgs["startTime"] = VtValue(12);
+    extraArgs["frameStride"] = VtValue(1.5f);
+    return extraArgs;
+}
+
+REGISTER_IMPORT_JOB_CONTEXT_FCT(SceneGrinder, "Scene Grinder", "Imports from Scene Grinder")
+{
+    VtDictionary extraArgs;
+
+    extraArgs["preferredMaterial"] = VtValue(std::string("standardSurface"));
+    extraArgs["importUSDZTextures"] = VtValue(true);
+    extraArgs["readAnimData"] = VtValue(true);
+    extraArgs["useCustomFrameRange"] = VtValue(true);
+    extraArgs["startTime"] = VtValue(12);
+    return extraArgs;
 }
 
 REGISTER_EXPORT_JOB_CONTEXT_FCT(

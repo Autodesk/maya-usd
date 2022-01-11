@@ -63,6 +63,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (inputs)
     (varname)
+    (varnameStr)
 );
 // clang-format on
 
@@ -101,14 +102,15 @@ bool _IsMergeableMaterial(const UsdShadeMaterial& shadeMaterial)
         return false;
     }
 
-    // Check that the only properties authored are varname inputs.
+    // Check that the only properties authored are varname and varnameStr inputs.
     for (const SdfPropertySpecHandle& propSpec : primSpec->GetProperties()) {
         const SdfPath propPath = propSpec->GetPath();
 
         const std::vector<std::string> splitName = SdfPath::TokenizeIdentifier(propPath.GetName());
-        // We allow only ["inputs", "<texture_name>", "varname"]
+        // We allow only ["inputs", "<texture_name>", "varname" or "varnameStr"]
         if (splitName.size() != 3u || splitName[0u] != _tokens->inputs.GetString()
-            || splitName[2u] != _tokens->varname.GetString()) {
+            || (splitName[2u] != _tokens->varname.GetString()
+                && splitName[2u] != _tokens->varnameStr.GetString())) {
             return false;
         }
     }
@@ -178,7 +180,9 @@ _GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderCo
     for (const UsdShadeInput& input : material.GetInputs()) {
         const UsdAttribute&      usdAttr = input.GetAttr();
         std::vector<std::string> splitName = usdAttr.SplitName();
-        if (splitName.size() != 3 || splitName[2] != _tokens->varname.GetString()) {
+        if (splitName.size() != 3
+            || (splitName[2] != _tokens->varname.GetString()
+                && splitName[2] != _tokens->varnameStr.GetString())) {
             continue;
         }
         VtValue val;
@@ -322,7 +326,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
         = UsdMayaTranslatorMaterial::Read(jobArguments, meshMaterial, primSchema, context);
 
     if (shadingEngine.isNull()) {
-        status = UsdMayaUtil::GetMObjectByName("initialShadingGroup", shadingEngine);
+        status = UsdMayaUtil::GetMObjectByName(MString("initialShadingGroup"), shadingEngine);
         if (status != MS::kSuccess) {
             return false;
         }
@@ -393,7 +397,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 _UVBindings faceUVBindings;
                 if (faceSubsetShadingEngine.isNull()) {
                     status = UsdMayaUtil::GetMObjectByName(
-                        "initialShadingGroup", faceSubsetShadingEngine);
+                        MString("initialShadingGroup"), faceSubsetShadingEngine);
                     if (status != MS::kSuccess) {
                         return false;
                     }

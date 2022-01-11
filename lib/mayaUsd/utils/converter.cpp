@@ -37,6 +37,8 @@
 |:-----------------|:----------------------|:---------------------------------------------------------------|:------------------------|:-------------------|
 | Bool             | bool                  | MFnNumericData::kBoolean                                       | bool                    | MakeMayaSimpleData |
 | Int              | int                   | MFnNumericData::kInt                                           | int                     | MakeMayaSimpleData |
+| Float            | float                 | MFnNumericData::kFloat                                         | float                   | MakeMayaSimpleData |
+| Double           | double                | MFnNumericData::kDouble                                        | double                  | MakeMayaSimpleData |
 ||
 | String           | std::string           | MFnData::kString, MFn::kStringData                             | MString, MFnStringData  | MakeMayaFnData     |
 ||
@@ -187,6 +189,46 @@ template <> struct MakeMayaSimpleData<int> : public std::true_type
     static void set(const MPlug& plug, MDGModifier& dst, const Type& value)
     {
         dst.newPlugValueInt(plug, value);
+    }
+};
+
+//! \brief  Type trait for Maya's float type providing get and set methods for data handle and
+//! plugs.
+template <> struct MakeMayaSimpleData<float> : public std::true_type
+{
+    using Type = float;
+    enum
+    {
+        kNumericType = MFnNumericData::kFloat
+    };
+
+    static void get(const MDataHandle& handle, Type& value) { value = handle.asFloat(); }
+
+    static void set(MDataHandle& handle, const Type& value) { handle.setFloat(value); }
+
+    static void set(const MPlug& plug, MDGModifier& dst, const Type& value)
+    {
+        dst.newPlugValueFloat(plug, value);
+    }
+};
+
+//! \brief  Type trait for Maya's double type providing get and set methods for data handle and
+//! plugs.
+template <> struct MakeMayaSimpleData<double> : public std::true_type
+{
+    using Type = double;
+    enum
+    {
+        kNumericType = MFnNumericData::kDouble
+    };
+
+    static void get(const MDataHandle& handle, Type& value) { value = handle.asDouble(); }
+
+    static void set(MDataHandle& handle, const Type& value) { handle.setDouble(value); }
+
+    static void set(const MPlug& plug, MDGModifier& dst, const Type& value)
+    {
+        dst.newPlugValueDouble(plug, value);
     }
 };
 
@@ -1008,6 +1050,8 @@ struct Converter::GenerateConverters
 
         createConverter<bool, bool>(converters, SdfValueTypeNames->Bool);
         createConverter<int, int32_t>(converters, SdfValueTypeNames->Int);
+        createConverter<float, float>(converters, SdfValueTypeNames->Float);
+        createConverter<double, double>(converters, SdfValueTypeNames->Double);
 
         createConverter<MString, std::string>(converters, SdfValueTypeNames->String);
         createConverter<float3, GfVec3f>(converters, SdfValueTypeNames->Float3);

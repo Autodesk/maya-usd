@@ -64,6 +64,7 @@ public:
 
     /// \brief Returns the Maya Dag path corresponding to a pulled USD path.  The Dag path will be
     /// empty if no correspondence exists.
+    MAYAUSD_CORE_PUBLIC
     MDagPath MapSdfPathToDagPath(const SdfPath& sdfPath) const;
 
 private:

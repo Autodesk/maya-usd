@@ -135,13 +135,7 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
 
     shaderSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_standard_surface_surfaceshader));
 
-    UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
-    if (!TF_VERIFY(
-            nodegraphSchema,
-            "Could not define UsdShadeNodeGraph at path '%s'\n",
-            GetUsdPath().GetText())) {
-        return;
-    }
+    UsdShadeNodeGraph nodegraphSchema;
 
     for (unsigned int i = 0u; i < depNodeFn.attributeCount(); ++i) {
         const MObject      attrObj = depNodeFn.reorderedAttribute(i);
@@ -188,6 +182,15 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
 
         // All connections go directly to the node graph:
         if (attrPlug.isConnected()) {
+            if (!nodegraphSchema) {
+                nodegraphSchema = UsdShadeNodeGraph(GetNodeGraph());
+                if (!TF_VERIFY(
+                        nodegraphSchema,
+                        "Could not define UsdShadeNodeGraph at path '%s'\n",
+                        GetUsdPath().GetText())) {
+                    return;
+                }
+            }
             UsdShadeOutput ngOutput = nodegraphSchema.CreateOutput(mayaAttrName, valueTypeName);
             input.ConnectToSource(ngOutput);
         }

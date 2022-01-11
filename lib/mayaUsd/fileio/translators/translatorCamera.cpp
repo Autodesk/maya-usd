@@ -20,6 +20,7 @@
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec2f.h>
@@ -41,6 +42,8 @@
 
 #include <string>
 #include <vector>
+
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -327,8 +330,8 @@ bool UsdMayaTranslatorCamera::Read(
     }
 
     // Create the camera shape node.
-    MDagModifier dagMod;
-    MObject      cameraObj
+    MDagModifier& dagMod = MDagModifierUndoItem::create("Camera creation");
+    MObject       cameraObj
         = dagMod.createNode(_tokens->MayaCameraTypeName.GetText(), transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();

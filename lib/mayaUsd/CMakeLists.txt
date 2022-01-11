@@ -102,6 +102,14 @@ if (MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
     )
 endif()
 
+message(STATUS "MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT is ${MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT}")
+if (MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT=1
+    )
+endif()
+
 if (MAYA_LIGHTAPI_VERSION EQUAL 2)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
@@ -181,7 +189,8 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXCore>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXFormat>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXRender>
-        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenOgsXml>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenShader>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
 )
 
 # -----------------------------------------------------------------------------

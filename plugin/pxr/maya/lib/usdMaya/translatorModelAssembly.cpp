@@ -25,6 +25,7 @@
 #include <mayaUsd/fileio/primWriterContext.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 
@@ -374,6 +375,8 @@ bool UsdMayaTranslatorModelAssembly::Read(
     // opposed to using MDagModifier's createNode() or any other method. That
     // seems to be the only way to ensure that the assembly's namespace and
     // container are setup correctly.
+    //
+    // TODO UNDO: does this need to be undoable and how to record this in an OpUndoItem?
     const std::string assemblyCmd = TfStringPrintf(
         "import maya.cmds; maya.cmds.assembly(name=\'%s\', type=\'%s\')",
         prim.GetName().GetText(),
@@ -384,11 +387,11 @@ bool UsdMayaTranslatorModelAssembly::Read(
 
     // Now we get the MObject for the assembly node we just created.
     MObject assemblyObj;
-    status = UsdMayaUtil::GetMObjectByName(newAssemblyName.asChar(), assemblyObj);
+    status = UsdMayaUtil::GetMObjectByName(newAssemblyName, assemblyObj);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Re-parent the assembly node underneath parentNode.
-    MDagModifier dagMod;
+    MDagModifier& dagMod = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Assembly reparenting");
     status = dagMod.reparentNode(assemblyObj, parentNode);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
@@ -499,8 +502,8 @@ bool UsdMayaTranslatorModelAssembly::ReadAsProxy(
     }
 
     // Create the proxy shape node.
-    MDagModifier dagMod;
-    MObject      proxyObj
+    MDagModifier& dagMod = MAYAUSD_NS_DEF::MDagModifierUndoItem::create("Proxy shape creation");
+    MObject       proxyObj
         = dagMod.createNode(UsdMayaProxyShapeTokens->MayaTypeName.GetText(), transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
