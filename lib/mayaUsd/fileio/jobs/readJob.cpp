@@ -21,6 +21,7 @@
 #include <mayaUsd/fileio/translators/translatorXformable.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -64,6 +65,8 @@
 #include <utility>
 #include <vector>
 
+using namespace MAYAUSD_NS_DEF;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -97,6 +100,10 @@ UsdMaya_ReadJob::~UsdMaya_ReadJob() { }
 
 bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 {
+    // Do not use the global undo info recording system.
+    // The read job Undo() / redo() functions will handle all operations.
+    OpUndoItemMuting undoMuting;
+
     MStatus status;
 
     if (!TF_VERIFY(!mImportData.empty())) {
@@ -531,7 +538,11 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
                         prototypeNode.removeChildAt(prototypeNode.childCount() - 1);
                     }
                 }
+#if MAYA_APP_VERSION >= 2020
+                deletePrototypeMod.deleteNode(prototypeObject, false);
+#else
                 deletePrototypeMod.deleteNode(prototypeObject);
+#endif
             }
         }
         deletePrototypeMod.doIt();
@@ -546,6 +557,10 @@ bool UsdMaya_ReadJob::SkipRootPrim(bool isImportingPseudoRoot) { return isImport
 
 bool UsdMaya_ReadJob::Redo()
 {
+    // Do not use the global undo info recording system.
+    // The read job Undo() / redo() functions will handle all operations.
+    OpUndoItemMuting undoMuting;
+
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
 
@@ -563,6 +578,10 @@ bool UsdMaya_ReadJob::Redo()
 
 bool UsdMaya_ReadJob::Undo()
 {
+    // Do not use the global undo info recording system.
+    // The read job Undo() / redo() functions will handle all operations.
+    OpUndoItemMuting undoMuting;
+
     // NOTE: (yliangsiew) All chasers need to have their Undo run as well.
     for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
         bool bStat = chaser->Undo();
@@ -591,7 +610,11 @@ bool UsdMaya_ReadJob::Undo()
                         }
                     }
                 }
+#if MAYA_APP_VERSION >= 2020
+                mDagModifierUndo.deleteNode(it.second, false);
+#else
                 mDagModifierUndo.deleteNode(it.second);
+#endif
             }
         }
     }
