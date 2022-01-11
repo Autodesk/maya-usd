@@ -118,12 +118,9 @@ static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
 static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
 static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
-<<<<<<< HEAD
 static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
 static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
-=======
 #endif
->>>>>>> dev
 
 #if PXR_VERSION >= 2008
 static constexpr char kAllRegisteredTypesItem[] = "All Registered";

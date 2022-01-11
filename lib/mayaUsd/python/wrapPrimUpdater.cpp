@@ -55,7 +55,7 @@ public:
 
     virtual ~PrimUpdaterWrapper() = default;
 
-    bool default_pushCopySpecs(
+    PushCopySpecs default_pushCopySpecs(
         UsdStageRefPtr srcStage,
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,
@@ -66,7 +66,7 @@ public:
         return base_t::pushCopySpecs(
             srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
     }
-    bool pushCopySpecs(
+    PushCopySpecs pushCopySpecs(
         UsdStageRefPtr srcStage,
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,
@@ -74,7 +74,7 @@ public:
         SdfLayerRefPtr dstLayer,
         const SdfPath& dstSdfPath) override
     {
-        return this->CallVirtual<bool>("pushCopySpecs", &This::default_pushCopySpecs)(
+        return this->CallVirtual<PushCopySpecs>("pushCopySpecs", &This::default_pushCopySpecs)(
             srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
     }
 
@@ -179,6 +179,10 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(UsdMayaPrimUpdater::Supports::Clear, "Clear");
     TF_ADD_ENUM_NAME(UsdMayaPrimUpdater::Supports::AutoPull, "AutoPull");
     TF_ADD_ENUM_NAME(UsdMayaPrimUpdater::Supports::All, "All");
+
+    TF_ADD_ENUM_NAME(UsdMayaPrimUpdater::PushCopySpecs::Failed, "Failed");
+    TF_ADD_ENUM_NAME(UsdMayaPrimUpdater::PushCopySpecs::Continue, "Continue");
+    TF_ADD_ENUM_NAME(UsdMayaPrimUpdater::PushCopySpecs::Prune, "Prune");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -192,6 +196,7 @@ void wrapPrimUpdater()
     boost::python::scope s(c);
 
     TfPyWrapEnum<UsdMayaPrimUpdater::Supports>();
+    TfPyWrapEnum<UsdMayaPrimUpdater::PushCopySpecs>();
 
     c.def("__init__", make_constructor(&PrimUpdaterWrapper::New))
         .def("pushCopySpecs", &This::pushCopySpecs, &PrimUpdaterWrapper::default_pushCopySpecs)

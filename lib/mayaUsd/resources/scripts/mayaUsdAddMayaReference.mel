@@ -370,36 +370,7 @@ proc fileOptionsSetup(string $parent, string $chosenFileType)
     }
     fo_prefixName ($action);
 
-    // Assume no proxy tags for now.  PPT, 1-Dec-2021.
-    //
-    // string $globalTags[] = `proxyTags( 1 )`;
-    // int $numTags = size($globalTags);
-    // if( $numTags == 0 ){
-    //     // No availabe existing tags, force usage of a new tag.
-    //     //
-    //     optionVar -intValue ("proxyOptionsUseNew"+$action+"Tag") true;
-    //     optionVar -stringValue ("proxyOptionsNew"+$action+"Tag") "";
-    // }
-    // int $useNewTag = `optionVar -q ("proxyOptionsUseNew"+$action+"Tag") `;
-    // if ($useNewTag) {
-    //     // Make the new tag field selected
-    //     //
-    //     optionMenu -e -select 1 proxyTagOptionMenu;
-    //         string $newProxyTagStr = `optionVar -q ("proxyOptionsNew"+$action+"Tag")`;
-    //     textField  -e -tx $newProxyTagStr newProxyTag;
-    //         optionVar -intValue ("proxyOptionsNew"+$action+"TagSpecified") true;
-    // } else if( `optionVar -exists ("proxyOptions"+$action+"Tag")` ){
-    //         // Select the same tag as last time, if available.
-    //         //
-    //     string $lastTagSelected = `optionVar -q ("proxyOptions"+$action+"Tag")`;
-    //     while( $numTags-- > 0 ){
-    //         if( $globalTags[$numTags] == $lastTagSelected ){
-    //             optionMenu -e -select (2+$numTags) proxyTagOptionMenu;
-    //             break;
-    //         }
-    //     }
-    // }
-    // fo_proxyTag($action);
+    // Maya reference proxy tags are not unsupported by Maya reference prims.
 
     initCurrentFileTypeOption($action, $parent, $fileType);
 }

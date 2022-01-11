@@ -1,5 +1,5 @@
 import maya.api.OpenMaya as om
-from pxr import Sdf, Usd, Vt
+from pxr import Sdf
 import mayaUsd
 import ufe
 
