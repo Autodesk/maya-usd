@@ -118,6 +118,8 @@ static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
 static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
 static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
+static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
+static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
 
 #if PXR_VERSION >= 2008
@@ -375,12 +377,12 @@ global proc string ClearAllUSDReferencesConfirm()
 ClearAllUSDReferencesConfirm();
 )";
 
-class AddReferenceUndoableCommand : public Ufe::UndoableCommand
+class AddUsdReferenceUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     static const std::string commandName;
 
-    AddReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath)
+    AddUsdReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath)
         : _prim(prim)
         , _sdfRef()
         , _filePath(filePath)
@@ -409,7 +411,7 @@ private:
     SdfReference      _sdfRef;
     const std::string _filePath;
 };
-const std::string AddReferenceUndoableCommand::commandName("Add Reference...");
+const std::string AddUsdReferenceUndoableCommand::commandName("Add USD Reference...");
 
 class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
 {
@@ -623,6 +625,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             if (PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
                 items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
                 items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
+                items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
                 items.emplace_back(Ufe::ContextItem::kSeparator);
             }
 #endif
@@ -670,7 +673,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 
         if (!fIsAGatewayType) {
             items.emplace_back(
-                AddReferenceUndoableCommand::commandName, AddReferenceUndoableCommand::commandName);
+                AddUsdReferenceUndoableCommand::commandName,
+                AddUsdReferenceUndoableCommand::commandName);
             items.emplace_back(
                 ClearAllReferencesUndoableCommand::commandName,
                 ClearAllReferencesUndoableCommand::commandName);
@@ -824,14 +828,14 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MGlobal::executeCommand(script);
         return nullptr;
 #endif
-    } else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
+    } else if (itemPath[0] == AddUsdReferenceUndoableCommand::commandName) {
         MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);
 
         std::string path = UsdMayaUtil::convert(fileRef);
         if (path.empty())
             return nullptr;
 
-        return std::make_shared<AddReferenceUndoableCommand>(prim(), path);
+        return std::make_shared<AddUsdReferenceUndoableCommand>(prim(), path);
     } else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
         MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
         if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
@@ -852,6 +856,10 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             DuplicateCommand::commandName,
             Ufe::PathString::string(path()).c_str());
         MGlobal::executeCommand(script, true, true);
+    } else if (itemPath[0] == kAddMayaReferenceItem) {
+        MString script;
+        script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path()).c_str());
+        MString result = MGlobal::executeCommandStringResult(script);
     }
 #endif
 
