@@ -1661,15 +1661,17 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
 
         addPredecessorNodes(node);
         outNet.nodes.push_back(node);
-        addSuccessorNodes(node, primvarToRead);
 
         // If the primvar reader is reading color or opacity, replace it with
         // UsdPrimvarReader_color which can create COLOR stream requirement
         // instead of generic TEXCOORD stream.
+        // Do this before addSuccessorNodes, because changing the identifier may change the
+        // input/output types and require another conversion node.
         if (primvarToRead == HdTokens->displayColor || primvarToRead == HdTokens->displayOpacity) {
             HdMaterialNode& nodeToChange = outNet.nodes.back();
             nodeToChange.identifier = _tokens->UsdPrimvarReader_color;
         }
+        addSuccessorNodes(node, primvarToRead);
 
         // Normal map is not supported yet. For now primvars:normals is used for
         // shading, which is also the current behavior of USD/Hydra.
@@ -1678,7 +1680,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         // UsdImagingMaterialAdapter doesn't create primvar requirements as
         // expected. Workaround by manually looking up "varname" parameter.
         // https://groups.google.com/forum/#!msg/usd-interest/z-14AgJKOcU/1uJJ1thXBgAJ
-        else if (isUsdPrimvarReader) {
+        if (isUsdPrimvarReader) {
             if (!primvarToRead.IsEmpty()) {
                 outNet.primvars.push_back(primvarToRead);
             }
