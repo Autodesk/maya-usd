@@ -7,7 +7,8 @@ import ufe
 def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace):
     '''Create a Maya reference prim parented to the argument path.'''
 
-    # Append reference name to parent Sdf path.
+    # Extract the USD path segment from the UFE path and append the Maya
+    # reference prim to it.
     ufePath = ufe.PathString.path(ufePathStr)
     parentPath = ufePath.segments[1]
     primPath = Sdf.AssetPath(str(parentPath)+'/MayaReference')

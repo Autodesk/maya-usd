@@ -594,7 +594,8 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
     // node type (e.g. transform, which is the fallback Maya node type for many
     // USD prim types).  Therefore, if we're at the root of the src hierarchy,
-    // use the prim at the pulled path to create the prim updater.
+    // use the prim at the pulled path to create the prim updater; this will
+    // occur on push, when the srcPath is in the temporary layer.
     const bool usePulledPrim = (srcPath.GetPathElementCount() == 1);
 
     auto primSpec = srcLayer->GetPrimAtPath(srcPath);
