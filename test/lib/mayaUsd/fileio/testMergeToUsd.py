@@ -199,5 +199,36 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         verifyMergeToUsd()
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    def testMergeToUsdToNonRootTargetInSessionLayer(self):
+        '''Merge edits on a USD transform back to USD targeting a non-root destination path that
+           does not exists in the destination layer.'''
+
+        # To merge back to USD, we must edit as Maya first.
+        (ps, aXlateOp, _, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, _, bUsdUfePathStr, bUsdUfePath, bUsdItem) = \
+            createSimpleXformScene()
+
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+        bMayaItem = ufe.GlobalSelection.get().front()
+        (bMayaPath, bMayaPathStr, _, bMayaMatrix) = \
+            setMayaTranslation(bMayaItem, om.MVector(10, 11, 12))
+
+        psHier = ufe.Hierarchy.hierarchy(ps)
+
+        # Merge edits back to USD.
+        stage = mayaUsd.ufe.getStage(bUsdUfePathStr)
+        stage.SetEditTarget(stage.GetSessionLayer())
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(bMayaPathStr))
+
+        # Check that edits have been preserved in USD.
+        bUsdMatrix = bXlateOp.GetOpTransform(
+            mayaUsd.ufe.getTime(bUsdUfePathStr))
+        mayaValues = [v for v in bMayaMatrix]
+        usdValues = [v for row in bUsdMatrix for v in row]
+    
+        assertVectorAlmostEqual(self, mayaValues, usdValues)
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
