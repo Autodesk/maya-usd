@@ -112,6 +112,27 @@ void valueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 }
 
 #endif
+
+void sendObjectAdd(const Ufe::SceneItem::Ptr& sceneItem)
+{
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
+#else
+    auto notification = Ufe::ObjectAdd(sceneItem);
+    Ufe::Scene::notifyObjectAdd(notification);
+#endif
+}
+
+void sendObjectPostDelete(const Ufe::SceneItem::Ptr& sceneItem)
+{
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
+#else
+    auto notification = Ufe::ObjectPostDelete(sceneItem);
+    Ufe::Scene::notifyObjectDelete(notification);
+#endif
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -244,7 +265,9 @@ void StagesSubject::stageChanged(
         return;
 
     auto stage = notice.GetStage();
-    for (const auto& changedPath : notice.GetResyncedPaths()) {
+    auto resyncPaths = notice.GetResyncedPaths();
+    for (auto it = resyncPaths.begin(), end = resyncPaths.end(); it != end; ++it) {
+        const auto& changedPath = *it;
         if (changedPath.IsPrimPropertyPath()) {
             // Special case to detect when an xformop is added or removed from a prim.
             // We need to send some notifs so Maya can update (such as on undo
@@ -298,29 +321,42 @@ void StagesSubject::stageChanged(
             // the add or delete of our UFE/USD implementation.
             if (InAddOrDeleteOperation::inAddOrDeleteOperation()) {
                 if (prim.IsActive()) {
-#ifdef UFE_V2_FEATURES_AVAILABLE
-                    Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
-#else
-                    auto notification = Ufe::ObjectAdd(sceneItem);
-                    Ufe::Scene::notifyObjectAdd(notification);
-#endif
+                    sendObjectAdd(sceneItem);
                 } else {
+                    sendObjectPostDelete(sceneItem);
+                }
+            } else {
+                // Use the entry flags in the USD notice to know what operation was performed and
+                // thus what Ufe notif to send.
+                const std::vector<const SdfChangeList::Entry*>& entries = it.base()->second;
+                bool                                            sentNotif { false };
+                for (const auto& entry : entries) {
+                    if (entry->flags.didAddInertPrim || entry->flags.didAddNonInertPrim) {
+                        sendObjectAdd(sceneItem);
+                        sentNotif = true;
+                        break;
+                    } else if (
+                        entry->flags.didRemoveInertPrim || entry->flags.didRemoveNonInertPrim) {
+                        sendObjectPostDelete(sceneItem);
+                        sentNotif = true;
+                        break;
+                    }
+                }
+
+                if (!sentNotif) {
 #ifdef UFE_V2_FEATURES_AVAILABLE
-                    Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
+                    // According to USD docs for GetResyncedPaths():
+                    // - Resyncs imply entire subtree invalidation of all descendant prims and
+                    // properties. So we send the UFE subtree invalidate notif.
+                    Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 #else
-                    auto notification = Ufe::ObjectPostDelete(sceneItem);
-                    Ufe::Scene::notifyObjectDelete(notification);
+                    // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
+                    // delete/add notifs.
+                    sendObjectPostDelete(sceneItem);
+                    sendObjectAdd(sceneItem);
 #endif
                 }
             }
-#ifdef UFE_V2_FEATURES_AVAILABLE
-            else {
-                // According to USD docs for GetResyncedPaths():
-                // - Resyncs imply entire subtree invalidation of all descendant prims and
-                // properties. So we send the UFE subtree invalidate notif.
-                Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-            }
-#endif
         }
 #ifdef UFE_V2_FEATURES_AVAILABLE
         else if (!prim.IsValid() && !InPathChange::inPathChange()) {
