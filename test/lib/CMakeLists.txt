@@ -49,6 +49,22 @@ endforeach()
 
 #
 # -----------------------------------------------------------------------------
+# Special interactive test to be able to start Maya with test configurations.
+# Can be started with VS Code but won't be part of test suites.
+# -----------------------------------------------------------------------------
+set(target _Interactive_Maya)
+mayaUsd_add_test(${target}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND ${MAYA_EXECUTABLE}
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+)
+set_property(TEST ${target} APPEND PROPERTY DISABLED True)
+set_property(TEST ${target} APPEND PROPERTY LABELS Debugging)
+
+#
+# -----------------------------------------------------------------------------
 # Special case for plug tests
 # -----------------------------------------------------------------------------
 set(TEST_PLUG_FILES
