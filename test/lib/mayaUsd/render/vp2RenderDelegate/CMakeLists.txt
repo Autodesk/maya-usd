@@ -9,7 +9,7 @@ list(APPEND TEST_SCRIPT_FILES
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
     	testVP2RenderDelegateDuplicateProxy.py
-	testVP2RenderDelegateInteractiveWorkflows.py
+        testVP2RenderDelegateInteractiveWorkflows.py
     )
 endif()
 
@@ -44,6 +44,12 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
             testVP2RenderDelegateUsdCamera.py
         )
     endif()
+endif()
+
+if (MAYA_APP_VERSION VERSION_GREATER 2022)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateSelection.py
+    )
 endif()
 
 if (CMAKE_WANT_MATERIALX_BUILD)
