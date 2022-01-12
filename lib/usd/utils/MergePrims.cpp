@@ -445,7 +445,7 @@ void unionChildren(
     dstChildren.clear();
     dstChildren.reserve(unionSet.size());
 
-    for (const FieldType child : unionSet) {
+    for (const FieldType& child : unionSet) {
         // Note: source cannot be a field that does not exists. To preserve a destination
         // field, the source field must simply be invalid.
         srcChildren.emplace_back(srcSet.count(child) ? child : FieldType {});
