@@ -15,7 +15,30 @@
 //
 #include "OpUndoItemList.h"
 
+#include <mayaUsd/listeners/notice.h>
+
+#include <pxr/base/tf/weakBase.h>
+
 namespace MAYAUSD_NS_DEF {
+
+//------------------------------------------------------------------------------
+// OpUndoItemList automatic celar when scene in reset.
+//------------------------------------------------------------------------------
+
+namespace {
+
+struct OnSceneResetListener : public PXR_NS::TfWeakBase
+{
+    OnSceneResetListener()
+    {
+        PXR_NS::TfWeakPtr<OnSceneResetListener> self(this);
+        PXR_NS::TfNotice::Register(self, &OnSceneResetListener::OnSceneReset);
+    }
+
+    void OnSceneReset(const PXR_NS::UsdMayaSceneResetNotice& notice) { OpUndoItemList::instance().clear(); }
+};
+
+} // namespace
 
 //------------------------------------------------------------------------------
 // OpUndoItemList
@@ -92,7 +115,9 @@ void OpUndoItemList::clear()
 
 OpUndoItemList& OpUndoItemList::instance()
 {
-    static OpUndoItemList itemList;
+    static OpUndoItemList       itemList;
+    static OnSceneResetListener onSceneResetListener;
+
     return itemList;
 }
 

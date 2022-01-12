@@ -38,6 +38,7 @@ TF_WRAP_MODULE
     TF_WRAP(PrimUpdaterContext);
     TF_WRAP(PrimUpdaterManager);
 #endif
+    TF_WRAP(OpUndoItem);
     TF_WRAP(Query);
     TF_WRAP(ReadUtil);
     TF_WRAP(RoundTripUtil);
