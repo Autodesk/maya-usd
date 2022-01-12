@@ -620,8 +620,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-        if (!fIsAGatewayType &&
-            PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
+        if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
             items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
         }
