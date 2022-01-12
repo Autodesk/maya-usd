@@ -4,5 +4,5 @@ list(APPEND scripts_src
 )
 
 install(FILES ${scripts_src}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/scripts
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts
 )
