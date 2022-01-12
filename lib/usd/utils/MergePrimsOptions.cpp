@@ -114,31 +114,25 @@ const VtDictionary& MergePrimsOptions::getDefaultDictionary()
     static VtDictionary   d;
     static std::once_flag once;
     std::call_once(once, []() {
-        const auto _token = VtValue(TfToken());
-        const auto _tokenVector = VtValue(std::vector<VtValue>({ _token }));
-
         d[UsdMayaMergeOptionsTokens->verbosity]
             = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->Default) }));
+
         d[UsdMayaMergeOptionsTokens->mergeChildren] = false;
         d[UsdMayaMergeOptionsTokens->ignoreUpperLayerOpinions] = false;
-        d[UsdMayaMergeOptionsTokens->propertiesHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
-        d[UsdMayaMergeOptionsTokens->primsHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
-        d[UsdMayaMergeOptionsTokens->connectionsHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
-        d[UsdMayaMergeOptionsTokens->relationshipsHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
-        d[UsdMayaMergeOptionsTokens->variantsHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
-        d[UsdMayaMergeOptionsTokens->variantSetsHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
-        d[UsdMayaMergeOptionsTokens->expressionsHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
-        d[UsdMayaMergeOptionsTokens->mappersHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
-        d[UsdMayaMergeOptionsTokens->mapperArgsHandling]
-            = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
+
+        static const TfToken handlingTokens[] = { UsdMayaMergeOptionsTokens->propertiesHandling,
+                                                  UsdMayaMergeOptionsTokens->primsHandling,
+                                                  UsdMayaMergeOptionsTokens->connectionsHandling,
+                                                  UsdMayaMergeOptionsTokens->relationshipsHandling,
+                                                  UsdMayaMergeOptionsTokens->variantsHandling,
+                                                  UsdMayaMergeOptionsTokens->variantSetsHandling,
+                                                  UsdMayaMergeOptionsTokens->expressionsHandling,
+                                                  UsdMayaMergeOptionsTokens->mappersHandling,
+                                                  UsdMayaMergeOptionsTokens->mapperArgsHandling };
+
+        for (const auto& ht : handlingTokens) {
+            d[ht] = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
+        }
     });
 
     return d;

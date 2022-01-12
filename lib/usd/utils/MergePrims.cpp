@@ -399,7 +399,7 @@ void unionChildren(
     VtValue&     srcChildrenValue,
     VtValue&     dstChildrenValue)
 {
-    // If not preserving missing attributes then we don't need to claculate
+    // If not preserving missing attributes then we don't need to calculate
     // the union of the source and destintation children.
     if (missingHandling == MergeMissing::None)
         return;
@@ -424,7 +424,7 @@ void unionChildren(
         dstChildren = dstChildrenValue.UncheckedGet<ChildrenVector>();
 
     // Create sets for fast comparison and return if both sets are equal,
-    // meaninig the source and destination already have the same children.
+    // meaning the source and destination already have the same children.
     ChildrenSet srcSet(srcChildren.begin(), srcChildren.end());
     ChildrenSet dstSet(dstChildren.begin(), dstChildren.end());
 
