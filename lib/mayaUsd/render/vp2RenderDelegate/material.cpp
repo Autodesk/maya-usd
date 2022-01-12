@@ -21,6 +21,7 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 #include <mayaUsd/utils/hash.h>
 
@@ -45,6 +46,7 @@
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
+#include <maya/M3dView.h>
 #include <maya/MFragmentManager.h>
 #include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
@@ -99,6 +101,18 @@ namespace mx = MaterialX;
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static bool _IsDisabledAsyncTextureLoading()
+{
+    static const MString kOptionVarName(MayaUsdOptionVars->DisableAsyncTextureLoading.GetText());
+    if (MGlobal::optionVarExists(kOptionVarName)) {
+        return MGlobal::optionVarIntValue(kOptionVarName);
+    }
+    return false;
+}
+
+// Refresh viewport duration (in milliseconds)
+static const std::size_t kRefreshDuration { 1000 };
 
 namespace {
 
@@ -826,12 +840,33 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     return texture;
 }
 
+MHWRender::MTexture* _GenerateFallbackTexture(
+    MHWRender::MTextureManager* const textureMgr,
+    const std::string&                path,
+    const GfVec4f&                    fallbackColor)
+{
+    MHWRender::MTextureDescription desc;
+    desc.setToDefault2DTexture();
+    desc.fWidth = 1;
+    desc.fHeight = 1;
+    desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+    desc.fBytesPerRow = 4;
+    desc.fBytesPerSlice = desc.fBytesPerRow;
+
+    std::vector<unsigned char> texels(4);
+    for (size_t i = 0; i < 4; ++i) {
+        float texelValue = GfClamp(fallbackColor[i], 0.0f, 1.0f);
+        texels[i] = static_cast<unsigned char>(texelValue * 255.0);
+    }
+    return textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+}
+
 //! Load texture from the specified path
 MHWRender::MTexture* _LoadTexture(
-    const std::string&    path,
-    bool&                 isColorSpaceSRGB,
-    MFloatArray&          uvScaleOffset,
-    const HdMaterialNode& node)
+    const std::string& path,
+    bool&              isColorSpaceSRGB,
+    MFloatArray&       uvScaleOffset,
+    const GfVec4f&     fallbackColor)
 {
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "LoadTexture", path.c_str());
@@ -865,31 +900,7 @@ MHWRender::MTexture* _LoadTexture(
 
     if (!TF_VERIFY(image, "Unable to create an image from %s", path.c_str())) {
         // Create a 1x1 texture of the fallback color, if it was specified:
-        auto it = node.parameters.find(_tokens->fallback);
-        if (it == node.parameters.end()) {
-            return nullptr;
-        }
-        const VtValue& value = it->second;
-        if (!value.IsHolding<GfVec4f>()) {
-            return nullptr;
-        }
-
-        MHWRender::MTextureDescription desc;
-        desc.setToDefault2DTexture();
-        desc.fWidth = 1;
-        desc.fHeight = 1;
-        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
-        desc.fBytesPerRow = 4;
-        desc.fBytesPerSlice = desc.fBytesPerRow;
-
-        const GfVec4f&             fallbackValue = value.UncheckedGet<GfVec4f>();
-        std::vector<unsigned char> texels(4);
-        for (size_t i = 0; i < 4; ++i) {
-            float texelValue = std::max(std::min(fallbackValue[i], 1.0f), 0.0f);
-            texels[i] = static_cast<unsigned char>(texelValue * 255.0);
-        }
-        isColorSpaceSRGB = false;
-        return textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        return _GenerateFallbackTexture(textureMgr, path, fallbackColor);
     }
 
     // This image is used for loading pixel data from usdz only and should
@@ -1205,6 +1216,93 @@ TfToken MayaDescriptorToToken(const MVertexBufferDescriptor& descriptor)
 
 } // anonymous namespace
 
+class HdVP2Material::TextureLoadingTask
+{
+public:
+    TextureLoadingTask(
+        HdVP2Material*     parent,
+        HdSceneDelegate*   sceneDelegate,
+        const std::string& path,
+        const GfVec4f&     fallbackColor)
+        : _parent(parent)
+        , _sceneDelegate(sceneDelegate)
+        , _path(path)
+        , _fallbackColor(fallbackColor)
+    {
+    }
+
+    ~TextureLoadingTask() = default;
+
+    const HdVP2TextureInfo& GetFallbackTextureInfo()
+    {
+        if (!_fallbackTextureInfo._texture) {
+            // Create a default texture info with fallback color
+            MHWRender::MRenderer* const       renderer = MHWRender::MRenderer::theRenderer();
+            MHWRender::MTextureManager* const textureMgr
+                = renderer ? renderer->getTextureManager() : nullptr;
+            if (textureMgr) {
+                // Use a relevant but unique name for fallback texture info
+                _fallbackTextureInfo._texture.reset(
+                    _GenerateFallbackTexture(textureMgr, _path + ".fallback", _fallbackColor));
+            }
+        }
+        return _fallbackTextureInfo;
+    }
+
+    bool EnqueueLoadOnIdle()
+    {
+        if (_started.exchange(true)) {
+            return false;
+        }
+        // Push the texture loading on idle
+        auto ret = MGlobal::executeTaskOnIdle(
+            [](void* data) {
+                auto* task = static_cast<HdVP2Material::TextureLoadingTask*>(data);
+                task->_Load();
+                // Once it is done, free the memory.
+                delete task;
+            },
+            this);
+        return ret == MStatus::kSuccess;
+    }
+
+    bool Terminate()
+    {
+        _terminated = true;
+        // Return the started state to caller, the caller will delete this object
+        // if this task has not started yet.
+        // We will not be able to delete this object within its method.
+        return !_started.load();
+    }
+
+private:
+    void _Load()
+    {
+        if (_terminated) {
+            return;
+        }
+        bool        isSRGB = false;
+        MFloatArray uvScaleOffset;
+        auto*       texture = _LoadTexture(_path, isSRGB, uvScaleOffset, _fallbackColor);
+        if (_terminated) {
+            return;
+        }
+        _parent->_UpdateLoadedTexture(_sceneDelegate, _path, texture, isSRGB, uvScaleOffset);
+    }
+
+    HdVP2TextureInfo  _fallbackTextureInfo;
+    HdVP2Material*    _parent;
+    HdSceneDelegate*  _sceneDelegate;
+    const std::string _path;
+    const GfVec4f     _fallbackColor;
+    std::atomic_bool  _started { false };
+    bool              _terminated { false };
+};
+
+std::mutex                            HdVP2Material::_refreshMutex;
+std::chrono::steady_clock::time_point HdVP2Material::_startTime;
+std::atomic_size_t                    HdVP2Material::_runningTasksCounter;
+
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
  */
 void HdVP2TextureDeleter::operator()(MHWRender::MTexture* texture)
@@ -1223,6 +1321,12 @@ HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath&
     : HdMaterial(id)
     , _renderDelegate(renderDelegate)
 {
+}
+
+HdVP2Material::~HdVP2Material()
+{
+    // Tell pending tasks or running tasks (if any) to terminate
+    ClearPendingTasks();
 }
 
 /*! \brief  Synchronize VP2 state with scene delegate state based on dirty bits
@@ -1274,7 +1378,7 @@ void HdVP2Material::Sync(
                     }
 
                     if (_surfaceShader) {
-                        _UpdateShaderInstance(bxdfNet);
+                        _UpdateShaderInstance(sceneDelegate, bxdfNet);
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
                         _MaterialChanged(sceneDelegate);
 #endif
@@ -1398,7 +1502,7 @@ void HdVP2Material::Sync(
                     }
                 }
 
-                _UpdateShaderInstance(bxdfNet);
+                _UpdateShaderInstance(sceneDelegate, bxdfNet);
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
                 _MaterialChanged(sceneDelegate);
@@ -2159,7 +2263,9 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMateria
 
 /*! \brief  Updates parameters for the surface shader.
  */
-void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
+void HdVP2Material::_UpdateShaderInstance(
+    HdSceneDelegate*         sceneDelegate,
+    const HdMaterialNetwork& mat)
 {
     if (!_surfaceShader) {
         return;
@@ -2269,8 +2375,8 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 const std::string&  resolvedPath = val.GetResolvedPath();
                 const std::string&  assetPath = val.GetAssetPath();
                 if (_IsUsdUVTexture(node) && token == _tokens->file) {
-                    const HdVP2TextureInfo& info
-                        = _AcquireTexture(!resolvedPath.empty() ? resolvedPath : assetPath, node);
+                    const HdVP2TextureInfo& info = _AcquireTexture(
+                        sceneDelegate, !resolvedPath.empty() ? resolvedPath : assetPath, node);
 
                     MHWRender::MTextureAssignment assignment;
                     assignment.texture = info._texture.get();
@@ -2364,28 +2470,160 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 
 /*! \brief  Acquires a texture for the given image path.
  */
-const HdVP2TextureInfo&
-HdVP2Material::_AcquireTexture(const std::string& path, const HdMaterialNode& node)
+const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
+    HdSceneDelegate*      sceneDelegate,
+    const std::string&    path,
+    const HdMaterialNode& node)
 {
     const auto it = _textureMap.find(path);
     if (it != _textureMap.end()) {
         return it->second;
     }
 
-    bool                 isSRGB = false;
-    MFloatArray          uvScaleOffset;
-    MHWRender::MTexture* texture = _LoadTexture(path, isSRGB, uvScaleOffset, node);
+    // Get fallback color if defined
+    bool    hasFallbackColor { false };
+    GfVec4f fallbackColor { 0.18, 0.18, 0.18, 0 };
+    auto    fallbackIt = node.parameters.find(_tokens->fallback);
+    if (fallbackIt != node.parameters.end() && fallbackIt->second.IsHolding<GfVec4f>()) {
+        fallbackColor = fallbackIt->second.UncheckedGet<GfVec4f>();
+        hasFallbackColor = true;
+    }
+
+    if (_IsDisabledAsyncTextureLoading()) {
+        bool        isSRGB = false;
+        MFloatArray uvScaleOffset;
+
+        MHWRender::MTexture* texture = _LoadTexture(path, isSRGB, uvScaleOffset, fallbackColor);
+
+        HdVP2TextureInfo& info = _textureMap[path];
+        info._texture.reset(texture);
+        info._isColorSpaceSRGB = isSRGB;
+        if (uvScaleOffset.length() > 0) {
+            TF_VERIFY(uvScaleOffset.length() == 4);
+            info._stScale.Set(
+                uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
+            info._stOffset.Set(
+                uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
+        }
+
+        return info;
+    }
+
+    auto* task = new TextureLoadingTask(this, sceneDelegate, path, fallbackColor);
+    _textureLoadingTasks.emplace(path, task);
+
+    // If material has defined a fallback color, creat a dedicated texture info for it
+    if (hasFallbackColor) {
+        return task->GetFallbackTextureInfo();
+    }
+
+    // If no fallback color, reuse the dummy grey texture info
+    static HdVP2TextureInfo dummyInfo;
+    if (!dummyInfo._texture) {
+        // Create a default texture info with fallback color
+        MHWRender::MRenderer* const       renderer = MHWRender::MRenderer::theRenderer();
+        MHWRender::MTextureManager* const textureMgr
+            = renderer ? renderer->getTextureManager() : nullptr;
+        if (textureMgr) {
+            dummyInfo._texture.reset(_GenerateFallbackTexture(textureMgr, "dummy", fallbackColor));
+        }
+    }
+
+    return dummyInfo;
+}
+
+void HdVP2Material::EnqueueLoadTextures()
+{
+    for (const auto& task : _textureLoadingTasks) {
+        if (task.second->EnqueueLoadOnIdle()) {
+            ++_runningTasksCounter;
+        }
+    }
+}
+
+void HdVP2Material::ClearPendingTasks()
+{
+    // Inform tasks that have not started or finished that this material object
+    // is no longer valid
+    for (auto& task : _textureLoadingTasks) {
+        if (task.second->Terminate()) {
+            // Delete the pointer: we can only do that outside of the object scope
+            delete task.second;
+        }
+    }
+
+    // Remove the reference of all the tasks
+    _textureLoadingTasks.clear();
+    // Reset counter, tasks that have started but not finished yet would be
+    // terminated and won't trigger any refresh
+    _runningTasksCounter = 0;
+}
+
+void HdVP2Material::_UpdateLoadedTexture(
+    HdSceneDelegate*     sceneDelegate,
+    const std::string&   path,
+    MHWRender::MTexture* texture,
+    bool                 isColorSpaceSRGB,
+    const MFloatArray&   uvScaleOffset)
+{
+    // Decrease the counter if texture finished loading.
+    // Please notice that we do not do the same thing for terminated tasks,
+    // when termination is requested, the scene delegate is being reset and
+    // the counter would be reset to 0 (see `ClearPendingTasks()` method),
+    // no need to decrease the counter one by one.
+    if (_runningTasksCounter.load() > 0) {
+        --_runningTasksCounter;
+    }
+
+    // Pop the task object from the container, since this method is
+    // called directly from the task object method `loadOnIdle()`,
+    // we do not handle the deletion here, we will let the
+    // function on idle to delete the task object.
+    _textureLoadingTasks.erase(path);
+
+    // Check the local cache again, do not overwrite if same texture has
+    // been loaded asynchronously
+    if (_textureMap.find(path) != _textureMap.end()) {
+        return;
+    }
 
     HdVP2TextureInfo& info = _textureMap[path];
     info._texture.reset(texture);
-    info._isColorSpaceSRGB = isSRGB;
+    info._isColorSpaceSRGB = isColorSpaceSRGB;
     if (uvScaleOffset.length() > 0) {
         TF_VERIFY(uvScaleOffset.length() == 4);
         info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
         info._stOffset.Set(
             uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
     }
-    return info;
+
+    // Mark sprim dirty
+    sceneDelegate->GetRenderIndex().GetChangeTracker().MarkSprimDirty(
+        GetId(), HdMaterial::DirtyResource);
+
+    _ScheduleRefresh();
+}
+
+/*static*/
+void HdVP2Material::_ScheduleRefresh()
+{
+    // We need this mutex due to the variables used in this method are static
+    std::lock_guard<std::mutex> lock(_refreshMutex);
+
+    auto isTimeout = []() {
+        auto diff(std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - _startTime));
+        if (static_cast<std::size_t>(diff.count()) < kRefreshDuration) {
+            return false;
+        }
+        _startTime = std::chrono::steady_clock::now();
+        return true;
+    };
+
+    // Trigger refresh for the last texture or when it is timeout
+    if (!_runningTasksCounter.load() || isTimeout()) {
+        M3dView::scheduleRefreshAllViews();
+    }
 }
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
