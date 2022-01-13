@@ -70,7 +70,9 @@ class MergeToUsdTestCase(unittest.TestCase):
         (ps, aXlateOp, _, aUsdUfePathStr, aUsdUfePath, aUsdItem,
          bXlateOp, _, bUsdUfePathStr, bUsdUfePath, bUsdItem) = \
             createSimpleXformScene()
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
         aMayaItem = ufe.GlobalSelection.get().front()
         (aMayaPath, aMayaPathStr, _, aMayaMatrix) = \
             setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
@@ -91,7 +93,8 @@ class MergeToUsdTestCase(unittest.TestCase):
         psHier = ufe.Hierarchy.hierarchy(ps)
 
         # Merge edits back to USD.
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
 
         # Check that edits have been preserved in USD.
         for (usdUfePathStr, mayaMatrix, xlateOp) in \
@@ -209,7 +212,9 @@ class MergeToUsdTestCase(unittest.TestCase):
          bXlateOp, _, bUsdUfePathStr, bUsdUfePath, bUsdItem) = \
             createSimpleXformScene()
 
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
         bMayaItem = ufe.GlobalSelection.get().front()
         (bMayaPath, bMayaPathStr, _, bMayaMatrix) = \
             setMayaTranslation(bMayaItem, om.MVector(10, 11, 12))
@@ -217,9 +222,10 @@ class MergeToUsdTestCase(unittest.TestCase):
         psHier = ufe.Hierarchy.hierarchy(ps)
 
         # Merge edits back to USD.
-        stage = mayaUsd.ufe.getStage(bUsdUfePathStr)
-        stage.SetEditTarget(stage.GetSessionLayer())
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(bMayaPathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            stage = mayaUsd.ufe.getStage(bUsdUfePathStr)
+            stage.SetEditTarget(stage.GetSessionLayer())
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(bMayaPathStr))
 
         # Check that edits have been preserved in USD.
         bUsdMatrix = bXlateOp.GetOpTransform(

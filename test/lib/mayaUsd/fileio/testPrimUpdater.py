@@ -76,25 +76,29 @@ class testPrimUpdater(unittest.TestCase):
 
         # Edit as Maya first time.
         (ps, xlateOp, usdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem, _, _, _, _, _) = createSimpleXformScene()
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
 
         aMayaItem = ufe.GlobalSelection.get().front()
         (aMayaPath, aMayaPathStr, _, aMayaMatrix) = setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
 
         # Discard Maya edits.
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.discardEdits(aMayaPathStr))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.discardEdits(aMayaPathStr))
 
         cmds.file(new=True, force=True)
 
         # Edit as Maya second time.
         (ps, xlateOp, usdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem, _, _, _, _, _) = createSimpleXformScene()
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
 
         aMayaItem = ufe.GlobalSelection.get().front()
         (aMayaPath, aMayaPathStr, _, aMayaMatrix) = setMayaTranslation(aMayaItem, om.MVector(4, 5, 6))
 
         # Merge edits back to USD.
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
 
         self.assertTrue(primUpdaterTest.editAsMayaCalled)
         self.assertTrue(primUpdaterTest.discardEditsCalled)

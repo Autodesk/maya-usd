@@ -32,6 +32,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapDiagnosticDelegate.cpp
         wrapEditRouter.cpp
         wrapMeshWriteUtils.cpp
+        wrapOpUndoItem.cpp
         wrapQuery.cpp
         wrapReadUtil.cpp
         wrapRoundTripUtil.cpp
