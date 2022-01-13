@@ -68,8 +68,9 @@ class DuplicateAsTestCase(unittest.TestCase):
             createSimpleXformScene()
 
         # Duplicate USD data as Maya data, placing it under the root.
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-            aUsdUfePathStr, '|world'))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
+                aUsdUfePathStr, '|world'))
 
         # Should now have two transform nodes in the Maya scene: the path
         # components in the second segment of the aUsdItem and bUsdItem will
@@ -142,8 +143,9 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Duplicate Maya data as USD data.  As of 17-Nov-2021 no single-segment
         # path handler registered to UFE for Maya path strings, so use absolute
         # path.
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
-            cmds.ls(group2, long=True)[0], psPathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
+                cmds.ls(group2, long=True)[0], psPathStr))
 
         # Maya hierarchy should be duplicated in USD.
         usdGroup2PathStr = psPathStr + ',/' + group2

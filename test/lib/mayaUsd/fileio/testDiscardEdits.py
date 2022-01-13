@@ -67,7 +67,10 @@ class MergeToUsdTestCase(unittest.TestCase):
         # Edit as Maya first.
         (ps, xlateOp, usdXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
          _, _, _, _, _) = createSimpleXformScene()
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
         aMayaItem = ufe.GlobalSelection.get().front()
         mayaXlation = om.MVector(4, 5, 6)
         (aMayaPath, aMayaPathStr, aFn, mayaMatrix) = \
@@ -83,7 +86,8 @@ class MergeToUsdTestCase(unittest.TestCase):
         self.assertIn(aMayaItem, psHier.children())
 
         # Discard Maya edits.
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(aMayaPathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(aMayaPathStr))
 
         # Original USD translation values are preserved.
         usdMatrix = xlateOp.GetOpTransform(mayaUsd.ufe.getTime(aUsdUfePathStr))
