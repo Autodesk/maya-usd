@@ -169,84 +169,33 @@ template <class T> auto makeFuncWithContext(const MergeContext& ctx, T&& func)
 // different transform operations order. (These are in the xformOpOrder attribute.)
 //----------------------------------------------------------------------------------------------------------------------
 
-const std::set<TfToken>& getTransformAttributeNames()
-{
-    static const std::set<TfToken> trfAttrs = {
-        TfToken("translate"),
-        TfToken("scale"),
-        TfToken("orient"),
-        TfToken("rotateX"),
-        TfToken("rotateY"),
-        TfToken("rotateZ"),
-        TfToken("rotateXYZ"),
-        TfToken("rotateXZY"),
-        TfToken("rotateYXZ"),
-        TfToken("rotateYZX"),
-        TfToken("rotateZXY"),
-        TfToken("rotateZYX"),
-        TfToken("transform"),
-        TfToken("xformOp:translate"),
-        TfToken("xformOp:scale"),
-        TfToken("xformOp:orient"),
-        TfToken("xformOp:rotateX"),
-        TfToken("xformOp:rotateY"),
-        TfToken("xformOp:rotateZ"),
-        TfToken("xformOp:rotateXYZ"),
-        TfToken("xformOp:rotateXZY"),
-        TfToken("xformOp:rotateYXZ"),
-        TfToken("xformOp:rotateYZX"),
-        TfToken("xformOp:rotateZXY"),
-        TfToken("xformOp:rotateZYX"),
-        TfToken("xformOp:transform"),
-        TfToken("xformOpOrder"),
-    };
-
-    return trfAttrs;
-}
-
 bool isTransformProperty(const UsdProperty& prop)
 {
-    const auto& trfAttrNames = getTransformAttributeNames();
-    return trfAttrNames.count(prop.GetBaseName()) > 0;
+    static const TfToken xformOpOrderToken("xformOpOrder");
+    return UsdGeomXformOp::IsXformOp(prop.GetName()) || prop.GetBaseName() == xformOpOrderToken;
 }
 
 std::vector<UsdAttribute> getTransformAttributes(const UsdPrim& prim)
 {
-    // To retrieve transform attributes, retrieve all attributes and then
-    // remove the non-transform ones. This is fast because we scan the
-    // attributes only once.
-    std::vector<UsdAttribute> trfAttrs = prim.GetAttributes();
+    UsdGeomXformable            xformable(prim);
+    bool                        resetParentTrf = true;
+    std::vector<UsdGeomXformOp> ops = xformable.GetOrderedXformOps(&resetParentTrf);
 
-    const auto newEnd
-        = std::remove_if(trfAttrs.begin(), trfAttrs.end(), [](const UsdAttribute& attr) {
-              return !isTransformProperty(attr);
-          });
-    trfAttrs.erase(newEnd, trfAttrs.end());
+    std::vector<UsdAttribute> trfAttrs;
+    for (const auto& op : ops)
+        trfAttrs.emplace_back(op.GetAttr());
 
     return trfAttrs;
 }
 
 GfMatrix4d getLocalTransform(const UsdPrim prim, const UsdTimeCode& timeCode)
 {
-    UsdGeomXformable xformable(prim);
-
-    // Note: we don't check the return of GetLocalTransformation() because prims
-    //       can lack transform, like the root for example.
     GfMatrix4d primMtx(1);
-    bool       resetParentTrf = true;
-    xformable.GetLocalTransformation(&primMtx, &resetParentTrf, timeCode);
 
-    return primMtx;
-}
-
-GfMatrix4d getPrimLocalTransform(const UsdPrim prim, const UsdTimeCode& timeCode)
-{
-    GfMatrix4d primMtx = getLocalTransform(prim, timeCode);
-
-    UsdPrim parent = prim.GetParent();
-    if (parent.IsValid()) {
-        GfMatrix4d parentMtx = getLocalTransform(parent, timeCode);
-        primMtx = parentMtx.GetInverse() * primMtx;
+    UsdGeomXformable xformable(prim);
+    bool             resetParentTrf = true;
+    if (!TF_VERIFY(xformable.GetLocalTransformation(&primMtx, &resetParentTrf, timeCode))) {
+        return GfMatrix4d(1);
     }
 
     return primMtx;
@@ -257,7 +206,12 @@ bool isLocalTransformModified(
     const UsdPrim&     dstPrim,
     const UsdTimeCode& timeCode)
 {
-    return getPrimLocalTransform(srcPrim, timeCode) != getPrimLocalTransform(dstPrim, timeCode);
+    double epsilon = 1e-9;
+    bool   similar = PXR_NS::GfIsClose(
+        getLocalTransform(srcPrim, timeCode),
+        getLocalTransform(dstPrim, timeCode),
+        epsilon);
+    return !similar;
 }
 
 bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
@@ -285,7 +239,7 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
         return isLocalTransformModified(srcPrim, dstPrim, UsdTimeCode::Default());
 
     for (const double time : times) {
-        if (getPrimLocalTransform(srcPrim, time) != getPrimLocalTransform(dstPrim, time)) {
+        if (isLocalTransformModified(srcPrim, dstPrim, time)) {
             return true;
         }
     }
