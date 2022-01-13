@@ -97,41 +97,41 @@ inline bool contains(MergeMissing a, MergeMissing b) { return (a & b) != MergeMi
 struct MergePrimsOptions
 {
     // How much logging is done during the merge.
-    MergeVerbosity verbosity = { MergeVerbosity::Default };
+    MergeVerbosity verbosity{ MergeVerbosity::Default };
 
     // if true, merges children too, otherwise merge only the given prim.
-    bool mergeChildren = { false };
+    bool mergeChildren{ false };
 
     // If true, the merge is done in a temporary layer so to ignore opinions
     // from upper layers (and children of upper layers).
-    bool ignoreUpperLayerOpinions = { false };
+    bool ignoreUpperLayerOpinions{ false };
 
     // How missing attributes are handled.
-    MergeMissing propertiesHandling = { MergeMissing::All };
+    MergeMissing propertiesHandling{ MergeMissing::All };
 
     // How missing prim children are handled.
-    MergeMissing primsHandling = { MergeMissing::All };
+    MergeMissing primsHandling{ MergeMissing::All };
 
     // How missing connections are handled.
-    MergeMissing connectionsHandling = { MergeMissing::All };
+    MergeMissing connectionsHandling{ MergeMissing::All };
 
     // How missing relationships are handled.
-    MergeMissing relationshipsHandling = { MergeMissing::All };
+    MergeMissing relationshipsHandling{ MergeMissing::All };
 
     // How missing variants are handled.
-    MergeMissing variantsHandling = { MergeMissing::All };
+    MergeMissing variantsHandling{ MergeMissing::All };
 
     // How missing variant sets are handled.
-    MergeMissing variantSetsHandling = { MergeMissing::All };
+    MergeMissing variantSetsHandling{ MergeMissing::All };
 
     // How missing expressions are handled.
-    MergeMissing expressionsHandling = { MergeMissing::All };
+    MergeMissing expressionsHandling{ MergeMissing::All };
 
     // How missing mappers are handled.
-    MergeMissing mappersHandling = { MergeMissing::All };
+    MergeMissing mappersHandling{ MergeMissing::All };
 
     // How missing mapper argumentss are handled.
-    MergeMissing mapperArgsHandling = { MergeMissing::All };
+    MergeMissing mapperArgsHandling{ MergeMissing::All };
 
     // Create a VtDictionary containing the default values for the merge options.
     MAYA_USD_UTILS_PUBLIC
