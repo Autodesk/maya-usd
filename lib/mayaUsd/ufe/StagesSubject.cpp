@@ -317,6 +317,7 @@ void StagesSubject::stageChanged(
             if (!sceneItem)
                 continue;
 
+#ifndef UFE_V2_FEATURES_AVAILABLE
             // Special case when we know the operation came from either
             // the add or delete of our UFE/USD implementation.
             if (InAddOrDeleteOperation::inAddOrDeleteOperation()) {
@@ -326,6 +327,7 @@ void StagesSubject::stageChanged(
                     sendObjectPostDelete(sceneItem);
                 }
             } else {
+#endif
                 // Use the entry flags in the USD notice to know what operation was performed and
                 // thus what Ufe notif to send.
                 const std::vector<const SdfChangeList::Entry*>& entries = it.base()->second;
@@ -350,13 +352,15 @@ void StagesSubject::stageChanged(
                     // properties. So we send the UFE subtree invalidate notif.
                     Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 #else
-                    // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
-                    // delete/add notifs.
-                    sendObjectPostDelete(sceneItem);
-                    sendObjectAdd(sceneItem);
+                // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
+                // delete/add notifs.
+                sendObjectPostDelete(sceneItem);
+                sendObjectAdd(sceneItem);
 #endif
                 }
+#ifndef UFE_V2_FEATURES_AVAILABLE
             }
+#endif
         }
 #ifdef UFE_V2_FEATURES_AVAILABLE
         else if (!prim.IsValid() && !InPathChange::inPathChange()) {

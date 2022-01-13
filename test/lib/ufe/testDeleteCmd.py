@@ -100,6 +100,113 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() == 1, 'Test old deactivate delete behaviour in UFE v1.')
+    def testLegacyDelete(self):
+        '''Delete Maya and USD objects using legacy deactive behaviour.'''
+
+        # Create our UFE notification observer
+        ufeObs = TestObserver()
+
+        if ufeUtils.ufeFeatureSetVersion() < 2:
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
+
+        # Select two objects, one Maya, one USD.
+        spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
+        sphereItem = ufe.Hierarchy.createItem(spherePath)
+        sphereShapePath = ufe.Path(
+            mayaUtils.createUfePathSegment("|pSphere1|pSphereShape1"))
+        sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
+
+        mayaSegment = mayaUtils.createUfePathSegment(
+            "|transform1|proxyShape1")
+        ball35Path = ufe.Path(
+            [mayaSegment,
+             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+        propsPath = ufe.Path(
+            [mayaSegment, usdUtils.createUfePathSegment("/Room_set/Props")])
+        propsItem = ufe.Hierarchy.createItem(propsPath)
+
+        sphereShapeName = str(sphereShapeItem.path().back())
+        ball35Name = str(ball35Item.path().back())
+
+        ufe.GlobalSelection.get().append(sphereShapeItem)
+        ufe.GlobalSelection.get().append(ball35Item)
+
+        # Before delete, each item is a child of its parent.
+        sphereHierarchy = ufe.Hierarchy.hierarchy(sphereItem)
+        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
+
+        sphereChildren = sphereHierarchy.children()
+        propsChildren = propsHierarchy.children()
+
+        sphereChildrenNames = childrenNames(sphereChildren)
+        propsChildrenNames = childrenNames(propsChildren)
+
+        self.assertIn(sphereShapeItem, sphereChildren)
+        self.assertIn(ball35Item, propsChildren)
+        self.assertIn(sphereShapeName, sphereChildrenNames)
+        self.assertIn(ball35Name, propsChildrenNames)
+
+        ufeObs.reset()
+        cmds.delete()
+
+        # We deleted two items.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+        self.assertEqual(ufeObs.nbAddNotif(), 0)
+
+        sphereChildren = sphereHierarchy.children()
+        propsChildren = propsHierarchy.children()
+
+        sphereChildrenNames = childrenNames(sphereChildren)
+        propsChildrenNames = childrenNames(propsChildren)
+
+        self.assertNotIn(sphereShapeName, sphereChildrenNames)
+        self.assertNotIn(ball35Name, propsChildrenNames)
+
+        cmds.undo()
+
+        # After the undo we added two items back.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+        self.assertEqual(ufeObs.nbAddNotif(), 2)
+
+        sphereChildren = sphereHierarchy.children()
+        propsChildren = propsHierarchy.children()
+
+        sphereChildrenNames = childrenNames(sphereChildren)
+        propsChildrenNames = childrenNames(propsChildren)
+
+        self.assertIn(sphereShapeItem, sphereChildren)
+        self.assertIn(ball35Item, propsChildren)
+        self.assertIn(sphereShapeName, sphereChildrenNames)
+        self.assertIn(ball35Name, propsChildrenNames)
+
+        cmds.redo()
+
+        # After the redo we again deleted two items.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 4)
+        self.assertEqual(ufeObs.nbAddNotif(), 2)
+
+        sphereChildren = sphereHierarchy.children()
+        propsChildren = propsHierarchy.children()
+
+        sphereChildrenNames = childrenNames(sphereChildren)
+        propsChildrenNames = childrenNames(propsChildren)
+
+        self.assertNotIn(sphereShapeName, sphereChildrenNames)
+        self.assertNotIn(ball35Name, propsChildrenNames)
+
+        # undo to restore state to original.
+        cmds.undo()
+
+        # After the undo we again added two items back.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 4)
+        self.assertEqual(ufeObs.nbAddNotif(), 4)		
+		
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
     def testDelete(self):
         '''Delete Maya and USD objects.'''
 
@@ -278,6 +385,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.undo()
         self.assertEqual(ufeObs.nbAddNotif(), 1)
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
     def testDeleteRestrictionSameLayerDef(self):
         '''Restrict deleting USD node. Cannot delete a prim defined on another layer.'''
         
@@ -311,6 +419,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         cmds.delete()    
         self.assertEqual(ufeObs.nbDeleteNotif(), 0)
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
     def testDeleteRestrictionHasSpecs(self):
         '''Restrict deleting USD node. Cannot delete a node that doesn't contribute to the final composed prim'''
 
@@ -382,7 +491,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         children = hierarchy.children()
         self.assertIn(geoItem, children)
 
-
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
     def testDeleteUniqueName(self):
         '''Deleting USD prim Maya seletion'''
         cmds.file(new=True, force=True)
@@ -442,7 +551,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # deleted two items
         self.assertEqual(ufeObs.nbDeleteNotif() , 2)
 
-
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
     def testDeleteRestrictionVariant(self):
         '''Deleting prims inside a variantSet is not allowed.'''
 

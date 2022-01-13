@@ -28,6 +28,7 @@
 #endif
 
 namespace {
+#ifdef UFE_V2_FEATURES_AVAILABLE
 bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
 {
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
@@ -46,6 +47,7 @@ bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
     }
     return false;
 }
+#endif
 } // anonymous namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -105,21 +107,7 @@ void UsdUndoDeleteCommand::redo()
 void UsdUndoDeleteCommand::perform(bool state)
 {
     MayaUsd::ufe::InAddOrDeleteOperation ad;
-
-    const auto& stage = _prim.GetStage();
-    auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
-
-    if (hasLayersMuted(_prim)) {
-        TF_WARN("Cannot remove prim because there are muted layers.");
-        return;
-    }
-
-    if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
-        auto retVal = stage->RemovePrim(_prim.GetPath());
-        if (!retVal) {
-            TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());
-        }
-    }
+    _prim.SetActive(state);
 }
 
 void UsdUndoDeleteCommand::undo() { perform(true); }
