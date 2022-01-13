@@ -620,21 +620,20 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
 #endif
 
-        // Top-level items (do not add for gateway type node):
-        if (!fIsAGatewayType) {
 #ifdef UFE_V3_FEATURES_AVAILABLE
-            if (PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
-                // Temporary - hide some of the context menu items behind an
-                //             env var until they are completed.
-                if (TfGetenvBool("MAYAUSD_ENABLE_EDIT_AS_MAYA_DATA", false))
-                    items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
-                items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
-                if (TfGetenvBool("MAYAUSD_ENABLE_ADD_MAYA_REFERENCE", false))
-                    items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
-                items.emplace_back(Ufe::ContextItem::kSeparator);
-            }
+        // Temporary - hide some of the context menu items behind an
+        //             env var until they are completed.
+        if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
+            if (TfGetenvBool("MAYAUSD_ENABLE_EDIT_AS_MAYA_DATA", false))
+                items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+            items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
+        }
+        if (TfGetenvBool("MAYAUSD_ENABLE_ADD_MAYA_REFERENCE", false))
+            items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+        items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
+        if (!fIsAGatewayType) {
             // Working set management (load and unload):
             const auto itemLabelPairs = _computeLoadAndUnloadItems(prim());
             for (const auto& itemLabelPair : itemLabelPairs) {
@@ -671,7 +670,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 kUSDToggleInstanceableStateItem,
                 prim().IsInstanceable() ? kUSDUnmarkAsInstanceableLabel
                                         : kUSDMarkAsInstancebaleLabel);
-        }
+        } // !fIsAGatewayType
 
         // Top level item - Add New Prim (for all context op types).
         items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
