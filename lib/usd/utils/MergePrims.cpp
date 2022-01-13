@@ -208,9 +208,7 @@ bool isLocalTransformModified(
 {
     double epsilon = 1e-9;
     bool   similar = PXR_NS::GfIsClose(
-        getLocalTransform(srcPrim, timeCode),
-        getLocalTransform(dstPrim, timeCode),
-        epsilon);
+        getLocalTransform(srcPrim, timeCode), getLocalTransform(dstPrim, timeCode), epsilon);
     return !similar;
 }
 
