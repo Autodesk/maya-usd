@@ -106,7 +106,9 @@ UsdMayaPrimUpdater::PushCopySpecs UsdMayaPrimUpdater::pushCopySpecs(
     SdfLayerRefPtr dstLayer,
     const SdfPath& dstSdfPath)
 {
-    return MayaUsdUtils::mergePrims(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath)
+    MayaUsdUtils::MergePrimsOptions options;
+    return MayaUsdUtils::mergePrims(
+               srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath, options)
         ? PushCopySpecs::Continue
         : PushCopySpecs::Failed;
 }
