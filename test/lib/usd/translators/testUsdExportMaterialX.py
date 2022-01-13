@@ -16,6 +16,7 @@
 #
 
 from pxr import Usd
+from pxr import Sdf
 from pxr import UsdShade
 
 from maya import cmds
@@ -23,39 +24,102 @@ from maya import standalone
 
 import mayaUsd.lib as mayaUsdLib
 
+import maya.api.OpenMaya as om
+
 import os
 import unittest
 
 import fixturesUtils
+
+class mxCompositeExportTest(mayaUsdLib.ShaderWriter):
+    _nameConversion = {
+        "colorA" : "bg",
+        "colorB" : "fg",
+        "factor" : "mix",
+    }
+    # All untested excepted for "mix":
+    _operationEquivalent = {
+        0: "ND_plus_color3",
+        1: "ND_minus_color3",
+        2: "ND_mix_color3",
+        3: "UNKNOWN_multiply_color3",
+        4: "ND_screen_color3",
+        5: "ND_overlay_color3",
+        6: "ND_difference_color3",
+        7: "ND_dodge_color3",
+        8: "ND_burn_color3",
+    }
+
+    @classmethod
+    def CanExport(cls, exportArgs):
+        if exportArgs.convertMaterialsTo == "MaterialX":
+            return mayaUsdLib.ShaderWriter.ContextSupport.Supported
+        else:
+            return mayaUsdLib.ShaderWriter.ContextSupport.Unsupported
+
+    def Write(self, usdTime):
+        """
+            Writes the Maya colorComposite node to MaterialX
+        """
+        try:
+            # Not handling animation (so does much of the shader export code)
+            if usdTime != Usd.TimeCode.Default():
+                return
+
+            # Everything must be added in the material node graph:
+            materialPath = self.GetUsdPath().GetParentPath()
+            ngName = "MayaNG_" + materialPath.name
+            ngPath = materialPath.AppendChild(ngName)
+
+            mayaNode = om.MFnDependencyNode(self.GetMayaObject())
+            # Normally we sanitize the name to remove namespace ":"
+            nodePath = ngPath.AppendChild(mayaNode.name())
+
+            nodeShader = UsdShade.Shader.Define(self.GetUsdStage(), nodePath)
+            self._SetUsdPrim(nodeShader.GetPrim())
+
+            mayaPlug = mayaNode.findPlug("operation", True)
+            mxOperation = mxCompositeExportTest._operationEquivalent[mayaPlug.asInt()]
+            nodeShader.CreateIdAttr(mxOperation)
+            nodeShader.CreateOutput("out", Sdf.ValueTypeNames.Color3f)
+
+            for mayaName, usdName in mxCompositeExportTest._nameConversion.items():
+                mayaPlug = mayaNode.findPlug(mayaName, True)
+
+                if not mayaUsdLib.Util.IsAuthored(mayaPlug):
+                    continue
+
+                valueTypeName = Sdf.ValueTypeNames.Color3f
+                if usdName == "mix":
+                    valueTypeName = Sdf.ValueTypeNames.Float
+
+                usdInput = nodeShader.CreateInput(usdName, valueTypeName)
+
+                if not mayaPlug.isDestination:
+                    mayaUsdLib.WriteUtil.SetUsdAttr(
+                        mayaPlug, usdInput, usdTime, self._GetSparseValueWriter())
+
+        except Exception as e:
+            # Quite usefull to debug errors in a Python callback
+            print('Write() - Error: %s' % str(e))
+
+    def GetShadingAttributeNameForMayaAttrName(self, mayaAttrName):
+        if mayaAttrName == "outColor":
+            return UsdShade.Utils.GetFullName("out", UsdShade.AttributeType.Output)
+        else:
+            retVal = mxCompositeExportTest._nameConversion.get(mayaAttrName, "")
+            return UsdShade.Utils.GetFullName(retVal, UsdShade.AttributeType.Input)
 
 
 class testUsdExportMaterialX(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        inputPath = fixturesUtils.setUpClass(__file__)
-
-        mayaFile = os.path.join(inputPath, 'UsdExportMaterialXTest',
-            'StandardSurfaceTextured.ma')
-        cmds.file(mayaFile, force=True, open=True)
-
-        # Export to USD.
-        usdFilePath = os.path.abspath('UsdExportMaterialXTest.usda')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
-            materialsScopeName='Materials')
-
-        cls._stage = Usd.Stage.Open(usdFilePath)
+        cls._inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
-
-    def testStageOpens(self):
-        '''
-        Tests that the USD stage was opened successfully.
-        '''
-        self.assertTrue(self._stage)
 
     def compareValue(self, shader, name, value):
         """Test that a named attribute has the expected value"""
@@ -69,11 +133,25 @@ class testUsdExportMaterialX(unittest.TestCase):
 
         this plane is a basic RGB texture without any customizations.
         '''
+        cmds.file(f=True, new=True)
+
+        mayaFile = os.path.join(self._inputPath, 'UsdExportMaterialXTest',
+            'StandardSurfaceTextured.ma')
+        cmds.file(mayaFile, force=True, open=True)
+
+        # Export to USD.
+        usdFilePath = os.path.abspath('UsdExportMaterialXTest.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            materialsScopeName='Materials')
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
 
         # Exploring this path:
         base_path = "/pPlane1/Materials/standardSurface2SG"
 
-        mesh_prim = self._stage.GetPrimAtPath('/pPlane1')
+        mesh_prim = stage.GetPrimAtPath('/pPlane1')
         self.assertTrue(mesh_prim)
 
         # Validate the Material prim bound to the Mesh prim.
@@ -134,11 +212,6 @@ class testUsdExportMaterialX(unittest.TestCase):
         self.assertEqual(shader.GetPath(),
                          ng_path + "/place2dTexture1")
 
-    def testExportTexturedMaterialXNodeTypes(self):
-        '''
-        Tests all node ids that are expected:
-        '''
-
         base_path = "/pPlane{0}/Materials/standardSurface{1}SG/MayaNG_standardSurface{1}SG/{2}"
         to_test = [
             (7, 8, "file7", "ND_image_float"),
@@ -167,11 +240,50 @@ class testUsdExportMaterialX(unittest.TestCase):
         for prim_idx, sg_idx, node_name, id_attr in to_test:
             prim_path = base_path.format(prim_idx, sg_idx, node_name)
 
-            prim = self._stage.GetPrimAtPath(prim_path)
+            prim = stage.GetPrimAtPath(prim_path)
             self.assertTrue(prim, prim_path)
             shader = UsdShade.Shader(prim)
             self.assertTrue(shader, prim_path)
             self.assertEqual(shader.GetIdAttr().Get(), id_attr, id_attr)
+
+    def testPythonCustomShaderExporter(self):
+        '''
+        Add a custom exporter to the mix and see if it can export a compositing node.
+        '''
+        cmds.file(f=True, new=True)
+
+        # Register our new exporter:
+        mayaUsdLib.ShaderWriter.Register(mxCompositeExportTest, "colorComposite")
+
+        mayaFile = os.path.join(self._inputPath, 'UsdExportMaterialXTest',
+            'MaterialX_decal.ma')
+        cmds.file(mayaFile, force=True, open=True)
+
+        # Export to USD.
+        usdFilePath = os.path.abspath('MaterialX_decal.usda')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            materialsScopeName='Materials')
+
+        stage = Usd.Stage.Open(usdFilePath)
+        self.assertTrue(stage)
+
+        # We should have a nice colorComposite1 node in the graph curtesy of the custom exporter:
+        prim = stage.GetPrimAtPath("/pPlane1/Materials/standardSurface2SG/MayaNG_standardSurface2SG/colorComposite1")
+        self.assertTrue(prim)
+        shader = UsdShade.Shader(prim)
+        self.assertTrue(shader)
+        self.assertEqual(shader.GetIdAttr().Get(), "ND_mix_color3")
+        input = shader.GetInput("fg")
+        self.assertEqual(input.Get(), (1,1,0))
+        input = shader.GetInput("bg")
+        cnxTuple = input.GetConnectedSource()
+        self.assertTrue(cnxTuple)
+        self.assertEqual(cnxTuple[0].GetPrim().GetName(), "file1")
+        input = shader.GetInput("mix")
+        cnxTuple = input.GetConnectedSource()
+        self.assertTrue(cnxTuple)
+        self.assertEqual(cnxTuple[0].GetPrim().GetName(), "MayaSwizzle_file2_a")
 
 
 if __name__ == '__main__':

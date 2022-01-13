@@ -96,14 +96,6 @@ public:
         return this->template CallVirtual<bool>("_HasAnimCurves", &This::default__HasAnimCurves)();
     }
 
-    void _SetUsdPrim(const UsdPrim& usdPrim) { base_t::_SetUsdPrim(usdPrim); }
-
-    const UsdMayaJobExportArgs& _GetExportArgs() const { return base_t::_GetExportArgs(); }
-    boost::python::object       _GetSparseValueWriter()
-    {
-        return boost::python::object(base_t::_GetSparseValueWriter());
-    }
-
     const SdfPathVector& default_GetModelPaths() const { return base_t::GetModelPaths(); }
     const SdfPathVector& GetModelPaths() const override
     {
@@ -289,6 +281,11 @@ public:
 };
 
 namespace {
+std::string getconvertMaterialsTo(UsdMayaJobExportArgs& self)
+{
+    return self.convertMaterialsTo.GetString();
+}
+
 std::vector<std::string> getChaserNames(UsdMayaJobExportArgs& self) { return self.chaserNames; }
 
 boost::python::object getChaserArgs(UsdMayaJobExportArgs& self, const std::string& chaser)
@@ -303,6 +300,32 @@ boost::python::object getChaserArgs(UsdMayaJobExportArgs& self, const std::strin
     }
     return boost::python::object(editDict);
 }
+
+// This class is used to expose protected members of UsdMayaPrimWriter to Python
+class PrimWriterAllowProtected : public UsdMayaPrimWriter
+{
+    typedef UsdMayaPrimWriter base_t;
+
+public:
+    void _SetUsdPrim(const UsdPrim& usdPrim) { base_t::_SetUsdPrim(usdPrim); }
+    const UsdMayaJobExportArgs& _GetExportArgs() const { return base_t::_GetExportArgs(); }
+    UsdUtilsSparseValueWriter*  _GetSparseValueWriter() { return base_t::_GetSparseValueWriter(); }
+};
+
+void unprotect_SetUsdPrim(UsdMayaPrimWriter& pw, const UsdPrim& prim)
+{
+    reinterpret_cast<PrimWriterAllowProtected&>(pw)._SetUsdPrim(prim);
+}
+const UsdMayaJobExportArgs& unprotect_GetExportArgs(UsdMayaPrimWriter& pw)
+{
+    return reinterpret_cast<PrimWriterAllowProtected&>(pw)._GetExportArgs();
+}
+boost::python::object unprotect_GetSparseValueWriter(UsdMayaPrimWriter& pw)
+{
+    return boost::python::object(
+        reinterpret_cast<PrimWriterAllowProtected&>(pw)._GetSparseValueWriter());
+}
+
 } // namespace
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobExportArgs()
@@ -310,7 +333,8 @@ void wrapJobExportArgs()
     boost::python::class_<UsdMayaJobExportArgs>("JobExportArgs", boost::python::no_init)
         .def("getChaserNames", &::getChaserNames)
         .def("getChaserArgs", &::getChaserArgs)
-        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName);
+        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName)
+        .add_property("convertMaterialsTo", &::getconvertMaterialsTo);
 }
 
 void wrapPrimWriter()
@@ -334,7 +358,7 @@ void wrapPrimWriter()
             "GetUsdPrim",
             &PrimWriterWrapper<>::GetUsdPrim,
             boost::python::return_internal_reference<>())
-        .def("_SetUsdPrim", &PrimWriterWrapper<>::_SetUsdPrim)
+        .def("_SetUsdPrim", &::unprotect_SetUsdPrim)
         .def(
             "MakeSingleSamplesStatic",
             static_cast<void (PrimWriterWrapper<>::*)()>(
@@ -350,9 +374,9 @@ void wrapPrimWriter()
             &PrimWriterWrapper<>::default__HasAnimCurves)
         .def(
             "_GetExportArgs",
-            &PrimWriterWrapper<>::_GetExportArgs,
+            &::unprotect_GetExportArgs,
             boost::python::return_internal_reference<>())
-        .def("_GetSparseValueWriter", &PrimWriterWrapper<>::_GetSparseValueWriter)
+        .def("_GetSparseValueWriter", &::unprotect_GetSparseValueWriter)
 
         .def(
             "GetDagPath",

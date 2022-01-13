@@ -46,6 +46,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdUndoManager);
     TF_WRAP(UserTaggedAttribute);
     TF_WRAP(WriteUtil);
+    TF_WRAP(Util);
     TF_WRAP(XformStack);
 
     TF_WRAP(OpenMaya);
