@@ -16,6 +16,7 @@ PXR_MTLX_STDLIB_SEARCH_PATHS+=${USD_INSTALL_LOCATION}/libraries
 icons: lib/icons
 plug-ins: 
 presets: 
+scripts: lib/scripts
 resources: 
 PATH+:=lib
 PYTHONPATH+:=lib/python
