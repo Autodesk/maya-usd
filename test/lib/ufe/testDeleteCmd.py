@@ -307,6 +307,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertNotIn(sphereShapeName, sphereChildrenNames)
         self.assertIn(ball35Name, propsChildrenNames)
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteArgs only available in UFE v2 or greater.')
     def testDeleteArgs(self):
         '''Delete Maya and USD objects passed as command arguments.'''
 
