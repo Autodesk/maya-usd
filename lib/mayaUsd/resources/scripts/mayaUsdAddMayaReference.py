@@ -10,8 +10,8 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace):
     # Extract the USD path segment from the UFE path and append the Maya
     # reference prim to it.
     ufePath = ufe.PathString.path(ufePathStr)
-    parentPath = ufePath.segments[1]
-    primPath = Sdf.AssetPath(str(parentPath)+'/MayaReference')
+    parentPath = str(ufePath.segments[1]) if ufePath.nbSegments() > 1 else ''
+    primPath = Sdf.AssetPath(parentPath+'/MayaReference')
 
     stage = mayaUsd.ufe.getStage(ufePathStr)
     prim = stage.DefinePrim(primPath.path, 'MayaReference')
