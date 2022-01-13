@@ -22,7 +22,7 @@
 namespace MAYAUSD_NS_DEF {
 
 //------------------------------------------------------------------------------
-// OpUndoItemList automatic celar when scene in reset.
+// Notifier to automatically clear OpUndoItemList when the scene is reset.
 //------------------------------------------------------------------------------
 
 namespace {
