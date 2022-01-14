@@ -153,13 +153,26 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     }
 
     // Add to a set, the set should already been created.
-    MObject pullSetObj;
-    auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
-    if (status != MStatus::kSuccess)
-        return false;
-
-    MFnSet fnPullSet(pullSetObj);
-    fnPullSet.addMember(path);
+    FunctionUndoItem::execute(
+        "Add edited item to pull set.",
+        [path]() {
+            MObject pullSetObj;
+            auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+            if (status != MStatus::kSuccess)
+                return false;
+            MFnSet fnPullSet(pullSetObj);
+            fnPullSet.addMember(path);
+            return true;
+        },
+        [path]() {
+            MObject pullSetObj;
+            auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+            if (status != MStatus::kSuccess)
+                return false;
+            MFnSet fnPullSet(pullSetObj);
+            fnPullSet.removeMember(path, MObject::kNullObj);
+            return true;
+        });
 
     // Store metadata on the prim in the Session Layer.
     auto stage = pulledPrim.GetStage();
@@ -172,6 +185,7 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     // Store medata on DG node
     auto              ufePathString = Ufe::PathString::string(ufePulledPath);
     MFnDependencyNode depNode(path.node());
+    MStatus           status;
     MPlug             dgMetadata = depNode.findPlug(kPullDGMetadataKey, &status);
     if (status != MStatus::kSuccess) {
         MFnStringData fnStringData;
@@ -287,9 +301,6 @@ PullImportPaths pullImport(
         TF_RUNTIME_ERROR("Empty file specified. Exiting.");
         return PullImportPaths(addedDagPaths, pulledUfePaths);
     }
-
-    // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(&UsdUndoableItemUndoItem::create("Pull import USD data modifications"));
 
     const VtDictionary& userArgs = context.GetUserArgs();
 
