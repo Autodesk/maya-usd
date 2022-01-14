@@ -22,20 +22,6 @@
 
 #include <maya/MGlobal.h>
 
-namespace {
-// Warning: If a user tries to delete a prim that is deactivated (can be localized).
-static constexpr char kWarningCannotDeactivePrim[]
-    = "Cannot deactivate \"^1s\" because it is already inactive.";
-
-void displayWarning(const PXR_NS::UsdPrim& prim, const MString& fmt)
-{
-    MString msg, primArg(prim.GetName().GetText());
-    msg.format(fmt, primArg);
-    MGlobal::displayWarning(msg);
-}
-
-} // namespace
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -65,23 +51,23 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const { return fItem; }
 
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 {
-    if (prim().IsActive()) {
+    if (prim()) {
         auto deleteCmd = UsdUndoDeleteCommand::create(prim());
         deleteCmd->execute();
         return deleteCmd;
     }
 
-    displayWarning(prim(), kWarningCannotDeactivePrim);
     return nullptr;
 }
 
 bool UsdSceneItemOps::deleteItem()
 {
-    if (prim().IsActive()) {
-        return prim().SetActive(false);
+    if (prim()) {
+        auto deleteCmd = UsdUndoDeleteCommand::create(prim());
+        deleteCmd->execute();
+        return true;
     }
 
-    displayWarning(prim(), kWarningCannotDeactivePrim);
     return false;
 }
 

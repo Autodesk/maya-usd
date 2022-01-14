@@ -91,6 +91,12 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
         
+        cmds.file(new=True, force=True)
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() == 1, 'Test old deactivate delete behaviour in UFE v1.')
+    def testLegacyDelete(self):
+        '''Delete Maya and USD objects using legacy deactive behaviour.'''
+
         # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
@@ -100,18 +106,10 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() == 1, 'Test old deactivate delete behaviour in UFE v1.')
-    def testLegacyDelete(self):
-        '''Delete Maya and USD objects using legacy deactive behaviour.'''
-
         # Create our UFE notification observer
         ufeObs = TestObserver()
-
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
+        ufe.Scene.addObjectDeleteObserver(ufeObs)
+        ufe.Scene.addObjectAddObserver(ufeObs)
 
         # Select two objects, one Maya, one USD.
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
@@ -206,297 +204,10 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(ufeObs.nbDeleteNotif(), 4)
         self.assertEqual(ufeObs.nbAddNotif(), 4)		
 		
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
-    def testDelete(self):
-        '''Delete Maya and USD objects.'''
-
-        # Create our UFE notification observer
-        ufeObs = TestObserver()
-
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
-
-        # Select two objects, one Maya, one USD.
-        spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
-        sphereItem = ufe.Hierarchy.createItem(spherePath)
-        sphereShapePath = ufe.Path(
-            mayaUtils.createUfePathSegment("|pSphere1|pSphereShape1"))
-        sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
-
-        mayaSegment = mayaUtils.createUfePathSegment(
-            "|transform1|proxyShape1")
-        ball35Path = ufe.Path(
-            [mayaSegment,
-             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
-        ball35Item = ufe.Hierarchy.createItem(ball35Path)
-        propsPath = ufe.Path(
-            [mayaSegment, usdUtils.createUfePathSegment("/Room_set/Props")])
-        propsItem = ufe.Hierarchy.createItem(propsPath)
-
-        sphereShapeName = str(sphereShapeItem.path().back())
-        ball35Name = str(ball35Item.path().back())
-
-        ufe.GlobalSelection.get().append(sphereShapeItem)
-        ufe.GlobalSelection.get().append(ball35Item)
-
-        # Before delete, each item is a child of its parent.
-        sphereHierarchy = ufe.Hierarchy.hierarchy(sphereItem)
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertIn(sphereShapeItem, sphereChildren)
-        self.assertIn(ball35Item, propsChildren)
-        self.assertIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
-
-        ufeObs.reset()
-        cmds.delete()
-
-        # We only deleted the maya object.
-        # because ball_35 is defined inside the variant composition arc
-        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
-        self.assertEqual(ufeObs.nbAddNotif(), 0)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertNotIn(sphereShapeName, sphereChildrenNames)
-        # ball_35 cannot be deleted check its still in list
-        self.assertIn(ball35Name, propsChildrenNames)
-
-        cmds.undo()
-
-        # After the undo we added one items back.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
-        self.assertEqual(ufeObs.nbAddNotif(), 1)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertIn(sphereShapeItem, sphereChildren)
-        self.assertIn(ball35Item, propsChildren)
-        self.assertIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
+    def testDeleteLeafPrims(self):
+        '''Test successful delete of leaf prims'''
         
-        cmds.redo()
-
-        # After the redo we again deleted one item.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
-        self.assertEqual(ufeObs.nbAddNotif(), 1)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertNotIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
-
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteArgs only available in UFE v2 or greater.')
-    def testDeleteArgs(self):
-        '''Delete Maya and USD objects passed as command arguments.'''
-
-        # Create our UFE notification observer
-        ufeObs = TestObserver()
-
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
-
-        spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
-        sphereItem = ufe.Hierarchy.createItem(spherePath)
-        sphereShapePath = ufe.Path(
-            mayaUtils.createUfePathSegment("|pSphere1|pSphereShape1"))
-        sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
-
-        mayaSegment = mayaUtils.createUfePathSegment(
-            "|transform1|proxyShape1")
-        ball35Path = ufe.Path(
-            [mayaSegment,
-             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
-        ball35Item = ufe.Hierarchy.createItem(ball35Path)
-        ball34Path = ufe.Path(
-            [mayaSegment,
-             usdUtils.createUfePathSegment("/Room_set/Props/Ball_34")])
-        ball34Item = ufe.Hierarchy.createItem(ball34Path)
-        propsPath = ufe.Path(
-            [mayaSegment, usdUtils.createUfePathSegment("/Room_set/Props")])
-        propsItem = ufe.Hierarchy.createItem(propsPath)
-
-        sphereShapeName = str(sphereShapeItem.path().back())
-        ball35Name = str(ball35Item.path().back())
-        ball34Name = str(ball34Item.path().back())
-
-        # Before delete, each item is a child of its parent.
-        sphereHierarchy = ufe.Hierarchy.hierarchy(sphereItem)
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertIn(sphereShapeItem, sphereChildren)
-        self.assertIn(ball35Item, propsChildren)
-        self.assertIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
-
-        ball34PathString = "|transform1|proxyShape1,/Room_set/Props/Ball_34"
-        # Test that "|world" prefix is optional for multi-segment paths.
-        ball35PathString = "|transform1|proxyShape1,/Room_set/Props/Ball_35"
-
-        ufeObs.reset()
-        
-        # Cannot delete Ball_34 and Ball_34 because they is defined inside the variant composition arc
-        cmds.delete(ball35PathString, ball34PathString, "|pSphere1|pSphereShape1")
-        
-        # We deleted 1 item the Maya item.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
-        self.assertEqual(ufeObs.nbAddNotif(), 0)
-
-        sphereChildren = sphereHierarchy.children()
-        propsChildren = propsHierarchy.children()
-
-        sphereChildrenNames = childrenNames(sphereChildren)
-        propsChildrenNames = childrenNames(propsChildren)
-
-        self.assertNotIn(sphereShapeName, sphereChildrenNames)
-        self.assertIn(ball35Name, propsChildrenNames)
-        self.assertIn(ball34Name, propsChildrenNames)
-        self.assertFalse(cmds.objExists("|pSphere1|pSphereShape1"))
-
-        cmds.undo()
-        self.assertEqual(ufeObs.nbAddNotif(), 1)
-
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
-    def testDeleteRestrictionSameLayerDef(self):
-        '''Restrict deleting USD node. Cannot delete a prim defined on another layer.'''
-        
-        # Create our UFE notification observer
-        ufeObs = TestObserver()
-
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
-
-        # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|transform1|proxyShape1')
-        usdPathSegment = usdUtils.createUfePathSegment('/Room_set/Props/Ball_35')
-        ball35Path = ufe.Path([mayaPathSegment, usdPathSegment])
-        ball35PathStr = ','.join(
-            [str(segment) for segment in ball35Path.segments])
-        
-        ball35Item = ufe.Hierarchy.createItem(ball35Path)
-        
-        ufe.GlobalSelection.get().append(ball35Item)
-        
-        # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
-        
-        # check GetLayerStack behavior
-        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
-
-        cmds.delete()    
-        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
-
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
-    def testDeleteRestrictionHasSpecs(self):
-        '''Restrict deleting USD node. Cannot delete a node that doesn't contribute to the final composed prim'''
-
-        cmds.file(new=True, force=True)
-
-        # open appleBite.ma scene in testSamples
-        mayaUtils.openAppleBiteScene()
-
-        # Create our UFE notification observer
-        ufeObs = TestObserver()
-
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
-
-        # clear selection to start off
-        cmds.select(clear=True)
-        
-        # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
-        usdPathSegment = usdUtils.createUfePathSegment('/apple/payload/geo')
-        geoPath = ufe.Path([mayaPathSegment, usdPathSegment])
-        geoItem = ufe.Hierarchy.createItem(geoPath)
-        globalSn = ufe.GlobalSelection.get()        
-        globalSn.append(geoItem)
-        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
-
-        cmds.delete()
-        # not deleted. It is defined on another layer.
-        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
-
-        # Clear the selection.
-        globalSn.clear()
-        self.assertTrue(globalSn.empty())
-
-        usdPathSegmentPayload = usdUtils.createUfePathSegment('/apple/payload')
-        geoPathPayload = ufe.Path([mayaPathSegment, usdPathSegmentPayload])
-        geoItemPayload = ufe.Hierarchy.createItem(geoPathPayload)
-
-        globalSn.append(geoItemPayload)
-        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
-
-        cmds.delete()
-        # deleted
-        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
-
-        usdPathSegmentApple = usdUtils.createUfePathSegment('/apple')
-        geoPathApple = ufe.Path([mayaPathSegment, usdPathSegmentApple])
-        geoItemApple = ufe.Hierarchy.createItem(geoPathApple)
-        hierarchy = ufe.Hierarchy.hierarchy(geoItemApple)
-        children = hierarchy.children()
-        # check that /apple/payload is not in children
-        self.assertNotIn(geoItemPayload, children)
-        
-		# revert
-        cmds.undo()
-
-        globalSn = ufe.GlobalSelection.get()        
-        globalSn.append(geoItemPayload)
-        # added back
-        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
-        self.assertEqual(ufeObs.nbAddNotif(), 1)
-
-        # check that /apple/payload/geo is in children
-        geoItemPayload = ufe.Hierarchy.createItem(geoPathPayload)
-        hierarchy = ufe.Hierarchy.hierarchy(geoItemPayload)
-        children = hierarchy.children()
-        self.assertIn(geoItem, children)
-
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
-    def testDeleteUniqueName(self):
-        '''Deleting USD prim Maya seletion'''
-        cmds.file(new=True, force=True)
-
         # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()
 
@@ -506,141 +217,268 @@ class DeleteCmdTestCase(unittest.TestCase):
         # clear selection to start off
         cmds.select(clear=True)
 
-        # Create our UFE notification observer
+        # create our UFE notification observer
         ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
 
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
-
-        # select a maya object.
-        spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
-        sphereItem = ufe.Hierarchy.createItem(spherePath)
-        sphereShapePath = ufe.Path(
-            mayaUtils.createUfePathSegment("|pSphere1|pSphereShape1"))
-        sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
-
-        ufe.GlobalSelection.get().append(sphereShapeItem)
-
-        # select a USD object.
+        # validate the default edit target to be the Rootlayer.
         mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
-        usdPathSegment = usdUtils.createUfePathSegment('/TreeBase/trunk')
-        trunkPath = ufe.Path([mayaPathSegment, usdPathSegment])
-        trunkItem = ufe.Hierarchy.createItem(trunkPath)
-
-        ufe.GlobalSelection.get().append(trunkItem)
-
-        # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
-
-        # by default edit target is set to the Rootlayer.
+        self.assertTrue(stage)
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
-
-        # delete selected item `/TreeBase/trunk` `
-        cmds.delete()
-        # deleted two items
-        self.assertEqual(ufeObs.nbDeleteNotif() , 2)
         
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves', '|Tree_usd|Tree_usdShape,/TreeBase/trunk', '|pSphere1|pSphereShape1')
+        self.assertEqual(ufeObs.nbDeleteNotif() , 3)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        # validate undo
         ufeObs.reset()
         cmds.undo()
-        # added two items
-        self.assertEqual(ufeObs.nbAddNotif() , 2)
-
+        self.assertEqual(ufeObs.nbAddNotif() , 3)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        # validate redo
         cmds.redo()
-        # deleted two items
+        self.assertEqual(ufeObs.nbDeleteNotif() , 3)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
+    def testDeleteHierarchy(self):
+        '''Test successful delete of a prim with children'''
+        
+        # open tree.ma scene in testSamples
+        mayaUtils.openTreeScene()
+
+        # create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
+
+        # validate the default edit target to be the Rootlayer.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase')
+        self.assertEqual(ufeObs.nbDeleteNotif() , 1)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        # validate undo
+        ufeObs.reset()
+        cmds.undo()
+        self.assertEqual(ufeObs.nbAddNotif() , 1)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        # validate redo
+        cmds.redo()
+        self.assertEqual(ufeObs.nbDeleteNotif() , 1)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+ 
+    #@unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
+    @unittest.skip("Doesn't work")
+    def testDeleteHierarchyMultiSelect(self):
+        '''Test successful delete of a multiple prims, some being children of others'''
+        
+        # open tree.ma scene in testSamples
+        mayaUtils.openTreeScene()
+
+        # create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
+
+        # validate the default edit target to be the Rootlayer.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves', '|Tree_usd|Tree_usdShape,/TreeBase', '|Tree_usd|Tree_usdShape,/TreeBase/trunk')
         self.assertEqual(ufeObs.nbDeleteNotif() , 2)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        # validate undo
+        ufeObs.reset()
+        cmds.undo()
+        self.assertEqual(ufeObs.nbAddNotif() , 2)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        # validate redo
+        cmds.redo()
+        self.assertEqual(ufeObs.nbDeleteNotif() , 2)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+ 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
+    def testDeleteRestrictionDifferentLayer(self):
+        '''Test delete restriction - we don't allow removal of a prim when edit target is different than layer introducing the prim'''
+        
+        # open tree.ma scene in testSamples
+        mayaUtils.openTreeScene()
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is available only in UFE v2.')
-    def testDeleteRestrictionVariant(self):
-        '''Deleting prims inside a variantSet is not allowed.'''
+        # create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
 
-        cmds.file(new=True, force=True)
-
+        # validate the default edit target to be the Rootlayer.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        stage.SetEditTarget(stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+        
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves', '|Tree_usd|Tree_usdShape,/TreeBase/trunk')
+        self.assertEqual(ufeObs.nbDeleteNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        # validate undo
+        ufeObs.reset()
+        cmds.undo()
+        self.assertEqual(ufeObs.nbAddNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        # validate redo
+        cmds.redo()
+        self.assertEqual(ufeObs.nbDeleteNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+ 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
+    def testDeleteRestrictionVariantPrim(self):
+        '''Test delete restriction - we don't allow removal of a prim defined in a variant'''
+        
         # open Variant.ma scene in testSamples
         mayaUtils.openVariantSetScene()
-
-        # Create our UFE notification observer
+        
+        # create our UFE notification observer
         ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
 
-        if ufeUtils.ufeFeatureSetVersion() < 2:
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
-
-        # stage
+        # validate the default edit target to be the Rootlayer.
         mayaPathSegment = mayaUtils.createUfePathSegment('|Variant_usd|Variant_usdShape')
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
-
-        # first check that we have a VariantSets
-        objectPrim = stage.GetPrimAtPath('/objects')
-        self.assertTrue(objectPrim.HasVariantSets())
-
-        # Geom
-        usdPathSegment = usdUtils.createUfePathSegment('/objects/Geom')
-        geomPath = ufe.Path([mayaPathSegment, usdPathSegment])
-        geomItem = ufe.Hierarchy.createItem(geomPath)
-        geomPrim = mayaUsd.ufe.ufePathToPrim("{},{}".format(mayaPathSegment,usdPathSegment))
-
-        # Small_Potato
-        smallPotatoUsdPathSegment = usdUtils.createUfePathSegment('/objects/Geom/Small_Potato')
-        smallPotatoPath = ufe.Path([mayaPathSegment, smallPotatoUsdPathSegment])
-        smallPotatoItem = ufe.Hierarchy.createItem(smallPotatoPath)
-        smallPotatoPrim = mayaUsd.ufe.ufePathToPrim("{},{}".format(mayaPathSegment,smallPotatoUsdPathSegment))
-
-        # add Geom to selection list
-        ufe.GlobalSelection.get().append(geomItem)
-
-        # get prim spec for geom
-        primspecGeom = stage.GetEditTarget().GetPrimSpecForScenePath(geomPrim.GetPath());
-
-        # primSpec is expected to be None as its inside a variant
-        self.assertIsNone(primspecGeom)
-
-        cmds.delete()
-        # expect no delete
+        self.assertTrue(stage)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Variant_usd|Variant_usdShape,/objects/Geom')
         self.assertEqual(ufeObs.nbDeleteNotif() , 0)
-
-        # clear selection
-        cmds.select(clear=True)
-
-        # add Small_Potato to selection list 
-        ufe.GlobalSelection.get().append(smallPotatoItem)
-
-        # get prim spec for Small_Potato prim
-        primspecSmallPotato = stage.GetEditTarget().GetPrimSpecForScenePath(smallPotatoPrim.GetPath())
-
-        # primSpec is expected to be None as its inside a variant
-        self.assertIsNone(primspecSmallPotato)
-
-        # try to delete a child of Geom "/objects/Geom/Small_Potato"
-        # expect no delete
-        cmds.delete()
+        self.assertTrue(stage.GetPrimAtPath('/objects/Geom'))
+        
+        # validate undo
+        ufeObs.reset()
+        cmds.undo()
+        self.assertEqual(ufeObs.nbAddNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/objects/Geom'))
+        
+        # validate redo
+        cmds.redo()
         self.assertEqual(ufeObs.nbDeleteNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/objects/Geom'))
 
-        # clear selection
-        ufe.GlobalSelection.get().clear()
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
+    def testDeleteRestrictionReferencedPrim(self):
+        '''Test delete restriction - we don't allow removal of a prim defined in a referenced layer'''
+        
+        # open appleBite.ma scene in testSamples
+        mayaUtils.openAppleBiteScene()
 
-        usdPathSegment = usdUtils.createUfePathSegment('/objects')
-        geomPath = ufe.Path([mayaPathSegment, usdPathSegment])
-        geomItem = ufe.Hierarchy.createItem(geomPath)
-        # select objects
-        ufe.GlobalSelection.get().append(geomItem)
-        cmds.delete()
-        # success
-        self.assertEqual(ufeObs.nbDeleteNotif() , 1)
+        # create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
 
-        cmds.undo();
+        # validate the default edit target to be the Rootlayer.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape,/apple/payload/geo')
+        self.assertEqual(ufeObs.nbDeleteNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/apple/payload/geo'))
+        
+        # validate undo
+        ufeObs.reset()
+        cmds.undo()
+        self.assertEqual(ufeObs.nbAddNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/apple/payload/geo'))
+        
+        # validate redo
+        cmds.redo()
+        self.assertEqual(ufeObs.nbDeleteNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/apple/payload/geo'))
 
-        # Clear the selection.
-        ufe.GlobalSelection.get().clear()
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
+    def testDeleteRestrictionHierarchyWithChildrenOnDifferentLayer(self):
+        '''Test delete restriction - we don't allow removal of a prim with child/children defined on a different layer'''
 
-        # reselect
-        ufe.GlobalSelection.get().append(smallPotatoItem)
-        self.assertEqual(len(ufe.GlobalSelection.get()), 1)
+        # open tree.ma scene in testSamples
+        mayaUtils.openTreeScene()
 
+        # create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObserver(ufeObs)
+
+        # add child defined on session layer
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        
+        stage.SetEditTarget(stage.GetSessionLayer())
+        stage.DefinePrim('/TreeBase/newChild', 'Xform')
+        stage.SetEditTarget(stage.GetRootLayer())
+        
+        # delete two USD prims and Maya's shape
+        ufeObs.reset()
+        cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase')
+        self.assertEqual(ufeObs.nbDeleteNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
+        
+        # validate undo
+        ufeObs.reset()
+        cmds.undo()
+        self.assertEqual(ufeObs.nbAddNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
+        
+        # validate redo
+        cmds.redo()
+        self.assertEqual(ufeObs.nbDeleteNotif() , 0)
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/newChild'))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
