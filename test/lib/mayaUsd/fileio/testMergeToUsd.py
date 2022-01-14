@@ -18,8 +18,8 @@
 
 import fixturesUtils
 
-from mayaUtils import setMayaTranslation
-from usdUtils import createSimpleXformScene
+from mayaUtils import setMayaTranslation, setMayaRotation
+from usdUtils import createSimpleXformScene, mayaUsd_createStageWithNewLayer
 
 import mayaUsd.lib
 
@@ -235,6 +235,40 @@ class MergeToUsdTestCase(unittest.TestCase):
     
         assertVectorAlmostEqual(self, mayaValues, usdValues)
 
+    def testEquivalentTransformMergeToUsd(self):
+        '''Merge edits on a USD transform back to USD when the new transform is equivalent.'''
+
+        # Create a simple scene with a prim with a rotateY attribute.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        psPath = ufe.PathString.path(psPathStr)
+        ps = ufe.Hierarchy.createItem(psPath)
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        aPrim = stage.DefinePrim('/A', 'Xform')
+        aXformable = UsdGeom.Xformable(aPrim)
+        aRotOp = aXformable.AddRotateYOp()
+        aRotOp.Set(5.)
+        aUsdUfePathStr = psPathStr + ',/A'
+        aUsdUfePath = ufe.PathString.path(aUsdUfePathStr)
+        aUsdItem = ufe.Hierarchy.createItem(aUsdUfePath)
+
+        # Edit as maya and set the rotation to 0, 5, 0 rotateXYZ, which is equivalent
+        # to rotateY but has a different representation.
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        aMayaItem = ufe.GlobalSelection.get().front()
+        (aMayaPath, aMayaPathStr, _, aMayaMatrix) = \
+            setMayaRotation(aMayaItem, om.MVector(0, 5, 0))
+
+        # Merge edits back to USD.
+        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+
+        # Check that the rotateXYZ has *not* been added and the rotateY is still there.
+        self.assertFalse(aPrim.HasAttribute("xformOp:rotateXYZ"))
+        self.assertTrue(aPrim.HasAttribute("xformOp:rotateY"))
+        self.assertTrue(aPrim.HasAttribute("xformOpOrder"))
+
+        opOrder = aPrim.GetAttribute("xformOpOrder").Get()
+        self.assertEqual(1, len(opOrder))
+        self.assertEqual("xformOp:rotateY", opOrder[0])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
