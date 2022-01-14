@@ -30,6 +30,7 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/getenv.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/reference.h>
@@ -620,11 +621,15 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+        // Temporary - hide some of the context menu items behind an
+        //             env var until they are completed.
         if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
-            items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+            if (TfGetenvBool("MAYAUSD_ENABLE_EDIT_AS_MAYA_DATA", false))
+                items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
             items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
         }
-        items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+        if (TfGetenvBool("MAYAUSD_ENABLE_ADD_MAYA_REFERENCE", false))
+            items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
         items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
