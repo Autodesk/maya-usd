@@ -51,13 +51,9 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const { return fItem; }
 
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 {
-    if (prim()) {
-        auto deleteCmd = UsdUndoDeleteCommand::create(prim());
-        deleteCmd->execute();
-        return deleteCmd;
-    }
-
-    return nullptr;
+    auto deleteCmd = UsdUndoDeleteCommand::create(prim());
+    deleteCmd->execute();
+    return deleteCmd;
 }
 
 bool UsdSceneItemOps::deleteItem()

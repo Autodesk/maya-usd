@@ -22,6 +22,8 @@ import maya.cmds as cmds
 from pxr import Tf, Usd, UsdGeom, Gf
 
 import mayaUsd.lib as mayaUsdLib
+import mayaUtils
+import mayaUsd.ufe
 
 class TestUsdUndoManager(unittest.TestCase):
 
@@ -103,3 +105,38 @@ class TestUsdUndoManager(unittest.TestCase):
 
         # expect to have 2 items on the undo queue
         self.assertEqual(cmds.undoInfo(q=True), nbCmds+2)
+
+    def testRemovePrims(self):
+        '''
+            Test delete prims
+        '''
+        # start with a new file
+        cmds.file(force=True, new=True)
+        
+        # open tree.ma scene in testSamples
+        mayaUtils.openTreeScene()
+
+        # get the current number of commands on the undo queue
+        nbCmds = cmds.undoInfo(q=True)
+        self.assertEqual(cmds.undoInfo(q=True), 0)
+        
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        
+        with mayaUsdLib.UsdUndoBlock():
+            self.assertTrue(stage.RemovePrim('/TreeBase/trunk'))
+            self.assertTrue(stage.RemovePrim('/TreeBase/leavesXform/leaves'))
+            self.assertTrue(stage.RemovePrim('/TreeBase/leavesXform'))
+            self.assertTrue(stage.RemovePrim('/TreeBase'))
+        
+        self.assertEqual(cmds.undoInfo(q=True), nbCmds+1)
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
+        
+        cmds.undo()
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
+        self.assertTrue(stage.GetPrimAtPath('/TreeBase/trunk'))

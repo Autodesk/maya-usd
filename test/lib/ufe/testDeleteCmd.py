@@ -267,7 +267,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # delete two USD prims and Maya's shape
         ufeObs.reset()
         cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase')
-        self.assertEqual(ufeObs.nbDeleteNotif() , 1)
+        self.assertEqual(ufeObs.nbDeleteNotif() , 4)
         self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
@@ -287,8 +287,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
  
-    #@unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
-    @unittest.skip("Doesn't work")
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'New prim delete behaviour is not available in UFE v1')
     def testDeleteHierarchyMultiSelect(self):
         '''Test successful delete of a multiple prims, some being children of others'''
         
@@ -308,7 +307,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # delete two USD prims and Maya's shape
         ufeObs.reset()
         cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves', '|Tree_usd|Tree_usdShape,/TreeBase', '|Tree_usd|Tree_usdShape,/TreeBase/trunk')
-        self.assertEqual(ufeObs.nbDeleteNotif() , 2)
+        self.assertEqual(ufeObs.nbDeleteNotif() , 4)
         self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))

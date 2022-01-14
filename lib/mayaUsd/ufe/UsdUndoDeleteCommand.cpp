@@ -47,6 +47,28 @@ bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
     }
     return false;
 }
+
+void removePrimRecursive(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdStageWeakPtr& stage)
+{
+
+    std::vector<PXR_NS::SdfPath> toRemove;
+
+    // collect all the prim paths to remove
+    PXR_NS::UsdPrimRange range = PXR_NS::UsdPrimRange::AllPrims(prim);
+    for (auto it = range.begin(); it != range.end(); ++it) {
+        const PXR_NS::UsdPrim& childPrim = *it;
+        toRemove.push_back(childPrim.GetPath());
+    }
+    // and then do reverse traversal to delete them from leafs up
+    for (auto it = toRemove.rbegin(); it != toRemove.rend(); it++) {
+        const PXR_NS::SdfPath& path = *it;
+        auto                   retVal = stage->RemovePrim(path);
+        if (!retVal) {
+            TF_VERIFY(retVal, "Failed to delete '%s'", path.GetText());
+        }
+    }
+}
+
 #endif
 } // anonymous namespace
 
@@ -70,6 +92,9 @@ UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const PXR_NS::UsdPrim& pr
 #ifdef UFE_V2_FEATURES_AVAILABLE
 void UsdUndoDeleteCommand::execute()
 {
+    if (!_prim.IsValid())
+        return;
+
     MayaUsd::ufe::InAddOrDeleteOperation ad;
 
     UsdUndoBlock undoBlock(&_undoableItem);
@@ -83,10 +108,7 @@ void UsdUndoDeleteCommand::execute()
     }
 
     if (MayaUsd::ufe::applyCommandRestrictionNoThrow(_prim, "delete")) {
-        auto retVal = stage->RemovePrim(_prim.GetPath());
-        if (!retVal) {
-            TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());
-        }
+        removePrimRecursive(_prim, stage);
     }
 }
 
