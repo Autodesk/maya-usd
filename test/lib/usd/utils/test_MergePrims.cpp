@@ -34,9 +34,6 @@ const TfToken otherRelName("other_rel");
 
 const SdfValueTypeName doubleType = SdfValueTypeNames->Double;
 
-const bool mergeChildren = true;
-const bool dontMergeChildren = false;
-
 UsdPrim createPrim(UsdStageRefPtr& stage, const SdfPath& path)
 {
     return stage->DefinePrim(SdfPath(path), TfToken("xform"));
@@ -92,6 +89,11 @@ TEST(MergePrims, mergePrimsEmpty)
     auto modifiedStage = UsdStage::CreateInMemory();
     auto modifiedPrim = createPrim(modifiedStage, primPath);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -99,8 +101,7 @@ TEST(MergePrims, mergePrimsEmpty)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -122,6 +123,11 @@ TEST(MergePrims, mergePrimsSameChildren)
     createChild(modifiedStage, childPath1, 1.0);
     createChild(modifiedStage, childPath2, 1.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -129,8 +135,7 @@ TEST(MergePrims, mergePrimsSameChildren)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -165,6 +170,11 @@ TEST(MergePrims, mergePrimsDiffChildren)
     createChild(modifiedStage, childPath1, 2.0);
     createChild(modifiedStage, childPath2, 3.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -172,8 +182,7 @@ TEST(MergePrims, mergePrimsDiffChildren)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -206,6 +215,12 @@ TEST(MergePrims, mergePrimsAbsentChild)
     auto modifiedPrim = createPrim(modifiedStage, primPath);
     createChild(modifiedStage, childPath1, 1.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.primsHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -213,8 +228,7 @@ TEST(MergePrims, mergePrimsAbsentChild)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -244,6 +258,11 @@ TEST(MergePrims, mergePrimsCreatedChild)
     createChild(modifiedStage, childPath1, 1.0);
     createChild(modifiedStage, childPath2, 2.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -251,8 +270,7 @@ TEST(MergePrims, mergePrimsCreatedChild)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -291,6 +309,11 @@ TEST(MergePrims, mergePrimsOnlySameChildren)
     createChild(modifiedStage, childPath1, 1.0);
     createChild(modifiedStage, childPath2, 1.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = false;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -298,8 +321,7 @@ TEST(MergePrims, mergePrimsOnlySameChildren)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        dontMergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -334,6 +356,11 @@ TEST(MergePrims, mergePrimsOnlyDiffChildren)
     createChild(modifiedStage, childPath1, 2.0);
     createChild(modifiedStage, childPath2, 3.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = false;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -341,8 +368,7 @@ TEST(MergePrims, mergePrimsOnlyDiffChildren)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        dontMergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -378,6 +404,11 @@ TEST(MergePrims, mergePrimsOnlyAbsentChild)
     auto modifiedPrim = createPrim(modifiedStage, primPath);
     createChild(modifiedStage, childPath1, 1.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = false;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -385,8 +416,7 @@ TEST(MergePrims, mergePrimsOnlyAbsentChild)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        dontMergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -422,6 +452,11 @@ TEST(MergePrims, mergePrimsOnlyCreatedChild)
     createChild(modifiedStage, childPath1, 1.0);
     createChild(modifiedStage, childPath2, 2.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = false;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -429,8 +464,7 @@ TEST(MergePrims, mergePrimsOnlyCreatedChild)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        dontMergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -468,6 +502,11 @@ TEST(MergePrims, mergePrimsAbsentChildAttribute)
     auto modifiedPrim = createPrim(modifiedStage, primPath);
     auto modifiedChild = createChild(modifiedStage, childPath1, 2.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -475,8 +514,7 @@ TEST(MergePrims, mergePrimsAbsentChildAttribute)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -508,6 +546,11 @@ TEST(MergePrims, mergePrimsCreatedChildAttribute)
     auto modifiedChild = createChild(modifiedStage, childPath1, 2.0);
     createAttr(modifiedChild, otherAttrName, 1.0);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -515,8 +558,7 @@ TEST(MergePrims, mergePrimsCreatedChildAttribute)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -553,6 +595,11 @@ TEST(MergePrims, mergePrimsAbsentChildRelationship)
     auto modifiedChild = createChild(modifiedStage, childPath1, 1.0);
     auto modifiedRel1 = createRel(modifiedChild, testRelName, targetPath1);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -560,8 +607,7 @@ TEST(MergePrims, mergePrimsAbsentChildRelationship)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -594,6 +640,11 @@ TEST(MergePrims, mergePrimsCreatedChildRelationship)
     createRel(modifiedChild, testRelName, targetPath1);
     createRel(modifiedChild, otherRelName, targetPath2);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -601,8 +652,7 @@ TEST(MergePrims, mergePrimsCreatedChildRelationship)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 
@@ -640,6 +690,11 @@ TEST(MergePrims, mergePrimsChildRelationshipAddTarget)
     auto modifiedRel1 = createRel(modifiedChild, testRelName, targetPath1);
     modifiedRel1.AddTarget(targetPath3);
 
+    MergePrimsOptions options;
+    options.mergeChildren = true;
+    options.propertiesHandling = MergeMissing::Create;
+    options.verbosity = MergeVerbosity::Failure;
+
     const bool result = mergePrims(
         modifiedStage,
         modifiedStage->GetRootLayer(),
@@ -647,8 +702,7 @@ TEST(MergePrims, mergePrimsChildRelationshipAddTarget)
         baselineStage,
         baselineStage->GetRootLayer(),
         baselinePrim.GetPath(),
-        mergeChildren,
-        MergeVerbosity::Failure);
+        options);
 
     EXPECT_TRUE(result);
 

@@ -282,6 +282,49 @@ struct Export::Impl
         }
     }
 
+    void addSelection(MDagPath parentDagPath, const std::string& path)
+    {
+        const std::string parent(parentDagPath.fullPathName().asChar());
+        m_selectionMap[parent].emplace(path);
+        // Add all of the parent paths
+        m_parentsMap.emplace(parent);
+        while (parentDagPath.pop() == MStatus::kSuccess && parentDagPath.isValid()) {
+            std::string pathStr(parentDagPath.fullPathName().asChar());
+            if (m_parentsMap.find(pathStr) != m_parentsMap.end()) {
+                // Parent path has been added
+                return;
+            }
+            m_parentsMap.emplace(pathStr);
+        }
+    }
+
+    bool isPathExcluded(MDagPath dagPath) const
+    {
+        // Excluded path is:
+        // 1) path itself is not selected; AND
+        // 2) none of any ascendants or descendants are selected
+
+        const std::string pathStr(dagPath.fullPathName().asChar());
+        if (dagPath.pop() != MStatus::kSuccess || !dagPath.isValid()) {
+            // Path is likely the root level node
+            return false;
+        }
+        // Check if the target path itself is selected or not
+        auto it = m_selectionMap.find(dagPath.fullPathName().asChar());
+        if (it != m_selectionMap.cend()) {
+            // Found parent path in cache map, either target path or any of its siblings
+            // is selected
+            if (it->second.find(pathStr) == it->second.cend()) {
+                // One of the target path's sibling is selected, do further checking
+                // to see if any of the children is select or not.
+                // If not found, this target path should be excluded.
+                return m_parentsMap.find(pathStr) == m_parentsMap.cend();
+            }
+            // Reaching here means the target path itself is selected
+        }
+        return false;
+    }
+
 private:
 #if AL_UTILS_ENABLE_SIMD
     std::map<i128, MObject, AL::maya::utils::guid_compare> m_nodeMap;
@@ -290,8 +333,10 @@ private:
     std::map<AL::maya::utils::guid, MObject, AL::maya::utils::guid_compare> m_nodeMap;
     std::map<AL::maya::utils::guid, SdfPath, AL::maya::utils::guid_compare> m_instanceMap;
 #endif
-    UsdStageRefPtr m_stage;
-    UsdPrim        m_instancesPrim;
+    std::unordered_map<std::string, std::unordered_set<std::string>> m_selectionMap;
+    std::unordered_set<std::string>                                  m_parentsMap;
+    UsdStageRefPtr                                                   m_stage;
+    UsdPrim                                                          m_instancesPrim;
 };
 
 static MObject g_transform_rotateAttr = MObject::kNullObj;
@@ -509,11 +554,11 @@ void Export::exportIkChain(MDagPath effectorPath, const SdfPath& usdPath)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void Export::copyTransformParams(UsdPrim prim, MFnTransform& fnTransform)
+void Export::copyTransformParams(UsdPrim prim, MFnTransform& fnTransform, bool exportInWorldSpace)
 {
 
     translators::TransformTranslator::copyAttributes(
-        fnTransform.object(), prim, m_params, fnTransform.dagPath());
+        fnTransform.object(), prim, m_params, fnTransform.dagPath(), exportInWorldSpace);
     if (m_params.m_dynamicAttributes) {
         translators::DgNodeTranslator::copyDynamicAttributes(
             fnTransform.object(), prim, m_params.m_animTranslator);
@@ -564,7 +609,8 @@ void Export::addReferences(
     MFnTransform&  fnTransform,
     SdfPath&       usdPath,
     const SdfPath& instancePath,
-    ReferenceType  refType)
+    ReferenceType  refType,
+    bool           exportInWorldSpace)
 {
     UsdStageRefPtr stage = m_impl->stage();
     if (refType == kShapeReference) {
@@ -583,7 +629,7 @@ void Export::addReferences(
         } break;
 
         case kShapeReference: {
-            copyTransformParams(usdPrim, fnTransform);
+            copyTransformParams(usdPrim, fnTransform, exportInWorldSpace);
         } break;
 
         default: break;
@@ -604,7 +650,8 @@ void Export::exportShapesCommonProc(
     MDagPath            shapePath,
     MFnTransform&       fnTransform,
     SdfPath&            usdPath,
-    const ReferenceType refType)
+    const ReferenceType refType,
+    bool                exportInWorldSpace)
 {
     UsdPrim transformPrim;
 
@@ -663,7 +710,7 @@ void Export::exportShapesCommonProc(
     }
 
     if (m_params.m_mergeTransforms && copyTransform) {
-        copyTransformParams(transformPrim, fnTransform);
+        copyTransformParams(transformPrim, fnTransform, exportInWorldSpace);
     }
 }
 
@@ -687,13 +734,14 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
     MItDag it(MItDag::kDepthFirst);
     it.reset(rootPath, MItDag::kDepthFirst, MFn::kTransform);
 
-    std::function<void(MDagPath, MFnTransform&, SdfPath&, ReferenceType)> exportShapeProc
+    std::function<void(MDagPath, MFnTransform&, SdfPath&, ReferenceType, bool)> exportShapeProc
         = [this](
               MDagPath      shapePath,
               MFnTransform& fnTransform,
               SdfPath&      usdPath,
-              ReferenceType refType) {
-              this->exportShapesCommonProc(shapePath, fnTransform, usdPath, refType);
+              ReferenceType refType,
+              bool          inWorldSpace) {
+              this->exportShapesCommonProc(shapePath, fnTransform, usdPath, refType, inWorldSpace);
           };
 
     std::function<bool(MDagPath, MFnTransform&, SdfPath&, bool)> exportTransformFunc
@@ -717,13 +765,13 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
               if (translatorPtr) {
                   UsdPrim transformPrim
                       = translatorPtr->exportObject(m_impl->stage(), transformPath, path, m_params);
-                  this->copyTransformParams(transformPrim, fnTransform);
+                  this->copyTransformParams(transformPrim, fnTransform, inWorldSpace);
                   exportKids = translatorPtr->exportDescendants();
               } else {
 
                   UsdGeomXform xform = UsdGeomXform::Define(m_impl->stage(), path);
                   UsdPrim      transformPrim = xform.GetPrim();
-                  this->copyTransformParams(transformPrim, fnTransform);
+                  this->copyTransformParams(transformPrim, fnTransform, inWorldSpace);
               }
               return exportKids;
           };
@@ -734,7 +782,8 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
                               MDagPath      shapePath,
                               MFnTransform& fnTransform,
                               SdfPath&      usdPath,
-                              ReferenceType refType) {
+                              ReferenceType refType,
+                              bool          inWorldSpace) {
             this->exportShapesOnlyUVProc(shapePath, fnTransform, usdPath);
         };
         exportTransformFunc = [this](
@@ -751,17 +800,36 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
     }
 
     MFnTransform fnTransform;
+    bool         exportInWorldSpace = m_params.m_exportInWorldSpace;
     // loop through transforms only
     while (!it.isDone()) {
         // assign transform function set
         MDagPath transformPath;
         it.getPath(transformPath);
 
+        // Check if any sibling is selected, exclude this node if not selected
+        if (m_impl->isPathExcluded(transformPath)) {
+            it.prune();
+            it.next();
+            continue;
+        }
+
+        if (exportInWorldSpace && !(transformPath == rootPath)) {
+            exportInWorldSpace = false;
+        }
+
         fnTransform.setObject(transformPath);
 
         // Make sure we haven't seen this transform before.
         bool transformHasBeenExported = m_impl->contains(fnTransform);
         if (transformHasBeenExported) {
+            // "rootPath" is the user selected node but if it has been exported,
+            // that means user selected a sub node under another selected node.
+            if (transformPath == rootPath) {
+                it.prune();
+                it.next();
+                continue;
+            }
             // We have an instanced shape!
             std::cout << "encountered transform instance " << fnTransform.fullPathName().asChar()
                       << std::endl;
@@ -794,9 +862,9 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
             uint32_t numShapes;
             transformPath.numberOfShapesDirectlyBelow(numShapes);
 
-            if (!m_params.m_mergeTransforms && !m_params.m_exportInWorldSpace) {
-                bool exportKids = exportTransformFunc(
-                    transformPath, fnTransform, usdPath, m_params.m_exportInWorldSpace);
+            if (!m_params.m_mergeTransforms && !exportInWorldSpace) {
+                bool exportKids
+                    = exportTransformFunc(transformPath, fnTransform, usdPath, exportInWorldSpace);
                 UsdPrim prim = m_impl->stage()->GetPrimAtPath(usdPath);
                 prim.SetMetadata<TfToken>(
                     AL::usdmaya::Metadata::mergedTransform, AL::usdmaya::Metadata::unmerged);
@@ -832,7 +900,8 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
                             refType = m_params.m_mergeTransforms ? kShapeReference
                                                                  : kTransformReference;
                         }
-                        exportShapeProc(shapePath, fnTransform, shapeUsdPath, refType);
+                        exportShapeProc(
+                            shapePath, fnTransform, shapeUsdPath, refType, exportInWorldSpace);
                     } else {
                         refType
                             = m_params.m_mergeTransforms ? kShapeReference : kTransformReference;
@@ -840,17 +909,29 @@ void Export::exportSceneHierarchy(MDagPath rootPath, SdfPath& defaultPrim)
 
                     if (refType == kShapeReference) {
                         SdfPath instancePath = m_impl->getMasterPath(shapeDag);
-                        addReferences(shapePath, fnTransform, shapeUsdPath, instancePath, refType);
+                        addReferences(
+                            shapePath,
+                            fnTransform,
+                            shapeUsdPath,
+                            instancePath,
+                            refType,
+                            exportInWorldSpace);
                     } else if (refType == kTransformReference) {
                         SdfPath instancePath
                             = m_impl->getMasterPath(MFnDagNode(shapeDag.parent(0)));
-                        addReferences(shapePath, fnTransform, usdPath, instancePath, refType);
+                        addReferences(
+                            shapePath,
+                            fnTransform,
+                            usdPath,
+                            instancePath,
+                            refType,
+                            exportInWorldSpace);
                     }
                 }
             } else {
                 if (m_params.m_mergeTransforms) {
                     if (!exportTransformFunc(
-                            transformPath, fnTransform, usdPath, m_params.m_exportInWorldSpace)) {
+                            transformPath, fnTransform, usdPath, exportInWorldSpace)) {
                         it.prune();
                     }
                 }
@@ -884,24 +965,34 @@ void Export::doExport()
         m_impl->createInstancesPrim();
     }
 
-    MObjectArray          objects;
     const MSelectionList& sl = m_params.m_nodes;
     SdfPath               defaultPrim;
 
+    // Use std::map to keep the same order regardless of the selection order from Maya
+    // This makes sure we process the objects from top to bottom
+    std::map<std::string, MDagPath> selectedPaths;
     for (uint32_t i = 0, n = sl.length(); i < n; ++i) {
         MDagPath path;
         if (sl.getDagPath(i, path)) {
+            std::string pathStr;
             if (path.node().hasFn(MFn::kTransform)) {
-                exportSceneHierarchy(path, defaultPrim);
+                pathStr = path.fullPathName().asChar();
             } else if (path.node().hasFn(MFn::kShape)) {
                 path.pop();
-                exportSceneHierarchy(path, defaultPrim);
+                pathStr = path.fullPathName().asChar();
+            } else {
+                continue;
             }
-        } else {
-            MObject obj;
-            sl.getDependNode(i, obj);
-            objects.append(obj);
+            selectedPaths.emplace(pathStr, path);
+            // Store direct parent path
+            if (path.pop() == MStatus::kSuccess && path.isValid()) {
+                m_impl->addSelection(path, pathStr);
+            }
         }
+    }
+
+    for (const auto& pathPair : selectedPaths) {
+        exportSceneHierarchy(pathPair.second, defaultPrim);
     }
 
     if (m_params.m_animTranslator) {

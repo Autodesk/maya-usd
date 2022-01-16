@@ -31,6 +31,15 @@ try:
 except ImportError:
     pass
 
+def connectUVNode(uv_node, file_node):
+    for att_name in (".coverage", ".translateFrame", ".rotateFrame",
+                    ".mirrorU", ".mirrorV", ".stagger", ".wrapU",
+                    ".wrapV", ".repeatUV", ".offset", ".rotateUV",
+                    ".noiseUV", ".vertexUvOne", ".vertexUvTwo",
+                    ".vertexUvThree", ".vertexCameraOne"):
+        cmds.connectAttr(uv_node + att_name, file_node + att_name, f=True)
+    cmds.connectAttr(uv_node + ".outUV", file_node + ".uvCoord", f=True)
+    cmds.connectAttr(uv_node + ".outUvFilterSize", file_node + ".uvFilterSize", f=True)
 
 class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
@@ -97,12 +106,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                                      isColorManaged=True)
         uv_node = cmds.shadingNode("place2dTexture", asUtility=True)
 
-        for att_name in (".coverage", ".translateFrame", ".rotateFrame",
-                         ".mirrorU", ".mirrorV", ".stagger", ".wrapU",
-                         ".wrapV", ".repeatUV", ".offset", ".rotateUV",
-                         ".noiseUV", ".vertexUvOne", ".vertexUvTwo",
-                         ".vertexUvThree", ".vertexCameraOne"):
-            cmds.connectAttr(uv_node + att_name, file_node + att_name, f=True)
+        connectUVNode(uv_node, file_node)
 
         cmds.connectAttr(file_node + ".outColor",
                          material_node + ".diffuseColor", f=True)
@@ -348,6 +352,93 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                     [final_sg+".surfaceShader"])
 
         self.assertTrue(mark.IsClean())
+
+    def testUVReaderMerging(self):
+        """
+        Test that we produce a minimal number of UV readers
+        """
+        cmds.file(f=True, new=True)
+
+        sphere_xform = cmds.polySphere()[0]
+
+        material_node = cmds.shadingNode("usdPreviewSurface", asShader=True,
+                                            name="ss01")
+        material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
+                                empty=True, name="ss01SG")
+        cmds.connectAttr(material_node+".outColor",
+                            material_sg+".surfaceShader", force=True)
+        cmds.sets(sphere_xform, e=True, forceElement=material_sg)
+
+        # One file with UVs connected to diffuse:
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        uv_node = cmds.shadingNode("place2dTexture", asUtility=True)
+        cmds.setAttr(uv_node + ".offsetU", 0.125)
+        cmds.setAttr(uv_node + ".offsetV", 0.5)
+        connectUVNode(uv_node, file_node)
+        cmds.connectAttr(file_node + ".outColor",
+                         material_node + ".diffuseColor", f=True)
+
+        # Another file, same UVs, connected to emissiveColor
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        connectUVNode(uv_node, file_node)
+        cmds.connectAttr(file_node + ".outColor",
+                         material_node + ".emissiveColor", f=True)
+
+        # Another file, no UVs, connected to metallic
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        cmds.connectAttr(file_node + ".outColorR",
+                         material_node + ".metallic", f=True)
+
+        # Another file, no UVs, connected to roughness
+        file_node = cmds.shadingNode("file", asTexture=True,
+                                     isColorManaged=True)
+        cmds.connectAttr(file_node + ".outColorR",
+                         material_node + ".roughness", f=True)
+        cmds.setAttr(file_node + ".offsetU", 0.25)
+        cmds.setAttr(file_node + ".offsetV", 0.75)
+
+        # Export to USD:
+        usd_path = os.path.abspath('MinimalUVReader.usda')
+        cmds.usdExport(mergeTransformAndShape=True,
+            file=usd_path,
+            shadingMode='useRegistry',
+            exportDisplayColor=True)
+
+        # We expect 2 primvar readers, and 2 st transforms:
+        stage = Usd.Stage.Open(usd_path)
+        mat_path = "/pSphere1/Looks/ss01SG/"
+
+        # Here are the expected connections in the produced USD file:
+        connections = [
+            # Source node, input, destination node:
+            ("ss01", "diffuseColor", "file1"),
+            ("file1", "st", "place2dTexture1_UsdTransform2d"),
+            ("place2dTexture1_UsdTransform2d", "in", "place2dTexture1"),
+
+            ("ss01", "emissiveColor", "file2"),
+            ("file2", "st", "place2dTexture1_UsdTransform2d"), # re-used
+            # Note that the transform name is derived from place2DTexture name.
+
+            ("ss01", "metallic", "file3"),
+            ("file3", "st", "shared_TexCoordReader"), # no UV in Maya.
+
+            ("ss01", "roughness", "file4"),
+            ("file4", "st", "file4_UsdTransform2d"), # xform on file node
+            ("file4_UsdTransform2d", "in", "shared_TexCoordReader")
+            # Note that the transform name is derived from file node name.
+        ]
+        for src_name, input_name, dst_name in connections:
+            src_prim = stage.GetPrimAtPath(mat_path + src_name)
+            self.assertTrue(src_prim)
+            src_shade = UsdShade.Shader(src_prim)
+            self.assertTrue(src_shade)
+            src_input = src_shade.GetInput(input_name)
+            self.assertTrue(src_input.HasConnectedSource())
+            (connect_api, out_name, _) = src_input.GetConnectedSource()
+            self.assertEqual(connect_api.GetPath(), mat_path + dst_name)
 
     @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2020, 'Requires standardSurface node which appeared in 2020.')
     def testOpacityRoundtrip(self):

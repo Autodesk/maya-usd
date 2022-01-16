@@ -143,10 +143,12 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
 
         return maya_file
 
-    def generateConnectedTestScene(self, attrTuples):
+    def generateConnectedTestScene(self, shadingNodeAttributes, ignoreColorSpaceFileRules=False):
         """
         Generate test scene containing a UsdPreviewSurface with bindings to other shading nodes
         exports correctly.
+        :type shadingNodeAttributes: List[Tuple[str, Any]]
+        :type ignoreColorSpaceFileRules: bool
         """
         maya_file = os.path.join(
             self.temp_dir, "UsdExportConnectedUsdPreviewSurfaceTest.ma"
@@ -159,7 +161,7 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         shading_node = "usdPreviewSurface_Connected"
         cmds.shadingNode("usdPreviewSurface", name=shading_node, asShader=True)
 
-        for attr in attrTuples:
+        for attr in shadingNodeAttributes:
             if isinstance(attr[1], Gf.Vec3f):
                 cmds.setAttr(
                     "%s.%s" % (shading_node, attr[0]),
@@ -177,6 +179,8 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         file_node = cmds.shadingNode(
             "file", asTexture=True, name="Brazilian_Rosewood_Texture"
         )
+        cmds.setAttr(file_node + ".ignoreColorSpaceFileRules", ignoreColorSpaceFileRules)
+
         cmds.setAttr(
             file_node + ".fileTextureName",
             os.path.join(texture_dir, "Brazilian_rosewood_pxr128.png"),
@@ -186,12 +190,18 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
             "%s.outColor" % file_node, "%s.diffuseColor" % shading_node, force=True
         )
 
+        # This file node should have stayed "sRGB":
+        if not ignoreColorSpaceFileRules:
+            self.assertEqual(cmds.getAttr(file_node + ".colorSpace"), "sRGB")
+
         cmds.defaultNavigation(
             createNew=True, destination="%s.roughness" % shading_node
         )
         file_node = cmds.shadingNode(
             "file", asTexture=True, name="Brazilian_Rosewood_Bump_Texture"
         )
+        cmds.setAttr(file_node + ".ignoreColorSpaceFileRules", ignoreColorSpaceFileRules)
+
         cmds.setAttr(
             file_node + ".fileTextureName",
             os.path.join(texture_dir, "Brazilian_rosewood_pxr128_bmp.png"),
@@ -200,6 +210,10 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         cmds.connectAttr(
             "%s.outColorR" % file_node, "%s.roughness" % shading_node, force=True
         )
+
+        # The monochrome file node should have been set to "Raw" automatically:
+        if not ignoreColorSpaceFileRules:
+            self.assertEqual(cmds.getAttr(file_node + ".colorSpace"), "Raw")
 
         cmds.defaultNavigation(
             createNew=True, destination="%s.clearcoatRoughness" % shading_node
@@ -222,6 +236,17 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
         cmds.connectAttr(
             "%s.outColor" % file_node, "%s.normal" % shading_node, force=True
         )
+
+        # The file node should have been set to "NormalMap" automatically:
+        self.assertEqual(cmds.getAttr(file_node + ".colorSpace"), "Raw")
+        self.assertEqual(cmds.getAttr(file_node + ".colorGainR"), 2)
+        self.assertEqual(cmds.getAttr(file_node + ".colorGainG"), 2)
+        self.assertEqual(cmds.getAttr(file_node + ".colorGainB"), 2)
+        self.assertEqual(cmds.getAttr(file_node + ".colorOffsetR"), -1)
+        self.assertEqual(cmds.getAttr(file_node + ".colorOffsetG"), -1)
+        self.assertEqual(cmds.getAttr(file_node + ".colorOffsetB"), -1)
+        self.assertEqual(cmds.getAttr(file_node + ".alphaGain"), 1)
+        self.assertEqual(cmds.getAttr(file_node + ".alphaOffset"), 0)
 
         shading_engine = "%sSG" % shading_node
         cmds.sets(
@@ -308,7 +333,7 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
             ("specularColor", Gf.Vec3f(0.2, 0.2, 0.2)),
             ("useSpecularWorkflow", 1),
         ]
-        maya_file = self.generateConnectedTestScene(expectedInputTuples)
+        maya_file = self.generateConnectedTestScene(expectedInputTuples, ignoreColorSpaceFileRules=False)
         cmds.file(maya_file, force=True, open=True)
         usd_file_path = os.path.join(self.temp_dir, "UsdPreviewSurfaceExportTest.usda")
         cmds.mayaUSDExport(
@@ -391,6 +416,10 @@ class testUsdExportUsdPreviewSurface(unittest.TestCase):
 
         self.assertEqual(normalTexShader.GetPath(), expectedShaderPrimPath)
         self.assertEqual(normalTexShader.GetShaderId(), "UsdUVTexture")
+
+    def testIgnoreColorSpaceFileRules(self):
+        """Test that color spaces don't get set when ignoreColorSpaceFileRules is set"""
+        self.generateConnectedTestScene([], ignoreColorSpaceFileRules=True)
 
 
 if __name__ == "__main__":

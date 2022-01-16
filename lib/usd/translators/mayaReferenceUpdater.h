@@ -34,8 +34,13 @@ public:
         const MFnDependencyNode& depNodeFn,
         const Ufe::Path&         path);
 
+    // Behavior of discardEdits() is still T.B.D.  PPT, 6-Dec-2021.
     MAYAUSD_CORE_PUBLIC
     bool discardEdits(const UsdMayaPrimUpdaterContext& context) override;
+
+    // Unload the Maya reference.
+    MAYAUSD_CORE_PUBLIC
+    bool pushEnd(const UsdMayaPrimUpdaterContext& context) override;
 
     /// Query to determine if the prim corresponding to this updater can be
     /// edited as Maya.  The implementation in this class returns true.
@@ -44,7 +49,7 @@ public:
 
 protected:
     MAYAUSD_CORE_PUBLIC
-    bool pushCopySpecs(
+    PushCopySpecs pushCopySpecs(
         UsdStageRefPtr srcStage,
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,

@@ -7,6 +7,7 @@ mayaUsd_add_test(TestALUSDMayaPython_ProxyShape
 
 mayaUsd_add_test(TestALUSDMayaPython_Translators
     PYTHON_MODULE testTranslators
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "${PXR_OVERRIDE_PLUGINPATH_NAME}=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
@@ -14,6 +15,7 @@ mayaUsd_add_test(TestALUSDMayaPython_Translators
 
 mayaUsd_add_test(TestALUSDMayaPython_LayerManager
     PYTHON_MODULE testLayerManager
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "${PXR_OVERRIDE_PLUGINPATH_NAME}=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"

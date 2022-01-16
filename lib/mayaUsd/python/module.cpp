@@ -31,10 +31,15 @@ TF_WRAP_MODULE
     TF_WRAP(Converter);
     TF_WRAP(ConverterArgs);
     TF_WRAP(DiagnosticDelegate);
+    TF_WRAP(EditRouter);
     TF_WRAP(MeshWriteUtils);
 #ifdef UFE_V3_FEATURES_AVAILABLE
+    TF_WRAP(PrimUpdater);
+    TF_WRAP(PrimUpdaterArgs);
+    TF_WRAP(PrimUpdaterContext);
     TF_WRAP(PrimUpdaterManager);
 #endif
+    TF_WRAP(OpUndoItem);
     TF_WRAP(Query);
     TF_WRAP(ReadUtil);
     TF_WRAP(RoundTripUtil);

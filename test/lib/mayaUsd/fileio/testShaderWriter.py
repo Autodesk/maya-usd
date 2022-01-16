@@ -90,6 +90,8 @@ class testShaderWriter(unittest.TestCase):
                          ".noiseUV", ".vertexUvOne", ".vertexUvTwo",
                          ".vertexUvThree", ".vertexCameraOne"):
             cmds.connectAttr(uv_node + att_name, file_node + att_name, f=True)
+        cmds.connectAttr(uv_node + ".outUV", file_node + ".uvCoord", f=True)
+        cmds.connectAttr(uv_node + ".outUvFilterSize", file_node + ".uvFilterSize", f=True)
 
         cmds.connectAttr(file_node + ".outColor",
                          material_node + ".color", f=True)

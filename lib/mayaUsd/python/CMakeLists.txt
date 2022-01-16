@@ -30,7 +30,9 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapColorSpace.cpp
         wrapConverter.cpp
         wrapDiagnosticDelegate.cpp
+        wrapEditRouter.cpp
         wrapMeshWriteUtils.cpp
+        wrapOpUndoItem.cpp
         wrapQuery.cpp
         wrapReadUtil.cpp
         wrapRoundTripUtil.cpp
@@ -56,6 +58,7 @@ target_sources(${PYTHON_TARGET_NAME}
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PYTHON_TARGET_NAME}
         PRIVATE
+            wrapPrimUpdater.cpp
             wrapPrimUpdaterManager.cpp
     )
 endif()

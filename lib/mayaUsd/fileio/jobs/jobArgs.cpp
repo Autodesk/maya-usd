@@ -785,6 +785,69 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
     return d;
 }
 
+const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
+{
+    static VtDictionary   d;
+    static std::once_flag once;
+
+    std::call_once(once, []() {
+        // Common types:
+        const auto _boolean = VtValue(false);
+        const auto _string = VtValue(std::string());
+        const auto _stringVector = VtValue(std::vector<VtValue>({ _string }));
+        const auto _stringTriplet = VtValue(std::vector<VtValue>({ _string, _string, _string }));
+        const auto _stringTripletVector = VtValue(std::vector<VtValue>({ _stringTriplet }));
+
+        // Provide guide types for the parser:
+        d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
+        d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
+        d[UsdMayaJobExportArgsTokens->compatibility] = _string;
+        d[UsdMayaJobExportArgsTokens->defaultCameras] = _boolean;
+        d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = _string;
+        d[UsdMayaJobExportArgsTokens->defaultUSDFormat] = _string;
+        d[UsdMayaJobExportArgsTokens->eulerFilter] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportColorSets] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportDisplayColor] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportInstances] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportRoots] = _stringVector;
+        d[UsdMayaJobExportArgsTokens->exportSkin] = _string;
+        d[UsdMayaJobExportArgsTokens->exportSkels] = _string;
+        d[UsdMayaJobExportArgsTokens->exportBlendShapes] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportUVs] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportVisibility] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportComponentTags] = _boolean;
+        d[UsdMayaJobExportArgsTokens->file] = _string;
+        d[UsdMayaJobExportArgsTokens->filterTypes] = _stringVector;
+        d[UsdMayaJobExportArgsTokens->ignoreWarnings] = _boolean;
+        d[UsdMayaJobExportArgsTokens->kind] = _string;
+        d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = _string;
+        d[UsdMayaJobExportArgsTokens->materialsScopeName] = _string;
+        d[UsdMayaJobExportArgsTokens->melPerFrameCallback] = _string;
+        d[UsdMayaJobExportArgsTokens->melPostCallback] = _string;
+        d[UsdMayaJobExportArgsTokens->mergeTransformAndShape] = _boolean;
+        d[UsdMayaJobExportArgsTokens->normalizeNurbs] = _boolean;
+        d[UsdMayaJobExportArgsTokens->parentScope] = _string;
+        d[UsdMayaJobExportArgsTokens->pythonPerFrameCallback] = _string;
+        d[UsdMayaJobExportArgsTokens->pythonPostCallback] = _string;
+        d[UsdMayaJobExportArgsTokens->renderableOnly] = _boolean;
+        d[UsdMayaJobExportArgsTokens->renderLayerMode] = _string;
+        d[UsdMayaJobExportArgsTokens->shadingMode] = _string;
+        d[UsdMayaJobExportArgsTokens->convertMaterialsTo] = _stringVector;
+        d[UsdMayaJobExportArgsTokens->apiSchema] = _stringVector;
+        d[UsdMayaJobExportArgsTokens->jobContext] = _stringVector;
+        d[UsdMayaJobExportArgsTokens->stripNamespaces] = _boolean;
+        d[UsdMayaJobExportArgsTokens->verbose] = _boolean;
+        d[UsdMayaJobExportArgsTokens->staticSingleSample] = _boolean;
+        d[UsdMayaJobExportArgsTokens->geomSidedness] = _string;
+    });
+
+    return d;
+}
+
 std::string UsdMayaJobExportArgs::GetResolvedFileName() const
 {
     MFileObject fileObj;
@@ -873,9 +936,6 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
             = std::vector<VtValue>({ VtValue(SdfFieldKeys->Hidden.GetString()),
                                      VtValue(SdfFieldKeys->Instanceable.GetString()),
                                      VtValue(SdfFieldKeys->Kind.GetString()) });
-        d[UsdMayaJobImportArgsTokens->shadingMode] = std::vector<VtValue> { VtValue(
-            std::vector<VtValue> { VtValue(UsdMayaShadingModeTokens->useRegistry.GetString()),
-                                   VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) }) };
         d[UsdMayaJobImportArgsTokens->preferredMaterial]
             = UsdMayaPreferredMaterialTokens->none.GetString();
         d[UsdMayaJobImportArgsTokens->importInstances] = true;
@@ -891,6 +951,74 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         const VtDictionary site
             = UsdMaya_RegistryHelper::GetComposedInfoDictionary(_usdImportInfoScope->allTokens);
         VtDictionaryOver(site, &d, /*coerceToWeakerOpinionType*/ true);
+    });
+
+    // Shading options default value is variable and depends on loaded plugins.
+    // Default priorities for searching for materials, as found in
+    //  lib\mayaUsd\commands\baseListShadingModesCommand.cpp:
+    //    - Specialized importers using registry based import.
+    //    - Specialized importers, non-registry based.
+    //    - UsdPreviewSurface importer.
+    //    - Display colors as last resort
+    std::vector<VtValue> shadingModes;
+    for (const auto& c : UsdMayaShadingModeRegistry::ListMaterialConversions()) {
+        if (c != UsdImagingTokens->UsdPreviewSurface) {
+            auto const& info = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(c);
+            if (info.hasImporter) {
+                shadingModes.emplace_back(std::vector<VtValue> {
+                    VtValue(UsdMayaShadingModeTokens->useRegistry.GetString()),
+                    VtValue(c.GetString()) });
+            }
+        }
+    }
+    for (const auto& s : UsdMayaShadingModeRegistry::ListImporters()) {
+        if (s != UsdMayaShadingModeTokens->useRegistry
+            && s != UsdMayaShadingModeTokens->displayColor) {
+            shadingModes.emplace_back(std::vector<VtValue> {
+                VtValue(s.GetString()), VtValue(UsdMayaShadingModeTokens->none.GetString()) });
+        }
+    }
+    shadingModes.emplace_back(
+        std::vector<VtValue> { VtValue(UsdMayaShadingModeTokens->useRegistry.GetString()),
+                               VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) });
+    shadingModes.emplace_back(
+        std::vector<VtValue> { VtValue(UsdMayaShadingModeTokens->displayColor.GetString()),
+                               VtValue(UsdMayaShadingModeTokens->none.GetString()) });
+
+    d[UsdMayaJobImportArgsTokens->shadingMode] = { VtValue(shadingModes) };
+
+    return d;
+}
+
+/* static */
+const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
+{
+    static VtDictionary   d;
+    static std::once_flag once;
+    std::call_once(once, []() {
+        // Common types:
+        const auto _boolean = VtValue(false);
+        const auto _string = VtValue(std::string());
+        const auto _stringVector = VtValue(std::vector<VtValue>({ _string }));
+        const auto _stringTuplet = VtValue(std::vector<VtValue>({ _string, _string, _string }));
+        const auto _stringTriplet = VtValue(std::vector<VtValue>({ _string, _string, _string }));
+        const auto _stringTupletVector = VtValue(std::vector<VtValue>({ _stringTuplet }));
+        const auto _stringTripletVector = VtValue(std::vector<VtValue>({ _stringTriplet }));
+
+        // Provide guide types for the parser:
+        d[UsdMayaJobImportArgsTokens->assemblyRep] = _string;
+        d[UsdMayaJobImportArgsTokens->apiSchema] = _stringVector;
+        d[UsdMayaJobImportArgsTokens->excludePrimvar] = _stringVector;
+        d[UsdMayaJobImportArgsTokens->jobContext] = _stringVector;
+        d[UsdMayaJobImportArgsTokens->metadata] = _stringVector;
+        d[UsdMayaJobImportArgsTokens->shadingMode] = _stringTupletVector;
+        d[UsdMayaJobImportArgsTokens->preferredMaterial] = _string;
+        d[UsdMayaJobImportArgsTokens->importInstances] = _boolean;
+        d[UsdMayaJobImportArgsTokens->importUSDZTextures] = _boolean;
+        d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = _string;
+        d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = _boolean;
+        d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
+        d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
     });
 
     return d;

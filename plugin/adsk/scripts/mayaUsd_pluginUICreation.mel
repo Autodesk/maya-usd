@@ -1,3 +1,22 @@
+int $gHasPrimUpdater = -1;
+
+global proc int hasPrimUpdater()
+{
+    global int $gHasPrimUpdater = -1;
+    if ($gHasPrimUpdater < 0) {
+        // Note: we use a convoluted call to exec() in Python because
+        //       try block in Python cannot be one-liners and the MEL
+        //       python() function only returns the computed value when
+        //       the supplied Python code is a one-liner.
+        //
+        //       Putting the Python try block inside exec() allow us to
+        //       makethe Python code look like a one-liner to MEL.
+        $gHasPrimUpdater = `python("res = -1; exec('try:\\n    from mayaUsd.lib import PrimUpdaterManager;\\n    res = 1;\\nexcept:\\n    res = 0;\\n'); res")`;
+    }
+    return $gHasPrimUpdater;
+}
+
+
 global proc mayaUsd_pluginUICreation()
 // Callback registered with the MFnPlugin for when the plugin is loaded.
 // Used to initialize any UI we create.
@@ -22,6 +41,12 @@ global proc mayaUsd_pluginUICreation()
             warning ("Error loading ufeSupport.py.");
         }
     }
-
     source "USDMenuProc.mel";
+
+    if ($mjv >= 2023) {
+        // This MEL source file is a core library file, but unfortunately there
+        // is no mechanism to source such a file once, if multiple plugins are
+        // loaded, so source it here in this plugin.  PPT, 29-Nov-2021.
+        source "mayaUsdAddMayaReference.mel";
+    }
 }

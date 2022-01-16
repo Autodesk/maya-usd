@@ -20,6 +20,7 @@
     Helper functions regarding Maya that will be used throughout the test.
 """
 
+from math import radians
 from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
 
@@ -194,6 +195,18 @@ def setMayaTranslation(aMayaItem, t):
     aDagPath = om.MSelectionList().add(aMayaPathStr).getDagPath(0)
     aFn= om.MFnTransform(aDagPath)
     aFn.setTranslation(t, om.MSpace.kObject)
+    return (aMayaPath, aMayaPathStr, aFn, aFn.transformation().asMatrix())
+
+def setMayaRotation(aMayaItem, r):
+    '''Set the rotation (XYZ) on the argument Maya scene item.'''
+
+    aMayaPath = aMayaItem.path()
+    aMayaPathStr = ufe.PathString.string(aMayaPath)
+    aDagPath = om.MSelectionList().add(aMayaPathStr).getDagPath(0)
+    aFn = om.MFnTransform(aDagPath)
+    rads = [ radians(v) for v in r ]
+    rot = om.MEulerRotation(rads[0], rads[1], rads[2])
+    aFn.setRotation(rot, om.MSpace.kTransform)
     return (aMayaPath, aMayaPathStr, aFn, aFn.transformation().asMatrix())
 
 def createProxyAndStage():

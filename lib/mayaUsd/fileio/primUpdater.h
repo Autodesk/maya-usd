@@ -55,10 +55,19 @@ public:
         All = Push | Pull | Clear
     };
 
+    // pushCopySpecs result code.  Prune means success, but no further
+    // traversal should take place.
+    enum class PushCopySpecs
+    {
+        Failed,
+        Continue,
+        Prune
+    };
+
     // Copy the pushed prim from the temporary srcLayer where it has been
     // exported by push into the destination dstLayer which is in the scene.
     MAYAUSD_CORE_PUBLIC
-    virtual bool pushCopySpecs(
+    virtual PushCopySpecs pushCopySpecs(
         UsdStageRefPtr srcStage,
         SdfLayerRefPtr srcLayer,
         const SdfPath& srcSdfPath,

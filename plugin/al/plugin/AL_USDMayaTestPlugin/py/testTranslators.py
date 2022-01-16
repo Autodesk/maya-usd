@@ -19,13 +19,15 @@
 import os
 import sys
 import unittest
-import tempfile
 
 from maya import cmds
 
 from AL import usdmaya
 
 from pxr import Usd, UsdUtils, Tf
+
+import fixturesUtils
+
 
 class CubeGenerator(usdmaya.TranslatorBase):
     '''
@@ -226,6 +228,17 @@ class UpdateableTranslator(usdmaya.TranslatorBase):
 
 class TestPythonTranslators(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # Setup for test output
+        inputPath = fixturesUtils.setUpClass(__file__, loadPlugin=False)
+        cls._testDataDir = os.path.join(inputPath, '../test_data/')
+        sys.path.append(cls._testDataDir)
+
+    @classmethod
+    def tearDownClass(cls):
+        fixturesUtils.tearDownClass(unloadPlugin=False)
+
     def setUp(self):
         cmds.file(force=True, new=True)
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
@@ -252,7 +265,7 @@ class TestPythonTranslators(unittest.TestCase):
 
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
 
-        stage = Usd.Stage.Open("../test_data/inactivetest.usda")
+        stage = Usd.Stage.Open(self._testDataDir + "inactivetest.usda")
         prim = stage.GetPrimAtPath('/root/peter01')
         vs = prim.GetVariantSet("cubes")
         vs.SetVariantSelection("fiveCubes")
@@ -273,7 +286,7 @@ class TestPythonTranslators(unittest.TestCase):
 
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
 
-        stage = Usd.Stage.Open("../test_data/inactivetest.usda")
+        stage = Usd.Stage.Open(self._testDataDir + "inactivetest.usda")
         prim = stage.GetPrimAtPath('/root/peter01')
         vs = prim.GetVariantSet("cubes")
         vs.SetVariantSelection("fiveCubes")
@@ -303,7 +316,7 @@ class TestPythonTranslators(unittest.TestCase):
 
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
 
-        stage = Usd.Stage.Open("../test_data/inactivetest.usda")
+        stage = Usd.Stage.Open(self._testDataDir + "inactivetest.usda")
         prim = stage.GetPrimAtPath('/root/peter01')
         vs = prim.GetVariantSet("cubes")
         vs.SetVariantSelection("fiveCubes")
@@ -329,7 +342,7 @@ class TestPythonTranslators(unittest.TestCase):
     def test_variantSwitch_that_keeps_existing_prim_runs_teardown_and_import(self):
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
 
-        stage = Usd.Stage.Open("../test_data/inactivetest.usda")
+        stage = Usd.Stage.Open(self._testDataDir + "inactivetest.usda")
         prim = stage.GetPrimAtPath('/root/peter01')
         vs = prim.GetVariantSet("cubes")
         vs.SetVariantSelection("fiveCubes")
@@ -369,7 +382,7 @@ class TestPythonTranslators(unittest.TestCase):
     def test_set_inactive_prim_removes_parent_transform(self):
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
 
-        stage = Usd.Stage.Open("../test_data/inactivetest.usda")
+        stage = Usd.Stage.Open(self._testDataDir + "inactivetest.usda")
         prim = stage.GetPrimAtPath('/root/peter01')
         vs = prim.GetVariantSet("cubes")
         vs.SetVariantSelection("fiveCubes")
@@ -399,18 +412,17 @@ class TestPythonTranslators(unittest.TestCase):
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
 
         # Make a dummy stage that mimics prim path found in test data
-        otherHandle = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        otherHandle.close()
+        otherHandle = os.path.abspath(type(self).__name__ + ".usda")
 
         # Scope
         if True:
             stage = Usd.Stage.CreateInMemory()
             stage.DefinePrim("/root/peter01")
-            stage.Export(otherHandle.name)
+            stage.Export(otherHandle)
 
         # Open both stages
-        testStage = Usd.Stage.Open("../test_data/inactivetest.usda")
-        otherStage = Usd.Stage.Open(otherHandle.name)
+        testStage = Usd.Stage.Open(self._testDataDir + "inactivetest.usda")
+        otherStage = Usd.Stage.Open(otherHandle)
 
         # Cache
         stageCache = UsdUtils.StageCache.Get()
@@ -432,16 +444,13 @@ class TestPythonTranslators(unittest.TestCase):
         # Ensure stage on proxy wasn't modified
         self.assertEqual(CubeGenerator.getState()["tearDownCount"], 0)
 
-        # Cleanup
-        os.remove(otherHandle.name)
-
     # this test is in progress... I cannot make it fail currently but
     # the motion translator in unicorn is definitely crashing Maya
     # if needsTransformParent() returns True.
     def test_deletion_of_parent_node_by_translator_does_not_crash_Maya(self):
         usdmaya.TranslatorBase.registerTranslator(DeleteParentNodeOnPostImport(), 'beast_rig')
 
-        stage = Usd.Stage.Open("../test_data/inactivetest.usda")
+        stage = Usd.Stage.Open(self._testDataDir + "inactivetest.usda")
         prim = stage.GetPrimAtPath('/root/peter01')
         vs = prim.GetVariantSet("cubes")
         vs.SetVariantSelection("fiveCubes")
@@ -466,7 +475,7 @@ class TestPythonTranslators(unittest.TestCase):
         updateableTranslator = UpdateableTranslator()
         usdmaya.TranslatorBase.registerTranslator(updateableTranslator, 'test')
 
-        stage = Usd.Stage.Open("../test_data/translator_update_postimport.usda")
+        stage = Usd.Stage.Open(self._testDataDir + "translator_update_postimport.usda")
         stageCache = UsdUtils.StageCache.Get()
         stageCache.Insert(stage)
         stageId = stageCache.GetId(stage)
@@ -571,6 +580,16 @@ class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
 
 class TestPythonTranslatorsUniqueKey(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        # Setup for test output
+        inputPath = fixturesUtils.setUpClass(__file__, loadPlugin=False)
+        cls._testDataDir = os.path.join(inputPath, '../test_data/')
+
+    @classmethod
+    def tearDownClass(cls):
+        fixturesUtils.tearDownClass(unloadPlugin=False)
+
     def setUp(self):
         cmds.file(force=True, new=True)
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
@@ -580,7 +599,7 @@ class TestPythonTranslatorsUniqueKey(unittest.TestCase):
 
         usdmaya.TranslatorBase.registerTranslator(self.translator, 'beast_bindings')
 
-        self.stage = Usd.Stage.Open('../test_data/rig_bindings.usda')
+        self.stage = Usd.Stage.Open(self._testDataDir + 'rig_bindings.usda')
         self.rootPrim = self.stage.GetPrimAtPath('/root')
 
         self.stageCache = UsdUtils.StageCache.Get()

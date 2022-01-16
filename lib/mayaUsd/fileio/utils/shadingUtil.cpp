@@ -149,7 +149,18 @@ UsdShadeOutput UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
 
     UsdShadeOutput shaderOutput = shader.CreateOutput(terminalName, materialOutput.GetTypeName());
 
-    materialOutput.ConnectToSource(shaderOutput);
+    UsdPrim parentPrim = shader.GetPrim().GetParent();
+    if (parentPrim == material.GetPrim()) {
+        materialOutput.ConnectToSource(shaderOutput);
+    } else {
+        // If the surface is inside a multi-material node graph, then we must create an intermediate
+        // output on the NodeGraph
+        UsdShadeNodeGraph parentNodeGraph(parentPrim);
+        UsdShadeOutput    parentOutput
+            = parentNodeGraph.CreateOutput(terminalName, materialOutput.GetTypeName());
+        parentOutput.ConnectToSource(shaderOutput);
+        materialOutput.ConnectToSource(parentOutput);
+    }
 
     return shaderOutput;
 }

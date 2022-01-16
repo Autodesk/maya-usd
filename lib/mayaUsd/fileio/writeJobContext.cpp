@@ -208,8 +208,14 @@ UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) co
     } else {
         // Cannot directly instance gprims, so this must be exported underneath
         // a fake scope using the gprim name.
-        MFnDagNode primNode(instancePath.node());
-        return std::make_pair(path.AppendChild(TfToken(primNode.name().asChar())), path);
+        MFnDagNode  primNode(instancePath.node());
+        std::string gprimScopeName(primNode.name().asChar());
+        if (mArgs.stripNamespaces) {
+            gprimScopeName = UsdMayaUtil::stripNamespaces(gprimScopeName);
+        }
+        gprimScopeName = TfStringReplace(gprimScopeName, "_", "__");
+        gprimScopeName = TfMakeValidIdentifier(gprimScopeName);
+        return std::make_pair(path.AppendChild(TfToken(gprimScopeName)), path);
     }
 }
 

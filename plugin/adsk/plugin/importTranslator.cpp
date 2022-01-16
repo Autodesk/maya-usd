@@ -92,7 +92,7 @@ MStatus UsdMayaImportTranslator::reader(
                 importData.setRootPrimPath(theOption[1].asChar());
             } else {
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
-                    argName, theOption[1].asChar(), UsdMayaJobImportArgs::GetDefaultDictionary());
+                    argName, theOption[1].asChar(), UsdMayaJobImportArgs::GetGuideDictionary());
             }
         }
     }
@@ -158,6 +158,10 @@ const std::string& UsdMayaImportTranslator::GetDefaultOptions()
         std::vector<std::string> entries;
         for (const std::pair<std::string, VtValue> keyValue :
              UsdMayaJobImportArgs::GetDefaultDictionary()) {
+            if (keyValue.first == UsdMayaJobImportArgsTokens->shadingMode.GetString()) {
+                // Shading mode varies with loaded plug-ins. Remove from defaults.
+                continue;
+            }
             bool        canConvert;
             std::string valueStr;
             std::tie(canConvert, valueStr) = UsdMayaUtil::ValueToArgument(keyValue.second);

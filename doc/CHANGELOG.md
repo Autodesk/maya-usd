@@ -1,5 +1,52 @@
 # Changelog
 
+## [v0.15.0] - 2021-12-16
+
+**Build:**
+- Updated AL Python tests to use fixturesUtils [#1886](https://github.com/Autodesk/maya-usd/pull/1886)
+- Added multi-format serialisation test for shared LayerManager [#1866](https://github.com/Autodesk/maya-usd/pull/1866)
+- Use AbsPath for INPUT_PATH env var in converter tests [#1837](https://github.com/Autodesk/maya-usd/pull/1837)
+- Compile MayaUSD correctly when mixing USD 20.05 and Maya 2022 [#1835](https://github.com/Autodesk/maya-usd/pull/1835)
+- Test passing array to Maya commands [#1831](https://github.com/Autodesk/maya-usd/pull/1831)
+- Use mayapy as Python interpreter on Mac [#1828](https://github.com/Autodesk/maya-usd/pull/1828)
+- Update callsites to work with USD dev API changes [#1825](https://github.com/Autodesk/maya-usd/pull/1825)
+- Fix UV export test [#1823](https://github.com/Autodesk/maya-usd/pull/1823)
+- Add tests for auto load new objects, auto load selected and for instanced [#1820](https://github.com/Autodesk/maya-usd/pull/1820)
+
+**Translation Framework:**
+- Convert UsdMayaPrimUpdater::isAnimated() use of Python to C++ [#1878](https://github.com/Autodesk/maya-usd/pull/1878)
+- Python bindings for chasers [#1864](https://github.com/Autodesk/maya-usd/pull/1864)
+- Maya 2020 picked wrong MDGModifier.deleteNode [#1853](https://github.com/Autodesk/maya-usd/pull/1853)
+- Job context UI for import/export dialogs [#1842](https://github.com/Autodesk/maya-usd/pull/1842)
+- Fix support for normal map channel connections [#1833](https://github.com/Autodesk/maya-usd/pull/1833)
+- Use Adaptors for custom schema import-export [#1814](https://github.com/Autodesk/maya-usd/pull/1814)
+- Bugfix for exporting instances that have namespaces or other use invalid characters [#1708](https://github.com/Autodesk/maya-usd/pull/1708)
+
+**Workflow:**
+- Push/Pull workflow:
+  - Remove edit-as-maya menus when not available [#1885](https://github.com/Autodesk/maya-usd/pull/1885)
+  - Validate pull push capability [#1845](https://github.com/Autodesk/maya-usd/pull/1845)
+  - Implement minimal merge of modified data when merging back to USD after editing in Maya [#1804](https://github.com/Autodesk/maya-usd/pull/1804)
+- Adjust unit tests for UFE 3.0 [#1888](https://github.com/Autodesk/maya-usd/pull/1888)
+- Unloaded prims should appear in the outliner [#1877](https://github.com/Autodesk/maya-usd/pull/1877)
+- Add action in Outliner context menu to toggle instanceable state of prim [#1873](https://github.com/Autodesk/maya-usd/pull/1873)
+- Made all dirty layers and anonymous sublayers serialisable [#1872](https://github.com/Autodesk/maya-usd/pull/1872)
+- Selecting an instanced prim and then the stage shows incorrect selection hilite in viewport [#1868](https://github.com/Autodesk/maya-usd/pull/1868)
+- Fixed exiting callback failing to deregister on UFE global [#1856](https://github.com/Autodesk/maya-usd/pull/1856)
+- Added locking for instance proxy xforms [#1851](https://github.com/Autodesk/maya-usd/pull/1851)
+- Prevent parenting under an instance [#1844](https://github.com/Autodesk/maya-usd/pull/1844)
+- Manage the edit-ability of an attribute from Maya's Attribute Editor [#1816](https://github.com/Autodesk/maya-usd/pull/1816)
+- Add the layer's file format as a serialisation attribute [#1792](https://github.com/Autodesk/maya-usd/pull/1792)
+
+**Render:**
+- Update for quaternion change in USD v21.11 [#1910](https://github.com/Autodesk/maya-usd/pull/1910) [#1902](https://github.com/Autodesk/maya-usd/pull/1902)
+- Skip Ufe Identifier update when the identifiers are not in use [#1875](https://github.com/Autodesk/maya-usd/pull/1875)
+- Fix for proxyShapes in VP2 to display shaders bound to "glslfx:surface" material output [#1870](https://github.com/Autodesk/maya-usd/pull/1870)
+- Insert backup restore GL state render task around colorize-select-task [#1863](https://github.com/Autodesk/maya-usd/pull/1863)
+- Performance optimization if there are no reprs selected [#1843](https://github.com/Autodesk/maya-usd/pull/1843)
+- Selection Highlight doesn't update when changing selection with USD 21.11 [#1838](https://github.com/Autodesk/maya-usd/pull/1838)
+- Fix OpenGL initialization to restore GPU Compute functionality [#1803](https://github.com/Autodesk/maya-usd/pull/1803)
+
 ## [0.14.0] - 2021-11-10
 
 **Build:**

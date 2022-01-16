@@ -17,6 +17,7 @@ target_sources(${TARGET_NAME}
         DiffRelationships.cpp
         DiffValues.cpp
         MergePrims.cpp
+        MergePrimsOptions.cpp
         util.cpp
 )
 
@@ -51,6 +52,7 @@ target_link_libraries(${TARGET_NAME}
         gf
         usd
         sdf
+        usdGeom
 )
 
 # -----------------------------------------------------------------------------
@@ -63,6 +65,7 @@ set(HEADERS
     DiffCore.h
     DiffPrims.h
     MergePrims.h
+    MergePrimsOptions.h
     ForwardDeclares.h
     SIMD.h
     util.h

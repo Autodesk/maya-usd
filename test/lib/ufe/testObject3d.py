@@ -493,6 +493,13 @@ class Object3dTestCase(unittest.TestCase):
         self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
         self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
 
+        # MAYA-114407: Hide the stage, then reveal a stage item. The stage must unhide without crashing.
+        if mayaUtils.previewReleaseVersion() >= 131:
+            cmds.hide(proxyShape)
+            self.assertEqual(cmds.getAttr("%s.visibility" % proxyShape), 0)
+            cmds.showHidden("%s,/Cylinder1" % proxyShape, above=True)
+            self.assertEqual(cmds.getAttr("%s.visibility" % proxyShape), 1)
+
     def testMayaGeomExtentsRecomputation(self):
         ''' Verify the automatic extents computation in when geom attributes change '''
 

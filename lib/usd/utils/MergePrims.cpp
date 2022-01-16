@@ -19,7 +19,9 @@
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
+#include <algorithm>
 #include <utility>
 
 namespace MayaUsdUtils {
@@ -36,16 +38,16 @@ namespace {
 // Data used for merging passed to all helper functions.
 struct MergeContext
 {
-    const MergeVerbosity  verbosity;
-    const bool            mergeChildren;
-    const UsdStageRefPtr& srcStage;
-    const SdfPath&        srcRootPath;
-    const UsdStageRefPtr& dstStage;
-    const SdfPath&        dstRootPath;
+    const MergePrimsOptions& options;
+    const UsdStageRefPtr&    srcStage;
+    const SdfPath&           srcRootPath;
+    const UsdStageRefPtr&    dstStage;
+    const SdfPath&           dstRootPath;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// Description of a merge location: layer, path and if the field already exists at that location.
+/// Description of a merge location: layer, path, field and if the field already exists at that
+/// location.
 struct MergeLocation
 {
     const SdfLayerHandle& layer;
@@ -63,7 +65,7 @@ void printAboutField(
     const char*          message,
     const char*          message2 = nullptr)
 {
-    if (!contains(printVerbosity, ctx.verbosity))
+    if (!contains(printVerbosity, ctx.options.verbosity))
         return;
 
     TF_STATUS(
@@ -94,7 +96,7 @@ void printAboutChildren(
     const char*                     message,
     const std::vector<std::string>& childrenNames)
 {
-    if (!contains(MergeVerbosity::Children, ctx.verbosity))
+    if (!contains(MergeVerbosity::Children, ctx.options.verbosity))
         return;
 
     const std::string allNames = TfStringJoin(childrenNames);
@@ -160,6 +162,90 @@ template <class T> auto makeFuncWithContext(const MergeContext& ctx, T&& func)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// Special transform attributes handling.
+//
+// The goal is to detect that a prim transform has *not* changed even though its representation
+// might have changed. For example it might use different attributes (RotateX vs RotateXYZ) or
+// different transform operations order. (These are in the xformOpOrder attribute.)
+//----------------------------------------------------------------------------------------------------------------------
+
+bool isTransformProperty(const UsdProperty& prop)
+{
+    static const TfToken xformOpOrderToken("xformOpOrder");
+    return UsdGeomXformOp::IsXformOp(prop.GetName()) || prop.GetBaseName() == xformOpOrderToken;
+}
+
+std::vector<UsdAttribute> getTransformAttributes(const UsdPrim& prim)
+{
+    UsdGeomXformable            xformable(prim);
+    bool                        resetParentTrf = true;
+    std::vector<UsdGeomXformOp> ops = xformable.GetOrderedXformOps(&resetParentTrf);
+
+    std::vector<UsdAttribute> trfAttrs;
+    for (const auto& op : ops)
+        trfAttrs.emplace_back(op.GetAttr());
+
+    return trfAttrs;
+}
+
+GfMatrix4d getLocalTransform(const UsdPrim prim, const UsdTimeCode& timeCode)
+{
+    GfMatrix4d primMtx(1);
+
+    UsdGeomXformable xformable(prim);
+    bool             resetParentTrf = true;
+    if (!TF_VERIFY(xformable.GetLocalTransformation(&primMtx, &resetParentTrf, timeCode))) {
+        return GfMatrix4d(1);
+    }
+
+    return primMtx;
+}
+
+bool isLocalTransformModified(
+    const UsdPrim&     srcPrim,
+    const UsdPrim&     dstPrim,
+    const UsdTimeCode& timeCode)
+{
+    double epsilon = 1e-9;
+    bool   similar = PXR_NS::GfIsClose(
+        getLocalTransform(srcPrim, timeCode), getLocalTransform(dstPrim, timeCode), epsilon);
+    return !similar;
+}
+
+bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
+{
+    // We will not compare the set of point-in-times themselves but the overall result
+    // of the animated values. This takes care of trying to match time-samples: we
+    // instead only care that the output result are the same.
+    //
+    // Note that the UsdAttribute API to get value automatically interpolates values
+    // where samples are missing when queried.
+    std::vector<double> times;
+    {
+        std::vector<UsdAttribute> trfAttrs = getTransformAttributes(srcPrim);
+        std::vector<UsdAttribute> dstTrfAttrs = getTransformAttributes(dstPrim);
+        trfAttrs.insert(trfAttrs.end(), dstTrfAttrs.begin(), dstTrfAttrs.end());
+
+        // If retrieving the time codes somehow fails, be conservative and assume
+        // the transform was modified.
+        if (!UsdAttribute::GetUnionedTimeSamples(trfAttrs, &times))
+            return true;
+    }
+
+    // If there are no time samples, then USD uses the default value.
+    if (times.size() == 0)
+        return isLocalTransformModified(srcPrim, dstPrim, UsdTimeCode::Default());
+
+    for (const double time : times) {
+        if (isLocalTransformModified(srcPrim, dstPrim, time)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // Merge Prims
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -181,6 +267,25 @@ bool isDataAtPathsModified(
 
     if (src.path.ContainsPropertyElements()) {
         const UsdProperty srcProp = srcPrim.GetPropertyAtPath(src.path);
+
+        // Note: we only return early for transform property if the local transform has
+        //       not changed. The reason is that when the transform has changed, we *do*
+        //       want to compare the individual properties in order to author only the
+        //       minimum change.
+        //
+        //       The only reason we are using the local transformation comparison is for
+        //       the somewhat common case where the transform has not changed but how it
+        //       is encoded changed, because the Maya representation and the original
+        //       representation differed, for example for USD data coming from another
+        //       tool that use a different transform operation order.
+        if (isTransformProperty(srcProp)) {
+            const bool changed = isLocalTransformModified(srcPrim, dstPrim);
+            if (!changed) {
+                printChangedField(ctx, src, "transform prop local trf", changed);
+                return changed;
+            }
+        }
+
         const UsdProperty dstProp = dstPrim.GetPropertyAtPath(dst.path);
         if (!srcProp.IsValid() || !dstProp.IsValid()) {
             printInvalidField(ctx, src, "prop", srcProp.IsValid(), dstProp.IsValid());
@@ -264,6 +369,7 @@ bool shouldMergeValue(
 template <class ChildPolicy>
 bool filterTypedChildren(
     const MergeContext&  ctx,
+    const MergeMissing   missingHandling,
     const MergeLocation& src,
     const MergeLocation& dst,
     VtValue&             srcChildrenValue,
@@ -294,19 +400,54 @@ bool filterTypedChildren(
     dstFilteredChildren.reserve(dstChildren.size());
 
     for (size_t i = 0; i < srcChildren.size(); ++i) {
-        if (srcChildren[i].IsEmpty() || dstChildren[i].IsEmpty()) {
-            printAboutFailure(ctx, src, "empty child. ");
+        const auto& srcChild = srcChildren[i];
+        const auto& dstChild = dstChildren[i];
+
+        // Special handling when the source or destination are empty.
+        if (srcChild.IsEmpty() || dstChild.IsEmpty()) {
+
+            // Both empty: should not happen, but let's be safe.
+            if (srcChild.IsEmpty() && dstChild.IsEmpty()) {
+                printAboutFailure(ctx, srcChild.IsEmpty() ? dst : src, "empty child. ");
+                continue;
+            }
+
+            // Check if we are  allowing missing attributes to be preserved.
+            if (srcChild.IsEmpty() && !contains(missingHandling, MergeMissing::Preserve)) {
+                printAboutFailure(ctx, dst, "not preserving child missing in source. ");
+                continue;
+            }
+
+            // Check if we are not allowing creation of attributes.
+            if (dstChild.IsEmpty() && !contains(missingHandling, MergeMissing::Create)) {
+                printAboutFailure(ctx, src, "not creating child missing in destination. ");
+                continue;
+            }
+
+            const SdfPath childPath = srcChild.IsEmpty()
+                ? ChildPolicy::GetChildPath(dst.path, dstChild)
+                : ChildPolicy::GetChildPath(src.path, srcChild);
+
+            const MergeLocation childLoc
+                = { srcChild.IsEmpty() ? dst.layer : src.layer, childPath, TfToken(), true };
+            printAboutField(ctx, childLoc, MergeVerbosity::Child, "empty child. ");
+
+            if (contains(ctx.options.verbosity, MergeVerbosity::Children))
+                childrenNames.emplace_back(childPath.GetName());
+
+            srcFilteredChildren.emplace_back(srcChild);
+            dstFilteredChildren.emplace_back(dstChild);
             continue;
         }
 
-        const SdfPath srcChildPath = ChildPolicy::GetChildPath(src.path, srcChildren[i]);
-        const SdfPath dstChildPath = ChildPolicy::GetChildPath(dst.path, dstChildren[i]);
+        const SdfPath srcChildPath = ChildPolicy::GetChildPath(src.path, srcChild);
+        const SdfPath dstChildPath = ChildPolicy::GetChildPath(dst.path, dstChild);
 
         // Note: don't use location's field, since we're in a child path, the children field is
         // irrelevant. We will assume the child exists, but we will actually verify it just
         // below with a call to HasSpec().
-        const MergeLocation childSrc = { src.layer, srcChildPath, TfToken(), true };
-        const MergeLocation childDst = { dst.layer, dstChildPath, TfToken(), true };
+        const MergeLocation childSrcLoc = { src.layer, srcChildPath, TfToken(), true };
+        const MergeLocation childDstLoc = { dst.layer, dstChildPath, TfToken(), true };
 
         // Note: we cannot drop a children that already has an opinion at the
         // destination, otherwise SdfCopySpec() will delete that opinion!
@@ -320,23 +461,23 @@ bool filterTypedChildren(
         const char* childMessage = nullptr;
         if (dst.layer->HasSpec(dstChildPath)) {
             childMessage = "keep child. ";
-            srcFilteredChildren.emplace_back(srcChildren[i]);
-            dstFilteredChildren.emplace_back(dstChildren[i]);
-            if (contains(ctx.verbosity, MergeVerbosity::Children))
+            srcFilteredChildren.emplace_back(srcChild);
+            dstFilteredChildren.emplace_back(dstChild);
+            if (contains(ctx.options.verbosity, MergeVerbosity::Children))
                 childrenNames.emplace_back(srcChildPath.GetName());
         } else {
-            if (isDataAtPathsModified(ctx, childSrc, childDst)) {
+            if (isDataAtPathsModified(ctx, childSrcLoc, childDstLoc)) {
                 childMessage = "create child. ";
-                srcFilteredChildren.emplace_back(srcChildren[i]);
-                dstFilteredChildren.emplace_back(dstChildren[i]);
-                if (contains(ctx.verbosity, MergeVerbosity::Children))
+                srcFilteredChildren.emplace_back(srcChild);
+                dstFilteredChildren.emplace_back(dstChild);
+                if (contains(ctx.options.verbosity, MergeVerbosity::Children))
                     childrenNames.emplace_back(srcChildPath.GetName());
             } else {
-                childMessage = "drop child. ";
+                childMessage = "drop child, data identical from elsewhere. ";
             }
         }
 
-        printAboutField(ctx, childSrc, MergeVerbosity::Child, childMessage);
+        printAboutField(ctx, childSrcLoc, MergeVerbosity::Child, childMessage);
     }
 
     const bool  shouldCopy = (srcFilteredChildren.size() > 0);
@@ -357,6 +498,72 @@ bool filterTypedChildren(
     return shouldCopy;
 }
 
+template <class ChildPolicy>
+void unionChildren(
+    MergeMissing missingHandling,
+    VtValue&     srcChildrenValue,
+    VtValue&     dstChildrenValue)
+{
+    // If not preserving missing attributes then we don't need to calculate
+    // the union of the source and destintation children.
+    if (missingHandling == MergeMissing::None)
+        return;
+
+    typedef typename ChildPolicy::FieldType FieldType;
+    typedef std::vector<FieldType>          ChildrenVector;
+    typedef std::set<FieldType>             ChildrenSet;
+
+    if (!TF_VERIFY(srcChildrenValue.IsHolding<ChildrenVector>() || srcChildrenValue.IsEmpty()))
+        return;
+
+    if (!TF_VERIFY(dstChildrenValue.IsHolding<ChildrenVector>() || dstChildrenValue.IsEmpty()))
+        return;
+
+    // Extract children from source and destination.
+    ChildrenVector srcChildren;
+    if (!srcChildrenValue.IsEmpty())
+        srcChildren = srcChildrenValue.UncheckedGet<ChildrenVector>();
+
+    ChildrenVector dstChildren;
+    if (!dstChildrenValue.IsEmpty())
+        dstChildren = dstChildrenValue.UncheckedGet<ChildrenVector>();
+
+    // Create sets for fast comparison and return if both sets are equal,
+    // meaning the source and destination already have the same children.
+    ChildrenSet srcSet(srcChildren.begin(), srcChildren.end());
+    ChildrenSet dstSet(dstChildren.begin(), dstChildren.end());
+
+    if (srcSet == dstSet)
+        return;
+
+    // If they differ, fill the source and destination to have the desired set
+    // of children.
+    ChildrenSet unionSet;
+    if (contains(missingHandling, MergeMissing::Create))
+        unionSet.insert(srcSet.begin(), srcSet.end());
+    if (contains(missingHandling, MergeMissing::Preserve))
+        unionSet.insert(dstSet.begin(), dstSet.end());
+
+    srcChildren.clear();
+    srcChildren.reserve(unionSet.size());
+
+    dstChildren.clear();
+    dstChildren.reserve(unionSet.size());
+
+    for (const FieldType& child : unionSet) {
+        // Note: source cannot be a field that does not exists. To preserve a destination
+        // field, the source field must simply be invalid.
+        srcChildren.emplace_back(srcSet.count(child) ? child : FieldType {});
+
+        // For destrination field, we can put a field that does not exist in the destination.
+        // It will be created.
+        dstChildren.emplace_back(child);
+    }
+
+    srcChildrenValue = srcChildren;
+    dstChildrenValue = dstChildren;
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 /// Filters the children.
 bool filterChildren(
@@ -367,41 +574,63 @@ bool filterChildren(
     VtValue&             dstChildren)
 {
     if (src.field == SdfChildrenKeys->ConnectionChildren) {
+        const auto missingHandling = ctx.options.connectionsHandling;
+        unionChildren<Sdf_AttributeConnectionChildPolicy>(
+            missingHandling, srcChildren, dstChildren);
         return filterTypedChildren<Sdf_AttributeConnectionChildPolicy>(
-            ctx, src, dst, srcChildren, dstChildren);
+            ctx, missingHandling, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->MapperChildren) {
-        return filterTypedChildren<Sdf_MapperChildPolicy>(ctx, src, dst, srcChildren, dstChildren);
+        const auto missingHandling = ctx.options.mappersHandling;
+        unionChildren<Sdf_MapperChildPolicy>(missingHandling, srcChildren, dstChildren);
+        return filterTypedChildren<Sdf_MapperChildPolicy>(
+            ctx, missingHandling, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->MapperArgChildren) {
+        const auto missingHandling = ctx.options.mapperArgsHandling;
+        unionChildren<Sdf_MapperArgChildPolicy>(missingHandling, srcChildren, dstChildren);
         return filterTypedChildren<Sdf_MapperArgChildPolicy>(
-            ctx, src, dst, srcChildren, dstChildren);
+            ctx, missingHandling, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->ExpressionChildren) {
+        const auto missingHandling = ctx.options.expressionsHandling;
+        unionChildren<Sdf_ExpressionChildPolicy>(missingHandling, srcChildren, dstChildren);
         return filterTypedChildren<Sdf_ExpressionChildPolicy>(
-            ctx, src, dst, srcChildren, dstChildren);
+            ctx, missingHandling, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->RelationshipTargetChildren) {
+        const auto missingHandling = ctx.options.relationshipsHandling;
+        unionChildren<Sdf_RelationshipTargetChildPolicy>(missingHandling, srcChildren, dstChildren);
         return filterTypedChildren<Sdf_RelationshipTargetChildPolicy>(
-            ctx, src, dst, srcChildren, dstChildren);
+            ctx, missingHandling, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->VariantChildren) {
-        return filterTypedChildren<Sdf_VariantChildPolicy>(ctx, src, dst, srcChildren, dstChildren);
+        const auto missingHandling = ctx.options.variantsHandling;
+        unionChildren<Sdf_VariantChildPolicy>(missingHandling, srcChildren, dstChildren);
+        return filterTypedChildren<Sdf_VariantChildPolicy>(
+            ctx, missingHandling, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->VariantSetChildren) {
+        const auto missingHandling = ctx.options.variantSetsHandling;
+        unionChildren<Sdf_VariantSetChildPolicy>(missingHandling, srcChildren, dstChildren);
         return filterTypedChildren<Sdf_VariantSetChildPolicy>(
-            ctx, src, dst, srcChildren, dstChildren);
+            ctx, missingHandling, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->PropertyChildren) {
+        const auto missingHandling = ctx.options.propertiesHandling;
+        unionChildren<Sdf_PropertyChildPolicy>(missingHandling, srcChildren, dstChildren);
         return filterTypedChildren<Sdf_PropertyChildPolicy>(
-            ctx, src, dst, srcChildren, dstChildren);
+            ctx, missingHandling, src, dst, srcChildren, dstChildren);
     }
     if (src.field == SdfChildrenKeys->PrimChildren) {
-        if (ctx.mergeChildren)
+        if (ctx.options.mergeChildren) {
+            const auto missingHandling = ctx.options.primsHandling;
+            unionChildren<Sdf_PrimChildPolicy>(missingHandling, srcChildren, dstChildren);
             return filterTypedChildren<Sdf_PrimChildPolicy>(
-                ctx, src, dst, srcChildren, dstChildren);
-        else
+                ctx, missingHandling, src, dst, srcChildren, dstChildren);
+        } else {
             return false;
+        }
     }
 
     printAboutFailure(ctx, src, "unknown children field.");
@@ -443,14 +672,17 @@ bool shouldMergeChildren(
     }
 
     // Protect against SdfShouldCopyChildren() not filling the children.
-    if (!*srcChildren || !*dstChildren) {
+    if (!*srcChildren) {
         *srcChildren = srcLayer->GetField(srcPath, childrenField);
-        *dstChildren = *srcChildren;
+    }
 
-        if (!*srcChildren || !*dstChildren) {
-            printAboutFailure(ctx, src, "no children to copy. ");
-            return false;
-        }
+    if (!*dstChildren) {
+        *dstChildren = dstLayer->GetField(dstPath, childrenField);
+    }
+
+    if (!*srcChildren || !*dstChildren) {
+        printAboutFailure(ctx, src, "no children to copy. ");
+        return false;
     }
 
     const MergeLocation dst = { dstLayer, dstPath, childrenField, fieldInDst };
@@ -461,18 +693,18 @@ bool shouldMergeChildren(
 /// Copies a minimal prim using diff and merge, printing all fields that are copied to the Maya
 /// console.
 bool mergeDiffPrims(
-    MergeVerbosity        verbosity,
-    bool                  mergeChildren,
-    const UsdStageRefPtr& srcStage,
-    const SdfLayerRefPtr& srcLayer,
-    const SdfPath&        srcPath,
-    const UsdStageRefPtr& dstStage,
-    const SdfLayerRefPtr& dstLayer,
-    const SdfPath&        dstPath)
+    const MergePrimsOptions& options,
+    const UsdStageRefPtr&    srcStage,
+    const SdfLayerRefPtr&    srcLayer,
+    const SdfPath&           srcPath,
+    const UsdStageRefPtr&    dstStage,
+    const SdfLayerRefPtr&    dstLayer,
+    const SdfPath&           dstPath)
 {
-    MergeContext ctx = { verbosity, mergeChildren, srcStage, srcPath, dstStage, dstPath };
-    auto         copyValue = makeFuncWithContext(ctx, shouldMergeValue);
-    auto         copyChildren = makeFuncWithContext(ctx, shouldMergeChildren);
+    const MergeContext ctx = { options, srcStage, srcPath, dstStage, dstPath };
+
+    auto copyValue = makeFuncWithContext(ctx, shouldMergeValue);
+    auto copyChildren = makeFuncWithContext(ctx, shouldMergeChildren);
     return SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath, copyValue, copyChildren);
 }
 
@@ -485,35 +717,29 @@ bool mergeDiffPrims(
 //----------------------------------------------------------------------------------------------------------------------
 /// merges prims starting at a source path from a source layer and stage to a destination.
 bool mergePrims(
-    const UsdStageRefPtr& srcStage,
-    const SdfLayerRefPtr& srcLayer,
-    const SdfPath&        srcPath,
-    const UsdStageRefPtr& dstStage,
-    const SdfLayerRefPtr& dstLayer,
-    const SdfPath&        dstPath,
-    bool                  mergeChildren,
-    MergeVerbosity        verbosity)
+    const UsdStageRefPtr&    srcStage,
+    const SdfLayerRefPtr&    srcLayer,
+    const SdfPath&           srcPath,
+    const UsdStageRefPtr&    dstStage,
+    const SdfLayerRefPtr&    dstLayer,
+    const SdfPath&           dstPath,
+    const MergePrimsOptions& options)
 {
-    // TODO: only create and transfer layer if: not the top layer (easy) or higher layers have an
-    // opinion (might be tricky).
-    const bool useTempStage = true;
-
-    if (useTempStage) {
+    if (options.ignoreUpperLayerOpinions) {
         auto           tempStage = UsdStage::CreateInMemory();
         SdfLayerHandle tempLayer = tempStage->GetSessionLayer();
 
         tempLayer->TransferContent(dstLayer);
 
-        const bool success = mergeDiffPrims(
-            verbosity, mergeChildren, srcStage, srcLayer, srcPath, tempStage, tempLayer, dstPath);
+        const bool success
+            = mergeDiffPrims(options, srcStage, srcLayer, srcPath, tempStage, tempLayer, dstPath);
 
         if (success)
             dstLayer->TransferContent(tempLayer);
 
         return success;
     } else {
-        return mergeDiffPrims(
-            verbosity, mergeChildren, srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath);
+        return mergeDiffPrims(options, srcStage, srcLayer, srcPath, dstStage, dstLayer, dstPath);
     }
 }
 

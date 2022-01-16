@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import os
 import fixturesUtils
 import mayaUtils
 import testTRSBase
@@ -394,6 +395,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestOpUndo(createCommonAPI, 'xformOp:translate')
 
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3014', 'Creating a SceneItem was fixed in UFE v3.14')
     def testBadSceneItem(self):
         '''Improperly constructed scene item should not crash Maya.'''
 
@@ -425,6 +427,40 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
         sn.append(sphereItem)
 
         cmds.move(0, 10, 0, relative=True, os=True, wd=True)
-        
+
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '3014', 'Creating a SceneItem works in UFE v3.14')
+    def testFactorySceneItem(self):
+        '''A scene item can be constructed directly and will work.'''
+
+        # Was:
+        # MAYA-112601 / GitHub #1169: improperly constructed Python scene item
+        # should not cause a crash.
+        # Now:
+        # MAYA-113409 / GutHub PR #222: Use factory CTOR for directly constructed
+        # SceneItems.
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        proxyShapePath = ufe.PathString.path(proxyShape)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+
+        spherePath = ufe.PathString.path('%s,/Sphere1' % proxyShape)
+        sphereItem = ufe.SceneItem(spherePath)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(sphereItem)
+
+        cmds.move(0, 10, 0, relative=True, os=True, wd=True)
+
+        # The USD prim will have a transform since the move command worked:
+        sphereAttrs = ufe.Attributes.attributes(sphereItem)
+        self.assertIsNotNone(sphereAttrs)
+        self.assertTrue("xformOp:translate" in sphereAttrs.attributeNames)
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

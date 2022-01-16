@@ -55,6 +55,14 @@ if(PYTHONLIBS_FOUND AND PYTHON_MODULE_EXTENSION)
     return()
 endif()
 
+# On Mac, with Maya 2022+, the Python binaries link against a non-existent path
+# maya2022/Maya.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python -> /Library/Frameworks/Python.framework/Versions/3.7/Python
+# However, just using the mayapy executable is good enough for the build system
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    MESSAGE(STATUS "Setting Python_EXECUTABLE to MayaPy ${MAYA_PY_EXECUTABLE}")
+    set(Python_EXECUTABLE ${MAYA_PY_EXECUTABLE})
+endif()
+
 # Use the Python module to find the python lib.
 if(BUILD_WITH_PYTHON_3)
     find_package(Python ${BUILD_WITH_PYTHON_3_VERSION} EXACT REQUIRED COMPONENTS Interpreter)
@@ -121,9 +129,16 @@ message(STATUS "PYTHON_MODULE_EXTENSION: ${PYTHON_MODULE_EXTENSION}")
 message(STATUS "PYTHON_IS_DEBUG: ${PYTHON_IS_DEBUG}")
 message(STATUS "PYTHON_SIZEOF_VOID_P: ${PYTHON_SIZEOF_VOID_P}")
 message(STATUS "PYTHON_LIBRARY_SUFFIX: ${PYTHON_LIBRARY_SUFFIX}")
-message(STATUS "PYTHON_LIBDIR: ${PYTHON_LIBDIR}")
 message(STATUS "PYTHON_MULTIARCH: ${PYTHON_MULTIARCH}")
 
+# Python, especially on the mac, doesn't always return the right PYTHON_LIBDIR,
+# so in the case that libdir is not able to be found, use a relative path from the include_dir
+IF(NOT EXISTS ${PYTHON_LIBDIR})
+    get_filename_component(_PYTHON_LIBDIR ${PYTHON_INCLUDE_DIR} PATH)
+    get_filename_component(_PYTHON_LIBDIR ${_PYTHON_LIBDIR} PATH)
+    set(PYTHON_LIBDIR "${_PYTHON_LIBDIR}/lib")
+endif()
+message(STATUS "PYTHON_LIBDIR: ${PYTHON_LIBDIR}")
 
 # Make sure the Python has the same pointer-size as the chosen compiler
 # Skip if CMAKE_SIZEOF_VOID_P is not defined

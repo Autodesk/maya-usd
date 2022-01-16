@@ -58,7 +58,8 @@ void UsdMayaPrimUpdaterRegistry::Register(
     const TfType&                                tfType,
     const std::string&                           mayaType,
     UsdMayaPrimUpdater::Supports                 sup,
-    UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn fn)
+    UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn fn,
+    bool                                         fromPython)
 {
     TfToken tfTypeName(tfType.GetTypeName());
 
@@ -71,10 +72,12 @@ void UsdMayaPrimUpdaterRegistry::Register(
         _regMayaType.insert(std::make_pair(mayaType, std::make_tuple(sup, fn)));
 
         // cleanup both registries when tftype gets unloaded
-        UsdMaya_RegistryHelper::AddUnloader([tfTypeName, mayaType]() {
-            _regTfType.erase(tfTypeName);
-            _regMayaType.erase(mayaType);
-        });
+        UsdMaya_RegistryHelper::AddUnloader(
+            [tfTypeName, mayaType]() {
+                _regTfType.erase(tfTypeName);
+                _regMayaType.erase(mayaType);
+            },
+            fromPython);
     } else {
         TF_CODING_ERROR("Multiple updaters for TfType %s", tfTypeName.GetText());
     }

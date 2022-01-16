@@ -38,6 +38,15 @@ import unittest
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
 
+def firstSubLayer(context, routingData):
+    prim = context.get('prim')
+    if prim is None:
+        print('Prim not in context')
+        return
+    if len(prim.GetStage().GetRootLayer().subLayerPaths)==0:
+        return 
+    print('PaTh: '+prim.GetStage().GetRootLayer().subLayerPaths[0])
+    routingData['layer'] = prim.GetStage().GetRootLayer().subLayerPaths[0]
 
 def matrixToList(m):
     mList = []
@@ -1165,6 +1174,49 @@ class ParentCmdTestCase(unittest.TestCase):
 
         children = hierarchyAfter()
         checkAfter(*children)
+
+    # Test is currently crashing and needs to be investigated
+    def _testEditRouter(self):
+        '''Test edit router functionality.'''
+
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        # Create the following hierarchy:
+        #
+        # ps
+        #  |_ A
+        #      |_ B
+        #  |_ C
+        #
+        # We select B and C, in order, and parent.  This parents B to C.
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/A', 'Xform')
+        stage.DefinePrim('/A/B', 'Xform')
+        stage.DefinePrim('/C', 'Xform')
+
+        psPath = ufe.PathString.path(psPathStr)
+        psPathSegment = psPath.segments[0]
+        aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
+        a = ufe.Hierarchy.createItem(aPath)
+        bPath = aPath + ufe.PathComponent('B')
+        b = ufe.Hierarchy.createItem(bPath)
+        cPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/C')])
+        c = ufe.Hierarchy.createItem(cPath)
+
+        # Add a sub-layer, where the parent edit should write to.
+        subLayerId = cmds.mayaUsdLayerEditor(stage.GetRootLayer().identifier, edit=True, addAnonymous="aSubLayer")[0]
+
+        mayaUsd.lib.registerEditRouter('parent', firstSubLayer)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(b)
+        sn.append(c)
+
+        cmds.parent()
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

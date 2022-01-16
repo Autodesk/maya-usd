@@ -17,34 +17,31 @@
 #
 
 import os
-import shutil
 import unittest
 
 from maya import cmds
 from AL.usdmaya import ProxyShape
 
-from pxr import Sdf, Usd
+from pxr import Sdf, Usd, UsdUtils
+
+import fixturesUtils
+
 
 class TestLayerManagerSerialisation(unittest.TestCase):
     """Test cases for layer manager serialisation and deserialisation"""
 
     @classmethod
     def setUpClass(cls):
-        # Reset the output directory
-        cls._outputPath = os.path.join(os.path.abspath('.'), os.path.splitext(__file__)[0] + "Output")
-        if os.path.exists(cls._outputPath):
-            shutil.rmtree(cls._outputPath)
-        os.mkdir(cls._outputPath)
-        cls._mayaFilePath = os.path.join(cls._outputPath, 'LayerManagerSerialisation.ma')
-        cls._usdFilePath = os.path.join(cls._outputPath, 'LayerManagerSerialisation.usda')
-
-        # Load the plugin
-        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
+        # Load the plugin and setup test output
+        fixturesUtils.setUpClass(__file__, pluginName="AL_USDMayaPlugin")
+        className = cls.__name__
+        cls._mayaFilePath = os.path.abspath(className + ".ma")
+        cls._usdFilePath = os.path.abspath(className + ".usda")
 
     @classmethod
     def tearDownClass(cls):
-        # Unload the plugin
-        cmds.unloadPlugin("AL_USDMayaPlugin", force=True)
+        # Unload the plugin and exit test output
+        fixturesUtils.tearDownClass(pluginName="AL_USDMayaPlugin")
 
     app = 'maya'
     def setUp(self):
@@ -152,7 +149,7 @@ class TestLayerManagerSerialisation(unittest.TestCase):
             layers = []
             for ext in ["usd", "usda", "usdc"]:
                 _format = Sdf.FileFormat.FindByExtension(ext)
-                filePath = os.path.join(self._outputPath, 'TestLayer.{}'.format(ext))
+                filePath = 'TestLayer.{}'.format(ext)
                 layer = Sdf.Layer.CreateNew(filePath)
                 layer.comment = ext
                 layer.Save()
@@ -207,10 +204,70 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         proxyName = _buildAndEditAndSaveScene(self._usdFilePath)
         _reloadAndAssert(self._usdFilePath, proxyName)
 
+    def test_anonymousLayerSerialisation(self):
+        """Tests multiple anonymous sublayers can be saved and restored.
+            
+        """
+
+        def _setupStage():
+            # Create a prim at root layer
+            rootLayer = self._stage.GetRootLayer()
+            Sdf.CreatePrimInLayer(rootLayer, "/root")
+
+            # Create session layer with prim
+            sessionLayer = self._stage.GetSessionLayer()
+            Sdf.CreatePrimInLayer(sessionLayer, "/root/prim01")
+
+            # Create anonymous sublayers
+            sublayer01 = Sdf.Layer.CreateAnonymous()
+            Sdf.CreatePrimInLayer(sublayer01, "/root/subprim01")
+            sublayer02 = Sdf.Layer.CreateAnonymous()
+            Sdf.CreatePrimInLayer(sublayer02, "/root/subprim02")
+
+            # TODO easy way to add testing for recursive restoration
+            # sublayer03 = Sdf.Layer.CreateAnonymous()
+            # Sdf.CreatePrimInLayer(sublayer02, "/root/subprim02/subsubprim03")
+            # sublayer02.subLayerPaths = [sublayer03.identifier]
+
+            # Add sublayers to session layer
+            sessionLayer.subLayerPaths = [
+                sublayer01.identifier,
+                sublayer02.identifier
+            ]
+        
+        def _saveScene():
+            # Save Maya scene to temp file and close
+            cmds.file(rename=self._mayaFilePath)
+            cmds.file(save=True, force=True, type="mayaAscii")
+            return self._mayaFilePath
+        
+        def _reloadScene(filename):
+            # Reopen the Maya scene file
+            cmds.file(new=True, force=True)
+            cmds.file(filename, open=True)
+            self._stage = ProxyShape.getByName('AL_usdmaya_Proxy').getUsdStage()
+        
+        _setupStage()
+        file = _saveScene()
+        _reloadScene(file)
+
+        # Assert reloaded state of anonymous sublayers
+        sessionLayer = self._stage.GetSessionLayer()
+        self.assertEqual(len(sessionLayer.subLayerPaths), 2)
+
+        sublayer01 = Sdf.Find(sessionLayer.subLayerPaths[0])
+        sublayer02 = Sdf.Find(sessionLayer.subLayerPaths[1])
+
+        self.assertIsNotNone(sublayer01)
+        self.assertIsNotNone(sublayer02)
+        self.assertIsNotNone(sublayer01.GetPrimAtPath('/root/subprim01'))
+        self.assertIsNotNone(sublayer02.GetPrimAtPath('/root/subprim02'))
+
+        # TODO easy way to add testing for recursive restoration
+        # self.assertEqual(len(sublayer02.subLayerPaths), 1)
+        # sublayer03 = Sdf.Find(sublayer02.subLayerPaths[0])
+        # self.assertIsNone(sublayer03.GetPrimAtPath('/root/subprim02/subsubprim03'))
+
 
 if __name__ == "__main__":
-
-    tests = [unittest.TestLoader().loadTestsFromTestCase(TestLayerManagerSerialisation),]
-    results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
-    exitCode = int(not all([result.wasSuccessful() for result in results]))
-    cmds.quit(exitCode=(exitCode))
+    fixturesUtils.runTests(globals(), verbosity=2)

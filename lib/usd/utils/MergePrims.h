@@ -16,40 +16,13 @@
 #pragma once
 
 #include <mayaUsdUtils/Api.h>
+#include <mayaUsdUtils/MergePrimsOptions.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/common.h>
 
 namespace MayaUsdUtils {
-
-//----------------------------------------------------------------------------------------------------------------------
-/// MergeVerbosity level flags.
-
-enum class MergeVerbosity
-{
-    None = 0,
-    Same = 1 << 0,
-    Differ = 1 << 1,
-    Child = 1 << 2,
-    Children = 1 << 3,
-    Failure = 1 << 4,
-    Default = Differ | Children | Failure,
-};
-
-MergeVerbosity operator|(MergeVerbosity a, MergeVerbosity b)
-{
-    return MergeVerbosity(uint32_t(a) | uint32_t(b));
-}
-MergeVerbosity operator&(MergeVerbosity a, MergeVerbosity b)
-{
-    return MergeVerbosity(uint32_t(a) & uint32_t(b));
-}
-MergeVerbosity operator^(MergeVerbosity a, MergeVerbosity b)
-{
-    return MergeVerbosity(uint32_t(a) ^ uint32_t(b));
-}
-bool contains(MergeVerbosity a, MergeVerbosity b) { return (a & b) != MergeVerbosity::None; }
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  merges prims starting at a source path from a source layer and stage to a destination.
@@ -59,8 +32,7 @@ bool contains(MergeVerbosity a, MergeVerbosity b) { return (a & b) != MergeVerbo
 /// \param  dstStage the stage containing the baseline prims that receive the modifications.
 /// \param  dstLayer the layer containing the baseline prims that receive the modifications.
 /// \param  dstPath the path to the baseline prims that receive the modifications.
-/// \param  mergeChildren if true, merges children too, otherwise only this prim.
-/// \param  verbosity how much info is printed about the merge in the console.
+/// \param  options merging options.
 /// \return true if the merge was successful.
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
@@ -71,7 +43,6 @@ bool mergePrims(
     const PXR_NS::UsdStageRefPtr& dstStage,
     const PXR_NS::SdfLayerRefPtr& dstLayer,
     const PXR_NS::SdfPath&        dstPath,
-    bool                          mergeChildren = false,
-    MergeVerbosity                verbosity = MergeVerbosity::Default);
+    const MergePrimsOptions&      options);
 
 } // namespace MayaUsdUtils

@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+    subLayers = [
+        @./layer1.usda@,
+        @./layer2.usda@,
+    ]
+)
+
+def "root"
+{
+}

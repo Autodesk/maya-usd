@@ -20,6 +20,7 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
+#include <pxr/base/gf/quath.h>
 #include <pxr/base/gf/vec2d.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec2i.h>
@@ -28,6 +29,7 @@
 #include <pxr/base/gf/vec3i.h>
 #include <pxr/base/gf/vec4d.h>
 #include <pxr/base/gf/vec4f.h>
+#include <pxr/base/gf/vec4h.h>
 #include <pxr/base/gf/vec4i.h>
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/vtBufferSource.h>
@@ -78,6 +80,8 @@ TYPE_HELPER(GfVec3d, HdTypeDoubleVec3)
 TYPE_HELPER(GfVec4d, HdTypeDoubleVec4)
 TYPE_HELPER(GfMatrix4f, HdTypeFloatMat4)
 TYPE_HELPER(GfMatrix4d, HdTypeDoubleMat4)
+TYPE_HELPER(GfVec4h, HdTypeHalfFloatVec4)
+TYPE_HELPER(GfQuath, HdTypeHalfFloatVec4)
 #undef TYPE_HELPER
 
 /*! \brief  A utility class that knows how to sample an element from a type-tagged

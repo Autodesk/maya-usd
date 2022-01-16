@@ -1,0 +1,640 @@
+// Verbatim copy of fileOptions.mel:pushOptionsUITemplate(), which is not
+// a global proc.
+proc pushOptionsUITemplate()
+{
+        // Standardize the look of the options UI
+        //
+    if (!`uiTemplate -exists optionsTemplate`) 
+        {
+                uiTemplate optionsTemplate;
+
+                frameLayout -defineTemplate optionsTemplate 
+                        -collapsable true
+                        -collapse false
+                        -labelVisible true 
+                        -labelIndent 5 
+                        -marginWidth 5 
+                        -marginHeight 5;
+
+        columnLayout -defineTemplate optionsTemplate 
+            -adjustableColumn true;
+        }
+        setUITemplate -pushTemplate optionsTemplate;
+}
+
+// Adapted from fileOptions.mel:fileOptionsTabPage().
+proc fileOptionsTabPage(string $tabLayout)
+{
+    string $action = "Reference";
+    pushOptionsUITemplate();
+
+    setParent $tabLayout;
+
+    // Need to keep 'optionsBoxForm' as translator plugins reference this
+    // directly to hide UI temporarily
+    global string $gOptBoxForm;
+    $gOptBoxForm = `formLayout optionsBoxForm`;
+
+    string $topFrame = `frameLayout -collapsable false -labelVisible false -marginWidth 10 -borderVisible false optionsBoxFrame`;
+    formLayout -e 
+        -af $topFrame left 0
+        -af $topFrame top 0
+        -af $topFrame right 0
+        -af $topFrame bottom 0
+        $gOptBoxForm;
+
+    string $topForm = `columnLayout -rowSpacing 5 actionOptionsForm`;
+    
+    frameLayout -label `uiRes("m_fileOptions.kGeneralOptions")` ;
+    columnLayout genOptionsLayout;
+    
+    // We need to ask for grouping information.
+    checkBoxGrp -numberOfCheckBoxes 1
+        -label "" -label1 `uiRes("m_fileOptions.kDeferred")`
+        referenceDeferReferenceGrp; 
+    
+    checkBoxGrp -numberOfCheckBoxes 1
+        -label "" -label1 `uiRes("m_fileOptions.kLock")`
+        referenceLockReferenceGrp;
+            
+    // No options in Add Maya reference to USD for Group, Group Name, or Locator.
+                
+    setParent $topForm;
+    frameLayout -label `uiRes("m_fileOptions.kReferenceLoadSettings")`;
+    columnLayout refLoadSettingsLayout;
+    fileOptionsLoadSettingsMenu($action);
+                    
+    setParent $topForm;
+    frameLayout -label `uiRes("m_fileOptions.kSharedReferenceOptions")`;
+    columnLayout sharedRefLayout;
+    checkBoxGrp -numberOfCheckBoxes 1
+        -label ""
+        -label1 `uiRes("m_fileOptions.kSharedNodes")`
+        -annotation `uiRes("m_fileOptions.kShareNodesAnnot")`
+        -cc "fo_changeSharedReferenceOption"
+        -v1 ((`optionVar -query referenceOptionsSharedReference`) == 1)
+        -cw 2 180
+        referenceSharedReferenceCheckBox;
+
+    checkBoxGrp -numberOfCheckBoxes 1
+        -label ""
+        -label1 `uiRes("m_fileOptions.kDisplayLayers")`
+        -cw 2 120
+        -annotation `uiRes("m_fileOptions.kMergeDuplicateDisplayLayers")`
+        referenceSharedDisplayLayers;
+    checkBoxGrp -numberOfCheckBoxes 1
+        -label ""
+        -label1 `uiRes("m_fileOptions.kShadingNetworks")`
+        -cw 2 180
+        -annotation `uiRes("m_fileOptions.kMergeDuplicateShadingNetworks")`
+        referenceSharedShadingNetworks;
+
+    setParent $topForm;
+
+    /*
+        ------------------------------------------------------------------------------------------------
+        Group A, tab title and use namespace checkbox(Optional).
+        ------------------------------------------------------------------------------------------------
+    */
+    frameLayout -label `uiRes("m_fileOptions.kNamespaceOptions")` namespaceOptionFrame;
+    checkBoxGrp -cw 2 200 -numberOfCheckBoxes 1 
+        -label "" -label1 `uiRes("m_fileOptions.kProxyUseNamespaces")`
+        -cc ("fo_changeReferenceNamespaceOption(\"" + $action + "\")")
+        -annotation `uiRes("m_fileOptions.kNamespacesEnsureUniqueNodeNames")`
+        useNamespacesGrp;
+    //All offlineMode is in namespace, so we set the useNamespacesGrp be true and gray
+    frameLayout -edit -expandCommand ("fo_NamespaceOptionExpand(\"" + $action + "\")") namespaceOptionFrame;
+
+    /*
+        ------------------------------------------------------------------------------------------------
+        Group B, resolve node options, and prefixesObsoleteLabel
+        ------------------------------------------------------------------------------------------------
+    */
+    columnLayout -rowSpacing 5 nameClashLayout;
+    formLayout nameClashForm;
+    string $resolveTitle;
+        text -l "" nameClashOptions;    
+        $resolveTitle = uiRes("m_fileOptions.kReferenceResolveAllNodesWith");
+    optionMenu -label $resolveTitle  -cc ("fo_prefixName (\"" + $action + "\")") nameClash2OptionMenu;
+    menuItem -label `uiRes("m_fileOptions.kTheFileName")` prefixOptionMenu3;
+    menuItem -label `uiRes("m_fileOptions.kThisString")` prefixOptionMenu4;
+
+    textField -w 152 nodeNamePrefix;
+    setParent ..;       
+                
+    formLayout -e 
+            -af nameClashOptions top 0 
+            -af nameClashOptions left 40 
+            -af nameClash2OptionMenu top 0
+            -ac nameClash2OptionMenu left 0 nameClashOptions
+            -af nodeNamePrefix top 0
+            -ac nodeNamePrefix left 3 nameClash2OptionMenu
+        nameClashForm;
+    
+    // Trying to concatenate uiRes() strings in a single statement generates a
+    // syntax error.
+    string $prefixesMsg = `uiRes("m_fileOptions.kPrefixesMsg1")` +
+        `uiRes("m_fileOptions.kPrefixesMsg2")` +
+        `uiRes("m_fileOptions.kPrefixesMsg3")`;
+
+    text
+        //-align "center" 
+        -label $prefixesMsg
+        prefixesObsoleteLabel;
+                    
+    string $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
+    int $useNS = (`optionVar -query $namespaceOptionVar`);
+    if ($useNS)
+    {
+        text -e -visible false prefixesObsoleteLabel;
+    }
+    else
+    {
+        text -e -visible true prefixesObsoleteLabel;
+    }
+
+    /*
+        ------------------------------------------------------------------------------------------------
+        Group C,namepace related controls, including a treeView and 4 radioButtons
+        by new design on Oct.8/2010
+        ------------------------------------------------------------------------------------------------
+    */
+    formLayout  namespaceOptionLayout;  
+
+    //1.TreeView
+    global string $gFileOptionTreeViewName;
+    $gFileOptionTreeViewName = namespaceTreeView(0, "", "");
+    treeView  -edit -width 200 -height 150 $gFileOptionTreeViewName;    
+                
+    //2.RadioButtons
+    columnLayout -adjustableColumn 1 -parent namespaceOptionLayout radioColumnLayout;           
+    // Do not use a global var to stash away the name of the
+    // collection; we need to use the same name to avoid updating the
+    // wrong one by referencing an out of data layout (that is, the one
+    // that is about to be deleted instead of the one that is being
+    // created). Since radioCollection elements need to be unique, in
+    // order to re-use the same name, we must first delete the old one
+    // if it exists.
+    //
+    if(`radioCollection -exists namespaceRadioCollection`){
+        deleteUI -ctl namespaceRadioCollection;
+    }
+    radioCollection namespaceRadioCollection;
+    radioButton -label `uiRes("m_fileOptions.kNamespaceOptionNewNamespaceWithFileName")`
+                        -onCommand ("fo_changeRadioCollection (\"" + $action + "\")")
+                    radioNamespaceOnFileName;
+    formLayout form1;
+    radioButton -label `uiRes("m_fileOptions.kNamespaceOptionNewNamespaceWithString")`
+                        -onCommand ("fo_changeRadioCollection (\"" + $action + "\")")
+                    radioNamespaceOnString;
+    textField -w 100 nodeNamePrefixInNamespace;
+    textField -e  -visible false nodeNamePrefixInNamespace;
+    formLayout -edit
+                        -ac nodeNamePrefixInNamespace left 2  radioNamespaceOnString
+                    form1;
+    setParent ..; 
+    radioButton -label `uiRes("m_fileOptions.kNamespaceOptionMergeIntoByRename")`
+                        -onCommand ("fo_changeRadioCollection (\"" + $action + "\")")
+                    radioNamespaceMergeToRename;
+    setParent ..;
+    global string $gMergeOptionValue;
+    $gMergeOptionValue = $action + "MergeOptionValue";
+    
+    optionVar -init false -category "Files/Projects" -sv $gMergeOptionValue "radioNamespaceOnFileName";
+
+    string $mergeOptionValue;
+    $mergeOptionValue = `optionVar -q $gMergeOptionValue`;
+    radioCollection -edit -select $mergeOptionValue namespaceRadioCollection;
+    formLayout -edit
+            -attachForm     $gFileOptionTreeViewName "top" 5 
+            -attachForm     $gFileOptionTreeViewName "left" 5
+            -attachForm     $gFileOptionTreeViewName "right" 50
+
+            -attachControl  radioColumnLayout "top" 5 $gFileOptionTreeViewName
+            -attachForm         radioColumnLayout "left" 5
+            -attachForm         radioColumnLayout "right" 5
+        namespaceOptionLayout;  
+    setParent ..;
+    /*
+        ------------------------------------------------------------------------------------------------
+        Initiate the status
+        ------------------------------------------------------------------------------------------------
+    */
+    //Fill the treeView anyway.
+    namespaceTreeView_update($gFileOptionTreeViewName, "");
+
+    refreshNamespaceOptions($useNS, $action);
+        
+    setParent $topForm;
+
+    frameLayout -label `uiRes("m_fileOptions.kFileTypeSpecificOptions")` FileSpecific_FL;
+
+    columnLayout fileOptionsScroll;
+
+    setParent $topForm;     
+        
+    setUITemplate -popTemplate;
+}
+
+// Adapted from fileOptions.mel:setOptionVars().
+proc setOptionVars()
+{
+    string $action = "Reference";
+    int $forceFactorySettings = false;
+    string $translators[];
+    string $optionName;
+    int $index;
+    string $defaultOptions;
+    global string $gAllOptionStrings[];
+    global int $gLastOptionSelectionIndex;
+    string $optionAllFiles   = uiRes("m_fileDialogFilterTypes.kAllFiles");
+    string $optionMayaScenes = uiRes("m_fileDialogFilterTypes.kMayaScenes");
+    string $category = "Files/Projects"; // Since some optionVars are shared
+
+    optionVar -init $forceFactorySettings -category $category
+        -iv referenceUseNamespacesDuringFileIO true
+        -iv referenceOptionsUseRenamePrefix false
+        -sv referenceOptionsRenamePrefix ""
+        -iv referenceOptionsLockReference false
+        -iv referenceOptionsDeferReference false
+        -iv referenceOptionsShareDisplayLayers false
+        -iv referenceOptionsShareShaders false
+        -sv referenceOptionsShareRenderLayers ""
+        -iv referenceOptionsSharedReference 1
+        -sv fileReferenceRefLoadSetting "default"
+        -iv fileReferenceReserveNamespaces false
+        ;
+    
+    optionVar -init $forceFactorySettings -category $category
+        -sv defaultFileReferenceType $optionAllFiles    // same default as createGlobalOptVars.mel
+        -iv ("proxyOptionsUseNew"+$action+"Tag") false
+        -sv ("proxyOptions"+$action+"Tag") ""
+        -sv ("proxyOptionsNew"+$action+"Tag") ""
+        ;
+    
+    //   Namespace object name clash method, including "new", "rename","replace" &"reject".
+    //   "new", always create a new namespace and put everything in it
+    //   "rename", when a name clash happens, rename the new object to ****1,****2...
+    //   "replace", replace old object by new one
+    //   "reject", reserve old one and reject new.
+    //   The default option is "new", to ensure not to destroy the file data
+    optionVar -init $forceFactorySettings -category $category
+        -sv namespaceClashNameMethod "new"
+        -sv fileWorkingNamespaceName ""
+        ;
+    
+    $translators = `translator -q -list`;
+    int $numOptionStrings = size($translators);
+    for ($index = 0; $index < $numOptionStrings; $index++) {
+        if ($translators[$index] == "directory") continue;
+        $optionName = ($translators[$index]+"Options");
+        $defaultOptions = `translator -q -do $translators[$index]`;
+        optionVar -init $forceFactorySettings -category $category
+            -sv $optionName $defaultOptions;
+        $gAllOptionStrings[$index] = `optionVar -q $optionName`;
+    }
+    $gLastOptionSelectionIndex = -1;
+}
+
+// Adapted from fileOptions.mel:fileOptionsSetup().
+proc fileOptionsSetup(string $parent, string $chosenFileType)
+{
+    string $action = "Reference";
+    
+    // Retrieve the option settings
+    //
+    setOptionVars();
+    setParent $parent;
+
+    checkBoxGrp -edit
+        -v1 `optionVar -query referenceOptionsLockReference`
+        referenceLockReferenceGrp;
+    checkBoxGrp -edit
+        -v1 `optionVar -query referenceOptionsDeferReference`
+        referenceDeferReferenceGrp;
+    checkBoxGrp -edit
+        -v1 ((`optionVar -query referenceOptionsSharedReference`) == 1)
+        referenceSharedReferenceCheckBox;
+    checkBoxGrp -edit
+        -v1 `optionVar -query referenceOptionsShareDisplayLayers`
+        referenceSharedDisplayLayers;
+    checkBoxGrp -edit
+        -v1 `optionVar -query referenceOptionsShareShaders`
+        referenceSharedShadingNetworks;
+    fo_changeSharedReferenceOption();
+
+    int $loadSettingIndex = fo_getLoadSettingIndex(`optionVar -q fileReferenceRefLoadSetting`);
+    optionMenuGrp -e -sl $loadSettingIndex ($action+"fo_loadSettingsMenu");
+
+    checkBoxGrp -edit
+        -v1 `optionVar -query fileReferenceReserveNamespaces`
+        ($action + "fo_reserveNamespacesGrp");
+
+    string $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
+    int $useNS = `optionVar -query $namespaceOptionVar`;
+    checkBoxGrp -edit -v1 $useNS useNamespacesGrp;
+    fo_changeReferenceNamespaceOption( $action );
+
+    if(`text -exists prefixesObsoleteLabel`) {
+        int $notUseNS = !$useNS;
+        text -e -visible $notUseNS prefixesObsoleteLabel;
+    }
+    
+    string $fileType = ("" == $chosenFileType) ? 
+        `optionVar -q defaultFileReferenceType` : $chosenFileType;
+
+    int $userPrefix = 0;
+    string $usePrefixOptionVar = "referenceOptionsUseRenamePrefix";
+    $userPrefix = `optionVar -q $usePrefixOptionVar `;
+
+    int $isUseNS = `optionVar -query $namespaceOptionVar`;
+    // Only non namespace mode uses nameClash2OptionMenu.  Set its menu Item via
+    // $userPrefix
+    if(!$isUseNS)
+    {
+        optionMenu -e -select ($userPrefix + 1) nameClash2OptionMenu;
+    }
+
+    if ($userPrefix) 
+    {
+        string $renamePrefixOptionVar = "referenceOptionsRenamePrefix";
+        string $userPrefixStr = `optionVar -q $renamePrefixOptionVar`;
+        if($isUseNS)
+        {
+            textField  -e -tx $userPrefixStr nodeNamePrefixInNamespace;
+        }
+        else
+        {
+            textField  -e -tx $userPrefixStr nodeNamePrefix;
+        }
+    }
+    fo_prefixName ($action);
+
+    // Maya reference proxy tags are not unsupported by Maya reference prims.
+
+    initCurrentFileTypeOption($action, $parent, $fileType);
+}
+
+// Adapted from projectViewer.mel:fileOperationsOptionsUISetup().
+//
+// $parent: layout into which controls are added.
+//
+global proc addMayaReferenceToUsdCreateUi(string $parent)
+{
+    setParent $parent;
+    $parent = `scrollLayout -childResizable true`;
+
+    fileOptionsTabPage($parent);
+}
+
+// Adapted from projectViewer.mel:fileOperationsOptionsUIInitValues().
+//
+// $parent:     layout into which controls have been added using the 
+//                  optionsUICreate flag. 
+// $filterType: initial file filter.
+//
+global proc addMayaReferenceToUsdInitUi(string $parent, string $filterType)
+{
+    setParent $parent;
+    fileOptionsSetup($parent, $filterType);
+}
+
+// Verbatim copy of performFileAction.mel:makeNamespaceNameFromFileName(), 
+// which is not a global proc.
+//
+//  Returns a valid namespace name which is created from the basename
+//  of $fileName, with any illegal characters replaced by an underscore.
+//
+//  Any path or extension in $fileName will be stripped off. If $fileName
+//  contains a URI then everything will be stripped off except the base name
+//  of the file.
+//
+proc string makeNamespaceNameFromFileName(string $fileName)
+{
+    //  Encode $fileName just in case it has any embedded quotes that could
+    //  cause us problems when building command strings.
+    //
+    string $result = encodeString($fileName);
+
+    //  MURI doesn't support '#" in the file path, but Maya file command does
+    //  and will replace '#' with '_'. In order to support '#' in file path,
+    //  replace '#' prior to calling MURI. '#' is important because
+    //  perforce uses it in the file name to handle versioning.
+    //
+    $fileName = python("name = \"" + $fileName + "\";name.replace('#','_')");
+
+    //  The MURI class can handle both URIs and normal file names, so let's
+    //  let it do all the work. Note that in the Python code we are using
+    //  double quotes around $fileName. Single quotes would be more
+    //  convenient, but the encodeString() call above only escapes double
+    //  quotes, not single.
+    //
+    $result = python("import maya.OpenMaya as om;uri = om.MURI(\"" + $fileName + "\");uri.getFileName(False)");
+
+    //  Now that we have just the basename of the file, make it into a valid
+    //  namespace name.
+    //
+    return `namespace -validateName $result`;
+}
+
+// Adapted from projectViewer.mel:fileOperationsOptionsUICallback() and
+// fileOptions.mel:fileOptionsCallback2().
+//
+// $parent:       layout into which controls have been added using the 
+//                    optionsUICreate flag. 
+// $selectedFile: file select using the dialog.
+//
+global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
+{
+    setParent $parent;
+
+    string $action = "Reference";
+
+    global string $gFileOptionsString;
+    global string $gAllOptionStrings[];
+    global int $gLastOptionSelectionIndex;
+    global string $gLastOptionSelection;
+    global string $gCurrentOptionSelection;
+    string $fileType;
+    string $optionsScript;
+
+    // First find out what the user has given us.
+    int $useNS = `checkBoxGrp -q -v1 useNamespacesGrp`;
+    string $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
+    optionVar -intValue $namespaceOptionVar $useNS;
+
+    int $lockItGood = `checkBoxGrp -q -v1 referenceLockReferenceGrp`;
+    string $referenceOptionsLockReferenceVar = "referenceOptionsLockReference";
+    optionVar -intValue $referenceOptionsLockReferenceVar $lockItGood;
+    
+    int $deferLoading = `checkBoxGrp -q -v1 referenceDeferReferenceGrp`;
+    string $referenceOptionsDeferReferenceVar = "referenceOptionsDeferReference";
+    optionVar -intValue $referenceOptionsDeferReferenceVar $deferLoading;
+
+    int $sharedEnabled = `checkBoxGrp -q -v1 referenceSharedReferenceCheckBox`;
+    optionVar -intValue referenceOptionsSharedReference $sharedEnabled;
+    
+    int $shareDisplayLayers = `checkBoxGrp -q -v1 referenceSharedDisplayLayers`;
+    optionVar -intValue referenceOptionsShareDisplayLayers $shareDisplayLayers;
+    int $shareShaders = `checkBoxGrp -q -v1 referenceSharedShadingNetworks`;
+    optionVar -intValue referenceOptionsShareShaders $shareShaders;
+
+    string $loadSetting = fo_getLoadSettingString( `optionMenuGrp -q -sl ($action+"fo_loadSettingsMenu")`);
+    optionVar -stringValue fileReferenceRefLoadSetting $loadSetting;
+
+    int $reserveNamespaces = `checkBoxGrp -q -v1 ($action+"fo_reserveNamespacesGrp")`;
+    optionVar -intValue fileReferenceReserveNamespaces $reserveNamespaces;
+
+    int $useRDN = 0;
+
+    int $radioExist = `radioCollection -exists namespaceRadioCollection`;
+    int $useNamePrefix  = 1;
+    if($useNS)
+    {
+        if($radioExist)
+        {
+            string $useNSString = `radioCollection -q -select namespaceRadioCollection`;
+            if( $useNSString == "radioNamespaceOnString")
+            {
+                $useNamePrefix  = 2;
+            }
+        }
+    }
+    else
+    {
+        $useNamePrefix  = `optionMenu -q -sl nameClash2OptionMenu`;
+    }
+
+    string $usePrefixOptionVar = "referenceOptionsUseRenamePrefix";
+    if ($useNamePrefix == 1) {
+        optionVar -intValue $usePrefixOptionVar false;
+    } else {
+        optionVar -intValue $usePrefixOptionVar true;
+    }
+
+    //Get namePrefix and workingNamespace from controls.
+    string $namePrefix;
+    $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
+    if( $useNS )
+    {
+        //Set prefix name, 
+        string $useNSString = `radioCollection -q -select namespaceRadioCollection`;
+        if($useNSString == "radioNamespaceOnString")
+        {
+            $namePrefix = `textField -q -tx nodeNamePrefixInNamespace`;
+        }
+        //else do nothing for not using name prefix
+
+        //Set working namespace
+        string $selectedNS = getlFullNamespaceFromTreeView();
+        optionVar -stringValue fileWorkingNamespaceName $selectedNS;
+    }
+    else
+    {
+        if($useNamePrefix)
+        {
+            $namePrefix = `textField -q -tx nodeNamePrefix`;        
+        }
+        //else do nothing for not using name prefix
+    }
+
+    if (size($namePrefix) > 0) {
+        string $renamePrefixOptionVar = "referenceOptionsRenamePrefix";
+        optionVar -stringValue $renamePrefixOptionVar $namePrefix;
+    }
+
+    $fileType = $gCurrentOptionSelection;
+    optionVar -stringValue defaultFileReferenceType $fileType;
+
+    if ($fileType != uiRes("m_fileOptions.kBestGuess") &&
+        $fileType != uiRes("m_fileDialogFilterTypes.kMayaScenes")) 
+    {   // We need to determine the type.
+        $optionsScript = `translator -q -optionsScript $fileType`;
+    }
+
+    if ($optionsScript != "") {
+        // Get the new options.
+        // Sets $gFileOptionsString
+        eval($optionsScript+" fileOptionsScroll \"query\" \"\" fo_optionsCallback");
+    } else {
+        $gFileOptionsString = "";
+    }
+
+    $gLastOptionSelectionIndex = -1;    // Assume not found
+
+    string $translators[] = `translator -q -list`;
+    int $numTranslators = size($translators);
+    for ($index = 0; $index < $numTranslators; $index++) {
+        if ($translators[$index] == "directory") continue;
+
+        if ($fileType == $translators[$index]) {
+            $gAllOptionStrings[$index] = $gFileOptionsString;
+        }
+
+        $optionName = ($translators[$index]+"Options");
+        optionVar -stringValue $optionName $gAllOptionStrings[$index];
+    }
+
+    // Clean up.
+    $gLastOptionSelectionIndex = -1;
+    string $empty[];
+    $gAllOptionStrings = $empty;
+}
+
+// Adapted from code in performFileAction.mel:performFileAction() , for 
+// $gOperationMode == "Reference"
+//
+// Inputs to this proc are option vars, set by the addMayaReferenceToUsdUiCb()
+// proc.
+//
+// Option var that stores the namespace name that the user entered: 
+// referenceOptionsRenamePrefix
+//
+// Option var that determines whether to use the referenceOptionsRenamePrefix
+// or not: referenceOptionsUseRenamePrefix
+proc string computeNamespace(string $filePath)
+{
+    string $ns;
+    if (`optionVar -exists referenceOptionsUseRenamePrefix`) {
+        int $userNs = `optionVar -q referenceOptionsUseRenamePrefix`;
+        if ($userNs && `optionVar -exists referenceOptionsRenamePrefix`) {
+            $ns = `optionVar -q referenceOptionsRenamePrefix`;
+        }
+    }
+
+    if (size($ns) == 0) {
+        $ns = makeNamespaceNameFromFileName($filePath);
+    }
+
+    return $ns;
+}
+
+global proc string addMayaReferenceToUsd(string $ufePath)
+{
+    // fileMode 1 means a single existing file.
+    // 
+    // As per projectViewer.mel, we set returnFilter to 1, to return the
+    // last file filter used, which allows us to obtain file type to invoke the
+    // proper Maya file translator.
+    //
+    // projectViewer.mel calls fileOptionsCancel() on cancel, doesn't seem to
+    // do much, T.B.D if we need to call it.
+    string $fileFilterList = buildReadableFileFilterList();
+    string $file[] = `fileDialog2 -returnFilter 1 -fileMode 1 -caption "Add Maya Reference to USD Prim" -fileFilter $fileFilterList -dialogStyle 2 -okCaption "Reference" -optionsUICreate addMayaReferenceToUsdCreateUi -optionsUIInit addMayaReferenceToUsdInitUi -optionsUITitle "" -optionsUICommit2 addMayaReferenceToUsdUiCb`;
+
+    // Empty return means file operation was not performed
+    int $len = size($file);
+    if( $len == 0 || $file[0] == "" )
+    {
+        return "";
+    }
+
+    // No need to actually create the Maya reference node: pulling on the
+    // Maya reference prim will create the Maya reference node.
+    // Create the Maya reference prim under its parent.
+    string $filePath = fromNativePath($file[0]);
+    string $ns = computeNamespace($filePath);
+    python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.createMayaReferencePrim(\"" + $ufePath + "\", \"" + $filePath + "\", \"" + $ns + "\")");
+
+    return $file[0];
+}
