@@ -140,12 +140,14 @@ const MObject getMessageAttr()
 
 const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
 const TfToken UsdMayaTranslatorMayaReference::m_referenceName = TfToken("mayaReference");
+const TfToken UsdMayaTranslatorMayaReference::m_mergeNamespacesOnClash = TfToken("mergeNamespacesOnClash");
 
 MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     const UsdPrim& prim,
     MObject&       parent,
     MString&       mayaReferencePath,
-    MString&       rigNamespaceM)
+    MString&       rigNamespaceM,
+    bool           mergeNamespacesOnClash)
 {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
         .Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
@@ -180,11 +182,12 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     // -mergeNamespacesOnClash to true.)
     //
     MStringArray createdNodes;
+    MString      mergeNamespacesOnClashArg = mergeNamespacesOnClash ? "true" : "false";
     MString      referenceCommand = MString("file"
                                        " -reference"
                                        " -returnNewNodes"
                                        " -deferReference true"
-                                       " -mergeNamespacesOnClash false"
+                                       " -mergeNamespacesOnClash " + mergeNamespacesOnClashArg +
                                        " -ignoreVersion"
                                        " -options \"v=0;\""
                                        " -namespace \"")
@@ -414,7 +417,13 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     // If no reference found, we'll need to create it. This may be the first time we are
     // bring in the reference or it may have been imported or removed directly in maya.
     if (refNode.isNull()) {
-        return LoadMayaReference(prim, parent, mayaReferencePath, rigNamespaceM);
+        bool mergeNamespacesOnClash = false;
+        if (UsdAttribute mergeNamespacesOnClashAttribute = prim.GetAttribute(m_mergeNamespacesOnClash))
+        {
+            mergeNamespacesOnClashAttribute.Get(&mergeNamespacesOnClash);
+        }
+
+        return LoadMayaReference(prim, parent, mayaReferencePath, rigNamespaceM, mergeNamespacesOnClash);
     }
 
     if (status) {
