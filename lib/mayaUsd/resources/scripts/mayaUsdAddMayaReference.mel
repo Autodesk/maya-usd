@@ -519,7 +519,7 @@ proc usdMayaRef_setupDefineInVariantRows(int $groupChecked, int $variantSetNameS
         $groupChecked = `checkBoxGrp -q -v1 usdMayaReferenceGroupGrp`;
     }
 
-    // If the caller didn't give us the variane set name size, get it now.
+    // If the caller didn't give us the variant set name size, get it now.
     if ($variantSetNameSize == -1) {
         string $variantSetNames[] = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getVariantSetNames('" + $gUsdMayaReferenceUfePath + "')")`;
         $variantSetNameSize = size($variantSetNames);

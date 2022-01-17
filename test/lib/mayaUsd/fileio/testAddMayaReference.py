@@ -77,12 +77,13 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
         kDefaultVariantSetName = getMayaUsdLibString('kMayaRefDefaultVariantSetName')
         kDefaultVariantName = getMayaUsdLibString('kMayaRefDefaultVariantName')
+        kDefaultNamespace = 'simpleSphere'
 
         import mayaUsdAddMayaReference
         mayaUsdAddMayaReference.createMayaReferencePrim(
             primPathStr,
             mayaSceneStr,
-            'simpleSphere', kDefaultVariantSetName, kDefaultVariantName)
+            kDefaultNamespace, kDefaultVariantSetName, kDefaultVariantName)
 
         # Make sure the prim has the variant set and variant.
         self.assertTrue(primA.HasVariantSets())
@@ -92,6 +93,20 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         self.assertTrue(vset.GetVariantNames())
         self.assertTrue(vset.HasAuthoredVariant(kDefaultVariantName))
         self.assertEqual(vset.GetVariantSelection(), kDefaultVariantName)
+
+        # Verify that a Maya Reference prim was created.
+        mayaRefPrim = primA.GetChild('MayaReference')
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
+
+        # Verify that the Maya reference prim is inside the variant,
+        # and that it has the expected metadata.
+        attr = mayaRefPrim.GetAttribute('mayaReference')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get().resolvedPath, mayaSceneStr)
+        attr = mayaRefPrim.GetAttribute('mayaNamespace')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), kDefaultNamespace)
 
         # Create another prim to test sanitizing variant name.
         primB = stage.DefinePrim('/B', 'Xform')
