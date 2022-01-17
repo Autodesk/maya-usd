@@ -187,7 +187,7 @@ class DuplicateAsTestCase(unittest.TestCase):
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
                 cmds.ls(mayaA, long=True)[0], psPathStr))
 
-        # Maya hierarchy should be duplicated in USD, but with a numeric suffix sue to the collision.
+        # Maya hierarchy should be duplicated in USD, but with a numeric suffix due to the collision.
         usdNewAPathStr = psPathStr + ',/' + mayaA + '1'
         usdNewAPath = ufe.PathString.path(usdNewAPathStr)
 
