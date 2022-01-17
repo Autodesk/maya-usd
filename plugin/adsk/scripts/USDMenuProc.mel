@@ -50,6 +50,6 @@ global proc USDMenuProc(string $parent, string $obj)
                 menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdEditAsMaya \"" + $obj + "\"");
             }
         }
-        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdDuplicateAsMaya \"" + $obj + "\"");
+        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdDuplicate \"" + $obj + "\"" + "\"|world\"");
     }
 }
