@@ -267,7 +267,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # delete two USD prims and Maya's shape
         ufeObs.reset()
         cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase')
-        self.assertEqual(ufeObs.nbDeleteNotif() , 4)
+        self.assertEqual(ufeObs.nbDeleteNotif() , 1)
         self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
@@ -307,7 +307,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # delete two USD prims and Maya's shape
         ufeObs.reset()
         cmds.delete('|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves', '|Tree_usd|Tree_usdShape,/TreeBase', '|Tree_usd|Tree_usdShape,/TreeBase/trunk')
-        self.assertEqual(ufeObs.nbDeleteNotif() , 4)
+        self.assertEqual(ufeObs.nbDeleteNotif() , 2)
         self.assertFalse(stage.GetPrimAtPath('/TreeBase'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/leavesXform/leaves'))
         self.assertFalse(stage.GetPrimAtPath('/TreeBase/trunk'))
