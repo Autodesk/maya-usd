@@ -14,7 +14,7 @@
 #
 
 import maya.api.OpenMaya as om
-from pxr import Sdf
+from pxr import Sdf, Tf
 import mayaUsd
 import ufe
 import re
@@ -42,8 +42,8 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace, varian
 
     stage = mayaUsd.ufe.getStage(ufePathStr)
 
-    variantSetName = mayaUsd.ufe.sanitizeName(variantSetName)
-    variantName = mayaUsd.ufe.sanitizeName(variantName)
+    variantSetName = Tf.MakeValidIdentifier(variantSetName)
+    variantName = Tf.MakeValidIdentifier(variantName)
     if variantSetName and variantName:
         ufePathPrim = mayaUsd.ufe.ufePathToPrim(ufePathStr)
         vset = ufePathPrim.GetVariantSet(variantSetName)

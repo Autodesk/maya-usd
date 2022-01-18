@@ -22,7 +22,7 @@ import usdUtils
 
 import mayaUsd.ufe
 
-from pxr import Usd
+from pxr import Usd, Tf
 
 from maya import cmds
 from maya import standalone
@@ -398,6 +398,7 @@ class RenameTestCase(unittest.TestCase):
 
         # rename starting with digits.
         newNameStartingWithDigit = '09123Potato'
+        self.assertFalse(Tf.IsValidIdentifier(newNameStartingWithDigit))
         cmds.rename(newNameStartingWithDigit)
 
         # get the prim
@@ -406,7 +407,8 @@ class RenameTestCase(unittest.TestCase):
         self.assertTrue(usdPrim)
 
         # prim names are not allowed to start with digits
-        self.assertEqual(usdPrim.GetName(), 'Potato')
+        newValidName = Tf.MakeValidIdentifier(newNameStartingWithDigit)
+        self.assertEqual(usdPrim.GetName(), newValidName)
 
     def testRenameNotifications(self):
         '''Rename a USD node and test for the UFE notifications.'''

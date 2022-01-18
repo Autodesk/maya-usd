@@ -21,6 +21,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUtils/util.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -72,7 +73,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     ufe::applyCommandRestriction(prim, "rename");
 
     // handle unique name for _newName
-    _newName = sanitizeName(uniqueChildName(prim.GetParent(), newName.string()));
+    _newName = TfMakeValidIdentifier(uniqueChildName(prim.GetParent(), newName.string()));
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand() { }

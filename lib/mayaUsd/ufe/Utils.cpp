@@ -287,25 +287,6 @@ std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
     return childName;
 }
 
-std::string sanitizeName(const std::string& name)
-{
-    std::string sanitizedName { name };
-
-    // Names are not allowed to start with digits.
-    sanitizedName = std::regex_replace(sanitizedName, std::regex("^\\d+"), std::string(""));
-
-    // Replace all special characters with '_'.
-    // Using R"raw( for the raw string tag because invalid chars include (
-    // Some characters needed to be backslashed:
-    //   -  means range
-    //   [] are start and end of group
-    //   \  must be backslashed
-    std::regex invalidChars(R"raw([~!@#$%^&*()\-=+,.?`'":{}|<>\[\]/\\ ]+)raw");
-    sanitizedName = std::regex_replace(sanitizedName, invalidChars, std::string("_"));
-
-    return sanitizedName;
-}
-
 bool isAGatewayType(const std::string& mayaNodeType)
 {
     // If we've seen this node type before, return the cached value.
