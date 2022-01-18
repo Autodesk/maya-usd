@@ -27,6 +27,9 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/getenv.h>
+#include <pxr/imaging/hd/extCompCpuComputation.h> // these 3 had quotes before?
+#include <pxr/imaging/hd/extCompPrimvarBufferSource.h>
+#include <pxr/imaging/hd/extComputation.h>
 #include <pxr/imaging/hd/meshUtil.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/smoothNormals.h>
@@ -2737,6 +2740,55 @@ void HdVP2Mesh::_UpdatePrimvarSources(
                     }
                 }
             }
+        }
+    }
+
+    // At this point we've searched the primvars for the required primvars.
+    // check to see if there are any HdExtComputation which should replace
+    // primvar data or fill in for a missing primvar.
+    HdExtComputationPrimvarDescriptorVector compPrimvars
+        = sceneDelegate->GetExtComputationPrimvarDescriptors(id, HdInterpolationVertex);
+    const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
+    for (const auto& primvarName : requiredPrimvars) {
+        // The compPrimvars are a description of the link between the compute system and
+        // what we need to draw.
+        auto result
+            = std::find_if(compPrimvars.begin(), compPrimvars.end(), [&](const auto& compPrimvar) {
+                  return compPrimvar.name == primvarName;
+              });
+        // if there is no compute for the given required primvar then we're done!
+        if (result == compPrimvars.end())
+            continue;
+        HdExtComputationPrimvarDescriptor compPrimvar = *result;
+        // Create the HdExtCompCpuComputation objects necessary to resolve the computation
+        HdExtComputation const* sourceComp
+            = static_cast<HdExtComputation const*>(renderIndex.GetSprim(
+                HdPrimTypeTokens->extComputation, compPrimvar.sourceComputationId));
+        if (!sourceComp || sourceComp->GetElementCount() <= 0)
+            continue;
+
+        // This compPrimvar is telling me that the primvar with "name" comes from compute.
+        // The compPrimvar has the Id of the compute the data comes from, and the output
+        // of the compute which contains the data
+        HdExtCompCpuComputationSharedPtr cpuComputation;
+        HdBufferSourceSharedPtrVector    sources;
+        // There is a possible data race calling CreateComputation, see
+        // https://github.com/PixarAnimationStudios/USD/issues/1742
+        cpuComputation
+            = HdExtCompCpuComputation::CreateComputation(sceneDelegate, *sourceComp, &sources);
+
+        // Immediately resolve the computation so we can fill _meshSharedData._primvarInfo
+        for (HdBufferSourceSharedPtr& source : sources) {
+            source->Resolve();
+        }
+
+        // Pull the result out of the compute and save it into our local primvar info.
+        size_t outputIndex = cpuComputation->GetOutputIndex(compPrimvar.sourceComputationOutputName);
+        // INVALID_OUTPUT_INDEX is declared static in USD, can't access here so re-declare
+        constexpr size_t INVALID_OUTPUT_INDEX = std::numeric_limits<size_t>::max();
+        if (INVALID_OUTPUT_INDEX != outputIndex) {
+            updatePrimvarInfo(
+                primvarName, cpuComputation->GetOutputByIndex(outputIndex), HdInterpolationVertex);
         }
     }
 }
