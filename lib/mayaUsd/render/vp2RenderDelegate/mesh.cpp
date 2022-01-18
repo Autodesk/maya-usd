@@ -27,7 +27,7 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/getenv.h>
-#include <pxr/imaging/hd/extCompCpuComputation.h> // these 3 had quotes before?
+#include <pxr/imaging/hd/extCompCpuComputation.h>
 #include <pxr/imaging/hd/extCompPrimvarBufferSource.h>
 #include <pxr/imaging/hd/extComputation.h>
 #include <pxr/imaging/hd/meshUtil.h>
@@ -2783,7 +2783,8 @@ void HdVP2Mesh::_UpdatePrimvarSources(
         }
 
         // Pull the result out of the compute and save it into our local primvar info.
-        size_t outputIndex = cpuComputation->GetOutputIndex(compPrimvar.sourceComputationOutputName);
+        size_t outputIndex
+            = cpuComputation->GetOutputIndex(compPrimvar.sourceComputationOutputName);
         // INVALID_OUTPUT_INDEX is declared static in USD, can't access here so re-declare
         constexpr size_t INVALID_OUTPUT_INDEX = std::numeric_limits<size_t>::max();
         if (INVALID_OUTPUT_INDEX != outputIndex) {

@@ -752,7 +752,7 @@ HdSprim* HdVP2RenderDelegate::CreateFallbackSprim(const TfToken& typeId)
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(SdfPath::EmptyPath());
     }
-    if (typeId == HdPrimTypeTokens->extComputation) { 
+    if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(SdfPath::EmptyPath());
     }
     /*
