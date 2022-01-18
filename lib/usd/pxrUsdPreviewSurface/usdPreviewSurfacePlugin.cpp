@@ -37,10 +37,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-TfToken::Set         _registeredTypeNames;
-static const MString cpvColorShaderName("cpvColor");
-static const MString cpvColorShaderUserClassification("texture/2d:");
-static const MString cpvColorShaderDrawClassification("drawdb/shader/texture/2d/");
+TfToken::Set _registeredTypeNames;
 } // namespace
 /* static */
 MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
@@ -76,12 +73,12 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
     CHECK_MSTATUS(status);
 
     // Register CPV shader node
-    const MString cpvDrawClassify(cpvColorShaderDrawClassification + cpvColorShaderName);
-    MString       cpvUserClassify(cpvColorShaderUserClassification);
+    const MString cpvDrawClassify(CPVColor::drawClassification + CPVColor::name);
+    MString       cpvUserClassify(CPVColor::userClassification);
     cpvUserClassify += cpvDrawClassify;
 
     status = plugin.registerNode(
-        cpvColorShaderName,
+        CPVColor::name,
         CPVColor::id,
         CPVColor::creator,
         CPVColor::initialize,
@@ -115,11 +112,10 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(
 
     deregisterFragments();
 
-    const MString cpvDrawClassify(cpvColorShaderDrawClassification + cpvColorShaderName);
     MStatus status = plugin.deregisterNode(CPVColor::id);
     CHECK_MSTATUS(status);
     status = MHWRender::MDrawRegistry::deregisterShadingNodeOverrideCreator(
-        cpvDrawClassify, registrantId);
+        CPVColor::drawClassification + CPVColor::name, registrantId);
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(

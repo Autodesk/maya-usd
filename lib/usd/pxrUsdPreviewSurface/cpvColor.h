@@ -30,6 +30,15 @@ class CPVColor : public MPxNode
 {
 public:
     PXRUSDPREVIEWSURFACE_API
+    static const MString name;
+
+    PXRUSDPREVIEWSURFACE_API
+    static const MString userClassification;
+
+    PXRUSDPREVIEWSURFACE_API
+    static const MString drawClassification;
+
+    PXRUSDPREVIEWSURFACE_API
     static void* creator();
 
     PXRUSDPREVIEWSURFACE_API
@@ -45,17 +54,17 @@ public:
     SchedulingType schedulingType() const override;
 
     PXRUSDPREVIEWSURFACE_API
-    static MStatus initialize();
+    MStatus compute(const MPlug& plug, MDataBlock& block) override;
 
     PXRUSDPREVIEWSURFACE_API
     static const MTypeId id;
 
 private:
-    static MObject aUVCoord;
-
     static MObject aOutColor;
 
     static MObject aOutAlpha;
+
+    static MObject aOutOpacity;
 };
 
 class CPVColorShadingNodeOverride : public MHWRender::MPxShadingNodeOverride

@@ -22,10 +22,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static const MString cpvInputFragmentName("mayaCPVInput");
 
+const MString CPVColor::name("cpvColor");
+const MString CPVColor::userClassification("utility/color:");
+const MString CPVColor::drawClassification("drawdb/shader/utility/color/");
+
 const MTypeId CPVColor::id(0x58000098);
-MObject       CPVColor::aUVCoord;
 MObject       CPVColor::aOutColor;
 MObject       CPVColor::aOutAlpha;
+MObject       CPVColor::aOutOpacity;
 
 void* CPVColor::creator() { return new CPVColor(); }
 
@@ -37,14 +41,6 @@ MStatus CPVColor::initialize()
 {
     // Define implicit shading network attributes
     MFnNumericAttribute nAttr;
-    MObject             uCoord = nAttr.create("uCoord", "u", MFnNumericData::kFloat);
-    MObject             vCoord = nAttr.create("vCoord", "v", MFnNumericData::kFloat);
-    aUVCoord = nAttr.create("uvCoord", "uv", uCoord, vCoord);
-    CHECK_MSTATUS(nAttr.setKeyable(true));
-    CHECK_MSTATUS(nAttr.setStorable(true));
-    CHECK_MSTATUS(nAttr.setReadable(true));
-    CHECK_MSTATUS(nAttr.setWritable(true));
-    CHECK_MSTATUS(nAttr.setHidden(true));
     aOutColor = nAttr.createColor("outColor", "oc");
     CHECK_MSTATUS(nAttr.setKeyable(false));
     CHECK_MSTATUS(nAttr.setStorable(false));
@@ -55,15 +51,37 @@ MStatus CPVColor::initialize()
     CHECK_MSTATUS(nAttr.setStorable(false));
     CHECK_MSTATUS(nAttr.setReadable(true));
     CHECK_MSTATUS(nAttr.setWritable(false));
+    CHECK_MSTATUS(nAttr.setHidden(true));
+    aOutOpacity = nAttr.create("outOpacity", "oo", MFnNumericData::kFloat);
+    CHECK_MSTATUS(nAttr.setKeyable(false));
+    CHECK_MSTATUS(nAttr.setStorable(false));
+    CHECK_MSTATUS(nAttr.setReadable(true));
+    CHECK_MSTATUS(nAttr.setWritable(false));
 
-    // Add attributes and setup attribute affecting relationships
-    CHECK_MSTATUS(addAttribute(aUVCoord));
+    // Add attributes
     CHECK_MSTATUS(addAttribute(aOutColor));
     CHECK_MSTATUS(addAttribute(aOutAlpha));
-    CHECK_MSTATUS(attributeAffects(aUVCoord, aOutColor));
-    CHECK_MSTATUS(attributeAffects(aUVCoord, aOutAlpha));
+    CHECK_MSTATUS(addAttribute(aOutOpacity));
+
+    return MS::kSuccess;
+}
 
 MPxNode::SchedulingType CPVColor::schedulingType() const { return SchedulingType::kParallel; }
+
+MStatus CPVColor::compute(const MPlug& plug, MDataBlock& block)
+{
+    if ((plug != aOutColor) && (plug.parent() != aOutColor) && (plug != aOutAlpha)
+        && (plug != aOutOpacity))
+        return MS::kUnknownParameter;
+
+    // Complement alpha for opacity attribute
+    MDataHandle outAlphaHandle = block.outputValue(aOutAlpha);
+    MDataHandle outOpacityHandle = block.outputValue(aOutOpacity);
+    float&      outOpacity = outOpacityHandle.asFloat();
+    outOpacity = 1 - outAlphaHandle.asFloat();
+    outOpacityHandle.setClean();
+    outAlphaHandle.setClean();
+
     return MS::kSuccess;
 }
 
