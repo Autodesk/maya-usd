@@ -21,6 +21,8 @@ import fixturesUtils
 import mayaUsd
 import mayaUtils
 
+from pxr import Tf
+
 from maya import cmds
 from maya import standalone
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
@@ -113,10 +115,10 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         primPathStr = proxyShapePathStr + ',/B'
         primB = mayaUsd.ufe.ufePathToPrim(primPathStr)
 
-        kBadVariantSetName = 'No Spaces or Special Chars#$%^&'
-        kGoodVariantSetName = 'No_Spaces_or_Special_Chars_'
-        kBadVariantName = '39no start digits+-*/='
-        kGoodVariantName = 'no_start_digits_'
+        kBadVariantSetName = 'No Spaces or Special#Chars'
+        kGoodVariantSetName = Tf.MakeValidIdentifier(kBadVariantSetName)
+        kBadVariantName = '3no start digits'
+        kGoodVariantName = Tf.MakeValidIdentifier(kBadVariantName)
         mayaUsdAddMayaReference.createMayaReferencePrim(
             primPathStr,
             mayaSceneStr,

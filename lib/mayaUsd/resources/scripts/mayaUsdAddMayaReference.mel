@@ -761,18 +761,39 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
     int $defineInVar = `checkBoxGrp -q -v1 usdMayaReferenceDefineInVariantGrp`;
     optionVar -iv usdMayaReferenceDefineInVariant $defineInVar;
 
-    if (`optionMenu -q -ni usdMayaReferenceVariantSetNameOptionMenu` > 0) {
-        string $varSetName = `optionMenu -q -value usdMayaReferenceVariantSetNameOptionMenu`;
-        optionVar -sv usdMayaReferenceVariantSetNameOption $varSetName;
+    if ($defineInVar)
+    {
+        string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+        string $varSetNameText = `textField -q -text usdMayaReferenceVariantSetNameTextField`;
+        if (`optionMenu -q -ni usdMayaReferenceVariantSetNameOptionMenu` > 0) {
+            // If "Create New" is used, then set the optionVar for the optionMenu to the value
+            // from the textField (the new Variant Set name that will be created).
+            string $varSetName = `optionMenu -q -value usdMayaReferenceVariantSetNameOptionMenu`;
+            if ($varSetName == $createNew) {
+                optionVar -sv usdMayaReferenceVariantSetNameOption $varSetNameText;
+            } else {
+                optionVar -sv usdMayaReferenceVariantSetNameOption $varSetName;
+            }
+        } else {
+            optionVar -sv usdMayaReferenceVariantSetNameOption $varSetNameText;
+        }
+        optionVar -sv usdMayaReferenceVariantSetNameText $varSetNameText;
+
+        string $varNameText = `textField -q -text usdMayaReferenceVariantNameTextField`;
+        if (`optionMenu -q -ni usdMayaReferenceVariantNameOptionMenu` > 0) {
+            // If "Create New" is used, then set the optionVar for the optionMenu to the value
+            // from the textField (the new Variant name that will be created).
+            string $varName = `optionMenu -q -value usdMayaReferenceVariantNameOptionMenu`;
+            if ($varName == $createNew) {
+                optionVar -sv usdMayaReferenceVariantNameOption $varNameText;
+            } else {
+                optionVar -sv usdMayaReferenceVariantNameOption $varName;
+            }
+        } else {
+            optionVar -sv usdMayaReferenceVariantNameOption $varNameText;
+        }
+        optionVar -sv usdMayaReferenceVariantNameText $varNameText;
     }
-    string $varSetNameText = `textField -q -text usdMayaReferenceVariantSetNameTextField`;
-    optionVar -sv usdMayaReferenceVariantSetNameText $varSetNameText;
-    if (`optionMenu -q -ni usdMayaReferenceVariantNameOptionMenu` > 0) {
-        string $varName = `optionMenu -q -value usdMayaReferenceVariantNameOptionMenu`;
-        optionVar -sv usdMayaReferenceVariantNameOption $varName;
-    }
-    string $varNameText = `textField -q -text usdMayaReferenceVariantNameTextField`;
-    optionVar -sv usdMayaReferenceVariantNameText $varNameText;
 
     // First find out what the user has given us.
     int $useNS = `checkBoxGrp -q -v1 useNamespacesGrp`;
@@ -928,6 +949,11 @@ proc string computeNamespace(string $filePath)
 proc string quoteString(string $unquotedStr)
 {
     return("\"" + $unquotedStr + "\"");
+}
+
+proc string sanitizeName(string $name)
+{
+    return `python("from pxr import Tf; Tf.MakeValidIdentifier('" + $name + "')")`;
 }
 
 global proc string addMayaReferenceToUsd(string $ufePath)
@@ -1100,6 +1126,12 @@ global proc usdMayaRef_changeVariantSetNameText(string $value)
     if ($value == "") {
         string $defValue = getMayaUsdLibString("kMayaRefDefaultVariantSetName");
         textField -edit -text $defValue usdMayaReferenceVariantSetNameTextField;
+    } else {
+        // Make sure the name user entered doesn't contain any invalid characters.
+        string $validatedSetName = sanitizeName($value);
+        if ($value != $validatedSetName) {
+            textField -edit -text $validatedSetName usdMayaReferenceVariantSetNameTextField;
+        }
     }
 }
 
@@ -1109,5 +1141,11 @@ global proc usdMayaRef_changeVariantNameText(string $value)
     if ($value == "") {
         string $defValue = getMayaUsdLibString("kMayaRefDefaultVariantName");
         textField -edit -text $defValue usdMayaReferenceVariantNameTextField;
+    } else {
+        // Make sure the name user entered doesn't contain any invalid characters.
+        string $validatedName = sanitizeName($value);
+        if ($value != $validatedName) {
+            textField -edit -text $validatedName usdMayaReferenceVariantNameTextField;
+        }
     }
 }
