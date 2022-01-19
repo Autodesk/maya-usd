@@ -37,8 +37,6 @@ global proc mayaUsdLibRegisterStrings()
     register("kMayaRefDefineInVariantAnn", "Select this checkbox to define the Maya Reference in a USD variant. This will enable your prim to have 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.");
     register("kMayaRefVariantSetName", "Variant Set Name:");
     register("kMayaRefVariantName", "Variant Name:");
-    register("kMayaRefDefaultVariantSetName", "Representation");
-    register("kMayaRefDefaultVariantName", "MayaReference");
     register("kMayaRefVariantOnPrim", "Variant will be on prim:");
     register("kMayaRefEditAsMayaData", "Edit as Maya Data");
     register("kMayaRefOptions", "Maya Reference Options");

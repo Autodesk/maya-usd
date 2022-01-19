@@ -14,10 +14,25 @@
 #
 
 import maya.api.OpenMaya as om
+import maya.cmds as cmds
 from pxr import Sdf, Tf
 import mayaUsd
 import ufe
 import re
+
+# These names should not be localized as Usd only accepts [a-z,A-Z] as valid characters.
+kDefaultMayaReferencePrimName = 'MayaReference1'
+kDefaultVariantSetName = 'Representation'
+kDefaultVariantName = 'MayaReference'
+
+def defaultMayaReferencePrimName():
+    return kDefaultMayaReferencePrimName
+
+def defaultVariantSetName():
+    return kDefaultVariantSetName
+
+def defaultVariantName():
+    return kDefaultVariantName
 
 def createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace):
     prim = stage.DefinePrim(primPath.path, 'MayaReference')
@@ -31,14 +46,26 @@ def createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace):
     return prim
 
 # Adapted from testMayaUsdSchemasMayaReference.py.
-def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace, variantSetName, variantName):
+def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace, 
+                            mayaReferencePrimName = kDefaultMayaReferencePrimName,
+                            variantSetName = kDefaultVariantSetName,
+                            variantName = kDefaultVariantName):
     '''Create a Maya reference prim parented to the argument path.'''
+
+    # Make sure the prim name is valid and doesn't already exist.
+    parentPrim = mayaUsd.ufe.ufePathToPrim(ufePathStr)
+
+    checkName = mayaUsd.ufe.uniqueChildName(parentPrim, mayaReferencePrimName)
+    if checkName != mayaReferencePrimName:
+        cmds.error('Maya Reference prim name already exists.')
+        return
+    validatedPrimName = Tf.MakeValidIdentifier(checkName)
 
     # Extract the USD path segment from the UFE path and append the Maya
     # reference prim to it.
     ufePath = ufe.PathString.path(ufePathStr)
     parentPath = str(ufePath.segments[1]) if ufePath.nbSegments() > 1 else ''
-    primPath = Sdf.AssetPath(parentPath+'/MayaReference')
+    primPath = Sdf.AssetPath(parentPath + '/' + validatedPrimName)
 
     stage = mayaUsd.ufe.getStage(ufePathStr)
 
@@ -77,3 +104,11 @@ def getPrimPath(ufePathStr):
     ufePath = ufe.PathString.path(ufePathStr)
     parentPath = ufePath.segments[1]
     return str(parentPath)
+
+def getUniqueMayaReferencePrimName(ufePathStr, startName=None):
+    '''Helper function to get a unique name for the Maya Reference prim.'''
+    newPrimName = kDefaultMayaReferencePrimName if not startName else startName
+    prim = mayaUsd.ufe.ufePathToPrim(ufePathStr)
+    if prim.IsValid():
+        return mayaUsd.ufe.uniqueChildName(prim, newPrimName)
+    return newPrimName
