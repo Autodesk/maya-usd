@@ -63,7 +63,6 @@ class customRigPrimUpdater(mayaUsdLib.PrimUpdater):
         return super(customRigPrimUpdater, self).discardEdits(context)
 
     def pushCopySpecs(self, srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath):
-        #return super(customRigPrimUpdater, self).pushCopySpecs(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath)
         newPrimDstSdfPath = "{}_cache".format(dstSdfPath)
         Sdf.CopySpec(srcLayer,srcSdfPath,dstLayer,newPrimDstSdfPath)
         return customRigPrimUpdater.PushCopySpecs.Prune
@@ -173,8 +172,6 @@ class testCustomRig(unittest.TestCase):
         
         # Retrieve pulled object
         bobMayaPathStr = cmds.ls(sl=True)[0]
-        #bobMayaItem = ufe.GlobalSelection.get().front()
-        #self.assertTrue(bobMayaItem)
         
         # Test partial paths to make the test more robust with any changes around "invisible" __mayaUsd__
         # parent
@@ -189,7 +186,6 @@ class testCustomRig(unittest.TestCase):
         cmds.setKeyframe( "bob|pCube2.ty", time=10.0, value=10 )
         
         # Push the animation back to USD. This will use a custom logic that will write it to a new prim
-        #bobMayaItemPathStr = ufe.PathString.string(bobMayaItem.path())
         self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(bobMayaPathStr))
         
         # After push, all Maya objects should be gone
