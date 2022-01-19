@@ -58,9 +58,6 @@ class testVP2RenderDelegateUsdSkel(imageUtils.ImageDiffingTestCase):
         return self.assertImagesClose(baselineImage, snapshotImage)
 
     def _StartTest(self, testName):
-        cmds.file(force=True, new=True)
-        mayaUtils.loadPlugin("mayaUsdPlugin")
-        
         self._testName = testName
         testFile = testUtils.getTestScene("UsdSkel", self._testName + ".usda")
         mayaUtils.createProxyFromFile(testFile)
@@ -74,9 +71,17 @@ class testVP2RenderDelegateUsdSkel(imageUtils.ImageDiffingTestCase):
         self.assertSnapshotClose('%s_100.png' % self._testName)
 
     def testPerInstanceInheritedData(self):
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        cmds.file(force=True, new=True)
         cmds.move(-8, 15, 6, 'persp')
         cmds.rotate(70, 0, -160, 'persp')
         self._StartTest('skinCluster')
+
+        cmds.file(force=True, new=True)
+        cmds.move(180, -525, 225, 'persp')
+        cmds.rotate(75, 0, 0, 'persp')
+        self._StartTest('HIK_Export')
 
 
 
