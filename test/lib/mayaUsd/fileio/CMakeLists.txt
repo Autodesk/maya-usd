@@ -14,6 +14,7 @@ endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
+        testAddMayaReference.py
         testEditAsMaya.py
         testMergeToUsd.py
         testDiscardEdits.py
