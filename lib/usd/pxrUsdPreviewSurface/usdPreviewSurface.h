@@ -48,7 +48,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((OpacityThresholdAttrName, "opacityThreshold"))                                             \
     ((RoughnessAttrName, "roughness"))                                                           \
     ((SpecularColorAttrName, "specularColor"))                                                   \
-    ((DisplayCPVAttrName, "displayCPV"))                                                         \
     ((UseSpecularWorkflowAttrName, "useSpecularWorkflow"))                                       \
     ((OutColorAttrName, "outColor"))                                                             \
     ((OutTransparencyAttrName, "outTransparency"))                                               \

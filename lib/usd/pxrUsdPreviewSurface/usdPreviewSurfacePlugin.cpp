@@ -15,9 +15,9 @@
 //
 #include "usdPreviewSurfacePlugin.h"
 
+#include "cpvColor.h"
 #include "usdPreviewSurface.h"
 #include "usdPreviewSurfaceReader.h"
-#include "usdPreviewSurfaceShaderOverride.h"
 #include "usdPreviewSurfaceShadingNodeOverride.h"
 #include "usdPreviewSurfaceWriter.h"
 
@@ -37,8 +37,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-TfToken::Set          _registeredTypeNames;
-static constexpr char shaderOverrideIdSuffix[] = "ShaderOverride";
+TfToken::Set         _registeredTypeNames;
+static const MString cpvColorShaderName("cpvColor");
+static const MString cpvColorShaderUserClassification("texture/2d:");
+static const MString cpvColorShaderDrawClassification("drawdb/shader/texture/2d/");
 } // namespace
 /* static */
 MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
@@ -73,10 +75,22 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
         drawDbClassification, registrantId, PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
 
-    status = MHWRender::MDrawRegistry::registerShaderOverrideCreator(
-        drawDbClassification,
-        registrantId + shaderOverrideIdSuffix,
-        PxrMayaUsdPreviewSurfaceShaderOverride::creator);
+    // Register CPV shader node
+    const MString cpvDrawClassify(cpvColorShaderDrawClassification + cpvColorShaderName);
+    MString       cpvUserClassify(cpvColorShaderUserClassification);
+    cpvUserClassify += cpvDrawClassify;
+
+    status = plugin.registerNode(
+        cpvColorShaderName,
+        CPVColor::id,
+        CPVColor::creator,
+        CPVColor::initialize,
+        MPxNode::kDependNode,
+        &cpvUserClassify);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::registerShadingNodeOverrideCreator(
+        cpvDrawClassify, registrantId, CPVColorShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
 
     return status;
@@ -101,8 +115,11 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(
 
     deregisterFragments();
 
-    MStatus status = MHWRender::MDrawRegistry::deregisterShaderOverrideCreator(
-        drawDbClassification, registrantId + shaderOverrideIdSuffix);
+    const MString cpvDrawClassify(cpvColorShaderDrawClassification + cpvColorShaderName);
+    MStatus status = plugin.deregisterNode(CPVColor::id);
+    CHECK_MSTATUS(status);
+    status = MHWRender::MDrawRegistry::deregisterShadingNodeOverrideCreator(
+        cpvDrawClassify, registrantId);
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
