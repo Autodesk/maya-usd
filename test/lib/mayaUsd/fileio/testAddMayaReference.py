@@ -77,15 +77,16 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         primA = mayaUsd.ufe.ufePathToPrim(primPathStr)
         self.assertFalse(primA.HasVariantSets())
 
-        kDefaultVariantSetName = getMayaUsdLibString('kMayaRefDefaultVariantSetName')
-        kDefaultVariantName = getMayaUsdLibString('kMayaRefDefaultVariantName')
-        kDefaultNamespace = 'simpleSphere'
-
+        # Add a Maya Reference using the default.
         import mayaUsdAddMayaReference
+        kDefaultNamespace = 'simpleSphere'
+        kDefaultPrimName = mayaUsdAddMayaReference.defaultMayaReferencePrimName()
+        kDefaultVariantSetName = mayaUsdAddMayaReference.defaultVariantSetName()
+        kDefaultVariantName = mayaUsdAddMayaReference.defaultVariantName()
         mayaUsdAddMayaReference.createMayaReferencePrim(
             primPathStr,
             mayaSceneStr,
-            kDefaultNamespace, kDefaultVariantSetName, kDefaultVariantName)
+            kDefaultNamespace)
 
         # Make sure the prim has the variant set and variant.
         self.assertTrue(primA.HasVariantSets())
@@ -97,7 +98,7 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         self.assertEqual(vset.GetVariantSelection(), kDefaultVariantName)
 
         # Verify that a Maya Reference prim was created.
-        mayaRefPrim = primA.GetChild('MayaReference')
+        mayaRefPrim = primA.GetChild(kDefaultPrimName)
         self.assertTrue(mayaRefPrim.IsValid())
         self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
 
@@ -115,6 +116,8 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         primPathStr = proxyShapePathStr + ',/B'
         primB = mayaUsd.ufe.ufePathToPrim(primPathStr)
 
+        kBadPrimName = ('3'+kDefaultPrimName+'$')
+        kGoodPrimName = Tf.MakeValidIdentifier(kBadPrimName)
         kBadVariantSetName = 'No Spaces or Special#Chars'
         kGoodVariantSetName = Tf.MakeValidIdentifier(kBadVariantSetName)
         kBadVariantName = '3no start digits'
@@ -122,7 +125,8 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         mayaUsdAddMayaReference.createMayaReferencePrim(
             primPathStr,
             mayaSceneStr,
-            'simpleSphere', kBadVariantSetName, kBadVariantName)
+            kDefaultNamespace,
+            kBadPrimName, kBadVariantSetName, kBadVariantName)
 
         # Make sure the prim has the variant set and variant with
         # the sanitized names.
@@ -133,6 +137,11 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         self.assertTrue(vset.GetVariantNames())
         self.assertTrue(vset.HasAuthoredVariant(kGoodVariantName))
         self.assertEqual(vset.GetVariantSelection(), kGoodVariantName)
+
+        # Verify that the prim was created with the good name.
+        mayaRefPrim = primB.GetChild(kGoodPrimName)
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
