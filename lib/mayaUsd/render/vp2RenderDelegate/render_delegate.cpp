@@ -28,6 +28,7 @@
 
 #include <pxr/imaging/hd/bprim.h>
 #include <pxr/imaging/hd/camera.h>
+#include <pxr/imaging/hd/extComputation.h>
 #include <pxr/imaging/hd/instancer.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
 #include <pxr/imaging/hd/rprim.h>
@@ -56,7 +57,9 @@ inline const TfTokenVector& _SupportedRprimTypes()
  */
 inline const TfTokenVector& _SupportedSprimTypes()
 {
-    static const TfTokenVector r { HdPrimTypeTokens->material, HdPrimTypeTokens->camera };
+    static const TfTokenVector r { HdPrimTypeTokens->material,
+                                   HdPrimTypeTokens->camera,
+                                   HdPrimTypeTokens->extComputation };
     return r;
 }
 
@@ -705,6 +708,9 @@ HdSprim* HdVP2RenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& 
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(sprimId);
     }
+    if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdExtComputation(sprimId);
+    }
     /*
     if (typeId == HdPrimTypeTokens->sphereLight) {
         return HdVP2Light::CreatePointLight(this, sprimId);
@@ -745,6 +751,9 @@ HdSprim* HdVP2RenderDelegate::CreateFallbackSprim(const TfToken& typeId)
     }
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(SdfPath::EmptyPath());
+    }
+    if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdExtComputation(SdfPath::EmptyPath());
     }
     /*
     if (typeId == HdPrimTypeTokens->sphereLight) {
