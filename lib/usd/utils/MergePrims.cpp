@@ -246,6 +246,25 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// Special metadata handling.
+//
+// There are some metadata that we know the merge-to-USD temporary export-to-USD
+// will never produce. List them here to be always preserved.
+//----------------------------------------------------------------------------------------------------------------------
+
+const std::set<TfToken>& getAlwaysPreservedMetadatas()
+{
+    static const std::set<TfToken> preserved = { TfToken("references") };
+
+    return preserved;
+}
+
+bool isMetadataAlwaysPreserved(const TfToken& metadata)
+{
+    return getAlwaysPreservedMetadatas().count(metadata) > 0;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // Merge Prims
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -271,7 +290,9 @@ bool isMetadataAtPathModified(
     // If the metadata is missing in the source and we preserve missing,
     // return that the metadata is *not* modified so as to preserve it.
     if (!src.fieldExists) {
-        const bool changed = !contains(missingHandling, MergeMissing::Preserve);
+        const bool preserved = contains(missingHandling, MergeMissing::Preserve)
+            || isMetadataAlwaysPreserved(src.field);
+        const bool changed = !preserved;
         printChangedField(ctx, src, metadataType, changed);
         return changed;
     }
@@ -279,7 +300,8 @@ bool isMetadataAtPathModified(
     // If the metadata is missing in the destination and we create missing,
     // return that the metadata *is* modified so as to create it.
     if (!dst.fieldExists) {
-        const bool changed = contains(missingHandling, MergeMissing::Create);
+        const bool created = contains(missingHandling, MergeMissing::Create);
+        const bool changed = created;
         printChangedField(ctx, src, metadataType, changed);
         return changed;
     }
