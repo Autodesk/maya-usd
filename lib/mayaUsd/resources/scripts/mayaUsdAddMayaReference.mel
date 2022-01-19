@@ -233,8 +233,13 @@ proc fileOptionsTabPage(string $tabLayout)
         -cc ("fo_changeReferenceNamespaceOption(\"" + $action + "\")")
         -annotation `uiRes("m_fileOptions.kNamespacesEnsureUniqueNodeNames")`
         useNamespacesGrp;
-    //All offlineMode is in namespace, so we set the useNamespacesGrp be true and gray
-    frameLayout -edit -expandCommand ("fo_NamespaceOptionExpand(\"" + $action + "\")") namespaceOptionFrame;
+
+    // For Usd Add Maya Reference we always want the "use namespaces" option to be true.
+    // So hide this checkbox.
+    // Note: we must leave all the controls for the non-useNamepsaces option as the
+    //       callbacks in Maya expect the controls to be there.
+    checkBoxGrp -edit -v1 true -manage false -visible false useNamespacesGrp;
+    frameLayout -edit -expandCommand ("fo_NamespaceOptionExpand(\"" + $action + "\"); checkBoxGrp -edit -v1 true -manage false -visible false useNamespacesGrp") namespaceOptionFrame;
 
     /*
         ------------------------------------------------------------------------------------------------
@@ -261,28 +266,9 @@ proc fileOptionsTabPage(string $tabLayout)
             -af nodeNamePrefix top 0
             -ac nodeNamePrefix left 3 nameClash2OptionMenu
         nameClashForm;
-    
-    // Trying to concatenate uiRes() strings in a single statement generates a
-    // syntax error.
-    string $prefixesMsg = `uiRes("m_fileOptions.kPrefixesMsg1")` +
-        `uiRes("m_fileOptions.kPrefixesMsg2")` +
-        `uiRes("m_fileOptions.kPrefixesMsg3")`;
 
-    text
-        //-align "center" 
-        -label $prefixesMsg
-        prefixesObsoleteLabel;
-
-    string $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
-    int $useNS = (`optionVar -query $namespaceOptionVar`);
-    if ($useNS)
-    {
-        text -e -visible false prefixesObsoleteLabel;
-    }
-    else
-    {
-        text -e -visible true prefixesObsoleteLabel;
-    }
+    // Need this text field as it is referenced by Maya callbacks.
+    text -visible false prefixesObsoleteLabel;
 
     /*
         ------------------------------------------------------------------------------------------------
@@ -354,7 +340,7 @@ proc fileOptionsTabPage(string $tabLayout)
     //Fill the treeView anyway.
     namespaceTreeView_update($gFileOptionTreeViewName, "");
 
-    refreshNamespaceOptions($useNS, $action);
+    refreshNamespaceOptions(true, $action);
 
     setParent $topForm;
 
@@ -403,9 +389,6 @@ proc setOptionVars(int $forceFactorySettings)
             optionVar -stringValue usdMayaReferenceVariantNameText $def;
         }
 
-        if ($forceFactorySettings || !`optionVar -exists referenceUseNamespacesDuringFileIO`) {
-            optionVar -intValue referenceUseNamespacesDuringFileIO true;
-        }
         if ($forceFactorySettings || !`optionVar -exists referenceOptionsUseRenamePrefix`) {
             optionVar -intValue referenceOptionsUseRenamePrefix false;
         }
@@ -475,7 +458,6 @@ proc setOptionVars(int $forceFactorySettings)
             ;
 
         optionVar -init $forceFactorySettings -category $category
-            -iv referenceUseNamespacesDuringFileIO true
             -iv referenceOptionsUseRenamePrefix false
             -sv referenceOptionsRenamePrefix ""
             -iv referenceOptionsLockReference false
@@ -653,16 +635,8 @@ proc fileOptionsSetup(string $parent, int $forceFactorySettings, string $chosenF
         -v1 `optionVar -query fileReferenceReserveNamespaces`
         ($action + "fo_reserveNamespacesGrp");
 
-    string $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
-    int $useNS = `optionVar -query $namespaceOptionVar`;
-    checkBoxGrp -edit -v1 $useNS useNamespacesGrp;
     fo_changeReferenceNamespaceOption( $action );
 
-    if(`text -exists prefixesObsoleteLabel`) {
-        int $notUseNS = !$useNS;
-        text -e -visible $notUseNS prefixesObsoleteLabel;
-    }
-    
     string $fileType = ("" == $chosenFileType) ? 
         `optionVar -q defaultFileReferenceType` : $chosenFileType;
 
@@ -670,26 +644,11 @@ proc fileOptionsSetup(string $parent, int $forceFactorySettings, string $chosenF
     string $usePrefixOptionVar = "referenceOptionsUseRenamePrefix";
     $userPrefix = `optionVar -q $usePrefixOptionVar `;
 
-    int $isUseNS = `optionVar -query $namespaceOptionVar`;
-    // Only non namespace mode uses nameClash2OptionMenu.  Set its menu Item via
-    // $userPrefix
-    if(!$isUseNS)
-    {
-        optionMenu -e -select ($userPrefix + 1) nameClash2OptionMenu;
-    }
-
     if ($userPrefix) 
     {
         string $renamePrefixOptionVar = "referenceOptionsRenamePrefix";
         string $userPrefixStr = `optionVar -q $renamePrefixOptionVar`;
-        if($isUseNS)
-        {
-            textField  -e -tx $userPrefixStr nodeNamePrefixInNamespace;
-        }
-        else
-        {
-            textField  -e -tx $userPrefixStr nodeNamePrefix;
-        }
+        textField  -e -tx $userPrefixStr nodeNamePrefixInNamespace;
     }
     fo_prefixName ($action);
 
@@ -824,10 +783,6 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
     }
 
     // First find out what the user has given us.
-    int $useNS = `checkBoxGrp -q -v1 useNamespacesGrp`;
-    string $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
-    optionVar -intValue $namespaceOptionVar $useNS;
-
     int $lockItGood = `checkBoxGrp -q -v1 referenceLockReferenceGrp`;
     string $referenceOptionsLockReferenceVar = "referenceOptionsLockReference";
     optionVar -intValue $referenceOptionsLockReferenceVar $lockItGood;
@@ -854,7 +809,7 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
 
     int $radioExist = `radioCollection -exists namespaceRadioCollection`;
     int $useNamePrefix  = 1;
-    if($useNS)
+    if (true) // Use namespaces
     {
         if($radioExist)
         {
@@ -864,10 +819,6 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
                 $useNamePrefix  = 2;
             }
         }
-    }
-    else
-    {
-        $useNamePrefix  = `optionMenu -q -sl nameClash2OptionMenu`;
     }
 
     string $usePrefixOptionVar = "referenceOptionsUseRenamePrefix";
@@ -879,8 +830,7 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
 
     //Get namePrefix and workingNamespace from controls.
     string $namePrefix;
-    $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
-    if( $useNS )
+    if( true ) // Use namespaces
     {
         //Set prefix name, 
         string $useNSString = `radioCollection -q -select namespaceRadioCollection`;
@@ -893,14 +843,6 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
         //Set working namespace
         string $selectedNS = getlFullNamespaceFromTreeView();
         optionVar -stringValue fileWorkingNamespaceName $selectedNS;
-    }
-    else
-    {
-        if($useNamePrefix)
-        {
-            $namePrefix = `textField -q -tx nodeNamePrefix`;        
-        }
-        //else do nothing for not using name prefix
     }
 
     if (size($namePrefix) > 0) {
