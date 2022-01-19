@@ -26,7 +26,7 @@ import mayaUsd.lib
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Gf
+from pxr import UsdGeom, Gf, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -36,7 +36,7 @@ import ufe
 
 import unittest
 
-from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorAlmostEqual, getTestScene
 
 import os
 
@@ -269,6 +269,41 @@ class MergeToUsdTestCase(unittest.TestCase):
         opOrder = aPrim.GetAttribute("xformOpOrder").Get()
         self.assertEqual(1, len(opOrder))
         self.assertEqual("xformOp:rotateY", opOrder[0])
+
+    def testMergeToUsdReferencedPrim(self):
+        '''Merge edits on a USD reference back to USD.'''
+
+        # Create a simple scene with a Def prim with a USD reference.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        psPath = ufe.PathString.path(psPathStr)
+        ps = ufe.Hierarchy.createItem(psPath)
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        aPrim = stage.DefinePrim('/A', 'Xform')
+
+        sphereFile = getTestScene("groupCmd", "sphere.usda")
+        sdfRef = Sdf.Reference(sphereFile)
+        primRefs = aPrim.GetReferences()
+        primRefs.AddReference(sdfRef)
+        self.assertTrue(aPrim.HasAuthoredReferences())
+
+        aUsdUfePathStr = psPathStr + ',/A'
+        aUsdUfePath = ufe.PathString.path(aUsdUfePathStr)
+        aUsdItem = ufe.Hierarchy.createItem(aUsdUfePath)
+
+        # Edit as maya and do nothing.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        aMayaItem = ufe.GlobalSelection.get().front()
+
+        # Merge edits back to USD.
+        with mayaUsd.lib.OpUndoItemList():
+            aMayaPath = aMayaItem.path()
+            aMayaPathStr = ufe.PathString.string(aMayaPath)
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+
+        # Check that the reference is still there.
+        self.assertTrue(aPrim.HasAuthoredReferences())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
