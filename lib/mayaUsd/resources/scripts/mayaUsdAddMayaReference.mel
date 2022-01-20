@@ -236,8 +236,8 @@ proc fileOptionsTabPage(string $tabLayout)
 
     // For Usd Add Maya Reference we always want the "use namespaces" option to be true.
     // So hide this checkbox.
-    // Note: we must leave all the controls for the non-useNamepsaces option as the
-    //       callbacks in Maya expect the controls to be there.
+    // Note: we must leave all the controls for the case where the "Use Namespaces" option
+    //       is off as the callbacks in Maya expect the controls to be there.
     checkBoxGrp -edit -v1 true -manage false -visible false useNamespacesGrp;
     frameLayout -edit -expandCommand ("fo_NamespaceOptionExpand(\"" + $action + "\"); checkBoxGrp -edit -v1 true -manage false -visible false useNamespacesGrp") namespaceOptionFrame;
 
