@@ -104,18 +104,6 @@ TranslatorMeshRead::TranslatorMeshRead(
             prim.GetPath().GetText());
     }
 
-    // If the USD mesh was left-handed, then the faces had their vertices in left-handed order.
-    // Fix them to be in right-handed order, as expected by Maya.
-    if (isPrimitiveLeftHanded(mesh)) {
-        size_t firstIndex = 0;
-        for (int vertexCount : faceVertexCounts) {
-            std::reverse(
-                faceVertexIndices.begin() + firstIndex,
-                faceVertexIndices.begin() + firstIndex + vertexCount);
-            firstIndex += vertexCount;
-        }
-    }
-
     // Gather points and normals
     // If timeInterval is non-empty, pick the first available sample in the
     // timeInterval or default.
@@ -194,6 +182,12 @@ TranslatorMeshRead::TranslatorMeshRead(
         *status = stat;
         return;
     }
+
+    // Note: the USD leftHanded orientation makes both the vertices order of faces left-handed
+    //       and the face normals be left-handed. On the other hand, the Maya 'opposite' flag
+    //       only flips faces, not normals. So, this may need further work.
+    UsdMayaUtil::setPlugValue(
+        m_meshObj, "opposite", isPrimitiveLeftHanded(mesh));
 
     // set mesh name
     const auto& primName = prim.GetName().GetString();

@@ -249,19 +249,35 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
 // Special metadata handling.
 //
 // There are some metadata that we know the merge-to-USD temporary export-to-USD
-// will never produce. List them here to be always preserved.
+// will never produce. Others are generated only when needed, so their absence
+// should always means to remove them.
+//
+// isMetadataAlwaysPreserved() is for those metadata we know we never produce.
+//
+// isMetadataNeverPreserved() is for those metadata we know we sometimes omit
+// to signify we want to remove them.
 //----------------------------------------------------------------------------------------------------------------------
-
-const std::set<TfToken>& getAlwaysPreservedMetadatas()
-{
-    static const std::set<TfToken> preserved = { TfToken("references") };
-
-    return preserved;
-}
 
 bool isMetadataAlwaysPreserved(const TfToken& metadata)
 {
-    return getAlwaysPreservedMetadatas().count(metadata) > 0;
+    static const std::set<TfToken> preserved = { TfToken("references") };
+
+    return preserved.count(metadata) > 0;
+}
+
+bool isMetadataNeverPreserved(const TfToken& metadata)
+{
+    static const std::set<TfToken> never = { };
+
+    return never.count(metadata) > 0;
+}
+
+bool isMetadataPreserved(const TfToken& metadata, MergeMissing missingHandling)
+{
+    if (contains(missingHandling, MergeMissing::Preserve))
+        return !isMetadataNeverPreserved(metadata);
+    else
+        return isMetadataAlwaysPreserved(metadata);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -290,8 +306,7 @@ bool isMetadataAtPathModified(
     // If the metadata is missing in the source and we preserve missing,
     // return that the metadata is *not* modified so as to preserve it.
     if (!src.fieldExists) {
-        const bool preserved = contains(missingHandling, MergeMissing::Preserve)
-            || isMetadataAlwaysPreserved(src.field);
+        const bool preserved = isMetadataPreserved(src.field, missingHandling);
         const bool changed = !preserved;
         printChangedField(ctx, src, metadataType, changed);
         return changed;
@@ -578,11 +593,6 @@ void unionChildren(
     VtValue&     srcChildrenValue,
     VtValue&     dstChildrenValue)
 {
-    // If not preserving missing attributes then we don't need to calculate
-    // the union of the source and destintation children.
-    if (missingHandling == MergeMissing::None)
-        return;
-
     typedef typename ChildPolicy::FieldType FieldType;
     typedef std::vector<FieldType>          ChildrenVector;
     typedef std::set<FieldType>             ChildrenSet;
