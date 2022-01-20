@@ -352,10 +352,10 @@ void StagesSubject::stageChanged(
                     // properties. So we send the UFE subtree invalidate notif.
                     Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 #else
-                    // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
-                    // delete/add notifs.
-                    sendObjectPostDelete(sceneItem);
-                    sendObjectAdd(sceneItem);
+                // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
+                // delete/add notifs.
+                sendObjectPostDelete(sceneItem);
+                sendObjectAdd(sceneItem);
 #endif
                 }
 #if !MAYA_ENABLE_NEW_PRIM_DELETE
