@@ -964,19 +964,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             // If color/opacity is not found, the default color of Maya curves will be used
             if (colorArray.empty()) {
-                MDoubleArray curveColorResult;
-                MGlobal::executeCommand(
-                    "int $index = `displayColor -q -dormant \"curve\"`; colorIndex -q $index;",
-                    curveColorResult);
-
-                if (curveColorResult.length() == 3) {
-                    colorArray.push_back(
-                        GfVec3f(curveColorResult[0], curveColorResult[1], curveColorResult[2]));
-                } else {
-                    // In case of an error, use the default navy-blue color
-                    colorArray.push_back(GfVec3f(0.000f, 0.016f, 0.376f));
-                }
-
+                colorArray.push_back(drawScene.GetCurveDefaultColor());
                 colorInterpolation = HdInterpolationConstant;
             }
 
