@@ -1349,27 +1349,29 @@ void HdVP2Material::Sync(
 
                     // Verify that _requiredPrivars contains all the requiredVertexBuffers() the
                     // shader instance needs.
-                    MVertexBufferDescriptorList requiredVertexBuffers;
-                    MStatus status = shader->requiredVertexBuffers(requiredVertexBuffers);
-                    if (status) {
-                        for (int reqIndex = 0; reqIndex < requiredVertexBuffers.length();
-                             reqIndex++) {
-                            MVertexBufferDescriptor desc;
-                            requiredVertexBuffers.getDescriptor(reqIndex, desc);
-                            TfToken requiredPrimvar = MayaDescriptorToToken(desc);
-                            // now make sure something matching requiredPrimvar is in
-                            // _requiredPrimvars
-                            if (requiredPrimvar != _tokens->Unknown
-                                && requiredPrimvar != _tokens->Computed) {
-                                bool found = false;
-                                for (TfToken const& primvar : _requiredPrimvars) {
-                                    if (primvar == requiredPrimvar) {
-                                        found = true;
-                                        break;
+                    if (shader) {
+                        MVertexBufferDescriptorList requiredVertexBuffers;
+                        MStatus status = shader->requiredVertexBuffers(requiredVertexBuffers);
+                        if (status) {
+                            for (int reqIndex = 0; reqIndex < requiredVertexBuffers.length();
+                                 reqIndex++) {
+                                MVertexBufferDescriptor desc;
+                                requiredVertexBuffers.getDescriptor(reqIndex, desc);
+                                TfToken requiredPrimvar = MayaDescriptorToToken(desc);
+                                // now make sure something matching requiredPrimvar is in
+                                // _requiredPrimvars
+                                if (requiredPrimvar != _tokens->Unknown
+                                    && requiredPrimvar != _tokens->Computed) {
+                                    bool found = false;
+                                    for (TfToken const& primvar : _requiredPrimvars) {
+                                        if (primvar == requiredPrimvar) {
+                                            found = true;
+                                            break;
+                                        }
                                     }
-                                }
-                                if (!found) {
-                                    _requiredPrimvars.push_back(requiredPrimvar);
+                                    if (!found) {
+                                        _requiredPrimvars.push_back(requiredPrimvar);
+                                    }
                                 }
                             }
                         }

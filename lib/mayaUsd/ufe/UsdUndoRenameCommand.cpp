@@ -21,6 +21,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUtils/util.h>
 
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -72,20 +73,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     ufe::applyCommandRestriction(prim, "rename");
 
     // handle unique name for _newName
-    _newName = uniqueChildName(prim.GetParent(), newName.string());
-
-    // names are not allowed to start to digit numbers
-    if (std::isdigit(_newName.at(0))) {
-        _newName = prim.GetName();
-    }
-
-    // all special characters are replaced with `_`
-    const std::string specialChars { "~!@#$%^&*()-=+,.?`':{}|<>[]/ " };
-    std::replace_if(
-        _newName.begin(),
-        _newName.end(),
-        [&](auto c) { return std::string::npos != specialChars.find(c); },
-        '_');
+    _newName = TfMakeValidIdentifier(uniqueChildName(prim.GetParent(), newName.string()));
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand() { }

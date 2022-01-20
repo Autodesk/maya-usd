@@ -253,13 +253,16 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         # Edit as maya and set the rotation to 0, 5, 0 rotateXYZ, which is equivalent
         # to rotateY but has a different representation.
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+            
         aMayaItem = ufe.GlobalSelection.get().front()
         (aMayaPath, aMayaPathStr, _, aMayaMatrix) = \
             setMayaRotation(aMayaItem, om.MVector(0, 5, 0))
 
         # Merge edits back to USD.
-        self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
 
         # Check that the rotateXYZ has *not* been added and the rotateY is still there.
         self.assertFalse(aPrim.HasAttribute("xformOp:rotateXYZ"))

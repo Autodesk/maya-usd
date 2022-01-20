@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
@@ -28,26 +27,15 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
-static VtValue _GetVtValue(const std::string& attrPath, const SdfValueTypeName& typeName)
+namespace {
+class UsdMayaUtilScope
 {
-    VtValue val;
+};
+} // namespace
 
-    MPlug   plug;
-    MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
-    CHECK_MSTATUS_AND_RETURN(status, val);
-
-    val = UsdMayaWriteUtil::GetVtValue(plug, typeName);
-    return val;
-}
-
-void wrapWriteUtil()
+void wrapUtil()
 {
-    typedef UsdMayaWriteUtil This;
-    class_<This>("WriteUtil", no_init)
-        .def("WriteUVAsFloat2", This::WriteUVAsFloat2)
-        .staticmethod("WriteUVAsFloat2")
-        .def("GetVtValue", _GetVtValue)
-        .staticmethod("GetVtValue")
-        .def("SetUsdAttr", This::SetUsdAttr)
-        .staticmethod("SetUsdAttr");
+    scope s(class_<UsdMayaUtilScope>("Util"));
+
+    def("IsAuthored", UsdMayaUtil::IsAuthored);
 }

@@ -1,25 +1,92 @@
+// Copyright 2022 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
 // Verbatim copy of fileOptions.mel:pushOptionsUITemplate(), which is not
 // a global proc.
 proc pushOptionsUITemplate()
 {
-        // Standardize the look of the options UI
-        //
+    // Standardize the look of the options UI
+    //
     if (!`uiTemplate -exists optionsTemplate`) 
-        {
-                uiTemplate optionsTemplate;
+    {
+            uiTemplate optionsTemplate;
 
-                frameLayout -defineTemplate optionsTemplate 
-                        -collapsable true
-                        -collapse false
-                        -labelVisible true 
-                        -labelIndent 5 
-                        -marginWidth 5 
-                        -marginHeight 5;
+            frameLayout -defineTemplate optionsTemplate 
+                    -collapsable true
+                    -collapse false
+                    -labelVisible true 
+                    -labelIndent 5 
+                    -marginWidth 5 
+                    -marginHeight 5;
 
-        columnLayout -defineTemplate optionsTemplate 
-            -adjustableColumn true;
-        }
-        setUITemplate -pushTemplate optionsTemplate;
+    columnLayout -defineTemplate optionsTemplate 
+        -adjustableColumn true;
+    }
+    setUITemplate -pushTemplate optionsTemplate;
+}
+
+proc createRowLayoutforMayaReference(string $parent, string $rowLayoutName)
+{
+    // See setDefaultTemplates.mel in Maya.
+    global int $gTemplateOptionMenuOffset;
+    int $kOffsetText = (`about -mac` ? 8 : 5);
+    global int $gTextColumnWidthIndex;
+    global int $gSingleWidgetWidthIndex;
+
+    int $nbCols = 3;
+    int $cw1 = $gTextColumnWidthIndex;
+    int $cw2 = (2 * $gSingleWidgetWidthIndex);
+    int $cw3 = (2 * $gSingleWidgetWidthIndex);
+
+    // Special sizes for this row layout.
+    if ($rowLayoutName == "usdMayaReferenceVariantPreviewRow") {
+        $nbCols = 2;
+        $cw2 += ($gTemplateOptionMenuOffset + $cw3);
+    }
+
+    setParent $parent;
+    if ($nbCols == 3)
+    {
+        rowLayout -numberOfColumns $nbCols
+            -columnWidth3 $cw1 $cw2 $cw3
+            -columnAlign3 right left left
+            -columnAttach3 both both both
+            -columnOffset3 $kOffsetText $gTemplateOptionMenuOffset $gTemplateOptionMenuOffset
+            $rowLayoutName;
+    }
+    else if ($nbCols == 2)
+    {
+        rowLayout -numberOfColumns $nbCols
+            -columnWidth2 $cw1 $cw2
+            -columnAlign2 right left
+            -columnAttach2 both both
+            -columnOffset2 $kOffsetText $gTemplateOptionMenuOffset
+            $rowLayoutName;
+    }
+}
+
+proc string defaultMayaReferencePrimName() {
+    return python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.defaultMayaReferencePrimName()");
+}
+
+proc string defaultVariantSetName() {
+    return python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.defaultVariantSetName()");
+}
+
+proc string defaultVariantName() {
+    return python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.defaultVariantName()");
 }
 
 // Adapted from fileOptions.mel:fileOptionsTabPage().
@@ -44,27 +111,91 @@ proc fileOptionsTabPage(string $tabLayout)
         $gOptBoxForm;
 
     string $topForm = `columnLayout -rowSpacing 5 actionOptionsForm`;
-    
+
+    setParent $topForm;
+    frameLayout -label `getMayaUsdLibString("kMayaRefDescription")`;
+    columnLayout -adjustableColumn true;
+    text -align "left" -label "TBD";
+
+    setParent $topForm;
+    frameLayout -label `getMayaUsdLibString("kMayaRefUsdOptions")`;
+    string $widgetColumn = `columnLayout usdOptionsLayout`;
+
+    textFieldGrp
+        -label `getMayaUsdLibString("kMayaRefMayaRefPrimName")`
+        -cc "usdMayaRef_changePrimNameText \"#1\""
+        usdMayaReferencePrimName;
+
+    checkBoxGrp -numberOfCheckBoxes 1
+        -label "" -label1 `getMayaUsdLibString("kMayaRefGroup")`
+        -cc1 "usdMayaRef_changeGroupOption #1"
+        usdMayaReferenceGroupGrp;
+
+    // The following options are considered as children of "Group".
+        textFieldGrp -label `getMayaUsdLibString("kMayaRefPrimName")`
+            -cc "usdMayaRef_changeGroupPrimNameText \"#1\""
+            usdMayaReferenceGroupPrimName;
+        textFieldGrp -label `getMayaUsdLibString("kMayaRefPrimType")` usdMayaReferenceGroupPrimType;
+        textFieldGrp -label `getMayaUsdLibString("kMayaRefPrimKind")` usdMayaReferenceGroupPrimKind;
+
+    checkBoxGrp -numberOfCheckBoxes 1
+        -label "" -label1 `getMayaUsdLibString("kMayaRefDefineInVariant")`
+        -annotation `getMayaUsdLibString("kMayaRefDefineInVariantAnn")`
+        -cc1 "usdMayaRef_changeDefineInVariantOption #1"
+        usdMayaReferenceDefineInVariantGrp;
+
+    // The following options are considered as children of "Define in Variant".
+        string $def = defaultVariantSetName();
+        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantSetNameRow");
+            text -label `getMayaUsdLibString("kMayaRefVariantSetName")`;
+            optionMenu -cc "usdMayaRef_changeVariantSetName \"#1\""
+                usdMayaReferenceVariantSetNameOptionMenu;
+            textField -text $def
+                -cc "usdMayaRef_changeVariantSetNameText \"#1\""
+                usdMayaReferenceVariantSetNameTextField;
+
+        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantNameRow");
+        $def = defaultVariantName();
+            text -label `getMayaUsdLibString("kMayaRefVariantName")`;
+            optionMenu -cc "usdMayaRef_changeVariantName \"#1\""
+                usdMayaReferenceVariantNameOptionMenu;
+            textField -text $def
+                -cc "usdMayaRef_changeVariantNameText \"#1\""
+                usdMayaReferenceVariantNameTextField;
+
+        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantPreviewRow");
+            iconTextStaticLabel -st "iconAndTextHorizontal" -i1 "info.png" -l `getMayaUsdLibString("kMayaRefVariantOnPrim")`;
+            textField -text "" -editable false usdMayaReferenceVariantPrim;
+
+    setParent $widgetColumn;
+    checkBoxGrp -ncb 1
+        -label "" -label1 `getMayaUsdLibString("kMayaRefEditAsMayaData")`
+        usdMayaReferenceEditAsMayaDat;
+
+    setParent $topForm;
+    string $lbl = getMayaUsdLibString("kMayaRefOptions");
+    string $mayaRefForm = `frameLayout -label $lbl`;
+
+    setParent $mayaRefForm;
     frameLayout -label `uiRes("m_fileOptions.kGeneralOptions")` ;
     columnLayout genOptionsLayout;
-    
+
     // We need to ask for grouping information.
     checkBoxGrp -numberOfCheckBoxes 1
         -label "" -label1 `uiRes("m_fileOptions.kDeferred")`
         referenceDeferReferenceGrp; 
-    
+
     checkBoxGrp -numberOfCheckBoxes 1
         -label "" -label1 `uiRes("m_fileOptions.kLock")`
         referenceLockReferenceGrp;
-            
+
     // No options in Add Maya reference to USD for Group, Group Name, or Locator.
-                
-    setParent $topForm;
+    setParent $mayaRefForm;
     frameLayout -label `uiRes("m_fileOptions.kReferenceLoadSettings")`;
     columnLayout refLoadSettingsLayout;
     fileOptionsLoadSettingsMenu($action);
                     
-    setParent $topForm;
+    setParent $mayaRefForm;
     frameLayout -label `uiRes("m_fileOptions.kSharedReferenceOptions")`;
     columnLayout sharedRefLayout;
     checkBoxGrp -numberOfCheckBoxes 1
@@ -89,7 +220,7 @@ proc fileOptionsTabPage(string $tabLayout)
         -annotation `uiRes("m_fileOptions.kMergeDuplicateShadingNetworks")`
         referenceSharedShadingNetworks;
 
-    setParent $topForm;
+    setParent $mayaRefForm;
 
     /*
         ------------------------------------------------------------------------------------------------
@@ -141,7 +272,7 @@ proc fileOptionsTabPage(string $tabLayout)
         //-align "center" 
         -label $prefixesMsg
         prefixesObsoleteLabel;
-                    
+
     string $namespaceOptionVar = "referenceUseNamespacesDuringFileIO";
     int $useNS = (`optionVar -query $namespaceOptionVar`);
     if ($useNS)
@@ -164,10 +295,10 @@ proc fileOptionsTabPage(string $tabLayout)
     //1.TreeView
     global string $gFileOptionTreeViewName;
     $gFileOptionTreeViewName = namespaceTreeView(0, "", "");
-    treeView  -edit -width 200 -height 150 $gFileOptionTreeViewName;    
-                
+    treeView  -edit -width 200 -height 150 $gFileOptionTreeViewName;
+
     //2.RadioButtons
-    columnLayout -adjustableColumn 1 -parent namespaceOptionLayout radioColumnLayout;           
+    columnLayout -adjustableColumn 1 -parent namespaceOptionLayout radioColumnLayout;
     // Do not use a global var to stash away the name of the
     // collection; we need to use the same name to avoid updating the
     // wrong one by referencing an out of data layout (that is, the one
@@ -199,7 +330,7 @@ proc fileOptionsTabPage(string $tabLayout)
     setParent ..;
     global string $gMergeOptionValue;
     $gMergeOptionValue = $action + "MergeOptionValue";
-    
+
     optionVar -init false -category "Files/Projects" -sv $gMergeOptionValue "radioNamespaceOnFileName";
 
     string $mergeOptionValue;
@@ -224,23 +355,22 @@ proc fileOptionsTabPage(string $tabLayout)
     namespaceTreeView_update($gFileOptionTreeViewName, "");
 
     refreshNamespaceOptions($useNS, $action);
-        
+
     setParent $topForm;
 
     frameLayout -label `uiRes("m_fileOptions.kFileTypeSpecificOptions")` FileSpecific_FL;
 
     columnLayout fileOptionsScroll;
 
-    setParent $topForm;     
-        
+    setParent $topForm;
+
     setUITemplate -popTemplate;
 }
 
 // Adapted from fileOptions.mel:setOptionVars().
-proc setOptionVars()
+proc setOptionVars(int $forceFactorySettings)
 {
     string $action = "Reference";
-    int $forceFactorySettings = false;
     string $translators[];
     string $optionName;
     int $index;
@@ -251,60 +381,253 @@ proc setOptionVars()
     string $optionMayaScenes = uiRes("m_fileDialogFilterTypes.kMayaScenes");
     string $category = "Files/Projects"; // Since some optionVars are shared
 
-    optionVar -init $forceFactorySettings -category $category
-        -iv referenceUseNamespacesDuringFileIO true
-        -iv referenceOptionsUseRenamePrefix false
-        -sv referenceOptionsRenamePrefix ""
-        -iv referenceOptionsLockReference false
-        -iv referenceOptionsDeferReference false
-        -iv referenceOptionsShareDisplayLayers false
-        -iv referenceOptionsShareShaders false
-        -sv referenceOptionsShareRenderLayers ""
-        -iv referenceOptionsSharedReference 1
-        -sv fileReferenceRefLoadSetting "default"
-        -iv fileReferenceReserveNamespaces false
-        ;
-    
-    optionVar -init $forceFactorySettings -category $category
-        -sv defaultFileReferenceType $optionAllFiles    // same default as createGlobalOptVars.mel
-        -iv ("proxyOptionsUseNew"+$action+"Tag") false
-        -sv ("proxyOptions"+$action+"Tag") ""
-        -sv ("proxyOptionsNew"+$action+"Tag") ""
-        ;
-    
-    //   Namespace object name clash method, including "new", "rename","replace" &"reject".
-    //   "new", always create a new namespace and put everything in it
-    //   "rename", when a name clash happens, rename the new object to ****1,****2...
-    //   "replace", replace old object by new one
-    //   "reject", reserve old one and reject new.
-    //   The default option is "new", to ensure not to destroy the file data
-    optionVar -init $forceFactorySettings -category $category
-        -sv namespaceClashNameMethod "new"
-        -sv fileWorkingNamespaceName ""
-        ;
-    
+    int $mjv = `about -majorVersion`;
+    if ($mjv <= 2022)
+    {
+        string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceDefineInVariant`) {
+            optionVar -intValue usdMayaReferenceDefineInVariant false;
+        }
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceVariantSetNameOption`) {
+            optionVar -stringValue usdMayaReferenceVariantSetNameOption $createNew;
+        }
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceVariantSetNameText`) {
+            string $def = defaultVariantSetName();
+            optionVar -stringValue usdMayaReferenceVariantSetNameText $def;
+        }
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceVariantNameOption`) {
+            optionVar -stringValue usdMayaReferenceVariantNameOption $createNew;
+        }
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceVariantNameText`) {
+            string $def = defaultVariantName();
+            optionVar -stringValue usdMayaReferenceVariantNameText $def;
+        }
+
+        if ($forceFactorySettings || !`optionVar -exists referenceUseNamespacesDuringFileIO`) {
+            optionVar -intValue referenceUseNamespacesDuringFileIO true;
+        }
+        if ($forceFactorySettings || !`optionVar -exists referenceOptionsUseRenamePrefix`) {
+            optionVar -intValue referenceOptionsUseRenamePrefix false;
+        }
+        if ($forceFactorySettings || !`optionVar -exists referenceOptionsRenamePrefix `) {
+            optionVar -stringValue referenceOptionsRenamePrefix "";
+        }
+        if ($forceFactorySettings || !`optionVar -exists referenceOptionsLockReference `) {
+            optionVar -intValue referenceOptionsLockReference false;
+        }
+        if ($forceFactorySettings || !`optionVar -exists referenceOptionsDeferReference `) {
+            optionVar -intValue referenceOptionsDeferReference false;
+        }
+        if ($forceFactorySettings || !`optionVar -exists referenceOptionsShareDisplayLayers`) {
+            optionVar -intValue referenceOptionsShareDisplayLayers false;
+        }
+        if ($forceFactorySettings || !`optionVar -exists referenceOptionsShareShaders`) {
+            optionVar -intValue referenceOptionsShareShaders false;
+        }
+        if ($forceFactorySettings || !`optionVar -exists referenceOptionsShareRenderLayers`) { 
+            optionVar -stringValue referenceOptionsShareRenderLayers ""; 
+        }
+        if ($forceFactorySettings || !`optionVar -exists referenceOptionsSharedReference` ) {
+            optionVar -intValue referenceOptionsSharedReference 1;
+        }
+        if ($forceFactorySettings || !`optionVar -exists fileReferenceRefLoadSetting`) {
+            optionVar -stringValue fileReferenceRefLoadSetting "default";
+        }
+        if ($forceFactorySettings || !`optionVar -exists fileReferenceReserveNamespaces`) {
+            optionVar -intValue fileReferenceReserveNamespaces false;
+        }
+
+        if ($forceFactorySettings || !`optionVar -exists defaultFileReferenceType`) {
+            optionVar -stringValue defaultFileReferenceType $optionAllFiles;
+        }
+        if ($forceFactorySettings || !`optionVar -exists ("proxyOptionsUseNew"+$action+"Tag")`) {
+            optionVar -intValue ("proxyOptionsUseNew"+$action+"Tag") false;
+        }
+        if ($forceFactorySettings || !`optionVar -exists ("proxyOptions"+$action+"Tag") `) {
+            optionVar -stringValue ("proxyOptions"+$action+"Tag") "";
+        }
+        if ($forceFactorySettings || !`optionVar -exists ("proxyOptionsNew"+$action+"Tag") `) {
+            optionVar -stringValue ("proxyOptionsNew"+$action+"Tag") "";
+        }
+
+        if ($forceFactorySettings || !`optionVar -exists namespaceClashNameMethod`)
+        {
+            optionVar -stringValue namespaceClashNameMethod "new";
+        }
+        if ($forceFactorySettings || !`optionVar -exists fileWorkingNamespaceName`)
+        {
+            optionVar -stringValue fileWorkingNamespaceName "";
+        }
+
+    }
+    else
+    {
+        string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+        string $defVariantSetName = defaultVariantSetName();
+        string $defVariantName = defaultVariantName();
+
+        optionVar -init $forceFactorySettings -category "MayaUsd"
+            -iv usdMayaReferenceDefineInVariant false
+            -sv usdMayaReferenceVariantSetNameOption $createNew
+            -sv usdMayaReferenceVariantSetNameText $defVariantSetName
+            -sv usdMayaReferenceVariantNameOption $createNew
+            -sv usdMayaReferenceVariantNameText $defVariantName
+            ;
+
+        optionVar -init $forceFactorySettings -category $category
+            -iv referenceUseNamespacesDuringFileIO true
+            -iv referenceOptionsUseRenamePrefix false
+            -sv referenceOptionsRenamePrefix ""
+            -iv referenceOptionsLockReference false
+            -iv referenceOptionsDeferReference false
+            -iv referenceOptionsShareDisplayLayers false
+            -iv referenceOptionsShareShaders false
+            -sv referenceOptionsShareRenderLayers ""
+            -iv referenceOptionsSharedReference 1
+            -sv fileReferenceRefLoadSetting "default"
+            -iv fileReferenceReserveNamespaces false
+            ;
+
+        optionVar -init $forceFactorySettings -category $category
+            -sv defaultFileReferenceType $optionAllFiles    // same default as createGlobalOptVars.mel
+            -iv ("proxyOptionsUseNew"+$action+"Tag") false
+            -sv ("proxyOptions"+$action+"Tag") ""
+            -sv ("proxyOptionsNew"+$action+"Tag") ""
+            ;
+
+        //   Namespace object name clash method, including "new", "rename","replace" &"reject".
+        //   "new", always create a new namespace and put everything in it
+        //   "rename", when a name clash happens, rename the new object to ****1,****2...
+        //   "replace", replace old object by new one
+        //   "reject", reserve old one and reject new.
+        //   The default option is "new", to ensure not to destroy the file data
+        optionVar -init $forceFactorySettings -category $category
+            -sv namespaceClashNameMethod "new"
+            -sv fileWorkingNamespaceName ""
+            ;
+    }
+
     $translators = `translator -q -list`;
     int $numOptionStrings = size($translators);
     for ($index = 0; $index < $numOptionStrings; $index++) {
         if ($translators[$index] == "directory") continue;
         $optionName = ($translators[$index]+"Options");
         $defaultOptions = `translator -q -do $translators[$index]`;
-        optionVar -init $forceFactorySettings -category $category
-            -sv $optionName $defaultOptions;
+        if ($mjv <= 2022) {
+            if ($forceFactorySettings || !`optionVar -exists $optionName`) {
+                optionVar -stringValue $optionName $defaultOptions;
+            }
+        } else {
+            optionVar -init $forceFactorySettings -category $category
+                -sv $optionName $defaultOptions;
+        }
         $gAllOptionStrings[$index] = `optionVar -q $optionName`;
     }
     $gLastOptionSelectionIndex = -1;
 }
 
-// Adapted from fileOptions.mel:fileOptionsSetup().
-proc fileOptionsSetup(string $parent, string $chosenFileType)
+proc usdMayaRef_setupDefineInVariantRows(int $groupChecked, int $variantSetNameSize)
 {
+    global string $gUsdMayaReferenceUfePath;
+    global int $gSingleWidgetWidthIndex;
+
+    // If the caller didn't give us the "Group" checkbox status, get it now.
+    if ($groupChecked == -1) {
+        $groupChecked = `checkBoxGrp -q -v1 usdMayaReferenceGroupGrp`;
+    }
+
+    // If the caller didn't give us the variant set name size, get it now.
+    if ($variantSetNameSize == -1) {
+        string $variantSetNames[] = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getVariantSetNames('" + $gUsdMayaReferenceUfePath + "')")`;
+        $variantSetNameSize = size($variantSetNames);
+    }
+
+    // If there are no variant set names, we never show the column 2.
+    int $hideCol2 = $groupChecked;
+    if ($variantSetNameSize == 0) {
+        $hideCol2 = 1;
+    }
+
+    int $rw = $hideCol2 ? 1 : (2 * $gSingleWidgetWidthIndex);
+    rowLayout -edit -columnWidth 2 $rw usdMayaReferenceVariantSetNameRow;
+    rowLayout -edit -columnWidth 2 $rw usdMayaReferenceVariantNameRow;
+}
+
+proc usdMayaRef_setupDefineInVariant()
+{
+    global string $gUsdMayaReferenceUfePath;
+
+    string $variantSetNames[] = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getVariantSetNames('" + $gUsdMayaReferenceUfePath + "')")`;
+    int $nbVarSetNames = size($variantSetNames);
+    if ($nbVarSetNames)
+    {
+        string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+
+        string $savedVarSetName = `optionVar -q usdMayaReferenceVariantSetNameOption`;
+        string $restoreVarSetName = "";
+
+        optionMenu -edit -visible true -deleteAllItems usdMayaReferenceVariantSetNameOptionMenu;
+        textField -e -visible true usdMayaReferenceVariantSetNameTextField;
+        optionMenu -edit -visible true usdMayaReferenceVariantNameOptionMenu;
+        menuItem -label $createNew -parent usdMayaReferenceVariantSetNameOptionMenu;
+        for ($varSetName in $variantSetNames)
+        {
+            menuItem -label $varSetName -parent usdMayaReferenceVariantSetNameOptionMenu;
+            if ($varSetName == $savedVarSetName) {
+                $restoreVarSetName = $varSetName;
+            }
+        }
+
+        if ($restoreVarSetName != "") {
+            optionMenu -edit -value $restoreVarSetName usdMayaReferenceVariantSetNameOptionMenu;
+        }
+
+        // Setup the variant name row as well.
+        usdMayaRef_changeVariantSetName(`optionMenu -q -value usdMayaReferenceVariantSetNameOptionMenu`);
+    }
+    else
+    {
+        // The prim does not have any existing variant sets, so hide the optionMenus.
+        optionMenu -edit -visible false -deleteAllItems usdMayaReferenceVariantSetNameOptionMenu;
+        optionMenu -edit -visible false -deleteAllItems usdMayaReferenceVariantNameOptionMenu;
+    }
+
+    usdMayaRef_setupDefineInVariantRows(-1, $nbVarSetNames);
+}
+
+// Adapted from fileOptions.mel:fileOptionsSetup().
+proc fileOptionsSetup(string $parent, int $forceFactorySettings, string $chosenFileType)
+{
+    global string $gUsdMayaReferenceUfePath;
+
     string $action = "Reference";
-    
+
     // Retrieve the option settings
     //
-    setOptionVars();
+    setOptionVars($forceFactorySettings);
     setParent $parent;
+
+    // Set initial (unique) name for Maya Reference Prim.
+    string $mayaRefPrimName = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getUniqueMayaReferencePrimName('" + $gUsdMayaReferenceUfePath + "')")`;
+    textFieldGrp -edit
+        -text $mayaRefPrimName
+        usdMayaReferencePrimName;
+
+    // Group is initially unchecked (todo: add optionvar control).
+    usdMayaRef_changeGroupOption(0);
+
+    // Setup the "Define in Variant" section.
+    int $defineInVar = `optionVar -q usdMayaReferenceDefineInVariant`;
+    checkBoxGrp -edit -v1 $defineInVar usdMayaReferenceDefineInVariantGrp;
+    usdMayaRef_changeDefineInVariantOption($defineInVar);
+    usdMayaRef_setupDefineInVariant();
+
+    textField -edit 
+        -text `optionVar -q usdMayaReferenceVariantSetNameText`
+        usdMayaReferenceVariantSetNameTextField;
+    textField -edit
+        -text `optionVar -q usdMayaReferenceVariantNameText`
+        usdMayaReferenceVariantNameTextField;
 
     checkBoxGrp -edit
         -v1 `optionVar -query referenceOptionsLockReference`
@@ -396,7 +719,7 @@ global proc addMayaReferenceToUsdCreateUi(string $parent)
 global proc addMayaReferenceToUsdInitUi(string $parent, string $filterType)
 {
     setParent $parent;
-    fileOptionsSetup($parent, $filterType);
+    fileOptionsSetup($parent, false, $filterType);
 }
 
 // Verbatim copy of performFileAction.mel:makeNamespaceNameFromFileName(), 
@@ -455,8 +778,50 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
     global int $gLastOptionSelectionIndex;
     global string $gLastOptionSelection;
     global string $gCurrentOptionSelection;
+    global string $gUsdMayaReferencePrimName;
+
     string $fileType;
     string $optionsScript;
+
+    // Save the various Usd Maya Reference Options.
+    $gUsdMayaReferencePrimName = `textFieldGrp -query -text usdMayaReferencePrimName`;
+
+    int $defineInVar = `checkBoxGrp -q -v1 usdMayaReferenceDefineInVariantGrp`;
+    optionVar -iv usdMayaReferenceDefineInVariant $defineInVar;
+
+    if ($defineInVar)
+    {
+        string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+        string $varSetNameText = `textField -q -text usdMayaReferenceVariantSetNameTextField`;
+        if (`optionMenu -q -ni usdMayaReferenceVariantSetNameOptionMenu` > 0) {
+            // If "Create New" is used, then set the optionVar for the optionMenu to the value
+            // from the textField (the new Variant Set name that will be created).
+            string $varSetName = `optionMenu -q -value usdMayaReferenceVariantSetNameOptionMenu`;
+            if ($varSetName == $createNew) {
+                optionVar -sv usdMayaReferenceVariantSetNameOption $varSetNameText;
+            } else {
+                optionVar -sv usdMayaReferenceVariantSetNameOption $varSetName;
+            }
+        } else {
+            optionVar -sv usdMayaReferenceVariantSetNameOption $varSetNameText;
+        }
+        optionVar -sv usdMayaReferenceVariantSetNameText $varSetNameText;
+
+        string $varNameText = `textField -q -text usdMayaReferenceVariantNameTextField`;
+        if (`optionMenu -q -ni usdMayaReferenceVariantNameOptionMenu` > 0) {
+            // If "Create New" is used, then set the optionVar for the optionMenu to the value
+            // from the textField (the new Variant name that will be created).
+            string $varName = `optionMenu -q -value usdMayaReferenceVariantNameOptionMenu`;
+            if ($varName == $createNew) {
+                optionVar -sv usdMayaReferenceVariantNameOption $varNameText;
+            } else {
+                optionVar -sv usdMayaReferenceVariantNameOption $varName;
+            }
+        } else {
+            optionVar -sv usdMayaReferenceVariantNameOption $varNameText;
+        }
+        optionVar -sv usdMayaReferenceVariantNameText $varNameText;
+    }
 
     // First find out what the user has given us.
     int $useNS = `checkBoxGrp -q -v1 useNamespacesGrp`;
@@ -609,8 +974,24 @@ proc string computeNamespace(string $filePath)
     return $ns;
 }
 
+proc string quoteString(string $unquotedStr)
+{
+    return("\"" + $unquotedStr + "\"");
+}
+
+proc string sanitizeName(string $name)
+{
+    return `python("from pxr import Tf; Tf.MakeValidIdentifier('" + $name + "')")`;
+}
+
 global proc string addMayaReferenceToUsd(string $ufePath)
 {
+    global string $gUsdMayaReferenceUfePath;
+    global string $gUsdMayaReferencePrimName;
+
+    // Save the Ufe Path string in a global variable so we can use it in the controls.
+    $gUsdMayaReferenceUfePath = $ufePath;
+
     // fileMode 1 means a single existing file.
     // 
     // As per projectViewer.mel, we set returnFilter to 1, to return the
@@ -620,7 +1001,19 @@ global proc string addMayaReferenceToUsd(string $ufePath)
     // projectViewer.mel calls fileOptionsCancel() on cancel, doesn't seem to
     // do much, T.B.D if we need to call it.
     string $fileFilterList = buildReadableFileFilterList();
-    string $file[] = `fileDialog2 -returnFilter 1 -fileMode 1 -caption "Add Maya Reference to USD Prim" -fileFilter $fileFilterList -dialogStyle 2 -okCaption "Reference" -optionsUICreate addMayaReferenceToUsdCreateUi -optionsUIInit addMayaReferenceToUsdInitUi -optionsUITitle "" -optionsUICommit2 addMayaReferenceToUsdUiCb`;
+    string $caption = getMayaUsdLibString("kMayaRefAddToPrim");
+    string $ok = getMayaUsdLibString("kMayaRefReference");
+    string $file[] = `fileDialog2
+                        -returnFilter 1
+                        -fileMode 1
+                        -caption $caption
+                        -fileFilter $fileFilterList
+                        -dialogStyle 2
+                        -okCaption $ok
+                        -optionsUICreate addMayaReferenceToUsdCreateUi
+                        -optionsUIInit addMayaReferenceToUsdInitUi
+                        -optionsUITitle ""
+                        -optionsUICommit2 addMayaReferenceToUsdUiCb`;
 
     // Empty return means file operation was not performed
     int $len = size($file);
@@ -629,12 +1022,180 @@ global proc string addMayaReferenceToUsd(string $ufePath)
         return "";
     }
 
+    string $qVarSetName = quoteString("");
+    string $qVarName = quoteString("");
+    // If the define in variant checkbox was enabled get the variant set and variant name.
+    if (`optionVar -query usdMayaReferenceDefineInVariant`)
+    {
+        string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+        string $tmpValue = `optionVar -query usdMayaReferenceVariantSetNameOption`;
+        if ($tmpValue == $createNew)
+        {
+            $tmpValue = `optionVar -query usdMayaReferenceVariantSetNameText`;
+        }
+        $qVarSetName = quoteString($tmpValue);
+
+        $tmpValue = `optionVar -query usdMayaReferenceVariantNameOption`;
+        if ($tmpValue == $createNew)
+        {
+            $tmpValue = `optionVar -query usdMayaReferenceVariantNameText`;
+        }
+        $qVarName = quoteString($tmpValue);
+    }
+
     // No need to actually create the Maya reference node: pulling on the
     // Maya reference prim will create the Maya reference node.
     // Create the Maya reference prim under its parent.
+    string $qUfePath = quoteString($ufePath);
+    string $qPrimName = quoteString($gUsdMayaReferencePrimName);
     string $filePath = fromNativePath($file[0]);
-    string $ns = computeNamespace($filePath);
-    python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.createMayaReferencePrim(\"" + $ufePath + "\", \"" + $filePath + "\", \"" + $ns + "\")");
+    string $qFilePath = quoteString($filePath);
+    string $qNs = quoteString(`computeNamespace($filePath)`);
+    python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.createMayaReferencePrim(" + $qUfePath + ", " + $qFilePath + ", " + $qNs + ", " + $qPrimName + ", " + $qVarSetName + ", " + $qVarName + ")");
 
     return $file[0];
+}
+
+global proc usdMayaRef_changePrimNameText(string $primName)
+{
+    global string $gUsdMayaReferenceUfePath;
+
+    // The text field cannot be empty. Reset to default value if it is.
+    if ($primName == "") {
+        string $defValue = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getUniqueMayaReferencePrimName('" + $gUsdMayaReferenceUfePath + "')")`;
+        textFieldGrp -edit -text $defValue usdMayaReferencePrimName;
+    } else {
+        // Make sure the name user entered is unique and doesn't contain
+        // any invalid characters.
+        string $validatedName = sanitizeName($primName);
+        $validatedName = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getUniqueMayaReferencePrimName('" + $gUsdMayaReferenceUfePath + "', '" + $validatedName + "')")`;
+        if ($validatedName != $primName)
+        {
+            textFieldGrp -edit -text $validatedName usdMayaReferencePrimName;
+        }
+    }
+}
+
+global proc usdMayaRef_changeGroupOption(int $opt)
+{
+    textFieldGrp -edit -enable $opt usdMayaReferenceGroupPrimName;
+    textFieldGrp -edit -enable $opt usdMayaReferenceGroupPrimType;
+    textFieldGrp -edit -enable $opt usdMayaReferenceGroupPrimKind;
+
+    optionMenu -edit -visible (!$opt) usdMayaReferenceVariantSetNameOptionMenu;
+    optionMenu -edit -visible (!$opt) usdMayaReferenceVariantNameOptionMenu;
+
+    usdMayaRef_setupDefineInVariantRows($opt, -1);
+
+    // Also update the variant preview.
+    string $primName = `textFieldGrp -q -text usdMayaReferenceGroupPrimName`;
+    usdMayaRef_changeGroupPrimNameText($primName);
+}
+
+global proc usdMayaRef_changeGroupPrimNameText(string $primName)
+{
+    global string $gUsdMayaReferenceUfePath;
+
+    // Fill-in the variant preview field.
+    int $groupChecked = `checkBoxGrp -q -v1 usdMayaReferenceGroupGrp`;
+    string $primPath = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getPrimPath('" + $gUsdMayaReferenceUfePath + "')")`;
+    if ($groupChecked) {
+        string $variantPreviewPath = $primPath;
+        if ($primName != "") {
+            $variantPreviewPath += ($primPath + "/" + $primName);
+        }
+        textField -edit -text $variantPreviewPath usdMayaReferenceVariantPrim;
+    } else {
+        textField -edit -text $primPath usdMayaReferenceVariantPrim;
+    }
+}
+
+global proc usdMayaRef_changeDefineInVariantOption(int $opt)
+{
+    // Enabling/disabling the row will enable/disable all controls in it.
+    rowLayout -edit -enable $opt usdMayaReferenceVariantSetNameRow;
+    rowLayout -edit -enable $opt usdMayaReferenceVariantNameRow;
+    rowLayout -edit -enable $opt usdMayaReferenceVariantPreviewRow;
+}
+
+global proc usdMayaRef_changeVariantSetName(string $value)
+{
+    global string $gUsdMayaReferenceUfePath;
+
+    string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+
+    // If the "Create New" item is selected, we show the text input
+    // to the right of the optionMenu. For existing variant set names
+    // the field is hidden.
+    int $showField = ($value == $createNew);
+    textField -e -visible $showField usdMayaReferenceVariantSetNameTextField;
+
+    // When the variant set name is showing "Create New", the only option
+    // in the variant name menu is also "Create New".
+    optionMenu -edit -visible true -deleteAllItems usdMayaReferenceVariantNameOptionMenu;
+    textField -e -visible true usdMayaReferenceVariantNameTextField;
+    menuItem -label $createNew -parent usdMayaReferenceVariantNameOptionMenu;
+
+    // If we picked a new variant set name, populate the variant name optionMenu
+    // with all the variant names (after the "Create New" menu item).
+    if (! $showField)
+    {
+        string $savedVarName = `optionVar -q usdMayaReferenceVariantNameOption`;
+        string $restoreVarName = "";
+
+        string $variantNames[] = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getVariantNames('" + $gUsdMayaReferenceUfePath + "', '" + $value + "')")`;
+        for ($varName in $variantNames)
+        {
+            menuItem -label $varName -parent usdMayaReferenceVariantNameOptionMenu;
+            if ($varName == $savedVarName) {
+                $restoreVarName = $varName;
+            }
+        }
+
+        if ($restoreVarName != "") {
+            optionMenu -edit -value $restoreVarName usdMayaReferenceVariantNameOptionMenu;
+            // Since we restored a value in the option menu we need to hide the field.
+            textField -e -visible false usdMayaReferenceVariantNameTextField;
+        }
+    }
+}
+
+global proc usdMayaRef_changeVariantName(string $value)
+{
+    // If the "Create New" item is selected, we show the text input
+    // to the right of the optionMenu. For existing variant names
+    // the field is hidden.
+    string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+    int $vis = ($value == $createNew);
+    textField -e -visible $vis usdMayaReferenceVariantNameTextField;
+}
+
+global proc usdMayaRef_changeVariantSetNameText(string $value)
+{
+    // The text field cannot be empty. Reset to default value if it is.
+    if ($value == "") {
+        string $defValue = defaultVariantSetName();
+        textField -edit -text $defValue usdMayaReferenceVariantSetNameTextField;
+    } else {
+        // Make sure the name user entered doesn't contain any invalid characters.
+        string $validatedSetName = sanitizeName($value);
+        if ($value != $validatedSetName) {
+            textField -edit -text $validatedSetName usdMayaReferenceVariantSetNameTextField;
+        }
+    }
+}
+
+global proc usdMayaRef_changeVariantNameText(string $value)
+{
+    // The text field cannot be empty. Reset to default value if it is.
+    if ($value == "") {
+        string $defValue = defaultVariantName();
+        textField -edit -text $defValue usdMayaReferenceVariantNameTextField;
+    } else {
+        // Make sure the name user entered doesn't contain any invalid characters.
+        string $validatedName = sanitizeName($value);
+        if ($value != $validatedName) {
+            textField -edit -text $validatedName usdMayaReferenceVariantNameTextField;
+        }
+    }
 }

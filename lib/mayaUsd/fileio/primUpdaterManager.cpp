@@ -1103,8 +1103,17 @@ bool PrimUpdaterManager::duplicate(
         // Copy the temporary layer contents out to the proper destination.
         const auto& srcLayer = std::get<SdfLayerRefPtr>(pushExportOutput);
         const auto& editTarget = dstStage->GetEditTarget();
-        auto        dstRootPath = editTarget.MapToSpecPath(srcRootPath);
         const auto& dstLayer = editTarget.GetLayer();
+
+        // Make the destination root path unique.
+        SdfPath     dstRootPath = editTarget.MapToSpecPath(srcRootPath);
+        SdfPath     dstParentPath = dstRootPath.GetParentPath();
+        std::string dstChildName = dstRootPath.GetName();
+        UsdPrim     dstParentPrim = dstStage->GetPrimAtPath(dstParentPath);
+        if (dstParentPrim.IsValid()) {
+            dstChildName = ufe::uniqueChildName(dstParentPrim, dstChildName);
+            dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
+        }
 
         if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
             return false;
