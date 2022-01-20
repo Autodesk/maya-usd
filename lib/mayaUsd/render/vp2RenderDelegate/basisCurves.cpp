@@ -962,10 +962,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 }
             }
 
-            // If color/opacity is not found, the 18% gray color will be used
-            // to match the default color of Hydra Storm.
+            // If color/opacity is not found, the default color of Maya curves will be used
             if (colorArray.empty()) {
-                colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
+                colorArray.push_back(drawScene.GetCurveDefaultColor());
                 colorInterpolation = HdInterpolationConstant;
             }
 

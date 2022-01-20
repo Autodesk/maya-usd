@@ -1480,6 +1480,24 @@ HdVP2SelectionStatus ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path
 //! \brief  Query the wireframe color assigned to the proxy shape.
 const MColor& ProxyRenderDelegate::GetWireframeColor() const { return _wireframeColor; }
 
+GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
+{
+    MDoubleArray curveColorResult;
+    {
+        std::lock_guard<std::mutex> _(_mayaCommandEngineMutex);
+        MGlobal::executeCommand(
+            "int $index = `displayColor -q -dormant \"curve\"`; colorIndex -q $index;",
+            curveColorResult);
+    }
+
+    if (curveColorResult.length() == 3) {
+        return GfVec3f(curveColorResult[0], curveColorResult[1], curveColorResult[2]);
+    } else {
+        // In case of an error, return the default navy-blue color
+        return GfVec3f(0.000f, 0.016f, 0.376f);
+    }
+}
+
 //! \brief
 const MColor& ProxyRenderDelegate::GetSelectionHighlightColor(bool lead) const
 {

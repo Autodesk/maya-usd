@@ -171,6 +171,9 @@ public:
     const MColor& GetWireframeColor() const;
 
     MAYAUSD_CORE_PUBLIC
+    GfVec3f GetCurveDefaultColor();
+
+    MAYAUSD_CORE_PUBLIC
     const MColor& GetSelectionHighlightColor(bool lead) const;
 
     MAYAUSD_CORE_PUBLIC
@@ -286,6 +289,8 @@ private:
     }; //!< Whether point snapping should snap to selected objects
 #endif
     MColor _wireframeColor; //!< Wireframe color assigned to the proxy shape
+
+    std::mutex _mayaCommandEngineMutex;
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
