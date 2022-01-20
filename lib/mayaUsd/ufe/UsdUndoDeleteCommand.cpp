@@ -28,7 +28,7 @@
 #endif
 
 namespace {
-#ifdef UFE_V2_FEATURES_AVAILABLE
+#if MAYA_ENABLE_NEW_PRIM_DELETE
 bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
 {
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
@@ -56,7 +56,6 @@ namespace ufe {
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const PXR_NS::UsdPrim& prim)
     : Ufe::UndoableCommand()
     , _prim(prim)
-
 {
 }
 
@@ -77,6 +76,7 @@ void UsdUndoDeleteCommand::execute()
 
     UsdUndoBlock undoBlock(&_undoableItem);
 
+#if MAYA_ENABLE_NEW_PRIM_DELETE
     const auto& stage = _prim.GetStage();
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
@@ -91,6 +91,9 @@ void UsdUndoDeleteCommand::execute()
             TF_VERIFY(retVal, "Failed to delete '%s'", _prim.GetPath().GetText());
         }
     }
+#else
+    _prim.SetActive(false);
+#endif
 }
 
 void UsdUndoDeleteCommand::undo()

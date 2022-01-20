@@ -18,6 +18,7 @@
 # MAYA_CURRENT_UFE_CAMERA_SUPPORT Presence of MFrameContext::getCurrentUfeCameraPath.
 # MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::setUfeIdentifier.
 # MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::updateUfeIdentifier.
+# MAYA_ENABLE_NEW_PRIM_DELETE Enable new delete behaviour for delete command
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -399,6 +400,11 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MPxSubSceneOverride.h"
         set(MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT TRUE CACHE INTERNAL "updateUfeIdentifiers")
         message(STATUS "Maya has updateUfeIdentifiers API")
     endif()
+endif()
+
+set(MAYA_ENABLE_NEW_PRIM_DELETE FALSE CACHE INTERNAL "enableNewPrimDelete")
+if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230000)
+    set(MAYA_ENABLE_NEW_PRIM_DELETE TRUE CACHE INTERNAL "enableNewPrimDelete")
 endif()
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if

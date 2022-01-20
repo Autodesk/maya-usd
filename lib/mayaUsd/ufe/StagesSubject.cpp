@@ -317,7 +317,7 @@ void StagesSubject::stageChanged(
             if (!sceneItem)
                 continue;
 
-#ifndef UFE_V2_FEATURES_AVAILABLE
+#if !MAYA_ENABLE_NEW_PRIM_DELETE
             // Special case when we know the operation came from either
             // the add or delete of our UFE/USD implementation.
             if (InAddOrDeleteOperation::inAddOrDeleteOperation()) {
@@ -352,13 +352,13 @@ void StagesSubject::stageChanged(
                     // properties. So we send the UFE subtree invalidate notif.
                     Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 #else
-                // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
-                // delete/add notifs.
-                sendObjectPostDelete(sceneItem);
-                sendObjectAdd(sceneItem);
+                    // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
+                    // delete/add notifs.
+                    sendObjectPostDelete(sceneItem);
+                    sendObjectAdd(sceneItem);
 #endif
                 }
-#ifndef UFE_V2_FEATURES_AVAILABLE
+#if !MAYA_ENABLE_NEW_PRIM_DELETE
             }
 #endif
         }
