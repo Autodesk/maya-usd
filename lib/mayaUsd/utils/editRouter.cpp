@@ -61,7 +61,7 @@ void CxxEditRouter::operator()(
 
 EditRouters editRouterDefaults()
 {
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     EditRouters   defaultRouters;
     TfTokenVector defaultOperations = { TfToken("parent"), TfToken("duplicate") };
