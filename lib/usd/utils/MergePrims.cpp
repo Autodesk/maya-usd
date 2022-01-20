@@ -246,8 +246,86 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// Special metadata handling.
+//
+// There are some metadata that we know the merge-to-USD temporary export-to-USD
+// will never produce. List them here to be always preserved.
+//----------------------------------------------------------------------------------------------------------------------
+
+const std::set<TfToken>& getAlwaysPreservedMetadatas()
+{
+    static const std::set<TfToken> preserved = { TfToken("references") };
+
+    return preserved;
+}
+
+bool isMetadataAlwaysPreserved(const TfToken& metadata)
+{
+    return getAlwaysPreservedMetadatas().count(metadata) > 0;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // Merge Prims
 //----------------------------------------------------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------------------------------------------------
+/// Verifies if the metadata at the given path have been modified.
+bool isMetadataAtPathModified(
+    const MergeContext&  ctx,
+    const MergeLocation& src,
+    const MergeLocation& dst,
+    const char* const    metadataType,
+    const UsdObject&     modified,
+    const UsdObject&     baseline,
+    const MergeMissing   missingHandling)
+{
+    // Verify if both are missing. Should not happen, but let's be safe.
+    // In that case, the metadata is not modified.
+    if (!src.fieldExists && !dst.fieldExists) {
+        const bool changed = false;
+        printChangedField(ctx, src, metadataType, changed);
+        return changed;
+    }
+
+    // If the metadata is missing in the source and we preserve missing,
+    // return that the metadata is *not* modified so as to preserve it.
+    if (!src.fieldExists) {
+        const bool preserved = contains(missingHandling, MergeMissing::Preserve)
+            || isMetadataAlwaysPreserved(src.field);
+        const bool changed = !preserved;
+        printChangedField(ctx, src, metadataType, changed);
+        return changed;
+    }
+
+    // If the metadata is missing in the destination and we create missing,
+    // return that the metadata *is* modified so as to create it.
+    if (!dst.fieldExists) {
+        const bool created = contains(missingHandling, MergeMissing::Create);
+        const bool changed = created;
+        printChangedField(ctx, src, metadataType, changed);
+        return changed;
+    }
+
+    // If both are present, we compare.
+    //
+    // Note: special references metadata handling.
+    //
+    // To support it fully, we would need:
+    //
+    //    - A generic SdfListOp<T> diff algorithm. That is because the references
+    //      metadata is kept as a SdfListOp<SdfReference>.
+    //
+    //    - A custom copyValue callback, to be returned by the shouldMergeValue()
+    //      function in the valueToCopy with custom code to merge a SdfListOp<T>
+    //      into another.
+    //
+    // For the short term, we know that push-to-USD cannot generate references.
+    // In other words, we will always go through the !src.fieldExists code above.
+    // So we don't need to write the SdfListOp code yet.
+    const bool changed = (compareMetadatas(modified, baseline, src.field) != DiffResult::Same);
+    printChangedField(ctx, src, metadataType, changed);
+    return changed;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// Verifies if the data at the given path have been modified.
@@ -293,10 +371,8 @@ bool isDataAtPathsModified(
         }
 
         if (!src.field.IsEmpty()) {
-            const bool changed
-                = (compareMetadatas(srcProp, dstProp, src.field) != DiffResult::Same);
-            printChangedField(ctx, src, "prop metadata", changed);
-            return changed;
+            return isMetadataAtPathModified(
+                ctx, src, dst, "prop metadata", srcProp, dstProp, ctx.options.propMetadataHandling);
         } else {
             if (srcProp.Is<UsdAttribute>()) {
                 const UsdAttribute srcAttr = srcProp.As<UsdAttribute>();
@@ -316,10 +392,8 @@ bool isDataAtPathsModified(
         }
     } else {
         if (!src.field.IsEmpty()) {
-            const bool changed
-                = (compareMetadatas(srcPrim, dstPrim, src.field) != DiffResult::Same);
-            printChangedField(ctx, src, "prim metadata", changed);
-            return changed;
+            return isMetadataAtPathModified(
+                ctx, src, dst, "prim metadata", srcPrim, dstPrim, ctx.options.propMetadataHandling);
         } else {
             comparePrimsOnly(srcPrim, dstPrim, &quickDiff);
             const bool changed = (quickDiff != DiffResult::Same);
