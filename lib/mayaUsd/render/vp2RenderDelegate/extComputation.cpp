@@ -22,7 +22,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdVP2ExtComputation::HdVP2ExtComputation(SdfPath const& id) : HdExtComputation(id) { }
+HdVP2ExtComputation::HdVP2ExtComputation(SdfPath const& id)
+    : HdExtComputation(id)
+{
+}
 
 HdVP2ExtComputation::~HdVP2ExtComputation() { }
 
