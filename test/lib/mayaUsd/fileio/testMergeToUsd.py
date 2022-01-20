@@ -308,5 +308,34 @@ class MergeToUsdTestCase(unittest.TestCase):
         # Check that the reference is still there.
         self.assertTrue(aPrim.HasAuthoredReferences())
 
+    def testMergeToUnchangedCylinder(self):
+        '''Merge edits on unchanged data.'''
+
+        # Create a stage from a file.
+        testFile = getTestScene("cylinderSubset", "cylinder.usda")
+        testDagPath, stage = mayaUtils.createProxyFromFile(testFile)
+        usdCylPathString = testDagPath + ",/sphere_butNot_pCylinder1"
+
+        cylBottomPrim = stage.GetPrimAtPath("/sphere_butNot_pCylinder1/bottom")
+        bottomIndices = cylBottomPrim.GetAttribute("indices")
+        self.assertEqual("int[]", bottomIndices.GetTypeName())
+
+        # Edit as maya and do nothing.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(usdCylPathString))
+
+        cylMayaItem = ufe.GlobalSelection.get().front()
+
+        # Merge edits back to USD.
+        with mayaUsd.lib.OpUndoItemList():
+            cylMayaPath = cylMayaItem.path()
+            cylMayaPathStr = ufe.PathString.string(cylMayaPath)
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(cylMayaPathStr))
+
+        # Check that the indices are still valid.
+        cylBottomPrim = stage.GetPrimAtPath("/sphere_butNot_pCylinder1/bottom")
+        bottomIndices = cylBottomPrim.GetAttribute("indices")
+        self.assertEqual("int[]", bottomIndices.GetTypeName())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

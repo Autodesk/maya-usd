@@ -607,11 +607,8 @@ void unionChildren(
     ChildrenSet srcSet(srcChildren.begin(), srcChildren.end());
     ChildrenSet dstSet(dstChildren.begin(), dstChildren.end());
 
-    if (srcSet == dstSet)
-        return;
-
-    // If they differ, fill the source and destination to have the desired set
-    // of children.
+    // Fill the source and destination to have the desired set
+    // of children in the same order.
     ChildrenSet unionSet;
     if (contains(missingHandling, MergeMissing::Create))
         unionSet.insert(srcSet.begin(), srcSet.end());

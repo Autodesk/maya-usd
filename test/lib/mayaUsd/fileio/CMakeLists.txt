@@ -44,4 +44,33 @@ foreach(script ${TEST_SCRIPT_FILES})
     set_property(TEST ${target} APPEND PROPERTY LABELS fileio)
 endforeach()
 
+if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
+    #------------------------------------------------------------------------------
+    # Custom Rig Schema
+    #------------------------------------------------------------------------------
+    execute_process(COMMAND
+                        ${Python_EXECUTABLE}
+                        ${USD_GENSCHEMA}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/schema.usda
+                        ${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/
+                    WORKING_DIRECTORY
+                        ${CMAKE_CURRENT_BINARY_DIR}
+                    RESULT_VARIABLE
+                        usdgen_res
+    )
+    if(usdgen_res)
+        message(FATAL_ERROR "Schemas generation failed")
+    endif()
+
+    set(TEST_CUSTOM_RIG testCustomRig.py)
+    mayaUsd_get_unittest_target(target ${TEST_CUSTOM_RIG})
+    mayaUsd_add_test(${target}
+        PYTHON_MODULE ${target}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
+            "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/"
+    )
+endif()
+
 add_subdirectory(utils)
