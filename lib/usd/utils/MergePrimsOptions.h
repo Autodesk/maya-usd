@@ -133,6 +133,12 @@ struct MergePrimsOptions
     // How missing mapper argumentss are handled.
     MergeMissing mapperArgsHandling { MergeMissing::All };
 
+    // How missing prop metadata are handled.
+    MergeMissing propMetadataHandling { MergeMissing::All };
+
+    // How missing prim metadata are handled.
+    MergeMissing primMetadataHandling { MergeMissing::All };
+
     // Create a VtDictionary containing the default values for the merge options.
     MAYA_USD_UTILS_PUBLIC
     static const PXR_NS::VtDictionary& getDefaultDictionary();
@@ -175,6 +181,9 @@ struct MergePrimsOptions
     (expressionsHandling)               \
     (mappersHandling)                   \
     (mapperArgsHandling)                \
+                                        \
+    (propMetadataHandling)              \
+    (primMetadataHandling)              \
                                         \
     (Create)                            \
     (Preserve)                          \
