@@ -184,7 +184,7 @@ struct MergePrimsOptions
 
 // Note: the macro below does not qualify the types it uses with the PXR namespace,
 // so we're forced to use the types it uses here.
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaMergeOptionsTokens,
