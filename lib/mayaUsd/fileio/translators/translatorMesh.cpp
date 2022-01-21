@@ -186,8 +186,7 @@ TranslatorMeshRead::TranslatorMeshRead(
     // Note: the USD leftHanded orientation makes both the vertices order of faces left-handed
     //       and the face normals be left-handed. On the other hand, the Maya 'opposite' flag
     //       only flips faces, not normals. So, this may need further work.
-    UsdMayaUtil::setPlugValue(
-        m_meshObj, "opposite", isPrimitiveLeftHanded(mesh));
+    UsdMayaUtil::setPlugValue(m_meshObj, "opposite", isPrimitiveLeftHanded(mesh));
 
     // set mesh name
     const auto& primName = prim.GetName().GetString();

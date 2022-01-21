@@ -35,7 +35,6 @@
 #include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdGeom/primvar.h>
 #include <pxr/usd/usdGeom/subset.h>
-#include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
@@ -834,7 +833,8 @@ void UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(
 
     bool isLeftHanded = false;
     UsdMayaUtil::getPlugValue(meshFn, "opposite", &isLeftHanded);
-    primSchema.CreateOrientationAttr(VtValue(isLeftHanded ? UsdGeomTokens->leftHanded : UsdGeomTokens->rightHanded));
+    primSchema.CreateOrientationAttr(
+        VtValue(isLeftHanded ? UsdGeomTokens->leftHanded : UsdGeomTokens->rightHanded));
 }
 
 void UsdMayaMeshWriteUtils::writeInvisibleFacesData(

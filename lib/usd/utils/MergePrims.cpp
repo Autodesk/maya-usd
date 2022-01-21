@@ -267,7 +267,7 @@ bool isMetadataAlwaysPreserved(const TfToken& metadata)
 
 bool isMetadataNeverPreserved(const TfToken& metadata)
 {
-    static const std::set<TfToken> never = { };
+    static const std::set<TfToken> never = {};
 
     return never.count(metadata) > 0;
 }
