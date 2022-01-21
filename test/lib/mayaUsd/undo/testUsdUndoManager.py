@@ -23,6 +23,7 @@ from pxr import Tf, Usd, UsdGeom, Gf
 
 import mayaUsd.lib as mayaUsdLib
 import mayaUtils
+import ufeUtils
 import mayaUsd.ufe
 
 class TestUsdUndoManager(unittest.TestCase):
