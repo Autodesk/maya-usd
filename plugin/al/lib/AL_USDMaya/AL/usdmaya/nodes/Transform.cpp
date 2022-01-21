@@ -29,7 +29,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MProfiler.h>
 #include <maya/MTime.h>
-#include <maya/MViewport2Renderer.h>
 
 namespace {
 const int _transformProfilerCategory = MProfiler::addCategory(
@@ -494,7 +493,6 @@ MStatus Transform::preEvaluation(const MDGContext& context, const MEvaluationNod
         UsdTimeCode usdTime(theTime.as(MTime::uiUnit()));
 
         getTransMatrix()->updateToTime(usdTime);
-        MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
     }
     return MPxTransform::preEvaluation(context, evaluationNode);
 }
@@ -515,7 +513,6 @@ MStatus Transform::postEvaluation(
     UsdTimeCode usdTime(theTime.as(MTime::uiUnit()));
 
     getTransMatrix()->updateToTime(usdTime);
-    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
 
     return MPxTransform::postEvaluation(context, evaluationNode, evalType);
 }
