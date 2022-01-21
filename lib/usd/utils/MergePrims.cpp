@@ -250,7 +250,7 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
 //
 // There are some metadata that we know the merge-to-USD temporary export-to-USD
 // will never produce. Others are generated only when needed, so their absence
-// should always means to remove them.
+// should always mean to remove them.
 //
 // isMetadataAlwaysPreserved() is for those metadata we know we never produce.
 //
