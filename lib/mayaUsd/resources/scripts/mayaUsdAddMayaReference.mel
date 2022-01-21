@@ -95,6 +95,7 @@ proc fileOptionsTabPage(string $tabLayout)
     string $action = "Reference";
     pushOptionsUITemplate();
 
+    string $lbl;
     setParent $tabLayout;
 
     // Need to keep 'optionsBoxForm' as translator plugins reference this
@@ -135,8 +136,19 @@ proc fileOptionsTabPage(string $tabLayout)
         textFieldGrp -label `getMayaUsdLibString("kMayaRefPrimName")`
             -cc "usdMayaRef_changeGroupPrimNameText \"#1\""
             usdMayaReferenceGroupPrimName;
-        textFieldGrp -label `getMayaUsdLibString("kMayaRefPrimType")` usdMayaReferenceGroupPrimType;
-        textFieldGrp -label `getMayaUsdLibString("kMayaRefPrimKind")` usdMayaReferenceGroupPrimKind;
+        optionMenuGrp -label `getMayaUsdLibString("kMayaRefPrimType")` usdMayaReferenceGroupPrimType;
+            menuItem -label "Xform";
+            menuItem -label "Scope";
+        optionMenuGrp -label `getMayaUsdLibString("kMayaRefPrimKind")` usdMayaReferenceGroupPrimKind;
+            menuItem -label "";     // empty
+            $lbl = python("from pxr import Kind; Kind.Tokens.group");
+            menuItem -label $lbl;
+            $lbl = python("from pxr import Kind; Kind.Tokens.assembly");
+            menuItem -label $lbl;
+            $lbl = python("from pxr import Kind; Kind.Tokens.component");
+            menuItem -label $lbl;
+            $lbl = python("from pxr import Kind; Kind.Tokens.subcomponent");
+            menuItem -label $lbl;
 
     checkBoxGrp -numberOfCheckBoxes 1
         -label "" -label1 `getMayaUsdLibString("kMayaRefDefineInVariant")`
@@ -174,7 +186,7 @@ proc fileOptionsTabPage(string $tabLayout)
         usdMayaReferenceEditAsMayaDatGrp;
 
     setParent $topForm;
-    string $lbl = getMayaUsdLibString("kMayaRefOptions");
+    $lbl = getMayaUsdLibString("kMayaRefOptions");
     string $mayaRefForm = `frameLayout -label $lbl`;
 
     setParent $mayaRefForm;
@@ -371,6 +383,19 @@ proc setOptionVars(int $forceFactorySettings)
     int $mjv = `about -majorVersion`;
     if ($mjv <= 2022)
     {
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceGroup`) {
+            optionVar -intValue usdMayaReferenceGroup false;
+        }
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceGroupPrimName`) {
+            optionVar -stringValue usdMayaReferenceGroupPrimName "";
+        }
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceGroupType`) {
+            optionVar -stringValue usdMayaReferenceGroupPrimType "Xform";
+        }
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceGroupKind`) {
+            string $def = python("from pxr import Kind; Kind.Tokens.group");
+            optionVar -stringValue usdMayaReferenceGroupPrimKind $def;
+        }
         string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
         if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceDefineInVariant`) {
             optionVar -intValue usdMayaReferenceDefineInVariant false;
@@ -450,10 +475,15 @@ proc setOptionVars(int $forceFactorySettings)
     else
     {
         string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
+        string $defGroupKind = python("from pxr import Kind; Kind.Tokens.group");
         string $defVariantSetName = defaultVariantSetName();
         string $defVariantName = defaultVariantName();
 
         optionVar -init $forceFactorySettings -category "MayaUsd"
+            -iv usdMayaReferenceGroup false
+            -sv usdMayaReferenceGroupPrimName ""
+            -sv usdMayaReferenceGroupPrimType "Xform"
+            -sv usdMayaReferenceGroupPrimKind $defGroupKind
             -iv usdMayaReferenceDefineInVariant false
             -sv usdMayaReferenceVariantSetNameOption $createNew
             -sv usdMayaReferenceVariantSetNameText $defVariantSetName
@@ -600,14 +630,29 @@ proc fileOptionsSetup(string $parent, int $forceFactorySettings, string $chosenF
         -text $mayaRefPrimName
         usdMayaReferencePrimName;
 
-    // Group is initially unchecked (todo: add optionvar control).
-    usdMayaRef_changeGroupOption(0);
+    // Setup the "Group" section.
+    int $groupVar = `optionVar -q usdMayaReferenceGroup`;
+    checkBoxGrp -edit -v1 $groupVar usdMayaReferenceGroupGrp;
+
+    textFieldGrp -edit
+        -text `optionVar -q usdMayaReferenceGroupPrimName`
+        usdMayaReferenceGroupPrimName;
+    optionMenuGrp -edit
+        -value `optionVar -q usdMayaReferenceGroupPrimType`
+        usdMayaReferenceGroupPrimType;
+    optionMenuGrp -edit
+        -value `optionVar -q usdMayaReferenceGroupPrimKind`
+        usdMayaReferenceGroupPrimKind;
 
     // Setup the "Define in Variant" section.
     int $defineInVar = `optionVar -q usdMayaReferenceDefineInVariant`;
     checkBoxGrp -edit -v1 $defineInVar usdMayaReferenceDefineInVariantGrp;
     usdMayaRef_changeDefineInVariantOption($defineInVar);
     usdMayaRef_setupDefineInVariant();
+
+    // We do this "after" the define in variant stuff since enabling group
+    // changes parts of the "define in variant" section.
+    usdMayaRef_changeGroupOption($groupVar);
 
     checkBoxGrp -edit
         -v1 `optionVar -query usdMayaReferenceEditAsMayaDat`
@@ -690,6 +735,18 @@ global proc addMayaReferenceToUsdInitUi(string $parent, string $filterType)
     fileOptionsSetup($parent, false, $filterType);
 }
 
+global proc addMayaReferenceToUsdSelectionChanged(string $parent, string $selection)
+{
+    global string $gCurrentFileDialogSelection;
+
+    setParent $parent;
+    $gCurrentFileDialogSelection = $selection;
+
+    // Update the variant preview field.
+    string $groupPrimName = `textFieldGrp -q -text usdMayaReferenceGroupPrimName`;
+    usdMayaRef_changeGroupPrimNameText($groupPrimName);
+}
+
 // Verbatim copy of performFileAction.mel:makeNamespaceNameFromFileName(), 
 // which is not a global proc.
 //
@@ -753,6 +810,21 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
 
     // Save the various Usd Maya Reference Options.
     $gUsdMayaReferencePrimName = `textFieldGrp -query -text usdMayaReferencePrimName`;
+
+    int $groupVar = `checkBoxGrp -q -v1 usdMayaReferenceGroupGrp`;
+    optionVar -iv usdMayaReferenceGroup $groupVar;
+
+    if ($groupVar)
+    {
+        string $groupPrimName = `textFieldGrp -q -text usdMayaReferenceGroupPrimName`;
+        optionVar -sv usdMayaReferenceGroupPrimName $groupPrimName;
+
+        string $groupPrimType = `optionMenuGrp -q -value usdMayaReferenceGroupPrimType`;
+        optionVar -sv usdMayaReferenceGroupPrimType $groupPrimType;
+
+        string $groupPrimKind = `optionMenuGrp -q -value usdMayaReferenceGroupPrimKind`;
+        optionVar -sv usdMayaReferenceGroupPrimKind $groupPrimKind;
+    }
 
     int $defineInVar = `checkBoxGrp -q -v1 usdMayaReferenceDefineInVariantGrp`;
     optionVar -iv usdMayaReferenceDefineInVariant $defineInVar;
@@ -928,11 +1000,6 @@ proc string computeNamespace(string $filePath)
     return $ns;
 }
 
-proc string quoteString(string $unquotedStr)
-{
-    return("\"" + $unquotedStr + "\"");
-}
-
 proc string sanitizeName(string $name)
 {
     return `python("from pxr import Tf; Tf.MakeValidIdentifier('" + $name + "')")`;
@@ -942,6 +1009,8 @@ global proc string addMayaReferenceToUsd(string $ufePath)
 {
     global string $gUsdMayaReferenceUfePath;
     global string $gUsdMayaReferencePrimName;
+    global string $gCurrentFileDialogSelection;
+    $gCurrentFileDialogSelection = "";
 
     // Save the Ufe Path string in a global variable so we can use it in the controls.
     $gUsdMayaReferenceUfePath = $ufePath;
@@ -966,6 +1035,7 @@ global proc string addMayaReferenceToUsd(string $ufePath)
                         -okCaption $ok
                         -optionsUICreate addMayaReferenceToUsdCreateUi
                         -optionsUIInit addMayaReferenceToUsdInitUi
+                        -selectionChanged addMayaReferenceToUsdSelectionChanged
                         -optionsUITitle ""
                         -optionsUICommit2 addMayaReferenceToUsdUiCb`;
 
@@ -976,9 +1046,21 @@ global proc string addMayaReferenceToUsd(string $ufePath)
         return "";
     }
 
-    string $qVarSetName = quoteString("");
-    string $qVarName = quoteString("");
+    // If the group checkbox was enabled get the group prim name/type/kind.
+    int $useGroup = `optionVar -query usdMayaReferenceGroup`;
+    string $groupName;
+    string $groupType;
+    string $groupKind;
+    if ($useGroup)
+    {
+        $groupName = `optionVar -query usdMayaReferenceGroupPrimName`;
+        $groupType = `optionVar -query usdMayaReferenceGroupPrimType`;
+        $groupKind = `optionVar -query usdMayaReferenceGroupPrimKind`;
+    }
+
     // If the define in variant checkbox was enabled get the variant set and variant name.
+    string $varSetName;
+    string $varName;
     if (`optionVar -query usdMayaReferenceDefineInVariant`)
     {
         string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
@@ -987,14 +1069,14 @@ global proc string addMayaReferenceToUsd(string $ufePath)
         {
             $tmpValue = `optionVar -query usdMayaReferenceVariantSetNameText`;
         }
-        $qVarSetName = quoteString($tmpValue);
+        $varSetName = $tmpValue;
 
         $tmpValue = `optionVar -query usdMayaReferenceVariantNameOption`;
         if ($tmpValue == $createNew)
         {
             $tmpValue = `optionVar -query usdMayaReferenceVariantNameText`;
         }
-        $qVarName = quoteString($tmpValue);
+        $varName = $tmpValue;
     }
 
     int $autoEditAsMayaData = `optionVar -query usdMayaReferenceEditAsMayaDat`;
@@ -1002,12 +1084,20 @@ global proc string addMayaReferenceToUsd(string $ufePath)
     // No need to actually create the Maya reference node: pulling on the
     // Maya reference prim will create the Maya reference node.
     // Create the Maya reference prim under its parent.
-    string $qUfePath = quoteString($ufePath);
-    string $qPrimName = quoteString($gUsdMayaReferencePrimName);
     string $filePath = fromNativePath($file[0]);
-    string $qFilePath = quoteString($filePath);
-    string $qNs = quoteString(`computeNamespace($filePath)`);
-    python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.createMayaReferencePrim(" + $qUfePath + ", " + $qFilePath + ", " + $qNs + ", " + $qPrimName + ", " + $qVarSetName + ", " + $qVarName + ", " + $autoEditAsMayaData + ")");
+    string $ns = computeNamespace($filePath);
+    string $pyCmdArgs = `format -s $ufePath -s $filePath -s $ns -s $gUsdMayaReferencePrimName "'^1s', '^2s', '^3s', '^4s'"`;
+    if ($useGroup)
+    {
+        $pyCmdArgs += `format -s $groupName -s $groupType -s $groupKind ", groupPrim=('^1s', '^2s', '^3s')"`;
+    }
+    if (($varSetName != "") && ($varName != ""))
+    {
+        $pyCmdArgs += `format -s $varSetName -s $varName ", variantSet=('^1s', '^2s')"`;
+    }
+    $pyCmdArgs += `format -s $autoEditAsMayaData ", mayaAutoEdit='^1s'"`;
+    string $pyCmd = `format -s $pyCmdArgs "import mayaUsdAddMayaReference; mayaUsdAddMayaReference.createMayaReferencePrim(^1s)"`;
+    python($pyCmd);
 
     return $file[0];
 }
@@ -1035,11 +1125,21 @@ global proc usdMayaRef_changePrimNameText(string $primName)
 global proc usdMayaRef_changeGroupOption(int $opt)
 {
     textFieldGrp -edit -enable $opt usdMayaReferenceGroupPrimName;
-    textFieldGrp -edit -enable $opt usdMayaReferenceGroupPrimType;
-    textFieldGrp -edit -enable $opt usdMayaReferenceGroupPrimKind;
+    optionMenuGrp -edit -enable $opt usdMayaReferenceGroupPrimType;
+    optionMenuGrp -edit -enable $opt usdMayaReferenceGroupPrimKind;
 
     optionMenu -edit -visible (!$opt) usdMayaReferenceVariantSetNameOptionMenu;
     optionMenu -edit -visible (!$opt) usdMayaReferenceVariantNameOptionMenu;
+
+    // If the "Group" option was just enabled, we need to set both the variant
+    // set and variant name to "Create New". Since when group is enabled we hide
+    // the optionMenu and only show the fields.
+    if ($opt && (`optionMenu -q -ni usdMayaReferenceVariantSetNameOptionMenu` > 0)) {
+        // We know that "Create New" is always the first menu item.
+        optionMenu -edit -select 1 usdMayaReferenceVariantSetNameOptionMenu;
+        string $v = `optionMenu -q -value usdMayaReferenceVariantSetNameOptionMenu`;
+        usdMayaRef_changeVariantSetName($v);
+    }
 
     usdMayaRef_setupDefineInVariantRows($opt, -1);
 
@@ -1052,13 +1152,33 @@ global proc usdMayaRef_changeGroupPrimNameText(string $primName)
 {
     global string $gUsdMayaReferenceUfePath;
 
+    // Validate the user input (note: the group prim name is allowed to empty in which case
+    // a default name will be created).
+    string $validatedGroupPrimName;
+    if ($primName != "") {
+        $validatedGroupPrimName = sanitizeName($primName);
+    }
+    if ($validatedGroupPrimName != $primName) {
+        textFieldGrp -edit -text $validatedGroupPrimName usdMayaReferenceGroupPrimName;
+    }
+
     // Fill-in the variant preview field.
     int $groupChecked = `checkBoxGrp -q -v1 usdMayaReferenceGroupGrp`;
     string $primPath = `python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.getPrimPath('" + $gUsdMayaReferenceUfePath + "')")`;
     if ($groupChecked) {
         string $variantPreviewPath = $primPath;
-        if ($primName != "") {
-            $variantPreviewPath += ($primPath + "/" + $primName);
+        if ($validatedGroupPrimName == "") {
+            string $ns;
+            string $sel = currentFileDialogSelection();
+            if ($sel == "") {
+                $ns = "<filename>";
+            } else {
+                string $filePath = fromNativePath($sel);
+                $ns = computeNamespace($filePath);
+            }
+            $variantPreviewPath += ("/" + $ns + "RNgroup");
+        } else {
+            $variantPreviewPath += ("/" + $validatedGroupPrimName);
         }
         textField -edit -text $variantPreviewPath usdMayaReferenceVariantPrim;
     } else {

@@ -177,24 +177,22 @@ Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)
 
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
-    const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
-
-    // Assume that there are only two segments in the path, the first a Maya
-    // Dag path segment to the proxy shape, which identifies the stage, and
-    // the second the USD segment.
     // When called we do not make any assumption on whether or not the
     // input path is valid.
+
+    const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
+
     const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
-    if (!TF_VERIFY(segments.size() == 2u, kIllegalUSDPath, path.string().c_str())) {
+    auto stage = getStage(Ufe::Path(segments[0]));
+    if (!TF_VERIFY(stage, kIllegalUSDPath, path.string().c_str())) {
         return UsdPrim();
     }
 
-    UsdPrim prim;
-    if (auto stage = getStage(Ufe::Path(segments[0]))) {
-        const SdfPath usdPath = SdfPath(segments[1].string());
-        prim = stage->GetPrimAtPath(usdPath.GetPrimPath());
-    }
-    return prim;
+    // If there is only a single segment in the path, it must point to the
+    // proxy shape, otherwise we would not have retrived a valid stage.
+    // The second path segment is the USD path.
+    return (segments.size() == 1u) ? stage->GetPseudoRoot() :
+        stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
 }
 
 int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim)
