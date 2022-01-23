@@ -170,7 +170,7 @@ proc fileOptionsTabPage(string $tabLayout)
     setParent $widgetColumn;
     checkBoxGrp -ncb 1
         -label "" -label1 `getMayaUsdLibString("kMayaRefEditAsMayaData")`
-        usdMayaReferenceEditAsMayaDat;
+        usdMayaReferenceEditAsMayaDatGrp;
 
     setParent $topForm;
     string $lbl = getMayaUsdLibString("kMayaRefOptions");
@@ -388,6 +388,9 @@ proc setOptionVars(int $forceFactorySettings)
             string $def = defaultVariantName();
             optionVar -stringValue usdMayaReferenceVariantNameText $def;
         }
+        if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceEditAsMayaDat`) {
+            optionVar -intValue usdMayaReferenceEditAsMayaDat false;
+        }
 
         if ($forceFactorySettings || !`optionVar -exists referenceOptionsUseRenamePrefix`) {
             optionVar -intValue referenceOptionsUseRenamePrefix false;
@@ -455,6 +458,7 @@ proc setOptionVars(int $forceFactorySettings)
             -sv usdMayaReferenceVariantSetNameText $defVariantSetName
             -sv usdMayaReferenceVariantNameOption $createNew
             -sv usdMayaReferenceVariantNameText $defVariantName
+            -iv usdMayaReferenceEditAsMayaDat false
             ;
 
         optionVar -init $forceFactorySettings -category $category
@@ -603,6 +607,10 @@ proc fileOptionsSetup(string $parent, int $forceFactorySettings, string $chosenF
     checkBoxGrp -edit -v1 $defineInVar usdMayaReferenceDefineInVariantGrp;
     usdMayaRef_changeDefineInVariantOption($defineInVar);
     usdMayaRef_setupDefineInVariant();
+
+    checkBoxGrp -edit
+        -v1 `optionVar -query usdMayaReferenceEditAsMayaDat`
+        usdMayaReferenceEditAsMayaDatGrp;
 
     textField -edit 
         -text `optionVar -q usdMayaReferenceVariantSetNameText`
@@ -781,6 +789,9 @@ global proc addMayaReferenceToUsdUiCb(string $parent, string $selectedFile)
         }
         optionVar -sv usdMayaReferenceVariantNameText $varNameText;
     }
+    
+    int $autoEditAsMayaData = `checkBoxGrp -q -v1 usdMayaReferenceEditAsMayaDatGrp`;
+    optionVar -iv usdMayaReferenceEditAsMayaDat $autoEditAsMayaData;
 
     // First find out what the user has given us.
     int $lockItGood = `checkBoxGrp -q -v1 referenceLockReferenceGrp`;
@@ -985,6 +996,8 @@ global proc string addMayaReferenceToUsd(string $ufePath)
         $qVarName = quoteString($tmpValue);
     }
 
+    string $autoEditAsMayaData = `optionVar -query usdMayaReferenceEditAsMayaDat`;
+    
     // No need to actually create the Maya reference node: pulling on the
     // Maya reference prim will create the Maya reference node.
     // Create the Maya reference prim under its parent.
@@ -993,7 +1006,7 @@ global proc string addMayaReferenceToUsd(string $ufePath)
     string $filePath = fromNativePath($file[0]);
     string $qFilePath = quoteString($filePath);
     string $qNs = quoteString(`computeNamespace($filePath)`);
-    python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.createMayaReferencePrim(" + $qUfePath + ", " + $qFilePath + ", " + $qNs + ", " + $qPrimName + ", " + $qVarSetName + ", " + $qVarName + ")");
+    python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.createMayaReferencePrim(" + $qUfePath + ", " + $qFilePath + ", " + $qNs + ", " + $qPrimName + ", " + $qVarSetName + ", " + $qVarName + ", " + $autoEditAsMayaData + ")");
 
     return $file[0];
 }

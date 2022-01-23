@@ -78,6 +78,12 @@ public:
             srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
     }
 
+    bool default_shouldAutoEdit() const { return base_t::shouldAutoEdit(); }
+    bool shouldAutoEdit() const override
+    {
+        return this->CallVirtual<bool>("shouldAutoEdit", &This::default_shouldAutoEdit)();
+    }
+
     bool default_canEditAsMaya() const { return base_t::canEditAsMaya(); }
     bool canEditAsMaya() const override
     {
@@ -200,6 +206,7 @@ void wrapPrimUpdater()
 
     c.def("__init__", make_constructor(&PrimUpdaterWrapper::New))
         .def("pushCopySpecs", &This::pushCopySpecs, &PrimUpdaterWrapper::default_pushCopySpecs)
+        .def("shouldAutoEdit", &This::shouldAutoEdit, &PrimUpdaterWrapper::default_shouldAutoEdit)
         .def("canEditAsMaya", &This::canEditAsMaya, &PrimUpdaterWrapper::default_canEditAsMaya)
         .def("editAsMaya", &This::editAsMaya, &PrimUpdaterWrapper::default_editAsMaya)
         .def("discardEdits", &This::discardEdits, &PrimUpdaterWrapper::default_discardEdits)

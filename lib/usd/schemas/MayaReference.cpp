@@ -61,19 +61,11 @@ MayaUsd_SchemasMayaReference::Define(const UsdStagePtr& stage, const SdfPath& pa
     return MayaUsd_SchemasMayaReference(stage->DefinePrim(path, usdPrimTypeName));
 }
 
-#if PXR_VERSION >= 2108
 /* virtual */
 UsdSchemaKind MayaUsd_SchemasMayaReference::_GetSchemaKind() const
 {
     return MayaUsd_SchemasMayaReference::schemaKind;
 }
-#else
-/* virtual */
-UsdSchemaType MayaUsd_SchemasMayaReference::_GetSchemaType() const
-{
-    return MayaUsd_SchemasMayaReference::schemaType;
-}
-#endif
 
 /* static */
 const TfType& MayaUsd_SchemasMayaReference::_GetStaticTfType()
@@ -128,6 +120,24 @@ UsdAttribute MayaUsd_SchemasMayaReference::CreateMayaNamespaceAttr(
         writeSparsely);
 }
 
+UsdAttribute MayaUsd_SchemasMayaReference::GetMayaAutoEditAttr() const
+{
+    return GetPrim().GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
+}
+
+UsdAttribute MayaUsd_SchemasMayaReference::CreateMayaAutoEditAttr(
+    VtValue const& defaultValue,
+    bool           writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(
+        MayaUsd_SchemasTokens->mayaAutoEdit,
+        SdfValueTypeNames->Bool,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
@@ -146,6 +156,7 @@ const TfTokenVector& MayaUsd_SchemasMayaReference::GetSchemaAttributeNames(bool 
     static TfTokenVector localNames = {
         MayaUsd_SchemasTokens->mayaReference,
         MayaUsd_SchemasTokens->mayaNamespace,
+        MayaUsd_SchemasTokens->mayaAutoEdit,
     };
     static TfTokenVector allNames
         = _ConcatenateAttributeNames(UsdGeomXformable::GetSchemaAttributeNames(true), localNames);

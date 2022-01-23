@@ -60,6 +60,8 @@ UsdMayaPrimUpdater::UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const
 {
 }
 
+bool UsdMayaPrimUpdater::shouldAutoEdit() const { return true; }
+
 bool UsdMayaPrimUpdater::canEditAsMaya() const
 {
     // To be editable as Maya data we must ensure that there is an importer (to
@@ -117,10 +119,7 @@ const MObject& UsdMayaPrimUpdater::getMayaObject() const { return _mayaObject; }
 
 const Ufe::Path& UsdMayaPrimUpdater::getUfePath() const { return _path; }
 
-UsdPrim UsdMayaPrimUpdater::getUsdPrim(const UsdMayaPrimUpdaterContext& context) const
-{
-    return MayaUsd::ufe::ufePathToPrim(_path);
-}
+UsdPrim UsdMayaPrimUpdater::getUsdPrim() const { return MayaUsd::ufe::ufePathToPrim(_path); }
 
 /* static */
 bool UsdMayaPrimUpdater::isAnimated(const MDagPath& path)

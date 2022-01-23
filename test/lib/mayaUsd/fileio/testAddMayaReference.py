@@ -86,7 +86,7 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         mayaUsdAddMayaReference.createMayaReferencePrim(
             primPathStr,
             mayaSceneStr,
-            kDefaultNamespace)
+            kDefaultNamespace, mayaAutoEdit=True)
 
         # Make sure the prim has the variant set and variant.
         self.assertTrue(primA.HasVariantSets())
@@ -110,6 +110,9 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         attr = mayaRefPrim.GetAttribute('mayaNamespace')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), kDefaultNamespace)
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(),True)
 
         # Create another prim to test sanitizing variant name.
         primB = stage.DefinePrim('/B', 'Xform')

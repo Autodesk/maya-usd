@@ -47,17 +47,10 @@ class SdfAssetPath;
 class MayaUsd_SchemasMayaReference : public UsdGeomXformable
 {
 public:
-#if PXR_VERSION >= 2108
     /// Compile time constant representing what kind of schema this class is.
     ///
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
-#else
-    /// Compile time constant representing what kind of schema this class is.
-    ///
-    /// \sa UsdSchemaType
-    static const UsdSchemaType schemaType = UsdSchemaType::ConcreteTyped;
-#endif
 
     /// Construct a MayaUsd_SchemasMayaReference on UsdPrim \p prim .
     /// Equivalent to MayaUsd_SchemasMayaReference::Get(prim.GetStage(), prim.GetPath())
@@ -124,19 +117,11 @@ public:
     static MayaUsd_SchemasMayaReference Define(const UsdStagePtr& stage, const SdfPath& path);
 
 protected:
-#if PXR_VERSION >= 2108
     /// Returns the kind of schema this class belongs to.
     ///
     /// \sa UsdSchemaKind
     MAYAUSD_SCHEMAS_API
     UsdSchemaKind _GetSchemaKind() const override;
-#else
-    /// Returns the type of schema this class belongs to.
-    ///
-    /// \sa UsdSchemaType
-    MAYAUSD_SCHEMAS_API
-    UsdSchemaType _GetSchemaType() const override;
-#endif
 
 private:
     // needs to invoke _GetStaticTfType.
@@ -195,6 +180,30 @@ public:
     /// the default for \p writeSparsely is \c false.
     MAYAUSD_SCHEMAS_API
     UsdAttribute CreateMayaNamespaceAttr(
+        VtValue const& defaultValue = VtValue(),
+        bool           writeSparsely = false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // MAYAAUTOEDIT
+    // --------------------------------------------------------------------- //
+    /// When an instance of this schema will be discovered in Maya, should it be auto-pulled.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `bool mayaAutoEdit = 0` |
+    /// | C++ Type | bool |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
+    MAYAUSD_SCHEMAS_API
+    UsdAttribute GetMayaAutoEditAttr() const;
+
+    /// See GetMayaAutoEditAttr(), and also
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    MAYAUSD_SCHEMAS_API
+    UsdAttribute CreateMayaAutoEditAttr(
         VtValue const& defaultValue = VtValue(),
         bool           writeSparsely = false) const;
 

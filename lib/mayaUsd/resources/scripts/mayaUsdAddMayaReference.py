@@ -24,6 +24,7 @@ import re
 kDefaultMayaReferencePrimName = 'MayaReference1'
 kDefaultVariantSetName = 'Representation'
 kDefaultVariantName = 'MayaReference'
+kDefaultEditAsMayaData = False
 
 def defaultMayaReferencePrimName():
     return kDefaultMayaReferencePrimName
@@ -34,7 +35,7 @@ def defaultVariantSetName():
 def defaultVariantName():
     return kDefaultVariantName
 
-def createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace):
+def createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit):
     prim = stage.DefinePrim(primPath.path, 'MayaReference')
 
     mayaReferenceAttr = prim.CreateAttribute('mayaReference', Sdf.ValueTypeNames.Asset)
@@ -42,6 +43,9 @@ def createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace):
 
     mayaNamespaceAttr = prim.CreateAttribute('mayaNamespace', Sdf.ValueTypeNames.String)
     mayaNamespaceAttr.Set(mayaNamespace)
+    
+    mayaAutoEditAttr = prim.CreateAttribute('mayaAutoEdit', Sdf.ValueTypeNames.Bool)
+    mayaAutoEditAttr.Set(mayaAutoEdit)
 
     return prim
 
@@ -49,7 +53,8 @@ def createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace):
 def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace, 
                             mayaReferencePrimName = kDefaultMayaReferencePrimName,
                             variantSetName = kDefaultVariantSetName,
-                            variantName = kDefaultVariantName):
+                            variantName = kDefaultVariantName,
+                            mayaAutoEdit = kDefaultEditAsMayaData):
     '''Create a Maya reference prim parented to the argument path.'''
 
     # Make sure the prim name is valid and doesn't already exist.
@@ -79,9 +84,9 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
         with vset.GetVariantEditContext():
             # Now all of our subsequent edits will go "inside" the
             # 'variantName' variant of 'variantSetName'.
-            prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace)
+            prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)
     else:
-        prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace)
+        prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)
     if not prim.IsValid():
         om.MGlobal.displayError("Could not create MayaReference prim under %s" % ufePathStr)
         return
