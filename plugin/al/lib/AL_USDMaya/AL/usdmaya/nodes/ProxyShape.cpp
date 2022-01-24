@@ -487,8 +487,6 @@ ProxyShape::ProxyShape()
     , m_translatorManufacture(context())
 {
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::ProxyShape\n");
-    m_onSelectionChanged
-        = MEventMessage::addEventCallback(MString("SelectionChanged"), onSelectionChanged, this);
 
     TfWeakPtr<ProxyShape> me(this);
 
@@ -507,7 +505,6 @@ ProxyShape::~ProxyShape()
 {
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::~ProxyShape\n");
     triggerEvent("PreDestroyProxyShape");
-    MEventMessage::removeCallback(m_onSelectionChanged);
     TfNotice::Revoke(m_variantChangedNoticeKey);
     TfNotice::Revoke(m_objectsChangedNoticeKey);
     TfNotice::Revoke(m_editTargetChanged);
