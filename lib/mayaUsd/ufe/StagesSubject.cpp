@@ -317,7 +317,7 @@ void StagesSubject::stageChanged(
             if (!sceneItem)
                 continue;
 
-#if !MAYA_ENABLE_NEW_PRIM_DELETE
+#ifndef MAYA_ENABLE_NEW_PRIM_DELETE
             // Special case when we know the operation came from either
             // the add or delete of our UFE/USD implementation.
             if (InAddOrDeleteOperation::inAddOrDeleteOperation()) {
@@ -358,7 +358,7 @@ void StagesSubject::stageChanged(
                 sendObjectAdd(sceneItem);
 #endif
                 }
-#if !MAYA_ENABLE_NEW_PRIM_DELETE
+#ifndef MAYA_ENABLE_NEW_PRIM_DELETE
             }
 #endif
         }

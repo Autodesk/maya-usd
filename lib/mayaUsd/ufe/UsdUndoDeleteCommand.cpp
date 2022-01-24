@@ -28,7 +28,7 @@
 #endif
 
 namespace {
-#if MAYA_ENABLE_NEW_PRIM_DELETE
+#ifdef MAYA_ENABLE_NEW_PRIM_DELETE
 bool hasLayersMuted(const PXR_NS::UsdPrim& prim)
 {
     const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
@@ -76,7 +76,7 @@ void UsdUndoDeleteCommand::execute()
 
     UsdUndoBlock undoBlock(&_undoableItem);
 
-#if MAYA_ENABLE_NEW_PRIM_DELETE
+#ifdef MAYA_ENABLE_NEW_PRIM_DELETE
     const auto& stage = _prim.GetStage();
     auto        targetPrimSpec = stage->GetEditTarget().GetPrimSpecForScenePath(_prim.GetPath());
 
