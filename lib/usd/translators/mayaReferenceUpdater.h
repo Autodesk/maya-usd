@@ -42,6 +42,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool pushEnd(const UsdMayaPrimUpdaterContext& context) override;
 
+    /// Only auto-pull when Maya Reference path is set and it is explicitly requested via an
+    /// attribute on a prim
+    MAYAUSD_CORE_PUBLIC
+    bool shouldAutoEdit() const override;
+
     /// Query to determine if the prim corresponding to this updater can be
     /// edited as Maya.  The implementation in this class returns true.
     MAYAUSD_CORE_PUBLIC

@@ -45,11 +45,7 @@ PXRUSDMAYA_REGISTER_UPDATER(
     reference,
     PxrUsdTranslators_MayaReferenceUpdater,
     (UsdMayaPrimUpdater::Supports::Push | UsdMayaPrimUpdater::Supports::Clear
-     // Disable AutoPull pending more granular support for it: MayaReference
-     // prims with no file path should not be auto-pulled.  Must add a virtual
-     // method to the prim updater to encapsulate this.  PPT, 13-Dec-2021.
-     // | UsdMayaPrimUpdater::Supports::AutoPull));
-     ));
+     | UsdMayaPrimUpdater::Supports::AutoPull));
 PXRUSDMAYA_REGISTER_UPDATER(
     MayaUsd_SchemasALMayaReference,
     reference,
@@ -62,6 +58,37 @@ PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
     const Ufe::Path&         path)
     : UsdMayaPrimUpdater(depNodeFn, path)
 {
+}
+
+/* virtual */
+bool PxrUsdTranslators_MayaReferenceUpdater::shouldAutoEdit() const
+{
+    UsdPrim prim = getUsdPrim();
+
+    // Check to see if auto-edit is enabled
+    UsdAttribute mayaAutoEditAttr = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
+    bool         autoEdit;
+    mayaAutoEditAttr.Get<bool>(&autoEdit);
+    if (!autoEdit) {
+        return false;
+    }
+
+    // Check to see if we have a valid Maya reference attribute
+    SdfAssetPath mayaReferenceAssetPath;
+    UsdAttribute mayaReferenceAttr = prim.GetAttribute(MayaUsd_SchemasTokens->mayaReference);
+    mayaReferenceAttr.Get(&mayaReferenceAssetPath);
+
+    MString mayaReferencePath(mayaReferenceAssetPath.GetResolvedPath().c_str());
+
+    // The resolved path is empty if the maya reference is a full path.
+    if (!mayaReferencePath.length())
+        mayaReferencePath = mayaReferenceAssetPath.GetAssetPath().c_str();
+
+    // If the path is still empty return, there is no reference to import
+    if (!mayaReferencePath.length())
+        return false;
+
+    return true;
 }
 
 /* virtual */

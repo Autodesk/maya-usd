@@ -51,11 +51,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use MayaUsd_SchemasTokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(MayaUsd_SchemasTokens->mayaNamespace);
+///     gprim.GetMyTokenValuedAttr().Set(MayaUsd_SchemasTokens->mayaAutoEdit);
 /// \endcode
 struct MayaUsd_SchemasTokensType
 {
     MAYAUSD_SCHEMAS_API MayaUsd_SchemasTokensType();
+    /// \brief "mayaAutoEdit"
+    ///
+    /// MayaUsd_SchemasMayaReference
+    const TfToken mayaAutoEdit;
     /// \brief "mayaNamespace"
     ///
     /// MayaUsd_SchemasMayaReference
