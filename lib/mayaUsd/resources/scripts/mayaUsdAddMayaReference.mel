@@ -170,6 +170,7 @@ proc fileOptionsTabPage(string $tabLayout)
     setParent $widgetColumn;
     checkBoxGrp -ncb 1
         -label "" -label1 `getMayaUsdLibString("kMayaRefEditAsMayaData")`
+        -annotation `getMayaUsdLibString("kMayaRefEditAsMayaDataAnn")`
         usdMayaReferenceEditAsMayaDatGrp;
 
     setParent $topForm;
