@@ -34,6 +34,7 @@ enum class MergeVerbosity
     Child = 1 << 2,
     Children = 1 << 3,
     Failure = 1 << 4,
+    All = Same | Differ | Child | Children | Failure,
     Default = Differ | Child | Children | Failure,
 };
 
