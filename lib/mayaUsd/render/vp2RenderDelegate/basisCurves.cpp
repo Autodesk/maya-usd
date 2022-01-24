@@ -1367,15 +1367,12 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                                                        colorBuffer,
                                                        primvarBuffers,
                                                        indexBuffer]() {
+
+        // This code executes serially, once per basisCurve updated. Keep
+        // performance in mind while modifying this code.
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
         if (ARCH_UNLIKELY(!renderItem))
             return;
-
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            drawItem->GetDrawItemName().asChar(),
-            "Commit");
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {

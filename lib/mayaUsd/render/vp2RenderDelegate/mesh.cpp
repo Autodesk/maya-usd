@@ -1996,13 +1996,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
-
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            _rprimId.asChar(),
-            "HdVP2Mesh Update instances");
-
         // Retrieve instance transforms from the instancer.
         HdInstancer*    instancer = renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms
@@ -2299,18 +2292,14 @@ void HdVP2Mesh::_UpdateDrawItem(
                                                            indexBuffer,
                                                            isBBoxItem,
                                                            &sharedBBoxGeom]() {
+            // This code executes serially, once per mesh updated. Keep
+            // performance in mind while modifying this code.
             const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
             MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
             if (ARCH_UNLIKELY(!renderItem))
                 return;
 
             MStatus result;
-
-            MProfilingScope profilingScope(
-                HdVP2RenderDelegate::sProfilerCategory,
-                MProfiler::kColorC_L2,
-                renderItem->name().asChar(),
-                "Commit");
 
             // If available, something changed
             if (stateToCommit._indexBufferData)
