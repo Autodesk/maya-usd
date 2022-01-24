@@ -1137,6 +1137,35 @@ void PrimUpdaterManager::onProxyContentChanged(
         return;
     }
 
+    auto proxyShapeUfePath = proxyNotice.GetProxyShape().ufePath();
+
+    auto autoEditFn = [this, proxyShapeUfePath](const UsdPrim& prim) -> bool {
+        TfToken typeName = prim.GetTypeName();
+
+        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
+        auto supports = std::get<UsdMayaPrimUpdater::Supports>(registryItem);
+
+        if ((supports & UsdMayaPrimUpdater::Supports::AutoPull)
+            != UsdMayaPrimUpdater::Supports::AutoPull)
+            return false;
+
+        const Ufe::PathSegment pathSegment = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
+        const Ufe::Path        path = proxyShapeUfePath + pathSegment;
+
+        auto factory = std::get<UpdaterFactoryFn>(registryItem);
+        auto updater = factory(MFnDependencyNode(MObject()), path);
+
+        if (updater && updater->shouldAutoEdit()) {
+            // TODO UNDO: is it okay to throw away the undo info in the change notification?
+            // What could we do with it anyway?
+            OpUndoItemMuting muting;
+            this->editAsMaya(path);
+
+            return true;
+        }
+        return false;
+    };
+
     const UsdNotice::ObjectsChanged& notice = proxyNotice.GetNotice();
 
     Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
@@ -1152,25 +1181,19 @@ void PrimUpdaterManager::onProxyContentChanged(
 
         for (auto it = range.begin(); it != range.end(); it++) {
             const UsdPrim& prim = *it;
-
-            TfToken typeName = prim.GetTypeName();
-
-            auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
-            auto supports = std::get<UsdMayaPrimUpdater::Supports>(registryItem);
-
-            if ((supports & UsdMayaPrimUpdater::Supports::AutoPull)
-                == UsdMayaPrimUpdater::Supports::AutoPull) {
+            if (autoEditFn(prim)) {
                 it.PruneChildren();
-
-                const Ufe::PathSegment pathSegment
-                    = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
-                const Ufe::Path path = proxyNotice.GetProxyShape().ufePath() + pathSegment;
-
-                // TODO UNDO: is it okay to throw away the undo info in the change notification?
-                // What could we do with it anyway?
-                OpUndoItemMuting muting;
-                editAsMaya(path);
             }
+        }
+    }
+
+    auto changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
+    for (auto it = changedInfoOnlyPaths.begin(), end = changedInfoOnlyPaths.end(); it != end;
+         ++it) {
+        const auto& changedPath = *it;
+        if (changedPath.IsPrimPropertyPath()) {
+            UsdPrim valueChangedPrim = stage->GetPrimAtPath(changedPath.GetPrimPath());
+            autoEditFn(valueChangedPrim);
         }
     }
 }

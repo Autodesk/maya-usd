@@ -34,6 +34,9 @@ class MayaReference "MayaReference"(
   string mayaNamespace (
     doc = "Namespace which the maya reference will be imported under."
   )
+  bool mayaAutoEdit = false (
+    doc = "When an instance of this schema will be discovered in Maya, should it be auto-pulled."
+  )
 }
 
 ###################################################################################################

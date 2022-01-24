@@ -39,6 +39,7 @@ global proc mayaUsdLibRegisterStrings()
     register("kMayaRefVariantName", "Variant Name:");
     register("kMayaRefVariantOnPrim", "Variant will be on prim:");
     register("kMayaRefEditAsMayaData", "Edit as Maya Data");
+    register("kMayaRefEditAsMayaDataAnn", "Select this checkbox to enable editing the MayaReference prim as a Maya Reference.");
     register("kMayaRefOptions", "Maya Reference Options");
     register("kMayaRefCreateNew", "Create New");
     register("kMayaRefAddToPrim", "Add Maya Reference to USD Prim");

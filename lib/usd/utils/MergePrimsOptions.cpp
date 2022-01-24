@@ -69,6 +69,8 @@ MergeVerbosity parseVerbosity(
             verbosity = verbosity | MergeVerbosity::Failure;
         if (UsdMayaMergeOptionsTokens->Default == token)
             verbosity = verbosity | MergeVerbosity::Default;
+        if (UsdMayaMergeOptionsTokens->All == token)
+            verbosity = verbosity | MergeVerbosity::All;
     }
 
     return verbosity;

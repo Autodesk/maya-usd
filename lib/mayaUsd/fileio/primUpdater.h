@@ -75,6 +75,13 @@ public:
         SdfLayerRefPtr dstLayer,
         const SdfPath& dstSdfPath);
 
+    /// Once prim updater decides that it wants to be auto-pulled each time
+    /// the registered schema type is present in the stage. This method
+    /// allows further customization to the logic. The default implementation
+    /// allways returns true.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool shouldAutoEdit() const;
+
     /// Query to determine if the prim corresponding to this updater can be
     /// edited as Maya.  The default implementation in this class checks
     /// whether there is an importer for the prim.
@@ -106,7 +113,7 @@ public:
 
     /// The destination USD prim which we are updating.
     MAYAUSD_CORE_PUBLIC
-    UsdPrim getUsdPrim(const UsdMayaPrimUpdaterContext& context) const;
+    UsdPrim getUsdPrim() const;
 
     MAYAUSD_CORE_PUBLIC
     static bool isAnimated(const MDagPath& path);
