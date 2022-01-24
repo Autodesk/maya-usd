@@ -13,19 +13,41 @@
 // limitations under the License.
 //
 
-proc int canEditAsMaya(string $obj)
+proc int canEditAsMaya()
 {
     if (!hasPrimUpdater())
         return 0;
 
-    if (size($obj) == 0) {
-        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
-        $obj = $nonMayaObjs[0];
-    }
+    string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
+    string $obj = $nonMayaObjs[0];
     if (size($obj) != 0) {
         return `python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.canEditAsMaya('" + $obj + "')")`;
     }
     return 0;
+}
+
+global proc mayaUsdMenu_editAsMaya()
+{
+    if (!hasPrimUpdater())
+        return;
+
+    string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
+    string $obj = $nonMayaObjs[0];
+    if (size($obj) != 0) {
+        mayaUsdEditAsMaya $obj;
+    }
+}
+
+global proc mayaUsdMenu_duplicate()
+{
+    if (!hasPrimUpdater())
+        return;
+        
+    string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
+    string $ufePath = $nonMayaObjs[0];
+    if (size($ufePath)) {
+        mayaUsdDuplicate $ufePath "|world";
+    }
 }
 
 global proc USDMenuProc(string $parent, string $obj)
@@ -40,16 +62,16 @@ global proc USDMenuProc(string $parent, string $obj)
         setParent -menu $parent;
 
         setParent -menu ..;
-        if (canEditAsMaya($obj)) {
+        if (canEditAsMaya()) {
             // Temporary - hide this context menu items behind an
             //             env var until it is completed.
             string $s = `getenv "MAYAUSD_ENABLE_EDIT_AS_MAYA_DATA"`;
             string $ls = tolower($s);
             if (`match $ls "true|yes|on|1"` !="")
             {
-                menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdEditAsMaya \"" + $obj + "\"");
+                menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_editAsMaya");
             }
         }
-        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdDuplicate \"" + $obj + "\"" + "\"|world\"");
+        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_duplicate");
     }
 }
