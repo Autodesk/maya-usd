@@ -15,6 +15,7 @@
 //
 #include "renderGlobals.h"
 
+#include "pxr/usd/usdRender/settings.h"
 #include "renderOverride.h"
 #include "utils.h"
 
@@ -458,6 +459,19 @@ template <> void _GetFromPlug<std::string>(const MPlug& plug, std::string& out)
 template <> void _GetFromPlug<TfEnum>(const MPlug& plug, TfEnum& out)
 {
     out = TfEnum(out.GetType(), plug.asInt());
+}
+
+template <> void _GetFromPlug<TfToken>(const MPlug& plug, TfToken& out)
+{
+    MObject attribute = plug.attribute();
+
+    if (attribute.hasFn(MFn::kEnumAttribute)) {
+        MFnEnumAttribute enumAttr(attribute);
+        MString          value = enumAttr.fieldName(plug.asShort());
+        out = TfToken(value.asChar());
+    } else {
+        out = TfToken(plug.asString().asChar());
+    }
 }
 
 template <typename T> bool _SetOptionVar(const MString& attrName, const T& value)
@@ -920,11 +934,33 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
                     attr.defaultValue.UncheckedGet<GfVec4f>(),
                     userDefaults);
             } else if (attr.defaultValue.IsHolding<TfToken>()) {
-                _CreateStringAttribute(
-                    node,
-                    filter.mayaString(),
-                    attr.defaultValue.UncheckedGet<TfToken>().GetString(),
-                    userDefaults);
+                // If this attribute type has AllowedTokens set, we treat it as an enum instead, so
+                // that only valid values are available.```
+                bool createdAsEnum = false;
+                if (auto primDef = UsdRenderSettings().GetSchemaClassPrimDefinition()) {
+                    VtTokenArray allowedTokens;
+
+                    if (primDef->GetPropertyMetadata(
+                            TfToken(attr.key), SdfFieldKeys->AllowedTokens, &allowedTokens)) {
+                        // Generate dropdown from allowedTokens
+                        TfTokenVector tokens(allowedTokens.begin(), allowedTokens.end());
+                        _CreateEnumAttribute(
+                            node,
+                            filter.mayaString(),
+                            tokens,
+                            attr.defaultValue.UncheckedGet<TfToken>(),
+                            userDefaults);
+                        createdAsEnum = true;
+                    }
+                }
+
+                if (!createdAsEnum) {
+                    _CreateStringAttribute(
+                        node,
+                        filter.mayaString(),
+                        attr.defaultValue.UncheckedGet<TfToken>().GetString(),
+                        userDefaults);
+                }
             } else if (attr.defaultValue.IsHolding<std::string>()) {
                 _CreateStringAttribute(
                     node,
