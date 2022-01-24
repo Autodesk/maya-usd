@@ -298,7 +298,7 @@ PullImportPaths pullImport(
 
     std::string mFileName = context.GetUsdStage()->GetRootLayer()->GetIdentifier();
     if (mFileName.empty()) {
-        TF_RUNTIME_ERROR("Empty file specified. Exiting.");
+        TF_WARN("Empty file specified. Exiting.");
         return PullImportPaths(addedDagPaths, pulledUfePaths);
     }
 
@@ -329,7 +329,7 @@ PullImportPaths pullImport(
     // Execute the command, which can succeed but import nothing.
     bool success = readJob->Read(&addedDagPaths);
     if (!success || addedDagPaths.size() == 0) {
-        TF_RUNTIME_ERROR("Nothing to edit in the selection.");
+        TF_WARN("Nothing to edit in the selection.");
         return PullImportPaths({}, {});
     }
 
@@ -912,7 +912,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     MDagPath pullParentPath;
     if (!updaterArgs._copyOperation
         && !(pullParentPath = setupPullParent(path, ctxArgs)).isValid()) {
-        TF_RUNTIME_ERROR("Cannot setup the edit parent node.");
+        TF_WARN("Cannot setup the edit parent node.");
         return false;
     }
 
@@ -936,7 +936,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
     // 2) Iterate over all imported Dag paths.
     if (!pullCustomize(importedPaths, context)) {
-        TF_RUNTIME_ERROR("Failed to customize the edited nodes.");
+        TF_WARN("Failed to customize the edited nodes.");
         return false;
     }
 
