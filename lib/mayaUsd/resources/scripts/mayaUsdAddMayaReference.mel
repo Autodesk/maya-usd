@@ -997,7 +997,7 @@ global proc string addMayaReferenceToUsd(string $ufePath)
         $qVarName = quoteString($tmpValue);
     }
 
-    string $autoEditAsMayaData = `optionVar -query usdMayaReferenceEditAsMayaDat`;
+    int $autoEditAsMayaData = `optionVar -query usdMayaReferenceEditAsMayaDat`;
     
     // No need to actually create the Maya reference node: pulling on the
     // Maya reference prim will create the Maya reference node.
