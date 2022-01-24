@@ -17,6 +17,7 @@
 
 #include "basisCurves.h"
 #include "bboxGeom.h"
+#include "extComputation.h"
 #include "instancer.h"
 #include "material.h"
 #include "mesh.h"
@@ -28,7 +29,6 @@
 
 #include <pxr/imaging/hd/bprim.h>
 #include <pxr/imaging/hd/camera.h>
-#include <pxr/imaging/hd/extComputation.h>
 #include <pxr/imaging/hd/instancer.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
 #include <pxr/imaging/hd/rprim.h>
@@ -709,7 +709,7 @@ HdSprim* HdVP2RenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& 
         return new HdCamera(sprimId);
     }
     if (typeId == HdPrimTypeTokens->extComputation) {
-        return new HdExtComputation(sprimId);
+        return new HdVP2ExtComputation(sprimId);
     }
     /*
     if (typeId == HdPrimTypeTokens->sphereLight) {

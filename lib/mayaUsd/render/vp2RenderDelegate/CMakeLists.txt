@@ -7,6 +7,7 @@ target_sources(${PROJECT_NAME}
         bboxGeom.cpp
         debugCodes.cpp
         draw_item.cpp
+        extComputation.cpp
         instancer.cpp
         material.cpp
         mayaPrimCommon.cpp
