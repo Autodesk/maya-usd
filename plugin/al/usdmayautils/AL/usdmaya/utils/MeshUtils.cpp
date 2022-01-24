@@ -980,14 +980,14 @@ MeshExportContext::MeshExportContext(
     bool              performDiff,
     CompactionLevel   compactionLevel,
     bool              reverseNormals,
-    SubdivisionScheme subdivisionScheme)
+    SubdivisionScheme inSubdivisionScheme)
     : fnMesh()
     , faceCounts()
     , faceConnects()
     , m_timeCode(timeCode)
     , mesh(mesh)
     , compaction(compactionLevel)
-    , subdivisionScheme(subdivisionScheme)
+    , subdivisionScheme(inSubdivisionScheme)
     , performDiff(performDiff)
     , reverseNormals(reverseNormals)
 {
