@@ -1367,7 +1367,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                                                        colorBuffer,
                                                        primvarBuffers,
                                                        indexBuffer]() {
-
         // This code executes serially, once per basisCurve updated. Keep
         // performance in mind while modifying this code.
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
