@@ -93,8 +93,7 @@ bool _ReadUsdAttribute(
     MFnDependencyNode depFn(obj, &status);
     if (!status) {
         TF_RUNTIME_ERROR(
-            "Could not find dependency node while reading '%s'",
-            usdAttr.GetPath().GetText());
+            "Could not find dependency node while reading '%s'", usdAttr.GetPath().GetText());
         return false;
     }
     return UsdMayaReadUtil::ReadUsdAttribute(usdAttr, depFn, plugName, args, &context);
