@@ -189,7 +189,7 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     }
 
     // If there is only a single segment in the path, it must point to the
-    // proxy shape, otherwise we would not have retrived a valid stage.
+    // proxy shape, otherwise we would not have retrieved a valid stage.
     // The second path segment is the USD path.
     return (segments.size() == 1u)
         ? stage->GetPseudoRoot()

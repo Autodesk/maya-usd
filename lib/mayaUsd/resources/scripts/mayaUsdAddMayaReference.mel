@@ -1095,7 +1095,8 @@ global proc string addMayaReferenceToUsd(string $ufePath)
     {
         $pyCmdArgs += `format -s $varSetName -s $varName ", variantSet=('^1s', '^2s')"`;
     }
-    $pyCmdArgs += `format -s $autoEditAsMayaData ", mayaAutoEdit='^1s'"`;
+    string $autoEditAsMayaDataBool = $autoEditAsMayaData ? "True" : "False";
+    $pyCmdArgs += `format -s $autoEditAsMayaDataBool ", mayaAutoEdit=^1s"`;
     string $pyCmd = `format -s $pyCmdArgs "import mayaUsdAddMayaReference; mayaUsdAddMayaReference.createMayaReferencePrim(^1s)"`;
     python($pyCmd);
 
