@@ -254,6 +254,7 @@ class testSchemaApiAdaptor(unittest.TestCase):
     def setUp(self):
         pass
 
+    @unittest.skipUnless(Usd.GetVersion() > (0, 21, 2), 'USD Lux becomes connectable in 21.05.')
     def testMinimalAdaptation(self):
         """Test that we can adapt ShadowAPI to an existing light shape. This exercises the most
         basic callbacks exposed by a SchemaAPI adaptor:"""
