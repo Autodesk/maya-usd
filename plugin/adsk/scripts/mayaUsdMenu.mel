@@ -650,15 +650,19 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
     
     string $pulledObject = getPulledUsdObject($obj);
     if ($pulledObject != "") {
-        string $pushback = `menuItem -label "Merge Maya Edits to USD" -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $pulledObject)`;
-        string $pushclear = `menuItem -label "Discard Maya Edits" -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $pulledObject)`;
+        string $tmp = getMayaUsdString("kMayaRefMergeEdits");
+        string $pushback = `menuItem -label $tmp -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $pulledObject)`;
+        
+        string $tmp = getMayaUsdString("kMayaRefDiscardEdits");
+        string $pushclear = `menuItem -label $tmp -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $pulledObject)`;
+        
         menuItem -divider true -insertAfter $pushclear;
     }
     else {
         string $proxyShapes[] = `ls -type mayaUsdProxyShape`;
         if (size($proxyShapes) > 0) {
             menuItem -divider true -insertAfter "";
-            menuItem -label "Duplicate As USD Data" -subMenu true -insertAfter "";
+            menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdData")` -subMenu true -insertAfter "";
             for ($proxy in $proxyShapes) {
                 menuItem -label $proxy -command ("mayaUsdMenu_duplicateToUSD " + $proxy + " " + $obj);
             }
