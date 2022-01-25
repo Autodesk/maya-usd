@@ -17,7 +17,7 @@
 
 import mayaUsd.lib as mayaUsdLib
 
-from pxr import Tf, Gf, UsdMaya, Usd, UsdPhysics
+from pxr import Tf, Gf, UsdMaya, Usd
 
 from maya import cmds
 import maya.api.OpenMaya as om
@@ -26,6 +26,7 @@ from maya import standalone
 
 HAS_BULLET = False
 try:
+    from pxr import UsdPhysics
     import maya.app.mayabullet.BulletUtils as BulletUtils
     import maya.app.mayabullet.RigidBody as RigidBody
     HAS_BULLET = True
@@ -279,8 +280,8 @@ class testSchemaApiAdaptor(unittest.TestCase):
         schema = adaptor.GetSchemaByName("ShadowAPI")
         self.assertTrue(schema)
 
-        self.assertEqual(schema.GetAuthoredAttributeNames(),
-                         ["inputs:shadow:color", "inputs:shadow:enable"])
+        self.assertEqual(set(schema.GetAuthoredAttributeNames()),
+                         set(["inputs:shadow:color", "inputs:shadow:enable"]))
         colorAttr = schema.GetAttribute("inputs:shadow:color")
         self.assertTrue(colorAttr)
         linearizedValue = (0.21763764, 0.047366142, 0)
