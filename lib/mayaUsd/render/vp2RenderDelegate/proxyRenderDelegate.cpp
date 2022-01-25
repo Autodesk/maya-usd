@@ -1271,7 +1271,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
 #endif
         HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
         for (auto path : *dirtyPaths) {
-            if(_renderIndex->HasRprim(path))
+            if (_renderIndex->HasRprim(path))
                 changeTracker.MarkRprimDirty(path, dirtySelectionBits);
         }
 
