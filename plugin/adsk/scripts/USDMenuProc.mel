@@ -26,25 +26,43 @@ proc int canEditAsMaya()
     return 0;
 }
 
-global proc mayaUsdMenu_editAsMaya()
+proc string expandToSelection(string $obj)
+{
+    // By default, for example if the obj is empty, we want to use the selection.
+    int $expandToSel = 1;
+
+    // If obj is non-empty, expand it to the selection if it is part of the selection.
+    if (size($obj)) {
+        string $script = "import maya.internal.ufeSupport.utils as ufeUtils; selection = ufeUtils.getNonMayaSelectedItems(); inSel = ['" + $obj + "'.startswith(sel) for sel in selection]; not selection or sum(inSel)";
+        $expandToSel = `python($script)`;
+    }
+
+    // If we expand to selection, use the UFE selection.
+    if ($expandToSel) {
+        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
+        $obj = $nonMayaObjs[0];
+    }
+
+    return $obj;
+}
+
+global proc mayaUsdMenu_editAsMaya(string $obj)
 {
     if (!hasPrimUpdater())
         return;
 
-    string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
-    string $obj = $nonMayaObjs[0];
+    $obj = expandToSelection($obj);
     if (size($obj) != 0) {
         mayaUsdEditAsMaya $obj;
     }
 }
 
-global proc mayaUsdMenu_duplicate()
+global proc mayaUsdMenu_duplicate(string $ufePath)
 {
     if (!hasPrimUpdater())
         return;
         
-    string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
-    string $ufePath = $nonMayaObjs[0];
+    $ufePath = expandToSelection($ufePath);
     if (size($ufePath)) {
         mayaUsdDuplicate $ufePath "|world";
     }
@@ -69,9 +87,9 @@ global proc USDMenuProc(string $parent, string $obj)
             string $ls = tolower($s);
             if (`match $ls "true|yes|on|1"` !="")
             {
-                menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_editAsMaya");
+                menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_editAsMaya \"" + $obj + "\"");
             }
         }
-        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_duplicate");
+        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_duplicate \"" + $obj + "\"");
     }
 }
