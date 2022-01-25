@@ -44,7 +44,4 @@ global proc mayaUsdLibRegisterStrings()
     register("kMayaRefCreateNew", "Create New");
     register("kMayaRefAddToPrim", "Add Maya Reference to USD Prim");
     register("kMayaRefReference", "Reference");
-    register("kMayaRefMergeEdits", "Merge Maya Edits to USD");
-    register("kMayaRefDiscardEdits", "Discard Maya Edits");
-    register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
 }
