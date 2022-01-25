@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include "wrapSparseValueWriter.h"
+
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
@@ -21,13 +23,16 @@
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
+#include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
+#include <pxr/base/tf/pyResultConversions.h>
 
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/return_internal_reference.hpp>
+#include <boost/python/return_value_policy.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -281,24 +286,18 @@ public:
 };
 
 namespace {
-std::string getconvertMaterialsTo(UsdMayaJobExportArgs& self)
+
+boost::python::object get_allChaserArgs(UsdMayaJobExportArgs& self)
 {
-    return self.convertMaterialsTo.GetString();
-}
-
-std::vector<std::string> getChaserNames(UsdMayaJobExportArgs& self) { return self.chaserNames; }
-
-boost::python::object getChaserArgs(UsdMayaJobExportArgs& self, const std::string& chaser)
-{
-    boost::python::dict editDict;
-
-    std::map<std::string, std::string> myArgs;
-    TfMapLookup(self.allChaserArgs, chaser, &myArgs);
-
-    for (const auto& item : myArgs) {
-        editDict[item.first] = item.second;
+    boost::python::dict allChaserArgs;
+    for (auto&& perChaser : self.allChaserArgs) {
+        auto perChaserDict = boost::python::dict();
+        for (auto&& perItem : perChaser.second) {
+            perChaserDict[perItem.first] = perItem.second;
+        }
+        allChaserArgs[perChaser.first] = perChaserDict;
     }
-    return boost::python::object(editDict);
+    return boost::python::object(allChaserArgs);
 }
 
 // This class is used to expose protected members of UsdMayaPrimWriter to Python
@@ -320,9 +319,9 @@ const UsdMayaJobExportArgs& unprotect_GetExportArgs(UsdMayaPrimWriter& pw)
 {
     return reinterpret_cast<PrimWriterAllowProtected&>(pw)._GetExportArgs();
 }
-boost::python::object unprotect_GetSparseValueWriter(UsdMayaPrimWriter& pw)
+MayaUsdLibSparseValueWriter unprotect_GetSparseValueWriter(UsdMayaPrimWriter& pw)
 {
-    return boost::python::object(
+    return MayaUsdLibSparseValueWriter(
         reinterpret_cast<PrimWriterAllowProtected&>(pw)._GetSparseValueWriter());
 }
 
@@ -330,11 +329,120 @@ boost::python::object unprotect_GetSparseValueWriter(UsdMayaPrimWriter& pw)
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobExportArgs()
 {
-    boost::python::class_<UsdMayaJobExportArgs>("JobExportArgs", boost::python::no_init)
-        .def("getChaserNames", &::getChaserNames)
-        .def("getChaserArgs", &::getChaserArgs)
-        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName)
-        .add_property("convertMaterialsTo", &::getconvertMaterialsTo);
+    using namespace boost::python;
+
+    class_<UsdMayaJobExportArgs>("JobExportArgs", no_init)
+        .add_property("allChaserArgs", ::get_allChaserArgs)
+        .add_property(
+            "allMaterialConversions",
+            make_getter(
+                &UsdMayaJobExportArgs::allMaterialConversions,
+                return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "chaserNames",
+            make_getter(
+                &UsdMayaJobExportArgs::chaserNames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "compatibility",
+            make_getter(
+                &UsdMayaJobExportArgs::compatibility, return_value_policy<return_by_value>()))
+        .add_property(
+            "convertMaterialsTo",
+            make_getter(
+                &UsdMayaJobExportArgs::convertMaterialsTo, return_value_policy<return_by_value>()))
+        //.add_property("dagPaths", requires exporting UsdMayaUtil::MDagPathSet)
+        .add_property(
+            "defaultMeshScheme",
+            make_getter(
+                &UsdMayaJobExportArgs::defaultMeshScheme, return_value_policy<return_by_value>()))
+        .add_property(
+            "defaultUSDFormat",
+            make_getter(
+                &UsdMayaJobExportArgs::defaultUSDFormat, return_value_policy<return_by_value>()))
+        .def_readonly("eulerFilter", &UsdMayaJobExportArgs::eulerFilter)
+        .def_readonly("excludeInvisible", &UsdMayaJobExportArgs::excludeInvisible)
+        .def_readonly("exportBlendShapes", &UsdMayaJobExportArgs::exportBlendShapes)
+        .def_readonly(
+            "exportCollectionBasedBindings", &UsdMayaJobExportArgs::exportCollectionBasedBindings)
+        .def_readonly("exportColorSets", &UsdMayaJobExportArgs::exportColorSets)
+        .def_readonly("exportComponentTags", &UsdMayaJobExportArgs::exportComponentTags)
+        .def_readonly("exportDefaultCameras", &UsdMayaJobExportArgs::exportDefaultCameras)
+        .def_readonly("exportDisplayColor", &UsdMayaJobExportArgs::exportDisplayColor)
+        .def_readonly("exportInstances", &UsdMayaJobExportArgs::exportInstances)
+        .def_readonly("exportMaterialCollections", &UsdMayaJobExportArgs::exportMaterialCollections)
+        .def_readonly("exportMeshUVs", &UsdMayaJobExportArgs::exportMeshUVs)
+        .def_readonly("exportNurbsExplicitUV", &UsdMayaJobExportArgs::exportNurbsExplicitUV)
+        .def_readonly("exportReferenceObjects", &UsdMayaJobExportArgs::exportReferenceObjects)
+        .def_readonly("exportRefsAsInstanceable", &UsdMayaJobExportArgs::exportRefsAsInstanceable)
+        .add_property(
+            "exportSkels",
+            make_getter(&UsdMayaJobExportArgs::exportSkels, return_value_policy<return_by_value>()))
+        .add_property(
+            "exportSkin",
+            make_getter(&UsdMayaJobExportArgs::exportSkin, return_value_policy<return_by_value>()))
+        .def_readonly("exportVisibility", &UsdMayaJobExportArgs::exportVisibility)
+        .def_readonly("file", &UsdMayaJobExportArgs::file)
+        .add_property(
+            "filteredTypeIds",
+            make_getter(
+                &UsdMayaJobExportArgs::filteredTypeIds, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "geomSidedness",
+            make_getter(
+                &UsdMayaJobExportArgs::geomSidedness, return_value_policy<return_by_value>()))
+        .def_readonly("ignoreWarnings", &UsdMayaJobExportArgs::ignoreWarnings)
+        .add_property(
+            "includeAPINames",
+            make_getter(
+                &UsdMayaJobExportArgs::includeAPINames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "jobContextNames",
+            make_getter(
+                &UsdMayaJobExportArgs::jobContextNames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "materialCollectionsPath",
+            make_getter(
+                &UsdMayaJobExportArgs::materialCollectionsPath,
+                return_value_policy<return_by_value>()))
+        .add_property(
+            "materialsScopeName",
+            make_getter(
+                &UsdMayaJobExportArgs::materialsScopeName, return_value_policy<return_by_value>()))
+        .def_readonly("melPerFrameCallback", &UsdMayaJobExportArgs::melPerFrameCallback)
+        .def_readonly("melPostCallback", &UsdMayaJobExportArgs::melPostCallback)
+        .def_readonly("mergeTransformAndShape", &UsdMayaJobExportArgs::mergeTransformAndShape)
+        .def_readonly("normalizeNurbs", &UsdMayaJobExportArgs::normalizeNurbs)
+        .add_property(
+            "parentScope",
+            make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))
+        .def_readonly("pythonPerFrameCallback", &UsdMayaJobExportArgs::pythonPerFrameCallback)
+        .def_readonly("pythonPostCallback", &UsdMayaJobExportArgs::pythonPostCallback)
+        .add_property(
+            "renderLayerMode",
+            make_getter(
+                &UsdMayaJobExportArgs::renderLayerMode, return_value_policy<return_by_value>()))
+        .add_property(
+            "rootKind",
+            make_getter(&UsdMayaJobExportArgs::rootKind, return_value_policy<return_by_value>()))
+        .add_property(
+            "rootMapFunction",
+            make_getter(
+                &UsdMayaJobExportArgs::rootMapFunction, return_value_policy<return_by_value>()))
+        .add_property(
+            "shadingMode",
+            make_getter(&UsdMayaJobExportArgs::shadingMode, return_value_policy<return_by_value>()))
+        .def_readonly("staticSingleSample", &UsdMayaJobExportArgs::staticSingleSample)
+        .def_readonly("stripNamespaces", &UsdMayaJobExportArgs::stripNamespaces)
+        .add_property(
+            "timeSamples",
+            make_getter(&UsdMayaJobExportArgs::timeSamples, return_value_policy<return_by_value>()))
+        .add_property(
+            "usdModelRootOverridePath",
+            make_getter(
+                &UsdMayaJobExportArgs::usdModelRootOverridePath,
+                return_value_policy<return_by_value>()))
+        .def_readonly("verbose", &UsdMayaJobExportArgs::verbose)
+        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName);
 }
 
 void wrapPrimWriter()

@@ -123,7 +123,7 @@ void UsdMayaSchemaApiAdaptor::RemoveAttribute(const TfToken& attrName, MDGModifi
     }
 }
 
-MObject UsdMayaSchemaApiAdaptor::GetMayaObjectForSchema() const { return {}; };
+MObject UsdMayaSchemaApiAdaptor::GetMayaObjectForSchema() const { return _handle.object(); };
 
 TfToken UsdMayaSchemaApiAdaptor::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {

@@ -22,14 +22,17 @@
 #include <mayaUsd/fileio/shading/shadingModeImporter.h>
 #include <mayaUsd/fileio/shading/symmetricShaderReader.h>
 
+#include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
+#include <pxr/base/tf/pyResultConversions.h>
 
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/pure_virtual.hpp>
 #include <boost/python/return_internal_reference.hpp>
+#include <boost/python/return_value_policy.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -250,11 +253,13 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void wrapPrimReaderContext()
 {
-    boost::python::class_<UsdMayaPrimReaderContext>("PrimReaderContext", boost::python::no_init)
+    using namespace boost::python;
+
+    class_<UsdMayaPrimReaderContext>("PrimReaderContext", no_init)
         .def(
             "GetMayaNode",
             &UsdMayaPrimReaderContext::GetMayaNode,
-            boost::python::return_value_policy<boost::python::return_by_value>())
+            return_value_policy<return_by_value>())
         .def("RegisterNewMayaNode", &UsdMayaPrimReaderContext::RegisterNewMayaNode)
         .def("GetPruneChildren", &UsdMayaPrimReaderContext::GetPruneChildren)
         .def("SetPruneChildren", &UsdMayaPrimReaderContext::SetPruneChildren)
@@ -263,66 +268,117 @@ void wrapPrimReaderContext()
 }
 
 namespace {
-std::vector<std::string> getChaserNames(UsdMayaJobImportArgs& self) { return self.chaserNames; }
 
-boost::python::object getChaserArgs(UsdMayaJobImportArgs& self, const std::string& chaser)
+boost::python::object get_allChaserArgs(UsdMayaJobImportArgs& self)
 {
-    boost::python::dict editDict;
-
-    std::map<std::string, std::string> myArgs;
-    TfMapLookup(self.allChaserArgs, chaser, &myArgs);
-
-    for (const auto& item : myArgs) {
-        editDict[item.first] = item.second;
+    boost::python::dict allChaserArgs;
+    for (auto&& perChaser : self.allChaserArgs) {
+        auto perChaserDict = boost::python::dict();
+        for (auto&& perItem : perChaser.second) {
+            perChaserDict[perItem.first] = perItem.second;
+        }
+        allChaserArgs[perChaser.first] = perChaserDict;
     }
-    return boost::python::object(editDict);
+    return boost::python::object(allChaserArgs);
 }
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobImportArgs()
 {
-    boost::python::class_<UsdMayaJobImportArgs>("JobImportArgs", boost::python::no_init)
-        .def("getChaserNames", &::getChaserNames)
-        .def("getChaserArgs", &::getChaserArgs)
-        .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName);
+    using namespace boost::python;
+
+    class_<UsdMayaJobImportArgs> c("JobImportArgs", no_init);
+
+    scope s(c);
+
+    class_<UsdMayaJobImportArgs::ShadingMode>("ShadingMode", no_init)
+        .def_readonly("mode", &UsdMayaJobImportArgs::ShadingMode::mode)
+        .def_readonly("materialConversion", &UsdMayaJobImportArgs::ShadingMode::materialConversion);
+
+    c.add_property(
+         "assemblyRep",
+         make_getter(&UsdMayaJobImportArgs::assemblyRep, return_value_policy<return_by_value>()))
+        .add_property("allChaserArgs", ::get_allChaserArgs)
+        .add_property(
+            "chaserNames",
+            make_getter(
+                &UsdMayaJobImportArgs::chaserNames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "excludePrimvarNames",
+            make_getter(
+                &UsdMayaJobImportArgs::excludePrimvarNames,
+                return_value_policy<TfPySequenceToSet>()))
+        .def_readonly("importInstances", &UsdMayaJobImportArgs::importInstances)
+        .def_readonly("importUSDZTextures", &UsdMayaJobImportArgs::importUSDZTextures)
+        .def_readonly(
+            "importUSDZTexturesFilePath", &UsdMayaJobImportArgs::importUSDZTexturesFilePath)
+        .def_readonly("importWithProxyShapes", &UsdMayaJobImportArgs::importWithProxyShapes)
+        .add_property(
+            "includeAPINames",
+            make_getter(
+                &UsdMayaJobImportArgs::includeAPINames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "includeMetadataKeys",
+            make_getter(
+                &UsdMayaJobImportArgs::includeMetadataKeys,
+                return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "jobContextNames",
+            make_getter(
+                &UsdMayaJobImportArgs::jobContextNames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "preferredMaterial",
+            make_getter(
+                &UsdMayaJobImportArgs::preferredMaterial, return_value_policy<return_by_value>()))
+        .def_readonly("shadingModes", &UsdMayaJobImportArgs::shadingModes)
+        .add_property(
+            "timeInterval",
+            make_getter(
+                &UsdMayaJobImportArgs::timeInterval, return_value_policy<return_by_value>()))
+        .def_readonly("useAsAnimationCache", &UsdMayaJobImportArgs::useAsAnimationCache)
+        .def("GetMaterialConversion", &UsdMayaJobImportArgs::GetMaterialConversion);
+
+    to_python_converter<
+        std::vector<UsdMayaJobImportArgs::ShadingMode>,
+        TfPySequenceToPython<std::vector<UsdMayaJobImportArgs::ShadingMode>>>();
 }
 
 void wrapPrimReaderArgs()
 {
-    boost::python::class_<UsdMayaPrimReaderArgs>("PrimReaderArgs", boost::python::no_init)
-        .def(
-            "GetUsdPrim",
-            &UsdMayaPrimReaderArgs::GetUsdPrim,
-            boost::python::return_internal_reference<>())
+    using namespace boost::python;
+
+    class_<UsdMayaPrimReaderArgs>("PrimReaderArgs", no_init)
+        .def("GetUsdPrim", &UsdMayaPrimReaderArgs::GetUsdPrim, return_internal_reference<>())
         .def(
             "GetJobArguments",
             &UsdMayaPrimReaderArgs::GetJobArguments,
-            boost::python::return_internal_reference<>())
+            return_internal_reference<>())
         .def("GetTimeInterval", &UsdMayaPrimReaderArgs::GetTimeInterval)
         .def(
             "GetIncludeMetadataKeys",
             &UsdMayaPrimReaderArgs::GetIncludeMetadataKeys,
-            boost::python::return_internal_reference<>())
+            return_internal_reference<>())
         .def(
             "GetIncludeAPINames",
             &UsdMayaPrimReaderArgs::GetIncludeAPINames,
-            boost::python::return_internal_reference<>())
+            return_internal_reference<>())
         .def(
             "GetExcludePrimvarNames",
             &UsdMayaPrimReaderArgs::GetExcludePrimvarNames,
-            boost::python::return_internal_reference<>())
+            return_internal_reference<>())
         .def("GetUseAsAnimationCache", &UsdMayaPrimReaderArgs::GetUseAsAnimationCache);
 }
 
 void wrapPrimReader()
 {
+    using namespace boost::python;
     typedef UsdMayaPrimReader This;
 
-    boost::python::class_<PrimReaderWrapper<>, boost::noncopyable>(
-        "PrimReader", boost::python::no_init)
+    class_<PrimReaderWrapper<>, boost::noncopyable>("PrimReader", no_init)
         .def("__init__", make_constructor(&PrimReaderWrapper<>::New))
-        .def("Read", boost::python::pure_virtual(&UsdMayaPrimReader::Read))
+        .def("Read", pure_virtual(&UsdMayaPrimReader::Read))
         .def(
             "HasPostReadSubtree",
             &This::HasPostReadSubtree,
@@ -331,10 +387,7 @@ void wrapPrimReader()
             "PostReadSubtree",
             &This::PostReadSubtree,
             &PrimReaderWrapper<>::default_PostReadSubtree)
-        .def(
-            "_GetArgs",
-            &PrimReaderWrapper<>::_GetArgs,
-            boost::python::return_internal_reference<>())
+        .def("_GetArgs", &PrimReaderWrapper<>::_GetArgs, return_internal_reference<>())
         .def("Register", &PrimReaderWrapper<>::Register)
         .staticmethod("Register");
 }
@@ -349,18 +402,18 @@ TF_REGISTRY_FUNCTION(TfEnum)
 //----------------------------------------------------------------------------------------------------------------------
 void wrapShaderReader()
 {
+    using namespace boost::python;
     typedef UsdMayaShaderReader This;
 
-    boost::python::
-        class_<ShaderReaderWrapper, boost::python::bases<PrimReaderWrapper<>>, boost::noncopyable>
-            c("ShaderReader", boost::python::no_init);
+    class_<ShaderReaderWrapper, bases<PrimReaderWrapper<>>, boost::noncopyable> c(
+        "ShaderReader", no_init);
 
-    boost::python::scope s(c);
+    scope s(c);
 
     TfPyWrapEnum<UsdMayaShaderReader::ContextSupport>();
 
     c.def("__init__", make_constructor(&ShaderReaderWrapper::New))
-        .def("Read", boost::python::pure_virtual(&UsdMayaPrimReader::Read))
+        .def("Read", pure_virtual(&UsdMayaPrimReader::Read))
         .def(
             "GetMayaPlugForUsdAttrName",
             &This::GetMayaPlugForUsdAttrName,
@@ -378,10 +431,7 @@ void wrapShaderReader()
             "GetCreatedObject",
             &This::GetCreatedObject,
             &ShaderReaderWrapper::default_GetCreatedObject)
-        .def(
-            "_GetArgs",
-            &ShaderReaderWrapper::_GetArgs,
-            boost::python::return_internal_reference<>())
+        .def("_GetArgs", &ShaderReaderWrapper::_GetArgs, return_internal_reference<>())
         .add_property("_downstreamReader", &ShaderReaderWrapper::GetDownstreamReader)
 
         .def("Register", &ShaderReaderWrapper::Register)
@@ -390,9 +440,8 @@ void wrapShaderReader()
         .staticmethod("RegisterSymmetric");
 
     // For wrapping UsdMayaShaderReader created in c++
-    boost::python::class_<This, std::shared_ptr<This>, boost::noncopyable>(
-        "ShaderReaderWrapper", boost::python::no_init)
-        .def("Read", boost::python::pure_virtual(&UsdMayaPrimReader::Read))
+    class_<This, std::shared_ptr<This>, boost::noncopyable>("ShaderReaderWrapper", no_init)
+        .def("Read", pure_virtual(&UsdMayaPrimReader::Read))
         .def("GetMayaPlugForUsdAttrName", &This::GetMayaPlugForUsdAttrName)
         .def("GetMayaNameForUsdAttrName", &This::GetMayaNameForUsdAttrName)
         .def("PostConnectSubtree", &This::PostConnectSubtree)

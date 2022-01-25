@@ -188,7 +188,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         imported_path = cmds.getAttr(file_node+".fileTextureName")
         # imported path will be absolute:
         self.assertFalse(imported_path.startswith(".."))
-        self.assertEqual(imported_path.lower(), original_path.lower())
+        self.assertEqual(os.path.normpath(imported_path.lower()),
+                         os.path.normpath(original_path.lower()))
         self.assertEqual(cmds.getAttr("place2dTexture.wrapU"), 0)
         self.assertEqual(cmds.getAttr("place2dTexture.wrapV"), 1)
 
