@@ -81,7 +81,7 @@ namespace {
 const std::string kPullParentPathKey("Maya:Pull:ParentPath");
 
 // Set name that will be used to hold all pulled objects
-const MString kPullSetName("pullStateSet");
+const MString kPullSetName("usdEditAsMaya");
 
 // Metadata key used to store pull information on a prim
 const TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
