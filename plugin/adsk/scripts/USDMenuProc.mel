@@ -13,19 +13,6 @@
 // limitations under the License.
 //
 
-proc int canEditAsMaya()
-{
-    if (!hasPrimUpdater())
-        return 0;
-
-    string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
-    string $obj = $nonMayaObjs[0];
-    if (size($obj) != 0) {
-        return `python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.canEditAsMaya('" + $obj + "')")`;
-    }
-    return 0;
-}
-
 proc string expandToSelection(string $obj)
 {
     // By default, for example if the obj is empty, we want to use the selection.
@@ -33,7 +20,7 @@ proc string expandToSelection(string $obj)
 
     // If obj is non-empty, expand it to the selection if it is part of the selection.
     if (size($obj)) {
-        string $script = "import maya.internal.ufeSupport.utils as ufeUtils; selection = ufeUtils.getNonMayaSelectedItems(); inSel = ['" + $obj + "'.startswith(sel) for sel in selection]; not selection or sum(inSel)";
+        string $script = "import maya.internal.ufeSupport.utils as ufeUtils; selection = ufeUtils.getNonMayaSelectedItems(); inSel = ['" + $obj + "'.startswith(sel) for sel in selection]; selection and sum(inSel)";
         $expandToSel = `python($script)`;
     }
 
@@ -46,12 +33,22 @@ proc string expandToSelection(string $obj)
     return $obj;
 }
 
+proc int canEditAsMaya(string $obj)
+{
+    if (!hasPrimUpdater())
+        return 0;
+
+    if (size($obj) != 0) {
+        return `python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.canEditAsMaya('" + $obj + "')")`;
+    }
+    return 0;
+}
+
 global proc mayaUsdMenu_editAsMaya(string $obj)
 {
     if (!hasPrimUpdater())
         return;
 
-    $obj = expandToSelection($obj);
     if (size($obj) != 0) {
         mayaUsdEditAsMaya $obj;
     }
@@ -62,7 +59,6 @@ global proc mayaUsdMenu_duplicate(string $ufePath)
     if (!hasPrimUpdater())
         return;
         
-    $ufePath = expandToSelection($ufePath);
     if (size($ufePath)) {
         mayaUsdDuplicate $ufePath "|world";
     }
@@ -73,14 +69,14 @@ global proc USDMenuProc(string $parent, string $obj)
     if (!hasPrimUpdater())
         return;
         
-    int $haveNonMaya = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.hasNonMayaSelectedItems()")`;
-    if ($haveNonMaya)
+    $obj = expandToSelection($obj);
+    if (size($obj) != 0)
     {
         popupMenu -e -dai $parent;
         setParent -menu $parent;
 
         setParent -menu ..;
-        if (canEditAsMaya()) {
+        if (canEditAsMaya($obj)) {
             // Temporary - hide this context menu items behind an
             //             env var until it is completed.
             string $s = `getenv "MAYAUSD_ENABLE_EDIT_AS_MAYA_DATA"`;
