@@ -298,7 +298,7 @@ PullImportPaths pullImport(
 
     std::string mFileName = context.GetUsdStage()->GetRootLayer()->GetIdentifier();
     if (mFileName.empty()) {
-        TF_WARN("Empty file specified. Exiting.");
+        TF_WARN("Nothing to edit: invalid layer.");
         return PullImportPaths(addedDagPaths, pulledUfePaths);
     }
 
