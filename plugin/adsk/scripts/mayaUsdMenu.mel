@@ -559,16 +559,45 @@ proc termAEShowMenu()
 // initPullMenu
 // Marking menu with USD options for DAG objects
 
-proc int isPulledUsdObject(string $dagObject) {
-    string $pullAttribute = ( $dagObject + ".Pull_UfePath" );
-    if (`attributeExists "Pull_UfePath" $dagObject`) {
-        string $ufePath = `getAttr $pullAttribute`;
-        if ($ufePath != "") {
-            return 1;
+proc string getPulledUsdObject(string $dagObject) {
+    string $root = "";
+    string $pulledDagObject = "";
+    
+    if (`objExists $dagObject`) {
+        // For some reason, outliner will provide a set instead of real
+        // selection when populating the menu under set. We go back to read the
+        // real selection
+        if (size(`ls -set $dagObject`) > 0) {
+            string $selection[] = `ls -sl`;
+            $dagObject = $selection[0];
+        }
+        if (size(`ls -dagObjects $dagObject`) > 0) {
+            for (;;) {
+                string $parents[] = `listRelatives -parent -fullPath $dagObject`;
+                if (size($parents) == 0) {
+                    $root = longNameOf($dagObject);
+                    break;
+                }
+                
+                // Not root, then maybe it's pulled object. Look for "metadata" attribute
+                if (`attributeExists "Pull_UfePath" $dagObject`) {
+                    string $pullAttribute = ( $dagObject + ".Pull_UfePath" );
+                    string $ufePath = `getAttr $pullAttribute`;
+                    if ($ufePath != "") {
+                        $pulledDagObject = $dagObject;
+                    }
+                }
+                
+                $dagObject = $parents[0];
+            }
         }
     }
     
-    return 0;
+    if ($root == "|__mayaUsd__" && $pulledDagObject != "") {
+        return $pulledDagObject;
+    }
+    
+    return "";
 }
 
 proc int isObjectSelected(string $obj)
@@ -618,10 +647,11 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
 {
     if (!hasPrimUpdater())
         return;
-
-    if (isPulledUsdObject($obj)) {
-        string $pushback = `menuItem -label "Merge Maya Edits to USD" -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $obj)`;
-        string $pushclear = `menuItem -label "Discard Maya Edits" -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $obj)`;
+    
+    string $pulledObject = getPulledUsdObject($obj);
+    if ($pulledObject != "") {
+        string $pushback = `menuItem -label "Merge Maya Edits to USD" -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $pulledObject)`;
+        string $pushclear = `menuItem -label "Discard Maya Edits" -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $pulledObject)`;
         menuItem -divider true -insertAfter $pushclear;
     }
     else {
