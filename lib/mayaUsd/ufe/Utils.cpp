@@ -183,7 +183,7 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
 
     const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
-    auto stage = getStage(Ufe::Path(segments[0]));
+    auto                       stage = getStage(Ufe::Path(segments[0]));
     if (!TF_VERIFY(stage, kIllegalUSDPath, path.string().c_str())) {
         return UsdPrim();
     }
@@ -191,8 +191,9 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     // If there is only a single segment in the path, it must point to the
     // proxy shape, otherwise we would not have retrived a valid stage.
     // The second path segment is the USD path.
-    return (segments.size() == 1u) ? stage->GetPseudoRoot() :
-        stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
+    return (segments.size() == 1u)
+        ? stage->GetPseudoRoot()
+        : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
 }
 
 int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim)
