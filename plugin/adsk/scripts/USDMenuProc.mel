@@ -15,22 +15,13 @@
 
 proc string expandToSelection(string $obj)
 {
-    // By default, for example if the obj is empty, we want to use the selection.
-    int $expandToSel = 1;
-
-    // If obj is non-empty, expand it to the selection if it is part of the selection.
     if (size($obj)) {
-        string $script = "import maya.internal.ufeSupport.utils as ufeUtils; selection = ufeUtils.getNonMayaSelectedItems(); inSel = ['" + $obj + "'.startswith(sel) for sel in selection]; selection and sum(inSel)";
-        $expandToSel = `python($script)`;
+        // If obj is non-empty, expand it to the selection if it is part of the selection.
+        return `python("import mayaUsd_selectionUtils; mayaUsd_selectionUtils.expandPathToSelection('" + $obj + "')")`;
+    } else {
+        // If obj is empty, use the first selected item non-Maya.
+        return `python("import maya.internal.ufeSupport.utils as ufeUtils; items = ufeUtils.getNonMayaSelectedItems(); items[0] if items else None")`;
     }
-
-    // If we expand to selection, use the UFE selection.
-    if ($expandToSel) {
-        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
-        $obj = $nonMayaObjs[0];
-    }
-
-    return $obj;
 }
 
 proc int canEditAsMaya(string $obj)
@@ -70,6 +61,7 @@ global proc USDMenuProc(string $parent, string $obj)
         return;
         
     $obj = expandToSelection($obj);
+    print($obj);
     if (size($obj) != 0)
     {
         popupMenu -e -dai $parent;
