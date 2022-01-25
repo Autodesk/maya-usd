@@ -8,11 +8,9 @@ def expandPathToSelection(path):
     """
     selection = ufe.GlobalSelection.get()
     ufePath = ufe.PathString.path(path)
-    if selection.containsAncestor(ufePath):
-        # Note: containsAncestor does *not* include the path itself,
-        #       so this will stop when we're at the top-most path
-        #       that is still in the selection but its parent is not.
-        while selection.containsAncestor(ufePath):
-            ufePath = ufePath.pop()
-        return ufe.PathString.string(ufePath)
-    return path
+    # Note: containsAncestor does *not* include the path itself,
+    #       so this will stop when we're at the top-most path
+    #       that is still in the selection but its parent is not.
+    while selection.containsAncestor(ufePath):
+        ufePath = ufePath.pop()
+    return ufe.PathString.string(ufePath)
