@@ -174,13 +174,19 @@ MStatus EditAsMayaCommand::doIt(const MArgList& argList)
     if (!isPrimPath(fPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoItemRecorder undoRecorder(fUndoItemList);
+    // Scope the undo item recording so we can undo on failure.
+    {
+        OpUndoItemRecorder undoRecorder(fUndoItemList);
 
-    auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-    if (!manager.editAsMaya(fPath))
-        return MS::kFailure;
+        auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
+        status = manager.editAsMaya(fPath) ? MS::kSuccess : MS::kFailure;
+    }
 
-    return MS::kSuccess;
+    // Undo potentially partially-made edit-as-Maya on failure.
+    if (status != MS::kSuccess)
+        fUndoItemList.undo();
+
+    return status;
 }
 
 //------------------------------------------------------------------------------
@@ -230,13 +236,19 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPulledPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoItemRecorder undoRecorder(fUndoItemList);
+    // Scope the undo item recording so we can undo on failure.
+    {
+        OpUndoItemRecorder undoRecorder(fUndoItemList);
 
-    auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-    if (!manager.mergeToUsd(fDagNode, fPulledPath))
-        return MS::kFailure;
+        auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
+        status = manager.mergeToUsd(fDagNode, fPulledPath) ? MS::kSuccess : MS::kFailure;
+    }
 
-    return MS::kSuccess;
+    // Undo potentially partially-made merge-to-USD on failure.
+    if (status != MS::kSuccess)
+        fUndoItemList.undo();
+
+    return status;
 }
 
 //------------------------------------------------------------------------------
@@ -280,13 +292,19 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPath))
         return reportError(MS::kInvalidParameter);
 
-    OpUndoItemRecorder undoRecorder(fUndoItemList);
+    // Scope the undo item recording so we can undo on failure.
+    {
+        OpUndoItemRecorder undoRecorder(fUndoItemList);
 
-    auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-    if (!manager.discardEdits(fPath))
-        return MS::kFailure;
+        auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
+        status = manager.discardEdits(fPath) ? MS::kSuccess : MS::kFailure;
+    }
 
-    return MS::kSuccess;
+    // Undo potentially partially-made discard-edit on failure.
+    if (status != MS::kSuccess)
+        fUndoItemList.undo();
+
+    return status;
 }
 
 //------------------------------------------------------------------------------
@@ -329,13 +347,19 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    OpUndoItemRecorder undoRecorder(fUndoItemList);
+    // Scope the undo item recording so we can undo on failure.
+    {
+        OpUndoItemRecorder undoRecorder(fUndoItemList);
 
-    auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-    if (!manager.duplicate(fSrcPath, fDstPath))
-        return MS::kFailure;
+        auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
+        status = manager.duplicate(fSrcPath, fDstPath) ? MS::kSuccess : MS::kFailure;
+    }
 
-    return MS::kSuccess;
+    // Undo potentially partially-made duplicate on failure.
+    if (status != MS::kSuccess)
+        fUndoItemList.undo();
+
+    return status;
 }
 
 } // namespace ufe
