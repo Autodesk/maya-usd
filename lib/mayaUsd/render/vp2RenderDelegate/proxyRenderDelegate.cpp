@@ -47,6 +47,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <maya/MColorPickerUtilities.h>
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
@@ -1500,12 +1501,39 @@ GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
 }
 
 //! \brief
-const MColor& ProxyRenderDelegate::GetSelectionHighlightColor(bool lead) const
+MColor ProxyRenderDelegate::GetSelectionHighlightColor(const char* className)
 {
-    static const MColor kLeadColor(0.056f, 1.0f, 0.366f, 1.0f);
+    // Construct the query command string.
+    MString queryCommand;
+    if (className) {
+        queryCommand = "int $index = `displayColor -q -active \"";
+        queryCommand += className;
+        queryCommand += "\"`; colorIndex -q $index;";
+    } else {
+        queryCommand = "displayRGBColor -q \"lead\"";
+    }
+
+    // Query and return the selection color.
+    {
+        MDoubleArray                colorResult;
+        std::lock_guard<std::mutex> _(_mayaCommandEngineMutex);
+        MGlobal::executeCommand(queryCommand, colorResult);
+
+        if (colorResult.length() == 3) {
+            // Since the "lead" color is returned in displace space,
+            // we need to convert it to rendering space.
+            MColor color(colorResult[0], colorResult[1], colorResult[2]);
+            return className
+                ? color
+                : MColorPickerUtilities::applyViewTransform(color, MColorPickerUtilities::kInverse);
+        }
+    }
+
+    // In case of an error, return the default color
+    static const MColor kLeadColor(0.351f, 5.519f, 0.408f, 1.0f);
     static const MColor kActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-    return lead ? kLeadColor : kActiveColor;
+    return className ? kActiveColor : kLeadColor;
 }
 
 bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const

@@ -173,8 +173,10 @@ public:
     MAYAUSD_CORE_PUBLIC
     GfVec3f GetCurveDefaultColor();
 
+    // Returns the selection highlight color for a given class.
+    // If className is null, returns the lead highlight color.
     MAYAUSD_CORE_PUBLIC
-    const MColor& GetSelectionHighlightColor(bool lead) const;
+    MColor GetSelectionHighlightColor(const char* className = nullptr);
 
     MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
