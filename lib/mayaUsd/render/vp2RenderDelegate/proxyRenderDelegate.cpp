@@ -775,10 +775,13 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
     }
 
-    // Work around for USD issue #1516. We don't know if any instanced object has
-    // had it's instance index change, so re-populate selection every update to
-    // ensure correct selection highlighting of instanced objects.
-    bool instanceIndexChanged = true;
+    // To work around USD issue #1516 set instanceIndexChange to true. By default leave the value
+    // false. There is a significant performance overhead caused by populating selection every
+    // frame, and the workflows that trigger it are much more common then changing instancing.
+    // See MayaUSD issue #1991 for the performance problem.
+    // We don't know if any instanced object has had it's instance index change, so re-populate
+    // selection every update to ensure correct selection highlighting of instanced objects.
+    bool instanceIndexChanged = false;
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     if (_selectionModeChanged || (_selectionChanged && !inSelectionPass) || instanceIndexChanged) {
         _UpdateSelectionStates();
