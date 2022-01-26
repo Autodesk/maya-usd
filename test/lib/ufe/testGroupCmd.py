@@ -647,5 +647,117 @@ class GroupCmdTestCase(unittest.TestCase):
         children = hierarchyAfter()
         checkAfter(*children)
 
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 128, 'Test requires fix in Maya Preview Release 128 or greater.')
+    def testGroupHierarchyWithRenaming(self):
+        '''Grouping a node and a descendant when all descendants share the same name'''
+        # MAYA-113532: when grouping a node and its descendant sharing the same name, we need to
+        # detect the name conflicts and rename as we reparent into the group.
+
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+
+        # Create the following hierarchy:
+        #
+        # ps
+        #  |_ A
+        #      |_ A
+        #          |_ A
+        #              |_ A
+        #                  |_ A
+        #
+        # And group them all at the same level, which implies renaming.
+
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.DefinePrim('/A', 'Xform')
+        stage.DefinePrim('/A/B', 'Cube')
+        stage.DefinePrim('/A/A', 'Xform')
+        stage.DefinePrim('/A/A/C', 'Cone')
+        stage.DefinePrim('/A/A/A', 'Xform')
+        stage.DefinePrim('/A/A/A/D', 'Sphere')
+        stage.DefinePrim('/A/A/A/A', 'Xform')
+        stage.DefinePrim('/A/A/A/A/E', 'Capsule')
+        stage.DefinePrim('/A/A/A/A/A', 'Xform')
+        stage.DefinePrim('/A/A/A/A/A/F', 'Cylinder')
+
+        psPath = ufe.PathString.path(psPathStr)
+        psPathSegment = psPath.segments[0]
+        ps = ufe.Hierarchy.createItem(psPath)
+        psHier = ufe.Hierarchy.hierarchy(ps)
+        groupPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/group1')])
+
+        def hierarchyBefore():
+            retVal = []
+            aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
+            retVal.append(ufe.Hierarchy.createItem(aPath))
+            for i in range(4):
+                aPath = aPath + ufe.PathComponent('A')
+                retVal.append(ufe.Hierarchy.createItem(aPath))
+            return retVal
+
+        a, aa, aaa, aaaa, aaaaa = hierarchyBefore()
+
+        def checkBefore():
+            # We care about 2 things:
+            #  - All Xforms are named A
+            #  - The non-xform stay in the right order:
+            order = [("B", "Cube"), ("C", "Cone"), ("D", "Sphere"), ("E", "Capsule"), ("F", "Cylinder")]
+            psChildren = psHier.children()
+            self.assertEqual(len(psChildren), 1)
+            a = psChildren[0]
+            for gprimName, gprimTypeName in order:
+                aHier = ufe.Hierarchy.hierarchy(a)
+                aChildren = aHier.children()
+                if gprimName == "F":
+                    self.assertEqual(len(aChildren), 1)
+                else:
+                    self.assertEqual(len(aChildren), 2)
+                for child in aChildren:
+                    prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(child.path()))
+                    if child.nodeName() == "A":
+                        self.assertEqual(prim.GetTypeName(), "Xform")
+                        a = child
+                    else:
+                        self.assertEqual(child.nodeName(), gprimName)
+                        self.assertEqual(prim.GetTypeName(), gprimTypeName)
+
+        def checkAfter():
+            # We care about 2 things:
+            #  - Group has 5 Xform children. Don't care about names: they will be unique.
+            #  - Each child has a one of the non-xform prims.
+            members = set([("B", "Cube"), ("C", "Cone"), ("D", "Sphere"), ("E", "Capsule"), ("F", "Cylinder")])
+            group = ufe.Hierarchy.createItem(groupPath)
+            groupHier = ufe.Hierarchy.hierarchy(group)
+            groupChildren = groupHier.children()
+            self.assertEqual(len(groupChildren), 5)
+            foundMembers = set()
+            for child in groupChildren:
+                prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(child.path()))
+                self.assertEqual(prim.GetTypeName(), "Xform")
+                childHier = ufe.Hierarchy.hierarchy(child)
+                childChildren = childHier.children()
+                self.assertEqual(len(childChildren), 1)
+                member = childChildren[0]
+                prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(member.path()))
+                foundMembers.add((member.nodeName(), prim.GetTypeName()))
+            self.assertEqual(members, foundMembers)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        # We randomize the order a bit to make sure previously moved items do
+        # not affect the next one.
+        sn.append(a)
+        sn.append(aaa)
+        sn.append(aa)
+        sn.append(aaaaa)
+        sn.append(aaaa)
+
+        cmds.group()
+        checkAfter()
+        cmds.undo()
+        checkBefore()
+        cmds.redo()
+        checkAfter()
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
