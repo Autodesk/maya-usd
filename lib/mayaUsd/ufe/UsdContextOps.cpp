@@ -852,14 +852,18 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MString script;
         script.format(
             "^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
+        MGlobal::executeCommand("waitCursor -state 1");
         MGlobal::executeCommand(script, true, true);
+        MGlobal::executeCommand("waitCursor -state 0");
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format(
             "^1s \"^2s\" \"|world\"",
             DuplicateCommand::commandName,
             Ufe::PathString::string(path()).c_str());
+        MGlobal::executeCommand("waitCursor -state 1");
         MGlobal::executeCommand(script, true, true);
+        MGlobal::executeCommand("waitCursor -state 0");
     } else if (itemPath[0] == kAddMayaReferenceItem) {
         MString script;
         script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path()).c_str());
