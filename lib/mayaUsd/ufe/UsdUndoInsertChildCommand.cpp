@@ -59,8 +59,8 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     const UsdSceneItem::Ptr& /* pos */)
     : Ufe::InsertChildCommand()
     , _ufeDstItem(nullptr)
-    , _ufeParentItem(parent)
     , _ufeSrcPath(child->path())
+    , _ufeParentPath(parent->path())
     , _usdSrcPath(child->prim().GetPath())
 {
     const auto& childPrim = child->prim();
@@ -118,7 +118,7 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
 bool UsdUndoInsertChildCommand::insertChildRedo()
 {
     if (_usdDstPath.IsEmpty()) {
-        const auto& parentPrim = ufePathToPrim(_ufeParentItem->path());
+        const auto& parentPrim = ufePathToPrim(_ufeParentPath);
 
         // First, check if we need to rename the child.
         const auto childName = uniqueChildName(parentPrim, _ufeSrcPath.back().string());
@@ -126,12 +126,11 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
         // Create a new segment if parent and child are in different run-times.
         // parenting a USD node to the proxy shape node implies two different run-times
         auto cRtId = _ufeSrcPath.runTimeId();
-        if (_ufeParentItem->path().runTimeId() == cRtId) {
-            _ufeDstPath = _ufeParentItem->path() + childName;
+        if (_ufeParentPath.runTimeId() == cRtId) {
+            _ufeDstPath = _ufeParentPath + childName;
         } else {
             auto cSep = _ufeSrcPath.getSegments().back().separator();
-            _ufeDstPath = _ufeParentItem->path()
-                + Ufe::PathSegment(Ufe::PathComponent(childName), cRtId, cSep);
+            _ufeDstPath = _ufeParentPath + Ufe::PathSegment(Ufe::PathComponent(childName), cRtId, cSep);
         }
         _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
     }
