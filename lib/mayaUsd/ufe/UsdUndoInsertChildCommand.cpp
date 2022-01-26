@@ -130,7 +130,8 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
             _ufeDstPath = _ufeParentPath + childName;
         } else {
             auto cSep = _ufeSrcPath.getSegments().back().separator();
-            _ufeDstPath = _ufeParentPath + Ufe::PathSegment(Ufe::PathComponent(childName), cRtId, cSep);
+            _ufeDstPath
+                = _ufeParentPath + Ufe::PathSegment(Ufe::PathComponent(childName), cRtId, cSep);
         }
         _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
     }
