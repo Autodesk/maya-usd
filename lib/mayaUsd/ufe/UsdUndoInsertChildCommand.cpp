@@ -59,6 +59,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     const UsdSceneItem::Ptr& /* pos */)
     : Ufe::InsertChildCommand()
     , _ufeDstItem(nullptr)
+    , _ufeParentItem(parent)
     , _ufeSrcPath(child->path())
     , _usdSrcPath(child->prim().GetPath())
 {
@@ -90,20 +91,6 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     ufe::applyCommandRestriction(childPrim, "reparent");
     ufe::applyCommandRestriction(parentPrim, "reparent");
 
-    // First, check if we need to rename the child.
-    const auto childName = uniqueChildName(parent->prim(), child->path().back().string());
-
-    // Create a new segment if parent and child are in different run-times.
-    // parenting a USD node to the proxy shape node implies two different run-times
-    auto cRtId = child->path().runTimeId();
-    if (parent->path().runTimeId() == cRtId) {
-        _ufeDstPath = parent->path() + childName;
-    } else {
-        auto cSep = child->path().getSegments().back().separator();
-        _ufeDstPath = parent->path() + Ufe::PathSegment(Ufe::PathComponent(childName), cRtId, cSep);
-    }
-    _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
-
     _childLayer = childPrim.GetStage()->GetEditTarget().GetLayer();
     _parentLayer = getEditRouterLayer(PXR_NS::TfToken("parent"), parentPrim);
 }
@@ -130,6 +117,24 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
 
 bool UsdUndoInsertChildCommand::insertChildRedo()
 {
+    if (_usdDstPath.IsEmpty()) {
+        const auto& parentPrim = ufePathToPrim(_ufeParentItem->path());
+
+        // First, check if we need to rename the child.
+        const auto childName = uniqueChildName(parentPrim, _ufeSrcPath.back().string());
+
+        // Create a new segment if parent and child are in different run-times.
+        // parenting a USD node to the proxy shape node implies two different run-times
+        auto cRtId = _ufeSrcPath.runTimeId();
+        if (_ufeParentItem->path().runTimeId() == cRtId) {
+            _ufeDstPath = _ufeParentItem->path() + childName;
+        } else {
+            auto cSep = _ufeSrcPath.getSegments().back().separator();
+            _ufeDstPath = _ufeParentItem->path() + Ufe::PathSegment(Ufe::PathComponent(childName), cRtId, cSep);
+        }
+        _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
+    }
+
     bool status = SdfCopySpec(_childLayer, _usdSrcPath, _parentLayer, _usdDstPath);
     if (status) {
         // remove all scene description for the given path and

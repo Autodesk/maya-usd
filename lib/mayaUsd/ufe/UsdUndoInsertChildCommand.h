@@ -64,6 +64,7 @@ private:
     bool insertChildUndo();
 
     UsdSceneItem::Ptr _ufeDstItem;
+    UsdSceneItem::Ptr _ufeParentItem;
 
     Ufe::Path _ufeSrcPath;
     Ufe::Path _ufeDstPath;
