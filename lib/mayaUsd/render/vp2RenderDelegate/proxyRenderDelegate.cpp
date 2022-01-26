@@ -1486,7 +1486,7 @@ GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
 {
     MDoubleArray curveColorResult;
     {
-        std::lock_guard<std::mutex> _(_mayaCommandEngineMutex);
+        std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
         MGlobal::executeCommand(
             "int $index = `displayColor -q -dormant \"curve\"`; colorIndex -q $index;",
             curveColorResult);
@@ -1495,6 +1495,7 @@ GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
     if (curveColorResult.length() == 3) {
         return GfVec3f(curveColorResult[0], curveColorResult[1], curveColorResult[2]);
     } else {
+        TF_WARN("Failed to obtain curve default color");
         // In case of an error, return the default navy-blue color
         return GfVec3f(0.000f, 0.016f, 0.376f);
     }
@@ -1503,6 +1504,9 @@ GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
 //! \brief
 MColor ProxyRenderDelegate::GetSelectionHighlightColor(const char* className)
 {
+    // Query display colors from Maya Command Engine only starting from Maya 2023 because the
+    // function MColorPickerUtilities::applyViewTransform is supported only in that case
+#if MAYA_APP_VERSION >= 2023
     // Construct the query command string.
     MString queryCommand;
     if (className) {
@@ -1516,7 +1520,7 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const char* className)
     // Query and return the selection color.
     {
         MDoubleArray                colorResult;
-        std::lock_guard<std::mutex> _(_mayaCommandEngineMutex);
+        std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
         MGlobal::executeCommand(queryCommand, colorResult);
 
         if (colorResult.length() == 3) {
@@ -1526,14 +1530,19 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const char* className)
             return className
                 ? color
                 : MColorPickerUtilities::applyViewTransform(color, MColorPickerUtilities::kInverse);
+        } else if (className) {
+            TF_WARN("Failed to obtain selection highlight color for class '%s'", className);
+        } else {
+            TF_WARN("Failed to obtain selection highlight color for lead objects");
         }
     }
+#endif
 
-    // In case of an error, return the default color
-    static const MColor kLeadColor(0.351f, 5.519f, 0.408f, 1.0f);
-    static const MColor kActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
+    // In case of any failure, return the default color
+    static const MColor kDefaultLeadColor(0.351f, 5.519f, 0.408f, 1.0f);
+    static const MColor kDefaultActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-    return className ? kActiveColor : kLeadColor;
+    return className ? kDefaultActiveColor : kDefaultLeadColor;
 }
 
 bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
