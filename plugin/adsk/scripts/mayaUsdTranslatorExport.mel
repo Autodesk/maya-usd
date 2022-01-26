@@ -364,6 +364,10 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 string $ann = `mayaUSDListJobContexts -ea $context`;
                 menuItem -l $context -ann $ann;
             }
+            if (size($contexts) == 0)
+            {
+                optionMenuGrp -e -vis 0 jobContextPopup;
+            }
 
         frameLayout -label `getMayaUsdString("kExportFrameOutputLbl")` -collapsable true -collapse false;
             separator -style "none";

@@ -18,6 +18,7 @@
 #include <mayaUsd/utils/undoHelperCommand.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/tf/pyPolymorphic.h>
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
@@ -35,6 +36,102 @@
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
+
+class SchemaAdaptorWrapper
+    : public UsdMayaSchemaAdaptor
+    , public TfPyPolymorphic<UsdMayaSchemaAdaptor>
+{
+public:
+    typedef SchemaAdaptorWrapper This;
+    typedef UsdMayaSchemaAdaptor base_t;
+
+    SchemaAdaptorWrapper() { }
+
+    SchemaAdaptorWrapper(
+        const MObjectHandle&     object,
+        const TfToken&           schemaName,
+        const UsdPrimDefinition* schemaPrimDef)
+        : base_t(object, schemaName, schemaPrimDef)
+    {
+    }
+
+    static std::shared_ptr<This> New(uintptr_t createdWrapper)
+    {
+        return *((std::shared_ptr<This>*)createdWrapper);
+    }
+
+    virtual ~SchemaAdaptorWrapper() { }
+
+    UsdMayaAttributeAdaptor default_GetAttribute(const TfToken& attrName) const
+    {
+        return base_t::GetAttribute(attrName);
+    }
+    UsdMayaAttributeAdaptor GetAttribute(const TfToken& attrName) const override
+    {
+        return this->CallVirtual("GetAttribute", &This::default_GetAttribute)(attrName);
+    }
+
+    TfTokenVector default_GetAuthoredAttributeNames() const
+    {
+        return base_t::GetAuthoredAttributeNames();
+    }
+    TfTokenVector GetAuthoredAttributeNames() const override
+    {
+        return this->CallVirtual(
+            "GetAuthoredAttributeNames", &This::default_GetAuthoredAttributeNames)();
+    }
+
+    UsdMayaAttributeAdaptor
+    default_UndoableCreateAttribute(const TfToken& attrName, MDGModifier& modifier)
+    {
+        return base_t::CreateAttribute(attrName, modifier);
+    }
+    UsdMayaAttributeAdaptor CreateAttribute(const TfToken& attrName, MDGModifier& modifier) override
+    {
+        // Not using TfPolymorphic::CallVirtual because MDGModifier is non-copyable
+        TfPyLock pyLock;
+        auto     pyOverride = this->GetOverride("UndoableCreateAttribute");
+        if (pyOverride) {
+            // Do *not* call through if there's an active python exception.
+            if (!PyErr_Occurred()) {
+                try {
+                    return boost::python::call<UsdMayaAttributeAdaptor>(
+                        pyOverride.ptr(), attrName, modifier);
+                } catch (boost::python::error_already_set const&) {
+                    // Convert any exception to TF_ERRORs.
+                    TfPyConvertPythonExceptionToTfErrors();
+                    PyErr_Clear();
+                }
+            }
+        }
+        return default_UndoableCreateAttribute(attrName, modifier);
+    }
+
+    void default_UndoableRemoveAttribute(const TfToken& attrName, MDGModifier& modifier)
+    {
+        base_t::RemoveAttribute(attrName, modifier);
+    }
+    void RemoveAttribute(const TfToken& attrName, MDGModifier& modifier) override
+    {
+        // Not using TfPolymorphic::CallVirtual because MDGModifier is non-copyable
+        TfPyLock pyLock;
+        auto     pyOverride = this->GetOverride("UndoableRemoveAttribute");
+        if (pyOverride) {
+            // Do *not* call through if there's an active python exception.
+            if (!PyErr_Occurred()) {
+                try {
+                    return boost::python::call<void>(pyOverride.ptr(), attrName, modifier);
+                } catch (boost::python::error_already_set const&) {
+                    // Convert any exception to TF_ERRORs.
+                    TfPyConvertPythonExceptionToTfErrors();
+                    PyErr_Clear();
+                }
+            }
+        }
+        return default_UndoableRemoveAttribute(attrName, modifier);
+    }
+};
+using SchemaAdaptorWrapperPtr = std::shared_ptr<SchemaAdaptorWrapper>;
 
 static UsdMayaAdaptor* _Adaptor__init__(const std::string& dagPath)
 {
@@ -231,16 +328,6 @@ void wrapAdaptor()
               .def("RegisterTypedSchemaConversion", &::RegisterTypedSchemaConversion)
               .staticmethod("RegisterTypedSchemaConversion");
 
-    class_<UsdMayaSchemaAdaptor, UsdMayaSchemaAdaptorPtr>("SchemaAdaptor")
-        .def(!self)
-        .def("__repr__", _SchemaAdaptor__repr__)
-        .def("GetName", &UsdMayaSchemaAdaptor::GetName)
-        .def("GetAttribute", &UsdMayaSchemaAdaptor::GetAttribute)
-        .def("CreateAttribute", _SchemaAdaptor_CreateAttribute)
-        .def("RemoveAttribute", _SchemaAdaptor_RemoveAttribute)
-        .def("GetAuthoredAttributeNames", &UsdMayaSchemaAdaptor::GetAuthoredAttributeNames)
-        .def("GetAttributeNames", &UsdMayaSchemaAdaptor::GetAttributeNames);
-
     class_<UsdMayaAttributeAdaptor>("AttributeAdaptor")
         .def(!self)
         .def("__repr__", _AttributeAdaptor__repr__)
@@ -248,4 +335,34 @@ void wrapAdaptor()
         .def("Get", _AttributeAdaptor_Get)
         .def("Set", _AttributeAdaptor_Set)
         .def("GetAttributeDefinition", &UsdMayaAttributeAdaptor::GetAttributeDefinition);
+
+    class_<SchemaAdaptorWrapper, boost::noncopyable> c("SchemaAdaptor", boost::python::no_init);
+    boost::python::scope                             s(c);
+
+    c.def(!self)
+        .def("__init__", make_constructor(&SchemaAdaptorWrapper::New))
+        .def("__repr__", _SchemaAdaptor__repr__)
+        .def("GetName", &UsdMayaSchemaAdaptor::GetName)
+        .def(
+            "GetAttribute",
+            &SchemaAdaptorWrapper::GetAttribute,
+            &SchemaAdaptorWrapper::default_GetAttribute)
+        .def("CreateAttribute", _SchemaAdaptor_CreateAttribute)
+        .def("RemoveAttribute", _SchemaAdaptor_RemoveAttribute)
+        .def(
+            "GetAuthoredAttributeNames",
+            &SchemaAdaptorWrapper::GetAuthoredAttributeNames,
+            &SchemaAdaptorWrapper::default_GetAuthoredAttributeNames)
+        .def("GetAttributeNames", &UsdMayaSchemaAdaptor::GetAttributeNames);
+
+    // For wrapping UsdMayaSchemaAdaptor created in c++
+    boost::python::class_<UsdMayaSchemaAdaptor, UsdMayaSchemaAdaptorPtr, boost::noncopyable>(
+        "SchemaAdaptor", boost::python::no_init)
+        .def(!self)
+        .def("GetName", &UsdMayaSchemaAdaptor::GetName)
+        .def("GetAttribute", &UsdMayaSchemaAdaptor::GetAttribute)
+        .def("CreateAttribute", _SchemaAdaptor_CreateAttribute)
+        .def("RemoveAttribute", _SchemaAdaptor_RemoveAttribute)
+        .def("GetAuthoredAttributeNames", &UsdMayaSchemaAdaptor::GetAuthoredAttributeNames)
+        .def("GetAttributeNames", &UsdMayaSchemaAdaptor::GetAttributeNames);
 }
