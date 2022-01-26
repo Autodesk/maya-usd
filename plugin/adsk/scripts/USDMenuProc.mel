@@ -47,9 +47,9 @@ global proc USDMenuProc(string $parent, string $obj)
             string $ls = tolower($s);
             if (`match $ls "true|yes|on|1"` !="")
             {
-                menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdEditAsMaya \"" + $obj + "\"");
+                menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdEditAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
             }
         }
-        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdDuplicate \"" + $obj + "\"" + "\"|world\"");
+        menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdDuplicate \"" + $obj + "\"" + "\"|world\"; waitCursor -state 0;}");
     }
 }
