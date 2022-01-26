@@ -31,13 +31,13 @@ class exportChaserTest(mayaUsdLib.ExportChaser):
     ExportFrameCalled = False
     PostExportCalled = False
     NotCalled = False
-    ChaserName = {}
+    ChaserNames = set()
     ChaserArgs = {}
 
     def __init__(self, factoryContext, *args, **kwargs):
         super(exportChaserTest, self).__init__(factoryContext, *args, **kwargs)
-        exportChaserTest.ChaserName = factoryContext.GetJobArgs().getChaserNames()[0] 
-        exportChaserTest.ChaserArgs = factoryContext.GetJobArgs().getChaserArgs('test')
+        exportChaserTest.ChaserNames = factoryContext.GetJobArgs().chaserNames
+        exportChaserTest.ChaserArgs = factoryContext.GetJobArgs().allChaserArgs['test']
 
     def ExportDefault(self):
         exportChaserTest.ExportDefaultCalled = True
@@ -82,7 +82,7 @@ class testExportChaser(unittest.TestCase):
         self.assertTrue(exportChaserTest.ExportFrameCalled)
         self.assertTrue(exportChaserTest.PostExportCalled)
         self.assertFalse(exportChaserTest.NotCalled)
-        self.assertEqual(exportChaserTest.ChaserName,'test')
+        self.assertTrue('test' in exportChaserTest.ChaserNames)
         self.assertEqual(exportChaserTest.ChaserArgs,{'bar': 'ometer', 'foo': 'tball'})
 
 if __name__ == '__main__':

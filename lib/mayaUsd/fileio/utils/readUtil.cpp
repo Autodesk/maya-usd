@@ -722,23 +722,33 @@ bool UsdMayaReadUtil::SetMayaAttr(
             ok = true;
         }
     } else if (newValue.IsHolding<GfVec2d>()) {
+        GfVec2d        v = newValue.Get<GfVec2d>();
+        MFnNumericData data;
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Double)) {
-            GfVec2d        v = newValue.Get<GfVec2d>();
-            MFnNumericData data;
-            MObject        dataObj = data.create(MFnNumericData::k2Double);
+            MObject dataObj = data.create(MFnNumericData::k2Double);
             data.setData2Double(v[0], v[1]);
+            modifier.newPlugValue(attrPlug, dataObj);
+            ok = true;
+        } else if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Float)) {
+            MObject dataObj = data.create(MFnNumericData::k2Float);
+            data.setData2Float(v[0], v[1]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
     } else if (newValue.IsHolding<GfVec3d>()) {
+        GfVec3d v = newValue.Get<GfVec3d>();
+        if (unlinearizeColors) {
+            v = _ConvertVec(attrPlug, v);
+        }
+        MFnNumericData data;
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Double)) {
-            GfVec3d v = newValue.Get<GfVec3d>();
-            if (unlinearizeColors) {
-                v = _ConvertVec(attrPlug, v);
-            }
-            MFnNumericData data;
-            MObject        dataObj = data.create(MFnNumericData::k3Double);
+            MObject dataObj = data.create(MFnNumericData::k3Double);
             data.setData3Double(v[0], v[1], v[2]);
+            modifier.newPlugValue(attrPlug, dataObj);
+            ok = true;
+        } else if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Float)) {
+            MObject dataObj = data.create(MFnNumericData::k3Float);
+            data.setData3Float(v[0], v[1], v[2]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }

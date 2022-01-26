@@ -25,6 +25,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
+    TF_WRAP(SparseValueWriter);
     TF_WRAP(Adaptor);
     TF_WRAP(BlockSceneModificationContext);
     TF_WRAP(ColorSpace);

@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include "wrapSparseValueWriter.h"
+
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/registryHelper.h>
@@ -77,16 +79,23 @@ public:
     }
 
     bool default_CopyToPrim(
-        const UsdPrim&             prim,
-        const UsdTimeCode&         usdTime,
-        UsdUtilsSparseValueWriter* valueWriter) const
+        const UsdPrim&              prim,
+        const UsdTimeCode&          usdTime,
+        MayaUsdLibSparseValueWriter valueWriter) const
     {
-        return base_t::CopyToPrim(prim, usdTime, valueWriter);
+        return base_t::CopyToPrim(prim, usdTime, valueWriter.Get());
     }
     bool CopyToPrim(
         const UsdPrim&             prim,
         const UsdTimeCode&         usdTime,
         UsdUtilsSparseValueWriter* valueWriter) const override
+    {
+        return python_CopyToPrim(prim, usdTime, MayaUsdLibSparseValueWriter(valueWriter));
+    }
+    virtual bool python_CopyToPrim(
+        const UsdPrim&              prim,
+        const UsdTimeCode&          usdTime,
+        MayaUsdLibSparseValueWriter valueWriter) const
     {
         return this->template CallVirtual<bool>("CopyToPrim", &This::default_CopyToPrim)(
             prim, usdTime, valueWriter);
@@ -106,6 +115,16 @@ public:
     {
         return this->template CallVirtual<bool>(
             "CanAdaptForExport", &This::default_CanAdaptForExport)(args);
+    }
+
+    bool default_CanAdaptForImport(const UsdMayaJobImportArgs& args) const
+    {
+        return base_t::CanAdaptForImport(args);
+    }
+    bool CanAdaptForImport(const UsdMayaJobImportArgs& args) const override
+    {
+        return this->template CallVirtual<bool>(
+            "CanAdaptForImport", &This::default_CanAdaptForImport)(args);
     }
 
     bool default_ApplySchema(MDGModifier& modifier) { return base_t::ApplySchema(modifier); }
@@ -170,75 +189,6 @@ public:
         return default_UnapplySchema(modifier);
     }
 
-    TfTokenVector default_GetAuthoredAttributeNames() const
-    {
-        return base_t::GetAuthoredAttributeNames();
-    }
-    TfTokenVector GetAuthoredAttributeNames() const override
-    {
-        return this->template CallVirtual<TfTokenVector>(
-            "GetAuthoredAttributeNames", &This::default_GetAuthoredAttributeNames)();
-    }
-
-    UsdMayaAttributeAdaptor default_GetAttribute(const TfToken& attrName) const
-    {
-        return base_t::GetAttribute(attrName);
-    }
-    UsdMayaAttributeAdaptor GetAttribute(const TfToken& attrName) const override
-    {
-        return this->template CallVirtual<UsdMayaAttributeAdaptor>(
-            "GetAttribute", &This::default_GetAttribute)(attrName);
-    }
-
-    UsdMayaAttributeAdaptor default_CreateAttribute(const TfToken& attrName, MDGModifier& modifier)
-    {
-        return base_t::CreateAttribute(attrName, modifier);
-    }
-    UsdMayaAttributeAdaptor CreateAttribute(const TfToken& attrName, MDGModifier& modifier) override
-    {
-        // Not using TfPolymorphic::CallVirtual. See ApplySchema(MDGModifier&) above for details.
-        TfPyLock pyLock;
-        auto     pyOverride = this->GetOverride("CreateAttribute");
-        if (pyOverride) {
-            // Do *not* call through if there's an active python exception.
-            if (!PyErr_Occurred()) {
-                try {
-                    return boost::python::call<UsdMayaAttributeAdaptor>(
-                        pyOverride.ptr(), attrName, modifier);
-                } catch (boost::python::error_already_set const&) {
-                    // Convert any exception to TF_ERRORs.
-                    TfPyConvertPythonExceptionToTfErrors();
-                    PyErr_Clear();
-                }
-            }
-        }
-        return default_CreateAttribute(attrName, modifier);
-    }
-
-    void default_RemoveAttribute(const TfToken& attrName, MDGModifier& modifier)
-    {
-        base_t::RemoveAttribute(attrName, modifier);
-    }
-    void RemoveAttribute(const TfToken& attrName, MDGModifier& modifier) override
-    {
-        // Not using TfPolymorphic::CallVirtual. See ApplySchema(MDGModifier&) above for details.
-        TfPyLock pyLock;
-        auto     pyOverride = this->GetOverride("RemoveAttribute");
-        if (pyOverride) {
-            // Do *not* call through if there's an active python exception.
-            if (!PyErr_Occurred()) {
-                try {
-                    return boost::python::call<void>(pyOverride.ptr(), attrName, modifier);
-                } catch (boost::python::error_already_set const&) {
-                    // Convert any exception to TF_ERRORs.
-                    TfPyConvertPythonExceptionToTfErrors();
-                    PyErr_Clear();
-                }
-            }
-        }
-        return default_RemoveAttribute(attrName, modifier);
-    }
-
     MObject default_GetMayaObjectForSchema() const { return base_t::GetMayaObjectForSchema(); }
     MObject GetMayaObjectForSchema() const override
     {
@@ -263,7 +213,7 @@ public:
     TfTokenVector GetAdaptedAttributeNames() const override
     {
         return this->template CallVirtual<TfTokenVector>(
-            "TfTokenVector", &This::default_GetAdaptedAttributeNames)();
+            "GetAdaptedAttributeNames", &This::default_GetAdaptedAttributeNames)();
     }
 
     static void Register(
@@ -286,24 +236,29 @@ public:
             },
             true);
     }
+
+    MObject _GetMayaObject() const { return _handle.object(); }
 };
 
 void wrapSchemaApiAdaptor()
 {
     typedef UsdMayaSchemaApiAdaptor This;
 
-    boost::python::class_<SchemaApiAdaptorWrapper, boost::noncopyable>(
-        "SchemaApiAdaptor", boost::python::no_init)
+    boost::python::class_<
+        SchemaApiAdaptorWrapper,
+        boost::python::bases<UsdMayaSchemaAdaptor>,
+        boost::noncopyable>("SchemaApiAdaptor", boost::python::no_init)
         .def("__init__", make_constructor(&SchemaApiAdaptorWrapper::New))
-
-        .def("CopyFromPrim", &This::CopyFromPrim, &SchemaApiAdaptorWrapper::default_CopyFromPrim)
-        .def("CopyToPrim", &This::CopyToPrim, &SchemaApiAdaptorWrapper::default_CopyToPrim)
 
         .def("CanAdapt", &This::CanAdapt, &SchemaApiAdaptorWrapper::default_CanAdapt)
         .def(
             "CanAdaptForExport",
             &This::CanAdaptForExport,
             &SchemaApiAdaptorWrapper::default_CanAdaptForExport)
+        .def(
+            "CanAdaptForImport",
+            &This::CanAdaptForImport,
+            &SchemaApiAdaptorWrapper::default_CanAdaptForImport)
         .def(
             "ApplySchema",
             (bool (This::*)(MDGModifier&)) & This::ApplySchema,
@@ -314,19 +269,6 @@ void wrapSchemaApiAdaptor()
                 & This::ApplySchema,
             &SchemaApiAdaptorWrapper::default_ApplySchemaForImport)
         .def("UnapplySchema", &This::UnapplySchema, &SchemaApiAdaptorWrapper::default_UnapplySchema)
-        .def(
-            "GetAuthoredAttributeNames",
-            &This::GetAuthoredAttributeNames,
-            &SchemaApiAdaptorWrapper::default_GetAuthoredAttributeNames)
-        .def("GetAttribute", &This::GetAttribute, &SchemaApiAdaptorWrapper::default_GetAttribute)
-        .def(
-            "CreateAttribute",
-            &This::CreateAttribute,
-            &SchemaApiAdaptorWrapper::default_CreateAttribute)
-        .def(
-            "RemoveAttribute",
-            &This::RemoveAttribute,
-            &SchemaApiAdaptorWrapper::default_RemoveAttribute)
         .def(
             "GetMayaObjectForSchema",
             &This::GetMayaObjectForSchema,
@@ -339,6 +281,12 @@ void wrapSchemaApiAdaptor()
             "GetAdaptedAttributeNames",
             &This::GetAdaptedAttributeNames,
             &SchemaApiAdaptorWrapper::default_GetAdaptedAttributeNames)
+        .def(
+            "CopyToPrim",
+            &SchemaApiAdaptorWrapper::python_CopyToPrim,
+            &SchemaApiAdaptorWrapper::default_CopyToPrim)
+        .def("CopyFromPrim", &This::CopyFromPrim, &SchemaApiAdaptorWrapper::default_CopyFromPrim)
         .def("Register", &SchemaApiAdaptorWrapper::Register)
-        .staticmethod("Register");
+        .staticmethod("Register")
+        .add_property("mayaObject", &SchemaApiAdaptorWrapper::_GetMayaObject);
 }
