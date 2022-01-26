@@ -61,7 +61,6 @@ global proc USDMenuProc(string $parent, string $obj)
         return;
         
     $obj = expandToSelection($obj);
-    print($obj);
     if (size($obj) != 0)
     {
         popupMenu -e -dai $parent;
