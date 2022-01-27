@@ -23,8 +23,17 @@ def getMayaUsdLibString(key):
     return getPluginResource('mayaUsdLib', key)
 
 def mayaUsdLibRegisterStrings():
+    # This function is called from the equivalent MEL proc
+    # with the same name. The strings registered here and all the
+    # ones registered from the MEL proc can be used in either
+    # MEL or python.
+
     # Any python strings from MayaUsd lib go here.
-    pass
+    register('kErrorGroupPrimExists', 'Group prim name "^1s" already exists under "^2s".')
+    register('kErrorCannotAddToProxyShape', 'Cannot add Maya Reference node to ProxyShape with VariantSet unless Group prim is used.')
+    register('kErrorMayaRefPrimExists', 'Maya Reference prim name "^1s" already exists under "^2s".')
+    register('kErrorCreatingGroupPrim', 'Could not create Group prim under "^1s".')
+    register('kErrorCreatingMayaRefPrim', 'Could not create MayaReference prim under "^1s".')
 
 def registerPluginResource(pluginId, stringId, resourceStr):
     '''See registerPluginResource.mel in Maya.

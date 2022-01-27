@@ -138,31 +138,39 @@ TEST(Transform, animationWithTransform)
     ASSERT_TRUE(status == MStatus::kSuccess);
     MString proxyName = cmdResults[0];
 
-    MString selectCommand
-        = "AL_usdmaya_ProxyShapeSelect -primPath \"/pCube1\" -proxy \"" + proxyName + "\"";
-    cmdResults.clear();
-    status = MGlobal::executeCommand(selectCommand, cmdResults, true);
-    ASSERT_TRUE(status == MStatus::kSuccess);
-    MString xformName = cmdResults[0];
-
-    MSelectionList sel;
-    sel.add(proxyName);
-    sel.add(xformName);
+    MSelectionList sl;
+    sl.add(proxyName);
     MDagPath proxyDagPath;
-    MDagPath xformDagPath;
-    sel.getDagPath(0, proxyDagPath);
-    sel.getDagPath(1, xformDagPath);
+    sl.getDagPath(0, proxyDagPath);
     MFnDagNode proxyMFn(proxyDagPath, &status);
-    ASSERT_TRUE(status == MStatus::kSuccess);
-    MFnDagNode xformMFn(xformDagPath, &status);
     ASSERT_TRUE(status == MStatus::kSuccess);
 
     auto proxy = dynamic_cast<ProxyShape*>(proxyMFn.userNode(&status));
     ASSERT_TRUE(status == MStatus::kSuccess);
-
     auto stage = proxy->getUsdStage();
     ASSERT_TRUE(stage);
-    auto prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+
+    MString xformName("pCube1");
+    SdfPath xformPath(("/" + xformName).asChar());
+
+    MDagModifier modifier1;
+    MDGModifier  modifier2;
+    proxy->makeUsdTransformChain(
+        stage->GetPrimAtPath(xformPath),
+        modifier1,
+        AL::usdmaya::nodes::ProxyShape::kSelection,
+        &modifier2);
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier2.doIt());
+
+    MSelectionList sel;
+    sel.add(xformName);
+    MDagPath xformDagPath;
+    sel.getDagPath(0, xformDagPath);
+    MFnDagNode xformMFn(xformDagPath, &status);
+    ASSERT_TRUE(status == MStatus::kSuccess);
+
+    auto prim = stage->GetPrimAtPath(xformPath);
     ASSERT_TRUE(prim.IsValid());
 
     UsdGeomXformable xformable(prim);

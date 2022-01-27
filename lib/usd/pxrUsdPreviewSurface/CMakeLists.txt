@@ -30,6 +30,7 @@ add_library(${TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME} 
     PRIVATE
+        cpvColor.cpp
         usdPreviewSurface.cpp
         usdPreviewSurfacePlugin.cpp
         usdPreviewSurfaceReader.cpp

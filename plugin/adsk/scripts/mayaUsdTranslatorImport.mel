@@ -181,6 +181,10 @@ global proc int mayaUsdTranslatorImport (string $parent,
                 string $ann = `mayaUSDListJobContexts -ia $context`;
                 menuItem -l $context -ann $ann;
             }
+            if (size($contexts) == 0)
+            {
+                optionMenuGrp -e -vis 0 mayaUsdTranslator_jobContextPopup;
+            }
 
 
         if (`exists usdImportDialog`)

@@ -49,9 +49,11 @@ class mxCompositeExportTest(mayaUsdLib.ShaderWriter):
         7: "ND_dodge_color3",
         8: "ND_burn_color3",
     }
+    _ShadingModes = []
 
     @classmethod
     def CanExport(cls, exportArgs):
+        cls._AllMaterialConversions = exportArgs.allMaterialConversions
         if exportArgs.convertMaterialsTo == "MaterialX":
             return mayaUsdLib.ShaderWriter.ContextSupport.Supported
         else:
@@ -100,7 +102,7 @@ class mxCompositeExportTest(mayaUsdLib.ShaderWriter):
                         mayaPlug, usdInput, usdTime, self._GetSparseValueWriter())
 
         except Exception as e:
-            # Quite usefull to debug errors in a Python callback
+            # Quite useful to debug errors in a Python callback
             print('Write() - Error: %s' % str(e))
 
     def GetShadingAttributeNameForMayaAttrName(self, mayaAttrName):
@@ -284,6 +286,7 @@ class testUsdExportMaterialX(unittest.TestCase):
         cnxTuple = input.GetConnectedSource()
         self.assertTrue(cnxTuple)
         self.assertEqual(cnxTuple[0].GetPrim().GetName(), "MayaSwizzle_file2_a")
+        self.assertTrue("MaterialX" in mxCompositeExportTest._AllMaterialConversions)
 
 
 if __name__ == '__main__':
