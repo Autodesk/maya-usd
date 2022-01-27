@@ -1539,7 +1539,7 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const char* className)
 #endif
 
     // In case of any failure, return the default color
-    static const MColor kDefaultLeadColor(0.351f, 5.519f, 0.408f, 1.0f);
+    static const MColor kDefaultLeadColor(0.056f, 1.0f, 0.366f, 1.0f);
     static const MColor kDefaultActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     return className ? kDefaultActiveColor : kDefaultLeadColor;
