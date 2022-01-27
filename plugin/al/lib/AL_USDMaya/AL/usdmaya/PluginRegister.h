@@ -257,9 +257,6 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePrintRefCountState);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ChangeVariant);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ActivatePrim);
-    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
-    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
-    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
@@ -441,9 +438,6 @@ template <typename AFnPlugin> MStatus unregisterPlugin(AFnPlugin& plugin)
 
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
     AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
-    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
-    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
-    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ActivatePrim);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ChangeVariant);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);

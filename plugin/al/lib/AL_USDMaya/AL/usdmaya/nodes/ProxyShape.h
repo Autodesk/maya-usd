@@ -602,22 +602,6 @@ public:
     AL_USDMAYA_PUBLIC
     SdfPathHashSet& selectedPaths();
 
-    /// \brief  Performs a selection operation on this node. Intended for use by the
-    /// ProxyShapeSelect command only \param  helper provides the arguments to the selection system,
-    /// and stores the internal proxy shape state
-    ///         changes that need to be done/undone
-    /// \param  orderedPaths provides the original (deduplicated) input paths, in order; provided
-    /// just so that the
-    ///         selection commands will return results in the same order they were provided - this
-    ///         is useful so that, if the user does, ie, "AL_usdmaya_ProxyShapeSelect -pp /foo/bar
-    ///         -pp /some/thing -proxy myProxyShape",
-    //          they will get as the result of the command, ["|proxyRoot|foo|bar",
-    //          "|proxyRoot|some|thing"], and be able to know what input SdfPath corresponds to what
-    //          ouptut maya path
-    /// \return true if the operation succeeded
-    AL_USDMAYA_PUBLIC
-    bool doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths);
-
     //--------------------------------------------------------------------------------------------------------------------
     /// \name   UsdImaging
     //--------------------------------------------------------------------------------------------------------------------
@@ -1067,7 +1051,6 @@ private:
     TfNotice::Key                m_editTargetChanged;
     TfNotice::Key                m_transactionNoticeKey;
 
-    MCallbackId                                m_onSelectionChanged = 0;
     SdfPathVector                              m_excludedGeometry;
     SdfPathVector                              m_excludedTaggedGeometry;
     proxy::LockManager                         m_lockManager;
