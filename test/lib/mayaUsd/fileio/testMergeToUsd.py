@@ -96,6 +96,11 @@ class MergeToUsdTestCase(unittest.TestCase):
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
 
+        # Edit will re-allocate anything that was under pulled prim due to deactivation
+        # Grab new references for /A/B prim
+        bUsdPrim = mayaUsd.ufe.ufePathToPrim(bUsdUfePathStr)
+        bXlateOp = UsdGeom.Xformable(bUsdPrim).GetOrderedXformOps()[0]
+        
         # Check that edits have been preserved in USD.
         for (usdUfePathStr, mayaMatrix, xlateOp) in \
             zip([aUsdUfePathStr, bUsdUfePathStr], [aMayaMatrix, bMayaMatrix], 
@@ -158,6 +163,11 @@ class MergeToUsdTestCase(unittest.TestCase):
         cmds.mayaUsdMergeToUsd(aMayaPathStr)
 
         def verifyMergeToUsd():
+            # Edit will re-allocate anything that was under pulled prim due to deactivation
+            # Grab new references for /A/B prim
+            bUsdPrim = mayaUsd.ufe.ufePathToPrim(bUsdUfePathStr)
+            bXlateOp = UsdGeom.Xformable(bUsdPrim).GetOrderedXformOps()[0]
+
             # Check that edits have been preserved in USD.
             for (usdUfePathStr, mayaMatrix, xlateOp) in \
                 zip([aUsdUfePathStr, bUsdUfePathStr], [aMayaMatrix, bMayaMatrix], 
