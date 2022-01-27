@@ -160,7 +160,7 @@ static const std::vector<std::string> kSchemaNiceNames = {
 // clang-format on
 #endif
 
-//! \brief Change the cursor to wait state when start() is called and restore it on destruction.
+//! \brief Change the cursor to wait state on construction and restore it on destruction.
 struct WaitCursor
 {
     WaitCursor() { MGlobal::executeCommand("waitCursor -state 1"); }
