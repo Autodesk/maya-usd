@@ -161,22 +161,10 @@ static const std::vector<std::string> kSchemaNiceNames = {
 #endif
 
 //! \brief Change the cursor to wait state when start() is called and restore it on destruction.
-struct MWaitCursor
+struct WaitCursor
 {
-    bool _started { false };
-
-    MWaitCursor() = default;
-    void start()
-    {
-        MGlobal::executeCommand("waitCursor -state 1");
-        _started = true;
-    }
-    ~MWaitCursor()
-    {
-        if (_started)
-            MGlobal::executeCommand("waitCursor -state 0");
-        _started = false;
-    }
+    WaitCursor() { MGlobal::executeCommand("waitCursor -state 1"); }
+    ~WaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
 };
 
 //! \brief Undoable command for loading a USD prim.
@@ -871,8 +859,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MString script;
         script.format(
             "^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
-        MWaitCursor wait;
-        wait.start();
+        WaitCursor wait;
         MGlobal::executeCommand(script, true, true);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
@@ -880,8 +867,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             "^1s \"^2s\" \"|world\"",
             DuplicateCommand::commandName,
             Ufe::PathString::string(path()).c_str());
-        MWaitCursor wait;
-        wait.start();
+        WaitCursor wait;
         MGlobal::executeCommand(script, true, true);
     } else if (itemPath[0] == kAddMayaReferenceItem) {
         MString script;
