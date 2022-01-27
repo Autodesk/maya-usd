@@ -29,6 +29,7 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/traverseLayer.h>
+#include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -123,18 +124,6 @@ Ufe::Path usdToMaya(const Ufe::Path& usdPath)
     return Ufe::PathString::path(dagPathStr);
 }
 
-SdfPath ufeToSdfPath(const Ufe::Path& usdPath)
-{
-    auto segments = usdPath.getSegments();
-
-    // Can be only a gateway node
-    if (segments.size() <= 1) {
-        return {};
-    }
-
-    return SdfPath(segments[1].string());
-}
-
 SdfPath makeDstPath(const SdfPath& dstRootParentPath, const SdfPath& srcPath)
 {
     auto relativeSrcPath = srcPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
@@ -226,27 +215,14 @@ void removePullInformation(const Ufe::Path& ufePulledPath)
 //
 bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
-    auto              proxyShape = MayaUsd::ufe::getProxyShape(ufePulledPath);
-    MStatus           status;
-    MFnDependencyNode depNode(proxyShape->thisMObject(), &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
 
-    MPlug excludePrimPathsPlug
-        = depNode.findPlug(MayaUsdProxyShapeBase::excludePrimPathsAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    auto stage = prim.GetStage();
+    if (!stage)
+        return false;
 
-    MString excludePrimPathsStr;
-    status = excludePrimPathsPlug.getValue(excludePrimPathsStr);
-    std::vector<std::string> excludePrimPaths = TfStringTokenize(excludePrimPathsStr.asChar(), ",");
-
-    std::string sdfPathStr = ufeToSdfPath(ufePulledPath).GetText();
-    if (std::find(excludePrimPaths.begin(), excludePrimPaths.end(), sdfPathStr)
-        != excludePrimPaths.end())
-        return true;
-
-    excludePrimPaths.push_back(sdfPathStr);
-    excludePrimPathsStr = TfStringJoin(excludePrimPaths, ",").c_str();
-    excludePrimPathsPlug.setValue(excludePrimPathsStr);
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    prim.SetActive(false);
 
     return true;
 }
@@ -255,29 +231,21 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 //
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
-    auto        proxyShape = MayaUsd::ufe::getProxyShape(ufePulledPath);
-    auto        prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    std::string sdfPathStr = prim.GetPath().GetText();
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
 
-    MStatus           status;
-    MFnDependencyNode depNode(proxyShape->thisMObject(), &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    auto stage = prim.GetStage();
+    if (!stage)
+        return false;
 
-    MPlug excludePrimPathsPlug
-        = depNode.findPlug(MayaUsdProxyShapeBase::excludePrimPathsAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    SdfLayerHandle sessionLayer = stage->GetSessionLayer();
+    UsdEditContext editContext(stage, sessionLayer);
 
-    MString excludePrimPathsStr;
-    status = excludePrimPathsPlug.getValue(excludePrimPathsStr);
-    std::vector<std::string> excludePrimPaths = TfStringTokenize(excludePrimPathsStr.asChar(), ",");
+    // Cleanup the field and potentially empty over
+    prim.ClearActive();
+    SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    if (sessionLayer && primSpec)
+        sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
 
-    auto foundIt = std::find(excludePrimPaths.begin(), excludePrimPaths.end(), sdfPathStr);
-    if (foundIt == excludePrimPaths.end())
-        return true;
-
-    excludePrimPaths.erase(foundIt);
-    excludePrimPathsStr = TfStringJoin(excludePrimPaths, ",").c_str();
-    excludePrimPathsPlug.setValue(excludePrimPathsStr);
     return true;
 }
 
@@ -537,34 +505,6 @@ PushCustomizeSrc pushExport(
     std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc) = usdPathToDagPathMap;
 
     return pushCustomizeSrc;
-}
-
-void removePullInfoAndExclusion(
-    const Ufe::Path&                 ufePulledPath,
-    const MDagPath&                  mayaDagPath,
-    const UsdMayaPrimUpdaterContext& context)
-{
-    const bool isCopy = context.GetArgs()._copyOperation;
-    if (isCopy)
-        return;
-
-    FunctionUndoItem::execute(
-        "Merge to Maya pull info removal",
-        [ufePulledPath]() {
-            removePullInformation(ufePulledPath);
-            return true;
-        },
-        [ufePulledPath, mayaDagPath]() {
-            return writePullInformation(ufePulledPath, mayaDagPath);
-        });
-
-    FunctionUndoItem::execute(
-        "Merge to Maya rendering inclusion",
-        [ufePulledPath]() {
-            removeExcludeFromRendering(ufePulledPath);
-            return true;
-        },
-        [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); });
 }
 
 //------------------------------------------------------------------------------
@@ -856,12 +796,29 @@ bool PrimUpdaterManager::mergeToUsd(
         ctxArgs,
         std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
 
+    if (!isCopy) {
+        FunctionUndoItem::execute(
+            "Merge to Maya rendering inclusion",
+            [pulledPath]() {
+                removeExcludeFromRendering(pulledPath);
+                return true;
+            },
+            [pulledPath]() { return addExcludeFromRendering(pulledPath); });
+    }
+
     if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
         return false;
     }
 
-    // Remove the pull information and node exclusion.
-    removePullInfoAndExclusion(pulledPath, mayaDagPath, context);
+    if (!isCopy) {
+        FunctionUndoItem::execute(
+            "Merge to Maya pull info removal",
+            [pulledPath]() {
+                removePullInformation(pulledPath);
+                return true;
+            },
+            [pulledPath, mayaDagPath]() { return writePullInformation(pulledPath, mayaDagPath); });
+    }
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);

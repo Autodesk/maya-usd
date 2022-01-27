@@ -98,7 +98,8 @@ public:
 
 private:
     const PXR_NS::UsdPrim& getUsdRootPrim() const;
-    Ufe::SceneItemList     createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range) const;
+    Ufe::SceneItemList
+    createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range, bool filterInactive) const;
 
 private:
     Ufe::SceneItem::Ptr        fItem;
