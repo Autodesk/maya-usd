@@ -625,6 +625,57 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
     }
 }
 
+global proc showPushBackToUSDOptions()
+{
+    string $form = `setParent -q`;
+
+    string $formName = `formLayout -e -width 200 $form`;
+
+    mayaUsdTranslatorExport($formName, "post", "", "");
+
+    string $mergeText = getMayaUsdString("kMergeButton");
+    string $cancelText = getMayaUsdString("kButtonCancel");
+    string $bMerge   = `button -l $mergeText -c ("layoutDialog -dismiss \"Merge\"")`;
+    string $bCancel = `button -l $cancelText -c "layoutDialog -dismiss \"Cancel\""`;
+
+    int $spacer = 10;
+    int $edge   = 20;
+
+    formLayout -edit
+        -attachNone            $bCancel  "top"
+        -attachNone            $bCancel  "left"
+        -attachForm            $bCancel  "bottom" $edge
+        -attachForm            $bCancel  "right"  $edge
+
+        -attachNone            $bMerge   "top"
+        -attachNone            $bMerge   "left"
+        -attachForm            $bMerge   "bottom"  $edge
+        -attachControl         $bMerge   "right"   $spacer $bCancel
+    $form;
+}
+
+global proc mayaUsdMenu_pushBackToUSDOptions(string $obj)
+{
+    if (!hasPrimUpdater())
+        return;
+
+    if (size($obj) == 0) {
+        string $sel[] = `ls -sl`;
+        if (size($sel)) {
+            $obj = $sel[0];
+        }
+    }
+    if (size($obj)) {
+        // TODO: show options.
+        string $dlgTitle = getMayaUsdString("kMergeToUSDOptionsTitle");
+        string $dlgReturn = `layoutDialog -ui "showPushBackToUSDOptions" -title $dlgTitle`;
+        if ("Merge" == $dlgReturn) {
+            mayaUsdMergeToUsd -exportOptions "shadingMode=none" $obj;
+        }
+    }
+}
+
+
 global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
 {
     if (!hasPrimUpdater())
@@ -639,7 +690,8 @@ global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
     string $objLong[] = `ls -l $obj`;
     string $proxyLong[] = `ls -l $proxy`;
     if (size($objLong) && size($proxyLong)) {
-        mayaUsdDuplicate $objLong[0] $proxyLong[0];
+        // TODO: show options.
+        mayaUsdDuplicate -exportOptions "shadingMode=none" $objLong[0] $proxyLong[0];
     }
 }
 
@@ -652,8 +704,9 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
     if ($pulledObject != "") {
         string $tmp = getMayaUsdString("kMayaRefMergeEdits");
         string $pushback = `menuItem -label $tmp -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $pulledObject)`;
+        menuItem -insertAfter $pushback -optionBox true -command ("mayaUsdMenu_pushBackToUSDOptions \"" + $pulledObject + "\"");
         
-        string $tmp = getMayaUsdString("kMayaRefDiscardEdits");
+        $tmp = getMayaUsdString("kMayaRefDiscardEdits");
         string $pushclear = `menuItem -label $tmp -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $pulledObject)`;
         
         menuItem -divider true -insertAfter $pushclear;

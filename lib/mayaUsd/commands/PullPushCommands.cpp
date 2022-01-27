@@ -15,7 +15,9 @@
 //
 #include "PullPushCommands.h"
 
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemRecorder.h>
 #include <mayaUsd/utils/util.h>
@@ -33,6 +35,9 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 namespace {
+
+static constexpr auto kExportOptionsFlag = "exo";
+static constexpr auto kExportOptionsFlagLong = "exportOptions";
 
 // Reports an error to the Maya scripting console.
 void reportError(const MString& errorString) { MGlobal::displayError(errorString); }
@@ -118,6 +123,14 @@ MStatus parseDagPathArg(const MArgParser& argParser, int index, MDagPath& output
         return status;
 
     return MDagPath::getAPathTo(obj, outputDagPath);
+}
+
+MString parseTextArg(const MArgDatabase& argData, const char* flag, MString defaultValue)
+{
+    MString value = defaultValue;
+    if (argData.isFlagSet(flag))
+        argData.getFlagArgument(flag, 0, value);
+    return value;
 }
 
 } // namespace
@@ -207,7 +220,12 @@ void* MergeToUsdCommand::creator()
 }
 
 // MPxCommand API to register the command syntax.
-MSyntax MergeToUsdCommand::createSyntax() { return createSyntaxWithUfeArgs(1); }
+MSyntax MergeToUsdCommand::createSyntax()
+{
+    MSyntax syntax = createSyntaxWithUfeArgs(1);
+    syntax.addFlag(kExportOptionsFlag, kExportOptionsFlagLong, MSyntax::kString);
+    return syntax;
+}
 
 // MPxCommand API to execute the command.
 MStatus MergeToUsdCommand::doIt(const MArgList& argList)
@@ -215,6 +233,8 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     clearResult();
 
     setCommandString(commandName);
+
+    PXR_NS::VtDictionary userArgs;
 
     MStatus    status = MS::kSuccess;
     MArgParser argParser(syntax(), argList, &status);
@@ -236,12 +256,24 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPulledPath))
         return reportError(MS::kInvalidParameter);
 
+    MArgDatabase argData(syntax(), argList, &status);
+    if (status != MS::kSuccess)
+        return reportError(status);
+
+    const MString exportOptions = parseTextArg(argData, kExportOptionsFlag, "");
+    if (exportOptions.length() > 0) {
+        status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
+            exportOptions, &userArgs, nullptr);
+        if (status != MS::kSuccess)
+            return status;
+    }
+
     // Scope the undo item recording so we can undo on failure.
     {
         OpUndoItemRecorder undoRecorder(fUndoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        status = manager.mergeToUsd(fDagNode, fPulledPath) ? MS::kSuccess : MS::kFailure;
+        status = manager.mergeToUsd(fDagNode, fPulledPath, userArgs) ? MS::kSuccess : MS::kFailure;
     }
 
     // Undo potentially partially-made merge-to-USD on failure.
@@ -325,7 +357,12 @@ void* DuplicateCommand::creator()
 }
 
 // MPxCommand API to register the command syntax.
-MSyntax DuplicateCommand::createSyntax() { return createSyntaxWithUfeArgs(2); }
+MSyntax DuplicateCommand::createSyntax()
+{
+    MSyntax syntax = createSyntaxWithUfeArgs(2);
+    syntax.addFlag(kExportOptionsFlag, kExportOptionsFlagLong, MSyntax::kBoolean);
+    return syntax;
+}
 
 // MPxCommand API to execute the command.
 MStatus DuplicateCommand::doIt(const MArgList& argList)
@@ -333,6 +370,8 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     clearResult();
 
     setCommandString(commandName);
+
+    PXR_NS::VtDictionary userArgs;
 
     MStatus    status = MS::kSuccess;
     MArgParser argParser(syntax(), argList, &status);
@@ -347,12 +386,24 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
+    MArgDatabase argData(syntax(), argList, &status);
+    if (status != MS::kSuccess)
+        return reportError(status);
+
+    const MString exportOptions = parseTextArg(argData, kExportOptionsFlag, "");
+    if (exportOptions.length() > 0) {
+        status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
+            exportOptions, &userArgs, nullptr);
+        if (status != MS::kSuccess)
+            return status;
+    }
+
     // Scope the undo item recording so we can undo on failure.
     {
         OpUndoItemRecorder undoRecorder(fUndoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        status = manager.duplicate(fSrcPath, fDstPath) ? MS::kSuccess : MS::kFailure;
+        status = manager.duplicate(fSrcPath, fDstPath, userArgs) ? MS::kSuccess : MS::kFailure;
     }
 
     // Undo potentially partially-made duplicate on failure.
