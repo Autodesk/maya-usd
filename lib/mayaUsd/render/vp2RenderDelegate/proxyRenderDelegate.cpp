@@ -1502,19 +1502,34 @@ GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
 }
 
 //! \brief
-MColor ProxyRenderDelegate::GetSelectionHighlightColor(const char* className)
+MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
 {
-    // Query display colors from Maya Command Engine only starting from Maya 2023 because the
-    // function MColorPickerUtilities::applyViewTransform is supported only in that case
-#if MAYA_API_VERSION >= 20230000
+    static const MColor kDefaultLeadColor(0.056f, 1.0f, 0.366f, 1.0f);
+    static const MColor kDefaultActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    // Prepare to construct the query command.
+    bool        fromPalette = true;
+    const char* queryName = "unsupported";
+    if (className.IsEmpty()) {
+        fromPalette = false;
+        queryName = "lead";
+    } else if (className == HdPrimTypeTokens->mesh) {
+        fromPalette = false;
+        queryName = "polymeshActive";
+    } else if (className == HdPrimTypeTokens->basisCurves) {
+        queryName = "curve";
+    }
+
     // Construct the query command string.
     MString queryCommand;
-    if (className) {
+    if (fromPalette) {
         queryCommand = "int $index = `displayColor -q -active \"";
-        queryCommand += className;
+        queryCommand += queryName;
         queryCommand += "\"`; colorIndex -q $index;";
     } else {
-        queryCommand = "displayRGBColor -q \"lead\"";
+        queryCommand = "displayRGBColor -q \"";
+        queryCommand += queryName;
+        queryCommand += "\"";
     }
 
     // Query and return the selection color.
@@ -1524,25 +1539,31 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const char* className)
         MGlobal::executeCommand(queryCommand, colorResult);
 
         if (colorResult.length() == 3) {
-            // Since the "lead" color is returned in displace space,
-            // we need to convert it to rendering space.
             MColor color(colorResult[0], colorResult[1], colorResult[2]);
-            return className
-                ? color
-                : MColorPickerUtilities::applyViewTransform(color, MColorPickerUtilities::kInverse);
-        } else if (className) {
-            TF_WARN("Failed to obtain selection highlight color for class '%s'", className);
+
+            if (className.IsEmpty()) {
+                // The 'lead' color is returned in display space, so we need to convert it to
+                // rendering space. However, function MColorPickerUtilities::applyViewTransform
+                // is supported only starting from Maya 2023, so in opposite case we just return
+                // the default lead color.
+#if MAYA_API_VERSION >= 20230000
+                return MColorPickerUtilities::applyViewTransform(
+                    color, MColorPickerUtilities::kInverse);
+#else
+                return kDefaultLeadColor;
+#endif
+            } else {
+                return color;
+            }
         } else {
-            TF_WARN("Failed to obtain selection highlight color for lead objects");
+            TF_WARN(
+                "Failed to obtain selection highlight color for '%s' objects",
+                className.IsEmpty() ? "lead" : className.GetString().c_str());
         }
     }
-#endif
 
     // In case of any failure, return the default color
-    static const MColor kDefaultLeadColor(0.056f, 1.0f, 0.366f, 1.0f);
-    static const MColor kDefaultActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-    return className ? kDefaultActiveColor : kDefaultLeadColor;
+    return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
 }
 
 bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
