@@ -1506,7 +1506,7 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const char* className)
 {
     // Query display colors from Maya Command Engine only starting from Maya 2023 because the
     // function MColorPickerUtilities::applyViewTransform is supported only in that case
-#if MAYA_APP_VERSION >= 2023
+#if MAYA_API_VERSION >= 20230000
     // Construct the query command string.
     MString queryCommand;
     if (className) {
