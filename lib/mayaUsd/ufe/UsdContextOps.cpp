@@ -160,6 +160,13 @@ static const std::vector<std::string> kSchemaNiceNames = {
 // clang-format on
 #endif
 
+//! \brief Change the cursor to wait state on construction and restore it on destruction.
+struct WaitCursor
+{
+    WaitCursor() { MGlobal::executeCommand("waitCursor -state 1"); }
+    ~WaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
+};
+
 //! \brief Undoable command for loading a USD prim.
 class LoadUndoableCommand : public Ufe::UndoableCommand
 {
@@ -852,6 +859,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MString script;
         script.format(
             "^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
+        WaitCursor wait;
         MGlobal::executeCommand(script, true, true);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
@@ -859,6 +867,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             "^1s \"^2s\" \"|world\"",
             DuplicateCommand::commandName,
             Ufe::PathString::string(path()).c_str());
+        WaitCursor wait;
         MGlobal::executeCommand(script, true, true);
     } else if (itemPath[0] == kAddMayaReferenceItem) {
         MString script;
