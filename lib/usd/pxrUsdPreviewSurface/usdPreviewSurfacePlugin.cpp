@@ -15,6 +15,7 @@
 //
 #include "usdPreviewSurfacePlugin.h"
 
+#include "cpvColor.h"
 #include "usdPreviewSurface.h"
 #include "usdPreviewSurfaceReader.h"
 #include "usdPreviewSurfaceShadingNodeOverride.h"
@@ -37,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 TfToken::Set _registeredTypeNames;
-}
+} // namespace
 /* static */
 MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
     MFnPlugin&     plugin,
@@ -71,6 +72,24 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
         drawDbClassification, registrantId, PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
 
+    // Register CPV shader node
+    const MString cpvDrawClassify(CPVColor::drawClassification + CPVColor::name);
+    MString       cpvUserClassify(CPVColor::userClassification);
+    cpvUserClassify += cpvDrawClassify;
+
+    status = plugin.registerNode(
+        CPVColor::name,
+        CPVColor::id,
+        CPVColor::creator,
+        CPVColor::initialize,
+        MPxNode::kDependNode,
+        &cpvUserClassify);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::registerShadingNodeOverrideCreator(
+        cpvDrawClassify, registrantId, CPVColorShadingNodeOverride::creator);
+    CHECK_MSTATUS(status);
+
     return status;
 }
 
@@ -93,7 +112,13 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(
 
     deregisterFragments();
 
-    MStatus status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
+    MStatus status = plugin.deregisterNode(CPVColor::id);
+    CHECK_MSTATUS(status);
+    status = MHWRender::MDrawRegistry::deregisterShadingNodeOverrideCreator(
+        CPVColor::drawClassification + CPVColor::name, registrantId);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
         drawDbClassification, registrantId);
     CHECK_MSTATUS(status);
 
