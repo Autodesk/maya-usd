@@ -10,7 +10,7 @@ def Xform "World" (
     kind = "group"
 )
 {
-    def ALMayaReference "Skeleto1"
+    def ALMayaReference "Skeleton1"
     {
         string mayaNamespace = "rig"
         asset mayaReference = @UsdExportSkeletonWithoutBindPose.ma@
