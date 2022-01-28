@@ -653,7 +653,7 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
         string $tmp = getMayaUsdString("kMayaRefMergeEdits");
         string $pushback = `menuItem -label $tmp -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $pulledObject)`;
         
-        string $tmp = getMayaUsdString("kMayaRefDiscardEdits");
+        $tmp = getMayaUsdString("kMayaRefDiscardEdits");
         string $pushclear = `menuItem -label $tmp -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $pulledObject)`;
         
         menuItem -divider true -insertAfter $pushclear;
