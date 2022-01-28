@@ -18,7 +18,6 @@
 
 #include "abstractCommandHook.h"
 #include "dirtyLayersCountBadge.h"
-#include "generatedIconButton.h"
 #include "layerTreeModel.h"
 #include "layerTreeView.h"
 #include "qtUtils.h"
@@ -68,7 +67,7 @@ QString getDPIPixmapName(QString baseName)
 
 // setup a push button with DPI-appropriate regular, hover and pressed png in the
 // autodesk human interface guideline style
-static void setupButtonWithHIGBitmaps(QPushButton* button, QString baseName)
+static void setupButtonWithHIGBitmaps(QPushButton* button, const QString& baseName)
 {
     button->setFlat(true);
 
@@ -221,16 +220,21 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
     toolbar->setContentsMargins(margin, 0, 0, 0);
     auto buttonAlignment = Qt::AlignLeft | Qt::AlignRight;
 
-    auto addButton = [toolbar, buttonAlignment](const char* iconName, const QString& tooltip) {
-        auto icon = utils->createIcon(iconName);
-        auto button = new GeneratedIconButton(nullptr, icon);
-        button->setToolTip(tooltip);
-        toolbar->addWidget(button, 0, buttonAlignment);
-        return button;
-    };
+    auto addHIGButton
+        = [buttonSize, toolbar, buttonAlignment](const QString& iconName, const QString& tooltip) {
+              auto higButtonYOffset = DPIScale(4);
+              auto higBtn = new QPushButton();
+              higBtn->move(0, higButtonYOffset);
+              setupButtonWithHIGBitmaps(higBtn, iconName);
+              higBtn->setFixedSize(buttonSize, buttonSize);
+              higBtn->setToolTip(tooltip);
+              toolbar->addWidget(higBtn, 0, buttonAlignment);
+              return higBtn;
+          };
 
-    _buttons._newLayer = addButton(
-        ":/RS_create_layer.png", StringResources::getAsQString(StringResources::kAddNewLayer));
+    _buttons._newLayer = addHIGButton(
+        ":/UsdLayerEditor/LE_add_layer",
+        StringResources::getAsQString(StringResources::kAddNewLayer));
     // clicked callback
     connect(
         _buttons._newLayer,
@@ -256,8 +260,8 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
         this,
         &LayerEditorWidget::updateNewLayerButton);
 
-    _buttons._loadLayer = addButton(
-        ":/RS_import_layer.png",
+    _buttons._loadLayer = addHIGButton(
+        ":/UsdLayerEditor/LE_import_layer",
         StringResources::getAsQString(StringResources::kLoadExistingLayer));
     // clicked callback
     connect(
