@@ -222,10 +222,9 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
 
     auto addHIGButton =
         [buttonSize, toolbar, buttonAlignment](const QString& iconName, const QString& tooltip) {
-            auto saveButtonYOffset = DPIScale(4);
-            auto saveButtonSize = QSize(buttonSize + DPIScale(12), buttonSize + saveButtonYOffset);
+            auto higButtonYOffset = DPIScale(4);
             auto higBtn = new QPushButton();
-            higBtn->move(0, saveButtonYOffset);
+            higBtn->move(0, higButtonYOffset);
             setupButtonWithHIGBitmaps(higBtn, iconName);
             higBtn->setFixedSize(buttonSize, buttonSize);
             higBtn->setToolTip(tooltip);
