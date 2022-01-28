@@ -455,9 +455,9 @@ private:
     /// are destructed last. Hgi may be used during engine/delegate destruction.
     HgiUniquePtr                   _hgi;
     HdDriver                       _hgiDriver;
-    HdEngine                       _hdEngine;
     HdStRenderDelegate             _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
+    HdEngine                       _hdEngine;
 
     /// The root ID of the batch renderer itself, and the top of the path
     /// hierarchies for shape adapter delegates, one for the legacy viewport
