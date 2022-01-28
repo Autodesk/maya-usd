@@ -140,7 +140,8 @@ const MObject getMessageAttr()
 
 const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
 const TfToken UsdMayaTranslatorMayaReference::m_referenceName = TfToken("mayaReference");
-const TfToken UsdMayaTranslatorMayaReference::m_mergeNamespacesOnClash = TfToken("mergeNamespacesOnClash");
+const TfToken UsdMayaTranslatorMayaReference::m_mergeNamespacesOnClash
+    = TfToken("mergeNamespacesOnClash");
 
 MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     const UsdPrim& prim,
@@ -183,14 +184,16 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     //
     MStringArray createdNodes;
     MString      mergeNamespacesOnClashArg = mergeNamespacesOnClash ? "true" : "false";
-    MString      referenceCommand = MString("file"
-                                       " -reference"
-                                       " -returnNewNodes"
-                                       " -deferReference true"
-                                       " -mergeNamespacesOnClash " + mergeNamespacesOnClashArg +
-                                       " -ignoreVersion"
-                                       " -options \"v=0;\""
-                                       " -namespace \"")
+    MString      referenceCommand = MString(
+                                   "file"
+                                   " -reference"
+                                   " -returnNewNodes"
+                                   " -deferReference true"
+                                   " -mergeNamespacesOnClash "
+                                   + mergeNamespacesOnClashArg
+                                   + " -ignoreVersion"
+                                     " -options \"v=0;\""
+                                     " -namespace \"")
         + rigNamespaceM + "\" \"" + mayaReferencePath + "\"";
 
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
@@ -418,12 +421,13 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     // bring in the reference or it may have been imported or removed directly in maya.
     if (refNode.isNull()) {
         bool mergeNamespacesOnClash = false;
-        if (UsdAttribute mergeNamespacesOnClashAttribute = prim.GetAttribute(m_mergeNamespacesOnClash))
-        {
+        if (UsdAttribute mergeNamespacesOnClashAttribute
+            = prim.GetAttribute(m_mergeNamespacesOnClash)) {
             mergeNamespacesOnClashAttribute.Get(&mergeNamespacesOnClash);
         }
 
-        return LoadMayaReference(prim, parent, mayaReferencePath, rigNamespaceM, mergeNamespacesOnClash);
+        return LoadMayaReference(
+            prim, parent, mayaReferencePath, rigNamespaceM, mergeNamespacesOnClash);
     }
 
     if (status) {
