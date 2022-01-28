@@ -220,17 +220,17 @@ QLayout* LayerEditorWidget::setupLayout_toolbar()
     toolbar->setContentsMargins(margin, 0, 0, 0);
     auto buttonAlignment = Qt::AlignLeft | Qt::AlignRight;
 
-    auto addHIGButton =
-        [buttonSize, toolbar, buttonAlignment](const QString& iconName, const QString& tooltip) {
-            auto higButtonYOffset = DPIScale(4);
-            auto higBtn = new QPushButton();
-            higBtn->move(0, higButtonYOffset);
-            setupButtonWithHIGBitmaps(higBtn, iconName);
-            higBtn->setFixedSize(buttonSize, buttonSize);
-            higBtn->setToolTip(tooltip);
-            toolbar->addWidget(higBtn, 0, buttonAlignment);
-            return higBtn;
-        };
+    auto addHIGButton
+        = [buttonSize, toolbar, buttonAlignment](const QString& iconName, const QString& tooltip) {
+              auto higButtonYOffset = DPIScale(4);
+              auto higBtn = new QPushButton();
+              higBtn->move(0, higButtonYOffset);
+              setupButtonWithHIGBitmaps(higBtn, iconName);
+              higBtn->setFixedSize(buttonSize, buttonSize);
+              higBtn->setToolTip(tooltip);
+              toolbar->addWidget(higBtn, 0, buttonAlignment);
+              return higBtn;
+          };
 
     _buttons._newLayer = addHIGButton(
         ":/UsdLayerEditor/LE_add_layer",
