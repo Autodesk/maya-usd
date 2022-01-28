@@ -621,27 +621,52 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
         }
     }
     if (size($obj)) {
-        mayaUsdMergeToUsd $obj;
+        mayaUsdMergeToUsd -exportOptions "animation=0;shadingMode=none;exportSkels=0;exportSkin=0;exportBlendShapes=0" $obj;
     }
 }
 
-global proc showPushBackToUSDOptions()
+global string $mayaUsdMergeToUsdOptions = "";
+
+global proc mayaUsdPushBackToUSDReceiveExportOptions(string $exportOptions)
+{
+    global string $mayaUsdMergeToUsdOptions = "";
+    $mayaUsdMergeToUsdOptions = $exportOptions;
+}
+
+global proc mayaUsdPushBackToUSDOptionsAccepted()
+{
+    mayaUsdTranslatorExport("", "query=all;!output", "", "mayaUsdPushBackToUSDReceiveExportOptions");
+    layoutDialog -dismiss "Merge";
+}
+
+global proc mayaUsdShowPushBackToUSDOptions()
 {
     string $form = `setParent -q`;
 
-    string $formName = `formLayout -e -width 200 $form`;
+    formLayout -e -width 420 $form;
 
-    mayaUsdTranslatorExport($formName, "post", "", "");
+    string $subLayout = `columnLayout -adj true -parent $form "pushBackToUSDOptionsLayout"`;
+
+    setParent $subLayout;
+
+    mayaUsdTranslatorExport($subLayout, "post=all;!output", "animation=0;shadingMode=none;exportSkels=0;exportSkin=0;exportBlendShapes=0", "");
+
+    setParent $form;
 
     string $mergeText = getMayaUsdString("kMergeButton");
     string $cancelText = getMayaUsdString("kButtonCancel");
-    string $bMerge   = `button -l $mergeText -c ("layoutDialog -dismiss \"Merge\"")`;
+    string $bMerge   = `button -l $mergeText -c "mayaUsdPushBackToUSDOptionsAccepted()"`;
     string $bCancel = `button -l $cancelText -c "layoutDialog -dismiss \"Cancel\""`;
 
     int $spacer = 10;
     int $edge   = 20;
 
     formLayout -edit
+        -attachForm            $subLayout  "top" $edge
+        -attachForm            $subLayout  "left" $edge
+        -attachControl         $subLayout  "bottom" $edge $bCancel
+        -attachForm            $subLayout  "right"  $edge
+
         -attachNone            $bCancel  "top"
         -attachNone            $bCancel  "left"
         -attachForm            $bCancel  "bottom" $edge
@@ -666,11 +691,11 @@ global proc mayaUsdMenu_pushBackToUSDOptions(string $obj)
         }
     }
     if (size($obj)) {
-        // TODO: show options.
+        global string $mayaUsdMergeToUsdOptions = "";
         string $dlgTitle = getMayaUsdString("kMergeToUSDOptionsTitle");
-        string $dlgReturn = `layoutDialog -ui "showPushBackToUSDOptions" -title $dlgTitle`;
+        string $dlgReturn = `layoutDialog -ui "mayaUsdShowPushBackToUSDOptions" -title $dlgTitle`;
         if ("Merge" == $dlgReturn) {
-            mayaUsdMergeToUsd -exportOptions "shadingMode=none" $obj;
+            mayaUsdMergeToUsd -exportOptions $mayaUsdMergeToUsdOptions $obj;
         }
     }
 }
