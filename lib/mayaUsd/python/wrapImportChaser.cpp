@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include "pythonObjectRegistry.h"
+
 #include <mayaUsd/fileio/chaser/importChaser.h>
 #include <mayaUsd/fileio/chaser/importChaserRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
@@ -73,19 +75,93 @@ public:
     bool default_Undo() { return base_t::Undo(); }
     bool Undo() override { return this->CallVirtual<>("Undo", &This::default_Undo)(); }
 
-    static void Register(boost::python::object cl, const char* name)
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class FactoryFnWrapper : public UsdMayaPythonObjectRegistry
     {
-        UsdMayaImportChaserRegistry::GetInstance().RegisterFactory(
-            name,
-            [=](const UsdMayaImportChaserRegistry::FactoryContext& factoryContext) {
-                auto                  chaser = new ImportChaserWrapper();
-                TfPyLock              pyLock;
-                boost::python::object instance = cl(factoryContext, (uintptr_t)chaser);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), chaser);
-                return chaser;
-            },
-            true);
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest class registered.
+        UsdMayaImportChaser*
+        operator()(const UsdMayaImportChaserRegistry::FactoryContext& factoryContext)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return nullptr;
+            }
+            auto                  chaser = new ImportChaserWrapper();
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass(factoryContext, (uintptr_t)chaser);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), chaser);
+            return chaser;
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. It we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static UsdMayaImportChaserRegistry::FactoryFn
+        Register(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaTypeName));
+            if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
+                // Return a new factory function:
+                return FactoryFnWrapper { classIndex };
+            } else {
+                // We already registered a factory function for this purpose:
+                return nullptr;
+            }
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, mayaTypeName));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        FactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            // Is it a Python class:
+            if (!IsPythonClass(cl)) {
+                TfPyThrowRuntimeError("First argument must be a Python class");
+            }
+
+            auto nameAttr = cl.attr("__name__");
+            if (!nameAttr) {
+                TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
+            }
+
+            std::string key = boost::python::extract<std::string>(nameAttr);
+            key = key + "," + mayaTypeName + "," + ",ImportChaser";
+            return key;
+        }
+    };
+
+    static void Register(boost::python::object cl, const std::string& mayaTypeName)
+    {
+        UsdMayaImportChaserRegistry::FactoryFn fn = FactoryFnWrapper::Register(cl, mayaTypeName);
+        if (fn) {
+            UsdMayaImportChaserRegistry::GetInstance().RegisterFactory(
+                mayaTypeName.c_str(), fn, true);
+        }
+    }
+
+    static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+    {
+        FactoryFnWrapper::Unregister(cl, mayaTypeName);
     }
 };
 
@@ -93,7 +169,7 @@ public:
 void wrapImportChaserRegistryFactoryContext()
 {
     boost::python::class_<UsdMayaImportChaserRegistry::FactoryContext>(
-        "UsdMayaExportChaserRegistryFactoryContext", boost::python::no_init)
+        "UsdMayaImportChaserRegistryFactoryContext", boost::python::no_init)
         .def("GetStage", &UsdMayaImportChaserRegistry::FactoryContext::GetStage)
         .def(
             "GetImportedDagPaths",
@@ -121,5 +197,7 @@ void wrapImportChaser()
         .def("Redo", &This::Redo, &ImportChaserWrapper::default_Redo)
         .def("Undo", &This::Undo, &ImportChaserWrapper::default_Undo)
         .def("Register", &ImportChaserWrapper::Register)
-        .staticmethod("Register");
+        .staticmethod("Register")
+        .def("Unregister", &ImportChaserWrapper::Unregister)
+        .staticmethod("Unregister");
 }

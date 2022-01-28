@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include "pythonObjectRegistry.h"
 #include "wrapSparseValueWriter.h"
 
 #include <mayaUsd/fileio/primReaderArgs.h>
@@ -216,25 +217,109 @@ public:
             "GetAdaptedAttributeNames", &This::default_GetAdaptedAttributeNames)();
     }
 
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class AdaptorFactoryFnWrapper : public UsdMayaPythonObjectRegistry
+    {
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest class registered.
+        UsdMayaSchemaApiAdaptorPtr operator()(
+            const MObjectHandle&     object,
+            const TfToken&           schemaName,
+            const UsdPrimDefinition* schemaPrimDef)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return nullptr;
+            }
+            auto                  sptr = std::make_shared<This>(object, schemaName, schemaPrimDef);
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass((uintptr_t)&sptr);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), sptr.get());
+            return sptr;
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. It we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFn Register(
+            boost::python::object cl,
+            const std::string&    mayaType,
+            const std::string&    schemaApiName)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaType, schemaApiName));
+            if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
+                // Return a new factory function:
+                return AdaptorFactoryFnWrapper { classIndex };
+            } else {
+                // We already registered a factory function for this purpose:
+                return nullptr;
+            }
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(
+            boost::python::object cl,
+            const std::string&    mayaType,
+            const std::string&    schemaApiName)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, mayaType, schemaApiName));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        AdaptorFactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(
+            boost::python::object cl,
+            const std::string&    mayaType,
+            const std::string&    schemaApiName)
+        {
+            // Is it a Python class:
+            if (!IsPythonClass(cl)) {
+                TfPyThrowRuntimeError("First argument must be a Python class");
+            }
+
+            auto nameAttr = cl.attr("__name__");
+            if (!nameAttr) {
+                TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
+            }
+
+            std::string key = boost::python::extract<std::string>(nameAttr);
+            key = key + "," + mayaType + "," + schemaApiName + ",SchemaApiAdaptor";
+            return key;
+        }
+    };
+
     static void Register(
         boost::python::object cl,
         const std::string&    mayaType,
         const std::string&    schemaApiName)
     {
-        UsdMayaSchemaApiAdaptorRegistry::Register(
-            mayaType,
-            schemaApiName,
-            [=](const MObjectHandle&     object,
-                const TfToken&           schemaName,
-                const UsdPrimDefinition* schemaPrimDef) {
-                auto     sptr = std::make_shared<This>(object, schemaName, schemaPrimDef);
-                TfPyLock pyLock;
-                boost::python::object instance = cl((uintptr_t)&sptr);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), sptr.get());
-                return sptr;
-            },
-            true);
+        UsdMayaSchemaApiAdaptorRegistry::AdaptorFactoryFn fn
+            = AdaptorFactoryFnWrapper::Register(cl, mayaType, schemaApiName);
+        if (fn) {
+            UsdMayaSchemaApiAdaptorRegistry::Register(mayaType, schemaApiName, fn, true);
+        }
+    }
+
+    static void Unregister(
+        boost::python::object cl,
+        const std::string&    mayaType,
+        const std::string&    schemaApiName)
+    {
+        AdaptorFactoryFnWrapper::Unregister(cl, mayaType, schemaApiName);
     }
 
     MObject _GetMayaObject() const { return _handle.object(); }
@@ -288,5 +373,7 @@ void wrapSchemaApiAdaptor()
         .def("CopyFromPrim", &This::CopyFromPrim, &SchemaApiAdaptorWrapper::default_CopyFromPrim)
         .def("Register", &SchemaApiAdaptorWrapper::Register)
         .staticmethod("Register")
+        .def("Unregister", &SchemaApiAdaptorWrapper::Unregister)
+        .staticmethod("Unregister")
         .add_property("mayaObject", &SchemaApiAdaptorWrapper::_GetMayaObject);
 }

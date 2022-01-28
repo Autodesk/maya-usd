@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include "pythonObjectRegistry.h"
+
 #include <mayaUsd/fileio/primUpdater.h>
 #include <mayaUsd/fileio/primUpdaterContext.h>
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
@@ -117,27 +119,115 @@ public:
         return this->CallVirtual<bool>("pushEnd", &This::default_pushEnd)(context);
     }
 
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class FactoryFnWrapper : public UsdMayaPythonObjectRegistry
+    {
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest class registered.
+        UsdMayaPrimUpdaterSharedPtr operator()(const MFnDependencyNode& node, const Ufe::Path& path)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return nullptr;
+            }
+            auto                  primUpdater = std::make_shared<This>(node, path);
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass((uintptr_t)&primUpdater);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), primUpdater.get());
+            return primUpdater;
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. It we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn Register(
+            boost::python::object cl,
+            const std::string&    usdTypeName,
+            const std::string&    mayaType,
+            int                   sup)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, usdTypeName, mayaType, sup));
+            if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
+                // Return a new factory function:
+                return FactoryFnWrapper { classIndex };
+            } else {
+                // We already registered a factory function for this purpose:
+                return nullptr;
+            }
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(
+            boost::python::object cl,
+            const std::string&    usdTypeName,
+            const std::string&    mayaType,
+            int                   sup)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, usdTypeName, mayaType, sup));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        FactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(
+            boost::python::object cl,
+            const std::string&    usdTypeName,
+            const std::string&    mayaType,
+            int                   sup)
+        {
+            // Is it a Python class:
+            if (!IsPythonClass(cl)) {
+                TfPyThrowRuntimeError("First argument must be a Python class");
+            }
+
+            auto nameAttr = cl.attr("__name__");
+            if (!nameAttr) {
+                TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
+            }
+
+            std::string key = boost::python::extract<std::string>(nameAttr);
+            key = key + "," + usdTypeName + "," + mayaType + "," + std::to_string(sup)
+                + ",PrimUpdater";
+            return key;
+        }
+    };
+
+    static void Unregister(
+        boost::python::object cl,
+        const std::string&    usdTypeName,
+        const std::string&    mayaType,
+        int                   sup)
+    {
+        FactoryFnWrapper::Unregister(cl, usdTypeName, mayaType, sup);
+    }
+
     static void Register(
         boost::python::object cl,
         const std::string&    usdTypeName,
         const std::string&    mayaType,
         int                   sup)
     {
-        auto type = TfType::FindByName(usdTypeName);
+        UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn fn
+            = FactoryFnWrapper::Register(cl, usdTypeName, mayaType, sup);
+        if (fn) {
+            auto type = TfType::FindByName(usdTypeName);
 
-        UsdMayaPrimUpdaterRegistry::Register(
-            type,
-            mayaType,
-            UsdMayaPrimUpdater::Supports(sup),
-            [=](const MFnDependencyNode& node, const Ufe::Path& path) {
-                auto                  primUpdater = std::make_shared<This>(node, path);
-                TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)&primUpdater);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), primUpdater.get());
-                return primUpdater;
-            },
-            true);
+            UsdMayaPrimUpdaterRegistry::Register(
+                type, mayaType, UsdMayaPrimUpdater::Supports(sup), fn, true);
+        }
     }
 };
 
@@ -220,5 +310,7 @@ void wrapPrimUpdater()
         .def("isAnimated", &This::isAnimated)
         .staticmethod("isAnimated")
         .def("Register", &PrimUpdaterWrapper::Register)
-        .staticmethod("Register");
+        .staticmethod("Register")
+        .def("Unregister", &PrimUpdaterWrapper::Unregister)
+        .staticmethod("Unregister");
 }
