@@ -17,6 +17,7 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND PXR_VERSION GREATER_EQUAL 2008)
     # The point instance selection tests requires UsdImaging API version 14 or
     # later, which is only provided by core USD 20.08 or later.
     list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateCrashPointInstancesManipulation.py
         testVP2RenderDelegatePointInstanceSelection.py
         testVP2RenderDelegatePointInstancesPickMode.py
         testVP2RenderDelegatePrimPath.py
