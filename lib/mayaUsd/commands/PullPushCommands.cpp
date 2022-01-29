@@ -125,7 +125,7 @@ MStatus parseDagPathArg(const MArgParser& argParser, int index, MDagPath& output
     return MDagPath::getAPathTo(obj, outputDagPath);
 }
 
-MString parseTextArg(const MArgDatabase& argData, const char* flag, MString defaultValue)
+MString parseTextArg(const MArgDatabase& argData, const char* flag, const MString& defaultValue)
 {
     MString value = defaultValue;
     if (argData.isFlagSet(flag))

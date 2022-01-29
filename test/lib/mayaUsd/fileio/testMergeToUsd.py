@@ -355,7 +355,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         testDagPath, stage = mayaUtils.createProxyFromFile(testFile)
         usdCylPathString = testDagPath + ",/pCylinder1"
 
-        # Verify the orignal scene does not have a look (material) prim.
+        # Verify that the original scene does not have a look (material) prim.
         cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
         self.assertFalse(cylLooksPrim.IsValid())
 
@@ -368,7 +368,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         cylMayaPathStr = ufe.PathString.string(cylMayaPath)
         cmds.mayaUsdMergeToUsd(cylMayaPathStr)
 
-        # Verify the merge scene added a look (material) prim.
+        # Verify that the merged scene added a look (material) prim.
         cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
         self.assertTrue(cylLooksPrim.IsValid())
 
@@ -378,7 +378,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         # Merge back to USD with export options that disable materials.
         cmds.mayaUsdMergeToUsd(cylMayaPathStr, exportOptions='shadingMode=none')
 
-        # Verify the merge scene still does not have a look (material) prim.
+        # Verify that the merged scene still does not have a look (material) prim.
         cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
         self.assertFalse(cylLooksPrim.IsValid())
 
