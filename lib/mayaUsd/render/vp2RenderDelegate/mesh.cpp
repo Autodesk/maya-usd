@@ -373,6 +373,10 @@ void _getColorData(
 
         infoMap[HdTokens->displayColor] = std::make_unique<PrimvarInfo>(
             PrimvarSource(VtValue(colorArray), interpolation, PrimvarSource::CPUCompute), nullptr);
+    } else {
+        for (size_t i = 0; i < colorArray.size(); ++i) {
+            colorArray[i] = MayaUsd::utils::ConvertLinearToMaya(colorArray[i]);
+        }
     }
 }
 
@@ -1933,7 +1937,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             if ((colorInterp == HdInterpolationConstant || colorInterp == HdInterpolationInstance)
                 && (alphaInterp == HdInterpolationConstant
                     || alphaInterp == HdInterpolationInstance)) {
-                const GfVec3f& clr3f = MayaUsd::utils::ConvertLinearToMaya(colorArray[0]);
+                const GfVec3f& clr3f = colorArray[0];
                 const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
                 shader = _delegate->GetFallbackShader(color);
                 // The color of the fallback shader is ignored when the interpolation is
