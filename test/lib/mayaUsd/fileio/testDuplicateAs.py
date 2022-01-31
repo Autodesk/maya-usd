@@ -255,5 +255,32 @@ class DuplicateAsTestCase(unittest.TestCase):
 
         verifyDuplicate()
 
+    def testDuplicateWithoutMaterials(self):
+        '''Duplicate a Maya sphere without merging the materials.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Duplicate Maya data as USD data with materials
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr)
+
+        # Verify that the copied sphere has a look (material) prim.
+        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        self.assertTrue(looksPrim.IsValid())
+
+        # Undo duplicate to USD.
+        cmds.undo()
+
+        # Duplicate Maya data as USD data without materials
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions='shadingMode=none')
+
+        # Verify that the copied sphere does not have a look (material) prim.
+        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        self.assertFalse(looksPrim.IsValid())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
