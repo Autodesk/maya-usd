@@ -192,6 +192,17 @@ proc mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes(string $arg, int $e
     }
 }
 
+proc mayaUsdTranslatorExport_DisableConvertMaterialsToCheckboxes() {
+    // If we are using a legacy material export mode, then disable the checkboxes
+    // since this material export mode is not compatible with multi-material export.
+    string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
+    for ($conversion in $conversions) {
+        string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
+        string $widget = $opt + "_ConvertMaterialsToCheckBox";
+        checkBoxGrp -e -v1 false -en false $widget;
+    }
+}
+
 proc string mayaUsdTranslatorExport_AppendConvertMaterialsTo(string $currentOptions, string $arg) {
     string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
     string $enabledConversions[];
@@ -251,6 +262,7 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
 
     if (size($currentOptions) > 0) {
         tokenize($currentOptions, ";", $optionList);
+        int $supportsMultiExport = 1;
         for ($index = 0; $index < size($optionList); $index++) {
             tokenize($optionList[$index], "=", $optionBreakDown);
             if ($optionBreakDown[0] == "exportUVs") {
@@ -292,6 +304,8 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
                 mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], $enable, "parentScopeField");
             } else if ($optionBreakDown[0] == "convertMaterialsTo") {
                 mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes($optionBreakDown[1], $enable, $processJobContext);
+            } else if ($optionBreakDown[0] == "shadingMode" && $optionBreakDown[1] != "useRegistry") {
+                $supportsMultiExport = 0;
             } else if ($optionBreakDown[0] == "exportDisplayColor") {
                 mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], $enable, "exportDisplayColorCheckBox");
             } else if ($optionBreakDown[0] == "exportInstances") {
@@ -307,6 +321,9 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
         if ($jobContext != "" && $processJobContext == 1) {
             mayaUsdTranslatorExport_SetJobContextDropdown($jobContext);
             mayaUsdTranslatorExport_JobContextCB();
+        }
+        if ($processJobContext == 0 && $supportsMultiExport == 0) {
+            mayaUsdTranslatorExport_DisableConvertMaterialsToCheckboxes();
         }
     }
 }
