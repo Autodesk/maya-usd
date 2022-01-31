@@ -25,6 +25,7 @@ add_library(${PYTHON_TARGET_NAME} SHARED)
 target_sources(${PYTHON_TARGET_NAME} 
     PRIVATE
         module.cpp
+        pythonObjectRegistry.cpp
         wrapSparseValueWriter.cpp
         wrapAdaptor.cpp
         wrapBlockSceneModificationContext.cpp

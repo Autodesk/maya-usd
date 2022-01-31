@@ -18,6 +18,7 @@
 #include <mayaUsd/fileio/jobContextRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 #include <mayaUsdUtils/DiffPrims.h>
 
@@ -715,6 +716,133 @@ UsdMayaJobExportArgs UsdMayaJobExportArgs::CreateFromDictionary(
     }
 
     return UsdMayaJobExportArgs(allUserArgs, dagPaths, timeSamples);
+}
+
+/* static */
+MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
+    const MString&       optionsString,
+    VtDictionary*        toFill,
+    std::vector<double>* timeSamples)
+{
+    if (!toFill)
+        return MS::kFailure;
+
+    VtDictionary& userArgs = *toFill;
+
+    bool       exportAnimation = false;
+    GfInterval timeInterval(1.0, 1.0);
+    double     frameStride = 1.0;
+
+    std::set<double> frameSamples;
+
+    // Get the options
+    if (optionsString.length() > 0) {
+        MStringArray optionList;
+        MStringArray theOption;
+        optionsString.split(';', optionList);
+        for (int i = 0; i < (int)optionList.length(); ++i) {
+            theOption.clear();
+            optionList[i].split('=', theOption);
+            if (theOption.length() != 2) {
+                // We allow an empty string to be passed to exportRoots. We must process it here.
+                if (theOption.length() == 1
+                    && theOption[0] == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
+                    std::vector<VtValue> userArgVals;
+                    userArgVals.push_back(VtValue(""));
+                    userArgs[UsdMayaJobExportArgsTokens->exportRoots] = userArgVals;
+                }
+                continue;
+            }
+
+            std::string argName(theOption[0].asChar());
+            if (argName == "animation") {
+                exportAnimation = (theOption[1].asInt() != 0);
+            } else if (argName == "startTime") {
+                timeInterval.SetMin(theOption[1].asDouble());
+            } else if (argName == "endTime") {
+                timeInterval.SetMax(theOption[1].asDouble());
+            } else if (argName == "frameStride") {
+                frameStride = theOption[1].asDouble();
+            } else if (argName == "filterTypes") {
+                std::vector<VtValue> userArgVals;
+                MStringArray         filteredTypes;
+                theOption[1].split(',', filteredTypes);
+                unsigned int nbTypes = filteredTypes.length();
+                for (unsigned int idxType = 0; idxType < nbTypes; ++idxType) {
+                    const std::string filteredType = filteredTypes[idxType].asChar();
+                    userArgVals.emplace_back(filteredType);
+                }
+                userArgs[UsdMayaJobExportArgsTokens->filterTypes] = userArgVals;
+            } else if (argName == "frameSample") {
+                frameSamples.clear();
+                MStringArray samplesStrings;
+                theOption[1].split(' ', samplesStrings);
+                unsigned int nbSams = samplesStrings.length();
+                for (unsigned int sam = 0; sam < nbSams; ++sam) {
+                    if (samplesStrings[sam].isDouble()) {
+                        frameSamples.insert(samplesStrings[sam].asDouble());
+                    }
+                }
+            } else if (argName == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
+                MStringArray exportRootStrings;
+                theOption[1].split(',', exportRootStrings);
+
+                std::vector<VtValue> userArgVals;
+
+                unsigned int nbRoots = exportRootStrings.length();
+                for (unsigned int idxRoot = 0; idxRoot < nbRoots; ++idxRoot) {
+                    const std::string exportRootPath = exportRootStrings[idxRoot].asChar();
+
+                    if (!exportRootPath.empty()) {
+                        MDagPath rootDagPath = UsdMayaUtil::nameToDagPath(exportRootPath);
+                        if (!rootDagPath.isValid()) {
+                            MGlobal::displayError(
+                                MString("Invalid dag path provided for export root: ")
+                                + exportRootStrings[idxRoot]);
+                            return MS::kFailure;
+                        }
+                        userArgVals.push_back(VtValue(exportRootPath));
+                    } else {
+                        userArgVals.push_back(VtValue(""));
+                    }
+                }
+                userArgs[argName] = userArgVals;
+            } else {
+                if (argName == "shadingMode") {
+                    TfToken shadingMode(theOption[1].asChar());
+                    if (!shadingMode.IsEmpty()
+                        && UsdMayaShadingModeRegistry::GetInstance().GetExporter(shadingMode)
+                            == nullptr
+                        && shadingMode != UsdMayaShadingModeTokens->none) {
+
+                        MGlobal::displayError(
+                            TfStringPrintf("No shadingMode '%s' found.", shadingMode.GetText())
+                                .c_str());
+                        return MS::kFailure;
+                    }
+                }
+                userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
+                    argName, theOption[1].asChar(), UsdMayaJobExportArgs::GetGuideDictionary());
+            }
+        }
+    }
+
+    // Now resync start and end frame based on export time interval.
+    if (exportAnimation) {
+        if (timeInterval.IsEmpty()) {
+            // If the user accidentally set start > end, resync to the closed
+            // interval with the single start point.
+            timeInterval = GfInterval(timeInterval.GetMin());
+        }
+    } else {
+        // No animation, so empty interval.
+        timeInterval = GfInterval();
+    }
+
+    if (timeSamples)
+        *timeSamples = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
+
+    return MS::kSuccess;
 }
 
 /* static */

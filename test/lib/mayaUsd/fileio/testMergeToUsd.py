@@ -347,5 +347,40 @@ class MergeToUsdTestCase(unittest.TestCase):
         bottomIndices = cylBottomPrim.GetAttribute("indices")
         self.assertEqual("int[]", bottomIndices.GetTypeName())
 
+    def testMergeWithoutMaterials(self):
+        '''Merge edits on data and not merging the materials.'''
+
+        # Create a stage from a file.
+        testFile = getTestScene("cylinder", "cylinder.usda")
+        testDagPath, stage = mayaUtils.createProxyFromFile(testFile)
+        usdCylPathString = testDagPath + ",/pCylinder1"
+
+        # Verify that the original scene does not have a look (material) prim.
+        cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
+        self.assertFalse(cylLooksPrim.IsValid())
+
+        # Edit as maya and do nothing.
+        cmds.mayaUsdEditAsMaya(usdCylPathString)
+
+        # Merge back to USD.
+        cylMayaItem = ufe.GlobalSelection.get().front()
+        cylMayaPath = cylMayaItem.path()
+        cylMayaPathStr = ufe.PathString.string(cylMayaPath)
+        cmds.mayaUsdMergeToUsd(cylMayaPathStr)
+
+        # Verify that the merged scene added a look (material) prim.
+        cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
+        self.assertTrue(cylLooksPrim.IsValid())
+
+        # Undo merge to USD.
+        cmds.undo()
+
+        # Merge back to USD with export options that disable materials.
+        cmds.mayaUsdMergeToUsd(cylMayaPathStr, exportOptions='shadingMode=none')
+
+        # Verify that the merged scene still does not have a look (material) prim.
+        cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
+        self.assertFalse(cylLooksPrim.IsValid())
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

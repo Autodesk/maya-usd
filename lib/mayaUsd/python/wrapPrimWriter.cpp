@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include "pythonObjectRegistry.h"
 #include "wrapSparseValueWriter.h"
 
 #include <mayaUsd/fileio/primWriter.h>
@@ -178,21 +179,83 @@ public:
         return This::default_GetDagToUsdPathMapping();
     }
 
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class FactoryFnWrapper : public UsdMayaPythonObjectRegistry
+    {
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest class registered.
+        UsdMayaPrimWriterSharedPtr operator()(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath&           usdPath,
+            UsdMayaWriteJobContext&  jobCtx)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return nullptr;
+            }
+            auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass((uintptr_t)&sptr);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), sptr.get());
+            return sptr;
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. If we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static UsdMayaPrimWriterRegistry::WriterFactoryFn
+        Register(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaTypeName));
+            if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
+                // Return a new factory function:
+                return FactoryFnWrapper { classIndex };
+            } else {
+                // We already registered a factory function for this purpose:
+                return nullptr;
+            }
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, mayaTypeName));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        FactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            return ClassName(cl) + "," + mayaTypeName + "," + ",PrimWriter";
+        }
+    };
+
     static void Register(boost::python::object cl, const std::string& mayaTypeName)
     {
-        UsdMayaPrimWriterRegistry::Register(
-            mayaTypeName,
-            [=](const MFnDependencyNode& depNodeFn,
-                const SdfPath&           usdPath,
-                UsdMayaWriteJobContext&  jobCtx) {
-                auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
-                TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)&sptr);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), sptr.get());
-                return sptr;
-            },
-            true);
+        UsdMayaPrimWriterRegistry::WriterFactoryFn fn
+            = FactoryFnWrapper::Register(cl, mayaTypeName);
+        if (fn) {
+            UsdMayaPrimWriterRegistry::Register(mayaTypeName, fn, true);
+        }
+    }
+
+    static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+    {
+        FactoryFnWrapper::Unregister(cl, mayaTypeName);
     }
 
 private:
@@ -250,28 +313,90 @@ public:
             &This::default_GetShadingAttributeForMayaAttrName)(mayaAttrName, typeName);
     }
 
-    static void Register(boost::python::object cl, const TfToken& mayaNodeTypeName)
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class FactoryFnWrapper : public UsdMayaPythonObjectRegistry
     {
-        UsdMayaShaderWriterRegistry::Register(
-            mayaNodeTypeName,
-            [=](const UsdMayaJobExportArgs& exportArgs) {
-                TfPyLock              pyLock;
-                boost::python::object CanExport = cl.attr("CanExport");
-                PyObject*             callable = CanExport.ptr();
-                auto                  res = boost::python::call<int>(callable, exportArgs);
-                return UsdMayaShaderWriter::ContextSupport(res);
-            },
-            [=](const MFnDependencyNode& depNodeFn,
-                const SdfPath&           usdPath,
-                UsdMayaWriteJobContext&  jobCtx) {
-                auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
-                TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)&sptr);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), sptr.get());
-                return sptr;
-            },
-            true);
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest class registered.
+        UsdMayaShaderWriterSharedPtr operator()(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath&           usdPath,
+            UsdMayaWriteJobContext&  jobCtx)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass((uintptr_t)&sptr);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), sptr.get());
+            return sptr;
+        }
+
+        // We can have multiple function objects, this one apapts the CanImport function:
+        UsdMayaShaderWriter::ContextSupport operator()(const UsdMayaJobExportArgs& exportArgs)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return UsdMayaShaderWriter::ContextSupport::Unsupported;
+            }
+            TfPyLock              pyLock;
+            boost::python::object CanExport = pyClass.attr("CanExport");
+            PyObject*             callable = CanExport.ptr();
+            auto                  res = boost::python::call<int>(callable, exportArgs);
+            return UsdMayaShaderWriter::ContextSupport(res);
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. If we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static FactoryFnWrapper
+        Register(boost::python::object cl, const std::string& usdShaderId, bool& updated)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, usdShaderId));
+            updated = classIndex == UsdMayaPythonObjectRegistry::UPDATED;
+            // Return a new factory function:
+            return FactoryFnWrapper { classIndex };
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(boost::python::object cl, const std::string& usdShaderId)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, usdShaderId));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        FactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(boost::python::object cl, const std::string& usdShaderId)
+        {
+            return ClassName(cl) + "," + usdShaderId + "," + ",ShaderWriter";
+        }
+    };
+
+    static void Register(boost::python::object cl, const TfToken& usdShaderId)
+    {
+        bool             updated = false;
+        FactoryFnWrapper fn = FactoryFnWrapper::Register(cl, usdShaderId, updated);
+        if (!updated) {
+            UsdMayaShaderWriterRegistry::Register(usdShaderId, fn, fn, true);
+        }
+    }
+
+    static void Unregister(boost::python::object cl, const TfToken& usdShaderId)
+    {
+        FactoryFnWrapper::Unregister(cl, usdShaderId);
     }
 
     static void RegisterSymmetric(
@@ -500,7 +625,9 @@ void wrapPrimWriter()
             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("Register", &PrimWriterWrapper<>::Register)
-        .staticmethod("Register");
+        .staticmethod("Register")
+        .def("Unregister", &PrimWriterWrapper<>::Unregister)
+        .staticmethod("Unregister");
 }
 
 TF_REGISTRY_FUNCTION(TfEnum)
@@ -533,6 +660,8 @@ void wrapShaderWriter()
 
         .def("Register", &ShaderWriterWrapper::Register)
         .staticmethod("Register")
+        .def("Unregister", &ShaderWriterWrapper::Unregister)
+        .staticmethod("Unregister")
         .def("RegisterSymmetric", &ShaderWriterWrapper::RegisterSymmetric)
         .staticmethod("RegisterSymmetric");
 }
