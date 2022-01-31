@@ -287,7 +287,9 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
     }
 
     if (stringArrayContains("animation", $sectionNames)) {
-        checkBoxGrp -e -en 1 animationCheckBox;
+        if (stringArrayContains("animation-data", $sectionNames)) {
+            checkBoxGrp -e -en 1 animationCheckBox;
+        }
         checkBoxGrp -e -en 1 eulerFilterCheckBox;
         checkBoxGrp -e -en 1 staticSingleSampleCheckBox;
         intFieldGrp -e -en1 1 -en2 1 frameRangeFields;
@@ -405,7 +407,7 @@ proc string[] parseActionSectionNames(string $sections)
 {
     global string $mayaUsdTranslatorExport_SectionNames[];
 
-    string $allSections[] = { "context", "output", "geometry", "materials", "animation", "advanced" };
+    string $allSections[] = { "context", "output", "geometry", "materials", "animation", "animation-data", "advanced" };
 
     string $sectionList[];
     tokenize($sections, ";", $sectionList);
@@ -453,7 +455,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 //
 //        In addition to the action, the list of UI sections that are desired can be added
 //        with the syntax "action=section1;section2;..." where the section names can be:
-//            context, output, geometry, materials, animation, advanced
+//            context, output, geometry, materials, animation, animation-data, advanced
 //
 //        The section name can also be "all", "none" or prefixed with "!":
 //            - When "all" is used, all sections are included.
@@ -579,8 +581,10 @@ global proc int mayaUsdTranslatorExport (string $parent,
                         -expandCommand("mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB");
                 separator -style "none";
 
-                checkBoxGrp -l `getMayaUsdString("kExportAnimDataLbl")` -cc ("mayaUsdTranslatorExport_AnimationCB")
-                    -annotation `getMayaUsdString("kExportAnimDataAnn")` animationCheckBox;
+                if (stringArrayContains("animation-data", $sectionNames)) {
+                    checkBoxGrp -l `getMayaUsdString("kExportAnimDataLbl")` -cc ("mayaUsdTranslatorExport_AnimationCB")
+                        -annotation `getMayaUsdString("kExportAnimDataAnn")` animationCheckBox;
+                }
 
                 columnLayout -width 100 animOptsCol;
                     rowLayout -numberOfColumns 2 -columnAttach 2 "left" 20;
@@ -648,7 +652,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("animation", $sectionNames)) {
-            $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
+            if (stringArrayContains("animation-data", $sectionNames)) {
+                $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
+            }
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "staticSingleSample", "staticSingleSampleCheckBox");
             $currentOptions = mayaUsdTranslatorExport_AppendFrameRange($currentOptions);

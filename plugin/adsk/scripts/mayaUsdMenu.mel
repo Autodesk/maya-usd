@@ -635,7 +635,7 @@ global proc mayaUsdPushBackToUSDReceiveExportOptions(string $exportOptions)
 
 global proc mayaUsdPushBackToUSDOptionsAccepted()
 {
-    mayaUsdTranslatorExport("", "query=all;!output", "", "mayaUsdPushBackToUSDReceiveExportOptions");
+    mayaUsdTranslatorExport("", "query=all;!output;!animation-data", "", "mayaUsdPushBackToUSDReceiveExportOptions");
     layoutDialog -dismiss "Merge";
 }
 
@@ -649,7 +649,7 @@ global proc mayaUsdShowPushBackToUSDOptions()
 
     setParent $subLayout;
 
-    mayaUsdTranslatorExport($subLayout, "post=all;!output", "animation=0;shadingMode=none;exportSkels=0;exportSkin=0;exportBlendShapes=0", "");
+    mayaUsdTranslatorExport($subLayout, "post=all;!output;!animation-data", "animation=0;shadingMode=none;exportSkels=0;exportSkin=0;exportBlendShapes=0", "");
 
     setParent $form;
 
