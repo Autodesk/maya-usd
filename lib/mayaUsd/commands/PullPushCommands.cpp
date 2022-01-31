@@ -360,7 +360,7 @@ void* DuplicateCommand::creator()
 MSyntax DuplicateCommand::createSyntax()
 {
     MSyntax syntax = createSyntaxWithUfeArgs(2);
-    syntax.addFlag(kExportOptionsFlag, kExportOptionsFlagLong, MSyntax::kBoolean);
+    syntax.addFlag(kExportOptionsFlag, kExportOptionsFlagLong, MSyntax::kString);
     return syntax;
 }
 
