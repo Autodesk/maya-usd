@@ -18,7 +18,7 @@
 global string $mayaUsdTranslatorExport_SectionNames[];
 
 proc mayaUsdTranslatorExport_SetCheckbox(string $arg, int $enable, string $widget) {
-    if (`checkBoxGrp -q -exists $widget` == 0)
+    if (`checkBoxGrp -exists $widget` == 0)
         return;
 
     if ($arg == "0") {
@@ -29,7 +29,7 @@ proc mayaUsdTranslatorExport_SetCheckbox(string $arg, int $enable, string $widge
 }
 
 proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, int $enable, string $widget) {
-    if (`checkBoxGrp -q -exists $widget` == 0)
+    if (`checkBoxGrp -exists $widget` == 0)
         return;
 
     if ($arg == "0") {
@@ -40,7 +40,7 @@ proc mayaUsdTranslatorExport_SetOppositeCheckbox(string $arg, int $enable, strin
 }
 
 proc mayaUsdTranslatorExport_SetJobContextDropdown(string $arg) {
-    if (`optionMenuGrp -q -exists jobContextPopup` == 0)
+    if (`optionMenuGrp -exists jobContextPopup` == 0)
         return;
 
     if (startsWith($arg, "[") && endsWith($arg, "]")) {
@@ -69,7 +69,7 @@ proc mayaUsdTranslatorExport_SetJobContextDropdown(string $arg) {
 }
 
 proc mayaUsdTranslatorExport_SetTextField(string $arg, int $enable, string $widget) {
-    if (`textFieldGrp -q -exists $widget` == 0)
+    if (`textFieldGrp -exists $widget` == 0)
         return;
 
     textFieldGrp -e -text $arg -en $enable $widget;
@@ -78,7 +78,7 @@ proc mayaUsdTranslatorExport_SetTextField(string $arg, int $enable, string $widg
 proc mayaUsdTranslatorExport_SetOptionMenuByAnnotation(
         string $ann, int $enable, string $widget) {
 
-    if (`optionMenuGrp -q -exists $widget` == 0)
+    if (`optionMenuGrp -exists $widget` == 0)
         return;
 
     int $index = 1; // 1-based indexing.
@@ -95,7 +95,7 @@ proc mayaUsdTranslatorExport_SetOptionMenuByAnnotation(
 proc mayaUsdTranslatorExport_SetOptionMenuByBool (
         string $ann, int $enable, string $widget) {
 
-    if (`optionMenuGrp -q -exists $widget` == 0)
+    if (`optionMenuGrp -exists $widget` == 0)
         return;
 
     // Mapping between a boolean option and an option menu with two choices.
@@ -110,7 +110,7 @@ proc mayaUsdTranslatorExport_SetOptionMenuByBool (
 }
 
 proc string mayaUsdTranslatorExport_AppendOppositeFromCheckbox(string $currentOptions, string $arg, string $widget) {
-    if (`checkBoxGrp -q -exists $widget` == 0)
+    if (`checkBoxGrp -exists $widget` == 0)
         return $currentOptions;
 
     if (`checkBoxGrp -q -v1 $widget` == 1) {
@@ -121,7 +121,7 @@ proc string mayaUsdTranslatorExport_AppendOppositeFromCheckbox(string $currentOp
 }
 
 proc string mayaUsdTranslatorExport_AppendFromCheckbox(string $currentOptions, string $arg, string $widget) {
-    if (`checkBoxGrp -q -exists $widget` == 0)
+    if (`checkBoxGrp -exists $widget` == 0)
         return $currentOptions;
 
     if (`checkBoxGrp -q -v1 $widget` == 1) {
@@ -132,7 +132,7 @@ proc string mayaUsdTranslatorExport_AppendFromCheckbox(string $currentOptions, s
 }
 
 proc string mayaUsdTranslatorExport_AppendJobContexts(string $currentOptions, string $arg) {
-    if (`optionMenuGrp -q -exists jobContextPopup` == 0)
+    if (`optionMenuGrp -exists jobContextPopup` == 0)
         return $currentOptions;
 
     string $niceName = `optionMenuGrp -q -value jobContextPopup`;
@@ -146,7 +146,7 @@ proc string mayaUsdTranslatorExport_AppendJobContexts(string $currentOptions, st
 }
 
 proc string mayaUsdTranslatorExport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
-    if (`optionMenuGrp -q -exists $widget` == 0)
+    if (`optionMenuGrp -exists $widget` == 0)
         return $currentOptions;
 
     int $index = `optionMenuGrp -q -select $widget` - 1;
@@ -157,7 +157,7 @@ proc string mayaUsdTranslatorExport_AppendFromPopup(string $currentOptions, stri
 }
 
 proc string mayaUsdTranslatorExport_AppendFromBoolPopup(string $currentOptions, string $arg, string $widget) {
-    if (`optionMenuGrp -q -exists $widget` == 0)
+    if (`optionMenuGrp -exists $widget` == 0)
         return $currentOptions;
 
     int $index = `optionMenuGrp -q -select $widget` - 1;
@@ -165,7 +165,7 @@ proc string mayaUsdTranslatorExport_AppendFromBoolPopup(string $currentOptions, 
 }
 
 proc string mayaUsdTranslatorExport_AppendFrameRange(string $currentOptions) {
-    if (`intFieldGrp -q -exists frameRangeFields` == 0)
+    if (`intFieldGrp -exists frameRangeFields` == 0)
         return $currentOptions;
 
     int $start = `intFieldGrp -q -value1 frameRangeFields`;
@@ -174,7 +174,7 @@ proc string mayaUsdTranslatorExport_AppendFrameRange(string $currentOptions) {
 }
 
 proc string mayaUsdTranslatorExport_AppendFromIntField(string $currentOptions, string $arg, string $widget) {
-    if (`intFieldGrp -q -exists $widget` == 0)
+    if (`intFieldGrp -exists $widget` == 0)
         return $currentOptions;
 
     string $value = `intFieldGrp -q -value1 $widget`;
@@ -182,7 +182,7 @@ proc string mayaUsdTranslatorExport_AppendFromIntField(string $currentOptions, s
 }
 
 proc string mayaUsdTranslatorExport_AppendFromFloatField(string $currentOptions, string $arg, string $widget) {
-    if (`floatFieldGrp -q -exists $widget` == 0)
+    if (`floatFieldGrp -exists $widget` == 0)
         return $currentOptions;
 
     string $value = `floatFieldGrp -q -value1 $widget`;
@@ -190,7 +190,7 @@ proc string mayaUsdTranslatorExport_AppendFromFloatField(string $currentOptions,
 }
 
 proc string mayaUsdTranslatorExport_AppendFromTextField(string $currentOptions, string $arg, string $widget) {
-    if (`textFieldGrp -q -exists $widget` == 0)
+    if (`textFieldGrp -exists $widget` == 0)
         return $currentOptions;
 
     string $value = `textFieldGrp -q -text $widget`;
@@ -198,7 +198,7 @@ proc string mayaUsdTranslatorExport_AppendFromTextField(string $currentOptions, 
 }
 
 global proc mayaUsdTranslatorExport_AnimationCB() {
-    if (`checkBoxGrp -q -exists animationCheckBox` == 0)
+    if (`checkBoxGrp -exists animationCheckBox` == 0)
         return;
 
     columnLayout -e -visible (`checkBoxGrp -q -v1 animationCheckBox`) animOptsCol;
@@ -210,14 +210,14 @@ global proc mayaUsdTranslatorExport_AnimationCB() {
 // to set all childs widget of frameLayout visible when the
 // frameLayout is expanded.
 global proc mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB() {
-    if (`checkBoxGrp -q -exists animationCheckBox` == 0)
+    if (`checkBoxGrp -exists animationCheckBox` == 0)
         return;
 
     columnLayout -e -visible (`checkBoxGrp -q -v1 animationCheckBox`) animOptsCol;
 }
 
 global proc mayaUsdTranslatorExport_AnimationRangeCB() {
-    if (`intFieldGrp -q -exists frameRangeFields` == 0)
+    if (`intFieldGrp -exists frameRangeFields` == 0)
         return;
 
     int $startTime = `playbackOptions -q -animationStartTime`;
@@ -239,7 +239,7 @@ proc mayaUsdTranslatorExport_SetConvertMaterialsToCheckboxes(string $arg, int $e
         string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
         string $widget = $opt + "_ConvertMaterialsToCheckBox";
 
-        if (`checkBoxGrp -q -exists $widget` == 0)
+        if (`checkBoxGrp -exists $widget` == 0)
             continue;
 
         if(stringArrayFind($opt, 0, $enabledConversions) != -1) {
@@ -259,7 +259,7 @@ proc string mayaUsdTranslatorExport_AppendConvertMaterialsTo(string $currentOpti
     for ($conversion in $conversions) {
         string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
         string $widget = $opt + "_ConvertMaterialsToCheckBox";
-        if (`checkBoxGrp -q -exists $widget` == 0)
+        if (`checkBoxGrp -exists $widget` == 0)
             continue;
         if (`checkBoxGrp -q -v1 $widget` == 1) {
             stringArrayInsertAtIndex(255, $enabledConversions, $opt);
