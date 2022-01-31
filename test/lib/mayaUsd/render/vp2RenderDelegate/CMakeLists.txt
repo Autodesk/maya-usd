@@ -2,6 +2,7 @@
 set(TEST_SCRIPT_FILES "")
 
 list(APPEND TEST_SCRIPT_FILES
+    testVP2RenderDelegateDisplayColors.py
 	testVP2RenderDelegateGeomSubset.py
     testVP2RenderDelegatePointInstanceOrientation.py
 )
