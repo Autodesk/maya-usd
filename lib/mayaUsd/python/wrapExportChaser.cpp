@@ -93,7 +93,7 @@ public:
         }
 
         // Create a new wrapper for a Python class that is seen for the first time for a given
-        // purpose. It we already have a registration for this purpose: update the class to
+        // purpose. If we already have a registration for this purpose: update the class to
         // allow the previously issued factory function to use it.
         static UsdMayaExportChaserRegistry::FactoryFn
         Register(boost::python::object cl, const std::string& mayaTypeName)
