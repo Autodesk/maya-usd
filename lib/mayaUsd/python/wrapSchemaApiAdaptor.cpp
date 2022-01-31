@@ -286,19 +286,7 @@ public:
             const std::string&    mayaType,
             const std::string&    schemaApiName)
         {
-            // Is it a Python class:
-            if (!IsPythonClass(cl)) {
-                TfPyThrowRuntimeError("First argument must be a Python class");
-            }
-
-            auto nameAttr = cl.attr("__name__");
-            if (!nameAttr) {
-                TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
-            }
-
-            std::string key = boost::python::extract<std::string>(nameAttr);
-            key = key + "," + mayaType + "," + schemaApiName + ",SchemaApiAdaptor";
-            return key;
+            return ClassName(cl) + "," + mayaType + "," + schemaApiName + ",SchemaApiAdaptor";
         }
     };
 

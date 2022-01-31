@@ -17,6 +17,7 @@
 #include "pythonObjectRegistry.h"
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/pyUtils.h>
 #include <pxr/pxr.h>
 
 #include <boost/python.hpp>
@@ -67,6 +68,22 @@ bool UsdMayaPythonObjectRegistry::IsPythonClass(object cl)
     }
     std::string name = extract<std::string>(nameAttr);
     return name == "class";
+}
+
+std::string UsdMayaPythonObjectRegistry::ClassName(object cl)
+{
+    // Is it a Python class:
+    if (!IsPythonClass(cl)) {
+        // So far class is always first parameter, so we can have this check be here.
+        TfPyThrowRuntimeError("First argument must be a Python class");
+    }
+
+    auto nameAttr = cl.attr("__name__");
+    if (!nameAttr) {
+        TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
+    }
+
+    return std::string(boost::python::extract<std::string>(nameAttr));
 }
 
 UsdMayaPythonObjectRegistry::TClassVec   UsdMayaPythonObjectRegistry::_sClassVec;

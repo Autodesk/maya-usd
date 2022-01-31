@@ -146,19 +146,7 @@ public:
         // purpose:
         static std::string GetKey(boost::python::object cl, const std::string& typeName)
         {
-            // Is it a Python class:
-            if (!IsPythonClass(cl)) {
-                TfPyThrowRuntimeError("First argument must be a Python class");
-            }
-
-            auto nameAttr = cl.attr("__name__");
-            if (!nameAttr) {
-                TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
-            }
-
-            std::string key = boost::python::extract<std::string>(nameAttr);
-            key = key + "," + typeName + "," + ",PrimReader";
-            return key;
+            return ClassName(cl) + "," + typeName + "," + ",PrimReader";
         }
     };
 
@@ -358,19 +346,7 @@ public:
         // purpose:
         static std::string GetKey(boost::python::object cl, const std::string& usdShaderId)
         {
-            // Is it a Python class:
-            if (!IsPythonClass(cl)) {
-                TfPyThrowRuntimeError("First argument must be a Python class");
-            }
-
-            auto nameAttr = cl.attr("__name__");
-            if (!nameAttr) {
-                TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
-            }
-
-            std::string key = boost::python::extract<std::string>(nameAttr);
-            key = key + "," + usdShaderId + "," + ",ShaderReader";
-            return key;
+            return ClassName(cl) + "," + usdShaderId + "," + ",ShaderReader";
         }
     };
 

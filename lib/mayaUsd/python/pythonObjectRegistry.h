@@ -45,6 +45,8 @@ protected:
 
     static bool IsPythonClass(boost::python::object cl);
 
+    static std::string ClassName(boost::python::object cl);
+
 private:
     // Static table of all registered Python classes, with associated index:
     typedef std::vector<boost::python::object> TClassVec;

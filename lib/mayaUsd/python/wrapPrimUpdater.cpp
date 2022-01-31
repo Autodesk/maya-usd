@@ -188,20 +188,8 @@ public:
             const std::string&    mayaType,
             int                   sup)
         {
-            // Is it a Python class:
-            if (!IsPythonClass(cl)) {
-                TfPyThrowRuntimeError("First argument must be a Python class");
-            }
-
-            auto nameAttr = cl.attr("__name__");
-            if (!nameAttr) {
-                TfPyThrowRuntimeError("Unexpected Python error: No __name__ attribute");
-            }
-
-            std::string key = boost::python::extract<std::string>(nameAttr);
-            key = key + "," + usdTypeName + "," + mayaType + "," + std::to_string(sup)
+            return ClassName(cl) + "," + usdTypeName + "," + mayaType + "," + std::to_string(sup)
                 + ",PrimUpdater";
-            return key;
         }
     };
 
