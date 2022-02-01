@@ -727,9 +727,7 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
     
     string $pulledObject = getPulledUsdObject($obj);
     if ($pulledObject != "") {
-        string $tmp = getMayaUsdString("kMayaRefMergeEdits");
-        string $pushback = `menuItem -label $tmp -insertAfter "" -image "merge_to_USD.png" -command ("mayaUsdMenu_pushBackToUSD " + $pulledObject)`;
-        menuItem -insertAfter $pushback -optionBox true -command ("mayaUsdMenu_pushBackToUSDOptions \"" + $pulledObject + "\"");
+        string $pushback = python("import mayaUsdMergeToUsd; mayaUsdMergeToUsd.createMenuItem(\"" + $pulledObject + "\", \"\")");
         
         $tmp = getMayaUsdString("kMayaRefDiscardEdits");
         string $pushclear = `menuItem -label $tmp -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $pulledObject)`;

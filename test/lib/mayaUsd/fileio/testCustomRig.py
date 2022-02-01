@@ -56,19 +56,19 @@ class customRigPrimUpdater(mayaUsdLib.PrimUpdater):
     def __init__(self, *args, **kwargs):
         super(customRigPrimUpdater, self).__init__(*args, **kwargs)
 
-    def editAsMaya(self,context):
-        return super(customRigPrimUpdater, self).editAsMaya(context)
+    def editAsMaya(self):
+        return super(customRigPrimUpdater, self).editAsMaya()
 
-    def discardEdits(self,context):
-        return super(customRigPrimUpdater, self).discardEdits(context)
+    def discardEdits(self):
+        return super(customRigPrimUpdater, self).discardEdits()
 
     def pushCopySpecs(self, srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath):
         newPrimDstSdfPath = "{}_cache".format(dstSdfPath)
         Sdf.CopySpec(srcLayer,srcSdfPath,dstLayer,newPrimDstSdfPath)
         return customRigPrimUpdater.PushCopySpecs.Prune
 
-    def pushEnd(self,context):
-        return super(customRigPrimUpdater, self).pushEnd(context)
+    def pushEnd(self):
+        return super(customRigPrimUpdater, self).pushEnd()
 
 class testCustomRig(unittest.TestCase):
     @classmethod

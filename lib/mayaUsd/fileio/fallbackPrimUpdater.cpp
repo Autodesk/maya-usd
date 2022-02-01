@@ -17,8 +17,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-FallbackPrimUpdater::FallbackPrimUpdater(const MFnDependencyNode& depNodeFn, const Ufe::Path& path)
-    : UsdMayaPrimUpdater(depNodeFn, path)
+FallbackPrimUpdater::FallbackPrimUpdater(
+    const UsdMayaPrimUpdaterContext& context,
+    const MFnDependencyNode&         depNodeFn,
+    const Ufe::Path&                 path)
+    : UsdMayaPrimUpdater(context, depNodeFn, path)
 {
 }
 

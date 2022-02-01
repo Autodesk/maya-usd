@@ -37,7 +37,7 @@ proc pushOptionsUITemplate()
     setUITemplate -pushTemplate optionsTemplate;
 }
 
-proc createRowLayoutforMayaReference(string $parent, string $rowLayoutName)
+global proc string createRowLayoutforMayaReference(string $parent, string $rowLayoutName, int $nbCols)
 {
     // See setDefaultTemplates.mel in Maya.
     global int $gTemplateOptionMenuOffset;
@@ -45,14 +45,13 @@ proc createRowLayoutforMayaReference(string $parent, string $rowLayoutName)
     global int $gTextColumnWidthIndex;
     global int $gSingleWidgetWidthIndex;
 
-    int $nbCols = 3;
     int $cw1 = $gTextColumnWidthIndex;
     int $cw2 = (2 * $gSingleWidgetWidthIndex);
     int $cw3 = (2 * $gSingleWidgetWidthIndex);
 
-    // Special sizes for this row layout.
-    if ($rowLayoutName == "usdMayaReferenceVariantPreviewRow") {
-        $nbCols = 2;
+    // Special sizes for the 2 column layout.
+    if ($nbCols == 2)
+    {
         $cw2 += ($gTemplateOptionMenuOffset + $cw3);
     }
 
@@ -75,25 +74,26 @@ proc createRowLayoutforMayaReference(string $parent, string $rowLayoutName)
             -columnOffset2 $kOffsetText $gTemplateOptionMenuOffset
             $rowLayoutName;
     }
+    return $rowLayoutName;
 }
 
 proc string defaultMayaReferencePrimName() {
-    return python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.defaultMayaReferencePrimName()");
+    return python("import mayaUsdMayaReferenceUtils; mayaUsdMayaReferenceUtils.defaultMayaReferencePrimName()");
 }
 
 proc string defaultVariantSetName() {
-    return python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.defaultVariantSetName()");
+    return python("import mayaUsdMayaReferenceUtils; mayaUsdMayaReferenceUtils.defaultVariantSetName()");
 }
 
 proc string defaultVariantName() {
-    return python("import mayaUsdAddMayaReference; mayaUsdAddMayaReference.defaultVariantName()");
+    return python("import mayaUsdMayaReferenceUtils; mayaUsdMayaReferenceUtils.defaultVariantName()");
 }
 
 // Adapted from fileOptions.mel:fileOptionsTabPage().
 proc fileOptionsTabPage(string $tabLayout)
 {
     string $action = "Reference";
-    pushOptionsUITemplate();
+    python("import mayaUsdMayaReferenceUtils; mayaUsdMayaReferenceUtils.pushOptionsUITemplate()");
 
     string $lbl;
     setParent $tabLayout;
@@ -158,7 +158,7 @@ proc fileOptionsTabPage(string $tabLayout)
 
     // The following options are considered as children of "Define in Variant".
         string $def = defaultVariantSetName();
-        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantSetNameRow");
+        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantSetNameRow", 3);
             text -label `getMayaUsdLibString("kMayaRefVariantSetName")`;
             optionMenu -cc "usdMayaRef_changeVariantSetName \"#1\""
                 usdMayaReferenceVariantSetNameOptionMenu;
@@ -166,7 +166,7 @@ proc fileOptionsTabPage(string $tabLayout)
                 -cc "usdMayaRef_changeVariantSetNameText \"#1\""
                 usdMayaReferenceVariantSetNameTextField;
 
-        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantNameRow");
+        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantNameRow", 3);
         $def = defaultVariantName();
             text -label `getMayaUsdLibString("kMayaRefVariantName")`;
             optionMenu -cc "usdMayaRef_changeVariantName \"#1\""
@@ -175,7 +175,7 @@ proc fileOptionsTabPage(string $tabLayout)
                 -cc "usdMayaRef_changeVariantNameText \"#1\""
                 usdMayaReferenceVariantNameTextField;
 
-        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantPreviewRow");
+        createRowLayoutforMayaReference($widgetColumn, "usdMayaReferenceVariantPreviewRow", 2);
             iconTextStaticLabel -st "iconAndTextHorizontal" -i1 "info.png" -l `getMayaUsdLibString("kMayaRefVariantOnPrim")`;
             textField -text "" -editable false usdMayaReferenceVariantPrim;
 
@@ -1021,8 +1021,8 @@ global proc string addMayaReferenceToUsd(string $ufePath)
     // last file filter used, which allows us to obtain file type to invoke the
     // proper Maya file translator.
     //
-    // projectViewer.mel calls fileOptionsCancel() on cancel, doesn't seem to
-    // do much, T.B.D if we need to call it.
+    // projectViewer.mel calls fileOptionsCancel() on cancel, which is not
+    // needed here.
     string $fileFilterList = buildReadableFileFilterList();
     string $caption = getMayaUsdLibString("kMayaRefAddToPrim");
     string $ok = getMayaUsdLibString("kMayaRefReference");

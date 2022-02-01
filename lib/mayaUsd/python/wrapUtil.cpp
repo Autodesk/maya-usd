@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
@@ -31,6 +32,17 @@ namespace {
 class UsdMayaUtilScope
 {
 };
+
+VtDictionary getDictionaryFromEncodedOptions(const std::string& textOptions)
+{
+    VtDictionary dictOptions;
+    auto         status = UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
+        MString(textOptions.c_str()), &dictOptions, nullptr);
+    if (status != MS::kSuccess)
+        return VtDictionary();
+    return dictOptions;
+}
+
 } // namespace
 
 void wrapUtil()
@@ -38,4 +50,5 @@ void wrapUtil()
     scope s(class_<UsdMayaUtilScope>("Util"));
 
     def("IsAuthored", UsdMayaUtil::IsAuthored);
+    def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions);
 }

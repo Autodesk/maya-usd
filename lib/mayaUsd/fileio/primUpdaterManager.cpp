@@ -428,13 +428,13 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
 
         auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
-        auto updater = factory(dgNodeFn, pulledUfePath);
+        auto updater = factory(context, dgNodeFn, pulledUfePath);
 
         // The failure of a single updater causes failure of the whole
         // customization step.  This is a frequent difficulty for operations on
         // multiple data, especially since we can't roll back the result of
         // the execution of previous updaters.  Revisit this.  PPT, 15-Sep-2021.
-        if (!updater->editAsMaya(context)) {
+        if (!updater->editAsMaya()) {
             return false;
         }
     }
@@ -576,7 +576,7 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     auto              mayaDagPath = context.MapSdfPathToDagPath(srcPath);
     MFnDependencyNode depNodeFn(mayaDagPath.isValid() ? mayaDagPath.node() : MObject());
 
-    return factory(depNodeFn, ufePath);
+    return factory(context, depNodeFn, ufePath);
 }
 
 //------------------------------------------------------------------------------
@@ -673,7 +673,7 @@ bool pushCustomize(
         }
 
         // Report pushEnd() failure.
-        if (!updater->pushEnd(context)) {
+        if (!updater->pushEnd()) {
             throw MayaUsd::TraversalFailure(std::string("PushEnd() failed."), srcPath);
         }
     };
@@ -840,7 +840,9 @@ bool PrimUpdaterManager::mergeToUsd(
         }
     }
 
-    auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath);
+    // Some updaters (like MayaReference) may be writing and changing the variant during merge.
+    // This will change the hierarchy around pulled prim. Grab hierarchy from the parent.
+    auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath.pop());
     auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
     if (TF_VERIFY(hier)) {
         scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
@@ -918,11 +920,15 @@ bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
     if (!prim) {
         return false;
     }
+
+    VtDictionary              userArgs;
+    UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), prim.GetStage(), userArgs);
+
     auto typeName = prim.GetTypeName();
     auto regItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
     auto factory = std::get<UpdaterFactoryFn>(regItem);
     // No Maya Dag path for the prim updater, so pass in a null MObject.
-    auto updater = factory(MFnDependencyNode(MObject()), path);
+    auto updater = factory(context, MFnDependencyNode(MObject()), path);
     return updater ? updater->canEditAsMaya() : false;
 }
 
@@ -971,9 +977,9 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
 
         auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
-        auto updater = factory(dgNodeFn, Ufe::Path());
+        auto updater = factory(context, dgNodeFn, Ufe::Path());
 
-        updater->discardEdits(context);
+        updater->discardEdits();
     }
 
     FunctionUndoItem::execute(
@@ -1099,7 +1105,8 @@ void PrimUpdaterManager::onProxyContentChanged(
 
     auto proxyShapeUfePath = proxyNotice.GetProxyShape().ufePath();
 
-    auto autoEditFn = [this, proxyShapeUfePath](const UsdPrim& prim) -> bool {
+    auto autoEditFn = [this, proxyShapeUfePath](
+                          const UsdMayaPrimUpdaterContext& context, const UsdPrim& prim) -> bool {
         TfToken typeName = prim.GetTypeName();
 
         auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
@@ -1113,7 +1120,7 @@ void PrimUpdaterManager::onProxyContentChanged(
         const Ufe::Path        path = proxyShapeUfePath + pathSegment;
 
         auto factory = std::get<UpdaterFactoryFn>(registryItem);
-        auto updater = factory(MFnDependencyNode(MObject()), path);
+        auto updater = factory(context, MFnDependencyNode(MObject()), path);
 
         if (updater && updater->shouldAutoEdit()) {
             // TODO UNDO: is it okay to throw away the undo info in the change notification?
@@ -1131,6 +1138,10 @@ void PrimUpdaterManager::onProxyContentChanged(
     Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
 
     auto stage = notice.GetStage();
+
+    VtDictionary              userArgs;
+    UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), stage, userArgs);
+
     for (const auto& changedPath : notice.GetResyncedPaths()) {
         if (changedPath == SdfPath::AbsoluteRootPath()) {
             continue;
@@ -1141,7 +1152,7 @@ void PrimUpdaterManager::onProxyContentChanged(
 
         for (auto it = range.begin(); it != range.end(); it++) {
             const UsdPrim& prim = *it;
-            if (autoEditFn(prim)) {
+            if (autoEditFn(context, prim)) {
                 it.PruneChildren();
             }
         }
@@ -1153,7 +1164,7 @@ void PrimUpdaterManager::onProxyContentChanged(
         const auto& changedPath = *it;
         if (changedPath.IsPrimPropertyPath()) {
             UsdPrim valueChangedPrim = stage->GetPrimAtPath(changedPath.GetPrimPath());
-            autoEditFn(valueChangedPrim);
+            autoEditFn(context, valueChangedPrim);
         }
     }
 }

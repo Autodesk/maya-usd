@@ -18,6 +18,7 @@
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsdUtils/MergePrims.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
@@ -38,6 +39,18 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+namespace {
+std::string findValue(const PXR_NS::VtDictionary& routingData, const PXR_NS::TfToken& key)
+{
+    auto found = routingData.find(key);
+    if (found == routingData.end() || !found->second.IsHolding<std::string>()) {
+        return std::string();
+    }
+    return found->second.UncheckedGet<std::string>();
+}
+
+} // namespace
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_UPDATER(
@@ -54,9 +67,10 @@ PXRUSDMAYA_REGISTER_UPDATER(
      | UsdMayaPrimUpdater::Supports::AutoPull));
 
 PxrUsdTranslators_MayaReferenceUpdater::PxrUsdTranslators_MayaReferenceUpdater(
-    const MFnDependencyNode& depNodeFn,
-    const Ufe::Path&         path)
-    : UsdMayaPrimUpdater(depNodeFn, path)
+    const UsdMayaPrimUpdaterContext& context,
+    const MFnDependencyNode&         depNodeFn,
+    const Ufe::Path&                 path)
+    : UsdMayaPrimUpdater(context, depNodeFn, path)
 {
 }
 
@@ -99,65 +113,75 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
     UsdStageRefPtr srcStage,
     SdfLayerRefPtr srcLayer,
     const SdfPath& srcSdfPath,
-    UsdStageRefPtr dstStage,
-    SdfLayerRefPtr dstLayer,
+    UsdStageRefPtr /* dstStage */,
+    SdfLayerRefPtr /* dstLayer */,
     const SdfPath& dstSdfPath)
 {
-    bool success = false;
-
-    // Prototype code, subject to change shortly.  PPT, 3-Nov-2021.
-    // We are looking for a very specific configuration in here
-    // i.e. a parent prim with a variant set called "animVariant"
-    // and two variants "cache" and "rig"
-    SdfPath parentSdfPath = dstSdfPath.GetParentPath();
-    UsdPrim primWithVariant = dstStage->GetPrimAtPath(parentSdfPath);
-
-    // Switching variant to cache to discover payload and where to write the data
-    UsdVariantSet variantSet = primWithVariant.GetVariantSet("animVariant");
-    variantSet.SetVariantSelection("cache");
-
-    // Find the layer and prim to which we need to copy the content of push
-    // There is currently no easy way to query this information at prim level
-    // so we go to pcp and sdf.
-    UsdPrim                 primWithPayload = primWithVariant.GetChildren().front();
-    UsdPrimCompositionQuery query(primWithPayload);
-    for (const auto& arc : query.GetCompositionArcs()) {
-        if (arc.GetArcType() == PcpArcTypePayload) {
-            SdfLayerHandle payloadLayer
-                = arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer;
-            SdfPath payloadPrimPath = arc.GetTargetNode().GetPath();
-            // The Maya reference is meant as a cache, and therefore fully
-            // overwritten, so we don't call MayaUsdUtils::mergePrims().
-            success = SdfCopySpec(srcLayer, srcSdfPath, payloadLayer, payloadPrimPath);
-
-            // As of 13-Dec-2021 pushEnd() will not be called on the
-            // MayaReferenceUpdater, because the prim updater type information
-            // is not correctly preserved.  Unload the reference here.  PPT.
-            if (success) {
-                const MObject& parentNode = getMayaObject();
-                UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
-            }
-
-            break;
-        }
+    // We need context to access user arguments
+    if (!getContext()) {
+        return PushCopySpecs::Failed;
     }
 
-    // If we successfully found the payload arc, no further traversal should
-    // take place.
-    return success ? PushCopySpecs::Prune : PushCopySpecs::Failed;
+    // Use the edit router to find the destination layer and path.
+    auto dstEditRouter = MayaUsd::getEditRouter(TfToken("mayaReferencePush"));
+    if (!dstEditRouter) {
+        return PushCopySpecs::Failed;
+    }
+
+    PXR_NS::VtDictionary routerContext = getContext()->GetUserArgs();
+    routerContext["stage"] = PXR_NS::VtValue(getContext()->GetUsdStage());
+    routerContext["prim"] = PXR_NS::VtValue(dstSdfPath.GetString());
+    PXR_NS::VtDictionary routingData;
+
+    (*dstEditRouter)(routerContext, routingData);
+
+    // Retrieve the destination layer and prim path from the routing data.
+    auto dstLayerStr = findValue(routingData, TfToken("layer"));
+    if (!TF_VERIFY(!dstLayerStr.empty())) {
+        return PushCopySpecs::Failed;
+    }
+    auto dstPathStr = findValue(routingData, TfToken("path"));
+    if (!TF_VERIFY(!dstPathStr.empty())) {
+        return PushCopySpecs::Failed;
+    }
+
+    auto dstLayer = SdfLayer::FindOrOpen(dstLayerStr);
+    if (!TF_VERIFY(dstLayer)) {
+        return PushCopySpecs::Failed;
+    }
+    SdfPath dstPath(dstPathStr);
+
+    // The Maya reference is meant as a cache, and therefore fully
+    // overwritten, so we don't call MayaUsdUtils::mergePrims().
+    // As of 13-Dec-2021 pushEnd() will not be called on the
+    // MayaReferenceUpdater, because the prim updater type information
+    // is not correctly preserved.  Unload the reference here.  PPT.
+    if (SdfCopySpec(srcLayer, srcSdfPath, dstLayer, dstPath)) {
+        const MObject& parentNode = getMayaObject();
+        UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
+
+        auto dstLayerStr = findValue(routingData, TfToken("save_layer"));
+        if (dstLayerStr == "yes")
+            dstLayer->Save();
+
+        // No further traversal should take place.
+        return PushCopySpecs::Prune;
+    }
+
+    return PushCopySpecs::Failed;
 }
 
 /* virtual */
-bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
+bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
 {
     const MObject& parentNode = getMayaObject();
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
 
-    return UsdMayaPrimUpdater::discardEdits(context);
+    return UsdMayaPrimUpdater::discardEdits();
 }
 
 /* virtual */
-bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd(const UsdMayaPrimUpdaterContext& context)
+bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
 {
     const MObject& parentNode = getMayaObject();
     return UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode) == MS::kSuccess;
