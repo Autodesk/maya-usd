@@ -29,11 +29,35 @@ def mayaUsdLibRegisterStrings():
     # MEL or python.
 
     # Any python strings from MayaUsd lib go here.
+
+    # mayaUsdAddMayaReference.py
     register('kErrorGroupPrimExists', 'Group prim name "^1s" already exists under "^2s".')
     register('kErrorCannotAddToProxyShape', 'Cannot add Maya Reference node to ProxyShape with VariantSet unless Group prim is used.')
     register('kErrorMayaRefPrimExists', 'Maya Reference prim name "^1s" already exists under "^2s".')
     register('kErrorCreatingGroupPrim', 'Could not create Group prim under "^1s".')
     register('kErrorCreatingMayaRefPrim', 'Could not create MayaReference prim under "^1s".')
+
+    # mayaUsdCacheMayaReference.py
+    register('kButtonNewChildPrim', 'New Child Prim')
+    register('kCacheFileWillAppear', 'Cache file will appear\non parent prim:')
+    register('kCacheMayaRefCache', 'Cache');
+    register('kCacheMayaRefOptions', 'Cache Options');
+    register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD Hierarchy');
+    register('kCaptionCacheToUsd', 'Cache to USD')
+    register('kErrorCacheToUsdFailed', 'Cache to USD failed for "^1s".')
+    register('kMenuAppend', 'Append')
+    register('kMenuPayload', 'Payload')
+    register('kMenuPrepend', 'Prepend')
+    register('kMenuReference', 'Reference')
+    register('kOptionAsCompositionArc', 'As Composition Arc:')
+    register('kOptionListEditedAs', 'List Edited As')
+    register('kTextDefineIn', 'Define in:')
+    register('kTextVariant', 'Variant')
+
+    # mayaUsdMergeToUsd.py
+    register('kErrorMergeToUsdMenuItem', 'Could not create menu item for merge to USD')
+    register('kMenuCacheToUsd', 'Cache to USD...')
+    register('kMenuMergeMayaEdits', 'Merge Maya Edits to USD');
 
 def registerPluginResource(pluginId, stringId, resourceStr):
     '''See registerPluginResource.mel in Maya.

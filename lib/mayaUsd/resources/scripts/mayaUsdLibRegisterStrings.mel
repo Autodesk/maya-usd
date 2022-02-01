@@ -44,4 +44,7 @@ global proc mayaUsdLibRegisterStrings()
     register("kMayaRefCreateNew", "Create New");
     register("kMayaRefAddToPrim", "Add Maya Reference to USD Prim");
     register("kMayaRefReference", "Reference");
+
+    // Used in multiple places.
+    register("kAllUsdFiles", "All USD Files");
 }

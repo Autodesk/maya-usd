@@ -26,6 +26,7 @@ from pxr import Tf, Usd, Kind
 from maya import cmds
 from maya import standalone
 import mayaUsdAddMayaReference
+import mayaUsdMayaReferenceUtils as mayaRefUtils
 
 import unittest
 
@@ -75,7 +76,7 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
         Add a Maya Reference using the defaults (no group or variant).
         '''
-        kDefaultPrimName = mayaUsdAddMayaReference.defaultMayaReferencePrimName()
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
 
         # Since this is a brand new prim, it should not have variant sets.
         primTestDefault = self.stage.DefinePrim('/Test_Default', 'Xform')
@@ -114,9 +115,9 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
         Add a Maya Reference with a (default) variant set.
         '''
-        kDefaultPrimName = mayaUsdAddMayaReference.defaultMayaReferencePrimName()
-        kDefaultVariantSetName = mayaUsdAddMayaReference.defaultVariantSetName()
-        kDefaultVariantName = mayaUsdAddMayaReference.defaultVariantName()
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+        kDefaultVariantSetName = mayaRefUtils.defaultVariantSetName()
+        kDefaultVariantName = mayaRefUtils.defaultVariantName()
 
         # Create another prim with default variant set and name.
         primTestVariant = self.stage.DefinePrim('/Test_Variant', 'Xform')
@@ -162,7 +163,7 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         Add a Maya Reference using a bad Maya Reference prim name and
         bad Variant Set and Variant name.
         '''
-        kDefaultPrimName = mayaUsdAddMayaReference.defaultMayaReferencePrimName()
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
 
         # Create another prim to test sanitizing variant set and name.
         primTestSanitizeVariant = self.stage.DefinePrim('/Test_SanitizeVariant', 'Xform')
@@ -210,9 +211,9 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
         Add a Maya Reference using a group.
         '''
-        kDefaultPrimName = mayaUsdAddMayaReference.defaultMayaReferencePrimName()
-        kDefaultVariantSetName = mayaUsdAddMayaReference.defaultVariantSetName()
-        kDefaultVariantName = mayaUsdAddMayaReference.defaultVariantName()
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+        kDefaultVariantSetName = mayaRefUtils.defaultVariantSetName()
+        kDefaultVariantName = mayaRefUtils.defaultVariantName()
 
         # Create another prim to test adding a group prim (with variant).
         primTestGroup = self.stage.DefinePrim('/Test_Group', 'Xform')
@@ -298,7 +299,7 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
         Add a Maya Reference using the defaults (no group or variant).
         '''
-        kDefaultPrimName = mayaUsdAddMayaReference.defaultMayaReferencePrimName()
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
 
         mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
             self.proxyShapePathStr,
@@ -312,8 +313,8 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
         # We should get an error (invalid prim) when adding a Maya reference under
         # the proxy shape when we also add a variant set.
-        kDefaultVariantSetName = mayaUsdAddMayaReference.defaultVariantSetName()
-        kDefaultVariantName = mayaUsdAddMayaReference.defaultVariantName()
+        kDefaultVariantSetName = mayaRefUtils.defaultVariantSetName()
+        kDefaultVariantName = mayaRefUtils.defaultVariantName()
         mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
             self.proxyShapePathStr,
             self.mayaSceneStr,

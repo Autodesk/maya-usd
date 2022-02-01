@@ -46,17 +46,17 @@ class primUpdaterTest(mayaUsdLib.PrimUpdater):
         primUpdaterTest.pushCopySpecsCalled = True
         return super(primUpdaterTest, self).pushCopySpecs(srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath)
 
-    def editAsMaya(self,context):
+    def editAsMaya(self):
         primUpdaterTest.editAsMayaCalled = True
-        return super(primUpdaterTest, self).editAsMaya(context)
+        return super(primUpdaterTest, self).editAsMaya()
 
-    def discardEdits(self,context):
+    def discardEdits(self):
         primUpdaterTest.discardEditsCalled = True
-        return super(primUpdaterTest, self).discardEdits(context)
+        return super(primUpdaterTest, self).discardEdits()
 
-    def pushEnd(self,context):
+    def pushEnd(self):
         primUpdaterTest.pushEndCalled = True
-        return super(primUpdaterTest, self).pushEnd(context)
+        return super(primUpdaterTest, self).pushEnd()
 
 class testPrimUpdater(unittest.TestCase):
     @classmethod

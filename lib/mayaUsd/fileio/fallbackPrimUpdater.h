@@ -25,7 +25,10 @@ class FallbackPrimUpdater : public UsdMayaPrimUpdater
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    FallbackPrimUpdater(const MFnDependencyNode& depNodeFn, const Ufe::Path& path);
+    FallbackPrimUpdater(
+        const UsdMayaPrimUpdaterContext& context,
+        const MFnDependencyNode&         depNodeFn,
+        const Ufe::Path&                 path);
 
     // clang errors if you use "= default" here, due to const SdfPath member
     //    see: http://open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#253

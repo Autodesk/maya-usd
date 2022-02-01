@@ -25,7 +25,6 @@ global proc string getMayaUsdString(string $key)
 
 global proc mayaUSDRegisterStrings()
 {
-    register("kAllUsdFiles", "All USD Files");
     register("kButtonSave", "Save");
     register("kButtonCancel", "Cancel");
     register("kCreateUsdStageFromFile", "Create USD Stage from File");

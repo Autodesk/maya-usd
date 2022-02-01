@@ -1,3 +1,4 @@
+#
 # Copyright 2022 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,21 +21,9 @@ import ufe
 import re
 import maya.cmds as cmds
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+import mayaUsdMayaReferenceUtils as mayaRefUtils
 
-# These names should not be localized as Usd only accepts [a-z,A-Z] as valid characters.
-kDefaultMayaReferencePrimName = 'MayaReference1'
-kDefaultVariantSetName = 'Representation'
-kDefaultVariantName = 'MayaReference'
 kDefaultEditAsMayaData = False
-
-def defaultMayaReferencePrimName():
-    return kDefaultMayaReferencePrimName
-
-def defaultVariantSetName():
-    return kDefaultVariantSetName
-
-def defaultVariantName():
-    return kDefaultVariantName
 
 def createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit):
     try:
@@ -67,7 +56,7 @@ def getDefaultGroupPrimName(parentPrim, mayaNamespace):
 
 # Adapted from testMayaUsdSchemasMayaReference.py.
 def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace, 
-                            mayaReferencePrimName = kDefaultMayaReferencePrimName,
+                            mayaReferencePrimName = mayaRefUtils.defaultMayaReferencePrimName(),
                             groupPrim = None, variantSet = None,
                             mayaAutoEdit = kDefaultEditAsMayaData):
     '''Create a Maya reference prim and optional group prim parented to the argument path.
@@ -226,7 +215,7 @@ def getPrimPath(ufePathStr):
 
 def getUniqueMayaReferencePrimName(ufePathStr, startName=None):
     '''Helper function to get a unique name for the Maya Reference prim.'''
-    newPrimName = kDefaultMayaReferencePrimName if not startName else startName
+    newPrimName = mayaRefUtils.defaultMayaReferencePrimName() if not startName else startName
     prim = mayaUsd.ufe.ufePathToPrim(ufePathStr)
     if prim.IsValid():
         return mayaUsd.ufe.uniqueChildName(prim, newPrimName)
