@@ -2138,10 +2138,11 @@ void HdVP2Mesh::_UpdateDrawItem(
             // render item.
 
             // Set up the source color buffers.
-            const MColor wireframeColors[] = { drawScene.GetWireframeColor(),
-                                               drawScene.GetSelectionHighlightColor(false),
-                                               drawScene.GetSelectionHighlightColor(true) };
-            bool         useWireframeColors = stateToCommit._instanceColorParam == kSolidColorStr;
+            const MColor wireframeColors[]
+                = { drawScene.GetWireframeColor(),
+                    drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->mesh),
+                    drawScene.GetSelectionHighlightColor() };
+            bool useWireframeColors = stateToCommit._instanceColorParam == kSolidColorStr;
 
             MFloatArray*    shadedColors = nullptr;
             HdInterpolation colorInterpolation = HdInterpolationConstant;
@@ -2254,9 +2255,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         if ((itemDirtyBits & DirtySelectionHighlight)
             && drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
             const MColor& color
-                = (_selectionStatus != kUnselected
-                       ? drawScene.GetSelectionHighlightColor(_selectionStatus == kFullyLead)
-                       : drawScene.GetWireframeColor());
+                = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                       _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->mesh)
+                                                   : drawScene.GetWireframeColor());
 
             MHWRender::MShaderInstance* shader = _delegate->Get3dSolidShader(color);
             if (shader != nullptr && shader != drawItemData._shader) {
