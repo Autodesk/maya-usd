@@ -73,6 +73,7 @@ inline const TfTokenVector& _SupportedBprimTypes()
 
 const MString _diffuseColorParameterName = "diffuseColor"; //!< Shader parameter name
 const MString _solidColorParameterName = "solidColor";     //!< Shader parameter name
+const MString _diffuseParameterName = "diffuse";           //!< Shader parameter name
 const MString _pointSizeParameterName = "pointSize";       //!< Shader parameter name
 const MString _curveBasisParameterName = "curveBasis";     //!< Shader parameter name
 const MString _structOutputName = "outSurfaceFinal"; //!< Output struct name of the fallback shader
@@ -181,6 +182,9 @@ public:
         TF_VERIFY(_3dDefaultMaterialShader);
 
         _3dCPVSolidShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dCPVSolidShader);
+        if (TF_VERIFY(_3dCPVSolidShader)) {
+            _3dCPVSolidShader->setParameter(_diffuseParameterName, 1.0f);
+        }
 
         TF_VERIFY(_3dCPVSolidShader);
 
@@ -204,6 +208,7 @@ public:
                 if (it != _curveBasisParameterValueMapping.end()) {
                     shader->setParameter(_curveBasisParameterName, it->second);
                 }
+                shader->setParameter(_diffuseParameterName, 1.0f);
             }
 
             _fallbackCPVShaders[i] = shader;
