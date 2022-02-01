@@ -150,7 +150,8 @@ private:
     bool    setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
     bool    isBounded() const override { return true; }
     bool    treatAsTransform() const override { return false; }
-    MStatus preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode) override;
+    MStatus
+            preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode) override;
     MStatus postEvaluation(
         const MDGContext&      context,
         const MEvaluationNode& evaluationNode,
