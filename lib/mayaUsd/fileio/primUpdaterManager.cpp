@@ -776,6 +776,16 @@ bool PrimUpdaterManager::mergeToUsd(
     if (!isCopy && TF_VERIFY(ufeMayaItem))
         scene.notify(Ufe::ObjectPreDelete(ufeMayaItem));
 
+    if (!isCopy) {
+        FunctionUndoItem::execute(
+            "Merge to Maya rendering inclusion",
+            [pulledPath]() {
+                removeExcludeFromRendering(pulledPath);
+                return true;
+            },
+            [pulledPath]() { return addExcludeFromRendering(pulledPath); });
+    }
+
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
         &UsdUndoableItemUndoItem::create("Merge to Maya USD data modifications"));
@@ -796,16 +806,6 @@ bool PrimUpdaterManager::mergeToUsd(
         proxyStage,
         ctxArgs,
         std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
-
-    if (!isCopy) {
-        FunctionUndoItem::execute(
-            "Merge to Maya rendering inclusion",
-            [pulledPath]() {
-                removeExcludeFromRendering(pulledPath);
-                return true;
-            },
-            [pulledPath]() { return addExcludeFromRendering(pulledPath); });
-    }
 
     if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
         return false;
