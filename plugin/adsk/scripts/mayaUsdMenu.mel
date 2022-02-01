@@ -609,6 +609,13 @@ proc int isObjectSelected(string $obj)
     return 0;
 }
 
+global string $mayaUsdMergeToUsdOptions = "";
+
+proc string getMergeToUsdOptionsDefaultSettings()
+{
+    return "exportColorSets=1;exportUVs=1;exportSkels=none;exportSkin=none;exportBlendShapes=0;exportDisplayColor=1;shadingMode=none;animation=1;exportVisibility=1;exportInstances=1;mergeTransformAndShape=1;stripNamespaces=0";
+}
+
 global proc mayaUsdMenu_pushBackToUSD(string $obj)
 {
     if (!hasPrimUpdater())
@@ -621,11 +628,10 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
         }
     }
     if (size($obj)) {
-        mayaUsdMergeToUsd -exportOptions "animation=0;shadingMode=none;exportSkels=0;exportSkin=0;exportBlendShapes=0" $obj;
+        string $exportOptions = getMergeToUsdOptionsDefaultSettings();
+        mayaUsdMergeToUsd -exportOptions $exportOptions $obj;
     }
 }
-
-global string $mayaUsdMergeToUsdOptions = "";
 
 global proc mayaUsdPushBackToUSDReceiveExportOptions(string $exportOptions)
 {
@@ -635,7 +641,8 @@ global proc mayaUsdPushBackToUSDReceiveExportOptions(string $exportOptions)
 
 global proc mayaUsdPushBackToUSDOptionsAccepted()
 {
-    mayaUsdTranslatorExport("", "query=all;!output;!animation-data", "", "mayaUsdPushBackToUSDReceiveExportOptions");
+    string $initialSettings = getMergeToUsdOptionsDefaultSettings();
+    mayaUsdTranslatorExport("", "query=all;!output;!animation-data", $initialSettings, "mayaUsdPushBackToUSDReceiveExportOptions");
     layoutDialog -dismiss "Merge";
 }
 
@@ -649,7 +656,8 @@ global proc mayaUsdShowPushBackToUSDOptions()
 
     setParent $subLayout;
 
-    mayaUsdTranslatorExport($subLayout, "post=all;!output;!animation-data", "animation=0;shadingMode=none;exportSkels=0;exportSkin=0;exportBlendShapes=0", "");
+    string $initialSettings = getMergeToUsdOptionsDefaultSettings();
+    mayaUsdTranslatorExport($subLayout, "post=all;!output;!animation-data", $initialSettings, "");
 
     setParent $form;
 
