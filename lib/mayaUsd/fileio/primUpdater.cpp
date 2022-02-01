@@ -54,9 +54,13 @@ using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMayaPrimUpdater::UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const Ufe::Path& path)
+UsdMayaPrimUpdater::UsdMayaPrimUpdater(
+    const UsdMayaPrimUpdaterContext& context,
+    const MFnDependencyNode&         depNodeFn,
+    const Ufe::Path&                 path)
     : _mayaObject(depNodeFn.object())
     , _path(path)
+    , _context(&context)
 {
 }
 
@@ -73,9 +77,9 @@ bool UsdMayaPrimUpdater::canEditAsMaya() const
     return (UsdMayaPrimReaderRegistry::Find(prim.GetTypeName()) != nullptr);
 }
 
-bool UsdMayaPrimUpdater::editAsMaya(const UsdMayaPrimUpdaterContext& context) { return true; }
+bool UsdMayaPrimUpdater::editAsMaya() { return true; }
 
-bool UsdMayaPrimUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
+bool UsdMayaPrimUpdater::discardEdits()
 {
     MObject objectToDelete = getMayaObject();
     if (objectToDelete.isNull())
@@ -94,7 +98,7 @@ bool UsdMayaPrimUpdater::discardEdits(const UsdMayaPrimUpdaterContext& context)
     return status == MS::kSuccess;
 }
 
-bool UsdMayaPrimUpdater::pushEnd(const UsdMayaPrimUpdaterContext& context)
+bool UsdMayaPrimUpdater::pushEnd()
 {
     // Nothing. We rely on the PrimUpdaterManager to delete the nodes in the correct order.
     return true;

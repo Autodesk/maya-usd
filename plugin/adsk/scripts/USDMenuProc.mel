@@ -55,6 +55,10 @@ global proc mayaUsdMenu_duplicate(string $ufePath)
     }
 }
 
+// On right click in the viewport, either through selection or through a pick
+// hit, Maya will look for a procedure called $runTimeName + "MenuProc".
+// and call it.  When the selection or pick hit is a USD prim, this calls the
+// following procedure.
 global proc USDMenuProc(string $parent, string $obj)
 {
     if (!hasPrimUpdater())

@@ -307,8 +307,10 @@ ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 {
-    // Maya shape nodes cannot be unparented.
-    return nullptr;
+    // The default parent is the root of the USD scene.
+    // Since the proxy shape corresponds to the USD root prim,
+    // therefore we implement the default parent as the proxy shape itself.
+    return UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 }
 
 #endif // UFE_V2_FEATURES_AVAILABLE

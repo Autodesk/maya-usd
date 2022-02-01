@@ -297,13 +297,49 @@ private:
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
 
-    //! The render tag version used the last time render tags were updated
-    unsigned int _renderTagVersion { 0 }; // initialized to 1 in HdChangeTracker, so we'll always
-                                          // have an invalid version the first update.
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    unsigned int _visibilityVersion { 0 }; // initialized to 1 in HdChangeTracker.
-#endif
-    bool _taskRenderTagsValid {
+    // Version Id values saved from the last time we queried the HdChangeTracker.
+    // These values are initialized to 1 in HdChangeTracker
+    struct HdChangeTrackerVersions
+    {
+        //! The render tag version the last time _Execute was called
+        unsigned int _renderTag { 0 };
+        //! The visibility change count the last time _Execute was called
+        unsigned int _visibility { 0 };
+        //! The combined instancer index version and instance index change count the last time
+        //! _Execute was called
+        unsigned int _instanceIndex { 0 };
+
+        void sync(const HdChangeTracker& tracker)
+        {
+            _renderTag = tracker.GetRenderTagVersion();
+            _visibility = tracker.GetVisibilityChangeCount();
+            _instanceIndex = tracker.GetInstancerIndexVersion();
+        }
+
+        bool renderTagValid(const HdChangeTracker& tracker)
+        {
+            return _renderTag == tracker.GetRenderTagVersion();
+        }
+
+        bool visibilityValid(const HdChangeTracker& tracker)
+        {
+            return _visibility == tracker.GetVisibilityChangeCount();
+        }
+
+        bool instanceIndexValid(const HdChangeTracker& tracker)
+        {
+            return _instanceIndex == tracker.GetInstancerIndexVersion();
+        }
+
+        void reset()
+        {
+            _renderTag = 0;
+            _visibility = 0;
+            _instanceIndex = 0;
+        }
+    };
+    HdChangeTrackerVersions _changeVersions;
+    bool                    _taskRenderTagsValid {
         false
     }; //!< If false the render tags on the dummy render task are not the minimum set of tags.
 

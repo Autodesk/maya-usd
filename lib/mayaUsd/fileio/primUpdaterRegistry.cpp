@@ -114,8 +114,10 @@ UsdMayaPrimUpdaterRegistry::FindOrFallback(const TfToken& usdTypeName)
         // use fallback
         ret = std::make_tuple(
             UsdMayaPrimUpdater::Supports::All,
-            [](const MFnDependencyNode& depNodeFn, const Ufe::Path& path) {
-                return std::make_shared<FallbackPrimUpdater>(depNodeFn, path);
+            [](const UsdMayaPrimUpdaterContext& context,
+               const MFnDependencyNode&         depNodeFn,
+               const Ufe::Path&                 path) {
+                return std::make_shared<FallbackPrimUpdater>(context, depNodeFn, path);
             });
 
         _regTfType[typeName] = ret;
@@ -137,8 +139,10 @@ UsdMayaPrimUpdaterRegistry::FindOrFallback(const std::string& mayaTypeName)
         // use fallback
         ret = std::make_tuple(
             UsdMayaPrimUpdater::Supports::All,
-            [](const MFnDependencyNode& depNodeFn, const Ufe::Path& path) {
-                return std::make_shared<FallbackPrimUpdater>(depNodeFn, path);
+            [](const UsdMayaPrimUpdaterContext& context,
+               const MFnDependencyNode&         depNodeFn,
+               const Ufe::Path&                 path) {
+                return std::make_shared<FallbackPrimUpdater>(context, depNodeFn, path);
             });
 
         _regMayaType[mayaTypeName] = ret;

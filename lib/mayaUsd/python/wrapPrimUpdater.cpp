@@ -50,8 +50,11 @@ public:
 
     PrimUpdaterWrapper() = default;
 
-    PrimUpdaterWrapper(const MFnDependencyNode& node, const Ufe::Path& path)
-        : UsdMayaPrimUpdater(node, path)
+    PrimUpdaterWrapper(
+        const UsdMayaPrimUpdaterContext& context,
+        const MFnDependencyNode&         node,
+        const Ufe::Path&                 path)
+        : UsdMayaPrimUpdater(context, node, path)
     {
     }
 
@@ -92,32 +95,20 @@ public:
         return this->CallVirtual<bool>("canEditAsMaya", &This::default_canEditAsMaya)();
     }
 
-    bool default_editAsMaya(const UsdMayaPrimUpdaterContext& context)
+    bool default_editAsMaya() { return base_t::editAsMaya(); }
+    bool editAsMaya() override
     {
-        return base_t::editAsMaya(context);
-    }
-    bool editAsMaya(const UsdMayaPrimUpdaterContext& context) override
-    {
-        return this->CallVirtual<bool>("editAsMaya", &This::default_editAsMaya)(context);
+        return this->CallVirtual<bool>("editAsMaya", &This::default_editAsMaya)();
     }
 
-    bool default_discardEdits(const UsdMayaPrimUpdaterContext& context)
+    bool default_discardEdits() { return base_t::discardEdits(); }
+    bool discardEdits() override
     {
-        return base_t::discardEdits(context);
-    }
-    bool discardEdits(const UsdMayaPrimUpdaterContext& context) override
-    {
-        return this->CallVirtual<bool>("discardEdits", &This::default_discardEdits)(context);
+        return this->CallVirtual<bool>("discardEdits", &This::default_discardEdits)();
     }
 
-    bool default_pushEnd(const UsdMayaPrimUpdaterContext& context)
-    {
-        return base_t::pushEnd(context);
-    }
-    bool pushEnd(const UsdMayaPrimUpdaterContext& context) override
-    {
-        return this->CallVirtual<bool>("pushEnd", &This::default_pushEnd)(context);
-    }
+    bool default_pushEnd() { return base_t::pushEnd(); }
+    bool pushEnd() override { return this->CallVirtual<bool>("pushEnd", &This::default_pushEnd)(); }
 
     //---------------------------------------------------------------------------------------------
     /// \brief  wraps a factory function that allows registering an updated Python class
@@ -128,14 +119,17 @@ public:
         // Instances of this class act as "function objects" that are fully compatible with the
         // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
         // python wrappers based on the latest class registered.
-        UsdMayaPrimUpdaterSharedPtr operator()(const MFnDependencyNode& node, const Ufe::Path& path)
+        UsdMayaPrimUpdaterSharedPtr operator()(
+            const UsdMayaPrimUpdaterContext& context,
+            const MFnDependencyNode&         node,
+            const Ufe::Path&                 path)
         {
             boost::python::object pyClass = GetPythonObject(_classIndex);
             if (!pyClass) {
                 // Prototype was unregistered
                 return nullptr;
             }
-            auto                  primUpdater = std::make_shared<This>(node, path);
+            auto                  primUpdater = std::make_shared<This>(context, node, path);
             TfPyLock              pyLock;
             boost::python::object instance = pyClass((uintptr_t)&primUpdater);
             boost::python::incref(instance.ptr());
