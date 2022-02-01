@@ -834,7 +834,7 @@ void UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(
     bool isLeftHanded = false;
     UsdMayaUtil::getPlugValue(meshFn, "opposite", &isLeftHanded);
     primSchema.CreateOrientationAttr(
-        VtValue(isLeftHanded ? UsdGeomTokens->leftHanded : UsdGeomTokens->rightHanded));
+        VtValue(isLeftHanded ? UsdGeomTokens->leftHanded : UsdGeomTokens->rightHanded), true);
 }
 
 void UsdMayaMeshWriteUtils::writeInvisibleFacesData(
