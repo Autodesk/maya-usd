@@ -613,7 +613,7 @@ global string $mayaUsdMergeToUsdOptions = "";
 
 proc string getMergeToUsdOptionsDefaultSettings()
 {
-    return "exportColorSets=1;exportUVs=1;exportSkels=0;exportSkin=0;exportBlendShapes=0;exportDisplayColor=1;shadingMode=none;animation=1;exportVisibility=1;exportInstances=1;mergeTransformAndShape=1;stripNamespaces=0";
+    return "exportColorSets=1;exportUVs=1;exportSkels=none;exportSkin=none;exportBlendShapes=0;exportDisplayColor=1;shadingMode=none;animation=1;exportVisibility=1;exportInstances=1;mergeTransformAndShape=1;stripNamespaces=0";
 }
 
 global proc mayaUsdMenu_pushBackToUSD(string $obj)
