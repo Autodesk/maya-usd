@@ -297,7 +297,6 @@ set_target_properties(${PYTHON_LIBRARY_LOCATION}
 set_property(GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}/${PYTHON_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
 execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py)
-execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py)
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py
     DESTINATION
