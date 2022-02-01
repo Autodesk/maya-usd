@@ -39,7 +39,7 @@ void HdVP2ExtComputation::Sync(
 
     HdExtComputation::_Sync(sceneDelegate, renderParam, dirtyBits);
 
-    TF_DEBUG(pxr::HD_EXT_COMPUTATION_UPDATED)
+    TF_DEBUG(HD_EXT_COMPUTATION_UPDATED)
         .Msg(
             "HdVP2ExtComputation::Sync for %s (dirty bits = 0x%x)\n",
             GetId().GetText(),
@@ -60,7 +60,7 @@ void HdVP2ExtComputation::Sync(
     // sync is parallel.
     if (_evaluatedInputs)
         return;
-    for (pxr::TfToken const& inputName : GetSceneInputNames()) {
+    for (TfToken const& inputName : GetSceneInputNames()) {
         sceneDelegate->GetExtComputationInput(GetId(), inputName);
     }
 
