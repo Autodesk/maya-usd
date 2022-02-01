@@ -507,10 +507,7 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
 
     // reset any version ids or dirty information that doesn't make sense if we clear
     // the render index.
-    _renderTagVersion = 0;
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    _visibilityVersion = 0;
-#endif
+    _changeVersions.reset();
     _taskRenderTagsValid = false;
     _isPopulated = false;
 }
@@ -558,13 +555,9 @@ void ProxyRenderDelegate::_InitRenderDelegate()
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 
-        // Set the _renderTagVersion and _visibilityVersion so that we don't trigger a
-        // needlessly large update them on the first frame.
-        HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-        _renderTagVersion = changeTracker.GetRenderTagVersion();
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-        _visibilityVersion = changeTracker.GetVisibilityChangeCount();
-#endif
+        // Sync the _changeVersions so that we don't trigger a needlessly large update them on the
+        // first frame.
+        _changeVersions.sync(_renderIndex->GetChangeTracker());
 
         // Add additional configurations after render index creation.
         static std::once_flag reprsOnce;
@@ -776,21 +769,22 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
     }
 
-    // To work around USD issue #1516 set instanceIndexChange to true. By default leave the value
-    // false. There is a significant performance overhead caused by populating selection every
-    // frame, and the workflows that trigger it are much more common then changing instancing.
-    // See MayaUSD issue #1991 for the performance problem.
-    // We don't know if any instanced object has had it's instance index change, so re-populate
-    // selection every update to ensure correct selection highlighting of instanced objects.
-    bool instanceIndexChanged = false;
+    // Work around USD issue #1516. There is a significant performance overhead caused by populating
+    // selection, so only force the populate selection to occur when we detect a change which
+    // impacts the instance indexing.
+    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+    bool             forcePopulateSelection = !_changeVersions.instanceIndexValid(changeTracker);
+    _changeVersions.sync(changeTracker);
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass) || instanceIndexChanged) {
+    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass)
+        || forcePopulateSelection) {
         _UpdateSelectionStates();
         _selectionChanged = false;
         _selectionModeChanged = false;
     }
 #else
-    if ((_selectionChanged && !inSelectionPass) || instanceIndexChanged) {
+    if ((_selectionChanged && !inSelectionPass) || forcePopulateSelection) {
         _UpdateSelectionStates();
         _selectionChanged = false;
     }
@@ -842,8 +836,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             // Mark everything "dirty" so that sync is called on everything
             // If there are multiple views up with different viewport modes then
             // this is slow.
-            auto&            rprims = _renderIndex->GetRprimIds();
-            HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+            auto& rprims = _renderIndex->GetRprimIds();
             for (auto path : rprims) {
                 changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtyDisplayMode);
             }
@@ -1324,10 +1317,10 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // or when the global render tags are set. Check to see if the render tags version has
     // changed since the last time we set the render tags so we know if there is a change
     // to an individual rprim or not.
-    bool rprimRenderTagChanged = (_renderTagVersion != changeTracker.GetRenderTagVersion());
+    bool rprimRenderTagChanged = !_changeVersions.renderTagValid(changeTracker);
 #ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     rprimRenderTagChanged
-        = rprimRenderTagChanged || (_visibilityVersion != changeTracker.GetVisibilityChangeCount());
+        = rprimRenderTagChanged || !_changeVersions.visibilityValid(changeTracker);
 #endif
 
     bool renderPurposeChanged = false;
@@ -1412,11 +1405,6 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // UsdImagingDelegate::GetRenderTag(). So far I don't see an advantage of
     // using this feature for MayaUSD, but it may be useful at some point in
     // the future.
-
-    _renderTagVersion = changeTracker.GetRenderTagVersion();
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    _visibilityVersion = changeTracker.GetVisibilityChangeCount();
-#endif
 }
 
 //! \brief  List the rprims in collection that match renderTags
