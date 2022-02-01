@@ -72,14 +72,7 @@ global proc USDMenuProc(string $parent, string $obj)
 
         setParent -menu ..;
         if (canEditAsMaya($obj)) {
-            // Temporary - hide this context menu items behind an
-            //             env var until it is completed.
-            string $s = `getenv "MAYAUSD_ENABLE_EDIT_AS_MAYA_DATA"`;
-            string $ls = tolower($s);
-            if (`match $ls "true|yes|on|1"` !="")
-            {
-                menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdMenu_editAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
-            }
+            menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdMenu_editAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
         }
         menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");
     }

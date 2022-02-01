@@ -631,8 +631,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         // Temporary - hide some of the context menu items behind an
         //             env var until they are completed.
         if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
-            if (TfGetenvBool("MAYAUSD_ENABLE_EDIT_AS_MAYA_DATA", false))
-                items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
+            items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
             items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
         }
         if (TfGetenvBool("MAYAUSD_ENABLE_ADD_MAYA_REFERENCE", false))
