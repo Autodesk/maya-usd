@@ -401,7 +401,7 @@ print(adaptor.GetAppliedSchemas())
 # Returns: ['PhysicsMassAPI']
 ```
 
-And we see the bullet simulation is back, with the right value for the sphere mass.
+And we see the bullet simulation is back.
 
 ## What is the minimal code necessary for exporting a schema API
 
@@ -427,7 +427,9 @@ class BarebonesSchemaApiExporter(mayaUsdLib.SchemaApiAdaptor):
 Here is an example for another Physics API to see this in action. First we declare the exporter and register it:
 
 ```python
+# We have multiple adaptors using this function, so it makes sense to extract it
 def _GetBullet(mayaNode):
+    """Navigate to a bullet shape if it exists"""
 	path = om.MDagPath.getAPathTo(mayaNode)
 	if not path or not path.pop():
 		return None
@@ -447,9 +449,7 @@ class BulletRigidBodyShemaAdaptor(mayaUsdLib.SchemaApiAdaptor):
         return _GetBullet(self.mayaObject) is not None
 
     def CopyToPrim(self, prim, usdTime, valueWriter):
-        """Barebones export callback. You have the Maya object and the USD prim, and
-        all latitude to edit the USD prim at will. Please resist the temptation to
-        write attributes that are not part of the schema."""
+        """Barebones export callback."""
         rbSchema = UsdPhysics.RigidBodyAPI.Apply(prim)
         velAttr = rbSchema.CreateVelocityAttr()
         depFn = om.MFnDependencyNode(_GetBullet(self.mayaObject))
@@ -550,6 +550,10 @@ def _ApplyBulletSchema(mayaShape):
     return True
 
 class BulletRigidBodyShemaImporter(mayaUsdLib.SchemaApiAdaptor):
+    #
+    # Not an incremental class this time. Import and export can be split in two
+    # separate classes as needed.
+    #
     def CanAdaptForImport(self, jobArgs):
         """Can always import."""
         return True
@@ -586,7 +590,7 @@ class BulletRigidBodyShemaImporter(mayaUsdLib.SchemaApiAdaptor):
         return True
 ```
 
-So we can now try importing the scene we exported in the previous section:
+Using the animation aware `mayaUsdLib.ReadUtil.ReadUsdAttribute()` function, so we can now try importing the scene we exported in the previous section:
 
 ```python
 mayaUsdLib.SchemaApiAdaptor.Register(BulletRigidBodyShemaImporter,
@@ -600,8 +604,8 @@ If you expand under pSphere1|pSphereShape1 you will see the imported bullet simu
 
 ## How to handle relationships
 
-The schema API adaptors are called as we export a Maya object, so it is quite possible that objects that are referenced in relationships do not yet appear in the datamodel that is being created. It is recommended to process relationships post-translation using chasers.
+The schema API adaptors are called as each object in the source datamaodel is traversed, so it is quite possible that objects that are referenced in relationships do not yet appear in the target datamodel that is being created. It is recommended to process relationships post-translation using chasers.
 
 ## How about C++?
 
-All the API discussed here are available in C++ as well (except class unregistration). All the information presented here for Python was extracted directly from the [testSchemaApiAdaptor](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/mayaUsd/fileio/testSchemaApiAdaptor.py) unit test. There is an equivalent unit test on the C++ side where you can see a [Mass adaptor](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/usd/plugin/bulletAdaptor.cpp#L147) implementation being registered [here](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/usd/plugin/bulletAdaptor.cpp#L274). This requires [registering the plugin](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/usd/plugin/nullApiExporter_plugInfo.json#L7) to be loaded when scanning for adaptors and is exercised by another [testUsdExportSchemaApi](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/usd/translators/testUsdExportSchemaApi.py) that 
+All the API discussed here are available in C++ as well (except class unregistration). All the information presented here for Python was extracted directly from the [testSchemaApiAdaptor](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/mayaUsd/fileio/testSchemaApiAdaptor.py) unit test. There is an equivalent unit test on the C++ side where you can see a [Mass API adaptor](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/usd/plugin/bulletAdaptor.cpp#L147) implementation being registered [here](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/usd/plugin/bulletAdaptor.cpp#L274). This requires [registering the plugin](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/usd/plugin/nullApiExporter_plugInfo.json#L7) to be loaded when scanning for adaptors and is exercised by another [testUsdExportSchemaApi](https://github.com/Autodesk/maya-usd/blob/dev/test/lib/usd/translators/testUsdExportSchemaApi.py) that follows closely the Python version.
