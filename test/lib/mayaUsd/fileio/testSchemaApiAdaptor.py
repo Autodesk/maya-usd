@@ -199,7 +199,7 @@ class TestBulletRigidBodyShemaAdaptor(mayaUsdLib.SchemaApiAdaptor):
         if self.GetMayaObjectForSchema() is not None:
             return True
 
-        retVal = self.ApplySchema(om.MDGModifier())
+        retVal = _ApplyBulletSchema(self.mayaObject)
 
         if retVal:
             newObject = self.GetMayaObjectForSchema()
