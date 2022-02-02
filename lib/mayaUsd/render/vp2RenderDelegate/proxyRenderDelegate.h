@@ -293,6 +293,15 @@ private:
     MColor _wireframeColor; //!< Wireframe color assigned to the proxy shape
 
     std::mutex _mayaCommandEngineMutex;
+    uint64_t   _frameCounter { 0 };
+
+    typedef std::pair<MColor, uint64_t>  MColorCache;
+    typedef std::pair<GfVec3f, uint64_t> GfVec3fCache;
+
+    MColorCache  _activeMeshColorCache { MColor(), 0 };
+    MColorCache  _activeCurveColorCache { MColor(), 0 };
+    MColorCache  _leadColorCache { MColor(), 0 };
+    GfVec3fCache _dormantCurveColorCache { GfVec3f(), 0 };
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
