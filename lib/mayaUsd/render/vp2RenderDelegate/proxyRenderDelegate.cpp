@@ -1485,7 +1485,12 @@ const MColor& ProxyRenderDelegate::GetWireframeColor() const { return _wireframe
 
 GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
 {
-    // Enter the mutex and check the cache
+    // Check the cache. It is safe since _dormantCurveColorCache.second is atomic
+    if (_dormantCurveColorCache.second == _frameCounter) {
+        return _dormantCurveColorCache.first;
+    }
+
+    // Enter the mutex and check the cache again
     std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
     if (_dormantCurveColorCache.second == _frameCounter) {
         return _dormantCurveColorCache.first;
@@ -1537,7 +1542,12 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
         return kDefaultActiveColor;
     }
 
-    // Enter the mutex and check the cache
+    // Check the cache. It is safe since colorCache->second is atomic
+    if (colorCache->second == _frameCounter) {
+        return colorCache->first;
+    }
+
+    // Enter the mutex and check the cache again
     std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
     if (colorCache->second == _frameCounter) {
         return colorCache->first;

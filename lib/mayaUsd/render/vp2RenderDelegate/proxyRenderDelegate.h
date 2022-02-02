@@ -295,8 +295,8 @@ private:
     std::mutex _mayaCommandEngineMutex;
     uint64_t   _frameCounter { 0 };
 
-    typedef std::pair<MColor, uint64_t>  MColorCache;
-    typedef std::pair<GfVec3f, uint64_t> GfVec3fCache;
+    typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
+    typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
 
     MColorCache  _activeMeshColorCache { MColor(), 0 };
     MColorCache  _activeCurveColorCache { MColor(), 0 };
