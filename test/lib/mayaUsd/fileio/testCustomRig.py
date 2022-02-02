@@ -56,6 +56,13 @@ class customRigPrimUpdater(mayaUsdLib.PrimUpdater):
     def __init__(self, *args, **kwargs):
         super(customRigPrimUpdater, self).__init__(*args, **kwargs)
 
+    def shouldAutoEdit(self):
+        autoEditAttr = self.getUsdPrim().GetAttribute("autoEdit")
+        if autoEditAttr == None:
+            return False
+            
+        return autoEditAttr.Get()
+
     def editAsMaya(self):
         return super(customRigPrimUpdater, self).editAsMaya()
 
@@ -74,6 +81,12 @@ class testCustomRig(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.inputPath = fixturesUtils.setUpClass(__file__)
+        
+        typeName = Usd.SchemaRegistry.GetTypeFromSchemaTypeName("CustomRig").typeName
+        
+        mayaUsdLib.PrimReader.Register(customRigPrimReader, typeName)
+        mayaUsdLib.PrimUpdater.Register(customRigPrimUpdater, typeName, "transform", customRigPrimUpdater.Supports.All.value + customRigPrimUpdater.Supports.AutoPull.value)
+
 
     @classmethod
     def tearDownClass(cls):
@@ -111,9 +124,6 @@ class testCustomRig(unittest.TestCase):
     def testCustomRigReader(self):
         "Validate prim reader for CustomRig codeless schema"
         
-        typeName = Usd.SchemaRegistry.GetTypeFromSchemaTypeName("CustomRig").typeName
-        mayaUsdLib.PrimReader.Register(customRigPrimReader, typeName)
-        
         layer = Sdf.Layer.CreateAnonymous(".usd")
         layer.ImportFromString(
         ''' #usda 1.0
@@ -139,9 +149,6 @@ class testCustomRig(unittest.TestCase):
        
     def testCustomRigUpdater(self):
         "Validate prim updater for CustomRig codeless schema"
-        
-        typeName = Usd.SchemaRegistry.GetTypeFromSchemaTypeName("CustomRig").typeName
-        mayaUsdLib.PrimUpdater.Register(customRigPrimUpdater, typeName, "transform", customRigPrimUpdater.Supports.All.value)
         
         import mayaUsd_createStageWithNewLayer
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
@@ -202,6 +209,78 @@ class testCustomRig(unittest.TestCase):
         attr = prim.GetAttribute("xformOp:translate")
         self.assertEqual(attr.GetNumTimeSamples(), 11)
         self.assertEqual(attr.GetTimeSamples(), [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+
+    def testCustomRigUpdaterAutoEditLoad(self):
+        "Validate auto edit on stage load for CustomRig codeless schema"
+        
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        
+        stage = mayaUsdUfe.getStage(proxyShape)
+        self.assertTrue(stage)
+        
+        layer = stage.GetRootLayer()
+        layer.ImportFromString(
+        ''' #sdf 1
+            (
+                defaultPrim = "world"
+            )
+            def Xform "world" {
+                def Xform "anim" {
+                    def CustomRig "bob" {
+                        int cubes = 2
+                        bool autoEdit = 1
+                    }
+                }
+            }
+        '''
+        )
+
+        self.assertTrue(self._GetMFnDagNode("bob|pCube1"))
+        self.assertTrue(self._GetMFnDagNode("bob|pCube2"))
+        
+        bobPrim = stage.GetPrimAtPath("/world/anim/bob")
+        autoEditAttr = bobPrim.GetAttribute("autoEdit")
+        self.assertTrue(autoEditAttr.Get())
+        
+    def testCustomRigUpdaterAutoEditChange(self):
+        "Validate auto edit on attr change for CustomRig codeless schema"
+        
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        
+        stage = mayaUsdUfe.getStage(proxyShape)
+        self.assertTrue(stage)
+        
+        layer = stage.GetRootLayer()
+        layer.ImportFromString(
+        ''' #sdf 1
+            (
+                defaultPrim = "world"
+            )
+            def Xform "world" {
+                def Xform "anim" {
+                    def CustomRig "bob" {
+                        int cubes = 2
+                        bool autoEdit = 0
+                    }
+                }
+            }
+        '''
+        )
+
+        self.assertFalse(self._GetMFnDagNode("bob|pCube1"))
+        self.assertFalse(self._GetMFnDagNode("bob|pCube2"))
+        
+        bobPrim = stage.GetPrimAtPath("/world/anim/bob")
+        autoEditAttr = bobPrim.GetAttribute("autoEdit")
+        self.assertFalse(autoEditAttr.Get())
+        
+        autoEditAttr.Set(True)
+        self.assertTrue(autoEditAttr.Get())
+ 
+        self.assertTrue(self._GetMFnDagNode("bob|pCube1"))
+        self.assertTrue(self._GetMFnDagNode("bob|pCube2"))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
