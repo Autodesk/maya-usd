@@ -1143,11 +1143,10 @@ void PrimUpdaterManager::onProxyContentChanged(
     UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), stage, userArgs);
 
     for (const auto& changedPath : notice.GetResyncedPaths()) {
-        if (changedPath == SdfPath::AbsoluteRootPath()) {
-            continue;
-        }
+        UsdPrim resyncPrim = (changedPath != SdfPath::AbsoluteRootPath())
+            ? stage->GetPrimAtPath(changedPath)
+            : stage->GetPseudoRoot();
 
-        UsdPrim      resyncPrim = stage->GetPrimAtPath(changedPath);
         UsdPrimRange range(resyncPrim, predicate);
 
         for (auto it = range.begin(); it != range.end(); it++) {
