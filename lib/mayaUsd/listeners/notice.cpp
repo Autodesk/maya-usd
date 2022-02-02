@@ -29,7 +29,9 @@ namespace {
 // to be removed.
 static int _newOrOpenRegistrationCount = 0;
 
-static void _OnMayaNewOrOpenSceneCallback(void* /*clientData*/)
+static void _afterNewSceneCallback(void* /*clientData*/) { UsdMayaSceneResetNotice().Send(); }
+
+static void _beforeNewSceneCallback(void* /*clientData*/)
 {
     // kBeforeFileRead messages are emitted when importing/referencing files,
     // which we don't consider a "scene reset".
@@ -37,20 +39,22 @@ static void _OnMayaNewOrOpenSceneCallback(void* /*clientData*/)
         return;
     }
 
+    UsdMayaSceneBeforeResetNotice().Send();
     UsdMayaSceneResetNotice().Send();
 }
 
 } // anonymous namespace
 
 TF_INSTANTIATE_TYPE(UsdMayaSceneResetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(UsdMayaSceneBeforeResetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 
-MCallbackId UsdMayaSceneResetNotice::_afterNewCallbackId = 0;
-MCallbackId UsdMayaSceneResetNotice::_beforeFileReadCallbackId = 0;
-
-UsdMayaSceneResetNotice::UsdMayaSceneResetNotice() { }
+MCallbackId UsdMayaNoticeListener::_beforeNewCallbackId = 0;
+MCallbackId UsdMayaNoticeListener::_afterNewCallbackId = 0;
+MCallbackId UsdMayaNoticeListener::_beforeFileReadCallbackId = 0;
+MCallbackId UsdMayaNoticeListener::_exitingCallbackId = 0;
 
 /* static */
-void UsdMayaSceneResetNotice::InstallListener()
+void UsdMayaNoticeListener::InstallListener()
 {
     if (_newOrOpenRegistrationCount++ > 0) {
         return;
@@ -67,17 +71,27 @@ void UsdMayaSceneResetNotice::InstallListener()
     // a scene reset notice.
     if (_afterNewCallbackId == 0) {
         _afterNewCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kAfterNew, _OnMayaNewOrOpenSceneCallback);
+            = MSceneMessage::addCallback(MSceneMessage::kAfterNew, _afterNewSceneCallback);
+    }
+
+    if (_beforeNewCallbackId == 0) {
+        _beforeNewCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kBeforeNew, _beforeNewSceneCallback);
     }
 
     if (_beforeFileReadCallbackId == 0) {
-        _beforeFileReadCallbackId = MSceneMessage::addCallback(
-            MSceneMessage::kBeforeFileRead, _OnMayaNewOrOpenSceneCallback);
+        _beforeFileReadCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kBeforeFileRead, _beforeNewSceneCallback);
+    }
+
+    if (_exitingCallbackId == 0) {
+        _exitingCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, _beforeNewSceneCallback);
     }
 }
 
 /* static */
-void UsdMayaSceneResetNotice::RemoveListener()
+void UsdMayaNoticeListener::RemoveListener()
 {
     if (_newOrOpenRegistrationCount-- > 1) {
         return;
@@ -89,6 +103,10 @@ void UsdMayaSceneResetNotice::RemoveListener()
 
     if (_beforeFileReadCallbackId == 0) {
         MMessage::removeCallback(_beforeFileReadCallbackId);
+    }
+
+    if (_exitingCallbackId != 0) {
+        MMessage::removeCallback(_exitingCallbackId);
     }
 }
 

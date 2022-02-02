@@ -333,7 +333,7 @@ MStatus initializePlugin(MObject obj)
 #endif
 #endif
 
-    UsdMayaSceneResetNotice::InstallListener();
+    UsdMayaNoticeListener::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -439,7 +439,7 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 #endif
 
-    UsdMayaSceneResetNotice::RemoveListener();
+    UsdMayaNoticeListener::RemoveListener();
     UsdMayaDiagnosticDelegate::RemoveDelegate();
 
     return status;

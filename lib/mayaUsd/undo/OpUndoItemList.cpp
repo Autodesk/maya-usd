@@ -33,9 +33,15 @@ struct OnSceneResetListener : public PXR_NS::TfWeakBase
     {
         PXR_NS::TfWeakPtr<OnSceneResetListener> self(this);
         PXR_NS::TfNotice::Register(self, &OnSceneResetListener::OnSceneReset);
+        PXR_NS::TfNotice::Register(self, &OnSceneResetListener::OnSceneBeforeReset);
     }
 
     void OnSceneReset(const PXR_NS::UsdMayaSceneResetNotice& notice)
+    {
+        OpUndoItemList::instance().clear();
+    }
+
+    void OnSceneBeforeReset(const PXR_NS::UsdMayaSceneBeforeResetNotice& notice)
     {
         OpUndoItemList::instance().clear();
     }

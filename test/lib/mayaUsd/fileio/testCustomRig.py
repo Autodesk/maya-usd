@@ -193,7 +193,8 @@ class testCustomRig(unittest.TestCase):
         cmds.setKeyframe( "bob|pCube2.ty", time=10.0, value=10 )
         
         # Push the animation back to USD. This will use a custom logic that will write it to a new prim
-        self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(bobMayaPathStr))
+        with mayaUsdLib.OpUndoItemList():
+            self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(bobMayaPathStr))
         
         # After push, all Maya objects should be gone
         self.assertFalse(self._GetMFnDagNode("bob"))
