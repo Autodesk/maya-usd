@@ -173,9 +173,13 @@ TEST(DiffPrimVar, diffGeomNormals)
 {
     MFileIO::newFile(true);
     MStringArray result;
+    // Creates a sphere with per face per vertex normals
     ASSERT_TRUE(
-        MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result)
+        MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1;", result)
         == MS::kSuccess);
+    ASSERT_TRUE(result.length() == 2);
+    ASSERT_TRUE(
+        MGlobal::executeCommand("LockNormals; polySoftEdge -a 0 -ch 1 pSphere1;") == MS::kSuccess);
 
     const MString temp_path = buildTempPath("AL_USDMayaTests_diffPrimVarNormals.usda");
 
@@ -187,7 +191,6 @@ TEST(DiffPrimVar, diffGeomNormals)
         + temp_path + "\";";
 
     ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
-    ASSERT_TRUE(result.length() == 2);
 
     MSelectionList sl;
     EXPECT_TRUE(sl.add("pSphereShape1") == MS::kSuccess);

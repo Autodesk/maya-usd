@@ -30,9 +30,6 @@ configure_file(
 # install python module
 foreach(INPUT_FILE ${PY_INIT_FILES})
   string(REPLACE ${CMAKE_CURRENT_SOURCE_DIR} ${AL_INSTALL_PREFIX}/lib/python OUTPUT_FILE ${INPUT_FILE})
-  # use bracket-argument-syntax for ${Python_EXECUTABLE}, which may contain
-  # backslashes on windows
-  install(CODE "execute_process(COMMAND [[${Python_EXECUTABLE}]] -m compileall \"${INPUT_FILE}\" )")
   get_filename_component(OUTPUT_PATH ${OUTPUT_FILE} DIRECTORY)
   install(FILES
         ${INPUT_FILE}  # .py files
