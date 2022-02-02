@@ -962,7 +962,7 @@ class AttributeTestCase(unittest.TestCase):
         # check the "transform op order" stack.
         self.assertEqual(sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray(('xformOp:translate','xformOp:rotateXYZ', 'xformOp:scale')))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3011', 'testMetadata is only available in UFE preview version 0.3.11 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testMetadata is only available in UFE v3 or greater.')
     def testMetadata(self):
         '''Test attribute metadata.'''
         cmds.file(new=True, force=True)
@@ -1054,7 +1054,7 @@ class AttributeTestCase(unittest.TestCase):
         runMetadataUndoRedo(float, 65.78, 0.567)
         runMetadataUndoRedo(str, 'New doc from command', 'New doc starting value')
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3011', 'testAttributeLock is only available in UFE preview version 0.3.11 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testAttributeLock is only available in UFE v3 or greater.')
     def testAttributeLock(self):
         '''Test attribute lock/unlock.'''
         cmds.file(new=True, force=True)

@@ -37,8 +37,6 @@ foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        ENV
-            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
     )
 
     # Add a ctest label to these tests for easy filtering.
@@ -69,7 +67,6 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENV
-            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/"
     )
 endif()

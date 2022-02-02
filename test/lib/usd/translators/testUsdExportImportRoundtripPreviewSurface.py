@@ -63,7 +63,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
     def testUsdPreviewSurfaceRoundtripMetallic(self):
         self.__testUsdPreviewSurfaceRoundtrip(metallic=True)
 
-    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.previewReleaseVersion() >= 126 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
+    @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
     def testUsdPreviewSurfaceRoundtripMaterialX(self):
         self.__testUsdPreviewSurfaceRoundtrip(metallic=True,
                                               convertTo="MaterialX")
