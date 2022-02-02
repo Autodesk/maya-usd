@@ -725,6 +725,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "Execute");
 
+    ++_frameCounter;
     _UpdateRenderTags();
 
     // If update for selection is enabled, the draw data for the "points" repr
@@ -1475,21 +1476,33 @@ const MColor& ProxyRenderDelegate::GetWireframeColor() const { return _wireframe
 
 GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
 {
-    MDoubleArray curveColorResult;
-    {
-        std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
-        MGlobal::executeCommand(
-            "int $index = `displayColor -q -dormant \"curve\"`; colorIndex -q $index;",
-            curveColorResult);
+    // Check the cache. It is safe since _dormantCurveColorCache.second is atomic
+    if (_dormantCurveColorCache.second == _frameCounter) {
+        return _dormantCurveColorCache.first;
     }
 
-    if (curveColorResult.length() == 3) {
-        return GfVec3f(curveColorResult[0], curveColorResult[1], curveColorResult[2]);
+    // Enter the mutex and check the cache again
+    std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
+    if (_dormantCurveColorCache.second == _frameCounter) {
+        return _dormantCurveColorCache.first;
+    }
+
+    // Execute Maya command engine to fetch the color
+    MDoubleArray colorResult;
+    MGlobal::executeCommand(
+        "int $index = `displayColor -q -dormant \"curve\"`; colorIndex -q $index;", colorResult);
+
+    if (colorResult.length() == 3) {
+        _dormantCurveColorCache.first = GfVec3f(colorResult[0], colorResult[1], colorResult[2]);
     } else {
         TF_WARN("Failed to obtain curve default color");
         // In case of an error, return the default navy-blue color
-        return GfVec3f(0.000f, 0.016f, 0.376f);
+        _dormantCurveColorCache.first = GfVec3f(0.000f, 0.016f, 0.376f);
     }
+
+    // Update the cache and return
+    _dormantCurveColorCache.second = _frameCounter;
+    return _dormantCurveColorCache.first;
 }
 
 //! \brief
@@ -1499,16 +1512,36 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
     static const MColor kDefaultActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Prepare to construct the query command.
-    bool        fromPalette = true;
-    const char* queryName = "unsupported";
+    bool         fromPalette = true;
+    const char*  queryName = "unsupported";
+    MColorCache* colorCache = nullptr;
     if (className.IsEmpty()) {
+        colorCache = &_leadColorCache;
         fromPalette = false;
         queryName = "lead";
     } else if (className == HdPrimTypeTokens->mesh) {
+        colorCache = &_activeMeshColorCache;
         fromPalette = false;
         queryName = "polymeshActive";
     } else if (className == HdPrimTypeTokens->basisCurves) {
+        colorCache = &_activeCurveColorCache;
         queryName = "curve";
+    } else {
+        TF_WARN(
+            "ProxyRenderDelegate::GetSelectionHighlightColor - unsupported class: '%s'",
+            className.GetString().c_str());
+        return kDefaultActiveColor;
+    }
+
+    // Check the cache. It is safe since colorCache->second is atomic
+    if (colorCache->second == _frameCounter) {
+        return colorCache->first;
+    }
+
+    // Enter the mutex and check the cache again
+    std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
+    if (colorCache->second == _frameCounter) {
+        return colorCache->first;
     }
 
     // Construct the query command string.
@@ -1524,37 +1557,38 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
     }
 
     // Query and return the selection color.
-    {
-        MDoubleArray                colorResult;
-        std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
-        MGlobal::executeCommand(queryCommand, colorResult);
+    MDoubleArray colorResult;
+    MGlobal::executeCommand(queryCommand, colorResult);
 
-        if (colorResult.length() == 3) {
-            MColor color(colorResult[0], colorResult[1], colorResult[2]);
+    if (colorResult.length() == 3) {
+        MColor color(colorResult[0], colorResult[1], colorResult[2]);
 
-            if (className.IsEmpty()) {
-                // The 'lead' color is returned in display space, so we need to convert it to
-                // rendering space. However, function MColorPickerUtilities::applyViewTransform
-                // is supported only starting from Maya 2023, so in opposite case we just return
-                // the default lead color.
+        if (className.IsEmpty()) {
+            // The 'lead' color is returned in display space, so we need to convert it to
+            // rendering space. However, function MColorPickerUtilities::applyViewTransform
+            // is supported only starting from Maya 2023, so in opposite case we just return
+            // the default lead color.
 #if MAYA_API_VERSION >= 20230000
-                return MColorPickerUtilities::applyViewTransform(
-                    color, MColorPickerUtilities::kInverse);
+            colorCache->first
+                = MColorPickerUtilities::applyViewTransform(color, MColorPickerUtilities::kInverse);
 #else
-                return kDefaultLeadColor;
+            colorCache->first = kDefaultLeadColor;
 #endif
-            } else {
-                return color;
-            }
         } else {
-            TF_WARN(
-                "Failed to obtain selection highlight color for '%s' objects",
-                className.IsEmpty() ? "lead" : className.GetString().c_str());
+            colorCache->first = color;
         }
+    } else {
+        TF_WARN(
+            "Failed to obtain selection highlight color for '%s' objects",
+            className.IsEmpty() ? "lead" : className.GetString().c_str());
+
+        // In case of any failure, return the default color
+        colorCache->first = className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
     }
 
-    // In case of any failure, return the default color
-    return className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
+    // Update the cache and return
+    colorCache->second = _frameCounter;
+    return colorCache->first;
 }
 
 bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
