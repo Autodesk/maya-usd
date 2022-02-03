@@ -70,9 +70,11 @@ void MayaUsdCustomData::RemoveInstancePrimPaths(const SdfPath& prim)
 
 #endif
 
-MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate)
+MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
+    : _delegate(delegate)
+    , _rprimId(id.GetText())
 {
-    
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

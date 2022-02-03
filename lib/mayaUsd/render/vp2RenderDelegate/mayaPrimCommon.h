@@ -25,6 +25,8 @@
 
 #include <vector>
 
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdVP2RenderDelegate;
@@ -80,8 +82,22 @@ public:
         DirtyBitLast = DirtyDisplayMode
     };
 
-    MayaUsdRPrim(HdVP2RenderDelegate* delegate);
+    MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id);
     virtual ~MayaUsdRPrim() = default;
+
+protected:
+
+    //! VP2 render delegate for which this prim was created
+    HdVP2RenderDelegate* _delegate { nullptr };
+
+    //! Rprim id cached as a maya string for easier debugging and profiling
+    const MString _rprimId;
+
+    //! Selection status of the Rprim
+    HdVP2SelectionStatus _selectionStatus { kUnselected };
+
+    //! The string representation of the runtime only path to this object
+    MStringArray _PrimSegmentString;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

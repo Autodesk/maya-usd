@@ -191,18 +191,12 @@ private:
         DirtySelectionMode = MayaUsdRPrim::DirtySelectionMode
     };
 
-    HdVP2RenderDelegate* _delegate {
-        nullptr
-    }; //!< VP2 render delegate for which this mesh was created
     HdDirtyBits _customDirtyBitsInUse {
         0
     };                      //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
-    const MString _rprimId; //!< Rprim id cached as a maya string for easier debugging and profiling
+
     std::shared_ptr<HdVP2MeshSharedData>
         _meshSharedData; //!< Shared data for all draw items of the Rprim
-
-    //! Selection status of the Rprim
-    HdVP2SelectionStatus _selectionStatus { kUnselected };
 
     //! Control GPU compute behavior
     //! Having these in place even without HDVP2_ENABLE_GPU_COMPUTE or HDVP2_ENABLE_GPU_OSD
@@ -210,9 +204,6 @@ private:
     bool _gpuNormalsEnabled { true }; //!< Use GPU Compute for normal calculation, only used
                                       //!< when HDVP2_ENABLE_GPU_COMPUTE is defined
     static size_t _gpuNormalsComputeThreshold;
-
-    //! The string representation of the runtime only path to this object
-    MStringArray _PrimSegmentString;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

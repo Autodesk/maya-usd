@@ -160,19 +160,8 @@ private:
         DirtySelectionHighlight = MayaUsdRPrim::DirtySelectionHighlight
     };
 
-    HdVP2RenderDelegate* _delegate {
-        nullptr
-    };                      //!< VP2 render delegate for which this mesh was created
-    const MString _rprimId; //!< Rprim id cached as a maya string for easier debugging and profiling
-
     //! Shared data for all draw items of the Rprim
     HdVP2BasisCurvesSharedData _curvesSharedData;
-
-    //! Selection status of the Rprim
-    HdVP2SelectionStatus _selectionStatus { kUnselected };
-
-    //! The string representation of the runtime only path to this object
-    MStringArray _PrimSegmentString;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

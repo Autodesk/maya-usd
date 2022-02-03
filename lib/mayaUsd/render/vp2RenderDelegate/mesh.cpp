@@ -441,9 +441,7 @@ HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id)
 HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const SdfPath& instancerId)
     : HdMesh(id, instancerId)
 #endif
-    , MayaUsdRPrim(delegate)
-    , _delegate(delegate)
-    , _rprimId(id.GetText())
+    , MayaUsdRPrim(delegate, id)
 {
     _meshSharedData = std::make_shared<HdVP2MeshSharedData>();
     // HdChangeTracker::IsVarying() can check dirty bits to tell us if an object is animated or not.
