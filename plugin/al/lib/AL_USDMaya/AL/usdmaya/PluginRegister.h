@@ -287,7 +287,6 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
         &ProxyRenderDelegate::drawDbClassification);
     CHECK_MSTATUS(status);
 
-
 #if defined(WANT_UFE_BUILD)
     status = MayaUsd::ufe::initialize();
     if (!status) {
