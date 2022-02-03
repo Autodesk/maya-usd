@@ -41,9 +41,7 @@
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/MeshAnimCreator.h"
 #include "AL/usdmaya/nodes/MeshAnimDeformer.h"
-#include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/nodes/ProxyShapeUI.h"
 #include "AL/usdmaya/nodes/ProxyUsdGeomCamera.h"
 #include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/Scope.h"
@@ -51,6 +49,7 @@
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -269,34 +268,24 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
-    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeTestIntersection);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
     AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
     AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
     AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
-    AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
-    if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
-        status = plugin.registerShape(
-            AL::usdmaya::nodes::ProxyShape::kTypeName,
-            AL::usdmaya::nodes::ProxyShape::kTypeId,
-            AL::usdmaya::nodes::ProxyShape::creator,
-            AL::usdmaya::nodes::ProxyShape::initialise,
-            AL::usdmaya::nodes::ProxyShapeUI::creator,
-            MayaUsdProxyShapePlugin::getProxyShapeClassification());
-        CHECK_MSTATUS(status);
-    } else {
-        AL_REGISTER_SHAPE_NODE(
-            plugin,
-            AL::usdmaya::nodes::ProxyShape,
-            AL::usdmaya::nodes::ProxyShapeUI,
-            AL::usdmaya::nodes::ProxyDrawOverride);
-    }
+    status = plugin.registerShape(
+        AL::usdmaya::nodes::ProxyShape::kTypeName,
+        AL::usdmaya::nodes::ProxyShape::kTypeId,
+        AL::usdmaya::nodes::ProxyShape::creator,
+        AL::usdmaya::nodes::ProxyShape::initialise,
+        nullptr,
+        &ProxyRenderDelegate::drawDbClassification);
+    CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)
     status = MayaUsd::ufe::initialize();
@@ -467,12 +456,10 @@ template <typename AFnPlugin> MStatus unregisterPlugin(AFnPlugin& plugin)
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
-    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeTestIntersection);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
     AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
     AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
     AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
-    AL_UNREGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
     AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
     AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
     AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
