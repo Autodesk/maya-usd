@@ -198,7 +198,10 @@ const std::set<std::string> _mtlxTopoNodeSet = {
     // Swizzles are inlined into the codegen and affect topology.
     "swizzle",
     // Conversion nodes:
-    "convert"
+    "convert",
+    // Constants: they get inlined in the source.
+    "constant"
+
 };
 
 // clang-format on
@@ -386,6 +389,9 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
 {
     // We expect only one node graph, but fixing them all is not an issue:
     for (mx::NodeGraphPtr nodeGraph : mtlxDoc->getNodeGraphs()) {
+        if (nodeGraph->hasSourceUri()) {
+            continue;
+        }
         // This will hold the emergency "ST" reader if one was necessary
         mx::NodePtr stReader;
         // Store nodes to delete when loop iteration is complete
@@ -422,7 +428,7 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
                 }
             }
             // Check if it is an explicit texcoord reader:
-            if (nodeDef->getCategory() == "texcoord") {
+            if (nodeDef->getNodeString() == "texcoord") {
                 // Switch it with a geompropvalue of the same name:
                 std::string nodeName = node->getName();
                 std::string oldName = nodeName + "_toDelete";
@@ -2167,6 +2173,13 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 #ifdef WANT_MATERIALX_BUILD
         const bool isMaterialXNode = _IsMaterialX(node);
         if (isMaterialXNode) {
+            mx::NodeDefPtr nodeDef
+                = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.identifier.GetString());
+            if (nodeDef
+                && _mtlxTopoNodeSet.find(nodeDef->getNodeString()) != _mtlxTopoNodeSet.cend()) {
+                // A topo node does not emit editable parameters:
+                continue;
+            }
             nodeName += _nodePathMap[node.path].GetName().c_str();
             if (node.path == _surfaceShaderId) {
                 nodeName = "";

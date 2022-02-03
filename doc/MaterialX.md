@@ -26,8 +26,9 @@ We currently support exporting to MaterialX-compatible UsdShade networks:
 
 ### To enable:
 
-- Rebuild the MayaUsd plugin for Maya 2022.1 or PR126 using tip of the dev branch or any commit that includes [PR 1478](https://github.com/Autodesk/maya-usd/pull/1478)
-- Look for a new "MaterialX shading" option in the `Materials` dropdown of the export options
+Two options:
+- Install MayaUSD v0.16.0
+- Rebuild tip of MayaUSD repo using a MaterialX-enabled build of USD
 
 ## Import
 
@@ -43,8 +44,9 @@ We can import MaterialX networks.
 
 ### To enable:
 
-- Rebuild the MayaUsd plugin for Maya 2022.1 or PR126 using tip of the dev branch or any commit that includes [PR 1478](https://github.com/Autodesk/maya-usd/pull/1478)
-- The import code will discover MaterialX shading networks and attempt to import them automatically
+Two options:
+- Install MayaUSD v0.16.0
+- Rebuild tip of MayaUSD repo using a MaterialX-enabled build of USD
 
 ## USD stage support in viewport
 
@@ -67,20 +69,24 @@ The same spheres exported with MaterialX shading and loaded as a USD stage: ![al
 
 ### To enable:
 
-This one is more complex and requires knowledge of how to build USD.
-
-**Requires Maya 2022.1 or PR126**
-
-1. Build MaterialX using the [Autodesk fork of MaterialX](https://github.com/autodesk-forks/MaterialX)
-    - Requires a version later than [PR 1285](https://github.com/autodesk-forks/MaterialX/pull/1285) for proper transparency support.
-    - Requires at minimum MATERIALX_BUILD_CONTRIB, MATERIALX_BUILD_GEN_OGSXML, and MATERIALX_BUILD_SHARED_LIBS options to be enabled
-    - We only require the OGS XML shadergen part (and USD requires the GLSL shadergen), so you can turn off all complex options like Viewer, OIIO, OSL, or Python support
-2. Install that freshly built MaterialX in the `install` location where you intend to build USD next
-3. Build a recent USD from the tip of the dev branch into the `install` location that has the updated MaterialX from step 1 (assuming you will use the build_usd.py script)
-    - There is an API change in the Autodesk branch of MaterialX that requires updating `pxr/imaging/hdSt/materialXFilter.cpp` at line 71 to remove second parameter on the `isTransparentSurface()` function call
-4. Rebuild MayaUSD plugin from the tip of the dev branch or any commit that includes both [PR 1478](https://github.com/Autodesk/maya-usd/pull/1478) and [PR 1433](https://github.com/Autodesk/maya-usd/pull/1433)
-    - Requires enabling the CMAKE_WANT_MATERIALX_BUILD option
-    - MaterialX_DIR should point to the one built in step 1
-    - PXR_USD_LOCATION should point to one built in step 3
+Two options:
+- Install MayaUSD v0.16.0 on top of Maya 2022.3 or PR132
+- Rebuild tip of MayaUSD repo using a MaterialX-enabled build of USD and a supported Maya version
 
 Once the updated plugin is in use, the viewport will automatically select MaterialX shading over UsdPreviewSurface shading if the referenced USD stage contains MaterialX shading networks.
+
+### Building a MaterialX-enabled USD compatible with MayaUSD
+
+We currently use MaterialX 1.38.3 and USD 20.11. Combining these two together requires patching USD:
+
+```
+git checkout tags/v21.11
+# Fetch updates selected for next USD release
+git cherry-pick 08a5644770d063fe355aff1a2069b22b84d8402a
+git cherry-pick adfc04eea92b91965b0da68503539b079a5d30d9
+git cherry-pick 4ac8a7e9a440695f0392a94e27db1683773fce76
+```
+
+Then you need to merge the pending MaterialX v1.38.3 update submitted as [pull request 1738](https://github.com/PixarAnimationStudios/USD/pull/1738)
+
+Then you build USD using the `build_usd.py` script and the `--materialx` option.
