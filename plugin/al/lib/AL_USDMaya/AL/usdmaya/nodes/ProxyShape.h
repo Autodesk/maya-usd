@@ -200,9 +200,7 @@ class ProxyShape
     , public TfWeakBase
 {
     friend struct SelectionUndoHelper;
-    friend class ProxyShapeUI;
     friend class StageReloadGuard;
-    friend class ProxyDrawOverride;
 
     typedef MayaUsdProxyShapeBase ParentClass;
 
