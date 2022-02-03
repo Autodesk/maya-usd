@@ -77,7 +77,7 @@ Once the updated plugin is in use, the viewport will automatically select Materi
 
 ### Building a MaterialX-enabled USD compatible with MayaUSD
 
-We currently use MaterialX 1.38.3 and USD 20.11. Combining these two together requires patching USD:
+We currently use MaterialX 1.38.3 and USD 21.11. Combining these two together requires patching USD:
 
 ```
 git checkout tags/v21.11
