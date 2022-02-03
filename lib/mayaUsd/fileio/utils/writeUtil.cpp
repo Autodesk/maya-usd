@@ -41,6 +41,8 @@
 #include <pxr/usd/usdRi/statementsAPI.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
+#include <maya/MAnimControl.h>
+#include <maya/MDGContextGuard.h>
 #include <maya/MDoubleArray.h>
 #include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
@@ -647,7 +649,9 @@ bool UsdMayaWriteUtil::SetUsdAttr(
         return true;
     }
 
-    VtValue val = GetVtValue(attrPlug, usdAttr.GetTypeName());
+    MDGContext      dgContext(MAnimControl::currentTime());
+    MDGContextGuard contextGuard(dgContext);
+    VtValue         val = GetVtValue(attrPlug, usdAttr.GetTypeName());
     if (val.IsEmpty()) {
         return false;
     }

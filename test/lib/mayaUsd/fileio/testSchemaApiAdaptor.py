@@ -373,11 +373,11 @@ class testSchemaApiAdaptor(unittest.TestCase):
         cmds.setKeyframe(bulletPath, at="mass", t=10, v=30.0)
 
         # Modify the velocity so it can be exported to the RBD Physics schema.
-        cmds.setKeyframe(bulletPath, at="initialVelocityX", t=0, v=5.0)
+        cmds.setKeyframe(bulletPath, at="initialVelocityX", t=1, v=5.0)
         cmds.setKeyframe(bulletPath, at="initialVelocityX", t=10, v=50.0)
-        cmds.setKeyframe(bulletPath, at="initialVelocityY", t=0, v=6.0)
+        cmds.setKeyframe(bulletPath, at="initialVelocityY", t=1, v=6.0)
         cmds.setKeyframe(bulletPath, at="initialVelocityY", t=10, v=60.0)
-        cmds.setKeyframe(bulletPath, at="initialVelocityZ", t=0, v=7.0)
+        cmds.setKeyframe(bulletPath, at="initialVelocityZ", t=1, v=7.0)
         cmds.setKeyframe(bulletPath, at="initialVelocityZ", t=10, v=70.0)
 
         # Try applying the schema on a new sphere:
