@@ -46,6 +46,9 @@ namespace {
 
 // We want to display the unloaded prims, so removed UsdPrimIsLoaded from
 // the default UsdPrimDefaultPredicate.
+// Note: UsdPrimIsActive is handled differently because pulled objects
+//       are set inactive (to hide them from Rendering), so we handle
+//       them differently.
 const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate = UsdPrimIsDefined && !UsdPrimIsAbstract;
 
 UsdPrimSiblingRange getUSDFilteredChildren(
@@ -136,7 +139,7 @@ bool ProxyShapeHierarchy::hasChildren() const
     // prims. Going this direction is more costly, but easier to maintain.
     //
     // I don't have data that proves we need to worry about performance in here,
-    // so going after maintainablility.
+    // so going after maintainability.
     return !children().empty();
 }
 
@@ -147,7 +150,7 @@ Ufe::SceneItemList ProxyShapeHierarchy::children() const
     if (!rootPrim.IsValid())
         return Ufe::SceneItemList();
 
-    return createUFEChildList(getUSDFilteredChildren(rootPrim), true);
+    return createUFEChildList(getUSDFilteredChildren(rootPrim), true /*filterInactive*/);
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -162,10 +165,10 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
     //       See UsdHierarchyHandler::childFilter()
     if ((childFilter.size() == 1) && (childFilter.front().name == "InactivePrims")) {
         // See uniqueChildName() for explanation of USD filter predicate.
-        Usd_PrimFlagsPredicate flags = childFilter.front().value
-            ? UsdPrimIsDefined && !UsdPrimIsAbstract
-            : MayaUsdPrimDefaultPredicate;
-        return createUFEChildList(getUSDFilteredChildren(rootPrim, flags), false);
+        const bool             showInactive = childFilter.front().value;
+        Usd_PrimFlagsPredicate flags
+            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : MayaUsdPrimDefaultPredicate;
+        return createUFEChildList(getUSDFilteredChildren(rootPrim, flags), !showInactive);
     }
 
     UFE_LOG("Unknown child filter");
