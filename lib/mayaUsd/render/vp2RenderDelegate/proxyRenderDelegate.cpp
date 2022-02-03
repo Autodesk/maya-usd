@@ -839,7 +839,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             // this is slow.
             auto& rprims = _renderIndex->GetRprimIds();
             for (auto path : rprims) {
-                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtyDisplayMode);
+                changeTracker.MarkRprimDirty(path, MayaUsdRPrim::DirtyDisplayMode);
             }
         }
 
@@ -1260,12 +1260,12 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
         // When the selection changes then we have to update all the selected render
         // items. Set a dirty flag on each of the rprims so they know what to update.
         // Avoid trying to set dirty the absolute root as it is not a Rprim.
-        HdDirtyBits dirtySelectionBits = MayaPrimCommon::DirtySelectionHighlight;
+        HdDirtyBits dirtySelectionBits = MayaUsdRPrim::DirtySelectionHighlight;
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
         // If the selection mode changes, for example into or out of point snapping,
         // then we need to do a little extra work.
         if (_selectionModeChanged)
-            dirtySelectionBits |= MayaPrimCommon::DirtySelectionMode;
+            dirtySelectionBits |= MayaUsdRPrim::DirtySelectionMode;
 #endif
         HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
         for (auto path : *dirtyPaths) {

@@ -101,7 +101,7 @@ struct HdVP2BasisCurvesSharedData
     in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
     all Rprims have been updated.
 */
-class HdVP2BasisCurves final : public HdBasisCurves
+class HdVP2BasisCurves final : public HdBasisCurves, public MayaUsdRPrim
 {
 public:
     HdVP2BasisCurves(
@@ -157,7 +157,7 @@ private:
 
     enum DirtyBits : HdDirtyBits
     {
-        DirtySelectionHighlight = MayaPrimCommon::DirtySelectionHighlight
+        DirtySelectionHighlight = MayaUsdRPrim::DirtySelectionHighlight
     };
 
     HdVP2RenderDelegate* _delegate {

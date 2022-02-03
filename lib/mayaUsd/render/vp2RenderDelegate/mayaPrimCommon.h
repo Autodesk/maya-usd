@@ -27,6 +27,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdVP2RenderDelegate;
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 // Each instanced render item needs to map from a Maya instance id
 // back to a usd instance id.
@@ -63,8 +65,9 @@ public:
 };
 #endif
 
-struct MayaPrimCommon
+class MayaUsdRPrim
 {
+public:
     enum DirtyBits : HdDirtyBits
     {
         // The rprim has been added, removed or otherwise changed such that the selection highlight
@@ -76,6 +79,9 @@ struct MayaPrimCommon
         DirtyDisplayMode = (DirtySelectionMode << 1),
         DirtyBitLast = DirtyDisplayMode
     };
+
+    MayaUsdRPrim(HdVP2RenderDelegate* delegate);
+    virtual ~MayaUsdRPrim() = default;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

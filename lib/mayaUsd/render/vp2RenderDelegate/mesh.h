@@ -101,7 +101,7 @@ struct HdVP2MeshSharedData
     in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
     all prims have been updated.
 */
-class HdVP2Mesh final : public HdMesh
+class HdVP2Mesh final : public HdMesh, public MayaUsdRPrim
 {
 public:
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
@@ -183,12 +183,12 @@ private:
     //! Custom dirty bits used by this mesh
     enum DirtyBits : HdDirtyBits
     {
-        DirtySmoothNormals = MayaPrimCommon::DirtyBitLast,
+        DirtySmoothNormals = MayaUsdRPrim::DirtyBitLast,
         DirtyFlatNormals = (DirtySmoothNormals << 1),
-        //! "Forward" the enumerated types here so we don't have to keep writing MayaPrimCommon in
+        //! "Forward" the enumerated types here so we don't have to keep writing MayaUsdRPrim in
         //! the cpp file.
-        DirtySelectionHighlight = MayaPrimCommon::DirtySelectionHighlight,
-        DirtySelectionMode = MayaPrimCommon::DirtySelectionMode
+        DirtySelectionHighlight = MayaUsdRPrim::DirtySelectionHighlight,
+        DirtySelectionMode = MayaUsdRPrim::DirtySelectionMode
     };
 
     HdVP2RenderDelegate* _delegate {

@@ -517,6 +517,7 @@ HdVP2BasisCurves::HdVP2BasisCurves(
     SdfPath const& instancerId)
     : HdBasisCurves(id, instancerId)
 #endif
+    , MayaUsdRPrim(delegate)
     , _delegate(delegate)
     , _rprimId(id.GetText())
 {
