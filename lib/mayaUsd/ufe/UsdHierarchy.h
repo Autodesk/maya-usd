@@ -105,7 +105,8 @@ public:
 #endif
 
 private:
-    Ufe::SceneItemList createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range) const;
+    Ufe::SceneItemList
+    createUFEChildList(const PXR_NS::UsdPrimSiblingRange& range, bool filterInactive) const;
 
 private:
     UsdSceneItem::Ptr fItem;

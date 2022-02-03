@@ -57,8 +57,10 @@ namespace {
 
 // We want to display the unloaded prims, so removed UsdPrimIsLoaded from
 // the default UsdPrimDefaultPredicate.
-const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate
-    = UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract;
+// Note: UsdPrimIsActive is handled differently because pulled objects
+//       are set inactive (to hide them from Rendering), so we handle
+//       them differently.
+const Usd_PrimFlagsConjunction MayaUsdPrimDefaultPredicate = UsdPrimIsDefined && !UsdPrimIsAbstract;
 
 UsdPrimSiblingRange getUSDFilteredChildren(
     const MayaUsd::ufe::UsdSceneItem::Ptr usdSceneItem,
@@ -115,11 +117,19 @@ UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const { return fItem; }
 
 Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const { return fItem; }
 
-bool UsdHierarchy::hasChildren() const { return !getUSDFilteredChildren(fItem).empty(); }
+bool UsdHierarchy::hasChildren() const
+{
+    // We have an extra logic in createUFEChildList to remap and filter
+    // prims. Going this direction is more costly, but easier to maintain.
+    //
+    // I don't have data that proves we need to worry about performance in here,
+    // so going after maintainability.
+    return !children().empty();
+}
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
-    return createUFEChildList(getUSDFilteredChildren(fItem));
+    return createUFEChildList(getUSDFilteredChildren(fItem), true /*filterInactive*/);
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -129,10 +139,10 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
     //       See UsdHierarchyHandler::childFilter()
     if ((childFilter.size() == 1) && (childFilter.front().name == "InactivePrims")) {
         // See uniqueChildName() for explanation of USD filter predicate.
-        Usd_PrimFlagsPredicate flags = childFilter.front().value
-            ? UsdPrimIsDefined && !UsdPrimIsAbstract
-            : MayaUsdPrimDefaultPredicate;
-        return createUFEChildList(getUSDFilteredChildren(fItem, flags));
+        const bool             showInactive = childFilter.front().value;
+        Usd_PrimFlagsPredicate flags
+            = showInactive ? UsdPrimIsDefined && !UsdPrimIsAbstract : MayaUsdPrimDefaultPredicate;
+        return createUFEChildList(getUSDFilteredChildren(fItem, flags), !showInactive);
     }
 
     UFE_LOG("Unknown child filter");
@@ -141,7 +151,8 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
 #endif
 
 // Return UFE child list from input USD child list.
-Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range) const
+Ufe::SceneItemList
+UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool filterInactive) const
 {
     // Note that the calls to this function are given a range from
     // getUSDFilteredChildren() above, which ensures that when fItem is a
@@ -159,7 +170,9 @@ Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& r
             }
         } else {
 #endif
-            children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+            if (!filterInactive || child.IsActive()) {
+                children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+            }
 #ifdef UFE_V3_FEATURES_AVAILABLE
         }
 #endif
