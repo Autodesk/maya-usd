@@ -706,23 +706,6 @@ void HdVP2BasisCurves::Sync(
     _UpdateRepr(delegate, reprToken);
 }
 
-void HdVP2BasisCurves::_CommitMVertexBuffer(
-    MHWRender::MVertexBuffer* const buffer,
-    void*                           bufferData) const
-{
-    const MString& rprimId = _rprimId;
-
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit([buffer, bufferData, rprimId]() {
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            "CommitBuffer",
-            rprimId.asChar());
-
-        buffer->commit(bufferData);
-    });
-}
-
 /*! \brief  Update the draw item
 
     This call happens on worker threads and results of the change are collected

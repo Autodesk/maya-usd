@@ -87,6 +87,8 @@ public:
 
 protected:
 
+    void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
+
     //! VP2 render delegate for which this prim was created
     HdVP2RenderDelegate* _delegate { nullptr };
 

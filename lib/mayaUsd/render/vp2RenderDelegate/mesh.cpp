@@ -460,21 +460,6 @@ HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const Sdf
 #endif
 }
 
-void HdVP2Mesh::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, void* bufferData) const
-{
-    const MString& rprimId = _rprimId;
-
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit([buffer, bufferData, rprimId]() {
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            "CommitBuffer",
-            rprimId.asChar()); // TODO: buffer usage so we know it is positions normals etc
-
-        buffer->commit(bufferData);
-    });
-}
-
 void HdVP2Mesh::_PrepareSharedVertexBuffers(
     HdSceneDelegate*   delegate,
     const HdDirtyBits& rprimDirtyBits,

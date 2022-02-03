@@ -125,8 +125,6 @@ private:
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
     void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
 
-    void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
-
     bool _PrimvarIsRequired(const TfToken&) const;
 
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
