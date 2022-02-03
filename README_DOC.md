@@ -10,4 +10,4 @@
 + [Undo/Redo Support](lib/mayaUsd/undo/README.md)
 + [MaterialX](doc/MaterialX.md)
 + [MaterialX Code Gen](lib/mayaUsd/render/MaterialXGenOgsXml/README.md)
-+ [MayaToHydra](doc/MayaToHydra.md)
++ [MayaToHydra](doc/MayaToHydra.md) 
