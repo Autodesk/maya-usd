@@ -165,7 +165,7 @@ void CxxEditRouter::operator()(
     _cb(context, routingData);
 }
 
-EditRouters editRouterDefaults()
+EditRouters defaultEditRouters()
 {
     PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -184,6 +184,17 @@ EditRouters editRouterDefaults()
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter)
 {
     editRouters[operation] = editRouter;
+}
+
+bool registerDefaultEditRouter(const PXR_NS::TfToken& operation)
+{
+    auto defaults = defaultEditRouters();
+    auto found = defaults.find(operation);
+    if (found == defaults.end()) {
+        return false;
+    }
+    registerEditRouter(operation, found->second);
+    return true;
 }
 
 EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation)

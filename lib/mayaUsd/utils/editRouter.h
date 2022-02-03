@@ -84,7 +84,13 @@ EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation);
 MAYAUSD_CORE_PUBLIC
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter);
 
+// Register the default edit router for the argument operation, overwriting
+// the currently-registered edit router.  Returns false if no such default
+// exists.
+MAYAUSD_CORE_PUBLIC
+bool registerDefaultEditRouter(const PXR_NS::TfToken& operation);
+
 // Return built-in default edit routers.
-EditRouters editRouterDefaults();
+EditRouters defaultEditRouters();
 
 } // namespace MAYAUSD_NS_DEF

@@ -74,4 +74,9 @@ void wrapEditRouter()
             return MayaUsd::registerEditRouter(
                 operation, std::make_shared<PyEditRouter>(editRouter));
         });
+
+    def(
+        "registerDefaultEditRouter", +[](const PXR_NS::TfToken& operation) {
+            return MayaUsd::registerDefaultEditRouter(operation);
+        });
 }

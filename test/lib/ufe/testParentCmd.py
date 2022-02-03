@@ -24,7 +24,7 @@ import usdUtils
 
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Vt, Gf
+from pxr import UsdGeom, Vt, Gf, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -34,19 +34,14 @@ import ufe
 import os
 import unittest
 
+def filterUsdStr(usdSceneStr):
+    '''Remove empty lines and lines starting with pound character.'''
+    nonBlankLines = filter(None, [l.rstrip() for l in usdSceneStr.splitlines()])
+    finalLines = [l for l in nonBlankLines if not l.startswith('#')]
+    return '\n'.join(finalLines)
 
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
-
-def firstSubLayer(context, routingData):
-    prim = context.get('prim')
-    if prim is None:
-        print('Prim not in context')
-        return
-    if len(prim.GetStage().GetRootLayer().subLayerPaths)==0:
-        return 
-    print('PaTh: '+prim.GetStage().GetRootLayer().subLayerPaths[0])
-    routingData['layer'] = prim.GetStage().GetRootLayer().subLayerPaths[0]
 
 def matrixToList(m):
     mList = []
@@ -1175,48 +1170,84 @@ class ParentCmdTestCase(unittest.TestCase):
         children = hierarchyAfter()
         checkAfter(*children)
 
-    # Test is currently crashing and needs to be investigated
-    def _testEditRouter(self):
+    def testEditRouter(self):
         '''Test edit router functionality.'''
 
         cmds.file(new=True, force=True)
         import mayaUsd_createStageWithNewLayer
 
-        # Create the following hierarchy:
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+
+        # Create the following layer hierarchy:
+        #
+        # anonymousLayer1
+        #  |_ bSubLayer
+        #  |_ aSubLayer
+        #
+        # Sublayer B is thus higher-priority than A.
+        rootLayerId = stage.GetRootLayer().identifier
+        aSubLayerId = cmds.mayaUsdLayerEditor(rootLayerId, edit=True, addAnonymous="aSubLayer")[0]
+        bSubLayerId = cmds.mayaUsdLayerEditor(rootLayerId, edit=True, addAnonymous="bSubLayer")[0]
+
+        # Create the following hierarchy in lower-priority layer A.
         #
         # ps
         #  |_ A
         #      |_ B
         #  |_ C
         #
-        # We select B and C, in order, and parent.  This parents B to C.
-
-        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        cmds.mayaUsdEditTarget(psPathStr, edit=True, editTarget=aSubLayerId)
         stage.DefinePrim('/A', 'Xform')
         stage.DefinePrim('/A/B', 'Xform')
         stage.DefinePrim('/C', 'Xform')
 
-        psPath = ufe.PathString.path(psPathStr)
-        psPathSegment = psPath.segments[0]
-        aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
-        a = ufe.Hierarchy.createItem(aPath)
-        bPath = aPath + ufe.PathComponent('B')
-        b = ufe.Hierarchy.createItem(bPath)
-        cPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/C')])
-        c = ufe.Hierarchy.createItem(cPath)
+        def firstSubLayer(context, routingData):
+            # Write edits to the highest-priority child layer of the root.
 
-        # Add a sub-layer, where the parent edit should write to.
-        subLayerId = cmds.mayaUsdLayerEditor(stage.GetRootLayer().identifier, edit=True, addAnonymous="aSubLayer")[0]
+            # Here, prim is the parent prim.
+            prim = context.get('prim')
+            self.assertIsNot(prim, None)
+            self.assertFalse(len(prim.GetStage().GetRootLayer().subLayerPaths)==0)
+            layerId = prim.GetStage().GetRootLayer().subLayerPaths[0]
+            layer = Sdf.Layer.Find(layerId)
+            # Make sure the destination exists in the target layer, otherwise
+            # SdfCopySpec will error.
+            Sdf.JustCreatePrimInLayer(layer, prim.GetPath())
+            routingData['layer'] = layerId
 
+        # Register our edit router which directs the parent edit to
+        # higher-priority layer B, which is not the edit target.
         mayaUsd.lib.registerEditRouter('parent', firstSubLayer)
 
+        # Check that layer B is empty.
+        bSubLayer = Sdf.Layer.Find(bSubLayerId)
+        self.assertEqual(filterUsdStr(bSubLayer.ExportToString()), '')
+
+        # We select B and C, in order, and parent.  This parents B to C.
         sn = ufe.GlobalSelection.get()
         sn.clear()
+        b = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/A/B'))
+        c = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/C'))
         sn.append(b)
         sn.append(c)
 
+        a = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/A'))
+        self.assertEqual(ufe.Hierarchy.hierarchy(b).parent(), a)
+
         cmds.parent()
+
+        # Check that prim B is now a child of prim C.  Re-create its scene
+        # item, as its path has changed.
+        b = ufe.Hierarchy.createItem(ufe.PathString.path(psPathStr+',/C/B'))
+        self.assertEqual(ufe.Hierarchy.hierarchy(b).parent(), c)
+
+        # Check that layer B now has the parent overs.
+        self.assertEqual(filterUsdStr(bSubLayer.ExportToString()),
+                         'over "C"\n{\n    def Xform "B"\n    {\n    }\n}')
+
+        # Restore default edit router.
+        mayaUsd.lib.registerDefaultEditRouter('parent')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
