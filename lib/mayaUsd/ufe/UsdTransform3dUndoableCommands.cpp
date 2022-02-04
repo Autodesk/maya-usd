@@ -63,6 +63,9 @@ void UsdSetMatrix4dUndoableCommand::executeUndoBlock()
     // transform stack, but not for a fallback Maya transform stack, and
     // both can be edited by this command.
     auto t3d = Ufe::Transform3d::editTransform3d(sceneItem());
+    if (!TF_VERIFY(t3d)) {
+        return;
+    }
     t3d->translate(_newT.x(), _newT.y(), _newT.z());
     t3d->rotate(_newR.x(), _newR.y(), _newR.z());
     t3d->scale(_newS.x(), _newS.y(), _newS.z());

@@ -24,7 +24,6 @@ import mayaUsdMayaReferenceUtils as mayaRefUtils
 
 from pxr import Sdf, Tf
 
-from functools import partial
 import re
 
 # These names should not be localized as Usd only accepts [a-z,A-Z] as valid characters.
