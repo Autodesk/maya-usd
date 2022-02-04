@@ -871,7 +871,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     } else if (itemPath[0] == kAddMayaReferenceItem) {
         MString script;
         script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path()).c_str());
-        MString result = MGlobal::executeCommandStringResult(script);
+        MString result = MGlobal::executeCommandStringResult(script, false, true);
     }
 #endif
 
