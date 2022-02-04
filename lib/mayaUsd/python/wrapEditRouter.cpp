@@ -75,8 +75,5 @@ void wrapEditRouter()
                 operation, std::make_shared<PyEditRouter>(editRouter));
         });
 
-    def(
-        "restoreDefaultEditRouter", +[](const PXR_NS::TfToken& operation) {
-            return MayaUsd::restoreDefaultEditRouter(operation);
-        });
+    def("restoreDefaultEditRouter", &MayaUsd::restoreDefaultEditRouter);
 }
