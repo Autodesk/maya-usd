@@ -206,7 +206,7 @@ MStatus initialize()
     UFE_V2(Ufe::PathString::registerPathComponentSeparator(g_USDRtid, '/');)
 
     // Initialize edit router registry with default routers.
-    auto defaults = editRouterDefaults();
+    auto defaults = defaultEditRouters();
     for (const auto& entry : defaults) {
         registerEditRouter(entry.first, entry.second);
     }
