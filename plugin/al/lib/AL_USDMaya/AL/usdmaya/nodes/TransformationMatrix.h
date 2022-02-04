@@ -431,15 +431,18 @@ public:
     static MPxTransformationMatrix* creator();
 
     /// \brief  ctor
+    AL_USDMAYA_PUBLIC
     TransformationMatrix();
 
     /// \brief  ctor
     /// \param  prim the USD prim that this matrix should represent
+    AL_USDMAYA_PUBLIC
     TransformationMatrix(const UsdPrim& prim);
 
     /// \brief  set the prim that this transformation matrix will read/write to.
     /// \param  prim the prim
     /// \param  transformNode the owning transform node
+    AL_USDMAYA_PUBLIC
     void setPrim(const UsdPrim& prim, Scope* transformNode) override;
 
     /// \brief  Returns the timecode to use when pushing the transform values to the USD prim. If
@@ -538,19 +541,31 @@ public:
     /// \param  readFromPrim if true, the maya attribute values will be updated from those found on
     /// the USD prim \param  node the transform node to which this matrix belongs (and where the USD
     /// prim will be extracted from)
+    AL_USDMAYA_PUBLIC
     void initialiseToPrim(bool readFromPrim = true, Scope* node = 0) override;
-
+    AL_USDMAYA_PUBLIC
     void pushTranslateToPrim();
+    AL_USDMAYA_PUBLIC
     void pushPivotToPrim();
+    AL_USDMAYA_PUBLIC
     void pushRotatePivotTranslateToPrim();
+    AL_USDMAYA_PUBLIC
     void pushRotatePivotToPrim();
+    AL_USDMAYA_PUBLIC
     void pushRotateToPrim();
+    AL_USDMAYA_PUBLIC
     void pushRotateQuatToPrim();
+    AL_USDMAYA_PUBLIC
     void pushRotateAxisToPrim();
+    AL_USDMAYA_PUBLIC
     void pushScalePivotTranslateToPrim();
+    AL_USDMAYA_PUBLIC
     void pushScalePivotToPrim();
+    AL_USDMAYA_PUBLIC
     void pushScaleToPrim();
+    AL_USDMAYA_PUBLIC
     void pushShearToPrim();
+    AL_USDMAYA_PUBLIC
     void pushTransformToPrim();
 
     // Helper class.  Creating a variable of this class temporarily disables

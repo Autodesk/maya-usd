@@ -1894,7 +1894,14 @@ void TransformationMatrix::pushRotateToPrim()
             internal_readRotation(tempRotate, op);
 
             // only write back if data has changed significantly
-            if (!tempRotate.isEquivalent(MPxTransformationMatrix::rotationValue)) {
+            // Note: the rotation values are converted to quaternion form to avoid
+            //       checking in Euler space, twisted values e.g.:
+            //       (180, -2.31718, 180) == (0, 182.317, 0)
+            //       are in fact the same although their raw values look different.
+            //       Also notice that we lower the tolerance for comparison since
+            //       the values are converted from Euler.
+            if (!tempRotate.asQuaternion().isEquivalent(
+                    MPxTransformationMatrix::rotationValue.asQuaternion(), 1e-5)) {
                 internal_pushRotation(MPxTransformationMatrix::rotationValue, op);
                 m_rotationFromUsd = MPxTransformationMatrix::rotationValue;
                 m_rotationTweak = MEulerRotation(0, 0, 0);
@@ -2299,7 +2306,8 @@ void TransformationMatrix::enableReadAnimatedValues(bool enabled)
 //----------------------------------------------------------------------------------------------------------------------
 void TransformationMatrix::enablePushToPrim(bool enabled)
 {
-    TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::enablePushToPrim\n");
+    TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX)
+        .Msg("TransformationMatrix::enablePushToPrim %d\n", enabled);
     if (enabled)
         m_flags |= kPushToPrimEnabled;
     else
