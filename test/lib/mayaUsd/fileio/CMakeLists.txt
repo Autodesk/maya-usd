@@ -4,6 +4,9 @@ set(TEST_SCRIPT_FILES
     testExportChaser.py
     testImportChaser.py
     testJobContextRegistry.py
+
+    # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
+    # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
     testSchemaApiAdaptor.py
 )
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
