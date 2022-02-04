@@ -186,7 +186,7 @@ void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr&
     editRouters[operation] = editRouter;
 }
 
-bool registerDefaultEditRouter(const PXR_NS::TfToken& operation)
+bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation)
 {
     auto defaults = defaultEditRouters();
     auto found = defaults.find(operation);

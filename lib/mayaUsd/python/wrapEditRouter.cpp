@@ -76,7 +76,7 @@ void wrapEditRouter()
         });
 
     def(
-        "registerDefaultEditRouter", +[](const PXR_NS::TfToken& operation) {
-            return MayaUsd::registerDefaultEditRouter(operation);
+        "restoreDefaultEditRouter", +[](const PXR_NS::TfToken& operation) {
+            return MayaUsd::restoreDefaultEditRouter(operation);
         });
 }

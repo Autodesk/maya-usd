@@ -1247,7 +1247,7 @@ class ParentCmdTestCase(unittest.TestCase):
                          'over "C"\n{\n    def Xform "B"\n    {\n    }\n}')
 
         # Restore default edit router.
-        mayaUsd.lib.registerDefaultEditRouter('parent')
+        mayaUsd.lib.restoreDefaultEditRouter('parent')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
