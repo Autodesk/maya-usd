@@ -26,6 +26,7 @@
 #include <vector>
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include "draw_item.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -69,6 +70,73 @@ public:
     static void               RemoveInstancePrimPaths(const SdfPath& prim);
 };
 #endif
+
+//! \brief  Helper struct used to package all the changes into single commit task
+//!         (such commit task will be executed on main-thread)
+struct MayaUsdCommitState
+{
+    HdVP2DrawItem::RenderItemData& _renderItemData;
+
+    //! If valid, new index buffer data to commit
+    int* _indexBufferData { nullptr };
+    //! If valid, new primvar buffer data to commit
+    PrimvarBufferDataMap _primvarBufferDataMap;
+
+    //! If valid, world matrix to set on the render item
+    MMatrix* _worldMatrix { nullptr };
+
+    //! If valid, bounding box to set on the render item
+    MBoundingBox* _boundingBox { nullptr };
+
+    //! if valid, enable or disable the render item
+    bool* _enabled { nullptr };
+
+    //! if valid, set the primitive type on the render item
+    MHWRender::MGeometry::Primitive* _primitiveType { nullptr };
+    //! if valid, set the primitive stride on the render item
+    int* _primitiveStride { nullptr }; 
+
+    //! Instancing doesn't have dirty bits, every time we do update, we must update instance
+    //! transforms
+    MMatrixArray _instanceTransforms;
+
+    //! Color parameter that _instanceColors should be bound to
+    MString _instanceColorParam;
+
+    //! Color array to support per-instance color and selection highlight.
+    MFloatArray _instanceColors;
+
+    //! List of runtime paths that a render item represents
+    MStringArray _ufeIdentifiers;
+
+    //! If valid, new shader instance to set
+    MHWRender::MShaderInstance* _shader { nullptr };
+
+    //! Is this object transparent
+    bool _isTransparent { false };
+
+    //! If true, associate geometric buffers to the render item and trigger consolidation/instancing
+    //! update
+    bool _geometryDirty { false };
+
+    //! Construct valid commit state
+    MayaUsdCommitState(HdVP2DrawItem::RenderItemData& renderItemData)
+        : _renderItemData(renderItemData)
+    {
+    }
+
+    //! No default constructor, we need draw item and dirty bits.
+    MayaUsdCommitState() = delete;
+
+    //! returns true if there is no state to commit
+    bool Empty()
+    {
+        return _indexBufferData == nullptr && _shader == nullptr && _enabled == nullptr
+            && !_geometryDirty && _boundingBox == nullptr && !_renderItemData._usingInstancedDraw
+            && _instanceTransforms.length() == 0 && _ufeIdentifiers.length() == 0
+            && _worldMatrix == nullptr;
+    }
+};
 
 class MayaUsdRPrim
 {

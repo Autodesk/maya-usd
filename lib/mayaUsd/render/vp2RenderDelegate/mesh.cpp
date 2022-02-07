@@ -56,67 +56,6 @@ const TfTokenVector sFallbackShaderPrimvars
 
 const MColor       kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f); //!< Opaque blue
 
-//! \brief  Helper struct used to package all the changes into single commit task
-//!         (such commit task will be executed on main-thread)
-struct CommitState
-{
-    HdVP2DrawItem::RenderItemData& _renderItemData;
-
-    //! If valid, new index buffer data to commit
-    int* _indexBufferData { nullptr };
-    //! If valid, new primvar buffer data to commit
-    PrimvarBufferDataMap _primvarBufferDataMap;
-
-    //! If valid, world matrix to set on the render item
-    MMatrix* _worldMatrix { nullptr };
-
-    //! If valid, bounding box to set on the render item
-    MBoundingBox* _boundingBox { nullptr };
-
-    //! if valid, enable or disable the render item
-    bool* _enabled { nullptr };
-
-    //! Instancing doesn't have dirty bits, every time we do update, we must update instance
-    //! transforms
-    MMatrixArray _instanceTransforms;
-
-    //! Color parameter that _instanceColors should be bound to
-    MString _instanceColorParam;
-
-    //! Color array to support per-instance color and selection highlight.
-    MFloatArray _instanceColors;
-
-    MStringArray _ufeIdentifiers;
-
-    //! If valid, new shader instance to set
-    MHWRender::MShaderInstance* _shader { nullptr };
-
-    //! Is this object transparent
-    bool _isTransparent { false };
-
-    //! If true, associate geometric buffers to the render item and trigger consolidation/instancing
-    //! update
-    bool _geometryDirty { false };
-
-    //! Construct valid commit state
-    CommitState(HdVP2DrawItem::RenderItemData& renderItemData)
-        : _renderItemData(renderItemData)
-    {
-    }
-
-    //! No default constructor, we need draw item and dirty bits.
-    CommitState() = delete;
-
-    //! returns true if there is no state to commit
-    bool Empty()
-    {
-        return _indexBufferData == nullptr && _shader == nullptr && _enabled == nullptr
-            && !_geometryDirty && _boundingBox == nullptr && !_renderItemData._usingInstancedDraw
-            && _instanceTransforms.length() == 0 && _ufeIdentifiers.length() == 0
-            && _worldMatrix == nullptr;
-    }
-};
-
 //! Helper utility function to fill primvar data to vertex buffer.
 template <class DEST_TYPE, class SRC_TYPE>
 void _FillPrimvarData(
@@ -1645,7 +1584,7 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
 /*! \brief  Update the draw item
 
     This call happens on worker threads and results of the change are collected
-    in CommitState and enqueued for Commit on main-thread using CommitTasks
+    in MayaUsdCommitState and enqueued for Commit on main-thread using CommitTasks
 */
 void HdVP2Mesh::_UpdateDrawItem(
     HdSceneDelegate*               sceneDelegate,
@@ -1687,7 +1626,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     MHWRender::MRenderItem*        renderItem = renderItemData._renderItem;
-    CommitState                    stateToCommit(renderItemData);
+    MayaUsdCommitState                    stateToCommit(renderItemData);
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
     if (ARCH_UNLIKELY(!renderItem)) {
         return;

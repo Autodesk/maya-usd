@@ -55,61 +55,6 @@ const TfTokenVector sFallbackShaderPrimvars
 //! Cached strings for efficiency
 const MString kWidthStr("U0_1");
 
-//! \brief  Helper struct used to package all the changes into single commit task
-//!         (such commit task will be executed on main-thread)
-struct CommitState
-{
-    HdVP2DrawItem::RenderItemData& _drawItemData;
-
-    //! If valid, new index buffer data to commit
-    int* _indexBufferData { nullptr };
-    //! If valid, new primvar buffer data to commit
-    PrimvarBufferDataMap _primvarBufferDataMap;
-
-    //! If valid, world matrix to set on the render item
-    MMatrix* _worldMatrix { nullptr };
-
-    //! If valid, bounding box to set on the render item
-    MBoundingBox* _boundingBox { nullptr };
-
-    //! if valid, enable or disable the render item
-    bool* _enabled { nullptr };
-
-    //! if valid, set the primitive type on the render item
-    MHWRender::MGeometry::Primitive* _primitiveType { nullptr };
-    //! if valid, set the primitive stride on the render item
-    int* _primitiveStride { nullptr };
-
-    //! Instancing doesn't have dirty bits, every time we do update, we must update instance
-    //! transforms
-    MMatrixArray _instanceTransforms;
-
-    //! List of runtime paths that a render item represents
-    MStringArray _ufeIdentifiers;
-
-    //! Color array to support per-instance color and selection highlight.
-    MFloatArray _instanceColors;
-
-    //! If valid, new shader instance to set
-    MHWRender::MShaderInstance* _shader { nullptr };
-
-    //! Is this object transparent
-    bool _isTransparent { false };
-
-    //! If true, associate geometric buffers to the render item and trigger consolidation/instancing
-    //! update
-    bool _geometryDirty { false };
-
-    //! Construct valid commit state
-    CommitState(HdVP2DrawItem::RenderItemData& renderItemData)
-        : _drawItemData(renderItemData)
-    {
-    }
-
-    //! No default constructor, we need draw item and dirty bits.
-    CommitState() = delete;
-};
-
 template <typename T>
 VtArray<T> InterpolateVarying(
     size_t            numVerts,
@@ -699,7 +644,7 @@ void HdVP2BasisCurves::Sync(
 /*! \brief  Update the draw item
 
     This call happens on worker threads and results of the change are collected
-    in CommitState and enqueued for Commit on main-thread using CommitTasks
+    in MayaUsdCommitState and enqueued for Commit on main-thread using CommitTasks
 */
 void HdVP2BasisCurves::_UpdateDrawItem(
     HdSceneDelegate*             sceneDelegate,
@@ -713,8 +658,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
-    CommitState                    stateToCommit(drawItem->GetRenderItemData());
-    HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
+    MayaUsdCommitState                    stateToCommit(drawItem->GetRenderItemData());
+    HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
 
     const SdfPath& id = GetId();
 
@@ -1384,7 +1329,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             int  stride = *stateToCommit._primitiveStride;
             renderItem->setPrimitive(primitive, stride);
 
-            const bool wantConsolidation = !stateToCommit._drawItemData._usingInstancedDraw
+            const bool wantConsolidation = !stateToCommit._renderItemData._usingInstancedDraw
                 && primitive != MHWRender::MGeometry::kPatch;
             setWantConsolidation(*renderItem, wantConsolidation);
         }
@@ -1419,7 +1364,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         }
 
         // Important, update instance transforms after setting geometry on render items!
-        auto&   oldInstanceCount = stateToCommit._drawItemData._instanceCount;
+        auto&   oldInstanceCount = stateToCommit._renderItemData._instanceCount;
         auto    newInstanceCount = stateToCommit._instanceTransforms.length();
         MString extraColorChannelName = kDiffuseColorStr;
         if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
@@ -1428,7 +1373,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
         // GPU instancing has been enabled. We cannot switch to consolidation
         // without recreating render item, so we keep using GPU instancing.
-        if (stateToCommit._drawItemData._usingInstancedDraw) {
+        if (stateToCommit._renderItemData._usingInstancedDraw) {
             if (oldInstanceCount == newInstanceCount) {
                 for (unsigned int i = 0; i < newInstanceCount; i++) {
                     // VP2 defines instance ID of the first instance to be 1.
@@ -1463,7 +1408,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                     *renderItem, extraColorChannelName, stateToCommit._instanceColors);
             }
 
-            stateToCommit._drawItemData._usingInstancedDraw = true;
+            stateToCommit._renderItemData._usingInstancedDraw = true;
         } else if (stateToCommit._worldMatrix != nullptr) {
             // Regular non-instanced prims. Consolidation has been turned on by
             // default and will be kept enabled on this case.
