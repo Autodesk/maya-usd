@@ -168,6 +168,8 @@ public:
 
 protected:
 
+    using ReprVector = std::vector<std::pair<TfToken, HdReprSharedPtr>>;
+
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     void _UpdateTransform(MayaUsdCommitState& stateToCommit, const HdRprimSharedData& sharedData, const HdDirtyBits itemDirtyBits, const bool isBoundingBoxItem);
@@ -175,6 +177,8 @@ protected:
     void _FirstInitRepr(HdDirtyBits* dirtyBits);
 
     void _SetDirtyRepr(const HdReprSharedPtr& repr);
+
+    void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
 
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);

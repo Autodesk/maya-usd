@@ -240,4 +240,48 @@ void MayaUsdRPrim::_SetDirtyRepr(const HdReprSharedPtr& repr)
     }
 }
 
+void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const
+{
+    if (bits & HdChangeTracker::AllDirty) {
+        // RPrim is dirty, propagate dirty bits to all draw items.
+        for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
+            const HdReprSharedPtr& repr = pair.second;
+            const auto&            items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
+            for (HdDrawItem* item : items) {
+                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+#else
+            for (const HdRepr::DrawItemUniquePtr& item : items) {
+                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+                    for (auto& renderItemData : drawItem->GetRenderItems()) {
+                        renderItemData.SetDirtyBits(bits);
+                    }
+                }
+            }
+        }
+    } else {
+        // RPrim is clean, find out if any drawItem about to be shown is dirty:
+        for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
+            const HdReprSharedPtr& repr = pair.second;
+            const auto&            items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
+            for (const HdDrawItem* item : items) {
+                if (const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item)) {
+#else
+            for (const HdRepr::DrawItemUniquePtr& item : items) {
+                if (const HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+                    // Is this Repr dirty and in need of a Sync?
+                    for (auto& renderItemData : drawItem->GetRenderItems()) {
+                        if (renderItemData.GetDirtyBits() & HdChangeTracker::DirtyRepr) {
+                            bits |= (renderItemData.GetDirtyBits() & ~HdChangeTracker::DirtyRepr);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
