@@ -429,16 +429,6 @@ _BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtFloatArra
 
     return result;
 }
-
-//! Helper utility function to adapt Maya API changes.
-void setWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
-{
-#if MAYA_API_VERSION >= 20190000
-    renderItem.setWantConsolidation(state);
-#else
-    renderItem.setWantSubSceneConsolidation(state);
-#endif
-}
 } // anonymous namespace
 
 //! \brief  Constructor
@@ -1331,7 +1321,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             const bool wantConsolidation = !stateToCommit._renderItemData._usingInstancedDraw
                 && primitive != MHWRender::MGeometry::kPatch;
-            setWantConsolidation(*renderItem, wantConsolidation);
+            _SetWantConsolidation(*renderItem, wantConsolidation);
         }
 #endif
 
@@ -1399,7 +1389,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         else if (newInstanceCount == 1) {
             renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
         } else if (newInstanceCount > 1) {
-            setWantConsolidation(*renderItem, false);
+            _SetWantConsolidation(*renderItem, false);
 #endif
             drawScene.setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
 
@@ -1819,7 +1809,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateWireRenderItem(const MString& n
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -1846,7 +1836,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateBBoxRenderItem(const MString& n
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -1881,7 +1871,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -1913,7 +1903,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString&
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }

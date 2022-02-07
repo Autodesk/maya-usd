@@ -170,6 +170,9 @@ protected:
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
+    //! Helper utility function to adapt Maya API changes.
+    static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
+
     //! VP2 render delegate for which this prim was created
     HdVP2RenderDelegate* _delegate { nullptr };
 

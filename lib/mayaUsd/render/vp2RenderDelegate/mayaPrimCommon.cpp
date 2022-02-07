@@ -103,4 +103,13 @@ void MayaUsdRPrim::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, 
     });
 }
 
+void MayaUsdRPrim::_SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
+{
+#if MAYA_API_VERSION >= 20190000
+    renderItem.setWantConsolidation(state);
+#else
+    renderItem.setWantSubSceneConsolidation(state);
+#endif
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

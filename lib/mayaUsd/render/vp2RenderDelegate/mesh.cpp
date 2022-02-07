@@ -261,16 +261,6 @@ void _FillEdgeIndices(int* indices, const HdMeshTopology& topology)
     }
 }
 
-//! Helper utility function to adapt Maya API changes.
-void setWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
-{
-#if MAYA_API_VERSION >= 20190000
-    renderItem.setWantConsolidation(state);
-#else
-    renderItem.setWantSubSceneConsolidation(state);
-#endif
-}
-
 PrimvarInfo* _getInfo(const PrimvarInfoMap& infoMap, const TfToken& token)
 {
     auto it = infoMap.find(token);
@@ -2362,7 +2352,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 bool success = renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
                 TF_VERIFY(success);
             } else if (newInstanceCount > 1) {
-                setWantConsolidation(*renderItem, false);
+                _SetWantConsolidation(*renderItem, false);
 #endif
                 result = drawScene.setInstanceTransformArray(
                     *renderItem, stateToCommit._instanceTransforms);
@@ -2755,7 +2745,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -2791,7 +2781,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& nam
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -2818,7 +2808,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(const MString& n
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
@@ -2887,7 +2877,7 @@ HdVP2DrawItem::RenderItemData& HdVP2Mesh::_CreateSmoothHullRenderItem(
     renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     _delegate->GetVP2ResourceRegistry().EnqueueCommit(
         [&subSceneContainer, renderItem]() { subSceneContainer.add(renderItem); });
@@ -2920,7 +2910,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
-    setWantConsolidation(*renderItem, true);
+    _SetWantConsolidation(*renderItem, true);
 
     return renderItem;
 }
