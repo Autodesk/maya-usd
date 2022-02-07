@@ -174,6 +174,8 @@ protected:
 
     void _FirstInitRepr(HdDirtyBits* dirtyBits);
 
+    void _SetDirtyRepr(const HdReprSharedPtr& repr);
+
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
 

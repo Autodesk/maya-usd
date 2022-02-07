@@ -1207,26 +1207,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
     _ReprVector::const_iterator it
         = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
     if (it != _reprs.end()) {
-        const HdReprSharedPtr& repr = it->second;
-        const auto&            items = repr->GetDrawItems();
-#if HD_API_VERSION < 35
-        for (HdDrawItem* item : items) {
-            HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item);
-#else
-        for (const HdRepr::DrawItemUniquePtr& item : items) {
-            HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
-#endif
-            if (drawItem) {
-                for (auto& renderItemData : drawItem->GetRenderItems()) {
-                    if (renderItemData.GetDirtyBits() & HdChangeTracker::AllDirty) {
-                        // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
-                        // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
-                        // items to ensure proper Sync
-                        renderItemData.SetDirtyBits(HdChangeTracker::DirtyRepr);
-                    }
-                }
-            }
-        }
+        _SetDirtyRepr(it->second);
         return;
     }
 

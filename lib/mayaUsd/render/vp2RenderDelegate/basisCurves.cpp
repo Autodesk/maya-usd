@@ -1424,24 +1424,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     _ReprVector::iterator it
         = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
     if (it != _reprs.end()) {
-        const HdReprSharedPtr& repr = it->second;
-        const auto&            items = repr->GetDrawItems();
-#if HD_API_VERSION < 35
-        for (HdDrawItem* item : items) {
-            HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item);
-#else
-        for (const HdRepr::DrawItemUniquePtr& item : items) {
-            HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
-#endif
-            if (drawItem) {
-                if (drawItem->GetDirtyBits() & HdChangeTracker::AllDirty) {
-                    // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
-                    // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
-                    // items to ensure proper Sync
-                    drawItem->SetDirtyBits(HdChangeTracker::DirtyRepr);
-                }
-            }
-        }
+        _SetDirtyRepr(it->second);
         return;
     }
 

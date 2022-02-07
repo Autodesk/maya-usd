@@ -217,4 +217,27 @@ void MayaUsdRPrim::_FirstInitRepr(HdDirtyBits* dirtyBits)
     }
 }
 
+void MayaUsdRPrim::_SetDirtyRepr(const HdReprSharedPtr& repr)
+{
+    const auto& items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
+    for (HdDrawItem* item : items) {
+        HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item);
+#else
+    for (const HdRepr::DrawItemUniquePtr& item : items) {
+        HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
+#endif
+        if (drawItem) {
+            for (auto& renderItemData : drawItem->GetRenderItems()) {
+                if (renderItemData.GetDirtyBits() & HdChangeTracker::AllDirty) {
+                    // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
+                    // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
+                    // items to ensure proper Sync
+                    renderItemData.SetDirtyBits(HdChangeTracker::DirtyRepr);
+                }
+            }
+        }
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
