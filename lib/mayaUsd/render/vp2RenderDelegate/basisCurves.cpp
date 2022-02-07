@@ -1382,7 +1382,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         return;
 
     if (_reprs.empty()) {
-        _FirstInitRepr(dirtyBits);
+        _FirstInitRepr(dirtyBits, GetId());
     }
 
     _ReprVector::iterator it

@@ -1162,7 +1162,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
         return;
 
     if (_reprs.empty()) {
-        _FirstInitRepr(dirtyBits);
+        _FirstInitRepr(dirtyBits, GetId());
     }
 
     _ReprVector::const_iterator it

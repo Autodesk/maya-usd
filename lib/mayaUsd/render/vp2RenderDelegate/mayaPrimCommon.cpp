@@ -85,8 +85,7 @@ void MayaUsdCustomData::RemoveInstancePrimPaths(const SdfPath& prim)
 #endif
 
 MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
-    : _hdId(id)
-    , _delegate(delegate)
+    : _delegate(delegate)
     , _rprimId(id.GetText())
 {
     // Store a string version of the Cache Path to be used to tag MRenderItems. The CachePath is
@@ -201,14 +200,14 @@ void MayaUsdRPrim::_UpdateTransform(MayaUsdCommitState& stateToCommit, const HdR
     }
 }
 
-void MayaUsdRPrim::_FirstInitRepr(HdDirtyBits* dirtyBits)
+void MayaUsdRPrim::_FirstInitRepr(HdDirtyBits* dirtyBits, SdfPath const& id)
 {
     auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
 
     // Update selection state when it is a new Rprim. DirtySelectionHighlight
     // will be propagated to all draw items, to trigger sync for each repr.
     const HdVP2SelectionStatus selectionStatus
-        = param->GetDrawScene().GetSelectionStatus(_hdId);
+        = param->GetDrawScene().GetSelectionStatus(id);
     if (_selectionStatus != selectionStatus) {
         _selectionStatus = selectionStatus;
         *dirtyBits |= DirtySelectionHighlight;
