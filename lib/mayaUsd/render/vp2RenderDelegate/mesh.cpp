@@ -366,13 +366,6 @@ HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const Sdf
     // HdChangeTracker::IsVarying() can check dirty bits to tell us if an object is animated or not.
     // Not sure if it is correct on file load
 
-    // Store a string version of the Cache Path to be used to tag MRenderItems. The CachePath is
-    // equivalent to the USD segment of the items full Ufe::Path.
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    _PrimSegmentString.append(
-        drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES).GetString().c_str());
-
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
     static std::once_flag initGPUComputeOnce;
     std::call_once(initGPUComputeOnce, _InitGPUCompute);

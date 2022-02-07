@@ -86,7 +86,12 @@ MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
     : _delegate(delegate)
     , _rprimId(id.GetText())
 {
-
+    // Store a string version of the Cache Path to be used to tag MRenderItems. The CachePath is
+    // equivalent to the USD segment of the items full Ufe::Path.
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    _PrimSegmentString.append(
+        drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES).GetString().c_str());
 }
 
 void MayaUsdRPrim::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, void* bufferData) const

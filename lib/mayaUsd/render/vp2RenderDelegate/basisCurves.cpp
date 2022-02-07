@@ -448,13 +448,6 @@ HdVP2BasisCurves::HdVP2BasisCurves(
         "", MHWRender::MGeometry::kPosition, MHWRender::MGeometry::kFloat, 3);
 
     _curvesSharedData._positionsBuffer.reset(new MHWRender::MVertexBuffer(desc));
-
-    // Store a string version of the Cache Path to be used to tag MRenderItems. The CachePath is
-    // equivalent to the USD segment of the items full Ufe::Path.
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    _PrimSegmentString.append(
-        drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES).GetString().c_str());
 }
 
 //! \brief  Synchronize VP2 state with scene delegate state based on dirty bits and repr
