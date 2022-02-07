@@ -108,7 +108,7 @@ static bool _IsDisabledAsyncTextureLoading()
     if (MGlobal::optionVarExists(kOptionVarName)) {
         return MGlobal::optionVarIntValue(kOptionVarName);
     }
-    return false;
+    return true;
 }
 
 // Refresh viewport duration (in milliseconds)
