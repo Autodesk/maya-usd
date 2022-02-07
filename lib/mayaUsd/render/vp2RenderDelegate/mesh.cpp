@@ -1861,77 +1861,8 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    // Bounds are updated through MPxSubSceneOverride::setGeometryForRenderItem()
-    // which is expensive, so it is updated only when it gets expanded in order
-    // to reduce calling frequence.
-    if (itemDirtyBits & HdChangeTracker::DirtyExtent) {
-        const GfRange3d& rangeToUse
-            = isBBoxItem ? _delegate->GetSharedBBoxGeom().GetRange() : range;
-
-        // If the Rprim has empty bounds, we will assign a null bounding box to the render item and
-        // Maya will compute the bounding box from the position data.
-        if (!rangeToUse.IsEmpty()) {
-            const GfVec3d& min = rangeToUse.GetMin();
-            const GfVec3d& max = rangeToUse.GetMax();
-
-            bool boundingBoxExpanded = false;
-
-            const MPoint pntMin(min[0], min[1], min[2]);
-            if (!drawItemData._boundingBox.contains(pntMin)) {
-                drawItemData._boundingBox.expand(pntMin);
-                boundingBoxExpanded = true;
-            }
-
-            const MPoint pntMax(max[0], max[1], max[2]);
-            if (!drawItemData._boundingBox.contains(pntMax)) {
-                drawItemData._boundingBox.expand(pntMax);
-                boundingBoxExpanded = true;
-            }
-
-            if (boundingBoxExpanded) {
-                stateToCommit._boundingBox = &drawItemData._boundingBox;
-            }
-        }
-    }
-
-    // Local-to-world transformation
+    _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, isBBoxItem);
     MMatrix& worldMatrix = drawItemData._worldMatrix;
-    _sharedData.bounds.GetMatrix().Get(worldMatrix.matrix);
-
-    // The bounding box draw item uses a globally-shared unit wire cube as the
-    // geometry and transfers scale and offset of the bounds to world matrix.
-    if (isBBoxItem) {
-        if ((itemDirtyBits & (HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyTransform))
-            && !range.IsEmpty()) {
-            const GfVec3d midpoint = range.GetMidpoint();
-            const GfVec3d size = range.GetSize();
-
-            MPoint midp(midpoint[0], midpoint[1], midpoint[2]);
-            midp *= worldMatrix;
-
-            auto& m = worldMatrix.matrix;
-            m[0][0] *= size[0];
-            m[0][1] *= size[0];
-            m[0][2] *= size[0];
-            m[0][3] *= size[0];
-            m[1][0] *= size[1];
-            m[1][1] *= size[1];
-            m[1][2] *= size[1];
-            m[1][3] *= size[1];
-            m[2][0] *= size[2];
-            m[2][1] *= size[2];
-            m[2][2] *= size[2];
-            m[2][3] *= size[2];
-            m[3][0] = midp[0];
-            m[3][1] = midp[1];
-            m[3][2] = midp[2];
-            m[3][3] = midp[3];
-
-            stateToCommit._worldMatrix = &drawItemData._worldMatrix;
-        }
-    } else if (itemDirtyBits & HdChangeTracker::DirtyTransform) {
-        stateToCommit._worldMatrix = &drawItemData._worldMatrix;
-    }
 
     // If the mesh is instanced, create one new instance per transform.
     // The current instancer invalidation tracking makes it hard for

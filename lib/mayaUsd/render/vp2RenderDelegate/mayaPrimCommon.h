@@ -170,6 +170,8 @@ protected:
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
+    void _UpdateTransform(MayaUsdCommitState& stateToCommit, const HdRprimSharedData& sharedData, const HdDirtyBits itemDirtyBits, const bool isBoundingBoxItem);
+
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
 
