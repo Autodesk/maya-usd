@@ -21,6 +21,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+const MColor MayaUsdRPrim::kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f);
+const MColor MayaUsdRPrim::kOpaqueGray(.18f, .18f, .18f, 1.0f);
+
+const MString MayaUsdRPrim::kPositionsStr("positions");
+const MString MayaUsdRPrim::kNormalsStr("normals");
+const MString MayaUsdRPrim::kDiffuseColorStr("diffuseColor");
+const MString MayaUsdRPrim::kSolidColorStr("solidColor");
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 
 namespace {

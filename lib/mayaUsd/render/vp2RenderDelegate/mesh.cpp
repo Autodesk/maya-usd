@@ -55,16 +55,6 @@ const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals };
 
 const MColor       kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f); //!< Opaque blue
-const MColor       kOpaqueGray(.18f, .18f, .18f, 1.0f); //!< Opaque gray
-const unsigned int kNumColorChannels = 4;               //!< The number of color channels
-
-const MString kPositionsStr("positions");       //!< Cached string for efficiency
-const MString kNormalsStr("normals");           //!< Cached string for efficiency
-const MString kDiffuseColorStr("diffuseColor"); //!< Cached string for efficiency
-const MString kSolidColorStr("solidColor");     //!< Cached string for efficiency
-
-//! A primvar vertex buffer data map indexed by primvar name.
-using PrimvarBufferDataMap = std::unordered_map<TfToken, void*, TfToken::HashFunctor>;
 
 //! \brief  Helper struct used to package all the changes into single commit task
 //!         (such commit task will be executed on main-thread)

@@ -38,6 +38,9 @@ using InstanceIdMap = std::vector<unsigned int>;
 
 using InstancePrimPaths = std::vector<SdfPath>;
 
+//! A primvar vertex buffer data map indexed by primvar name.
+using PrimvarBufferDataMap = std::unordered_map<TfToken, void*, TfToken::HashFunctor>;
+
 // global singleton rather than MUserData, because consolidated world will
 // not consolidate render items with different MUserData objects.
 class MayaUsdCustomData
@@ -81,6 +84,16 @@ public:
         DirtyDisplayMode = (DirtySelectionMode << 1),
         DirtyBitLast = DirtyDisplayMode
     };
+
+    static const MColor kOpaqueBlue; //!< Opaque blue
+    static const MColor kOpaqueGray; //!< The default 18% gray color
+    static const unsigned int kNumColorChannels = 4; //!< The number of color channels
+
+    //! Cached strings for efficiency
+    static const MString kPositionsStr;
+    static const MString kNormalsStr;
+    static const MString kDiffuseColorStr;
+    static const MString kSolidColorStr;
 
     MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id);
     virtual ~MayaUsdRPrim() = default;
