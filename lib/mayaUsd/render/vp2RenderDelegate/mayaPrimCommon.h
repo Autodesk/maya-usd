@@ -172,8 +172,12 @@ protected:
 
     void _UpdateTransform(MayaUsdCommitState& stateToCommit, const HdRprimSharedData& sharedData, const HdDirtyBits itemDirtyBits, const bool isBoundingBoxItem);
 
+    void _FirstInitRepr(HdDirtyBits* dirtyBits);
+
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
+
+    SdfPath _hdId;
 
     //! VP2 render delegate for which this prim was created
     HdVP2RenderDelegate* _delegate { nullptr };

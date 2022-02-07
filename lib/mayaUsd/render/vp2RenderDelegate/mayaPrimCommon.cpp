@@ -20,6 +20,8 @@
 
 #include <maya/MProfiler.h>
 
+#include <pxr/usdImaging/usdImaging/delegate.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 const MColor MayaUsdRPrim::kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f);
@@ -83,7 +85,8 @@ void MayaUsdCustomData::RemoveInstancePrimPaths(const SdfPath& prim)
 #endif
 
 MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
-    : _delegate(delegate)
+    : _hdId(id)
+    , _delegate(delegate)
     , _rprimId(id.GetText())
 {
     // Store a string version of the Cache Path to be used to tag MRenderItems. The CachePath is
@@ -195,6 +198,22 @@ void MayaUsdRPrim::_UpdateTransform(MayaUsdCommitState& stateToCommit, const HdR
         }
     } else if (itemDirtyBits & HdChangeTracker::DirtyTransform) {
         stateToCommit._worldMatrix = &drawItemData._worldMatrix;
+    }
+}
+
+void MayaUsdRPrim::_FirstInitRepr(HdDirtyBits* dirtyBits)
+{
+    auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+
+    // Update selection state when it is a new Rprim. DirtySelectionHighlight
+    // will be propagated to all draw items, to trigger sync for each repr.
+    const HdVP2SelectionStatus selectionStatus
+        = param->GetDrawScene().GetSelectionStatus(_hdId);
+    if (_selectionStatus != selectionStatus) {
+        _selectionStatus = selectionStatus;
+        *dirtyBits |= DirtySelectionHighlight;
+    } else if (_selectionStatus == kPartiallySelected) {
+        *dirtyBits |= DirtySelectionHighlight;
     }
 }
 

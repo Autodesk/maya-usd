@@ -1417,17 +1417,8 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    // Update selection state on demand or when it is a new Rprim. DirtySelectionHighlight
-    // will be propagated to all draw items, to trigger sync for each repr.
     if (_reprs.empty()) {
-        const HdVP2SelectionStatus selectionStatus
-            = param->GetDrawScene().GetSelectionStatus(GetId());
-        if (_selectionStatus != selectionStatus) {
-            _selectionStatus = selectionStatus;
-            *dirtyBits |= DirtySelectionHighlight;
-        } else if (_selectionStatus == kPartiallySelected) {
-            *dirtyBits |= DirtySelectionHighlight;
-        }
+        _FirstInitRepr(dirtyBits);
     }
 
     _ReprVector::iterator it

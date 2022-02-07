@@ -1200,17 +1200,8 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    // Update selection state when it is a new Rprim. DirtySelectionHighlight
-    // will be propagated to all draw items, to trigger sync for each repr.
     if (_reprs.empty()) {
-        const HdVP2SelectionStatus selectionStatus
-            = param->GetDrawScene().GetSelectionStatus(GetId());
-        if (_selectionStatus != selectionStatus) {
-            _selectionStatus = selectionStatus;
-            *dirtyBits |= DirtySelectionHighlight;
-        } else if (_selectionStatus == kPartiallySelected) {
-            *dirtyBits |= DirtySelectionHighlight;
-        }
+        _FirstInitRepr(dirtyBits);
     }
 
     _ReprVector::const_iterator it
