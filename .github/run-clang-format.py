@@ -136,7 +136,7 @@ def run_clang_format(paths=(), verbose=False, commit=None):
         match_path = match_path.replace('\\', '/')
         if not include_regex.search(match_path):
             return False
-        if ignore_regex.search(match_path):
+        if ignore_regex.pattern != '()' and ignore_regex.search(match_path):
             return False
         return True
 
