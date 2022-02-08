@@ -16,17 +16,17 @@
 #ifndef HD_VP2_MAYA_PRIM_COMMON
 #define HD_VP2_MAYA_PRIM_COMMON
 
+#include "draw_item.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/types.h"
+
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <maya/MHWGeometry.h>
 
 #include <tbb/concurrent_unordered_map.h>
 
 #include <vector>
-
-#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
-#include "draw_item.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -94,7 +94,7 @@ struct MayaUsdCommitState
     //! if valid, set the primitive type on the render item
     MHWRender::MGeometry::Primitive* _primitiveType { nullptr };
     //! if valid, set the primitive stride on the render item
-    int* _primitiveStride { nullptr }; 
+    int* _primitiveStride { nullptr };
 
     //! Instancing doesn't have dirty bits, every time we do update, we must update instance
     //! transforms
@@ -153,8 +153,8 @@ public:
         DirtyBitLast = DirtyDisplayMode
     };
 
-    static const MColor kOpaqueBlue; //!< Opaque blue
-    static const MColor kOpaqueGray; //!< The default 18% gray color
+    static const MColor       kOpaqueBlue;           //!< Opaque blue
+    static const MColor       kOpaqueGray;           //!< The default 18% gray color
     static const unsigned int kNumColorChannels = 4; //!< The number of color channels
 
     //! Cached strings for efficiency
@@ -167,12 +167,15 @@ public:
     virtual ~MayaUsdRPrim() = default;
 
 protected:
-
     using ReprVector = std::vector<std::pair<TfToken, HdReprSharedPtr>>;
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
-    void _UpdateTransform(MayaUsdCommitState& stateToCommit, const HdRprimSharedData& sharedData, const HdDirtyBits itemDirtyBits, const bool isBoundingBoxItem);
+    void _UpdateTransform(
+        MayaUsdCommitState&      stateToCommit,
+        const HdRprimSharedData& sharedData,
+        const HdDirtyBits        itemDirtyBits,
+        const bool               isBoundingBoxItem);
 
     void _FirstInitRepr(HdDirtyBits* dirtyBits, SdfPath const& id);
 

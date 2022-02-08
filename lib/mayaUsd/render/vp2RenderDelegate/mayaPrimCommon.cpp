@@ -14,13 +14,14 @@
 // limitations under the License.
 //
 
-#include "bboxGeom.h"
 #include "mayaPrimCommon.h"
+
+#include "bboxGeom.h"
 #include "render_delegate.h"
 
-#include <maya/MProfiler.h>
-
 #include <pxr/usdImaging/usdImaging/delegate.h>
+
+#include <maya/MProfiler.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -96,7 +97,8 @@ MayaUsdRPrim::MayaUsdRPrim(HdVP2RenderDelegate* delegate, const SdfPath& id)
         drawScene.GetScenePrimPath(id, UsdImagingDelegate::ALL_INSTANCES).GetString().c_str());
 }
 
-void MayaUsdRPrim::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, void* bufferData) const
+void MayaUsdRPrim::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, void* bufferData)
+    const
 {
     const MString& rprimId = _rprimId;
 
@@ -120,7 +122,11 @@ void MayaUsdRPrim::_SetWantConsolidation(MHWRender::MRenderItem& renderItem, boo
 #endif
 }
 
-void MayaUsdRPrim::_UpdateTransform(MayaUsdCommitState& stateToCommit, const HdRprimSharedData& sharedData, const HdDirtyBits itemDirtyBits, const bool isBoundingBoxItem)
+void MayaUsdRPrim::_UpdateTransform(
+    MayaUsdCommitState&      stateToCommit,
+    const HdRprimSharedData& sharedData,
+    const HdDirtyBits        itemDirtyBits,
+    const bool               isBoundingBoxItem)
 {
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
 
@@ -206,8 +212,7 @@ void MayaUsdRPrim::_FirstInitRepr(HdDirtyBits* dirtyBits, SdfPath const& id)
 
     // Update selection state when it is a new Rprim. DirtySelectionHighlight
     // will be propagated to all draw items, to trigger sync for each repr.
-    const HdVP2SelectionStatus selectionStatus
-        = param->GetDrawScene().GetSelectionStatus(id);
+    const HdVP2SelectionStatus selectionStatus = param->GetDrawScene().GetSelectionStatus(id);
     if (_selectionStatus != selectionStatus) {
         _selectionStatus = selectionStatus;
         *dirtyBits |= DirtySelectionHighlight;

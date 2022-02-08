@@ -101,7 +101,9 @@ struct HdVP2MeshSharedData
     in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
     all prims have been updated.
 */
-class HdVP2Mesh final : public HdMesh, public MayaUsdRPrim
+class HdVP2Mesh final
+    : public HdMesh
+    , public MayaUsdRPrim
 {
 public:
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
@@ -191,7 +193,7 @@ private:
 
     HdDirtyBits _customDirtyBitsInUse {
         0
-    };                      //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
+    }; //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
 
     std::shared_ptr<HdVP2MeshSharedData>
         _meshSharedData; //!< Shared data for all draw items of the Rprim

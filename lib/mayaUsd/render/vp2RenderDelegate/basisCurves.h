@@ -101,7 +101,9 @@ struct HdVP2BasisCurvesSharedData
     in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
     all Rprims have been updated.
 */
-class HdVP2BasisCurves final : public HdBasisCurves, public MayaUsdRPrim
+class HdVP2BasisCurves final
+    : public HdBasisCurves
+    , public MayaUsdRPrim
 {
 public:
     HdVP2BasisCurves(

@@ -54,7 +54,7 @@ namespace {
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals };
 
-const MColor       kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f); //!< Opaque blue
+const MColor kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f); //!< Opaque blue
 
 //! Helper utility function to fill primvar data to vertex buffer.
 template <class DEST_TYPE, class SRC_TYPE>
@@ -1542,7 +1542,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     MHWRender::MRenderItem*        renderItem = renderItemData._renderItem;
-    MayaUsdCommitState                    stateToCommit(renderItemData);
+    MayaUsdCommitState             stateToCommit(renderItemData);
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
     if (ARCH_UNLIKELY(!renderItem)) {
         return;

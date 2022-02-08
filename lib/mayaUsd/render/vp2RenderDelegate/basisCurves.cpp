@@ -641,7 +641,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
-    MayaUsdCommitState                    stateToCommit(drawItem->GetRenderItemData());
+    MayaUsdCommitState             stateToCommit(drawItem->GetRenderItemData());
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
 
     const SdfPath& id = GetId();
