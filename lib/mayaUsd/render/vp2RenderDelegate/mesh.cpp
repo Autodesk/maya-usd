@@ -1571,45 +1571,6 @@ void HdVP2Mesh::_UpdateDrawItem(
     const bool requiresIndexUpdate = !isBBoxItem && !isPointSnappingItem;
 #endif
 
-    // Local bounds
-    const GfRange3d& range = _sharedData.bounds.GetRange();
-
-    // Determine if the render item should be enabled or not.
-    if (itemDirtyBits
-        & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
-           | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent
-           | DirtySelectionHighlight)) {
-        bool enable = drawItem->GetVisible() && !_points(_meshSharedData->_primvarInfo).empty();
-
-        if (isDedicatedSelectionHighlightItem) {
-            enable = enable && (_selectionStatus != kUnselected);
-        } else if (isPointSnappingItem) {
-            enable = enable && (_selectionStatus == kUnselected);
-        } else if (isBBoxItem) {
-            enable = enable && !range.IsEmpty();
-        }
-
-        enable = enable && drawScene.DrawRenderTag(_meshSharedData->_renderTag);
-
-        if (drawItemData._enabled != enable) {
-            drawItemData._enabled = enable;
-            if (!enable) {
-                // When hiding the render item skip the rest of the update. This has a nice side
-                // benefit for selection highlight render items. Normally when we disable those
-                // wireframe items we also change the color to the passive wireframe color (they are
-                // re-used for wireframe on shaded). BUT if those items are not being drawn chaning
-                // the shader is pointless, and triggers extra work in Maya. Then, when we re-select
-                // the items we have to change the color again, triggering even more Maya work. It
-                // is MUCH faster to just not update the items we're not going to draw.
-                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                    [renderItem]() { renderItem->enable(false); });
-                return;
-            } else {
-                stateToCommit._enabled = &drawItemData._enabled;
-            }
-        }
-    }
-
     // Prepare index buffer.
     if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
         const HdMeshTopology& topologyToUse = _meshSharedData->_renderingTopology;
@@ -1787,6 +1748,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
+    // Local bounds
+    const GfRange3d& range = _sharedData.bounds.GetRange();
+
     _UpdateTransform(stateToCommit, _sharedData, itemDirtyBits, isBBoxItem);
     MMatrix& worldMatrix = drawItemData._worldMatrix;
 
@@ -1794,8 +1758,11 @@ void HdVP2Mesh::_UpdateDrawItem(
     // The current instancer invalidation tracking makes it hard for
     // us to tell whether transforms will be dirty, so this code
     // pulls them every time something changes.
+    // If the mesh is instanced but has 0 instance transforms remember that
+    // so the render item can be hidden.
+
+    bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
-        bool instancerWithNoInstances = false;
         // Retrieve instance transforms from the instancer.
         HdInstancer*    instancer = renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms
@@ -2003,19 +1970,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
             if (stateToCommit._instanceTransforms.length() == 0)
                 instancerWithNoInstances = true;
-
-            // instancer with no instances means nothing to draw. Disable
-            // the render item if it is not already disabled
-            if (instancerWithNoInstances) {
-                if (drawItemData._enabled) {
-                    drawItemData._enabled = false;
-                    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                        [renderItem]() { renderItem->enable(false); });
-                }
-                // skip the rest of the update because the MRenderItem is not
-                // enabled
-                return;
-            }
         }
     } else {
         // Non-instanced Rprims.
@@ -2032,6 +1986,31 @@ void HdVP2Mesh::_UpdateDrawItem(
                 stateToCommit._shader = shader;
                 stateToCommit._isTransparent = false;
             }
+        }
+    }
+
+    // Determine if the render item should be enabled or not.
+    if (!GetInstancerId().IsEmpty()
+        || (itemDirtyBits
+            & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
+               | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent
+               | DirtySelectionHighlight))) {
+        bool enable = drawItem->GetVisible() && !_points(_meshSharedData->_primvarInfo).empty()
+            && !instancerWithNoInstances;
+
+        if (isDedicatedSelectionHighlightItem) {
+            enable = enable && (_selectionStatus != kUnselected);
+        } else if (isPointSnappingItem) {
+            enable = enable && (_selectionStatus == kUnselected);
+        } else if (isBBoxItem) {
+            enable = enable && !range.IsEmpty();
+        }
+
+        enable = enable && drawScene.DrawRenderTag(_meshSharedData->_renderTag);
+
+        if (drawItemData._enabled != enable) {
+            drawItemData._enabled = enable;
+            stateToCommit._enabled = &drawItemData._enabled;
         }
     }
 
@@ -2103,9 +2082,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             // If the enable state is changed, then update it.
             if (stateToCommit._enabled != nullptr) {
-                // We're already done an early exit when disabling the item, so we should
-                // only ever be enabling here.
-                TF_VERIFY(*stateToCommit._enabled);
                 renderItem->enable(*stateToCommit._enabled);
             }
 
