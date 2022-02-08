@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         jobArgs.cpp
+        meshDataReadJob.cpp
         modelKindProcessor.cpp
         readJob.cpp
         writeJob.cpp
@@ -11,6 +12,7 @@ target_sources(${PROJECT_NAME}
 
 set(HEADERS
     jobArgs.h
+    meshDataReadJob.h
     modelKindProcessor.h
     readJob.h
     writeJob.h

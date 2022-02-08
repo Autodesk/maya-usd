@@ -198,11 +198,15 @@ TranslatorMeshRead::TranslatorMeshRead(
     // set mesh name
     const auto& primName = prim.GetName().GetString();
     const auto  shapeName = TfStringPrintf("%sShape", primName.c_str());
-    meshFn.setName(MString(shapeName.c_str()), false, &stat);
 
-    if (!stat) {
-        *status = stat;
-        return;
+    // Set the mesh name if creating a maya mesh object
+    if (transformObj.isNull() || MFn::kMeshData != transformObj.apiType()) {
+        meshFn.setName(MString(shapeName.c_str()), false, &stat);
+
+        if (!stat) {
+            *status = stat;
+            return;
+        }
     }
 
     // store the path
