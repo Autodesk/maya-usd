@@ -1437,7 +1437,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             }
             // The item is used for bbox display and selection highlight.
             else if (reprToken == HdVP2ReprTokens->bbox) {
-                renderItem = _CreateBBoxRenderItem(renderItemName);
+                renderItem = _CreateBoundingBoxRenderItem(renderItemName, kOpaqueGray, MSelectionMask::kSelectNurbsCurves, MHWRender::MFrameContext::kExcludeNurbsCurves);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
                 renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1665,33 +1665,6 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateWireRenderItem(const MString& n
     renderItem->setSelectionMask(selectionMask);
 #else
     renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
-#endif
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
-}
-
-/*! \brief  Create render item for bbox repr.
- */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreateBBoxRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
 #endif
 
 #if MAYA_API_VERSION >= 20220000

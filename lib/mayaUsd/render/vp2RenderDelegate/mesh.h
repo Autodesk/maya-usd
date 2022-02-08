@@ -172,7 +172,6 @@ private:
         const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
 
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;

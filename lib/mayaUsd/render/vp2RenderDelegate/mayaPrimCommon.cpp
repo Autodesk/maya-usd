@@ -288,4 +288,31 @@ void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector
     }
 }
 
+/*! \brief  Create render item for bbox repr.
+ */
+MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(const MString& name, const MColor& color, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
+
+    renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setShader(_delegate->Get3dSolidShader(color));
+    renderItem->setSelectionMask(selectionMask);
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
+
+#if MAYA_API_VERSION >= 20220000
+    renderItem->setObjectTypeExclusionFlag(exclusionFlag);
+#endif
+
+    _SetWantConsolidation(*renderItem, true);
+
+    return renderItem;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -54,8 +54,6 @@ namespace {
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals };
 
-const MColor kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f); //!< Opaque blue
-
 //! Helper utility function to fill primvar data to vertex buffer.
 template <class DEST_TYPE, class SRC_TYPE>
 void _FillPrimvarData(
@@ -1281,7 +1279,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
             }
             // The item is used for bbox display and selection highlight.
             else if (reprToken == HdVP2ReprTokens->bbox) {
-                renderItem = _CreateBoundingBoxRenderItem(renderItemName);
+                renderItem = _CreateBoundingBoxRenderItem(renderItemName, kOpaqueBlue, MSelectionMask::kSelectMeshes, MHWRender::MFrameContext::kExcludeMeshes);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             break;
@@ -2604,33 +2602,6 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& nam
 #else
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 #endif
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
-}
-
-/*! \brief  Create render item for bbox repr.
- */
-MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
-    renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 #ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
