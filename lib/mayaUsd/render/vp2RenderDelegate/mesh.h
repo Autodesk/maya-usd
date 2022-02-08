@@ -172,10 +172,6 @@ private:
         const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
 
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
-#endif
-
     static void _InitGPUCompute();
 
     //! Custom dirty bits used by this mesh

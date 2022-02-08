@@ -149,10 +149,6 @@ private:
 
     MHWRender::MRenderItem* _CreatePatchRenderItem(const MString& name) const;
 
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
-#endif
-
     enum DirtyBits : HdDirtyBits
     {
         DirtySelectionHighlight = MayaUsdRPrim::DirtySelectionHighlight

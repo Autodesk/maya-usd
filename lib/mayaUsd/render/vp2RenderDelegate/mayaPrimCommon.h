@@ -189,6 +189,10 @@ protected:
     MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name, const MColor& color, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const;
     MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name, const MColor& color, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const;
 
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const;
+#endif
+
     //! VP2 render delegate for which this prim was created
     HdVP2RenderDelegate* _delegate { nullptr };
 

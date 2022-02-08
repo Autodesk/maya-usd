@@ -1284,7 +1284,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
             }
             break;
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        case HdMeshGeomStylePoints: renderItem = _CreatePointsRenderItem(renderItemName); break;
+        case HdMeshGeomStylePoints: renderItem = _CreatePointsRenderItem(renderItemName, MSelectionMask::kSelectMeshVerts, MHWRender::MFrameContext::kExcludeMeshes); break;
 #endif
         default: TF_WARN("Unsupported geomStyle"); break;
         }
@@ -2548,39 +2548,6 @@ void HdVP2Mesh::_UpdatePrimvarSources(
         }
     }
 }
-
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-/*! \brief  Create render item for points repr.
- */
-MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kPoints);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
-    renderItem->depthPriority(MHWRender::MRenderItem::sDormantPointDepthPriority);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dFatPointShader());
-
-    MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
-    selectionMask.addMask(MSelectionMask::kSelectMeshVerts);
-    renderItem->setSelectionMask(selectionMask);
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
-}
-#endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 MHWRender::MRenderItem* HdVP2Mesh::_CreateShadedSelectedInstancesItem(

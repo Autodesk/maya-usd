@@ -1455,7 +1455,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             break;
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
         case HdBasisCurvesGeomStylePoints:
-            renderItem = _CreatePointsRenderItem(renderItemName);
+            renderItem = _CreatePointsRenderItem(renderItemName, MSelectionMask::kSelectNurbsCurves, MHWRender::MFrameContext::kExcludeNurbsCurves);
             break;
 #endif
         default: TF_WARN("Unsupported geomStyle"); break;
@@ -1675,38 +1675,5 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
 
     return renderItem;
 }
-
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-/*! \brief  Create render item for points repr.
- */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kPoints);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
-    renderItem->depthPriority(MHWRender::MRenderItem::sDormantPointDepthPriority);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dFatPointShader());
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
-
-    MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
-    selectionMask.addMask(MSelectionMask::kSelectNurbsCurves);
-    renderItem->setSelectionMask(selectionMask);
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
-}
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

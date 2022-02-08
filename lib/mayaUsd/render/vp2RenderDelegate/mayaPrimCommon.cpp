@@ -350,4 +350,37 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateWireframeRenderItem(const MString& 
     return renderItem;
 }
 
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
+/*! \brief  Create render item for points repr.
+ */
+MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(const MString& name, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kPoints);
+
+    renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
+    renderItem->depthPriority(MHWRender::MRenderItem::sDormantPointDepthPriority);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setShader(_delegate->Get3dFatPointShader());
+
+    MSelectionMask selectionMasks(selectionMask);
+    selectionMasks.addMask(MSelectionMask::kSelectPointsForGravity);
+    renderItem->setSelectionMask(selectionMasks);
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
+
+#if MAYA_API_VERSION >= 20220000
+    renderItem->setObjectTypeExclusionFlag(exclusionFlag);
+#endif
+
+    _SetWantConsolidation(*renderItem, true);
+
+    return renderItem;
+}
+#endif
+
 PXR_NAMESPACE_CLOSE_SCOPE
