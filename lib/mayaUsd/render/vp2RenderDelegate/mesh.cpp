@@ -1274,7 +1274,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 #endif
             // The item is used for wireframe display and selection highlight.
             else if (reprToken == HdReprTokens->wire) {
-                renderItem = _CreateWireframeRenderItem(renderItemName);
+                renderItem = _CreateWireframeRenderItem(renderItemName, kOpaqueBlue, MSelectionMask::kSelectMeshes, MHWRender::MFrameContext::kExcludeMeshes);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             // The item is used for bbox display and selection highlight.
@@ -2581,41 +2581,6 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
     return renderItem;
 }
 #endif
-
-/*! \brief  Create render item for wireframe repr.
- */
-MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kWireframe);
-    renderItem->depthPriority(MHWRender::MRenderItem::sDormantWireDepthPriority);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
-
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MSelectionMask selectionMask(MSelectionMask::kSelectMeshes);
-    selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
-    renderItem->setSelectionMask(selectionMask);
-#else
-    renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
-#endif
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
-}
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
 MHWRender::MRenderItem* HdVP2Mesh::_CreateShadedSelectedInstancesItem(

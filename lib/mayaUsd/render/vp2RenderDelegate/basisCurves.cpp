@@ -1429,7 +1429,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         case HdBasisCurvesGeomStyleWire:
             // The item is used for wireframe display and selection highlight.
             if (reprToken == HdReprTokens->wire) {
-                renderItem = _CreateWireRenderItem(renderItemName);
+                renderItem = _CreateWireframeRenderItem(renderItemName, kOpaqueGray, MSelectionMask::kSelectNurbsCurves, MHWRender::MFrameContext::kExcludeNurbsCurves);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
                 renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1445,7 +1445,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             }
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             else if (reprToken == HdVP2ReprTokens->defaultMaterial) {
-                renderItem = _CreateWireRenderItem(renderItemName);
+                renderItem = _CreateWireframeRenderItem(renderItemName, kOpaqueGray, MSelectionMask::kSelectNurbsCurves, MHWRender::MFrameContext::kExcludeNurbsCurves);
                 renderItem->setDrawMode(MHWRender::MGeometry::kAll);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
                 renderItem->setDefaultMaterialHandling(
@@ -1639,41 +1639,6 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
             }
         }
     }
-}
-
-/*! \brief  Create render item for wireframe repr.
- */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreateWireRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kWireframe);
-    renderItem->depthPriority(MHWRender::MRenderItem::sDormantWireDepthPriority);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
-
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
-    selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
-    renderItem->setSelectionMask(selectionMask);
-#else
-    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
-#endif
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
 }
 
 /*! \brief  Create render item for smoothHull repr.

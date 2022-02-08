@@ -186,6 +186,7 @@ protected:
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
 
+    MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name, const MColor& color, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const;
     MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name, const MColor& color, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const;
 
     //! VP2 render delegate for which this prim was created
