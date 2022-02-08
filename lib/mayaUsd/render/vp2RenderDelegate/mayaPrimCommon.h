@@ -39,9 +39,6 @@ using InstanceIdMap = std::vector<unsigned int>;
 
 using InstancePrimPaths = std::vector<SdfPath>;
 
-//! A primvar vertex buffer data map indexed by primvar name.
-using PrimvarBufferDataMap = std::unordered_map<TfToken, void*, TfToken::HashFunctor>;
-
 // global singleton rather than MUserData, because consolidated world will
 // not consolidate render items with different MUserData objects.
 class MayaUsdCustomData
@@ -70,6 +67,9 @@ public:
     static void               RemoveInstancePrimPaths(const SdfPath& prim);
 };
 #endif
+
+//! A primvar vertex buffer data map indexed by primvar name.
+using PrimvarBufferDataMap = std::unordered_map<TfToken, void*, TfToken::HashFunctor>;
 
 //! \brief  Helper struct used to package all the changes into single commit task
 //!         (such commit task will be executed on main-thread)
