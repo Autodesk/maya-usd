@@ -219,6 +219,7 @@ global proc mayaUSDRegisterStrings()
     register("kMergeButton", "Merge");
     register("kMayaRefDiscardEdits", "Discard Maya Edits");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
+    register("kMayaRefDuplicateAsUsdDataDiv", "Stages");
 
     // Register the strings from the python equivalent register function.
     // Note: the strings from both the MEL and python register can be loaded

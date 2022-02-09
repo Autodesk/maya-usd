@@ -747,6 +747,7 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
         if (size($proxyShapes) > 0) {
             menuItem -divider true -insertAfter "";
             menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdData")` -subMenu true -insertAfter "";
+            menuItem -divider true -dividerLabel `getMayaUsdString("kMayaRefDuplicateAsUsdDataDiv")`;
             for ($proxy in $proxyShapes) {
                 menuItem -label $proxy -command ("mayaUsdMenu_duplicateToUSD " + $proxy + " " + $obj);
             }
