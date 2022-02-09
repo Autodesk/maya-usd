@@ -185,6 +185,8 @@ protected:
 
     void _MakeOtherReprRenderItemsInvisible(const TfToken&, const ReprVector&);
 
+    void _HideAllDrawItems(HdReprSharedPtr const& curRepr);
+
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
 

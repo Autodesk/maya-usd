@@ -139,8 +139,6 @@ private:
         HdVP2DrawItem*               drawItem,
         HdBasisCurvesReprDesc const& desc);
 
-    void _HideAllDrawItems(const TfToken& reprToken);
-
     void _UpdatePrimvarSources(
         HdSceneDelegate*     sceneDelegate,
         HdDirtyBits          dirtyBits,

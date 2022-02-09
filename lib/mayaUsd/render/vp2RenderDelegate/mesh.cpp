@@ -771,7 +771,7 @@ void HdVP2Mesh::Sync(
     // existing render items because they should not be drawn.
     HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
-        _HideAllDrawItems(reprToken);
+        _HideAllDrawItems(_GetRepr(reprToken));
         *dirtyBits &= ~(
             HdChangeTracker::DirtyRenderTag
 #ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
@@ -2182,31 +2182,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     // Reset dirty bits because we've prepared commit state for this render item.
     renderItemData.ResetDirtyBits();
-}
-
-void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
-{
-    HdReprSharedPtr const& curRepr = _GetRepr(reprToken);
-    if (!curRepr) {
-        return;
-    }
-
-    const auto& items = curRepr->GetDrawItems();
-
-#if HD_API_VERSION < 35
-    for (HdDrawItem* item : items) {
-        if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
-#else
-    for (const HdRepr::DrawItemUniquePtr& item : items) {
-        if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
-#endif
-            for (auto& renderItemData : drawItem->GetRenderItems()) {
-                renderItemData._enabled = false;
-                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                    [&]() { renderItemData._renderItem->enable(false); });
-            }
-        }
-    }
 }
 
 #ifdef HDVP2_ENABLE_GPU_COMPUTE

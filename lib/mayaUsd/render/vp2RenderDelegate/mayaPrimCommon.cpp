@@ -416,4 +416,28 @@ void MayaUsdRPrim::_MakeOtherReprRenderItemsInvisible(
     }
 }
 
+void MayaUsdRPrim::_HideAllDrawItems(HdReprSharedPtr const& curRepr)
+{
+    if (!curRepr) {
+        return;
+    }
+
+    const auto& items = curRepr->GetDrawItems();
+
+#if HD_API_VERSION < 35
+    for (HdDrawItem* item : items) {
+        if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+#else
+    for (const HdRepr::DrawItemUniquePtr& item : items) {
+        if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+            for (auto& renderItemData : drawItem->GetRenderItems()) {
+                renderItemData._enabled = false;
+                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                    [&]() { renderItemData._renderItem->enable(false); });
+            }
+        }
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

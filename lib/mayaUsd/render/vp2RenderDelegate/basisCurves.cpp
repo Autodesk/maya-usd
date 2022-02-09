@@ -464,7 +464,7 @@ void HdVP2BasisCurves::Sync(
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
     HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
     if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()))) {
-        _HideAllDrawItems(reprToken);
+        _HideAllDrawItems(_GetRepr(reprToken));
         *dirtyBits &= ~(
             HdChangeTracker::DirtyRenderTag
 #ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
@@ -1521,31 +1521,6 @@ HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
         | DirtySelectionHighlight;
 
     return bits;
-}
-
-void HdVP2BasisCurves::_HideAllDrawItems(const TfToken& reprToken)
-{
-    HdReprSharedPtr const& curRepr = _GetRepr(reprToken);
-    if (!curRepr) {
-        return;
-    }
-
-    const auto& items = curRepr->GetDrawItems();
-
-#if HD_API_VERSION < 35
-    for (HdDrawItem* item : items) {
-        if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
-#else
-    for (const HdRepr::DrawItemUniquePtr& item : items) {
-        if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
-#endif
-            for (auto& renderItemData : drawItem->GetRenderItems()) {
-                renderItemData._enabled = false;
-                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                    [&]() { renderItemData._renderItem->enable(false); });
-            }
-        }
-    }
 }
 
 /*! \brief  Update _primvarSourceMap, our local cache of raw primvar data.

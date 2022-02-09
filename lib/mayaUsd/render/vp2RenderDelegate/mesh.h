@@ -142,8 +142,6 @@ private:
         const HdMeshReprDesc& desc,
         const TfToken&        reprToken);
 
-    void _HideAllDrawItems(const TfToken& reprToken);
-
     void _UpdatePrimvarSources(
         HdSceneDelegate*     sceneDelegate,
         HdDirtyBits          dirtyBits,
