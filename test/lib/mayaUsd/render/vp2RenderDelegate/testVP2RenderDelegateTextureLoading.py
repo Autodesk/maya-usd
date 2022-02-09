@@ -42,39 +42,39 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
 
         cls._test_dir = os.path.abspath(".")
 
-    def assertSnapshotClose(self, imageName):
-        baseline_image = os.path.join(self._baseline_dir, imageName)
-        snapshot_image = os.path.join(self._test_dir, imageName)
-        imageUtils.snapshot(snapshot_image, width=960, height=540)
-        return self.assertImagesClose(baseline_image, snapshot_image)
-
-    def setUp(self):
-        cmds.file(force=True, new=True)
-
-        self._optVarName = "mayaUsd_DisableAsyncTextureLoading"
+        cls._optVarName = "mayaUsd_DisableAsyncTextureLoading"
         # Save optionVar preference
-        self._hasDisabledAsync = cmds.optionVar(exists=self._optVarName)
-        if self._hasDisabledAsync:
-            self._prevDisableAsync = cmds.optionVar(q=self._optVarName)
+        cls._hasDisabledAsync = cmds.optionVar(exists=cls._optVarName)
+        if cls._hasDisabledAsync:
+            cls._prevDisableAsync = cmds.optionVar(q=cls._optVarName)
 
         mayaUtils.loadPlugin("mayaUsdPlugin")
 
-    def tearDown(self):
-        cmds.file(force=True, new=True)
-        cmds.unloadPlugin("mayaUsdPlugin", force=True)
-
+    @classmethod
+    def tearDownClass(cls):
         # Restore user optionVar
-        if self._hasDisabledAsync:
-            cmds.optionVar(iv=(self._optVarName, self._prevDisableAsync))
+        if cls._hasDisabledAsync:
+            cmds.optionVar(iv=(cls._optVarName, cls._prevDisableAsync))
         else:
-            cmds.optionVar(remove=self._optVarName)
+            cmds.optionVar(remove=cls._optVarName)
+
+    def assertSnapshotClose(self, imageName):
+        baseline_image = os.path.join(self._baseline_dir, imageName)
+        snapshot_image = os.path.join(self._test_dir, imageName)
+        imageUtils.snapshot(snapshot_image, width=768, height=768)
+        return self.assertImagesClose(baseline_image, snapshot_image)
 
     def testTextureLoadingSync(self):
+        cmds.file(force=True, new=True)
+
         # Make sure the sync mode is ON (disable async loading)
         cmds.optionVar(iv=(self._optVarName, 1))
 
-        cmds.xform("persp", t=(2, 2, 10))
+        cmds.xform("persp", t=(2, 2, 5.8))
         cmds.xform("persp", ro=[0, 0, 0], ws=True)
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="default")
 
         testFile = testUtils.getTestScene("multipleMaterialsAssignment",
                                           "MultipleMaterialsAssignment.usda")
@@ -86,17 +86,21 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
 
         # Switch purpose to "render"
         cmds.setAttr("{}.drawProxyPurpose".format(shapeNode), 0)
-        cmds.setAttr("{}.drawProxyPurpose".format(shapeNode), 1)
+        cmds.setAttr("{}.drawRenderPurpose".format(shapeNode), 1)
 
         cmds.select(cl=True)
         self.assertSnapshotClose("TextureLoading_Render_Sync.png")
 
     def testTextureLoadingAsync(self):
+        cmds.file(force=True, new=True)
         # Make sure the async mode is ON (enable async loading)
         cmds.optionVar(iv=(self._optVarName, 0))
 
-        cmds.xform("persp", t=(2, 2, 10))
+        cmds.xform("persp", t=(2, 2, 5.8))
         cmds.xform("persp", ro=[0, 0, 0], ws=True)
+
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, edit=True, lights=False, displayLights="default")
 
         testFile = testUtils.getTestScene("multipleMaterialsAssignment",
                                           "MultipleMaterialsAssignment.usda")
@@ -111,7 +115,7 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
 
         # Switch purpose to "render"
         cmds.setAttr("{}.drawProxyPurpose".format(shapeNode), 0)
-        cmds.setAttr("{}.drawProxyPurpose".format(shapeNode), 1)
+        cmds.setAttr("{}.drawRenderPurpose".format(shapeNode), 1)
 
         # Force all idle tasks to finish
         cmds.flushIdleQueue()

@@ -29,7 +29,7 @@ def Xform "root"
             def Shader "base_tex"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @proxy_red.jpg@
+                asset inputs:file = @proxy_red.png@
                 float2 inputs:st.connect = </root/MATERIAL/proxy_red_material/uv_reader.outputs:result>
                 custom token inputs:wrapS = "repeat"
                 custom token inputs:wrapT = "repeat"
@@ -46,21 +46,21 @@ def Xform "root"
             def Shader "blue_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @blue.jpg@
+                asset inputs:file = @blue.png@
                 vector3f outputs:rgb
             }
 
             def Shader "proxy_red_tex_r"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @proxy_red.jpg@
+                asset inputs:file = @proxy_red.png@
                 vector3f outputs:r
             }
 
             def Shader "proxy_green_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @proxy_green.jpg@
+                asset inputs:file = @proxy_green.png@
                 vector3f outputs:rgb
             }
         }
@@ -86,7 +86,7 @@ def Xform "root"
             def Shader "base_tex"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @proxy_green.jpg@
+                asset inputs:file = @proxy_green.png@
                 float2 inputs:st.connect = </root/MATERIAL/proxy_green_material/uv_reader.outputs:result>
                 custom token inputs:wrapS = "repeat"
                 custom token inputs:wrapT = "repeat"
@@ -103,21 +103,21 @@ def Xform "root"
             def Shader "blue_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @blue.jpg@
+                asset inputs:file = @blue.png@
                 vector3f outputs:rgb
             }
 
             def Shader "proxy_red_tex_r"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @proxy_red.jpg@
+                asset inputs:file = @proxy_red.png@
                 vector3f outputs:r
             }
 
             def Shader "proxy_green_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @proxy_green.jpg@
+                asset inputs:file = @proxy_green.png@
                 vector3f outputs:rgb
             }
         }
@@ -143,7 +143,7 @@ def Xform "root"
             def Shader "base_tex"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @/dummy/path/to/non_exist_texture.jpg@
+                asset inputs:file = @/dummy/path/to/non_exist_texture.png@
                 float4 inputs:fallback = (0, 0, 1, 0)
                 float2 inputs:st.connect = </root/MATERIAL/proxy_blue_material/uv_reader.outputs:result>
                 custom token inputs:wrapS = "repeat"
@@ -161,7 +161,7 @@ def Xform "root"
             def Shader "non_exist_with_fallback"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @/dummy/path/to/non_exist_texture.jpg@
+                asset inputs:file = @/dummy/path/to/non_exist_texture.png@
                 float4 inputs:fallback = (1, 1, 0, 0)
                 vector3f outputs:rgb
             }
@@ -169,14 +169,14 @@ def Xform "root"
             def Shader "proxy_red_tex_r"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @proxy_red.jpg@
+                asset inputs:file = @proxy_red.png@
                 vector3f outputs:r
             }
 
             def Shader "proxy_green_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @proxy_green.jpg@
+                asset inputs:file = @proxy_green.png@
                 vector3f outputs:rgb
             }
         }
@@ -202,7 +202,7 @@ def Xform "root"
             def Shader "base_tex"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @render_red.jpg@
+                asset inputs:file = @render_red.png@
                 float2 inputs:st.connect = </root/MATERIAL/render_red_material/uv_reader.outputs:result>
                 custom token inputs:wrapS = "repeat"
                 custom token inputs:wrapT = "repeat"
@@ -219,21 +219,21 @@ def Xform "root"
             def Shader "blue_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @blue.jpg@
+                asset inputs:file = @blue.png@
                 vector3f outputs:rgb
             }
 
             def Shader "render_green_tex_g"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @render_green.jpg@
+                asset inputs:file = @render_green.png@
                 vector3f outputs:g
             }
 
             def Shader "render_green_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @render_green.jpg@
+                asset inputs:file = @render_green.png@
                 vector3f outputs:rgb
             }
         }
@@ -259,7 +259,7 @@ def Xform "root"
             def Shader "base_tex"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @render_green.jpg@
+                asset inputs:file = @render_green.png@
                 float2 inputs:st.connect = </root/MATERIAL/render_green_material/uv_reader.outputs:result>
                 custom token inputs:wrapS = "repeat"
                 custom token inputs:wrapT = "repeat"
@@ -276,21 +276,21 @@ def Xform "root"
             def Shader "blue_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @blue.jpg@
+                asset inputs:file = @blue.png@
                 vector3f outputs:rgb
             }
 
             def Shader "render_green_tex_g"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @render_green.jpg@
+                asset inputs:file = @render_green.png@
                 vector3f outputs:g
             }
 
             def Shader "render_green_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @render_green.jpg@
+                asset inputs:file = @render_green.png@
                 vector3f outputs:rgb
             }
         }
@@ -316,7 +316,7 @@ def Xform "root"
             def Shader "base_tex"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @/dummy/path/to/non_exist_texture.jpg@
+                asset inputs:file = @/dummy/path/to/non_exist_texture.png@
                 float4 inputs:fallback = (0, 0, 1, 0)
                 float2 inputs:st.connect = </root/MATERIAL/render_blue_material/uv_reader.outputs:result>
                 custom token inputs:wrapS = "repeat"
@@ -334,7 +334,7 @@ def Xform "root"
             def Shader "non_exist_with_fallback"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @/dummy/path/to/non_exist_texture.jpg@
+                asset inputs:file = @/dummy/path/to/non_exist_texture.png@
                 float4 inputs:fallback = (1, 1, 0, 0)
                 vector3f outputs:rgb
             }
@@ -342,14 +342,14 @@ def Xform "root"
             def Shader "render_green_tex_g"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @render_green.jpg@
+                asset inputs:file = @render_green.png@
                 vector3f outputs:g
             }
 
             def Shader "render_green_tex_rgb"
             {
                 uniform token info:id = "UsdUVTexture"
-                asset inputs:file = @render_green.jpg@
+                asset inputs:file = @render_green.png@
                 vector3f outputs:rgb
             }
         }
@@ -389,7 +389,7 @@ def Xform "root"
                     kind = "component"
                 )
                 {
-                    double3 xformOp:translate = (2, 0, 0)
+                    double3 xformOp:translate = (0, 2, 0)
                     uniform token[] xformOpOrder = ["xformOp:translate"]
                     rel material:binding = </root/MATERIAL/render_red_material>
 
@@ -409,7 +409,7 @@ def Xform "root"
                     kind = "component"
                 )
                 {
-                    double3 xformOp:translate = (4, 0, 0)
+                    double3 xformOp:translate = (0, 4, 0)
                     uniform token[] xformOpOrder = ["xformOp:translate"]
                     rel material:binding = </root/MATERIAL/render_red_material>
 
@@ -427,7 +427,7 @@ def Xform "root"
 
             def Xform "green"
             {
-                double3 xformOp:translate = (0, 2, 0)
+                double3 xformOp:translate = (2, 0, 0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
 
                 def Mesh "plane_01" (
@@ -455,7 +455,7 @@ def Xform "root"
                     kind = "component"
                 )
                 {
-                    double3 xformOp:translate = (2, 0, 0)
+                    double3 xformOp:translate = (0, 2, 0)
                     uniform token[] xformOpOrder = ["xformOp:translate"]
                     rel material:binding = </root/MATERIAL/render_green_material>
 
@@ -475,7 +475,7 @@ def Xform "root"
                     kind = "component"
                 )
                 {
-                    double3 xformOp:translate = (4, 0, 0)
+                    double3 xformOp:translate = (0, 4, 0)
                     uniform token[] xformOpOrder = ["xformOp:translate"]
                     rel material:binding = </root/MATERIAL/render_green_material>
 
@@ -493,7 +493,7 @@ def Xform "root"
 
             def Xform "blue"
             {
-                double3 xformOp:translate = (0, 4, 0)
+                double3 xformOp:translate = (4, 0, 0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
 
                 def Mesh "plane_01" (
@@ -521,7 +521,7 @@ def Xform "root"
                     kind = "component"
                 )
                 {
-                    double3 xformOp:translate = (2, 0, 0)
+                    double3 xformOp:translate = (0, 2, 0)
                     uniform token[] xformOpOrder = ["xformOp:translate"]
                     rel material:binding = </root/MATERIAL/render_blue_material>
 
@@ -541,7 +541,7 @@ def Xform "root"
                     kind = "component"
                 )
                 {
-                    double3 xformOp:translate = (4, 0, 0)
+                    double3 xformOp:translate = (0, 4, 0)
                     uniform token[] xformOpOrder = ["xformOp:translate"]
                     rel material:binding = </root/MATERIAL/render_blue_material>
 
