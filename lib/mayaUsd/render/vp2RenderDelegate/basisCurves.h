@@ -131,6 +131,8 @@ protected:
 
     void _InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits) override;
 
+    TfToken& _RenderTag() override { return _curvesSharedData._renderTag; }
+
 private:
     void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
 

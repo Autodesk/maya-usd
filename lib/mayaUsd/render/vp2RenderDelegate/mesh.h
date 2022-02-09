@@ -135,6 +135,8 @@ private:
     void _CreateOSDTables();
 #endif
 
+    TfToken& _RenderTag() override { return _meshSharedData->_renderTag; }
+
     void _UpdateDrawItem(
         HdSceneDelegate*,
         HdVP2DrawItem*,

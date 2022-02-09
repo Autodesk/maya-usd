@@ -197,6 +197,8 @@ protected:
     MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const;
 #endif
 
+    virtual TfToken& _RenderTag() = 0;
+
     //! VP2 render delegate for which this prim was created
     HdVP2RenderDelegate* _delegate { nullptr };
 

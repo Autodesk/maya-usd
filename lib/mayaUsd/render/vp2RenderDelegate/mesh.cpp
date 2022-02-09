@@ -1039,7 +1039,7 @@ void HdVP2Mesh::Sync(
     // Hydra now manages and caches render tags under the hood and is clearing
     // the dirty bit prior to calling sync. Unconditionally set the render tag
     // in the shared data structure based on current Hydra data
-    _meshSharedData->_renderTag = GetRenderTag();
+    _RenderTag() = GetRenderTag();
 #else
     if (*dirtyBits
         & (HdChangeTracker::DirtyRenderTag
@@ -1047,7 +1047,7 @@ void HdVP2Mesh::Sync(
            | HdChangeTracker::DirtyVisibility
 #endif
            )) {
-        _meshSharedData->_renderTag = delegate->GetRenderTag(id);
+        _RenderTag() = delegate->GetRenderTag(id);
     }
 #endif
 
