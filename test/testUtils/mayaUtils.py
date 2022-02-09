@@ -239,6 +239,23 @@ def createProxyFromFile(filePath):
 
     return shapeNode,shapeStage
 
+def createSingleSphereMayaScene(directory=None):
+    '''Create a Maya scene with a single polygonal sphere.
+    Returns the file path.
+    '''
+
+    cmds.file(new=True, force=True)
+    cmds.CreatePolygonSphere()
+    tempMayaFile = 'simpleSphere.ma'
+    if directory is not None:
+        tempMayaFile = os.path.join(directory, tempMayaFile)
+    # Prevent Windows single backslash from being interpreted as a control
+    # character.
+    tempMayaFile = tempMayaFile.replace(os.sep, '/')
+    cmds.file(rename=tempMayaFile)
+    cmds.file(save=True, force=True, type='mayaAscii')
+    return tempMayaFile
+
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.
 
