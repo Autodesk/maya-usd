@@ -457,13 +457,15 @@ void HdVP2BasisCurves::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
+    const SdfPath& id = GetId();
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
     // We don't update the repr if it is hidden by the render tags (purpose)
     // of the ProxyRenderDelegate. In additional, we need to hide any already
     // existing render items because they should not be drawn.
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
     HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
-    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()))) {
+    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
         _HideAllDrawItems(_GetRepr(reprToken));
         *dirtyBits &= ~(
             HdChangeTracker::DirtyRenderTag
@@ -479,8 +481,6 @@ void HdVP2BasisCurves::Sync(
         MProfiler::kColorC_L2,
         _rprimId.asChar(),
         "HdVP2BasisCurves::Sync");
-
-    const SdfPath& id = GetId();
 
     // Update the selection status if it changed.
     if (*dirtyBits & DirtySelectionHighlight) {
