@@ -181,6 +181,8 @@ protected:
 
     void _SetDirtyRepr(const HdReprSharedPtr& repr);
 
+    void _SyncSharedData(HdRprimSharedData& sharedData, HdSceneDelegate* delegate, HdDirtyBits const* dirtyBits, TfToken const& reprToken, SdfPath const& id, ReprVector const& reprs);
+
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
 
     void _MakeOtherReprRenderItemsInvisible(const TfToken&, const ReprVector&);

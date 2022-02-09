@@ -440,4 +440,42 @@ void MayaUsdRPrim::_HideAllDrawItems(HdReprSharedPtr const& curRepr)
     }
 }
 
+void MayaUsdRPrim::_SyncSharedData(HdRprimSharedData& sharedData, HdSceneDelegate* delegate, HdDirtyBits const* dirtyBits, TfToken const& reprToken, SdfPath const& id, ReprVector const& reprs)
+{
+    if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
+        sharedData.bounds.SetRange(delegate->GetExtent(id));
+    }
+
+    if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
+        sharedData.bounds.SetMatrix(delegate->GetTransform(id));
+    }
+
+    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
+        sharedData.visible = delegate->GetVisible(id);
+
+        // Invisible rprims don't get calls to Sync or _PropagateDirtyBits while
+        // they are invisible. This means that when a prim goes from visible to
+        // invisible that we must update every repr, because if we switch reprs while
+        // invisible we'll get no chance to update!
+        if (!sharedData.visible)
+            _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
+    }
+
+#if PXR_VERSION > 2111
+    // Hydra now manages and caches render tags under the hood and is clearing
+    // the dirty bit prior to calling sync. Unconditionally set the render tag
+    // in the shared data structure based on current Hydra data
+    _RenderTag() = GetRenderTag();
+#else
+    if (*dirtyBits
+        & (HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+           | HdChangeTracker::DirtyVisibility
+#endif
+           )) {
+        _RenderTag() = delegate->GetRenderTag(id);
+    }
+#endif
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
