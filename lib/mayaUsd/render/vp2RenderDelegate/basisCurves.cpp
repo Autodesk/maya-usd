@@ -458,21 +458,8 @@ void HdVP2BasisCurves::Sync(
     TfToken const&   reprToken)
 {
     const SdfPath& id = GetId();
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-
-    // We don't update the repr if it is hidden by the render tags (purpose)
-    // of the ProxyRenderDelegate. In additional, we need to hide any already
-    // existing render items because they should not be drawn.
-    HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
-    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
-        _HideAllDrawItems(_GetRepr(reprToken));
-        *dirtyBits &= ~(
-            HdChangeTracker::DirtyRenderTag
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-            | HdChangeTracker::DirtyVisibility
-#endif
-        );
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
+    if (!_SyncCommon(dirtyBits, id, _GetRepr(reprToken), renderIndex)) {
         return;
     }
 
@@ -481,13 +468,6 @@ void HdVP2BasisCurves::Sync(
         MProfiler::kColorC_L2,
         _rprimId.asChar(),
         "HdVP2BasisCurves::Sync");
-
-    // Update the selection status if it changed.
-    if (*dirtyBits & DirtySelectionHighlight) {
-        _selectionStatus = drawScene.GetSelectionStatus(id);
-    } else {
-        TF_VERIFY(_selectionStatus == drawScene.GetSelectionStatus(id));
-    }
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         const SdfPath materialId = delegate->GetMaterialId(id);

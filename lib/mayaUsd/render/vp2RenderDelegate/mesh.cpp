@@ -754,22 +754,9 @@ void HdVP2Mesh::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
-    const SdfPath&       id = GetId();
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-
-    // We don't update the repr if it is hidden by the render tags (purpose)
-    // of the ProxyRenderDelegate. In additional, we need to hide any already
-    // existing render items because they should not be drawn.
+    const SdfPath& id = GetId();
     HdRenderIndex& renderIndex = delegate->GetRenderIndex();
-    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
-        _HideAllDrawItems(_GetRepr(reprToken));
-        *dirtyBits &= ~(
-            HdChangeTracker::DirtyRenderTag
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-            | HdChangeTracker::DirtyVisibility
-#endif
-        );
+    if (!_SyncCommon(dirtyBits, id, _GetRepr(reprToken), renderIndex)) {
         return;
     }
 
@@ -779,8 +766,10 @@ void HdVP2Mesh::Sync(
         _rprimId.asChar(),
         "HdVP2Mesh::Sync");
 
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
     UsdImagingDelegate*  usdImagingDelegate = drawScene.GetUsdImagingDelegate();
-    
+
     // Geom subsets are accessed through the mesh topology. I need to know about
     // the additional materialIds that get bound by geom subsets before we build the
     // _primvaInfo. So the very first thing I need to do is grab the topology.
@@ -825,13 +814,6 @@ void HdVP2Mesh::Sync(
             }
         }
 #endif
-    }
-
-    // Update the selection status if it changed.
-    if (*dirtyBits & DirtySelectionHighlight) {
-        _selectionStatus = drawScene.GetSelectionStatus(id);
-    } else {
-        TF_VERIFY(_selectionStatus == drawScene.GetSelectionStatus(id));
     }
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {

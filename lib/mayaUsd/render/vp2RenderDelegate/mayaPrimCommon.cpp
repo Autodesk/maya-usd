@@ -478,4 +478,33 @@ void MayaUsdRPrim::_SyncSharedData(HdRprimSharedData& sharedData, HdSceneDelegat
 #endif
 }
 
+bool MayaUsdRPrim::_SyncCommon(HdDirtyBits* dirtyBits, const SdfPath& id, HdReprSharedPtr const& curRepr, HdRenderIndex& renderIndex)
+{
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
+    // Update the selection status if it changed.
+    if (*dirtyBits & DirtySelectionHighlight) {
+        _selectionStatus = drawScene.GetSelectionStatus(id);
+    } else {
+        TF_VERIFY(_selectionStatus == drawScene.GetSelectionStatus(id));
+    }
+
+    // We don't update the repr if it is hidden by the render tags (purpose)
+    // of the ProxyRenderDelegate. In additional, we need to hide any already
+    // existing render items because they should not be drawn.
+    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
+        _HideAllDrawItems(curRepr);
+        *dirtyBits &= ~(
+            HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+            | HdChangeTracker::DirtyVisibility
+#endif
+        );
+        return false;
+    }
+
+    return true;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
