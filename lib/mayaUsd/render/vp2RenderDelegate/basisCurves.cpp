@@ -1530,24 +1530,20 @@ void HdVP2BasisCurves::_HideAllDrawItems(const TfToken& reprToken)
         return;
     }
 
-    _BasisCurvesReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
+    const auto& items = curRepr->GetDrawItems();
 
-    // For each relevant draw item, update dirty buffer sources.
-    int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
-        const HdBasisCurvesReprDesc& desc = reprDescs[descIdx];
-        if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) {
-            continue;
-        }
-
-        auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
-        if (!drawItem)
-            continue;
-
-        for (auto& renderItemData : drawItem->GetRenderItems()) {
-            renderItemData._enabled = false;
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [&]() { renderItemData._renderItem->enable(false); });
+#if HD_API_VERSION < 35
+    for (HdDrawItem* item : items) {
+        if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+#else
+    for (const HdRepr::DrawItemUniquePtr& item : items) {
+        if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+            for (auto& renderItemData : drawItem->GetRenderItems()) {
+                renderItemData._enabled = false;
+                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                    [&]() { renderItemData._renderItem->enable(false); });
+            }
         }
     }
 }
