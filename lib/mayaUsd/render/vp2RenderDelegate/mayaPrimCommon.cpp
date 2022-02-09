@@ -17,6 +17,7 @@
 #include "mayaPrimCommon.h"
 
 #include "bboxGeom.h"
+#include "material.h"
 #include "render_delegate.h"
 
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -505,6 +506,37 @@ bool MayaUsdRPrim::_SyncCommon(HdDirtyBits* dirtyBits, const SdfPath& id, HdRepr
     }
 
     return true;
+}
+
+SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate)
+{
+    const SdfPath& id = rprim->GetId();
+    const SdfPath materialId = delegate->GetMaterialId(id);
+
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+    const SdfPath& origMaterialId = rprim->GetMaterialId();
+    if (materialId != origMaterialId) {
+        HdRenderIndex& renderIndex = delegate->GetRenderIndex();
+
+        if (!origMaterialId.IsEmpty()) {
+            HdVP2Material* material = static_cast<HdVP2Material*>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material, origMaterialId));
+            if (material) {
+                material->UnsubscribeFromMaterialUpdates(id);
+            }
+        }
+
+        if (!materialId.IsEmpty()) {
+            HdVP2Material* material = static_cast<HdVP2Material*>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+            if (material) {
+                material->SubscribeForMaterialUpdates(id);
+            }
+        }
+    }
+#endif
+
+    return materialId;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

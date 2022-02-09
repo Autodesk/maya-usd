@@ -470,29 +470,7 @@ void HdVP2BasisCurves::Sync(
         "HdVP2BasisCurves::Sync");
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        const SdfPath materialId = delegate->GetMaterialId(id);
-
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-        const SdfPath& origMaterialId = GetMaterialId();
-        if (materialId != origMaterialId) {
-            if (!origMaterialId.IsEmpty()) {
-                HdVP2Material* material = static_cast<HdVP2Material*>(
-                    renderIndex.GetSprim(HdPrimTypeTokens->material, origMaterialId));
-                if (material) {
-                    material->UnsubscribeFromMaterialUpdates(id);
-                }
-            }
-
-            if (!materialId.IsEmpty()) {
-                HdVP2Material* material = static_cast<HdVP2Material*>(
-                    renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
-                if (material) {
-                    material->SubscribeForMaterialUpdates(id);
-                }
-            }
-        }
-#endif
-
+        const SdfPath materialId = _GetUpdatedMaterialId(this, delegate);
 #if HD_API_VERSION < 37
         _SetMaterialId(renderIndex.GetChangeTracker(), materialId);
 #else

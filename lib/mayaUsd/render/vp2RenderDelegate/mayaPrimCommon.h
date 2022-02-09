@@ -185,6 +185,8 @@ protected:
 
     void _SyncSharedData(HdRprimSharedData& sharedData, HdSceneDelegate* delegate, HdDirtyBits const* dirtyBits, TfToken const& reprToken, SdfPath const& id, ReprVector const& reprs);
 
+    SdfPath _GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate);
+
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
 
     void _MakeOtherReprRenderItemsInvisible(const TfToken&, const ReprVector&);
