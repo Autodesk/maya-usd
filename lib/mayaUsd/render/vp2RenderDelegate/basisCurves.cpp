@@ -599,7 +599,7 @@ void HdVP2BasisCurves::Sync(
         // invisible that we must update every repr, because if we switch reprs while
         // invisible we'll get no chance to update!
         if (!_sharedData.visible)
-            _MakeOtherReprRenderItemsInvisible(delegate, reprToken);
+            _MakeOtherReprRenderItemsInvisible(reprToken, _reprs);
     }
 
 #if PXR_VERSION > 2111
@@ -1474,39 +1474,6 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
 #else
         repr->AddDrawItem(std::move(drawItem));
 #endif
-    }
-}
-
-/*! \brief Hide all of the repr objects for this Rprim except the named repr.
-    Repr objects are created to support specific reprName tokens, and contain a list of
-    HdVP2DrawItems and corresponding RenderItems.
-*/
-void HdVP2BasisCurves::_MakeOtherReprRenderItemsInvisible(
-    HdSceneDelegate* sceneDelegate,
-    const TfToken&   reprToken)
-{
-    for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
-        if (pair.first != reprToken) {
-            // For each relevant draw item, update dirty buffer sources.
-            const HdReprSharedPtr& repr = pair.second;
-            const auto&            items = repr->GetDrawItems();
-
-#if HD_API_VERSION < 35
-            for (HdDrawItem* item : items) {
-                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
-#else
-            for (const HdRepr::DrawItemUniquePtr& item : items) {
-                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
-#endif
-                    for (auto& renderItemData : drawItem->GetRenderItems()) {
-                        _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() {
-                            renderItemData._enabled = false;
-                            renderItemData._renderItem->enable(false);
-                        });
-                    }
-                }
-            }
-        }
     }
 }
 

@@ -183,6 +183,8 @@ protected:
 
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
 
+    void _MakeOtherReprRenderItemsInvisible(const TfToken&, const ReprVector&);
+
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
 

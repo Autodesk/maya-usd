@@ -133,7 +133,6 @@ protected:
 
 private:
     void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
-    void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
 
     void _UpdateDrawItem(
         HdSceneDelegate*             sceneDelegate,

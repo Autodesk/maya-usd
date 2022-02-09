@@ -383,4 +383,37 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(const MString& nam
 }
 #endif
 
+/*! \brief Hide all of the repr objects for this Rprim except the named repr.
+    Repr objects are created to support specific reprName tokens, and contain a list of
+    HdVP2DrawItems and corresponding RenderItems.
+*/
+void MayaUsdRPrim::_MakeOtherReprRenderItemsInvisible(
+    const TfToken&   reprToken,
+    const ReprVector& reprs)
+{
+    for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
+        if (pair.first != reprToken) {
+            // For each relevant draw item, update dirty buffer sources.
+            const HdReprSharedPtr& repr = pair.second;
+            const auto&            items = repr->GetDrawItems();
+
+#if HD_API_VERSION < 35
+            for (HdDrawItem* item : items) {
+                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+#else
+            for (const HdRepr::DrawItemUniquePtr& item : items) {
+                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+                    for (auto& renderItemData : drawItem->GetRenderItems()) {
+                        _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() {
+                            renderItemData._enabled = false;
+                            renderItemData._renderItem->enable(false);
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
