@@ -181,6 +181,8 @@ protected:
 
     void _SetDirtyRepr(const HdReprSharedPtr& repr);
 
+    HdReprSharedPtr _AddNewRepr(TfToken const& reprToken, ReprVector& reprs, HdDirtyBits* dirtyBits, SdfPath const& id);
+
     bool _SyncCommon(HdDirtyBits* dirtyBits, const SdfPath& id, HdReprSharedPtr const& curRepr, HdRenderIndex& renderIndex);
 
     void _SyncSharedData(HdRprimSharedData& sharedData, HdSceneDelegate* delegate, HdDirtyBits const* dirtyBits, TfToken const& reprToken, SdfPath const& id, ReprVector const& reprs);

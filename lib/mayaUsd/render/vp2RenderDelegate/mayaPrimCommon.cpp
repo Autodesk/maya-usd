@@ -245,6 +245,26 @@ void MayaUsdRPrim::_SetDirtyRepr(const HdReprSharedPtr& repr)
     }
 }
 
+HdReprSharedPtr MayaUsdRPrim::_AddNewRepr(TfToken const& reprToken, ReprVector& reprs, HdDirtyBits* dirtyBits, SdfPath const& id)
+{
+    if (reprs.empty()) {
+        _FirstInitRepr(dirtyBits, id);
+    }
+
+    ReprVector::const_iterator it
+        = std::find_if(reprs.begin(), reprs.end(), [reprToken](ReprVector::const_reference e) { return reprToken == e.first; });
+    if (it != reprs.end()) {
+        _SetDirtyRepr(it->second);
+        return nullptr;
+    }
+
+    // set dirty bit to say we need to sync a new repr
+    *dirtyBits |= HdChangeTracker::NewRepr;
+
+    reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
+    return reprs.back().second;
+}
+
 void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const
 {
     if (bits & HdChangeTracker::AllDirty) {

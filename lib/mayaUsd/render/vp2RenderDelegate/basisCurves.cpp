@@ -1306,23 +1306,9 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    if (_reprs.empty()) {
-        _FirstInitRepr(dirtyBits, GetId());
-    }
-
-    _ReprVector::iterator it
-        = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
-    if (it != _reprs.end()) {
-        _SetDirtyRepr(it->second);
+    HdReprSharedPtr repr = _AddNewRepr(reprToken, _reprs, dirtyBits, GetId());
+    if (!repr)
         return;
-    }
-
-    // add new repr
-    _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
-    HdReprSharedPtr repr = _reprs.back().second;
-
-    // set dirty bit to say we need to sync a new repr
-    *dirtyBits |= HdChangeTracker::NewRepr;
 
     _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprToken);
 
