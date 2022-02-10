@@ -49,6 +49,8 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
             cls._prevDisableAsync = cmds.optionVar(q=cls._optVarName)
 
         mayaUtils.loadPlugin("mayaUsdPlugin")
+        # Resume running idle tasks
+        cmds.flushIdleQueue(resume=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -105,12 +107,12 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
         testFile = testUtils.getTestScene("multipleMaterialsAssignment",
                                           "MultipleMaterialsAssignment.usda")
 
-        # Force all idle tasks to finish
-        cmds.flushIdleQueue()
-
         # Default purpose mode is "proxy"
         shapeNode, _ = mayaUtils.createProxyFromFile(testFile)
         cmds.select(cl=True)
+
+        # Force all idle tasks to finish
+        cmds.flushIdleQueue()
         self.assertSnapshotClose("TextureLoading_Proxy_Async.png")
 
         # Switch purpose to "render"
@@ -119,8 +121,6 @@ class testVP2RenderDelegateTextureLoading(imageUtils.ImageDiffingTestCase):
 
         # Force all idle tasks to finish
         cmds.flushIdleQueue()
-
-        cmds.select(cl=True)
         self.assertSnapshotClose("TextureLoading_Render_Async.png")
 
 

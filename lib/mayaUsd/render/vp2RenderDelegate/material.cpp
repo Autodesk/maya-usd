@@ -845,6 +845,11 @@ MHWRender::MTexture* _GenerateFallbackTexture(
     const std::string&                path,
     const GfVec4f&                    fallbackColor)
 {
+    MHWRender::MTexture* texture = textureMgr->findTexture(path.c_str());
+    if (texture) {
+        return texture;
+    }
+
     MHWRender::MTextureDescription desc;
     desc.setToDefault2DTexture();
     desc.fWidth = 1;
@@ -1223,11 +1228,13 @@ public:
         HdVP2Material*     parent,
         HdSceneDelegate*   sceneDelegate,
         const std::string& path,
+        bool               hasFallbackColor,
         const GfVec4f&     fallbackColor)
         : _parent(parent)
         , _sceneDelegate(sceneDelegate)
         , _path(path)
         , _fallbackColor(fallbackColor)
+        , _hasFallbackColor(hasFallbackColor)
     {
     }
 
@@ -1241,9 +1248,12 @@ public:
             MHWRender::MTextureManager* const textureMgr
                 = renderer ? renderer->getTextureManager() : nullptr;
             if (textureMgr) {
-                // Use a relevant but unique name for fallback texture info
-                _fallbackTextureInfo._texture.reset(
-                    _GenerateFallbackTexture(textureMgr, _path + ".fallback", _fallbackColor));
+                // Use a relevant but unique name if there is a fallback color
+                // Otherwise reuse the same default texture
+                _fallbackTextureInfo._texture.reset(_GenerateFallbackTexture(
+                    textureMgr,
+                    _hasFallbackColor ? _path + ".fallback" : "default_fallback",
+                    _fallbackColor));
             }
         }
         return _fallbackTextureInfo;
@@ -1297,6 +1307,7 @@ private:
     const GfVec4f     _fallbackColor;
     std::atomic_bool  _started { false };
     bool              _terminated { false };
+    bool              _hasFallbackColor;
 };
 
 std::mutex                            HdVP2Material::_refreshMutex;
@@ -2509,27 +2520,9 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
         return info;
     }
 
-    auto* task = new TextureLoadingTask(this, sceneDelegate, path, fallbackColor);
+    auto* task = new TextureLoadingTask(this, sceneDelegate, path, hasFallbackColor, fallbackColor);
     _textureLoadingTasks.emplace(path, task);
-
-    // If material has defined a fallback color, creat a dedicated texture info for it
-    if (hasFallbackColor) {
-        return task->GetFallbackTextureInfo();
-    }
-
-    // If no fallback color, reuse the dummy grey texture info
-    static HdVP2TextureInfo dummyInfo;
-    if (!dummyInfo._texture) {
-        // Create a default texture info with fallback color
-        MHWRender::MRenderer* const       renderer = MHWRender::MRenderer::theRenderer();
-        MHWRender::MTextureManager* const textureMgr
-            = renderer ? renderer->getTextureManager() : nullptr;
-        if (textureMgr) {
-            dummyInfo._texture.reset(_GenerateFallbackTexture(textureMgr, "dummy", fallbackColor));
-        }
-    }
-
-    return dummyInfo;
+    return task->GetFallbackTextureInfo();
 }
 
 void HdVP2Material::EnqueueLoadTextures()
