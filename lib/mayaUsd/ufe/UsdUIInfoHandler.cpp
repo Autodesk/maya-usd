@@ -136,8 +136,8 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
         { "GeomSubset", "out_USD_GeomSubset.png" },
         { "LightFilter", "out_USD_LightFilter.png" },
         { "LightPortal", "out_USD_LightPortal.png" },
-        { "mayaReference", "out_USD_mayaReference.png" },
-        { "AL_MayaReference", "out_USD_mayaReference.png" }, // Same as mayaRef
+        { "MayaReference", "out_USD_MayaReference.png" },
+        { "ALMayaReference", "out_USD_MayaReference.png" }, // Same as mayaRef
         { "Mesh", "out_USD_Mesh.png" },
         { "NurbsPatch", "out_USD_NurbsPatch.png" },
         { "PointInstancer", "out_USD_PointInstancer.png" },
