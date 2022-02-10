@@ -1189,17 +1189,30 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 #endif
             // The item is used for wireframe display and selection highlight.
             else if (reprToken == HdReprTokens->wire) {
-                renderItem = _CreateWireframeRenderItem(renderItemName, kOpaqueBlue, MSelectionMask::kSelectMeshes, MHWRender::MFrameContext::kExcludeMeshes);
+                renderItem = _CreateWireframeRenderItem(
+                    renderItemName,
+                    kOpaqueBlue,
+                    MSelectionMask::kSelectMeshes,
+                    MHWRender::MFrameContext::kExcludeMeshes);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             // The item is used for bbox display and selection highlight.
             else if (reprToken == HdVP2ReprTokens->bbox) {
-                renderItem = _CreateBoundingBoxRenderItem(renderItemName, kOpaqueBlue, MSelectionMask::kSelectMeshes, MHWRender::MFrameContext::kExcludeMeshes);
+                renderItem = _CreateBoundingBoxRenderItem(
+                    renderItemName,
+                    kOpaqueBlue,
+                    MSelectionMask::kSelectMeshes,
+                    MHWRender::MFrameContext::kExcludeMeshes);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
             }
             break;
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        case HdMeshGeomStylePoints: renderItem = _CreatePointsRenderItem(renderItemName, MSelectionMask::kSelectMeshVerts, MHWRender::MFrameContext::kExcludeMeshes); break;
+        case HdMeshGeomStylePoints:
+            renderItem = _CreatePointsRenderItem(
+                renderItemName,
+                MSelectionMask::kSelectMeshVerts,
+                MHWRender::MFrameContext::kExcludeMeshes);
+            break;
 #endif
         default: TF_WARN("Unsupported geomStyle"); break;
         }

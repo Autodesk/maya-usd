@@ -1340,7 +1340,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         case HdBasisCurvesGeomStyleWire:
             // The item is used for wireframe display and selection highlight.
             if (reprToken == HdReprTokens->wire) {
-                renderItem = _CreateWireframeRenderItem(renderItemName, kOpaqueGray, MSelectionMask::kSelectNurbsCurves, MHWRender::MFrameContext::kExcludeNurbsCurves);
+                renderItem = _CreateWireframeRenderItem(
+                    renderItemName,
+                    kOpaqueGray,
+                    MSelectionMask::kSelectNurbsCurves,
+                    MHWRender::MFrameContext::kExcludeNurbsCurves);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
                 renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1348,7 +1352,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             }
             // The item is used for bbox display and selection highlight.
             else if (reprToken == HdVP2ReprTokens->bbox) {
-                renderItem = _CreateBoundingBoxRenderItem(renderItemName, kOpaqueGray, MSelectionMask::kSelectNurbsCurves, MHWRender::MFrameContext::kExcludeNurbsCurves);
+                renderItem = _CreateBoundingBoxRenderItem(
+                    renderItemName,
+                    kOpaqueGray,
+                    MSelectionMask::kSelectNurbsCurves,
+                    MHWRender::MFrameContext::kExcludeNurbsCurves);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
                 renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1356,7 +1364,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             }
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             else if (reprToken == HdVP2ReprTokens->defaultMaterial) {
-                renderItem = _CreateWireframeRenderItem(renderItemName, kOpaqueGray, MSelectionMask::kSelectNurbsCurves, MHWRender::MFrameContext::kExcludeNurbsCurves);
+                renderItem = _CreateWireframeRenderItem(
+                    renderItemName,
+                    kOpaqueGray,
+                    MSelectionMask::kSelectNurbsCurves,
+                    MHWRender::MFrameContext::kExcludeNurbsCurves);
                 renderItem->setDrawMode(MHWRender::MGeometry::kAll);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
                 renderItem->setDefaultMaterialHandling(
@@ -1366,7 +1378,10 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             break;
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
         case HdBasisCurvesGeomStylePoints:
-            renderItem = _CreatePointsRenderItem(renderItemName, MSelectionMask::kSelectNurbsCurves, MHWRender::MFrameContext::kExcludeNurbsCurves);
+            renderItem = _CreatePointsRenderItem(
+                renderItemName,
+                MSelectionMask::kSelectNurbsCurves,
+                MHWRender::MFrameContext::kExcludeNurbsCurves);
             break;
 #endif
         default: TF_WARN("Unsupported geomStyle"); break;

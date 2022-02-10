@@ -245,14 +245,20 @@ void MayaUsdRPrim::_SetDirtyRepr(const HdReprSharedPtr& repr)
     }
 }
 
-HdReprSharedPtr MayaUsdRPrim::_AddNewRepr(TfToken const& reprToken, ReprVector& reprs, HdDirtyBits* dirtyBits, SdfPath const& id)
+HdReprSharedPtr MayaUsdRPrim::_AddNewRepr(
+    TfToken const& reprToken,
+    ReprVector&    reprs,
+    HdDirtyBits*   dirtyBits,
+    SdfPath const& id)
 {
     if (reprs.empty()) {
         _FirstInitRepr(dirtyBits, id);
     }
 
     ReprVector::const_iterator it
-        = std::find_if(reprs.begin(), reprs.end(), [reprToken](ReprVector::const_reference e) { return reprToken == e.first; });
+        = std::find_if(reprs.begin(), reprs.end(), [reprToken](ReprVector::const_reference e) {
+              return reprToken == e.first;
+          });
     if (it != reprs.end()) {
         _SetDirtyRepr(it->second);
         return nullptr;
@@ -311,7 +317,11 @@ void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector
 
 /*! \brief  Create render item for bbox repr.
  */
-MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(const MString& name, const MColor& color, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const
+MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(
+    const MString&        name,
+    const MColor&         color,
+    const MSelectionMask& selectionMask,
+    MUint64               exclusionFlag) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
@@ -338,7 +348,11 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(const MString
 
 /*! \brief  Create render item for wireframe repr.
  */
-MHWRender::MRenderItem* MayaUsdRPrim::_CreateWireframeRenderItem(const MString& name, const MColor& color, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const
+MHWRender::MRenderItem* MayaUsdRPrim::_CreateWireframeRenderItem(
+    const MString&        name,
+    const MColor&         color,
+    const MSelectionMask& selectionMask,
+    MUint64               exclusionFlag) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
@@ -374,7 +388,10 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreateWireframeRenderItem(const MString& 
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
 /*! \brief  Create render item for points repr.
  */
-MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(const MString& name, const MSelectionMask& selectionMask, MUint64 exclusionFlag) const
+MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(
+    const MString&        name,
+    const MSelectionMask& selectionMask,
+    MUint64               exclusionFlag) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
         name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kPoints);
@@ -409,7 +426,7 @@ MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(const MString& nam
     HdVP2DrawItems and corresponding RenderItems.
 */
 void MayaUsdRPrim::_MakeOtherReprRenderItemsInvisible(
-    const TfToken&   reprToken,
+    const TfToken&    reprToken,
     const ReprVector& reprs)
 {
     for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
@@ -461,7 +478,13 @@ void MayaUsdRPrim::_HideAllDrawItems(HdReprSharedPtr const& curRepr)
     }
 }
 
-void MayaUsdRPrim::_SyncSharedData(HdRprimSharedData& sharedData, HdSceneDelegate* delegate, HdDirtyBits const* dirtyBits, TfToken const& reprToken, SdfPath const& id, ReprVector const& reprs)
+void MayaUsdRPrim::_SyncSharedData(
+    HdRprimSharedData& sharedData,
+    HdSceneDelegate*   delegate,
+    HdDirtyBits const* dirtyBits,
+    TfToken const&     reprToken,
+    SdfPath const&     id,
+    ReprVector const&  reprs)
 {
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
         sharedData.bounds.SetRange(delegate->GetExtent(id));
@@ -499,7 +522,11 @@ void MayaUsdRPrim::_SyncSharedData(HdRprimSharedData& sharedData, HdSceneDelegat
 #endif
 }
 
-bool MayaUsdRPrim::_SyncCommon(HdDirtyBits* dirtyBits, const SdfPath& id, HdReprSharedPtr const& curRepr, HdRenderIndex& renderIndex)
+bool MayaUsdRPrim::_SyncCommon(
+    HdDirtyBits*           dirtyBits,
+    const SdfPath&         id,
+    HdReprSharedPtr const& curRepr,
+    HdRenderIndex&         renderIndex)
 {
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
@@ -531,7 +558,7 @@ bool MayaUsdRPrim::_SyncCommon(HdDirtyBits* dirtyBits, const SdfPath& id, HdRepr
 SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate)
 {
     const SdfPath& id = rprim->GetId();
-    const SdfPath materialId = delegate->GetMaterialId(id);
+    const SdfPath  materialId = delegate->GetMaterialId(id);
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
     const SdfPath& origMaterialId = rprim->GetMaterialId();
