@@ -53,6 +53,7 @@ set(LIB_ICONS
     discard_edits
     edit_as_Maya
     merge_to_USD
+    cache_to_USD
 )
 foreach(ICON_BASE ${LIB_ICONS})
     # The _100.png files need to be installed without the _100. This is the

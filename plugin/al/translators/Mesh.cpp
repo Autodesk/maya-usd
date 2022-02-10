@@ -97,7 +97,13 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
     }
 
     AL::usdmaya::utils::MeshImportContext importContext(mesh, parent, dagName, timeCode);
-    importContext.applyVertexNormals();
+    TfToken                               scheme;
+    mesh.GetSubdivisionSchemeAttr().Get(&scheme);
+    bool isSubd = (scheme != UsdGeomTokens->none);
+    // Skip normals for subdiv surfaces
+    if (!isSubd) {
+        importContext.applyVertexNormals();
+    }
     importContext.applyHoleFaces();
     importContext.applyVertexCreases();
     importContext.applyEdgeCreases();
@@ -141,13 +147,18 @@ UsdPrim Mesh::exportObject(
     auto compaction = (AL::usdmaya::utils::MeshExportContext::CompactionLevel)params.getInt(
         GeometryExportOptions::kCompactionLevel);
 
+    auto subdivisionScheme
+        = (AL::usdmaya::utils::MeshExportContext::SubdivisionScheme)params.getInt(
+            GeometryExportOptions::kSubdivisionScheme);
+
     AL::usdmaya::utils::MeshExportContext context(
         dagPath,
         mesh,
         params.m_timeCode,
         false,
         compaction,
-        params.getBool(GeometryExportOptions::kReverseOppositeNormals));
+        params.getBool(GeometryExportOptions::kReverseOppositeNormals),
+        subdivisionScheme);
     if (context) {
         UsdAttribute pointsAttr = mesh.GetPointsAttr();
         if (params.m_animTranslator && AnimationTranslator::isAnimatedMesh(dagPath)) {

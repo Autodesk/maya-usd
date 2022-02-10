@@ -21,14 +21,13 @@
 #include "AL/usd/transaction/Notice.h"
 #include "AL/usdmaya/Api.h"
 #include "AL/usdmaya/ForwardDeclares.h"
-#include "AL/usdmaya/SelectabilityDB.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-#include "AL/usdmaya/nodes/proxy/LockManager.h"
 #include "AL/usdmaya/nodes/proxy/PrimFilter.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
+#include <pxr/base/tf/hashmap.h>
 #include <pxr/usd/sdf/notice.h>
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/prim.h>
@@ -41,6 +40,8 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionList.h>
+
+#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -184,6 +185,9 @@ private:
 
 typedef std::unordered_map<SdfPath, MString, SdfPath::Hash> PrimPathToDagPath;
 
+using UnselectablePrimCache = TfHashMap<UsdPrim, bool, boost::hash<UsdPrim>>;
+using LockPrimCache = TfHashMap<UsdPrim, bool, boost::hash<UsdPrim>>;
+
 extern AL::event::EventId kPreClearStageCache;
 extern AL::event::EventId kPostClearStageCache;
 //----------------------------------------------------------------------------------------------------------------------
@@ -200,9 +204,7 @@ class ProxyShape
     , public TfWeakBase
 {
     friend struct SelectionUndoHelper;
-    friend class ProxyShapeUI;
     friend class StageReloadGuard;
-    friend class ProxyDrawOverride;
 
     typedef MayaUsdProxyShapeBase ParentClass;
 
@@ -602,22 +604,6 @@ public:
     AL_USDMAYA_PUBLIC
     SdfPathHashSet& selectedPaths();
 
-    /// \brief  Performs a selection operation on this node. Intended for use by the
-    /// ProxyShapeSelect command only \param  helper provides the arguments to the selection system,
-    /// and stores the internal proxy shape state
-    ///         changes that need to be done/undone
-    /// \param  orderedPaths provides the original (deduplicated) input paths, in order; provided
-    /// just so that the
-    ///         selection commands will return results in the same order they were provided - this
-    ///         is useful so that, if the user does, ie, "AL_usdmaya_ProxyShapeSelect -pp /foo/bar
-    ///         -pp /some/thing -proxy myProxyShape",
-    //          they will get as the result of the command, ["|proxyRoot|foo|bar",
-    //          "|proxyRoot|some|thing"], and be able to know what input SdfPath corresponds to what
-    //          ouptut maya path
-    /// \return true if the operation succeeded
-    AL_USDMAYA_PUBLIC
-    bool doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths);
-
     //--------------------------------------------------------------------------------------------------------------------
     /// \name   UsdImaging
     //--------------------------------------------------------------------------------------------------------------------
@@ -665,7 +651,7 @@ public:
     AL_USDMAYA_PUBLIC
     void onPrePrimChanged(const SdfPath& path, SdfPathVector& outPathVector);
 
-    // \brief process any USD objects which have been changed, normally by a notice of some kind
+    /// \brief process any USD objects which have been changed, normally by a notice of some kind
     /// \param[in] resyncedPaths vector of topmost paths for which hierarchy has changed
     /// \param[in] changedOnlyPaths vector of paths that changed properties
     /// \note do we need to handle the complex prim locking and selection logic that is curently on
@@ -730,15 +716,29 @@ public:
     AL_USDMAYA_PUBLIC
     void setChangedSelectionState(const bool hasSelectabilityChanged);
 
-    /// \brief Returns the SelectionDatabase owned by the ProxyShape
-    /// \return A SelectableDB owned by the ProxyShape
+    /// \brief convenience method to check if a path is unselectable.
+    /// \param path Usd prim path.
+    /// \return true if unselectable, false otherwise.
     AL_USDMAYA_PUBLIC
-    AL::usdmaya::SelectabilityDB& selectabilityDB();
+    bool isPathUnselectable(const SdfPath& path) const;
 
-    /// \brief Returns the SelectionDatabase owned by the ProxyShape
-    /// \return A constant SelectableDB owned by the ProxyShape
+    /// \brief convenience method to check if a prim is unselectable.
+    /// \param path Usd prim.
+    /// \return true if unselectable, false otherwise.
     AL_USDMAYA_PUBLIC
-    const AL::usdmaya::SelectabilityDB& selectabilityDB() const;
+    bool isPrimUnselectable(const UsdPrim& prim, UnselectablePrimCache& cache) const;
+
+    /// \brief convenience method to check if a path is locked.
+    /// \param path Usd prim path.
+    /// \return true if locked, false otherwise.
+    AL_USDMAYA_PUBLIC
+    bool isPathLocked(const SdfPath& path) const;
+
+    /// \brief convenience method to check if a prim is locked.
+    /// \param path Usd prim.
+    /// \return true if locked, false otherwise.
+    AL_USDMAYA_PUBLIC
+    bool isPrimLocked(const UsdPrim& prim, LockPrimCache& cache) const;
 
     /// \brief  used to reload the stage after file open
     AL_USDMAYA_PUBLIC
@@ -1019,18 +1019,9 @@ private:
     }
 
 public:
-    bool isLockPrimFeatureActive() const
-    {
-        bool ignoreLockPrims = MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims");
-        // The lock Prim functionality is a UI thing - no need to have it on in batch mode
-        // However, this also causes the tests to fail which is bad
-        return (/*(MGlobal::mayaState() == MGlobal::kInteractive) &&*/ !ignoreLockPrims);
-    }
-
     void processChangedMetaData(
         const SdfPathVector& resyncedPaths,
         const SdfPathVector& changedOnlyPaths);
-    void removeMetaData(const SdfPathVector& removedPaths);
 
     bool isPrimDirty(const UsdPrim& prim) override
     {
@@ -1056,21 +1047,18 @@ private:
     AL_USDMAYA_PUBLIC
     static std::vector<MObjectHandle> m_unloadedProxyShapes;
 
-    AL::usdmaya::SelectabilityDB m_selectabilityDB;
-    SelectionList                m_selectionList;
-    SdfPathHashSet               m_selectedPaths;
-    PrimPathToDagPath            m_primPathToDagPath;
-    std::vector<SdfPath>         m_paths;
-    std::vector<UsdPrim>         m_prims;
-    TfNotice::Key                m_objectsChangedNoticeKey;
-    TfNotice::Key                m_variantChangedNoticeKey;
-    TfNotice::Key                m_editTargetChanged;
-    TfNotice::Key                m_transactionNoticeKey;
+    SelectionList        m_selectionList;
+    SdfPathHashSet       m_selectedPaths;
+    PrimPathToDagPath    m_primPathToDagPath;
+    std::vector<SdfPath> m_paths;
+    std::vector<UsdPrim> m_prims;
+    TfNotice::Key        m_objectsChangedNoticeKey;
+    TfNotice::Key        m_variantChangedNoticeKey;
+    TfNotice::Key        m_editTargetChanged;
+    TfNotice::Key        m_transactionNoticeKey;
 
-    MCallbackId                                m_onSelectionChanged = 0;
     SdfPathVector                              m_excludedGeometry;
     SdfPathVector                              m_excludedTaggedGeometry;
-    proxy::LockManager                         m_lockManager;
     static MObject                             m_transformTranslate;
     static MObject                             m_transformRotate;
     static MObject                             m_transformScale;

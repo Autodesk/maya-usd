@@ -20,6 +20,7 @@
     Helper functions regarding Maya that will be used throughout the test.
 """
 
+from math import radians
 from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
 
@@ -196,6 +197,18 @@ def setMayaTranslation(aMayaItem, t):
     aFn.setTranslation(t, om.MSpace.kObject)
     return (aMayaPath, aMayaPathStr, aFn, aFn.transformation().asMatrix())
 
+def setMayaRotation(aMayaItem, r):
+    '''Set the rotation (XYZ) on the argument Maya scene item.'''
+
+    aMayaPath = aMayaItem.path()
+    aMayaPathStr = ufe.PathString.string(aMayaPath)
+    aDagPath = om.MSelectionList().add(aMayaPathStr).getDagPath(0)
+    aFn = om.MFnTransform(aDagPath)
+    rads = [ radians(v) for v in r ]
+    rot = om.MEulerRotation(rads[0], rads[1], rads[2])
+    aFn.setRotation(rot, om.MSpace.kTransform)
+    return (aMayaPath, aMayaPathStr, aFn, aFn.transformation().asMatrix())
+
 def createProxyAndStage():
     """
     Create in-memory stage
@@ -225,6 +238,23 @@ def createProxyFromFile(filePath):
     cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
 
     return shapeNode,shapeStage
+
+def createSingleSphereMayaScene(directory=None):
+    '''Create a Maya scene with a single polygonal sphere.
+    Returns the file path.
+    '''
+
+    cmds.file(new=True, force=True)
+    cmds.CreatePolygonSphere()
+    tempMayaFile = 'simpleSphere.ma'
+    if directory is not None:
+        tempMayaFile = os.path.join(directory, tempMayaFile)
+    # Prevent Windows single backslash from being interpreted as a control
+    # character.
+    tempMayaFile = tempMayaFile.replace(os.sep, '/')
+    cmds.file(rename=tempMayaFile)
+    cmds.file(save=True, force=True, type='mayaAscii')
+    return tempMayaFile
 
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.

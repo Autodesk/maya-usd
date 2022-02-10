@@ -505,15 +505,6 @@ bool MeshImportContext::applyVertexNormals()
         return false;
     };
 
-    // Lambda to set face vertex normals in unlocked state
-    auto setUnlockedFaceVertexNormals
-        = [&](MVectorArray& normals, MIntArray& faceList, MIntArray& vertexList) -> bool {
-        if (fnMesh.setFaceVertexNormals(normals, faceList, vertexList, MSpace::kObject)) {
-            return fnMesh.unlockFaceVertexNormals(faceList, vertexList);
-        }
-        return false;
-    };
-
     if (normals.length()) {
         // According to the docs for UsdGeomMesh: If 'normals' and 'primvars:normals' are both
         // specified, the latter has precedence.
@@ -555,9 +546,11 @@ bool MeshImportContext::applyVertexNormals()
                         ns[i] = normals[indices[i]];
                     }
 
-                    return setUnlockedFaceVertexNormals(ns, normalsFaceIds, connects);
+                    return fnMesh.setFaceVertexNormals(
+                        ns, normalsFaceIds, connects, MSpace::kObject);
                 } else {
-                    return setUnlockedFaceVertexNormals(normals, normalsFaceIds, connects);
+                    return fnMesh.setFaceVertexNormals(
+                        normals, normalsFaceIds, connects, MSpace::kObject);
                 }
             }
         } else {
@@ -574,7 +567,8 @@ bool MeshImportContext::applyVertexNormals()
                         }
                     }
                 }
-                return setUnlockedFaceVertexNormals(normals, normalsFaceIds, connects);
+                return fnMesh.setFaceVertexNormals(
+                    normals, normalsFaceIds, connects, MSpace::kObject);
             }
         }
     }
@@ -980,18 +974,20 @@ void MeshImportContext::applyUVs()
 
 //----------------------------------------------------------------------------------------------------------------------
 MeshExportContext::MeshExportContext(
-    MDagPath        path,
-    UsdGeomMesh&    mesh,
-    UsdTimeCode     timeCode,
-    bool            performDiff,
-    CompactionLevel compactionLevel,
-    bool            reverseNormals)
+    MDagPath          path,
+    UsdGeomMesh&      mesh,
+    UsdTimeCode       timeCode,
+    bool              performDiff,
+    CompactionLevel   compactionLevel,
+    bool              reverseNormals,
+    SubdivisionScheme inSubdivisionScheme)
     : fnMesh()
     , faceCounts()
     , faceConnects()
     , m_timeCode(timeCode)
     , mesh(mesh)
     , compaction(compactionLevel)
+    , subdivisionScheme(inSubdivisionScheme)
     , performDiff(performDiff)
     , reverseNormals(reverseNormals)
 {
@@ -1005,6 +1001,19 @@ MeshExportContext::MeshExportContext(
 
     if (!reverseNormals && fnMesh.findPlug("opposite", true).asBool()) {
         mesh.CreateOrientationAttr().Set(UsdGeomTokens->leftHanded);
+    }
+
+    TfToken subdToken;
+    switch (subdivisionScheme) {
+    case kSubdCatmull: subdToken = UsdGeomTokens->catmullClark; break;
+    case kSubdNone: subdToken = UsdGeomTokens->none; break;
+    case kSubdLoop: subdToken = UsdGeomTokens->loop; break;
+    case kSubdBilinear: subdToken = UsdGeomTokens->bilinear; break;
+    default: break;
+    }
+    // Author opinion only if "default" has not been used.
+    if (!subdToken.IsEmpty()) {
+        mesh.GetSubdivisionSchemeAttr().Set(subdToken);
     }
 
     if (performDiff) {
@@ -1909,26 +1918,44 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
                             &normalIndices[0],
                             &faceConnects[0],
                             normalIndices.length(),
-                            faceConnects.length())) {
+                            faceConnects.length())
+                        || numNormals == (size_t)fnMesh.numVertices()) {
                         if (copyAsPrimvar) {
                             primvar.SetInterpolation(UsdGeomTokens->vertex);
                         } else {
                             mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
                         }
 
-                        VtArray<GfVec3f> normals(vecData, vecData + numNormals);
-                        normalsAttr.Set(normals, time);
+                        if (numNormals == (size_t)fnMesh.numVertices()) {
+                            auto             object = fnMesh.object();
+                            MItMeshVertex    itVertex(object);
+                            VtArray<GfVec3f> normals(numNormals);
+                            for (size_t i = 0; !itVertex.isDone(); itVertex.next(), i++) {
+                                MVector mayaNormal;
+                                itVertex.getNormal(mayaNormal);
+                                normals[i] = GfVec3f(mayaNormal.x, mayaNormal.y, mayaNormal.z);
+                            }
+                            normalsAttr.Set(normals, time);
+                        } else {
+                            VtArray<GfVec3f> normals(vecData, vecData + numNormals);
+                            normalsAttr.Set(normals, time);
+                        }
                     } else {
                         std::unordered_map<uint32_t, uint32_t> missing;
                         bool                                   isPerVertex = true;
-                        for (uint32_t i = 0, n = normalIndices.length(); isPerVertex && i < n;
-                             ++i) {
-                            if (normalIndices[i] != faceConnects[i]) {
-                                auto it = missing.find(normalIndices[i]);
-                                if (it == missing.end()) {
-                                    missing[normalIndices[i]] = faceConnects[i];
-                                } else if (it->second != uint32_t(faceConnects[i])) {
-                                    isPerVertex = false;
+                        const unsigned int numFaceVertices = fnMesh.numFaceVertices(&status);
+                        if (numFaceVertices == normalIndices.length()) {
+                            isPerVertex = false;
+                        } else {
+                            for (uint32_t i = 0, n = normalIndices.length(); isPerVertex && i < n;
+                                 ++i) {
+                                if (normalIndices[i] != faceConnects[i]) {
+                                    auto it = missing.find(normalIndices[i]);
+                                    if (it == missing.end()) {
+                                        missing[normalIndices[i]] = faceConnects[i];
+                                    } else if (it->second != uint32_t(faceConnects[i])) {
+                                        isPerVertex = false;
+                                    }
                                 }
                             }
                         }

@@ -138,11 +138,10 @@ private:
     //--------------------------------------------------------------------------------------------------------------------
 
     MPxNode::SchedulingType schedulingType() const override { return kParallel; }
-
-    MStatus validateAndSetValue(
-        const MPlug&       plug,
-        const MDataHandle& handle,
-        const MDGContext&  context) override;
+    MStatus                 validateAndSetValue(
+                        const MPlug&       plug,
+                        const MDataHandle& handle,
+                        const MDGContext&  context) override;
     MPxTransformationMatrix* createTransformationMatrix() override;
     MStatus                  compute(const MPlug& plug, MDataBlock& datablock) override;
     void                     postConstructor() override;
@@ -151,6 +150,12 @@ private:
     bool    setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
     bool    isBounded() const override { return true; }
     bool    treatAsTransform() const override { return false; }
+    MStatus
+            preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode) override;
+    MStatus postEvaluation(
+        const MDGContext&      context,
+        const MEvaluationNode& evaluationNode,
+        PostEvaluationType     evalType) override;
 
     //--------------------------------------------------------------------------------------------------------------------
     /// utils

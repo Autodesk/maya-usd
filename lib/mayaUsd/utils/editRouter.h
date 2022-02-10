@@ -67,15 +67,30 @@ private:
 using EditRouters
     = PXR_NS::TfHashMap<PXR_NS::TfToken, EditRouter::Ptr, PXR_NS::TfToken::HashFunctor>;
 
+// Utility function that returns a layer for the argument operation.
+// If no edit router exists for that operation, a nullptr is returned.
+// The edit router is given the prim in the context with key "prim", and is
+// expected to return the computed layer in the routingData with key "layer".
 MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfLayerHandle
 getEditRouterLayer(const PXR_NS::TfToken& operation, const PXR_NS::UsdPrim& prim);
+
+// Retrieve the edit router for the argument operation.  If no such edit router
+// exits, a nullptr is returned.
+MAYAUSD_CORE_PUBLIC
+EditRouter::Ptr getEditRouter(const PXR_NS::TfToken& operation);
 
 // Register an edit router for the argument operation.
 MAYAUSD_CORE_PUBLIC
 void registerEditRouter(const PXR_NS::TfToken& operation, const EditRouter::Ptr& editRouter);
 
+// Restore the default edit router for the argument operation, overwriting
+// the currently-registered edit router.  Returns false if no such default
+// exists.
+MAYAUSD_CORE_PUBLIC
+bool restoreDefaultEditRouter(const PXR_NS::TfToken& operation);
+
 // Return built-in default edit routers.
-EditRouters editRouterDefaults();
+EditRouters defaultEditRouters();
 
 } // namespace MAYAUSD_NS_DEF

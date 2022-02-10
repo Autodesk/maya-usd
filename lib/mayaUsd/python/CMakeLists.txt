@@ -25,6 +25,8 @@ add_library(${PYTHON_TARGET_NAME} SHARED)
 target_sources(${PYTHON_TARGET_NAME} 
     PRIVATE
         module.cpp
+        pythonObjectRegistry.cpp
+        wrapSparseValueWriter.cpp
         wrapAdaptor.cpp
         wrapBlockSceneModificationContext.cpp
         wrapColorSpace.cpp
@@ -40,6 +42,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapTokens.cpp
         wrapUsdUndoManager.cpp
         wrapUserTaggedAttribute.cpp
+        wrapUtil.cpp
         wrapWriteUtil.cpp
         wrapXformStack.cpp
 

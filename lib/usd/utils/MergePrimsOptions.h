@@ -34,6 +34,7 @@ enum class MergeVerbosity
     Child = 1 << 2,
     Children = 1 << 3,
     Failure = 1 << 4,
+    All = Same | Differ | Child | Children | Failure,
     Default = Differ | Child | Children | Failure,
 };
 
@@ -133,6 +134,12 @@ struct MergePrimsOptions
     // How missing mapper argumentss are handled.
     MergeMissing mapperArgsHandling { MergeMissing::All };
 
+    // How missing prop metadata are handled.
+    MergeMissing propMetadataHandling { MergeMissing::All };
+
+    // How missing prim metadata are handled.
+    MergeMissing primMetadataHandling { MergeMissing::All };
+
     // Create a VtDictionary containing the default values for the merge options.
     MAYA_USD_UTILS_PUBLIC
     static const PXR_NS::VtDictionary& getDefaultDictionary();
@@ -176,6 +183,9 @@ struct MergePrimsOptions
     (mappersHandling)                   \
     (mapperArgsHandling)                \
                                         \
+    (propMetadataHandling)              \
+    (primMetadataHandling)              \
+                                        \
     (Create)                            \
     (Preserve)                          \
     (All)                               \
@@ -184,7 +194,7 @@ struct MergePrimsOptions
 
 // Note: the macro below does not qualify the types it uses with the PXR namespace,
 // so we're forced to use the types it uses here.
-using namespace PXR_NS;
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaMergeOptionsTokens,

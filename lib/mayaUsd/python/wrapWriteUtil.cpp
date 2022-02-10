@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include "wrapSparseValueWriter.h"
+
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/util.h>
 
@@ -28,7 +31,8 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
-static VtValue _GetVtValue(const std::string& attrPath, const SdfValueTypeName& typeName)
+namespace {
+VtValue _GetVtValue(const std::string& attrPath, const SdfValueTypeName& typeName)
 {
     VtValue val;
 
@@ -40,6 +44,16 @@ static VtValue _GetVtValue(const std::string& attrPath, const SdfValueTypeName& 
     return val;
 }
 
+bool _SetUsdAttr(
+    const MPlug&                attrPlug,
+    const UsdAttribute&         usdAttr,
+    const UsdTimeCode&          usdTime,
+    MayaUsdLibSparseValueWriter valueWriter)
+{
+    return UsdMayaWriteUtil::SetUsdAttr(attrPlug, usdAttr, usdTime, valueWriter.Get());
+}
+} // namespace
+
 void wrapWriteUtil()
 {
     typedef UsdMayaWriteUtil This;
@@ -47,5 +61,7 @@ void wrapWriteUtil()
         .def("WriteUVAsFloat2", This::WriteUVAsFloat2)
         .staticmethod("WriteUVAsFloat2")
         .def("GetVtValue", _GetVtValue)
-        .staticmethod("GetVtValue");
+        .staticmethod("GetVtValue")
+        .def("SetUsdAttr", _SetUsdAttr)
+        .staticmethod("SetUsdAttr");
 }

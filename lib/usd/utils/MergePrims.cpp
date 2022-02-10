@@ -19,7 +19,9 @@
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
+#include <algorithm>
 #include <utility>
 
 namespace MayaUsdUtils {
@@ -160,8 +162,185 @@ template <class T> auto makeFuncWithContext(const MergeContext& ctx, T&& func)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// Special transform attributes handling.
+//
+// The goal is to detect that a prim transform has *not* changed even though its representation
+// might have changed. For example it might use different attributes (RotateX vs RotateXYZ) or
+// different transform operations order. (These are in the xformOpOrder attribute.)
+//----------------------------------------------------------------------------------------------------------------------
+
+bool isTransformProperty(const UsdProperty& prop)
+{
+    static const TfToken xformOpOrderToken("xformOpOrder");
+    return UsdGeomXformOp::IsXformOp(prop.GetName()) || prop.GetBaseName() == xformOpOrderToken;
+}
+
+std::vector<UsdAttribute> getTransformAttributes(const UsdPrim& prim)
+{
+    UsdGeomXformable            xformable(prim);
+    bool                        resetParentTrf = true;
+    std::vector<UsdGeomXformOp> ops = xformable.GetOrderedXformOps(&resetParentTrf);
+
+    std::vector<UsdAttribute> trfAttrs;
+    for (const auto& op : ops)
+        trfAttrs.emplace_back(op.GetAttr());
+
+    return trfAttrs;
+}
+
+GfMatrix4d getLocalTransform(const UsdPrim prim, const UsdTimeCode& timeCode)
+{
+    GfMatrix4d primMtx(1);
+
+    UsdGeomXformable xformable(prim);
+    bool             resetParentTrf = true;
+    if (!TF_VERIFY(xformable.GetLocalTransformation(&primMtx, &resetParentTrf, timeCode))) {
+        return GfMatrix4d(1);
+    }
+
+    return primMtx;
+}
+
+bool isLocalTransformModified(
+    const UsdPrim&     srcPrim,
+    const UsdPrim&     dstPrim,
+    const UsdTimeCode& timeCode)
+{
+    double epsilon = 1e-9;
+    bool   similar = PXR_NS::GfIsClose(
+        getLocalTransform(srcPrim, timeCode), getLocalTransform(dstPrim, timeCode), epsilon);
+    return !similar;
+}
+
+bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
+{
+    // We will not compare the set of point-in-times themselves but the overall result
+    // of the animated values. This takes care of trying to match time-samples: we
+    // instead only care that the output result are the same.
+    //
+    // Note that the UsdAttribute API to get value automatically interpolates values
+    // where samples are missing when queried.
+    std::vector<double> times;
+    {
+        std::vector<UsdAttribute> trfAttrs = getTransformAttributes(srcPrim);
+        std::vector<UsdAttribute> dstTrfAttrs = getTransformAttributes(dstPrim);
+        trfAttrs.insert(trfAttrs.end(), dstTrfAttrs.begin(), dstTrfAttrs.end());
+
+        // If retrieving the time codes somehow fails, be conservative and assume
+        // the transform was modified.
+        if (!UsdAttribute::GetUnionedTimeSamples(trfAttrs, &times))
+            return true;
+    }
+
+    // If there are no time samples, then USD uses the default value.
+    if (times.size() == 0)
+        return isLocalTransformModified(srcPrim, dstPrim, UsdTimeCode::Default());
+
+    for (const double time : times) {
+        if (isLocalTransformModified(srcPrim, dstPrim, time)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Special metadata handling.
+//
+// There are some metadata that we know the merge-to-USD temporary export-to-USD
+// will never produce. Others are generated only when needed, so their absence
+// should always mean to remove them.
+//
+// isMetadataAlwaysPreserved() is for those metadata we know we never produce.
+//
+// isMetadataNeverPreserved() is for those metadata we know we sometimes omit
+// to signify we want to remove them.
+//----------------------------------------------------------------------------------------------------------------------
+
+bool isMetadataAlwaysPreserved(const TfToken& metadata)
+{
+    static const std::set<TfToken> preserved = { TfToken("references") };
+
+    return preserved.count(metadata) > 0;
+}
+
+bool isMetadataNeverPreserved(const TfToken& metadata)
+{
+    static const std::set<TfToken> never = {};
+
+    return never.count(metadata) > 0;
+}
+
+bool isMetadataPreserved(const TfToken& metadata, MergeMissing missingHandling)
+{
+    if (contains(missingHandling, MergeMissing::Preserve))
+        return !isMetadataNeverPreserved(metadata);
+    else
+        return isMetadataAlwaysPreserved(metadata);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // Merge Prims
 //----------------------------------------------------------------------------------------------------------------------
+
+//----------------------------------------------------------------------------------------------------------------------
+/// Verifies if the metadata at the given path have been modified.
+bool isMetadataAtPathModified(
+    const MergeContext&  ctx,
+    const MergeLocation& src,
+    const MergeLocation& dst,
+    const char* const    metadataType,
+    const UsdObject&     modified,
+    const UsdObject&     baseline,
+    const MergeMissing   missingHandling)
+{
+    // Verify if both are missing. Should not happen, but let's be safe.
+    // In that case, the metadata is not modified.
+    if (!src.fieldExists && !dst.fieldExists) {
+        const bool changed = false;
+        printChangedField(ctx, src, metadataType, changed);
+        return changed;
+    }
+
+    // If the metadata is missing in the source and we preserve missing,
+    // return that the metadata is *not* modified so as to preserve it.
+    if (!src.fieldExists) {
+        const bool preserved = isMetadataPreserved(src.field, missingHandling);
+        const bool changed = !preserved;
+        printChangedField(ctx, src, metadataType, changed);
+        return changed;
+    }
+
+    // If the metadata is missing in the destination and we create missing,
+    // return that the metadata *is* modified so as to create it.
+    if (!dst.fieldExists) {
+        const bool created = contains(missingHandling, MergeMissing::Create);
+        const bool changed = created;
+        printChangedField(ctx, src, metadataType, changed);
+        return changed;
+    }
+
+    // If both are present, we compare.
+    //
+    // Note: special references metadata handling.
+    //
+    // To support it fully, we would need:
+    //
+    //    - A generic SdfListOp<T> diff algorithm. That is because the references
+    //      metadata is kept as a SdfListOp<SdfReference>.
+    //
+    //    - A custom copyValue callback, to be returned by the shouldMergeValue()
+    //      function in the valueToCopy with custom code to merge a SdfListOp<T>
+    //      into another.
+    //
+    // For the short term, we know that push-to-USD cannot generate references.
+    // In other words, we will always go through the !src.fieldExists code above.
+    // So we don't need to write the SdfListOp code yet.
+    const bool changed = (compareMetadatas(modified, baseline, src.field) != DiffResult::Same);
+    printChangedField(ctx, src, metadataType, changed);
+    return changed;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// Verifies if the data at the given path have been modified.
@@ -181,6 +360,25 @@ bool isDataAtPathsModified(
 
     if (src.path.ContainsPropertyElements()) {
         const UsdProperty srcProp = srcPrim.GetPropertyAtPath(src.path);
+
+        // Note: we only return early for transform property if the local transform has
+        //       not changed. The reason is that when the transform has changed, we *do*
+        //       want to compare the individual properties in order to author only the
+        //       minimum change.
+        //
+        //       The only reason we are using the local transformation comparison is for
+        //       the somewhat common case where the transform has not changed but how it
+        //       is encoded changed, because the Maya representation and the original
+        //       representation differed, for example for USD data coming from another
+        //       tool that use a different transform operation order.
+        if (isTransformProperty(srcProp)) {
+            const bool changed = isLocalTransformModified(srcPrim, dstPrim);
+            if (!changed) {
+                printChangedField(ctx, src, "transform prop local trf", changed);
+                return changed;
+            }
+        }
+
         const UsdProperty dstProp = dstPrim.GetPropertyAtPath(dst.path);
         if (!srcProp.IsValid() || !dstProp.IsValid()) {
             printInvalidField(ctx, src, "prop", srcProp.IsValid(), dstProp.IsValid());
@@ -188,10 +386,8 @@ bool isDataAtPathsModified(
         }
 
         if (!src.field.IsEmpty()) {
-            const bool changed
-                = (compareMetadatas(srcProp, dstProp, src.field) != DiffResult::Same);
-            printChangedField(ctx, src, "prop metadata", changed);
-            return changed;
+            return isMetadataAtPathModified(
+                ctx, src, dst, "prop metadata", srcProp, dstProp, ctx.options.propMetadataHandling);
         } else {
             if (srcProp.Is<UsdAttribute>()) {
                 const UsdAttribute srcAttr = srcProp.As<UsdAttribute>();
@@ -211,10 +407,8 @@ bool isDataAtPathsModified(
         }
     } else {
         if (!src.field.IsEmpty()) {
-            const bool changed
-                = (compareMetadatas(srcPrim, dstPrim, src.field) != DiffResult::Same);
-            printChangedField(ctx, src, "prim metadata", changed);
-            return changed;
+            return isMetadataAtPathModified(
+                ctx, src, dst, "prim metadata", srcPrim, dstPrim, ctx.options.propMetadataHandling);
         } else {
             comparePrimsOnly(srcPrim, dstPrim, &quickDiff);
             const bool changed = (quickDiff != DiffResult::Same);
@@ -399,11 +593,6 @@ void unionChildren(
     VtValue&     srcChildrenValue,
     VtValue&     dstChildrenValue)
 {
-    // If not preserving missing attributes then we don't need to calculate
-    // the union of the source and destintation children.
-    if (missingHandling == MergeMissing::None)
-        return;
-
     typedef typename ChildPolicy::FieldType FieldType;
     typedef std::vector<FieldType>          ChildrenVector;
     typedef std::set<FieldType>             ChildrenSet;
@@ -428,11 +617,8 @@ void unionChildren(
     ChildrenSet srcSet(srcChildren.begin(), srcChildren.end());
     ChildrenSet dstSet(dstChildren.begin(), dstChildren.end());
 
-    if (srcSet == dstSet)
-        return;
-
-    // If they differ, fill the source and destination to have the desired set
-    // of children.
+    // Fill the source and destination to have the desired set
+    // of children in the same order.
     ChildrenSet unionSet;
     if (contains(missingHandling, MergeMissing::Create))
         unionSet.insert(srcSet.begin(), srcSet.end());

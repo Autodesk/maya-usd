@@ -59,6 +59,18 @@ public:
         _undoItemList.reset();
     }
 
+    void undo()
+    {
+        if (_undoItemList)
+            _undoItemList->undo();
+    }
+
+    void redo()
+    {
+        if (_undoItemList)
+            _undoItemList->redo();
+    }
+
 private:
     std::unique_ptr<MayaUsd::OpUndoItemList>     _undoItemList;
     std::unique_ptr<MayaUsd::OpUndoItemRecorder> _recorder;
@@ -73,6 +85,8 @@ void wrapOpUndoItem()
         typedef PythonOpUndoItemList This;
         class_<This, boost::noncopyable>("OpUndoItemList", init<>())
             .def("__enter__", &This::enter)
-            .def("__exit__", &This::exit);
+            .def("__exit__", &This::exit)
+            .def("undo", &This::undo)
+            .def("redo", &This::redo);
     }
 }

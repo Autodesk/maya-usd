@@ -27,6 +27,9 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/getenv.h>
+#include <pxr/imaging/hd/extCompCpuComputation.h>
+#include <pxr/imaging/hd/extCompPrimvarBufferSource.h>
+#include <pxr/imaging/hd/extComputation.h>
 #include <pxr/imaging/hd/meshUtil.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/smoothNormals.h>
@@ -370,6 +373,10 @@ void _getColorData(
 
         infoMap[HdTokens->displayColor] = std::make_unique<PrimvarInfo>(
             PrimvarSource(VtValue(colorArray), interpolation, PrimvarSource::CPUCompute), nullptr);
+    } else {
+        for (size_t i = 0; i < colorArray.size(); ++i) {
+            colorArray[i] = MayaUsd::utils::ConvertLinearToMaya(colorArray[i]);
+        }
     }
 }
 
@@ -1891,9 +1898,12 @@ void HdVP2Mesh::_UpdateDrawItem(
             if ((colorInterp == HdInterpolationConstant || colorInterp == HdInterpolationInstance)
                 && (alphaInterp == HdInterpolationConstant
                     || alphaInterp == HdInterpolationInstance)) {
-                const GfVec3f& clr3f = MayaUsd::utils::ConvertLinearToMaya(colorArray[0]);
+                const GfVec3f& clr3f = colorArray[0];
                 const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
                 shader = _delegate->GetFallbackShader(color);
+                if (shader) {
+                    shader->setParameter("diffuse", 1.0f);
+                }
                 // The color of the fallback shader is ignored when the interpolation is
                 // instance
             } else {
@@ -1993,13 +2003,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
-
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            _rprimId.asChar(),
-            "HdVP2Mesh Update instances");
-
         // Retrieve instance transforms from the instancer.
         HdInstancer*    instancer = renderIndex.GetInstancer(GetInstancerId());
         VtMatrix4dArray transforms
@@ -2109,10 +2112,11 @@ void HdVP2Mesh::_UpdateDrawItem(
             // render item.
 
             // Set up the source color buffers.
-            const MColor wireframeColors[] = { drawScene.GetWireframeColor(),
-                                               drawScene.GetSelectionHighlightColor(false),
-                                               drawScene.GetSelectionHighlightColor(true) };
-            bool         useWireframeColors = stateToCommit._instanceColorParam == kSolidColorStr;
+            const MColor wireframeColors[]
+                = { drawScene.GetWireframeColor(),
+                    drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->mesh),
+                    drawScene.GetSelectionHighlightColor() };
+            bool useWireframeColors = stateToCommit._instanceColorParam == kSolidColorStr;
 
             MFloatArray*    shadedColors = nullptr;
             HdInterpolation colorInterpolation = HdInterpolationConstant;
@@ -2212,9 +2216,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         if ((itemDirtyBits & DirtySelectionHighlight)
             && drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
             const MColor& color
-                = (_selectionStatus != kUnselected
-                       ? drawScene.GetSelectionHighlightColor(_selectionStatus == kFullyLead)
-                       : drawScene.GetWireframeColor());
+                = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                       _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->mesh)
+                                                   : drawScene.GetWireframeColor());
 
             MHWRender::MShaderInstance* shader = _delegate->Get3dSolidShader(color);
             if (shader != nullptr && shader != drawItemData._shader) {
@@ -2296,18 +2300,14 @@ void HdVP2Mesh::_UpdateDrawItem(
                                                            indexBuffer,
                                                            isBBoxItem,
                                                            &sharedBBoxGeom]() {
+            // This code executes serially, once per mesh updated. Keep
+            // performance in mind while modifying this code.
             const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
             MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
             if (ARCH_UNLIKELY(!renderItem))
                 return;
 
             MStatus result;
-
-            MProfilingScope profilingScope(
-                HdVP2RenderDelegate::sProfilerCategory,
-                MProfiler::kColorC_L2,
-                renderItem->name().asChar(),
-                "Commit");
 
             // If available, something changed
             if (stateToCommit._indexBufferData)
@@ -2737,6 +2737,56 @@ void HdVP2Mesh::_UpdatePrimvarSources(
                     }
                 }
             }
+        }
+    }
+
+    // At this point we've searched the primvars for the required primvars.
+    // check to see if there are any HdExtComputation which should replace
+    // primvar data or fill in for a missing primvar.
+    HdExtComputationPrimvarDescriptorVector compPrimvars
+        = sceneDelegate->GetExtComputationPrimvarDescriptors(id, HdInterpolationVertex);
+    const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
+    for (const auto& primvarName : requiredPrimvars) {
+        // The compPrimvars are a description of the link between the compute system and
+        // what we need to draw.
+        auto result
+            = std::find_if(compPrimvars.begin(), compPrimvars.end(), [&](const auto& compPrimvar) {
+                  return compPrimvar.name == primvarName;
+              });
+        // if there is no compute for the given required primvar then we're done!
+        if (result == compPrimvars.end())
+            continue;
+        HdExtComputationPrimvarDescriptor compPrimvar = *result;
+        // Create the HdExtCompCpuComputation objects necessary to resolve the computation
+        HdExtComputation const* sourceComp
+            = static_cast<HdExtComputation const*>(renderIndex.GetSprim(
+                HdPrimTypeTokens->extComputation, compPrimvar.sourceComputationId));
+        if (!sourceComp || sourceComp->GetElementCount() <= 0)
+            continue;
+
+        // This compPrimvar is telling me that the primvar with "name" comes from compute.
+        // The compPrimvar has the Id of the compute the data comes from, and the output
+        // of the compute which contains the data
+        HdExtCompCpuComputationSharedPtr cpuComputation;
+        HdBufferSourceSharedPtrVector    sources;
+        // There is a possible data race calling CreateComputation, see
+        // https://github.com/PixarAnimationStudios/USD/issues/1742
+        cpuComputation
+            = HdExtCompCpuComputation::CreateComputation(sceneDelegate, *sourceComp, &sources);
+
+        // Immediately resolve the computation so we can fill _meshSharedData._primvarInfo
+        for (HdBufferSourceSharedPtr& source : sources) {
+            source->Resolve();
+        }
+
+        // Pull the result out of the compute and save it into our local primvar info.
+        size_t outputIndex
+            = cpuComputation->GetOutputIndex(compPrimvar.sourceComputationOutputName);
+        // INVALID_OUTPUT_INDEX is declared static in USD, can't access here so re-declare
+        constexpr size_t INVALID_OUTPUT_INDEX = std::numeric_limits<size_t>::max();
+        if (INVALID_OUTPUT_INDEX != outputIndex) {
+            updatePrimvarInfo(
+                primvarName, cpuComputation->GetOutputByIndex(outputIndex), HdInterpolationVertex);
         }
     }
 }

@@ -1,0 +1,30 @@
+#usda 1.0
+(
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "mayaUsdSchemaTest"
+        string libraryPath       = "./"
+        string libraryPrefix     = "MayaUsdSchemaTest"
+        bool skipCodeGeneration = 1
+    }
+)
+{
+}
+
+class CustomRig "CustomRig" (
+    doc = "Test schema for shot based animation workflows"
+    inherits = </Typed>
+    customData = {
+        string className = "Rig"
+    }
+)
+{
+    int cubes = 1 (
+        doc = "Number of cubes with fallback 1"
+    )
+}

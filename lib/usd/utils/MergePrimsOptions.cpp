@@ -69,6 +69,8 @@ MergeVerbosity parseVerbosity(
             verbosity = verbosity | MergeVerbosity::Failure;
         if (UsdMayaMergeOptionsTokens->Default == token)
             verbosity = verbosity | MergeVerbosity::Default;
+        if (UsdMayaMergeOptionsTokens->All == token)
+            verbosity = verbosity | MergeVerbosity::All;
     }
 
     return verbosity;
@@ -128,7 +130,9 @@ const VtDictionary& MergePrimsOptions::getDefaultDictionary()
                                                   UsdMayaMergeOptionsTokens->variantSetsHandling,
                                                   UsdMayaMergeOptionsTokens->expressionsHandling,
                                                   UsdMayaMergeOptionsTokens->mappersHandling,
-                                                  UsdMayaMergeOptionsTokens->mapperArgsHandling };
+                                                  UsdMayaMergeOptionsTokens->mapperArgsHandling,
+                                                  UsdMayaMergeOptionsTokens->propMetadataHandling,
+                                                  UsdMayaMergeOptionsTokens->primMetadataHandling };
 
         for (const auto& ht : handlingTokens) {
             d[ht] = VtValue(std::vector<VtValue>({ VtValue(UsdMayaMergeOptionsTokens->All) }));
@@ -150,31 +154,26 @@ MergePrimsOptions::MergePrimsOptions(const VtDictionary& options)
     ignoreUpperLayerOpinions
         = parseBoolean(optionsWithDef, UsdMayaMergeOptionsTokens->ignoreUpperLayerOpinions);
 
-    propertiesHandling
-        = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->propertiesHandling);
+    const struct
+    {
+        TfToken       handlingToken;
+        MergeMissing& handlingValue;
+    } missingHandlings[]
+        = { { UsdMayaMergeOptionsTokens->propertiesHandling, this->propertiesHandling },
+            { UsdMayaMergeOptionsTokens->primsHandling, this->primsHandling },
+            { UsdMayaMergeOptionsTokens->connectionsHandling, this->connectionsHandling },
+            { UsdMayaMergeOptionsTokens->relationshipsHandling, this->relationshipsHandling },
+            { UsdMayaMergeOptionsTokens->variantsHandling, this->variantsHandling },
+            { UsdMayaMergeOptionsTokens->variantSetsHandling, this->variantSetsHandling },
+            { UsdMayaMergeOptionsTokens->expressionsHandling, this->expressionsHandling },
+            { UsdMayaMergeOptionsTokens->mappersHandling, this->mappersHandling },
+            { UsdMayaMergeOptionsTokens->mapperArgsHandling, this->mapperArgsHandling },
+            { UsdMayaMergeOptionsTokens->propMetadataHandling, this->propMetadataHandling },
+            { UsdMayaMergeOptionsTokens->primMetadataHandling, this->primMetadataHandling } };
 
-    primsHandling = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->primsHandling);
-
-    connectionsHandling
-        = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->connectionsHandling);
-
-    relationshipsHandling
-        = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->relationshipsHandling);
-
-    variantsHandling
-        = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->variantsHandling);
-
-    variantSetsHandling
-        = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->variantSetsHandling);
-
-    expressionsHandling
-        = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->expressionsHandling);
-
-    mappersHandling
-        = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->mappersHandling);
-
-    mapperArgsHandling
-        = parseMissingHandling(optionsWithDef, UsdMayaMergeOptionsTokens->mapperArgsHandling);
+    for (const auto& handling : missingHandlings) {
+        handling.handlingValue = parseMissingHandling(optionsWithDef, handling.handlingToken);
+    }
 }
 
 MergePrimsOptions::MergePrimsOptions()

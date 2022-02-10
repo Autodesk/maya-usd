@@ -56,6 +56,7 @@ void wrapMayaUsd_SchemasTokens()
 {
     boost::python::class_<MayaUsd_SchemasTokensType, boost::noncopyable> cls(
         "Tokens", boost::python::no_init);
+    _AddToken(cls, "mayaAutoEdit", MayaUsd_SchemasTokens->mayaAutoEdit);
     _AddToken(cls, "mayaNamespace", MayaUsd_SchemasTokens->mayaNamespace);
     _AddToken(cls, "mayaReference", MayaUsd_SchemasTokens->mayaReference);
 }

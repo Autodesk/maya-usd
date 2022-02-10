@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include "pythonObjectRegistry.h"
+
 #include <mayaUsd/fileio/chaser/exportChaser.h>
 #include <mayaUsd/fileio/chaser/exportChaserRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
@@ -65,19 +67,80 @@ public:
         return this->CallVirtual<>("PostExport", &This::default_PostExport)();
     }
 
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class FactoryFnWrapper : public UsdMayaPythonObjectRegistry
+    {
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest Class registered.
+        UsdMayaExportChaser*
+        operator()(const UsdMayaExportChaserRegistry::FactoryContext& factoryContext)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return nullptr;
+            }
+            auto                  chaser = new ExportChaserWrapper();
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass(factoryContext, (uintptr_t)chaser);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), chaser);
+            return chaser;
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. If we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static UsdMayaExportChaserRegistry::FactoryFn
+        Register(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaTypeName));
+            if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
+                // Return a new factory function:
+                return FactoryFnWrapper { classIndex };
+            } else {
+                // We already registered a factory function for this purpose:
+                return nullptr;
+            }
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, mayaTypeName));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        FactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            return ClassName(cl) + "," + mayaTypeName + "," + ",ExportChaser";
+        }
+    };
+
     static void Register(boost::python::object cl, const std::string& mayaTypeName)
     {
-        UsdMayaExportChaserRegistry::GetInstance().RegisterFactory(
-            mayaTypeName,
-            [=](const UsdMayaExportChaserRegistry::FactoryContext& factoryContext) {
-                auto                  chaser = new ExportChaserWrapper();
-                TfPyLock              pyLock;
-                boost::python::object instance = cl(factoryContext, (uintptr_t)chaser);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), chaser);
-                return chaser;
-            },
-            true);
+        UsdMayaExportChaserRegistry::FactoryFn fn = FactoryFnWrapper::Register(cl, mayaTypeName);
+        if (fn) {
+            UsdMayaExportChaserRegistry::GetInstance().RegisterFactory(mayaTypeName, fn, true);
+        }
+    }
+
+    static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+    {
+        FactoryFnWrapper::Unregister(cl, mayaTypeName);
     }
 };
 
@@ -109,5 +172,7 @@ void wrapExportChaser()
         .def("ExportFrame", &This::ExportFrame, &ExportChaserWrapper::default_ExportFrame)
         .def("PostExport", &This::PostExport, &ExportChaserWrapper::default_PostExport)
         .def("Register", &ExportChaserWrapper::Register)
-        .staticmethod("Register");
+        .staticmethod("Register")
+        .def("Unregister", &ExportChaserWrapper::Unregister)
+        .staticmethod("Unregister");
 }

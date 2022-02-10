@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 
+#include "pythonObjectRegistry.h"
+
 #include <mayaUsd/fileio/primUpdater.h>
 #include <mayaUsd/fileio/primUpdaterContext.h>
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
@@ -48,8 +50,11 @@ public:
 
     PrimUpdaterWrapper() = default;
 
-    PrimUpdaterWrapper(const MFnDependencyNode& node, const Ufe::Path& path)
-        : UsdMayaPrimUpdater(node, path)
+    PrimUpdaterWrapper(
+        const UsdMayaPrimUpdaterContext& context,
+        const MFnDependencyNode&         node,
+        const Ufe::Path&                 path)
+        : UsdMayaPrimUpdater(context, node, path)
     {
     }
 
@@ -78,37 +83,117 @@ public:
             srcStage, srcLayer, srcSdfPath, dstStage, dstLayer, dstSdfPath);
     }
 
+    bool default_shouldAutoEdit() const { return base_t::shouldAutoEdit(); }
+    bool shouldAutoEdit() const override
+    {
+        return this->CallVirtual<bool>("shouldAutoEdit", &This::default_shouldAutoEdit)();
+    }
+
     bool default_canEditAsMaya() const { return base_t::canEditAsMaya(); }
     bool canEditAsMaya() const override
     {
         return this->CallVirtual<bool>("canEditAsMaya", &This::default_canEditAsMaya)();
     }
 
-    bool default_editAsMaya(const UsdMayaPrimUpdaterContext& context)
+    bool default_editAsMaya() { return base_t::editAsMaya(); }
+    bool editAsMaya() override
     {
-        return base_t::editAsMaya(context);
-    }
-    bool editAsMaya(const UsdMayaPrimUpdaterContext& context) override
-    {
-        return this->CallVirtual<bool>("editAsMaya", &This::default_editAsMaya)(context);
+        return this->CallVirtual<bool>("editAsMaya", &This::default_editAsMaya)();
     }
 
-    bool default_discardEdits(const UsdMayaPrimUpdaterContext& context)
+    bool default_discardEdits() { return base_t::discardEdits(); }
+    bool discardEdits() override
     {
-        return base_t::discardEdits(context);
-    }
-    bool discardEdits(const UsdMayaPrimUpdaterContext& context) override
-    {
-        return this->CallVirtual<bool>("discardEdits", &This::default_discardEdits)(context);
+        return this->CallVirtual<bool>("discardEdits", &This::default_discardEdits)();
     }
 
-    bool default_pushEnd(const UsdMayaPrimUpdaterContext& context)
+    bool default_pushEnd() { return base_t::pushEnd(); }
+    bool pushEnd() override { return this->CallVirtual<bool>("pushEnd", &This::default_pushEnd)(); }
+
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class FactoryFnWrapper : public UsdMayaPythonObjectRegistry
     {
-        return base_t::pushEnd(context);
-    }
-    bool pushEnd(const UsdMayaPrimUpdaterContext& context) override
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest class registered.
+        UsdMayaPrimUpdaterSharedPtr operator()(
+            const UsdMayaPrimUpdaterContext& context,
+            const MFnDependencyNode&         node,
+            const Ufe::Path&                 path)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return nullptr;
+            }
+            auto                  primUpdater = std::make_shared<This>(context, node, path);
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass((uintptr_t)&primUpdater);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), primUpdater.get());
+            return primUpdater;
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. If we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn Register(
+            boost::python::object cl,
+            const std::string&    usdTypeName,
+            const std::string&    mayaType,
+            int                   sup)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, usdTypeName, mayaType, sup));
+            if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
+                // Return a new factory function:
+                return FactoryFnWrapper { classIndex };
+            } else {
+                // We already registered a factory function for this purpose:
+                return nullptr;
+            }
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(
+            boost::python::object cl,
+            const std::string&    usdTypeName,
+            const std::string&    mayaType,
+            int                   sup)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, usdTypeName, mayaType, sup));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        FactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(
+            boost::python::object cl,
+            const std::string&    usdTypeName,
+            const std::string&    mayaType,
+            int                   sup)
+        {
+            return ClassName(cl) + "," + usdTypeName + "," + mayaType + "," + std::to_string(sup)
+                + ",PrimUpdater";
+        }
+    };
+
+    static void Unregister(
+        boost::python::object cl,
+        const std::string&    usdTypeName,
+        const std::string&    mayaType,
+        int                   sup)
     {
-        return this->CallVirtual<bool>("pushEnd", &This::default_pushEnd)(context);
+        FactoryFnWrapper::Unregister(cl, usdTypeName, mayaType, sup);
     }
 
     static void Register(
@@ -117,21 +202,14 @@ public:
         const std::string&    mayaType,
         int                   sup)
     {
-        auto type = TfType::FindByName(usdTypeName);
+        UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn fn
+            = FactoryFnWrapper::Register(cl, usdTypeName, mayaType, sup);
+        if (fn) {
+            auto type = TfType::FindByName(usdTypeName);
 
-        UsdMayaPrimUpdaterRegistry::Register(
-            type,
-            mayaType,
-            UsdMayaPrimUpdater::Supports(sup),
-            [=](const MFnDependencyNode& node, const Ufe::Path& path) {
-                auto                  primUpdater = std::make_shared<This>(node, path);
-                TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)&primUpdater);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), primUpdater.get());
-                return primUpdater;
-            },
-            true);
+            UsdMayaPrimUpdaterRegistry::Register(
+                type, mayaType, UsdMayaPrimUpdater::Supports(sup), fn, true);
+        }
     }
 };
 
@@ -200,6 +278,7 @@ void wrapPrimUpdater()
 
     c.def("__init__", make_constructor(&PrimUpdaterWrapper::New))
         .def("pushCopySpecs", &This::pushCopySpecs, &PrimUpdaterWrapper::default_pushCopySpecs)
+        .def("shouldAutoEdit", &This::shouldAutoEdit, &PrimUpdaterWrapper::default_shouldAutoEdit)
         .def("canEditAsMaya", &This::canEditAsMaya, &PrimUpdaterWrapper::default_canEditAsMaya)
         .def("editAsMaya", &This::editAsMaya, &PrimUpdaterWrapper::default_editAsMaya)
         .def("discardEdits", &This::discardEdits, &PrimUpdaterWrapper::default_discardEdits)
@@ -213,5 +292,7 @@ void wrapPrimUpdater()
         .def("isAnimated", &This::isAnimated)
         .staticmethod("isAnimated")
         .def("Register", &PrimUpdaterWrapper::Register)
-        .staticmethod("Register");
+        .staticmethod("Register")
+        .def("Unregister", &PrimUpdaterWrapper::Unregister)
+        .staticmethod("Unregister");
 }

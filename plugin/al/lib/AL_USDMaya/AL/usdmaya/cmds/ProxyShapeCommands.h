@@ -211,69 +211,6 @@ private:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  ProxyShapeSelect
-/// \ingroup commands
-//----------------------------------------------------------------------------------------------------------------------
-class ProxyShapeSelect : public ProxyShapeCommandBase
-{
-    nodes::SelectionUndoHelper* m_helper;
-
-public:
-    ProxyShapeSelect()
-        : m_helper(0)
-    {
-    }
-    ~ProxyShapeSelect() { delete m_helper; }
-    AL_MAYA_DECLARE_COMMAND();
-
-private:
-    bool    isUndoable() const override;
-    MStatus doIt(const MArgList& args) override;
-    MStatus undoIt() override;
-    MStatus redoIt() override;
-    MStatus _redoIt(bool isInternal);
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  ProxyShapeSelect
-/// \ingroup commands
-//----------------------------------------------------------------------------------------------------------------------
-class ProxyShapePostSelect : public ProxyShapeCommandBase
-{
-    nodes::ProxyShape* m_proxy;
-
-public:
-    ~ProxyShapePostSelect() { }
-    AL_MAYA_DECLARE_COMMAND();
-
-private:
-    bool    isUndoable() const override;
-    MStatus doIt(const MArgList& args) override;
-    MStatus undoIt() override;
-    MStatus redoIt() override;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  InternalProxyShapeSelect
-/// \ingroup commands
-//----------------------------------------------------------------------------------------------------------------------
-class InternalProxyShapeSelect : public ProxyShapeCommandBase
-{
-    nodes::ProxyShape*   m_proxy;
-    nodes::SelectionList m_previous;
-    nodes::SelectionList m_new;
-
-public:
-    AL_MAYA_DECLARE_COMMAND();
-
-private:
-    bool    isUndoable() const override;
-    MStatus doIt(const MArgList& args) override;
-    MStatus undoIt() override;
-    MStatus redoIt() override;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
 /// \brief  TranslatePrim
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
@@ -286,25 +223,6 @@ class TranslatePrim : public ProxyShapeCommandBase
     SdfPathVector      m_teardownPaths;
     SdfPathVector      m_updatePaths;
     bool               m_recursive;
-
-public:
-    AL_MAYA_DECLARE_COMMAND();
-
-private:
-    bool    isUndoable() const override;
-    MStatus doIt(const MArgList& args) override;
-    MStatus redoIt() override;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief  ProxyShapeTestIntersection
-/// \ingroup commands
-//----------------------------------------------------------------------------------------------------------------------
-class ProxyShapeTestIntersection : public ProxyShapeCommandBase
-{
-    nodes::ProxyShape* m_proxy;
-    double             m_sx;
-    double             m_sy;
 
 public:
     AL_MAYA_DECLARE_COMMAND();

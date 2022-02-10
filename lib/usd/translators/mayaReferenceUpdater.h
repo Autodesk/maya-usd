@@ -31,16 +31,22 @@ class PxrUsdTranslators_MayaReferenceUpdater : public UsdMayaPrimUpdater
 {
 public:
     PxrUsdTranslators_MayaReferenceUpdater(
-        const MFnDependencyNode& depNodeFn,
-        const Ufe::Path&         path);
+        const UsdMayaPrimUpdaterContext& context,
+        const MFnDependencyNode&         depNodeFn,
+        const Ufe::Path&                 path);
 
     // Behavior of discardEdits() is still T.B.D.  PPT, 6-Dec-2021.
     MAYAUSD_CORE_PUBLIC
-    bool discardEdits(const UsdMayaPrimUpdaterContext& context) override;
+    bool discardEdits() override;
 
     // Unload the Maya reference.
     MAYAUSD_CORE_PUBLIC
-    bool pushEnd(const UsdMayaPrimUpdaterContext& context) override;
+    bool pushEnd() override;
+
+    /// Only auto-pull when Maya Reference path is set and it is explicitly requested via an
+    /// attribute on a prim
+    MAYAUSD_CORE_PUBLIC
+    bool shouldAutoEdit() const override;
 
     /// Query to determine if the prim corresponding to this updater can be
     /// edited as Maya.  The implementation in this class returns true.

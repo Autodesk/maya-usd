@@ -41,6 +41,12 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+static std::string _Repr(const MayaUsd_SchemasALMayaReference& self)
+{
+    std::string primRepr = TfPyRepr(self.GetPrim());
+    return TfStringPrintf("MayaUsd_Schemas.ALMayaReference(%s)", primRepr.c_str());
+}
+
 } // anonymous namespace
 
 void wrapMayaUsd_SchemasALMayaReference()
@@ -74,7 +80,7 @@ void wrapMayaUsd_SchemasALMayaReference()
 
         .def(!self)
 
-        ;
+        .def("__repr__", ::_Repr);
 
     _CustomWrapCode(cls);
 }

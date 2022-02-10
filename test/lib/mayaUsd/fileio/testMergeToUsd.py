@@ -18,15 +18,15 @@
 
 import fixturesUtils
 
-from mayaUtils import setMayaTranslation
-from usdUtils import createSimpleXformScene
+from mayaUtils import setMayaTranslation, setMayaRotation
+from usdUtils import createSimpleXformScene, mayaUsd_createStageWithNewLayer
 
 import mayaUsd.lib
 
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import UsdGeom, Gf
+from pxr import UsdGeom, Gf, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -36,7 +36,7 @@ import ufe
 
 import unittest
 
-from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorAlmostEqual, getTestScene
 
 import os
 
@@ -96,6 +96,11 @@ class MergeToUsdTestCase(unittest.TestCase):
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
 
+        # Edit will re-allocate anything that was under pulled prim due to deactivation
+        # Grab new references for /A/B prim
+        bUsdPrim = mayaUsd.ufe.ufePathToPrim(bUsdUfePathStr)
+        bXlateOp = UsdGeom.Xformable(bUsdPrim).GetOrderedXformOps()[0]
+        
         # Check that edits have been preserved in USD.
         for (usdUfePathStr, mayaMatrix, xlateOp) in \
             zip([aUsdUfePathStr, bUsdUfePathStr], [aMayaMatrix, bMayaMatrix], 
@@ -158,6 +163,11 @@ class MergeToUsdTestCase(unittest.TestCase):
         cmds.mayaUsdMergeToUsd(aMayaPathStr)
 
         def verifyMergeToUsd():
+            # Edit will re-allocate anything that was under pulled prim due to deactivation
+            # Grab new references for /A/B prim
+            bUsdPrim = mayaUsd.ufe.ufePathToPrim(bUsdUfePathStr)
+            bXlateOp = UsdGeom.Xformable(bUsdPrim).GetOrderedXformOps()[0]
+
             # Check that edits have been preserved in USD.
             for (usdUfePathStr, mayaMatrix, xlateOp) in \
                 zip([aUsdUfePathStr, bUsdUfePathStr], [aMayaMatrix, bMayaMatrix], 
@@ -235,6 +245,142 @@ class MergeToUsdTestCase(unittest.TestCase):
     
         assertVectorAlmostEqual(self, mayaValues, usdValues)
 
+    def testEquivalentTransformMergeToUsd(self):
+        '''Merge edits on a USD transform back to USD when the new transform is equivalent.'''
+
+        # Create a simple scene with a prim with a rotateY attribute.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        psPath = ufe.PathString.path(psPathStr)
+        ps = ufe.Hierarchy.createItem(psPath)
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        aPrim = stage.DefinePrim('/A', 'Xform')
+        aXformable = UsdGeom.Xformable(aPrim)
+        aRotOp = aXformable.AddRotateYOp()
+        aRotOp.Set(5.)
+        aUsdUfePathStr = psPathStr + ',/A'
+        aUsdUfePath = ufe.PathString.path(aUsdUfePathStr)
+        aUsdItem = ufe.Hierarchy.createItem(aUsdUfePath)
+
+        # Edit as maya and set the rotation to 0, 5, 0 rotateXYZ, which is equivalent
+        # to rotateY but has a different representation.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+            
+        aMayaItem = ufe.GlobalSelection.get().front()
+        (aMayaPath, aMayaPathStr, _, aMayaMatrix) = \
+            setMayaRotation(aMayaItem, om.MVector(0, 5, 0))
+
+        # Merge edits back to USD.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+
+        # Check that the rotateXYZ has *not* been added and the rotateY is still there.
+        self.assertFalse(aPrim.HasAttribute("xformOp:rotateXYZ"))
+        self.assertTrue(aPrim.HasAttribute("xformOp:rotateY"))
+        self.assertTrue(aPrim.HasAttribute("xformOpOrder"))
+
+        opOrder = aPrim.GetAttribute("xformOpOrder").Get()
+        self.assertEqual(1, len(opOrder))
+        self.assertEqual("xformOp:rotateY", opOrder[0])
+
+    def testMergeToUsdReferencedPrim(self):
+        '''Merge edits on a USD reference back to USD.'''
+
+        # Create a simple scene with a Def prim with a USD reference.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        psPath = ufe.PathString.path(psPathStr)
+        ps = ufe.Hierarchy.createItem(psPath)
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        aPrim = stage.DefinePrim('/A', 'Xform')
+
+        sphereFile = getTestScene("groupCmd", "sphere.usda")
+        sdfRef = Sdf.Reference(sphereFile)
+        primRefs = aPrim.GetReferences()
+        primRefs.AddReference(sdfRef)
+        self.assertTrue(aPrim.HasAuthoredReferences())
+
+        aUsdUfePathStr = psPathStr + ',/A'
+        aUsdUfePath = ufe.PathString.path(aUsdUfePathStr)
+        aUsdItem = ufe.Hierarchy.createItem(aUsdUfePath)
+
+        # Edit as maya and do nothing.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+        aMayaItem = ufe.GlobalSelection.get().front()
+
+        # Merge edits back to USD.
+        with mayaUsd.lib.OpUndoItemList():
+            aMayaPath = aMayaItem.path()
+            aMayaPathStr = ufe.PathString.string(aMayaPath)
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr))
+
+        # Check that the reference is still there.
+        self.assertTrue(aPrim.HasAuthoredReferences())
+
+    def testMergeToUnchangedCylinder(self):
+        '''Merge edits on unchanged data.'''
+
+        # Create a stage from a file.
+        testFile = getTestScene("cylinderSubset", "cylinder.usda")
+        testDagPath, stage = mayaUtils.createProxyFromFile(testFile)
+        usdCylPathString = testDagPath + ",/sphere_butNot_pCylinder1"
+
+        cylBottomPrim = stage.GetPrimAtPath("/sphere_butNot_pCylinder1/bottom")
+        bottomIndices = cylBottomPrim.GetAttribute("indices")
+        self.assertEqual("int[]", bottomIndices.GetTypeName())
+
+        # Edit as maya and do nothing.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(usdCylPathString))
+
+        cylMayaItem = ufe.GlobalSelection.get().front()
+
+        # Merge edits back to USD.
+        with mayaUsd.lib.OpUndoItemList():
+            cylMayaPath = cylMayaItem.path()
+            cylMayaPathStr = ufe.PathString.string(cylMayaPath)
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(cylMayaPathStr))
+
+        # Check that the indices are still valid.
+        cylBottomPrim = stage.GetPrimAtPath("/sphere_butNot_pCylinder1/bottom")
+        bottomIndices = cylBottomPrim.GetAttribute("indices")
+        self.assertEqual("int[]", bottomIndices.GetTypeName())
+
+    def testMergeWithoutMaterials(self):
+        '''Merge edits on data and not merging the materials.'''
+
+        # Create a stage from a file.
+        testFile = getTestScene("cylinder", "cylinder.usda")
+        testDagPath, stage = mayaUtils.createProxyFromFile(testFile)
+        usdCylPathString = testDagPath + ",/pCylinder1"
+
+        # Verify that the original scene does not have a look (material) prim.
+        cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
+        self.assertFalse(cylLooksPrim.IsValid())
+
+        # Edit as maya and do nothing.
+        cmds.mayaUsdEditAsMaya(usdCylPathString)
+
+        # Merge back to USD.
+        cylMayaItem = ufe.GlobalSelection.get().front()
+        cylMayaPath = cylMayaItem.path()
+        cylMayaPathStr = ufe.PathString.string(cylMayaPath)
+        cmds.mayaUsdMergeToUsd(cylMayaPathStr)
+
+        # Verify that the merged scene added a look (material) prim.
+        cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
+        self.assertTrue(cylLooksPrim.IsValid())
+
+        # Undo merge to USD.
+        cmds.undo()
+
+        # Merge back to USD with export options that disable materials.
+        cmds.mayaUsdMergeToUsd(cylMayaPathStr, exportOptions='shadingMode=none')
+
+        # Verify that the merged scene still does not have a look (material) prim.
+        cylLooksPrim = stage.GetPrimAtPath("/pCylinder1/Looks")
+        self.assertFalse(cylLooksPrim.IsValid())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

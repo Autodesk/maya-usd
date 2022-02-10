@@ -29,6 +29,7 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/traverseLayer.h>
+#include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -81,7 +82,7 @@ namespace {
 const std::string kPullParentPathKey("Maya:Pull:ParentPath");
 
 // Set name that will be used to hold all pulled objects
-const MString kPullSetName("pullStateSet");
+const MString kPullSetName("usdEditAsMaya");
 
 // Metadata key used to store pull information on a prim
 const TfToken kPullPrimMetadataKey("Maya:Pull:DagPath");
@@ -123,18 +124,6 @@ Ufe::Path usdToMaya(const Ufe::Path& usdPath)
     return Ufe::PathString::path(dagPathStr);
 }
 
-SdfPath ufeToSdfPath(const Ufe::Path& usdPath)
-{
-    auto segments = usdPath.getSegments();
-
-    // Can be only a gateway node
-    if (segments.size() <= 1) {
-        return {};
-    }
-
-    return SdfPath(segments[1].string());
-}
-
 SdfPath makeDstPath(const SdfPath& dstRootParentPath, const SdfPath& srcPath)
 {
     auto relativeSrcPath = srcPath.MakeRelativePath(SdfPath::AbsoluteRootPath());
@@ -153,13 +142,26 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     }
 
     // Add to a set, the set should already been created.
-    MObject pullSetObj;
-    auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
-    if (status != MStatus::kSuccess)
-        return false;
-
-    MFnSet fnPullSet(pullSetObj);
-    fnPullSet.addMember(path);
+    FunctionUndoItem::execute(
+        "Add edited item to pull set.",
+        [path]() {
+            MObject pullSetObj;
+            auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+            if (status != MStatus::kSuccess)
+                return false;
+            MFnSet fnPullSet(pullSetObj);
+            fnPullSet.addMember(path);
+            return true;
+        },
+        [path]() {
+            MObject pullSetObj;
+            auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+            if (status != MStatus::kSuccess)
+                return false;
+            MFnSet fnPullSet(pullSetObj);
+            fnPullSet.removeMember(path, MObject::kNullObj);
+            return true;
+        });
 
     // Store metadata on the prim in the Session Layer.
     auto stage = pulledPrim.GetStage();
@@ -172,6 +174,7 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     // Store medata on DG node
     auto              ufePathString = Ufe::PathString::string(ufePulledPath);
     MFnDependencyNode depNode(path.node());
+    MStatus           status;
     MPlug             dgMetadata = depNode.findPlug(kPullDGMetadataKey, &status);
     if (status != MStatus::kSuccess) {
         MFnStringData fnStringData;
@@ -212,27 +215,14 @@ void removePullInformation(const Ufe::Path& ufePulledPath)
 //
 bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
-    auto              proxyShape = MayaUsd::ufe::getProxyShape(ufePulledPath);
-    MStatus           status;
-    MFnDependencyNode depNode(proxyShape->thisMObject(), &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
 
-    MPlug excludePrimPathsPlug
-        = depNode.findPlug(MayaUsdProxyShapeBase::excludePrimPathsAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    auto stage = prim.GetStage();
+    if (!stage)
+        return false;
 
-    MString excludePrimPathsStr;
-    status = excludePrimPathsPlug.getValue(excludePrimPathsStr);
-    std::vector<std::string> excludePrimPaths = TfStringTokenize(excludePrimPathsStr.asChar(), ",");
-
-    std::string sdfPathStr = ufeToSdfPath(ufePulledPath).GetText();
-    if (std::find(excludePrimPaths.begin(), excludePrimPaths.end(), sdfPathStr)
-        != excludePrimPaths.end())
-        return true;
-
-    excludePrimPaths.push_back(sdfPathStr);
-    excludePrimPathsStr = TfStringJoin(excludePrimPaths, ",").c_str();
-    excludePrimPathsPlug.setValue(excludePrimPathsStr);
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
+    prim.SetActive(false);
 
     return true;
 }
@@ -241,29 +231,21 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
 //
 bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
 {
-    auto        proxyShape = MayaUsd::ufe::getProxyShape(ufePulledPath);
-    auto        prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    std::string sdfPathStr = prim.GetPath().GetText();
+    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
 
-    MStatus           status;
-    MFnDependencyNode depNode(proxyShape->thisMObject(), &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    auto stage = prim.GetStage();
+    if (!stage)
+        return false;
 
-    MPlug excludePrimPathsPlug
-        = depNode.findPlug(MayaUsdProxyShapeBase::excludePrimPathsAttr, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
+    SdfLayerHandle sessionLayer = stage->GetSessionLayer();
+    UsdEditContext editContext(stage, sessionLayer);
 
-    MString excludePrimPathsStr;
-    status = excludePrimPathsPlug.getValue(excludePrimPathsStr);
-    std::vector<std::string> excludePrimPaths = TfStringTokenize(excludePrimPathsStr.asChar(), ",");
+    // Cleanup the field and potentially empty over
+    prim.ClearActive();
+    SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    if (sessionLayer && primSpec)
+        sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
 
-    auto foundIt = std::find(excludePrimPaths.begin(), excludePrimPaths.end(), sdfPathStr);
-    if (foundIt == excludePrimPaths.end())
-        return true;
-
-    excludePrimPaths.erase(foundIt);
-    excludePrimPathsStr = TfStringJoin(excludePrimPaths, ",").c_str();
-    excludePrimPathsPlug.setValue(excludePrimPathsStr);
     return true;
 }
 
@@ -284,12 +266,9 @@ PullImportPaths pullImport(
 
     std::string mFileName = context.GetUsdStage()->GetRootLayer()->GetIdentifier();
     if (mFileName.empty()) {
-        TF_RUNTIME_ERROR("Empty file specified. Exiting.");
+        TF_WARN("Nothing to edit: invalid layer.");
         return PullImportPaths(addedDagPaths, pulledUfePaths);
     }
-
-    // Record all USD modifications in an undo block and item.
-    UsdUndoBlock undoBlock(&UsdUndoableItemUndoItem::create("Pull import USD data modifications"));
 
     const VtDictionary& userArgs = context.GetUserArgs();
 
@@ -318,6 +297,7 @@ PullImportPaths pullImport(
     // Execute the command, which can succeed but import nothing.
     bool success = readJob->Read(&addedDagPaths);
     if (!success || addedDagPaths.size() == 0) {
+        TF_WARN("Nothing to edit in the selection.");
         return PullImportPaths({}, {});
     }
 
@@ -448,13 +428,13 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
 
         auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
-        auto updater = factory(dgNodeFn, pulledUfePath);
+        auto updater = factory(context, dgNodeFn, pulledUfePath);
 
         // The failure of a single updater causes failure of the whole
         // customization step.  This is a frequent difficulty for operations on
         // multiple data, especially since we can't roll back the result of
         // the execution of previous updaters.  Revisit this.  PPT, 15-Sep-2021.
-        if (!updater->editAsMaya(context)) {
+        if (!updater->editAsMaya()) {
             return false;
         }
     }
@@ -528,34 +508,6 @@ PushCustomizeSrc pushExport(
     return pushCustomizeSrc;
 }
 
-void removePullInfoAndExclusion(
-    const Ufe::Path&                 ufePulledPath,
-    const MDagPath&                  mayaDagPath,
-    const UsdMayaPrimUpdaterContext& context)
-{
-    const bool isCopy = context.GetArgs()._copyOperation;
-    if (isCopy)
-        return;
-
-    FunctionUndoItem::execute(
-        "Merge to Maya pull info removal",
-        [ufePulledPath]() {
-            removePullInformation(ufePulledPath);
-            return true;
-        },
-        [ufePulledPath, mayaDagPath]() {
-            return writePullInformation(ufePulledPath, mayaDagPath);
-        });
-
-    FunctionUndoItem::execute(
-        "Merge to Maya rendering inclusion",
-        [ufePulledPath]() {
-            removeExcludeFromRendering(ufePulledPath);
-            return true;
-        },
-        [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); });
-}
-
 //------------------------------------------------------------------------------
 //
 SdfPath getDstSdfPath(const Ufe::Path& ufePulledPath, const SdfPath& srcSdfPath, bool isCopy)
@@ -624,7 +576,7 @@ UsdMayaPrimUpdaterSharedPtr createUpdater(
     auto              mayaDagPath = context.MapSdfPathToDagPath(srcPath);
     MFnDependencyNode depNodeFn(mayaDagPath.isValid() ? mayaDagPath.node() : MObject());
 
-    return factory(depNodeFn, ufePath);
+    return factory(context, depNodeFn, ufePath);
 }
 
 //------------------------------------------------------------------------------
@@ -721,7 +673,7 @@ bool pushCustomize(
         }
 
         // Report pushEnd() failure.
-        if (!updater->pushEnd(context)) {
+        if (!updater->pushEnd()) {
             throw MayaUsd::TraversalFailure(std::string("PushEnd() failed."), srcPath);
         }
     };
@@ -845,12 +797,29 @@ bool PrimUpdaterManager::mergeToUsd(
         ctxArgs,
         std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
 
+    if (!isCopy) {
+        FunctionUndoItem::execute(
+            "Merge to Maya rendering inclusion",
+            [pulledPath]() {
+                removeExcludeFromRendering(pulledPath);
+                return true;
+            },
+            [pulledPath]() { return addExcludeFromRendering(pulledPath); });
+    }
+
     if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
         return false;
     }
 
-    // Remove the pull information and node exclusion.
-    removePullInfoAndExclusion(pulledPath, mayaDagPath, context);
+    if (!isCopy) {
+        FunctionUndoItem::execute(
+            "Merge to Maya pull info removal",
+            [pulledPath]() {
+                removePullInformation(pulledPath);
+                return true;
+            },
+            [pulledPath, mayaDagPath]() { return writePullInformation(pulledPath, mayaDagPath); });
+    }
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
@@ -871,7 +840,9 @@ bool PrimUpdaterManager::mergeToUsd(
         }
     }
 
-    auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath);
+    // Some updaters (like MayaReference) may be writing and changing the variant during merge.
+    // This will change the hierarchy around pulled prim. Grab hierarchy from the parent.
+    auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath.pop());
     auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
     if (TF_VERIFY(hier)) {
         scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
@@ -900,6 +871,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     MDagPath pullParentPath;
     if (!updaterArgs._copyOperation
         && !(pullParentPath = setupPullParent(path, ctxArgs)).isValid()) {
+        TF_WARN("Cannot setup the edit parent node.");
         return false;
     }
 
@@ -923,6 +895,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
     // 2) Iterate over all imported Dag paths.
     if (!pullCustomize(importedPaths, context)) {
+        TF_WARN("Failed to customize the edited nodes.");
         return false;
     }
 
@@ -947,11 +920,15 @@ bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
     if (!prim) {
         return false;
     }
+
+    VtDictionary              userArgs;
+    UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), prim.GetStage(), userArgs);
+
     auto typeName = prim.GetTypeName();
     auto regItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
     auto factory = std::get<UpdaterFactoryFn>(regItem);
     // No Maya Dag path for the prim updater, so pass in a null MObject.
-    auto updater = factory(MFnDependencyNode(MObject()), path);
+    auto updater = factory(context, MFnDependencyNode(MObject()), path);
     return updater ? updater->canEditAsMaya() : false;
 }
 
@@ -1000,9 +977,9 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
 
         auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
-        auto updater = factory(dgNodeFn, Ufe::Path());
+        auto updater = factory(context, dgNodeFn, Ufe::Path());
 
-        updater->discardEdits(context);
+        updater->discardEdits();
     }
 
     FunctionUndoItem::execute(
@@ -1092,8 +1069,17 @@ bool PrimUpdaterManager::duplicate(
         // Copy the temporary layer contents out to the proper destination.
         const auto& srcLayer = std::get<SdfLayerRefPtr>(pushExportOutput);
         const auto& editTarget = dstStage->GetEditTarget();
-        auto        dstRootPath = editTarget.MapToSpecPath(srcRootPath);
         const auto& dstLayer = editTarget.GetLayer();
+
+        // Make the destination root path unique.
+        SdfPath     dstRootPath = editTarget.MapToSpecPath(srcRootPath);
+        SdfPath     dstParentPath = dstRootPath.GetParentPath();
+        std::string dstChildName = dstRootPath.GetName();
+        UsdPrim     dstParentPrim = dstStage->GetPrimAtPath(dstParentPath);
+        if (dstParentPrim.IsValid()) {
+            dstChildName = ufe::uniqueChildName(dstParentPrim, dstChildName);
+            dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
+        }
 
         if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
             return false;
@@ -1117,40 +1103,67 @@ void PrimUpdaterManager::onProxyContentChanged(
         return;
     }
 
+    auto proxyShapeUfePath = proxyNotice.GetProxyShape().ufePath();
+
+    auto autoEditFn = [this, proxyShapeUfePath](
+                          const UsdMayaPrimUpdaterContext& context, const UsdPrim& prim) -> bool {
+        TfToken typeName = prim.GetTypeName();
+
+        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
+        auto supports = std::get<UsdMayaPrimUpdater::Supports>(registryItem);
+
+        if ((supports & UsdMayaPrimUpdater::Supports::AutoPull)
+            != UsdMayaPrimUpdater::Supports::AutoPull)
+            return false;
+
+        const Ufe::PathSegment pathSegment = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
+        const Ufe::Path        path = proxyShapeUfePath + pathSegment;
+
+        auto factory = std::get<UpdaterFactoryFn>(registryItem);
+        auto updater = factory(context, MFnDependencyNode(MObject()), path);
+
+        if (updater && updater->shouldAutoEdit()) {
+            // TODO UNDO: is it okay to throw away the undo info in the change notification?
+            // What could we do with it anyway?
+            OpUndoItemMuting muting;
+            this->editAsMaya(path);
+
+            return true;
+        }
+        return false;
+    };
+
     const UsdNotice::ObjectsChanged& notice = proxyNotice.GetNotice();
 
     Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
 
     auto stage = notice.GetStage();
-    for (const auto& changedPath : notice.GetResyncedPaths()) {
-        if (changedPath == SdfPath::AbsoluteRootPath()) {
-            continue;
-        }
 
-        UsdPrim      resyncPrim = stage->GetPrimAtPath(changedPath);
+    VtDictionary              userArgs;
+    UsdMayaPrimUpdaterContext context(UsdTimeCode::Default(), stage, userArgs);
+
+    for (const auto& changedPath : notice.GetResyncedPaths()) {
+        UsdPrim resyncPrim = (changedPath != SdfPath::AbsoluteRootPath())
+            ? stage->GetPrimAtPath(changedPath)
+            : stage->GetPseudoRoot();
+
         UsdPrimRange range(resyncPrim, predicate);
 
         for (auto it = range.begin(); it != range.end(); it++) {
             const UsdPrim& prim = *it;
-
-            TfToken typeName = prim.GetTypeName();
-
-            auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
-            auto supports = std::get<UsdMayaPrimUpdater::Supports>(registryItem);
-
-            if ((supports & UsdMayaPrimUpdater::Supports::AutoPull)
-                == UsdMayaPrimUpdater::Supports::AutoPull) {
+            if (autoEditFn(context, prim)) {
                 it.PruneChildren();
-
-                const Ufe::PathSegment pathSegment
-                    = MayaUsd::ufe::usdPathToUfePathSegment(prim.GetPath());
-                const Ufe::Path path = proxyNotice.GetProxyShape().ufePath() + pathSegment;
-
-                // TODO UNDO: is it okay to throw away the undo info in the change notification?
-                // What could we do with it anyway?
-                OpUndoItemMuting muting;
-                editAsMaya(path);
             }
+        }
+    }
+
+    auto changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
+    for (auto it = changedInfoOnlyPaths.begin(), end = changedInfoOnlyPaths.end(); it != end;
+         ++it) {
+        const auto& changedPath = *it;
+        if (changedPath.IsPrimPropertyPath()) {
+            UsdPrim valueChangedPrim = stage->GetPrimAtPath(changedPath.GetPrimPath());
+            autoEditFn(context, valueChangedPrim);
         }
     }
 }

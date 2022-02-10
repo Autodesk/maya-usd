@@ -11,12 +11,11 @@ target_sources(${TARGET_NAME}
         AL/maya/test_MatrixToSRT.cpp
         AL/maya/test_MayaEventManager.cpp
         AL/usdmaya/commands/test_ExportCommands.cpp
-        AL/usdmaya/commands/test_InternalProxySelection.cpp
         AL/usdmaya/commands/test_LayerCommands.cpp
         AL/usdmaya/commands/test_LayerManagerCommands.cpp
         AL/usdmaya/commands/test_ProxyShapeImport.cpp
-        AL/usdmaya/commands/test_ProxyShapeSelect.cpp
         AL/usdmaya/commands/test_TranslateCommand.cpp
+        AL/usdmaya/fileio/export_misc.cpp
         AL/usdmaya/fileio/export_blendshape.cpp
         AL/usdmaya/fileio/export_constraints.cpp
         AL/usdmaya/fileio/export_ik.cpp
@@ -43,7 +42,6 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/nodes/test_VariantFallbacks.cpp
         AL/usdmaya/test_DiffGeom.cpp
         AL/usdmaya/test_DiffPrimVar.cpp
-        AL/usdmaya/test_SelectabilityDB.cpp
         test_translators_AnimationTranslator.cpp
         test_translators_CameraTranslator.cpp
         test_translators_DgTranslator.cpp

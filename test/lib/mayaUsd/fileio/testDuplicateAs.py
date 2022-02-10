@@ -168,6 +168,34 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertEqual([1, 2, 3], usdGroup1T3d.translation().vector)
         self.assertEqual([-4, -5, -6], usdGroup2T3d.translation().vector)
 
+    def testDuplicateAsUsdSameName(self):
+        '''Duplicate a Maya transform to USD when USD already has a prim with that name.'''
+
+        # Create a Maya transform named 'A'.
+        mayaA = cmds.createNode('transform', name='A')
+        cmds.setAttr(mayaA + '.translate', 1, 2, 3)
+
+        # Create a stage to receive the USD duplicate, with a prim of the same name.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        aPrim = stage.DefinePrim('/A', 'Xform')
+        
+        # Duplicate Maya data as USD data.  As of 17-Nov-2021 no single-segment
+        # path handler registered to UFE for Maya path strings, so use absolute
+        # path.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
+                cmds.ls(mayaA, long=True)[0], psPathStr))
+
+        # Maya hierarchy should be duplicated in USD, but with a numeric suffix due to the collision.
+        usdNewAPathStr = psPathStr + ',/' + mayaA + '1'
+        usdNewAPath = ufe.PathString.path(usdNewAPathStr)
+
+        # Translations have been preserved.
+        usdNewA = ufe.Hierarchy.createItem(usdNewAPath)
+        usdNewAT3d = ufe.Transform3d.transform3d(usdNewA)
+        self.assertEqual([1, 2, 3], usdNewAT3d.translation().vector)
+
     def testDuplicateAsUsdUndoRedo(self):
         '''Duplicate a Maya transform hierarchy to USD and then undo and redo the command.'''
 
@@ -226,6 +254,33 @@ class DuplicateAsTestCase(unittest.TestCase):
         cmds.redo()
 
         verifyDuplicate()
+
+    def testDuplicateWithoutMaterials(self):
+        '''Duplicate a Maya sphere without merging the materials.'''
+
+        # Create a sphere.
+        sphere = cmds.polySphere(r=1)
+
+        # Create a stage to receive the USD duplicate.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        
+        # Duplicate Maya data as USD data with materials
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr)
+
+        # Verify that the copied sphere has a look (material) prim.
+        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        self.assertTrue(looksPrim.IsValid())
+
+        # Undo duplicate to USD.
+        cmds.undo()
+
+        # Duplicate Maya data as USD data without materials
+        cmds.mayaUsdDuplicate(cmds.ls(sphere, long=True)[0], psPathStr, exportOptions='shadingMode=none')
+
+        # Verify that the copied sphere does not have a look (material) prim.
+        looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
+        self.assertFalse(looksPrim.IsValid())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

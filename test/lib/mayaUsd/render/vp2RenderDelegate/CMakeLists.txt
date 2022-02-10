@@ -2,6 +2,7 @@
 set(TEST_SCRIPT_FILES "")
 
 list(APPEND TEST_SCRIPT_FILES
+    testVP2RenderDelegateDisplayColors.py
 	testVP2RenderDelegateGeomSubset.py
     testVP2RenderDelegatePointInstanceOrientation.py
 )
@@ -49,6 +50,7 @@ endif()
 if (MAYA_APP_VERSION VERSION_GREATER 2022)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegateSelection.py
+        testVP2RenderDelegateUsdSkel.py
     )
 endif()
 

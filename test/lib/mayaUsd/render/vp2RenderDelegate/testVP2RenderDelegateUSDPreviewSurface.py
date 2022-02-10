@@ -206,6 +206,30 @@ class testVP2RenderDelegateUSDPreviewSurface(imageUtils.ImageDiffingTestCase):
 
         self.assertSnapshotClose('TestFallbackColor.png')
 
+    def testImportDisplayColor(self):
+        """Tests that the import of the USD preview surface containing a connected displayColor
+        primvar reader shader node is imported with vertex colours for textured display"""
+        cmds.file(force=True, new=True)
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        # Turn on textured display and focus in on the subject
+        panel = mayaUtils.activeModelPanel()
+        cmds.modelEditor(panel, e=1, displayTextures=1)
+        cmds.dolly("persp", abs=True, d=3.2)
+
+        # Import the USD file
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")
+        options = ["shadingMode=[[useRegistry,UsdPreviewSurface]]",
+                   "primPath=/",
+                   "preferredMaterial=none"]
+        cmds.file(testFile, i=True, type="USD Import",
+                  ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
+                  namespace="Test", pr=True, importTimeRange="combine",
+                  options=";".join(options))
+
+        # Snapshot and assert similarity
+        self.assertSnapshotClose('DisplayColorCube.png')
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

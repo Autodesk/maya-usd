@@ -36,7 +36,10 @@ class UsdMayaPrimUpdater
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const Ufe::Path& path);
+    UsdMayaPrimUpdater(
+        const UsdMayaPrimUpdaterContext& context,
+        const MFnDependencyNode&         depNodeFn,
+        const Ufe::Path&                 path);
 
     // clang errors if you use "= default" here, due to const SdfPath member
     //    see: http://open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#253
@@ -75,6 +78,13 @@ public:
         SdfLayerRefPtr dstLayer,
         const SdfPath& dstSdfPath);
 
+    /// Once prim updater decides that it wants to be auto-pulled each time
+    /// the registered schema type is present in the stage. This method
+    /// allows further customization to the logic. The default implementation
+    /// allways returns true.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool shouldAutoEdit() const;
+
     /// Query to determine if the prim corresponding to this updater can be
     /// edited as Maya.  The default implementation in this class checks
     /// whether there is an importer for the prim.
@@ -84,17 +94,17 @@ public:
     /// Customize the pulled prim after pull import.  Default implementation in
     /// this class is a no-op.
     MAYAUSD_CORE_PUBLIC
-    virtual bool editAsMaya(const UsdMayaPrimUpdaterContext& context);
+    virtual bool editAsMaya();
 
     /// Discard edits done in Maya.  Implementation in this class removes the
     /// Maya node.
     MAYAUSD_CORE_PUBLIC
-    virtual bool discardEdits(const UsdMayaPrimUpdaterContext& context);
+    virtual bool discardEdits();
 
     /// Clean up Maya data model at end of push.  Implementation in this class
     /// calls discardEdits().
     MAYAUSD_CORE_PUBLIC
-    virtual bool pushEnd(const UsdMayaPrimUpdaterContext& context);
+    virtual bool pushEnd();
 
     /// The MObject for the Maya node being updated by this updater.
     MAYAUSD_CORE_PUBLIC
@@ -106,7 +116,10 @@ public:
 
     /// The destination USD prim which we are updating.
     MAYAUSD_CORE_PUBLIC
-    UsdPrim getUsdPrim(const UsdMayaPrimUpdaterContext& context) const;
+    UsdPrim getUsdPrim() const;
+
+    MAYAUSD_CORE_PUBLIC
+    const UsdMayaPrimUpdaterContext* getContext() const { return _context; }
 
     MAYAUSD_CORE_PUBLIC
     static bool isAnimated(const MDagPath& path);
@@ -119,6 +132,9 @@ private:
 
     /// The proxy shape and destination Sdf path if provided.
     const Ufe::Path _path;
+
+    /// Context giving access to the manager update state
+    const UsdMayaPrimUpdaterContext* _context { nullptr };
 };
 
 using UsdMayaPrimUpdaterSharedPtr = std::shared_ptr<UsdMayaPrimUpdater>;

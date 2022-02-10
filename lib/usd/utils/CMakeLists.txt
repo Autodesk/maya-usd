@@ -52,6 +52,7 @@ target_link_libraries(${TARGET_NAME}
         gf
         usd
         sdf
+        usdGeom
 )
 
 # -----------------------------------------------------------------------------
