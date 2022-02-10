@@ -18,6 +18,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 import mayaUsd
+from mayaUsd.lib import cacheToUsd
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 import mayaUsdMayaReferenceUtils as mayaRefUtils
@@ -31,7 +32,7 @@ kDefaultCacheVariantName = 'Cache'
 kDefaultCachePrimName = 'Cache1'
 
 # Cache options in string format, for MEL mayaUsdTranslatorExport() consumption.
-_cacheOptions = None
+_cacheExportOptions = None
 
 # Dag path corresponding to pulled prim.  This is a Maya transform node that is
 # not in the Maya reference itself, but is its parent.
@@ -180,22 +181,22 @@ def fileOptionsTabPage(tabLayout):
     # USD file option controls will be parented under this layout.
     # resultCallback not called on "post", is therefore an empty string.
     fileOptionsScroll = cmds.columnLayout('fileOptionsScroll')
-    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post=all;!animation-data", "' + getCacheOptions() + '", "")') 
+    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post=all;!animation-data", "' + getCacheExportOptions() + '", "")') 
 
     cacheFileUsdHierarchyOptions(topForm)
 
     cmds.setUITemplate(popTemplate=True)
 
-def getCacheOptions():
-    global _cacheOptions
-    # Init on first use from "USD Export" translator.
-    if _cacheOptions is None:
-        _cacheOptions = cmds.translator('USD Export', query=True, do=True)
-    return _cacheOptions
+def getCacheExportOptions():
+    global _cacheExportOptions
+    if _cacheExportOptions is None:
+        _cacheExportOptions = cacheToUsd.getDefaultExportOptions()
+    return _cacheExportOptions
 
 def setCacheOptions(newCacheOptions):
-    global _cacheOptions
-    _cacheOptions = newCacheOptions
+    global _cacheExportOptions
+    # Animation is always on for cache to USD.
+    _cacheExportOptions = cacheToUsd.turnOnAnimation(newCacheOptions)
 
 def cacheCreateUi(parent):
     cmds.setParent(parent)
@@ -238,29 +239,27 @@ def cacheInitUi(parent, filterType):
 def cacheCommitUi(parent, selectedFile):
     # Read data to set up cache.
 
-    # The following call will set _cacheOptions.  Initial settings not accessed
-    # on "query", is therefore an empty string.
+    # The following call will set _cacheExportOptions.  Initial settings not
+    # accessed on "query", is therefore an empty string.
     mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "query", "", "mayaUsdCacheMayaReference_setCacheOptions")')
 
-    # Regardless of UI, animation is always on.
-    cacheOptionsText = re.sub(r'animation=.', 'animation=1', getCacheOptions())
-
-    userArgs = mayaUsd.lib.Util.getDictionaryFromEncodedOptions(cacheOptionsText)
-
     primName = cmds.textFieldGrp('primNameText', query=True, text=True)
-    defineInVariant = cmds.radioButtonGrp('variantRadioBtn', query=True, select=True)
-    userArgs['rn_layer']           = selectedFile
-    userArgs['rn_primName']        = primName
-    userArgs['rn_defineInVariant'] = defineInVariant
-    userArgs['rn_payloadOrReference'] = cmds.optionMenuGrp('compositionArcTypeMenu', query=True, value=True)
-    userArgs['rn_listEditType'] = cmds.optionMenu('listEditedAsMenu', query=True, value=True)
+    payloadOrReference = cmds.optionMenuGrp('compositionArcTypeMenu', query=True, value=True)
+    listEditType = cmds.optionMenu('listEditedAsMenu', query=True, value=True)
     
+    defineInVariant = cmds.radioButtonGrp('variantRadioBtn', query=True, select=True)
     if defineInVariant:
-        userArgs['rn_variantSetName'] = cmds.optionMenu('variantSetMenu', query=True, value=True)
+        variantSetName = cmds.optionMenu('variantSetMenu', query=True, value=True)
         variantName = cmds.optionMenu('variantNameMenu', query=True, value=True)
         if variantName == 'Create New':
             variantName = cmds.textField('variantNameText', query=True, text=True)
-        userArgs['rn_variantName'] = variantName
+    else:
+        variantName = None
+        variantSetName = None
+
+    userArgs = cacheToUsd.getCacheCreationOptions(
+        getCacheExportOptions(), selectedFile, primName, payloadOrReference,
+        listEditType, variantSetName, variantName)
 
     # Call push.
     if not mayaUsd.lib.PrimUpdaterManager.mergeToUsd(_mayaRefDagPath, userArgs):
