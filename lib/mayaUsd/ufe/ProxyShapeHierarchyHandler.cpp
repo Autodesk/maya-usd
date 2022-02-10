@@ -18,8 +18,12 @@
 #include <mayaUsd/ufe/ProxyShapeHierarchy.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <ufe/runTimeMgr.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
+
+extern Ufe::Rtid g_USDRtid;
 
 ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(
     const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
@@ -58,9 +62,9 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::Hierarchy::ChildFilter ProxyShapeHierarchyHandler::childFilter() const
 {
-    Ufe::Hierarchy::ChildFilter childFilters;
-    childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
-    return childFilters;
+    // Use the same child filter as the USD hierarchy handler.
+    auto usdHierHand = Ufe::RunTimeMgr::instance().hierarchyHandler(g_USDRtid);
+    return usdHierHand->childFilter();
 }
 #endif
 

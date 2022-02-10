@@ -75,7 +75,7 @@ bool readPlugInfoObject(const std::string& pathname, JsObject& result)
     std::ifstream ifs;
     ifs.open(pathname.c_str());
     if (!ifs.is_open()) {
-        TF_RUNTIME_ERROR("Plugin info file %s couldn't be read", pathname.c_str());
+        TF_WARN("Plugin info file %s couldn't be read", pathname.c_str());
         return false;
     }
 
@@ -99,7 +99,7 @@ bool readPlugInfoObject(const std::string& pathname, JsObject& result)
 
     // Validate.
     if (plugInfo.IsNull()) {
-        TF_RUNTIME_ERROR(
+        TF_WARN(
             "Plugin info file %s couldn't be read "
             "(line %d, col %d): %s",
             pathname.c_str(),
@@ -108,7 +108,7 @@ bool readPlugInfoObject(const std::string& pathname, JsObject& result)
             error.reason.c_str());
     } else if (!plugInfo.IsObject()) {
         // The contents didn't evaluate to a json object....
-        TF_RUNTIME_ERROR("Plugin info file %s did not contain a JSON object", pathname.c_str());
+        TF_WARN("Plugin info file %s did not contain a JSON object", pathname.c_str());
     } else {
         result = plugInfo.GetJsObject();
     }
@@ -132,7 +132,7 @@ bool checkPluginVersions(
     }
 
     if (!checkIt->second.IsObject()) {
-        TF_RUNTIME_ERROR(
+        TF_WARN(
             "Plugin info %s key '%s' doesn't hold an object",
             debugLocation.c_str(),
             checkIt->first.c_str());
@@ -155,7 +155,7 @@ bool checkPluginVersions(
         }
 
         if (!checkIt->second.IsString()) {
-            TF_RUNTIME_ERROR(
+            TF_WARN(
                 "Plugin info %s key '%s' doesn't hold a string",
                 debugLocation.c_str(),
                 key.c_str());
@@ -207,7 +207,7 @@ std::string getPluginPath(
     JsObject::const_iterator pluginPathIt = plugInfo.find(_Tokens->PlugPathKey);
     if (pluginPathIt != plugInfo.end()) {
         if (!pluginPathIt->second.IsString()) {
-            TF_RUNTIME_ERROR(
+            TF_WARN(
                 "Plugin info %s key %s doesn't hold a string",
                 debugLocation.c_str(),
                 pluginPathIt->first.c_str());
@@ -245,7 +245,7 @@ void registerVersionedPlugins()
             }
 
             if (TfIsRelativePath(path)) {
-                TF_CODING_ERROR(
+                TF_WARN(
                     "Relative paths are unsupported for MAYA_PXR_PLUGINPATH_NAME: '%s'",
                     path.c_str());
                 continue;
@@ -262,7 +262,7 @@ void registerVersionedPlugins()
 
             JsObject::const_iterator topIncludesIt = plugInfoObject.find(_Tokens->IncludesKey);
             if (topIncludesIt == plugInfoObject.end() || !topIncludesIt->second.IsArray()) {
-                TF_RUNTIME_ERROR(
+                TF_WARN(
                     "Plugin info file %s key '%s' doesn't hold an object",
                     plugInfoPath.c_str(),
                     _Tokens->IncludesKey.GetString().c_str());
@@ -275,7 +275,7 @@ void registerVersionedPlugins()
                     "file %s %s[%zd]", plugInfoPath.c_str(), topIncludesIt->first.c_str(), i);
 
                 if (!pluginIncludes[i].IsObject()) {
-                    TF_RUNTIME_ERROR(
+                    TF_WARN(
                         "Plugin info %s key '%s' doesn't hold an object",
                         debugLocation.c_str(),
                         topIncludesIt->first.c_str());

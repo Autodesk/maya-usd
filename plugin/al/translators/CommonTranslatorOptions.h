@@ -28,6 +28,8 @@ static constexpr const char* const kNormalsAsPrimvars
 static constexpr const char* const kReverseOppositeNormals
     = "Reverse Opposite Normals"; ///< if true, normals will be reversed when the opposite flag is
                                   ///< enabled
+static constexpr const char* const kSubdivisionScheme
+    = "Subdivision scheme"; ///< subdivision method
 static constexpr const char* const kCompactionLevel
     = "Compaction Level"; ///< export mesh face holes
 static constexpr const char* const kNurbsCurves

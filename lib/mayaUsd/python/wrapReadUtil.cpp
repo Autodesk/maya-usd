@@ -21,6 +21,7 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/pyConversions.h>
 
+#include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 
 #include <boost/python/class.hpp>
@@ -30,7 +31,8 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
-static std::string _FindOrCreateMayaAttr(
+namespace {
+std::string _FindOrCreateMayaAttr(
     const SdfValueTypeName& typeName,
     const SdfVariability    variability,
     const std::string&      nodeName,
@@ -56,7 +58,7 @@ static std::string _FindOrCreateMayaAttr(
     return attrPath;
 }
 
-static bool _SetMayaAttr(const std::string& attrPath, const VtValue& newValue)
+bool _SetMayaAttr(const std::string& attrPath, const VtValue& newValue)
 {
     MPlug   plug;
     MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
@@ -68,7 +70,7 @@ static bool _SetMayaAttr(const std::string& attrPath, const VtValue& newValue)
     return UsdMayaReadUtil::SetMayaAttr(plug, newValue);
 }
 
-static void _SetMayaAttrKeyableState(const std::string& attrPath, const SdfVariability variability)
+void _SetMayaAttrKeyableState(const std::string& attrPath, const SdfVariability variability)
 {
     MPlug   plug;
     MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
@@ -79,6 +81,25 @@ static void _SetMayaAttrKeyableState(const std::string& attrPath, const SdfVaria
 
     UsdMayaReadUtil::SetMayaAttrKeyableState(plug, variability);
 }
+
+bool _ReadUsdAttribute(
+    const UsdAttribute&          usdAttr,
+    const MObject&               obj,
+    const TfToken&               plugName,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext&    context)
+{
+    MStatus           status;
+    MFnDependencyNode depFn(obj, &status);
+    if (!status) {
+        TF_RUNTIME_ERROR(
+            "Could not find dependency node while reading '%s'", usdAttr.GetPath().GetText());
+        return false;
+    }
+    return UsdMayaReadUtil::ReadUsdAttribute(usdAttr, depFn, plugName, args, &context);
+}
+
+} // namespace
 
 void wrapReadUtil()
 {
@@ -98,5 +119,7 @@ void wrapReadUtil()
         .def("SetMayaAttr", _SetMayaAttr)
         .staticmethod("SetMayaAttr")
         .def("SetMayaAttrKeyableState", _SetMayaAttrKeyableState)
-        .staticmethod("SetMayaAttrKeyableState");
+        .staticmethod("SetMayaAttrKeyableState")
+        .def("ReadUsdAttribute", _ReadUsdAttribute)
+        .staticmethod("ReadUsdAttribute");
 }

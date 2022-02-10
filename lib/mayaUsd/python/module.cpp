@@ -25,16 +25,22 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
+    TF_WRAP(SparseValueWriter);
     TF_WRAP(Adaptor);
     TF_WRAP(BlockSceneModificationContext);
     TF_WRAP(ColorSpace);
     TF_WRAP(Converter);
     TF_WRAP(ConverterArgs);
     TF_WRAP(DiagnosticDelegate);
+    TF_WRAP(EditRouter);
     TF_WRAP(MeshWriteUtils);
 #ifdef UFE_V3_FEATURES_AVAILABLE
+    TF_WRAP(PrimUpdater);
+    TF_WRAP(PrimUpdaterArgs);
+    TF_WRAP(PrimUpdaterContext);
     TF_WRAP(PrimUpdaterManager);
 #endif
+    TF_WRAP(OpUndoItem);
     TF_WRAP(Query);
     TF_WRAP(ReadUtil);
     TF_WRAP(RoundTripUtil);
@@ -43,6 +49,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdUndoManager);
     TF_WRAP(UserTaggedAttribute);
     TF_WRAP(WriteUtil);
+    TF_WRAP(Util);
     TF_WRAP(XformStack);
 
     TF_WRAP(OpenMaya);

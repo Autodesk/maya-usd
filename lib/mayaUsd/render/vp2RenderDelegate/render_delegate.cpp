@@ -17,6 +17,7 @@
 
 #include "basisCurves.h"
 #include "bboxGeom.h"
+#include "extComputation.h"
 #include "instancer.h"
 #include "material.h"
 #include "mesh.h"
@@ -56,7 +57,9 @@ inline const TfTokenVector& _SupportedRprimTypes()
  */
 inline const TfTokenVector& _SupportedSprimTypes()
 {
-    static const TfTokenVector r { HdPrimTypeTokens->material, HdPrimTypeTokens->camera };
+    static const TfTokenVector r { HdPrimTypeTokens->material,
+                                   HdPrimTypeTokens->camera,
+                                   HdPrimTypeTokens->extComputation };
     return r;
 }
 
@@ -70,6 +73,7 @@ inline const TfTokenVector& _SupportedBprimTypes()
 
 const MString _diffuseColorParameterName = "diffuseColor"; //!< Shader parameter name
 const MString _solidColorParameterName = "solidColor";     //!< Shader parameter name
+const MString _diffuseParameterName = "diffuse";           //!< Shader parameter name
 const MString _pointSizeParameterName = "pointSize";       //!< Shader parameter name
 const MString _curveBasisParameterName = "curveBasis";     //!< Shader parameter name
 const MString _structOutputName = "outSurfaceFinal"; //!< Output struct name of the fallback shader
@@ -178,6 +182,9 @@ public:
         TF_VERIFY(_3dDefaultMaterialShader);
 
         _3dCPVSolidShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dCPVSolidShader);
+        if (TF_VERIFY(_3dCPVSolidShader)) {
+            _3dCPVSolidShader->setParameter(_diffuseParameterName, 1.0f);
+        }
 
         TF_VERIFY(_3dCPVSolidShader);
 
@@ -201,6 +208,7 @@ public:
                 if (it != _curveBasisParameterValueMapping.end()) {
                     shader->setParameter(_curveBasisParameterName, it->second);
                 }
+                shader->setParameter(_diffuseParameterName, 1.0f);
             }
 
             _fallbackCPVShaders[i] = shader;
@@ -705,6 +713,9 @@ HdSprim* HdVP2RenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& 
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(sprimId);
     }
+    if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdVP2ExtComputation(sprimId);
+    }
     /*
     if (typeId == HdPrimTypeTokens->sphereLight) {
         return HdVP2Light::CreatePointLight(this, sprimId);
@@ -745,6 +756,9 @@ HdSprim* HdVP2RenderDelegate::CreateFallbackSprim(const TfToken& typeId)
     }
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(SdfPath::EmptyPath());
+    }
+    if (typeId == HdPrimTypeTokens->extComputation) {
+        return new HdExtComputation(SdfPath::EmptyPath());
     }
     /*
     if (typeId == HdPrimTypeTokens->sphereLight) {

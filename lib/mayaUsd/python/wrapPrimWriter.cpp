@@ -14,6 +14,9 @@
 // limitations under the License.
 //
 
+#include "pythonObjectRegistry.h"
+#include "wrapSparseValueWriter.h"
+
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/registryHelper.h>
@@ -21,13 +24,16 @@
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
+#include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyEnum.h>
 #include <pxr/base/tf/pyPolymorphic.h>
+#include <pxr/base/tf/pyResultConversions.h>
 
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/make_constructor.hpp>
 #include <boost/python/return_internal_reference.hpp>
+#include <boost/python/return_value_policy.hpp>
 #include <boost/python/wrapper.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -57,7 +63,7 @@ public:
         return *((std::shared_ptr<This>*)createdWrapper);
     }
 
-    virtual ~PrimWriterWrapper() { }
+    virtual ~PrimWriterWrapper() = default;
 
     const UsdStage& GetUsdStage() const { return *get_pointer(base_t::GetUsdStage()); }
 
@@ -94,14 +100,6 @@ public:
     bool _HasAnimCurves() const override
     {
         return this->template CallVirtual<bool>("_HasAnimCurves", &This::default__HasAnimCurves)();
-    }
-
-    void _SetUsdPrim(const UsdPrim& usdPrim) { base_t::_SetUsdPrim(usdPrim); }
-
-    const UsdMayaJobExportArgs& _GetExportArgs() const { return base_t::_GetExportArgs(); }
-    boost::python::object       _GetSparseValueWriter()
-    {
-        return boost::python::object(base_t::_GetSparseValueWriter());
     }
 
     const SdfPathVector& default_GetModelPaths() const { return base_t::GetModelPaths(); }
@@ -181,21 +179,83 @@ public:
         return This::default_GetDagToUsdPathMapping();
     }
 
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class FactoryFnWrapper : public UsdMayaPythonObjectRegistry
+    {
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest class registered.
+        UsdMayaPrimWriterSharedPtr operator()(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath&           usdPath,
+            UsdMayaWriteJobContext&  jobCtx)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return nullptr;
+            }
+            auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass((uintptr_t)&sptr);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), sptr.get());
+            return sptr;
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. If we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static UsdMayaPrimWriterRegistry::WriterFactoryFn
+        Register(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, mayaTypeName));
+            if (classIndex != UsdMayaPythonObjectRegistry::UPDATED) {
+                // Return a new factory function:
+                return FactoryFnWrapper { classIndex };
+            } else {
+                // We already registered a factory function for this purpose:
+                return nullptr;
+            }
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, mayaTypeName));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        FactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(boost::python::object cl, const std::string& mayaTypeName)
+        {
+            return ClassName(cl) + "," + mayaTypeName + "," + ",PrimWriter";
+        }
+    };
+
     static void Register(boost::python::object cl, const std::string& mayaTypeName)
     {
-        UsdMayaPrimWriterRegistry::Register(
-            mayaTypeName,
-            [=](const MFnDependencyNode& depNodeFn,
-                const SdfPath&           usdPath,
-                UsdMayaWriteJobContext&  jobCtx) {
-                auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
-                TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)&sptr);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), sptr.get());
-                return sptr;
-            },
-            true);
+        UsdMayaPrimWriterRegistry::WriterFactoryFn fn
+            = FactoryFnWrapper::Register(cl, mayaTypeName);
+        if (fn) {
+            UsdMayaPrimWriterRegistry::Register(mayaTypeName, fn, true);
+        }
+    }
+
+    static void Unregister(boost::python::object cl, const std::string& mayaTypeName)
+    {
+        FactoryFnWrapper::Unregister(cl, mayaTypeName);
     }
 
 private:
@@ -253,28 +313,90 @@ public:
             &This::default_GetShadingAttributeForMayaAttrName)(mayaAttrName, typeName);
     }
 
-    static void Register(boost::python::object cl, const TfToken& mayaNodeTypeName)
+    //---------------------------------------------------------------------------------------------
+    /// \brief  wraps a factory function that allows registering an updated Python class
+    //---------------------------------------------------------------------------------------------
+    class FactoryFnWrapper : public UsdMayaPythonObjectRegistry
     {
-        UsdMayaShaderWriterRegistry::Register(
-            mayaNodeTypeName,
-            [=](const UsdMayaJobExportArgs& exportArgs) {
-                TfPyLock              pyLock;
-                boost::python::object CanExport = cl.attr("CanExport");
-                PyObject*             callable = CanExport.ptr();
-                auto                  res = boost::python::call<int>(callable, exportArgs);
-                return UsdMayaShaderWriter::ContextSupport(res);
-            },
-            [=](const MFnDependencyNode& depNodeFn,
-                const SdfPath&           usdPath,
-                UsdMayaWriteJobContext&  jobCtx) {
-                auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
-                TfPyLock              pyLock;
-                boost::python::object instance = cl((uintptr_t)&sptr);
-                boost::python::incref(instance.ptr());
-                initialize_wrapper(instance.ptr(), sptr.get());
-                return sptr;
-            },
-            true);
+    public:
+        // Instances of this class act as "function objects" that are fully compatible with the
+        // std::function requested by UsdMayaSchemaApiAdaptorRegistry::Register. These will create
+        // python wrappers based on the latest class registered.
+        UsdMayaShaderWriterSharedPtr operator()(
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath&           usdPath,
+            UsdMayaWriteJobContext&  jobCtx)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            auto                  sptr = std::make_shared<This>(depNodeFn, usdPath, jobCtx);
+            TfPyLock              pyLock;
+            boost::python::object instance = pyClass((uintptr_t)&sptr);
+            boost::python::incref(instance.ptr());
+            initialize_wrapper(instance.ptr(), sptr.get());
+            return sptr;
+        }
+
+        // We can have multiple function objects, this one apapts the CanImport function:
+        UsdMayaShaderWriter::ContextSupport operator()(const UsdMayaJobExportArgs& exportArgs)
+        {
+            boost::python::object pyClass = GetPythonObject(_classIndex);
+            if (!pyClass) {
+                // Prototype was unregistered
+                return UsdMayaShaderWriter::ContextSupport::Unsupported;
+            }
+            TfPyLock              pyLock;
+            boost::python::object CanExport = pyClass.attr("CanExport");
+            PyObject*             callable = CanExport.ptr();
+            auto                  res = boost::python::call<int>(callable, exportArgs);
+            return UsdMayaShaderWriter::ContextSupport(res);
+        }
+
+        // Create a new wrapper for a Python class that is seen for the first time for a given
+        // purpose. If we already have a registration for this purpose: update the class to
+        // allow the previously issued factory function to use it.
+        static FactoryFnWrapper
+        Register(boost::python::object cl, const std::string& usdShaderId, bool& updated)
+        {
+            size_t classIndex = RegisterPythonObject(cl, GetKey(cl, usdShaderId));
+            updated = classIndex == UsdMayaPythonObjectRegistry::UPDATED;
+            // Return a new factory function:
+            return FactoryFnWrapper { classIndex };
+        }
+
+        // Unregister a class for a given purpose. This will cause the associated factory
+        // function to stop producing this Python class.
+        static void Unregister(boost::python::object cl, const std::string& usdShaderId)
+        {
+            UnregisterPythonObject(cl, GetKey(cl, usdShaderId));
+        }
+
+    private:
+        // Function object constructor. Requires only the index of the Python class to use.
+        FactoryFnWrapper(size_t classIndex)
+            : _classIndex(classIndex) {};
+
+        size_t _classIndex;
+
+        // Generates a unique key based on the name of the class, along with the class
+        // purpose:
+        static std::string GetKey(boost::python::object cl, const std::string& usdShaderId)
+        {
+            return ClassName(cl) + "," + usdShaderId + "," + ",ShaderWriter";
+        }
+    };
+
+    static void Register(boost::python::object cl, const TfToken& usdShaderId)
+    {
+        bool             updated = false;
+        FactoryFnWrapper fn = FactoryFnWrapper::Register(cl, usdShaderId, updated);
+        if (!updated) {
+            UsdMayaShaderWriterRegistry::Register(usdShaderId, fn, fn, true);
+        }
+    }
+
+    static void Unregister(boost::python::object cl, const TfToken& usdShaderId)
+    {
+        FactoryFnWrapper::Unregister(cl, usdShaderId);
     }
 
     static void RegisterSymmetric(
@@ -289,27 +411,162 @@ public:
 };
 
 namespace {
-std::vector<std::string> getChaserNames(UsdMayaJobExportArgs& self) { return self.chaserNames; }
 
-boost::python::object getChaserArgs(UsdMayaJobExportArgs& self, const std::string& chaser)
+boost::python::object get_allChaserArgs(UsdMayaJobExportArgs& self)
 {
-    boost::python::dict editDict;
-
-    std::map<std::string, std::string> myArgs;
-    TfMapLookup(self.allChaserArgs, chaser, &myArgs);
-
-    for (const auto& item : myArgs) {
-        editDict[item.first] = item.second;
+    boost::python::dict allChaserArgs;
+    for (auto&& perChaser : self.allChaserArgs) {
+        auto perChaserDict = boost::python::dict();
+        for (auto&& perItem : perChaser.second) {
+            perChaserDict[perItem.first] = perItem.second;
+        }
+        allChaserArgs[perChaser.first] = perChaserDict;
     }
-    return boost::python::object(editDict);
+    return boost::python::object(allChaserArgs);
 }
+
+// This class is used to expose protected members of UsdMayaPrimWriter to Python
+class PrimWriterAllowProtected : public UsdMayaPrimWriter
+{
+    typedef UsdMayaPrimWriter base_t;
+
+public:
+    void _SetUsdPrim(const UsdPrim& usdPrim) { base_t::_SetUsdPrim(usdPrim); }
+    const UsdMayaJobExportArgs& _GetExportArgs() const { return base_t::_GetExportArgs(); }
+    UsdUtilsSparseValueWriter*  _GetSparseValueWriter() { return base_t::_GetSparseValueWriter(); }
+};
+
+void unprotect_SetUsdPrim(UsdMayaPrimWriter& pw, const UsdPrim& prim)
+{
+    reinterpret_cast<PrimWriterAllowProtected&>(pw)._SetUsdPrim(prim);
+}
+const UsdMayaJobExportArgs& unprotect_GetExportArgs(UsdMayaPrimWriter& pw)
+{
+    return reinterpret_cast<PrimWriterAllowProtected&>(pw)._GetExportArgs();
+}
+MayaUsdLibSparseValueWriter unprotect_GetSparseValueWriter(UsdMayaPrimWriter& pw)
+{
+    return MayaUsdLibSparseValueWriter(
+        reinterpret_cast<PrimWriterAllowProtected&>(pw)._GetSparseValueWriter());
+}
+
 } // namespace
 //----------------------------------------------------------------------------------------------------------------------
 void wrapJobExportArgs()
 {
-    boost::python::class_<UsdMayaJobExportArgs>("JobExportArgs", boost::python::no_init)
-        .def("getChaserNames", &::getChaserNames)
-        .def("getChaserArgs", &::getChaserArgs)
+    using namespace boost::python;
+
+    class_<UsdMayaJobExportArgs>("JobExportArgs", no_init)
+        .add_property("allChaserArgs", ::get_allChaserArgs)
+        .add_property(
+            "allMaterialConversions",
+            make_getter(
+                &UsdMayaJobExportArgs::allMaterialConversions,
+                return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "chaserNames",
+            make_getter(
+                &UsdMayaJobExportArgs::chaserNames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "compatibility",
+            make_getter(
+                &UsdMayaJobExportArgs::compatibility, return_value_policy<return_by_value>()))
+        .add_property(
+            "convertMaterialsTo",
+            make_getter(
+                &UsdMayaJobExportArgs::convertMaterialsTo, return_value_policy<return_by_value>()))
+        //.add_property("dagPaths", requires exporting UsdMayaUtil::MDagPathSet)
+        .add_property(
+            "defaultMeshScheme",
+            make_getter(
+                &UsdMayaJobExportArgs::defaultMeshScheme, return_value_policy<return_by_value>()))
+        .add_property(
+            "defaultUSDFormat",
+            make_getter(
+                &UsdMayaJobExportArgs::defaultUSDFormat, return_value_policy<return_by_value>()))
+        .def_readonly("eulerFilter", &UsdMayaJobExportArgs::eulerFilter)
+        .def_readonly("excludeInvisible", &UsdMayaJobExportArgs::excludeInvisible)
+        .def_readonly("exportBlendShapes", &UsdMayaJobExportArgs::exportBlendShapes)
+        .def_readonly(
+            "exportCollectionBasedBindings", &UsdMayaJobExportArgs::exportCollectionBasedBindings)
+        .def_readonly("exportColorSets", &UsdMayaJobExportArgs::exportColorSets)
+        .def_readonly("exportComponentTags", &UsdMayaJobExportArgs::exportComponentTags)
+        .def_readonly("exportDefaultCameras", &UsdMayaJobExportArgs::exportDefaultCameras)
+        .def_readonly("exportDisplayColor", &UsdMayaJobExportArgs::exportDisplayColor)
+        .def_readonly("exportInstances", &UsdMayaJobExportArgs::exportInstances)
+        .def_readonly("exportMaterialCollections", &UsdMayaJobExportArgs::exportMaterialCollections)
+        .def_readonly("exportMeshUVs", &UsdMayaJobExportArgs::exportMeshUVs)
+        .def_readonly("exportNurbsExplicitUV", &UsdMayaJobExportArgs::exportNurbsExplicitUV)
+        .def_readonly("exportReferenceObjects", &UsdMayaJobExportArgs::exportReferenceObjects)
+        .def_readonly("exportRefsAsInstanceable", &UsdMayaJobExportArgs::exportRefsAsInstanceable)
+        .add_property(
+            "exportSkels",
+            make_getter(&UsdMayaJobExportArgs::exportSkels, return_value_policy<return_by_value>()))
+        .add_property(
+            "exportSkin",
+            make_getter(&UsdMayaJobExportArgs::exportSkin, return_value_policy<return_by_value>()))
+        .def_readonly("exportVisibility", &UsdMayaJobExportArgs::exportVisibility)
+        .def_readonly("file", &UsdMayaJobExportArgs::file)
+        .add_property(
+            "filteredTypeIds",
+            make_getter(
+                &UsdMayaJobExportArgs::filteredTypeIds, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "geomSidedness",
+            make_getter(
+                &UsdMayaJobExportArgs::geomSidedness, return_value_policy<return_by_value>()))
+        .def_readonly("ignoreWarnings", &UsdMayaJobExportArgs::ignoreWarnings)
+        .add_property(
+            "includeAPINames",
+            make_getter(
+                &UsdMayaJobExportArgs::includeAPINames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "jobContextNames",
+            make_getter(
+                &UsdMayaJobExportArgs::jobContextNames, return_value_policy<TfPySequenceToSet>()))
+        .add_property(
+            "materialCollectionsPath",
+            make_getter(
+                &UsdMayaJobExportArgs::materialCollectionsPath,
+                return_value_policy<return_by_value>()))
+        .add_property(
+            "materialsScopeName",
+            make_getter(
+                &UsdMayaJobExportArgs::materialsScopeName, return_value_policy<return_by_value>()))
+        .def_readonly("melPerFrameCallback", &UsdMayaJobExportArgs::melPerFrameCallback)
+        .def_readonly("melPostCallback", &UsdMayaJobExportArgs::melPostCallback)
+        .def_readonly("mergeTransformAndShape", &UsdMayaJobExportArgs::mergeTransformAndShape)
+        .def_readonly("normalizeNurbs", &UsdMayaJobExportArgs::normalizeNurbs)
+        .add_property(
+            "parentScope",
+            make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))
+        .def_readonly("pythonPerFrameCallback", &UsdMayaJobExportArgs::pythonPerFrameCallback)
+        .def_readonly("pythonPostCallback", &UsdMayaJobExportArgs::pythonPostCallback)
+        .add_property(
+            "renderLayerMode",
+            make_getter(
+                &UsdMayaJobExportArgs::renderLayerMode, return_value_policy<return_by_value>()))
+        .add_property(
+            "rootKind",
+            make_getter(&UsdMayaJobExportArgs::rootKind, return_value_policy<return_by_value>()))
+        .add_property(
+            "rootMapFunction",
+            make_getter(
+                &UsdMayaJobExportArgs::rootMapFunction, return_value_policy<return_by_value>()))
+        .add_property(
+            "shadingMode",
+            make_getter(&UsdMayaJobExportArgs::shadingMode, return_value_policy<return_by_value>()))
+        .def_readonly("staticSingleSample", &UsdMayaJobExportArgs::staticSingleSample)
+        .def_readonly("stripNamespaces", &UsdMayaJobExportArgs::stripNamespaces)
+        .add_property(
+            "timeSamples",
+            make_getter(&UsdMayaJobExportArgs::timeSamples, return_value_policy<return_by_value>()))
+        .add_property(
+            "usdModelRootOverridePath",
+            make_getter(
+                &UsdMayaJobExportArgs::usdModelRootOverridePath,
+                return_value_policy<return_by_value>()))
+        .def_readonly("verbose", &UsdMayaJobExportArgs::verbose)
         .def("GetResolvedFileName", &UsdMayaJobExportArgs::GetResolvedFileName);
 }
 
@@ -334,7 +591,7 @@ void wrapPrimWriter()
             "GetUsdPrim",
             &PrimWriterWrapper<>::GetUsdPrim,
             boost::python::return_internal_reference<>())
-        .def("_SetUsdPrim", &PrimWriterWrapper<>::_SetUsdPrim)
+        .def("_SetUsdPrim", &::unprotect_SetUsdPrim)
         .def(
             "MakeSingleSamplesStatic",
             static_cast<void (PrimWriterWrapper<>::*)()>(
@@ -350,9 +607,9 @@ void wrapPrimWriter()
             &PrimWriterWrapper<>::default__HasAnimCurves)
         .def(
             "_GetExportArgs",
-            &PrimWriterWrapper<>::_GetExportArgs,
+            &::unprotect_GetExportArgs,
             boost::python::return_internal_reference<>())
-        .def("_GetSparseValueWriter", &PrimWriterWrapper<>::_GetSparseValueWriter)
+        .def("_GetSparseValueWriter", &::unprotect_GetSparseValueWriter)
 
         .def(
             "GetDagPath",
@@ -368,7 +625,9 @@ void wrapPrimWriter()
             boost::python::return_value_policy<boost::python::return_by_value>())
 
         .def("Register", &PrimWriterWrapper<>::Register)
-        .staticmethod("Register");
+        .staticmethod("Register")
+        .def("Unregister", &PrimWriterWrapper<>::Unregister)
+        .staticmethod("Unregister");
 }
 
 TF_REGISTRY_FUNCTION(TfEnum)
@@ -401,6 +660,8 @@ void wrapShaderWriter()
 
         .def("Register", &ShaderWriterWrapper::Register)
         .staticmethod("Register")
+        .def("Unregister", &ShaderWriterWrapper::Unregister)
+        .staticmethod("Unregister")
         .def("RegisterSymmetric", &ShaderWriterWrapper::RegisterSymmetric)
         .staticmethod("RegisterSymmetric");
 }

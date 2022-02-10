@@ -222,6 +222,10 @@ finally:
     list(APPEND MAYAUSD_VARNAME_PATH
          "${CMAKE_INSTALL_PREFIX}/lib")
     list(APPEND MAYAUSD_VARNAME_PYTHONPATH
+         "${CMAKE_INSTALL_PREFIX}/lib/scripts")
+    list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
+         "${CMAKE_INSTALL_PREFIX}/lib/scripts")
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/lib/python")
     list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
          "${CMAKE_INSTALL_PREFIX}/lib/usd")
@@ -330,7 +334,7 @@ finally:
             "${pathvar}=${MAYAUSD_VARNAME_${pathvar}}")
     endforeach()
     
-    # Set a temporary folder path for the MAYA_APP_DIR in which the
+    # Set a temporary folder path for the TMP,TEMP and MAYA_APP_DIR in which the
     # maya profile will be created.
     # Note: replace bad chars in test_name with _.
     string(REGEX REPLACE "[:<>\|]" "_" SANITIZED_TEST_NAME ${test_name})
@@ -338,6 +342,8 @@ finally:
     # Note: ${WORKING_DIR} can point to the source folder, so don't use it
     #       in any env var that will write files (such as MAYA_APP_DIR).
     set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+        "TMP=${MAYA_APP_TEMP_DIR}"
+        "TEMP=${MAYA_APP_TEMP_DIR}"
         "MAYA_APP_DIR=${MAYA_APP_TEMP_DIR}")
     file(MAKE_DIRECTORY ${MAYA_APP_TEMP_DIR})
 

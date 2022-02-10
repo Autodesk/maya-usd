@@ -20,6 +20,7 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MColor.h>
@@ -396,14 +397,13 @@ MStatus TranslatorMeshRead::setPointBasedDeformerForMayaNode(
     CHECK_MSTATUS(status);
 
     // Get the newly created point based deformer node.
-    status = UsdMayaUtil::GetMObjectByName(
-        m_newPointBasedDeformerName.asChar(), m_pointBasedDeformerNode);
+    status = UsdMayaUtil::GetMObjectByName(m_newPointBasedDeformerName, m_pointBasedDeformerNode);
     CHECK_MSTATUS(status);
 
     MFnDependencyNode depNodeFn(m_pointBasedDeformerNode, &status);
     CHECK_MSTATUS(status);
 
-    MDGModifier dgMod;
+    MDGModifier& dgMod = MDGModifierUndoItem::create("Deformer connection");
 
     // Set the prim path on the deformer node.
     MPlug primPathPlug

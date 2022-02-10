@@ -184,7 +184,7 @@ class testUtilsSelectabilityPointInstanceSelection(unittest.TestCase):
 
         # In USD versions before 21.05, the point instancer pick mode did not exists.
         # For those version we end-up selecting the prototypes, of which there are 7.
-        expectedCount = 1 if Usd.GetVersion() >= (0, 21, 5) else 7
+        expectedCount = 1 if Usd.GetVersion() >= (0, 21, 2) else 7
 
         self._RunTest(expectedCount)
 
@@ -198,7 +198,7 @@ class testUtilsSelectabilityPointInstanceSelection(unittest.TestCase):
 
         # In USD versions before 21.05, the point instancer pick mode did not exists.
         # For those version we end-up selecting the prototypes, of which there are 7.
-        expectedCount = 1 if Usd.GetVersion() >= (0, 21, 5) else 7
+        expectedCount = 1 if Usd.GetVersion() >= (0, 21, 2) else 7
         
         self._RunTest(expectedCount)
 

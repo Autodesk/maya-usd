@@ -23,6 +23,7 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
@@ -45,15 +46,6 @@
 
 using AL::maya::test::buildTempPath;
 
-// #define TEST(X, Y) void X##Y()
-
-//  inline const UsdPrim& prim() const
-//  inline bool hasAnimation() const
-//  inline bool hasAnimatedScale() const
-//  inline bool hasAnimatedShear() const
-//  inline bool hasAnimatedTranslation() const
-//  inline bool hasAnimatedRotation() const
-//  inline bool hasAnimatedMatrix() const
 TEST(Transform, hasAnimation)
 {
     auto constructTransformChain = []() {
@@ -1354,189 +1346,147 @@ TEST(Transform, getTimeCode)
 // rather than TRS components.
 TEST(Transform, matrixAnimationChannels) { AL_USDMAYA_UNTESTED; }
 
-// Check that simply querying the value of various xform attrs doesn't create do-nothing ops
-TEST(Transform, emptyOpsNotMade)
+// Test twisted rotation values (angles should be considered the same)
+TEST(Transform, checkTwistedRotation)
 {
     MStatus     status;
     const char* xformName = "myXform";
     SdfPath     xformPath(std::string("/") + xformName);
-
-    auto constructTransformChain = [&]() {
-        UsdStageRefPtr stage = UsdStage::CreateInMemory();
-        UsdGeomXform   a = UsdGeomXform::Define(stage, xformPath);
-        return stage;
-    };
+    SdfPath     spherePath(xformPath.AppendChild(TfToken("mesh")));
 
     MFileIO::newFile(true);
 
-    const std::string temp_path = buildTempPath("AL_USDMayaTests_transform_emptyOpsNotMade.usda");
-    std::string       sessionLayerContents;
+    const std::string temp_path
+        = buildTempPath("AL_USDMayaTests_transform_checkTwistedRotation.usda");
 
     // generate some data for the proxy shape
     {
-        auto stage = constructTransformChain();
+        UsdStageRefPtr stage = UsdStage::CreateInMemory();
+        UsdGeomXform   a = UsdGeomXform::Define(stage, xformPath);
+        auto           op = a.AddRotateXYZOp();
+        op.Set(GfVec3f(180.f, -2.317184f, 180.f));
+        UsdGeomSphere::Define(stage, spherePath);
         stage->Export(temp_path, false);
     }
 
+    MFnDagNode fn;
+    MObject    xform = fn.create("transform");
+    MString    proxyParentMayaPath = fn.fullPathName();
+    MObject    shape = fn.create("AL_usdmaya_ProxyShape", xform);
+    MString    proxyShapeMayaPath = fn.fullPathName();
+
+    auto* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    // Verify current edit target has nothing
+    ASSERT_TRUE(stage->GetEditTarget().GetLayer()->IsEmpty());
+
+    MDagModifier modifier1;
+    MDGModifier  modifier2;
+    proxy->makeUsdTransformChain(
+        stage->GetPrimAtPath(spherePath),
+        modifier1,
+        AL::usdmaya::nodes::ProxyShape::kSelection,
+        &modifier2);
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier2.doIt());
+
+    MSelectionList sel;
+    sel.add("myXform");
+    MObject xformMobj;
+    ASSERT_TRUE(sel.getDependNode(0, xformMobj));
+    MFnTransform xformMfn(xformMobj);
+
     {
-        MFnDagNode fn;
-        MObject    xform = fn.create("transform");
-        MString    proxyParentMayaPath = fn.fullPathName();
-        MObject    shape = fn.create("AL_usdmaya_ProxyShape", xform);
-        MString    proxyShapeMayaPath = fn.fullPathName();
+        // Verify default values from Maya after loading USD
+        MEulerRotation rot;
+        ASSERT_TRUE(xformMfn.getRotation(rot) == MStatus::kSuccess);
+        EXPECT_NEAR(rot.x, 0.f, 1e-5f);
+        EXPECT_NEAR(rot.y, 3.1820349693298f, 1e-5f);
+        EXPECT_NEAR(rot.z, 0.f, 1e-5f);
+        // Expect nothing changed in USD
+        ASSERT_TRUE(stage->GetEditTarget().GetLayer()->IsEmpty());
+    }
 
-        AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+    {
+        // Explicitly rotate X axis by 360 degree, there should be no "over" on USD
+        // Notice that we only set the X component here
+        MPlug(xformMobj, MPxTransform::rotateX).setValue(M_PI * 2);
+        ASSERT_TRUE(stage->GetEditTarget().GetLayer()->IsEmpty());
+    }
 
-        // force the stage to load
-        proxy->filePathPlug().setString(temp_path.c_str());
+    {
+        auto                                     xformPrim = stage->GetPrimAtPath(xformPath);
+        AL::usdmaya::nodes::TransformationMatrix tm;
+        tm.setPrim(xformPrim, nullptr);
 
-        auto stage = proxy->getUsdStage();
-
-        auto         xformPrim = stage->GetPrimAtPath(xformPath);
-        UsdGeomXform xformGeom(xformPrim);
-
-        // Make sure the xform op is initially what's expected
-        auto assertEmptyOps = [&]() {
-            bool resetsXform;
-            auto xformOps = xformGeom.GetOrderedXformOps(&resetsXform);
-            EXPECT_FALSE(resetsXform);
-            EXPECT_EQ(xformOps.size(), 0u);
-        };
-
+        MEulerRotation rot(M_PI, -2.317184f * M_PI / 180.f, M_PI);
+        ((MPxTransformationMatrix*)(&tm))->rotateTo(rot);
+        // Verify the matrix has been set to expected values
+        MStatus status;
+        auto    tmRot = tm.eulerRotation(MSpace::kTransform, &status);
+        ASSERT_TRUE(status == MStatus::kSuccess);
+        EXPECT_NEAR(tmRot.x, M_PI, 1e-5f);
+        EXPECT_NEAR(tmRot.y, -2.317184f * M_PI / 180.f, 1e-5f);
+        EXPECT_NEAR(tmRot.z, M_PI, 1e-5f);
+        // Verify the USD rotation
         {
-            SCOPED_TRACE("initial stage load");
-            assertEmptyOps();
+            GfVec3f usdRot { 0.f, 0.f, 0.f };
+            ASSERT_TRUE(xformPrim.GetAttribute(TfToken("xformOp:rotateXYZ")).Get(&usdRot));
+            EXPECT_NEAR(usdRot[0], 180.f, 1e-5f);
+            EXPECT_NEAR(usdRot[1], -2.317184f, 1e-5f);
+            EXPECT_NEAR(usdRot[2], 180.f, 1e-5f);
         }
 
-        // Select the xform, to make it in maya
-        // use "-r" to insulate from previous tests, as default is append
-        MString cmd = MString("AL_usdmaya_ProxyShapeSelect -r -primPath \"") + xformPath.GetText()
-            + "\" -proxy \"" + proxyShapeMayaPath + "\"";
-        MGlobal::executeCommand(cmd);
-
-        MSelectionList sel;
-        EXPECT_TRUE(MGlobal::getActiveSelectionList(sel));
-        EXPECT_EQ(1u, sel.length());
-        MObject xformMobj;
-        EXPECT_TRUE(sel.getDependNode(0, xformMobj));
-        MFnTransform xformMfn(xformMobj);
-
-        // Make sure the usd ops haven't changed yet
+        // Attempt to apply the rotation to USD
+        tm.pushRotateToPrim();
+        // Expect no "over" being created
+        ASSERT_TRUE(stage->GetEditTarget().GetLayer()->IsEmpty());
+        // Verify again the rotation values in USD
         {
-            SCOPED_TRACE("After selection");
-            assertEmptyOps();
-        }
-
-        auto assertEmptyAfterQuerying = [&]() {
-            // Make sure that things are still empty as we query various plugs
-            for (auto& plugName : { "translate",
-                                    "rotate",
-                                    "scale",
-                                    "shear",
-                                    "rotatePivot",
-                                    "rotatePivotTranslate",
-                                    "scalePivot",
-                                    "scalePivotTranslate",
-                                    "rotateAxis",
-                                    "transMinusRotatePivot" }) {
-                MPlug basePlug = xformMfn.findPlug(plugName, true, &status);
-                EXPECT_EQ(MS::kSuccess, status);
-
-                for (unsigned int i = 0; i < 3; ++i) {
-                    MPlug childPlug = basePlug.child(i, &status);
-                    EXPECT_EQ(MS::kSuccess, status);
-
-                    SCOPED_TRACE(MString("Pulling on plug: ") + childPlug.name());
-                    childPlug.asDouble();
-                    assertEmptyOps();
-                }
-            }
-
-            {
-                MPlug plug = xformMfn.findPlug("rotateOrder", true, &status);
-                EXPECT_EQ(MS::kSuccess, status);
-
-                SCOPED_TRACE(MString("Pulling on plug: ") + plug.name());
-                plug.asShort();
-                assertEmptyOps();
-            }
-        };
-
-        {
-            SCOPED_TRACE("Clean querying");
-            assertEmptyAfterQuerying();
-        }
-
-        {
-            SCOPED_TRACE("Querying after dirtying node");
-            MString cmd = MString("dgdirty \"") + xformMfn.partialPathName() + "\";";
-            status = MGlobal::executeCommand(cmd);
-            EXPECT_EQ(MS::kSuccess, status);
-            assertEmptyAfterQuerying();
+            GfVec3f usdRot { 0.f, 0.f, 0.f };
+            ASSERT_TRUE(xformPrim.GetAttribute(TfToken("xformOp:rotateXYZ")).Get(&usdRot));
+            EXPECT_NEAR(usdRot[0], 180.f, 1e-5f);
+            EXPECT_NEAR(usdRot[1], -2.317184f, 1e-5f);
+            EXPECT_NEAR(usdRot[2], 180.f, 1e-5f);
         }
     }
-}
 
-//  TransformationMatrix();
-//  TransformationMatrix(const UsdPrim& prim);
-//  void setPrim(const UsdPrim& prim);
-//  inline void setLocalTranslationOffset(const MVector& localTranslateOffset)
-//  void initialiseToPrim(bool readFromPrim = true, Transform* node = 0);
-//  inline bool pushPrimToMatrix() const
-
-// Check that simply querying the value of various xform attrs doesn't create do-nothing ops
-TEST(Transform, dontWriteToUsdOnSelection)
-{
-    std::string filePath = buildTempPath("AL_USDMayaTests_dontWriteToUsdOnSelection.usda");
     {
-        UsdStageRefPtr stage = UsdStage::CreateInMemory();
-        UsdGeomXform   xform = UsdGeomXform::Define(stage, SdfPath("/transform1"));
-        UsdGeomMesh    mesh = UsdGeomMesh::Define(stage, SdfPath("/transform1/shape"));
+        auto                                     xformPrim = stage->GetPrimAtPath(xformPath);
+        AL::usdmaya::nodes::TransformationMatrix tm;
+        tm.setPrim(stage->GetPrimAtPath(xformPath), nullptr);
 
-        UsdAttribute points = mesh.CreatePointsAttr();
-        UsdAttribute indices = mesh.CreateFaceVertexIndicesAttr();
-        UsdAttribute counts = mesh.CreateFaceVertexCountsAttr();
+        MEulerRotation rot(0.f, 0.f, 0.f);
+        ((MPxTransformationMatrix*)(&tm))->rotateTo(rot);
 
-        VtArray<GfVec3f> pointData
-            = { GfVec3f(0, 1.0f, 0), GfVec3f(-1.0f, 0, 0), GfVec3f(1.0f, 0, 0) };
-        VtArray<int> indexData = { 0, 1, 2 };
-        VtArray<int> countData = { 3 };
+        // Verify the original rotation in USD
+        {
+            GfVec3f usdRot { 0.f, 0.f, 0.f };
+            ASSERT_TRUE(xformPrim.GetAttribute(TfToken("xformOp:rotateXYZ")).Get(&usdRot));
+            EXPECT_NEAR(usdRot[0], 180.f, 1e-5f);
+            EXPECT_NEAR(usdRot[1], -2.317184f, 1e-5f);
+            EXPECT_NEAR(usdRot[2], 180.f, 1e-5f);
+        }
+        // This should change the USD since the rotation values are different now
+        tm.pushRotateToPrim();
 
-        points.Set(pointData);
-        indices.Set(indexData);
-        counts.Set(countData);
-
-        xform.AddRotateZYXOp().Set(GfVec3f(0, 0, 90.0f), UsdTimeCode::Default());
-        stage->Export(filePath);
+        // Expect an "over" in USD
+        ASSERT_FALSE(stage->GetEditTarget().GetLayer()->IsEmpty());
+        auto primSpec = stage->GetEditTarget().GetLayer()->GetPrimAtPath(xformPath);
+        ASSERT_TRUE(primSpec);
+        EXPECT_EQ(primSpec->GetSpecifier(), SdfSpecifierOver);
+        // Rotation should have been changed as well
+        {
+            GfVec3f usdRot { 0.f, 0.f, 0.f };
+            ASSERT_TRUE(xformPrim.GetAttribute(TfToken("xformOp:rotateXYZ")).Get(&usdRot));
+            EXPECT_NEAR(usdRot[0], 0.f, 1e-5f);
+            EXPECT_NEAR(usdRot[1], 0.f, 1e-5f);
+            EXPECT_NEAR(usdRot[2], 0.f, 1e-5f);
+        }
     }
-    MFileIO::newFile(true);
-
-    MString command = "AL_usdmaya_ProxyShapeImport -f \"";
-    command += filePath.c_str();
-    command += "\" -name \"proxy\"";
-
-    ASSERT_TRUE(MGlobal::executeCommand(command));
-
-    MSelectionList sl;
-    sl.add("proxyShape");
-    MObject obj;
-    sl.getDependNode(0, obj);
-    ASSERT_TRUE(obj != MObject::kNullObj);
-
-    MFnDependencyNode               fn(obj);
-    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
-
-    auto stage = proxy->usdStage();
-
-    auto        session = stage->GetSessionLayer();
-    std::string postContents, priorContents;
-    session->ExportToString(&priorContents);
-
-    // make sure write backs to USD do not happen on selection.
-    ASSERT_TRUE(MGlobal::executeCommand(
-        "AL_usdmaya_ProxyShapeSelect -p \"proxyShape\" -pp \"/transform1/shape\" -replace"));
-
-    session->ExportToString(&postContents);
-
-    EXPECT_EQ(priorContents, postContents);
 }

@@ -13,64 +13,67 @@
 // limitations under the License.
 //
 
+proc string expandToSelection(string $obj)
+{
+    if (size($obj)) {
+        // If obj is non-empty, expand it to the selection if it is part of the selection.
+        return `python("import mayaUsd_selectionUtils; mayaUsd_selectionUtils.expandPathToSelection('" + $obj + "')")`;
+    } else {
+        // If obj is empty, use the first selected item non-Maya.
+        return `python("import maya.internal.ufeSupport.utils as ufeUtils; items = ufeUtils.getNonMayaSelectedItems(); items[0] if items else None")`;
+    }
+}
+
 proc int canEditAsMaya(string $obj)
 {
     if (!hasPrimUpdater())
         return 0;
 
-    if (size($obj) == 0) {
-        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
-        $obj = $nonMayaObjs[0];
-    }
     if (size($obj) != 0) {
         return `python("from mayaUsd.lib import PrimUpdaterManager; PrimUpdaterManager.canEditAsMaya('" + $obj + "')")`;
     }
     return 0;
 }
 
-global proc mayaUsdMenu_pullToDG(string $obj)
+global proc mayaUsdMenu_editAsMaya(string $obj)
 {
     if (!hasPrimUpdater())
         return;
 
-    if (size($obj) == 0) {
-        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
-        $obj = $nonMayaObjs[0];
-    }
     if (size($obj) != 0) {
-        python("from mayaUsd.lib import PrimUpdaterManager; import ufe; PrimUpdaterManager.editAsMaya('" + $obj + "');");
+        mayaUsdEditAsMaya $obj;
     }
 }
 
-global proc mayaUsdMenu_duplicateToDG( string $ufePath )
+global proc mayaUsdMenu_duplicate(string $ufePath)
 {
     if (!hasPrimUpdater())
         return;
         
-    if (size($ufePath) == 0) {
-        string $nonMayaObjs[] = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.getNonMayaSelectedItems()")`;
-        $ufePath = $nonMayaObjs[0];
-    }
-    
     if (size($ufePath)) {
-        python("from mayaUsd.lib import PrimUpdaterManager; import maya.cmds as cmds; PrimUpdaterManager.duplicate('" + $ufePath + "', '|world');");
+        mayaUsdDuplicate $ufePath "|world";
     }
 }
+
+// On right click in the viewport, either through selection or through a pick
+// hit, Maya will look for a procedure called $runTimeName + "MenuProc".
+// and call it.  When the selection or pick hit is a USD prim, this calls the
+// following procedure.
 global proc USDMenuProc(string $parent, string $obj)
 {
     if (!hasPrimUpdater())
         return;
         
-    int $haveNonMaya = `python("import maya.internal.ufeSupport.utils as ufeUtils; ufeUtils.hasNonMayaSelectedItems()")`;
-    if ($haveNonMaya)
+    $obj = expandToSelection($obj);
+    if (size($obj) != 0)
     {
         popupMenu -e -dai $parent;
         setParent -menu $parent;
 
         setParent -menu ..;
         if (canEditAsMaya($obj)) {
-            menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("mayaUsdMenu_pullToDG \"" + $obj + "\"");
+            menuItem -label "Edit As Maya Data" -image "edit_as_Maya.png" -command ("{waitCursor -state 1; mayaUsdMenu_editAsMaya \"" + $obj + "\"; waitCursor -state 0;}");
         }
-        menuItem -label "Duplicate As Maya Data" -command ("mayaUsdMenu_duplicateToDG \"" + $obj + "\"");
+        menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");
     }
 }

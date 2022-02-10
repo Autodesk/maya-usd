@@ -10,9 +10,16 @@ def Xform "World" (
     kind = "group"
 )
 {
-    def ALMayaReference "Skeleton"
+    def ALMayaReference "Skeleton1"
     {
         string mayaNamespace = "rig"
         asset mayaReference = @UsdExportSkeletonWithoutBindPose.ma@
+    }
+
+    def ALMayaReference "Skeleton2"
+    {
+        string mayaNamespace = "unique_namespace_1"
+        asset mayaReference = @UsdExportSkeletonWithoutBindPose.ma@
+        bool mergeNamespacesOnClash = true
     }
 }

@@ -220,7 +220,7 @@ global proc mayaUsd_createStageFromFile() {
     setOptionVars(false);
     
     $caption = getMayaUsdString("kCreateUsdStageFromFile");
-    $fileFilter = getMayaUsdString("kAllUsdFiles") + " (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz";
+    $fileFilter = getMayaUsdLibString("kAllUsdFiles") + " (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz";
     $okCaption = getMayaUsdString("kCreateStage");
     
     string $startFolder = getLatestLoadStageFolder();

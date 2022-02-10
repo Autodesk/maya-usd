@@ -17,9 +17,8 @@
 #ifndef MAYAUSD_UNDO_UNDOMANAGER_H
 #define MAYAUSD_UNDO_UNDOMANAGER_H
 
-#include "UsdUndoableItem.h"
-
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/sdf/layer.h>
 

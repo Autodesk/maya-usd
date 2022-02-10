@@ -62,8 +62,10 @@ struct UsdMayaPrimUpdaterRegistry
 {
     /// Updater factory function, i.e. a function that creates a prim updater
     /// for the given Maya node/USD paths and context.
-    using UpdaterFactoryFn
-        = std::function<UsdMayaPrimUpdaterSharedPtr(const MFnDependencyNode&, const Ufe::Path&)>;
+    using UpdaterFactoryFn = std::function<UsdMayaPrimUpdaterSharedPtr(
+        const UsdMayaPrimUpdaterContext& context,
+        const MFnDependencyNode&,
+        const Ufe::Path&)>;
 
     using RegisterItem = std::tuple<UsdMayaPrimUpdater::Supports, UpdaterFactoryFn>;
 
@@ -89,7 +91,8 @@ struct UsdMayaPrimUpdaterRegistry
         const TfType&                tfType,
         const std::string&           mayaType,
         UsdMayaPrimUpdater::Supports sup,
-        UpdaterFactoryFn             fn);
+        UpdaterFactoryFn             fn,
+        bool                         fromPython = false);
 
     /// \brief Register \p fn as an updater provider for \p T.
     ///
@@ -154,8 +157,10 @@ struct UsdMayaPrimUpdaterRegistry
         UsdMayaPrimUpdaterRegistry::Register<usdTypeName>(                                  \
             #mayaTypeName,                                                                  \
             supports,                                                                       \
-            [](const MFnDependencyNode& depNodeFn, const Ufe::Path& path) {                 \
-                return std::make_shared<updaterClass>(depNodeFn, path);                     \
+            [](const UsdMayaPrimUpdaterContext& context,                                    \
+               const MFnDependencyNode&         depNodeFn,                                  \
+               const Ufe::Path&                 path) {                                                     \
+                return std::make_shared<updaterClass>(context, depNodeFn, path);            \
             });                                                                             \
     }
 

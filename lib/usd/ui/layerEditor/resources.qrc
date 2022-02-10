@@ -4,6 +4,7 @@
         <file alias="LE_addCreateGeneric.png">resources/addCreateGeneric_100.png</file>
         <file alias="LE_addCreateGeneric_150.png">resources/addCreateGeneric_150.png</file>
         <file alias="LE_addCreateGeneric_200.png">resources/addCreateGeneric_200.png</file>
+
         <file alias="LE_save_all_100.png">resources/save_all_100.png</file>
         <file alias="LE_save_all_150.png">resources/save_all_150.png</file>
         <file alias="LE_save_all_200.png">resources/save_all_200.png</file>
@@ -13,6 +14,27 @@
         <file alias="LE_save_all_pressed_100.png">resources/save_all_pressed_100.png</file>
         <file alias="LE_save_all_pressed_150.png">resources/save_all_pressed_150.png</file>
         <file alias="LE_save_all_pressed_200.png">resources/save_all_pressed_200.png</file>
+
+        <file alias="LE_add_layer_100.png">resources/add_layer_100.png</file>
+        <file alias="LE_add_layer_150.png">resources/add_layer_150.png</file>
+        <file alias="LE_add_layer_200.png">resources/add_layer_200.png</file>
+        <file alias="LE_add_layer_hover_100.png">resources/add_layer_hover_100.png</file>
+        <file alias="LE_add_layer_hover_150.png">resources/add_layer_hover_150.png</file>
+        <file alias="LE_add_layer_hover_200.png">resources/add_layer_hover_200.png</file>
+        <file alias="LE_add_layer_pressed_100.png">resources/add_layer_pressed_100.png</file>
+        <file alias="LE_add_layer_pressed_150.png">resources/add_layer_pressed_150.png</file>
+        <file alias="LE_add_layer_pressed_200.png">resources/add_layer_pressed_200.png</file>
+
+        <file alias="LE_import_layer_100.png">resources/import_layer_100.png</file>
+        <file alias="LE_import_layer_150.png">resources/import_layer_150.png</file>
+        <file alias="LE_import_layer_200.png">resources/import_layer_200.png</file>
+        <file alias="LE_import_layer_hover_100.png">resources/import_layer_hover_100.png</file>
+        <file alias="LE_import_layer_hover_150.png">resources/import_layer_hover_150.png</file>
+        <file alias="LE_import_layer_hover_200.png">resources/import_layer_hover_200.png</file>
+        <file alias="LE_import_layer_pressed_100.png">resources/import_layer_pressed_100.png</file>
+        <file alias="LE_import_layer_pressed_150.png">resources/import_layer_pressed_150.png</file>
+        <file alias="LE_import_layer_pressed_200.png">resources/import_layer_pressed_200.png</file>
+
 
         <file alias="target_hover.png">resources/target_hover_100.png</file>
         <file alias="target_hover_150.png">resources/target_hover_150.png</file>

@@ -52,9 +52,9 @@ def Scope "Looks"
 {
 	def Material "standardSurface2SG"
 	{
-		string inputs:file1:varname = "map1"
-		string inputs:file2:varname = "map1"
-		string inputs:file3:varname = "map1"
+		string inputs:file1:varnameStr = "map1"
+		string inputs:file2:varnameStr = "map1"
+		string inputs:file3:varnameStr = "map1"
 		token outputs:mtlx:surface.connect = </Looks/standardSurface2SG/standardSurface2.outputs:surface>
 
 		def Shader "standardSurface2"
@@ -92,7 +92,7 @@ def Scope "Looks"
 			def Shader "MayaGeomPropValue_file1"
 			{
 				uniform token info:id = "ND_geompropvalue_vector2"
-				string inputs:geomprop.connect = </Looks/standardSurface2SG.inputs:file1:varname>
+				string inputs:geomprop.connect = </Looks/standardSurface2SG.inputs:file1:varnameStr>
 				float2 outputs:out
 			}
 
@@ -112,7 +112,7 @@ def Scope "Looks"
 			def Shader "MayaGeomPropValue_file2"
 			{
 				uniform token info:id = "ND_geompropvalue_vector2"
-				string inputs:geomprop.connect = </Looks/standardSurface2SG.inputs:file2:varname>
+				string inputs:geomprop.connect = </Looks/standardSurface2SG.inputs:file2:varnameStr>
 				float2 outputs:out
 			}
 
@@ -148,7 +148,7 @@ def Scope "Looks"
 			def Shader "MayaGeomPropValue_file3"
 			{
 				uniform token info:id = "ND_geompropvalue_vector2"
-				string inputs:geomprop.connect = </Looks/standardSurface2SG.inputs:file3:varname>
+				string inputs:geomprop.connect = </Looks/standardSurface2SG.inputs:file3:varnameStr>
 				float2 outputs:out
 			}
 

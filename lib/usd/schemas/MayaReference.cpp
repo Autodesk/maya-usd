@@ -128,6 +128,24 @@ UsdAttribute MayaUsd_SchemasMayaReference::CreateMayaNamespaceAttr(
         writeSparsely);
 }
 
+UsdAttribute MayaUsd_SchemasMayaReference::GetMayaAutoEditAttr() const
+{
+    return GetPrim().GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
+}
+
+UsdAttribute MayaUsd_SchemasMayaReference::CreateMayaAutoEditAttr(
+    VtValue const& defaultValue,
+    bool           writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(
+        MayaUsd_SchemasTokens->mayaAutoEdit,
+        SdfValueTypeNames->Bool,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
@@ -146,6 +164,7 @@ const TfTokenVector& MayaUsd_SchemasMayaReference::GetSchemaAttributeNames(bool 
     static TfTokenVector localNames = {
         MayaUsd_SchemasTokens->mayaReference,
         MayaUsd_SchemasTokens->mayaNamespace,
+        MayaUsd_SchemasTokens->mayaAutoEdit,
     };
     static TfTokenVector allNames
         = _ConcatenateAttributeNames(UsdGeomXformable::GetSchemaAttributeNames(true), localNames);

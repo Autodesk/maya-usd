@@ -170,6 +170,7 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
             mayaVal[1] = vecVal[1];
             mayaVal[2] = vecVal[2];
         }
+        val = mayaVal;
         UsdMayaReadUtil::SetMayaAttr(mayaAttr, val, /*unlinearizeColors*/ false);
     }
 

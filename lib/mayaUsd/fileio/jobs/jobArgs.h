@@ -249,6 +249,16 @@ struct UsdMayaJobExportArgs
         const UsdMayaUtil::MDagPathSet& dagPaths,
         const std::vector<double>&      timeSamples = std::vector<double>());
 
+    /// Fills a VtDictionary from the given text-encoded options.
+    /// Issues runtime errors if some options contain values of the wrong format.
+    ///
+    /// The text encoding is in the form: name1=value1;name2=value2;...
+    MAYAUSD_CORE_PUBLIC
+    static MStatus GetDictionaryFromEncodedOptions(
+        const MString&       textEncodedOptions,
+        VtDictionary*        userArgs,
+        std::vector<double>* timeSamples);
+
     /// Gets the default arguments dictionary for UsdMayaJobExportArgs.
     MAYAUSD_CORE_PUBLIC
     static const VtDictionary& GetDefaultDictionary();

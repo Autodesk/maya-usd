@@ -50,6 +50,28 @@ public:
     }
 };
 
+Ufe::PathSegment replaceLastComponent(
+    const Ufe::PathSegment&             segment,
+    const Ufe::PathSegment::Components& components)
+{
+    auto segmentSize = segment.size();
+    if (segmentSize == 1u) {
+        // If the segment only had a single component, easy: just create a new
+        // segment from the argument components.
+        return Ufe::PathSegment(components, segment.runTimeId(), segment.separator());
+    }
+
+    // Copy existing components except the last, then append the argument
+    // components.
+    auto                         nbKeptComponents = segmentSize - 1;
+    Ufe::PathSegment::Components newComponents(nbKeptComponents + components.size());
+
+    auto pos = std::copy_n(segment.begin(), nbKeptComponents, newComponents.begin());
+    std::copy(components.begin(), components.end(), pos);
+
+    return Ufe::PathSegment(newComponents, segment.runTimeId(), segment.separator());
+}
+
 Ufe::Observer::Ptr ufeObserver;
 
 } // namespace
@@ -95,6 +117,11 @@ Ufe::Path UsdPathMappingHandler::fromHost(const Ufe::Path& hostPath) const
         return found->data();
     }
 
+    // If nothing has been pulled, then there is no mapping to be done.
+    if (!PXR_NS::PrimUpdaterManager::getInstance().hasPulledPrims()) {
+        return {};
+    }
+
     // Start by getting the dag path from the input host path. The dag path is needed
     // to get the pull information (returned as a Ufe::Path) from the plug.
     Ufe::Path mayaHostPath(hostPath);
@@ -112,11 +139,14 @@ Ufe::Path UsdPathMappingHandler::fromHost(const Ufe::Path& hostPath) const
         mayaHostPath = mayaHostPath.pop();
         Ufe::Path ufePath;
         if (PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, ufePath)) {
-            // From the pulled info path, we pop only the last component and replace it with
-            // the Maya component array.
+            // From the pulled info path, we pop only the last component and
+            // append the Maya component array.
             std::reverse(mayaComps.begin(), mayaComps.end());
-            Ufe::PathSegment seg(mayaComps, getUsdRunTimeId(), '/');
-            mayaMappedPath = ufePath.pop() + seg;
+
+            TF_AXIOM(ufePath.nbSegments() == 2);
+            const auto& usdSegment = ufePath.getSegments()[1];
+            mayaMappedPath = ufePath.popSegment() + replaceLastComponent(usdSegment, mayaComps);
+
             break;
         }
         dagPath.pop();

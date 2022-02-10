@@ -70,7 +70,8 @@ TEST(translators_TranformTranslator, io)
 
         EXPECT_EQ(
             MStatus(MS::kSuccess),
-            TransformTranslator::copyAttributes(node, prim, eparams, fn.dagPath()));
+            TransformTranslator::copyAttributes(
+                node, prim, eparams, fn.dagPath(), eparams.m_exportInWorldSpace));
 
         MObject nodeB = xlator.createNode(prim, MObject::kNullObj, "transform", iparams);
 
@@ -139,7 +140,8 @@ TEST(translators_TranformTranslator, animated_io)
 
         EXPECT_EQ(
             MStatus(MS::kSuccess),
-            TransformTranslator::copyAttributes(node, prim, eparams, fn.dagPath()));
+            TransformTranslator::copyAttributes(
+                node, prim, eparams, fn.dagPath(), eparams.m_exportInWorldSpace));
         eparams.m_animTranslator->exportAnimation(eparams);
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,6 +196,79 @@ TEST(translators_TranformTranslator, animated_io)
     }
 }
 
+TEST(translators_TranformTranslator, default_rotateOrder_true)
+{
+    // If the Rotate order is not default, confrim xformOpOrder value is set correctly
+    DagNodeTranslator::registerType();
+    TransformTranslator::registerType();
+
+    MDagModifier fn;
+    MObject      node = fn.createNode("transform");
+    fn.doIt();
+
+    MFnDependencyNode nodeFn(node);
+    MPlug             plug = nodeFn.findPlug("rotateOrder");
+    plug.setInt(5); // rotateZYX
+
+    MDagPath nodeDagPath;
+    MDagPath::getAPathTo(node, nodeDagPath);
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    ExporterParams eparams;
+    eparams.m_animation = false;
+
+    UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/rotateOrder_true"));
+    UsdPrim      prim = xform.GetPrim();
+    EXPECT_EQ(
+        MStatus(MS::kSuccess),
+        TransformTranslator::copyAttributes(
+            node, prim, eparams, nodeDagPath, eparams.m_exportInWorldSpace));
+
+    bool reset;
+    auto xformOps = xform.GetOrderedXformOps(&reset);
+    ASSERT_TRUE(1 == xformOps.size());
+
+    GfVec3f resultValue;
+    xformOps[0].Get(&resultValue);
+    auto resultName = xformOps[0].GetName().GetString();
+
+    ASSERT_EQ(resultName, "xformOp:rotateZYX");
+    ASSERT_EQ(resultValue, GfVec3f(0.f, 0.f, 0.f));
+}
+
+TEST(translators_TranformTranslator, default_rotateOrder_false)
+{
+    // If the Rotate order is default, confrim xformOpOrder value is not set
+    DagNodeTranslator::registerType();
+    TransformTranslator::registerType();
+
+    MDagModifier fn;
+    MObject      node = fn.createNode("transform");
+    fn.doIt();
+
+    MDagPath nodeDagPath;
+    MDagPath::getAPathTo(node, nodeDagPath);
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+
+    ExporterParams eparams;
+    eparams.m_animation = false;
+
+    UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/rotateOrder_false"));
+    UsdPrim      prim = xform.GetPrim();
+    EXPECT_EQ(
+        MStatus(MS::kSuccess),
+        TransformTranslator::copyAttributes(
+            node, prim, eparams, nodeDagPath, eparams.m_exportInWorldSpace));
+
+    auto    attribute = xform.GetXformOpOrderAttr();
+    VtValue currentValue;
+    attribute.Get(&currentValue, UsdTimeCode::Default());
+
+    ASSERT_TRUE(currentValue.GetArraySize() == 0);
+}
+
 TEST(translators_TranformTranslator, worldSpaceExport)
 {
     MFileIO::newFile(true);
@@ -234,4 +309,193 @@ TEST(translators_TranformTranslator, worldSpaceExport)
     EXPECT_NEAR(1.0, transform[3][0], 1e-6);
     EXPECT_NEAR(2.0, transform[3][1], 1e-6);
     EXPECT_NEAR(3.0, transform[3][2], 1e-6);
+}
+
+TEST(translators_TranformTranslator, worldSpaceGroupsExport)
+{
+    MFileIO::newFile(true);
+
+    // clang-format off
+  // Command below creates a hierarchy like this:
+  //    Maya               Selection      Expected in USD
+  //      A                     *             A
+  //        X1                  *               X1
+  //          Y1                *                 Y1          # Only Y1 exists
+  //          Y2                                              # Siblings should be excluded
+  //          Y3
+  //        X2                                                # X2 is excluded because X1 is selected
+  //          Y1
+  //          Y2
+  //          Y3
+  //        X3                                  X3            # root node A and child Y3 is selected, X3 is preserved
+  //          Y1                                              # Y1 is excluded because of Y3
+  //          Y2                                              # Y2 is excluded because of Y3
+  //          Y3                *                 Y3
+  //      B                                                   # B is excluded
+  //        X1                                                # root node B is not selected, X1 is excluded
+  //          Y1                *             Y1              # none of Y1's parents are selected, Y1 becomes a root prim in USD
+  //          Y2                *             Y2              # none of Y2's parents are selected, Y2 becomes a root prim in USD
+  //          Y3
+  //        X2
+  //          Y1
+  //            cube1
+  //              cube1Shape    *             cube1           # none of Y2's parents are selected, the cube becomes a root prim in USD
+  //          Y2
+  //          Y3
+  //        X3
+  //      C                     *             C               # C is exported as it is
+  //        X1                                  X1            # X1 is exported as it is
+  //        X2                                  X2            # X2 is exported as it is
+    // clang-format on
+
+    MString buildCommand =
+        R"(
+      polyCube -n "cube1";
+      group -n "Y1" "cube1";        move 1 1 1; duplicate -n "Y2" "Y1"; duplicate -n "Y3" "Y1";
+      group -n "X1" "Y1" "Y2" "Y3"; move 1 1 1; duplicate -n "X2" "X1"; duplicate -n "X3" "X1";
+      group -n "A" "X1" "X2" "X3";  move 1 1 1; duplicate -n "B" "A";   duplicate -n "C" "A";
+      delete "|C|X3" "|C|X1|Y2" "|C|X1|Y3";
+      select -r "|A" "|A|X1" "|A|X1|Y1" "|A|X3|Y3" "|B|X1|Y1" "|B|X1|Y2" "|B|X2|Y1|cube1|cube1Shape" "|C";
+    )";
+    ASSERT_TRUE(MGlobal::executeCommand(buildCommand));
+
+    auto    path = buildTempPath("AL_USDMayaTests_exportInWorldSpaceMultipleGroups.usda");
+    MString exportCommand = "file -force -options "
+                            "\"Dynamic_Attributes=0;Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;"
+                            "Mesh_Normals=0;Mesh_Vertex_Creases=0;"
+                            "Mesh_Edge_Creases=0;Mesh_UVs=0;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;"
+                            "Mesh_Colours=0;Mesh_Holes=0;Compaction_Level=0;"
+                            "Nurbs_Curves=0;Duplicate_Instances=0;Merge_Transforms=1;Animation=1;"
+                            "Use_Timeline_Range=0;Frame_Min=1;"
+                            "Frame_Max=2;Sub_Samples=1;Filter_Sample=0;Export_At_Which_Time=2;"
+                            "Export_In_World_Space=1;\" -typ \"AL usdmaya export\" -pr -es ";
+    exportCommand += "\"";
+    exportCommand += path;
+    exportCommand += "\"";
+
+    // Export cube in world space
+    ASSERT_TRUE(MGlobal::executeCommand(exportCommand));
+
+    auto stage = UsdStage::Open(path);
+    ASSERT_TRUE(stage);
+
+    bool       resetsXformStack = false;
+    GfMatrix4d transform;
+
+    // === Test the A group
+    auto primA = stage->GetPrimAtPath(SdfPath("/A"));
+    ASSERT_TRUE(primA);
+    {
+        UsdGeomXform xform(primA);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // Make sure the local space tm values match the world coords.
+        EXPECT_NEAR(1.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][2], 1e-6);
+    }
+
+    // /A/X1: the child group should have no change
+    auto primA_X1 = stage->GetPrimAtPath(SdfPath("/A/X1"));
+    ASSERT_TRUE(primA_X1);
+    {
+        UsdGeomXform xform(primA_X1);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // The local space tm values should be untouched
+        EXPECT_NEAR(1.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][2], 1e-6);
+    }
+    auto primA_X1_Y1 = stage->GetPrimAtPath(SdfPath("/A/X1/Y1"));
+    ASSERT_TRUE(primA_X1_Y1);
+    {
+        UsdGeomXform xform(primA_X1_Y1);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // The local space tm values should be untouched
+        EXPECT_NEAR(1.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][2], 1e-6);
+    }
+    auto primA_X1_Y1_cube = stage->GetPrimAtPath(SdfPath("/A/X1/Y1/cube1"));
+    ASSERT_TRUE(primA_X1_Y1_cube);
+    {
+        UsdGeomXform xform(primA_X1_Y1_cube);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // The local space tm values should be untouched
+        EXPECT_NEAR(0.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[3][2], 1e-6);
+    }
+
+    // Test the rest of the prims in hierarchy
+    // /A/X2 should not be there
+    ASSERT_FALSE(stage->GetPrimAtPath(SdfPath("/A/X2")));
+    // /A/X3/Y3/cube1 should be preserved
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/A/X3/Y3/cube1")));
+
+    // === Test the B group
+    // /B should not be there
+    ASSERT_FALSE(stage->GetPrimAtPath(SdfPath("/B")));
+
+    // The child Y1 in B should now become a root level prim with world space xform baked
+    auto primB_Y1 = stage->GetPrimAtPath(SdfPath("/Y1"));
+    ASSERT_TRUE(primB_Y1);
+    {
+        UsdGeomXform xform(primB_Y1);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // The local space tm values should be untouched
+        EXPECT_NEAR(3.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][2], 1e-6);
+    }
+
+    // The nested cube under Y1 should be untouched
+    auto primB_Y1_cube = stage->GetPrimAtPath(SdfPath("/Y1/cube1"));
+    ASSERT_TRUE(primB_Y1_cube);
+    {
+        UsdGeomXform xform(primB_Y1_cube);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // The local space tm values should be untouched
+        EXPECT_NEAR(0.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[3][2], 1e-6);
+    }
+
+    // Same for Y2 in B
+    auto primB_Y2 = stage->GetPrimAtPath(SdfPath("/Y2"));
+    ASSERT_TRUE(primB_Y2);
+    {
+        UsdGeomXform xform(primB_Y2);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // The local space tm values should be untouched
+        EXPECT_NEAR(3.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][2], 1e-6);
+    }
+    auto primB_Y2_cube = stage->GetPrimAtPath(SdfPath("/Y2/cube1"));
+    ASSERT_TRUE(primB_Y2_cube);
+
+    // leaf cube in B also becomes a root level prim
+    auto primB_cube = stage->GetPrimAtPath(SdfPath("/cube1"));
+    ASSERT_TRUE(primB_cube);
+    {
+        UsdGeomXform xform(primB_cube);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // The local space tm values should be untouched
+        EXPECT_NEAR(3.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][2], 1e-6);
+    }
+
+    // === Test the C group hierarchy
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X1")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X1/Y1")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X1/Y1/cube1")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y1")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y1/cube1")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y2")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y2/cube1")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y3")));
+    ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y3/cube1")));
 }

@@ -34,7 +34,8 @@ using namespace boost;
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-bool mergeToUsd(const std::string& nodeName)
+
+bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDictionary())
 {
     MObject obj;
     MStatus status = UsdMayaUtil::GetMObjectByName(nodeName, obj);
@@ -54,8 +55,10 @@ bool mergeToUsd(const std::string& nodeName)
     if (!PrimUpdaterManager::readPullInformation(dagPath, path))
         return false;
 
-    return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path);
+    return PrimUpdaterManager::getInstance().mergeToUsd(dagNode, path, userArgs);
 }
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(mergeToUsd_overloads, mergeToUsd, 1, 2)
 
 bool editAsMaya(const std::string& ufePathString)
 {
@@ -80,7 +83,10 @@ bool discardEdits(const std::string& nodeName)
     return PrimUpdaterManager::getInstance().discardEdits(path);
 }
 
-bool duplicate(const std::string& srcUfePathString, const std::string& dstUfePathString)
+bool duplicate(
+    const std::string&  srcUfePathString,
+    const std::string&  dstUfePathString,
+    const VtDictionary& userArgs = VtDictionary())
 {
     Ufe::Path src = Ufe::PathString::path(srcUfePathString);
     Ufe::Path dst = Ufe::PathString::path(dstUfePathString);
@@ -88,18 +94,19 @@ bool duplicate(const std::string& srcUfePathString, const std::string& dstUfePat
     if (src.empty() || dst.empty())
         return false;
 
-    return PrimUpdaterManager::getInstance().duplicate(src, dst);
+    return PrimUpdaterManager::getInstance().duplicate(src, dst, userArgs);
 }
+
+BOOST_PYTHON_FUNCTION_OVERLOADS(duplicate_overloads, duplicate, 2, 3)
 
 } // namespace
 
 void wrapPrimUpdaterManager()
 {
-    using This = PrimUpdaterManager;
-    class_<This>("PrimUpdaterManager", no_init)
-        .def("mergeToUsd", mergeToUsd)
+    class_<PrimUpdaterManager, noncopyable>("PrimUpdaterManager", no_init)
+        .def("mergeToUsd", mergeToUsd, mergeToUsd_overloads())
         .def("editAsMaya", editAsMaya)
         .def("canEditAsMaya", canEditAsMaya)
         .def("discardEdits", discardEdits)
-        .def("duplicate", duplicate);
+        .def("duplicate", duplicate, duplicate_overloads());
 }

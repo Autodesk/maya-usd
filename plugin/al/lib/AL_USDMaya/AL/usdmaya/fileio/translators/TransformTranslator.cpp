@@ -661,7 +661,8 @@ MStatus TransformTranslator::copyAttributes(
     const MObject&        from,
     UsdPrim&              to,
     const ExporterParams& params,
-    const MDagPath&       path)
+    const MDagPath&       path,
+    bool                  exportInWorldSpace)
 {
     UsdGeomXform xformSchema(to);
     GfVec3f      scale;
@@ -686,6 +687,7 @@ MStatus TransformTranslator::copyAttributes(
     static const GfVec3f defaultRotatePivot(0.0f);
     static const GfVec3f defaultScalePivotTranslate(0.0f);
     static const GfVec3f defaultRotatePivotTranslate(0.0f);
+    static const int32_t defaultRotateOrder(0);
     static const bool    defaultVisible(true);
 
     const float          radToDeg = 57.295779506f;
@@ -698,7 +700,7 @@ MStatus TransformTranslator::copyAttributes(
         transformAnimated = animTranslator->isAnimatedTransform(from);
     }
 
-    if (!params.m_exportInWorldSpace) {
+    if (!exportInWorldSpace) {
         getBool(from, m_inheritsTransform, inheritsTransform);
         getBool(from, m_visible, visible);
         getVec3(from, m_scale, (float*)&scale);
@@ -756,7 +758,7 @@ MStatus TransformTranslator::copyAttributes(
         }
 
         plugAnimated = transformAnimated || animationCheck(animTranslator, MPlug(from, m_rotation));
-        if (plugAnimated || rotation != defaultRotation) {
+        if (plugAnimated || rotation != defaultRotation || rotateOrder != defaultRotateOrder) {
             rotation *= radToDeg;
             UsdAttribute rotateAttr
                 = addRotateOp(xformSchema, "", rotateOrder, rotation, params.m_timeCode);

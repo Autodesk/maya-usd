@@ -42,4 +42,12 @@ global proc mayaUsd_pluginUICreation()
         }
     }
     source "USDMenuProc.mel";
+
+    if ($mjv >= 2023) {
+        // This MEL source file is a core library file, but unfortunately there
+        // is no mechanism to source such a file once, if multiple plugins are
+        // loaded, so source it here in this plugin.  PPT, 29-Nov-2021.
+        source "mayaUsdAddMayaReference.mel";
+        source "mayaUsdCacheMayaReference.mel";
+    }
 }
