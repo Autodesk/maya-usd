@@ -125,7 +125,6 @@ private:
     void _InitRepr(const TfToken&, HdDirtyBits*) override;
 
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
-    void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
 
     bool _PrimvarIsRequired(const TfToken&) const;
 
@@ -136,14 +135,14 @@ private:
     void _CreateOSDTables();
 #endif
 
+    TfToken& _RenderTag() override { return _meshSharedData->_renderTag; }
+
     void _UpdateDrawItem(
         HdSceneDelegate*,
         HdVP2DrawItem*,
         HdVP2DrawItem::RenderItemData&,
         const HdMeshReprDesc& desc,
         const TfToken&        reprToken);
-
-    void _HideAllDrawItems(const TfToken& reprToken);
 
     void _UpdatePrimvarSources(
         HdSceneDelegate*     sceneDelegate,
@@ -171,12 +170,6 @@ private:
         MSubSceneContainer& subSceneContainer,
         const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
-
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
-#endif
 
     static void _InitGPUCompute();
 

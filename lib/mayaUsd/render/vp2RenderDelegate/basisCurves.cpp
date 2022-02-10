@@ -457,20 +457,9 @@ void HdVP2BasisCurves::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
-    // We don't update the repr if it is hidden by the render tags (purpose)
-    // of the ProxyRenderDelegate. In additional, we need to hide any already
-    // existing render items because they should not be drawn.
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
-    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()))) {
-        _HideAllDrawItems(reprToken);
-        *dirtyBits &= ~(
-            HdChangeTracker::DirtyRenderTag
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-            | HdChangeTracker::DirtyVisibility
-#endif
-        );
+    const SdfPath& id = GetId();
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
+    if (!_SyncCommon(dirtyBits, id, _GetRepr(reprToken), renderIndex)) {
         return;
     }
 
@@ -480,39 +469,8 @@ void HdVP2BasisCurves::Sync(
         _rprimId.asChar(),
         "HdVP2BasisCurves::Sync");
 
-    const SdfPath& id = GetId();
-
-    // Update the selection status if it changed.
-    if (*dirtyBits & DirtySelectionHighlight) {
-        _selectionStatus = drawScene.GetSelectionStatus(id);
-    } else {
-        TF_VERIFY(_selectionStatus == drawScene.GetSelectionStatus(id));
-    }
-
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
-        const SdfPath materialId = delegate->GetMaterialId(id);
-
-#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
-        const SdfPath& origMaterialId = GetMaterialId();
-        if (materialId != origMaterialId) {
-            if (!origMaterialId.IsEmpty()) {
-                HdVP2Material* material = static_cast<HdVP2Material*>(
-                    renderIndex.GetSprim(HdPrimTypeTokens->material, origMaterialId));
-                if (material) {
-                    material->UnsubscribeFromMaterialUpdates(id);
-                }
-            }
-
-            if (!materialId.IsEmpty()) {
-                HdVP2Material* material = static_cast<HdVP2Material*>(
-                    renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
-                if (material) {
-                    material->SubscribeForMaterialUpdates(id);
-                }
-            }
-        }
-#endif
-
+        const SdfPath materialId = _GetUpdatedMaterialId(this, delegate);
 #if HD_API_VERSION < 37
         _SetMaterialId(renderIndex.GetChangeTracker(), materialId);
 #else
@@ -583,40 +541,7 @@ void HdVP2BasisCurves::Sync(
         }
     }
 
-    if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
-        _sharedData.bounds.SetRange(delegate->GetExtent(id));
-    }
-
-    if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
-        _sharedData.bounds.SetMatrix(delegate->GetTransform(id));
-    }
-
-    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
-        _sharedData.visible = delegate->GetVisible(id);
-
-        // Invisible rprims don't get calls to Sync or _PropagateDirtyBits while
-        // they are invisible. This means that when a prim goes from visible to
-        // invisible that we must update every repr, because if we switch reprs while
-        // invisible we'll get no chance to update!
-        if (!_sharedData.visible)
-            _MakeOtherReprRenderItemsInvisible(delegate, reprToken);
-    }
-
-#if PXR_VERSION > 2111
-    // Hydra now manages and caches render tags under the hood and is clearing
-    // the dirty bit prior to calling sync. Unconditionally set the render tag
-    // in the shared data structure based on current Hydra data
-    _curvesSharedData._renderTag = GetRenderTag();
-#else
-    if (*dirtyBits
-        & (HdChangeTracker::DirtyRenderTag
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-           | HdChangeTracker::DirtyVisibility
-#endif
-           )) {
-        _curvesSharedData._renderTag = delegate->GetRenderTag(id);
-    }
-#endif
+    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, id, _reprs);
 
     *dirtyBits = HdChangeTracker::Clean;
 
@@ -1381,23 +1306,9 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    if (_reprs.empty()) {
-        _FirstInitRepr(dirtyBits, GetId());
-    }
-
-    _ReprVector::iterator it
-        = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
-    if (it != _reprs.end()) {
-        _SetDirtyRepr(it->second);
+    HdReprSharedPtr repr = _AddNewRepr(reprToken, _reprs, dirtyBits, GetId());
+    if (!repr)
         return;
-    }
-
-    // add new repr
-    _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
-    HdReprSharedPtr repr = _reprs.back().second;
-
-    // set dirty bit to say we need to sync a new repr
-    *dirtyBits |= HdChangeTracker::NewRepr;
 
     _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprToken);
 
@@ -1429,7 +1340,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         case HdBasisCurvesGeomStyleWire:
             // The item is used for wireframe display and selection highlight.
             if (reprToken == HdReprTokens->wire) {
-                renderItem = _CreateWireRenderItem(renderItemName);
+                renderItem = _CreateWireframeRenderItem(
+                    renderItemName,
+                    kOpaqueGray,
+                    MSelectionMask::kSelectNurbsCurves,
+                    MHWRender::MFrameContext::kExcludeNurbsCurves);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
                 renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1437,7 +1352,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             }
             // The item is used for bbox display and selection highlight.
             else if (reprToken == HdVP2ReprTokens->bbox) {
-                renderItem = _CreateBBoxRenderItem(renderItemName);
+                renderItem = _CreateBoundingBoxRenderItem(
+                    renderItemName,
+                    kOpaqueGray,
+                    MSelectionMask::kSelectNurbsCurves,
+                    MHWRender::MFrameContext::kExcludeNurbsCurves);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
                 renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
@@ -1445,7 +1364,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             }
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             else if (reprToken == HdVP2ReprTokens->defaultMaterial) {
-                renderItem = _CreateWireRenderItem(renderItemName);
+                renderItem = _CreateWireframeRenderItem(
+                    renderItemName,
+                    kOpaqueGray,
+                    MSelectionMask::kSelectNurbsCurves,
+                    MHWRender::MFrameContext::kExcludeNurbsCurves);
                 renderItem->setDrawMode(MHWRender::MGeometry::kAll);
                 drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
                 renderItem->setDefaultMaterialHandling(
@@ -1455,7 +1378,10 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             break;
 #ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
         case HdBasisCurvesGeomStylePoints:
-            renderItem = _CreatePointsRenderItem(renderItemName);
+            renderItem = _CreatePointsRenderItem(
+                renderItemName,
+                MSelectionMask::kSelectNurbsCurves,
+                MHWRender::MFrameContext::kExcludeNurbsCurves);
             break;
 #endif
         default: TF_WARN("Unsupported geomStyle"); break;
@@ -1474,39 +1400,6 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
 #else
         repr->AddDrawItem(std::move(drawItem));
 #endif
-    }
-}
-
-/*! \brief Hide all of the repr objects for this Rprim except the named repr.
-    Repr objects are created to support specific reprName tokens, and contain a list of
-    HdVP2DrawItems and corresponding RenderItems.
-*/
-void HdVP2BasisCurves::_MakeOtherReprRenderItemsInvisible(
-    HdSceneDelegate* sceneDelegate,
-    const TfToken&   reprToken)
-{
-    for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
-        if (pair.first != reprToken) {
-            // For each relevant draw item, update dirty buffer sources.
-            const HdReprSharedPtr& repr = pair.second;
-            const auto&            items = repr->GetDrawItems();
-
-#if HD_API_VERSION < 35
-            for (HdDrawItem* item : items) {
-                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
-#else
-            for (const HdRepr::DrawItemUniquePtr& item : items) {
-                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
-#endif
-                    for (auto& renderItemData : drawItem->GetRenderItems()) {
-                        _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() {
-                            renderItemData._enabled = false;
-                            renderItemData._renderItem->enable(false);
-                        });
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -1554,35 +1447,6 @@ HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
         | DirtySelectionHighlight;
 
     return bits;
-}
-
-void HdVP2BasisCurves::_HideAllDrawItems(const TfToken& reprToken)
-{
-    HdReprSharedPtr const& curRepr = _GetRepr(reprToken);
-    if (!curRepr) {
-        return;
-    }
-
-    _BasisCurvesReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
-
-    // For each relevant draw item, update dirty buffer sources.
-    int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
-        const HdBasisCurvesReprDesc& desc = reprDescs[descIdx];
-        if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) {
-            continue;
-        }
-
-        auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
-        if (!drawItem)
-            continue;
-
-        for (auto& renderItemData : drawItem->GetRenderItems()) {
-            renderItemData._enabled = false;
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [&]() { renderItemData._renderItem->enable(false); });
-        }
-    }
 }
 
 /*! \brief  Update _primvarSourceMap, our local cache of raw primvar data.
@@ -1641,68 +1505,6 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
     }
 }
 
-/*! \brief  Create render item for wireframe repr.
- */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreateWireRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kWireframe);
-    renderItem->depthPriority(MHWRender::MRenderItem::sDormantWireDepthPriority);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
-
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
-    selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
-    renderItem->setSelectionMask(selectionMask);
-#else
-    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
-#endif
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
-}
-
-/*! \brief  Create render item for bbox repr.
- */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreateBBoxRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
-    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
-}
-
 /*! \brief  Create render item for smoothHull repr.
  */
 MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name) const
@@ -1737,38 +1539,5 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
 
     return renderItem;
 }
-
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-/*! \brief  Create render item for points repr.
- */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString& name) const
-{
-    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kPoints);
-
-    renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
-    renderItem->depthPriority(MHWRender::MRenderItem::sDormantPointDepthPriority);
-    renderItem->castsShadows(false);
-    renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dFatPointShader());
-#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
-#endif
-
-    MSelectionMask selectionMask(MSelectionMask::kSelectPointsForGravity);
-    selectionMask.addMask(MSelectionMask::kSelectNurbsCurves);
-    renderItem->setSelectionMask(selectionMask);
-
-#if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
-#endif
-
-    _SetWantConsolidation(*renderItem, true);
-
-    return renderItem;
-}
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

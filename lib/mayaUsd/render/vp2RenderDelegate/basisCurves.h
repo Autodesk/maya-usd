@@ -131,16 +131,15 @@ protected:
 
     void _InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits) override;
 
+    TfToken& _RenderTag() override { return _curvesSharedData._renderTag; }
+
 private:
     void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
-    void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
 
     void _UpdateDrawItem(
         HdSceneDelegate*             sceneDelegate,
         HdVP2DrawItem*               drawItem,
         HdBasisCurvesReprDesc const& desc);
-
-    void _HideAllDrawItems(const TfToken& reprToken);
 
     void _UpdatePrimvarSources(
         HdSceneDelegate*     sceneDelegate,
@@ -148,12 +147,6 @@ private:
         TfTokenVector const& requiredPrimvars);
 
     MHWRender::MRenderItem* _CreatePatchRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateWireRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateBBoxRenderItem(const MString& name) const;
-
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
-#endif
 
     enum DirtyBits : HdDirtyBits
     {

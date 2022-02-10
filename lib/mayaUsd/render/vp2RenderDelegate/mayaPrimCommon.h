@@ -181,10 +181,56 @@ protected:
 
     void _SetDirtyRepr(const HdReprSharedPtr& repr);
 
+    HdReprSharedPtr _AddNewRepr(
+        TfToken const& reprToken,
+        ReprVector&    reprs,
+        HdDirtyBits*   dirtyBits,
+        SdfPath const& id);
+
+    bool _SyncCommon(
+        HdDirtyBits*           dirtyBits,
+        const SdfPath&         id,
+        HdReprSharedPtr const& curRepr,
+        HdRenderIndex&         renderIndex);
+
+    void _SyncSharedData(
+        HdRprimSharedData& sharedData,
+        HdSceneDelegate*   delegate,
+        HdDirtyBits const* dirtyBits,
+        TfToken const&     reprToken,
+        SdfPath const&     id,
+        ReprVector const&  reprs);
+
+    SdfPath _GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate);
+
     void _PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const;
+
+    void _MakeOtherReprRenderItemsInvisible(const TfToken&, const ReprVector&);
+
+    void _HideAllDrawItems(HdReprSharedPtr const& curRepr);
 
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);
+
+    MHWRender::MRenderItem* _CreateWireframeRenderItem(
+        const MString&        name,
+        const MColor&         color,
+        const MSelectionMask& selectionMask,
+        MUint64               exclusionFlag) const;
+    MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(
+        const MString&        name,
+        const MColor&         color,
+        const MSelectionMask& selectionMask,
+        MUint64               exclusionFlag) const;
+
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MHWRender::MRenderItem* _CreatePointsRenderItem(
+        const MString&        name,
+        const MSelectionMask& selectionMask,
+        MUint64               exclusionFlag) const;
+#endif
+
+    virtual TfToken& _RenderTag() = 0;
 
     //! VP2 render delegate for which this prim was created
     HdVP2RenderDelegate* _delegate { nullptr };

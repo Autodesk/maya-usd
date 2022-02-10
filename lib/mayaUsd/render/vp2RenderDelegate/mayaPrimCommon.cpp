@@ -17,6 +17,7 @@
 #include "mayaPrimCommon.h"
 
 #include "bboxGeom.h"
+#include "material.h"
 #include "render_delegate.h"
 
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -244,6 +245,32 @@ void MayaUsdRPrim::_SetDirtyRepr(const HdReprSharedPtr& repr)
     }
 }
 
+HdReprSharedPtr MayaUsdRPrim::_AddNewRepr(
+    TfToken const& reprToken,
+    ReprVector&    reprs,
+    HdDirtyBits*   dirtyBits,
+    SdfPath const& id)
+{
+    if (reprs.empty()) {
+        _FirstInitRepr(dirtyBits, id);
+    }
+
+    ReprVector::const_iterator it
+        = std::find_if(reprs.begin(), reprs.end(), [reprToken](ReprVector::const_reference e) {
+              return reprToken == e.first;
+          });
+    if (it != reprs.end()) {
+        _SetDirtyRepr(it->second);
+        return nullptr;
+    }
+
+    // set dirty bit to say we need to sync a new repr
+    *dirtyBits |= HdChangeTracker::NewRepr;
+
+    reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
+    return reprs.back().second;
+}
+
 void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector& reprs) const
 {
     if (bits & HdChangeTracker::AllDirty) {
@@ -286,6 +313,277 @@ void MayaUsdRPrim::_PropagateDirtyBitsCommon(HdDirtyBits& bits, const ReprVector
             }
         }
     }
+}
+
+/*! \brief  Create render item for bbox repr.
+ */
+MHWRender::MRenderItem* MayaUsdRPrim::_CreateBoundingBoxRenderItem(
+    const MString&        name,
+    const MColor&         color,
+    const MSelectionMask& selectionMask,
+    MUint64               exclusionFlag) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
+
+    renderItem->setDrawMode(MHWRender::MGeometry::kBoundingBox);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setShader(_delegate->Get3dSolidShader(color));
+    renderItem->setSelectionMask(selectionMask);
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
+
+#if MAYA_API_VERSION >= 20220000
+    renderItem->setObjectTypeExclusionFlag(exclusionFlag);
+#endif
+
+    _SetWantConsolidation(*renderItem, true);
+
+    return renderItem;
+}
+
+/*! \brief  Create render item for wireframe repr.
+ */
+MHWRender::MRenderItem* MayaUsdRPrim::_CreateWireframeRenderItem(
+    const MString&        name,
+    const MColor&         color,
+    const MSelectionMask& selectionMask,
+    MUint64               exclusionFlag) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kLines);
+
+    renderItem->setDrawMode(MHWRender::MGeometry::kWireframe);
+    renderItem->depthPriority(MHWRender::MRenderItem::sDormantWireDepthPriority);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setShader(_delegate->Get3dSolidShader(color));
+
+#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
+    MSelectionMask selectionMasks(selectionMask);
+    selectionMasks.addMask(MSelectionMask::kSelectPointsForGravity);
+    renderItem->setSelectionMask(selectionMasks);
+#else
+    renderItem->setSelectionMask(selectionMask);
+#endif
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
+
+#if MAYA_API_VERSION >= 20220000
+    renderItem->setObjectTypeExclusionFlag(exclusionFlag);
+#endif
+
+    _SetWantConsolidation(*renderItem, true);
+
+    return renderItem;
+}
+
+#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
+/*! \brief  Create render item for points repr.
+ */
+MHWRender::MRenderItem* MayaUsdRPrim::_CreatePointsRenderItem(
+    const MString&        name,
+    const MSelectionMask& selectionMask,
+    MUint64               exclusionFlag) const
+{
+    MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
+        name, MHWRender::MRenderItem::DecorationItem, MHWRender::MGeometry::kPoints);
+
+    renderItem->setDrawMode(MHWRender::MGeometry::kSelectionOnly);
+    renderItem->depthPriority(MHWRender::MRenderItem::sDormantPointDepthPriority);
+    renderItem->castsShadows(false);
+    renderItem->receivesShadows(false);
+    renderItem->setShader(_delegate->Get3dFatPointShader());
+
+    MSelectionMask selectionMasks(selectionMask);
+    selectionMasks.addMask(MSelectionMask::kSelectPointsForGravity);
+    renderItem->setSelectionMask(selectionMasks);
+#ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    drawScene.setUfeIdentifiers(*renderItem, _PrimSegmentString);
+#endif
+
+#if MAYA_API_VERSION >= 20220000
+    renderItem->setObjectTypeExclusionFlag(exclusionFlag);
+#endif
+
+    _SetWantConsolidation(*renderItem, true);
+
+    return renderItem;
+}
+#endif
+
+/*! \brief Hide all of the repr objects for this Rprim except the named repr.
+    Repr objects are created to support specific reprName tokens, and contain a list of
+    HdVP2DrawItems and corresponding RenderItems.
+*/
+void MayaUsdRPrim::_MakeOtherReprRenderItemsInvisible(
+    const TfToken&    reprToken,
+    const ReprVector& reprs)
+{
+    for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
+        if (pair.first != reprToken) {
+            // For each relevant draw item, update dirty buffer sources.
+            const HdReprSharedPtr& repr = pair.second;
+            const auto&            items = repr->GetDrawItems();
+
+#if HD_API_VERSION < 35
+            for (HdDrawItem* item : items) {
+                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+#else
+            for (const HdRepr::DrawItemUniquePtr& item : items) {
+                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+                    for (auto& renderItemData : drawItem->GetRenderItems()) {
+                        _delegate->GetVP2ResourceRegistry().EnqueueCommit([&renderItemData]() {
+                            renderItemData._enabled = false;
+                            renderItemData._renderItem->enable(false);
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
+void MayaUsdRPrim::_HideAllDrawItems(HdReprSharedPtr const& curRepr)
+{
+    if (!curRepr) {
+        return;
+    }
+
+    const auto& items = curRepr->GetDrawItems();
+
+#if HD_API_VERSION < 35
+    for (HdDrawItem* item : items) {
+        if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+#else
+    for (const HdRepr::DrawItemUniquePtr& item : items) {
+        if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+            for (auto& renderItemData : drawItem->GetRenderItems()) {
+                renderItemData._enabled = false;
+                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                    [&]() { renderItemData._renderItem->enable(false); });
+            }
+        }
+    }
+}
+
+void MayaUsdRPrim::_SyncSharedData(
+    HdRprimSharedData& sharedData,
+    HdSceneDelegate*   delegate,
+    HdDirtyBits const* dirtyBits,
+    TfToken const&     reprToken,
+    SdfPath const&     id,
+    ReprVector const&  reprs)
+{
+    if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
+        sharedData.bounds.SetRange(delegate->GetExtent(id));
+    }
+
+    if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
+        sharedData.bounds.SetMatrix(delegate->GetTransform(id));
+    }
+
+    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
+        sharedData.visible = delegate->GetVisible(id);
+
+        // Invisible rprims don't get calls to Sync or _PropagateDirtyBits while
+        // they are invisible. This means that when a prim goes from visible to
+        // invisible that we must update every repr, because if we switch reprs while
+        // invisible we'll get no chance to update!
+        if (!sharedData.visible)
+            _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
+    }
+
+#if PXR_VERSION > 2111
+    // Hydra now manages and caches render tags under the hood and is clearing
+    // the dirty bit prior to calling sync. Unconditionally set the render tag
+    // in the shared data structure based on current Hydra data
+    _RenderTag() = GetRenderTag();
+#else
+    if (*dirtyBits
+        & (HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+           | HdChangeTracker::DirtyVisibility
+#endif
+           )) {
+        _RenderTag() = delegate->GetRenderTag(id);
+    }
+#endif
+}
+
+bool MayaUsdRPrim::_SyncCommon(
+    HdDirtyBits*           dirtyBits,
+    const SdfPath&         id,
+    HdReprSharedPtr const& curRepr,
+    HdRenderIndex&         renderIndex)
+{
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+
+    // Update the selection status if it changed.
+    if (*dirtyBits & DirtySelectionHighlight) {
+        _selectionStatus = drawScene.GetSelectionStatus(id);
+    } else {
+        TF_VERIFY(_selectionStatus == drawScene.GetSelectionStatus(id));
+    }
+
+    // We don't update the repr if it is hidden by the render tags (purpose)
+    // of the ProxyRenderDelegate. In additional, we need to hide any already
+    // existing render items because they should not be drawn.
+    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(id))) {
+        _HideAllDrawItems(curRepr);
+        *dirtyBits &= ~(
+            HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+            | HdChangeTracker::DirtyVisibility
+#endif
+        );
+        return false;
+    }
+
+    return true;
+}
+
+SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate)
+{
+    const SdfPath& id = rprim->GetId();
+    const SdfPath  materialId = delegate->GetMaterialId(id);
+
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+    const SdfPath& origMaterialId = rprim->GetMaterialId();
+    if (materialId != origMaterialId) {
+        HdRenderIndex& renderIndex = delegate->GetRenderIndex();
+
+        if (!origMaterialId.IsEmpty()) {
+            HdVP2Material* material = static_cast<HdVP2Material*>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material, origMaterialId));
+            if (material) {
+                material->UnsubscribeFromMaterialUpdates(id);
+            }
+        }
+
+        if (!materialId.IsEmpty()) {
+            HdVP2Material* material = static_cast<HdVP2Material*>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+            if (material) {
+                material->SubscribeForMaterialUpdates(id);
+            }
+        }
+    }
+#endif
+
+    return materialId;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
