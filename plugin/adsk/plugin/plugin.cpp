@@ -72,6 +72,7 @@
 #endif
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
 
@@ -220,6 +221,13 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
 #if defined(WANT_QT_BUILD)
     registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
+#endif
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    registerCommandCheck<MayaUsd::ufe::EditAsMayaCommand>(plugin);
+    registerCommandCheck<MayaUsd::ufe::MergeToUsdCommand>(plugin);
+    registerCommandCheck<MayaUsd::ufe::DiscardEditsCommand>(plugin);
+    registerCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
 #endif
 
     status = plugin.registerCommand(
@@ -385,6 +393,13 @@ MStatus uninitializePlugin(MObject obj)
 #if defined(WANT_QT_BUILD)
     deregisterCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
     MayaUsd::LayerEditorWindowCommand::cleanupOnPluginUnload();
+#endif
+
+#ifdef UFE_V3_FEATURES_AVAILABLE
+    deregisterCommandCheck<MayaUsd::ufe::EditAsMayaCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ufe::MergeToUsdCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ufe::DiscardEditsCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::ufe::DuplicateCommand>(plugin);
 #endif
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);

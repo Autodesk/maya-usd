@@ -47,6 +47,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <maya/MColorPickerUtilities.h>
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
@@ -506,10 +507,7 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
 
     // reset any version ids or dirty information that doesn't make sense if we clear
     // the render index.
-    _renderTagVersion = 0;
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    _visibilityVersion = 0;
-#endif
+    _changeVersions.reset();
     _taskRenderTagsValid = false;
     _isPopulated = false;
 }
@@ -557,13 +555,9 @@ void ProxyRenderDelegate::_InitRenderDelegate()
             HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L1, "Allocate RenderIndex");
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 
-        // Set the _renderTagVersion and _visibilityVersion so that we don't trigger a
-        // needlessly large update them on the first frame.
-        HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-        _renderTagVersion = changeTracker.GetRenderTagVersion();
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-        _visibilityVersion = changeTracker.GetVisibilityChangeCount();
-#endif
+        // Sync the _changeVersions so that we don't trigger a needlessly large update them on the
+        // first frame.
+        _changeVersions.sync(_renderIndex->GetChangeTracker());
 
         // Add additional configurations after render index creation.
         static std::once_flag reprsOnce;
@@ -731,6 +725,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "Execute");
 
+    ++_frameCounter;
     _UpdateRenderTags();
 
     // If update for selection is enabled, the draw data for the "points" repr
@@ -766,14 +761,31 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
+    const unsigned int displayStyle = frameContext.getDisplayStyle();
+
+    // Query the wireframe color assigned to proxy shape.
+    if (displayStyle
+        & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
+        _wireframeColor
+            = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
+    }
+
+    // Work around USD issue #1516. There is a significant performance overhead caused by populating
+    // selection, so only force the populate selection to occur when we detect a change which
+    // impacts the instance indexing.
+    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+    bool             forcePopulateSelection = !_changeVersions.instanceIndexValid(changeTracker);
+    _changeVersions.sync(changeTracker);
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass)) {
+    if (_selectionModeChanged || (_selectionChanged && !inSelectionPass)
+        || forcePopulateSelection) {
         _UpdateSelectionStates();
         _selectionChanged = false;
         _selectionModeChanged = false;
     }
 #else
-    if (_selectionChanged && !inSelectionPass) {
+    if ((_selectionChanged && !inSelectionPass) || forcePopulateSelection) {
         _UpdateSelectionStates();
         _selectionChanged = false;
     }
@@ -787,15 +799,6 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
 #endif
     } else {
-        const unsigned int displayStyle = frameContext.getDisplayStyle();
-
-        // Query the wireframe color assigned to proxy shape.
-        if (displayStyle
-            & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
-            _wireframeColor
-                = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
-        }
-
         // Update repr selector based on display style of the current viewport
         if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
             if (!reprSelector.Contains(HdVP2ReprTokens->bbox)) {
@@ -825,13 +828,21 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         }
     }
 
-    if (_defaultCollection->GetReprSelector() != reprSelector) {
-        _defaultCollection->SetReprSelector(reprSelector);
-        _taskController->SetCollection(*_defaultCollection);
-    }
-
     // if there are no repr's to update then don't even call sync.
     if (reprSelector != HdReprSelector()) {
+        if (_defaultCollection->GetReprSelector() != reprSelector) {
+            _defaultCollection->SetReprSelector(reprSelector);
+            _taskController->SetCollection(*_defaultCollection);
+
+            // Mark everything "dirty" so that sync is called on everything
+            // If there are multiple views up with different viewport modes then
+            // this is slow.
+            auto& rprims = _renderIndex->GetRprimIds();
+            for (auto path : rprims) {
+                changeTracker.MarkRprimDirty(path, MayaPrimCommon::DirtyDisplayMode);
+            }
+        }
+
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
     }
 }
@@ -1258,12 +1269,13 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
 #endif
         HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
         for (auto path : *dirtyPaths) {
-            changeTracker.MarkRprimDirty(path, dirtySelectionBits);
+            if (_renderIndex->HasRprim(path))
+                changeTracker.MarkRprimDirty(path, dirtySelectionBits);
         }
 
         // now that the appropriate prims have been marked dirty trigger
         // a sync so that they all update.
-        HdRprimCollection collection(HdTokens->geometry, kSmoothHullReprSelector);
+        HdRprimCollection collection(HdTokens->geometry, _defaultCollection->GetReprSelector());
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
         _engine.Execute(_renderIndex.get(), &_dummyTasks);
@@ -1306,10 +1318,10 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // or when the global render tags are set. Check to see if the render tags version has
     // changed since the last time we set the render tags so we know if there is a change
     // to an individual rprim or not.
-    bool rprimRenderTagChanged = (_renderTagVersion != changeTracker.GetRenderTagVersion());
+    bool rprimRenderTagChanged = !_changeVersions.renderTagValid(changeTracker);
 #ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     rprimRenderTagChanged
-        = rprimRenderTagChanged || (_visibilityVersion != changeTracker.GetVisibilityChangeCount());
+        = rprimRenderTagChanged || !_changeVersions.visibilityValid(changeTracker);
 #endif
 
     bool renderPurposeChanged = false;
@@ -1394,11 +1406,6 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // UsdImagingDelegate::GetRenderTag(). So far I don't see an advantage of
     // using this feature for MayaUSD, but it may be useful at some point in
     // the future.
-
-    _renderTagVersion = changeTracker.GetRenderTagVersion();
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    _visibilityVersion = changeTracker.GetVisibilityChangeCount();
-#endif
 }
 
 //! \brief  List the rprims in collection that match renderTags
@@ -1467,13 +1474,121 @@ HdVP2SelectionStatus ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path
 //! \brief  Query the wireframe color assigned to the proxy shape.
 const MColor& ProxyRenderDelegate::GetWireframeColor() const { return _wireframeColor; }
 
-//! \brief
-const MColor& ProxyRenderDelegate::GetSelectionHighlightColor(bool lead) const
+GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
 {
-    static const MColor kLeadColor(0.056f, 1.0f, 0.366f, 1.0f);
-    static const MColor kActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
+    // Check the cache. It is safe since _dormantCurveColorCache.second is atomic
+    if (_dormantCurveColorCache.second == _frameCounter) {
+        return _dormantCurveColorCache.first;
+    }
 
-    return lead ? kLeadColor : kActiveColor;
+    // Enter the mutex and check the cache again
+    std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
+    if (_dormantCurveColorCache.second == _frameCounter) {
+        return _dormantCurveColorCache.first;
+    }
+
+    // Execute Maya command engine to fetch the color
+    MDoubleArray colorResult;
+    MGlobal::executeCommand(
+        "int $index = `displayColor -q -dormant \"curve\"`; colorIndex -q $index;", colorResult);
+
+    if (colorResult.length() == 3) {
+        _dormantCurveColorCache.first = GfVec3f(colorResult[0], colorResult[1], colorResult[2]);
+    } else {
+        TF_WARN("Failed to obtain curve default color");
+        // In case of an error, return the default navy-blue color
+        _dormantCurveColorCache.first = GfVec3f(0.000f, 0.016f, 0.376f);
+    }
+
+    // Update the cache and return
+    _dormantCurveColorCache.second = _frameCounter;
+    return _dormantCurveColorCache.first;
+}
+
+//! \brief
+MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
+{
+    static const MColor kDefaultLeadColor(0.056f, 1.0f, 0.366f, 1.0f);
+    static const MColor kDefaultActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    // Prepare to construct the query command.
+    bool         fromPalette = true;
+    const char*  queryName = "unsupported";
+    MColorCache* colorCache = nullptr;
+    if (className.IsEmpty()) {
+        colorCache = &_leadColorCache;
+        fromPalette = false;
+        queryName = "lead";
+    } else if (className == HdPrimTypeTokens->mesh) {
+        colorCache = &_activeMeshColorCache;
+        fromPalette = false;
+        queryName = "polymeshActive";
+    } else if (className == HdPrimTypeTokens->basisCurves) {
+        colorCache = &_activeCurveColorCache;
+        queryName = "curve";
+    } else {
+        TF_WARN(
+            "ProxyRenderDelegate::GetSelectionHighlightColor - unsupported class: '%s'",
+            className.GetString().c_str());
+        return kDefaultActiveColor;
+    }
+
+    // Check the cache. It is safe since colorCache->second is atomic
+    if (colorCache->second == _frameCounter) {
+        return colorCache->first;
+    }
+
+    // Enter the mutex and check the cache again
+    std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
+    if (colorCache->second == _frameCounter) {
+        return colorCache->first;
+    }
+
+    // Construct the query command string.
+    MString queryCommand;
+    if (fromPalette) {
+        queryCommand = "int $index = `displayColor -q -active \"";
+        queryCommand += queryName;
+        queryCommand += "\"`; colorIndex -q $index;";
+    } else {
+        queryCommand = "displayRGBColor -q \"";
+        queryCommand += queryName;
+        queryCommand += "\"";
+    }
+
+    // Query and return the selection color.
+    MDoubleArray colorResult;
+    MGlobal::executeCommand(queryCommand, colorResult);
+
+    if (colorResult.length() == 3) {
+        MColor color(colorResult[0], colorResult[1], colorResult[2]);
+
+        if (className.IsEmpty()) {
+            // The 'lead' color is returned in display space, so we need to convert it to
+            // rendering space. However, function MColorPickerUtilities::applyViewTransform
+            // is supported only starting from Maya 2023, so in opposite case we just return
+            // the default lead color.
+#if MAYA_API_VERSION >= 20230000
+            colorCache->first
+                = MColorPickerUtilities::applyViewTransform(color, MColorPickerUtilities::kInverse);
+#else
+            colorCache->first = kDefaultLeadColor;
+#endif
+        } else {
+            colorCache->first = color;
+        }
+    } else {
+        TF_WARN(
+            "Failed to obtain selection highlight color for '%s' objects",
+            className.IsEmpty() ? "lead" : className.GetString().c_str());
+
+        // In case of any failure, return the default color
+        colorCache->first = className.IsEmpty() ? kDefaultLeadColor : kDefaultActiveColor;
+    }
+
+    // Update the cache and return
+    colorCache->second = _frameCounter;
+    return colorCache->first;
 }
 
 bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const

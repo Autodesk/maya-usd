@@ -171,7 +171,12 @@ public:
     const MColor& GetWireframeColor() const;
 
     MAYAUSD_CORE_PUBLIC
-    const MColor& GetSelectionHighlightColor(bool lead) const;
+    GfVec3f GetCurveDefaultColor();
+
+    // Returns the selection highlight color for a given HdPrim type.
+    // If className is empty, returns the lead highlight color.
+    MAYAUSD_CORE_PUBLIC
+    MColor GetSelectionHighlightColor(const TfToken& className = TfToken());
 
     MAYAUSD_CORE_PUBLIC
     const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
@@ -287,16 +292,63 @@ private:
 #endif
     MColor _wireframeColor; //!< Wireframe color assigned to the proxy shape
 
+    std::mutex _mayaCommandEngineMutex;
+    uint64_t   _frameCounter { 0 };
+
+    typedef std::pair<MColor, std::atomic<uint64_t>>  MColorCache;
+    typedef std::pair<GfVec3f, std::atomic<uint64_t>> GfVec3fCache;
+
+    MColorCache  _activeMeshColorCache { MColor(), 0 };
+    MColorCache  _activeCurveColorCache { MColor(), 0 };
+    MColorCache  _leadColorCache { MColor(), 0 };
+    GfVec3fCache _dormantCurveColorCache { GfVec3f(), 0 };
+
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
 
-    //! The render tag version used the last time render tags were updated
-    unsigned int _renderTagVersion { 0 }; // initialized to 1 in HdChangeTracker, so we'll always
-                                          // have an invalid version the first update.
-#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
-    unsigned int _visibilityVersion { 0 }; // initialized to 1 in HdChangeTracker.
-#endif
-    bool _taskRenderTagsValid {
+    // Version Id values saved from the last time we queried the HdChangeTracker.
+    // These values are initialized to 1 in HdChangeTracker
+    struct HdChangeTrackerVersions
+    {
+        //! The render tag version the last time _Execute was called
+        unsigned int _renderTag { 0 };
+        //! The visibility change count the last time _Execute was called
+        unsigned int _visibility { 0 };
+        //! The combined instancer index version and instance index change count the last time
+        //! _Execute was called
+        unsigned int _instanceIndex { 0 };
+
+        void sync(const HdChangeTracker& tracker)
+        {
+            _renderTag = tracker.GetRenderTagVersion();
+            _visibility = tracker.GetVisibilityChangeCount();
+            _instanceIndex = tracker.GetInstancerIndexVersion();
+        }
+
+        bool renderTagValid(const HdChangeTracker& tracker)
+        {
+            return _renderTag == tracker.GetRenderTagVersion();
+        }
+
+        bool visibilityValid(const HdChangeTracker& tracker)
+        {
+            return _visibility == tracker.GetVisibilityChangeCount();
+        }
+
+        bool instanceIndexValid(const HdChangeTracker& tracker)
+        {
+            return _instanceIndex == tracker.GetInstancerIndexVersion();
+        }
+
+        void reset()
+        {
+            _renderTag = 0;
+            _visibility = 0;
+            _instanceIndex = 0;
+        }
+    };
+    HdChangeTrackerVersions _changeVersions;
+    bool                    _taskRenderTagsValid {
         false
     }; //!< If false the render tags on the dummy render task are not the minimum set of tags.
 

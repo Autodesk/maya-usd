@@ -74,7 +74,7 @@ bool MayaSessionState::getStageEntry(StageEntry* out_stageEntry, const MString& 
     UsdPrim prim;
 
     MObject shapeObj;
-    MStatus status = UsdMayaUtil::GetMObjectByName(shapePath.asChar(), shapeObj);
+    MStatus status = UsdMayaUtil::GetMObjectByName(shapePath, shapeObj);
     CHECK_MSTATUS_AND_RETURN(status, false);
     MFnDagNode dagNode(shapeObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);

@@ -9,6 +9,7 @@ target_sources(${PROJECT_NAME}
         customLayerData.cpp
         diagnosticDelegate.cpp
         editability.cpp
+        editRouter.cpp
         query.cpp
         plugRegistryHelper.cpp
         selectability.cpp
@@ -27,6 +28,7 @@ set(HEADERS
     converter.h
     diagnosticDelegate.h
     editability.h
+    editRouter.h
     hash.h
     query.h
     plugRegistryHelper.h

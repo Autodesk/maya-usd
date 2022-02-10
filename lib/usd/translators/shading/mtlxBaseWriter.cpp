@@ -117,7 +117,7 @@ UsdAttribute MtlxUsd_BaseWriter::AddConversion(
         TfToken        converterName(TfStringPrintf(
             "%s_%s_%s_%s",
             _tokens->ConverterPrefix.GetText(),
-            depNodeFn.name().asChar(),
+            UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()).c_str(),
             fromType.GetAsToken().GetText(),
             toType.GetAsToken().GetText()));
         const SdfPath  converterPath = nodegraphPath.AppendChild(converterName);
@@ -248,8 +248,10 @@ UsdAttribute MtlxUsd_BaseWriter::AddLuminance(int numChannels)
     UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
     SdfPath           nodegraphPath = nodegraphSchema.GetPath();
 
-    TfToken luminanceName(
-        TfStringPrintf("%s_%s", _tokens->LuminancePrefix.GetText(), depNodeFn.name().asChar()));
+    TfToken        luminanceName(TfStringPrintf(
+        "%s_%s",
+        _tokens->LuminancePrefix.GetText(),
+        UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()).c_str()));
     const SdfPath  luminancePath = nodegraphPath.AppendChild(luminanceName);
     UsdShadeShader luminanceSchema = UsdShadeShader::Define(GetUsdStage(), luminancePath);
 
@@ -299,7 +301,7 @@ UsdAttribute MtlxUsd_BaseWriter::AddNormalMapping(UsdAttribute normalInput)
     TfToken        nodeName(TfStringPrintf(
         "%s_%s_%s",
         _tokens->NormalMapPrefix.GetText(),
-        depNodeFn.name().asChar(),
+        UsdMayaUtil::SanitizeName(depNodeFn.name().asChar()).c_str(),
         normalInput.GetBaseName().GetText()));
     SdfPath        nodePath = nodegraphPath.AppendChild(nodeName);
     UsdShadeShader nodeSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);

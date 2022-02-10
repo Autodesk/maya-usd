@@ -17,7 +17,6 @@
 #ifndef LAYEREDITORWIDGET_H
 #define LAYEREDITORWIDGET_H
 
-#include "generatedIconButton.h"
 #include "layerTreeItem.h"
 #include "layerTreeView.h"
 
@@ -30,7 +29,6 @@ class QPushButton;
 
 namespace UsdLayerEditor {
 class DirtyLayersCountBadge;
-class GeneratedIconButton;
 class LayerTreeView;
 class SessionState;
 
@@ -64,8 +62,8 @@ protected:
     QWidget*      _saveButtonParent { nullptr };
     struct
     {
-        GeneratedIconButton*   _newLayer;
-        GeneratedIconButton*   _loadLayer;
+        QPushButton*           _newLayer;
+        QPushButton*           _loadLayer;
         QPushButton*           _saveStageButton;
         DirtyLayersCountBadge* _dirtyCountBadge;
     } _buttons;

@@ -34,6 +34,8 @@ class testUsdImportMayaReference(unittest.TestCase):
     def setUpClass(cls):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
+        cmds.namespace(add='unique_namespace_1')
+
         usdFile = os.path.join(inputPath, "UsdImportMayaReferenceTest", "MayaReference.usda")
         cmds.usdImport(file=usdFile, shadingMode=[['none', 'default'], ])
 
@@ -43,6 +45,10 @@ class testUsdImportMayaReference(unittest.TestCase):
 
     def testImport(self):
         mayaReference = 'rig:cubeRig'
+        self.assertTrue(cmds.objExists(mayaReference))
+
+    def testMergeNamespacesOnClash(self):
+        mayaReference = 'unique_namespace_1:cubeRig'
         self.assertTrue(cmds.objExists(mayaReference))
 
 if __name__ == '__main__':

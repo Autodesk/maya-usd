@@ -17,6 +17,7 @@ target_sources(${TARGET_NAME}
         usdPhongEWriter.cpp
         usdReflectWriter.cpp
         usdUVTextureReader.cpp
+        usdPrimvarReaderFloat3Reader.cpp
 )
 
 if (BUILD_RFM_TRANSLATORS)

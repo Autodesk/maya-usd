@@ -18,6 +18,7 @@
 #include "private/UfeNotifGuard.h"
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+#include <mayaUsd/commands/PullPushCommands.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #endif
 #include <mayaUsd/ufe/UsdObject3d.h>
@@ -29,6 +30,7 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/getenv.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/reference.h>
@@ -117,6 +119,8 @@ static constexpr char    kEditAsMayaLabel[] = "Edit As Maya Data";
 static const std::string kEditAsMayaImage { "edit_as_Maya.png" };
 static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
 static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
+static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
+static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
 #endif
 
 #if PXR_VERSION >= 2008
@@ -155,6 +159,13 @@ static const std::vector<std::string> kSchemaNiceNames = {
 };
 // clang-format on
 #endif
+
+//! \brief Change the cursor to wait state on construction and restore it on destruction.
+struct WaitCursor
+{
+    WaitCursor() { MGlobal::executeCommand("waitCursor -state 1"); }
+    ~WaitCursor() { MGlobal::executeCommand("waitCursor -state 0"); }
+};
 
 //! \brief Undoable command for loading a USD prim.
 class LoadUndoableCommand : public Ufe::UndoableCommand
@@ -374,12 +385,12 @@ global proc string ClearAllUSDReferencesConfirm()
 ClearAllUSDReferencesConfirm();
 )";
 
-class AddReferenceUndoableCommand : public Ufe::UndoableCommand
+class AddUsdReferenceUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     static const std::string commandName;
 
-    AddReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath)
+    AddUsdReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath)
         : _prim(prim)
         , _sdfRef()
         , _filePath(filePath)
@@ -408,7 +419,7 @@ private:
     SdfReference      _sdfRef;
     const std::string _filePath;
 };
-const std::string AddReferenceUndoableCommand::commandName("Add Reference...");
+const std::string AddUsdReferenceUndoableCommand::commandName("Add USD Reference...");
 
 class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
 {
@@ -616,16 +627,19 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
 #endif
 
-        // Top-level items (do not add for gateway type node):
-        if (!fIsAGatewayType) {
 #ifdef UFE_V3_FEATURES_AVAILABLE
-            if (PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
-                items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
-            }
+        // Temporary - hide some of the context menu items behind an
+        //             env var until they are completed.
+        if (!fIsAGatewayType && PrimUpdaterManager::getInstance().canEditAsMaya(path())) {
+            items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
             items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
-            items.emplace_back(Ufe::ContextItem::kSeparator);
+        }
+        if (TfGetenvBool("MAYAUSD_ENABLE_ADD_MAYA_REFERENCE", false))
+            items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+        items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
+        if (!fIsAGatewayType) {
             // Working set management (load and unload):
             const auto itemLabelPairs = _computeLoadAndUnloadItems(prim());
             for (const auto& itemLabelPair : itemLabelPairs) {
@@ -662,14 +676,15 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 kUSDToggleInstanceableStateItem,
                 prim().IsInstanceable() ? kUSDUnmarkAsInstanceableLabel
                                         : kUSDMarkAsInstancebaleLabel);
-        }
+        } // !fIsAGatewayType
 
         // Top level item - Add New Prim (for all context op types).
         items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
 
         if (!fIsAGatewayType) {
             items.emplace_back(
-                AddReferenceUndoableCommand::commandName, AddReferenceUndoableCommand::commandName);
+                AddUsdReferenceUndoableCommand::commandName,
+                AddUsdReferenceUndoableCommand::commandName);
             items.emplace_back(
                 ClearAllReferencesUndoableCommand::commandName,
                 ClearAllReferencesUndoableCommand::commandName);
@@ -823,14 +838,14 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         MGlobal::executeCommand(script);
         return nullptr;
 #endif
-    } else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
+    } else if (itemPath[0] == AddUsdReferenceUndoableCommand::commandName) {
         MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);
 
         std::string path = UsdMayaUtil::convert(fileRef);
         if (path.empty())
             return nullptr;
 
-        return std::make_shared<AddReferenceUndoableCommand>(prim(), path);
+        return std::make_shared<AddUsdReferenceUndoableCommand>(prim(), path);
     } else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
         MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
         if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
@@ -841,12 +856,22 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 #ifdef UFE_V3_FEATURES_AVAILABLE
     else if (itemPath[0] == kEditAsMayaItem) {
         MString script;
-        script.format("mayaUsdMenu_pullToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
-        MGlobal::executeCommand(script);
+        script.format(
+            "^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
+        WaitCursor wait;
+        MGlobal::executeCommand(script, true, true);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
-        script.format("mayaUsdMenu_duplicateToDG \"^1s\"", Ufe::PathString::string(path()).c_str());
-        MGlobal::executeCommand(script);
+        script.format(
+            "^1s \"^2s\" \"|world\"",
+            DuplicateCommand::commandName,
+            Ufe::PathString::string(path()).c_str());
+        WaitCursor wait;
+        MGlobal::executeCommand(script, true, true);
+    } else if (itemPath[0] == kAddMayaReferenceItem) {
+        MString script;
+        script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path()).c_str());
+        MString result = MGlobal::executeCommandStringResult(script);
     }
 #endif
 

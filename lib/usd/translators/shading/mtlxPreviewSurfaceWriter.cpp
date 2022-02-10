@@ -88,13 +88,7 @@ MtlxUsd_PreviewSurfaceWriter::MtlxUsd_PreviewSurfaceWriter(
 
     shaderSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_UsdPreviewSurface_surfaceshader));
 
-    UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
-    if (!TF_VERIFY(
-            nodegraphSchema,
-            "Could not define UsdShadeNodeGraph at path '%s'\n",
-            GetUsdPath().GetText())) {
-        return;
-    }
+    UsdShadeNodeGraph nodegraphSchema;
 
     for (const TfToken& mayaAttrName : PxrMayaUsdPreviewSurfaceTokens->allTokens) {
 
@@ -135,6 +129,15 @@ MtlxUsd_PreviewSurfaceWriter::MtlxUsd_PreviewSurfaceWriter(
 
         // All connections go directly to the node graph:
         if (attrPlug.isConnected()) {
+            if (!nodegraphSchema) {
+                nodegraphSchema = UsdShadeNodeGraph(GetNodeGraph());
+                if (!TF_VERIFY(
+                        nodegraphSchema,
+                        "Could not define UsdShadeNodeGraph at path '%s'\n",
+                        GetUsdPath().GetText())) {
+                    return;
+                }
+            }
             UsdShadeOutput ngOutput = nodegraphSchema.CreateOutput(mayaAttrName, valueTypeName);
             input.ConnectToSource(ngOutput);
         }

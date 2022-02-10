@@ -16,6 +16,7 @@
 #include "readUtil.h"
 
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
@@ -75,7 +76,7 @@ MObject UsdMayaReadUtil::FindOrCreateMayaAttr(
     const std::string&      attrName,
     const std::string&      attrNiceName)
 {
-    MDGModifier modifier;
+    MDGModifier& modifier = MDGModifierUndoItem::create("Generic attribute find or creation");
     return FindOrCreateMayaAttr(typeName, variability, depNode, attrName, attrNiceName, modifier);
 }
 
@@ -480,7 +481,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
     const VtValue& newValue,
     const bool     unlinearizeColors)
 {
-    MDGModifier modifier;
+    MDGModifier& modifier = MDGModifierUndoItem::create("Generic Maya attribute modification");
     return SetMayaAttr(attrPlug, newValue, modifier, unlinearizeColors);
 }
 
@@ -721,23 +722,33 @@ bool UsdMayaReadUtil::SetMayaAttr(
             ok = true;
         }
     } else if (newValue.IsHolding<GfVec2d>()) {
+        GfVec2d        v = newValue.Get<GfVec2d>();
+        MFnNumericData data;
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Double)) {
-            GfVec2d        v = newValue.Get<GfVec2d>();
-            MFnNumericData data;
-            MObject        dataObj = data.create(MFnNumericData::k2Double);
+            MObject dataObj = data.create(MFnNumericData::k2Double);
             data.setData2Double(v[0], v[1]);
+            modifier.newPlugValue(attrPlug, dataObj);
+            ok = true;
+        } else if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Float)) {
+            MObject dataObj = data.create(MFnNumericData::k2Float);
+            data.setData2Float(v[0], v[1]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
     } else if (newValue.IsHolding<GfVec3d>()) {
+        GfVec3d v = newValue.Get<GfVec3d>();
+        if (unlinearizeColors) {
+            v = _ConvertVec(attrPlug, v);
+        }
+        MFnNumericData data;
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Double)) {
-            GfVec3d v = newValue.Get<GfVec3d>();
-            if (unlinearizeColors) {
-                v = _ConvertVec(attrPlug, v);
-            }
-            MFnNumericData data;
-            MObject        dataObj = data.create(MFnNumericData::k3Double);
+            MObject dataObj = data.create(MFnNumericData::k3Double);
             data.setData3Double(v[0], v[1], v[2]);
+            modifier.newPlugValue(attrPlug, dataObj);
+            ok = true;
+        } else if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Float)) {
+            MObject dataObj = data.create(MFnNumericData::k3Float);
+            data.setData3Float(v[0], v[1], v[2]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
@@ -788,7 +799,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
 
 void UsdMayaReadUtil::SetMayaAttrKeyableState(MPlug& attrPlug, const SdfVariability variability)
 {
-    MDGModifier modifier;
+    MDGModifier& modifier = MDGModifierUndoItem::create("Generic Maya attribute keyable state");
     SetMayaAttrKeyableState(attrPlug, variability, modifier);
 }
 

@@ -19,6 +19,7 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/editRouter.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
@@ -48,6 +49,9 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
 
     auto newName = uniqueChildName(parentPrim, srcPrim.GetName());
     _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
+
+    _srcLayer = srcPrim.GetStage()->GetEditTarget().GetLayer();
+    _dstLayer = getEditRouterLayer(PXR_NS::TfToken("duplicate"), srcPrim);
 }
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
@@ -97,8 +101,7 @@ void UsdUndoDuplicateCommand::execute()
     }
     stage->SetLoadRules(rules);
 
-    auto layer = stage->GetEditTarget().GetLayer();
-    bool retVal = PXR_NS::SdfCopySpec(layer, path, layer, _usdDstPath);
+    bool retVal = PXR_NS::SdfCopySpec(_srcLayer, path, _dstLayer, _usdDstPath);
     TF_VERIFY(
         retVal,
         "Failed to copy spec data at '%s' to '%s'",
@@ -144,11 +147,7 @@ bool UsdUndoDuplicateCommand::duplicateUndo()
 bool UsdUndoDuplicateCommand::duplicateRedo()
 {
     auto prim = ufePathToPrim(_ufeSrcPath);
-    auto layer = prim.GetStage()->GetEditTarget().GetLayer();
-
-    bool retVal = SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
-
-    return retVal;
+    return SdfCopySpec(_srcLayer, prim.GetPath(), _dstLayer, _usdDstPath);
 }
 
 void UsdUndoDuplicateCommand::undo()

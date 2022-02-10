@@ -962,10 +962,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 }
             }
 
-            // If color/opacity is not found, the 18% gray color will be used
-            // to match the default color of Hydra Storm.
+            // If color/opacity is not found, the default color of Maya curves will be used
             if (colorArray.empty()) {
-                colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
+                colorArray.push_back(drawScene.GetCurveDefaultColor());
                 colorInterpolation = HdInterpolationConstant;
             }
 
@@ -1207,9 +1206,10 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             // it needs to display both wireframe color and selection highlight
             // with one color vertex buffer.
             if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
-                const MColor colors[] = { drawScene.GetWireframeColor(),
-                                          drawScene.GetSelectionHighlightColor(false),
-                                          drawScene.GetSelectionHighlightColor(true) };
+                const MColor colors[]
+                    = { drawScene.GetWireframeColor(),
+                        drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->basisCurves),
+                        drawScene.GetSelectionHighlightColor() };
 
                 // Store the indices to colors.
                 std::vector<unsigned char> colorIndices;
@@ -1265,9 +1265,10 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 int  primitiveStride = 0;
 
                 const MColor& color
-                    = (_selectionStatus != kUnselected
-                           ? drawScene.GetSelectionHighlightColor(_selectionStatus == kFullyLead)
-                           : drawScene.GetWireframeColor());
+                    = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
+                           _selectionStatus == kFullyLead ? TfToken()
+                                                          : HdPrimTypeTokens->basisCurves)
+                                                       : drawScene.GetWireframeColor());
 
                 if (desc.geomStyle == HdBasisCurvesGeomStylePatch) {
                     if (_selectionStatus != kUnselected) {
@@ -1368,15 +1369,11 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                                                        colorBuffer,
                                                        primvarBuffers,
                                                        indexBuffer]() {
+        // This code executes serially, once per basisCurve updated. Keep
+        // performance in mind while modifying this code.
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
         if (ARCH_UNLIKELY(!renderItem))
             return;
-
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            drawItem->GetDrawItemName().asChar(),
-            "Commit");
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {

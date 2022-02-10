@@ -52,6 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define TR_USD_PRIMVAR \
     (UsdPrimvarReader_float2) \
+    (displayColor) \
     (result)
 
 #define TR_USD_XFORM \
@@ -173,12 +174,15 @@ TF_DECLARE_PUBLIC_TOKENS(TrUsdTokens, , TR_USD_COMMON TR_USD_TEXTURE TR_USD_PRIM
     (outUV) \
     (uvCoord)
 
+#define TR_MAYA_PRIMVAR \
+    (cpvColor)
+
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     TrMayaTokens,
     ,
-    TR_MAYA_MATERIALS TR_MAYA_STANDARD_SURFACE TR_MAYA_FILE TR_MAYA_UV);
+    TR_MAYA_MATERIALS TR_MAYA_STANDARD_SURFACE TR_MAYA_FILE TR_MAYA_UV TR_MAYA_PRIMVAR);
 
 #ifdef WANT_MATERIALX_TRANSLATORS
 
@@ -262,6 +266,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (cubic)
 
 #define TR_MTLX_ATTRIBUTES \
+    (varnameStr) \
     (geomprop) \
     (channels) \
     (in) \

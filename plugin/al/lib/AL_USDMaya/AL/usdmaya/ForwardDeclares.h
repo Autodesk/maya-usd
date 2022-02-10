@@ -70,9 +70,7 @@ class TransformTranslator;
 
 namespace nodes {
 class Layer;
-class ProxyDrawOverride;
 class ProxyShape;
-class ProxyShapeUI;
 class SchemaNodeRefDB;
 class Transform;
 class Scope;

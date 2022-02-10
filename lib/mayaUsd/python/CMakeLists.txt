@@ -25,12 +25,16 @@ add_library(${PYTHON_TARGET_NAME} SHARED)
 target_sources(${PYTHON_TARGET_NAME} 
     PRIVATE
         module.cpp
+        pythonObjectRegistry.cpp
+        wrapSparseValueWriter.cpp
         wrapAdaptor.cpp
         wrapBlockSceneModificationContext.cpp
         wrapColorSpace.cpp
         wrapConverter.cpp
         wrapDiagnosticDelegate.cpp
+        wrapEditRouter.cpp
         wrapMeshWriteUtils.cpp
+        wrapOpUndoItem.cpp
         wrapQuery.cpp
         wrapReadUtil.cpp
         wrapRoundTripUtil.cpp
@@ -38,6 +42,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapTokens.cpp
         wrapUsdUndoManager.cpp
         wrapUserTaggedAttribute.cpp
+        wrapUtil.cpp
         wrapWriteUtil.cpp
         wrapXformStack.cpp
 
@@ -56,6 +61,7 @@ target_sources(${PYTHON_TARGET_NAME}
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PYTHON_TARGET_NAME}
         PRIVATE
+            wrapPrimUpdater.cpp
             wrapPrimUpdaterManager.cpp
     )
 endif()

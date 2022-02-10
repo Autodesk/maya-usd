@@ -101,15 +101,13 @@ message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
 
 include(cmake/jinja.cmake)
 
+find_package(USD 0.20.05 REQUIRED)
 if (CMAKE_WANT_MATERIALX_BUILD)
-    # Requires USD_SHA1 > 891eef161aeed582b9831584ab7f31ebe4bc52e8 for hdMtlx module
-    find_package(USD 0.21.08 REQUIRED)
-    # USD must have been built with MaterialX:
+    # Requires at least USD 21.08 for hdMtlx module and USD must have been built with MaterialX:
     if(NOT TARGET hdMtlx)
-        message(FATAL_ERROR "MaterialX option requires USD binaries compiled with -DPXR_ENABLE_MATERIALX_SUPPORT=ON and recent enough to have the hdMtlx module")
+        set(CMAKE_WANT_MATERIALX_BUILD OFF)
+        message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this USD package.")
     endif()
-else()
-    find_package(USD 0.20.05 REQUIRED)
 endif()
 include(cmake/usd.cmake)
 
@@ -140,16 +138,16 @@ if(CMAKE_WANT_UFE_BUILD)
     endif()
 endif()
 
-if(CMAKE_WANT_MATERIALX_BUILD)
+if(CMAKE_WANT_MATERIALX_BUILD AND MAYA_LIGHTAPI_VERSION LESS 2)
+    set(CMAKE_WANT_MATERIALX_BUILD OFF)
+    message(WARNING "Disabling MaterialX VP2 rendering: it is not supported by this version of Maya.")
+endif()
+
+if(TARGET hdMtlx)
+    # MaterialX was built into USD. We need to know where to find MaterialX targets.
     find_package(MaterialX REQUIRED)
     if(TARGET MaterialXCore)
         message(STATUS "Found MaterialX")
-        if(NOT TARGET MaterialXGenOgsXml)
-            message(FATAL_ERROR "MaterialX option requires the MaterialXGenOgsXml target found in the adsk_contrib/dev branch of the Autodesk-forks MaterialX library compiled with -DMATERIALX_BUILD_GEN_OGSXML=ON")
-        endif()
-    endif()
-    if (MAYA_LIGHTAPI_VERSION LESS 2)
-        message(FATAL_ERROR "MaterialX option requires a Maya version that implements the light API version 2")
     endif()
 endif()
 
@@ -176,9 +174,9 @@ endif()
 include(cmake/compiler_config.cmake)
 
 #------------------------------------------------------------------------------
-# gulark filesystem
+# gulrak filesystem
 #------------------------------------------------------------------------------
-include(cmake/gulark.cmake)
+include(cmake/gulrak.cmake)
 
 #------------------------------------------------------------------------------
 # test

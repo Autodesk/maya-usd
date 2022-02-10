@@ -189,7 +189,8 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXCore>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXFormat>
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXRender>
-        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenOgsXml>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenShader>
+        $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:MaterialXGenGlsl>
 )
 
 # -----------------------------------------------------------------------------

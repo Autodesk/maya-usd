@@ -71,6 +71,8 @@ public:
         const SdfValueTypeName& typeName) override;
 
 private:
+    SdfPath _GetPlace2DTexturePath(const MFnDependencyNode& depNodeFn);
+
     int _numChannels = 4;
 };
 
@@ -80,8 +82,8 @@ PXRUSDMAYA_REGISTER_SHADER_WRITER(file, MtlxUsd_FileWriter);
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    // Prefix for helper nodes:
-    ((PrimvarReaderPrefix, "MayaGeomPropValue"))
+    // Shared primvar writer (when no place2dTexture found):
+    ((PrimvarReaderShaderName, "shared_MayaGeomPropValue"))
 );
 // clang-format on
 
@@ -101,7 +103,8 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     }
 
     SdfPath nodegraphPath = nodegraphSchema.GetPath();
-    SdfPath texPath = nodegraphPath.AppendChild(TfToken(depNodeFn.name().asChar()));
+    SdfPath texPath
+        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar())));
 
     // Create a image shader as the "primary" shader for this writer.
     UsdShadeShader texSchema = UsdShadeShader::Define(GetUsdStage(), texPath);
@@ -148,40 +151,54 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     }
 
     // Now create a geompropvalue reader that the image shader will use.
-    TfToken primvarReaderName(
-        TfStringPrintf("%s_%s", _tokens->PrimvarReaderPrefix.GetText(), depNodeFn.name().asChar()));
-    const SdfPath  primvarReaderPath = nodegraphPath.AppendChild(primvarReaderName);
-    UsdShadeShader primvarReaderSchema = UsdShadeShader::Define(GetUsdStage(), primvarReaderPath);
+    SdfPath        primvarReaderPath = _GetPlace2DTexturePath(depNodeFn);
+    UsdShadeOutput primvarReaderOutput;
 
-    primvarReaderSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_geompropvalue_vector2));
+    if (!GetUsdStage()->GetPrimAtPath(primvarReaderPath)) {
+        UsdShadeShader primvarReaderSchema
+            = UsdShadeShader::Define(GetUsdStage(), primvarReaderPath);
+        primvarReaderSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_geompropvalue_vector2));
+        UsdShadeInput varnameInput
+            = primvarReaderSchema.CreateInput(TrMtlxTokens->geomprop, SdfValueTypeNames->String);
 
-    UsdShadeInput varnameInput
-        = primvarReaderSchema.CreateInput(TrMtlxTokens->geomprop, SdfValueTypeNames->String);
-
-    // We expose the primvar reader varname attribute to the material to allow
-    // easy specialization based on UV mappings to geometries:
-    SdfPath          materialPath = GetUsdPath().GetParentPath();
-    UsdShadeMaterial materialSchema(GetUsdStage()->GetPrimAtPath(materialPath));
-    while (!materialSchema && !materialPath.IsEmpty()) {
-        materialPath = materialPath.GetParentPath();
-        materialSchema = UsdShadeMaterial(GetUsdStage()->GetPrimAtPath(materialPath));
-    }
-
-    if (materialSchema) {
         TfToken inputName(
-            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), TrUsdTokens->varname.GetText()));
-        UsdShadeInput materialInput
-            = materialSchema.CreateInput(inputName, SdfValueTypeNames->String);
-        materialInput.Set(UsdUtilsGetPrimaryUVSetName().GetString());
-        varnameInput.ConnectToSource(materialInput);
+            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), TrMtlxTokens->varnameStr.GetText()));
+
+        // We expose the primvar reader varnameStr attribute to the material to allow
+        // easy specialization based on UV mappings to geometries:
+        UsdPrim          materialPrim = primvarReaderSchema.GetPrim().GetParent();
+        UsdShadeMaterial materialSchema(materialPrim);
+        while (!materialSchema && materialPrim) {
+            UsdShadeNodeGraph intermediateNodeGraph(materialPrim);
+            if (intermediateNodeGraph) {
+                UsdShadeInput intermediateInput
+                    = intermediateNodeGraph.CreateInput(inputName, SdfValueTypeNames->String);
+                varnameInput.ConnectToSource(intermediateInput);
+                varnameInput = intermediateInput;
+            }
+
+            materialPrim = materialPrim.GetParent();
+            materialSchema = UsdShadeMaterial(materialPrim);
+        }
+
+        if (materialSchema) {
+            UsdShadeInput materialInput
+                = materialSchema.CreateInput(inputName, SdfValueTypeNames->String);
+            materialInput.Set(UsdUtilsGetPrimaryUVSetName().GetString());
+            varnameInput.ConnectToSource(materialInput);
+        } else {
+            varnameInput.Set(UsdUtilsGetPrimaryUVSetName());
+        }
+
+        primvarReaderOutput
+            = primvarReaderSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float2);
     } else {
-        varnameInput.Set(UsdUtilsGetPrimaryUVSetName());
+        // Re-using an existing primvar reader:
+        UsdShadeShader primvarReaderShaderSchema(GetUsdStage()->GetPrimAtPath(primvarReaderPath));
+        primvarReaderOutput = primvarReaderShaderSchema.GetOutput(TrMtlxTokens->out);
     }
-
-    UsdShadeOutput primvarReaderOutput
-        = primvarReaderSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float2);
-
-    // TODO: Handle UV SRT with a ND_place2d_vector2 node.
+    // TODO: Handle UV SRT with a ND_place2d_vector2 node. Make sure the name derives from the
+    //       place2dTexture node if there is one (see usdFileTextureWriter for details)
 
     // Connect the output of the primvar reader to the texture coordinate
     // input of the UV texture.
@@ -420,6 +437,30 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
     }
 
     return UsdAttribute();
+}
+
+SdfPath MtlxUsd_FileWriter::_GetPlace2DTexturePath(const MFnDependencyNode& depNodeFn)
+{
+    MStatus     status;
+    std::string usdUvTextureName;
+    const MPlug plug = depNodeFn.findPlug(
+        TrMayaTokens->uvCoord.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
+    if (status == MS::kSuccess && plug.isDestination(&status)) {
+        MPlug source = plug.source(&status);
+        if (status == MS::kSuccess && !source.isNull()) {
+            MFnDependencyNode sourceNode(source.node());
+            usdUvTextureName = UsdMayaUtil::SanitizeName(sourceNode.name().asChar());
+        }
+    }
+
+    if (usdUvTextureName.empty()) {
+        // We want a single UV reader for all file nodes not connected to a place2DTexture node
+        usdUvTextureName = _tokens->PrimvarReaderShaderName.GetString();
+    }
+
+    return GetNodeGraph().GetPath().AppendChild(TfToken(usdUvTextureName.c_str()));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

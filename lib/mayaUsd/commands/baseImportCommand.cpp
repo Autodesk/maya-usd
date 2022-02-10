@@ -18,6 +18,7 @@
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
+#include <mayaUsd/undo/OpUndoItemMuting.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
@@ -125,6 +126,10 @@ std::unique_ptr<UsdMaya_ReadJob> MayaUSDImportCommand::initializeReadJob(
 /* virtual */
 MStatus MayaUSDImportCommand::doIt(const MArgList& args)
 {
+    // The import process has its own undo/redo recording.
+    // See: UsdMaya_ReadJob::Undo() and Redo().
+    OpUndoItemMuting undoInfoMuting;
+
     MStatus status;
 
     MArgDatabase argData(syntax(), args, &status);

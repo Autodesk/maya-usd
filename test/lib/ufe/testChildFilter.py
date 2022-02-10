@@ -53,6 +53,26 @@ class ChildFilterTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
+    def testChildFilter(self):
+        # Ensure we have one USD child filter
+        rid = ufe.RunTimeMgr.instance().getId('USD')
+        usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
+        cf = usdHierHndlr.childFilter()
+        self.assertEqual(1, len(cf))
+
+        # Make sure the USD hierarchy handler has an inactive prims filter
+        self.assertEqual('InactivePrims', cf[0].name)
+
+        # Ensure we have the same child filter on the Maya runtime (for the
+        # ProxyShapeHierarchyHandler.
+        rid = ufe.RunTimeMgr.instance().getId('Maya-DG')
+        mayaHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
+        mayaCf = mayaHierHndlr.childFilter()
+        self.assertEqual(1, len(mayaCf))
+        self.assertEqual(cf[0].name, mayaCf[0].name)
+        self.assertEqual(cf[0].label, mayaCf[0].label)
+        self.assertEqual(cf[0].value, mayaCf[0].value)
+
     def testFilteredChildren(self):
         mayaUtils.openGroupBallsScene()
         cmds.select(clear=True)
@@ -64,30 +84,30 @@ class ChildFilterTestCase(unittest.TestCase):
         self.assertEqual(6, len(propsHier.children()))
 
         # Deactivate Ball_3 (which will remove it from children)
-        ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
-        ball3Hier = ufe.Hierarchy.createItem(ball3Path)
-        cmds.delete('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
+        ball3PathStr = '|transform1|proxyShape1,/Ball_set/Props/Ball_3'
+        ball3Path = ufe.PathString.path(ball3PathStr)
+        ball3Item = ufe.Hierarchy.createItem(ball3Path)
+
+        # Set Ball_3 to inactive.
+        ball3Prim = mayaUsd.ufe.ufePathToPrim(ball3PathStr)
+        ball3Prim.SetActive(False)
 
         # Props should now have 5 children and ball3 should not be one of them.
         children = propsHier.children()
         self.assertEqual(5, len(children))
-        self.assertNotIn(ball3Hier, children)
+        self.assertNotIn(ball3Item, children)
 
-        # Ensure we have one USD child filter
-        rid = ufe.RunTimeMgr.instance().getId('USD')
-        usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
+        # Get the child filter for the hierarchy handler corresponding
+        # to the runtime of the Ball_3.
+        usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(ball3Item.runTimeId())
         cf = usdHierHndlr.childFilter()
-        self.assertEqual(1, len(cf))
-
-        # Make sure the USD hierarchy handler has an inactive prims filter
-        self.assertEqual('InactivePrims', cf[0].name)
 
         # Toggle "Inactive Prims" on and get the filtered children
         # (with inactive prims) and verify ball3 is one of them.
         cf[0].value = True
         children = propsHier.filteredChildren(cf)
         self.assertEqual(6, len(children))
-        self.assertIn(ball3Hier, children)
+        self.assertIn(ball3Item, children)
 
     def testProxyShapeFilteredChildren(self):
         mayaUtils.openGroupBallsScene()
@@ -98,47 +118,36 @@ class ChildFilterTestCase(unittest.TestCase):
         psItem = ufe.Hierarchy.createItem(psPath)
         psHier = ufe.Hierarchy.hierarchy(psItem)
         psChildren = psHier.children()
-
         self.assertEqual(len(psChildren), 1)
+
+        # Verify that the single child is the Ball_set.
         ballSetPathStr = '|transform1|proxyShape1,/Ball_set'
         ballSetPath = ufe.PathString.path(ballSetPathStr)
         ballSetItem = ufe.Hierarchy.createItem(ballSetPath)
         self.assertEqual(ballSetItem, psChildren[0])
 
-        # Get the USD child filter.  We know from testFilteredChildren() that
-        # it has a single filter flag, 'InactivePrims'.
-        rid = ufe.RunTimeMgr.instance().getId('USD')
-        usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
-        cf = usdHierHndlr.childFilter()
-
-        # The filtered children are the same as default children.
-        psFilteredChildren = psHier.filteredChildren(cf)
-        self.assertEqual(len(psFilteredChildren), 1)
-        self.assertEqual(ballSetItem, psFilteredChildren[0])
-
-        # Inactivate Ball_set.  Default children will be empty, filtered
-        # children will remain the same.
+        # Inactivate Ball_set.
         ballSetPrim = mayaUsd.ufe.ufePathToPrim(ballSetPathStr)
         ballSetPrim.SetActive(False)
 
-        psChildren = psHier.children()
-        self.assertEqual(len(psChildren), 0)
+        # Proxy shape should now have no children.
+        children = psHier.children()
+        self.assertEqual(0, len(children))
+        self.assertNotIn(ballSetItem, children)
 
-        psFilteredChildren = psHier.filteredChildren(cf)
-        self.assertEqual(len(psFilteredChildren), 1)
+        # Get the child filter for the hierarcy handler corresponding
+        # to the runtime of the ProxyShape.
+        # Because the proxy shape hierarchy handler overrides the
+        # Maya child filter and returns the same child filter.
+        usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(psItem.runTimeId())
+        cf = usdHierHndlr.childFilter()
 
-        # Now get the Maya child filter.  Because the proxy shape hierarchy
-        # handler overrides the Maya child filter and adds the 'InactivePrims'
-        # child filter flag, it should be on the Maya child filter.
-        rid = ufe.RunTimeMgr.instance().getId('Maya-DG')
-        mayaHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(rid)
-        cf = mayaHierHndlr.childFilter()
-        self.assertEqual(1, len(cf))
-        self.assertEqual('InactivePrims', cf[0].name)
-
-        psFilteredChildren = psHier.filteredChildren(cf)
-        self.assertEqual(len(psFilteredChildren), 1)
-        self.assertEqual(ballSetItem, psFilteredChildren[0])
+        # Toggle the "Inactive Prims" on and get the filtered children
+        # (with inactive prims) and verify Ball_set is one of them.
+        cf[0].value = True
+        children = psHier.filteredChildren(cf)
+        self.assertEqual(1, len(children))
+        self.assertIn(ballSetItem, children)
 
     def testUnload(self):
         mayaUtils.openTopLayerScene()

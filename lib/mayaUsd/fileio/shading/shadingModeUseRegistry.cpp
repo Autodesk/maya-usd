@@ -348,6 +348,9 @@ private:
             if (context.GetExportArgs().allMaterialConversions.size() > 1) {
                 // Write each material in its own scope
                 materialExportPath = materialExportPath.AppendChild(currentMaterialConversion);
+
+                // This path needs to be a NodeGraph:
+                UsdShadeNodeGraph::Define(context.GetUsdStage(), materialExportPath);
             }
 
             UsdShadeShader surfaceShaderSchema = _ExportShadingDepGraph(
@@ -364,6 +367,15 @@ private:
                 materialExportPath, context.GetDisplacementShaderPlug(), context);
             UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
                 displacementShaderSchema, material, UsdShadeTokens->displacement, renderContext);
+
+            // Clean-up nodegraph if nothing was exported:
+            if (context.GetExportArgs().allMaterialConversions.size() > 1) {
+                UsdPrim nodeGraphPrim(context.GetUsdStage()->GetPrimAtPath(materialExportPath));
+
+                if (nodeGraphPrim.GetAllChildren().empty()) {
+                    context.GetUsdStage()->RemovePrim(materialExportPath);
+                }
+            }
         }
         context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
     }

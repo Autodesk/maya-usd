@@ -116,7 +116,7 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
             const float* const usdNormals = (const float* const)normalData.cdata();
             const float* const mayaNormals = (const float* const)mesh.getRawNormals(&status);
             const size_t       usdNormalsCount = normalData.size();
-            const size_t       mayaNormalsCount = mesh.numVertices();
+            const size_t       mayaNormalsCount = mesh.numNormals();
             if (!MayaUsdUtils::compareArray(
                     usdNormals, mayaNormals, usdNormalsCount * 3, mayaNormalsCount * 3)) {
                 result |= kNormals;

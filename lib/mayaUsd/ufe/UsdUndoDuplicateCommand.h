@@ -66,6 +66,9 @@ private:
     Ufe::Path       _ufeSrcPath;
     PXR_NS::SdfPath _usdDstPath;
 
+    PXR_NS::SdfLayerHandle _srcLayer;
+    PXR_NS::SdfLayerHandle _dstLayer;
+
 }; // UsdUndoDuplicateCommand
 
 } // namespace ufe
