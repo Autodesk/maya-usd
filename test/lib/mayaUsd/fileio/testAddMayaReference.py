@@ -143,6 +143,21 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(),True)
 
+        # Test an error creating the Variant Set by disabling permission to edit on the
+        # edit target layer.
+        editTarget = self.stage.GetEditTarget()
+        editLayer = editTarget.GetLayer()
+        editLayer.SetPermissionToEdit(False)
+        badMayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            self.mayaSceneStr,
+            self.kDefaultNamespace,
+            mayaReferencePrimName='PrimVariantFail',
+            variantSet=('VariantFailSet', 'VariantNameFail'),
+            mayaAutoEdit=False)
+        self.assertFalse(badMayaRefPrim.IsValid())
+        editLayer.SetPermissionToEdit(True)
+
     def testBadNames(self):
         '''Test using bad prim and variant names.
 
