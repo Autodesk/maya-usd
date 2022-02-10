@@ -211,10 +211,6 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
         MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", true);
     }
 
-    if (!MGlobal::optionVarExists("AL_usdmaya_ignoreLockPrims")) {
-        MGlobal::setOptionVarValue("AL_usdmaya_ignoreLockPrims", false);
-    }
-
     MStatus status;
 
     // gpuCachePluginMain used as an example.
@@ -345,11 +341,6 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
         "optionVar -iv \\\"AL_usdmaya_pushToPrim\\\" #1",
         true,
         MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"));
-    AL::maya::utils::MenuBuilder::addEntry(
-        "USD/Selection Ignore Lock Prims Enabled",
-        "optionVar -iv \\\"AL_usdmaya_ignoreLockPrims\\\" #1",
-        true,
-        MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"));
     CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
     AL::usdmaya::Global::onPluginLoad();
 

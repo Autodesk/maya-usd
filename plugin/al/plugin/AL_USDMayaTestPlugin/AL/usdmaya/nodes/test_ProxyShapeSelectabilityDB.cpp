@@ -59,7 +59,7 @@ TEST(ProxyShapeSelectabilityDB, selectablesOnOpen)
         = CreateMayaProxyShape(constructTransformChain, temp_path);
 
     // Check that the path is selectable directly using the selectableDB object
-    EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    EXPECT_TRUE(proxyShape->isPathUnselectable(expectedSelectable));
 }
 
 /*
@@ -82,13 +82,13 @@ TEST(ProxyShapeSelectabilityDB, selectablesOnModification)
         = CreateMayaProxyShape(constructTransformChain, temp_path);
 
     SdfPath expectedSelectable("/A/B");
-    EXPECT_FALSE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    EXPECT_FALSE(proxyShape->isPathUnselectable(expectedSelectable));
 
     UsdPrim b = proxyShape->getUsdStage()->GetPrimAtPath(expectedSelectable);
     b.SetMetadata(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::unselectable);
 
     // Check that the path is selectable directly using the selectableDB object
-    EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    EXPECT_TRUE(proxyShape->isPathUnselectable(expectedSelectable));
 }
 
 /*
@@ -114,11 +114,11 @@ TEST(ProxyShapeSelectabilityDB, selectableIsRemoval)
     AL::usdmaya::nodes::ProxyShape* proxyShape
         = CreateMayaProxyShape(constructTransformChain, temp_path);
 
-    EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    EXPECT_TRUE(proxyShape->isPathUnselectable(expectedSelectable));
 
     UsdPrim b = proxyShape->getUsdStage()->GetPrimAtPath(expectedSelectable);
     b.SetMetadata(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::selectable);
 
     // Check that the path has been removed from the selectable list
-    EXPECT_FALSE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    EXPECT_FALSE(proxyShape->isPathUnselectable(expectedSelectable));
 }

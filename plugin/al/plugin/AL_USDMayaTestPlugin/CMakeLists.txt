@@ -42,7 +42,6 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/nodes/test_VariantFallbacks.cpp
         AL/usdmaya/test_DiffGeom.cpp
         AL/usdmaya/test_DiffPrimVar.cpp
-        AL/usdmaya/test_SelectabilityDB.cpp
         test_translators_AnimationTranslator.cpp
         test_translators_CameraTranslator.cpp
         test_translators_DgTranslator.cpp
