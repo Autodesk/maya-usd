@@ -40,12 +40,11 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
-        if not cls.pluginsLoaded:
-            cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+        fixturesUtils.setUpClass(__file__)
 
         # Create a pure Maya scene to reference in.
-        cls.mayaSceneStr = cls.createSimpleMayaScene()
+        import os
+        cls.mayaSceneStr = mayaUtils.createSingleSphereMayaScene(os.getcwd())
 
     @classmethod
     def tearDownClass(cls):
@@ -57,19 +56,6 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         import mayaUsd_createStageWithNewLayer
         self.proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
-
-    @staticmethod
-    def createSimpleMayaScene():
-        import os
-        import maya.cmds as cmds
-        import tempfile
-
-        cmds.file(new=True, force=True)
-        cmds.CreatePolygonSphere()
-        tempMayaFile = os.path.join(tempfile.gettempdir(), 'simpleSphere.ma')
-        cmds.file(rename=tempMayaFile)
-        cmds.file(save=True, force=True, type='mayaAscii')
-        return tempMayaFile
 
     def testDefault(self):
         '''Test the default options for Add Maya Reference.

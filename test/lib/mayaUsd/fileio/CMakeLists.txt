@@ -20,6 +20,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         testDiscardEdits.py
         testDuplicateAs.py
         testPrimUpdater.py
+        testCacheToUsd.py
     )
 endif()
 
