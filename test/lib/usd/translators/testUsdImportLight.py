@@ -234,6 +234,16 @@ class testUsdImportLight(unittest.TestCase):
         if getMayaAPIVersion() > 2019:
             self.assertTrue(cmds.getAttr('%s.normalize' % nodePath) == 0)
    
+    def _ValidateLightImportedUnderScope(self):
+        # This tests a case where the "Scope" translator was treating lights as
+        # materials and deciding to not translate the scope.  This would result in
+        # the "NonRootRectLight" here to be translated at the scene root.
+        nodePath = '|LightsTest|NonMaterialsScope|NonRootRectLight'
+        depNodeFn = self._GetMayaDependencyNode(nodePath)
+
+        # _GetMayaDependencyNode already does this assert, but in case we ever
+        # remove that, just redundantly assert here.
+        self.assertTrue(depNodeFn)
 
     def testImportMayaLights(self):
         """
@@ -243,6 +253,7 @@ class testUsdImportLight(unittest.TestCase):
         self._ValidateMayaPointLight()
         self._ValidateMayaSpotLight()
         self._ValidateMayaAreaLight()
+        self._ValidateLightImportedUnderScope()
 
 
 
