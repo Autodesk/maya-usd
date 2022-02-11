@@ -17,12 +17,19 @@
 
 import mayaUsd.lib as mayaUsdLib
 
-from pxr import Tf, Gf, UsdMaya, Usd
+from pxr import Tf, Gf, Usd
 
 from maya import cmds
 import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
 from maya import standalone
+
+HAS_USDMAYA = False
+try:
+    from pxr import UsdMaya
+    HAS_USDMAYA = True
+except ImportError as ie:
+    pass
 
 HAS_BULLET = False
 try:
@@ -294,7 +301,7 @@ class testSchemaApiAdaptor(unittest.TestCase):
         colorAttr.Set((1,0,1))
         self.assertEqual(cmds.getAttr(lightShape1 + ".shadowColor"), [(1.0, 0.0, 1.0)])
 
-    @unittest.skipUnless(HAS_BULLET, 'Requires the bullet plugin.')  
+    @unittest.skipUnless(HAS_BULLET and HAS_USDMAYA, 'Requires the Pixar and bullet plugins.')
     def testComplexAdaptation(self):
         """Test that we can adapt a bullet simulation"""
 

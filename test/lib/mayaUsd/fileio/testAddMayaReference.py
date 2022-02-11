@@ -28,7 +28,7 @@ from maya import standalone
 import mayaUsdAddMayaReference
 import mayaUsdMayaReferenceUtils as mayaRefUtils
 
-import unittest
+import os, unittest
 
 class AddMayaReferenceTestCase(unittest.TestCase):
     '''Test Add Maya Reference.
@@ -135,7 +135,7 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         # and that it has the expected metadata.
         attr = mayaRefPrim.GetAttribute('mayaReference')
         self.assertTrue(attr.IsValid())
-        self.assertEqual(attr.Get().resolvedPath, self.mayaSceneStr)
+        self.assertTrue(os.path.samefile(attr.Get().resolvedPath, self.mayaSceneStr))
         attr = mayaRefPrim.GetAttribute('mayaNamespace')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), self.kDefaultNamespace)

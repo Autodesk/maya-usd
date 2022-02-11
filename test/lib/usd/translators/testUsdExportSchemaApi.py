@@ -23,9 +23,16 @@ from maya import standalone
 import maya.api.OpenMaya as om
 import maya.api.OpenMayaAnim as oma
 
-from pxr import Tf, Gf, UsdMaya, Usd
+from pxr import Tf, Gf, Usd
 
 import fixturesUtils
+
+HAS_USDMAYA = False
+try:
+    from pxr import UsdMaya
+    HAS_USDMAYA = True
+except ImportError as ie:
+    pass
 
 HAS_BULLET = False
 try:
@@ -130,7 +137,7 @@ class testUsdExportSchemaApi(unittest.TestCase):
 
         cmds.file(f=True, new=True)
 
-    @unittest.skipUnless(HAS_BULLET, 'Requires the bullet plugin.')  
+    @unittest.skipUnless(HAS_BULLET and HAS_USDMAYA, 'Requires the Pixar and bullet plugins.')
     def testPluginSchemaAdaptors(self):
         """Testing a plugin Schema adaptor in a generic context:"""
 
