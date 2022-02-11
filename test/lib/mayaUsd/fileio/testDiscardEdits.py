@@ -25,6 +25,7 @@ import mayaUsd.lib
 
 import mayaUtils
 import mayaUsd.ufe
+import usdUtils
 
 from pxr import UsdGeom, Gf
 
@@ -59,6 +60,16 @@ class MergeToUsdTestCase(unittest.TestCase):
 
     def setUp(self):
         cmds.file(new=True, force=True)
+
+    def _GetMayaDependencyNode(self, objectName):
+        selectionList = om.MSelectionList()
+        try:
+            selectionList.add(objectName)
+        except:
+            return None
+        mObj = selectionList.getDependNode(0)
+
+        return om.MFnDependencyNode(mObj)
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
     def testDiscardEdits(self):
@@ -156,6 +167,45 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         verifyDiscard()
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    def testDiscardOrphaned(self):
+        '''Discard orphaned edits due to prim inactivation'''
+        
+        # open appleBite.ma scene in testSamples
+        mayaUtils.openAppleBiteScene()
+
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        
+        usdPathSegment = usdUtils.createUfePathSegment('/apple/payload/geo/skin')
+        geoPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        geoPathStr = ufe.PathString.string(geoPath)
+        
+        # pull the skin geo for editing
+        cmds.mayaUsdEditAsMaya(geoPathStr)
+        
+        pulledDagPath = '|__mayaUsd__|skinParent|skin'
+        self.assertTrue(self._GetMayaDependencyNode(pulledDagPath))
+        
+        # now we will make the pulled prim goes away...which makes state in DG orphaned
+        primToDeactivate = stage.GetPrimAtPath('/apple/payload')
+        primToDeactivate.SetActive(False)
+        self.assertFalse(stage.GetPrimAtPath('/apple/payload/geo/skin'))
+        # we keep the state in Maya untouched to prevent data loss
+        self.assertTrue(self._GetMayaDependencyNode(pulledDagPath))
+        
+        # discard orphaned edits
+        cmds.mayaUsdDiscardEdits(pulledDagPath)
+        self.assertFalse(self._GetMayaDependencyNode(pulledDagPath))
+        
+        # validate undo
+        cmds.undo()
+        self.assertTrue(self._GetMayaDependencyNode(pulledDagPath))
+        
+        # validate redo
+        cmds.redo()
+        self.assertFalse(self._GetMayaDependencyNode(pulledDagPath))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
