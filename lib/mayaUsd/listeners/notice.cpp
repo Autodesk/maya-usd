@@ -52,7 +52,7 @@ static void _OnMayaExitCallback(void* /*clientData*/)
 
 TF_INSTANTIATE_TYPE(UsdMayaSceneResetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 
-MCallbackId UsdMayaSceneResetNotice::_beforeNewCallbackId = 0;
+MCallbackId UsdMayaSceneResetNotice::_afterNewCallbackId = 0;
 MCallbackId UsdMayaSceneResetNotice::_beforeFileReadCallbackId = 0;
 
 UsdMayaSceneResetNotice::UsdMayaSceneResetNotice() { }
@@ -73,9 +73,9 @@ void UsdMayaSceneResetNotice::InstallListener()
     // the new scene has been opened). However, they are also emitted when a
     // file is imported or referenced, so we check for that and do *not* send
     // a scene reset notice.
-    if (_beforeNewCallbackId == 0) {
-        _beforeNewCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kBeforeNew, _OnMayaNewOrOpenSceneCallback);
+    if (_afterNewCallbackId == 0) {
+        _afterNewCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kAfterNew, _OnMayaNewOrOpenSceneCallback);
     }
 
     if (_beforeFileReadCallbackId == 0) {
@@ -91,8 +91,8 @@ void UsdMayaSceneResetNotice::RemoveListener()
         return;
     }
 
-    if (_beforeNewCallbackId != 0) {
-        MMessage::removeCallback(_beforeNewCallbackId);
+    if (_afterNewCallbackId != 0) {
+        MMessage::removeCallback(_afterNewCallbackId);
     }
 
     if (_beforeFileReadCallbackId == 0) {

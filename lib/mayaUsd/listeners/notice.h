@@ -44,7 +44,7 @@ public:
     static void RemoveListener();
 
 private:
-    static MCallbackId _beforeNewCallbackId;
+    static MCallbackId _afterNewCallbackId;
     static MCallbackId _beforeFileReadCallbackId;
 };
 
