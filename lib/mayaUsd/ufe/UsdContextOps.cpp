@@ -859,7 +859,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         script.format(
             "^1s \"^2s\"", EditAsMayaCommand::commandName, Ufe::PathString::string(path()).c_str());
         WaitCursor wait;
-        MGlobal::executeCommand(script, true, true);
+        MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
     } else if (itemPath[0] == kDuplicateAsMayaItem) {
         MString script;
         script.format(
@@ -867,11 +867,12 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             DuplicateCommand::commandName,
             Ufe::PathString::string(path()).c_str());
         WaitCursor wait;
-        MGlobal::executeCommand(script, true, true);
+        MGlobal::executeCommand(script, /* display = */ true, /* undoable = */ true);
     } else if (itemPath[0] == kAddMayaReferenceItem) {
         MString script;
         script.format("addMayaReferenceToUsd \"^1s\"", Ufe::PathString::string(path()).c_str());
-        MString result = MGlobal::executeCommandStringResult(script, false, true);
+        MString result = MGlobal::executeCommandStringResult(
+            script, /* display = */ false, /* undoable = */ true);
     }
 #endif
 
