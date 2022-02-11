@@ -869,9 +869,10 @@ MHWRender::MTexture* _GenerateFallbackTexture(
 //! Load texture from the specified path
 MHWRender::MTexture* _LoadTexture(
     const std::string& path,
+    bool               hasFallbackColor,
+    const GfVec4f&     fallbackColor,
     bool&              isColorSpaceSRGB,
-    MFloatArray&       uvScaleOffset,
-    const GfVec4f&     fallbackColor)
+    MFloatArray&       uvScaleOffset)
 {
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "LoadTexture", path.c_str());
@@ -904,6 +905,9 @@ MHWRender::MTexture* _LoadTexture(
 #endif
 
     if (!TF_VERIFY(image, "Unable to create an image from %s", path.c_str())) {
+        if (!hasFallbackColor) {
+            return nullptr;
+        }
         // Create a 1x1 texture of the fallback color, if it was specified:
         return _GenerateFallbackTexture(textureMgr, path, fallbackColor);
     }
@@ -1293,7 +1297,8 @@ private:
         }
         bool        isSRGB = false;
         MFloatArray uvScaleOffset;
-        auto*       texture = _LoadTexture(_path, isSRGB, uvScaleOffset, _fallbackColor);
+        auto*       texture
+            = _LoadTexture(_path, _hasFallbackColor, _fallbackColor, isSRGB, uvScaleOffset);
         if (_terminated) {
             return;
         }
@@ -2504,7 +2509,8 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
         bool        isSRGB = false;
         MFloatArray uvScaleOffset;
 
-        MHWRender::MTexture* texture = _LoadTexture(path, isSRGB, uvScaleOffset, fallbackColor);
+        MHWRender::MTexture* texture
+            = _LoadTexture(path, hasFallbackColor, fallbackColor, isSRGB, uvScaleOffset);
 
         HdVP2TextureInfo& info = _textureMap[path];
         info._texture.reset(texture);
