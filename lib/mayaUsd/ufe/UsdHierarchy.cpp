@@ -254,7 +254,7 @@ UsdHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem
 }
 
 // Create a transform.
-#if (UFE_PREVIEW_VERSION_NUM >= 3005)
+#ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
     Ufe::SceneItem::Ptr createdItem = nullptr;
@@ -284,18 +284,13 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
 }
 #endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 3001)
-Ufe::InsertChildCommand::Ptr
-#else
-Ufe::UndoableCommand::Ptr
-#endif
-
-#if (UFE_PREVIEW_VERSION_NUM >= 3005)
-UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
+#ifdef UFE_V3_FEATURES_AVAILABLE
+Ufe::InsertChildCommand::Ptr UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 {
     return UsdUndoCreateGroupCommand::create(fItem, name.string());
 }
 #else
+Ufe::UndoableCommand::Ptr
 UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
     return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());

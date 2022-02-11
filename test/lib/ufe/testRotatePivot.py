@@ -189,7 +189,7 @@ class RotatePivotTestCase(unittest.TestCase):
         # Start with a non-zero initial rotation. This is required to test
         # MAYA-112175, otherwise a zero initial rotation means rotate pivot
         # translation will be empty and we get the correct result by accident.
-        if (mayaUtils.previewReleaseVersion() >= 127):
+        if (mayaUtils.mayaMajorVersion() >= 2023):
             cmds.rotate(0, 0, 90)
             print(type(pivot))
             pivot = om.MPoint(0, 10, 0)
@@ -219,7 +219,7 @@ class RotatePivotTestCase(unittest.TestCase):
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
         self.checkPos(sphereMatrix, rotatedPosition)
 
-        if (mayaUtils.previewReleaseVersion() >= 127):
+        if (mayaUtils.mayaMajorVersion() >= 2023):
             cmds.undo()
             cmds.move(10, 10, 0, absolute=True)
             sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
