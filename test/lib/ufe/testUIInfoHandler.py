@@ -23,6 +23,7 @@ from maya import cmds
 from maya import standalone
 
 import ufe
+import mayaUsd.ufe
 
 import os
 import unittest
@@ -65,8 +66,9 @@ class UIInfoHandlerTestCase(unittest.TestCase):
         self.assertNotEqual(0, len(ufeUIInfo.getLongRunTimeLabel()))
 
         # Deactivate one of the balls.
-        cmds.delete('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
-
+        ballSetPrim = mayaUsd.ufe.ufePathToPrim('|transform1|proxyShape1,/Ball_set/Props/Ball_3')
+        ballSetPrim.SetActive(False)
+		
         # Now ask for the treeViewCellInfo and test that some values were set
         # (because the ball is inactive).
         ball3Path = ufe.PathString.path('|transform1|proxyShape1,/Ball_set/Props/Ball_3')

@@ -1064,9 +1064,7 @@ void ProxyShape::processChangedObjects(
         // you need to reselect the proxy before the bounds will be updated).
     }
 
-    if (isLockPrimFeatureActive()) {
-        processChangedMetaData(resyncedPaths, changedOnlyPaths);
-    }
+    processChangedMetaData(resyncedPaths, changedOnlyPaths);
 
     // These paths are subtree-roots representing entire subtrees that may have
     // changed. In this case, we must dump all cached data below these points
@@ -1461,9 +1459,7 @@ void ProxyShape::loadStage()
     if (m_stage && !MFileIO::isReadingFile()) {
         // execute the post load process to import any custom prims
         cmds::ProxyShapePostLoadProcess::initialise(this);
-        if (isLockPrimFeatureActive()) {
-            findPrimsWithMetaData();
-        }
+        findPrimsWithMetaData();
     }
 
     destroyGLImagingEngine();
@@ -2088,12 +2084,89 @@ void ProxyShape::setChangedSelectionState(const bool hasSelectabilityChanged)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-AL::usdmaya::SelectabilityDB& ProxyShape::selectabilityDB() { return m_selectabilityDB; }
+template <typename CacheT>
+bool checkPrimMetadata(
+    const UsdPrim& prim,
+    const TfToken& key,
+    const TfToken& trueToken,
+    const TfToken& falseToken,
+    CacheT&        cache)
+{
+    TfHashSet<UsdPrim, boost::hash<UsdPrim>> cachedPrims;
+    auto                                     updateCache = [&cache, &cachedPrims](bool value) {
+        for (auto&& cachedPrim : cachedPrims) {
+            cache.insert(std::make_pair(cachedPrim, value));
+        }
+        return value;
+    };
+
+    auto parent(prim);
+    while (parent.IsValid() && !parent.IsPseudoRoot()) {
+        auto it = cache.find(parent);
+        if (it != cache.end()) {
+            return it->second;
+        }
+        cachedPrims.insert(parent);
+        TfToken token;
+        if (parent.GetMetadata<TfToken>(key, &token)) {
+            if (token == trueToken) {
+                return updateCache(true);
+            } else if (token == falseToken) {
+                return updateCache(false);
+            }
+        }
+        parent = parent.GetParent();
+    }
+    return updateCache(false);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
-const AL::usdmaya::SelectabilityDB& ProxyShape::selectabilityDB() const
+bool ProxyShape::isPathUnselectable(const SdfPath& path) const
 {
-    return const_cast<ProxyShape*>(this)->selectabilityDB();
+    if (!m_stage) {
+        return false;
+    }
+    auto prim(m_stage->GetPrimAtPath(path));
+    if (!prim) {
+        return false;
+    }
+    UnselectablePrimCache cache;
+    return isPrimUnselectable(prim, cache);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::isPrimUnselectable(const UsdPrim& prim, UnselectablePrimCache& cache) const
+{
+    // If global optionVar is not enabled, disable selection for all paths
+    if (MGlobal::optionVarExists("AL_usdmaya_selectionEnabled")
+        && !MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled")) {
+        // Return true to indicate the path is not selectable
+        return true;
+    }
+
+    return checkPrimMetadata(
+        prim, Metadata::selectability, Metadata::unselectable, Metadata::selectable, cache);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::isPathLocked(const SdfPath& path) const
+{
+    if (!m_stage) {
+        return false;
+    }
+    auto prim(m_stage->GetPrimAtPath(path));
+    if (!prim) {
+        return false;
+    }
+    LockPrimCache cache;
+    return isPrimLocked(prim, cache);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::isPrimLocked(const UsdPrim& prim, LockPrimCache& cache) const
+{
+    return checkPrimMetadata(
+        prim, Metadata::locked, Metadata::lockTransform, Metadata::lockUnlocked, cache);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

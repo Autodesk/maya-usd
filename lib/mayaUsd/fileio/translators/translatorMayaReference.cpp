@@ -37,6 +37,7 @@
 
 #include <maya/MDGModifier.h>
 #include <maya/MFileIO.h>
+#include <maya/MFileObject.h>
 #include <maya/MFnCamera.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnStringData.h>
@@ -354,6 +355,10 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     if (!mayaReferencePath.length()) {
         return MS::kFailure;
     }
+    MFileObject fileObj;
+    fileObj.setRawFullName(mayaReferencePath);
+    mayaReferencePath = fileObj.resolvedFullName();
+
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
         .Msg(
             "MayaReferenceLogic::update Looking for attribute on \"%s\".\"%s\"\n",

@@ -22,7 +22,6 @@ set(TEST_SCRIPT_FILES
     testUsdExportNurbsCurve.py
     testUsdExportOpenLayer.py
     testUsdExportOverImport.py
-    testUsdExportUsdzPackage.py
     testUsdExportUsdPreviewSurface.py
     testUsdExportParentScope.py
     # To investigate: following test asserts in MFnParticleSystem, but passes.
@@ -90,6 +89,13 @@ if(BUILD_PXR_PLUGIN)
     # Pixar plugin.
     list(APPEND TEST_SCRIPT_FILES
         testUsdExportUVTransforms.py
+    )
+
+    # This test uses the file "asset.ma" which
+    # requires the plugin "pxrUsdPreviewSurface" that is built by the
+    # Pixar plugin.
+    list(APPEND TEST_SCRIPT_FILES
+        testUsdExportUsdzPackage.py
     )
 endif()
 
@@ -242,6 +248,8 @@ set_property(TEST testUsdMayaListShadingModesCommand APPEND PROPERTY LABELS tran
 
 # Requires Physics API to test some exporters:
 if (PXR_VERSION VERSION_GREATER 2105)
+    # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
+    # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
     mayaUsd_add_test(testUsdExportSchemaApi
         PYTHON_MODULE testUsdExportSchemaApi
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

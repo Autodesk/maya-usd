@@ -23,6 +23,7 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/sphere.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
@@ -1344,3 +1345,148 @@ TEST(Transform, getTimeCode)
 // Need to test the behaviour of the transform node when the animation data present is from Matrices
 // rather than TRS components.
 TEST(Transform, matrixAnimationChannels) { AL_USDMAYA_UNTESTED; }
+
+// Test twisted rotation values (angles should be considered the same)
+TEST(Transform, checkTwistedRotation)
+{
+    MStatus     status;
+    const char* xformName = "myXform";
+    SdfPath     xformPath(std::string("/") + xformName);
+    SdfPath     spherePath(xformPath.AppendChild(TfToken("mesh")));
+
+    MFileIO::newFile(true);
+
+    const std::string temp_path
+        = buildTempPath("AL_USDMayaTests_transform_checkTwistedRotation.usda");
+
+    // generate some data for the proxy shape
+    {
+        UsdStageRefPtr stage = UsdStage::CreateInMemory();
+        UsdGeomXform   a = UsdGeomXform::Define(stage, xformPath);
+        auto           op = a.AddRotateXYZOp();
+        op.Set(GfVec3f(180.f, -2.317184f, 180.f));
+        UsdGeomSphere::Define(stage, spherePath);
+        stage->Export(temp_path, false);
+    }
+
+    MFnDagNode fn;
+    MObject    xform = fn.create("transform");
+    MString    proxyParentMayaPath = fn.fullPathName();
+    MObject    shape = fn.create("AL_usdmaya_ProxyShape", xform);
+    MString    proxyShapeMayaPath = fn.fullPathName();
+
+    auto* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path.c_str());
+
+    auto stage = proxy->getUsdStage();
+
+    // Verify current edit target has nothing
+    ASSERT_TRUE(stage->GetEditTarget().GetLayer()->IsEmpty());
+
+    MDagModifier modifier1;
+    MDGModifier  modifier2;
+    proxy->makeUsdTransformChain(
+        stage->GetPrimAtPath(spherePath),
+        modifier1,
+        AL::usdmaya::nodes::ProxyShape::kSelection,
+        &modifier2);
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier1.doIt());
+    EXPECT_EQ(MStatus(MS::kSuccess), modifier2.doIt());
+
+    MSelectionList sel;
+    sel.add("myXform");
+    MObject xformMobj;
+    ASSERT_TRUE(sel.getDependNode(0, xformMobj));
+    MFnTransform xformMfn(xformMobj);
+
+    {
+        // Verify default values from Maya after loading USD
+        MEulerRotation rot;
+        ASSERT_TRUE(xformMfn.getRotation(rot) == MStatus::kSuccess);
+        EXPECT_NEAR(rot.x, 0.f, 1e-5f);
+        EXPECT_NEAR(rot.y, 3.1820349693298f, 1e-5f);
+        EXPECT_NEAR(rot.z, 0.f, 1e-5f);
+        // Expect nothing changed in USD
+        ASSERT_TRUE(stage->GetEditTarget().GetLayer()->IsEmpty());
+    }
+
+    {
+        // Explicitly rotate X axis by 360 degree, there should be no "over" on USD
+        // Notice that we only set the X component here
+        MPlug(xformMobj, MPxTransform::rotateX).setValue(M_PI * 2);
+        ASSERT_TRUE(stage->GetEditTarget().GetLayer()->IsEmpty());
+    }
+
+    {
+        auto                                     xformPrim = stage->GetPrimAtPath(xformPath);
+        AL::usdmaya::nodes::TransformationMatrix tm;
+        tm.setPrim(xformPrim, nullptr);
+
+        MEulerRotation rot(M_PI, -2.317184f * M_PI / 180.f, M_PI);
+        ((MPxTransformationMatrix*)(&tm))->rotateTo(rot);
+        // Verify the matrix has been set to expected values
+        MStatus status;
+        auto    tmRot = tm.eulerRotation(MSpace::kTransform, &status);
+        ASSERT_TRUE(status == MStatus::kSuccess);
+        EXPECT_NEAR(tmRot.x, M_PI, 1e-5f);
+        EXPECT_NEAR(tmRot.y, -2.317184f * M_PI / 180.f, 1e-5f);
+        EXPECT_NEAR(tmRot.z, M_PI, 1e-5f);
+        // Verify the USD rotation
+        {
+            GfVec3f usdRot { 0.f, 0.f, 0.f };
+            ASSERT_TRUE(xformPrim.GetAttribute(TfToken("xformOp:rotateXYZ")).Get(&usdRot));
+            EXPECT_NEAR(usdRot[0], 180.f, 1e-5f);
+            EXPECT_NEAR(usdRot[1], -2.317184f, 1e-5f);
+            EXPECT_NEAR(usdRot[2], 180.f, 1e-5f);
+        }
+
+        // Attempt to apply the rotation to USD
+        tm.pushRotateToPrim();
+        // Expect no "over" being created
+        ASSERT_TRUE(stage->GetEditTarget().GetLayer()->IsEmpty());
+        // Verify again the rotation values in USD
+        {
+            GfVec3f usdRot { 0.f, 0.f, 0.f };
+            ASSERT_TRUE(xformPrim.GetAttribute(TfToken("xformOp:rotateXYZ")).Get(&usdRot));
+            EXPECT_NEAR(usdRot[0], 180.f, 1e-5f);
+            EXPECT_NEAR(usdRot[1], -2.317184f, 1e-5f);
+            EXPECT_NEAR(usdRot[2], 180.f, 1e-5f);
+        }
+    }
+
+    {
+        auto                                     xformPrim = stage->GetPrimAtPath(xformPath);
+        AL::usdmaya::nodes::TransformationMatrix tm;
+        tm.setPrim(stage->GetPrimAtPath(xformPath), nullptr);
+
+        MEulerRotation rot(0.f, 0.f, 0.f);
+        ((MPxTransformationMatrix*)(&tm))->rotateTo(rot);
+
+        // Verify the original rotation in USD
+        {
+            GfVec3f usdRot { 0.f, 0.f, 0.f };
+            ASSERT_TRUE(xformPrim.GetAttribute(TfToken("xformOp:rotateXYZ")).Get(&usdRot));
+            EXPECT_NEAR(usdRot[0], 180.f, 1e-5f);
+            EXPECT_NEAR(usdRot[1], -2.317184f, 1e-5f);
+            EXPECT_NEAR(usdRot[2], 180.f, 1e-5f);
+        }
+        // This should change the USD since the rotation values are different now
+        tm.pushRotateToPrim();
+
+        // Expect an "over" in USD
+        ASSERT_FALSE(stage->GetEditTarget().GetLayer()->IsEmpty());
+        auto primSpec = stage->GetEditTarget().GetLayer()->GetPrimAtPath(xformPath);
+        ASSERT_TRUE(primSpec);
+        EXPECT_EQ(primSpec->GetSpecifier(), SdfSpecifierOver);
+        // Rotation should have been changed as well
+        {
+            GfVec3f usdRot { 0.f, 0.f, 0.f };
+            ASSERT_TRUE(xformPrim.GetAttribute(TfToken("xformOp:rotateXYZ")).Get(&usdRot));
+            EXPECT_NEAR(usdRot[0], 0.f, 1e-5f);
+            EXPECT_NEAR(usdRot[1], 0.f, 1e-5f);
+            EXPECT_NEAR(usdRot[2], 0.f, 1e-5f);
+        }
+    }
+}

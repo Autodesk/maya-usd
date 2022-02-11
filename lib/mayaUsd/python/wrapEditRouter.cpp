@@ -74,4 +74,6 @@ void wrapEditRouter()
             return MayaUsd::registerEditRouter(
                 operation, std::make_shared<PyEditRouter>(editRouter));
         });
+
+    def("restoreDefaultEditRouter", &MayaUsd::restoreDefaultEditRouter);
 }

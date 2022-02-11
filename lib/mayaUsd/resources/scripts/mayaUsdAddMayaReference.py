@@ -155,7 +155,7 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
                 groupPrim = Usd.Prim()
             if not groupPrim.IsValid():
                 errorMsgFormat = getMayaUsdLibString('kErrorCreatingGroupPrim')
-                errorMsg = cmds.format(errorMsgFormat, stringArg=(ufePathStr))
+                errorMsg = cmds.format(errorMsgFormat, stringArg=(ufePathStr, groupPrimName))
                 om.MGlobal.displayError(errorMsg)
                 return Usd.Prim()
             if groupPrimKind:
@@ -179,19 +179,24 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
             # If we created a group prim add the variant set there, otherwise add it
             # to the prim that corresponds to the input ufe path.
             variantPrim = groupPrim if groupPrim else mayaUsd.ufe.ufePathToPrim(ufePathStr)
-            vset = variantPrim.GetVariantSet(validatedVariantSetName)
-            vset.AddVariant(validatedVariantName)
-            vset.SetVariantSelection(validatedVariantName)
+            try:
+                vset = variantPrim.GetVariantSet(validatedVariantSetName)
+                vset.AddVariant(validatedVariantName)
+                vset.SetVariantSelection(validatedVariantName)
+            except (Tf.ErrorException):
+                errorMsgFormat = getMayaUsdLibString('kErrorCreateVariantSet')
+                errorMsg = cmds.format(errorMsgFormat,
+                                    stringArg=(str(variantPrim.GetPrimPath()), validatedVariantName, str(variantPrim.GetName())))
+                om.MGlobal.displayError(errorMsg)
+                return Usd.Prim()
             with vset.GetVariantEditContext():
                 # Now all of our subsequent edits will go "inside" the
                 # 'variantName' variant of 'variantSetName'.
                 prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)
-        else:
-            prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)
             
     if prim is None or not prim.IsValid():
         errorMsgFormat = getMayaUsdLibString('kErrorCreatingMayaRefPrim')
-        errorMsg = cmds.format(errorMsgFormat, stringArg=(ufePathStr))
+        errorMsg = cmds.format(errorMsgFormat, stringArg=(ufePathStr, validatedPrimName))
         om.MGlobal.displayError(errorMsg)
         return Usd.Prim()
 
