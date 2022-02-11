@@ -17,7 +17,7 @@
 
 #include "private/Utils.h"
 
-#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+#ifdef UFE_V3_FEATURES_AVAILABLE
 #include <mayaUsd/base/tokens.h>
 #endif
 #include <mayaUsd/ufe/StagesSubject.h>
@@ -44,7 +44,7 @@ static constexpr char kErrorMsgFailedConvertToString[]
     = "Could not convert the attribute to a string";
 static constexpr char kErrorMsgInvalidType[]
     = "USD attribute does not match created attribute class type";
-#if (UFE_PREVIEW_VERSION_NUM >= 3013)
+#ifdef UFE_V3_FEATURES_AVAILABLE
 static constexpr char kErrorMsgInvalidValueType[] = "Unexpected Ufe::Value type";
 #endif
 
@@ -93,7 +93,7 @@ template <typename T> bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T&
     return attr.Set<T>(value);
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+#ifdef UFE_V3_FEATURES_AVAILABLE
 bool setUsdAttrMetadata(
     const PXR_NS::UsdAttribute& attr,
     const std::string&          key,
@@ -118,7 +118,6 @@ bool setUsdAttrMetadata(
     // We must convert the Ufe::Value to VtValue for storage in Usd.
     // Figure out the type of the input Ufe Value and create proper Usd VtValue.
     PXR_NS::VtValue usdValue;
-#if (UFE_PREVIEW_VERSION_NUM >= 3013)
     if (value.isType<bool>())
         usdValue = value.get<bool>();
     else if (value.isType<int>())
@@ -132,22 +131,6 @@ bool setUsdAttrMetadata(
     else {
         TF_CODING_ERROR(kErrorMsgInvalidValueType);
     }
-#else
-    if (value.type() == typeid(bool))
-        usdValue = value.get<bool>();
-    else if (value.type() == typeid(int))
-        usdValue = value.get<int>();
-    else if (value.type() == typeid(float))
-        usdValue = value.get<float>();
-    else if (value.type() == typeid(double))
-        usdValue = value.get<double>();
-    // Workaround a bug on OSX (with Clang) with the type_info not comparing correctly.
-    // For now we know the known types that Ufe::Value supports. So if not one of
-    // the basic types, then it must be std::string. Once Ufe is fixed we can change
-    // this else into else if and assert for unknown type.
-    else /*if (value.type() == typeid(std::string))*/
-        usdValue = value.get<std::string>();
-#endif
     if (!usdValue.IsEmpty()) {
         PXR_NS::TfToken tok(key);
         return attr.SetMetadata(tok, usdValue);
@@ -252,7 +235,7 @@ private:
     const T               _newValue;
 };
 
-#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+#ifdef UFE_V3_FEATURES_AVAILABLE
 class SetUndoableMetadataCommand : public UsdUndoableCommand
 {
 public:
@@ -307,7 +290,7 @@ std::string UsdAttribute::string(const Ufe::SceneItem::Ptr& item) const
     return getUsdAttributeValueAsString(fUsdAttr, getCurrentTime(item));
 }
 
-#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+#ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
 {
     // Special cases for known Ufe metadata keys.

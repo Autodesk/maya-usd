@@ -20,6 +20,7 @@ import fixturesUtils
 
 from mayaUtils import setMayaTranslation
 from usdUtils import createSimpleXformScene
+from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
 
@@ -60,7 +61,7 @@ class MergeToUsdTestCase(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testDiscardEdits(self):
         '''Discard edits on a USD transform.'''
 
@@ -106,7 +107,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             om.MSelectionList().add(aMayaPathStr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testDiscardEditsUndoRedo(self):
         '''Discard edits on a USD transform then undo and redo.'''
 

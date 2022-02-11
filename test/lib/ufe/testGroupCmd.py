@@ -130,8 +130,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertEqual("ballset.usda", layer.GetDisplayName())
         stage.SetEditTarget(layer)
 
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
-
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
             globalSn = ufe.GlobalSelection.get()
             globalSn.append(ball5Item)
             globalSn.append(ball3Item)
@@ -166,7 +165,7 @@ class GroupCmdTestCase(unittest.TestCase):
 
         # The command will now append a number 1 at the end to match the naming
         # convention in Maya.
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
             newGroupPath = parentPath + ufe.PathComponent(groupName)
         else:
             newGroupPath = parentPath + ufe.PathComponent("newGroup1")
@@ -183,13 +182,13 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(ball5Path not in childPaths)
         self.assertTrue(ball3Path not in childPaths)
         
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
             cmds.undo()
         else:
             groupCmd.undo()
 
         # global selection should not be empty after undo.
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3004'):
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
             self.assertEqual(len(globalSelection), 2)
         else:
             self.assertEqual(len(globalSelection), 1)
@@ -202,7 +201,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(ball5Path in childPathsUndo)
         self.assertTrue(ball3Path in childPathsUndo)
 
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '3000'):
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
             cmds.redo()
         else:
             groupCmd.redo()
@@ -368,7 +367,7 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/Ball_set/Props/Ball_6"),
             stage.GetPrimAtPath("/Sphere1")])
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupAbsolute is only available in UFE preview version 0.3.5 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupAbsolute is only available in UFE v3 or greater.')
     def testGroupAbsolute(self):
         '''Verify -absolute flag.'''
 
@@ -405,7 +404,7 @@ class GroupCmdTestCase(unittest.TestCase):
                 "xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale")))
 
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupRelative is only available in UFE preview version 0.3.5 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupRelative is only available in UFE v3 or greater.')
     def testGroupRelative(self):
         '''Verify -relative flag.'''
         cmds.file(new=True, force=True)
@@ -440,7 +439,7 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertFalse(newspherePrim.HasAttribute('xformOp:rotateXYZ'))
         self.assertFalse(newspherePrim.HasAttribute('xformOp:scale'))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupWorld is only available in UFE preview version 0.3.5 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupWorld is only available in UFE v3 or greater.')
     def testGroupWorld(self):
         '''Verify -world flag.'''
         cmds.file(new=True, force=True)
@@ -483,7 +482,7 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group2/Sphere2"),
             stage.GetPrimAtPath("/group2/Sphere3")])
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3005', 'testGroupUndoRedo is only available in UFE preview version 0.3.5 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupUndoRedo is only available in UFE v3 or greater.')
     def testGroupUndoRedo(self):
         '''Verify grouping after multiple undo/redo.'''
         cmds.file(new=True, force=True)
@@ -528,7 +527,7 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group1/Sphere2"),
             stage.GetPrimAtPath("/group1/Sphere3")])
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 128, 'Test requires fix in Maya Preview Release 128 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testGroupHierarchy(self):
         '''Grouping a node and a descendant.'''
         # MAYA-112957: when grouping a node and its descendant, with the node
@@ -647,7 +646,7 @@ class GroupCmdTestCase(unittest.TestCase):
         children = hierarchyAfter()
         checkAfter(*children)
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 128, 'Test requires fix in Maya Preview Release 128 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testGroupHierarchyWithRenaming(self):
         '''Grouping a node and a descendant when all descendants share the same name'''
         # MAYA-113532: when grouping a node and its descendant sharing the same name, we need to
