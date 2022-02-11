@@ -30,6 +30,7 @@
 #endif
 
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -340,6 +341,17 @@ void StagesSubject::stageChanged(
                     } else if (
                         entry->flags.didRemoveInertPrim || entry->flags.didRemoveNonInertPrim) {
                         sendObjectPostDelete(sceneItem);
+                        sentNotif = true;
+                        break;
+                    }
+
+                    // Special case for "active" metadata.
+                    if (entry->HasInfoChange(SdfFieldKeys->Active)) {
+                        if (prim.IsActive()) {
+                            sendObjectAdd(sceneItem);
+                        } else {
+                            sendObjectPostDelete(sceneItem);
+                        }
                         sentNotif = true;
                         break;
                     }
