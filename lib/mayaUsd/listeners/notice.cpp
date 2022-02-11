@@ -40,6 +40,13 @@ static void _OnMayaNewOrOpenSceneCallback(void* /*clientData*/)
     UsdMayaSceneResetNotice().Send();
 }
 
+static int _beforeSceneResetRegistrationCount = 0;
+
+static void _OnMayaBeforeResetCallback(void* /*clientData*/)
+{
+    UsdMayaBeforeSceneResetNotice().Send();
+}
+
 static int _exitRegistrationCount = 0;
 
 static void _OnMayaExitCallback(void* /*clientData*/)
@@ -97,6 +104,37 @@ void UsdMayaSceneResetNotice::RemoveListener()
 
     if (_beforeFileReadCallbackId == 0) {
         MMessage::removeCallback(_beforeFileReadCallbackId);
+    }
+}
+
+TF_INSTANTIATE_TYPE(UsdMayaBeforeSceneResetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+
+MCallbackId UsdMayaBeforeSceneResetNotice::_beforeNewCallbackId = 0;
+
+UsdMayaBeforeSceneResetNotice::UsdMayaBeforeSceneResetNotice() { }
+
+/* static */
+void UsdMayaBeforeSceneResetNotice::InstallListener()
+{
+    if (_beforeSceneResetRegistrationCount++ > 0) {
+        return;
+    }
+
+    if (_beforeNewCallbackId == 0) {
+        _beforeNewCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kBeforeNew, _OnMayaBeforeResetCallback);
+    }
+}
+
+/* static */
+void UsdMayaBeforeSceneResetNotice::RemoveListener()
+{
+    if (_beforeSceneResetRegistrationCount-- > 1) {
+        return;
+    }
+
+    if (_beforeNewCallbackId != 0) {
+        MMessage::removeCallback(_beforeNewCallbackId);
     }
 }
 

@@ -161,6 +161,7 @@ MStatus initializePlugin(MObject obj)
     }
 
     UsdMayaSceneResetNotice::InstallListener();
+    UsdMayaBeforeSceneResetNotice::InstallListener();
     UsdMayaExitNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
 
@@ -246,6 +247,7 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     UsdMayaSceneResetNotice::RemoveListener();
+    UsdMayaBeforeSceneResetNotice::RemoveListener();
     UsdMayaExitNotice::RemoveListener();
     UsdMayaDiagnosticDelegate::RemoveDelegate();
 
