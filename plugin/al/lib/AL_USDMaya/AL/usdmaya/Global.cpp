@@ -481,7 +481,8 @@ void Global::onPluginLoad()
     }
 #endif
 
-    UsdMayaNoticeListener::InstallListener();
+    UsdMayaSceneResetNotice::InstallListener();
+    UsdMayaExitNotice::InstallListener();
 
     // For callback initialization for stage cache callback, it will be done via proxy node
     // attribute change.
@@ -512,7 +513,8 @@ void Global::onPluginUnload()
     }
 #endif
 
-    UsdMayaNoticeListener::RemoveListener();
+    UsdMayaSceneResetNotice::RemoveListener();
+    UsdMayaExitNotice::RemoveListener();
 }
 
 void Global::openingFile(bool val)

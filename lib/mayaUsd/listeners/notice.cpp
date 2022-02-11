@@ -29,9 +29,7 @@ namespace {
 // to be removed.
 static int _newOrOpenRegistrationCount = 0;
 
-static void _afterNewSceneCallback(void* /*clientData*/) { UsdMayaSceneResetNotice().Send(); }
-
-static void _beforeNewSceneCallback(void* /*clientData*/)
+static void _OnMayaNewOrOpenSceneCallback(void* /*clientData*/)
 {
     // kBeforeFileRead messages are emitted when importing/referencing files,
     // which we don't consider a "scene reset".
@@ -39,22 +37,28 @@ static void _beforeNewSceneCallback(void* /*clientData*/)
         return;
     }
 
-    UsdMayaSceneBeforeResetNotice().Send();
     UsdMayaSceneResetNotice().Send();
+}
+
+static int _exitRegistrationCount = 0;
+
+static void _OnMayaExitCallback(void* /*clientData*/)
+{
+    // Maya is about to exit, notifying listeners.
+    UsdMayaExitNotice().Send();
 }
 
 } // anonymous namespace
 
 TF_INSTANTIATE_TYPE(UsdMayaSceneResetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
-TF_INSTANTIATE_TYPE(UsdMayaSceneBeforeResetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 
-MCallbackId UsdMayaNoticeListener::_beforeNewCallbackId = 0;
-MCallbackId UsdMayaNoticeListener::_afterNewCallbackId = 0;
-MCallbackId UsdMayaNoticeListener::_beforeFileReadCallbackId = 0;
-MCallbackId UsdMayaNoticeListener::_exitingCallbackId = 0;
+MCallbackId UsdMayaSceneResetNotice::_beforeNewCallbackId = 0;
+MCallbackId UsdMayaSceneResetNotice::_beforeFileReadCallbackId = 0;
+
+UsdMayaSceneResetNotice::UsdMayaSceneResetNotice() { }
 
 /* static */
-void UsdMayaNoticeListener::InstallListener()
+void UsdMayaSceneResetNotice::InstallListener()
 {
     if (_newOrOpenRegistrationCount++ > 0) {
         return;
@@ -69,44 +73,61 @@ void UsdMayaNoticeListener::InstallListener()
     // the new scene has been opened). However, they are also emitted when a
     // file is imported or referenced, so we check for that and do *not* send
     // a scene reset notice.
-    if (_afterNewCallbackId == 0) {
-        _afterNewCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kAfterNew, _afterNewSceneCallback);
-    }
-
     if (_beforeNewCallbackId == 0) {
         _beforeNewCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kBeforeNew, _beforeNewSceneCallback);
+            = MSceneMessage::addCallback(MSceneMessage::kBeforeNew, _OnMayaNewOrOpenSceneCallback);
     }
 
     if (_beforeFileReadCallbackId == 0) {
-        _beforeFileReadCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kBeforeFileRead, _beforeNewSceneCallback);
-    }
-
-    if (_exitingCallbackId == 0) {
-        _exitingCallbackId
-            = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, _beforeNewSceneCallback);
+        _beforeFileReadCallbackId = MSceneMessage::addCallback(
+            MSceneMessage::kBeforeFileRead, _OnMayaNewOrOpenSceneCallback);
     }
 }
 
 /* static */
-void UsdMayaNoticeListener::RemoveListener()
+void UsdMayaSceneResetNotice::RemoveListener()
 {
     if (_newOrOpenRegistrationCount-- > 1) {
         return;
     }
 
-    if (_afterNewCallbackId != 0) {
-        MMessage::removeCallback(_afterNewCallbackId);
+    if (_beforeNewCallbackId != 0) {
+        MMessage::removeCallback(_beforeNewCallbackId);
     }
 
     if (_beforeFileReadCallbackId == 0) {
         MMessage::removeCallback(_beforeFileReadCallbackId);
     }
+}
 
-    if (_exitingCallbackId != 0) {
-        MMessage::removeCallback(_exitingCallbackId);
+TF_INSTANTIATE_TYPE(UsdMayaExitNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+
+MCallbackId UsdMayaExitNotice::_beforeExitCallbackId = 0;
+
+UsdMayaExitNotice::UsdMayaExitNotice() { }
+
+/* static */
+void UsdMayaExitNotice::InstallListener()
+{
+    if (_exitRegistrationCount++ > 0) {
+        return;
+    }
+
+    if (_beforeExitCallbackId == 0) {
+        _beforeExitCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kMayaExiting, _OnMayaExitCallback);
+    }
+}
+
+/* static */
+void UsdMayaExitNotice::RemoveListener()
+{
+    if (_exitRegistrationCount-- > 1) {
+        return;
+    }
+
+    if (_beforeExitCallbackId != 0) {
+        MMessage::removeCallback(_beforeExitCallbackId);
     }
 }
 

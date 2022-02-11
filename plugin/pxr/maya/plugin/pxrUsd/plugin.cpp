@@ -160,7 +160,8 @@ MStatus initializePlugin(MObject obj)
         status.perror("pxrUsd: unable to register USD Export translator.");
     }
 
-    UsdMayaNoticeListener::InstallListener();
+    UsdMayaSceneResetNotice::InstallListener();
+    UsdMayaExitNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
 
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
@@ -244,7 +245,8 @@ MStatus uninitializePlugin(MObject obj)
     status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 
-    UsdMayaNoticeListener::RemoveListener();
+    UsdMayaSceneResetNotice::RemoveListener();
+    UsdMayaExitNotice::RemoveListener();
     UsdMayaDiagnosticDelegate::RemoveDelegate();
 
     return status;
