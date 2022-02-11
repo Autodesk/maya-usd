@@ -31,11 +31,12 @@ def mayaUsdLibRegisterStrings():
     # Any python strings from MayaUsd lib go here.
 
     # mayaUsdAddMayaReference.py
-    register('kErrorGroupPrimExists', 'Group prim name "^1s" already exists under "^2s".')
-    register('kErrorCannotAddToProxyShape', 'Cannot add Maya Reference node to ProxyShape with VariantSet unless Group prim is used.')
-    register('kErrorMayaRefPrimExists', 'Maya Reference prim name "^1s" already exists under "^2s".')
-    register('kErrorCreatingGroupPrim', 'Could not create Group prim under "^1s".')
-    register('kErrorCreatingMayaRefPrim', 'Could not create MayaReference prim under "^1s".')
+    register('kErrorGroupPrimExists', 'Group prim "^1s" already exists under "^2s". Choose prim name other than "^1s" to proceed.')
+    register('kErrorCannotAddToProxyShape', 'Cannot add Maya Reference node to ProxyShape with Variant Set unless grouped. Enable Group checkbox to proceed.')
+    register('kErrorMayaRefPrimExists', 'Maya Reference prim "^1s" already exists under "^2s". Choose Maya Reference prim name other than "^1s" to proceed.')
+    register('kErrorCreatingGroupPrim', 'Cannot create group prim under "^1s". Ensure target layer is editable and "^2s" can be added to "^1s".')
+    register('kErrorCreatingMayaRefPrim', 'Cannot create MayaReference prim under "^1s". Ensure target layer is editable and "^2s" can be added to "^1s".')
+    register('kErrorCreateVariantSet', 'Cannot create Variant Set on prim at path "^1s". Ensure target layer is editable and "^2s" can be added to "^3s".')
 
     # mayaUsdCacheMayaReference.py
     register('kButtonNewChildPrim', 'New Child Prim')
