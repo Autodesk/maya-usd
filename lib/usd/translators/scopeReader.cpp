@@ -24,8 +24,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static bool
-_IsShadingNode(const UsdPrim& prim)
+static bool _IsShadingNode(const UsdPrim& prim)
 {
     // Note, UsdShadeShader prims are used in other contexts that aren't just
     // surface shading, so we just look for UsdShadeMaterial nodes.
