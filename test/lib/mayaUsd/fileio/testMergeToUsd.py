@@ -20,6 +20,7 @@ import fixturesUtils
 
 from mayaUtils import setMayaTranslation, setMayaRotation
 from usdUtils import createSimpleXformScene, mayaUsd_createStageWithNewLayer
+from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
 
@@ -62,7 +63,7 @@ class MergeToUsdTestCase(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testTransformMergeToUsd(self):
         '''Merge edits on a USD transform back to USD.'''
 
@@ -127,7 +128,7 @@ class MergeToUsdTestCase(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 om.MSelectionList().add(mayaPathStr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testTransformMergeToUsdUndoRedo(self):
         '''Merge edits on a USD transform back to USD and use undo redo.'''
 
@@ -212,7 +213,7 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         verifyMergeToUsd()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testMergeToUsdToNonRootTargetInSessionLayer(self):
         '''Merge edits on a USD transform back to USD targeting a non-root destination path that
            does not exists in the destination layer.'''

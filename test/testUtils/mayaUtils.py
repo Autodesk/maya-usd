@@ -263,6 +263,8 @@ def previewReleaseVersion():
 
     If the version of Maya is 2020, returns 110.
 
+    If the version of Maya is 2022, returns 122.
+
     If the version of Maya is current and is not a Preview Release, returns
     sys.maxsize (a very large number).  If the environment variable
     MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE is defined, return its value instead.

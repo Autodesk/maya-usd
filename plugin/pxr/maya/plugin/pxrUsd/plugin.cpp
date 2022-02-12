@@ -161,6 +161,8 @@ MStatus initializePlugin(MObject obj)
     }
 
     UsdMayaSceneResetNotice::InstallListener();
+    UsdMayaBeforeSceneResetNotice::InstallListener();
+    UsdMayaExitNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
 
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
@@ -245,6 +247,8 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     UsdMayaSceneResetNotice::RemoveListener();
+    UsdMayaBeforeSceneResetNotice::RemoveListener();
+    UsdMayaExitNotice::RemoveListener();
     UsdMayaDiagnosticDelegate::RemoveDelegate();
 
     return status;

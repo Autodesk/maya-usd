@@ -19,6 +19,7 @@
 import fixturesUtils
 
 from usdUtils import createSimpleXformScene
+from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
 
@@ -61,7 +62,7 @@ class EditAsMayaTestCase(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testTransformEditAsMaya(self):
         '''Edit a USD transform as a Maya object.'''
 
@@ -111,7 +112,7 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         assertVectorAlmostEqual(self, mayaValues, usdValues)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testEditAsMayaUndoRedo(self):
         '''Edit a USD transform as a Maya object and apply undo and redo.'''
 
@@ -176,7 +177,7 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         verifyEditedScene()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testIllegalEditAsMaya(self):
         '''Trying to edit as Maya on object that doesn't support it.'''
         
@@ -203,7 +204,7 @@ class EditAsMayaTestCase(unittest.TestCase):
         #     self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(scopePathStr))
         #     self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(scopePathStr))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testSessionLayer(self):
         '''Verify that the edit gets on the sessionLayer instead of the editTarget layer.'''
         

@@ -34,7 +34,7 @@ public:
 
     UsdUndoCreateGroupCommand(
         const UsdSceneItem::Ptr& parentItem,
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
+#ifndef UFE_V3_FEATURES_AVAILABLE
         const Ufe::Selection& selection,
 #endif
         const Ufe::PathComponent& name);
@@ -49,7 +49,7 @@ public:
     //! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
     static UsdUndoCreateGroupCommand::Ptr create(
         const UsdSceneItem::Ptr& parentItem,
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
+#ifndef UFE_V3_FEATURES_AVAILABLE
         const Ufe::Selection& selection,
 #endif
         const Ufe::PathComponent& name);
@@ -64,7 +64,7 @@ private:
     UsdSceneItem::Ptr  _parentItem;
     Ufe::PathComponent _name;
     UsdSceneItem::Ptr  _groupItem;
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
+#ifndef UFE_V3_FEATURES_AVAILABLE
     Ufe::Selection _selection;
 #endif
 
