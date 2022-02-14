@@ -193,6 +193,8 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
                 # Now all of our subsequent edits will go "inside" the
                 # 'variantName' variant of 'variantSetName'.
                 prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)
+        else:
+                prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)                
             
     if prim is None or not prim.IsValid():
         errorMsgFormat = getMayaUsdLibString('kErrorCreatingMayaRefPrim')
