@@ -58,14 +58,22 @@ def createMayaReferenceMenuItem(dagPath, precedingItem):
     pulledPath = pathMapper.fromHost(mayaItem.path())
     prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(pulledPath))
 
-    # If the pulled prim isn't a MayaReference, not our responsibility.
-    if prim.GetTypeName() != 'MayaReference':
-        return ''
+    # If the pulled prim doesn't exist anymore, we won't delegate the reponsibility to
+    # another creator and handle the menu item in here. We already have all the information
+    # available.
+    if prim:
+        # If the pulled prim isn't a MayaReference, not our responsibility.
+        if prim.GetTypeName() != 'MayaReference':
+            return ''
 
-    cmd = partial(mayaUsdCacheMayaReference.cacheDialog, fullDagPath, prim)
-    cacheLabel = getMayaUsdLibString('kMenuCacheToUsd')
-    return cmds.menuItem(label=cacheLabel, insertAfter=precedingItem, 
-                         image="cache_to_USD.png", command=cmd)
+        cmd = partial(mayaUsdCacheMayaReference.cacheDialog, fullDagPath, prim)
+        cacheLabel = getMayaUsdLibString('kMenuCacheToUsd')
+        return cmds.menuItem(label=cacheLabel, insertAfter=precedingItem,
+                             image="cache_to_USD.png", command=cmd, enable=1)
+    else:
+        menuLabel = getMayaUsdLibString('kMenuMergeMayaEdits')
+        return cmds.menuItem(label=menuLabel, insertAfter=precedingItem,
+                             image="merge_to_USD.png", enable=0)
 
 _menuItemCreators = [createMayaReferenceMenuItem, createDefaultMenuItem]
 

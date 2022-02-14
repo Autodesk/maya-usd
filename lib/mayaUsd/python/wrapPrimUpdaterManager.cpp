@@ -75,12 +75,7 @@ bool canEditAsMaya(const std::string& ufePathString)
 bool discardEdits(const std::string& nodeName)
 {
     auto dagPath = UsdMayaUtil::nameToDagPath(nodeName);
-
-    Ufe::Path path;
-    if (!PrimUpdaterManager::readPullInformation(dagPath, path))
-        return false;
-
-    return PrimUpdaterManager::getInstance().discardEdits(path);
+    return PrimUpdaterManager::getInstance().discardEdits(dagPath);
 }
 
 bool duplicate(

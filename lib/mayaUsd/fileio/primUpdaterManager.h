@@ -54,7 +54,7 @@ public:
     bool canEditAsMaya(const Ufe::Path& path) const;
 
     MAYAUSD_CORE_PUBLIC
-    bool discardEdits(const Ufe::Path& path);
+    bool discardEdits(const MDagPath& dagPath);
 
     MAYAUSD_CORE_PUBLIC
     bool duplicate(
@@ -82,6 +82,9 @@ private:
 
     PrimUpdaterManager(PrimUpdaterManager&) = delete;
     PrimUpdaterManager(PrimUpdaterManager&&) = delete;
+
+    bool discardPrimEdits(const Ufe::Path& path);
+    bool discardOrphanedEdits(const MDagPath& dagPath);
 
     void onProxyContentChanged(const MayaUsdProxyStageObjectsChangedNotice& notice);
 

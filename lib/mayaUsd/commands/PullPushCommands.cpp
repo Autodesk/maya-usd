@@ -329,7 +329,7 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
         OpUndoItemRecorder undoRecorder(fUndoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        status = manager.discardEdits(fPath) ? MS::kSuccess : MS::kFailure;
+        status = manager.discardEdits(dagPath) ? MS::kSuccess : MS::kFailure;
     }
 
     // Undo potentially partially-made discard-edit on failure.
