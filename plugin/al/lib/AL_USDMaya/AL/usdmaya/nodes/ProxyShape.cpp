@@ -935,26 +935,17 @@ void ProxyShape::validateTransforms()
 {
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("validateTransforms\n");
     if (m_stage) {
-        SdfPathVector pathsToNuke;
         for (auto& it : m_requiredPaths) {
             TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("validateTransforms %s\n", it.first.GetText());
 
             MObject       node = it.second.node();
             MObjectHandle handle(node);
-            if (!handle.isValid() || !handle.isAlive()) {
-                continue;
-            }
-
-            if (node.isNull()) {
+            if (!handle.isValid() || !handle.isAlive() || node.isNull()) {
                 continue;
             }
 
             Scope* tm = it.second.getTransformNode();
             if (!tm) {
-                UsdPrim newPrim = m_stage->GetPrimAtPath(it.first);
-                if (!newPrim) {
-                    pathsToNuke.push_back(it.first);
-                }
                 continue;
             }
 
@@ -965,8 +956,6 @@ void ProxyShape::validateTransforms()
                 if (newPrim && transformType.empty()) {
                     tm->transform()->setPrim(newPrim, tm);
                 }
-            } else {
-                pathsToNuke.push_back(it.first);
             }
         }
     }
