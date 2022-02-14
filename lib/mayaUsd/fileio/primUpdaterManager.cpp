@@ -932,7 +932,17 @@ bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
     return updater ? updater->canEditAsMaya() : false;
 }
 
-bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
+bool PrimUpdaterManager::discardEdits(const MDagPath& dagPath)
+{
+    Ufe::Path primPath;
+    if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, primPath))
+        return false;
+
+    auto usdPrim = MayaUsd::ufe::ufePathToPrim(primPath);
+    return usdPrim ? discardPrimEdits(primPath) : discardOrphanedEdits(dagPath);
+}
+
+bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
     if (!proxyShape) {
@@ -1007,6 +1017,43 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
     if (TF_VERIFY(hier)) {
         scene.notify(Ufe::SubtreeInvalidate(hier->defaultParent()));
     }
+    return true;
+}
+
+bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
+{
+    PushPullScope scopeIt(_inPushPull);
+
+    // Unlock the pulled hierarchy, clear the pull information, and remove the
+    // pull parent, which is simply the parent of the pulled path.
+    auto pullParent = dagPath;
+    pullParent.pop();
+
+    LockNodesUndoItem::lock("Discard orphaned edits node unlocking", pullParent, false);
+
+    // Reset the selection, otherwise it will keep a reference to a deleted node
+    // and crash later on.
+    SelectionUndoItem::select("Discard orphaned edits selection reset", MSelectionList());
+
+    UsdMayaPrimUpdaterContext context(UsdTimeCode(), nullptr, VtDictionary());
+
+    // Discard all pulled Maya nodes.
+    std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(dagPath);
+    for (const MDagPath& curDagPath : toApplyOn) {
+        MFnDependencyNode dgNodeFn(curDagPath.node());
+        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
+
+        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
+        auto updater = factory(context, dgNodeFn, Ufe::Path());
+
+        updater->discardEdits();
+    }
+
+    if (!TF_VERIFY(removePullParent(pullParent))) {
+        return false;
+    }
+
     return true;
 }
 

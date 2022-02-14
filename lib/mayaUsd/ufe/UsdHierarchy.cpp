@@ -165,17 +165,17 @@ UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range, bool filterIn
 #ifdef UFE_V3_FEATURES_AVAILABLE
         if (PXR_NS::PrimUpdaterManager::readPullInformation(child, dagPathStr)) {
             auto item = Ufe::Hierarchy::createItem(Ufe::PathString::path(dagPathStr));
-            if (TF_VERIFY(item)) {
+            // if we mapped to a valid object, insert it. it's possible that we got stale object
+            // so in this case simply fallback to the usual processing of items
+            if (item) {
                 children.emplace_back(item);
+                continue;
             }
-        } else {
-#endif
-            if (!filterInactive || child.IsActive()) {
-                children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
-            }
-#ifdef UFE_V3_FEATURES_AVAILABLE
         }
 #endif
+        if (!filterInactive || child.IsActive()) {
+            children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+        }
     }
     return children;
 }
