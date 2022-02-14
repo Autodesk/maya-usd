@@ -275,7 +275,7 @@ class SelectTestCase(unittest.TestCase):
         self.assertTrue(globalSn.contains(first.path()))
         self.assertEqual(globalSn.back(), first)
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 123)), 'testMayaSelectMuteLayer only available in UFE v2 or greater and Maya Preview Release 123 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only avaiable in Maya 2023 or greater.')
     def testMayaSelectMuteLayer(self):
         '''Stale selection items must be removed on mute layer.'''
         
@@ -350,7 +350,7 @@ class SelectTestCase(unittest.TestCase):
 
         self.assertTrue(sn.empty())
 
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 123)), 'testMayaSelectSwitchVariant only available in UFE v2 or greater and Maya Preview Release 123 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testMayaSelectSwitchVariant(self):
         '''Stale selection items must be removed on variant switch.'''
 
@@ -445,7 +445,7 @@ class SelectTestCase(unittest.TestCase):
 
         self.assertTrue(sn.empty())
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 126, 'Requires Maya fixes only available in Maya Preview Release 126 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testMayaSelectUndoPrimCreation(self):
         '''Test if the SceneItem's prim is still valid on selection after the prim creation is undone then redone'''
 
