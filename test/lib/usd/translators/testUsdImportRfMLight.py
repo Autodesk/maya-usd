@@ -347,6 +347,17 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertTrue(Gf.IsClose(cmds.getAttr('%s.shadowFalloffGamma' % nodePath),
             expectedShadowFalloffGamma, 1e-6))
 
+    def _ValidatePxrLightImportedUnderScope(self):
+        # This tests a case where the "Scope" translator was treating lights as
+        # materials and deciding to not translate the scope.  This would result in
+        # the "NonRootRectLight" here to be translated at the scene root.
+        nodePath = '|RfMLightsTest|NonMaterialsScope|NonRootRectLight'
+        depNodeFn = self._GetMayaDependencyNode(nodePath)
+
+        # _GetMayaDependencyNode already does this assert, but in case we ever
+        # remove that, just redundantly assert here.
+        self.assertTrue(depNodeFn)
+
     def testImportRenderManForMayaLights(self):
         """
         Tests that UsdLux schema USD prims import into Maya as the appropriate
@@ -379,6 +390,8 @@ class testUsdImportRfMLight(unittest.TestCase):
         self._ValidateMayaLightShaping()
 
         self._ValidateMayaLightShadow()
+
+        self._ValidatePxrLightImportedUnderScope()
 
 
 if __name__ == '__main__':
