@@ -108,7 +108,8 @@ enum class UsdPointInstancesPickMode
     Use MAYAUSD_DISABLE_VP2_RENDER_DELEGATE  env variable before loading USD
     plugin to switch to the legacy rendering with draw override approach.
 */
-class ProxyRenderDelegate : public MHWRender::MPxSubSceneOverride
+class ProxyRenderDelegate
+    : public Autodesk::Maya::OPENMAYA_LATEST_NAMESPACE::MHWRender::MPxSubSceneOverride
 {
     ProxyRenderDelegate(const MObject& obj);
 
