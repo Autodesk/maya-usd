@@ -574,6 +574,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           { UsdMayaJobExportArgsTokens->currentLayer,
             UsdMayaJobExportArgsTokens->modelingVariant }))
     , rootKind(_String(userArgs, UsdMayaJobExportArgsTokens->kind))
+    , disableModelKindProcessor(
+          _Boolean(userArgs, UsdMayaJobExportArgsTokens->disableModelKindProcessor))
     , shadingMode(_Token(
           userArgs,
           UsdMayaJobExportArgsTokens->shadingMode,
@@ -651,6 +653,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "parentScope: " << exportArgs.parentScope << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
+        << "disableModelKindProcessor: " << exportArgs.disableModelKindProcessor << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
         << "allMaterialConversions: " << std::endl;
     for (const auto& conv : exportArgs.allMaterialConversions) {
@@ -877,6 +880,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->filterTypes] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = false;
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
+        d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = false;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
         d[UsdMayaJobExportArgsTokens->materialsScopeName]
             = UsdUtilsGetMaterialsScopeName().GetString();
@@ -952,6 +956,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->filterTypes] = _stringVector;
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = _boolean;
         d[UsdMayaJobExportArgsTokens->kind] = _string;
+        d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = _boolean;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = _string;
         d[UsdMayaJobExportArgsTokens->materialsScopeName] = _string;
         d[UsdMayaJobExportArgsTokens->melPerFrameCallback] = _string;

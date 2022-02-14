@@ -51,6 +51,10 @@ void UsdMaya_ModelKindProcessor::OnWritePrim(
     const UsdPrim&                    prim,
     const UsdMayaPrimWriterSharedPtr& primWriter)
 {
+    if (_args.disableModelKindProcessor) {
+        return;
+    }
+
     const SdfPath& path = prim.GetPath();
 
     // Here we save all of the root prims that are assemblies (or derived), so
@@ -105,6 +109,10 @@ bool UsdMaya_ModelKindProcessor::MakeModelHierarchy(UsdStageRefPtr& stage)
     // independent root-trees/models in the same export, however the
     // analysis we have done about gprims and references authored is global,
     // so all trees will get the same treatment/kind.
+
+    if (_args.disableModelKindProcessor) {
+        return true;
+    }
 
     _PathBoolMap rootPrimIsComponent;
 
