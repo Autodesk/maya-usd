@@ -446,7 +446,7 @@ MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
 
 //! \brief  Constructor
 ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
-    : MHWRender::MPxSubSceneOverride(obj)
+    : Autodesk::Maya::OPENMAYA_LATEST_NAMESPACE::MHWRender::MPxSubSceneOverride(obj)
 {
     MDagPath proxyDagPath;
     MDagPath::getAPathTo(obj, proxyDagPath);
