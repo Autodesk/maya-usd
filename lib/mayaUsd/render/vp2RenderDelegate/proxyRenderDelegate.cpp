@@ -524,6 +524,10 @@ void ProxyRenderDelegate::_ClearInvalidData(MSubSceneContainer& container)
     // and clear everything. If this is a performance problem we can probably store the old value
     // of excluded prims, compare it to the new value and only add back the difference.
     if (!_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()) {
+        // Tell texture loading tasks to terminate (exit) if they have not finished yet
+        if (_renderDelegate) {
+            dynamic_cast<HdVP2RenderDelegate*>(_renderDelegate.get())->CleanupMaterials();
+        }
         // delete everything so we can re-initialize with the new stage
         _ClearRenderDelegate();
         container.clear();

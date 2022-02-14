@@ -902,7 +902,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             if (material) {
                 MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
-                if (shader != nullptr && shader != drawItemData._shader) {
+                if (shader != nullptr
+                    && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
                     stateToCommit._isTransparent = shader->isTransparent();
