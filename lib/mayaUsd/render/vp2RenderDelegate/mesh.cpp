@@ -942,6 +942,15 @@ void HdVP2Mesh::Sync(
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         const SdfPath materialId = delegate->GetMaterialId(id);
 
+        if (!materialId.IsEmpty()) {
+            auto* material = dynamic_cast<HdVP2Material*>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+            if (material) {
+                // Load the textures if any
+                material->EnqueueLoadTextures();
+            }
+        }
+
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
         const SdfPath& origMaterialId = GetMaterialId();
         if (materialId != origMaterialId) {
@@ -1866,7 +1875,8 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             if (material) {
                 MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
-                if (shader != nullptr && shader != drawItemData._shader) {
+                if (shader != nullptr
+                    && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                     drawItemData._shader = shader;
                     drawItemData._shaderIsFallback = false;
                     stateToCommit._shader = shader;
