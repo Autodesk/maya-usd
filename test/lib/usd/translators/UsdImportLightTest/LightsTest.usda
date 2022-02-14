@@ -128,4 +128,10 @@ def Xform "LightsTest" (
         uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
     }
 
+    def Scope "NonMaterialsScope"
+    {
+        def RectLight "NonRootRectLight"
+        {
+        }
+    }
 }
