@@ -404,22 +404,30 @@ wanted the default flags mentioned above:
 
 ```javascript
 {
-    "UsdMaya": {
-        "mayaUSDExport": {
-            "exportMaterialCollections": true,
-            "chaser": "alembic",
-            "chaserArgs": [
-                ["alembic", "primvarprefix", "ABC_,ABC2_=customPrefix_,ABC3_=,ABC4_=customNamespace:"],
-                ["alembic", "attrprefix", "ABC_,ABC2_=customPrefix_,ABC3_=,ABC4_=customNamespace:"]
-            ]
+  "Plugins": [
+    {
+      "Info": {
+        "UsdMaya": {
+            "UsdExport": {
+              "exportMaterialCollections": true,
+              "chaser": ["alembic"],
+              "chaserArgs": [
+                  ["alembic", "primvarprefix", "ABC_,ABC2_=customPrefix_,ABC3_=,ABC4_=customNamespace:"],
+                  ["alembic", "attrprefix", "ABC_,ABC2_=customPrefix_,ABC3_=,ABC4_=customNamespace:"]
+              ]
+          }
         }
+      },
+      "Name": "MySiteSpecificConfigPlugin",
+      "Type": "resource"
     }
+  ]
 }
 ```
 
 This also works for the `MayaUSDImportCommand` base command, for example
 in the `mayaUSDImport` command and the "File > Import" menu item; use
-the `mayaUSDImport` key in the `plugInfo.json` file to configure your
+the `UsdImport` key in the `plugInfo.json` file to configure your
 site-specific defaults.
 
 
