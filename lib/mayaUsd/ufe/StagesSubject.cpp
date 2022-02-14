@@ -386,8 +386,7 @@ void StagesSubject::stageChanged(
 #ifndef MAYA_ENABLE_NEW_PRIM_DELETE
             }
 #endif
-        }
-        else if (!prim.IsValid() && !InPathChange::inPathChange()) {
+        } else if (!prim.IsValid() && !InPathChange::inPathChange()) {
             Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath);
             if (!sceneItem || InAddOrDeleteOperation::inAddOrDeleteOperation()) {
                 sendObjectDestroyed(ufePath);
