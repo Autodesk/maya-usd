@@ -145,13 +145,8 @@ void sendObjectDestroyed(const Ufe::Path& ufePath)
     // So the only choice we have is to subtree invalidate the
     // parent which will remove the destroyed item (keeping all
     // the valid children).
-    auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
-    while (!sceneItem)
-    {
-        auto parentPath = ufePath.pop();
-        sceneItem = Ufe::Hierarchy::createItem(ufePath);
-    }
-    if (sceneItem) {
+    auto sceneItem = Ufe::Hierarchy::createItem(ufePath.pop());
+    if (TF_VERIFY(sceneItem)) {
         sendObjectPostDelete(sceneItem);
         sendObjectAdd(sceneItem);
     }
