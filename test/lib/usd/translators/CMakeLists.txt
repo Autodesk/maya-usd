@@ -259,3 +259,12 @@ if (PXR_VERSION VERSION_GREATER 2105)
     )
     set_property(TEST testUsdExportSchemaApi APPEND PROPERTY LABELS translators)
 endif()
+
+mayaUsd_add_test(testUsdImportExportSiteSpecificConfig
+    PYTHON_MODULE testUsdImportExportSiteSpecificConfig
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_BINARY_DIR}/../plugin/SiteSpecificConfig"
+)
+set_property(TEST testUsdImportExportSiteSpecificConfig APPEND PROPERTY LABELS translators)
+
