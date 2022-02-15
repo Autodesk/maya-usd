@@ -85,17 +85,21 @@ bool UsdMayaPrimUpdater::discardEdits()
     if (objectToDelete.isNull())
         return true;
 
+    // Nodes that are from a referenced file cannot be deleted
+    // as they live in a different file. They will go away once
+    // the reference is unloaded. Don't try to delete them here.
     MFnDependencyNode depNode(objectToDelete);
+    if (!depNode.isFromReferencedFile()) {
+        MStatus status = NodeDeletionUndoItem::deleteNode(
+            "Discard edits delete individual pulled node", depNode.absoluteName(), objectToDelete);
 
-    MStatus status = NodeDeletionUndoItem::deleteNode(
-        "Discard edits delete individual pulled node", depNode.absoluteName(), objectToDelete);
-
-    if (status != MS::kSuccess) {
-        TF_WARN("Discard edits: cannot delete node.");
-        return false;
+        if (status != MS::kSuccess) {
+            TF_WARN("Discard edits: cannot delete node.");
+            return false;
+        }
     }
 
-    return status == MS::kSuccess;
+    return true;
 }
 
 bool UsdMayaPrimUpdater::pushEnd()

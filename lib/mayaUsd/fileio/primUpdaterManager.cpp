@@ -983,11 +983,23 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
     for (const MDagPath& curDagPath : toApplyOn) {
         MFnDependencyNode dgNodeFn(curDagPath.node());
-        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
 
-        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        const Ufe::Path path = MayaUsd::ufe::dagPathToPathSegment(curDagPath);
+
+        // The root of the pulled hierarchy is crucial for determining push
+        // behavior.  When pulling, we may have created a Maya pull hierarchy root
+        // node whose type does not map to the same prim updater as the original
+        // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
+        // node type (e.g. transform, which is the fallback Maya node type for many
+        // USD prim types).  Therefore, if we're at the root of the src hierarchy,
+        // use the prim at the pulled path to create the prim updater.
+        bool usePulledPrim = (curDagPath == mayaDagPath);
+        auto registryItem = usePulledPrim
+            ? UsdMayaPrimUpdaterRegistry::FindOrFallback(
+                MayaUsd::ufe::ufePathToPrim(pulledPath).GetTypeName())
+            : UsdMayaPrimUpdaterRegistry::FindOrFallback(dgNodeFn.typeName().asChar());
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
-        auto updater = factory(context, dgNodeFn, Ufe::Path());
+        auto updater = factory(context, dgNodeFn, path);
 
         updater->discardEdits();
     }
