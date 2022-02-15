@@ -270,3 +270,15 @@ endif()
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/nullApiExporter_plugInfo.json"
                 "${CMAKE_CURRENT_BINARY_DIR}/nullApiExporter/plugInfo.json"
 )
+
+# -----------------------------------------------------------------------------
+# Site-specific configuration tests:
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# Plug-in files
+# -----------------------------------------------------------------------------
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfoSiteSpecificConfig.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/SiteSpecificConfig/plugInfo.json"
+)
+
