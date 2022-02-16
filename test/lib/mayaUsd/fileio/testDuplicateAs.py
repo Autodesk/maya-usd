@@ -93,6 +93,9 @@ class DuplicateAsTestCase(unittest.TestCase):
                bXlation, bUsdUfePathStr, bUsdUfePath, _) = \
             createSimpleXformScene()
 
+        # Capture selection before duplicate.
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
+
         # Duplicate USD data as Maya data, placing it under the root.
         cmds.mayaUsdDuplicate(aUsdUfePathStr, '|world')
 
@@ -111,6 +114,11 @@ class DuplicateAsTestCase(unittest.TestCase):
             self.assertEqual(cmds.getAttr(bMayaPathStr + '.translate')[0],
                             bXlation)
 
+            # Selection is on the duplicate.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertEqual(len(sn), 1)
+            self.assertEqual(sn[0], aMayaPathStr)
+
         verifyDuplicate()
 
         cmds.undo()
@@ -118,6 +126,7 @@ class DuplicateAsTestCase(unittest.TestCase):
         def verifyDuplicateIsGone():
             bMayaPathStr = str(bUsdUfePath.segments[1]).replace('/', '|')
             self.assertListEqual(cmds.ls(bMayaPathStr, long=True), [])
+            self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
 
         verifyDuplicateIsGone()
 
@@ -211,6 +220,9 @@ class DuplicateAsTestCase(unittest.TestCase):
         # Create a stage to receive the USD duplicate.
         psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         
+        # Capture selection before duplicate.
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
+
         # Duplicate Maya data as USD data.  As of 17-Nov-2021 no single-segment
         # path handler registered to UFE for Maya path strings, so use absolute
         # path.
@@ -238,6 +250,11 @@ class DuplicateAsTestCase(unittest.TestCase):
             self.assertEqual([1, 2, 3], usdGroup1T3d.translation().vector)
             self.assertEqual([-4, -5, -6], usdGroup2T3d.translation().vector)
 
+            # Selection is on duplicate.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertEqual(len(sn), 1)
+            self.assertEqual(sn[0], usdGroup2PathStr)
+            
         verifyDuplicate()
 
         cmds.undo()
@@ -248,6 +265,7 @@ class DuplicateAsTestCase(unittest.TestCase):
             usdGroup2Path = ufe.PathString.path(usdGroup2PathStr)
             usdGroup2 = ufe.Hierarchy.createItem(usdGroup2Path)
             self.assertIsNone(usdGroup2)
+            self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
 
         verifyDuplicateIsGone()
 
