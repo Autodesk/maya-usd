@@ -20,8 +20,10 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MSelectionList.h>
+#ifdef WANT_UFE_BUILD
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
+#endif
 
 namespace MAYAUSD_NS_DEF {
 
