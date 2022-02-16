@@ -357,6 +357,7 @@ bool SelectionUndoItem::redo()
     return status == MS::kSuccess;
 }
 
+#ifdef WANT_UFE_BUILD
 //------------------------------------------------------------------------------
 // UfeSelectionUndoItem
 //------------------------------------------------------------------------------
@@ -403,6 +404,7 @@ void UfeSelectionUndoItem::invert()
     globalSn->replaceWith(_selection);
     _selection = std::move(previousSelection);
 }
+#endif
 
 //------------------------------------------------------------------------------
 // LockNodesUndoItem

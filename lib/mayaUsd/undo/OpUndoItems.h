@@ -26,7 +26,9 @@
 #include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
+#ifdef WANT_UFE_BUILD
 #include <ufe/selection.h>
+#endif
 
 #include <memory>
 #include <vector>
@@ -404,6 +406,7 @@ private:
     MGlobal::ListAdjustment _selMode;
 };
 
+#ifdef WANT_UFE_BUILD
 //------------------------------------------------------------------------------
 // UfeSelectionUndoItem
 //------------------------------------------------------------------------------
@@ -443,6 +446,7 @@ private:
 
     Ufe::Selection _selection;
 };
+#endif
 
 //------------------------------------------------------------------------------
 // LockNodesUndoItem
