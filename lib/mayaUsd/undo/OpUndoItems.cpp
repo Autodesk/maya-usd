@@ -20,6 +20,8 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MSelectionList.h>
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
 
 namespace MAYAUSD_NS_DEF {
 
@@ -353,6 +355,53 @@ bool SelectionUndoItem::redo()
     MGlobal::getActiveSelectionList(_previousSelection);
     MStatus status = MGlobal::setActiveSelectionList(_selection, _selMode);
     return status == MS::kSuccess;
+}
+
+//------------------------------------------------------------------------------
+// UfeSelectionUndoItem
+//------------------------------------------------------------------------------
+
+UfeSelectionUndoItem::UfeSelectionUndoItem(const std::string& name, const Ufe::Selection& selection)
+    : OpUndoItem(name)
+    , _selection(selection)
+{
+}
+
+UfeSelectionUndoItem::~UfeSelectionUndoItem() { }
+
+void UfeSelectionUndoItem::select(
+    const std::string&    name,
+    const Ufe::Selection& selection,
+    OpUndoItemList&       undoInfo)
+{
+    auto item = std::make_unique<UfeSelectionUndoItem>(name, selection);
+    item->redo();
+    undoInfo.addItem(std::move(item));
+}
+
+void UfeSelectionUndoItem::select(const std::string& name, const Ufe::Selection& selection)
+{
+    select(name, selection, OpUndoItemList::instance());
+}
+
+bool UfeSelectionUndoItem::undo()
+{
+    invert();
+    return true;
+}
+
+bool UfeSelectionUndoItem::redo()
+{
+    invert();
+    return true;
+}
+
+void UfeSelectionUndoItem::invert()
+{
+    auto globalSn = Ufe::GlobalSelection::get();
+    auto previousSelection = *globalSn;
+    globalSn->replaceWith(_selection);
+    _selection = std::move(previousSelection);
 }
 
 //------------------------------------------------------------------------------

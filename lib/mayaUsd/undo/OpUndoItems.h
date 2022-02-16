@@ -26,6 +26,7 @@
 #include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
+#include <ufe/selection.h>
 
 #include <memory>
 #include <vector>
@@ -401,6 +402,46 @@ private:
     MSelectionList          _selection;
     MSelectionList          _previousSelection;
     MGlobal::ListAdjustment _selMode;
+};
+
+//------------------------------------------------------------------------------
+// UfeSelectionUndoItem
+//------------------------------------------------------------------------------
+
+/// \class UfeSelectionUndoItem
+/// \brief Record data needed to undo or redo select nodes sub-operations.
+class UfeSelectionUndoItem : public OpUndoItem
+{
+public:
+    /// \brief Create and execute a select node undo item and keep track of it.  The global
+    /// selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void
+    select(const std::string& name, const Ufe::Selection& selection, OpUndoItemList& undoInfo);
+
+    /// \brief create and execute a select node undo item and keep track of it in the global list.
+    /// The global selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void select(const std::string& name, const Ufe::Selection& selection);
+
+    MAYAUSD_CORE_PUBLIC
+    UfeSelectionUndoItem(const std::string& name, const Ufe::Selection& selection);
+
+    MAYAUSD_CORE_PUBLIC
+    ~UfeSelectionUndoItem() override;
+
+    /// \brief undo a single sub-operation.
+    MAYAUSD_CORE_PUBLIC
+    bool undo() override;
+
+    /// \brief redo a single sub-operation.
+    MAYAUSD_CORE_PUBLIC
+    bool redo() override;
+
+private:
+    void invert();
+
+    Ufe::Selection _selection;
 };
 
 //------------------------------------------------------------------------------

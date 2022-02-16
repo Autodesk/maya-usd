@@ -18,16 +18,20 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItemRecorder.h>
+#include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MArgParser.h>
 #include <maya/MGlobal.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
+#include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
+#include <ufe/selection.h>
 
 #include <algorithm>
 
@@ -404,6 +408,25 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
         status = manager.duplicate(fSrcPath, fDstPath, userArgs) ? MS::kSuccess : MS::kFailure;
+
+        // If the duplicate src is Maya, the duplicate child of the destination
+        // will be USD, and vice-versa.  Construct an appropriate child path:
+        // - Maya duplicate to USD: we always duplicate directly under the
+        //   proxy shape, so add a single path component USD path segment.
+        // - USD duplicate to Maya: no path segment to add.
+        Ufe::Path childPath = (fSrcPath.runTimeId() == getMayaRunTimeId())
+            ?
+            // Maya duplicate to USD
+            fDstPath + Ufe::PathSegment(fSrcPath.back(), getUsdRunTimeId(), '/')
+            // USD duplicate to Maya
+            : fDstPath + fSrcPath.back();
+
+        Ufe::Selection sn;
+        sn.append(Ufe::Hierarchy::createItem(childPath));
+        // It is appropriate to use the overload that uses the global list, as
+        // the undo recorder will transfer the items on the global list to
+        // fUndoItemList.
+        UfeSelectionUndoItem::select("duplicate", sn);
     }
 
     // Undo potentially partially-made duplicate on failure.
