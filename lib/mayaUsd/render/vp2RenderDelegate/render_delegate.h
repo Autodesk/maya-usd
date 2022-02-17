@@ -138,7 +138,8 @@ public:
     MHWRender::MShaderInstance* Get3dSolidShader(const MColor& color) const;
     MHWRender::MShaderInstance* Get3dDefaultMaterialShader() const;
     MHWRender::MShaderInstance* Get3dCPVSolidShader() const;
-    MHWRender::MShaderInstance* Get3dFatPointShader() const;
+    MHWRender::MShaderInstance* Get3dCPVFatPointShader() const;    
+    MHWRender::MShaderInstance* Get3dFatPointShader(const MColor& color = MColor(1.f, 1.f, 1.f)) const;
 
     MHWRender::MShaderInstance* GetBasisCurvesFallbackShader(
         const TfToken& curveType,
