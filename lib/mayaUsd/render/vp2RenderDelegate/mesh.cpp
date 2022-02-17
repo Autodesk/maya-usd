@@ -2441,8 +2441,8 @@ void HdVP2Mesh::_UpdateDrawItem(
             // Important, update instance transforms after setting geometry on render items!
             auto& oldInstanceCount = stateToCommit._renderItemData._instanceCount;
             auto  newInstanceCount = stateToCommit._instanceTransforms
-                 ? stateToCommit._instanceTransforms->length()
-                 : oldInstanceCount;
+                ? stateToCommit._instanceTransforms->length()
+                : oldInstanceCount;
 
             // GPU instancing has been enabled. We cannot switch to consolidation
             // without recreating render item, so we keep using GPU instancing.
