@@ -18,8 +18,12 @@
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/shading/symmetricShaderReader.h>
+#include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/converter.h>
@@ -63,6 +67,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((SwizzlePrefix, "MayaSwizzle"))
     ((LuminancePrefix, "MayaLuminance"))
     ((NormalMapPrefix, "MayaNormalMap"))
+
+    (lambert)
+    (MayaND_lambert_surfaceshader)
+    (phong)
+    (MayaND_phong_surfaceshader)
+    (blinn)
+    (MayaND_blinn_surfaceshader)
 );
 // clang-format on
 
@@ -71,6 +82,27 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     TrMtlxTokens->contextName,
     TrMtlxTokens->niceName,
     TrMtlxTokens->exportDescription);
+
+// Register symmetric writers:
+TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
+{
+    UsdMayaSymmetricShaderWriter::RegisterWriter(
+        _tokens->lambert, _tokens->MayaND_lambert_surfaceshader, TrMtlxTokens->conversionName);
+    UsdMayaSymmetricShaderWriter::RegisterWriter(
+        _tokens->phong, _tokens->MayaND_phong_surfaceshader, TrMtlxTokens->conversionName);
+    UsdMayaSymmetricShaderWriter::RegisterWriter(
+        _tokens->blinn, _tokens->MayaND_blinn_surfaceshader, TrMtlxTokens->conversionName);
+};
+
+TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
+{
+    UsdMayaSymmetricShaderReader::RegisterReader(
+        _tokens->MayaND_lambert_surfaceshader, _tokens->lambert, TrMtlxTokens->conversionName);
+    UsdMayaSymmetricShaderReader::RegisterReader(
+        _tokens->MayaND_phong_surfaceshader, _tokens->phong, TrMtlxTokens->conversionName);
+    UsdMayaSymmetricShaderReader::RegisterReader(
+        _tokens->MayaND_blinn_surfaceshader, _tokens->blinn, TrMtlxTokens->conversionName);
+};
 
 UsdMayaShaderWriter::ContextSupport
 MtlxUsd_BaseWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
