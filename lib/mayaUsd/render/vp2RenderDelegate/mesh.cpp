@@ -2212,7 +2212,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 #else
             TF_VERIFY(
                 stateToCommit._ufeIdentifiers.length()
-                == stateToCommit._instanceTransforms.length());
+                == stateToCommit._instanceTransforms->length());
 #endif
             if (stateToCommit._instanceTransforms->length() == 0)
                 instancerWithNoInstances = true;
@@ -2462,7 +2462,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                     }
                 }
 
-                if (stateToCommit._instanceColors->length() > 0) {
+                if (stateToCommit._instanceColors && stateToCommit._instanceColors->length() > 0) {
                     TF_VERIFY(
                         newInstanceCount * kNumColorChannels
                         == stateToCommit._instanceColors->length());
