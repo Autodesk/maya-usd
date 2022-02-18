@@ -310,7 +310,9 @@ global proc mayaUsdTranslatorExport_EnableAllControls() {
 
     if (stringArrayContains("output", $sectionNames)) {
         optionMenuGrp -e -en 1 defaultUSDFormatPopup;
-        textFieldGrp -e -en 1 parentScopeField;
+        if (stringArrayContains("output-parentscope", $sectionNames)) {
+            textFieldGrp -e -en 1 parentScopeField;
+        }
     }
 
     if (stringArrayContains("materials", $sectionNames)) {
@@ -424,7 +426,7 @@ proc string[] parseActionSectionNames(string $sections)
 {
     global string $mayaUsdTranslatorExport_SectionNames[];
 
-    string $allSections[] = { "context", "output", "geometry", "materials", "animation", "animation-data", "advanced" };
+    string $allSections[] = { "context", "output", "output-parentscope", "geometry", "materials", "animation", "animation-data", "advanced" };
 
     string $sectionList[];
     tokenize($sections, ";", $sectionList);
@@ -472,7 +474,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 //
 //        In addition to the action, the list of UI sections that are desired can be added
 //        with the syntax "action=section1;section2;..." where the section names can be:
-//            context, output, geometry, materials, animation, animation-data, advanced
+//            context, output, output-parentscope, geometry, materials, animation, animation-data, advanced
 //
 //        The section name can also be "all", "none" or prefixed with "!":
 //            - When "all" is used, all sections are included.
@@ -534,10 +536,12 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     menuItem -l `getMayaUsdString("kExportDefaultFormatBinLbl")` -ann "usdc";
                     menuItem -l `getMayaUsdString("kExportDefaultFormatAscLbl")` -ann "usda";
 
-                separator -style "none";
+                if (stringArrayContains("output-parentscope", $sectionNames)) {
+                    separator -style "none";
 
-                textFieldGrp -l `getMayaUsdString("kExportParentScopLbl")` -placeholderText `getMayaUsdString("kExportParentScopPht")`
-                    -annotation `getMayaUsdString("kExportParentScopAnn")` parentScopeField;
+                    textFieldGrp -l `getMayaUsdString("kExportParentScopeLbl")` -placeholderText `getMayaUsdString("kExportParentScopePht")`
+                        -annotation `getMayaUsdString("kExportParentScopeAnn")` parentScopeField;
+                }
 
                 separator -style "none";
             setParent ..;
@@ -681,7 +685,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         if (stringArrayContains("output", $sectionNames)) {
             $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "defaultUSDFormat", "defaultUSDFormatPopup");
-            $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
+            if (stringArrayContains("output-parentscope", $sectionNames)) {
+                $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
+            }
         }
 
         if (stringArrayContains("materials", $sectionNames)) {

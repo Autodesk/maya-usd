@@ -34,6 +34,9 @@ kDefaultCachePrimName = 'Cache1'
 # Cache options in string format, for MEL mayaUsdTranslatorExport() consumption.
 _cacheExportOptions = None
 
+# The options string that we pass to mayaUsdTranslatorExport.
+kTranslatorExportOptions = 'all;!output-parentscope;!animation-data'
+
 # Dag path corresponding to pulled prim.  This is a Maya transform node that is
 # not in the Maya reference itself, but is its parent.
 _mayaRefDagPath = None
@@ -181,7 +184,7 @@ def fileOptionsTabPage(tabLayout):
     # USD file option controls will be parented under this layout.
     # resultCallback not called on "post", is therefore an empty string.
     fileOptionsScroll = cmds.columnLayout('fileOptionsScroll')
-    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post=all;!animation-data", "' + getCacheExportOptions() + '", "")') 
+    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post={exportOpts}", "{cacheOpts}", "")'.format(exportOpts=kTranslatorExportOptions, cacheOpts=getCacheExportOptions()))
 
     cacheFileUsdHierarchyOptions(topForm)
 
@@ -241,7 +244,7 @@ def cacheCommitUi(parent, selectedFile):
 
     # The following call will set _cacheExportOptions.  Initial settings not
     # accessed on "query", is therefore an empty string.
-    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "query", "", "mayaUsdCacheMayaReference_setCacheOptions")')
+    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "query={exportOpts}", "", "mayaUsdCacheMayaReference_setCacheOptions")'.format(exportOpts=kTranslatorExportOptions))
 
     primName = cmds.textFieldGrp('primNameText', query=True, text=True)
     payloadOrReference = cmds.optionMenuGrp('compositionArcTypeMenu', query=True, value=True)
