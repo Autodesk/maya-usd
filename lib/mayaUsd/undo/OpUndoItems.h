@@ -427,6 +427,26 @@ public:
     MAYAUSD_CORE_PUBLIC
     static void select(const std::string& name, const Ufe::Selection& selection);
 
+    /// \brief create and execute a select node undo item and keep track of it.
+    /// The global selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void select(const std::string& name, const MDagPath& dagPath, OpUndoItemList& undoInfo);
+
+    /// \brief create and execute a select node undo item and keep track of it on the global list.
+    /// The global selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void select(const std::string& name, const MDagPath& dagPath);
+
+    /// \brief Create and execute a select node undo item and keep track of it.  The global
+    /// selection is cleared.
+    MAYAUSD_CORE_PUBLIC
+    static void clear(const std::string& name, OpUndoItemList& undoInfo);
+
+    /// \brief create and execute a select node undo item and keep track of it in the global list.
+    /// The global selection is cleared.
+    MAYAUSD_CORE_PUBLIC
+    static void clear(const std::string& name);
+
     MAYAUSD_CORE_PUBLIC
     UfeSelectionUndoItem(const std::string& name, const Ufe::Selection& selection);
 

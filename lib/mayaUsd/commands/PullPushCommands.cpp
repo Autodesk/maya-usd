@@ -25,6 +25,7 @@
 #include <mayaUsd/utils/util.h>
 
 #include <maya/MArgParser.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
@@ -253,11 +254,13 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    status = fDagNode.setObject(dagPath);
+    MFnDagNode dagNode;
+    status = dagNode.setObject(dagPath);
     if (status != MS::kSuccess)
         return reportError(status);
 
-    if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPulledPath))
+    Ufe::Path pulledPath;
+    if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, pulledPath))
         return reportError(MS::kInvalidParameter);
 
     MArgDatabase argData(syntax(), argList, &status);
@@ -277,7 +280,14 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
         OpUndoItemRecorder undoRecorder(fUndoItemList);
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
-        status = manager.mergeToUsd(fDagNode, fPulledPath, userArgs) ? MS::kSuccess : MS::kFailure;
+        status = manager.mergeToUsd(dagNode, pulledPath, userArgs) ? MS::kSuccess : MS::kFailure;
+
+        if (status == MS::kSuccess) {
+            // Select the merged prim.  See DuplicateCommand::doIt() comments.
+            Ufe::Selection sn;
+            sn.append(Ufe::Hierarchy::createItem(pulledPath));
+            UfeSelectionUndoItem::select("mergeToUsd", sn);
+        }
     }
 
     // Undo potentially partially-made merge-to-USD on failure.
@@ -324,8 +334,9 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
     if (status != MS::kSuccess)
         return reportError(status);
 
-    MDagPath dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(nodeName.asChar());
-    if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, fPath))
+    MDagPath  dagPath = PXR_NS::UsdMayaUtil::nameToDagPath(nodeName.asChar());
+    Ufe::Path pulledPath;
+    if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, pulledPath))
         return reportError(MS::kInvalidParameter);
 
     // Scope the undo item recording so we can undo on failure.
@@ -334,6 +345,18 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
 
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
         status = manager.discardEdits(dagPath) ? MS::kSuccess : MS::kFailure;
+
+        if (status == MS::kSuccess) {
+            // Select the original prim, if it exists --- orphaned DG edits will
+            // have no corresponding prim.  If it does not exist, the selection
+            // will simply be cleared.  See DuplicateCommand::doIt() comments.
+            Ufe::Selection sn;
+            auto           pulledItem = Ufe::Hierarchy::createItem(pulledPath);
+            if (pulledItem) {
+                sn.append(pulledItem);
+            }
+            UfeSelectionUndoItem::select("discardEdits", sn);
+        }
     }
 
     // Undo potentially partially-made discard-edit on failure.
@@ -409,24 +432,29 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
         auto& manager = PXR_NS::PrimUpdaterManager::getInstance();
         status = manager.duplicate(fSrcPath, fDstPath, userArgs) ? MS::kSuccess : MS::kFailure;
 
-        // If the duplicate src is Maya, the duplicate child of the destination
-        // will be USD, and vice-versa.  Construct an appropriate child path:
-        // - Maya duplicate to USD: we always duplicate directly under the
-        //   proxy shape, so add a single path component USD path segment.
-        // - USD duplicate to Maya: no path segment to add.
-        Ufe::Path childPath = (fSrcPath.runTimeId() == getMayaRunTimeId())
-            ?
-            // Maya duplicate to USD
-            fDstPath + Ufe::PathSegment(fSrcPath.back(), getUsdRunTimeId(), '/')
-            // USD duplicate to Maya
-            : fDstPath + fSrcPath.back();
+        if (status == MS::kSuccess) {
+            // Select the duplicate.
+            //
+            // If the duplicate src is Maya, the duplicate child of the
+            // destination will be USD, and vice-versa.  Construct an
+            // appropriate child path:
+            // - Maya duplicate to USD: we always duplicate directly under the
+            //   proxy shape, so add a single path component USD path segment.
+            // - USD duplicate to Maya: no path segment to add.
+            Ufe::Path childPath = (fSrcPath.runTimeId() == getMayaRunTimeId())
+                ?
+                // Maya duplicate to USD
+                fDstPath + Ufe::PathSegment(fSrcPath.back(), getUsdRunTimeId(), '/')
+                // USD duplicate to Maya
+                : fDstPath + fSrcPath.back();
 
-        Ufe::Selection sn;
-        sn.append(Ufe::Hierarchy::createItem(childPath));
-        // It is appropriate to use the overload that uses the global list, as
-        // the undo recorder will transfer the items on the global list to
-        // fUndoItemList.
-        UfeSelectionUndoItem::select("duplicate", sn);
+            Ufe::Selection sn;
+            sn.append(Ufe::Hierarchy::createItem(childPath));
+            // It is appropriate to use the overload that uses the global list,
+            // as the undo recorder will transfer the items on the global list
+            // to fUndoItemList.
+            UfeSelectionUndoItem::select("duplicate", sn);
+        }
     }
 
     // Undo potentially partially-made duplicate on failure.

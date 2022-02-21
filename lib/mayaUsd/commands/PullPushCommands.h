@@ -22,7 +22,6 @@
 #include <mayaUsd/mayaUsd.h>
 #include <mayaUsd/undo/OpUndoItemList.h>
 
-#include <maya/MFnDagNode.h>
 #include <maya/MPxCommand.h>
 #include <ufe/path.h>
 #include <ufe/undoableCommand.h>
@@ -115,9 +114,6 @@ public:
 private:
     // Make sure callers need to call creator().
     MergeToUsdCommand();
-
-    MFnDagNode fDagNode;
-    Ufe::Path  fPulledPath;
 };
 
 //------------------------------------------------------------------------------
@@ -148,8 +144,6 @@ public:
 private:
     // Make sure callers need to call creator().
     DiscardEditsCommand();
-
-    Ufe::Path fPath;
 };
 
 //------------------------------------------------------------------------------
