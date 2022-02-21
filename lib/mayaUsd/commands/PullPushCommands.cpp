@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -286,7 +286,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
             // Select the merged prim.  See DuplicateCommand::doIt() comments.
             Ufe::Selection sn;
             sn.append(Ufe::Hierarchy::createItem(pulledPath));
-            UfeSelectionUndoItem::select("mergeToUsd", sn);
+            UfeSelectionUndoItem::select("mergeToUsd: select merged prim", sn);
         }
     }
 
@@ -355,7 +355,7 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
             if (pulledItem) {
                 sn.append(pulledItem);
             }
-            UfeSelectionUndoItem::select("discardEdits", sn);
+            UfeSelectionUndoItem::select("discardEdits: select original prim", sn);
         }
     }
 
@@ -453,7 +453,7 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
             // It is appropriate to use the overload that uses the global list,
             // as the undo recorder will transfer the items on the global list
             // to fUndoItemList.
-            UfeSelectionUndoItem::select("duplicate", sn);
+            UfeSelectionUndoItem::select("duplicate: select duplicate", sn);
         }
     }
 
