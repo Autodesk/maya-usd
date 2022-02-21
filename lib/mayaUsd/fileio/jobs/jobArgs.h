@@ -133,6 +133,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (importInstances) \
     (importUSDZTextures) \
     (importUSDZTexturesFilePath) \
+    (pullImport) \
     /* assemblyRep values */ \
     (Collapsed) \
     (Full) \
@@ -304,6 +305,7 @@ struct UsdMayaJobImportArgs
     const bool        importInstances;
     const bool        useAsAnimationCache;
     const bool        importWithProxyShapes;
+    const bool        pullImport;
     /// The interval over which to import animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
     /// animated (time-sampled) data should be imported.

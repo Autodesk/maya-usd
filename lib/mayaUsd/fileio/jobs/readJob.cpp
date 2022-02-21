@@ -141,7 +141,11 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     } else {
         UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(
             mImportData.stageInitialLoadSet() == UsdStage::InitialLoadSet::LoadAll));
-        stage = UsdStage::Open(rootLayer, sessionLayer, mImportData.stageInitialLoadSet());
+
+        if (mArgs.pullImport)
+            stage = UsdStage::Open(rootLayer, mImportData.stageInitialLoadSet());
+        else
+            stage = UsdStage::Open(rootLayer, sessionLayer, mImportData.stageInitialLoadSet());
     }
     if (!stage) {
         return false;

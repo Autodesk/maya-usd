@@ -183,7 +183,10 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
 
     const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
-    auto                       stage = getStage(Ufe::Path(segments[0]));
+    if (!TF_VERIFY(!segments.empty(), kIllegalUSDPath, path.string().c_str())) {
+        return UsdPrim();
+    }
+    auto stage = getStage(Ufe::Path(segments[0]));
     if (!TF_VERIFY(stage, kIllegalUSDPath, path.string().c_str())) {
         return UsdPrim();
     }

@@ -62,6 +62,8 @@ struct UsdMayaTranslatorMayaReference
     static MStatus update(const UsdPrim& prim, MObject parent);
 
 private:
+    static MString namespaceFromPrim(const UsdPrim& prim);
+    static MString getUniqueRefNodeName(const UsdPrim& prim, const MFnDagNode& parentDag, const MFnReference& refDependNode);
     static MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode);
 
     static const TfToken m_namespaceName;
