@@ -494,8 +494,6 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                         MObject      tempRefNode = refIter.item();
                         MFnReference tempRefFn(tempRefNode);
                         if (!tempRefFn.isFromReferencedFile()) {
-
-                            bool equal = false;
                             if (expectedValue == tempRefFn.uuid()) {
                                 // Reconnect the reference node's `associatedNode` attr before
                                 // loading it, since the previous connection may be gone.
