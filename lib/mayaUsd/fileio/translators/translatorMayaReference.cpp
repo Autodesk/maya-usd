@@ -48,7 +48,6 @@
 #include <maya/MNodeClass.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
-#include <maya/MUuid.h>
 
 #include <ghc/filesystem.hpp>
 
@@ -331,9 +330,7 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     //    if(!prim.HasAttribute(MayaReferenceAttribute))
     {
         UsdAttribute attr = prim.CreateAttribute(MayaReferenceAttribute, SdfValueTypeNames->String);
-        // Set the UUID of the reference node to prim
-        MUuid uuid = refDependNode.uuid();
-        attr.Set(uuid.asString().asChar());
+        attr.Set(refDependNode.name().asChar());
     }
     // Now load the reference to properly trigger the kAfterReferenceLoad callback
     status = LoadMayaReferenceWithUndo(referenceObject);
@@ -488,13 +485,13 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                 // Check if attribute was directly on prim or inherited.
                 bool isAttributeOnPrim = resInfo.GetNode().GetPath() == prim.GetPath();
                 if (isAttributeOnPrim && value.GetType() == SdfValueTypeNames->String.GetType()) {
-                    MUuid expectedValue(MString(value.Get<std::string>().c_str()));
+                    MString expectedValue = MString(value.Get<std::string>().c_str());
                     for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone();
                          refIter.next()) {
                         MObject      tempRefNode = refIter.item();
                         MFnReference tempRefFn(tempRefNode);
                         if (!tempRefFn.isFromReferencedFile()) {
-                            if (expectedValue == tempRefFn.uuid()) {
+                            if (expectedValue == tempRefFn.name()) {                            
                                 // Reconnect the reference node's `associatedNode` attr before
                                 // loading it, since the previous connection may be gone.
                                 connectReferenceAssociatedNode(parentDag, tempRefFn);
@@ -505,10 +502,15 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                                     = getUniqueRefNodeName(prim, parentDag, tempRefFn);
                                 tempRefFn.setName(uniqueRefNodeName);
 
-                                VtValue value(std::string(
-                                    uniqueRefNodeName.asChar(), uniqueRefNodeName.length()));
+                                MString refDependNodeName = tempRefFn.name();
+                                VtValue value(std::string(refDependNodeName.asChar(), refDependNodeName.length()));
                                 prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
 
+                                if(prim.HasAttribute(MayaReferenceAttribute))
+                                {
+                                    UsdAttribute attr = prim.GetAttribute(MayaReferenceAttribute);
+                                    attr.Set(refDependNodeName.asChar());
+                                }
                                 break;
                             }
                         }
