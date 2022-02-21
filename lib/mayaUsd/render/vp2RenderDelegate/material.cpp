@@ -1949,6 +1949,9 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
+#if PXR_VERSION > 2111
+                fixedPath,
+#endif
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
                 _GetMaterialXData()._mtlxLibrary,
                 &hdTextureNodes,
