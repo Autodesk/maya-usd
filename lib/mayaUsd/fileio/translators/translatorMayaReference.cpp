@@ -491,7 +491,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                         MObject      tempRefNode = refIter.item();
                         MFnReference tempRefFn(tempRefNode);
                         if (!tempRefFn.isFromReferencedFile()) {
-                            if (expectedValue == tempRefFn.name()) {                            
+                            if (expectedValue == tempRefFn.name()) {
                                 // Reconnect the reference node's `associatedNode` attr before
                                 // loading it, since the previous connection may be gone.
                                 connectReferenceAssociatedNode(parentDag, tempRefFn);
@@ -503,11 +503,11 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                                 tempRefFn.setName(uniqueRefNodeName);
 
                                 MString refDependNodeName = tempRefFn.name();
-                                VtValue value(std::string(refDependNodeName.asChar(), refDependNodeName.length()));
+                                VtValue value(std::string(
+                                    refDependNodeName.asChar(), refDependNodeName.length()));
                                 prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
 
-                                if(prim.HasAttribute(MayaReferenceAttribute))
-                                {
+                                if (prim.HasAttribute(MayaReferenceAttribute)) {
                                     UsdAttribute attr = prim.GetAttribute(MayaReferenceAttribute);
                                     attr.Set(refDependNodeName.asChar());
                                 }
