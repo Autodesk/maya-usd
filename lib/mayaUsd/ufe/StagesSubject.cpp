@@ -30,6 +30,7 @@
 #endif
 
 #include <pxr/pxr.h>
+#include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/tokens.h>
@@ -130,6 +131,38 @@ void sendObjectPostDelete(const Ufe::SceneItem::Ptr& sceneItem)
 #else
     auto notification = Ufe::ObjectPostDelete(sceneItem);
     Ufe::Scene::notifyObjectDelete(notification);
+#endif
+}
+
+void sendObjectDestroyed(const Ufe::Path& ufePath)
+{
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
+#else
+    // Unfortunately in Ufe v1 there was no object destroyed notif
+    // and the only delete notifs we have both take a scene item
+    // which we cannot create for the input Ufe path since that
+    // path is no longer valid (it has already been destroyed).
+    // So the only choice we have is to subtree invalidate the
+    // parent which will remove the destroyed item (keeping all
+    // the valid children).
+    auto sceneItem = Ufe::Hierarchy::createItem(ufePath.pop());
+    if (TF_VERIFY(sceneItem)) {
+        sendObjectPostDelete(sceneItem);
+        sendObjectAdd(sceneItem);
+    }
+#endif
+}
+
+void sendSubtreeInvalidate(const Ufe::SceneItem::Ptr& sceneItem)
+{
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+#else
+    // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
+    // delete/add notifs.
+    sendObjectPostDelete(sceneItem);
+    sendObjectAdd(sceneItem);
 #endif
 }
 
@@ -343,35 +376,36 @@ void StagesSubject::stageChanged(
                         sentNotif = true;
                         break;
                     }
+
+                    // Special case for "active" metadata.
+                    if (entry->HasInfoChange(SdfFieldKeys->Active)) {
+                        if (prim.IsActive()) {
+                            sendObjectAdd(sceneItem);
+                        } else {
+                            sendObjectPostDelete(sceneItem);
+                        }
+                        sentNotif = true;
+                        break;
+                    }
                 }
 
                 if (!sentNotif) {
-#ifdef UFE_V2_FEATURES_AVAILABLE
                     // According to USD docs for GetResyncedPaths():
                     // - Resyncs imply entire subtree invalidation of all descendant prims and
                     // properties. So we send the UFE subtree invalidate notif.
-                    Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-#else
-                // In Ufe v1 there was no subtree invalidate notif. So we mimic it by sending
-                // delete/add notifs.
-                sendObjectPostDelete(sceneItem);
-                sendObjectAdd(sceneItem);
-#endif
+                    sendSubtreeInvalidate(sceneItem);
                 }
 #ifndef MAYA_ENABLE_NEW_PRIM_DELETE
             }
 #endif
-        }
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        else if (!prim.IsValid() && !InPathChange::inPathChange()) {
+        } else if (!prim.IsValid() && !InPathChange::inPathChange()) {
             Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath);
             if (!sceneItem || InAddOrDeleteOperation::inAddOrDeleteOperation()) {
-                Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
+                sendObjectDestroyed(ufePath);
             } else {
-                Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+                sendSubtreeInvalidate(sceneItem);
             }
         }
-#endif
     }
 
     auto changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
@@ -531,15 +565,13 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
             fStageListeners[stage] = noticeKeys;
         }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
         // Now we can send the notifications about stage change.
         for (auto& path : fInvalidStages) {
             Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(path);
             if (sceneItem) {
-                Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+                sendSubtreeInvalidate(sceneItem);
             }
         }
-#endif
 
         fInvalidStages.clear();
 

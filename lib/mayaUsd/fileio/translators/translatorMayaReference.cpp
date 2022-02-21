@@ -152,6 +152,34 @@ const bool isMayaReference(const UsdPrim& prim)
 
 const TfToken MayaReferenceAttribute("MayaReferenceAttribute");
 
+MStatus LoadOrUnloadMayaReferenceWithUndo(const MObject& referenceObject, bool load)
+{
+    MStatus status = MS::kSuccess;
+
+    MFnDependencyNode referenceNodeFn(referenceObject, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    // Note: the code below is equivalent to MFileIO::loadReferenceByNode()
+    //       and MFileIO::unloadReferenceByNode() except we add the
+    //       -preserveUndo flag to avoid flushing the undo queue.
+    MString referenceNodeName = referenceNodeFn.name();
+    MString loadOrUnloadFlag = load ? "-lr" : "-ur";
+    MString loadCommand = "file -preserveUndo true " + loadOrUnloadFlag + " " + referenceNodeName;
+    status = MGlobal::executeCommand(loadCommand);
+
+    return status;
+}
+
+MStatus LoadMayaReferenceWithUndo(const MObject& referenceObject)
+{
+    return LoadOrUnloadMayaReferenceWithUndo(referenceObject, true);
+}
+
+MStatus UnloadMayaReferenceWithUndo(const MObject& referenceObject)
+{
+    return LoadOrUnloadMayaReferenceWithUndo(referenceObject, false);
+}
+
 } // namespace
 
 const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
@@ -254,6 +282,7 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     MString      mergeNamespacesOnClashArg = mergeNamespacesOnClash ? "true" : "false";
     MString      referenceCommand = MString(
                                    "file"
+                                   " -preserveUndo true"
                                    " -reference"
                                    " -returnNewNodes"
                                    " -deferReference true"
@@ -303,7 +332,7 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
         attr.Set(uuid.asString().asChar());
     }
     // Now load the reference to properly trigger the kAfterReferenceLoad callback
-    MFileIO::loadReferenceByNode(referenceObject, &status);
+    status = LoadMayaReferenceWithUndo(referenceObject);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     {
         // To avoid the error that USD complains about editing to same layer simultaneously from
@@ -332,7 +361,7 @@ MStatus UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& paren
             for (uint32_t i = 0; i < referencePlugsLength; ++i) {
                 MObject temp = referencePlugs[i].node();
                 if (temp.hasFn(MFn::kReference)) {
-                    MFileIO::unloadReferenceByNode(temp, &status);
+                    status = UnloadMayaReferenceWithUndo(temp);
                     CHECK_MSTATUS_AND_RETURN_IT(status);
                 }
             }
@@ -541,7 +570,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
 
         if (prim.IsActive()) {
             if (mayaReferencePath.length() != 0 && filepath != mayaReferencePath) {
-                command = "file -loadReference \"";
+                command = "file -preserveUndo true -loadReference \"";
                 command += fnReference.name();
                 command += "\" \"";
                 command += mayaReferencePath;
@@ -565,9 +594,12 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                         .Msg(
                             "MayaReferenceLogic::update prim=%s loadReferenceByNode\n",
                             prim.GetPath().GetText());
-                    MString s = MFileIO::loadReferenceByNode(refNode, &status);
+                    status = LoadMayaReferenceWithUndo(refNode);
+                    CHECK_MSTATUS_AND_RETURN_IT(status);
                 }
 
+                // TODO: should this rig namespace update also be done when the
+                //       mayaReferencePath changes above?
                 if (!rigNamespace.empty()) {
                     // check to see if the namespace has changed
                     MString refNamespace = fnReference.associatedNamespace(true);
@@ -577,7 +609,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                             prim.GetPath().GetText(),
                             refNamespace.asChar());
                     if (refNamespace != rigNamespace.c_str()) {
-                        command = "file -e -ns \"";
+                        command = "file -preserveUndo true -e -ns \"";
                         command += rigNamespace.c_str();
                         command += "\" \"";
                         command += filepath;
@@ -604,7 +636,8 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                 .Msg(
                     "MayaReferenceLogic::update prim=%s unloadReferenceByNode\n",
                     prim.GetPath().GetText());
-            MString s = MFileIO::unloadReferenceByNode(refNode, &status);
+            status = UnloadMayaReferenceWithUndo(refNode);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
         }
     }
     return MS::kSuccess;
