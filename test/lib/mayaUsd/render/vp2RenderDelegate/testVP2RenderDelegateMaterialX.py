@@ -57,8 +57,6 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         return self.assertImagesClose(baselineImage, snapshotImage)
 
     def _StartTest(self, testName):
-        cmds.file(force=True, new=True)
-        cmds.move(2, -2, 1.5, 'persp')
         mayaUtils.loadPlugin("mayaUsdPlugin")
         
         self._testName = testName
@@ -71,8 +69,15 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
     def testUVStreamManagement(self):
         """Test that a scene without primvar readers renders correctly if it
            uses indexed UV streams"""
+        cmds.file(force=True, new=True)
+        cmds.move(2, -2, 1.5, 'persp')
         self._StartTest('MtlxUVStreamTest')
 
+    def testMayaSurfaces(self):
+        cmds.file(force=True, new=True)
+        cmds.move(6, -6, 6, 'persp')
+        cmds.rotate(60, 0, 45, 'persp')
+        self._StartTest('MayaSurfaces')
 
 
 if __name__ == '__main__':

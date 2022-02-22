@@ -215,8 +215,6 @@ global proc mayaUSDRegisterStrings()
     register("kImportUSDZTxtLbl", "USDZ Texture Import: ");
     register("kImportVariantsInScopeNumLbl", "Variants Switched in Scope:");
     register("kMayaRefMergeEdits", "Merge Maya Edits to USD");
-    register("kMergeToUSDOptionsTitle", "Merge Maya Edits to USD Options");
-    register("kMergeButton", "Merge");
     register("kMayaRefDiscardEdits", "Discard Maya Edits");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
     register("kMayaRefDuplicateAsUsdDataDiv", "Stages");

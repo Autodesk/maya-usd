@@ -185,13 +185,38 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vaddressmode)
     (filtertype)
     (channels)
+    (out)
+    (surfaceshader)
 
     // Texcoord reader identifiers:
+    (texcoord)
     (index)
     (UV0)
     (geompropvalue)
     (ST_reader)
     (vector2)
+
+    // Tangent related identifiers:
+    (tangent)
+    (normalmap)
+    (arbitrarytangents)
+    (texcoordtangents)
+    (Tworld)
+    (Tobject)
+    (Tw_reader)
+    (vector3)
+    (transformvector)
+    (constant)
+    (Tw_to_To)
+    (in)
+    (space)
+    (fromspace)
+    (tospace)
+    (world)
+    (object)
+    (model)
+    (outTworld)
+    (outTobject)
 );
 
 const std::set<std::string> _mtlxTopoNodeSet = {
@@ -401,18 +426,152 @@ MStatus _SetFAParameter(
 // name for UV at index zero.
 void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
 {
-    // We expect only one node graph, but fixing them all is not an issue:
-    for (mx::NodeGraphPtr nodeGraph : mtlxDoc->getNodeGraphs()) {
-        if (nodeGraph->hasSourceUri()) {
+    mx::NodeGraphPtr nodeGraph = mtlxDoc->getNodeGraph(_mtlxTokens->NG_Maya.GetString());
+    if (!nodeGraph) {
+        return;
+    }
+
+    // This will hold the emergency "ST" reader if one was necessary
+    mx::NodePtr stReader;
+    // Store nodes to delete when loop iteration is complete
+    std::vector<std::string> nodesToDelete;
+
+    for (mx::NodePtr node : nodeGraph->getNodes()) {
+        // Check the inputs of the node for UV0 default geom properties
+        mx::NodeDefPtr nodeDef = node->getNodeDef();
+        // A missing node def is a very bad sign. No need to process further.
+        if (!TF_VERIFY(
+                nodeDef,
+                "Could not find MaterialX NodeDef for Node '%s'. Please recheck library paths.",
+                node->getNamePath().c_str())) {
+            return;
+        }
+        for (mx::InputPtr input : nodeDef->getActiveInputs()) {
+            if (input->hasDefaultGeomPropString()
+                && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
+                // See if the corresponding input is connected on the node:
+                if (node->getConnectedNodeName(input->getName()).empty()) {
+                    // Create emergency ST reader if necessary
+                    if (!stReader) {
+                        stReader = nodeGraph->addNode(
+                            _mtlxTokens->geompropvalue.GetString(),
+                            _mtlxTokens->ST_reader.GetString(),
+                            _mtlxTokens->vector2.GetString());
+                        mx::ValueElementPtr prpInput
+                            = stReader->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
+                        prpInput->setValueString(_tokens->st.GetString());
+                    }
+                    node->addInputFromNodeDef(input->getName());
+                    node->setConnectedNodeName(input->getName(), stReader->getName());
+                }
+            }
+        }
+        // Check if it is an explicit texcoord reader:
+        if (nodeDef->getNodeString() == _mtlxTokens->texcoord.GetString()) {
+            // Switch it with a geompropvalue of the same name:
+            std::string nodeName = node->getName();
+            std::string oldName = nodeName + "_toDelete";
+            node->setName(oldName);
+            nodesToDelete.push_back(oldName);
+            // Find out if there is an explicit stream index:
+            int          streamIndex = 0;
+            mx::InputPtr indexInput = node->getInput(_mtlxTokens->index.GetString());
+            if (indexInput && indexInput->hasValue()) {
+                mx::ValuePtr indexValue = indexInput->getValue();
+                if (indexValue->isA<int>()) {
+                    streamIndex = indexValue->asA<int>();
+                }
+            }
+            // Add replacement geompropvalue node:
+            mx::NodePtr doppelNode = nodeGraph->addNode(
+                _mtlxTokens->geompropvalue.GetString(),
+                nodeName,
+                nodeDef->getOutput(_mtlxTokens->out.GetString())->getType());
+            mx::ValueElementPtr prpInput
+                = doppelNode->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
+            MString primvar = _tokens->st.GetText();
+            if (streamIndex) {
+                // If reading at index > 0 we add the index to the primvar name:
+                primvar += streamIndex;
+            }
+            prpInput->setValueString(primvar.asChar());
+        }
+    }
+    // Delete all obsolete texcoord reader nodes.
+    for (const std::string& deadNode : nodesToDelete) {
+        nodeGraph->removeNode(deadNode);
+    }
+}
+
+// Recursively traverse a node graph, depth first, to find target node
+mx::NodePtr _RecursiveFindNode(const mx::NodePtr& node, const TfToken& target)
+{
+    mx::NodePtr retVal;
+    for (auto const& input : node->getInputs()) {
+        if (mx::NodePtr downstreamNode = input->getConnectedNode()) {
+            if (mx::NodeDefPtr nodeDef = downstreamNode->getNodeDef()) {
+                if (nodeDef->getNodeString() == _mtlxTokens->geompropvalue.GetString()
+                    && downstreamNode->getType() == _mtlxTokens->vector2.GetString()) {
+                    retVal = downstreamNode;
+                    break;
+                }
+            }
+            retVal = _RecursiveFindNode(downstreamNode, target);
+            if (retVal) {
+                break;
+            }
+        }
+    }
+    return retVal;
+}
+
+// USD does not provide tangents, so we need to build them from UV coordinates when possible:
+void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
+{
+    // We will need at least one geompropvalue reader to generate tangents:
+    mx::NodePtr stReader;
+
+    // List of all items to fix:
+    using nodeInput = std::pair<mx::NodePtr, std::string>;
+    std::vector<nodeInput>   graphTworldInputs;
+    std::vector<nodeInput>   graphTobjectInputs;
+    std::vector<nodeInput>   materialTworldInputs;
+    std::vector<nodeInput>   materialTobjectInputs;
+    std::vector<mx::NodePtr> nodesToReplace;
+
+    // The materialnode very often will have a tangent input:
+    for (mx::NodePtr material : mtlxDoc->getMaterialNodes()) {
+        if (material->getName() != _mtlxTokens->USD_Mtlx_VP2_Material.GetText()) {
             continue;
         }
-        // This will hold the emergency "ST" reader if one was necessary
-        mx::NodePtr stReader;
-        // Store nodes to delete when loop iteration is complete
-        std::vector<std::string> nodesToDelete;
+        mx::InputPtr surfaceInput = material->getInput(_mtlxTokens->surfaceshader.GetString());
+        if (surfaceInput) {
+            material = surfaceInput->getConnectedNode();
+        }
+        mx::NodeDefPtr nodeDef = material->getNodeDef();
+        for (mx::InputPtr input : nodeDef->getActiveInputs()) {
+            if (input->hasDefaultGeomPropString()) {
+                const std::string& geomPropString = input->getDefaultGeomPropString();
+                if (geomPropString == _mtlxTokens->Tworld.GetString()
+                    && !material->getConnectedOutput(input->getName())) {
+                    materialTworldInputs.emplace_back(material, input->getName());
+                }
+                if (geomPropString == _mtlxTokens->Tobject.GetString()
+                    && !material->getConnectedOutput(input->getName())) {
+                    materialTobjectInputs.emplace_back(material, input->getName());
+                }
+            }
+        }
+    }
 
+    // If we have no nodegraph, but need tangent input on the material node, then we create one:
+    mx::NodeGraphPtr nodeGraph = mtlxDoc->getNodeGraph(_mtlxTokens->NG_Maya.GetString());
+    if (!nodeGraph && (!materialTworldInputs.empty() || !materialTobjectInputs.empty())) {
+        nodeGraph = mtlxDoc->addNodeGraph(_mtlxTokens->NG_Maya.GetString());
+    }
+
+    if (nodeGraph) {
         for (mx::NodePtr node : nodeGraph->getNodes()) {
-            // Check the inputs of the node for UV0 default geom properties
             mx::NodeDefPtr nodeDef = node->getNodeDef();
             // A missing node def is a very bad sign. No need to process further.
             if (!TF_VERIFY(
@@ -421,60 +580,160 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
                     node->getNamePath().c_str())) {
                 return;
             }
-            for (mx::InputPtr input : nodeDef->getInputs()) {
-                if (input->hasDefaultGeomPropString()
-                    && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
-                    // See if the corresponding input is connected on the node:
-                    if (node->getConnectedNodeName(input->getName()).empty()) {
-                        // Create emergency ST reader if necessary
-                        if (!stReader) {
-                            stReader = nodeGraph->addNode(
-                                _mtlxTokens->geompropvalue.GetString(),
-                                _mtlxTokens->ST_reader.GetString(),
-                                _mtlxTokens->vector2.GetString());
-                            mx::ValueElementPtr prpInput
-                                = stReader->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
-                            prpInput->setValueString(_tokens->st.GetString());
-                        }
-                        node->addInputFromNodeDef(input->getName());
-                        node->setConnectedNodeName(input->getName(), stReader->getName());
+
+            if (!stReader && nodeDef->getNodeString() == _mtlxTokens->geompropvalue.GetString()
+                && node->getType() == _mtlxTokens->vector2.GetString()) {
+                // Grab the first st reader we can find. This will be the default one used for
+                // tangents unless we find something better.
+                stReader = node;
+                continue;
+            }
+
+            if (nodeDef->getNodeString() == _mtlxTokens->normalmap.GetString()) {
+                // That one is even more important, because the texcoord reader attached to the
+                // image is definitely the one we want for our tangents since it is used for normal
+                // mapping:
+                mx::NodePtr downstreamReader = _RecursiveFindNode(node, _mtlxTokens->geompropvalue);
+                if (downstreamReader) {
+                    stReader = downstreamReader;
+                }
+            }
+
+            // Check the inputs of the node for Tworld and Tobject default geom properties
+            for (mx::InputPtr input : nodeDef->getActiveInputs()) {
+                if (input->hasDefaultGeomPropString()) {
+                    const std::string& geomPropString = input->getDefaultGeomPropString();
+                    if (geomPropString == _mtlxTokens->Tworld.GetString()
+                        && node->getConnectedNodeName(input->getName()).empty()) {
+                        graphTworldInputs.emplace_back(node, input->getName());
+                    }
+                    if (geomPropString == _mtlxTokens->Tobject.GetString()
+                        && node->getConnectedNodeName(input->getName()).empty()) {
+                        graphTobjectInputs.emplace_back(node, input->getName());
                     }
                 }
             }
-            // Check if it is an explicit texcoord reader:
-            if (nodeDef->getNodeString() == "texcoord") {
-                // Switch it with a geompropvalue of the same name:
-                std::string nodeName = node->getName();
-                std::string oldName = nodeName + "_toDelete";
-                node->setName(oldName);
-                nodesToDelete.push_back(oldName);
-                // Find out if there is an explicit stream index:
-                int          streamIndex = 0;
-                mx::InputPtr indexInput = node->getInput(_mtlxTokens->index.GetString());
-                if (indexInput && indexInput->hasValue()) {
-                    mx::ValuePtr indexValue = indexInput->getValue();
-                    if (indexValue->isA<int>()) {
-                        streamIndex = indexValue->asA<int>();
-                    }
-                }
-                // Add replacement geompropvalue node:
-                mx::NodePtr doppelNode = nodeGraph->addNode(
-                    _mtlxTokens->geompropvalue.GetString(),
-                    nodeName,
-                    nodeDef->getOutput("out")->getType());
-                mx::ValueElementPtr prpInput
-                    = doppelNode->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
-                MString primvar = _tokens->st.GetText();
-                if (streamIndex) {
-                    // If reading at index > 0 we add the index to the primvar name:
-                    primvar += streamIndex;
-                }
-                prpInput->setValueString(primvar.asChar());
+            // Check if it is an explicit tangent reader:
+            if (nodeDef->getNodeString() == _mtlxTokens->tangent.GetString()) {
+                nodesToReplace.push_back(node);
             }
         }
-        // Delete all obsolete texcoord reader nodes.
-        for (const std::string& deadNode : nodesToDelete) {
-            nodeGraph->removeNode(deadNode);
+
+        if (nodesToReplace.empty() && graphTworldInputs.empty() && graphTobjectInputs.empty()
+            && materialTworldInputs.empty() && materialTobjectInputs.empty()) {
+            // Nothing to do.
+            return;
+        }
+
+        // Create the tangent generator:
+        mx::NodePtr tangentGenerator;
+        if (stReader) {
+            tangentGenerator = nodeGraph->addNode(
+                _mtlxTokens->texcoordtangents.GetString(),
+                _mtlxTokens->Tw_reader.GetString(),
+                _mtlxTokens->vector3.GetString());
+            tangentGenerator->addInputFromNodeDef(_mtlxTokens->texcoord.GetString());
+            tangentGenerator->setConnectedNodeName(
+                _mtlxTokens->texcoord.GetString(), stReader->getName());
+        } else {
+            tangentGenerator = nodeGraph->addNode(
+                _mtlxTokens->arbitrarytangents.GetString(),
+                _mtlxTokens->Tw_reader.GetString(),
+                _mtlxTokens->vector3.GetString());
+        }
+
+        // We create a world -> object transformation on demand. Computing an object tangent from
+        // object space normal and position might be more precise though.
+        mx::NodePtr transformVectorToObject;
+        mx::NodePtr transformVectorToModel;
+        auto        _createTransformVector = [&](const TfToken& toSpace) {
+            mx::NodePtr retVal = nodeGraph->addNode(
+                _mtlxTokens->transformvector.GetString(),
+                _mtlxTokens->Tw_to_To.GetString(),
+                _mtlxTokens->vector3.GetString());
+            retVal->addInputFromNodeDef(_mtlxTokens->in.GetString());
+            retVal->setConnectedNodeName(_mtlxTokens->in.GetString(), tangentGenerator->getName());
+            retVal->addInputFromNodeDef(_mtlxTokens->fromspace.GetString())
+                ->setValueString(_mtlxTokens->world.GetString());
+            retVal->addInputFromNodeDef(_mtlxTokens->tospace.GetString())
+                ->setValueString(toSpace.GetString());
+            return retVal;
+        };
+
+        // Reconnect nodes that require Tworld to the tangent generator:
+        for (const auto& nodeInput : graphTworldInputs) {
+            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->setConnectedNodeName(nodeInput.second, tangentGenerator->getName());
+        }
+
+        // Reconnect nodes that require Tobject to the tangent generator via a space transform:
+        for (const auto& nodeInput : graphTobjectInputs) {
+            if (!transformVectorToObject) {
+                transformVectorToObject = _createTransformVector(_mtlxTokens->object);
+            }
+            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->setConnectedNodeName(
+                nodeInput.second, transformVectorToObject->getName());
+        }
+
+        // Connect Tworld inputs on the material via an output port on the nodegraph:
+        mx::OutputPtr outTworld = nodeGraph->getOutput(_mtlxTokens->outTworld.GetString());
+        for (const auto& nodeInput : materialTworldInputs) {
+            if (!outTworld) {
+                outTworld = nodeGraph->addOutput(
+                    _mtlxTokens->outTworld.GetString(), _mtlxTokens->vector3.GetString());
+                outTworld->setConnectedNode(tangentGenerator);
+            }
+            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->setConnectedOutput(nodeInput.second, outTworld);
+        }
+
+        // Connect Tobject inputs on the material via an output port on the nodegraph:
+        mx::OutputPtr outTobject = nodeGraph->getOutput(_mtlxTokens->outTobject.GetString());
+        for (const auto& nodeInput : materialTobjectInputs) {
+            if (!outTobject) {
+                outTobject = nodeGraph->addOutput(
+                    _mtlxTokens->outTworld.GetString(), _mtlxTokens->vector3.GetString());
+                if (!transformVectorToObject) {
+                    transformVectorToObject = _createTransformVector(_mtlxTokens->object);
+                }
+                outTobject->setConnectedNode(transformVectorToObject);
+            }
+            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->setConnectedOutput(nodeInput.second, outTobject);
+        }
+
+        // We will replace tangent nodes with a passthru that feeds on the tangent generator. A
+        // space transform will be used when appropriate.
+        auto replaceWithPassthru = [&](mx::NodePtr& toReplace, mx::NodePtr& newSource) {
+            std::string nodeName = toReplace->getName();
+
+            nodeGraph->removeNode(nodeName);
+
+            mx::NodePtr passthruNode = nodeGraph->addNode(
+                _mtlxTokens->constant.GetString(), nodeName, _mtlxTokens->vector3.GetString());
+            passthruNode->addInputFromNodeDef(_mtlxTokens->in.GetString());
+            passthruNode->setConnectedNodeName(_mtlxTokens->in.GetString(), newSource->getName());
+        };
+
+        for (auto& tangentNode : nodesToReplace) {
+            mx::InputPtr spaceInput = tangentNode->getInput(_mtlxTokens->space.GetString());
+            if (spaceInput) {
+                if (spaceInput->getValueString() == _mtlxTokens->object.GetString()) {
+                    if (!transformVectorToObject) {
+                        transformVectorToObject = _createTransformVector(_mtlxTokens->object);
+                    }
+                    replaceWithPassthru(tangentNode, transformVectorToObject);
+                } else if (spaceInput->getValueString() == _mtlxTokens->model.GetString()) {
+                    if (!transformVectorToModel) {
+                        transformVectorToModel = _createTransformVector(_mtlxTokens->model);
+                    }
+                    replaceWithPassthru(tangentNode, transformVectorToModel);
+                } else {
+                    // Default to world.
+                    replaceWithPassthru(tangentNode, tangentGenerator);
+                }
+            }
         }
     }
 }
@@ -1949,6 +2208,9 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
+#if PXR_VERSION > 2111
+                fixedPath,
+#endif
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
                 _GetMaterialXData()._mtlxLibrary,
                 &hdTextureNodes,
@@ -1958,8 +2220,9 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
                 return shaderInstance;
             }
 
-            // Fix any missing texcoord reader.
+            // Touchups required to fix input stream issues:
             _AddMissingTexcoordReaders(mtlxDoc);
+            _AddMissingTangents(mtlxDoc);
 
             _surfaceShaderId = terminalPath;
 
@@ -2047,8 +2310,19 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             }
         }
 
-        // Add automatic tangent generation:
-        shaderInstance->addInputFragment("materialXTw", "Tw", "Tw");
+        // Fixup inputs that were renamed because they conflicted with reserved keywords:
+        for (const auto& namePair : ogsFragment.getPathInputMap()) {
+            std::string path = namePair.first;
+            std::string input = namePair.second;
+            // Renaming adds digits at the end, so only compare the backs.
+            if (path.back() != input.back()) {
+                MString uniqueName(input.c_str());
+                while (!input.empty() && path.back() != input.back()) {
+                    input.pop_back();
+                }
+                shaderInstance->renameParameter(uniqueName, input.c_str());
+            }
+        }
 
         shaderInstance->setIsTransparent(ogsFragment.isTransparent());
 

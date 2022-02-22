@@ -16,12 +16,16 @@
 #include "OpUndoItems.h"
 
 #include <mayaUsd/utils/util.h>
+#ifdef WANT_UFE_BUILD
+#include <mayaUsd/ufe/Utils.h>
+#endif
 
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MSelectionList.h>
 #ifdef WANT_UFE_BUILD
 #include <ufe/globalSelection.h>
+#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #endif
 
@@ -385,6 +389,31 @@ void UfeSelectionUndoItem::select(
 void UfeSelectionUndoItem::select(const std::string& name, const Ufe::Selection& selection)
 {
     select(name, selection, OpUndoItemList::instance());
+}
+
+void UfeSelectionUndoItem::select(
+    const std::string& name,
+    const MDagPath&    dagPath,
+    OpUndoItemList&    undoInfo)
+{
+    Ufe::Selection sn;
+    sn.append(Ufe::Hierarchy::createItem(MayaUsd::ufe::dagPathToUfe(dagPath)));
+    select(name, sn, undoInfo);
+}
+
+void UfeSelectionUndoItem::select(const std::string& name, const MDagPath& dagPath)
+{
+    select(name, dagPath, OpUndoItemList::instance());
+}
+
+void UfeSelectionUndoItem::clear(const std::string& name, OpUndoItemList& undoInfo)
+{
+    select(name, Ufe::Selection(), undoInfo);
+}
+
+void UfeSelectionUndoItem::clear(const std::string& name)
+{
+    clear(name, OpUndoItemList::instance());
 }
 
 bool UfeSelectionUndoItem::undo()

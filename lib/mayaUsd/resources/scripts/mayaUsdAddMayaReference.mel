@@ -415,7 +415,7 @@ proc setOptionVars(int $forceFactorySettings)
             optionVar -stringValue usdMayaReferenceVariantNameText $def;
         }
         if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceEditAsMayaDat`) {
-            optionVar -intValue usdMayaReferenceEditAsMayaDat false;
+            optionVar -intValue usdMayaReferenceEditAsMayaDat true;
         }
 
         if ($forceFactorySettings || !`optionVar -exists referenceOptionsUseRenamePrefix`) {
@@ -489,7 +489,7 @@ proc setOptionVars(int $forceFactorySettings)
             -sv usdMayaReferenceVariantSetNameText $defVariantSetName
             -sv usdMayaReferenceVariantNameOption $createNew
             -sv usdMayaReferenceVariantNameText $defVariantName
-            -iv usdMayaReferenceEditAsMayaDat false
+            -iv usdMayaReferenceEditAsMayaDat true
             ;
 
         optionVar -init $forceFactorySettings -category $category

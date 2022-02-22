@@ -55,6 +55,17 @@ def mayaUsdLibRegisterStrings():
     register('kTextDefineIn', 'Define in:')
     register('kTextVariant', 'Variant')
 
+    # mayaUsdMergeToUSDOptions.py
+    register('kMergeToUSDOptionsTitle', 'Merge Maya Edits to USD Options')
+    register('kMergeButton', 'Merge')
+    register('kApplyButton', 'Apply')
+    register('kCancelButton', 'Cancel')
+    register('kEditMenu', 'Edit')
+    register('kSaveSettingsMenuItem', 'Save Settings')
+    register('kResetSettingsMenuItem', 'Reset Settings')
+    register('kHelpMenu', 'Help')
+    register('kHelpMergeToUSDOptionsMenuItem', 'Help on Merge Maya Edits to USD Options')
+
     # mayaUsdMergeToUsd.py
     register('kErrorMergeToUsdMenuItem', 'Could not create menu item for merge to USD')
     register('kMenuCacheToUsd', 'Cache to USD...')

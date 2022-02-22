@@ -17,18 +17,39 @@
 import mayaUsd
 import maya.cmds as cmds
 
+import mayaUsdOptions
+
 import re
 
-def turnOnAnimation(textOptions):
+
+def forceCacheOptions(textOptions):
+    """
+    Adjusts the export options with cache-to-USD specific values.
+    """
     return re.sub(r'animation=.', 'animation=1', textOptions)
 
-def getDefaultExportOptions():
-    # Animation is always on for cache to USD.
-    return turnOnAnimation(cmds.translator('USD Export', query=True, do=True))
 
-def getCacheCreationOptions(exportOptions, cacheFile, cachePrimName,
+def getDefaultExportOptions():
+    """
+    Retrieves the default export options used by cache-to-USD.
+    """
+    optionsText = cmds.translator('USD Export', query=True, do=True)
+    return forceCacheOptions(optionsText)
+
+
+def getDefaultCacheCreationOptions():
+    """
+    Retrieves the default cache-to-USD options as a dictionary.
+    """
+    return createCacheCreationOptions(getDefaultExportOptions(), "", 'Cache1', 'Payload', 'Append', None, 'Cache')
+
+
+def createCacheCreationOptions(exportOptions, cacheFile, cachePrimName,
                             payloadOrReference, listEditType,
                             variantSetName = None, variantName = None):
+    """
+    Creates the dict containing the export options and the cache-to-USD options.
+    """
 
     defineInVariant = 0 if variantSetName is None else 1
 
@@ -45,3 +66,26 @@ def getCacheCreationOptions(exportOptions, cacheFile, cachePrimName,
         userArgs['rn_variantName'] = variantName
 
     return userArgs
+
+
+def _getVarName():
+    """
+    Retrieves the option var name used to save the cache-to-USD options.
+    """
+    return "mayaUsd_CacheToUSDOptions"
+
+
+def saveCacheCreationOptions(optionsDict):
+    """
+    Saves the options dictionary into an option var.
+    """
+    optionsText = mayaUsdOptions.convertOptionsDictToText(optionsDict)
+    mayaUsdOptions.setOptionsText(_getVarName(), optionsText)
+
+
+def loadCacheCreationOptions():
+    """
+    Loads the cache-to-USD options from the option var and returns them as a dictionary.
+    """
+    optionsText = mayaUsdOptions.getOptionsText(_getVarName(), getDefaultExportOptions())
+    return mayaUsdOptions.convertOptionsTextToDict(optionsText, getDefaultCacheCreationOptions())

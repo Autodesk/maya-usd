@@ -130,12 +130,12 @@ class testVP2RenderDelegateSelection(imageUtils.ImageDiffingTestCase):
         cmds.modelEditor('modelPanel4', e=True, wireframeOnShaded=False, displayLights='default')
         self._selectionTest('', usdCube, usdCylinder, proxyDagPath, 'smoothShaded')
 
-        # Test smooth shaded
+        # Test wireframe on shaded
         cmds.modelEditor('modelPanel4', e=True, displayAppearance='smoothShaded', displayLights='default')
         cmds.modelEditor('modelPanel4', e=True, wireframeOnShaded=True, displayLights='default')
         self._selectionTest('', usdCube, usdCylinder, proxyDagPath, 'wireframeOnShaded')
 
-        # Test smooth shaded
+        # Test wireframe
         cmds.modelEditor('modelPanel4', e=True, displayAppearance='wireframe', displayLights='default')
         cmds.modelEditor('modelPanel4', e=True, wireframeOnShaded=False, displayLights='default')
         self._selectionTest('', usdCube, usdCylinder, proxyDagPath, 'wireframe')
@@ -157,12 +157,12 @@ class testVP2RenderDelegateSelection(imageUtils.ImageDiffingTestCase):
         cmds.modelEditor('modelPanel4', e=True, wireframeOnShaded=False, displayLights='default')
         self._selectionTest('instance_', usdball01, usdball03, proxyDagPath, 'smoothShaded')
 
-        # Test smooth shaded
+        # Test wireframe on shaded
         cmds.modelEditor('modelPanel4', e=True, displayAppearance='smoothShaded', displayLights='default')
         cmds.modelEditor('modelPanel4', e=True, wireframeOnShaded=True, displayLights='default')
         self._selectionTest('instance_', usdball01, usdball03, proxyDagPath, 'wireframeOnShaded')
 
-        # Test smooth shaded
+        # Test wireframe
         cmds.modelEditor('modelPanel4', e=True, displayAppearance='wireframe', displayLights='default')
         cmds.modelEditor('modelPanel4', e=True, wireframeOnShaded=False, displayLights='default')
         self._selectionTest('instance_', usdball01, usdball03, proxyDagPath, 'wireframe')
