@@ -47,7 +47,9 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MSceneMessage.h>
+#include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
+#include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/sceneNotification.h>
@@ -315,6 +317,12 @@ PullImportPaths pullImport(
     if (!isCopy) {
         // Quick workaround to reuse some POC code - to rewrite later
 
+        // Communication to current proxyAccessor code is through the global
+        // selection, so we must save the current selection for proper undo.
+        // This is not logically necessary, and should be re-written to avoid
+        // going through the global selection.
+        UfeSelectionUndoItem::select("Pre-proxyAccessor selection", *Ufe::GlobalSelection::get());
+
         // The "child" is the node that will receive the computed parent
         // transformation, in its offsetParentMatrix attribute.  We are using
         // the pull parent for this purpose, so pop the path of the ufeChild to
@@ -351,7 +359,7 @@ PullImportPaths pullImport(
 
         // Create the pull set if it does not exists.
         //
-        // Note: do not use the MfnSet API to create it as it clears the redo stack
+        // Note: do not use the MFnSet API to create it as it clears the redo stack
         // and thus prevents redo.
         MObject pullSetObj;
         MStatus status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
@@ -382,7 +390,7 @@ PullImportPaths pullImport(
                 return true;
             });
 
-        SelectionUndoItem::select("Pull import select DAG node", addedDagPath);
+        UfeSelectionUndoItem::select("Pull import select DAG node", addedDagPath);
     }
 
     // Invert the new node registry, for MObject to Ufe::Path lookup.
@@ -766,7 +774,7 @@ bool PrimUpdaterManager::mergeToUsd(
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Merge to USD selection reset", MSelectionList());
+    UfeSelectionUndoItem::clear("Merge to USD selection reset");
 
     UsdStageRefPtr            proxyStage = proxyShape->usdPrim().GetStage();
     UsdMayaPrimUpdaterContext context(proxyShape->getTime(), proxyStage, ctxArgs);
@@ -977,7 +985,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Discard edits selection reset", MSelectionList());
+    UfeSelectionUndoItem::clear("Discard edits selection reset");
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
@@ -1045,7 +1053,7 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Discard orphaned edits selection reset", MSelectionList());
+    UfeSelectionUndoItem::clear("Discard orphaned edits selection reset");
 
     UsdMayaPrimUpdaterContext context(UsdTimeCode(), nullptr, VtDictionary());
 
