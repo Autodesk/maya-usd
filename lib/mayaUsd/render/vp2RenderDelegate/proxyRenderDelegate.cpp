@@ -765,14 +765,19 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
-    const unsigned int displayStyle = frameContext.getDisplayStyle();
+    const unsigned int currentDisplayStyle = frameContext.getDisplayStyle();
 
     // Query the wireframe color assigned to proxy shape.
-    if (displayStyle
+    if (currentDisplayStyle
         & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
         _wireframeColor
             = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
     }
+#ifdef MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS
+    const unsigned int displayStyle = frameContext.getDisplayStyleOfAllViewports();
+#else
+    const unsigned int displayStyle = currentDisplayStyle;
+#endif
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
     // selection, so only force the populate selection to occur when we detect a change which
