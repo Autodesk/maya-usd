@@ -20,6 +20,7 @@ import maya.cmds as cmds
 
 import mayaUsd
 import mayaUsdCacheMayaReference
+import mayaUsdUtils
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 
 import ufe
@@ -47,16 +48,7 @@ def createMayaReferenceMenuItem(dagPath, precedingItem):
     # prim.  If this prim is of type Maya reference, create a specific menu
     # item for it, otherwise return an empty string for the chain of
     # responsibility.
-
-    # The dagPath may come in as a shortest unique name.  Expand it to full
-    # name; ls -l would be an alternate implementation.
-    sn = om.MSelectionList()
-    sn.add(dagPath)
-    fullDagPath = sn.getDagPath(0).fullPathName()
-    mayaItem = ufe.Hierarchy.createItem(ufe.PathString.path(fullDagPath))
-    pathMapper = ufe.PathMappingHandler.pathMappingHandler(mayaItem)
-    pulledPath = pathMapper.fromHost(mayaItem.path())
-    prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(pulledPath))
+    fullDagPath, _, _, prim = mayaUsdUtils.getPulledInfo(dagPath)
 
     # If the pulled prim doesn't exist anymore, we won't delegate the reponsibility to
     # another creator and handle the menu item in here. We already have all the information
