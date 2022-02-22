@@ -114,7 +114,8 @@ enum class UsdPointInstancesPickMode
     plugin to switch to the legacy rendering with draw override approach.
 */
 class ProxyRenderDelegate
-    : public Autodesk::Maya::OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE::MHWRender::MPxSubSceneOverride
+    : public Autodesk::Maya::OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE::MHWRender::
+          MPxSubSceneOverride
 {
     ProxyRenderDelegate(const MObject& obj);
 
