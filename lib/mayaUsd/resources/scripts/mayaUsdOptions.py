@@ -17,15 +17,17 @@
 import maya.cmds as cmds
 
 
-def getOptionsText(varName, defaultOptionsDict):
+def getOptionsText(varName, defaultOptions):
     """
     Retrieves the current options as text with column-separated key/value pairs.
     If the options don't exist, return the default options in the same text format.
     """
     if cmds.optionVar(exists=varName):
         return cmds.optionVar(query=varName)
+    elif isinstance(defaultOptions, dict):
+        return convertOptionsDictToText(defaultOptions)
     else:
-        return convertOptionsDictToText(defaultOptionsDict)
+        return defaultOptions
     
 
 def setOptionsText(varName, optionsText):
@@ -41,3 +43,56 @@ def convertOptionsDictToText(optionsDict):
     """
     optionsList = ['%s=%s' % (name, value) for name, value in optionsDict.items()]
     return ';'.join(optionsList)
+
+
+def convertOptionsTextToDict(optionsText, defaultOptionsDict):
+    """
+    Converts options from text with column-separated key/value pairs to a dict.
+    """
+    # Initialize the result dict with the defaults, making a copy to avoid modifying
+    # the given default dict.
+    optionsDict = defaultOptionsDict.copy()
+
+    # Parse each key/value pair that were extracted by splitting at columns.
+    for opt in optionsText.split(';'):
+        if '=' in opt:
+            key, value = opt.split('=')
+        else:
+            key, value = opt, ""
+
+        # Use the default values to try to convert the saved value to the correct type.
+        if key in optionsDict:
+            optionsDict[key] = _convertType(value, optionsDict[key])
+        else:
+            optionsDict[key] = value
+
+    return optionsDict
+
+
+def _convertType(valueToConvert, defaultValue):
+    """
+    Ensure the value has the correct expected type by converting it.
+    Since the values are extracted from text, it is normal that they
+    don't have the expected type right away.
+
+    If the value cannot be converted, use the default value. This could
+    happen if the optionVar got corrupted, for example from corrupted user
+    prefs.
+    """
+    desiredType = type(defaultValue)
+    if isinstance(valueToConvert, desiredType):
+        return valueToConvert
+    # Try to convert the value to the desired value.
+    # We only support a subset of types to avoid problems,
+    # for example trying to convert text to a list would
+    # create a list of single letters.
+    #
+    # Use the default value if the data is somehow corrupted,
+    # for example from corrupted user prefs.
+    try:
+        types = [str, int, float, bool]
+        for t in types:
+            if isinstance(defaultValue, t):
+                return t(valueToConvert)
+    except:
+        return defaultValue

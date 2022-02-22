@@ -141,7 +141,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         cachePrimName = 'cachePrimName'
         payloadOrReference = 'Payload'
         listEditType = 'Prepend'
-        cacheOptions = cacheToUsd.getCacheCreationOptions(
+        cacheOptions = cacheToUsd.createCacheCreationOptions(
             defaultExportOptions, cacheFile, cachePrimName,
             payloadOrReference, listEditType)
 
