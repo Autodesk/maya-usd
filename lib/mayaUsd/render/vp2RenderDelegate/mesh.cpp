@@ -88,13 +88,13 @@ struct CommitState
 
     //! Instancing doesn't have dirty bits, every time we do update, we must update instance
     //! transforms
-    MMatrixArray _instanceTransforms;
+    std::shared_ptr<MMatrixArray> _instanceTransforms;
 
     //! Color parameter that _instanceColors should be bound to
     MString _instanceColorParam;
 
     //! Color array to support per-instance color and selection highlight.
-    MFloatArray _instanceColors;
+    std::shared_ptr<MFloatArray> _instanceColors;
 
     MStringArray _ufeIdentifiers;
 
@@ -121,9 +121,8 @@ struct CommitState
     bool Empty()
     {
         return _indexBufferData == nullptr && _shader == nullptr && _enabled == nullptr
-            && !_geometryDirty && _boundingBox == nullptr && !_renderItemData._usingInstancedDraw
-            && _instanceTransforms.length() == 0 && _ufeIdentifiers.length() == 0
-            && _worldMatrix == nullptr;
+            && !_geometryDirty && _boundingBox == nullptr && !_instanceTransforms
+            && !_instanceColors && _ufeIdentifiers.length() == 0 && _worldMatrix == nullptr;
     }
 };
 
@@ -465,15 +464,8 @@ void HdVP2Mesh::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, voi
 {
     const MString& rprimId = _rprimId;
 
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit([buffer, bufferData, rprimId]() {
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            "CommitBuffer",
-            rprimId.asChar()); // TODO: buffer usage so we know it is positions normals etc
-
-        buffer->commit(bufferData);
-    });
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+        [buffer, bufferData, rprimId]() { buffer->commit(bufferData); });
 }
 
 void HdVP2Mesh::_PrepareSharedVertexBuffers(
@@ -2007,7 +1999,9 @@ void HdVP2Mesh::_UpdateDrawItem(
     // If the mesh is instanced, create one new instance per transform.
     // The current instancer invalidation tracking makes it hard for
     // us to tell whether transforms will be dirty, so this code
-    // pulls them every time something changes.
+    // pulls them every time something changes. Then, it compares the
+    // new transforms and the old transforms. If they are the same, skip
+    // updating Maya.
     // If the mesh is instanced but has 0 instance transforms remember that
     // so the render item can be hidden.
 
@@ -2166,6 +2160,8 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
 #endif
 
+            stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
+            stateToCommit._instanceColors = std::make_shared<MFloatArray>();
             for (unsigned int usdInstanceId = 0; usdInstanceId < instanceCount; usdInstanceId++) {
                 unsigned char info = instanceInfo[usdInstanceId];
                 if (info == invalid)
@@ -2175,19 +2171,19 @@ void HdVP2Mesh::_UpdateDrawItem(
                     drawScene.GetScenePrimPath(GetId(), usdInstanceId).GetString().c_str());
 #endif
                 transforms[usdInstanceId].Get(instanceMatrix.matrix);
-                stateToCommit._instanceTransforms.append(worldMatrix * instanceMatrix);
+                stateToCommit._instanceTransforms->append(worldMatrix * instanceMatrix);
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
                 mayaToUsd.push_back(usdInstanceId);
 #endif
                 if (useWireframeColors) {
                     const MColor& color = wireframeColors[info];
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
-                        stateToCommit._instanceColors.append(color[j]);
+                        stateToCommit._instanceColors->append(color[j]);
                     }
                 } else if (shadedColors) {
                     unsigned int offset = usdInstanceId * kNumColorChannels;
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
-                        stateToCommit._instanceColors.append((*shadedColors)[offset + j]);
+                        stateToCommit._instanceColors->append((*shadedColors)[offset + j]);
                     }
                 }
             }
@@ -2216,11 +2212,60 @@ void HdVP2Mesh::_UpdateDrawItem(
 #else
             TF_VERIFY(
                 stateToCommit._ufeIdentifiers.length()
-                == stateToCommit._instanceTransforms.length());
+                == stateToCommit._instanceTransforms->length());
 #endif
-            if (stateToCommit._instanceTransforms.length() == 0)
+            if (stateToCommit._instanceTransforms->length() == 0)
                 instancerWithNoInstances = true;
         }
+
+        // compare the new _instanceTransforms on stateToCommit to
+        // the existing instance transforms (if any) on drawItemData
+        bool instanceTransformsChanged = static_cast<bool>(stateToCommit._instanceTransforms)
+            ? !static_cast<bool>(drawItemData._instanceTransforms)
+            : static_cast<bool>(drawItemData._instanceTransforms);
+        if (stateToCommit._instanceTransforms && drawItemData._instanceTransforms) {
+            instanceTransformsChanged
+                = (stateToCommit._instanceTransforms->length()
+                   != drawItemData._instanceTransforms->length());
+            for (unsigned int index = 0;
+                 index < stateToCommit._instanceTransforms->length() && !instanceTransformsChanged;
+                 index++) {
+                instanceTransformsChanged
+                    = ((*stateToCommit._instanceTransforms)[index]
+                       != (*drawItemData._instanceTransforms)[index]);
+            }
+        }
+        // if the values are the same then there is nothing to do. Don't update
+        // the instance transforms and keep on drawing with the current transforms
+        if (!instanceTransformsChanged) {
+            stateToCommit._instanceTransforms.reset();
+        } else {
+            drawItemData._instanceTransforms = stateToCommit._instanceTransforms;
+        }
+
+        // compate the new _instanceColors on stateToCommit to
+        // the existing instance colors (if any) on drawItemData
+        bool instanceColorsChanged = static_cast<bool>(stateToCommit._instanceColors)
+            ? !static_cast<bool>(drawItemData._instanceColors)
+            : static_cast<bool>(drawItemData._instanceColors); // XOR
+        if (stateToCommit._instanceColors && drawItemData._instanceColors) {
+            instanceColorsChanged
+                = stateToCommit._instanceColors->length() != drawItemData._instanceColors->length();
+            for (unsigned int i = 0;
+                 i < drawItemData._instanceColors->length() && !instanceColorsChanged;
+                 i++) {
+                instanceColorsChanged
+                    = (*drawItemData._instanceColors)[i] != (*stateToCommit._instanceColors)[i];
+            }
+        }
+        // if the colors haven't changed then there is nothing to do. Don't update
+        // the instance colors and keep on drawing the current colors
+        if (!instanceColorsChanged) {
+            stateToCommit._instanceColors.reset();
+        } else {
+            drawItemData._instanceColors = stateToCommit._instanceColors;
+        }
+
     } else {
         // Non-instanced Rprims.
         if ((itemDirtyBits & DirtySelectionHighlight)
@@ -2395,58 +2440,67 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             // Important, update instance transforms after setting geometry on render items!
             auto& oldInstanceCount = stateToCommit._renderItemData._instanceCount;
-            auto  newInstanceCount = stateToCommit._instanceTransforms.length();
+            auto  newInstanceCount = stateToCommit._instanceTransforms
+                ? stateToCommit._instanceTransforms->length()
+                : oldInstanceCount;
 
             // GPU instancing has been enabled. We cannot switch to consolidation
             // without recreating render item, so we keep using GPU instancing.
             if (stateToCommit._renderItemData._usingInstancedDraw) {
-                if (oldInstanceCount == newInstanceCount) {
-                    for (unsigned int i = 0; i < newInstanceCount; i++) {
-                        // VP2 defines instance ID of the first instance to be 1.
-                        result = drawScene.updateInstanceTransform(
-                            *renderItem, i + 1, stateToCommit._instanceTransforms[i]);
+                if (stateToCommit._instanceTransforms) {
+                    if (oldInstanceCount == newInstanceCount) {
+                        for (unsigned int i = 0; i < newInstanceCount; i++) {
+                            // VP2 defines instance ID of the first instance to be 1.
+                            result = drawScene.updateInstanceTransform(
+                                *renderItem, i + 1, (*stateToCommit._instanceTransforms)[i]);
+                            TF_VERIFY(result == MStatus::kSuccess);
+                        }
+                    } else {
+                        result = drawScene.setInstanceTransformArray(
+                            *renderItem, *stateToCommit._instanceTransforms);
                         TF_VERIFY(result == MStatus::kSuccess);
                     }
-                } else {
-                    result = drawScene.setInstanceTransformArray(
-                        *renderItem, stateToCommit._instanceTransforms);
-                    TF_VERIFY(result == MStatus::kSuccess);
                 }
 
-                if (newInstanceCount > 0
-                    && stateToCommit._instanceColors.length()
-                        == newInstanceCount * kNumColorChannels) {
+                if (stateToCommit._instanceColors && stateToCommit._instanceColors->length() > 0) {
+                    TF_VERIFY(
+                        newInstanceCount * kNumColorChannels
+                        == stateToCommit._instanceColors->length());
                     result = drawScene.setExtraInstanceData(
                         *renderItem,
                         stateToCommit._instanceColorParam,
-                        stateToCommit._instanceColors);
+                        *stateToCommit._instanceColors);
                     TF_VERIFY(result == MStatus::kSuccess);
                 }
             }
 #if MAYA_API_VERSION >= 20210000
             else if (newInstanceCount >= 1) {
 #else
-            // In Maya 2020 and before, GPU instancing and consolidation are two separate systems
-            // that cannot be used by a render item at the same time. In case of single instance, we
-            // keep the original render item to allow consolidation with other prims. In case of
-            // multiple instances, we need to disable consolidation to allow GPU instancing to be
-            // used.
+            // In Maya 2020 and before, GPU instancing and consolidation are two separate
+            // systems that cannot be used by a render item at the same time. In case of single
+            // instance, we keep the original render item to allow consolidation with other
+            // prims. In case of multiple instances, we need to disable consolidation to allow
+            // GPU instancing to be used.
             else if (newInstanceCount == 1) {
-                bool success = renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
+                bool success = renderItem->setMatrix(&(*stateToCommit._instanceTransforms)[0]);
                 TF_VERIFY(success);
             } else if (newInstanceCount > 1) {
                 setWantConsolidation(*renderItem, false);
 #endif
-                result = drawScene.setInstanceTransformArray(
-                    *renderItem, stateToCommit._instanceTransforms);
-                TF_VERIFY(result == MStatus::kSuccess);
+                if (stateToCommit._instanceTransforms) {
+                    result = drawScene.setInstanceTransformArray(
+                        *renderItem, *stateToCommit._instanceTransforms);
+                    TF_VERIFY(result == MStatus::kSuccess);
+                }
 
-                if (stateToCommit._instanceColors.length()
-                    == newInstanceCount * kNumColorChannels) {
+                if (stateToCommit._instanceColors->length() > 0) {
+                    TF_VERIFY(
+                        newInstanceCount * kNumColorChannels
+                        == stateToCommit._instanceColors->length());
                     result = drawScene.setExtraInstanceData(
                         *renderItem,
                         stateToCommit._instanceColorParam,
-                        stateToCommit._instanceColors);
+                        *stateToCommit._instanceColors);
                     TF_VERIFY(result == MStatus::kSuccess);
                 }
 
@@ -2458,7 +2512,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                 TF_VERIFY(success);
             }
 
-            oldInstanceCount = newInstanceCount;
+            if (stateToCommit._instanceTransforms) {
+                oldInstanceCount = newInstanceCount;
+            }
 #ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
             if (stateToCommit._ufeIdentifiers.length() > 0) {
                 drawScene.setUfeIdentifiers(*renderItem, stateToCommit._ufeIdentifiers);
