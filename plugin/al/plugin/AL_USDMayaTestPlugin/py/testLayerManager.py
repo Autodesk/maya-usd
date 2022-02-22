@@ -36,6 +36,7 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         fixturesUtils.setUpClass(__file__, pluginName="AL_USDMayaPlugin")
         className = cls.__name__
         cls._mayaFilePath = os.path.abspath(className + ".ma")
+        cls._mayaFilePath2 = os.path.abspath(className + "2.ma")
         cls._usdFilePath = os.path.abspath(className + ".usda")
 
     @classmethod
@@ -237,9 +238,9 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         
         def _saveScene():
             # Save Maya scene to temp file and close
-            cmds.file(rename=self._mayaFilePath)
+            cmds.file(rename=self._mayaFilePath2)
             cmds.file(save=True, force=True, type="mayaAscii")
-            return self._mayaFilePath
+            return self._mayaFilePath2
         
         def _reloadScene(filename):
             # Reopen the Maya scene file
