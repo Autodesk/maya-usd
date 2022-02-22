@@ -80,6 +80,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (filterTypes) \
     (ignoreWarnings) \
     (kind) \
+    (disableModelKindProcessor) \
     (materialCollectionsPath) \
     (materialsScopeName) \
     (melPerFrameCallback) \
@@ -198,6 +199,7 @@ struct UsdMayaJobExportArgs
     const SdfPath      parentScope;
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
+    const bool         disableModelKindProcessor;
     const TfToken      shadingMode;
     TfToken            convertMaterialsTo; // Can not be const, iteration variable.
     const TfToken::Set allMaterialConversions;

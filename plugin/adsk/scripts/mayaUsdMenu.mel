@@ -670,8 +670,18 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
     if ($pulledObject != "") {
         string $pushback = python("import mayaUsdMergeToUsd; mayaUsdMergeToUsd.createMenuItem(\"" + $pulledObject + "\", \"\")");
         
-        $tmp = getMayaUsdString("kMayaRefDiscardEdits");
-        string $pushclear = `menuItem -label $tmp -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $pulledObject)`;
+        int $isMayaRef = python("import mayaUsdUtils; mayaUsdUtils.isPulledMayaReference('''" + $pulledObject + "''')");
+
+        string $label;
+        string $icon;
+        if ($isMayaRef) {
+            $label = getMayaUsdString("kMayaRefDiscardEdits");
+            $icon = "discard_edits.png";
+        } else {
+            $label = getMayaUsdString("kMayaDiscardEdits");
+            $icon = "discard_edits.png";
+        }
+        string $pushclear = `menuItem -label $label -insertAfter $pushback -image $icon -command ("mayaUsdDiscardEdits " + $pulledObject)`;
         
         menuItem -divider true -insertAfter $pushclear;
     }

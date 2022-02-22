@@ -162,9 +162,9 @@ global proc mayaUSDRegisterStrings()
     register("kExportMergeShapesLbl", "Merge Transform and\nShape Nodes:");
     register("kExportNamespacesAnn", "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1");
     register("kExportNamespacesLbl", "Include Namespaces:");
-    register("kExportParentScopAnn", "Name of the USD scope that is the parent of the exported data.");
-    register("kExportParentScopLbl", "Create USD Parent Scope:");
-    register("kExportParentScopPht", "USD Prim Name");
+    register("kExportParentScopeAnn", "Name of the USD scope that is the parent of the exported data.");
+    register("kExportParentScopeLbl", "Create USD Parent Scope:");
+    register("kExportParentScopePht", "USD Prim Name");
     register("kExportSkelsAnn", "Exports Maya joints as part of a USD skeleton.");
     register("kExportSkelsLbl", "Skeletons:");
     register("kExportSkelsNoneLbl", "None");
@@ -215,7 +215,8 @@ global proc mayaUSDRegisterStrings()
     register("kImportUSDZTxtLbl", "USDZ Texture Import: ");
     register("kImportVariantsInScopeNumLbl", "Variants Switched in Scope:");
     register("kMayaRefMergeEdits", "Merge Maya Edits to USD");
-    register("kMayaRefDiscardEdits", "Discard Maya Edits");
+    register("kMayaDiscardEdits", "Discard Maya Edits");
+    register("kMayaRefDiscardEdits", "Cancel Editing as Maya Data");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
     register("kMayaRefDuplicateAsUsdDataDiv", "Stages");
 
