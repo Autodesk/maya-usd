@@ -469,6 +469,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 //        Valid options are:
 //            "query" - construct the options string and pass it to the resultCallback.
 //            "post" - post all the elf controls.
+//            "fill" - refill all the elf controls with the data.
 //
 //        In addition to the action, the list of UI sections that are desired can be added
 //        with the syntax "action=section1;section2;..." where the section names can be:
@@ -643,16 +644,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
             setParent ..;
         }
 
-        setParent $parent;
-
-        // Now set to current settings.
-        $currentOptions = $initialSettings;
-
-        mayaUsdTranslatorExport_EnableAllControls();
-        mayaUsdTranslatorExport_SetFromOptions($currentOptions, 1, 1);
-
-        // Set visibility for anim widgets
-        mayaUsdTranslatorExport_AnimationCB();
         $bResult = 1;
 
     } else if ($action == "query") {
@@ -704,6 +695,21 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
     } else {
         $bResult = 0;
+    }
+
+    if ($action == "post" || $action == "fill") {
+        setParent $parent;
+
+        // Now set to current settings.
+        $currentOptions = $initialSettings;
+
+        mayaUsdTranslatorExport_EnableAllControls();
+        mayaUsdTranslatorExport_SetFromOptions($currentOptions, 1, 1);
+
+        // Set visibility for anim widgets
+        mayaUsdTranslatorExport_AnimationCB();
+
+        $bResult = 1;
     }
 
     return $bResult;

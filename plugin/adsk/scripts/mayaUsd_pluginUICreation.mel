@@ -49,5 +49,6 @@ global proc mayaUsd_pluginUICreation()
         // loaded, so source it here in this plugin.  PPT, 29-Nov-2021.
         source "mayaUsdAddMayaReference.mel";
         source "mayaUsdCacheMayaReference.mel";
+        source "mayaUsdMergeToUSDOptions.mel";
     }
 }

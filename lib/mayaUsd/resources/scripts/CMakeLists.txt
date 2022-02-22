@@ -5,7 +5,10 @@ list(APPEND scripts_src
     mayaUsdAddMayaReference.py
     mayaUsdCacheMayaReference.mel
     mayaUsdCacheMayaReference.py
+    mayaUsdMergeToUSDOptions.mel
+    mayaUsdMergeToUSDOptions.py
     mayaUsdMergeToUsd.py
+    mayaUsdOptions.py
     mayaUsdMayaReferenceUtils.py
 )
 
