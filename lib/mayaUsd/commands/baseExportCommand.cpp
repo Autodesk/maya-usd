@@ -149,6 +149,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         MSyntax::kString);
     syntax.addFlag(kKindFlag, UsdMayaJobExportArgsTokens->kind.GetText(), MSyntax::kString);
     syntax.addFlag(
+        kDisableModelKindProcessorFlag,
+        UsdMayaJobExportArgsTokens->disableModelKindProcessor.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kCompatibilityFlag, UsdMayaJobExportArgsTokens->compatibility.GetText(), MSyntax::kString);
 
     syntax.addFlag(kChaserFlag, UsdMayaJobExportArgsTokens->chaser.GetText(), MSyntax::kString);

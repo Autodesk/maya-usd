@@ -72,6 +72,7 @@ public:
     static constexpr auto kDefaultCamerasFlag = "dc";
     static constexpr auto kRenderLayerModeFlag = "rlm";
     static constexpr auto kKindFlag = "k";
+    static constexpr auto kDisableModelKindProcessorFlag = "dmk";
     static constexpr auto kCompatibilityFlag = "com";
     static constexpr auto kChaserFlag = "chr";
     static constexpr auto kChaserArgsFlag = "cha";
