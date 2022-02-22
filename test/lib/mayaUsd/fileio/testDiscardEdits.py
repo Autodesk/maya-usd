@@ -144,6 +144,10 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         verifyScenesModifications()
 
+        # Make a selection before discard Maya edits.
+        cmds.select('persp')
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
+
         # Discard Maya edits.
         cmds.mayaUsdDiscardEdits(aMayaPathStr)
 
@@ -156,12 +160,19 @@ class MergeToUsdTestCase(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 om.MSelectionList().add(aMayaPathStr)
 
+            # Selection is on the USD object.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertEqual(len(sn), 1)
+            self.assertEqual(sn[0], aUsdUfePathStr)
+
         verifyDiscard()
 
         # undo
         cmds.undo()
 
         verifyScenesModifications()
+        # Selection is restored.
+        self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
 
         # redo
         cmds.redo()
@@ -189,7 +200,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         pulledDagPath = '|__mayaUsd__|skinParent|skin'
         self.assertTrue(self._GetMayaDependencyNode(pulledDagPath))
         
-        # now we will make the pulled prim goes away...which makes state in DG orphaned
+        # now we will make the pulled prim go away...which makes state in DG orphaned
         primToDeactivate = stage.GetPrimAtPath('/apple/payload')
         primToDeactivate.SetActive(False)
         self.assertFalse(stage.GetPrimAtPath('/apple/payload/geo/skin'))

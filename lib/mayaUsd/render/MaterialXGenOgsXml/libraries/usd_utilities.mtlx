@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+  <!-- ======================================================================== -->
+  <!-- Utilities specific to USD handling                                       -->
+  <!-- ======================================================================== -->
+
+  <!-- Node: texcoordtangents: Generate world tangents from derivatives of position
+             and texcoord                                                       -->
+  <nodedef name="MayaND_texcoordtangents_vector3" node="texcoordtangents" nodegroup="math">
+    <input name="position" type="vector3" defaultgeomprop="Pworld" />
+    <input name="normal" type="vector3" defaultgeomprop="Nworld" />
+    <input name="texcoord" type="vector2" defaultgeomprop="UV0" />
+    <output name="out" type="vector3" />
+  </nodedef>
+
+  <!-- Node: arbitrarytangents: Completely arbitrary tangent for when there is no
+             texcoord space available                                           -->
+  <nodedef name="MayaND_arbitrarytangents_vector3" node="arbitrarytangents" nodegroup="math">
+    <input name="position" type="vector3" defaultgeomprop="Pworld" />
+    <input name="normal" type="vector3" defaultgeomprop="Nworld" />
+    <output name="out" type="vector3" />
+  </nodedef>
+</materialx>

@@ -160,6 +160,10 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         psHier = ufe.Hierarchy.hierarchy(ps)
 
+        # Make a selection before merge edits back to USD.
+        cmds.select('persp')
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
+
         # Merge edits back to USD.
         cmds.mayaUsdMergeToUsd(aMayaPathStr)
 
@@ -195,6 +199,11 @@ class MergeToUsdTestCase(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     om.MSelectionList().add(mayaPathStr)
 
+            # Selection is on the restored USD object.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertEqual(len(sn), 1)
+            self.assertEqual(sn[0], aUsdUfePathStr)
+
         verifyMergeToUsd()
 
         cmds.undo()
@@ -206,6 +215,8 @@ class MergeToUsdTestCase(unittest.TestCase):
                     om.MSelectionList().add(mayaPathStr)
                 except:
                     self.assertTrue(False, "Selecting node should not have raise an exception")
+            # Selection is restored.
+            self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
 
         verifyMergeIsUndone()
 
