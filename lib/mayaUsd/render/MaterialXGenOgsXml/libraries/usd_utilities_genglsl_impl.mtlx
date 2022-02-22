@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <implementation name="MayaIM_texcoordtangents_vector3_genglsl" nodedef="MayaND_texcoordtangents_vector3" file="adsk/maya/genglsl/mx_texcoordtangents_vector3.glsl" function="mx_texcoordtangents_vector3" target="genglsl" />
+  <implementation name="MayaIM_arbitrarytangents_vector3_genglsl" nodedef="MayaND_arbitrarytangents_vector3" file="adsk/maya/genglsl/mx_arbitrarytangents_vector3.glsl" function="mx_arbitrarytangents_vector3" target="genglsl" />
+</materialx>
