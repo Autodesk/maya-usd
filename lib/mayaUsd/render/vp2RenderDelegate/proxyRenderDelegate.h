@@ -300,6 +300,7 @@ private:
 
     MColorCache  _activeMeshColorCache { MColor(), 0 };
     MColorCache  _activeCurveColorCache { MColor(), 0 };
+    MColorCache  _activePointsColorCache { MColor(), 0 };
     MColorCache  _leadColorCache { MColor(), 0 };
     GfVec3fCache _dormantCurveColorCache { GfVec3f(), 0 };
 

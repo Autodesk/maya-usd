@@ -1,6 +1,6 @@
 //
 // Copyright 2018 Pixar
-// Copyright 2020 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "basisCurves.h"
+#include "points.h"
 
 #include "bboxGeom.h"
 #include "debugCodes.h"
@@ -39,11 +39,6 @@
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
 
-// Complete tessellation shader support is avaiable for basisCurves complexity levels
-#if MAYA_API_VERSION >= 20210000
-#define HDVP2_ENABLE_BASISCURVES_TESSELLATION
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -52,312 +47,8 @@ namespace {
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals, HdTokens->widths };
 
-template <typename T>
-VtArray<T> InterpolateVarying(
-    size_t            numVerts,
-    VtIntArray const& vertexCounts,
-    TfToken           wrap,
-    TfToken           basis,
-    VtArray<T> const& authoredValues)
+VtVec3fArray _BuildInterpolatedArray(size_t numVerts, const VtVec3fArray& authoredData)
 {
-    VtArray<T> outputValues(numVerts);
-
-    size_t srcIndex = 0;
-    size_t dstIndex = 0;
-
-    if (wrap == HdTokens->periodic) {
-        // XXX : Add support for periodic curves
-        TF_WARN("Varying data is only supported for non-periodic curves.");
-    }
-
-    TF_FOR_ALL(itVertexCount, vertexCounts)
-    {
-        int nVerts = *itVertexCount;
-
-        // Handling for the case of potentially incorrect vertex counts
-        if (nVerts < 1) {
-            continue;
-        }
-
-        if (basis == HdTokens->catmullRom || basis == HdTokens->bSpline) {
-            // For splines with a vstep of 1, we are doing linear interpolation
-            // between segments, so all we do here is duplicate the first and
-            // last outputValues. Since these are never acutally used during
-            // drawing, it would also work just to set the to 0.
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex;
-            for (int i = 1; i < nVerts - 2; ++i) {
-                outputValues[dstIndex] = authoredValues[srcIndex];
-                ++dstIndex;
-                ++srcIndex;
-            }
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex;
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex;
-            ++srcIndex;
-        } else if (basis == HdTokens->bezier) {
-            // For bezier splines, we map the linear values to cubic values
-            // the begin value gets mapped to the first two vertices and
-            // the end value gets mapped to the last two vertices in a segment.
-            // shaders can choose to access value[1] and value[2] when linearly
-            // interpolating a value, which happens to match up with the
-            // indexing to use for catmullRom and bSpline basis.
-            int vStep = 3;
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex; // don't increment the srcIndex
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex;
-            ++srcIndex;
-
-            // vstep - 1 control points will have an interpolated value
-            for (int i = 2; i < nVerts - 2; i += vStep) {
-                outputValues[dstIndex] = authoredValues[srcIndex];
-                ++dstIndex; // don't increment the srcIndex
-                outputValues[dstIndex] = authoredValues[srcIndex];
-                ++dstIndex; // don't increment the srcIndex
-                outputValues[dstIndex] = authoredValues[srcIndex];
-                ++dstIndex;
-                ++srcIndex;
-            }
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex; // don't increment the srcIndex
-            outputValues[dstIndex] = authoredValues[srcIndex];
-            ++dstIndex;
-            ++srcIndex;
-        } else {
-            TF_WARN("Unsupported basis: '%s'", basis.GetText());
-        }
-    }
-    TF_VERIFY(srcIndex == authoredValues.size());
-    TF_VERIFY(dstIndex == numVerts);
-
-    return outputValues;
-}
-
-VtValue _BuildCubicIndexArray(const HdBasisCurvesTopology& topology)
-{
-    /*
-    Here's a diagram of what's happening in this code:
-
-    For open (non periodic, wrap = false) curves:
-
-      bezier (vStep = 3)
-      0------1------2------3------4------5------6 (vertex index)
-      [======= seg0 =======]
-                           [======= seg1 =======]
-
-
-      bspline / catmullRom (vStep = 1)
-      0------1------2------3------4------5------6 (vertex index)
-      [======= seg0 =======]
-             [======= seg1 =======]
-                    [======= seg2 =======]
-                           [======= seg3 =======]
-
-
-    For closed (periodic, wrap = true) curves:
-
-       periodic bezier (vStep = 3)
-       0------1------2------3------4------5------0 (vertex index)
-       [======= seg0 =======]
-                            [======= seg1 =======]
-
-
-       periodic bspline / catmullRom (vStep = 1)
-       0------1------2------3------4------5------0------1------2 (vertex index)
-       [======= seg0 =======]
-              [======= seg1 =======]
-                     [======= seg2 =======]
-                            [======= seg3 =======]
-                                   [======= seg4 =======]
-                                          [======= seg5 =======]
-    */
-    std::vector<GfVec4i> indices;
-
-    const VtArray<int> vertexCounts = topology.GetCurveVertexCounts();
-    bool               wrap = topology.GetCurveWrap() == HdTokens->periodic;
-    int                vStep;
-    TfToken            basis = topology.GetCurveBasis();
-    if (basis == HdTokens->bezier) {
-        vStep = 3;
-    } else {
-        vStep = 1;
-    }
-
-    int vertexIndex = 0;
-    int curveIndex = 0;
-    TF_FOR_ALL(itCounts, vertexCounts)
-    {
-        int count = *itCounts;
-        // The first segment always eats up 4 verts, not just vstep, so to
-        // compensate, we break at count - 3.
-        int numSegs;
-
-        // If we're closing the curve, make sure that we have enough
-        // segments to wrap all the way back to the beginning.
-        if (wrap) {
-            numSegs = count / vStep;
-        } else {
-            numSegs = ((count - 4) / vStep) + 1;
-        }
-
-        for (int i = 0; i < numSegs; ++i) {
-
-            // Set up curve segments based on curve basis
-            GfVec4i seg;
-            int     offset = i * vStep;
-            for (int v = 0; v < 4; ++v) {
-                // If there are not enough verts to round out the segment
-                // just repeat the last vert.
-                seg[v] = wrap ? vertexIndex + ((offset + v) % count)
-                              : vertexIndex + std::min(offset + v, (count - 1));
-            }
-            indices.push_back(seg);
-        }
-        vertexIndex += count;
-        curveIndex++;
-    }
-
-    VtVec4iArray      finalIndices(indices.size());
-    VtIntArray const& curveIndices = topology.GetCurveIndices();
-
-    // If have topology has indices set, map the generated indices
-    // with the given indices.
-    if (curveIndices.empty()) {
-        std::copy(indices.begin(), indices.end(), finalIndices.begin());
-    } else {
-        size_t lineCount = indices.size();
-        int    maxIndex = curveIndices.size() - 1;
-
-        for (size_t lineNum = 0; lineNum < lineCount; ++lineNum) {
-            const GfVec4i& line = indices[lineNum];
-
-            int i0 = std::min(line[0], maxIndex);
-            int i1 = std::min(line[1], maxIndex);
-            int i2 = std::min(line[2], maxIndex);
-            int i3 = std::min(line[3], maxIndex);
-
-            int v0 = curveIndices[i0];
-            int v1 = curveIndices[i1];
-            int v2 = curveIndices[i2];
-            int v3 = curveIndices[i3];
-
-            finalIndices[lineNum].Set(v0, v1, v2, v3);
-        }
-    }
-
-    return VtValue(finalIndices);
-}
-
-VtValue _BuildLinesIndexArray(const HdBasisCurvesTopology& topology)
-{
-    std::vector<GfVec2i> indices;
-    VtArray<int>         vertexCounts = topology.GetCurveVertexCounts();
-
-    int vertexIndex = 0;
-    int curveIndex = 0;
-    TF_FOR_ALL(itCounts, vertexCounts)
-    {
-        for (int i = 0; i < *itCounts; i += 2) {
-            indices.push_back(GfVec2i(vertexIndex, vertexIndex + 1));
-            vertexIndex += 2;
-        }
-        curveIndex++;
-    }
-
-    VtVec2iArray      finalIndices(indices.size());
-    VtIntArray const& curveIndices = topology.GetCurveIndices();
-
-    // If have topology has indices set, map the generated indices
-    // with the given indices.
-    if (curveIndices.empty()) {
-        std::copy(indices.begin(), indices.end(), finalIndices.begin());
-    } else {
-        size_t lineCount = indices.size();
-        int    maxIndex = curveIndices.size() - 1;
-
-        for (size_t lineNum = 0; lineNum < lineCount; ++lineNum) {
-            const GfVec2i& line = indices[lineNum];
-
-            int i0 = std::min(line[0], maxIndex);
-            int i1 = std::min(line[1], maxIndex);
-
-            int v0 = curveIndices[i0];
-            int v1 = curveIndices[i1];
-
-            finalIndices[lineNum].Set(v0, v1);
-        }
-    }
-
-    return VtValue(finalIndices);
-}
-
-VtValue _BuildLineSegmentIndexArray(const HdBasisCurvesTopology& topology)
-{
-    const TfToken basis = topology.GetCurveBasis();
-    const bool    skipFirstAndLastSegs = (basis == HdTokens->catmullRom);
-
-    std::vector<GfVec2i> indices;
-    const VtArray<int>   vertexCounts = topology.GetCurveVertexCounts();
-    bool                 wrap = topology.GetCurveWrap() == HdTokens->periodic;
-    int                  vertexIndex = 0; // Index of next vertex to emit
-    int                  curveIndex = 0;  // Index of next curve to emit
-    // For each curve
-    TF_FOR_ALL(itCounts, vertexCounts)
-    {
-        int v0 = vertexIndex;
-        int v1;
-        // Store first vert index incase we are wrapping
-        const int firstVert = v0;
-        ++vertexIndex;
-        for (int i = 1; i < *itCounts; ++i) {
-            v1 = vertexIndex;
-            ++vertexIndex;
-            if (!skipFirstAndLastSegs || (i > 1 && i < (*itCounts) - 1)) {
-                indices.push_back(GfVec2i(v0, v1));
-            }
-            v0 = v1;
-        }
-        if (wrap) {
-            indices.push_back(GfVec2i(v0, firstVert));
-        }
-        ++curveIndex;
-    }
-
-    VtVec2iArray      finalIndices(indices.size());
-    VtIntArray const& curveIndices = topology.GetCurveIndices();
-
-    // If have topology has indices set, map the generated indices
-    // with the given indices.
-    if (curveIndices.empty()) {
-        std::copy(indices.begin(), indices.end(), finalIndices.begin());
-    } else {
-        size_t lineCount = indices.size();
-        int    maxIndex = curveIndices.size() - 1;
-
-        for (size_t lineNum = 0; lineNum < lineCount; ++lineNum) {
-            const GfVec2i& line = indices[lineNum];
-
-            int i0 = std::min(line[0], maxIndex);
-            int i1 = std::min(line[1], maxIndex);
-
-            int v0 = curveIndices[i0];
-            int v1 = curveIndices[i1];
-
-            finalIndices[lineNum].Set(v0, v1);
-        }
-    }
-
-    return VtValue(finalIndices);
-}
-
-VtVec3fArray
-_BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtVec3fArray& authoredData)
-{
-    // We need to interpolate primvar depending on its type
-    size_t numVerts = topology.CalculateNeededNumberOfControlPoints();
-
     VtVec3fArray result(numVerts);
     size_t       size = authoredData.size();
 
@@ -370,32 +61,20 @@ _BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtVec3fArra
     } else if (size == numVerts) {
         // Vertex data
         result = authoredData;
-    } else if (size == topology.CalculateNeededNumberOfVaryingControlPoints()) {
-        // Varying data
-        result = InterpolateVarying<GfVec3f>(
-            numVerts,
-            topology.GetCurveVertexCounts(),
-            topology.GetCurveWrap(),
-            topology.GetCurveBasis(),
-            authoredData);
     } else {
         // Fallback
         const GfVec3f elem(1.0f, 0.0f, 0.0f);
         for (size_t i = 0; i < numVerts; ++i) {
             result[i] = elem;
         }
-        TF_WARN("Incorrect number of primvar data, using default GfVec3f(0,0,0) for rendering.");
+        TF_WARN("Incorrect number of primvar data, using default GfVec3f(1,0,0) for rendering.");
     }
 
     return result;
 }
 
-VtFloatArray
-_BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtFloatArray& authoredData)
+VtFloatArray _BuildInterpolatedArray(size_t numVerts, const VtFloatArray& authoredData)
 {
-    // We need to interpolate primvar depending on its type
-    size_t numVerts = topology.CalculateNeededNumberOfControlPoints();
-
     VtFloatArray result(numVerts);
     size_t       size = authoredData.size();
 
@@ -408,14 +87,6 @@ _BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtFloatArra
     } else if (size == numVerts) {
         // Vertex data
         result = authoredData;
-    } else if (size == topology.CalculateNeededNumberOfVaryingControlPoints()) {
-        // Varying data
-        result = InterpolateVarying<float>(
-            numVerts,
-            topology.GetCurveVertexCounts(),
-            topology.GetCurveWrap(),
-            topology.GetCurveBasis(),
-            authoredData);
     } else {
         // Fallback
         for (size_t i = 0; i < numVerts; ++i) {
@@ -426,29 +97,31 @@ _BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtFloatArra
 
     return result;
 }
+
 } // anonymous namespace
 
 //! \brief  Constructor
-HdVP2BasisCurves::HdVP2BasisCurves(
+HdVP2Points::HdVP2Points(
     HdVP2RenderDelegate* delegate,
+    SdfPath const&       id
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-    SdfPath const& id)
-    : HdBasisCurves(id)
+    )
+    : HdPoints(id)
 #else
-    SdfPath const& id,
+    ,
     SdfPath const& instancerId)
-    : HdBasisCurves(id, instancerId)
+    : HdPoints(id, instancerId)
 #endif
     , MayaUsdRPrim(delegate, id)
 {
     const MHWRender::MVertexBufferDescriptor desc(
         "", MHWRender::MGeometry::kPosition, MHWRender::MGeometry::kFloat, 3);
 
-    _curvesSharedData._positionsBuffer.reset(new MHWRender::MVertexBuffer(desc));
+    _pointsSharedData._positionsBuffer.reset(new MHWRender::MVertexBuffer(desc));
 }
 
 //! \brief  Synchronize VP2 state with scene delegate state based on dirty bits and repr
-void HdVP2BasisCurves::Sync(
+void HdVP2Points::Sync(
     HdSceneDelegate* delegate,
     HdRenderParam*   renderParam,
     HdDirtyBits*     dirtyBits,
@@ -464,7 +137,7 @@ void HdVP2BasisCurves::Sync(
         HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L2,
         _rprimId.asChar(),
-        "HdVP2BasisCurves::Sync");
+        "HdVP2Points::Sync");
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
         const SdfPath materialId = _GetUpdatedMaterialId(this, delegate);
@@ -493,36 +166,25 @@ void HdVP2BasisCurves::Sync(
     }
 
     if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
-        _curvesSharedData._displayStyle = GetDisplayStyle(delegate);
-    }
-
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
-        _curvesSharedData._topology = GetBasisCurvesTopology(delegate);
+        _pointsSharedData._displayStyle = delegate->GetDisplayStyle(id);
     }
 
     // Prepare position buffer. It is shared among all draw items so it should
     // be updated only once when it gets dirty.
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
         const VtValue value = delegate->Get(id, HdTokens->points);
-        _curvesSharedData._points = value.Get<VtVec3fArray>();
+        _pointsSharedData._points = value.Get<VtVec3fArray>();
 
-        const size_t numVertices = _curvesSharedData._points.size();
+        const size_t numVertices = _pointsSharedData._points.size();
 
-        const HdBasisCurvesTopology& topology = _curvesSharedData._topology;
-        const size_t numControlPoints = topology.CalculateNeededNumberOfControlPoints();
-
-        if (!topology.HasIndices() && numVertices != numControlPoints) {
-            TF_WARN("Topology and vertices do not match for BasisCurve %s", id.GetName().c_str());
-        }
-
-        void* bufferData = _curvesSharedData._positionsBuffer->acquire(numVertices, true);
+        void* bufferData = _pointsSharedData._positionsBuffer->acquire(numVertices, true);
         if (bufferData) {
             const size_t numBytes = sizeof(GfVec3f) * numVertices;
-            memcpy(bufferData, _curvesSharedData._points.cdata(), numBytes);
+            memcpy(bufferData, _pointsSharedData._points.cdata(), numBytes);
 
             // Capture class member for lambda
             MHWRender::MVertexBuffer* const positionsBuffer
-                = _curvesSharedData._positionsBuffer.get();
+                = _pointsSharedData._positionsBuffer.get();
             const MString& rprimId = _rprimId;
 
             _delegate->GetVP2ResourceRegistry().EnqueueCommit(
@@ -551,10 +213,10 @@ void HdVP2BasisCurves::Sync(
     This call happens on worker threads and results of the change are collected
     in MayaUsdCommitState and enqueued for Commit on main-thread using CommitTasks
 */
-void HdVP2BasisCurves::_UpdateDrawItem(
-    HdSceneDelegate*             sceneDelegate,
-    HdVP2DrawItem*               drawItem,
-    HdBasisCurvesReprDesc const& desc)
+void HdVP2Points::_UpdateDrawItem(
+    HdSceneDelegate*        sceneDelegate,
+    HdVP2DrawItem*          drawItem,
+    HdPointsReprDesc const& desc)
 {
     MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
     if (ARCH_UNLIKELY(!renderItem)) {
@@ -573,18 +235,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
 
-    const auto& primvarSourceMap = _curvesSharedData._primvarSourceMap;
-
-    const HdBasisCurvesTopology& topology = _curvesSharedData._topology;
-    const TfToken                type = topology.GetCurveType();
-    const TfToken                wrap = topology.GetCurveWrap();
-    const TfToken                basis = topology.GetCurveBasis();
-
-#if defined(HDVP2_ENABLE_BASISCURVES_TESSELLATION)
-    const int refineLevel = _curvesSharedData._displayStyle.refineLevel;
-#else
-    const int refineLevel = 0;
-#endif
+    const auto& primvarSourceMap = _pointsSharedData._primvarSourceMap;
 
     const MHWRender::MGeometry::DrawMode drawMode = renderItem->drawMode();
 
@@ -596,48 +247,10 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     constexpr bool isPointSnappingItem = false;
 #else
-    const bool isPointSnappingItem = (renderItem->primitive() == MHWRender::MGeometry::kPoints);
+    constexpr bool isPointSnappingItem = true;
 #endif
 
-    const bool requiresIndexUpdate = !isBoundingBoxItem && !isPointSnappingItem;
-
-    // Prepare index buffer.
-    if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
-
-        const bool forceLines = (refineLevel <= 0) || (drawMode & MHWRender::MGeometry::kWireframe);
-
-        VtValue result;
-
-        if (!forceLines && type == HdTokens->cubic) {
-            result = _BuildCubicIndexArray(topology);
-        } else if (wrap == HdTokens->segmented) {
-            result = _BuildLinesIndexArray(topology);
-        } else {
-            result = _BuildLineSegmentIndexArray(topology);
-        }
-
-        const void*  indexData = nullptr;
-        unsigned int numIndices = 0;
-
-        if (result.IsHolding<VtVec2iArray>()) {
-            indexData = result.UncheckedGet<VtVec2iArray>().cdata();
-            numIndices = result.GetArraySize() * 2;
-        } else if (result.IsHolding<VtVec4iArray>()) {
-            indexData = result.UncheckedGet<VtVec4iArray>().cdata();
-            numIndices = result.GetArraySize() * 4;
-        }
-
-        if (drawItemData._indexBuffer && numIndices > 0) {
-            stateToCommit._indexBufferData
-                = static_cast<int*>(drawItemData._indexBuffer->acquire(numIndices, true));
-
-            if (indexData != nullptr && stateToCommit._indexBufferData != nullptr) {
-                memcpy(stateToCommit._indexBufferData, indexData, numIndices * sizeof(int));
-            }
-        }
-    }
-
-    if (desc.geomStyle == HdBasisCurvesGeomStylePatch) {
+    if (desc.geomStyle == HdPointsGeomStylePoints) {
         // Prepare normals buffer.
         if (itemDirtyBits & (HdChangeTracker::DirtyNormals | HdChangeTracker::DirtyDisplayStyle)) {
             VtVec3fArray normals;
@@ -656,29 +269,27 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 normals.push_back(GfVec3f(0.0f, 0.0f, 0.0f));
             }
 
-            normals = _BuildInterpolatedArray(topology, normals);
+            normals = _BuildInterpolatedArray(_pointsSharedData._points.size(), normals);
 
-            if (!_curvesSharedData._normalsBuffer) {
+            if (!_pointsSharedData._normalsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
                     "", MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
 
-                _curvesSharedData._normalsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+                _pointsSharedData._normalsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
             }
 
             unsigned int numNormals = normals.size();
-            if (_curvesSharedData._normalsBuffer && numNormals > 0) {
-                void* bufferData = _curvesSharedData._normalsBuffer->acquire(numNormals, true);
+            if (_pointsSharedData._normalsBuffer && numNormals > 0) {
+                void* bufferData = _pointsSharedData._normalsBuffer->acquire(numNormals, true);
                 if (bufferData) {
                     memcpy(bufferData, normals.cdata(), numNormals * sizeof(GfVec3f));
-                    _CommitMVertexBuffer(_curvesSharedData._normalsBuffer.get(), bufferData);
+                    _CommitMVertexBuffer(_pointsSharedData._normalsBuffer.get(), bufferData);
                 }
             }
         }
 
         // Prepare widths buffer.
-        if ((refineLevel > 0)
-            && (itemDirtyBits
-                & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle))) {
+        if (itemDirtyBits & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle)) {
             VtFloatArray widths;
 
             const auto it = primvarSourceMap.find(HdTokens->widths);
@@ -693,17 +304,17 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 widths.push_back(1.0f);
             }
 
-            widths = _BuildInterpolatedArray(topology, widths);
+            widths = _BuildInterpolatedArray(_pointsSharedData._points.size(), widths);
 
             MHWRender::MVertexBuffer* widthsBuffer
-                = _curvesSharedData._primvarBuffers[HdTokens->widths].get();
+                = _pointsSharedData._primvarBuffers[HdTokens->widths].get();
 
             if (!widthsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
                     "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 1);
 
                 widthsBuffer = new MHWRender::MVertexBuffer(vbDesc);
-                _curvesSharedData._primvarBuffers[HdTokens->widths].reset(widthsBuffer);
+                _pointsSharedData._primvarBuffers[HdTokens->widths].reset(widthsBuffer);
             }
 
             unsigned int numWidths = widths.size();
@@ -730,7 +341,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                     stateToCommit._isTransparent = shader->isTransparent();
                 }
 
-                auto primitiveType = MHWRender::MGeometry::kLines;
+                auto primitiveType = MHWRender::MGeometry::kPoints;
                 int  primitiveStride = 0;
 
                 if (primitiveType != drawItemData._primitiveType
@@ -784,9 +395,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 }
             }
 
-            // If color/opacity is not found, the default color of Maya curves will be used
+            // If color/opacity is not found, the default color will be used
             if (colorArray.empty()) {
-                colorArray.push_back(drawScene.GetCurveDefaultColor());
+                colorArray.push_back(GfVec3f(0.247f, 0.137f, 0.122f));
                 colorInterpolation = HdInterpolationConstant;
             }
 
@@ -802,7 +413,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             // instance from the material.
             if (!stateToCommit._shader) {
                 MHWRender::MShaderInstance*     shader = nullptr;
-                MHWRender::MGeometry::Primitive primitiveType = MHWRender::MGeometry::kLines;
+                MHWRender::MGeometry::Primitive primitiveType = MHWRender::MGeometry::kPoints;
                 int                             primitiveStride = 0;
 
                 bool usingCPV
@@ -817,20 +428,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                     const GfVec3f& clr3f = colorArray[0];
                     // When the interpolation is instance the color of the material is ignored
                     const MColor color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
-
-                    if (refineLevel > 0) {
-                        shader = _delegate->GetBasisCurvesFallbackShader(type, basis, color);
-                        primitiveType = MHWRender::MGeometry::kPatch;
-                        primitiveStride = (type == HdTokens->linear ? 2 : 4);
-                    } else {
-                        shader = _delegate->Get3dSolidShader(color);
-                    }
-                } else if (refineLevel > 0) {
-                    shader = _delegate->GetBasisCurvesCPVShader(type, basis);
-                    primitiveType = MHWRender::MGeometry::kPatch;
-                    primitiveStride = (type == HdTokens->linear ? 2 : 4);
+                    shader = _delegate->Get3dFatPointShader(color);
                 } else {
-                    shader = _delegate->Get3dCPVSolidShader();
+                    shader = _delegate->Get3dCPVFatPointShader();
                 }
 
                 if (shader != nullptr && shader != drawItemData._shader) {
@@ -849,8 +449,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             }
 
             if (prepareCPVBuffer) {
-                colorArray = _BuildInterpolatedArray(topology, colorArray);
-                alphaArray = _BuildInterpolatedArray(topology, alphaArray);
+                colorArray = _BuildInterpolatedArray(_pointsSharedData._points.size(), colorArray);
+                alphaArray = _BuildInterpolatedArray(_pointsSharedData._points.size(), alphaArray);
 
                 const size_t numColors = colorArray.size();
                 const size_t numAlphas = alphaArray.size();
@@ -858,19 +458,19 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
                 if (numColors != numAlphas) {
                     TF_CODING_ERROR(
-                        "color and opacity do not match for BasisCurve %s", id.GetName().c_str());
+                        "color and opacity do not match for points %s", id.GetName().c_str());
                 }
 
                 // Fill color and opacity into the float4 color stream.
-                if (!_curvesSharedData._colorBuffer) {
+                if (!_pointsSharedData._colorBuffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
                         "", MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
 
-                    _curvesSharedData._colorBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+                    _pointsSharedData._colorBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
                 }
 
                 float* bufferData = static_cast<float*>(
-                    _curvesSharedData._colorBuffer->acquire(numVertices, true));
+                    _pointsSharedData._colorBuffer->acquire(numVertices, true));
 
                 if (bufferData) {
                     unsigned int offset = 0;
@@ -883,7 +483,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                         bufferData[offset++] = alphaArray[v];
                     }
 
-                    _CommitMVertexBuffer(_curvesSharedData._colorBuffer.get(), bufferData);
+                    _CommitMVertexBuffer(_pointsSharedData._colorBuffer.get(), bufferData);
                 }
             } else if (prepareInstanceColorBuffer) {
                 TF_VERIFY(
@@ -961,7 +561,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
                 const MColor colors[]
                     = { drawScene.GetWireframeColor(),
-                        drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->basisCurves),
+                        drawScene.GetSelectionHighlightColor(HdPrimTypeTokens->points),
                         drawScene.GetSelectionHighlightColor() };
 
                 // Store the indices to colors.
@@ -1014,27 +614,20 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 && drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
                 MHWRender::MShaderInstance* shader = nullptr;
 
-                auto primitiveType = MHWRender::MGeometry::kLines;
+                auto primitiveType = MHWRender::MGeometry::kPoints;
                 int  primitiveStride = 0;
 
                 const MColor& color
                     = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                           _selectionStatus == kFullyLead ? TfToken()
-                                                          : HdPrimTypeTokens->basisCurves)
+                           _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->points)
                                                        : drawScene.GetWireframeColor());
 
-                if (desc.geomStyle == HdBasisCurvesGeomStylePatch) {
+                if (desc.geomStyle == HdPointsGeomStylePoints) {
                     if (_selectionStatus != kUnselected) {
-                        if (refineLevel <= 0) {
-                            shader = _delegate->Get3dSolidShader(color);
-                        } else {
-                            shader = _delegate->GetBasisCurvesFallbackShader(type, basis, color);
-                            primitiveType = MHWRender::MGeometry::kPatch;
-                            primitiveStride = (type == HdTokens->linear ? 2 : 4);
-                        }
+                        shader = _delegate->Get3dFatPointShader(color);
                     }
                 } else {
-                    shader = _delegate->Get3dSolidShader(color);
+                    shader = _delegate->Get3dFatPointShader(color);
                 }
 
                 if (shader != nullptr && shader != drawItemData._shader) {
@@ -1061,7 +654,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
                | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent
                | DirtySelectionHighlight))) {
-        bool enable = drawItem->GetVisible() && !_curvesSharedData._points.empty()
+        bool enable = drawItem->GetVisible() && !_pointsSharedData._points.empty()
             && !instancerWithNoInstances;
 
         if (isPointSnappingItem) {
@@ -1070,7 +663,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             enable = enable && !range.IsEmpty();
         }
 
-        enable = enable && drawScene.DrawRenderTag(_curvesSharedData._renderTag);
+        enable = enable && drawScene.DrawRenderTag(_pointsSharedData._renderTag);
 
         if (drawItemData._enabled != enable) {
             drawItemData._enabled = enable;
@@ -1086,7 +679,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     if ((itemDirtyBits & DirtySelectionHighlight) && !isBoundingBoxItem) {
-        MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
+        MSelectionMask selectionMask(MSelectionMask::kSelectParticleShapes);
 
         // Only unselected Rprims can be used for point snapping.
         if (_selectionStatus == kUnselected) {
@@ -1102,10 +695,10 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     drawItem->ResetDirtyBits();
 
     // Capture the valid position buffer and index buffer
-    MHWRender::MVertexBuffer* positionsBuffer = _curvesSharedData._positionsBuffer.get();
-    MHWRender::MVertexBuffer* colorBuffer = _curvesSharedData._colorBuffer.get();
-    MHWRender::MVertexBuffer* normalsBuffer = _curvesSharedData._normalsBuffer.get();
-    const PrimvarBufferMap*   primvarBuffers = &_curvesSharedData._primvarBuffers;
+    MHWRender::MVertexBuffer* positionsBuffer = _pointsSharedData._positionsBuffer.get();
+    MHWRender::MVertexBuffer* colorBuffer = _pointsSharedData._colorBuffer.get();
+    MHWRender::MVertexBuffer* normalsBuffer = _pointsSharedData._normalsBuffer.get();
+    const PrimvarBufferMap*   primvarBuffers = &_pointsSharedData._primvarBuffers;
     MHWRender::MIndexBuffer*  indexBuffer = drawItemData._indexBuffer.get();
 
     if (isBoundingBoxItem) {
@@ -1122,7 +715,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                                                        colorBuffer,
                                                        primvarBuffers,
                                                        indexBuffer]() {
-        // This code executes serially, once per basisCurve updated. Keep
+        // This code executes serially, once per points set updated. Keep
         // performance in mind while modifying this code.
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
         if (ARCH_UNLIKELY(!renderItem))
@@ -1157,19 +750,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         if (stateToCommit._enabled != nullptr) {
             renderItem->enable(*stateToCommit._enabled);
         }
-
-#if defined(HDVP2_ENABLE_BASISCURVES_TESSELLATION)
-        // If the primitive type and stride are changed, then update them.
-        if (stateToCommit._primitiveType != nullptr && stateToCommit._primitiveStride != nullptr) {
-            auto primitive = *stateToCommit._primitiveType;
-            int  stride = *stateToCommit._primitiveStride;
-            renderItem->setPrimitive(primitive, stride);
-
-            const bool wantConsolidation = !stateToCommit._renderItemData._usingInstancedDraw
-                && primitive != MHWRender::MGeometry::kPatch;
-            _SetWantConsolidation(*renderItem, wantConsolidation);
-        }
-#endif
 
         ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
@@ -1273,7 +853,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     See HdRprim::PropagateRprimDirtyBits()
 */
-HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
+HdDirtyBits HdVP2Points::_PropagateDirtyBits(HdDirtyBits bits) const
 {
     _PropagateDirtyBitsCommon(bits, _reprs);
     return bits;
@@ -1296,7 +876,7 @@ HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
 
     See HdRprim::InitRepr()
 */
-void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
+void HdVP2Points::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits)
 {
     auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     MSubSceneContainer* subSceneContainer = param->GetContainer();
@@ -1307,11 +887,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     if (!repr)
         return;
 
-    _BasisCurvesReprConfig::DescArray descs = _GetReprDesc(reprToken);
+    _PointsReprConfig::DescArray descs = _GetReprDesc(reprToken);
 
     for (size_t descIdx = 0; descIdx < descs.size(); ++descIdx) {
-        const HdBasisCurvesReprDesc& desc = descs[descIdx];
-        if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) {
+        const HdPointsReprDesc& desc = descs[descIdx];
+        if (desc.geomStyle == HdPointsGeomStyleInvalid) {
             continue;
         }
 
@@ -1327,60 +907,13 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         MHWRender::MRenderItem* renderItem = nullptr;
 
         switch (desc.geomStyle) {
-        case HdBasisCurvesGeomStylePatch:
-            renderItem = _CreatePatchRenderItem(renderItemName);
+        case HdPointsGeomStylePoints:
+            renderItem = _CreateFatPointsRenderItem(renderItemName);
             drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
 #ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
             renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
 #endif
             break;
-        case HdBasisCurvesGeomStyleWire:
-            // The item is used for wireframe display and selection highlight.
-            if (reprToken == HdReprTokens->wire) {
-                renderItem = _CreateWireframeRenderItem(
-                    renderItemName,
-                    kOpaqueGray,
-                    MSelectionMask::kSelectNurbsCurves,
-                    MHWRender::MFrameContext::kExcludeNurbsCurves);
-                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-                renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
-#endif
-            }
-            // The item is used for bbox display and selection highlight.
-            else if (reprToken == HdVP2ReprTokens->bbox) {
-                renderItem = _CreateBoundingBoxRenderItem(
-                    renderItemName,
-                    kOpaqueGray,
-                    MSelectionMask::kSelectNurbsCurves,
-                    MHWRender::MFrameContext::kExcludeNurbsCurves);
-                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-                renderItem->setDefaultMaterialHandling(MRenderItem::SkipWhenDefaultMaterialActive);
-#endif
-            }
-#ifdef HAS_DEFAULT_MATERIAL_SUPPORT_API
-            else if (reprToken == HdVP2ReprTokens->defaultMaterial) {
-                renderItem = _CreateWireframeRenderItem(
-                    renderItemName,
-                    kOpaqueGray,
-                    MSelectionMask::kSelectNurbsCurves,
-                    MHWRender::MFrameContext::kExcludeNurbsCurves);
-                renderItem->setDrawMode(MHWRender::MGeometry::kAll);
-                drawItem->AddUsage(HdVP2DrawItem::kSelectionHighlight);
-                renderItem->setDefaultMaterialHandling(
-                    MRenderItem::DrawOnlyWhenDefaultMaterialActive);
-            }
-#endif
-            break;
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-        case HdBasisCurvesGeomStylePoints:
-            renderItem = _CreatePointsRenderItem(
-                renderItemName,
-                MSelectionMask::kSelectNurbsCurves,
-                MHWRender::MFrameContext::kExcludeNurbsCurves);
-            break;
-#endif
         default: TF_WARN("Unsupported geomStyle"); break;
         }
 
@@ -1405,20 +938,20 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
     Repr objects are created to support specific reprName tokens, and contain a list of
     HdVP2DrawItems and corresponding RenderItems.
 */
-void HdVP2BasisCurves::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken)
+void HdVP2Points::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken)
 {
     HdReprSharedPtr const& repr = _GetRepr(reprToken);
     if (!repr) {
         return;
     }
 
-    const _BasisCurvesReprConfig::DescArray& descs = _GetReprDesc(reprToken);
-    const size_t                             numDescs = descs.size();
-    int                                      drawItemIndex = 0;
+    const _PointsReprConfig::DescArray& descs = _GetReprDesc(reprToken);
+    const size_t                        numDescs = descs.size();
+    int                                 drawItemIndex = 0;
 
     for (size_t i = 0; i < numDescs; ++i) {
-        const HdBasisCurvesReprDesc& desc = descs[i];
-        if (desc.geomStyle != HdBasisCurvesGeomStyleInvalid) {
+        const HdPointsReprDesc& desc = descs[i];
+        if (desc.geomStyle != HdPointsGeomStyleInvalid) {
             HdVP2DrawItem* drawItem
                 = static_cast<HdVP2DrawItem*>(repr->GetDrawItem(drawItemIndex++));
             if (drawItem) {
@@ -1431,17 +964,15 @@ void HdVP2BasisCurves::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const
 /*! \brief  Returns the minimal set of dirty bits to place in the
             change tracker for use in the first sync of this prim.
 */
-HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
+HdDirtyBits HdVP2Points::GetInitialDirtyBitsMask() const
 {
     constexpr HdDirtyBits bits = HdChangeTracker::InitRepr | HdChangeTracker::DirtyExtent
         | HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyNormals
         | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle
         | HdChangeTracker::DirtyRepr | HdChangeTracker::DirtyMaterialId
-        | HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyTransform
-        | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyWidths
-        | HdChangeTracker::DirtyComputationPrimvarDesc | HdChangeTracker::DirtyRenderTag
-        | DirtySelectionHighlight;
+        | HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyVisibility
+        | HdChangeTracker::DirtyWidths | HdChangeTracker::DirtyRenderTag | DirtySelectionHighlight;
 
     return bits;
 }
@@ -1454,7 +985,7 @@ HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
     the points primvar is processed separately for direct access later. We
     only call GetPrimvar on primvars that have been marked dirty.
 */
-void HdVP2BasisCurves::_UpdatePrimvarSources(
+void HdVP2Points::_UpdatePrimvarSources(
     HdSceneDelegate*     sceneDelegate,
     HdDirtyBits          dirtyBits,
     const TfTokenVector& requiredPrimvars)
@@ -1475,11 +1006,11 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
         for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
             if (std::find(begin, end, pv.name) == end) {
                 // erase the unused primvar so we don't hold onto stale data
-                _curvesSharedData._primvarSourceMap.erase(pv.name);
+                _pointsSharedData._primvarSourceMap.erase(pv.name);
             } else {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)) {
                     const VtValue value = sceneDelegate->Get(instancerId, pv.name);
-                    _curvesSharedData._primvarSourceMap[pv.name]
+                    _pointsSharedData._primvarSourceMap[pv.name]
                         = { value, HdInterpolationInstance };
                 }
             }
@@ -1493,10 +1024,10 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
 
         for (const HdPrimvarDescriptor& pv : primvars) {
             if (std::find(begin, end, pv.name) == end) {
-                _curvesSharedData._primvarSourceMap.erase(pv.name);
+                _pointsSharedData._primvarSourceMap.erase(pv.name);
             } else if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                 const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                _curvesSharedData._primvarSourceMap[pv.name] = { value, interp };
+                _pointsSharedData._primvarSourceMap[pv.name] = { value, interp };
             }
         }
     }
@@ -1504,16 +1035,16 @@ void HdVP2BasisCurves::_UpdatePrimvarSources(
 
 /*! \brief  Create render item for smoothHull repr.
  */
-MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& name) const
+MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& name) const
 {
     MHWRender::MRenderItem* const renderItem = MHWRender::MRenderItem::Create(
-        name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kLines);
+        name, MHWRender::MRenderItem::MaterialSceneItem, MHWRender::MGeometry::kPoints);
 
     renderItem->setDrawMode(static_cast<MHWRender::MGeometry::DrawMode>(
         MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
+    renderItem->setShader(_delegate->Get3dFatPointShader());
 #ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
@@ -1521,15 +1052,15 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
 #endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MSelectionMask selectionMask(MSelectionMask::kSelectNurbsCurves);
+    MSelectionMask selectionMask(MSelectionMask::kSelectParticleShapes);
     selectionMask.addMask(MSelectionMask::kSelectPointsForGravity);
     renderItem->setSelectionMask(selectionMask);
 #else
-    renderItem->setSelectionMask(MSelectionMask::kSelectNurbsCurves);
+    renderItem->setSelectionMask(MSelectionMask::kSelectParticleShapes);
 #endif
 
 #if MAYA_API_VERSION >= 20220000
-    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNParticles);
 #endif
 
     _SetWantConsolidation(*renderItem, true);

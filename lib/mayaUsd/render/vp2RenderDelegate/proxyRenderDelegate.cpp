@@ -1526,6 +1526,9 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
     } else if (className == HdPrimTypeTokens->basisCurves) {
         colorCache = &_activeCurveColorCache;
         queryName = "curve";
+    } else if (className == HdPrimTypeTokens->points) {
+        colorCache = &_activePointsColorCache;
+        queryName = "particle";
     } else {
         TF_WARN(
             "ProxyRenderDelegate::GetSelectionHighlightColor - unsupported class: '%s'",
