@@ -143,6 +143,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             mImportData.stageInitialLoadSet() == UsdStage::InitialLoadSet::LoadAll));
 
         if (mArgs.pullImport)
+            // During a pullImport the sessionLayer is not used to request the proper stage.
             stage = UsdStage::Open(rootLayer, mImportData.stageInitialLoadSet());
         else
             stage = UsdStage::Open(rootLayer, sessionLayer, mImportData.stageInitialLoadSet());

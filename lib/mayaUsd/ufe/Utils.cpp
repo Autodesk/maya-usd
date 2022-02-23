@@ -60,7 +60,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
+constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
 
 bool stringBeginsWithDigit(const std::string& inputString)
 {
@@ -183,11 +183,11 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
 
     const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
-    if (!TF_VERIFY(!segments.empty(), kIllegalUSDPath, path.string().c_str())) {
+    if (!TF_VERIFY(!segments.empty(), kIllegalUFEPath, path.string().c_str())) {
         return UsdPrim();
     }
     auto stage = getStage(Ufe::Path(segments[0]));
-    if (!TF_VERIFY(stage, kIllegalUSDPath, path.string().c_str())) {
+    if (!TF_VERIFY(stage, kIllegalUFEPath, path.string().c_str())) {
         return UsdPrim();
     }
 
@@ -228,7 +228,7 @@ bool isRootChild(const Ufe::Path& path)
     // path and we are only testing whether or not we are a root child.
     auto segments = path.getSegments();
     if (segments.size() != 2) {
-        TF_RUNTIME_ERROR(kIllegalUSDPath, path.string().c_str());
+        TF_RUNTIME_ERROR(kIllegalUFEPath, path.string().c_str());
     }
     return (segments[1].size() == 1);
 }

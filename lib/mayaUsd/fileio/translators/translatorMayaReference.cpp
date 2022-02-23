@@ -140,13 +140,10 @@ const MObject getMessageAttr()
     return messageAttr;
 }
 
-const TfToken maya_associatedReferenceNode(
-    "maya_associatedReferenceNode"); // Didn't find any reference to this information, is it still
-                                     // used?
-
-const bool isMayaReference(const UsdPrim& prim)
+const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
+const bool    isMayaReference(const UsdPrim& prim)
 {
-    //    return true;  // Force new behaviour for all prims.
+    //    return true;  // Force new behaviour for all Maya Reference prims.
     const TfToken MayaReference("MayaReference");
     return prim.GetTypeName()
         == MayaReference; // Only MayaReference prims are using the new behaviour.
@@ -220,6 +217,7 @@ MString UsdMayaTranslatorMayaReference::getUniqueRefNodeName(
 {
     MString uniqueRefNodeName;
     if (isMayaReference(prim)) {
+        // New behaviour for MayaReference
         // Rename the reference node. Append "RN" to the end of filename, to indicate it's a
         // reference node.
         //
@@ -233,6 +231,7 @@ MString UsdMayaTranslatorMayaReference::getUniqueRefNodeName(
         }
         uniqueRefNodeName += L"RN";
     } else {
+        // Old behaviour for ALMayaReference
         // Rename the reference node.  We want a unique name so that multiple copies
         // of a given prim can each have their own reference edits. We make a name
         // from the full path to the prim for which the reference is being created
@@ -327,11 +326,9 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     refDependNode.setName(uniqueRefNodeName);
 
     //  Always have to create the attribute, we are here because the prim didn't have it.
-    //    if(!prim.HasAttribute(MayaReferenceAttribute))
-    {
-        UsdAttribute attr = prim.CreateAttribute(MayaReferenceAttribute, SdfValueTypeNames->String);
-        attr.Set(refDependNode.name().asChar());
-    }
+    UsdAttribute attr = prim.CreateAttribute(MayaReferenceAttribute, SdfValueTypeNames->String);
+    attr.Set(refDependNode.name().asChar());
+
     // Now load the reference to properly trigger the kAfterReferenceLoad callback
     status = LoadMayaReferenceWithUndo(referenceObject);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -476,7 +473,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     //
     if (refNode.isNull()) {
         if (isMayaReference(prim)) {
-            // New behaviour
+            // New behaviour for MayaReference
             if (prim.HasAttribute(MayaReferenceAttribute)) {
                 UsdAttribute attr = prim.GetAttribute(MayaReferenceAttribute);
                 VtValue      value;
@@ -518,7 +515,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                 }
             }
         } else {
-            // Old behaviour
+            // Old behaviour for ALMayaReference
             for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
                 MObject      tempRefNode = refIter.item();
                 MFnReference tempRefFn(tempRefNode);
