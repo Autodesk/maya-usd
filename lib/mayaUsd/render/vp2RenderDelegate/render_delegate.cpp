@@ -187,7 +187,8 @@ public:
             _3dCPVSolidShader->setParameter(_diffuseParameterName, 1.0f);
         }
 
-        _3dCPVFatPointShader = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dCPVFatPointShader);
+        _3dCPVFatPointShader
+            = shaderMgr->getStockShader(MHWRender::MShaderManager::k3dCPVFatPointShader);
         if (TF_VERIFY(_3dCPVFatPointShader)) {
             _3dCPVFatPointShader->setParameter(_diffuseParameterName, 1.0f);
 
@@ -236,7 +237,7 @@ public:
     /*! \brief  Returns a white 3d fat point shader.
      */
     MHWRender::MShaderInstance* Get3dFatPointShader(const MColor& color)
-    { 
+    {
         // Look for it first with reader lock
         tbb::spin_rw_mutex::scoped_lock lock(_3dFatPointShaders._mutex, false /*write*/);
         auto                            it = _3dFatPointShaders._map.find(color);
@@ -282,7 +283,7 @@ public:
 
     /*! \brief  Returns a 3d CPV fat point shader instance.
      */
-    MHWRender::MShaderInstance* Get3dCPVFatPointShader() const { return _3dCPVFatPointShader; } 
+    MHWRender::MShaderInstance* Get3dCPVFatPointShader() const { return _3dCPVFatPointShader; }
 
     /*! \brief  Returns a 3d solid shader with the specified color.
      */
@@ -466,7 +467,7 @@ private:
     //!< 3d default material shader
     MHWRender::MShaderInstance* _3dDefaultMaterialShader { nullptr };
 
-    MHWRender::MShaderInstance* _3dCPVSolidShader { nullptr }; //!< 3d CPV solid-color shader
+    MHWRender::MShaderInstance* _3dCPVSolidShader { nullptr };    //!< 3d CPV solid-color shader
     MHWRender::MShaderInstance* _3dCPVFatPointShader { nullptr }; //!< 3d CPV fat point shader
 
     HdVP2ShaderCache _userCache; //!< A thread-safe cache of user generated shaders.
@@ -730,7 +731,7 @@ HdRprim* HdVP2RenderDelegate::CreateRprim(
 #else
         return new HdVP2Points(this, rprimId, instancerId);
 #endif
-    }    
+    }
     // if (typeId == HdPrimTypeTokens->volume) {
     // #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
     //    return new HdVP2Volume(this, rprimId);

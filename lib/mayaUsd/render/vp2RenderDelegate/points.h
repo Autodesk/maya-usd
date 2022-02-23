@@ -20,8 +20,8 @@
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
-#include <pxr/imaging/hd/points.h>
 #include <pxr/imaging/hd/enums.h>
+#include <pxr/imaging/hd/points.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
@@ -90,11 +90,13 @@ class HdVP2Points final
 {
 public:
     HdVP2Points(
-        HdVP2RenderDelegate* delegate, const SdfPath& id
+        HdVP2RenderDelegate* delegate,
+        const SdfPath&       id
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-        );
+    );
 #else
-        , const SdfPath& instancerId = SdfPath());
+        ,
+        const SdfPath& instancerId = SdfPath());
 #endif
 
     //! Destructor.
@@ -119,8 +121,8 @@ private:
     void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
 
     void _UpdateDrawItem(
-        HdSceneDelegate*             sceneDelegate,
-        HdVP2DrawItem*               drawItem,
+        HdSceneDelegate*        sceneDelegate,
+        HdVP2DrawItem*          drawItem,
         HdPointsReprDesc const& desc);
 
     void _UpdatePrimvarSources(

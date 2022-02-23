@@ -46,9 +46,8 @@ namespace {
 //! Required primvars when there is no material binding.
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals, HdTokens->widths };
-    
-VtVec3fArray
-_BuildInterpolatedArray(size_t numVerts, const VtVec3fArray& authoredData)
+
+VtVec3fArray _BuildInterpolatedArray(size_t numVerts, const VtVec3fArray& authoredData)
 {
     VtVec3fArray result(numVerts);
     size_t       size = authoredData.size();
@@ -74,8 +73,7 @@ _BuildInterpolatedArray(size_t numVerts, const VtVec3fArray& authoredData)
     return result;
 }
 
-VtFloatArray
-_BuildInterpolatedArray(size_t numVerts, const VtFloatArray& authoredData)
+VtFloatArray _BuildInterpolatedArray(size_t numVerts, const VtFloatArray& authoredData)
 {
     VtFloatArray result(numVerts);
     size_t       size = authoredData.size();
@@ -104,11 +102,15 @@ _BuildInterpolatedArray(size_t numVerts, const VtFloatArray& authoredData)
 
 //! \brief  Constructor
 HdVP2Points::HdVP2Points(
-    HdVP2RenderDelegate* delegate, SdfPath const& id
+    HdVP2RenderDelegate* delegate,
+    SdfPath const&       id
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-    ) : HdPoints(id)
+    )
+    : HdPoints(id)
 #else
-    , SdfPath const& instancerId) : HdPoints(id, instancerId)
+    ,
+    SdfPath const& instancerId)
+    : HdPoints(id, instancerId)
 #endif
     , MayaUsdRPrim(delegate, id)
 {
@@ -212,8 +214,8 @@ void HdVP2Points::Sync(
     in MayaUsdCommitState and enqueued for Commit on main-thread using CommitTasks
 */
 void HdVP2Points::_UpdateDrawItem(
-    HdSceneDelegate*             sceneDelegate,
-    HdVP2DrawItem*               drawItem,
+    HdSceneDelegate*        sceneDelegate,
+    HdVP2DrawItem*          drawItem,
     HdPointsReprDesc const& desc)
 {
     MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
@@ -617,8 +619,7 @@ void HdVP2Points::_UpdateDrawItem(
 
                 const MColor& color
                     = (_selectionStatus != kUnselected ? drawScene.GetSelectionHighlightColor(
-                           _selectionStatus == kFullyLead ? TfToken()
-                                                          : HdPrimTypeTokens->points)
+                           _selectionStatus == kFullyLead ? TfToken() : HdPrimTypeTokens->points)
                                                        : drawScene.GetWireframeColor());
 
                 if (desc.geomStyle == HdPointsGeomStylePoints) {
@@ -945,8 +946,8 @@ void HdVP2Points::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& rep
     }
 
     const _PointsReprConfig::DescArray& descs = _GetReprDesc(reprToken);
-    const size_t                             numDescs = descs.size();
-    int                                      drawItemIndex = 0;
+    const size_t                        numDescs = descs.size();
+    int                                 drawItemIndex = 0;
 
     for (size_t i = 0; i < numDescs; ++i) {
         const HdPointsReprDesc& desc = descs[i];
@@ -970,10 +971,8 @@ HdDirtyBits HdVP2Points::GetInitialDirtyBitsMask() const
         | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle
         | HdChangeTracker::DirtyRepr | HdChangeTracker::DirtyMaterialId
-        | HdChangeTracker::DirtyTransform
-        | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyWidths
-        | HdChangeTracker::DirtyRenderTag
-        | DirtySelectionHighlight;
+        | HdChangeTracker::DirtyTransform | HdChangeTracker::DirtyVisibility
+        | HdChangeTracker::DirtyWidths | HdChangeTracker::DirtyRenderTag | DirtySelectionHighlight;
 
     return bits;
 }
