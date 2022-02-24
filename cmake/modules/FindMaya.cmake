@@ -19,6 +19,7 @@
 # MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::setUfeIdentifier.
 # MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::updateUfeIdentifier.
 # MAYA_ENABLE_NEW_PRIM_DELETE Enable new delete behaviour for delete command
+# MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS Presence of MFrameContext::getDisplayStyleOfAllViewports.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -406,6 +407,16 @@ set(MAYA_ENABLE_NEW_PRIM_DELETE FALSE CACHE INTERNAL "enableNewPrimDelete")
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20230000)
     set(MAYA_ENABLE_NEW_PRIM_DELETE TRUE CACHE INTERNAL "enableNewPrimDelete")
 endif()
+
+set(MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS FALSE CACHE INTERNAL "DisplayStyleOfAllViewports")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFrameContext.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MFrameContext.h MAYA_HAS_API REGEX "getDisplayStyleOfAllViewports")
+    if(MAYA_HAS_API)
+        set(MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS TRUE CACHE INTERNAL "DisplayStyleOfAllViewports")
+        message(STATUS "Maya has getDisplayStyleOfAllViewports API")
+    endif()
+endif()
+
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE
