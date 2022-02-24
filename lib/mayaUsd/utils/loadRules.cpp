@@ -28,7 +28,7 @@ void duplicateLoadRules(
 
     // Retrieve the effective rule for the source path.
     //
-    // The reason we retrieve the effetive rule is that even
+    // The reason we retrieve the effective rule is that even
     // though we will modify all rules specific to that path,
     // its actual effective rule might be dictated by an ancestor.
     //
@@ -72,7 +72,7 @@ void duplicateLoadRules(
     //
     // Note: the UsdStageLoadRules has a Minimize function that simplifies
     // rules, but we don't want to change rules the user might have set.
-    // The user may expect those rules to exists for some future purpose
+    // The user may expect those rules to exist for some future purpose
     // even though they are not currently used. As a general principle
     // we try to not change user data unless necessary.
     if (desiredRule != loadRules.GetEffectiveRuleForPath(destPath)) {
