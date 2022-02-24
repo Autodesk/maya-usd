@@ -548,9 +548,8 @@ class GroupCmdTestCase(unittest.TestCase):
         sphere3Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere3Path))
 
         # Setup the load rules:
-        #     /Props is unloaded
-        #     /Props/Ball1 is loaded
-        #     /Props/Ball2 has no rule, so is governed by /Props
+        #     /Sphere1 is unloaded
+        #     /Sphere2 is loaded
         loadRules = stage.GetLoadRules()
         loadRules.AddRule('/Sphere1', loadRules.NoneRule)
         loadRules.AddRule('/Sphere2', loadRules.AllRule)

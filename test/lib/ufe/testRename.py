@@ -362,7 +362,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball2SdfRenamedPath))
 
         # Undo both rename commands and re-verify load rules.
-        # Note: each renaming does slect + rename, so we need to undo four times.
+        # Note: each renaming does select + rename, so we need to undo four times.
         cmds.undo()
         cmds.undo()
         cmds.undo()
@@ -377,7 +377,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball2SdfPath))
 
         # Redo both rename commands and re-verify load rules.
-        # Note: each renaming does slect + rename, so we need to redo four times.
+        # Note: each renaming does select + rename, so we need to redo four times.
         cmds.redo()
         cmds.redo()
         cmds.redo()
