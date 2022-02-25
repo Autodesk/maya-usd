@@ -20,6 +20,7 @@
 # MAYA_UPDATE_UFE_IDENTIFIER_SUPPORT Presence of MPxSubSceneOverride::updateUfeIdentifier.
 # MAYA_ENABLE_NEW_PRIM_DELETE Enable new delete behaviour for delete command
 # MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS Presence of MFrameContext::getDisplayStyleOfAllViewports.
+# MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT Presence of maya array iterator difference_type trait
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -417,6 +418,14 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MFrameContext.h")
     endif()
 endif()
 
+set(MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT FALSE CACHE INTERNAL "hasArrayIteratorDifferenceType")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MArrayIteratorTemplate.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MArrayIteratorTemplate.h MAYA_HAS_API REGEX "difference_type")
+    if(MAYA_HAS_API)
+        set(MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT TRUE CACHE INTERNAL "hasArrayIteratorDifferenceType")
+        message(STATUS "Maya array iterator has difference_type trait")
+    endif()
+endif()
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE
