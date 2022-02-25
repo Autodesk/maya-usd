@@ -528,15 +528,24 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
             if (computeCPUNormals) {
                 // note: normals gets dirty when points are marked as dirty,
                 // at change tracker.
-                Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
-                HdBufferSourceSharedPtr     adjacencyComputation
-                    = adjacency->GetSharedAdjacencyBuilderComputation(&_meshSharedData->_topology);
-                adjacencyComputation->Resolve();
+                if (!_meshSharedData->_adjacency) {
+                    _meshSharedData->_adjacency.reset(new Hd_VertexAdjacency());
+
+                    HdBufferSourceSharedPtr     adjacencyComputation
+                        = _meshSharedData->_adjacency->GetSharedAdjacencyBuilderComputation(&_meshSharedData->_topology);
+                    MProfilingScope profilingScope(
+                        HdVP2RenderDelegate::sProfilerCategory,
+                        MProfiler::kColorC_L2,
+                        _rprimId.asChar(),
+                        "HdVP2Mesh::computeAdjacency");
+                        
+                    adjacencyComputation->Resolve();
+                }
 
                 // Only the points referenced by the topology are used to compute
                 // smooth normals.
                 VtValue normals(Hd_SmoothNormals::ComputeSmoothNormals(
-                    adjacency.get(),
+                    _meshSharedData->_adjacency.get(),
                     _points(_meshSharedData->_primvarInfo).size(),
                     _points(_meshSharedData->_primvarInfo).cdata()));
 
@@ -919,7 +928,21 @@ void HdVP2Mesh::Sync(
                 MProfiler::kColorC_L2,
                 _rprimId.asChar(),
                 "HdVP2Mesh::GetMeshTopology");
-            _meshSharedData->_topology = GetMeshTopology(delegate);
+            HdMeshTopology newTopology = GetMeshTopology(delegate);
+            
+            // Test to see if the topology actually changed. If not, we don't have to do anything!
+            // Don't test IsTopologyDirty anywhere below this because it is not accurate. Instead
+            // using the _indexBufferValid flag on render item data.
+            if (!(newTopology == _meshSharedData->_topology)) {
+                _meshSharedData->_topology = newTopology;
+                _meshSharedData->_adjacency.reset();
+                _meshSharedData->_renderingTopology = HdMeshTopology();
+
+                auto setIndexBufferDirty = [](HdVP2DrawItem::RenderItemData& renderItemData) {
+                    renderItemData._indexBufferValid = false;
+                };
+                _ForEachRenderItem(setIndexBufferDirty);
+            }
         }
 
         // subscribe to material updates from the new geom subset materials
@@ -1030,7 +1053,7 @@ void HdVP2Mesh::Sync(
         _UpdatePrimvarSources(delegate, *dirtyBits, _meshSharedData->_allRequiredPrimvars);
     }
 
-    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
+    if (_meshSharedData->_renderingTopology == HdMeshTopology()) {
         MProfilingScope profilingScope(
             HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L2,
@@ -1752,16 +1775,16 @@ void HdVP2Mesh::_UpdateDrawItem(
 #endif
 
     // Prepare index buffer.
-    if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
+    if (requiresIndexUpdate && !renderItemData._indexBufferValid) {
         const HdMeshTopology& topologyToUse = _meshSharedData->_renderingTopology;
 
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            _rprimId.asChar(),
-            "HdVP2Mesh prepare index buffer");
-
         if (desc.geomStyle == HdMeshGeomStyleHull) {
+            MProfilingScope profilingScope(
+                HdVP2RenderDelegate::sProfilerCategory,
+                MProfiler::kColorC_L2,
+                _rprimId.asChar(),
+                "HdVP2Mesh prepare index buffer");
+
             // _trianglesFaceVertexIndices has the full triangulation calculated in
             // _updateRepr. Find the triangles which represent faces in the matching
             // geom subset and add those triangles to the index buffer for renderItem.
@@ -1851,6 +1874,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 : nullptr;
             _FillEdgeIndices(stateToCommit._indexBufferData, topologyToUse);
         }
+        renderItemData._indexBufferValid = true;
     }
 
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
@@ -2473,6 +2497,18 @@ void HdVP2Mesh::_UpdateDrawItem(
 
 void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
 {
+    auto hideDrawItem = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
+        renderItemData._enabled = false;
+        _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+            [&]() { renderItemData._renderItem->enable(false); });
+    };
+
+    _ForEachRenderItemInRepr(reprToken, hideDrawItem);
+}
+
+template <typename Func>
+void HdVP2Mesh::_ForEachRenderItemInRepr(const TfToken& reprToken, Func func)
+{
     HdReprSharedPtr const& curRepr = _GetRepr(reprToken);
     if (!curRepr) {
         return;
@@ -2493,10 +2529,16 @@ void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
             continue;
 
         for (auto& renderItemData : drawItem->GetRenderItems()) {
-            renderItemData._enabled = false;
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [&]() { renderItemData._renderItem->enable(false); });
+            func(renderItemData);
         }
+    }
+}
+
+template <typename Func>
+void HdVP2Mesh::_ForEachRenderItem(Func func)
+{
+    for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
+        _ForEachRenderItemInRepr(pair.first, func);
     }
 }
 
