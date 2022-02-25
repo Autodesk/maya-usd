@@ -2492,7 +2492,6 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
     const std::string&    path,
     const HdMaterialNode& node)
 {
-    fprintf(stderr, "Searching for texture %s in the texture map\n", path.c_str());
     const auto it = _textureMap.find(path);
     if (it != _textureMap.end()) {
         return it->second;
@@ -2514,8 +2513,6 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
         MHWRender::MTexture* texture
             = _LoadTexture(path, hasFallbackColor, fallbackColor, isSRGB, uvScaleOffset);
 
-
-        fprintf(stderr, "Adding texture %s in the texture map\n", path.c_str());
         HdVP2TextureInfo& info = _textureMap[path];
         info._texture.reset(texture);
         info._isColorSpaceSRGB = isSRGB;
