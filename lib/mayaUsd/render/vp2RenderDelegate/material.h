@@ -149,7 +149,7 @@ private:
 
     HdVP2ShaderUniquePtr _surfaceShader;    //!< VP2 surface shader instance
     SdfPath              _surfaceShaderId;  //!< Path of the surface shader
-    HdVP2TextureMap      _textureMap;       //!< Textures used by this material
+    static HdVP2TextureMap      _textureMap;       //!< Textures used by this material
     TfTokenVector        _requiredPrimvars; //!< primvars required by this material
 
     std::unordered_map<std::string, TextureLoadingTask*> _textureLoadingTasks;
