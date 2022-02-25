@@ -531,14 +531,15 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 if (!_meshSharedData->_adjacency) {
                     _meshSharedData->_adjacency.reset(new Hd_VertexAdjacency());
 
-                    HdBufferSourceSharedPtr     adjacencyComputation
-                        = _meshSharedData->_adjacency->GetSharedAdjacencyBuilderComputation(&_meshSharedData->_topology);
+                    HdBufferSourceSharedPtr adjacencyComputation
+                        = _meshSharedData->_adjacency->GetSharedAdjacencyBuilderComputation(
+                            &_meshSharedData->_topology);
                     MProfilingScope profilingScope(
                         HdVP2RenderDelegate::sProfilerCategory,
                         MProfiler::kColorC_L2,
                         _rprimId.asChar(),
                         "HdVP2Mesh::computeAdjacency");
-                        
+
                     adjacencyComputation->Resolve();
                 }
 
@@ -929,7 +930,7 @@ void HdVP2Mesh::Sync(
                 _rprimId.asChar(),
                 "HdVP2Mesh::GetMeshTopology");
             HdMeshTopology newTopology = GetMeshTopology(delegate);
-            
+
             // Test to see if the topology actually changed. If not, we don't have to do anything!
             // Don't test IsTopologyDirty anywhere below this because it is not accurate. Instead
             // using the _indexBufferValid flag on render item data.
@@ -2534,8 +2535,7 @@ void HdVP2Mesh::_ForEachRenderItemInRepr(const TfToken& reprToken, Func func)
     }
 }
 
-template <typename Func>
-void HdVP2Mesh::_ForEachRenderItem(Func func)
+template <typename Func> void HdVP2Mesh::_ForEachRenderItem(Func func)
 {
     for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
         _ForEachRenderItemInRepr(pair.first, func);
