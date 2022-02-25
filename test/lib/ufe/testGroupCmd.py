@@ -374,7 +374,7 @@ class GroupCmdTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
          # create a stage
-        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage()
 
         # create a sphere generator
         sphereGen = SphereGenerator(1, contextOp, proxyShapePathStr)
@@ -410,7 +410,7 @@ class GroupCmdTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
          # create a stage
-        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage()
 
         # create a sphere generator
         sphereGen = SphereGenerator(1, contextOp, proxyShapePathStr)
@@ -445,7 +445,7 @@ class GroupCmdTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
          # create a stage
-        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage()
 
         # create a sphere generator
         sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
@@ -488,7 +488,7 @@ class GroupCmdTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
 
          # create a stage
-        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage();
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage()
 
         # create a sphere generator
         sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
@@ -526,6 +526,60 @@ class GroupCmdTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/group1/Sphere1"), 
             stage.GetPrimAtPath("/group1/Sphere2"),
             stage.GetPrimAtPath("/group1/Sphere3")])
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'testGroupUndoRedo is only available in UFE v3 or greater.')
+    def testGroupPreserveLoadRules(self):
+        '''Verify load rules are preserved when grouping.'''
+        cmds.file(new=True, force=True)
+
+         # create a stage
+        (stage, proxyShapePathStr, proxyShapeItem, contextOp) = createStage()
+
+        # create a sphere generator
+        sphereGen = SphereGenerator(3, contextOp, proxyShapePathStr)
+
+        sphere1Path = sphereGen.createSphere()
+        sphere1Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere1Path))
+
+        sphere2Path = sphereGen.createSphere()
+        sphere2Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere2Path))
+
+        sphere3Path = sphereGen.createSphere()
+        sphere3Prim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(sphere3Path))
+
+        # Setup the load rules:
+        #     /Sphere1 is unloaded
+        #     /Sphere2 is loaded
+        loadRules = stage.GetLoadRules()
+        loadRules.AddRule('/Sphere1', loadRules.NoneRule)
+        loadRules.AddRule('/Sphere2', loadRules.AllRule)
+        stage.SetLoadRules(loadRules)
+
+        self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath('/Sphere1'))
+        self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath('/Sphere2'))
+
+        # group Sphere1, Sphere2, and Sphere3
+        groupName = cmds.group(ufe.PathString.string(sphere1Path),
+                               ufe.PathString.string(sphere2Path),
+                               ufe.PathString.string(sphere3Path))
+
+        # verify that groupItem has 3 children
+        groupItem = ufe.GlobalSelection.get().front()
+        groupHierarchy = ufe.Hierarchy.hierarchy(groupItem)
+        self.assertEqual(len(groupHierarchy.children()), 3)
+
+        self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere1'))
+        self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere2'))
+
+        cmds.undo()
+
+        self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath('/Sphere1'))
+        self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath('/Sphere2'))
+
+        cmds.redo()
+
+        self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere1'))
+        self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere2'))
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testGroupHierarchy(self):

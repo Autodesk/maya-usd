@@ -19,6 +19,7 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/loadRules.h>
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/stringUtils.h>
@@ -108,6 +109,16 @@ bool UsdUndoRenameCommand::renameRedo()
             return false;
         }
 
+        // Make sure the load state of the renamed prim will be preserved.
+        // We copy all rules that applied to it specifically and remove the rules
+        // that applied to it specifically.
+        {
+            auto fromPath = SdfPath(_ufeSrcItem->path().getSegments()[1].string());
+            auto destPath = SdfPath(ufeSiblingPath.getSegments()[1].string());
+            duplicateLoadRules(*_stage, fromPath, destPath);
+            removeRulesForPath(*_stage, fromPath);
+        }
+
         // set the new name
         auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
         status = primSpec->SetName(_newName);
@@ -151,6 +162,16 @@ bool UsdUndoRenameCommand::renameUndo()
             prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
+        }
+
+        // Make sure the load state of the renamed prim will be preserved.
+        // We copy all rules that applied to it specifically and remove the rules
+        // that applied to it specifically.
+        {
+            auto fromPath = SdfPath(_ufeDstItem->path().getSegments()[1].string());
+            auto destPath = SdfPath(ufeSiblingPath.getSegments()[1].string());
+            duplicateLoadRules(*_stage, fromPath, destPath);
+            removeRulesForPath(*_stage, fromPath);
         }
 
         auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);

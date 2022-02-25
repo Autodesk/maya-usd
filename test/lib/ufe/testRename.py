@@ -148,6 +148,9 @@ class RenameTestCase(unittest.TestCase):
         assertStageAndPrimAccess(mayaSegment, ball35PathStr, usdSegment)
 
     def testRename(self):
+        '''
+        Testing renaming a USD node.
+        '''
         # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()
 
@@ -178,7 +181,7 @@ class RenameTestCase(unittest.TestCase):
         assert len(defaultPrim.GetChildren()) == 2
 
         # get prim spec for defaultPrim
-        primspec = stage.GetEditTarget().GetPrimSpecForScenePath(defaultPrim.GetPath());
+        primspec = stage.GetEditTarget().GetPrimSpecForScenePath(defaultPrim.GetPath())
 
         # set primspec name
         primspec.name = "TreeBase_potato"
@@ -187,7 +190,7 @@ class RenameTestCase(unittest.TestCase):
         renamedPrim = stage.GetPrimAtPath('/TreeBase_potato')
 
         # One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
-        stage.SetDefaultPrim(renamedPrim);
+        stage.SetDefaultPrim(renamedPrim)
 
         # get defaultPrim again
         defaultPrim = stage.GetDefaultPrim()
@@ -206,7 +209,9 @@ class RenameTestCase(unittest.TestCase):
         self.assertEqual(leavesPrimSpec.GetName(), 'leaves')
 
     def testRenameUndo(self):
-        '''Rename USD node.'''
+        '''
+        Testing rename USD node undo/redo.
+        '''
 
         # open usdCylinder.ma scene in testSamples
         mayaUtils.openCylinderScene()
@@ -278,6 +283,113 @@ class RenameTestCase(unittest.TestCase):
         self.assertIn(pCylinder1RenName, propsChildrenNames)
         self.assertNotIn('pCylinder1', propsChildrenNames)
         self.assertEqual(len(propsChildren), len(propsChildrenPre))
+
+    def testRenamePreserveLoadRules(self):
+        '''
+        Testing that renaming a USD node preserve load rules targeting it.
+        '''
+
+        # open scene in testSamples. Relevant hierarchy is:
+        #    |transform1
+        #       |proxyShape1
+        #          /Ball_set
+        #             /Props
+        #                /Ball_1
+        #                /Ball_2
+        #                ...
+
+        mayaUtils.openGroupBallsScene()
+
+        # USD paths used in the test.
+        propsSdfPath = '/Ball_set/Props'
+        ball1SdfPath = '/Ball_set/Props/Ball_1'
+        ball2SdfPath = '/Ball_set/Props/Ball_2'
+
+        ball1SdfRenamedPath = '/Ball_set/Props/Round_1'
+        ball2SdfRenamedPath = '/Ball_set/Props/Round_2'
+
+        # Maya UFE segment and USD stage, needed in various places below.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|transform1|proxyShape1')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # Setup the load rules:
+        #     /Props is unloaded
+        #     /Props/Ball1 is loaded
+        #     /Props/Ball2 has no rule, so is governed by /Props
+        loadRules = stage.GetLoadRules()
+        loadRules.AddRule(propsSdfPath, loadRules.NoneRule)
+        loadRules.AddRule(ball1SdfPath, loadRules.AllRule)
+        stage.SetLoadRules(loadRules)
+
+        self.assertEqual(loadRules.OnlyRule, stage.GetLoadRules().GetEffectiveRuleForPath(propsSdfPath))
+        self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball1SdfPath))
+        self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball2SdfPath))
+
+        def childrenNames(children):
+           return [str(child.path().back()) for child in children]
+
+        # Verify we can find the expected prims.
+        def verifyNames(expectedNames):
+            propsPathSegment = usdUtils.createUfePathSegment(propsSdfPath)
+            propsUfePath = ufe.Path([mayaPathSegment, propsPathSegment])
+            propsUfeItem = ufe.Hierarchy.createItem(propsUfePath)
+            propsHierarchy = ufe.Hierarchy.hierarchy(propsUfeItem)
+            propsChildren = propsHierarchy.children()
+            propsChildrenNames = childrenNames(propsChildren)
+            for name in expectedNames:
+                self.assertIn(name, propsChildrenNames)
+
+        verifyNames(['Ball_1', 'Ball_2'])
+
+        # Rename the balls.
+        def rename(sdfPath, newName):
+            ufePathSegment = usdUtils.createUfePathSegment(sdfPath)
+            ufePath = ufe.Path([mayaPathSegment, ufePathSegment])
+            ufeItem = ufe.Hierarchy.createItem(ufePath)
+            cmds.select(clear=True)
+            ufe.GlobalSelection.get().append(ufeItem)
+            cmds.rename(newName)
+
+        rename(ball1SdfPath, "Round_1")
+        rename(ball2SdfPath, "Round_2")
+
+        # Verify we can find the expected renamed prims.
+        verifyNames(['Round_1', 'Round_2'])
+
+        # Verify the load rules for each item has not changed.
+        self.assertEqual(loadRules.OnlyRule, stage.GetLoadRules().GetEffectiveRuleForPath(propsSdfPath))
+        self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball1SdfRenamedPath))
+        self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball2SdfRenamedPath))
+
+        # Undo both rename commands and re-verify load rules.
+        # Note: each renaming does select + rename, so we need to undo four times.
+        cmds.undo()
+        cmds.undo()
+        cmds.undo()
+        cmds.undo()
+
+        # Verify we can find the expected renamed prims.
+        verifyNames(['Ball_1', 'Ball_2'])
+
+        # Verify the load rules for each item has not changed.
+        self.assertEqual(loadRules.OnlyRule, stage.GetLoadRules().GetEffectiveRuleForPath(propsSdfPath))
+        self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball1SdfPath))
+        self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball2SdfPath))
+
+        # Redo both rename commands and re-verify load rules.
+        # Note: each renaming does select + rename, so we need to redo four times.
+        cmds.redo()
+        cmds.redo()
+        cmds.redo()
+        cmds.redo()
+        
+        # Verify we can find the expected renamed prims.
+        verifyNames(['Round_1', 'Round_2'])
+
+        # Verify the load rules for each item has not changed.
+        self.assertEqual(loadRules.OnlyRule, stage.GetLoadRules().GetEffectiveRuleForPath(propsSdfPath))
+        self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball1SdfRenamedPath))
+        self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath(ball2SdfRenamedPath))
 
     def testRenameRestrictionSameLayerDef(self):
         '''Restrict renaming USD node. Cannot rename a prim defined on another layer.'''
