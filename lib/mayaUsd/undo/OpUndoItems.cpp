@@ -444,18 +444,8 @@ void UfeSelectionUndoItem::invert()
 namespace {
 
 //! Lock or unlock hierarchy starting at given root.
-MStatus lockNodes(const MString& rootName, bool state)
+void lockNodes(const MDagPath& root, bool state)
 {
-    MObject obj;
-    MStatus status = PXR_NS::UsdMayaUtil::GetMObjectByName(rootName, obj);
-    if (status != MStatus::kSuccess)
-        return status;
-
-    MDagPath root;
-    status = MDagPath::getAPathTo(obj, root);
-    if (status != MStatus::kSuccess)
-        return status;
-
     MItDag dagIt;
     dagIt.reset(root);
     for (; !dagIt.isDone(); dagIt.next()) {
@@ -466,15 +456,13 @@ MStatus lockNodes(const MString& rootName, bool state)
         }
         node.setLocked(state);
     }
-
-    return MS::kSuccess;
 }
 
 } // namespace
 
 LockNodesUndoItem::LockNodesUndoItem(const std::string name, const MDagPath& root, bool lock)
     : OpUndoItem(std::move(name))
-    , _rootName(root.fullPathName())
+    , _root(root)
     , _lock(lock)
 {
 }
@@ -499,13 +487,13 @@ void LockNodesUndoItem::lock(const std::string name, const MDagPath& root, bool 
 
 bool LockNodesUndoItem::undo()
 {
-    lockNodes(_rootName, !_lock);
+    lockNodes(_root, !_lock);
     return true;
 }
 
 bool LockNodesUndoItem::redo()
 {
-    lockNodes(_rootName, _lock);
+    lockNodes(_root, _lock);
     return true;
 }
 
