@@ -2499,9 +2499,11 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
         if (cacheEntry) {
             _localTextureMap[path] = cacheEntry;
             return *cacheEntry;
+        } else {
+            // if cacheEntry is nullptr then there is a stale entry in the _globalTextureMap. Erase
+            // it now to simplify adding the new texture to the global cache later.
+            _globalTextureMap.erase(it);
         }
-        // if cacheEntry is nullptr then there is a stale entry in the _globalTextureMap. No need
-        // to erase it because we're going to re-fill that entry right now.
     }
 
     // Get fallback color if defined
@@ -2521,10 +2523,12 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
             = _LoadTexture(path, hasFallbackColor, fallbackColor, isSRGB, uvScaleOffset);
 
         HdVP2TextureInfoSharedPtr info = std::make_shared<HdVP2TextureInfo>();
-        _localTextureMap.insert_or_assign(
-            path, info); // should never have already been in _localTextureMap, because if it was
-                         // we'd have found it in _globalTextureMap
-        _globalTextureMap.insert_or_assign(path, info);
+        // path should never already be in _localTextureMap because if it was
+        // we'd have found it in _globalTextureMap
+        _localTextureMap.emplace(path, info);
+        // path should never already be in _globalTextureMap because if it was present
+        // and nullptr then we erased it.
+        _globalTextureMap.emplace(path, info);
         info->_texture.reset(texture);
         info->_isColorSpaceSRGB = isSRGB;
         if (uvScaleOffset.length() > 0) {
@@ -2596,10 +2600,12 @@ void HdVP2Material::_UpdateLoadedTexture(
     // the add it.
     if (_globalTextureMap.find(path) == _globalTextureMap.end()) {
         HdVP2TextureInfoSharedPtr info = std::make_shared<HdVP2TextureInfo>();
-        _localTextureMap.insert_or_assign(
-            path, info); // should never have already been in _localTextureMap, because if it was
-                         // we'd have found it in _globalTextureMap
-        _globalTextureMap.insert_or_assign(path, info);
+        // path should never already be in _localTextureMap because if it was
+        // we'd have found it in _globalTextureMap
+        _localTextureMap.emplace(path, info);
+        // path should never already be in _globalTextureMap because if it was present
+        // and nullptr then we erased it.
+        _globalTextureMap.emplace(path, info);
         info->_texture.reset(texture);
         info->_isColorSpaceSRGB = isColorSpaceSRGB;
         if (uvScaleOffset.length() > 0) {
