@@ -42,7 +42,7 @@ def mayaUsdLibRegisterStrings():
     register('kButtonNewChildPrim', 'New Child Prim')
     register('kCacheFileWillAppear', 'Cache file will appear\non parent prim:')
     register('kCacheMayaRefCache', 'Cache');
-    register('kCacheMayaRefOptions', 'Cache Options');
+    register('kCacheMayaRefOptions', 'Cache File Options');
     register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD Hierarchy');
     register('kCaptionCacheToUsd', 'Cache to USD')
     register('kErrorCacheToUsdFailed', 'Cache to USD failed for "^1s".')
@@ -50,7 +50,7 @@ def mayaUsdLibRegisterStrings():
     register('kMenuPayload', 'Payload')
     register('kMenuPrepend', 'Prepend')
     register('kMenuReference', 'Reference')
-    register('kOptionAsCompositionArc', 'As Composition Arc:')
+    register('kOptionAsUSDReference', 'As USD Reference:')
     register('kOptionListEditedAs', 'List Edited As')
     register('kTextDefineIn', 'Define in:')
     register('kTextVariant', 'Variant')
