@@ -62,9 +62,21 @@ struct HdVP2TextureInfo
     bool                  _isColorSpaceSRGB { false }; //!< Whether sRGB linearization is needed
 };
 
+using HdVP2TextureInfoSharedPtr = std::shared_ptr<HdVP2TextureInfo>;
+using HdVP2TextureInfoWeakPtr = std::weak_ptr<HdVP2TextureInfo>;
+
 /*! \brief  An unordered string-indexed map to cache texture information.
+
+    Maya has a global internal texture map but we can't rely on it here, because we miss out
+    on the extra information we store, such as _isColorSpaceSRGB. In HdVP2GlobalTextureMap we
+    have that additional information.
+
+    In order to correctly delete textures when they are no longer in use the global texture map
+    holds only a weak_ptr to the HdVP2TextureInfo. The individual materials hold shared_ptrs to
+    the textures they are using, so that when no materials are using a texture it'll be deleted.
  */
-using HdVP2TextureMap = std::unordered_map<std::string, HdVP2TextureInfo>;
+using HdVP2LocalTextureMap = std::unordered_map<std::string, HdVP2TextureInfoSharedPtr>;
+using HdVP2GlobalTextureMap = std::unordered_map<std::string, HdVP2TextureInfoWeakPtr>;
 
 /*! \brief  A VP2-specific implementation for a Hydra material prim.
     \class  HdVP2Material
@@ -147,10 +159,11 @@ private:
 
     TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
 
-    HdVP2ShaderUniquePtr   _surfaceShader;    //!< VP2 surface shader instance
-    SdfPath                _surfaceShaderId;  //!< Path of the surface shader
-    static HdVP2TextureMap _textureMap;       //!< Textures used by this material
-    TfTokenVector          _requiredPrimvars; //!< primvars required by this material
+    HdVP2ShaderUniquePtr         _surfaceShader;    //!< VP2 surface shader instance
+    SdfPath                      _surfaceShaderId;  //!< Path of the surface shader
+    static HdVP2GlobalTextureMap _globalTextureMap; //!< Texture in use by all materials in MayaUSD
+    HdVP2LocalTextureMap         _localTextureMap;  //!< Textures used by this material
+    TfTokenVector                _requiredPrimvars; //!< primvars required by this material
 
     std::unordered_map<std::string, TextureLoadingTask*> _textureLoadingTasks;
 
