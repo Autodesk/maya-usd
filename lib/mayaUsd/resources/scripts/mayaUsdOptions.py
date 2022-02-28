@@ -16,6 +16,21 @@
 
 import maya.cmds as cmds
 
+import mayaUsd
+
+import re
+
+def setAnimateOption(nodeName, textOptions):
+    """
+    Adjusts the export options to fill the animate value based on the node or subnode being animated.
+    """
+    animated = int(mayaUsd.lib.PrimUpdaterManager.isAnimated(nodeName))
+    animateOption = 'animation={animated}'.format(animated=animated)
+    if 'animation=' in textOptions:
+        return re.sub(r'animation=[^;]+', animateOption, textOptions)
+    else:
+        return textOptions + ';' + animateOption
+
 
 def getOptionsText(varName, defaultOptions):
     """
@@ -57,6 +72,8 @@ def _convertValueToText(value):
         else:
             sep = ' '
         return sep.join([_convertValueToText(v) for v in value])
+    elif isinstance(value,bool):
+        return str(int(value))
     else:
         return str(value)
 

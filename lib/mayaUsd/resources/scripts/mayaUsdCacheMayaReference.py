@@ -245,6 +245,7 @@ def fileOptionsTabPage(tabLayout):
     # resultCallback not called on "post", is therefore an empty string.
     fileOptionsScroll = cmds.columnLayout('fileOptionsScroll')
     optionsText = mayaUsdOptions.convertOptionsDictToText(cacheToUsd.loadCacheCreationOptions())
+    optionsText = mayaUsdOptions.setAnimateOption(_mayaRefDagPath, optionsText)
     mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post={exportOpts}", "{cacheOpts}", "")'.format(exportOpts=kTranslatorExportOptions, cacheOpts=optionsText))
 
     cacheFileUsdHierarchyOptions(topForm)

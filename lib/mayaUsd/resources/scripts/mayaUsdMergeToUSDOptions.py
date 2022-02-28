@@ -74,11 +74,11 @@ def _createMergeToUSDOptionsDialog(window, target):
     subLayout = cmds.columnLayout("MergeToUSDOptionsDialogSubLayout", adjustableColumn=True, parent=windowLayout)
 
     optionsText = getMergeToUSDOptionsText()
-    _fillMergeToUSDOptionsDialog(subLayout, optionsText, "post")
+    _fillMergeToUSDOptionsDialog(target, subLayout, optionsText, "post")
 
     menu = cmds.menu(label=getMayaUsdLibString("kEditMenu"), parent=menuBarLayout)
     cmds.menuItem(label=getMayaUsdLibString("kSaveSettingsMenuItem"), command=_saveMergeToUSDOptions)
-    cmds.menuItem(label=getMayaUsdLibString("kResetSettingsMenuItem"), command=partial(_resetMergeToUSDOptions, subLayout))
+    cmds.menuItem(label=getMayaUsdLibString("kResetSettingsMenuItem"), command=partial(_resetMergeToUSDOptions, target, subLayout))
 
     cmds.setParent(menuBarLayout)
     menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
@@ -177,19 +177,20 @@ def _saveMergeToUSDOptions(data=None):
     mel.eval('''mayaUsdTranslatorExport("", "query=all;!output", "", "receiveMergeToUSDOptionsTextFromDialog");''')
 
 
-def _resetMergeToUSDOptions(subLayout, data=None):
+def _resetMergeToUSDOptions(target, subLayout, data=None):
     """
     Resets the merge-to-USD options in the dialog.
     """
     optionsText = mayaUsdOptions.convertOptionsDictToText(_getDefaultMergeToUSDOptionsDict())
-    _fillMergeToUSDOptionsDialog(subLayout, optionsText, "fill")
+    _fillMergeToUSDOptionsDialog(target, subLayout, optionsText, "fill")
 
 
-def _fillMergeToUSDOptionsDialog(subLayout, optionsText, action):
+def _fillMergeToUSDOptionsDialog(target, subLayout, optionsText, action):
     """
     Fills the merge-to-USD options dialog UI elements with the given options.
     """
     cmds.setParent(subLayout)
+    optionsText = mayaUsdOptions.setAnimateOption(target, optionsText)
     mel.eval(
         '''
         mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output", "{optionsText}", "")
