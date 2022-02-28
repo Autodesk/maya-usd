@@ -150,12 +150,19 @@ def primNameTextChanged(primName):
         if validatedName != primName:
             cmds.textFieldGrp('primNameText', edit=True, text=validatedName)
 
+def variantOrNewPrim(buttonChecked):
+    # The variant and new child prim radio buttons are part of a collection.
+    # So only one can be checked.
+    variantSelected = cmds.radioButtonGrp('variantRadioBtn', query=True, select=1)
+    cmds.rowLayout('usdCacheVariantSetRow', edit=True, enable=variantSelected)
+    cmds.rowLayout('usdCacheVariantNameRow', edit=True, enable=variantSelected)
+    cmds.textFieldGrp('primNameText', edit=True, enable=not variantSelected)
 
 def cacheFileUsdHierarchyOptions(topForm):
     '''Create controls to insert Maya reference USD cache into USD hierarchy.'''
 
     cmds.setParent(topForm)
-    cmds.frameLayout(label=getMayaUsdLibString("kCacheMayaRefUsdHierarchy"))
+    cmds.frameLayout('authorFrameLayout', label=getMayaUsdLibString("kCacheMayaRefUsdHierarchy"))
     widgetColumn = cmds.columnLayout()
 
     rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "cacheFilePreviewRow", 2)')
@@ -166,7 +173,7 @@ def cacheFileUsdHierarchyOptions(topForm):
 
     with mayaRefUtils.SetParentContext(cmds.rowLayout(numberOfColumns=2)):
         cmds.optionMenuGrp('compositionArcTypeMenu',
-                           label=getMayaUsdLibString('kOptionAsCompositionArc'),
+                           label=getMayaUsdLibString('kOptionAsUSDReference'),
                            cc=compositionArcChanged)
         for label in _compositionArcLabels:
             cmds.menuItem(label=label)
@@ -178,6 +185,7 @@ def cacheFileUsdHierarchyOptions(topForm):
 
     variantRb = cmds.radioButtonGrp('variantRadioBtn',
                                     nrb=1,
+                                    changeCommand1=variantOrNewPrim,
                                     label=getMayaUsdLibString('kTextDefineIn'),
                                     l1=getMayaUsdLibString('kTextVariant'))
 
@@ -196,6 +204,8 @@ def cacheFileUsdHierarchyOptions(topForm):
         cmds.textField('variantNameText',
                        cc=variantNameTextChanged)
 
+    # Note: this radio button doesn't need the change command since its part of
+    #       the same collection as the variantRb (which has the changeCommand).
     newChildRb = cmds.radioButtonGrp('newChildPrimRadioBtn',
                                      nrb=1,
                                      label='',
@@ -207,6 +217,7 @@ def cacheFileUsdHierarchyOptions(topForm):
                       cc=primNameTextChanged)
 
     cmds.radioButtonGrp(variantRb, edit=True, select=1)
+    variantOrNewPrim(True)
 
 
 # Adapted from fileOptions.mel:fileOptionsTabPage().
@@ -332,6 +343,13 @@ def cacheInitUi(parent, filterType):
         primName = mayaUsd.ufe.uniqueChildName(mayaRefPrimParent, kDefaultCachePrimName)
     cmds.textFieldGrp('primNameText', edit=True, text=primName)
 
+    # By default we want to collapse certain sections.
+    cmds.frameLayout('outputFrameLayout', edit=True, collapse=False)
+    cmds.frameLayout('geometryFrameLayout', edit=True, collapse=True)
+    cmds.frameLayout('materialsFrameLayout', edit=True, collapse=True)
+    cmds.frameLayout('animationFrameLayout', edit=True, collapse=True)
+    cmds.frameLayout('advancedFrameLayout', edit=True, collapse=True)
+    cmds.frameLayout('authorFrameLayout', edit=True, collapse=False)
 
 def cacheCommitUi(parent, selectedFile):
     """

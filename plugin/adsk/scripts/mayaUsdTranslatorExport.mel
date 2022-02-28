@@ -530,7 +530,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("output", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameOutputLbl")` -collapsable true -collapse false;
+            frameLayout -label `getMayaUsdString("kExportFrameOutputLbl")` -collapsable true -collapse false outputFrameLayout;
                 separator -style "none";
 
                 optionMenuGrp -l `getMayaUsdString("kExportDefaultFormatLbl")` -annotation `getMayaUsdString("kExportDefaultFormatAnn")` -statusBarMessage `getMayaUsdString("kExportDefaultFormatStatus")` defaultUSDFormatPopup;
@@ -549,7 +549,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("geometry", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameGeometryLbl")` -collapsable true -collapse false;
+            frameLayout -label `getMayaUsdString("kExportFrameGeometryLbl")` -collapsable true -collapse false geometryFrameLayout;
                 separator -style "none";
                 optionMenuGrp -l `getMayaUsdString("kExportSubdMethodLbl")` -annotation `getMayaUsdString("kExportSubdMethodAnn")` defaultMeshSchemePopup;
                     menuItem -l `getMayaUsdString("kExportSubdMethodCCLbl")` -ann "catmullClark";
@@ -580,7 +580,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("materials", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameMaterialsLbl")` -collapsable true -collapse false -ann `getMayaUsdString("kExportMaterialsAnn")`;
+            frameLayout -label `getMayaUsdString("kExportFrameMaterialsLbl")` -collapsable true -collapse false -ann `getMayaUsdString("kExportMaterialsAnn")` materialsFrameLayout;
                 separator -style "none";
 
                 string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
@@ -600,7 +600,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         if (stringArrayContains("animation", $sectionNames)) {
             frameLayout -label `getMayaUsdString("kExportFrameAnimationLbl")` -collapsable true -collapse false 
-                        -expandCommand("mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB");
+                        -expandCommand("mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB") animationFrameLayout;
                 separator -style "none";
 
                 if (stringArrayContains("animation-data", $sectionNames)) {
@@ -630,7 +630,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("advanced", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameAdvancedLbl")` -collapsable true -collapse true;
+            frameLayout -label `getMayaUsdString("kExportFrameAdvancedLbl")` -collapsable true -collapse true advancedFrameLayout;
                 separator -style "none";
 
                 checkBoxGrp -l `getMayaUsdString("kExportVisibilityLbl")` -annotation `getMayaUsdString("kExportVisibilityAnn")` exportVisibilityCheckBox;
