@@ -481,14 +481,8 @@ PushCustomizeSrc pushExport(
     UsdMayaUtil::MDagPathSet dagPaths;
     dagPaths.insert(dagPath);
 
-    GfInterval timeInterval = PXR_NS::UsdMayaPrimUpdater::isAnimated(dagPath)
-        ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
-        : GfInterval();
-    double           frameStride = 1.0;
-    std::set<double> frameSamples;
-
-    const std::vector<double> timeSamples
-        = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
+    std::vector<double> timeSamples;
+    UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
 
     // The pushed Dag node is the root of the export job.
     std::vector<VtValue> rootPathString(

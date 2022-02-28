@@ -174,7 +174,7 @@ def _saveMergeToUSDOptions(data=None):
     Saves the merge-to-USD options as currently set in the dialog.
     The MEL receiveMergeToUSDOptionsTextFromDialog will call setMergeToUSDOptionsText.
     """
-    mel.eval('''mayaUsdTranslatorExport("", "query=all;!output;!animation-data", "", "receiveMergeToUSDOptionsTextFromDialog");''')
+    mel.eval('''mayaUsdTranslatorExport("", "query=all;!output", "", "receiveMergeToUSDOptionsTextFromDialog");''')
 
 
 def _resetMergeToUSDOptions(subLayout, data=None):
@@ -192,7 +192,7 @@ def _fillMergeToUSDOptionsDialog(subLayout, optionsText, action):
     cmds.setParent(subLayout)
     mel.eval(
         '''
-        mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output;!animation-data", "{optionsText}", "")
+        mayaUsdTranslatorExport("{subLayout}", "{action}=all;!output", "{optionsText}", "")
         '''.format(optionsText=optionsText, subLayout=subLayout, action=action))
 
 

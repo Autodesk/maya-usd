@@ -36,7 +36,7 @@ kDefaultCachePrimName = 'Cache1'
 _cacheExportOptions = None
 
 # The options string that we pass to mayaUsdTranslatorExport.
-kTranslatorExportOptions = 'all;!output-parentscope;!animation-data'
+kTranslatorExportOptions = 'all;!output-parentscope'
 
 # Dag path corresponding to pulled prim.  This is a Maya transform node that is
 # not in the Maya reference itself, but is its parent.
