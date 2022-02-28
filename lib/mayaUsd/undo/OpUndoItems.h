@@ -502,8 +502,8 @@ public:
     bool redo() override;
 
 private:
-    MString _rootName;
-    bool    _lock;
+    const MDagPath _root;
+    const bool     _lock;
 };
 
 //------------------------------------------------------------------------------
