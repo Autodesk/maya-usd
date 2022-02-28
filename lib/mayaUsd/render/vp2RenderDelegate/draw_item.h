@@ -54,6 +54,7 @@ public:
 
         //! Render item index buffer - use when updating data
         std::unique_ptr<MHWRender::MIndexBuffer> _indexBuffer;
+        bool                                     _indexBufferValid { false };
         //! Bounding box of the render item.
         MBoundingBox _boundingBox;
         //! World matrix of the render item.
