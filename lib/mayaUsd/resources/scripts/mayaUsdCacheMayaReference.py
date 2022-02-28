@@ -269,7 +269,7 @@ def setCacheOptions(newCacheOptions):
     Called from mayaUsdTranslatorExport via mayaUsdCacheMayaReference_setCacheOptions in MEL.
     """
     global _cacheExportOptions
-    _cacheExportOptions = cacheToUsd.forceCacheOptions(newCacheOptions)
+    _cacheExportOptions = newCacheOptions
 
 
 def cacheCreateUi(parent):

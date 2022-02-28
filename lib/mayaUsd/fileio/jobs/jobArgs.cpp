@@ -91,14 +91,20 @@ bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
 /// Extracts a double at \p key from \p userArgs, or defaultValue if it can't extract.
 double _Double(const VtDictionary& userArgs, const TfToken& key, double defaultValue)
 {
-    if (!VtDictionaryIsHolding<double>(userArgs, key)) {
-        TF_CODING_ERROR(
-            "Dictionary is missing required key '%s' or key is "
-            "not double type",
-            key.GetText());
-        return defaultValue;
-    }
-    return VtDictionaryGet<double>(userArgs, key);
+    if (VtDictionaryIsHolding<double>(userArgs, key))
+        return VtDictionaryGet<double>(userArgs, key);
+
+    // Since user dictionary can be provided from Python and in Python it is easy to
+    // mix int and double, especially since value literal will take the simplest value
+    // they can, for example 0 will be an int, support receiving the value as an integer.
+    if (VtDictionaryIsHolding<int>(userArgs, key))
+        return VtDictionaryGet<int>(userArgs, key);
+
+    TF_CODING_ERROR(
+        "Dictionary is missing required key '%s' or key is "
+        "not double type",
+        key.GetText());
+    return defaultValue;
 }
 
 /// Extracts a string at \p key from \p userArgs, or "" if it can't extract.
@@ -167,6 +173,11 @@ SdfPath _AbsolutePath(const VtDictionary& userArgs, const TfToken& key)
 template <typename T> std::vector<T> _Vector(const VtDictionary& userArgs, const TfToken& key)
 {
     // Check that vector exists.
+    if (VtDictionaryIsHolding<std::vector<T>>(userArgs, key)) {
+        std::vector<T> vals = VtDictionaryGet<std::vector<T>>(userArgs, key);
+        return vals;
+    }
+
     if (!VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, key)) {
         TF_CODING_ERROR(
             "Dictionary is missing required key '%s' or key is "

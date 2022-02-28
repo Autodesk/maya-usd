@@ -766,6 +766,20 @@ bool PrimUpdaterManager::mergeToUsd(
         LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false);
     }
 
+    // If the user-provided argument does *not* contain an animation key, then
+    // automatically infer if we should merge animations.
+    if (!VtDictionaryIsHolding<bool>(userArgs, UsdMayaJobExportArgsTokens->animation)) {
+        const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
+        GfInterval timeInterval = isAnimated
+            ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
+            : GfInterval();
+
+        ctxArgs[UsdMayaJobExportArgsTokens->animation] = isAnimated;
+        ctxArgs[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
+        ctxArgs[UsdMayaJobExportArgsTokens->startTime] = timeInterval.GetMin();
+        ctxArgs[UsdMayaJobExportArgsTokens->endTime] = timeInterval.GetMax();
+    }
+
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
     UfeSelectionUndoItem::clear("Merge to USD selection reset");
