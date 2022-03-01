@@ -65,7 +65,7 @@ def _convertValueToText(value):
     # comma-separated values, while floating-point used space-separated values.
     if isinstance(value,list):
         # Note: empty list must create empty text.
-        if not len(value):
+        if not value:
             return ''
         if isinstance(value[0], str):
             sep = ','
