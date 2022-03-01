@@ -61,23 +61,22 @@ class testMayaUsdOptions(unittest.TestCase):
         compositeText = mayaUsdOptions.convertOptionsDictToText(compositeDict)
         self.assertTextContains(compositeText, ['floats=1.0 2.0', 'texts=hello,goodbye', 'empty='])
 
-    def convertOptionsTextToDict(self):
+    def testConvertOptionsTextToDict(self):
         '''
         Test Conversion of options text to dictionary.
         '''
 
         defaultDict = {
-            'integer': 1,
-            'float': 1.,
+            'integer': 22,
+            'float': 33.,
             'text': '',
-            'truth': bool,
-            'lies': bool,
-            'floats': [],
-            'texts': [],
-            'empty': [],
+            'truth': True,
+            'lies': True,
+            'truth2': True,
+            'lies2': True,
         }
 
-        simpleText = ';'.join(['integer=1', 'float=0.1', 'text=hello', 'truth=1', 'lies=0'])
+        simpleText = ';'.join(['integer=1', 'float=0.1', 'text=hello', 'truth=1', 'lies=0', 'truth2=True', 'lies2=False'])
         simpleDict = mayaUsdOptions.convertOptionsTextToDict(simpleText, defaultDict)
         self.assertEqual(simpleDict, {
             'integer': 1,
@@ -85,16 +84,24 @@ class testMayaUsdOptions(unittest.TestCase):
             'text': 'hello',
             'truth': True,
             'lies': False,
+            'truth2': True,
+            'lies2': False,
         })
 
+        defaultDict = {
+            'floats': [1.],
+            'texts': [],
+            'empty': [],
+            'use_default': 'default',
+        }
+
         compositeText = ';'.join(['floats=1.0 2.0   0.0', 'texts=hello, goodbye', 'empty='])
-
-
         compositeDict = mayaUsdOptions.convertOptionsTextToDict(compositeText, defaultDict)
         self.assertEqual(compositeDict, {
-            'floats': [1.0, 2.0],
+            'floats': [1.0, 2.0, 0.0],
             'texts': ['hello', 'goodbye'],
             'empty': [],
+            'use_default': 'default',
         })
 
 

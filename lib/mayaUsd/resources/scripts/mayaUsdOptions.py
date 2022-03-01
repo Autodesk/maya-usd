@@ -116,18 +116,20 @@ def _convertTextToType(valueToConvert, defaultValue, desiredType=None):
         desiredType = type(defaultValue)
     if isinstance(valueToConvert, desiredType):
         return valueToConvert
-    # Try to convert the value to the desired value.
+    # Try to convert the value to the desired type.
     # We only support a subset of types to avoid problems,
     # for example trying to convert text to a list would
     # create a list of single letters.
-    #
-    # Use the default value if the data is somehow corrupted,
-    # for example from corrupted user prefs.
     try:
-        types = [str, int, float, bool]
-        for t in types:
-            if isinstance(defaultValue, t):
-                return t(valueToConvert)
+        textConvertibleTypes = [str, int, float]
+        if desiredType in textConvertibleTypes:
+            return desiredType(valueToConvert)
+        elif desiredType == bool:
+            if valueToConvert.lower() == 'true':
+                return True
+            if valueToConvert.lower() == 'false':
+                return False
+            return bool(int(valueToConvert))
     except:
         pass
 
@@ -154,4 +156,7 @@ def _convertTextToType(valueToConvert, defaultValue, desiredType=None):
             return convertedValues
     except:
         pass
+
+    # Use the default value if the data is somehow corrupted,
+    # for example from corrupted user prefs.
     return defaultValue
