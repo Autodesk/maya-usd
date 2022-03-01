@@ -1577,6 +1577,7 @@ private:
 std::mutex                            HdVP2Material::_refreshMutex;
 std::chrono::steady_clock::time_point HdVP2Material::_startTime;
 std::atomic_size_t                    HdVP2Material::_runningTasksCounter;
+HdVP2GlobalTextureMap                 HdVP2Material::_globalTextureMap;
 
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
  */
@@ -2765,9 +2766,18 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
     const std::string&    path,
     const HdMaterialNode& node)
 {
-    const auto it = _textureMap.find(path);
-    if (it != _textureMap.end()) {
-        return it->second;
+    // see if we already have the texture loaded.
+    const auto it = _globalTextureMap.find(path);
+    if (it != _globalTextureMap.end()) {
+        HdVP2TextureInfoSharedPtr cacheEntry = it->second.lock();
+        if (cacheEntry) {
+            _localTextureMap[path] = cacheEntry;
+            return *cacheEntry;
+        } else {
+            // if cacheEntry is nullptr then there is a stale entry in the _globalTextureMap. Erase
+            // it now to simplify adding the new texture to the global cache later.
+            _globalTextureMap.erase(it);
+        }
     }
 
     // Get fallback color if defined
@@ -2786,18 +2796,24 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
         MHWRender::MTexture* texture
             = _LoadTexture(path, hasFallbackColor, fallbackColor, isSRGB, uvScaleOffset);
 
-        HdVP2TextureInfo& info = _textureMap[path];
-        info._texture.reset(texture);
-        info._isColorSpaceSRGB = isSRGB;
+        HdVP2TextureInfoSharedPtr info = std::make_shared<HdVP2TextureInfo>();
+        // path should never already be in _localTextureMap because if it was
+        // we'd have found it in _globalTextureMap
+        _localTextureMap.emplace(path, info);
+        // path should never already be in _globalTextureMap because if it was present
+        // and nullptr then we erased it.
+        _globalTextureMap.emplace(path, info);
+        info->_texture.reset(texture);
+        info->_isColorSpaceSRGB = isSRGB;
         if (uvScaleOffset.length() > 0) {
             TF_VERIFY(uvScaleOffset.length() == 4);
-            info._stScale.Set(
+            info->_stScale.Set(
                 uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
-            info._stOffset.Set(
+            info->_stOffset.Set(
                 uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
         }
 
-        return info;
+        return *info;
     }
 
     auto* task = new TextureLoadingTask(this, sceneDelegate, path, hasFallbackColor, fallbackColor);
@@ -2854,20 +2870,25 @@ void HdVP2Material::_UpdateLoadedTexture(
     // function on idle to delete the task object.
     _textureLoadingTasks.erase(path);
 
-    // Check the local cache again, do not overwrite if same texture has
-    // been loaded asynchronously
-    if (_textureMap.find(path) != _textureMap.end()) {
-        return;
-    }
-
-    HdVP2TextureInfo& info = _textureMap[path];
-    info._texture.reset(texture);
-    info._isColorSpaceSRGB = isColorSpaceSRGB;
-    if (uvScaleOffset.length() > 0) {
-        TF_VERIFY(uvScaleOffset.length() == 4);
-        info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
-        info._stOffset.Set(
-            uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
+    // Check the cache again. If the texture is not in the cache
+    // the add it.
+    if (_globalTextureMap.find(path) == _globalTextureMap.end()) {
+        HdVP2TextureInfoSharedPtr info = std::make_shared<HdVP2TextureInfo>();
+        // path should never already be in _localTextureMap because if it was
+        // we'd have found it in _globalTextureMap
+        _localTextureMap.emplace(path, info);
+        // path should never already be in _globalTextureMap because if it was present
+        // and nullptr then we erased it.
+        _globalTextureMap.emplace(path, info);
+        info->_texture.reset(texture);
+        info->_isColorSpaceSRGB = isColorSpaceSRGB;
+        if (uvScaleOffset.length() > 0) {
+            TF_VERIFY(uvScaleOffset.length() == 4);
+            info->_stScale.Set(
+                uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
+            info->_stOffset.Set(
+                uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
+        }
     }
 
     // Mark sprim dirty
