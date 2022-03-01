@@ -522,6 +522,23 @@ class RenameTestCase(unittest.TestCase):
         newValidName = Tf.MakeValidIdentifier(newNameStartingWithDigit)
         self.assertEqual(usdPrim.GetName(), newValidName)
 
+        # [GitHub #2150] renaming 2 usd items with illegal characters will cause Maya to crash
+        cmds.file(new=True, force=True)
+        import mayaUsd_createStageWithNewLayer
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        x1 = stage.DefinePrim('/Xform1', 'Xform')
+        x2 = stage.DefinePrim('/Xform2', 'Xform')
+        cmds.select('|stage1|stageShape1,/Xform1', replace=True)
+        cmds.rename('test.') # Rename first object with illegal name
+        cmds.select('|stage1|stageShape1,/Xform2', replace=True)
+        cmds.rename('test.') # Rename second object with same illegal name
+
+        # Make sure they got renamed as we expect.
+        cmds.select('|stage1|stageShape1,/test_', '|stage1|stageShape1,/test_1', replace=True)
+        sel = ufe.GlobalSelection.get()
+        self.assertEqual(2, len(sel))
+
     def testRenameNotifications(self):
         '''Rename a USD node and test for the UFE notifications.'''
 
