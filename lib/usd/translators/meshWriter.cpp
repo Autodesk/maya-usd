@@ -346,8 +346,11 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     const UsdMayaJobExportArgs& exportArgs = _GetExportArgs();
 
     // Exporting reference object only once
-    if (usdTime.IsDefault() && exportArgs.exportReferenceObjects) {
-        UsdMayaMeshWriteUtils::exportReferenceMesh(primSchema, GetMayaObject());
+    if (usdTime.IsDefault() && exportArgs.referenceObjectMode != UsdMayaJobExportArgsTokens->none) {
+        UsdMayaMeshWriteUtils::exportReferenceMesh(
+            primSchema,
+            GetMayaObject(),
+            exportArgs.referenceObjectMode == UsdMayaJobExportArgsTokens->defaultToMesh);
     }
 
     // Write UsdSkel skeletal skinning data first, since this will
