@@ -36,7 +36,7 @@ kDefaultCachePrimName = 'Cache1'
 _cacheExportOptions = None
 
 # The options string that we pass to mayaUsdTranslatorExport.
-kTranslatorExportOptions = 'all;!output-parentscope;!animation-data'
+kTranslatorExportOptions = 'all;!output-parentscope'
 
 # Dag path corresponding to pulled prim.  This is a Maya transform node that is
 # not in the Maya reference itself, but is its parent.
@@ -256,6 +256,7 @@ def fileOptionsTabPage(tabLayout):
     # resultCallback not called on "post", is therefore an empty string.
     fileOptionsScroll = cmds.columnLayout('fileOptionsScroll')
     optionsText = mayaUsdOptions.convertOptionsDictToText(cacheToUsd.loadCacheCreationOptions())
+    optionsText = mayaUsdOptions.setAnimateOption(_mayaRefDagPath, optionsText)
     mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post={exportOpts}", "{cacheOpts}", "")'.format(exportOpts=kTranslatorExportOptions, cacheOpts=optionsText))
 
     cacheFileUsdHierarchyOptions(topForm)
@@ -279,7 +280,7 @@ def setCacheOptions(newCacheOptions):
     Called from mayaUsdTranslatorExport via mayaUsdCacheMayaReference_setCacheOptions in MEL.
     """
     global _cacheExportOptions
-    _cacheExportOptions = cacheToUsd.forceCacheOptions(newCacheOptions)
+    _cacheExportOptions = newCacheOptions
 
 
 def cacheCreateUi(parent):

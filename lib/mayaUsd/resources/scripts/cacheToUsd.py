@@ -22,19 +22,11 @@ import mayaUsdOptions
 import re
 
 
-def forceCacheOptions(textOptions):
-    """
-    Adjusts the export options with cache-to-USD specific values.
-    """
-    return re.sub(r'animation=.', 'animation=1', textOptions)
-
-
 def getDefaultExportOptions():
     """
     Retrieves the default export options used by cache-to-USD.
     """
-    optionsText = cmds.translator('USD Export', query=True, do=True)
-    return forceCacheOptions(optionsText)
+    return cmds.translator('USD Export', query=True, do=True)
 
 
 def getDefaultCacheCreationOptions():
