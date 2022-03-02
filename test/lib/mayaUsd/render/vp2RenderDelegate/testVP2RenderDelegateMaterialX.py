@@ -79,6 +79,21 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.rotate(60, 0, 45, 'persp')
         self._StartTest('MayaSurfaces')
 
+    def testMayaPlace2dTexture(self):
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+        testFile = testUtils.getTestScene("MaterialX", "place2dTextureShowcase.ma")
+        cmds.file(testFile, force=True, open=True)
+        cmds.move(3, 12, -1.2, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')        
+        self.assertSnapshotClose('place2dTextureShowcase_Maya_render.png')
+        usdFilePath = os.path.join(self._testDir, "place2dTextureShowcase.usda")
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            materialsScopeName='Materials')
+        xform, shape = mayaUtils.createProxyFromFile(usdFilePath)
+        cmds.move(0, 0, 1, xform)
+        self.assertSnapshotClose('place2dTextureShowcase_USD_render.png')
+
 
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())

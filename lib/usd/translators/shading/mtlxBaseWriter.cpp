@@ -68,12 +68,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((LuminancePrefix, "MayaLuminance"))
     ((NormalMapPrefix, "MayaNormalMap"))
 
-    (lambert)
-    (MayaND_lambert_surfaceshader)
-    (phong)
-    (MayaND_phong_surfaceshader)
-    (blinn)
-    (MayaND_blinn_surfaceshader)
 );
 // clang-format on
 
@@ -87,21 +81,37 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
 TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 {
     UsdMayaSymmetricShaderWriter::RegisterWriter(
-        _tokens->lambert, _tokens->MayaND_lambert_surfaceshader, TrMtlxTokens->conversionName);
+        TrMayaTokens->lambert,
+        TrMtlxTokens->MayaND_lambert_surfaceshader,
+        TrMtlxTokens->conversionName);
     UsdMayaSymmetricShaderWriter::RegisterWriter(
-        _tokens->phong, _tokens->MayaND_phong_surfaceshader, TrMtlxTokens->conversionName);
+        TrMayaTokens->phong,
+        TrMtlxTokens->MayaND_phong_surfaceshader,
+        TrMtlxTokens->conversionName);
     UsdMayaSymmetricShaderWriter::RegisterWriter(
-        _tokens->blinn, _tokens->MayaND_blinn_surfaceshader, TrMtlxTokens->conversionName);
+        TrMayaTokens->blinn,
+        TrMtlxTokens->MayaND_blinn_surfaceshader,
+        TrMtlxTokens->conversionName);
 };
 
 TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
 {
     UsdMayaSymmetricShaderReader::RegisterReader(
-        _tokens->MayaND_lambert_surfaceshader, _tokens->lambert, TrMtlxTokens->conversionName);
+        TrMtlxTokens->MayaND_lambert_surfaceshader,
+        TrMayaTokens->lambert,
+        TrMtlxTokens->conversionName);
     UsdMayaSymmetricShaderReader::RegisterReader(
-        _tokens->MayaND_phong_surfaceshader, _tokens->phong, TrMtlxTokens->conversionName);
+        TrMtlxTokens->MayaND_phong_surfaceshader,
+        TrMayaTokens->phong,
+        TrMtlxTokens->conversionName);
     UsdMayaSymmetricShaderReader::RegisterReader(
-        _tokens->MayaND_blinn_surfaceshader, _tokens->blinn, TrMtlxTokens->conversionName);
+        TrMtlxTokens->MayaND_blinn_surfaceshader,
+        TrMayaTokens->blinn,
+        TrMtlxTokens->conversionName);
+    UsdMayaSymmetricShaderReader::RegisterReader(
+        TrMtlxTokens->MayaND_place2dTexture_vector2,
+        TrMayaTokens->place2dTexture,
+        TrMtlxTokens->conversionName);
 };
 
 UsdMayaShaderWriter::ContextSupport
@@ -170,12 +180,6 @@ UsdAttribute MtlxUsd_BaseWriter::AddConversion(
     }
 
     return UsdAttribute();
-}
-
-UsdAttribute MtlxUsd_BaseWriter::AddSwizzle(const std::string& channels, int numChannels)
-{
-    UsdAttribute nodeOutput = UsdShadeShader(_usdPrim).GetOutput(TrMtlxTokens->out);
-    return AddSwizzle(channels, numChannels, nodeOutput);
 }
 
 UsdAttribute MtlxUsd_BaseWriter::AddSwizzle(
@@ -263,9 +267,141 @@ UsdAttribute MtlxUsd_BaseWriter::AddSwizzle(
     return swizzleOutput;
 }
 
-UsdAttribute MtlxUsd_BaseWriter::AddLuminance(int numChannels)
+UsdAttribute
+MtlxUsd_BaseWriter::AddSwizzleConversion(const SdfValueTypeName& destType, UsdAttribute nodeOutput)
 {
-    UsdAttribute nodeOutput = UsdShadeShader(_usdPrim).GetOutput(TrMtlxTokens->out);
+    const SdfValueTypeName& sourceType = nodeOutput.GetTypeName();
+    if (sourceType == destType) {
+        // No swizzle actually needed:
+        return nodeOutput;
+    }
+
+    struct _SwizzleData
+    {
+        const SdfValueTypeName _fromName;
+        const SdfValueTypeName _toName;
+        const std::string      _fromType;
+        const std::string      _toType;
+        const std::string      _channels;
+        _SwizzleData(
+            const SdfValueTypeName fromName,
+            const SdfValueTypeName toName,
+            std::string&&          fromType,
+            std::string&&          toType,
+            std::string&&          channels)
+            : _fromName(fromName)
+            , _toName(toName)
+            , _fromType(std::move(fromType))
+            , _toType(std::move(toType))
+            , _channels(std::move(channels))
+        {
+        }
+    };
+
+    // There are 6 types to handle. Not enough that a sorted container would help. Grouping them
+    // will allow finding any item in maximum 10 iterations by skipping whole chunks. Putting Float3
+    // and Float4 last since they are the least likely to be searched for.
+    typedef std::vector<_SwizzleData> _SwizzleMap;
+    static const _SwizzleMap          _swizzleMap = _SwizzleMap {
+        { SdfValueTypeNames->Float, SdfValueTypeNames->Float2, "float", "vector2", "xx" },
+        { SdfValueTypeNames->Float, SdfValueTypeNames->Color3f, "float", "color3", "xxx" },
+        { SdfValueTypeNames->Float, SdfValueTypeNames->Color4f, "float", "color4", "xxx1" },
+        { SdfValueTypeNames->Float, SdfValueTypeNames->Float3, "float", "vector3", "xxx" },
+        { SdfValueTypeNames->Float, SdfValueTypeNames->Float4, "float", "vector4", "xxxx" },
+
+        { SdfValueTypeNames->Float2, SdfValueTypeNames->Float, "vector2", "float", "x" },
+        { SdfValueTypeNames->Float2, SdfValueTypeNames->Color3f, "vector2", "color3", "xyy" },
+        { SdfValueTypeNames->Float2, SdfValueTypeNames->Color4f, "vector2", "color4", "xyyy" },
+        { SdfValueTypeNames->Float2, SdfValueTypeNames->Float3, "vector2", "vector3", "xyy" },
+        { SdfValueTypeNames->Float2, SdfValueTypeNames->Float4, "vector2", "vector4", "xxyy" },
+
+        { SdfValueTypeNames->Color3f, SdfValueTypeNames->Float, "color3", "float", "r" },
+        { SdfValueTypeNames->Color3f, SdfValueTypeNames->Float2, "color3", "vector2", "rg" },
+        { SdfValueTypeNames->Color3f, SdfValueTypeNames->Color4f, "color3", "color4", "rgb1" },
+        { SdfValueTypeNames->Color3f, SdfValueTypeNames->Float3, "color3", "vector3", "rgb" },
+        { SdfValueTypeNames->Color3f, SdfValueTypeNames->Float4, "color3", "vector4", "rgb1" },
+
+        { SdfValueTypeNames->Color4f, SdfValueTypeNames->Float, "color4", "float", "r" },
+        { SdfValueTypeNames->Color4f, SdfValueTypeNames->Float2, "color4", "vector2", "rg" },
+        { SdfValueTypeNames->Color4f, SdfValueTypeNames->Color3f, "color4", "color3", "rgb" },
+        { SdfValueTypeNames->Color4f, SdfValueTypeNames->Float3, "color4", "vector3", "rgb" },
+        { SdfValueTypeNames->Color4f, SdfValueTypeNames->Float4, "color4", "vector4", "rgba" },
+
+        { SdfValueTypeNames->Float3, SdfValueTypeNames->Float, "vector3", "float", "x" },
+        { SdfValueTypeNames->Float3, SdfValueTypeNames->Float2, "vector3", "vector2", "xy" },
+        { SdfValueTypeNames->Float3, SdfValueTypeNames->Color3f, "vector3", "color3", "xyz" },
+        { SdfValueTypeNames->Float3, SdfValueTypeNames->Color4f, "vector3", "color4", "xyz1" },
+        { SdfValueTypeNames->Float3, SdfValueTypeNames->Float4, "vector3", "vector4", "xyz1" },
+
+        { SdfValueTypeNames->Float4, SdfValueTypeNames->Float, "vector4", "float", "x" },
+        { SdfValueTypeNames->Float4, SdfValueTypeNames->Float2, "vector4", "vector2", "xy" },
+        { SdfValueTypeNames->Float4, SdfValueTypeNames->Color3f, "vector4", "color3", "xyz" },
+        { SdfValueTypeNames->Float4, SdfValueTypeNames->Color4f, "vector4", "color4", "xyzw" },
+        { SdfValueTypeNames->Float4, SdfValueTypeNames->Float3, "vector4", "vector3", "xyz" },
+    };
+
+    const std::string* srcType = nullptr;
+    const std::string* dstType = nullptr;
+    const std::string* channels = nullptr;
+    // Search with stride 5 for sourceType
+    for (size_t fromIdx = 0; !srcType && fromIdx < _swizzleMap.size(); fromIdx += 5) {
+        if (_swizzleMap[fromIdx]._fromName == sourceType) {
+            // Refine at stride 1 for destType
+            for (size_t toIdx = 0; !srcType && toIdx < 5; ++toIdx) {
+                if (_swizzleMap[fromIdx + toIdx]._toName == destType) {
+                    srcType = &_swizzleMap[fromIdx + toIdx]._fromType;
+                    dstType = &_swizzleMap[fromIdx + toIdx]._toType;
+                    channels = &_swizzleMap[fromIdx + toIdx]._channels;
+                }
+            }
+        }
+    }
+
+    if (!srcType) {
+        TF_CODING_ERROR(
+            "Could not swizzle from %s to %s",
+            sourceType.GetAsToken().GetText(),
+            destType.GetAsToken().GetText());
+        return {};
+    }
+
+    UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
+    SdfPath           nodegraphPath = nodegraphSchema.GetPath();
+
+    SdfPath outputPath = nodeOutput.GetPath().GetParentPath();
+
+    TfToken        swizzleName(TfStringPrintf(
+        "%s_%s_%s",
+        _tokens->SwizzlePrefix.GetText(),
+        outputPath.GetName().c_str(),
+        channels->c_str()));
+    const SdfPath  swizzlePath = nodegraphPath.AppendChild(swizzleName);
+    UsdShadeShader swizzleSchema = UsdShadeShader::Define(GetUsdStage(), swizzlePath);
+
+    UsdAttribute swizzleOutput = swizzleSchema.GetOutput(TrMtlxTokens->out);
+    if (swizzleOutput) {
+        // Reusing existing node:
+        return swizzleOutput;
+    }
+
+    // The swizzle name varies according to source and destination channel sizes:
+    swizzleSchema.CreateInput(TrMtlxTokens->in, sourceType)
+        .ConnectToSource(UsdShadeOutput(nodeOutput));
+
+    swizzleSchema.CreateInput(TrMtlxTokens->channels, SdfValueTypeNames->String)
+        .Set(*channels, UsdTimeCode::Default());
+
+    swizzleOutput = swizzleSchema.CreateOutput(TrMtlxTokens->out, destType);
+
+    TfToken swizzleID(TfStringPrintf("ND_swizzle_%s_%s", srcType->c_str(), dstType->c_str()));
+
+    swizzleSchema.CreateIdAttr(VtValue(swizzleID));
+
+    return swizzleOutput;
+}
+
+UsdAttribute MtlxUsd_BaseWriter::AddLuminance(int numChannels, UsdAttribute nodeOutput)
+{
     if (numChannels < 3) {
         // Not enough channels:
         return nodeOutput;
@@ -344,6 +480,65 @@ UsdAttribute MtlxUsd_BaseWriter::AddNormalMapping(UsdAttribute normalInput)
     UsdShadeOutput(normalInput).ConnectToSource(UsdShadeOutput(mapOutput));
 
     return mapInput;
+}
+
+bool MtlxUsd_BaseWriter::AuthorShaderInputFromShadingNodeAttr(
+    const MFnDependencyNode& depNodeFn,
+    const TfToken&           shadingNodeAttrName,
+    UsdShadeShader&          shaderSchema,
+    const UsdTimeCode        usdTime,
+    bool                     ignoreIfUnauthored)
+{
+    MStatus status;
+
+    MPlug shadingNodePlug = depNodeFn.findPlug(
+        depNodeFn.attribute(shadingNodeAttrName.GetText()),
+        /* wantNetworkedPlug = */ true,
+        &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    SdfValueTypeName shaderInputTypeName = Converter::getUsdTypeName(shadingNodePlug);
+
+    // We know exactly which types are supported by MaterialX, so we can adjust here:
+    if (shaderInputTypeName == SdfValueTypeNames->Double) {
+        shaderInputTypeName = SdfValueTypeNames->Float;
+    }
+
+    if (ignoreIfUnauthored && !UsdMayaUtil::IsAuthored(shadingNodePlug)) {
+        // Ignore this unauthored Maya attribute and return success.
+        return true;
+    }
+
+    const bool isDestination = shadingNodePlug.isDestination(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    // Are color values are all linear on the shader?
+    // Do we need to re-linearize them?
+    VtValue value = UsdMayaWriteUtil::GetVtValue(
+        shadingNodePlug,
+        shaderInputTypeName,
+        /* linearizeColors = */ false);
+
+    if (value.IsEmpty()) {
+        return false;
+    }
+
+    UsdShadeInput shaderInput = shaderSchema.CreateInput(shadingNodeAttrName, shaderInputTypeName);
+
+    // For attributes that are the destination of a connection, we create
+    // the input on the shader but we do *not* author a value for it. We
+    // expect its actual value to come from the source of its connection.
+    // We'll leave it to the shading export to handle creating
+    // the connections in USD.
+    if (!isDestination) {
+        shaderInput.Set(value, usdTime);
+    }
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

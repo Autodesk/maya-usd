@@ -56,7 +56,7 @@ def Mesh "pCube1" (
                 {
                     uniform token info:id = "ND_image_color4"
                     color4f inputs:default = (0.5, 0.5, 0.5, 1)
-                    asset inputs:file = @grid.png@
+                    asset inputs:file = @textures/grid.png@
                     float2 inputs:texcoord.connect = </pCube1/Looks/lambert2SG/MayaNG_lambert2SG/place2dTexture1.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -135,7 +135,7 @@ def Mesh "pCube2" (
                 {
                     uniform token info:id = "ND_image_color4"
                     color4f inputs:default = (0.5, 0.5, 0.5, 1)
-                    asset inputs:file = @grid.png@
+                    asset inputs:file = @textures/grid.png@
                     float2 inputs:texcoord.connect = </pCube2/Looks/standardSurface2SG/MayaNG_standardSurface2SG/place2dTexture2.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -213,7 +213,7 @@ def Mesh "pPlatonic1" (
                 {
                     uniform token info:id = "ND_image_color4"
                     color4f inputs:default = (0.5, 0.5, 0.5, 1)
-                    asset inputs:file = @grid.png@
+                    asset inputs:file = @textures/grid.png@
                     float2 inputs:texcoord.connect = </pPlatonic1/Looks/blinn1SG/MayaNG_blinn1SG/place2dTexture3.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
@@ -291,7 +291,7 @@ def Mesh "pPlatonic2" (
                 {
                     uniform token info:id = "ND_image_color4"
                     color4f inputs:default = (0.5, 0.5, 0.5, 1)
-                    asset inputs:file = @grid.png@
+                    asset inputs:file = @textures/grid.png@
                     float2 inputs:texcoord.connect = </pPlatonic2/Looks/phong1SG/MayaNG_phong1SG/place2dTexture4.outputs:out>
                     string inputs:uaddressmode = "periodic"
                     string inputs:vaddressmode = "periodic"
