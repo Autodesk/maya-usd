@@ -63,6 +63,7 @@ struct UsdMayaTranslatorMayaReference
 
 private:
     static MString namespaceFromPrim(const UsdPrim& prim);
+    static MString getRefNodeNameFromPrim(const UsdPrim& prim);
     static MString getUniqueRefNodeName(
         const UsdPrim&      prim,
         const MFnDagNode&   parentDag,
