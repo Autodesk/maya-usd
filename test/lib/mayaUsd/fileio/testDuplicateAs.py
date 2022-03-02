@@ -177,6 +177,55 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertEqual([1, 2, 3], usdGroup1T3d.translation().vector)
         self.assertEqual([-4, -5, -6], usdGroup2T3d.translation().vector)
 
+    def testDuplicateAsNonRootUsd(self):
+        '''Duplicate a Maya transform hierarchy to a non-root node in USD.'''
+
+        # Create a hierarchy.  Because group1 is selected upon creation, group2
+        # will be its parent.
+        group1 = cmds.createNode('transform')
+        group2 = cmds.group()
+        self.assertEqual(cmds.listRelatives(group1, parent=True)[0], group2)
+
+        cmds.setAttr(group1 + '.translate', 1, 2, 3)
+        cmds.setAttr(group2 + '.translate', -4, -5, -6)
+
+        # Create a stage to receive the USD duplicate, with a prim that will be the parent.
+        psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        parentName = 'future_parent'
+        aPrim = stage.DefinePrim('/' + parentName, 'Xform')
+        parentPathStr = psPathStr + ',/' + parentName
+        
+        # Duplicate Maya data as USD data.  As of 17-Nov-2021 no single-segment
+        # path handler registered to UFE for Maya path strings, so use absolute
+        # path.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
+                cmds.ls(group2, long=True)[0], parentPathStr))
+
+        # Maya hierarchy should be duplicated in USD.
+        usdGroup2PathStr = psPathStr + ',/' + parentName + '/' + group2
+        usdGroup1PathStr = usdGroup2PathStr + '/' + group1
+        usdGroup2Path = ufe.PathString.path(usdGroup2PathStr)
+        usdGroup1Path = ufe.PathString.path(usdGroup1PathStr)
+
+        # group1 is the child of group2
+        usdGroup1 = ufe.Hierarchy.createItem(usdGroup1Path)
+        self.assertIsNotNone(usdGroup1)
+        usdGroup2 = ufe.Hierarchy.createItem(usdGroup2Path)
+        self.assertIsNotNone(usdGroup2)
+        usdGroup1Hier = ufe.Hierarchy.hierarchy(usdGroup1)
+        usdGroup2Hier = ufe.Hierarchy.hierarchy(usdGroup2)
+        self.assertEqual(usdGroup2, usdGroup1Hier.parent())
+        self.assertEqual(len(usdGroup2Hier.children()), 1)
+        self.assertEqual(usdGroup1, usdGroup2Hier.children()[0])
+
+        # Translations have been preserved.
+        usdGroup1T3d = ufe.Transform3d.transform3d(usdGroup1)
+        usdGroup2T3d = ufe.Transform3d.transform3d(usdGroup2)
+        self.assertEqual([1, 2, 3], usdGroup1T3d.translation().vector)
+        self.assertEqual([-4, -5, -6], usdGroup2T3d.translation().vector)
+
     def testDuplicateAsUsdSameName(self):
         '''Duplicate a Maya transform to USD when USD already has a prim with that name.'''
 
