@@ -107,13 +107,14 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
             # and validate the input name.
             # Note: it is allowed to be input as empty in which case a default is used.
             if groupPrimName:
+                groupPrimName = Tf.MakeValidIdentifier(groupPrimName)
                 checkGroupPrimName = mayaUsd.ufe.uniqueChildName(parentPrim, groupPrimName)
                 if checkGroupPrimName != groupPrimName:
                     errorMsgFormat = getMayaUsdLibString('kErrorGroupPrimExists')
                     errorMsg = cmds.format(errorMsgFormat, stringArg=(groupPrimName, ufePathStr))
                     om.MGlobal.displayError(errorMsg)
                     return Usd.Prim()
-                groupPrimName = Tf.MakeValidIdentifier(checkGroupPrimName)
+                groupPrimName = checkGroupPrimName
 
         # If the group prim was either not provided or empty we use a default name.
         if not groupPrimName:
@@ -130,13 +131,14 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
     # Note: if we are given a group prim to create, then we know that the
     #       Maya Reference prim name will be unique since it will be the
     #       only child (of the newly created group prim).
+    mayaReferencePrimName = Tf.MakeValidIdentifier(mayaReferencePrimName)
     checkName = mayaUsd.ufe.uniqueChildName(parentPrim, mayaReferencePrimName) if groupPrim is None else mayaReferencePrimName
     if checkName != mayaReferencePrimName:
         errorMsgFormat = getMayaUsdLibString('kErrorMayaRefPrimExists')
         errorMsg = cmds.format(errorMsgFormat, stringArg=(mayaReferencePrimName, ufePathStr))
         om.MGlobal.displayError(errorMsg)
         return Usd.Prim()
-    validatedPrimName = Tf.MakeValidIdentifier(checkName)
+    validatedPrimName = checkName
 
     # Extract the USD path segment from the UFE path and append the Maya
     # reference prim to it.
