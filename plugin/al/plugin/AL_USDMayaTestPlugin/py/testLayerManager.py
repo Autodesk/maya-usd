@@ -204,6 +204,7 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         proxyName = _buildAndEditAndSaveScene(self._usdFilePath)
         _reloadAndAssert(self._usdFilePath, proxyName)
 
+    @unittest.skip("This test needs to be investigated; it is randomly failing regardless of the platforms or the versions Maya/USD see: MAYA-120860 for details")
     def test_anonymousLayerSerialisation(self):
         """Tests multiple anonymous sublayers can be saved and restored.
             
