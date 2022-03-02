@@ -74,7 +74,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     ufe::applyCommandRestriction(prim, "rename");
 
     // handle unique name for _newName
-    _newName = TfMakeValidIdentifier(uniqueChildName(prim.GetParent(), newName.string()));
+    _newName = uniqueChildName(prim.GetParent(), TfMakeValidIdentifier(newName.string()));
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand() { }
