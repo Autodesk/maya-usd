@@ -1886,6 +1886,10 @@ VtValue _ParseArgumentValue(const std::string& value, const VtValue& guideValue)
     // The export UI only has boolean and string parameters.
     if (guideValue.IsHolding<bool>()) {
         return VtValue(TfUnstringify<bool>(value));
+    } else if (guideValue.IsHolding<double>()) {
+        return VtValue(TfUnstringify<double>(value));
+    } else if (guideValue.IsHolding<int>()) {
+        return VtValue(TfUnstringify<int>(value));
     } else if (guideValue.IsHolding<std::string>()) {
         return VtValue(value);
     } else if (guideValue.IsHolding<std::vector<VtValue>>()) {

@@ -53,6 +53,11 @@ TF_DECLARE_PUBLIC_TOKENS(
 // clang-format off
 #define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
+    (animation) \
+    (startTime) \
+    (endTime) \
+    (frameStride) \
+    (frameSample) \
     (apiSchema) \
     (chaser) \
     (chaserArgs) \
@@ -256,10 +261,13 @@ struct UsdMayaJobExportArgs
     ///
     /// The text encoding is in the form: name1=value1;name2=value2;...
     MAYAUSD_CORE_PUBLIC
-    static MStatus GetDictionaryFromEncodedOptions(
-        const MString&       textEncodedOptions,
-        VtDictionary*        userArgs,
-        std::vector<double>* timeSamples);
+    static MStatus
+    GetDictionaryFromEncodedOptions(const MString& textEncodedOptions, VtDictionary* userArgs);
+
+    /// Extract the time samples corresponding to the animation options.
+    MAYAUSD_CORE_PUBLIC
+    static void
+    GetDictionaryTimeSamples(const VtDictionary& userArgs, std::vector<double>& timeSamples);
 
     /// Gets the default arguments dictionary for UsdMayaJobExportArgs.
     MAYAUSD_CORE_PUBLIC

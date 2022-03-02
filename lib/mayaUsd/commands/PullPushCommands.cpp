@@ -270,7 +270,7 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
     const MString exportOptions = parseTextArg(argData, kExportOptionsFlag, "");
     if (exportOptions.length() > 0) {
         status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
-            exportOptions, &userArgs, nullptr);
+            exportOptions, &userArgs);
         if (status != MS::kSuccess)
             return status;
     }
@@ -420,7 +420,7 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
     const MString exportOptions = parseTextArg(argData, kExportOptionsFlag, "");
     if (exportOptions.length() > 0) {
         status = PXR_NS::UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
-            exportOptions, &userArgs, nullptr);
+            exportOptions, &userArgs);
         if (status != MS::kSuccess)
             return status;
     }

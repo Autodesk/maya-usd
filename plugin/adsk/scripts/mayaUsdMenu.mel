@@ -621,7 +621,7 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
         }
     }
     if (size($obj)) {
-        string $exportOptions = `python("import mayaUsdMergeToUSDOptions; mayaUsdMergeToUSDOptions.getMergeToUSDOptionsText()")`;
+        string $exportOptions = `python("import mayaUsdMergeToUSDOptions; import mayaUsdOptions; mayaUsdOptions.setAnimateOption('''" + $obj + "''', mayaUsdMergeToUSDOptions.getMergeToUSDOptionsText())")`;
         mayaUsdMergeToUsd -exportOptions $exportOptions $obj;
     }
 }

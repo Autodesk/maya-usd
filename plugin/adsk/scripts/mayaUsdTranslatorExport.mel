@@ -714,6 +714,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
         // Set visibility for anim widgets
         mayaUsdTranslatorExport_AnimationCB();
+        mayaUsdTranslatorExport_AnimationRangeCB();
 
         $bResult = 1;
     }
