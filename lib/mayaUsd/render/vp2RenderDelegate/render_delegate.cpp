@@ -87,6 +87,7 @@ enum class FallbackShaderType
     kBasisCurvesCubicBezier,
     kBasisCurvesCubicBSpline,
     kBasisCurvesCubicCatmullRom,
+    kPoints,
     kCount
 };
 
@@ -98,14 +99,13 @@ const MString _fallbackShaderNames[] = { "FallbackShader",
                                          "BasisCurvesLinearFallbackShader",
                                          "BasisCurvesCubicFallbackShader",
                                          "BasisCurvesCubicFallbackShader",
-                                         "BasisCurvesCubicFallbackShader" };
+                                         "BasisCurvesCubicFallbackShader",
+                                         "PointsFallbackShader" };
 
 //! Array of varying-color shader fragment names indexed by FallbackShaderType
-const MString _cpvFallbackShaderNames[] = { "FallbackCPVShader",
-                                            "BasisCurvesLinearCPVShader",
-                                            "BasisCurvesCubicCPVShader",
-                                            "BasisCurvesCubicCPVShader",
-                                            "BasisCurvesCubicCPVShader" };
+const MString _cpvFallbackShaderNames[]
+    = { "FallbackCPVShader",         "BasisCurvesLinearCPVShader", "BasisCurvesCubicCPVShader",
+        "BasisCurvesCubicCPVShader", "BasisCurvesCubicCPVShader",  "PointsFallbackCPVShader" };
 
 //! "curveBasis" parameter values for three different cubic curves
 const std::unordered_map<FallbackShaderType, int> _curveBasisParameterValueMapping
@@ -205,6 +205,9 @@ public:
                 const auto         it = _curveBasisParameterValueMapping.find(type);
                 if (it != _curveBasisParameterValueMapping.end()) {
                     shader->setParameter(_curveBasisParameterName, it->second);
+                }
+                if (type == FallbackShaderType::kPoints) {
+                    shader->addInputFragment("PointsGeometry", "GPUStage", "GPUStage");
                 }
                 shader->setParameter(_diffuseParameterName, 1.0f);
             }
@@ -382,6 +385,9 @@ public:
                     const auto it = _curveBasisParameterValueMapping.find(type);
                     if (it != _curveBasisParameterValueMapping.end()) {
                         shader->setParameter(_curveBasisParameterName, it->second);
+                    }
+                    if (type == FallbackShaderType::kPoints) {
+                        shader->addInputFragment("PointsGeometry", "GPUStage", "GPUStage");
                     }
                 }
             }
@@ -979,6 +985,11 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(const MColor&
     return sShaderCache.GetFallbackShader(color, FallbackShaderType::kCommon);
 }
 
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetPointsFallbackShader(const MColor& color) const
+{
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kPoints);
+}
+
 /*! \brief  Returns a constant-color fallback shader instance for basisCurves when no material is
    bound.
 
@@ -1024,6 +1035,11 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetBasisCurvesCPVShader(
 MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackCPVShader() const
 {
     return sShaderCache.GetFallbackCPVShader(FallbackShaderType::kCommon);
+}
+
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetPointsFallbackCPVShader() const
+{
+    return sShaderCache.GetFallbackCPVShader(FallbackShaderType::kPoints);
 }
 
 /*! \brief  Returns a 3d solid-color shader.
