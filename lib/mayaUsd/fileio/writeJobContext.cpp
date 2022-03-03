@@ -121,7 +121,7 @@ bool UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
     // Any transform with multiple (non-intermediate) shapes below is
     // non-mergeable.
     unsigned int numShapes = 0;
-    const auto childCount = path.childCount();
+    const auto   childCount = path.childCount();
     for (auto child = decltype(childCount) { 0 }; child < childCount; ++child) {
         const auto dagObj = path.child(child);
         MFnDagNode dagNode(dagObj);
