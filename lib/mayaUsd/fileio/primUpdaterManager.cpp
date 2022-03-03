@@ -1146,15 +1146,16 @@ bool PrimUpdaterManager::duplicate(
         const auto& editTarget = dstStage->GetEditTarget();
         const auto& dstLayer = editTarget.GetLayer();
 
-        // Make the destination root path unique.
-        SdfPath     dstRootPath = editTarget.MapToSpecPath(srcRootPath);
-        SdfPath     dstParentPath = dstRootPath.GetParentPath();
-        std::string dstChildName = dstRootPath.GetName();
-        UsdPrim     dstParentPrim = dstStage->GetPrimAtPath(dstParentPath);
-        if (dstParentPrim.IsValid()) {
-            dstChildName = ufe::uniqueChildName(dstParentPrim, dstChildName);
-            dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
+        // Validate that the destination parent prim is valid.
+        UsdPrim dstParentPrim = MayaUsd::ufe::ufePathToPrim(dstPath);
+        if (!dstParentPrim.IsValid()) {
+            return false;
         }
+
+        // Make the destination root path unique.
+        SdfPath     dstParentPath = dstParentPrim.GetPath();
+        std::string dstChildName = ufe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
+        SdfPath     dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
 
         if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
             return false;
