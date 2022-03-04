@@ -130,6 +130,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportBlendShapesLbl", "Blend Shapes:");
     register("kExportColorSetsAnn", "Exports Maya Color Sets as USD primvars.");
     register("kExportColorSetsLbl", "Color Sets:");
+    register("kExportCurvesAnn", "Exports Maya NURBS curves as USD geometries.");
+    register("kExportCurvesLbl", "NURBS Curves:");
     register("kExportDefaultFormatAnn", "Select whether the .usd file is written out in binary or ASCII");
     register("kExportDefaultFormatLbl", ".usd File Format:");
     register("kExportDefaultFormatBinLbl", "Binary");

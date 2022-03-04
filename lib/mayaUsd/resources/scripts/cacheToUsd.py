@@ -26,7 +26,9 @@ def getDefaultExportOptions():
     """
     Retrieves the default export options used by cache-to-USD.
     """
-    return cmds.translator('USD Export', query=True, do=True)
+    textOptions = cmds.translator('USD Export', query=True, do=True)
+    textOptions += ";filterTypes=nurbsCurve"
+    return textOptions
 
 
 def getDefaultCacheCreationOptions():
