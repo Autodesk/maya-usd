@@ -59,6 +59,54 @@ class testUsdExportNurbsCurve(unittest.TestCase):
         self.assertEqual(nc.GetOrderAttr().Get(), Vt.IntArray([4]))
         self.assertEqual(nc.GetCurveVertexCountsAttr().Get(), Vt.IntArray([8]))
 
+    def testNotExportViaPython(self):
+        '''
+        Test that filtering curves works when invoked via Python:
+        '''
+        usdFile = os.path.abspath('UsdExportNoNurbsCurveTest_Py.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none', filterTypes=["nurbsCurve"])
+
+        stage = Usd.Stage.Open(usdFile)
+
+        # Curve got exported as an XForm:
+        nc = UsdGeom.Xform.Get(stage, '/curve1')
+        self.assertTrue(nc)
+        # But not as a curve
+        nc = UsdGeom.NurbsCurves.Get(stage, '/curve1')
+        self.assertFalse(nc)
+
+    def testNotExportViaFile(self):
+        '''
+        Test that filtering curves works when invoked via the file command:
+        '''
+        usdFile = os.path.abspath('UsdExportNoNurbsCurveTest_File.usda')
+
+        default_ext_setting = cmds.file(q=True, defaultExtensions=True)
+        cmds.file(defaultExtensions=False)
+
+        # Note the braces denoting an array on the filterType argument:
+        export_options = [
+            "filterTypes=nurbsCurve",
+            "mergeTransformAndShape=1",
+            "shadingMode=none"
+        ]
+
+        cmds.file(usdFile, force=True,
+                  options=";".join(export_options),
+                  typ="USD Export", pr=True, ea=True)
+
+        cmds.file(defaultExtensions=default_ext_setting)
+
+        stage = Usd.Stage.Open(usdFile)
+
+        # Curve got exported as an XForm:
+        nc = UsdGeom.Xform.Get(stage, '/curve1')
+        self.assertTrue(nc)
+        # But not as a curve
+        nc = UsdGeom.NurbsCurves.Get(stage, '/curve1')
+        self.assertFalse(nc)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
