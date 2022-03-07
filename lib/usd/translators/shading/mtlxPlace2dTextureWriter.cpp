@@ -198,7 +198,8 @@ void MtlxUsd_Place2dTextureWriter::_ConnectVarnameInput(UsdShadeShader& primvarR
 
     UsdShadeInput varnameInput
         = primvarReaderSchema.CreateInput(TrMtlxTokens->geomprop, SdfValueTypeNames->String);
-    TfToken inputName(TfStringPrintf("%s:%s", fileNodeName, TrMtlxTokens->varnameStr.GetText()));
+    TfToken inputName(
+        TfStringPrintf("%s:%s", fileNodeName.c_str(), TrMtlxTokens->varnameStr.GetText()));
 
     // We expose the primvar reader varnameStr attribute to the material to allow
     // easy specialization based on UV mappings to geometries:
