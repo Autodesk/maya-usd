@@ -106,7 +106,7 @@ bool UsdMaya_MeshDataReadJob::OverridePrimReader(
     MStatus status = MS::kSuccess;
 
     const UsdPrim& primMesh = args.GetUsdPrim();
-    UsdGeomMesh mesh(primMesh);
+    UsdGeomMesh    mesh(primMesh);
 
     if (!mesh) {
         // Skip non mesh objects
