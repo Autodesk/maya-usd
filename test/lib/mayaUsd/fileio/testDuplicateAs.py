@@ -98,14 +98,14 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertEqual(1, len(xformNames))
         xformName = xformNames[0]
 
-        # Duplicate USD data as Maya data, placing it under the root.
+        # Duplicate USD data as Maya data, placing it under the transform we created.
         with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
                 aUsdUfePathStr, '|world|'+ xformName))
 
         # Should now have two transform nodes in the Maya scene: the path
         # components in the second segment of the aUsdItem and bUsdItem will
-        # now be under the Maya world.
+        # now be under the transform.
         aMayaPathStr = '|' + xformName + str(aUsdUfePath.segments[1]).replace('/', '|')
         bMayaPathStr = '|' + xformName + str(bUsdUfePath.segments[1]).replace('/', '|')
         self.assertEqual(1, len(cmds.ls(aMayaPathStr, long=True)))

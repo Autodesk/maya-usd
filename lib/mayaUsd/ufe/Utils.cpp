@@ -372,19 +372,9 @@ MDagPath ufeToDagPath(const Ufe::Path& ufePath)
     );
 }
 
-bool isMayaRootPath(const Ufe::Path& ufePath)
+bool isMayaWorldPath(const Ufe::Path& ufePath)
 {
-    if (ufePath.runTimeId() != g_MayaRtid)
-        return false;
-
-    const auto& segments = ufePath.getSegments();
-    if (segments.size() != 1)
-        return false;
-
-    if (segments[0].components().size() != 1)
-        return false;
-
-    return true;
+    return (ufePath.runTimeId() == g_MayaRtid && ufePath.size() == 1);
 }
 
 PXR_NS::MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)

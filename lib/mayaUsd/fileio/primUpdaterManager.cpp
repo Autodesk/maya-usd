@@ -1108,10 +1108,10 @@ bool PrimUpdaterManager::duplicate(
         // to configure the updater
         ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
 
-        // Set destination of duplicate. The Maya root MDagPath is not valid,
-        // so don't try to validate the path if it is the root.
+        // Set destination of duplicate. The Maya world MDagPath is not valid,
+        // so don't try to validate the path if it is the world root.
         MDagPath pullParentPath;
-        if (!MayaUsd::ufe::isMayaRootPath(dstPath)) {
+        if (!MayaUsd::ufe::isMayaWorldPath(dstPath)) {
             pullParentPath = MayaUsd::ufe::ufeToDagPath(dstPath);
             if (!pullParentPath.isValid()) {
                 return false;

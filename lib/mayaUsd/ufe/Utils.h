@@ -125,9 +125,9 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 MAYAUSD_CORE_PUBLIC
 MDagPath ufeToDagPath(const Ufe::Path& ufePath);
 
-//! Verify if the UFE path is the Maya root.
+//! Verify if the UFE path is the Maya world (root) path.
 MAYAUSD_CORE_PUBLIC
-bool isMayaRootPath(const Ufe::Path& ufePath);
+bool isMayaWorldPath(const Ufe::Path& ufePath);
 
 //! Return the gateway node (i.e. proxy shape)
 MAYAUSD_CORE_PUBLIC
