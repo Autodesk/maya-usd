@@ -81,6 +81,10 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
 
     def testMayaPlace2dTexture(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        # Too much differences between Linux and Windows otherwise
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
+
         testFile = testUtils.getTestScene("MaterialX", "place2dTextureShowcase.ma")
         cmds.file(testFile, force=True, open=True)
         cmds.move(0, 7, -1.5, 'persp')
@@ -98,6 +102,8 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         xform = cmds.mayaUSDImport(file=usdFilePath, shadingMode=[["useRegistry","MaterialX"]])
         cmds.move(0, 0, 1, xform)
         self.assertSnapshotClose('place2dTextureShowcase_Import_render.png', 960, 960)
+
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
 
 
 if __name__ == '__main__':
