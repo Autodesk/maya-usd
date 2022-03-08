@@ -183,20 +183,28 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             # MaterialX section
 
             # Source node, input, destination node:
-            ("/MaterialX/MayaNG_MaterialX", "diffuseColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file1_rgb"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file1_rgb", "in", "/MaterialX/MayaNG_MaterialX/M_file1"),
+            ("/MaterialX/MayaNG_MaterialX", "diffuseColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file1_MayafileTexture_rgb"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file1_MayafileTexture_rgb", "in", "/MaterialX/MayaNG_MaterialX/M_file1_MayafileTexture"),
+            ("/MaterialX/MayaNG_MaterialX/M_file1_MayafileTexture", "inColor", "/MaterialX/MayaNG_MaterialX/M_file1"),
+            ("/MaterialX/MayaNG_MaterialX/M_file1_MayafileTexture", "uvCoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"),
             ("/MaterialX/MayaNG_MaterialX/M_file1", "texcoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"),
 
-            ("/MaterialX/MayaNG_MaterialX", "emissiveColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file2_rgb"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file2_rgb", "in", "/MaterialX/MayaNG_MaterialX/M_file2"),
+            ("/MaterialX/MayaNG_MaterialX", "emissiveColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file2_MayafileTexture_rgb"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file2_MayafileTexture_rgb", "in", "/MaterialX/MayaNG_MaterialX/M_file2_MayafileTexture"),
+            ("/MaterialX/MayaNG_MaterialX/M_file2_MayafileTexture", "inColor", "/MaterialX/MayaNG_MaterialX/M_file2"),
+            ("/MaterialX/MayaNG_MaterialX/M_file2_MayafileTexture", "uvCoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"), # re-used
             ("/MaterialX/MayaNG_MaterialX/M_file2", "texcoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"), # re-used
 
-            ("/MaterialX/MayaNG_MaterialX", "metallic", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file3_r"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file3_r", "in", "/MaterialX/MayaNG_MaterialX/M_file3"),
+            ("/MaterialX/MayaNG_MaterialX", "metallic", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file3_MayafileTexture_r"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file3_MayafileTexture_r", "in", "/MaterialX/MayaNG_MaterialX/M_file3_MayafileTexture"),
+            ("/MaterialX/MayaNG_MaterialX/M_file3_MayafileTexture", "inColor", "/MaterialX/MayaNG_MaterialX/M_file3"),
+            ("/MaterialX/MayaNG_MaterialX/M_file3_MayafileTexture", "uvCoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"),
             ("/MaterialX/MayaNG_MaterialX/M_file3", "texcoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # no UV in Maya.
 
-            ("/MaterialX/MayaNG_MaterialX", "roughness", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file4_r"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file4_r", "in", "/MaterialX/MayaNG_MaterialX/M_file4"),
+            ("/MaterialX/MayaNG_MaterialX", "roughness", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file4_MayafileTexture_r"),
+            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file4_MayafileTexture_r", "in", "/MaterialX/MayaNG_MaterialX/M_file4_MayafileTexture"),
+            ("/MaterialX/MayaNG_MaterialX/M_file4_MayafileTexture", "inColor", "/MaterialX/MayaNG_MaterialX/M_file4"),
+            ("/MaterialX/MayaNG_MaterialX/M_file4_MayafileTexture", "uvCoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # re-used
             ("/MaterialX/MayaNG_MaterialX/M_file4", "texcoord", "/MaterialX/MayaNG_MaterialX/shared_MayaGeomPropValue"), # re-used
 
             # Making sure no NodeGraph boundaries were skipped downstream:
@@ -210,7 +218,7 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             ("/UsdPreviewSurface/M_place2dTexture1", "varname", "/UsdPreviewSurface"),
             ("/UsdPreviewSurface", "M:file1:varname", ""),
 
-            ("/MaterialX/MayaNG_MaterialX/M_place2dTexture1", "geomprop", "/MaterialX/MayaNG_MaterialX"),
+            ("/MaterialX/MayaNG_MaterialX/M_place2dTexture1_MayaGeomPropValue", "geomprop", "/MaterialX/MayaNG_MaterialX"),
             ("/MaterialX/MayaNG_MaterialX", "M:file1:varnameStr", "/MaterialX"),
             ("/MaterialX", "M:file1:varnameStr", ""),
         ]

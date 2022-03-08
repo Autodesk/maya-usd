@@ -63,6 +63,8 @@ public:
 
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 
+    void PostConnectSubtree(UsdMayaPrimReaderContext* context) override;
+
 private:
     TfToken _shaderID;
 };
@@ -105,12 +107,6 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
     }
 
     context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
-
-    // Create place2dTexture:
-    MObject           uvObj = UsdMayaShadingUtil::CreatePlace2dTextureAndConnectTexture(mayaObject);
-    MFnDependencyNode uvDepFn(uvObj);
-
-    // TODO: Import UV SRT from ND_place2d_vector2 node.
 
     // File
     VtValue val;
@@ -174,41 +170,6 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
         UsdMayaReadUtil::SetMayaAttr(mayaAttr, val, /*unlinearizeColors*/ false);
     }
 
-    // Wrap U/V
-    const TfToken wrapMirrorTriples[2][3] {
-        { TrMayaTokens->wrapU, TrMayaTokens->mirrorU, TrMtlxTokens->uaddressmode },
-        { TrMayaTokens->wrapV, TrMayaTokens->mirrorV, TrMtlxTokens->vaddressmode }
-    };
-    for (auto wrapMirrorTriple : wrapMirrorTriples) {
-        auto wrapUVToken = wrapMirrorTriple[0];
-        auto mirrorUVToken = wrapMirrorTriple[1];
-        auto wrapSTToken = wrapMirrorTriple[2];
-
-        usdInput = shaderSchema.GetInput(wrapSTToken);
-        if (usdInput) {
-            if (usdInput.Get(&val) && val.IsHolding<std::string>()) {
-                const std::string& wrapVal = val.UncheckedGet<std::string>();
-                TfToken            plugName;
-
-                if (wrapVal == TrMtlxTokens->periodic.GetString()) {
-                    // do nothing - will repeat by default
-                    continue;
-                } else if (wrapVal == TrMtlxTokens->mirror.GetString()) {
-                    plugName = mirrorUVToken;
-                    val = true;
-                } else {
-                    plugName = wrapUVToken;
-                    val = false;
-                }
-                mayaAttr = uvDepFn.findPlug(plugName.GetText(), true, &status);
-                if (status != MS::kSuccess) {
-                    continue;
-                }
-                UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
-            }
-        }
-    }
-
     return true;
 }
 
@@ -227,7 +188,27 @@ TfToken MtlxUsd_ImageReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrNam
         return TrMayaTokens->outColor;
     }
 
+    if (attrType == UsdShadeAttributeType::Input && usdOutputName == TrMtlxTokens->texcoord) {
+        return TrMayaTokens->uvCoord;
+    }
+
     return TfToken();
+}
+
+void MtlxUsd_ImageReader::PostConnectSubtree(UsdMayaPrimReaderContext* context)
+{
+    MObject           mayaObject = context->GetMayaNode(_GetArgs().GetUsdPrim().GetPath(), false);
+    MFnDependencyNode depFn(mayaObject);
+
+    MPlug uvCoordPlug = depFn.findPlug(TrMayaTokens->uvCoord.GetText());
+
+    if (!uvCoordPlug.isDestination()) {
+        // If there is no place2dTexture at this point, we can create a default one.
+        UsdMayaShadingUtil::CreatePlace2dTextureAndConnectTexture(mayaObject);
+    } else {
+        // We imported a place2dTexture. Make sure it is fully connected.
+        UsdMayaShadingUtil::ConnectPlace2dTexture(mayaObject, uvCoordPlug.source().node());
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
