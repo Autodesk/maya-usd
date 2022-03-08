@@ -162,15 +162,20 @@ void HdVP2Points::Sync(
 #endif
 
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
+        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->widths)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
         const HdVP2Material* material = static_cast<const HdVP2Material*>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
-        const TfTokenVector& requiredPrimvars = (material && material->GetSurfaceShader())
-            ? material->GetRequiredPrimvars()
-            : sFallbackShaderPrimvars;
-
-        _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
+        TfTokenVector materialPrimvars;
+        const TfTokenVector* requiredPrimvars = &sFallbackShaderPrimvars;
+        if (material && material->GetSurfaceShader()) {
+            materialPrimvars = material->GetRequiredPrimvars();
+            materialPrimvars.push_back(HdTokens->widths);
+            requiredPrimvars = &materialPrimvars;
+        }
+        
+        _UpdatePrimvarSources(delegate, *dirtyBits, *requiredPrimvars);
     }
 
     if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
@@ -342,7 +347,7 @@ void HdVP2Points::_UpdateDrawItem(
                 renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
             if (material) {
-                MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
+                MHWRender::MShaderInstance* shader = material->GetPointShader();
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;

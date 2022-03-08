@@ -88,6 +88,7 @@ public:
 
     //! Get the surface shader instance.
     MHWRender::MShaderInstance* GetSurfaceShader() const { return _surfaceShader.get(); }
+    MHWRender::MShaderInstance* GetPointShader() const;
 
     //! Get primvar tokens required by this material.
     const TfTokenVector& GetRequiredPrimvars() const { return _requiredPrimvars; }
@@ -126,6 +127,7 @@ private:
     TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
 
     HdVP2ShaderUniquePtr _surfaceShader;    //!< VP2 surface shader instance
+    mutable HdVP2ShaderUniquePtr _pointShader;      //!< VP2 point shader instance, if needed
     SdfPath              _surfaceShaderId;  //!< Path of the surface shader
     HdVP2TextureMap      _textureMap;       //!< Textures used by this material
     TfTokenVector        _requiredPrimvars; //!< primvars required by this material
