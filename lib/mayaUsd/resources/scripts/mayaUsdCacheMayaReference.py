@@ -174,7 +174,8 @@ def cacheFileUsdHierarchyOptions(topForm):
     with mayaRefUtils.SetParentContext(cmds.rowLayout(numberOfColumns=2)):
         cmds.optionMenuGrp('compositionArcTypeMenu',
                            label=getMayaUsdLibString('kOptionAsUSDReference'),
-                           cc=compositionArcChanged)
+                           cc=compositionArcChanged,
+                           annotation=getMayaUsdLibString('kOptionAsUSDReferenceToolTip'))
         for label in _compositionArcLabels:
             cmds.menuItem(label=label)
         cmds.optionMenu('listEditedAsMenu',
@@ -187,7 +188,8 @@ def cacheFileUsdHierarchyOptions(topForm):
                                     nrb=1,
                                     changeCommand1=variantOrNewPrim,
                                     label=getMayaUsdLibString('kTextDefineIn'),
-                                    l1=getMayaUsdLibString('kTextVariant'))
+                                    l1=getMayaUsdLibString('kTextVariant'),
+                                    annotation=getMayaUsdLibString('kTextVariantToolTip'))
 
     rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "usdCacheVariantSetRow", 3)')
     with mayaRefUtils.SetParentContext(rl):
@@ -210,7 +212,8 @@ def cacheFileUsdHierarchyOptions(topForm):
                                      nrb=1,
                                      label='',
                                      scl=variantRb,
-                                     l1=getMayaUsdLibString('kButtonNewChildPrim'))
+                                     l1=getMayaUsdLibString('kButtonNewChildPrim'),
+                                     annotation=getMayaUsdLibString('kButtonNewChildPrimToolTip'))
 
     cmds.textFieldGrp('primNameText',
                       label=getMayaUsdLibString('kMayaRefPrimName'),
@@ -247,7 +250,7 @@ def fileOptionsTabPage(tabLayout):
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kMayaRefDescription"))
     cmds.columnLayout(adjustableColumn=True)
-    cmds.text(align="left", label="TBD")
+    cmds.text(align="left", label=getMayaUsdLibString("kMayaRefCacheToUSDDescription"))
 
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kCacheMayaRefOptions"))
