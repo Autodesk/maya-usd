@@ -27,6 +27,7 @@ import unittest
 class shaderWriterTest(mayaUsdLib.ShaderWriter):
     CanExportCalled = False
     WriteCalledCount = 0
+    PostExportCalledCount = 0
     GetShadingAttributeNameForMayaAttrNameCalledWith = ""
     GetShadingAttributeForMayaAttrNameCalled = False
     NotCalled = False
@@ -38,6 +39,9 @@ class shaderWriterTest(mayaUsdLib.ShaderWriter):
 
     def Write(self, usdTime):
         shaderWriterTest.WriteCalledCount += 1
+
+    def PostExport(self):
+        shaderWriterTest.PostExportCalledCount += 1
 
     def GetShadingAttributeNameForMayaAttrName(self, mayaAttrName):
         shaderWriterTest.GetShadingAttributeNameForMayaAttrNameCalledWith = mayaAttrName
@@ -109,6 +113,7 @@ class testShaderWriter(unittest.TestCase):
 
         self.assertTrue(shaderWriterTest.CanExportCalled)
         self.assertEqual(shaderWriterTest.WriteCalledCount,1)
+        self.assertEqual(shaderWriterTest.PostExportCalledCount,1)
         self.assertTrue(shaderWriterTest.GetShadingAttributeForMayaAttrNameCalled)
         self.assertEqual(shaderWriterTest.GetShadingAttributeNameForMayaAttrNameCalledWith, 'color')
         self.assertFalse(shaderWriterTest.NotCalled)

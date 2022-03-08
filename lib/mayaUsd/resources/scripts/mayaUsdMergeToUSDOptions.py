@@ -24,6 +24,7 @@ from functools import partial
 
 
 _mergeTarget = None
+_kMergeToUSDOptionsHelpContentId = 'UsdMergeMayaEditsToUsd'
 
 
 def showMergeToUSDOptions(target):
@@ -81,8 +82,9 @@ def _createMergeToUSDOptionsDialog(window, target):
     cmds.menuItem(label=getMayaUsdLibString("kResetSettingsMenuItem"), command=partial(_resetMergeToUSDOptions, target, subLayout))
 
     cmds.setParent(menuBarLayout)
-    menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
-    cmds.menuItem(label=getMayaUsdLibString("kHelpMergeToUSDOptionsMenuItem"), command=_helpMergeToUSDOptions)
+    if _hasMergeToUSDOptionsHelp():
+        menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
+        cmds.menuItem(label=getMayaUsdLibString("kHelpMergeToUSDOptionsMenuItem"), command=_helpMergeToUSDOptions)
 
     buttonsLayout = cmds.formLayout(parent=windowLayout)
 
@@ -197,12 +199,21 @@ def _fillMergeToUSDOptionsDialog(target, subLayout, optionsText, action):
         '''.format(optionsText=optionsText, subLayout=subLayout, action=action))
 
 
+def _hasMergeToUSDOptionsHelp():
+    """
+    Returns True if the help topic for the options is available in Maya.
+    """
+    # Note: catchQuiet returns 0 or 1, not the value, so we use a dummy assignment
+    #       to produce the value to be returned by eval().
+    url = mel.eval('''catchQuiet($url = `showHelp -q "''' + _kMergeToUSDOptionsHelpContentId + '''"`); $a = $url;''')
+    return bool(url)
+
 def _helpMergeToUSDOptions(data=None):
     """
     Shows help on the merge-to-USD options dialog.
     """
     # TODO: add help about the options UI instead of the merge command
-    cmds.help('mayaUsdMergeToUsd', doc=True)
+    cmds.showHelp(_kMergeToUSDOptionsHelpContentId)
 
 
 def _getMergeToUSDOptionsVarName():

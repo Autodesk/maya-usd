@@ -46,6 +46,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
             mtlxBaseWriter.cpp
             mtlxConverterReader.cpp
             mtlxImageReader.cpp
+            mtlxPlace2dTextureWriter.cpp
             mtlxPreviewSurfaceReader.cpp
             mtlxPreviewSurfaceWriter.cpp
             mtlxStandardSurfaceReader.cpp

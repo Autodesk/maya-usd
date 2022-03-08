@@ -298,6 +298,10 @@ private:
             }
         }
 
+        for (auto&& writerEntry : shaderWriterMap) {
+            writerEntry.second->PostExport();
+        }
+
         return topLevelShader;
     }
 
