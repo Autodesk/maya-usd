@@ -77,10 +77,10 @@ endif()
 
 if (USD_VERSION VERSION_GREATER_EQUAL "0.21.11")
     set(USD_LIB_PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}usd_"
-        CACHE STRING "Prefix of USD libraries; generally matches the PXR_LIB_PREFIX used when building core USD")
+        CACHE STRING "Prefix of USD libraries; generally matches the PXR_LIB_PREFIX used when building core USD" FORCE)
 else()
     set(USD_LIB_PREFIX ${CMAKE_SHARED_LIBRARY_PREFIX}
-        CACHE STRING "Prefix of USD libraries; generally matches the PXR_LIB_PREFIX used when building core USD")
+        CACHE STRING "Prefix of USD libraries; generally matches the PXR_LIB_PREFIX used when building core USD" FORCE)
 endif()
 
 if (WIN32)
@@ -92,6 +92,8 @@ else ()
     set(USD_LIB_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX}
         CACHE STRING "Extension of USD libraries")
 endif ()
+
+message(STATUS "Searching for main USD library ${USD_LIB_PREFIX}usd${USD_LIB_SUFFIX}")
 
 find_library(USD_LIBRARY
     NAMES
