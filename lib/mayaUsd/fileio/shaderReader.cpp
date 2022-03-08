@@ -63,6 +63,11 @@ TfToken UsdMayaShaderReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrNam
     return TfToken();
 }
 
+bool UsdMayaShaderReader::TraverseUnconnectableInput(const TfToken& usdAttrName) const
+{
+    return false;
+}
+
 void UsdMayaShaderReader::PostConnectSubtree(UsdMayaPrimReaderContext* context) { }
 
 boost::optional<UsdMayaShaderReader::IsConverterResult> UsdMayaShaderReader::IsConverter()
