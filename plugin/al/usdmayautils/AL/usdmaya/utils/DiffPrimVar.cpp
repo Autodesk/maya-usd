@@ -736,6 +736,104 @@ void UvSetBuilder::performDiffTest(PrimVarDiffReport& report)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+static bool isUniformUVSetBasic(const MIntArray& indices, const MIntArray& faceCounts)
+{
+    // let's see whether we have a uniform set (based on the assumption that each face will have
+    // unique indices)
+    uint32_t offset = 0;
+    for (uint32_t i = 0, n = faceCounts.length(); i < n; ++i) {
+        const uint32_t numVerts = faceCounts[i];
+        int32_t        index = indices[offset];
+        for (uint32_t j = 1; j < numVerts; ++j) {
+            if (index != indices[offset + j]) {
+                return false;
+            }
+        }
+        offset += numVerts;
+    }
+    return true;
+}
+
+static bool isUniformUVSetExhaustive(
+    const MFloatArray& u,
+    const MFloatArray& v,
+    const MIntArray&   indices,
+    const MIntArray&   faceCounts)
+{
+    // An exhaustive test to see if we have per-face assignment of UVs
+    uint32_t offset = 0;
+    for (uint32_t i = 0, n = faceCounts.length(); i < n; ++i) {
+        const uint32_t numVerts = faceCounts[i];
+        const int32_t  index = indices[offset];
+
+        // extract UV for first vertex in face
+        const float u0 = u[index];
+        const float v0 = v[index];
+
+        // process each face
+        for (uint32_t j = 1; j < numVerts; ++j) {
+            const int32_t next_index = indices[offset + j];
+
+            // if the indices don't match
+            if (index != next_index) {
+                // check the UV values directly
+                const float u1 = u[next_index];
+                const float v1 = v[next_index];
+                if (u0 != u1 || v0 != v1) {
+                    return false;
+                }
+            }
+        }
+        offset += numVerts;
+    }
+    return true;
+}
+
+static bool isVertexUVSetExhaustive(
+    const MFloatArray&     u,
+    const MFloatArray&     v,
+    const MIntArray&       indices,
+    const MIntArray&       pointIndices,
+    std::vector<uint32_t>& indicesToExtract)
+{
+    std::map<int32_t, int32_t> indicesMap;
+
+    // do an exhaustive test to see if the UV assignments are per-vertex
+    indicesMap.emplace(pointIndices[0], indices[0]);
+    for (uint32_t i = 1, n = pointIndices.length(); i < n; ++i) {
+        auto index = pointIndices[i];
+        auto uvindex = indices[i];
+        auto it = indicesMap.find(index);
+
+        // if not found, insert new entry in map
+        if (it == indicesMap.end()) {
+            indicesMap.emplace(index, uvindex);
+        } else {
+            // if the UV index matches, we have the same assignment
+            if (uvindex != it->second) {
+                // if not, check to see if the indices differ, but the values are the same
+                const float u0 = u[it->second];
+                const float v0 = v[it->second];
+                const float u1 = u[uvindex];
+                const float v1 = v[uvindex];
+                if (u0 != u1 || v0 != v1) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    std::vector<uint32_t> tempIndicesToExtract(indicesMap.size());
+    auto                  iter = indicesMap.begin();
+    for (size_t i = 0; i < tempIndicesToExtract.size(); ++i, ++iter) {
+        tempIndicesToExtract[i] = iter->second;
+    }
+    std::swap(indicesToExtract, tempIndicesToExtract);
+
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStringArray hasNewUvSet(UsdGeomMesh& geom, const MFnMesh& mesh, PrimVarDiffReport& report)
 {
     const std::vector<UsdGeomPrimvar> primvars = geom.GetPrimvars();
@@ -783,24 +881,10 @@ TfToken guessUVInterpolationTypeExtended(
         return type;
     }
 
-    // let's see whether we have a uniform UV set (based on the assumption that each face will have
-    // unique UV indices)
-    {
-        uint32_t offset = 0;
-        for (uint32_t i = 0, n = faceCounts.length(); i < n; ++i) {
-            const uint32_t numVerts = faceCounts[i];
-            int32_t        index = indices[offset];
-            for (uint32_t j = 1; j < numVerts; ++j) {
-                if (index != indices[offset + j]) {
-                    goto face_varying;
-                }
-            }
-            offset += numVerts;
-        }
+    if (isUniformUVSetBasic(indices, faceCounts)) {
         return UsdGeomTokens->uniform;
     }
 
-face_varying:
     return UsdGeomTokens->faceVarying;
 }
 
@@ -825,77 +909,14 @@ TfToken guessUVInterpolationTypeExtensive(
         return UsdGeomTokens->constant;
     }
 
-    std::map<int32_t, int32_t> indicesMap;
-
-    // do an exhaustive test to see if the UV assignments are per-vertex
-    {
-        indicesMap.emplace(pointIndices[0], indices[0]);
-        for (uint32_t i = 1, n = pointIndices.length(); i < n; ++i) {
-            auto index = pointIndices[i];
-            auto uvindex = indices[i];
-            auto it = indicesMap.find(index);
-
-            // if not found, insert new entry in map
-            if (it == indicesMap.end()) {
-                indicesMap.emplace(index, uvindex);
-            } else {
-                // if the UV index matches, we have the same assignment
-                if (uvindex != it->second) {
-                    // if not, check to see if the indices differ, but the values are the same
-                    const float u0 = u[it->second];
-                    const float v0 = v[it->second];
-                    const float u1 = u[uvindex];
-                    const float v1 = v[uvindex];
-                    if (u0 != u1 || v0 != v1) {
-                        goto uniform_test;
-                    }
-                }
-            }
-        }
-
-        std::vector<uint32_t> tempIndicesToExtract(indicesMap.size());
-        auto                  iter = indicesMap.begin();
-        for (size_t i = 0; i < tempIndicesToExtract.size(); ++i, ++iter) {
-            tempIndicesToExtract[i] = iter->second;
-        }
-        std::swap(indicesToExtract, tempIndicesToExtract);
-
+    if (isVertexUVSetExhaustive(u, v, indices, pointIndices, indicesToExtract)) {
         return UsdGeomTokens->vertex;
     }
 
-uniform_test:
-
-    // An exhaustive test to see if we have per-face assignment of UVs
-    {
-        uint32_t offset = 0;
-        for (uint32_t i = 0, n = faceCounts.length(); i < n; ++i) {
-            const uint32_t numVerts = faceCounts[i];
-            const int32_t  index = indices[offset];
-
-            // extract UV for first vertex in face
-            const float u0 = u[index];
-            const float v0 = v[index];
-
-            // process each face
-            for (uint32_t j = 1; j < numVerts; ++j) {
-                const int32_t next_index = indices[offset + j];
-
-                // if the indices don't match
-                if (index != next_index) {
-                    // check the UV values directly
-                    const float u1 = u[next_index];
-                    const float v1 = v[next_index];
-                    if (u0 != u1 || v0 != v1) {
-                        goto face_varying;
-                    }
-                }
-            }
-            offset += numVerts;
-        }
+    if (isUniformUVSetExhaustive(u, v, indices, faceCounts)) {
         return UsdGeomTokens->uniform;
     }
 
-face_varying:
     return UsdGeomTokens->faceVarying;
 }
 
