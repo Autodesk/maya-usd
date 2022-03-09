@@ -921,6 +921,101 @@ TfToken guessUVInterpolationTypeExtensive(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+static bool isVertexColourSet(
+    const float*           rgba,
+    const size_t           numPoints,
+    const MIntArray&       pointIndices,
+    std::vector<uint32_t>& indicesToExtract)
+{
+    // check for per-vertex assignment
+    std::vector<uint32_t> indicesMap;
+    indicesMap.resize(numPoints, -1);
+
+    for (uint32_t i = 0, n = pointIndices.length(); i < n; ++i) {
+        auto index = pointIndices[i];
+        auto lastIndex = indicesMap[index];
+        if (lastIndex == 0xFFFFFFFF) {
+            indicesMap[index] = i;
+        } else {
+#if defined(__SSE__)
+
+            const f128 rgba0 = loadu4f(rgba + 4 * lastIndex);
+            const f128 rgba1 = loadu4f(rgba + 4 * i);
+            const f128 cmp = cmpne4f(rgba0, rgba1);
+            if (movemask4f(cmp)) {
+                return false;
+            }
+
+#else
+
+            // if not, check to see if the indices differ, but the values are the same
+            const float x0 = rgba[4 * lastIndex + 0];
+            const float y0 = rgba[4 * lastIndex + 1];
+            const float z0 = rgba[4 * lastIndex + 2];
+            const float w0 = rgba[4 * lastIndex + 3];
+            const float x1 = rgba[4 * i + 0];
+            const float y1 = rgba[4 * i + 1];
+            const float z1 = rgba[4 * i + 2];
+            const float w1 = rgba[4 * i + 3];
+            if (x0 != x1 || y0 != y1 || z0 != z1 || w0 != w1) {
+                return false;
+            }
+
+#endif
+        }
+    }
+    std::swap(indicesToExtract, indicesMap);
+    return true;
+}
+
+static bool isUniformColourSet(
+    const float*           rgba,
+    const size_t           numPoints,
+    const MIntArray&       faceCounts,
+    std::vector<uint32_t>& indicesToExtract)
+{
+    // check for uniform assignment
+    std::vector<uint32_t> indicesMap;
+    indicesMap.resize(numPoints, -1);
+
+    const uint32_t numFaces = faceCounts.length();
+    indicesMap.resize(numFaces);
+    uint32_t offset = 0;
+    for (uint32_t i = 0; i < numFaces; ++i) {
+        indicesMap[i] = offset;
+
+        int numPointsInFace = faceCounts[i];
+#if defined(__SSE__)
+
+        const f128 rgba0 = loadu4f(rgba + 4 * offset);
+        for (int32_t j = 1; j < numPointsInFace; ++j) {
+            const f128 rgba1 = loadu4f(rgba + 4 * (offset + j));
+            const f128 cmp = cmpne4f(rgba0, rgba1);
+            if (movemask4f(cmp)) {
+                return false;
+            }
+        }
+
+#else
+
+        const float* rgba0 = rgba + 4 * offset;
+        for (int32_t j = 1; j < numPointsInFace; ++j) {
+            const float* rgba1 = rgba + 4 * (offset + j);
+            if (rgba0[0] != rgba1[0] || rgba0[1] != rgba1[1] || rgba0[2] != rgba1[2]
+                || rgba0[3] != rgba1[3]) {
+                return false;
+            }
+        }
+
+#endif
+
+        offset += numPointsInFace;
+    }
+    std::swap(indicesToExtract, indicesMap);
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 TfToken guessColourSetInterpolationType(const float* rgba, const size_t numElements)
 {
     // if prim vars are all identical, we have a constant value
@@ -945,83 +1040,14 @@ TfToken guessColourSetInterpolationTypeExtensive(
         return UsdGeomTokens->constant;
     }
 
-    // check for per-vertex assignment
-    std::vector<uint32_t> indicesMap;
-    indicesMap.resize(numPoints, -1);
-
-    {
-        for (uint32_t i = 0, n = pointIndices.length(); i < n; ++i) {
-            auto index = pointIndices[i];
-            auto lastIndex = indicesMap[index];
-            if (lastIndex == 0xFFFFFFFF) {
-                indicesMap[index] = i;
-            } else {
-#if defined(__SSE__)
-
-                const f128 rgba0 = loadu4f(rgba + 4 * lastIndex);
-                const f128 rgba1 = loadu4f(rgba + 4 * i);
-                const f128 cmp = cmpne4f(rgba0, rgba1);
-                if (movemask4f(cmp))
-                    goto uniform_test;
-
-#else
-
-                // if not, check to see if the indices differ, but the values are the same
-                const float x0 = rgba[4 * lastIndex + 0];
-                const float y0 = rgba[4 * lastIndex + 1];
-                const float z0 = rgba[4 * lastIndex + 2];
-                const float w0 = rgba[4 * lastIndex + 3];
-                const float x1 = rgba[4 * i + 0];
-                const float y1 = rgba[4 * i + 1];
-                const float z1 = rgba[4 * i + 2];
-                const float w1 = rgba[4 * i + 3];
-                if (x0 != x1 || y0 != y1 || z0 != z1 || w0 != w1)
-                    goto uniform_test;
-
-#endif
-            }
-        }
-        std::swap(indicesToExtract, indicesMap);
+    if (isVertexColourSet(rgba, numPoints, pointIndices, indicesToExtract)) {
         return UsdGeomTokens->vertex;
     }
 
-uniform_test:
-
-    const uint32_t numFaces = faceCounts.length();
-    indicesMap.resize(numFaces);
-    uint32_t offset = 0;
-    for (uint32_t i = 0; i < numFaces; ++i) {
-        indicesMap[i] = offset;
-
-        int numPointsInFace = faceCounts[i];
-#if defined(__SSE__)
-
-        const f128 rgba0 = loadu4f(rgba + 4 * offset);
-        for (int32_t j = 1; j < numPointsInFace; ++j) {
-            const f128 rgba1 = loadu4f(rgba + 4 * (offset + j));
-            const f128 cmp = cmpne4f(rgba0, rgba1);
-            if (movemask4f(cmp))
-                goto faceVarying;
-        }
-
-#else
-
-        const float* rgba0 = rgba + 4 * offset;
-        for (int32_t j = 1; j < numPointsInFace; ++j) {
-            const float* rgba1 = rgba + 4 * (offset + j);
-            if (rgba0[0] != rgba1[0] || rgba0[1] != rgba1[1] || rgba0[2] != rgba1[2]
-                || rgba0[3] != rgba1[3])
-                goto faceVarying;
-        }
-
-#endif
-
-        offset += numPointsInFace;
+    if (isUniformColourSet(rgba, numPoints, faceCounts, indicesToExtract)) {
+        return UsdGeomTokens->uniform;
     }
-    std::swap(indicesToExtract, indicesMap);
-    return UsdGeomTokens->uniform;
 
-faceVarying:
     return UsdGeomTokens->faceVarying;
 }
 
