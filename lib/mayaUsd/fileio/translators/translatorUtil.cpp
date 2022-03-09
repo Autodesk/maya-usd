@@ -70,13 +70,14 @@ bool UsdMayaTranslatorUtil::CreateTransformNode(
 
 /* static */
 bool UsdMayaTranslatorUtil::CreateDummyTransformNode(
-    const UsdPrim&               usdPrim,
-    MObject&                     parentNode,
-    bool                         importTypeName,
-    const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context,
-    MStatus*                     status,
-    MObject*                     mayaNodeObj)
+    const UsdPrim&                  usdPrim,
+    MObject&                        parentNode,
+    bool                            importTypeName,
+    const UsdMayaPrimReaderArgs&    args,
+    UsdMayaPrimReaderContext*       context,
+    MStatus*                        status,
+    MObject*                        mayaNodeObj,
+    const UsdMayaDummyTransformType dummyTransformType)
 {
     if (!usdPrim) {
         return false;
@@ -111,6 +112,10 @@ bool UsdMayaTranslatorUtil::CreateDummyTransformNode(
             UsdMayaUtil::SetNotes(dagNode, notes);
         }
         adaptor.SetMetadata(SdfFieldKeys->TypeName, typeName);
+    }
+
+    if (dummyTransformType == UsdMayaDummyTransformType::UnlockedTransform) {
+        return true;
     }
 
     // Lock all the transform attributes.

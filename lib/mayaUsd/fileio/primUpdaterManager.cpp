@@ -58,7 +58,7 @@
 #include <tuple>
 
 using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
-using namespace MAYAUSD_NS_DEF;
+using namespace MayaUsd;
 
 // Allow for use of MObjectHandle with std::unordered_map.
 namespace std {
@@ -134,8 +134,8 @@ SdfPath makeDstPath(const SdfPath& dstRootParentPath, const SdfPath& srcPath)
 
 //------------------------------------------------------------------------------
 //
-// The UFE path and the prim refer to the same object: the prim is passed in as
-// an optimization to avoid an additional call to ufePathToPrim().
+// The UFE path is to the pulled prim, and the Dag path is the corresponding
+// Maya pulled object.
 bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
 {
     auto pulledPrim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
@@ -432,9 +432,16 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         const auto&       pulledUfePath = *ufePathIt;
         MFnDependencyNode dgNodeFn(dagPath.node());
 
+        // If the Maya node holds USD type information (e.g. a dummy transform
+        // node which is a stand-in for a non-transform USD prim type), use the
+        // USD type instead.
+        auto              usdTypeNamePlug = dgNodeFn.findPlug("USD_typeName", true);
+        bool              useUsdType = !usdTypeNamePlug.isNull();
         const std::string mayaTypeName(dgNodeFn.typeName().asChar());
 
-        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        auto registryItem = useUsdType ? UsdMayaPrimUpdaterRegistry::FindOrFallback(
+                                TfToken(usdTypeNamePlug.asString().asChar()))
+                                       : UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, pulledUfePath);
 
@@ -533,31 +540,21 @@ SdfPath getDstSdfPath(const Ufe::Path& ufePulledPath, const SdfPath& srcSdfPath,
 
 //------------------------------------------------------------------------------
 //
+// Create an updater for use with both pushCustomize() traversals /
+// customization points: pushCopySpec() and pushEnd().
+//
 UsdMayaPrimUpdaterSharedPtr createUpdater(
-    const Ufe::Path&                 ufePulledPath,
     const SdfLayerRefPtr&            srcLayer,
     const SdfPath&                   srcPath,
-    const SdfLayerRefPtr&            dstLayer,
     const SdfPath&                   dstPath,
     const UsdMayaPrimUpdaterContext& context)
 {
-    // The root of the pulled hierarchy is crucial for determining push
-    // behavior.  When pulling, we may have created a Maya pull hierarchy root
-    // node whose type does not map to the same prim updater as the original
-    // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
-    // node type (e.g. transform, which is the fallback Maya node type for many
-    // USD prim types).  Therefore, if we're at the root of the src hierarchy,
-    // use the prim at the pulled path to create the prim updater; this will
-    // occur on push, when the srcPath is in the temporary layer.
-    const bool usePulledPrim = (srcPath.GetPathElementCount() == 1);
-
     auto primSpec = srcLayer->GetPrimAtPath(srcPath);
     if (!TF_VERIFY(primSpec)) {
         return nullptr;
     }
 
-    TfToken typeName = usePulledPrim ? MayaUsd::ufe::ufePathToPrim(ufePulledPath).GetTypeName()
-                                     : primSpec->GetTypeName();
+    auto typeName = primSpec->GetTypeName();
     auto regItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
     auto factory = std::get<UpdaterFactoryFn>(regItem);
 
@@ -619,8 +616,7 @@ bool pushCustomize(
               }
 
               auto dstPath = makeDstPath(dstRootParentPath, srcPath);
-              auto updater
-                  = createUpdater(ufePulledPath, srcLayer, srcPath, dstLayer, dstPath, context);
+              auto updater = createUpdater(srcLayer, srcPath, dstPath, context);
               // If we cannot find an updater for the srcPath, prune the traversal.
               if (!updater) {
                   TF_WARN(
@@ -665,7 +661,7 @@ bool pushCustomize(
         }
 
         auto dstPath = makeDstPath(dstRootParentPath, srcPath);
-        auto updater = createUpdater(ufePulledPath, srcLayer, srcPath, dstLayer, dstPath, context);
+        auto updater = createUpdater(srcLayer, srcPath, dstPath, context);
         if (!updater) {
             TF_WARN(
                 "Could not create a prim updater for path %s during PushEnd() traversal, pruning "

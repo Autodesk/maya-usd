@@ -52,8 +52,13 @@ PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasMayaReference, args, context)
 
     MObject referenceParentNode;
 
-    UsdMayaTranslatorUtil::CreateTransformNode(
-        usdPrim, parentNode, args, &context, &status, &referenceParentNode);
+    // The stand-in for a Maya reference prim is a dummy transform node, which
+    // preserves the source USD prim type in attribute "USD_typeName".  To
+    // support workflows where this dummy transform node has its transform
+    // changed, we leave its transform unlocked.
+    UsdMayaTranslatorUtil::CreateDummyTransformNode(
+        usdPrim, parentNode, /*importTypeName*/ true, args, &context, &status,
+        &referenceParentNode, UsdMayaDummyTransformType::UnlockedTransform);
 
     return UsdMayaTranslatorMayaReference::update(usdPrim, referenceParentNode);
 }
