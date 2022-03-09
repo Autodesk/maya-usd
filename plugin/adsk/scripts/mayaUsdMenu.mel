@@ -287,10 +287,9 @@ proc string getMayaMajorVersion() {
 // setup the items in Maya's "Create" menu
 global proc mayaUsdMenu_createMenuCallback() {
     global string $gMayaUsdCreateSubMenu;
+    global string $gMainCreateMenu; // maya's create menu
 
     if ($gMayaUsdCreateSubMenu == "") {    
-        global string $gMainCreateMenu; // maya's create menu
-
         string $mayaVersion = getMayaMajorVersion();
         // find the insertion point, after the Scene Management separator
         $sceneManagementDivider = findDividerByLabel($gMainCreateMenu, uiRes("m_ModCreateMenu.kCreateSceneMgt"));
@@ -309,6 +308,8 @@ global proc mayaUsdMenu_createMenuCallback() {
             error `getMayaUsdString("kMenuStageCreateMenuError")`;
         }
     }
+
+    removeMenuCallback(`setParent -q -menu`, "mayaUsdMenu_createMenuCallback");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -511,10 +512,12 @@ proc termCreateMenu() {
         deleteUI -mi $gMayaUsdCreateSubMenu;
         $gMayaUsdCreateSubMenu = "";
     }
+    removeMenuCallback($gMainCreateMenu, "mayaUsdMenu_createMenuCallback");
     global string $gMayaUsdOpenUsdLayerEditorMenuItem;
     if ($gMayaUsdOpenUsdLayerEditorMenuItem != "") {
         deleteUI -mi $gMayaUsdOpenUsdLayerEditorMenuItem;
     }
+    removeMenuCallback($gMainCreateMenu, "mayaUsdMenu_windowMenuCallback");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -535,12 +538,15 @@ proc termSelectMenu() {
     if (`menuItem -q -exists $gMayaUsdSelectMenuDivider`) {
         deleteUI -mi $gMayaUsdSelectMenuDivider;
     }
+    global string $gMainSelectMenu; // maya's select menu
+    removeMenuCallback($gMainSelectMenu, "mayaUsdMenu_selectMenuCallback");
 
     // remove our selection mode sub menu
     global string $gMayaUsdSelectModeSubMenu;
     if (`menuItem -q -exists $gMayaUsdSelectModeSubMenu`) {
         deleteUI -mi $gMayaUsdSelectModeSubMenu;
     }
+    removeMenuCallback($gMainSelectMenu, "mayaUsdMenu_selectMenuCallback");
 }
 
 proc initAEShowMenu()
