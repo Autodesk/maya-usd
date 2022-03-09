@@ -142,7 +142,7 @@ const MObject getMessageAttr()
     return messageAttr;
 }
 
-const bool    isMayaReference(const UsdPrim& prim)
+const bool isMayaReference(const UsdPrim& prim)
 {
     if (TfGetenvBool("MAYAUSD_ENABLE_MAYA_REFERENCE_OLD_BEHAVIOUR", false)) {
         const TfToken MayaReference("MayaReference");
@@ -348,8 +348,8 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     MString uniqueRefNodeName = getUniqueRefNodeName(prim, parentDag, refDependNode);
     refDependNode.setName(uniqueRefNodeName);
 
-    // Always have to create the attribute to make sure it is in the prim scope and not inherited.
-    // If it was already created, it will be used.
+    // Always have to try to create the attribute to make sure it is in the prim scope and not
+    // inherited. If it was already created, it will be used.
     UsdAttribute attr = prim.CreateAttribute(MayaReferenceNodeName, SdfValueTypeNames->String);
     attr.Set(refDependNode.name().asChar());
 
