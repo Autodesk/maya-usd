@@ -134,7 +134,7 @@ class TestTranslator(unittest.TestCase):
         # ...and then make sure that our ref edit was preserved
         self.assertEqual(mc.getAttr('cubeNS:pCube1.translate')[0], (4.0, 5.0, 6.0))
 
-    @unittest.skipIf(not os.getenv('MAYAUSD_ENABLE_MAYA_REFERENCE_NEW_BEHAVIOUR'),
+    @unittest.skipIf(os.getenv('MAYAUSD_ENABLE_MAYA_REFERENCE_OLD_BEHAVIOUR'),
         'Not applicable with old Maya Reference behaviour')
     def testMayaReference_SurvivesHierarchyChanges(self):
         """

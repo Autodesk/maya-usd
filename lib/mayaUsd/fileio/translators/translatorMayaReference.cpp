@@ -145,16 +145,16 @@ const MObject getMessageAttr()
 const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
 const bool    isMayaReference(const UsdPrim& prim)
 {
-    if (TfGetenvBool("MAYAUSD_ENABLE_MAYA_REFERENCE_NEW_BEHAVIOUR", false)) {
-        return true; // Force new behaviour for all Maya Reference prims.
-    } else {
+    if (TfGetenvBool("MAYAUSD_ENABLE_MAYA_REFERENCE_OLD_BEHAVIOUR", false)) {
         const TfToken MayaReference("MayaReference");
         return prim.GetTypeName()
             == MayaReference; // Only MayaReference prims are using the new behaviour.
+    } else {
+        return true; // Force new behaviour for all Maya Reference prims.
     }
 }
 
-const TfToken MayaReferenceAttribute("MayaReferenceAttribute");
+const TfToken MayaReferenceNodeName("MayaReferenceNodeName");
 
 MStatus LoadOrUnloadMayaReferenceWithUndo(const MObject& referenceObject, bool load)
 {
@@ -222,9 +222,9 @@ MString UsdMayaTranslatorMayaReference::getRefNodeNameFromPrim(const UsdPrim& pr
 
     if (refNodeName.length() == 0) {
         SdfAssetPath mayaReferenceAssetPath;
-        // Check to see if we have a valid Maya reference attribute
-        UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
-        mayaReferenceAttribute.Get(&mayaReferenceAssetPath);
+        // Check to see if we have a valid Maya reference node name
+        UsdAttribute mayaReferenceNodeName = prim.GetAttribute(m_referenceName);
+        mayaReferenceNodeName.Get(&mayaReferenceAssetPath);
         ghc::filesystem::path fsFilePath(mayaReferenceAssetPath.GetAssetPath().c_str());
         fsFilePath.replace_extension(""); // Remove the extension
 
@@ -349,8 +349,9 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     MString uniqueRefNodeName = getUniqueRefNodeName(prim, parentDag, refDependNode);
     refDependNode.setName(uniqueRefNodeName);
 
-    //  Always have to create the attribute, we are here because the prim didn't have it.
-    UsdAttribute attr = prim.CreateAttribute(MayaReferenceAttribute, SdfValueTypeNames->String);
+    // Always have to create the attribute to make sure it is in the prim scope and not inherited.
+    // If it was already created, it will be used.
+    UsdAttribute attr = prim.CreateAttribute(MayaReferenceNodeName, SdfValueTypeNames->String);
     attr.Set(refDependNode.name().asChar());
 
     // Now load the reference to properly trigger the kAfterReferenceLoad callback
@@ -431,9 +432,9 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
 {
     MStatus      status;
     SdfAssetPath mayaReferenceAssetPath;
-    // Check to see if we have a valid Maya reference attribute
-    UsdAttribute mayaReferenceAttribute = prim.GetAttribute(m_referenceName);
-    mayaReferenceAttribute.Get(&mayaReferenceAssetPath);
+    // Check to see if we have a valid Maya reference node name
+    UsdAttribute mayaReferenceNodeName = prim.GetAttribute(m_referenceName);
+    mayaReferenceNodeName.Get(&mayaReferenceAssetPath);
     MString mayaReferencePath(mayaReferenceAssetPath.GetResolvedPath().c_str());
 
     // The resolved path is empty if the maya reference is a full path.
@@ -501,8 +502,8 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
             MString      expectedValue;
             UsdAttribute attr;
 
-            if (prim.HasAttribute(MayaReferenceAttribute)) {
-                attr = prim.GetAttribute(MayaReferenceAttribute);
+            if (prim.HasAttribute(MayaReferenceNodeName)) {
+                attr = prim.GetAttribute(MayaReferenceNodeName);
                 VtValue value;
                 attr.Get(&value);
                 auto resInfo = attr.GetResolveInfo();
@@ -513,7 +514,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                 }
             }
 
-            // If the prim didn't have the MayaReferenceAttribute set properly used the prim info to
+            // If the prim didn't have the MayaReferenceNodeName set properly used the prim info to
             // try to match.
             if (expectedValue.length() == 0) {
                 expectedValue = getRefNodeNameFromPrim(prim);
@@ -543,7 +544,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
 
                             if (!attr.IsValid()) {
                                 attr = prim.CreateAttribute(
-                                    MayaReferenceAttribute, SdfValueTypeNames->String);
+                                    MayaReferenceNodeName, SdfValueTypeNames->String);
                             }
 
                             attr.Set(refDependNodeName.asChar());
