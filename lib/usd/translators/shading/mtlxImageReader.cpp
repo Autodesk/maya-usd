@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "mtlxBaseReader.h"
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/shaderReader.h>
@@ -54,7 +55,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtlxUsd_ImageReader : public UsdMayaShaderReader
+class MtlxUsd_ImageReader : public MtlxUsd_BaseReader
 {
 public:
     MtlxUsd_ImageReader(const UsdMayaPrimReaderArgs&);
@@ -71,11 +72,13 @@ private:
 
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_image_float, MtlxUsd_ImageReader)
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_image_vector2, MtlxUsd_ImageReader)
+PXRUSDMAYA_REGISTER_SHADER_READER(ND_image_vector3, MtlxUsd_ImageReader)
+PXRUSDMAYA_REGISTER_SHADER_READER(ND_image_vector4, MtlxUsd_ImageReader)
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_image_color3, MtlxUsd_ImageReader)
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_image_color4, MtlxUsd_ImageReader)
 
 MtlxUsd_ImageReader::MtlxUsd_ImageReader(const UsdMayaPrimReaderArgs& readArgs)
-    : UsdMayaShaderReader(readArgs)
+    : MtlxUsd_BaseReader(readArgs)
 {
 }
 
@@ -88,25 +91,31 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
         return false;
     }
 
-    MStatus           status;
-    MObject           mayaObject;
-    MFnDependencyNode depFn;
-    if (!(UsdMayaTranslatorUtil::CreateShaderNode(
-              MString(prim.GetName().GetText()),
-              TrMayaTokens->file.GetText(),
-              UsdMayaShadingNodeType::Texture,
-              &status,
-              &mayaObject)
-          && depFn.setObject(mayaObject))) {
-        // we need to make sure assumes those types are loaded..
-        TF_RUNTIME_ERROR(
-            "Could not create node of type '%s' for shader '%s'.\n",
-            TrMayaTokens->file.GetText(),
-            prim.GetPath().GetText());
-        return false;
+    // It is possible the file node already exists if we encountered a post-processor:
+    MObject mayaObject = context.GetMayaNode(prim.GetPath(), false);
+
+    MStatus status;
+    if (mayaObject.isNull()) {
+        if (!UsdMayaTranslatorUtil::CreateShaderNode(
+                MString(prim.GetName().GetText()),
+                TrMayaTokens->file.GetText(),
+                UsdMayaShadingNodeType::Texture,
+                &status,
+                &mayaObject)) {
+            // we need to make sure those types are loaded..
+            TF_RUNTIME_ERROR(
+                "Could not create node of type '%s' for shader '%s'.\n",
+                TrMayaTokens->file.GetText(),
+                prim.GetPath().GetText());
+            return false;
+        }
+        context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
     }
 
-    context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
+    MFnDependencyNode depFn(mayaObject, &status);
+    if (!status) {
+        return false;
+    }
 
     // File
     VtValue val;
@@ -141,33 +150,11 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
 
     // Default color
     //
-    // The number of channels in the source can vary:
-    shaderSchema.GetIdAttr().Get(&_shaderID);
-    usdInput = shaderSchema.GetInput(TrMtlxTokens->paramDefault);
-    mayaAttr = depFn.findPlug(TrMayaTokens->defaultColor.GetText(), true, &status);
-    if (usdInput && status == MS::kSuccess && usdInput.Get(&val)) {
-        GfVec3f mayaVal(0.0f, 0.0f, 0.0f);
-        if (_shaderID == TrMtlxTokens->ND_image_float && val.IsHolding<float>()) {
-            // Mono: treat as rrr swizzle
-            mayaVal[0] = val.UncheckedGet<float>();
-            mayaVal[1] = mayaVal[0];
-            mayaVal[2] = mayaVal[0];
-        } else if (_shaderID == TrMtlxTokens->ND_image_vector2 && val.IsHolding<GfVec2f>()) {
-            const GfVec2f& vecVal = val.UncheckedGet<GfVec2f>();
-            // Mono + alpha: treat as rrr swizzle
-            mayaVal[0] = vecVal[0];
-            mayaVal[1] = vecVal[0];
-            mayaVal[2] = vecVal[0];
-        } else if (_shaderID == TrMtlxTokens->ND_image_color3 && val.IsHolding<GfVec3f>()) {
-            mayaVal = val.UncheckedGet<GfVec3f>();
-        } else if (_shaderID == TrMtlxTokens->ND_image_color4 && val.IsHolding<GfVec4f>()) {
-            const GfVec4f& vecVal = val.UncheckedGet<GfVec4f>();
-            mayaVal[0] = vecVal[0];
-            mayaVal[1] = vecVal[1];
-            mayaVal[2] = vecVal[2];
-        }
-        val = mayaVal;
-        UsdMayaReadUtil::SetMayaAttr(mayaAttr, val, /*unlinearizeColors*/ false);
+    float   alphaVal = 1.0f;
+    GfVec3f colorVal(0.0f, 0.0f, 0.0f);
+    if (GetColorAndAlphaFromInput(shaderSchema, TrMayaTokens->defaultColor, colorVal, alphaVal)) {
+        MPlug mayaAttr = depFn.findPlug(TrMayaTokens->defaultColor.GetText(), true, &status);
+        UsdMayaReadUtil::SetMayaAttr(mayaAttr, VtValue(colorVal), /*unlinearizeColors*/ false);
     }
 
     return true;

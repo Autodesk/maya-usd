@@ -90,7 +90,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext& context)
               &status,
               &mayaObject)
           && depFn.setObject(mayaObject))) {
-        // we need to make sure assumes those types are loaded..
+        // we need to make sure those types are loaded..
         TF_RUNTIME_ERROR(
             "Could not create node of type '%s' for shader '%s'.\n",
             TrMayaTokens->file.GetText(),
