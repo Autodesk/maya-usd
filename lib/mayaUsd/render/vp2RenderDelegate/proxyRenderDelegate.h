@@ -171,7 +171,7 @@ public:
     const MColor& GetWireframeColor() const;
 
     MAYAUSD_CORE_PUBLIC
-    GfVec3f GetCurveDefaultColor();
+    GfVec3f GetDefaultColor(const TfToken& className);
 
     // Returns the selection highlight color for a given HdPrim type.
     // If className is empty, returns the lead highlight color.
@@ -303,6 +303,7 @@ private:
     MColorCache  _activePointsColorCache { MColor(), 0 };
     MColorCache  _leadColorCache { MColor(), 0 };
     GfVec3fCache _dormantCurveColorCache { GfVec3f(), 0 };
+    GfVec3fCache _dormantPointsColorCache { GfVec3f(), 0 };    
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;

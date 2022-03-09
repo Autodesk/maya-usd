@@ -1474,35 +1474,55 @@ HdVP2SelectionStatus ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path
 //! \brief  Query the wireframe color assigned to the proxy shape.
 const MColor& ProxyRenderDelegate::GetWireframeColor() const { return _wireframeColor; }
 
-GfVec3f ProxyRenderDelegate::GetCurveDefaultColor()
+GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
 {
-    // Check the cache. It is safe since _dormantCurveColorCache.second is atomic
-    if (_dormantCurveColorCache.second == _frameCounter) {
-        return _dormantCurveColorCache.first;
+    static const GfVec3f kDefaultColor(0.000f, 0.016f, 0.376f);
+
+    // Prepare to construct the query command.
+    const char*  queryName = "unsupported";
+    GfVec3fCache* colorCache = nullptr;
+    if (className == HdPrimTypeTokens->basisCurves) {
+        colorCache = &_dormantCurveColorCache;
+        queryName = "curve";
+    } else if (className == HdPrimTypeTokens->points) {
+        colorCache = &_dormantPointsColorCache;
+        queryName = "particle";
+    } else {
+        TF_WARN(
+            "ProxyRenderDelegate::GetDefaultColor - unsupported class: '%s'",
+            className.IsEmpty() ? "empty" : className.GetString().c_str());
+        return kDefaultColor;
+    }
+
+    // Check the cache. It is safe since colorCache->second is atomic
+    if (colorCache->second == _frameCounter) {
+        return colorCache->first;
     }
 
     // Enter the mutex and check the cache again
     std::lock_guard<std::mutex> mutexGuard(_mayaCommandEngineMutex);
-    if (_dormantCurveColorCache.second == _frameCounter) {
-        return _dormantCurveColorCache.first;
+    if (colorCache->second == _frameCounter) {
+        return colorCache->first;
     }
+
+    MString queryCommand = "int $index = `displayColor -q -dormant \"";
+    queryCommand += queryName;
+    queryCommand += "\"`; colorIndex -q $index;";
 
     // Execute Maya command engine to fetch the color
     MDoubleArray colorResult;
-    MGlobal::executeCommand(
-        "int $index = `displayColor -q -dormant \"curve\"`; colorIndex -q $index;", colorResult);
+    MGlobal::executeCommand(queryCommand, colorResult);
 
     if (colorResult.length() == 3) {
-        _dormantCurveColorCache.first = GfVec3f(colorResult[0], colorResult[1], colorResult[2]);
+        colorCache->first = GfVec3f(colorResult[0], colorResult[1], colorResult[2]);
     } else {
-        TF_WARN("Failed to obtain curve default color");
-        // In case of an error, return the default navy-blue color
-        _dormantCurveColorCache.first = GfVec3f(0.000f, 0.016f, 0.376f);
+        TF_WARN("Failed to obtain default color");
+        colorCache->first = kDefaultColor;
     }
 
     // Update the cache and return
-    _dormantCurveColorCache.second = _frameCounter;
-    return _dormantCurveColorCache.first;
+    colorCache->second = _frameCounter;
+    return colorCache->first;
 }
 
 //! \brief

@@ -415,7 +415,7 @@ void HdVP2Points::_UpdateDrawItem(
             }
 
             // If color/opacity is not found, the default color will be used
-            GfVec3f defaultColor(0.247f, 0.137f, 0.122f);
+            GfVec3f defaultColor = drawScene.GetDefaultColor(HdPrimTypeTokens->points);
             if (colorArray.empty()) {
                 colorArray.push_back(defaultColor);
                 colorInterpolation = HdInterpolationConstant;

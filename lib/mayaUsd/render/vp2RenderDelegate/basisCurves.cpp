@@ -786,7 +786,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             // If color/opacity is not found, the default color of Maya curves will be used
             if (colorArray.empty()) {
-                colorArray.push_back(drawScene.GetCurveDefaultColor());
+                colorArray.push_back(drawScene.GetDefaultColor(HdPrimTypeTokens->basisCurves));
                 colorInterpolation = HdInterpolationConstant;
             }
 
