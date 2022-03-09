@@ -142,7 +142,6 @@ const MObject getMessageAttr()
     return messageAttr;
 }
 
-const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
 const bool    isMayaReference(const UsdPrim& prim)
 {
     if (TfGetenvBool("MAYAUSD_ENABLE_MAYA_REFERENCE_OLD_BEHAVIOUR", false)) {
@@ -357,13 +356,6 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     // Now load the reference to properly trigger the kAfterReferenceLoad callback
     status = LoadMayaReferenceWithUndo(referenceObject);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    {
-        // To avoid the error that USD complains about editing to same layer simultaneously from
-        // different threads, we record it as custom data instead of creating an attribute.
-        MString refDependNodeName = refDependNode.name();
-        VtValue value(std::string(refDependNodeName.asChar(), refDependNodeName.length()));
-        prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
-    }
 
     return MS::kSuccess;
 }
@@ -538,10 +530,6 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                             tempRefFn.setName(uniqueRefNodeName);
 
                             MString refDependNodeName = tempRefFn.name();
-                            VtValue value(std::string(
-                                refDependNodeName.asChar(), refDependNodeName.length()));
-                            prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
-
                             if (!attr.IsValid()) {
                                 attr = prim.CreateAttribute(
                                     MayaReferenceNodeName, SdfValueTypeNames->String);
