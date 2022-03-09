@@ -47,6 +47,8 @@ static const std::unordered_map<string, const pugi::char_t*> OGS_SEMANTICS_MAP =
     { "Bw", "Bw" },
     { "Bm", "Bm" },
 
+    { "GPUStage", "GPUStage" },
+
     { "u_worldMatrix", "World" },
     { "u_worldInverseMatrix", "WorldInverse" },
     { "u_worldTransposeMatrix", "WorldTranspose" },
@@ -344,6 +346,10 @@ string OgsXmlGenerator::generate(
         xmlProperties,
         glslPixelStage.getInputBlock(HW::VERTEX_DATA),
         OgsParameterFlags::VARYING_INPUT_PARAM);
+
+    // Add dummy property GPUStage to allow insertion of custom geometry fragments later on
+    pugi::xml_node gpuStageProp = xmlProperties.append_child("undefined");
+    xmlSetProperty(gpuStageProp, "GPUStage", "GPUStage");
 
     const bool hwTransparency = glslShader.hasAttribute(HW::ATTR_TRANSPARENT);
     if (hwTransparency) {
