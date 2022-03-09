@@ -27,7 +27,6 @@
 #include <memory>
 #include <vector>
 
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
