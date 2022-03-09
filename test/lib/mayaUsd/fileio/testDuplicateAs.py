@@ -86,6 +86,39 @@ class DuplicateAsTestCase(unittest.TestCase):
         self.assertEqual(cmds.getAttr(bMayaPathStr + '.translate')[0],
                          bXlation)
 
+    def testDuplicateAsNonRootMaya(self):
+        '''Duplicate a USD transform hierarchy to Maya.'''
+
+        (_, _, aXlation, aUsdUfePathStr, aUsdUfePath, _, _, 
+               bXlation, bUsdUfePathStr, bUsdUfePath, _) = \
+            createSimpleXformScene()
+
+        xform = cmds.createNode('transform')
+        xformNames = cmds.ls(xform)
+        self.assertEqual(1, len(xformNames))
+        xformName = xformNames[0]
+
+        # Duplicate USD data as Maya data, placing it under the transform we created.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.duplicate(
+                aUsdUfePathStr, '|world|'+ xformName))
+
+        # Should now have two transform nodes in the Maya scene: the path
+        # components in the second segment of the aUsdItem and bUsdItem will
+        # now be under the transform.
+        aMayaPathStr = '|' + xformName + str(aUsdUfePath.segments[1]).replace('/', '|')
+        bMayaPathStr = '|' + xformName + str(bUsdUfePath.segments[1]).replace('/', '|')
+        self.assertEqual(1, len(cmds.ls(aMayaPathStr, long=True)))
+        self.assertEqual(1, len(cmds.ls(bMayaPathStr, long=True)))
+        self.assertEqual(cmds.ls(aMayaPathStr, long=True)[0], aMayaPathStr)
+        self.assertEqual(cmds.ls(bMayaPathStr, long=True)[0], bMayaPathStr)
+
+        # Translation should have been copied over to the Maya data model.
+        self.assertEqual(cmds.getAttr(aMayaPathStr + '.translate')[0],
+                         aXlation)
+        self.assertEqual(cmds.getAttr(bMayaPathStr + '.translate')[0],
+                         bXlation)
+
     def testDuplicateAsMayaUndoRedo(self):
         '''Duplicate a USD transform hierarchy to Maya and then undo and redo the command.'''
 

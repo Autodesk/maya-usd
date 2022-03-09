@@ -65,7 +65,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
     # Temporarily disabling since the import will be in a separate PR.
     @unittest.skipUnless("mayaUtils" in globals() and mayaUtils.mayaMajorVersion() >= 2023 and Usd.GetVersion() > (0, 21, 2), 'Requires MaterialX support.')
-    def disabled_testUsdPreviewSurfaceRoundtripMaterialX(self):
+    def testUsdPreviewSurfaceRoundtripMaterialX(self):
         self.__testUsdPreviewSurfaceRoundtrip(metallic=True,
                                               convertTo="MaterialX")
 
@@ -155,6 +155,11 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             "pSphere1Shape",
             isMember=material_sg))
 
+        # MaterialX preserves the place2dTexture name:
+        p2dName = "place2dTexture"
+        if convertTo == "MaterialX":
+            p2dName = uv_node
+
         # Check that we have no spurious "Looks" transform
         expectedTr = set(['front', 'persp', 'side', 'top', 'pSphere1'])
         allTr = set(cmds.ls(tr=True))
@@ -169,7 +174,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             file_node+".outColor")
         self.assertEqual(
             cmds.connectionInfo(file_node+".wrapU", sfd=True),
-            "place2dTexture.wrapU")
+            "%s.wrapU"%p2dName)
 
         # Check values:
         self.assertAlmostEqual(cmds.getAttr(material_node+".ior"), 2)
@@ -191,8 +196,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         self.assertFalse(imported_path.startswith(".."))
         self.assertEqual(os.path.normpath(imported_path.lower()),
                          os.path.normpath(original_path.lower()))
-        self.assertEqual(cmds.getAttr("place2dTexture.wrapU"), 0)
-        self.assertEqual(cmds.getAttr("place2dTexture.wrapV"), 1)
+        self.assertEqual(cmds.getAttr("%s.wrapU"%p2dName), 0)
+        self.assertEqual(cmds.getAttr("%s.wrapV"%p2dName), 1)
 
         # Make sure paths are relative in the USD file. Joining the directory
         # that the USD file lives in with the texture path should point us at

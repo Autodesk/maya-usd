@@ -18,11 +18,9 @@
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/shading/symmetricShaderReader.h>
 #include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
@@ -91,26 +89,6 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
     UsdMayaSymmetricShaderWriter::RegisterWriter(
         TrMayaTokens->blinn,
         TrMtlxTokens->MayaND_blinn_surfaceshader,
-        TrMtlxTokens->conversionName);
-};
-
-TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
-{
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->MayaND_lambert_surfaceshader,
-        TrMayaTokens->lambert,
-        TrMtlxTokens->conversionName);
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->MayaND_phong_surfaceshader,
-        TrMayaTokens->phong,
-        TrMtlxTokens->conversionName);
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->MayaND_blinn_surfaceshader,
-        TrMayaTokens->blinn,
-        TrMtlxTokens->conversionName);
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->MayaND_place2dTexture_vector2,
-        TrMayaTokens->place2dTexture,
         TrMtlxTokens->conversionName);
 };
 
