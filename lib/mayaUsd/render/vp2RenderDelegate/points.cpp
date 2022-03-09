@@ -55,40 +55,15 @@ namespace {
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals, HdTokens->widths };
 
-VtVec3fArray _BuildInterpolatedArray(size_t numVerts, const VtVec3fArray& authoredData)
+template<typename BaseType>
+VtArray<BaseType> _BuildInterpolatedArray(size_t numVerts, const VtArray<BaseType>& authoredData, const BaseType& defaultValue)
 {
-    VtVec3fArray result(numVerts);
+    VtArray<BaseType> result(numVerts);
     size_t       size = authoredData.size();
 
     if (size == 1) {
         // Uniform data
-        const GfVec3f& elem = authoredData[0];
-        for (size_t i = 0; i < numVerts; ++i) {
-            result[i] = elem;
-        }
-    } else if (size == numVerts) {
-        // Vertex data
-        result = authoredData;
-    } else {
-        // Fallback
-        const GfVec3f elem(1.0f, 0.0f, 0.0f);
-        for (size_t i = 0; i < numVerts; ++i) {
-            result[i] = elem;
-        }
-        TF_WARN("Incorrect number of primvar data, using default GfVec3f(1,0,0) for rendering.");
-    }
-
-    return result;
-}
-
-VtFloatArray _BuildInterpolatedArray(size_t numVerts, const VtFloatArray& authoredData)
-{
-    VtFloatArray result(numVerts);
-    size_t       size = authoredData.size();
-
-    if (size == 1) {
-        // Uniform or missing data
-        float elem = authoredData[0];
+        const BaseType& elem = authoredData[0];
         for (size_t i = 0; i < numVerts; ++i) {
             result[i] = elem;
         }
@@ -98,9 +73,9 @@ VtFloatArray _BuildInterpolatedArray(size_t numVerts, const VtFloatArray& author
     } else {
         // Fallback
         for (size_t i = 0; i < numVerts; ++i) {
-            result[i] = 1.0;
+            result[i] = defaultValue;
         }
-        TF_WARN("Incorrect number of primvar data, using default 1.0 for rendering.");
+        TF_WARN("Incorrect number of primvar data, using default value for rendering.");
     }
 
     return result;
@@ -221,6 +196,46 @@ void HdVP2Points::Sync(
     _UpdateRepr(delegate, reprToken);
 }
 
+template<typename BaseType>
+void PreparePrimvarBuffer(HdVP2PointsSharedData& pointsSharedData, MayaUsdCommitState& stateToCommit, const TfToken& primvarToken, const TfToken& bufferToken, const MHWRender::MVertexBufferDescriptor& vbDesc, const BaseType& defaultValue)
+{
+    const auto& primvarSourceMap = pointsSharedData._primvarSourceMap;
+
+    VtArray<BaseType> primvarArray;
+
+    const auto it = primvarSourceMap.find(primvarToken);
+    if (it != primvarSourceMap.end()) {
+        const VtValue& value = it->second.data;
+        if (value.IsHolding<VtArray<BaseType>>()) {
+            primvarArray = value.UncheckedGet<VtArray<BaseType>>();
+        }
+    }
+
+    if (primvarArray.empty()) {
+        primvarArray.push_back(defaultValue);
+    }
+
+    primvarArray = _BuildInterpolatedArray(pointsSharedData._points.size(), primvarArray, defaultValue);
+
+    MHWRender::MVertexBuffer* primvarBuffer
+        = pointsSharedData._primvarBuffers[bufferToken].get();
+
+    if (!primvarBuffer) {
+        primvarBuffer = new MHWRender::MVertexBuffer(vbDesc);
+        pointsSharedData._primvarBuffers[bufferToken].reset(primvarBuffer);
+    }
+
+    unsigned int numElems = primvarArray.size();
+    if (primvarBuffer && numElems > 0) {
+        void* bufferData = primvarBuffer->acquire(numElems, true);
+        stateToCommit._primvarBufferDataMap[bufferToken] = bufferData;
+
+        if (bufferData != nullptr) {
+            memcpy(bufferData, primvarArray.cdata(), numElems * sizeof(BaseType));
+        }
+    }
+}
+
 /*! \brief  Update the draw item
 
     This call happens on worker threads and results of the change are collected
@@ -276,13 +291,13 @@ void HdVP2Points::_UpdateDrawItem(
                 }
             }
 
-            // Using a zero vector to indicate requirement of camera-facing
-            // normals when there is no authored normals.
+            // The default normal is looking up
+            GfVec3f defaultNormal(0.0f, 1.0f, 0.0f);
             if (normals.empty()) {
-                normals.push_back(GfVec3f(0.0f, 1.0f, 0.0f));
+                normals.push_back(defaultNormal);
             }
 
-            normals = _BuildInterpolatedArray(_pointsSharedData._points.size(), normals);
+            normals = _BuildInterpolatedArray(_pointsSharedData._points.size(), normals, defaultNormal);
 
             if (!_pointsSharedData._normalsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
@@ -301,42 +316,33 @@ void HdVP2Points::_UpdateDrawItem(
             }
         }
 
-        // Prepare widths buffer.
+        // Prepare primvar buffers.
         if (itemDirtyBits & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle)) {
-            VtFloatArray widths;
+            for (const auto& it : primvarSourceMap) {
+                const TfToken& token = it.first;
+            
+                // skip primvars that are processed separately.
+                if ((token == HdTokens->displayColor) || (token == HdTokens->displayOpacity)
+                    || (token == HdTokens->points) || (token == HdTokens->normals))
+                    continue;
 
-            const auto it = primvarSourceMap.find(HdTokens->widths);
-            if (it != primvarSourceMap.end()) {
-                const VtValue& value = it->second.data;
+                const VtValue& value = it.second.data;
                 if (value.IsHolding<VtFloatArray>()) {
-                    widths = value.UncheckedGet<VtFloatArray>();
-                }
-            }
+                    const MHWRender::MVertexBufferDescriptor vbDesc(
+                        "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 1);
 
-            if (widths.empty()) {
-                widths.push_back(1.0f);
-            }
+                    const auto& bufferToken = (token == HdTokens->widths) ? _tokens->spriteWidth : token;
+                    PreparePrimvarBuffer(_pointsSharedData, stateToCommit, token, bufferToken, vbDesc, 1.f);
+                } else if (value.IsHolding<VtVec2fArray>()) {
+                    const MHWRender::MVertexBufferDescriptor vbDesc(
+                        "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 2);
 
-            widths = _BuildInterpolatedArray(_pointsSharedData._points.size(), widths);
+                    PreparePrimvarBuffer(_pointsSharedData, stateToCommit, token, token, vbDesc, GfVec2f(0.f, 0.f));
+                } else if (value.IsHolding<VtVec3fArray>()) {
+                    const MHWRender::MVertexBufferDescriptor vbDesc(
+                        "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 3);
 
-            MHWRender::MVertexBuffer* widthsBuffer
-                = _pointsSharedData._primvarBuffers[_tokens->spriteWidth].get();
-
-            if (!widthsBuffer) {
-                const MHWRender::MVertexBufferDescriptor vbDesc(
-                    "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 1);
-
-                widthsBuffer = new MHWRender::MVertexBuffer(vbDesc);
-                _pointsSharedData._primvarBuffers[_tokens->spriteWidth].reset(widthsBuffer);
-            }
-
-            unsigned int numWidths = widths.size();
-            if (widthsBuffer && numWidths > 0) {
-                void* bufferData = widthsBuffer->acquire(numWidths, true);
-                stateToCommit._primvarBufferDataMap[_tokens->spriteWidth] = bufferData;
-
-                if (bufferData != nullptr) {
-                    memcpy(bufferData, widths.cdata(), numWidths * sizeof(float));
+                    PreparePrimvarBuffer(_pointsSharedData, stateToCommit, token, token, vbDesc, GfVec3f(0.f, 0.f, 0.f));
                 }
             }
         }
@@ -409,8 +415,9 @@ void HdVP2Points::_UpdateDrawItem(
             }
 
             // If color/opacity is not found, the default color will be used
+            GfVec3f defaultColor(0.247f, 0.137f, 0.122f);
             if (colorArray.empty()) {
-                colorArray.push_back(GfVec3f(0.247f, 0.137f, 0.122f));
+                colorArray.push_back(defaultColor);
                 colorInterpolation = HdInterpolationConstant;
             }
 
@@ -462,8 +469,8 @@ void HdVP2Points::_UpdateDrawItem(
             }
 
             if (prepareCPVBuffer) {
-                colorArray = _BuildInterpolatedArray(_pointsSharedData._points.size(), colorArray);
-                alphaArray = _BuildInterpolatedArray(_pointsSharedData._points.size(), alphaArray);
+                colorArray = _BuildInterpolatedArray(_pointsSharedData._points.size(), colorArray, defaultColor);
+                alphaArray = _BuildInterpolatedArray(_pointsSharedData._points.size(), alphaArray, 1.f);
 
                 const size_t numColors = colorArray.size();
                 const size_t numAlphas = alphaArray.size();
