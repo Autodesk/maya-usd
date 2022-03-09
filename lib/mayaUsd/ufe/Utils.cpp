@@ -372,6 +372,11 @@ MDagPath ufeToDagPath(const Ufe::Path& ufePath)
     );
 }
 
+bool isMayaWorldPath(const Ufe::Path& ufePath)
+{
+    return (ufePath.runTimeId() == g_MayaRtid && ufePath.size() == 1);
+}
+
 PXR_NS::MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
 {
     // Path should not be empty.
