@@ -93,7 +93,7 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
 
     // It is possible the file node already exists if we encountered a post-processor:
     MObject mayaObject = context.GetMayaNode(prim.GetPath(), false);
-    ;
+
     MStatus status;
     if (mayaObject.isNull()) {
         if (!UsdMayaTranslatorUtil::CreateShaderNode(
@@ -102,7 +102,7 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
                 UsdMayaShadingNodeType::Texture,
                 &status,
                 &mayaObject)) {
-            // we need to make sure assumes those types are loaded..
+            // we need to make sure those types are loaded..
             TF_RUNTIME_ERROR(
                 "Could not create node of type '%s' for shader '%s'.\n",
                 TrMayaTokens->file.GetText(),

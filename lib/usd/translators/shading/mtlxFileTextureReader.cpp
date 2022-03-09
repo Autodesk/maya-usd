@@ -123,7 +123,7 @@ bool MtlxUsd_FileTextureReader::Read(UsdMayaPrimReaderContext& context)
                 UsdMayaShadingNodeType::Texture,
                 &status,
                 &mayaObject)) {
-            // we need to make sure assumes those types are loaded..
+            // we need to make sure those types are loaded..
             TF_RUNTIME_ERROR(
                 "Could not create node of type '%s' for shader '%s'.\n",
                 TrMayaTokens->file.GetText(),
