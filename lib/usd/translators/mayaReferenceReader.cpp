@@ -57,8 +57,14 @@ PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasMayaReference, args, context)
     // support workflows where this dummy transform node has its transform
     // changed, we leave its transform unlocked.
     UsdMayaTranslatorUtil::CreateDummyTransformNode(
-        usdPrim, parentNode, /*importTypeName*/ true, args, &context, &status,
-        &referenceParentNode, UsdMayaDummyTransformType::UnlockedTransform);
+        usdPrim,
+        parentNode,
+        /*importTypeName*/ true,
+        args,
+        &context,
+        &status,
+        &referenceParentNode,
+        UsdMayaDummyTransformType::UnlockedTransform);
 
     return UsdMayaTranslatorMayaReference::update(usdPrim, referenceParentNode);
 }
