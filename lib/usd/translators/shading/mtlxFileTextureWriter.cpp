@@ -389,6 +389,24 @@ void MtlxUsd_FileWriter::Write(const UsdTimeCode& usdTime)
         .Set(TrMtlxTokens->periodic.GetString());
     shaderSchema.CreateInput(TrMtlxTokens->vaddressmode, SdfValueTypeNames->String)
         .Set(TrMtlxTokens->periodic.GetString());
+
+    // Filter type:
+    //
+    // A bit arbitrary. We will go with:
+    //       Off(0) -> closest (rendered as kMinMagMipPoint in VP2)
+    //    MipMap(1) -> linear (MaterialX default rendered as kMinMagMipLinear in VP2)
+    // All other(-) -> cubic (rendered as kAnisotropic in VP2)
+    MPlug filterTypePlug = depNodeFn.findPlug(TrMayaTokens->filterType.GetText(), true, &status);
+    if (status == MS::kSuccess) {
+        int filterTypeVal = filterTypePlug.asInt();
+        if (filterTypeVal == 0) {
+            shaderSchema.CreateInput(TrMtlxTokens->filtertype, SdfValueTypeNames->String)
+                .Set(TrMtlxTokens->closest.GetString());
+        } else if (filterTypeVal > 1) {
+            shaderSchema.CreateInput(TrMtlxTokens->filtertype, SdfValueTypeNames->String)
+                .Set(TrMtlxTokens->cubic.GetString());
+        }
+    }
 }
 
 bool MtlxUsd_FileWriter::AuthorSplitColor4InputFromShadingNodeAttr(

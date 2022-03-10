@@ -34,6 +34,14 @@ list(APPEND NODE_GLSL_IMPLEMENTATIONS
     libraries/usd_utilities_genglsl_impl.mtlx
     libraries/mx_texcoordtangents_vector3.glsl
     libraries/mx_arbitrarytangents_vector3.glsl
+    libraries/mx_srgb_texture_to_aces_2065_1_color3.glsl
+    libraries/mx_srgb_texture_to_aces_2065_1_color4.glsl
+    libraries/mx_srgb_texture_to_acescg_color3.glsl
+    libraries/mx_srgb_texture_to_acescg_color4.glsl
+    libraries/mx_srgb_texture_to_lin_dci_p3_d65_color3.glsl
+    libraries/mx_srgb_texture_to_lin_dci_p3_d65_color4.glsl
+    libraries/mx_srgb_texture_to_linrec2020_color3.glsl
+    libraries/mx_srgb_texture_to_linrec2020_color4.glsl
 )
 
 # -----------------------------------------------------------------------------
