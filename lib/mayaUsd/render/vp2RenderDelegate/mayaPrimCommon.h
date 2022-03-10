@@ -98,13 +98,13 @@ struct MayaUsdCommitState
 
     //! Instancing doesn't have dirty bits, every time we do update, we must update instance
     //! transforms
-    MMatrixArray _instanceTransforms;
+    std::shared_ptr<MMatrixArray> _instanceTransforms;
 
     //! Color parameter that _instanceColors should be bound to
     MString _instanceColorParam;
 
     //! Color array to support per-instance color and selection highlight.
-    MFloatArray _instanceColors;
+    std::shared_ptr<MFloatArray> _instanceColors;
 
     //! List of runtime paths that a render item represents
     MStringArray _ufeIdentifiers;
@@ -132,9 +132,8 @@ struct MayaUsdCommitState
     bool Empty()
     {
         return _indexBufferData == nullptr && _shader == nullptr && _enabled == nullptr
-            && !_geometryDirty && _boundingBox == nullptr && !_renderItemData._usingInstancedDraw
-            && _instanceTransforms.length() == 0 && _ufeIdentifiers.length() == 0
-            && _worldMatrix == nullptr;
+            && !_geometryDirty && _boundingBox == nullptr && !_instanceTransforms
+            && !_instanceColors && _ufeIdentifiers.length() == 0 && _worldMatrix == nullptr;
     }
 };
 

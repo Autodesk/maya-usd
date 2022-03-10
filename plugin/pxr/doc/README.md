@@ -344,16 +344,24 @@ For example, your `plugInfo.json` would contain these keys if you wanted the def
 
 ```javascript
 {
-    "UsdMaya": {
-        "UsdExport": {
-            "exportMaterialCollections": true,
-            "chaser": "alembic",
-            "chaserArgs": [
-                ["alembic", "primvarprefix", "ABC_,ABC2_=customPrefix_,ABC3_=,ABC4_=customNamespace:"],
-                ["alembic", "attrprefix", "ABC_,ABC2_=customPrefix_,ABC3_=,ABC4_=customNamespace:"]
-            ]
+  "Plugins": [
+    {
+      "Info": {
+        "UsdMaya": {
+            "UsdExport": {
+              "exportMaterialCollections": true,
+              "chaser": ["alembic"],
+              "chaserArgs": [
+                  ["alembic", "primvarprefix", "ABC_,ABC2_=customPrefix_,ABC3_=,ABC4_=customNamespace:"],
+                  ["alembic", "attrprefix", "ABC_,ABC2_=customPrefix_,ABC3_=,ABC4_=customNamespace:"]
+              ]
+          }
         }
+      },
+      "Name": "MySiteSpecificConfigPlugin",
+      "Type": "resource"
     }
+  ]
 }
 ```
 

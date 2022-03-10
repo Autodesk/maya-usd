@@ -20,7 +20,9 @@
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/shadingUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
@@ -35,6 +37,7 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/output.h>
@@ -54,6 +57,8 @@
 
 #include <regex>
 
+using namespace MAYAUSD_NS_DEF;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MtlxUsd_FileWriter : public MtlxUsd_BaseWriter
@@ -66,14 +71,23 @@ public:
 
     void Write(const UsdTimeCode& usdTime) override;
 
+    void PostExport() override;
+
     UsdAttribute GetShadingAttributeForMayaAttrName(
         const TfToken&          mayaAttrName,
         const SdfValueTypeName& typeName) override;
 
-private:
-    SdfPath _GetPlace2DTexturePath(const MFnDependencyNode& depNodeFn);
+    bool AuthorSplitColor4InputFromShadingNodeAttr(
+        const MFnDependencyNode& depNodeFn,
+        const TfToken&           coorAttrName,
+        const TfToken&           alphaAttrName,
+        UsdShadeShader&          shaderSchema,
+        const UsdTimeCode        usdTime);
 
-    int _numChannels = 4;
+private:
+    int              _numChannels = 4;
+    UsdPrim          _fileTexturePrim;
+    SdfValueTypeName _outputDataType;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(file, MtlxUsd_FileWriter);
@@ -84,6 +98,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Shared primvar writer (when no place2dTexture found):
     ((PrimvarReaderShaderName, "shared_MayaGeomPropValue"))
+    ((fileTextureSuffix, "_MayafileTexture"))
 );
 // clang-format on
 
@@ -133,25 +148,66 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
     switch (_numChannels) {
     case 1:
         texSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_image_float));
-        texSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float);
+        _outputDataType = SdfValueTypeNames->Float;
         break;
     case 2:
         texSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_image_vector2));
-        texSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Float2);
+        _outputDataType = SdfValueTypeNames->Float2;
         break;
     case 3:
         texSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_image_color3));
-        texSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Color3f);
+        _outputDataType = SdfValueTypeNames->Color3f;
         break;
     case 4:
         texSchema.CreateIdAttr(VtValue(TrMtlxTokens->ND_image_color4));
-        texSchema.CreateOutput(TrMtlxTokens->out, SdfValueTypeNames->Color4f);
+        _outputDataType = SdfValueTypeNames->Color4f;
         break;
     default: TF_CODING_ERROR("Unsupported format"); return;
     }
+    texSchema.CreateInput(TrMtlxTokens->filtertype, SdfValueTypeNames->String).Set("cubic");
+    UsdShadeOutput colorOutput = texSchema.CreateOutput(TrMtlxTokens->out, _outputDataType);
 
-    // Now create a geompropvalue reader that the image shader will use.
-    SdfPath        primvarReaderPath = _GetPlace2DTexturePath(depNodeFn);
+    // The color correction section of a fileTexture node exists on a separate node that post
+    // processes the values of the MaterialX image node, which is kept visible to allow DCC to
+    // properly detect textures that need to be loaded.
+    MString fileTextureName = depNodeFn.name();
+    fileTextureName += _tokens->fileTextureSuffix.GetText();
+    SdfPath fileTexturePath
+        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(fileTextureName.asChar())));
+
+    UsdShadeShader fileTextureSchema = UsdShadeShader::Define(GetUsdStage(), fileTexturePath);
+    _fileTexturePrim = fileTextureSchema.GetPrim();
+
+    if (_outputDataType == SdfValueTypeNames->Float) {
+        fileTextureSchema.CreateIdAttr(VtValue(TrMtlxTokens->MayaND_fileTexture_float));
+    } else if (_outputDataType == SdfValueTypeNames->Color3f) {
+        fileTextureSchema.CreateIdAttr(VtValue(TrMtlxTokens->MayaND_fileTexture_color3));
+    } else if (_outputDataType == SdfValueTypeNames->Color4f) {
+        fileTextureSchema.CreateIdAttr(VtValue(TrMtlxTokens->MayaND_fileTexture_color4));
+    } else if (_outputDataType == SdfValueTypeNames->Float2) {
+        fileTextureSchema.CreateIdAttr(VtValue(TrMtlxTokens->MayaND_fileTexture_vector2));
+    } else if (_outputDataType == SdfValueTypeNames->Float3) {
+        fileTextureSchema.CreateIdAttr(VtValue(TrMtlxTokens->MayaND_fileTexture_vector3));
+    } else if (_outputDataType == SdfValueTypeNames->Float4) {
+        fileTextureSchema.CreateIdAttr(VtValue(TrMtlxTokens->MayaND_fileTexture_vector4));
+    }
+
+    fileTextureSchema.CreateInput(TrMayaTokens->inColor, _outputDataType)
+        .ConnectToSource(colorOutput);
+    fileTextureSchema.CreateInput(TrMayaTokens->uvCoord, _outputDataType);
+    fileTextureSchema.CreateOutput(TrMayaTokens->outColor, _outputDataType);
+
+    const MPlug uvCoordPlug = depNodeFn.findPlug(
+        TrMayaTokens->uvCoord.GetText(),
+        /* wantNetworkedPlug = */ true);
+    if (!uvCoordPlug.isNull() && uvCoordPlug.isDestination()) {
+        // We have something driving the UV coordinates
+        return;
+    }
+
+    // No place2dtexture connected: create a geompropvalue reader
+    SdfPath primvarReaderPath
+        = GetNodeGraph().GetPath().AppendChild(_tokens->PrimvarReaderShaderName);
     UsdShadeOutput primvarReaderOutput;
 
     if (!GetUsdStage()->GetPrimAtPath(primvarReaderPath)) {
@@ -197,9 +253,6 @@ MtlxUsd_FileWriter::MtlxUsd_FileWriter(
         UsdShadeShader primvarReaderShaderSchema(GetUsdStage()->GetPrimAtPath(primvarReaderPath));
         primvarReaderOutput = primvarReaderShaderSchema.GetOutput(TrMtlxTokens->out);
     }
-    // TODO: Handle UV SRT with a ND_place2d_vector2 node. Make sure the name derives from the
-    //       place2dTexture node if there is one (see usdFileTextureWriter for details)
-
     // Connect the output of the primvar reader to the texture coordinate
     // input of the UV texture.
     texSchema.CreateInput(TrMtlxTokens->texcoord, SdfValueTypeNames->Float2)
@@ -251,6 +304,57 @@ void MtlxUsd_FileWriter::Write(const UsdTimeCode& usdTime)
         = shaderSchema.CreateInput(TrMtlxTokens->file, SdfValueTypeNames->Asset);
     fileInput.Set(SdfAssetPath(fileTextureName.c_str()), usdTime);
 
+    // Default Color (which needs to have a matching number of channels)
+    const MPlug defaultColorPlug = depNodeFn.findPlug(
+        TrMayaTokens->defaultColor.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
+    if (status != MS::kSuccess) {
+        return;
+    }
+
+    // Adding inputs to the fileTexture post procesor node:
+    auto fileTextureShader = UsdShadeShader(_fileTexturePrim);
+    if (!fileTextureShader) {
+        return;
+    }
+
+    if (!defaultColorPlug.isDestination()) {
+        UsdShadeInput defaultValueInput
+            = fileTextureShader.CreateInput(TrMayaTokens->defaultColor, _outputDataType);
+
+        switch (_numChannels) {
+        case 1: {
+            float fallback = 0.0f;
+            defaultColorPlug.child(0).getValue(fallback);
+            defaultValueInput.Set(fallback, usdTime);
+
+        } break;
+        case 2: {
+            GfVec2f fallback(0.0f, 0.0f);
+            for (size_t i = 0u; i < GfVec2f::dimension; ++i) {
+                defaultColorPlug.child(i).getValue(fallback[i]);
+            }
+            defaultValueInput.Set(fallback, usdTime);
+        } break;
+        case 3: {
+            GfVec3f fallback(0.0f, 0.0f, 0.0f);
+            for (size_t i = 0u; i < GfVec3f::dimension; ++i) {
+                defaultColorPlug.child(i).getValue(fallback[i]);
+            }
+            defaultValueInput.Set(fallback, usdTime);
+        } break;
+        case 4: {
+            GfVec4f fallback(0.0f, 0.0f, 0.0f, 1.0f);
+            for (size_t i = 0u; i < 3; ++i) { // defaultColor is a 3Float
+                defaultColorPlug.child(i).getValue(fallback[i]);
+            }
+            defaultValueInput.Set(fallback, usdTime);
+        } break;
+        default: TF_CODING_ERROR("Unsupported format for default"); return;
+        }
+    }
+
     // Source color space:
     MPlug colorSpacePlug = depNodeFn.findPlug(TrMayaTokens->colorSpace.GetText(), true, &status);
     if (status == MS::kSuccess) {
@@ -261,102 +365,107 @@ void MtlxUsd_FileWriter::Write(const UsdTimeCode& usdTime)
         const MString colorSpace(colorSpacePlug.asString(&status));
         if (status == MS::kSuccess && colorSpace != colorSpaceByRule) {
             fileInput.GetAttr().SetColorSpace(TfToken(colorSpace.asChar()));
+            // Also add it on the post-processor node for UsdMaya internal use:
+            fileTextureShader.CreateInput(TrMayaTokens->colorSpace, SdfValueTypeNames->String)
+                .Set(std::string(colorSpace.asChar()));
         }
     }
 
-    // Default Color (which needs to have a matching number of channels)
-    const MPlug defaultColorPlug = depNodeFn.findPlug(
-        TrMayaTokens->defaultColor.GetText(),
+    AuthorShaderInputFromShadingNodeAttr(
+        depNodeFn, TrMayaTokens->invert, fileTextureShader, usdTime);
+    AuthorShaderInputFromShadingNodeAttr(
+        depNodeFn, TrMayaTokens->exposure, fileTextureShader, usdTime);
+    AuthorSplitColor4InputFromShadingNodeAttr(
+        depNodeFn, TrMayaTokens->colorGain, TrMayaTokens->alphaGain, fileTextureShader, usdTime);
+    AuthorSplitColor4InputFromShadingNodeAttr(
+        depNodeFn,
+        TrMayaTokens->colorOffset,
+        TrMayaTokens->alphaOffset,
+        fileTextureShader,
+        usdTime);
+
+    // Usdview has issues unless the u and v addressmodes are explicitly set
+    shaderSchema.CreateInput(TrMtlxTokens->uaddressmode, SdfValueTypeNames->String)
+        .Set(TrMtlxTokens->periodic.GetString());
+    shaderSchema.CreateInput(TrMtlxTokens->vaddressmode, SdfValueTypeNames->String)
+        .Set(TrMtlxTokens->periodic.GetString());
+}
+
+bool MtlxUsd_FileWriter::AuthorSplitColor4InputFromShadingNodeAttr(
+    const MFnDependencyNode& depNodeFn,
+    const TfToken&           colorAttrName,
+    const TfToken&           alphaAttrName,
+    UsdShadeShader&          shaderSchema,
+    const UsdTimeCode        usdTime)
+{
+    MStatus status;
+
+    MPlug colorPlug = depNodeFn.findPlug(
+        depNodeFn.attribute(colorAttrName.GetText()),
         /* wantNetworkedPlug = */ true,
         &status);
     if (status != MS::kSuccess) {
-        return;
+        return false;
     }
 
+    MPlug alphaPlug = depNodeFn.findPlug(
+        depNodeFn.attribute(alphaAttrName.GetText()),
+        /* wantNetworkedPlug = */ true,
+        &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (!UsdMayaUtil::IsAuthored(colorPlug) && !UsdMayaUtil::IsAuthored(alphaPlug)) {
+        // Ignore this unauthored Maya attribute and return success.
+        return true;
+    }
+
+    const bool isDestination = colorPlug.isDestination(&status) || alphaPlug.isDestination(&status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+
+    if (isDestination) {
+        // Destination inputs will be explicitly created on demand.
+        return true;
+    }
+
+    // Here we need to consider the number of channels we export:
+    UsdShadeInput shaderInput = shaderSchema.CreateInput(colorAttrName, _outputDataType);
     switch (_numChannels) {
     case 1: {
-        float fallback = 0.0f;
-        defaultColorPlug.child(0).getValue(fallback);
-        shaderSchema.CreateInput(TrMtlxTokens->paramDefault, SdfValueTypeNames->Float)
-            .Set(fallback, usdTime);
+        float value = 0.0f;
+        colorPlug.child(0).getValue(value);
+        shaderInput.Set(value, usdTime);
 
     } break;
     case 2: {
-        GfVec2f fallback(0.0f, 0.0f);
+        GfVec2f value(0.0f, 0.0f);
         for (size_t i = 0u; i < GfVec2f::dimension; ++i) {
-            defaultColorPlug.child(i).getValue(fallback[i]);
+            colorPlug.child(i).getValue(value[i]);
         }
-        shaderSchema.CreateInput(TrMtlxTokens->paramDefault, SdfValueTypeNames->Float2)
-            .Set(fallback, usdTime);
+        shaderInput.Set(value, usdTime);
     } break;
     case 3: {
-        GfVec3f fallback(0.0f, 0.0f, 0.0f);
+        GfVec3f value(0.0f, 0.0f, 0.0f);
         for (size_t i = 0u; i < GfVec3f::dimension; ++i) {
-            defaultColorPlug.child(i).getValue(fallback[i]);
+            colorPlug.child(i).getValue(value[i]);
         }
-        shaderSchema.CreateInput(TrMtlxTokens->paramDefault, SdfValueTypeNames->Color3f)
-            .Set(fallback, usdTime);
+        shaderInput.Set(value, usdTime);
     } break;
     case 4: {
-        GfVec4f fallback(0.0f, 0.0f, 0.0f, 1.0f);
+        GfVec4f value(0.0f, 0.0f, 0.0f, 1.0f);
         for (size_t i = 0u; i < 3; ++i) { // defaultColor is a 3Float
-            defaultColorPlug.child(i).getValue(fallback[i]);
+            colorPlug.child(i).getValue(value[i]);
         }
-        shaderSchema.CreateInput(TrMtlxTokens->paramDefault, SdfValueTypeNames->Color4f)
-            .Set(fallback, usdTime);
+        alphaPlug.getValue(value[3]);
+        shaderInput.Set(value, usdTime);
     } break;
-    default: TF_CODING_ERROR("Unsupported format for default"); return;
+    default: TF_CODING_ERROR("Unsupported format for default"); return false;
     }
 
-    // uaddressmode type="string" value="periodic" enum="constant,clamp,periodic,mirror"
-    // vaddressmode type="string" value="periodic" enum="constant,clamp,periodic,mirror"
-    const TfToken wrapMirror[2][3] {
-        { TrMayaTokens->wrapU, TrMayaTokens->mirrorU, TrMtlxTokens->uaddressmode },
-        { TrMayaTokens->wrapV, TrMayaTokens->mirrorV, TrMtlxTokens->vaddressmode }
-    };
-    for (auto wrapMirrorTriple : wrapMirror) {
-        auto wrapUVToken = wrapMirrorTriple[0];
-        auto mirrorUVToken = wrapMirrorTriple[1];
-        auto addressModeToken = wrapMirrorTriple[2];
-
-        const MPlug wrapUVPlug = depNodeFn.findPlug(
-            wrapUVToken.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
-        if (status != MS::kSuccess) {
-            return;
-        }
-
-        // Don't check if authored
-        const bool wrapVal = wrapUVPlug.asBool(&status);
-        if (status != MS::kSuccess) {
-            return;
-        }
-
-        std::string outputValue;
-        if (!wrapVal) {
-            outputValue = TrMtlxTokens->clamp.GetString();
-        } else {
-            const MPlug mirrorUVPlug = depNodeFn.findPlug(
-                mirrorUVToken.GetText(),
-                /* wantNetworkedPlug = */ true,
-                &status);
-            if (status != MS::kSuccess) {
-                return;
-            }
-
-            const bool mirrorVal = mirrorUVPlug.asBool(&status);
-            if (status != MS::kSuccess) {
-                return;
-            }
-            outputValue
-                = mirrorVal ? TrMtlxTokens->mirror.GetString() : TrMtlxTokens->periodic.GetString();
-        }
-        shaderSchema.CreateInput(addressModeToken, SdfValueTypeNames->String)
-            .Set(outputValue, usdTime);
-    }
-
-    // We could try to do filtertype, but the values do not map 1:1 between MaterialX and Maya
+    return true;
 }
 
 /* virtual */
@@ -364,35 +473,22 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
     const TfToken&          mayaAttrName,
     const SdfValueTypeName& typeName)
 {
-    UsdShadeShader nodeSchema(_usdPrim);
+    UsdShadeShader nodeSchema = UsdShadeShader(_fileTexturePrim);
+    TfToken        outName = TrMayaTokens->outColor;
     if (!nodeSchema) {
         return UsdAttribute();
     }
 
     if (mayaAttrName == TrMayaTokens->outColor) {
-        switch (_numChannels) {
-        case 1: return AddSwizzle("rrr", _numChannels);
-        case 2:
-            // Monochrome + alpha: use xxx swizzle of ND_image_vector2
-            return AddSwizzle("xxx", _numChannels);
-        case 3:
-            // Non-swizzled:
-            if (typeName == SdfValueTypeNames->Color3f) {
-                return nodeSchema.GetOutput(TrMtlxTokens->out);
-            } else if (typeName == SdfValueTypeNames->Float3) {
-                return AddConversion(
-                    SdfValueTypeNames->Color3f, typeName, nodeSchema.GetOutput(TrMtlxTokens->out));
-            }
-        case 4:
-            if (typeName == SdfValueTypeNames->Color3f) {
-                return AddSwizzle("rgb", _numChannels);
-            } else if (typeName == SdfValueTypeNames->Float3) {
-                return AddConversion(
-                    SdfValueTypeNames->Color3f, typeName, AddSwizzle("rgb", _numChannels));
-            }
+        UsdShadeOutput mainOutput = nodeSchema.GetOutput(outName);
 
-        default: TF_CODING_ERROR("Unsupported format for outColor"); return UsdAttribute();
+        if (mainOutput.GetTypeName() == typeName) {
+            return mainOutput;
         }
+
+        // If types differ, then we need to handle all possible conversions and
+        // channel swizzling.
+        return AddSwizzleConversion(typeName, mainOutput);
     }
 
     // Starting here, we handle subcomponent requests:
@@ -401,23 +497,23 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
         // This will be ND_image_vector2, so requires xyz swizzles:
         if (mayaAttrName == TrMayaTokens->outColorR || mayaAttrName == TrMayaTokens->outColorG
             || mayaAttrName == TrMayaTokens->outColorB) {
-            return AddSwizzle("x", _numChannels);
+            return AddSwizzle("x", _numChannels, nodeSchema.GetOutput(outName));
         }
         if (mayaAttrName == TrMayaTokens->outAlpha) {
-            return AddSwizzle("y", _numChannels);
+            return AddSwizzle("y", _numChannels, nodeSchema.GetOutput(outName));
         }
     }
 
     if (mayaAttrName == TrMayaTokens->outColorR) {
-        return AddSwizzle("r", _numChannels);
+        return AddSwizzle("r", _numChannels, nodeSchema.GetOutput(outName));
     }
 
     if (mayaAttrName == TrMayaTokens->outColorG) {
-        return AddSwizzle("g", _numChannels);
+        return AddSwizzle("g", _numChannels, nodeSchema.GetOutput(outName));
     }
 
     if (mayaAttrName == TrMayaTokens->outColorB) {
-        return AddSwizzle("b", _numChannels);
+        return AddSwizzle("b", _numChannels, nodeSchema.GetOutput(outName));
     }
 
     if (mayaAttrName == TrMayaTokens->outAlpha) {
@@ -430,37 +526,60 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
         }
 
         if (alphaIsLuminance || _numChannels == 3) {
-            return AddLuminance(_numChannels);
+            return AddLuminance(_numChannels, nodeSchema.GetOutput(outName));
         } else {
-            return AddSwizzle("a", _numChannels);
+            return AddSwizzle("a", _numChannels, nodeSchema.GetOutput(outName));
         }
+    }
+
+    if (mayaAttrName == TrMayaTokens->uvCoord) {
+        return UsdShadeShader(_usdPrim).CreateInput(
+            TrMtlxTokens->texcoord, SdfValueTypeNames->Float2);
+    }
+
+    if (mayaAttrName == TrMayaTokens->defaultColor) {
+        return UsdShadeShader(_fileTexturePrim)
+            .CreateInput(TrMayaTokens->defaultColor, _outputDataType);
+    } else if (mayaAttrName == TrMayaTokens->colorGain) {
+        // TODO: Merge colorGain and alphaGain in a color4/vector4 connection.
+        return UsdShadeShader(_fileTexturePrim)
+            .CreateInput(TrMayaTokens->colorGain, _outputDataType);
+    } else if (mayaAttrName == TrMayaTokens->colorOffset) {
+        // TODO: Merge colorOffset and alphaOffset in a color4/vector4 connection.
+        return UsdShadeShader(_fileTexturePrim)
+            .CreateInput(TrMayaTokens->colorOffset, _outputDataType);
     }
 
     return UsdAttribute();
 }
 
-SdfPath MtlxUsd_FileWriter::_GetPlace2DTexturePath(const MFnDependencyNode& depNodeFn)
+void MtlxUsd_FileWriter::PostExport()
 {
-    MStatus     status;
-    std::string usdUvTextureName;
-    const MPlug plug = depNodeFn.findPlug(
-        TrMayaTokens->uvCoord.GetText(),
-        /* wantNetworkedPlug = */ true,
-        &status);
-    if (status == MS::kSuccess && plug.isDestination(&status)) {
-        MPlug source = plug.source(&status);
-        if (status == MS::kSuccess && !source.isNull()) {
-            MFnDependencyNode sourceNode(source.node());
-            usdUvTextureName = UsdMayaUtil::SanitizeName(sourceNode.name().asChar());
-        }
+    // Connect the fileTexture node to the UVs of the image (generated by place2dTexture)
+    UsdShadeShader fileTextureSchema(_fileTexturePrim);
+    if (!fileTextureSchema) {
+        return;
+    }
+    UsdShadeShader nodeSchema(_usdPrim);
+    if (!nodeSchema) {
+        return;
+    }
+    UsdShadeInput texcoordInput = nodeSchema.GetInput(TrMtlxTokens->texcoord);
+    if (!texcoordInput) {
+        return;
     }
 
-    if (usdUvTextureName.empty()) {
-        // We want a single UV reader for all file nodes not connected to a place2DTexture node
-        usdUvTextureName = _tokens->PrimvarReaderShaderName.GetString();
+    UsdShadeConnectableAPI sourceNode;
+    TfToken                sourceOutputName;
+    UsdShadeAttributeType  sourceType;
+
+    if (!UsdShadeConnectableAPI::GetConnectedSource(
+            texcoordInput, &sourceNode, &sourceOutputName, &sourceType)) {
+        return;
     }
 
-    return GetNodeGraph().GetPath().AppendChild(TfToken(usdUvTextureName.c_str()));
+    fileTextureSchema.CreateInput(TrMayaTokens->uvCoord, SdfValueTypeNames->Float2)
+        .ConnectToSource(sourceNode.GetOutput(sourceOutputName));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

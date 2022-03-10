@@ -163,6 +163,8 @@ public:
 
     const HdVP2BBoxGeom& GetSharedBBoxGeom() const;
 
+    void CleanupMaterials();
+
     static const int sProfilerCategory; //!< Profiler category
 
 private:
@@ -176,6 +178,8 @@ private:
         _renderDelegateMutex; //!< Mutex protecting construction/destruction of render delegate
     static HdResourceRegistrySharedPtr
         _resourceRegistry; //!< Shared and unused by VP2 resource registry
+
+    std::unordered_set<HdSprim*> _materialSprims;
 
     std::unique_ptr<HdVP2RenderParam>
             _renderParam; //!< Render param used to provided access to VP2 during prim synchronization

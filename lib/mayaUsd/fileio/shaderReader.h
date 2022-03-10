@@ -85,6 +85,17 @@ public:
     MAYAUSD_CORE_PUBLIC
     virtual TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const;
 
+    /// Continue traversing on the given \p shaderInput even though it is not
+    /// representable as a connectable Maya MPlug
+    ///
+    /// Sometimes a single Maya node will be represented by multiple nodes in
+    /// the target rendering space. When that happens, the connections between
+    /// these node will not result in a connection on the Maya side, but we must
+    /// still traverse the UsdShader branch to restore connections and values
+    /// found on downstream USD prims.
+    MAYAUSD_CORE_PUBLIC
+    virtual bool TraverseUnconnectableInput(const TfToken& usdAttrName) const;
+
     /// Callback after the shading context reader is done connecting all inputs
     MAYAUSD_CORE_PUBLIC
     virtual void PostConnectSubtree(UsdMayaPrimReaderContext* context);

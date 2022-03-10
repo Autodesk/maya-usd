@@ -24,6 +24,7 @@
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <pxr/imaging/hd/mesh.h>
+#include <pxr/imaging/hd/vertexAdjacency.h>
 #include <pxr/pxr.h>
 
 #include <maya/MHWGeometry.h>
@@ -47,6 +48,9 @@ struct HdVP2MeshSharedData
     //! only call const accessors keeping them around doesn't incur a buffer
     //! copy.
     HdMeshTopology _topology;
+
+    //! Adjacency based off of _topology
+    Hd_VertexAdjacencySharedPtr _adjacency;
 
     //! The rendering topology is to create unshared or sorted vertice layout
     //! for efficient GPU rendering.
@@ -144,6 +148,12 @@ private:
         const HdMeshReprDesc& desc,
         const TfToken&        reprToken);
 
+    void _HideAllDrawItems(const TfToken& reprToken);
+
+    template <typename Func> void _ForEachRenderItemInRepr(const TfToken& reprToken, Func func);
+
+    template <typename Func> void _ForEachRenderItem(Func func);
+
     void _UpdatePrimvarSources(
         HdSceneDelegate*     sceneDelegate,
         HdDirtyBits          dirtyBits,
@@ -186,7 +196,7 @@ private:
 
     HdDirtyBits _customDirtyBitsInUse {
         0
-    }; //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
+    };                      //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
 
     std::shared_ptr<HdVP2MeshSharedData>
         _meshSharedData; //!< Shared data for all draw items of the Rprim

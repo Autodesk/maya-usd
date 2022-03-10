@@ -566,6 +566,9 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     MayaUsdCommitState             stateToCommit(drawItem->GetRenderItemData());
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
 
+    stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
+    stateToCommit._instanceColors = std::make_shared<MFloatArray>();
+
     const SdfPath& id = GetId();
 
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
@@ -724,7 +727,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             if (material) {
                 MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
-                if (shader != nullptr && shader != drawItemData._shader) {
+                if (shader != nullptr
+                    && (shader != drawItemData._shader || shader != stateToCommit._shader)) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
                     stateToCommit._isTransparent = shader->isTransparent();
@@ -902,8 +906,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 }
 
                 unsigned int numInstances = colorArray.size();
-                stateToCommit._instanceColors.setLength(numInstances * kNumColorChannels);
-                float* bufferData = &stateToCommit._instanceColors[0];
+                stateToCommit._instanceColors->setLength(numInstances * kNumColorChannels);
+                float* bufferData = &(*stateToCommit._instanceColors)[0];
 
                 if (bufferData) {
                     unsigned int offset = 0;
@@ -947,10 +951,10 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         if (0 == instanceCount) {
             instancerWithNoInstances = true;
         } else {
-            stateToCommit._instanceTransforms.setLength(instanceCount);
+            stateToCommit._instanceTransforms->setLength(instanceCount);
             for (unsigned int i = 0; i < instanceCount; ++i) {
                 transforms[i].Get(instanceMatrix.matrix);
-                stateToCommit._instanceTransforms[i] = worldMatrix * instanceMatrix;
+                (*stateToCommit._instanceTransforms)[i] = worldMatrix * instanceMatrix;
                 stateToCommit._ufeIdentifiers.append(
                     drawScene.GetScenePrimPath(GetId(), i).GetString().c_str());
             }
@@ -968,7 +972,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 std::vector<unsigned char> colorIndices;
 
                 // Assign with the index to the dormant wireframe color by default.
-                bool         hasAuthoredColor = stateToCommit._instanceColors.length() > 0;
+                bool         hasAuthoredColor = stateToCommit._instanceColors->length() > 0;
                 const size_t authoredColorIndex = sizeof(colors) / sizeof(MColor);
                 colorIndices.resize(instanceCount, hasAuthoredColor ? authoredColorIndex : 0);
 
@@ -991,7 +995,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 }
 
                 // Fill per-instance colors.
-                stateToCommit._instanceColors.setLength(instanceCount * kNumColorChannels);
+                stateToCommit._instanceColors->setLength(instanceCount * kNumColorChannels);
                 unsigned int offset = 0;
 
                 for (unsigned int i = 0; i < instanceCount; ++i) {
@@ -1002,7 +1006,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                     }
                     const MColor& color = colors[colorIndex];
                     for (unsigned int j = 0; j < kNumColorChannels; j++) {
-                        stateToCommit._instanceColors[offset++] = color[j];
+                        (*stateToCommit._instanceColors)[offset++] = color[j];
                     }
                 }
             }
@@ -1201,7 +1205,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
         // Important, update instance transforms after setting geometry on render items!
         auto&   oldInstanceCount = stateToCommit._renderItemData._instanceCount;
-        auto    newInstanceCount = stateToCommit._instanceTransforms.length();
+        auto    newInstanceCount = stateToCommit._instanceTransforms->length();
         MString extraColorChannelName = kDiffuseColorStr;
         if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
             extraColorChannelName = kSolidColorStr;
@@ -1214,15 +1218,15 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 for (unsigned int i = 0; i < newInstanceCount; i++) {
                     // VP2 defines instance ID of the first instance to be 1.
                     drawScene.updateInstanceTransform(
-                        *renderItem, i + 1, stateToCommit._instanceTransforms[i]);
+                        *renderItem, i + 1, (*stateToCommit._instanceTransforms)[i]);
                 }
             } else {
-                drawScene.setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
+                drawScene.setInstanceTransformArray(*renderItem, *stateToCommit._instanceTransforms);
             }
 
-            if (stateToCommit._instanceColors.length() == newInstanceCount * kNumColorChannels) {
+            if (stateToCommit._instanceColors->length() == newInstanceCount * kNumColorChannels) {
                 drawScene.setExtraInstanceData(
-                    *renderItem, extraColorChannelName, stateToCommit._instanceColors);
+                    *renderItem, extraColorChannelName, *stateToCommit._instanceColors);
             }
         }
 #if MAYA_API_VERSION >= 20210000
@@ -1233,15 +1237,15 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         // the original render item to allow consolidation with other prims. In case of multiple
         // instances, we need to disable consolidation to allow GPU instancing to be used.
         else if (newInstanceCount == 1) {
-            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
+            renderItem->setMatrix(&(*stateToCommit._instanceTransforms)[0]);
         } else if (newInstanceCount > 1) {
             _SetWantConsolidation(*renderItem, false);
 #endif
-            drawScene.setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
+            drawScene.setInstanceTransformArray(*renderItem, *stateToCommit._instanceTransforms);
 
-            if (stateToCommit._instanceColors.length() == newInstanceCount * kNumColorChannels) {
+            if (stateToCommit._instanceColors->length() == newInstanceCount * kNumColorChannels) {
                 drawScene.setExtraInstanceData(
-                    *renderItem, extraColorChannelName, stateToCommit._instanceColors);
+                    *renderItem, extraColorChannelName, *stateToCommit._instanceColors);
             }
 
             stateToCommit._renderItemData._usingInstancedDraw = true;

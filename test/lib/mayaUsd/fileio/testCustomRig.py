@@ -210,6 +210,75 @@ class testCustomRig(unittest.TestCase):
         self.assertEqual(attr.GetNumTimeSamples(), 11)
         self.assertEqual(attr.GetTimeSamples(), [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
 
+    def testCustomRigUpdaterSubsetAnim(self):
+        "Validate prim updater for CustomRig codeless schema but with only a subset of frames"
+        
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        
+        stage = mayaUsdUfe.getStage(proxyShape)
+        self.assertTrue(stage)
+        
+        layer = stage.GetRootLayer()
+        layer.ImportFromString(
+        ''' #sdf 1
+            (
+                defaultPrim = "world"
+            )
+            def Xform "world" {
+                def Xform "anim" {
+                    def CustomRig "bob" {
+                        int cubes = 2
+                    }
+                }
+            }
+        '''
+        )
+        
+        bobUfePathStr = "{},/world/anim/bob".format(proxyShape)
+        
+        # Pull the object for editing in Maya
+        self.assertTrue(mayaUsdLib.PrimUpdaterManager.editAsMaya(bobUfePathStr))
+        
+        # Retrieve pulled object
+        bobMayaPathStr = cmds.ls(sl=True)[0]
+        
+        # Test partial paths to make the test more robust with any changes around "invisible" __mayaUsd__
+        # parent
+        self.assertTrue(self._GetMFnDagNode("bob|pCube1"))
+        self.assertTrue(self._GetMFnDagNode("bob|pCube2"))
+        
+        # Animate the cubes
+        cmds.playbackOptions( minTime=0, maxTime=10 )
+        cmds.setKeyframe( "bob|pCube1.ry", time=1.0, value=0 )
+        cmds.setKeyframe( "bob|pCube1.ry", time=10.0, value=100 )
+        cmds.setKeyframe( "bob|pCube2.ty", time=1.0, value=0 )
+        cmds.setKeyframe( "bob|pCube2.ty", time=10.0, value=10 )
+        
+        # Push the animation back to USD. This will use a custom logic that will write it to a new prim
+        userArgs = {
+            'animation': True,
+            'startTime': 0.,
+            'endTime': 9.0,
+            'frameStride': 2.0,
+        }
+        self.assertTrue(mayaUsdLib.PrimUpdaterManager.mergeToUsd(bobMayaPathStr, userArgs))
+        
+        # After push, all Maya objects should be gone
+        self.assertFalse(self._GetMFnDagNode("bob"))
+        self.assertFalse(self._GetMFnDagNode("bob|pCube1"))
+        self.assertFalse(self._GetMFnDagNode("bob|pCube2"))
+        
+        # Validate the data we pushed back via custom updater
+        self.assertTrue(stage.GetPrimAtPath("/world/anim/bob_cache"))
+        self.assertTrue(stage.GetPrimAtPath("/world/anim/bob_cache/pCube1"))
+        self.assertTrue(stage.GetPrimAtPath("/world/anim/bob_cache/pCube2"))
+        
+        prim = stage.GetPrimAtPath("/world/anim/bob_cache/pCube2")
+        attr = prim.GetAttribute("xformOp:translate")
+        self.assertEqual(attr.GetNumTimeSamples(), 5)
+        self.assertEqual(attr.GetTimeSamples(), [0.0, 2.0, 4.0, 6.0, 8.0])
+
     def testCustomRigUpdaterAutoEditLoad(self):
         "Validate auto edit on stage load for CustomRig codeless schema"
         

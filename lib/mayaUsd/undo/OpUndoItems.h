@@ -26,6 +26,9 @@
 #include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
+#ifdef WANT_UFE_BUILD
+#include <ufe/selection.h>
+#endif
 
 #include <memory>
 #include <vector>
@@ -403,6 +406,68 @@ private:
     MGlobal::ListAdjustment _selMode;
 };
 
+#ifdef WANT_UFE_BUILD
+//------------------------------------------------------------------------------
+// UfeSelectionUndoItem
+//------------------------------------------------------------------------------
+
+/// \class UfeSelectionUndoItem
+/// \brief Record data needed to undo or redo select nodes sub-operations.
+class UfeSelectionUndoItem : public OpUndoItem
+{
+public:
+    /// \brief Create and execute a select node undo item and keep track of it.  The global
+    /// selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void
+    select(const std::string& name, const Ufe::Selection& selection, OpUndoItemList& undoInfo);
+
+    /// \brief create and execute a select node undo item and keep track of it in the global list.
+    /// The global selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void select(const std::string& name, const Ufe::Selection& selection);
+
+    /// \brief create and execute a select node undo item and keep track of it.
+    /// The global selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void select(const std::string& name, const MDagPath& dagPath, OpUndoItemList& undoInfo);
+
+    /// \brief create and execute a select node undo item and keep track of it on the global list.
+    /// The global selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void select(const std::string& name, const MDagPath& dagPath);
+
+    /// \brief Create and execute a clear selection undo item and keep track of it.  The global
+    /// selection is cleared.
+    MAYAUSD_CORE_PUBLIC
+    static void clear(const std::string& name, OpUndoItemList& undoInfo);
+
+    /// \brief create and execute a clear selection undo item and keep track of it in the global
+    /// list. The global selection is cleared.
+    MAYAUSD_CORE_PUBLIC
+    static void clear(const std::string& name);
+
+    MAYAUSD_CORE_PUBLIC
+    UfeSelectionUndoItem(const std::string& name, const Ufe::Selection& selection);
+
+    MAYAUSD_CORE_PUBLIC
+    ~UfeSelectionUndoItem() override;
+
+    /// \brief undo a single sub-operation.
+    MAYAUSD_CORE_PUBLIC
+    bool undo() override;
+
+    /// \brief redo a single sub-operation.
+    MAYAUSD_CORE_PUBLIC
+    bool redo() override;
+
+private:
+    void invert();
+
+    Ufe::Selection _selection;
+};
+#endif
+
 //------------------------------------------------------------------------------
 // LockNodesUndoItem
 //------------------------------------------------------------------------------
@@ -437,8 +502,8 @@ public:
     bool redo() override;
 
 private:
-    MString _rootName;
-    bool    _lock;
+    const MDagPath _root;
+    const bool     _lock;
 };
 
 //------------------------------------------------------------------------------

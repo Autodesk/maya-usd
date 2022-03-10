@@ -47,7 +47,9 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MSceneMessage.h>
+#include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
+#include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/sceneNotification.h>
@@ -315,6 +317,12 @@ PullImportPaths pullImport(
     if (!isCopy) {
         // Quick workaround to reuse some POC code - to rewrite later
 
+        // Communication to current proxyAccessor code is through the global
+        // selection, so we must save the current selection for proper undo.
+        // This is not logically necessary, and should be re-written to avoid
+        // going through the global selection.
+        UfeSelectionUndoItem::select("Pre-proxyAccessor selection", *Ufe::GlobalSelection::get());
+
         // The "child" is the node that will receive the computed parent
         // transformation, in its offsetParentMatrix attribute.  We are using
         // the pull parent for this purpose, so pop the path of the ufeChild to
@@ -351,7 +359,7 @@ PullImportPaths pullImport(
 
         // Create the pull set if it does not exists.
         //
-        // Note: do not use the MfnSet API to create it as it clears the redo stack
+        // Note: do not use the MFnSet API to create it as it clears the redo stack
         // and thus prevents redo.
         MObject pullSetObj;
         MStatus status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
@@ -382,7 +390,7 @@ PullImportPaths pullImport(
                 return true;
             });
 
-        SelectionUndoItem::select("Pull import select DAG node", addedDagPath);
+        UfeSelectionUndoItem::select("Pull import select DAG node", addedDagPath);
     }
 
     // Invert the new node registry, for MObject to Ufe::Path lookup.
@@ -473,14 +481,8 @@ PushCustomizeSrc pushExport(
     UsdMayaUtil::MDagPathSet dagPaths;
     dagPaths.insert(dagPath);
 
-    GfInterval timeInterval = PXR_NS::UsdMayaPrimUpdater::isAnimated(dagPath)
-        ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
-        : GfInterval();
-    double           frameStride = 1.0;
-    std::set<double> frameSamples;
-
-    const std::vector<double> timeSamples
-        = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
+    std::vector<double> timeSamples;
+    UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
 
     // The pushed Dag node is the root of the export job.
     std::vector<VtValue> rootPathString(
@@ -764,9 +766,23 @@ bool PrimUpdaterManager::mergeToUsd(
         LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false);
     }
 
+    // If the user-provided argument does *not* contain an animation key, then
+    // automatically infer if we should merge animations.
+    if (!VtDictionaryIsHolding<bool>(userArgs, UsdMayaJobExportArgsTokens->animation)) {
+        const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
+        GfInterval timeInterval = isAnimated
+            ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
+            : GfInterval();
+
+        ctxArgs[UsdMayaJobExportArgsTokens->animation] = isAnimated;
+        ctxArgs[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
+        ctxArgs[UsdMayaJobExportArgsTokens->startTime] = timeInterval.GetMin();
+        ctxArgs[UsdMayaJobExportArgsTokens->endTime] = timeInterval.GetMax();
+    }
+
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Merge to USD selection reset", MSelectionList());
+    UfeSelectionUndoItem::clear("Merge to USD selection reset");
 
     UsdStageRefPtr            proxyStage = proxyShape->usdPrim().GetStage();
     UsdMayaPrimUpdaterContext context(proxyShape->getTime(), proxyStage, ctxArgs);
@@ -932,7 +948,17 @@ bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
     return updater ? updater->canEditAsMaya() : false;
 }
 
-bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
+bool PrimUpdaterManager::discardEdits(const MDagPath& dagPath)
+{
+    Ufe::Path primPath;
+    if (!PXR_NS::PrimUpdaterManager::readPullInformation(dagPath, primPath))
+        return false;
+
+    auto usdPrim = MayaUsd::ufe::ufePathToPrim(primPath);
+    return usdPrim ? discardPrimEdits(primPath) : discardOrphanedEdits(dagPath);
+}
+
+bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
 {
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(pulledPath);
     if (!proxyShape) {
@@ -967,17 +993,29 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Discard edits selection reset", MSelectionList());
+    UfeSelectionUndoItem::clear("Discard edits selection reset");
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
     for (const MDagPath& curDagPath : toApplyOn) {
         MFnDependencyNode dgNodeFn(curDagPath.node());
-        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
 
-        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        const Ufe::Path path = MayaUsd::ufe::dagPathToPathSegment(curDagPath);
+
+        // The root of the pulled hierarchy is crucial for determining push
+        // behavior.  When pulling, we may have created a Maya pull hierarchy root
+        // node whose type does not map to the same prim updater as the original
+        // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
+        // node type (e.g. transform, which is the fallback Maya node type for many
+        // USD prim types).  Therefore, if we're at the root of the src hierarchy,
+        // use the prim at the pulled path to create the prim updater.
+        bool usePulledPrim = (curDagPath == mayaDagPath);
+        auto registryItem = usePulledPrim
+            ? UsdMayaPrimUpdaterRegistry::FindOrFallback(
+                MayaUsd::ufe::ufePathToPrim(pulledPath).GetTypeName())
+            : UsdMayaPrimUpdaterRegistry::FindOrFallback(dgNodeFn.typeName().asChar());
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
-        auto updater = factory(context, dgNodeFn, Ufe::Path());
+        auto updater = factory(context, dgNodeFn, path);
 
         updater->discardEdits();
     }
@@ -1010,6 +1048,43 @@ bool PrimUpdaterManager::discardEdits(const Ufe::Path& pulledPath)
     return true;
 }
 
+bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
+{
+    PushPullScope scopeIt(_inPushPull);
+
+    // Unlock the pulled hierarchy, clear the pull information, and remove the
+    // pull parent, which is simply the parent of the pulled path.
+    auto pullParent = dagPath;
+    pullParent.pop();
+
+    LockNodesUndoItem::lock("Discard orphaned edits node unlocking", pullParent, false);
+
+    // Reset the selection, otherwise it will keep a reference to a deleted node
+    // and crash later on.
+    UfeSelectionUndoItem::clear("Discard orphaned edits selection reset");
+
+    UsdMayaPrimUpdaterContext context(UsdTimeCode(), nullptr, VtDictionary());
+
+    // Discard all pulled Maya nodes.
+    std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(dagPath);
+    for (const MDagPath& curDagPath : toApplyOn) {
+        MFnDependencyNode dgNodeFn(curDagPath.node());
+        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
+
+        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
+        auto updater = factory(context, dgNodeFn, Ufe::Path());
+
+        updater->discardEdits();
+    }
+
+    if (!TF_VERIFY(removePullParent(pullParent))) {
+        return false;
+    }
+
+    return true;
+}
+
 bool PrimUpdaterManager::duplicate(
     const Ufe::Path&    srcPath,
     const Ufe::Path&    dstPath,
@@ -1032,6 +1107,17 @@ bool PrimUpdaterManager::duplicate(
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
         ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
+
+        // Set destination of duplicate. The Maya world MDagPath is not valid,
+        // so don't try to validate the path if it is the world root.
+        MDagPath pullParentPath;
+        if (!MayaUsd::ufe::isMayaWorldPath(dstPath)) {
+            pullParentPath = MayaUsd::ufe::ufeToDagPath(dstPath);
+            if (!pullParentPath.isValid()) {
+                return false;
+            }
+        }
+        ctxArgs[kPullParentPathKey] = VtValue(std::string(pullParentPath.fullPathName().asChar()));
 
         UsdMayaPrimUpdaterContext context(
             srcProxyShape->getTime(), srcProxyShape->getUsdStage(), ctxArgs);
@@ -1071,15 +1157,16 @@ bool PrimUpdaterManager::duplicate(
         const auto& editTarget = dstStage->GetEditTarget();
         const auto& dstLayer = editTarget.GetLayer();
 
-        // Make the destination root path unique.
-        SdfPath     dstRootPath = editTarget.MapToSpecPath(srcRootPath);
-        SdfPath     dstParentPath = dstRootPath.GetParentPath();
-        std::string dstChildName = dstRootPath.GetName();
-        UsdPrim     dstParentPrim = dstStage->GetPrimAtPath(dstParentPath);
-        if (dstParentPrim.IsValid()) {
-            dstChildName = ufe::uniqueChildName(dstParentPrim, dstChildName);
-            dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
+        // Validate that the destination parent prim is valid.
+        UsdPrim dstParentPrim = MayaUsd::ufe::ufePathToPrim(dstPath);
+        if (!dstParentPrim.IsValid()) {
+            return false;
         }
+
+        // Make the destination root path unique.
+        SdfPath     dstParentPath = dstParentPrim.GetPath();
+        std::string dstChildName = ufe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
+        SdfPath     dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
 
         if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
             return false;

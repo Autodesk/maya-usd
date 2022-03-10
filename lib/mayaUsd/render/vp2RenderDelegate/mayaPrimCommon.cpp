@@ -103,15 +103,8 @@ void MayaUsdRPrim::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, 
 {
     const MString& rprimId = _rprimId;
 
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit([buffer, bufferData, rprimId]() {
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            "CommitBuffer",
-            rprimId.asChar()); // TODO: buffer usage so we know it is positions normals etc
-
-        buffer->commit(bufferData);
-    });
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+        [buffer, bufferData, rprimId]() { buffer->commit(bufferData); });
 }
 
 void MayaUsdRPrim::_SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
@@ -559,6 +552,16 @@ SdfPath MayaUsdRPrim::_GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* del
 {
     const SdfPath& id = rprim->GetId();
     const SdfPath  materialId = delegate->GetMaterialId(id);
+    HdRenderIndex& renderIndex = delegate->GetRenderIndex();
+
+    if (!materialId.IsEmpty()) {
+        auto* material = dynamic_cast<HdVP2Material*>(
+            renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+        if (material) {
+            // Load the textures if any
+            material->EnqueueLoadTextures();
+        }
+    }
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
     const SdfPath& origMaterialId = rprim->GetMaterialId();

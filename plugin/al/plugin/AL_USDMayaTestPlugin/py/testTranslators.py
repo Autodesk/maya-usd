@@ -74,7 +74,7 @@ class CubeGenerator(usdmaya.TranslatorBase):
         return True
 
     def canExport(self, mayaObjectName):
-        return False
+        return usdmaya.ExportFlag.kNotSupported
 
     def needsTransformParent(self):
         return True
@@ -176,7 +176,7 @@ class DeleteParentNodeOnPostImport(usdmaya.TranslatorBase):
         return True
 
     def canExport(self, mayaObjectName):
-        return False
+        return usdmaya.ExportFlag.kNotSupported
 
     def exportObject(self, stage, path, usdPath, params):
         return
@@ -221,7 +221,7 @@ class UpdateableTranslator(usdmaya.TranslatorBase):
         return True
 
     def canExport(self, mayaObjectName):
-        return False
+        return usdmaya.ExportFlag.kNotSupported
 
     def exportObject(self, stage, path, usdPath, params):
         return
@@ -281,7 +281,6 @@ class TestPythonTranslators(unittest.TestCase):
         prim = stage.GetPrimAtPath('/root/peter01/rig')
         # self.assertTrue(usdmaya.TranslatorBase.generateTranslatorId(prim)=="assettype:beast_rig")
 
-    @unittest.skipIf(sys.version_info[0] >= 3, "RecursionError: maximum recursion depth exceeded while calling a Python object")
     def test_variantSwitch_that_removes_prim_and_create_new_one(self):
 
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
@@ -303,7 +302,11 @@ class TestPythonTranslators(unittest.TestCase):
         '''
         Variant switch that leads to another prim being created.
         '''
-        vs.SetVariantSelection("sixCubesRig2")
+        try:
+            vs.SetVariantSelection("sixCubesRig2")
+        except RecursionError:
+            # Force RecursionErrors to fail the test instead of erroring them
+            self.fail("Raised RecursionError unexpectedly!")
 
         self.assertEqual(CubeGenerator.getState()["tearDownCount"],1)
         self.assertEqual(CubeGenerator.getState()["importObjectCount"],2)
@@ -338,7 +341,6 @@ class TestPythonTranslators(unittest.TestCase):
         self.assertEqual(CubeGenerator.getState()["importObjectCount"], 1)
         self.assertFalse(cmds.objExists('|bobo|root|peter01|rig'))
 
-    @unittest.skipIf(sys.version_info[0] >= 3, "RecursionError: maximum recursion depth exceeded while calling a Python object")
     def test_variantSwitch_that_keeps_existing_prim_runs_teardown_and_import(self):
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
 
@@ -366,7 +368,11 @@ class TestPythonTranslators(unittest.TestCase):
         '''
         Variant switch that leads to same prim still existing.
         '''
-        vs.SetVariantSelection("sixCubesRig")
+        try:
+            vs.SetVariantSelection("sixCubesRig")
+        except RecursionError:
+            # Force RecursionErrors to fail the test instead of erroring them
+            self.fail("Raised RecursionError unexpectedly!")
 
         self.assertEqual(CubeGenerator.getState()["tearDownCount"],1)
         self.assertEqual(CubeGenerator.getState()["importObjectCount"],2)
@@ -530,7 +536,7 @@ class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
         return True
 
     def canExport(self, mayaObjectName):
-        return False
+        return usdmaya.ExportFlag.kNotSupported
 
     def needsTransformParent(self):
         return True

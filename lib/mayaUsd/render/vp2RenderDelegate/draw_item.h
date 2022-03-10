@@ -54,10 +54,17 @@ public:
 
         //! Render item index buffer - use when updating data
         std::unique_ptr<MHWRender::MIndexBuffer> _indexBuffer;
+        bool                                     _indexBufferValid { false };
         //! Bounding box of the render item.
         MBoundingBox _boundingBox;
         //! World matrix of the render item.
         MMatrix _worldMatrix;
+
+        //! Instance transforms for the render item
+        std::shared_ptr<MMatrixArray> _instanceTransforms;
+
+        //! Instance colors for the render item
+        std::shared_ptr<MFloatArray> _instanceColors;
 
         //! Shader instance assigned to the render item. No ownership is held.
         MHWRender::MShaderInstance* _shader { nullptr };

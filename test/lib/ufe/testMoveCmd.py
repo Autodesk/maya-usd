@@ -395,7 +395,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestOpUndo(createCommonAPI, 'xformOp:translate')
 
-    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3014', 'Creating a SceneItem was fixed in UFE v3.14')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() < 3, 'Creating a SceneItem was fixed in UFE v3.')
     def testBadSceneItem(self):
         '''Improperly constructed scene item should not crash Maya.'''
 
@@ -428,7 +428,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         cmds.move(0, 10, 0, relative=True, os=True, wd=True)
 
-    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '3014', 'Creating a SceneItem works in UFE v3.14')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 3, 'Creating a SceneItem works in UFE v3.')
     def testFactorySceneItem(self):
         '''A scene item can be constructed directly and will work.'''
 

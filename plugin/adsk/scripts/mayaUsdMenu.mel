@@ -290,7 +290,7 @@ global proc mayaUsdMenu_createMenuCallback() {
 
     if ($gMayaUsdCreateSubMenu == "") {    
         global string $gMainCreateMenu; // maya's create menu
-
+        
         string $mayaVersion = getMayaMajorVersion();
         // find the insertion point, after the Scene Management separator
         $sceneManagementDivider = findDividerByLabel($gMainCreateMenu, uiRes("m_ModCreateMenu.kCreateSceneMgt"));
@@ -309,6 +309,8 @@ global proc mayaUsdMenu_createMenuCallback() {
             error `getMayaUsdString("kMenuStageCreateMenuError")`;
         }
     }
+
+    removeMenuCallback(`setParent -q -menu`, "mayaUsdMenu_createMenuCallback");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -511,10 +513,12 @@ proc termCreateMenu() {
         deleteUI -mi $gMayaUsdCreateSubMenu;
         $gMayaUsdCreateSubMenu = "";
     }
+    removeMenuCallback($gMainCreateMenu, "mayaUsdMenu_createMenuCallback");
     global string $gMayaUsdOpenUsdLayerEditorMenuItem;
     if ($gMayaUsdOpenUsdLayerEditorMenuItem != "") {
         deleteUI -mi $gMayaUsdOpenUsdLayerEditorMenuItem;
     }
+    removeMenuCallback($gMainCreateMenu, "mayaUsdMenu_windowMenuCallback");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -535,12 +539,15 @@ proc termSelectMenu() {
     if (`menuItem -q -exists $gMayaUsdSelectMenuDivider`) {
         deleteUI -mi $gMayaUsdSelectMenuDivider;
     }
+    global string $gMainSelectMenu; // maya's select menu
+    removeMenuCallback($gMainSelectMenu, "mayaUsdMenu_selectMenuCallback");
 
     // remove our selection mode sub menu
     global string $gMayaUsdSelectModeSubMenu;
     if (`menuItem -q -exists $gMayaUsdSelectModeSubMenu`) {
         deleteUI -mi $gMayaUsdSelectModeSubMenu;
     }
+    removeMenuCallback($gMainSelectMenu, "mayaUsdMenu_selectMenuCallback");
 }
 
 proc initAEShowMenu()
@@ -609,13 +616,6 @@ proc int isObjectSelected(string $obj)
     return 0;
 }
 
-global string $mayaUsdMergeToUsdOptions = "";
-
-proc string getMergeToUsdOptionsDefaultSettings()
-{
-    return "exportColorSets=1;exportUVs=1;exportSkels=none;exportSkin=none;exportBlendShapes=0;exportDisplayColor=1;shadingMode=none;animation=1;exportVisibility=1;exportInstances=1;mergeTransformAndShape=1;stripNamespaces=0";
-}
-
 global proc mayaUsdMenu_pushBackToUSD(string $obj)
 {
     if (!hasPrimUpdater())
@@ -628,63 +628,9 @@ global proc mayaUsdMenu_pushBackToUSD(string $obj)
         }
     }
     if (size($obj)) {
-        string $exportOptions = getMergeToUsdOptionsDefaultSettings();
+        string $exportOptions = `python("import mayaUsdMergeToUSDOptions; import mayaUsdOptions; mayaUsdOptions.setAnimateOption('''" + $obj + "''', mayaUsdMergeToUSDOptions.getMergeToUSDOptionsText())")`;
         mayaUsdMergeToUsd -exportOptions $exportOptions $obj;
     }
-}
-
-global proc mayaUsdPushBackToUSDReceiveExportOptions(string $exportOptions)
-{
-    global string $mayaUsdMergeToUsdOptions = "";
-    $mayaUsdMergeToUsdOptions = $exportOptions;
-}
-
-global proc mayaUsdPushBackToUSDOptionsAccepted()
-{
-    string $initialSettings = getMergeToUsdOptionsDefaultSettings();
-    mayaUsdTranslatorExport("", "query=all;!output;!animation-data", $initialSettings, "mayaUsdPushBackToUSDReceiveExportOptions");
-    layoutDialog -dismiss "Merge";
-}
-
-global proc mayaUsdShowPushBackToUSDOptions()
-{
-    string $form = `setParent -q`;
-
-    formLayout -e -width 420 $form;
-
-    string $subLayout = `columnLayout -adj true -parent $form "pushBackToUSDOptionsLayout"`;
-
-    setParent $subLayout;
-
-    string $initialSettings = getMergeToUsdOptionsDefaultSettings();
-    mayaUsdTranslatorExport($subLayout, "post=all;!output;!animation-data", $initialSettings, "");
-
-    setParent $form;
-
-    string $mergeText = getMayaUsdString("kMergeButton");
-    string $cancelText = getMayaUsdString("kButtonCancel");
-    string $bMerge   = `button -l $mergeText -c "mayaUsdPushBackToUSDOptionsAccepted()"`;
-    string $bCancel = `button -l $cancelText -c "layoutDialog -dismiss \"Cancel\""`;
-
-    int $spacer = 10;
-    int $edge   = 20;
-
-    formLayout -edit
-        -attachForm            $subLayout  "top" $edge
-        -attachForm            $subLayout  "left" $edge
-        -attachControl         $subLayout  "bottom" $edge $bCancel
-        -attachForm            $subLayout  "right"  $edge
-
-        -attachNone            $bCancel  "top"
-        -attachNone            $bCancel  "left"
-        -attachForm            $bCancel  "bottom" $edge
-        -attachForm            $bCancel  "right"  $edge
-
-        -attachNone            $bMerge   "top"
-        -attachNone            $bMerge   "left"
-        -attachForm            $bMerge   "bottom"  $edge
-        -attachControl         $bMerge   "right"   $spacer $bCancel
-    $form;
 }
 
 global proc mayaUsdMenu_pushBackToUSDOptions(string $obj)
@@ -699,15 +645,9 @@ global proc mayaUsdMenu_pushBackToUSDOptions(string $obj)
         }
     }
     if (size($obj)) {
-        global string $mayaUsdMergeToUsdOptions = "";
-        string $dlgTitle = getMayaUsdString("kMergeToUSDOptionsTitle");
-        string $dlgReturn = `layoutDialog -ui "mayaUsdShowPushBackToUSDOptions" -title $dlgTitle`;
-        if ("Merge" == $dlgReturn) {
-            mayaUsdMergeToUsd -exportOptions $mayaUsdMergeToUsdOptions $obj;
-        }
+        python("import mayaUsdMergeToUSDOptions; mayaUsdMergeToUSDOptions.showMergeToUSDOptions('''" + $obj + "''')");
     }
 }
-
 
 global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
 {
@@ -737,8 +677,18 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
     if ($pulledObject != "") {
         string $pushback = python("import mayaUsdMergeToUsd; mayaUsdMergeToUsd.createMenuItem(\"" + $pulledObject + "\", \"\")");
         
-        $tmp = getMayaUsdString("kMayaRefDiscardEdits");
-        string $pushclear = `menuItem -label $tmp -insertAfter $pushback -image "discard_edits.png" -command ("mayaUsdDiscardEdits " + $pulledObject)`;
+        int $isMayaRef = python("import mayaUsdUtils; mayaUsdUtils.isPulledMayaReference('''" + $pulledObject + "''')");
+
+        string $label;
+        string $icon;
+        if ($isMayaRef) {
+            $label = getMayaUsdString("kMayaRefDiscardEdits");
+            $icon = "discard_edits.png";
+        } else {
+            $label = getMayaUsdString("kMayaDiscardEdits");
+            $icon = "discard_edits.png";
+        }
+        string $pushclear = `menuItem -label $label -insertAfter $pushback -image $icon -command ("mayaUsdDiscardEdits " + $pulledObject)`;
         
         menuItem -divider true -insertAfter $pushclear;
     }
@@ -747,6 +697,7 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
         if (size($proxyShapes) > 0) {
             menuItem -divider true -insertAfter "";
             menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdData")` -subMenu true -insertAfter "";
+            menuItem -divider true -dividerLabel `getMayaUsdString("kMayaRefDuplicateAsUsdDataDiv")`;
             for ($proxy in $proxyShapes) {
                 menuItem -label $proxy -command ("mayaUsdMenu_duplicateToUSD " + $proxy + " " + $obj);
             }

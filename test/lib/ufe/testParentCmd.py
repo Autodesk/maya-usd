@@ -280,7 +280,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentAbsoluteSingleMatrixOp(self):
         """Test parent -absolute on prim with a single matrix op."""
 
@@ -413,7 +413,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentAbsoluteFallback(self):
         """Test parent -absolute on prim with a fallback Maya transform stack."""
         # Create a scene with an xform and a capsule.
@@ -535,7 +535,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         checkParentDone()
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentAbsoluteMultiMatrixOp(self):
         """Test parent -absolute on prim with a transform stack with multiple matrix ops."""
 
@@ -1052,7 +1052,7 @@ class ParentCmdTestCase(unittest.TestCase):
             cmds.parent("|Tree_usd|Tree_usdShape,/TreeBase/trunk",
                         "|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves")
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 128, 'Test requires fix in Maya Preview Release 128 or greater.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testParentHierarchy(self):
         '''Parenting a node and a descendant.'''
 

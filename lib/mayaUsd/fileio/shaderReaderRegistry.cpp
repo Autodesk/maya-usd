@@ -95,18 +95,25 @@ void UsdMayaShaderReaderRegistry::Register(
 
     // The unloader uses the index to know which entry to erase when there are
     // more than one for the same usdInfoId.
-    UsdMaya_RegistryHelper::AddUnloader(
-        [usdInfoId, index]() {
-            _Registry::const_iterator it, itEnd;
-            std::tie(it, itEnd) = _reg.equal_range(usdInfoId);
-            for (; it != itEnd; ++it) {
-                if (it->second._index == index) {
-                    _reg.erase(it);
-                    break;
+    //
+    // TODO: The decision to remember that a type was not registered will have
+    //       to be revisited at some point. Loading a plugin creates an
+    //       opportunity to discover more readers... as long as we stop
+    //       registering nullptrs.
+    if (fn) {
+        UsdMaya_RegistryHelper::AddUnloader(
+            [usdInfoId, index]() {
+                _Registry::const_iterator it, itEnd;
+                std::tie(it, itEnd) = _reg.equal_range(usdInfoId);
+                for (; it != itEnd; ++it) {
+                    if (it->second._index == index) {
+                        _reg.erase(it);
+                        break;
+                    }
                 }
-            }
-        },
-        fromPython);
+            },
+            fromPython);
+    }
 }
 
 /* static */

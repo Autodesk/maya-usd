@@ -763,7 +763,9 @@ void HdVP2RenderDelegate::DestroyRprim(HdRprim* rPrim) { delete rPrim; }
 HdSprim* HdVP2RenderDelegate::CreateSprim(const TfToken& typeId, const SdfPath& sprimId)
 {
     if (typeId == HdPrimTypeTokens->material) {
-        return new HdVP2Material(this, sprimId);
+        auto* material = new HdVP2Material(this, sprimId);
+        _materialSprims.emplace(material);
+        return material;
     }
     if (typeId == HdPrimTypeTokens->camera) {
         return new HdCamera(sprimId);
@@ -841,7 +843,11 @@ HdSprim* HdVP2RenderDelegate::CreateFallbackSprim(const TfToken& typeId)
 
 /*! \brief  Destroy & deallocate Sprim instance
  */
-void HdVP2RenderDelegate::DestroySprim(HdSprim* sPrim) { delete sPrim; }
+void HdVP2RenderDelegate::DestroySprim(HdSprim* sPrim)
+{
+    _materialSprims.erase(sPrim);
+    delete sPrim;
+}
 
 /*! \brief  Request to Allocate and Construct a new, VP2 specialized Bprim.
 
@@ -1109,5 +1115,14 @@ HdVP2RenderDelegate::GetSamplerState(const MHWRender::MSamplerStateDesc& desc) c
 /*! \brief  Returns the shared bbox geometry.
  */
 const HdVP2BBoxGeom& HdVP2RenderDelegate::GetSharedBBoxGeom() const { return *sSharedBBoxGeom; }
+
+void HdVP2RenderDelegate::CleanupMaterials()
+{
+    for (const auto& sprim : _materialSprims) {
+        if (auto* material = dynamic_cast<HdVP2Material*>(sprim)) {
+            material->ClearPendingTasks();
+        }
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

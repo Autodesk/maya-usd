@@ -19,6 +19,7 @@
 import fixturesUtils
 
 from usdUtils import createSimpleXformScene
+from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
 
@@ -61,7 +62,7 @@ class EditAsMayaTestCase(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testTransformEditAsMaya(self):
         '''Edit a USD transform as a Maya object.'''
 
@@ -111,15 +112,21 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         assertVectorAlmostEqual(self, mayaValues, usdValues)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testEditAsMayaUndoRedo(self):
         '''Edit a USD transform as a Maya object and apply undo and redo.'''
 
         (ps, xlateOp, xlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
          _, _, _, _, _) = createSimpleXformScene()
 
+        aPrim = mayaUsd.ufe.ufePathToPrim(aUsdUfePathStr)
+
         # Edit aPrim as Maya data.
         self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+
+        # Make a selection before edit as Maya.
+        cmds.select('persp')
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
 
         cmds.mayaUsdEditAsMaya(aUsdUfePathStr)
 
@@ -159,6 +166,15 @@ class EditAsMayaTestCase(unittest.TestCase):
 
             assertVectorAlmostEqual(self, mayaValues, usdValues)
 
+            # Selection is on the edited Maya object.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertEqual(len(sn), 1)
+            self.assertEqual(sn[0], aMayaPathStr)
+
+            # Read the pull information from the pulled prim.
+            aMayaPullPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(aPrim)
+            self.assertEqual(aMayaPathStr, aMayaPullPathStr)
+
         verifyEditedScene()
 
         # Undo
@@ -168,6 +184,10 @@ class EditAsMayaTestCase(unittest.TestCase):
             # Maya node is removed.
             with self.assertRaises(RuntimeError):
                 om.MSelectionList().add(aMayaPathStr)
+            # Selection is restored.
+            self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
+            # No more pull information on the prim.
+            self.assertEqual(len(mayaUsd.lib.PrimUpdaterManager.readPullInformation(aPrim)), 0)
 
         verifyNoLongerEdited()
         
@@ -176,7 +196,7 @@ class EditAsMayaTestCase(unittest.TestCase):
 
         verifyEditedScene()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testIllegalEditAsMaya(self):
         '''Trying to edit as Maya on object that doesn't support it.'''
         
@@ -203,7 +223,7 @@ class EditAsMayaTestCase(unittest.TestCase):
         #     self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(scopePathStr))
         #     self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(scopePathStr))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testSessionLayer(self):
         '''Verify that the edit gets on the sessionLayer instead of the editTarget layer.'''
         

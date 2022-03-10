@@ -538,7 +538,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
                         prototypeNode.removeChildAt(prototypeNode.childCount() - 1);
                     }
                 }
-#if MAYA_APP_VERSION >= 2020
+#if MAYA_API_VERSION > 20200200
                 deletePrototypeMod.deleteNode(prototypeObject, false);
 #else
                 deletePrototypeMod.deleteNode(prototypeObject);
@@ -610,7 +610,7 @@ bool UsdMaya_ReadJob::Undo()
                         }
                     }
                 }
-#if MAYA_APP_VERSION >= 2020
+#if MAYA_API_VERSION > 20200200
                 mDagModifierUndo.deleteNode(it.second, false);
 #else
                 mDagModifierUndo.deleteNode(it.second);

@@ -26,20 +26,6 @@ global proc AEmayaUsdProxyShapeInfoReplace(string $input)
     textFieldGrp -edit -text $defaultPrim mayaUsdProxyShapeDefaultPrim;
 }
 
-global proc AEmayaUsdProxyShapePayloadsNew(string $loadPayloads)
-{
-    setUITemplate -pst attributeEditorTemplate;
-    rowLayout -nc 5 -cl5 "right" "center" "center" "center" "center";
-        text -label `getMayaUsdString("kPayloads")` -ann `getMayaUsdString("kPayloadsAnn")`;
-        button -label `getMayaUsdString("kLoadAll")` payloadsLoadAllBtn;
-        button -label `getMayaUsdString("kUnloadAll")` payloadsUnloadAllBtn;
-        text -label "";
-        text -label "";
-    setParent ..;
-    setUITemplate -ppt;
-    AEmayaUsdProxyShapePayloadsReplace($loadPayloads);
-}
-
 global proc AEmayaUsdProxyShapeShareStageNew(string $shareStageAttr)
 {
     checkBoxGrp
@@ -56,41 +42,6 @@ global proc AEmayaUsdProxyShapeShareStageReplace(string $shareStageAttr)
         -value1 `getAttr($shareStageAttr)`
         -changeCommand1 ("setAttr " + $shareStageAttr + " #1")
         shareStageCheckBoxGrp;
-}
-
-global proc AEMayaUsdProxyShapeStageLoadAll(string $fullNodeName)
-{
-    mayaUsdStageLoadAll $fullNodeName;
-
-    // Maya 2022 and above will automatically refresh the viewport, but
-    // for earlier versions of Maya we need to do it manually.
-    int $mjv = `about -majorVersion`;
-    if ($mjv < 2022) {
-        refresh;
-    }
-}
-
-global proc AEMayaUsdProxyShapeStageUnloadAll(string $fullNodeName)
-{
-    mayaUsdStageUnloadAll $fullNodeName;
-
-    // Maya 2022 and above will automatically refresh the viewport, but
-    // for earlier versions of Maya we need to do it manually.
-    int $mjv = `about -majorVersion`;
-    if ($mjv < 2022) {
-        refresh;
-    }
-}
-
-global proc AEmayaUsdProxyShapePayloadsReplace(string $loadPayloads)
-{
-    // From the input attribute we simply want the node name.
-    string $nodeName = plugNode($loadPayloads);
-    string $res[] = `ls -l $nodeName`;
-    string $fullNodeName = $res[0];
-
-    button -e -c ("evalEcho AEMayaUsdProxyShapeStageLoadAll(\"" + $fullNodeName + "\")") payloadsLoadAllBtn;
-    button -e -c ("evalEcho AEMayaUsdProxyShapeStageUnloadAll(\"" + $fullNodeName + "\")") payloadsUnloadAllBtn;
 }
 
 global proc AEmayaUsdProxyShapeFilePathNew(string $filePathAttr)
@@ -219,16 +170,12 @@ global proc AEmayaUsdProxyShapeBaseTemplate( string $nodeName )
         editorTemplate -suppress "stageCacheId";
         editorTemplate -suppress "outStageCacheId";
 
-        // MAYA-109438 - temp suppress these non-functional attributes.
-        editorTemplate -suppress "loadPayloads";
-
         editorTemplate -beginLayout `getMayaUsdString("kLabelStage")` -collapse 0;
             // We aren't displaying the "inStageData" attribute in the ProxyShapeInfo. We simply
             // pass it in order to get the current nodename. Cannot use the input one here as it
             // changes based on which proxy shape the AE is viewing.
             editorTemplate -callCustom "AEmayaUsdProxyShapeInfoNew" "AEmayaUsdProxyShapeInfoReplace" inStageData;
             editorTemplate -callCustom "AEmayaUsdProxyShapeShareStageNew" "AEmayaUsdProxyShapeShareStageReplace" "shareStage";
-            editorTemplate -callCustom "AEmayaUsdProxyShapePayloadsNew" "AEmayaUsdProxyShapePayloadsReplace" loadPayloads;
         editorTemplate -endLayout;
 
         editorTemplate -beginLayout `getMayaUsdString("kLabelStageSource")` -collapse 0;

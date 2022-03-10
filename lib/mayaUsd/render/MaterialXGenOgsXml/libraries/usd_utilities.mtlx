@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <!--
+ Copyright 2022 Autodesk
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+  -->
+
+  <!-- ======================================================================== -->
+  <!-- Utilities specific to USD handling                                       -->
+  <!-- ======================================================================== -->
+
+  <!-- Node: texcoordtangents: Generate world tangents from derivatives of position
+             and texcoord                                                       -->
+  <nodedef name="MayaND_texcoordtangents_vector3" node="texcoordtangents" nodegroup="math">
+    <input name="position" type="vector3" defaultgeomprop="Pworld" />
+    <input name="normal" type="vector3" defaultgeomprop="Nworld" />
+    <input name="texcoord" type="vector2" defaultgeomprop="UV0" />
+    <output name="out" type="vector3" />
+  </nodedef>
+
+  <!-- Node: arbitrarytangents: Completely arbitrary tangent for when there is no
+             texcoord space available                                           -->
+  <nodedef name="MayaND_arbitrarytangents_vector3" node="arbitrarytangents" nodegroup="math">
+    <input name="position" type="vector3" defaultgeomprop="Pworld" />
+    <input name="normal" type="vector3" defaultgeomprop="Nworld" />
+    <output name="out" type="vector3" />
+  </nodedef>
+</materialx>
