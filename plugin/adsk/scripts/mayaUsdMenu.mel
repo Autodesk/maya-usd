@@ -287,9 +287,10 @@ proc string getMayaMajorVersion() {
 // setup the items in Maya's "Create" menu
 global proc mayaUsdMenu_createMenuCallback() {
     global string $gMayaUsdCreateSubMenu;
-    global string $gMainCreateMenu; // maya's create menu
 
     if ($gMayaUsdCreateSubMenu == "") {    
+        global string $gMainCreateMenu; // maya's create menu
+        
         string $mayaVersion = getMayaMajorVersion();
         // find the insertion point, after the Scene Management separator
         $sceneManagementDivider = findDividerByLabel($gMainCreateMenu, uiRes("m_ModCreateMenu.kCreateSceneMgt"));
