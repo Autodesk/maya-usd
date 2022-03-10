@@ -46,6 +46,7 @@ MObject MayaUsdGeomNode::outGeomAttr;
 MObject MayaUsdGeomNode::outGeomMatrixAttr;
 
 namespace {
+// Utility class to simplify outputing attribute arrays.
 class OutputArrayHandler
 {
 public:
@@ -143,7 +144,6 @@ MayaUsdGeomNode::MayaUsdGeomNode()
     : MPxNode()
     , _cache(std::make_unique<CacheData>())
 {
-    TfRegistryManager::GetInstance().SubscribeTo<MayaUsdGeomNode>();
 }
 
 /* virtual */
@@ -200,33 +200,13 @@ MStatus MayaUsdGeomNode::compute(const MPlug& plug, MDataBlock& dataBlock)
                 dataBlock, outGeomMatrixAttr, _cache->primitives.size(), retValue);
             CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-            // MDataHandle outputGeomHandle = dataBlock.outputValue(outGeomAttr, &retValue);
-            // CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-            // MDataHandle outputMatrixHandle = dataBlock.outputValue(outGeomMatrixAttr, &retValue);
-            // CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-            // MArrayDataHandle geomDst(outputGeomHandle);
-            // MArrayDataHandle matrixDst(outputMatrixHandle);
-
-            // MArrayDataBuilder geomBuilder(&dataBlock, outGeomAttr, _cache->primitives.size());
-            // MArrayDataBuilder marixbuilder(&dataBlock, outGeomMatrixAttr,
-            // _cache->primitives.size());
-
             for (auto& prim : _cache->primitives) {
                 geomOut.add(prim.geometry);
                 matrixOut.add(prim.matrix);
-                // MDataHandle geomElement = geomBuilder.addLast();
-                // geomElement.set(prim.geom);
-
-                // MDataHandle matrixElement = marixbuilder.addLast();
-                // matrixElement.set(prim.matrix);
             }
 
             geomOut.finish();
             matrixOut.finish();
-            // geomDst.set(geomBuilder);
-            // geomDst.set(matrixDst);
         }
     }
 

@@ -17,6 +17,7 @@
 
 #include <mayaUsd/fileio/translators/translatorMesh.h>
 #include <mayaUsd/fileio/utils/meshReadUtils.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/usd/usdGeom/xformable.h>
@@ -31,10 +32,7 @@ using namespace MAYAUSD_NS_DEF;
 namespace {
 void convertMatrix(const GfMatrix4d& inMatrix, MMatrix& outMatrix, MObject& outMatrixObj)
 {
-    double usdLocalTransformData[4u][4u];
-    inMatrix.Get(usdLocalTransformData);
-
-    outMatrix = MMatrix(usdLocalTransformData);
+    outMatrix = UsdMayaUtil::GfMatrixToMMatrix(inMatrix);
 
     MFnMatrixData matrixData;
     outMatrixObj = matrixData.create();

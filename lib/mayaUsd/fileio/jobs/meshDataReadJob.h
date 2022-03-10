@@ -35,8 +35,8 @@ public:
         const UsdMayaJobImportArgs& iArgs);
 
 protected:
-    // Override prim reader to create a mesh without a node and to store
-    // the mesh then access it and return it in the plug.
+    // Override prim reader to create a mesh without a node and store the created mesh
+    // to be retrieved later.
     bool OverridePrimReader(
         const UsdPrim&               usdRootPrim,
         const UsdPrim&               prim,
