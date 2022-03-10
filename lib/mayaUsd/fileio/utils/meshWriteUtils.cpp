@@ -677,7 +677,7 @@ void UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject
     VtVec3fArray   points(mayaRawVec3, mayaRawVec3 + numVertices);
 
     UsdGeomPrimvar primVar = primSchema.CreatePrimvar(
-        UsdUtilsGetPrefName(), SdfValueTypeNames->Point3fArray, UsdGeomTokens->varying);
+        UsdUtilsGetPrefName(), SdfValueTypeNames->Point3fArray, UsdGeomTokens->vertex);
 
     if (!primVar) {
         return;
