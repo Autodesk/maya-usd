@@ -41,6 +41,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (spriteWidth)
+);
+// clang-format on
+
 namespace {
 
 //! Required primvars when there is no material binding.
@@ -266,7 +274,7 @@ void HdVP2Points::_UpdateDrawItem(
             // Using a zero vector to indicate requirement of camera-facing
             // normals when there is no authored normals.
             if (normals.empty()) {
-                normals.push_back(GfVec3f(0.0f, 0.0f, 0.0f));
+                normals.push_back(GfVec3f(0.0f, 1.0f, 0.0f));
             }
 
             normals = _BuildInterpolatedArray(_pointsSharedData._points.size(), normals);
@@ -307,20 +315,20 @@ void HdVP2Points::_UpdateDrawItem(
             widths = _BuildInterpolatedArray(_pointsSharedData._points.size(), widths);
 
             MHWRender::MVertexBuffer* widthsBuffer
-                = _pointsSharedData._primvarBuffers[HdTokens->widths].get();
+                = _pointsSharedData._primvarBuffers[_tokens->spriteWidth].get();
 
             if (!widthsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
                     "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 1);
 
                 widthsBuffer = new MHWRender::MVertexBuffer(vbDesc);
-                _pointsSharedData._primvarBuffers[HdTokens->widths].reset(widthsBuffer);
+                _pointsSharedData._primvarBuffers[_tokens->spriteWidth].reset(widthsBuffer);
             }
 
             unsigned int numWidths = widths.size();
             if (widthsBuffer && numWidths > 0) {
                 void* bufferData = widthsBuffer->acquire(numWidths, true);
-                stateToCommit._primvarBufferDataMap[HdTokens->widths] = bufferData;
+                stateToCommit._primvarBufferDataMap[_tokens->spriteWidth] = bufferData;
 
                 if (bufferData != nullptr) {
                     memcpy(bufferData, widths.cdata(), numWidths * sizeof(float));
@@ -428,9 +436,9 @@ void HdVP2Points::_UpdateDrawItem(
                     const GfVec3f& clr3f = colorArray[0];
                     // When the interpolation is instance the color of the material is ignored
                     const MColor color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
-                    shader = _delegate->Get3dFatPointShader(color);
+                    shader = _delegate->GetPointsFallbackShader(color);
                 } else {
-                    shader = _delegate->Get3dCPVFatPointShader();
+                    shader = _delegate->GetPointsFallbackCPVShader();
                 }
 
                 if (shader != nullptr && shader != drawItemData._shader) {
@@ -624,10 +632,10 @@ void HdVP2Points::_UpdateDrawItem(
 
                 if (desc.geomStyle == HdPointsGeomStylePoints) {
                     if (_selectionStatus != kUnselected) {
-                        shader = _delegate->Get3dFatPointShader(color);
+                        shader = _delegate->GetPointsFallbackShader(color);
                     }
                 } else {
-                    shader = _delegate->Get3dFatPointShader(color);
+                    shader = _delegate->GetPointsFallbackShader(color);
                 }
 
                 if (shader != nullptr && shader != drawItemData._shader) {
@@ -1044,7 +1052,7 @@ MHWRender::MRenderItem* HdVP2Points::_CreateFatPointsRenderItem(const MString& n
         MHWRender::MGeometry::kShaded | MHWRender::MGeometry::kTextured));
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dFatPointShader());
+    renderItem->setShader(_delegate->GetPointsFallbackShader(MColor()));
 #ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();

@@ -62,6 +62,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (BasisCurvesLinearFallbackShader)
     (BasisCurvesLinearHull)
 
+    (PointsFallbackCPVShader)
+    (PointsFallbackShader)
+    (PointsGeometry)
+
     (FallbackCPVShader)
     (FallbackShader)
 
@@ -133,6 +137,8 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
 
                                               _tokens->NwFaceCameraIfNAN,
 
+                                              _tokens->PointsGeometry,
+
                                               _tokens->lightingContributions,
                                               _tokens->scaledDiffusePassThrough,
                                               _tokens->scaledSpecularPassThrough,
@@ -145,7 +151,8 @@ static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDoma
 static const TfTokenVector _FragmentGraphNames
     = { _tokens->BasisCurvesCubicCPVShader,  _tokens->BasisCurvesCubicFallbackShader,
         _tokens->BasisCurvesLinearCPVShader, _tokens->BasisCurvesLinearFallbackShader,
-        _tokens->FallbackCPVShader,          _tokens->FallbackShader };
+        _tokens->FallbackCPVShader,          _tokens->FallbackShader,
+        _tokens->PointsFallbackCPVShader,    _tokens->PointsFallbackShader };
 
 namespace {
 //! Get the file path of the shader fragment.
