@@ -1489,7 +1489,7 @@ GfVec3f ProxyRenderDelegate::GetDefaultColor(const TfToken& className)
     static const GfVec3f kDefaultColor(0.000f, 0.016f, 0.376f);
 
     // Prepare to construct the query command.
-    const char*  queryName = "unsupported";
+    const char*   queryName = "unsupported";
     GfVec3fCache* colorCache = nullptr;
     if (className == HdPrimTypeTokens->basisCurves) {
         colorCache = &_dormantCurveColorCache;

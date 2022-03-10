@@ -196,7 +196,7 @@ private:
 
     HdDirtyBits _customDirtyBitsInUse {
         0
-    };                      //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
+    }; //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
 
     std::shared_ptr<HdVP2MeshSharedData>
         _meshSharedData; //!< Shared data for all draw items of the Rprim

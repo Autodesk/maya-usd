@@ -1221,7 +1221,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                         *renderItem, i + 1, (*stateToCommit._instanceTransforms)[i]);
                 }
             } else {
-                drawScene.setInstanceTransformArray(*renderItem, *stateToCommit._instanceTransforms);
+                drawScene.setInstanceTransformArray(
+                    *renderItem, *stateToCommit._instanceTransforms);
             }
 
             if (stateToCommit._instanceColors->length() == newInstanceCount * kNumColorChannels) {

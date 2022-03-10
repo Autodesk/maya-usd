@@ -425,7 +425,7 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 if (!_meshSharedData->_adjacency) {
                     _meshSharedData->_adjacency.reset(new Hd_VertexAdjacency());
 
-                HdBufferSourceSharedPtr     adjacencyComputation
+                    HdBufferSourceSharedPtr adjacencyComputation
                         = _meshSharedData->_adjacency->GetSharedAdjacencyBuilderComputation(
                             &_meshSharedData->_topology);
                     MProfilingScope profilingScope(
@@ -434,7 +434,7 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                         _rprimId.asChar(),
                         "HdVP2Mesh::computeAdjacency");
 
-                adjacencyComputation->Resolve();
+                    adjacencyComputation->Resolve();
                 }
 
                 // Only the points referenced by the topology are used to compute
@@ -764,7 +764,7 @@ void HdVP2Mesh::Sync(
     HdDirtyBits*     dirtyBits,
     TfToken const&   reprToken)
 {
-    const SdfPath&       id = GetId();
+    const SdfPath& id = GetId();
     HdRenderIndex& renderIndex = delegate->GetRenderIndex();
     if (!_SyncCommon(dirtyBits, id, _GetRepr(reprToken), renderIndex)) {
         return;
@@ -1491,11 +1491,11 @@ void HdVP2Mesh::_UpdateDrawItem(
         const HdMeshTopology& topologyToUse = _meshSharedData->_renderingTopology;
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            _rprimId.asChar(),
-            "HdVP2Mesh prepare index buffer");
+            MProfilingScope profilingScope(
+                HdVP2RenderDelegate::sProfilerCategory,
+                MProfiler::kColorC_L2,
+                _rprimId.asChar(),
+                "HdVP2Mesh prepare index buffer");
 
             // _trianglesFaceVertexIndices has the full triangulation calculated in
             // _updateRepr. Find the triangles which represent faces in the matching
@@ -2123,18 +2123,18 @@ void HdVP2Mesh::_UpdateDrawItem(
             // without recreating render item, so we keep using GPU instancing.
             if (stateToCommit._renderItemData._usingInstancedDraw) {
                 if (stateToCommit._instanceTransforms) {
-                if (oldInstanceCount == newInstanceCount) {
-                    for (unsigned int i = 0; i < newInstanceCount; i++) {
-                        // VP2 defines instance ID of the first instance to be 1.
-                        result = drawScene.updateInstanceTransform(
+                    if (oldInstanceCount == newInstanceCount) {
+                        for (unsigned int i = 0; i < newInstanceCount; i++) {
+                            // VP2 defines instance ID of the first instance to be 1.
+                            result = drawScene.updateInstanceTransform(
                                 *renderItem, i + 1, (*stateToCommit._instanceTransforms)[i]);
+                            TF_VERIFY(result == MStatus::kSuccess);
+                        }
+                    } else {
+                        result = drawScene.setInstanceTransformArray(
+                            *renderItem, *stateToCommit._instanceTransforms);
                         TF_VERIFY(result == MStatus::kSuccess);
                     }
-                } else {
-                    result = drawScene.setInstanceTransformArray(
-                            *renderItem, *stateToCommit._instanceTransforms);
-                    TF_VERIFY(result == MStatus::kSuccess);
-                }
                 }
 
                 if (stateToCommit._instanceColors && stateToCommit._instanceColors->length() > 0) {
@@ -2163,9 +2163,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                 _SetWantConsolidation(*renderItem, false);
 #endif
                 if (stateToCommit._instanceTransforms) {
-                result = drawScene.setInstanceTransformArray(
+                    result = drawScene.setInstanceTransformArray(
                         *renderItem, *stateToCommit._instanceTransforms);
-                TF_VERIFY(result == MStatus::kSuccess);
+                    TF_VERIFY(result == MStatus::kSuccess);
                 }
 
                 if (stateToCommit._instanceColors->length() > 0) {
@@ -2188,7 +2188,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
 
             if (stateToCommit._instanceTransforms) {
-            oldInstanceCount = newInstanceCount;
+                oldInstanceCount = newInstanceCount;
             }
 #ifdef MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT
             if (stateToCommit._ufeIdentifiers.length() > 0) {
@@ -2239,7 +2239,7 @@ void HdVP2Mesh::_ForEachRenderItemInRepr(const TfToken& reprToken, Func func)
             func(renderItemData);
         }
     }
-        }
+}
 
 template <typename Func> void HdVP2Mesh::_ForEachRenderItem(Func func)
 {

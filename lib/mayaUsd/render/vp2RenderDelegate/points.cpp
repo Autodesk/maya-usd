@@ -55,11 +55,14 @@ namespace {
 const TfTokenVector sFallbackShaderPrimvars
     = { HdTokens->displayColor, HdTokens->displayOpacity, HdTokens->normals, HdTokens->widths };
 
-template<typename BaseType>
-VtArray<BaseType> _BuildInterpolatedArray(size_t numVerts, const VtArray<BaseType>& authoredData, const BaseType& defaultValue)
+template <typename BaseType>
+VtArray<BaseType> _BuildInterpolatedArray(
+    size_t                   numVerts,
+    const VtArray<BaseType>& authoredData,
+    const BaseType&          defaultValue)
 {
     VtArray<BaseType> result(numVerts);
-    size_t       size = authoredData.size();
+    size_t            size = authoredData.size();
 
     if (size == 1) {
         // Uniform data
@@ -142,14 +145,14 @@ void HdVP2Points::Sync(
         const HdVP2Material* material = static_cast<const HdVP2Material*>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
-        TfTokenVector materialPrimvars;
+        TfTokenVector        materialPrimvars;
         const TfTokenVector* requiredPrimvars = &sFallbackShaderPrimvars;
         if (material && material->GetSurfaceShader()) {
             materialPrimvars = material->GetRequiredPrimvars();
             materialPrimvars.push_back(HdTokens->widths);
             requiredPrimvars = &materialPrimvars;
         }
-        
+
         _UpdatePrimvarSources(delegate, *dirtyBits, *requiredPrimvars);
     }
 
@@ -196,8 +199,14 @@ void HdVP2Points::Sync(
     _UpdateRepr(delegate, reprToken);
 }
 
-template<typename BaseType>
-void PreparePrimvarBuffer(HdVP2PointsSharedData& pointsSharedData, MayaUsdCommitState& stateToCommit, const TfToken& primvarToken, const TfToken& bufferToken, const MHWRender::MVertexBufferDescriptor& vbDesc, const BaseType& defaultValue)
+template <typename BaseType>
+void PreparePrimvarBuffer(
+    HdVP2PointsSharedData&                    pointsSharedData,
+    MayaUsdCommitState&                       stateToCommit,
+    const TfToken&                            primvarToken,
+    const TfToken&                            bufferToken,
+    const MHWRender::MVertexBufferDescriptor& vbDesc,
+    const BaseType&                           defaultValue)
 {
     const auto& primvarSourceMap = pointsSharedData._primvarSourceMap;
 
@@ -215,10 +224,10 @@ void PreparePrimvarBuffer(HdVP2PointsSharedData& pointsSharedData, MayaUsdCommit
         primvarArray.push_back(defaultValue);
     }
 
-    primvarArray = _BuildInterpolatedArray(pointsSharedData._points.size(), primvarArray, defaultValue);
+    primvarArray
+        = _BuildInterpolatedArray(pointsSharedData._points.size(), primvarArray, defaultValue);
 
-    MHWRender::MVertexBuffer* primvarBuffer
-        = pointsSharedData._primvarBuffers[bufferToken].get();
+    MHWRender::MVertexBuffer* primvarBuffer = pointsSharedData._primvarBuffers[bufferToken].get();
 
     if (!primvarBuffer) {
         primvarBuffer = new MHWRender::MVertexBuffer(vbDesc);
@@ -255,7 +264,7 @@ void HdVP2Points::_UpdateDrawItem(
 
     MayaUsdCommitState             stateToCommit(drawItem->GetRenderItemData());
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
-                
+
     stateToCommit._instanceTransforms = std::make_shared<MMatrixArray>();
     stateToCommit._instanceColors = std::make_shared<MFloatArray>();
 
@@ -300,7 +309,8 @@ void HdVP2Points::_UpdateDrawItem(
                 normals.push_back(defaultNormal);
             }
 
-            normals = _BuildInterpolatedArray(_pointsSharedData._points.size(), normals, defaultNormal);
+            normals
+                = _BuildInterpolatedArray(_pointsSharedData._points.size(), normals, defaultNormal);
 
             if (!_pointsSharedData._normalsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
@@ -323,7 +333,7 @@ void HdVP2Points::_UpdateDrawItem(
         if (itemDirtyBits & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle)) {
             for (const auto& it : primvarSourceMap) {
                 const TfToken& token = it.first;
-            
+
                 // skip primvars that are processed separately.
                 if ((token == HdTokens->displayColor) || (token == HdTokens->displayOpacity)
                     || (token == HdTokens->points) || (token == HdTokens->normals))
@@ -334,18 +344,27 @@ void HdVP2Points::_UpdateDrawItem(
                     const MHWRender::MVertexBufferDescriptor vbDesc(
                         "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 1);
 
-                    const auto& bufferToken = (token == HdTokens->widths) ? _tokens->spriteWidth : token;
-                    PreparePrimvarBuffer(_pointsSharedData, stateToCommit, token, bufferToken, vbDesc, 1.f);
+                    const auto& bufferToken
+                        = (token == HdTokens->widths) ? _tokens->spriteWidth : token;
+                    PreparePrimvarBuffer(
+                        _pointsSharedData, stateToCommit, token, bufferToken, vbDesc, 1.f);
                 } else if (value.IsHolding<VtVec2fArray>()) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
                         "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 2);
 
-                    PreparePrimvarBuffer(_pointsSharedData, stateToCommit, token, token, vbDesc, GfVec2f(0.f, 0.f));
+                    PreparePrimvarBuffer(
+                        _pointsSharedData, stateToCommit, token, token, vbDesc, GfVec2f(0.f, 0.f));
                 } else if (value.IsHolding<VtVec3fArray>()) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
                         "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 3);
 
-                    PreparePrimvarBuffer(_pointsSharedData, stateToCommit, token, token, vbDesc, GfVec3f(0.f, 0.f, 0.f));
+                    PreparePrimvarBuffer(
+                        _pointsSharedData,
+                        stateToCommit,
+                        token,
+                        token,
+                        vbDesc,
+                        GfVec3f(0.f, 0.f, 0.f));
                 }
             }
         }
@@ -472,8 +491,10 @@ void HdVP2Points::_UpdateDrawItem(
             }
 
             if (prepareCPVBuffer) {
-                colorArray = _BuildInterpolatedArray(_pointsSharedData._points.size(), colorArray, defaultColor);
-                alphaArray = _BuildInterpolatedArray(_pointsSharedData._points.size(), alphaArray, 1.f);
+                colorArray = _BuildInterpolatedArray(
+                    _pointsSharedData._points.size(), colorArray, defaultColor);
+                alphaArray
+                    = _BuildInterpolatedArray(_pointsSharedData._points.size(), alphaArray, 1.f);
 
                 const size_t numColors = colorArray.size();
                 const size_t numAlphas = alphaArray.size();
@@ -820,7 +841,8 @@ void HdVP2Points::_UpdateDrawItem(
                         *renderItem, i + 1, (*stateToCommit._instanceTransforms)[i]);
                 }
             } else {
-                drawScene.setInstanceTransformArray(*renderItem, *stateToCommit._instanceTransforms);
+                drawScene.setInstanceTransformArray(
+                    *renderItem, *stateToCommit._instanceTransforms);
             }
 
             if (stateToCommit._instanceColors->length() == newInstanceCount * kNumColorChannels) {
