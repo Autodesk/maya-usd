@@ -28,6 +28,8 @@ import fixturesUtils
 
 import unittest
 
+_customRigTypeName = None
+
 class customRigPrimReader(mayaUsdLib.PrimReader):
     def Read(self, context):
         usdPrim = self._GetArgs().GetUsdPrim()
@@ -47,6 +49,8 @@ class customRigPrimReader(mayaUsdLib.PrimReader):
         selectionList = OpenMaya.MSelectionList()
         selectionList.add(rigNode[0])
         rigNodeObj = selectionList.getDependNode(0)
+        # Add USD original type information to corresponding Maya node.
+        mayaUsdLib.TranslatorUtil.SetUsdTypeName(rigNodeObj, _customRigTypeName)
         nodePath = usdPrim.GetPath().pathString
         context.RegisterNewMayaNode(nodePath, rigNodeObj);
 
@@ -82,10 +86,11 @@ class testCustomRig(unittest.TestCase):
     def setUpClass(cls):
         cls.inputPath = fixturesUtils.setUpClass(__file__)
         
-        typeName = Usd.SchemaRegistry.GetTypeFromSchemaTypeName("CustomRig").typeName
-        
-        mayaUsdLib.PrimReader.Register(customRigPrimReader, typeName)
-        mayaUsdLib.PrimUpdater.Register(customRigPrimUpdater, typeName, "transform", customRigPrimUpdater.Supports.All.value + customRigPrimUpdater.Supports.AutoPull.value)
+        global _customRigTypeName
+        _customRigTypeName = Usd.SchemaRegistry.GetTypeFromSchemaTypeName("CustomRig").typeName
+
+        mayaUsdLib.PrimReader.Register(customRigPrimReader, _customRigTypeName)
+        mayaUsdLib.PrimUpdater.Register(customRigPrimUpdater, _customRigTypeName, "transform", customRigPrimUpdater.Supports.All.value + customRigPrimUpdater.Supports.AutoPull.value)
 
 
     @classmethod

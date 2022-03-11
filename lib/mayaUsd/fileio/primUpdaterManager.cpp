@@ -435,13 +435,13 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         // If the Maya node holds USD type information (e.g. a dummy transform
         // node which is a stand-in for a non-transform USD prim type), use the
         // USD type instead.
-        auto              usdTypeNamePlug = dgNodeFn.findPlug("USD_typeName", true);
-        bool              useUsdType = !usdTypeNamePlug.isNull();
-        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
+        auto       usdTypeNamePlug = dgNodeFn.findPlug("USD_typeName", true);
+        const bool useUsdType = !usdTypeNamePlug.isNull();
 
-        auto registryItem = useUsdType ? UsdMayaPrimUpdaterRegistry::FindOrFallback(
-                                TfToken(usdTypeNamePlug.asString().asChar()))
-                                       : UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        auto registryItem = useUsdType
+            ? UsdMayaPrimUpdaterRegistry::FindOrFallback(
+                TfToken(usdTypeNamePlug.asString().asChar()))
+            : UsdMayaPrimUpdaterRegistry::FindOrFallback(std::string(dgNodeFn.typeName().asChar()));
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, pulledUfePath);
 
@@ -543,6 +543,17 @@ SdfPath getDstSdfPath(const Ufe::Path& ufePulledPath, const SdfPath& srcSdfPath,
 // Create an updater for use with both pushCustomize() traversals /
 // customization points: pushCopySpec() and pushEnd().
 //
+// pushCopySpec() and pushEnd() must use the same updater type.  An earlier
+// version of this function tried to ensure this by using the pulled prim to
+// create the updater.  However, this prim cannot be relied on, as
+// pushCopySpec() has an edit router customization point that can remove the
+// pulled prim from the USD scene (e.g. by switching a variant set to a
+// different variant, such as what occurs when caching to a variant).  It is
+// more robust to use the USD primSpec type at srcPath, which is in the
+// srcLayer in the temporary stage.  If USD type round-tripping is set up
+// properly (see UsdMayaTranslatorUtil::CreateDummyTransformNode()), this
+// primSpec will have the type of the original pulled prim.
+//
 UsdMayaPrimUpdaterSharedPtr createUpdater(
     const SdfLayerRefPtr&            srcLayer,
     const SdfPath&                   srcPath,
@@ -605,8 +616,7 @@ bool pushCustomize(
     // Traverse the layer, creating a prim updater for each primSpec
     // along the way, and call PushCopySpec on the prim.
     auto pushCopySpecsFn
-        = [&context, &ufePulledPath, srcStage, srcLayer, dstLayer, dstRootParentPath](
-              const SdfPath& srcPath) {
+        = [&context, srcStage, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
               // We can be called with a primSpec path that is not a prim path
               // (e.g. a property path like "/A.xformOp:translate").  This is not an
               // error, just prune the traversal.  FIXME Is this still true?  We
@@ -651,8 +661,7 @@ bool pushCustomize(
 
     // SdfLayer::TraversalFn does not return a status, so must report
     // failure through an exception.
-    auto pushEndFn = [&context, &ufePulledPath, srcLayer, dstLayer, dstRootParentPath](
-                         const SdfPath& srcPath) {
+    auto pushEndFn = [&context, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
         // We can be called with a primSpec path that is not a prim path
         // (e.g. a property path like "/A.xformOp:translate").  This is not an
         // error, just a no-op.

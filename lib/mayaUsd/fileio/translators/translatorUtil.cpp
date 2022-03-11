@@ -289,4 +289,16 @@ bool UsdMayaTranslatorUtil::CreateShaderNode(
     return true;
 }
 
+/* static */
+bool UsdMayaTranslatorUtil::SetUsdTypeName(const MObject& mayaNodeObj, const TfToken& usdTypeName)
+{
+    if (UsdMayaAdaptor adaptor = UsdMayaAdaptor(mayaNodeObj)) {
+        VtValue typeName;
+        typeName = usdTypeName;
+        adaptor.SetMetadata(SdfFieldKeys->TypeName, typeName);
+        return true;
+    }
+    return false;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

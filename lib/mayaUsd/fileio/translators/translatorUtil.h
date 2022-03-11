@@ -152,6 +152,11 @@ struct UsdMayaTranslatorUtil
 
         return APISchemaType(usdPrim);
     }
+
+    /// Write USD type information into the argument Maya object.  Returns true
+    /// for success.
+    MAYAUSD_CORE_PUBLIC
+    static bool SetUsdTypeName(const MObject& mayaNodeObj, const TfToken& usdTypeName);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
