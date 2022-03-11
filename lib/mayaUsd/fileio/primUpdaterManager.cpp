@@ -417,8 +417,43 @@ PullImportPaths pullImport(
 
 //------------------------------------------------------------------------------
 //
+UsdMayaPrimUpdaterRegistry::RegisterItem getUpdaterItem(
+    const MFnDependencyNode& dgNodeFn,
+    const MDagPath&          nodePath,
+    const MDagPath&          initialPulledMayaPath,
+    const Ufe::Path&         initialUsdPulledPath)
+{
+    MPlug usdTypeNamePlug = dgNodeFn.findPlug("USD_typeName", true);
+
+    // If the Maya node holds USD type information (e.g. a dummy transform
+    // node which is a stand-in for a non-transform USD prim type), use that
+    // USD type intead of the Maya node type name.
+    if (!usdTypeNamePlug.isNull())
+        return UsdMayaPrimUpdaterRegistry::FindOrFallback(
+            TfToken(usdTypeNamePlug.asString().asChar()));
+
+    // The root of the pulled hierarchy is crucial for determining push
+    // behavior.  When pulling, we may have created a Maya pull hierarchy root
+    // node whose type does not map to the same prim updater as the original
+    // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
+    // node type (e.g. transform, which is the fallback Maya node type for many
+    // USD prim types).  Therefore, if we're at the root of the src hierarchy,
+    // use the prim at the pulled path to create the prim updater.
+    if (nodePath == initialPulledMayaPath)
+        UsdMayaPrimUpdaterRegistry::FindOrFallback(
+            MayaUsd::ufe::ufePathToPrim(initialUsdPulledPath).GetTypeName());
+
+    // In the absence of explicit USD type name, use the Maya type name.
+    return UsdMayaPrimUpdaterRegistry::FindOrFallback(dgNodeFn.typeName().asChar());
+}
+
+//------------------------------------------------------------------------------
+//
 // Perform the customization step of the pull (second step).
-bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdaterContext& context)
+bool pullCustomize(
+    const Ufe::Path&                 initialPulledPath,
+    const PullImportPaths&           importedPaths,
+    const UsdMayaPrimUpdaterContext& context)
 {
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
@@ -432,16 +467,8 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         const auto&       pulledUfePath = *ufePathIt;
         MFnDependencyNode dgNodeFn(dagPath.node());
 
-        // If the Maya node holds USD type information (e.g. a dummy transform
-        // node which is a stand-in for a non-transform USD prim type), use the
-        // USD type instead of the Maya type.
-        auto       usdTypeNamePlug = dgNodeFn.findPlug("USD_typeName", true);
-        const bool useUsdType = !usdTypeNamePlug.isNull();
-
-        auto registryItem = useUsdType
-            ? UsdMayaPrimUpdaterRegistry::FindOrFallback(
-                TfToken(usdTypeNamePlug.asString().asChar()))
-            : UsdMayaPrimUpdaterRegistry::FindOrFallback(std::string(dgNodeFn.typeName().asChar()));
+        MDagPath intialMayaPath = pulledUfePath == initialPulledPath ? dagPath : MDagPath();
+        auto registryItem = getUpdaterItem(dgNodeFn, dagPath, intialMayaPath, initialPulledPath);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, pulledUfePath);
 
@@ -915,7 +942,7 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     }
 
     // 2) Iterate over all imported Dag paths.
-    if (!pullCustomize(importedPaths, context)) {
+    if (!pullCustomize(path, importedPaths, context)) {
         TF_WARN("Failed to customize the edited nodes.");
         return false;
     }
@@ -1007,18 +1034,8 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
 
         const Ufe::Path path = MayaUsd::ufe::dagPathToPathSegment(curDagPath);
 
-        // The root of the pulled hierarchy is crucial for determining push
-        // behavior.  When pulling, we may have created a Maya pull hierarchy root
-        // node whose type does not map to the same prim updater as the original
-        // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
-        // node type (e.g. transform, which is the fallback Maya node type for many
-        // USD prim types).  Therefore, if we're at the root of the src hierarchy,
-        // use the prim at the pulled path to create the prim updater.
         bool usePulledPrim = (curDagPath == mayaDagPath);
-        auto registryItem = usePulledPrim
-            ? UsdMayaPrimUpdaterRegistry::FindOrFallback(
-                MayaUsd::ufe::ufePathToPrim(pulledPath).GetTypeName())
-            : UsdMayaPrimUpdaterRegistry::FindOrFallback(dgNodeFn.typeName().asChar());
+        auto registryItem = getUpdaterItem(dgNodeFn, curDagPath, mayaDagPath, pulledPath);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, path);
 
@@ -1070,13 +1087,16 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
 
     UsdMayaPrimUpdaterContext context(UsdTimeCode(), nullptr, VtDictionary());
 
+    const MDagPath  unknownInitialMayaDagPath;
+    const Ufe::Path unknownInitialPulledPath;
+
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(dagPath);
     for (const MDagPath& curDagPath : toApplyOn) {
         MFnDependencyNode dgNodeFn(curDagPath.node());
-        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
 
-        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        auto registryItem = getUpdaterItem(
+            dgNodeFn, curDagPath, unknownInitialMayaDagPath, unknownInitialPulledPath);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, Ufe::Path());
 

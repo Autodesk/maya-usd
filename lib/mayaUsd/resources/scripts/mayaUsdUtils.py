@@ -42,9 +42,32 @@ def getPulledInfo(dagPath):
     return fullDagPath, mayaItem, pulledPath, prim
 
 
+def getDagPathUsdTypeName(dagPath):
+    """
+    Retrieves the type name of the USD object that created the node pointed to by the DAG path.
+    This type name is kept in the 'USD_typeName' attribute.
+    Returns None if the attribute is not found.
+    """
+    sn = om.MSelectionList()
+    sn.add(dagPath)
+    obj = sn.getDependNode(0)
+    node = om.MFnDependencyNode(obj)
+    if not node.hasAttribute('USD_typeName'):
+        return None
+
+    plug = node.findPlug('USD_typeName', True)
+    if not plug:
+        return None
+        
+    return plug.asString()
+
+
 def isPulledMayaReference(dagPath):
     """
     Verifies if the DAG path refers to a pulled prim that is a Maya reference.
     """
+    if getDagPathUsdTypeName(dagPath) == 'MayaReference':
+        return True
+
     _, _, _, prim = getPulledInfo(dagPath)
     return prim and prim.GetTypeName() == 'MayaReference'
