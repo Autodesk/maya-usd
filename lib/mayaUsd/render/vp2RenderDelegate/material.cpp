@@ -222,14 +222,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (tangent_fix)
 
     // Basic color-correction:
-    (inColor)
     (outColor)
-    (file)
     (colorSpace)
-    (Raw)
-    (sRGB)
-    (MayaUSD_color_correct)
-    (fileTexture)
     (color3)
     (color4)
 );
@@ -260,10 +254,11 @@ const std::set<std::string> _mtlxTopoNodeSet = {
 
 // Maps from a known Maya target color space name to the corresponding color correct category.
 const std::unordered_map<std::string, std::string> _mtlxColorCorrectCategoryMap = {
-    {"scene-linear Rec.709-sRGB",  "MayaND_sRGBtoLinrec709_" },
+    { "scene-linear Rec.709-sRGB", "MayaND_sRGBtoLinrec709_" },
     { "scene-linear Rec 709/sRGB", "MayaND_sRGBtoLinrec709_" },
     { "ACEScg",                    "MayaND_sRGBtoACEScg_" },
     { "ACES2065_1",                "MayaND_sRGBtoACES2065_" },
+    { "ACES2065-1",                "MayaND_sRGBtoACES2065_" },
     { "scene-linear DCI-P3 D65",   "MayaND_sRGBtoLinDCIP3D65_" },
     { "scene-linear DCI-P3",       "MayaND_sRGBtoLinDCIP3D65_" },
     { "scene-linear Rec.2020",     "MayaND_sRGBtoLinrec2020_" },
@@ -2229,12 +2224,7 @@ TfToken _RequiresColorManagement(
         // upstream is not an image
         return {};
     }
-    mx::OutputPtr colorOutput;
-    if (upstreamCategory == _mtlxTokens->fileTexture.GetString()) {
-        colorOutput = upstreamDef->getActiveOutput(_mtlxTokens->outColor.GetString());
-    } else {
-        colorOutput = upstreamDef->getActiveOutput(_mtlxTokens->out.GetString());
-    }
+    mx::OutputPtr colorOutput = upstreamDef->getActiveOutput(_mtlxTokens->out.GetString());
     if (!colorOutput) {
         return {};
     }
@@ -2245,7 +2235,7 @@ TfToken _RequiresColorManagement(
         return {};
     }
 
-    auto itFileParam = upstream.parameters.find(_mtlxTokens->file);
+    auto itFileParam = upstream.parameters.find(_tokens->file);
     if (itFileParam == upstream.parameters.end()
         || !itFileParam->second.IsHolding<SdfAssetPath>()) {
         // No file name to check:
@@ -2260,7 +2250,7 @@ TfToken _RequiresColorManagement(
         "colorManagementFileRules -evaluate \"^1s\";",
         (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
     const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
-    if (colorSpaceByRule != _mtlxTokens->sRGB.GetText()) {
+    if (colorSpaceByRule != _tokens->sRGB.GetText()) {
         // We only know how to handle sRGB source color space.
         return {};
     }
