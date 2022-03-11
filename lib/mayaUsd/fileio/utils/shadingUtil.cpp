@@ -203,7 +203,7 @@ MObject UsdMayaShadingUtil::CreatePlace2dTextureAndConnectTexture(MObject textur
             UsdMayaShadingNodeType::Utility,
             &status,
             &uvObj))) {
-        // we need to make sure assumes those types are loaded..
+        // we need to make sure those types are loaded..
         MFnDependencyNode depFn(textureNode);
         TF_RUNTIME_ERROR(
             "Could not create place2dTexture for texture '%s'.\n", depFn.name().asChar());

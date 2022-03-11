@@ -36,4 +36,56 @@
     <input name="normal" type="vector3" defaultgeomprop="Nworld" />
     <output name="out" type="vector3" />
   </nodedef>
+
+  <!-- Explicit color conversion while waiting for an OCIO-enabled MaterialX    -->
+  <nodedef name="MayaND_sRGBtoLinrec709_color3" node="sRGBtoLinrec709" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinrec709_color4" node="sRGBtoLinrec709" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoACEScg_color3" node="sRGBtoACEScg" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoACEScg_color4" node="sRGBtoACEScg" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoACES2065_color3" node="sRGBtoACES2065" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoACES2065_color4" node="sRGBtoACES2065" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinDCIP3D65_color3" node="sRGBtoLinDCIP3D65" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinDCIP3D65_color4" node="sRGBtoLinDCIP3D65" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinrec2020_color3" node="sRGBtoLinrec2020" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinrec2020_color4" node="sRGBtoLinrec2020" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
 </materialx>
