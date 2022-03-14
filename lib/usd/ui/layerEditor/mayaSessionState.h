@@ -89,7 +89,7 @@ protected:
     static void sceneClosingCB(void* clientData);
 
     void proxyShapeAddedCBOnIdle(const MObject& node);
-    void nodeRenamedCBOnIdle(std::string const& oldName, const MObject& obj);
+    void nodeRenamedCBOnIdle(const MString& shapePath);
 
     // Notice listener method for proxy stage set
     void mayaUsdStageReset(const MayaUsdProxyStageSetNotice& notice);
