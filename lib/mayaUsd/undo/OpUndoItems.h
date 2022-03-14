@@ -474,6 +474,13 @@ private:
 
 /// \class LockNodesUndoItem
 /// \brief Record data needed to undo / redo the lock / unlock of Maya nodes.
+///
+/// The node at the Dag path root, and all its children, will be locked.
+/// Since referenced nodes cannot be deleted, locking such nodes is not a
+/// useful workflow for maya-usd.  Therefore, if a child of the Dag path root
+/// is a referenced node, the lock traversal is pruned at that point, for
+/// efficiency.
+
 class LockNodesUndoItem : public OpUndoItem
 {
 public:

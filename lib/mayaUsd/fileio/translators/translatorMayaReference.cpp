@@ -38,10 +38,8 @@
 #include <maya/MDGModifier.h>
 #include <maya/MFileIO.h>
 #include <maya/MFileObject.h>
-#include <maya/MFnCamera.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnStringData.h>
-#include <maya/MFnTransform.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>

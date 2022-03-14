@@ -40,6 +40,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapRoundTripUtil.cpp
         wrapStageCache.cpp
         wrapTokens.cpp
+        wrapTranslatorUtil.cpp
         wrapUsdUndoManager.cpp
         wrapUserTaggedAttribute.cpp
         wrapUtil.cpp
