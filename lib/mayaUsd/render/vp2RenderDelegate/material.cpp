@@ -1755,10 +1755,15 @@ void HdVP2Material::Sync(
             if (!bxdfNet.nodes.empty()) {
                 if (_IsMaterialX(bxdfNet.nodes.back())) {
 
-                    bool               isVolume = false;
+                    bool isVolume = false;
+#if PXR_VERSION > 2203
+                    const HdMaterialNetwork2 surfaceNetwork
+                        = HdConvertToHdMaterialNetwork2(networkMap, &isVolume);
+#else
                     HdMaterialNetwork2 surfaceNetwork;
                     HdMaterialNetwork2ConvertFromHdMaterialNetworkMap(
                         networkMap, &surfaceNetwork, &isVolume);
+#endif
                     if (isVolume) {
                         // Not supported.
                         return;
