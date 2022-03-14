@@ -123,9 +123,9 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->ignoreWarnings.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
-        kExportReferenceObjectsFlag,
-        UsdMayaJobExportArgsTokens->exportReferenceObjects.GetText(),
-        MSyntax::kBoolean);
+        kReferenceObjectModeFlag,
+        UsdMayaJobExportArgsTokens->referenceObjectMode.GetText(),
+        MSyntax::kString);
     syntax.addFlag(
         kExportRootsFlag, UsdMayaJobExportArgsTokens->exportRoots.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kExportRootsFlag);
