@@ -434,7 +434,7 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
 
         // If the Maya node holds USD type information (e.g. a dummy transform
         // node which is a stand-in for a non-transform USD prim type), use the
-        // USD type instead.
+        // USD type instead of the Maya type.
         auto       usdTypeNamePlug = dgNodeFn.findPlug("USD_typeName", true);
         const bool useUsdType = !usdTypeNamePlug.isNull();
 
