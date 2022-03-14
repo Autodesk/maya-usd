@@ -62,7 +62,7 @@ public:
     static constexpr auto kMaterialCollectionsPathFlag = "mcp";
     static constexpr auto kExportCollectionBasedBindingsFlag = "cbb";
     static constexpr auto kNormalizeNurbsFlag = "nnu";
-    static constexpr auto kExportReferenceObjectsFlag = "ero";
+    static constexpr auto kReferenceObjectModeFlag = "rom";
     static constexpr auto kExportRootsFlag = "ert";
     static constexpr auto kExportSkelsFlag = "skl";
     static constexpr auto kExportSkinFlag = "skn";
