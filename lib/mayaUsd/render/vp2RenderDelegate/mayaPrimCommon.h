@@ -167,6 +167,7 @@ public:
 
 protected:
     using ReprVector = std::vector<std::pair<TfToken, HdReprSharedPtr>>;
+    using RenderItemFunc = std::function<void(HdVP2DrawItem::RenderItemData&)>;
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
@@ -207,6 +208,9 @@ protected:
     void _MakeOtherReprRenderItemsInvisible(const TfToken&, const ReprVector&);
 
     void _HideAllDrawItems(HdReprSharedPtr const& curRepr);
+
+    void _ForEachRenderItemInRepr(const HdReprSharedPtr& curRepr, RenderItemFunc& func);
+    void _ForEachRenderItem(const ReprVector& reprs, RenderItemFunc& func);
 
     //! Helper utility function to adapt Maya API changes.
     static void _SetWantConsolidation(MHWRender::MRenderItem& renderItem, bool state);

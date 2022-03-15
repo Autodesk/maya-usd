@@ -449,6 +449,17 @@ void MayaUsdRPrim::_MakeOtherReprRenderItemsInvisible(
 
 void MayaUsdRPrim::_HideAllDrawItems(HdReprSharedPtr const& curRepr)
 {
+    RenderItemFunc hideDrawItem = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
+        renderItemData._enabled = false;
+        _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+            [&]() { renderItemData._renderItem->enable(false); });
+    };
+
+    _ForEachRenderItemInRepr(curRepr, hideDrawItem);
+}
+
+void MayaUsdRPrim::_ForEachRenderItemInRepr(const HdReprSharedPtr& curRepr, RenderItemFunc& func)
+{
     if (!curRepr) {
         return;
     }
@@ -463,11 +474,16 @@ void MayaUsdRPrim::_HideAllDrawItems(HdReprSharedPtr const& curRepr)
         if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
 #endif
             for (auto& renderItemData : drawItem->GetRenderItems()) {
-                renderItemData._enabled = false;
-                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                    [&]() { renderItemData._renderItem->enable(false); });
+                func(renderItemData);
             }
         }
+    }
+}
+
+void MayaUsdRPrim::_ForEachRenderItem(const ReprVector& reprs, RenderItemFunc& func)
+{
+    for (const std::pair<TfToken, HdReprSharedPtr>& pair : reprs) {
+        _ForEachRenderItemInRepr(pair.second, func);
     }
 }
 

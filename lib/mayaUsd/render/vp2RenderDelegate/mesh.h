@@ -148,12 +148,6 @@ private:
         const HdMeshReprDesc& desc,
         const TfToken&        reprToken);
 
-    void _HideAllDrawItems(const TfToken& reprToken);
-
-    template <typename Func> void _ForEachRenderItemInRepr(const TfToken& reprToken, Func func);
-
-    template <typename Func> void _ForEachRenderItem(Func func);
-
     void _UpdatePrimvarSources(
         HdSceneDelegate*     sceneDelegate,
         HdDirtyBits          dirtyBits,

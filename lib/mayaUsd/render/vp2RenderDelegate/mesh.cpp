@@ -816,10 +816,10 @@ void HdVP2Mesh::Sync(
                 _meshSharedData->_adjacency.reset();
                 _meshSharedData->_renderingTopology = HdMeshTopology();
 
-                auto setIndexBufferDirty = [](HdVP2DrawItem::RenderItemData& renderItemData) {
+                RenderItemFunc setIndexBufferDirty = [](HdVP2DrawItem::RenderItemData& renderItemData) {
                     renderItemData._indexBufferValid = false;
                 };
-                _ForEachRenderItem(setIndexBufferDirty);
+                _ForEachRenderItem(_reprs, setIndexBufferDirty);
             }
         }
 
@@ -2200,52 +2200,6 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     // Reset dirty bits because we've prepared commit state for this render item.
     renderItemData.ResetDirtyBits();
-}
-
-void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
-{
-    auto hideDrawItem = [this](HdVP2DrawItem::RenderItemData& renderItemData) {
-        renderItemData._enabled = false;
-        _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-            [&]() { renderItemData._renderItem->enable(false); });
-    };
-
-    _ForEachRenderItemInRepr(reprToken, hideDrawItem);
-}
-
-template <typename Func>
-void HdVP2Mesh::_ForEachRenderItemInRepr(const TfToken& reprToken, Func func)
-{
-    HdReprSharedPtr const& curRepr = _GetRepr(reprToken);
-    if (!curRepr) {
-        return;
-    }
-
-    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
-
-    // For each relevant draw item, update dirty buffer sources.
-    int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
-        const HdMeshReprDesc& desc = reprDescs[descIdx];
-        if (desc.geomStyle == HdMeshGeomStyleInvalid) {
-            continue;
-        }
-
-        auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
-        if (!drawItem)
-            continue;
-
-        for (auto& renderItemData : drawItem->GetRenderItems()) {
-            func(renderItemData);
-        }
-    }
-}
-
-template <typename Func> void HdVP2Mesh::_ForEachRenderItem(Func func)
-{
-    for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
-        _ForEachRenderItemInRepr(pair.first, func);
-    }
 }
 
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
