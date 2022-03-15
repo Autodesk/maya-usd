@@ -487,6 +487,65 @@ void MayaUsdRPrim::_ForEachRenderItem(const ReprVector& reprs, RenderItemFunc& f
     }
 }
 
+void MayaUsdRPrim::_UpdatePrimvarSourcesGeneric(
+    HdSceneDelegate*       sceneDelegate,
+    HdDirtyBits            dirtyBits,
+    const TfTokenVector&   requiredPrimvars,
+    HdRprim&               refThis,
+    UpdatePrimvarInfoFunc& updatePrimvarInfo,
+    ErasePrimvarInfoFunc&  erasePrimvarInfo)
+{
+    TfTokenVector::const_iterator begin = requiredPrimvars.cbegin();
+    TfTokenVector::const_iterator end = requiredPrimvars.cend();
+
+    // inspired by HdStInstancer::_SyncPrimvars
+    // Get any required instanced primvars from the instancer. Get these before we get
+    // any rprims from the rprim itself. If both are present, the rprim's values override
+    // the instancer's value.
+    const SdfPath& instancerId = refThis.GetInstancerId();
+    if (!instancerId.IsEmpty()) {
+        HdPrimvarDescriptorVector instancerPrimvars
+            = sceneDelegate->GetPrimvarDescriptors(instancerId, HdInterpolationInstance);
+        bool instancerDirty
+            = ((dirtyBits
+                & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyInstancer
+                   | HdChangeTracker::DirtyInstanceIndex))
+               != 0);
+
+        for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
+            if (std::find(begin, end, pv.name) == end) {
+                // erase the unused primvar so we don't hold onto stale data
+                erasePrimvarInfo(pv.name);
+            } else {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)
+                    || instancerDirty) {
+                    const VtValue value = sceneDelegate->Get(instancerId, pv.name);
+                    updatePrimvarInfo(pv.name, value, HdInterpolationInstance);
+                }
+            }
+        }
+    }
+
+    const SdfPath& id = refThis.GetId();
+    for (size_t i = 0; i < HdInterpolationCount; i++) {
+        const HdInterpolation           interp = static_cast<HdInterpolation>(i);
+        const HdPrimvarDescriptorVector primvars
+            = refThis.GetPrimvarDescriptors(sceneDelegate, interp);
+
+        for (const HdPrimvarDescriptor& pv : primvars) {
+            if (std::find(begin, end, pv.name) == end) {
+                // erase the unused primvar so we don't hold onto stale data
+                erasePrimvarInfo(pv.name);
+            } else {
+                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
+                    const VtValue value = refThis.GetPrimvar(sceneDelegate, pv.name);
+                    updatePrimvarInfo(pv.name, value, interp);
+                }
+            }
+        }
+    }
+}
+
 void MayaUsdRPrim::_SyncSharedData(
     HdRprimSharedData& sharedData,
     HdSceneDelegate*   delegate,

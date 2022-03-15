@@ -1050,47 +1050,16 @@ void HdVP2Points::_UpdatePrimvarSources(
     HdDirtyBits          dirtyBits,
     const TfTokenVector& requiredPrimvars)
 {
-    const SdfPath& id = GetId();
+    ErasePrimvarInfoFunc erasePrimvarInfo
+        = [this](const TfToken& name) { _pointsSharedData._primvarSourceMap.erase(name); };
 
-    TfTokenVector::const_iterator begin = requiredPrimvars.cbegin();
-    TfTokenVector::const_iterator end = requiredPrimvars.cend();
+    UpdatePrimvarInfoFunc updatePrimvarInfo
+        = [this](const TfToken& name, const VtValue& value, const HdInterpolation interpolation) {
+              _pointsSharedData._primvarSourceMap[name] = { value, interpolation };
+          };
 
-    // inspired by HdStInstancer::_SyncPrimvars
-    // Get any required instanced primvars from the instancer. Get these before we get
-    // any rprims from the rprim itself. If both are present, the rprim's values override
-    // the instancer's value.
-    const SdfPath& instancerId = GetInstancerId();
-    if (!instancerId.IsEmpty()) {
-        HdPrimvarDescriptorVector instancerPrimvars
-            = sceneDelegate->GetPrimvarDescriptors(instancerId, HdInterpolationInstance);
-        for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
-            if (std::find(begin, end, pv.name) == end) {
-                // erase the unused primvar so we don't hold onto stale data
-                _pointsSharedData._primvarSourceMap.erase(pv.name);
-            } else {
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)) {
-                    const VtValue value = sceneDelegate->Get(instancerId, pv.name);
-                    _pointsSharedData._primvarSourceMap[pv.name]
-                        = { value, HdInterpolationInstance };
-                }
-            }
-        }
-    }
-
-    for (size_t i = 0; i < HdInterpolationCount; i++) {
-        const HdInterpolation interp = static_cast<HdInterpolation>(i);
-
-        const HdPrimvarDescriptorVector primvars = GetPrimvarDescriptors(sceneDelegate, interp);
-
-        for (const HdPrimvarDescriptor& pv : primvars) {
-            if (std::find(begin, end, pv.name) == end) {
-                _pointsSharedData._primvarSourceMap.erase(pv.name);
-            } else if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
-                const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                _pointsSharedData._primvarSourceMap[pv.name] = { value, interp };
-            }
-        }
-    }
+    _UpdatePrimvarSourcesGeneric(
+        sceneDelegate, dirtyBits, requiredPrimvars, *this, updatePrimvarInfo, erasePrimvarInfo);
 }
 
 /*! \brief  Create render item for smoothHull repr.

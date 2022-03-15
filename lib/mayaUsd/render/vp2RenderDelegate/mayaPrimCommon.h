@@ -168,6 +168,9 @@ public:
 protected:
     using ReprVector = std::vector<std::pair<TfToken, HdReprSharedPtr>>;
     using RenderItemFunc = std::function<void(HdVP2DrawItem::RenderItemData&)>;
+    using UpdatePrimvarInfoFunc = std::function<
+        void(const TfToken& name, const VtValue& value, const HdInterpolation interpolation)>;
+    using ErasePrimvarInfoFunc = std::function<void(const TfToken& name)>;
 
     void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
@@ -200,6 +203,14 @@ protected:
         TfToken const&     reprToken,
         SdfPath const&     id,
         ReprVector const&  reprs);
+
+    void _UpdatePrimvarSourcesGeneric(
+        HdSceneDelegate*       sceneDelegate,
+        HdDirtyBits            dirtyBits,
+        const TfTokenVector&   requiredPrimvars,
+        HdRprim&               refThis,
+        UpdatePrimvarInfoFunc& updatePrimvarInfo,
+        ErasePrimvarInfoFunc&  erasePrimvarInfo);
 
     SdfPath _GetUpdatedMaterialId(HdRprim* rprim, HdSceneDelegate* delegate);
 

@@ -816,9 +816,10 @@ void HdVP2Mesh::Sync(
                 _meshSharedData->_adjacency.reset();
                 _meshSharedData->_renderingTopology = HdMeshTopology();
 
-                RenderItemFunc setIndexBufferDirty = [](HdVP2DrawItem::RenderItemData& renderItemData) {
-                    renderItemData._indexBufferValid = false;
-                };
+                RenderItemFunc setIndexBufferDirty
+                    = [](HdVP2DrawItem::RenderItemData& renderItemData) {
+                          renderItemData._indexBufferValid = false;
+                      };
                 _ForEachRenderItem(_reprs, setIndexBufferDirty);
             }
         }
@@ -2355,7 +2356,10 @@ void HdVP2Mesh::_UpdatePrimvarSources(
 
     const SdfPath& id = GetId();
 
-    auto updatePrimvarInfo
+    ErasePrimvarInfoFunc erasePrimvarInfo
+        = [this](const TfToken& name) { _meshSharedData->_primvarInfo.erase(name); };
+
+    UpdatePrimvarInfoFunc updatePrimvarInfo
         = [&](const TfToken& name, const VtValue& value, const HdInterpolation interpolation) {
               PrimvarInfo* info = _getInfo(_meshSharedData->_primvarInfo, name);
               if (info) {
@@ -2366,91 +2370,43 @@ void HdVP2Mesh::_UpdatePrimvarSources(
                   _meshSharedData->_primvarInfo[name] = std::make_unique<PrimvarInfo>(
                       PrimvarSource(value, interpolation, PrimvarSource::Primvar), nullptr);
               }
-          };
 
-    TfTokenVector::const_iterator begin = requiredPrimvars.cbegin();
-    TfTokenVector::const_iterator end = requiredPrimvars.cend();
+              // if the primvar color changes then we might need to use a different fallback
+              // material
+              if (interpolation == HdInterpolationConstant && name == HdTokens->displayColor) {
+                  // find all the smooth hull render items and mark their _fallbackColorDirty true
+                  for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
 
-    // inspired by HdStInstancer::_SyncPrimvars
-    // Get any required instanced primvars from the instancer. Get these before we get
-    // any rprims from the rprim itself. If both are present, the rprim's values override
-    // the instancer's value.
-    const SdfPath& instancerId = GetInstancerId();
-    if (!instancerId.IsEmpty()) {
-        HdPrimvarDescriptorVector instancerPrimvars
-            = sceneDelegate->GetPrimvarDescriptors(instancerId, HdInterpolationInstance);
-        bool instancerDirty
-            = ((dirtyBits
-                & (HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyInstancer
-                   | HdChangeTracker::DirtyInstanceIndex))
-               != 0);
-
-        for (const HdPrimvarDescriptor& pv : instancerPrimvars) {
-            if (std::find(begin, end, pv.name) == end) {
-                // erase the unused primvar so we don't hold onto stale data
-                _meshSharedData->_primvarInfo.erase(pv.name);
-            } else {
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, instancerId, pv.name)
-                    || instancerDirty) {
-                    const VtValue value = sceneDelegate->Get(instancerId, pv.name);
-                    updatePrimvarInfo(pv.name, value, HdInterpolationInstance);
-                }
-            }
-        }
-    }
-
-    for (size_t i = 0; i < HdInterpolationCount; i++) {
-        const HdInterpolation           interp = static_cast<HdInterpolation>(i);
-        const HdPrimvarDescriptorVector primvars = GetPrimvarDescriptors(sceneDelegate, interp);
-
-        for (const HdPrimvarDescriptor& pv : primvars) {
-            if (std::find(begin, end, pv.name) == end) {
-                // erase the unused primvar so we don't hold onto stale data
-                _meshSharedData->_primvarInfo.erase(pv.name);
-            } else {
-                if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
-                    const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                    updatePrimvarInfo(pv.name, value, interp);
-
-                    // if the primvar color changes then we might need to use a different fallback
-                    // material
-                    if (interp == HdInterpolationConstant && pv.name == HdTokens->displayColor) {
-                        // find all the smooth hull render items and mark their _fallbackColorDirty
-                        // true
-                        for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
-
-                            _MeshReprConfig::DescArray reprDescs = _GetReprDesc(pair.first);
-                            // Iterate through all reprdescs for the current repr to figure out if
-                            // any of them requires the fallback material
-                            for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
-                                const HdMeshReprDesc& desc = reprDescs[descIdx];
-                                if (desc.geomStyle == HdMeshGeomStyleHull) {
-                                    const HdReprSharedPtr& repr = pair.second;
-                                    const auto&            items = repr->GetDrawItems();
+                      _MeshReprConfig::DescArray reprDescs = _GetReprDesc(pair.first);
+                      // Iterate through all reprdescs for the current repr to figure out if
+                      // any of them requires the fallback material
+                      for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
+                          const HdMeshReprDesc& desc = reprDescs[descIdx];
+                          if (desc.geomStyle == HdMeshGeomStyleHull) {
+                              const HdReprSharedPtr& repr = pair.second;
+                              const auto&            items = repr->GetDrawItems();
 
 #if HD_API_VERSION < 35
-                                    for (HdDrawItem* item : items) {
-                                        if (HdVP2DrawItem* drawItem
-                                            = static_cast<HdVP2DrawItem*>(item)) {
+                              for (HdDrawItem* item : items) {
+                                  if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
 #else
-                                    for (const HdRepr::DrawItemUniquePtr& item : items) {
-                                        if (HdVP2DrawItem* const drawItem
-                                            = static_cast<HdVP2DrawItem*>(item.get())) {
+                              for (const HdRepr::DrawItemUniquePtr& item : items) {
+                                  if (HdVP2DrawItem* const drawItem
+                                      = static_cast<HdVP2DrawItem*>(item.get())) {
 #endif
-                                            for (auto& renderItemData :
-                                                 drawItem->GetRenderItems()) {
-                                                renderItemData._fallbackColorDirty = true;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+                                      for (auto& renderItemData : drawItem->GetRenderItems()) {
+                                          renderItemData._fallbackColorDirty = true;
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          };
+
+    _UpdatePrimvarSourcesGeneric(
+        sceneDelegate, dirtyBits, requiredPrimvars, *this, updatePrimvarInfo, erasePrimvarInfo);
 
     // At this point we've searched the primvars for the required primvars.
     // check to see if there are any HdExtComputation which should replace
