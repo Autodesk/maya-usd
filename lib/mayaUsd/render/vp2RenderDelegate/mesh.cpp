@@ -2383,22 +2383,12 @@ void HdVP2Mesh::_UpdatePrimvarSources(
                       for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
                           const HdMeshReprDesc& desc = reprDescs[descIdx];
                           if (desc.geomStyle == HdMeshGeomStyleHull) {
-                              const HdReprSharedPtr& repr = pair.second;
-                              const auto&            items = repr->GetDrawItems();
+                              RenderItemFunc renderItemFunc
+                                  = [](HdVP2DrawItem::RenderItemData& renderItemData) {
+                                        renderItemData._fallbackColorDirty = true;
+                                    };
 
-#if HD_API_VERSION < 35
-                              for (HdDrawItem* item : items) {
-                                  if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
-#else
-                              for (const HdRepr::DrawItemUniquePtr& item : items) {
-                                  if (HdVP2DrawItem* const drawItem
-                                      = static_cast<HdVP2DrawItem*>(item.get())) {
-#endif
-                                      for (auto& renderItemData : drawItem->GetRenderItems()) {
-                                          renderItemData._fallbackColorDirty = true;
-                                      }
-                                  }
-                              }
+                              _ForEachRenderItemInRepr(pair.second, renderItemFunc);
                           }
                       }
                   }
