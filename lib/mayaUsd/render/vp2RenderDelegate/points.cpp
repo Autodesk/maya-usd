@@ -46,6 +46,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (spriteWidth)
+    (tangents)
 );
 // clang-format on
 
@@ -327,6 +328,20 @@ void HdVP2Points::_UpdateDrawItem(
                     _CommitMVertexBuffer(_pointsSharedData._normalsBuffer.get(), bufferData);
                 }
             }
+
+            // Some materials, particularly MaterialX, require tangents data to be present
+            // in the vertex buffers. So for now, to avoid crashes, let's add dummy tungents.
+            // We may need to reevaluate it later.
+            const MHWRender::MVertexBufferDescriptor vbDesc(
+                "", MHWRender::MGeometry::kTangent, MHWRender::MGeometry::kFloat, 3);
+            VtVec3fArray tangents;
+            PreparePrimvarBuffer(
+                _pointsSharedData,
+                stateToCommit,
+                _tokens->tangents,
+                _tokens->tangents,
+                vbDesc,
+                GfVec3f(1.f, 0.f, 0.f));
         }
 
         // Prepare primvar buffers.
