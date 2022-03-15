@@ -352,18 +352,21 @@ VtValue _BuildLineSegmentIndexArray(const HdBasisCurvesTopology& topology)
     return VtValue(finalIndices);
 }
 
-VtVec3fArray
-_BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtVec3fArray& authoredData)
+template <typename BaseType>
+VtArray<BaseType> _BuildInterpolatedArray(
+    const HdBasisCurvesTopology& topology,
+    const VtArray<BaseType>&     authoredData,
+    const BaseType&              defaultValue)
 {
     // We need to interpolate primvar depending on its type
     size_t numVerts = topology.CalculateNeededNumberOfControlPoints();
 
-    VtVec3fArray result(numVerts);
-    size_t       size = authoredData.size();
+    VtArray<BaseType> result(numVerts);
+    size_t            size = authoredData.size();
 
     if (size == 1) {
         // Uniform data
-        const GfVec3f& elem = authoredData[0];
+        const BaseType& elem = authoredData[0];
         for (size_t i = 0; i < numVerts; ++i) {
             result[i] = elem;
         }
@@ -372,45 +375,7 @@ _BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtVec3fArra
         result = authoredData;
     } else if (size == topology.CalculateNeededNumberOfVaryingControlPoints()) {
         // Varying data
-        result = InterpolateVarying<GfVec3f>(
-            numVerts,
-            topology.GetCurveVertexCounts(),
-            topology.GetCurveWrap(),
-            topology.GetCurveBasis(),
-            authoredData);
-    } else {
-        // Fallback
-        const GfVec3f elem(1.0f, 0.0f, 0.0f);
-        for (size_t i = 0; i < numVerts; ++i) {
-            result[i] = elem;
-        }
-        TF_WARN("Incorrect number of primvar data, using default GfVec3f(0,0,0) for rendering.");
-    }
-
-    return result;
-}
-
-VtFloatArray
-_BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtFloatArray& authoredData)
-{
-    // We need to interpolate primvar depending on its type
-    size_t numVerts = topology.CalculateNeededNumberOfControlPoints();
-
-    VtFloatArray result(numVerts);
-    size_t       size = authoredData.size();
-
-    if (size == 1) {
-        // Uniform or missing data
-        float elem = authoredData[0];
-        for (size_t i = 0; i < numVerts; ++i) {
-            result[i] = elem;
-        }
-    } else if (size == numVerts) {
-        // Vertex data
-        result = authoredData;
-    } else if (size == topology.CalculateNeededNumberOfVaryingControlPoints()) {
-        // Varying data
-        result = InterpolateVarying<float>(
+        result = InterpolateVarying<BaseType>(
             numVerts,
             topology.GetCurveVertexCounts(),
             topology.GetCurveWrap(),
@@ -419,9 +384,9 @@ _BuildInterpolatedArray(const HdBasisCurvesTopology& topology, const VtFloatArra
     } else {
         // Fallback
         for (size_t i = 0; i < numVerts; ++i) {
-            result[i] = 1.0;
+            result[i] = defaultValue;
         }
-        TF_WARN("Incorrect number of primvar data, using default 1.0 for rendering.");
+        TF_WARN("Incorrect number of primvar data, using default value for rendering.");
     }
 
     return result;
@@ -655,11 +620,12 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
             // Using a zero vector to indicate requirement of camera-facing
             // normals when there is no authored normals.
+            GfVec3f defaultNormal(0.0f, 0.0f, 0.0f);
             if (normals.empty()) {
-                normals.push_back(GfVec3f(0.0f, 0.0f, 0.0f));
+                normals.push_back(defaultNormal);
             }
 
-            normals = _BuildInterpolatedArray(topology, normals);
+            normals = _BuildInterpolatedArray(topology, normals, defaultNormal);
 
             if (!_curvesSharedData._normalsBuffer) {
                 const MHWRender::MVertexBufferDescriptor vbDesc(
@@ -696,7 +662,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
                 widths.push_back(1.0f);
             }
 
-            widths = _BuildInterpolatedArray(topology, widths);
+            widths = _BuildInterpolatedArray(topology, widths, 1.f);
 
             MHWRender::MVertexBuffer* widthsBuffer
                 = _curvesSharedData._primvarBuffers[HdTokens->widths].get();
@@ -853,8 +819,8 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             }
 
             if (prepareCPVBuffer) {
-                colorArray = _BuildInterpolatedArray(topology, colorArray);
-                alphaArray = _BuildInterpolatedArray(topology, alphaArray);
+                colorArray = _BuildInterpolatedArray(topology, colorArray, GfVec3f(1.f, 0.f, 0.f));
+                alphaArray = _BuildInterpolatedArray(topology, alphaArray, 1.f);
 
                 const size_t numColors = colorArray.size();
                 const size_t numAlphas = alphaArray.size();
