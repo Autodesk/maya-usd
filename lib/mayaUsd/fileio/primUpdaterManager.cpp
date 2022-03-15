@@ -1015,7 +1015,6 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
 
         const Ufe::Path path = MayaUsd::ufe::dagPathToPathSegment(curDagPath);
 
-        bool usePulledPrim = (curDagPath == mayaDagPath);
         auto registryItem = getUpdaterItem(dgNodeFn);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, path);
