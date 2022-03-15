@@ -634,8 +634,11 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             items.emplace_back(kEditAsMayaItem, kEditAsMayaLabel, kEditAsMayaImage);
             items.emplace_back(kDuplicateAsMayaItem, kDuplicateAsMayaLabel);
         }
-        if (TfGetenvBool("MAYAUSD_ENABLE_ADD_MAYA_REFERENCE", false))
-            items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+        if (TfGetenvBool("MAYAUSD_ENABLE_ADD_MAYA_REFERENCE", false)) {
+            if (prim().GetTypeName() != TfToken("MayaReference")) {
+                items.emplace_back(kAddMayaReferenceItem, kAddMayaReferenceLabel);
+            }
+        }
         items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
