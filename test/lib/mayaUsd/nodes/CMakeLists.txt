@@ -1,4 +1,5 @@
 set(TEST_SCRIPT_FILES
+    testGeomNode.py
     testLayerManagerSerialization.py
     testPointBasedDeformerNode.py
     testProxyShapeBase.py
