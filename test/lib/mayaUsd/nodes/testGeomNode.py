@@ -27,6 +27,7 @@ import tempfile
 import usdUtils
 import mayaUtils
 import ufeUtils
+import logging
 
 
 class testGeomNode(unittest.TestCase):
@@ -41,66 +42,91 @@ class testGeomNode(unittest.TestCase):
 
         # Usd file with hierarchy of geometry to test importing specific root.
         cls.usdTestRootPrimFilePath = os.path.join(inputPath, 'GeomNodeTest',
-                                                  'GeomNodeTestRootPrim.usda')
+                                                   'GeomNodeTestRootPrim.usda')
 
         # Usd file with geometry containing component tags.
         cls.usdTestComponentTagsFilePath = os.path.join(inputPath, 'GeomNodeTest',
                                                         'GeomNodeTestComponentTags.usda')
 
-        # Maya scenes with a usdGeomNode connected to a polyunite and then a compare node.
-        # The scenes also contains the geometries imported directly.
-        cls.mayaSceneFilePath = os.path.join(inputPath, 'GeomNodeTest',
-                                             'GeomNodeTestParentTransform.ma')
-
-        cls.mayaRootPrimSceneFilePath = os.path.join(inputPath, 'GeomNodeTest',
-                                                    'GeomNodeTestRootPrim.ma')
-
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testCompareGeometry(self):
+    def testImportGeometry(self):
         '''
-            Open test scene that compares directly imported geometry to geometry
-            imported using usdGeomNode
+            Test importing geometry with parent matrix
         '''
-        cmds.file(self.mayaSceneFilePath, open=True, force=True)
-        cmds.setAttr('mayaUsdGeomNode1.filePath',
-                     self.usdTestParentFilePath, type='string')
-        compareValue = cmds.getAttr('compare1.outValue')
+        cmds.file(new=True, f=True)
+        mayaUtils.loadPlugin('mayaUsdPlugin')
 
-        # The compare node compares the output geometry of the usdGeomNode to the geometry
-        # directly imported in the scene. The value should be 1 to show that the geometries
-        # are the same.
-        self.assertEqual(compareValue, 1)
+        geomNode = cmds.createNode('mayaUsdGeomNode')
+
+        cmds.setAttr('{}.filePath'.format(geomNode),
+                     self.usdTestParentFilePath, type='string')
+
+        # Check imported matrix
+        mat = cmds.getAttr('{}.matrix[1]'.format(geomNode))
+
+        self.assertEqual(mat, [1.0, 0.0, 0.0, 0.0,
+                               0.0, 2.8136587142944336, 0.0, 0.0,
+                               0.0, 0.0, 1.0, 0.0,
+                               0.0, -0.4708861620018041, 2.1663852079004746, 1.0])
+
+        # Check that geometry was imported
+        shapeNode = cmds.createNode('mesh')
+        cmds.connectAttr('{}.geometry[1]'.format(
+            geomNode), '{}.inMesh'.format(shapeNode), f=True)
+
+        bbox = cmds.getAttr('{}.boundingBox.boundingBoxSize'.format(shapeNode))
+
+        self.assertEqual(bbox, [(1.7888545989990234, 1.7013016939163208, 2.0)])
 
     def testRootPrim(self):
         '''
-            Open test scene that compares imported geometry with geometry already in scene
+            Test importing only a part of the usd file using the root prim
         '''
-        cmds.file(self.mayaRootPrimSceneFilePath, open=True, force=True)
-        cmds.setAttr('mayaUsdGeomNode1.filePath',
+        cmds.file(new=True, f=True)
+        mayaUtils.loadPlugin('mayaUsdPlugin')
+
+        geomNode = cmds.createNode('mayaUsdGeomNode')
+
+        cmds.setAttr('{}.filePath'.format(geomNode),
                      self.usdTestRootPrimFilePath, type='string')
-        cmds.setAttr('mayaUsdGeomNode1.rootPrim',
+        cmds.setAttr('{}.rootPrim'.format(geomNode),
                      '/pCylinder1/pCube1/pSphere1', type='string')
-        compareValue = cmds.getAttr('compare1.outValue')
 
-        # The compare node compares the output geometry of the usdGeomNode to the geometry
-        # in the scene. The value should be 1 to show that the geometries are the same and
-        # the usdGeomNode only extracted the geometry at the given root (sphere)
-        self.assertEqual(compareValue, 1)
+        # call get Attr to force compute
+        cmds.getAttr('{}.matrix[0]'.format(geomNode))
 
+        # get the array of output attributes to compare the number of imported prims.
+        imported = cmds.listAttr('{}.geometry'.format(geomNode), m=True)
+        numberOfImports = len(imported)
+
+        # Expecting only a single prim imported since the root was set.
+        self.assertEqual(numberOfImports, 1)
+
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2022, 'Component tags only available in Maya 2022 or greater.')
     def testComponentTags(self):
         '''
             Test that component tags are applied to mesh
         '''
-        cmds.file(self.mayaSceneFilePath, open=True, force=True)
-        cmds.setAttr('mayaUsdGeomNode1.filePath',
+        cmds.file(new=True, f=True)
+        mayaUtils.loadPlugin('mayaUsdPlugin')
+
+        geomNode = cmds.createNode('mayaUsdGeomNode')
+        cmds.setAttr('{}.filePath'.format(geomNode),
                      self.usdTestComponentTagsFilePath, type='string')
 
-        # Get component tag history, should return: [{'key': 'comptagfaces', 'node': 'polyUnite1', 'affectCount': 3, 'fullCount': 20, 'modified': False, 'procedural': True, 'editable': False, 'category': 4, 'injectionOrder': 1, 'final': True}]
-        componentTags = cmds.geometryAttrInfo('polyUnite1.output', cth=True)
+        polyUniteNode = cmds.createNode('polyUnite')
 
+        cmds.connectAttr('{}.matrix'.format(geomNode),
+                         '{}.inputMat'.format(polyUniteNode), f=True)
+        cmds.connectAttr('{}.geometry'.format(geomNode),
+                         '{}.inputPoly'.format(polyUniteNode), f=True)
+
+        # Get component tag history, should return: [{'key': 'comptagfaces', 'node': 'polyUnite1', 'affectCount': 3, 'fullCount': 20, 'modified': False, 'procedural': True, 'editable': False, 'category': 4, 'injectionOrder': 1, 'final': True}]
+        componentTags = cmds.geometryAttrInfo(
+            '{}.output'.format(polyUniteNode), cth=True)
         self.assertEqual(len(componentTags), 1)
         self.assertEqual(componentTags[0]['key'], 'comptagfaces')
         self.assertEqual(componentTags[0]['node'], 'polyUnite1')
