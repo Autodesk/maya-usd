@@ -141,7 +141,13 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     } else {
         UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(
             mImportData.stageInitialLoadSet() == UsdStage::InitialLoadSet::LoadAll));
-        stage = UsdStage::Open(rootLayer, sessionLayer, mImportData.stageInitialLoadSet());
+
+        if (mArgs.pullImport)
+            // During a pullImport the sessionLayer is not used to request the proper stage.
+            // We don't want a stage with criteria on the variant selection.
+            stage = UsdStage::Open(rootLayer, mImportData.stageInitialLoadSet());
+        else
+            stage = UsdStage::Open(rootLayer, sessionLayer, mImportData.stageInitialLoadSet());
     }
     if (!stage) {
         return false;
