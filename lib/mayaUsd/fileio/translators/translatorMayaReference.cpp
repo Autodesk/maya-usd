@@ -474,23 +474,17 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     // Check to see whether we have previously created a reference node for this
     // prim.  If so, we can just reuse it.
     //
-    // The check is based on comparing the prim's full path and the name of the
-    // reference node, which we had originally created from the prim's full
-    // path.  (Because of this, if the name or parentage of the prim has changed
-    // since we created the reference, we won't find the old reference node.
-    // The old one will be left orphaned, a new one will be created, and we will
-    // lose any reference edits we had made.  Ideally, this won't happen often.
-    // To prevent the problem, we could store the name of the reference node in
-    // an attribute on the prim node.  The reference node would never be renamed
-    // by the user, since it's locked.  If the user were to rename the prim
-    // node, we could update the reference node's name too, for consistency,
-    // when the two nodes got reattached.  Not doing this currently, but can
-    // revisit if renaming/reparenting of prims with reference nodes turns out
-    // to be a common thing in the workflow.)
-    //
     if (refNode.isNull()) {
         if (isMayaReference(prim)) {
             // New behaviour for MayaReference
+            // Using a MayaReferenceNodeName attribute in the session layer to
+            // uniquely identify by name the MayaReferenceNode and reconnect to it.
+            // MayaReferenceNode is named using the mayaNamespace or filename if
+            // mayaNamespace is not set. And "RN" is added to the end.
+            // On reconnect MayaReferenceNode is rename to match any mayaNamespace
+            // or filename change.
+            // If the MayaReferenceNodeName is not found, we try a name match  
+            // with all the non-connected reference node.
             MString      expectedValue;
             UsdAttribute attr;
 
@@ -543,6 +537,20 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
             }
         } else {
             // Old behaviour for ALMayaReference
+            // The check is based on comparing the prim's full path and the name of the
+            // reference node, which we had originally created from the prim's full
+            // path.  (Because of this, if the name or parentage of the prim has changed
+            // since we created the reference, we won't find the old reference node.
+            // The old one will be left orphaned, a new one will be created, and we will
+            // lose any reference edits we had made.  Ideally, this won't happen often.
+            // To prevent the problem, we could store the name of the reference node in
+            // an attribute on the prim node.  The reference node would never be renamed
+            // by the user, since it's locked.  If the user were to rename the prim
+            // node, we could update the reference node's name too, for consistency,
+            // when the two nodes got reattached.  Not doing this currently, but can
+            // revisit if renaming/reparenting of prims with reference nodes turns out
+            // to be a common thing in the workflow.)
+            //
             for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
                 MObject      tempRefNode = refIter.item();
                 MFnReference tempRefFn(tempRefNode);
