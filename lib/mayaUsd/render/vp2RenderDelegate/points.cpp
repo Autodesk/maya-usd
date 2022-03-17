@@ -285,12 +285,6 @@ void HdVP2Points::_UpdateDrawItem(
     // draw.
     const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
 
-#ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    constexpr bool isPointSnappingItem = false;
-#else
-    constexpr bool isPointSnappingItem = true;
-#endif
-
     if (desc.geomStyle == HdPointsGeomStylePoints) {
         // Prepare normals buffer.
         if (itemDirtyBits & (HdChangeTracker::DirtyNormals | HdChangeTracker::DirtyDisplayStyle)) {
@@ -716,9 +710,7 @@ void HdVP2Points::_UpdateDrawItem(
         bool enable = drawItem->GetVisible() && !_pointsSharedData._points.empty()
             && !instancerWithNoInstances;
 
-        if (isPointSnappingItem) {
-            enable = enable && (_selectionStatus == kUnselected);
-        } else if (isBoundingBoxItem) {
+        if (isBoundingBoxItem) {
             enable = enable && !range.IsEmpty();
         }
 
