@@ -483,7 +483,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
             // mayaNamespace is not set. And "RN" is added to the end.
             // On reconnect MayaReferenceNode is rename to match any mayaNamespace
             // or filename change.
-            // If the MayaReferenceNodeName is not found, we try a name match  
+            // If the MayaReferenceNodeName is not found, we try a name match
             // with all the non-connected reference node.
             MString      expectedValue;
             UsdAttribute attr;
