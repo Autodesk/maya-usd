@@ -116,7 +116,7 @@ proc fileOptionsTabPage(string $tabLayout)
     setParent $topForm;
     frameLayout -label `getMayaUsdLibString("kMayaRefDescription")`;
     columnLayout -adjustableColumn true;
-    text -align "left" -label `getMayaUsdLibString("kMayaRefAddToUSDDescription")`;
+    text -align "left" -wordWrap 1 -label `getMayaUsdLibString("kMayaRefAddToUSDDescription")`;
 
     setParent $topForm;
     frameLayout -label `getMayaUsdLibString("kMayaRefUsdOptions")`;
