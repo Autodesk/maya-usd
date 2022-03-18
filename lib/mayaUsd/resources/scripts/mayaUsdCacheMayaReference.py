@@ -250,7 +250,7 @@ def fileOptionsTabPage(tabLayout):
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kMayaRefDescription"))
     cmds.columnLayout(adjustableColumn=True)
-    cmds.text(align="left", label=getMayaUsdLibString("kMayaRefCacheToUSDDescription"))
+    cmds.text(align="left", wordWrap=True, label=getMayaUsdLibString("kMayaRefCacheToUSDDescription"))
 
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kCacheMayaRefOptions"))

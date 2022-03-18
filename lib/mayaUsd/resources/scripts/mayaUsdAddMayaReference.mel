@@ -115,8 +115,11 @@ proc fileOptionsTabPage(string $tabLayout)
 
     setParent $topForm;
     frameLayout -label `getMayaUsdLibString("kMayaRefDescription")`;
-    columnLayout -adjustableColumn true;
-    text -align "left" -label `getMayaUsdLibString("kMayaRefAddToUSDDescription")`;
+    // Note: if column is adjustable, then the label takes too much vertical space.
+    //       when set no adjuatable, the text does not take the full width. This
+    //       seemed less bad than large empty vertical spacing.
+    columnLayout -adjustableColumn false;
+    text -align "left" -wordWrap true -label `getMayaUsdLibString("kMayaRefAddToUSDDescription")`;
 
     setParent $topForm;
     frameLayout -label `getMayaUsdLibString("kMayaRefUsdOptions")`;
