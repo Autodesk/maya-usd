@@ -190,7 +190,7 @@ class ImageDiffingTestCase(unittest.TestCase):
             msg = "Images differed by {} (max allowed: {}):\n" \
                   "  {}\n" \
                   "  {}".format(diff, maxAvgChannelDiff, absPath1, absPath2)
-            self.fail(msg)
+            self.fail(msg) #temporarily don't fail to re-generate all the images.
         # if we succeed, return the avg diff
         return diff
 
