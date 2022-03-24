@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "mtlxSymmetricShaderWriter.h"
-
+#include "mtlxBaseWriter.h"
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
@@ -46,20 +45,89 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \class MtlxUsd_SymmetricShaderWriter
+/// \brief Provides "literal" translation of Maya shading nodes to USD Shader
+/// prims that are MaterialX-compatible.
+///
+/// This shader writer performs a "literal" translation of a Maya shading node
+/// type to USD. Input and output attributes on the Maya node translate
+/// directly to inputs and outputs with the same names on the exported
+/// UsdShadeShader. With one major exception: color and alpha are kept together
+/// to solve some temporary issues about multi-output management in MaterialX/USD.
+///
+/// A static "RegisterWriter()" function is provided to simplify the
+/// registration of writers that use this class. Note however that it should be
+/// called inside a "TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)" block,
+/// for example:
+///
+/// \code
+/// TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
+/// {
+///     MtlxUsd_SymmetricShaderWriter::RegisterWriter(
+///         TfToken("checker"),
+///         TfToken("MayaND_checker_color3"));
+/// };
+/// \endcode
+///
+class MtlxUsd_SymmetricShaderWriter : public MtlxUsd_BaseWriter
+{
+public:
+    /// Register a shader writer to translate \p mayaNodeTypeName Maya nodes to
+    /// USD shaders with ID \p usdShaderId.
+    ///
+    /// Note that this function should generally only be called inside a
+    /// TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry) block.
+    static void RegisterWriter(
+        const TfToken& mayaNodeTypeName,
+        const TfToken& usdShaderId,
+        bool           inNodeGraph = true,
+        bool           fromPython = false);
+
+    static ContextSupport CanExport(const UsdMayaJobExportArgs& exportArgs);
+
+    MtlxUsd_SymmetricShaderWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx,
+        const TfToken&           usdShaderId,
+        bool                     inNodeGraph);
+
+    void Write(const UsdTimeCode& usdTime) override;
+
+    UsdAttribute GetShadingAttributeForMayaAttrName(
+        const TfToken&          mayaAttrName,
+        const SdfValueTypeName& typeName) override;
+
+private:
+    std::unordered_map<TfToken, MPlug, TfToken::HashFunctor> _inputNameAttrMap;
+};
+
 // Register symmetric writers:
 TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 {
-    // The MxVersion will export nodes to the MaterialX NodeGraph, as expected:
+    // These nodes are not by default in a node graph. Might change as we start exporting layered
+    // surfaced.
+    MtlxUsd_SymmetricShaderWriter::RegisterWriter(
+        TrMayaTokens->lambert, TrMtlxTokens->MayaND_lambert_surfaceshader, false);
+    MtlxUsd_SymmetricShaderWriter::RegisterWriter(
+        TrMayaTokens->phong, TrMtlxTokens->MayaND_phong_surfaceshader, false);
+    MtlxUsd_SymmetricShaderWriter::RegisterWriter(
+        TrMayaTokens->blinn, TrMtlxTokens->MayaND_blinn_surfaceshader, false);
+
+    // These nodes are always in a NodeGraph:
     MtlxUsd_SymmetricShaderWriter::RegisterWriter(
         TrMayaTokens->floatCorrect, TrMtlxTokens->LdkND_FloatCorrect_float);
     MtlxUsd_SymmetricShaderWriter::RegisterWriter(
         TrMayaTokens->colorCorrect, TrMtlxTokens->LdkND_ColorCorrect_color4);
+    MtlxUsd_SymmetricShaderWriter::RegisterWriter(
+        TrMayaTokens->clamp, TrMtlxTokens->MayaND_clamp_vector3);
 };
 
 /* static */
 void MtlxUsd_SymmetricShaderWriter::RegisterWriter(
     const TfToken& mayaNodeTypeName,
     const TfToken& usdShaderId,
+    bool           inNodeGraph,
     bool           fromPython)
 {
     UsdMayaShaderWriterRegistry::Register(
@@ -67,12 +135,12 @@ void MtlxUsd_SymmetricShaderWriter::RegisterWriter(
         [](const UsdMayaJobExportArgs& exportArgs) {
             return MtlxUsd_SymmetricShaderWriter::CanExport(exportArgs);
         },
-        [usdShaderId](
+        [usdShaderId, inNodeGraph](
             const MFnDependencyNode& depNodeFn,
             const SdfPath&           usdPath,
             UsdMayaWriteJobContext&  jobCtx) {
             return std::make_shared<MtlxUsd_SymmetricShaderWriter>(
-                depNodeFn, usdPath, jobCtx, usdShaderId);
+                depNodeFn, usdPath, jobCtx, usdShaderId, inNodeGraph);
         },
         fromPython);
 }
@@ -92,22 +160,24 @@ MtlxUsd_SymmetricShaderWriter::MtlxUsd_SymmetricShaderWriter(
     const MFnDependencyNode& depNodeFn,
     const SdfPath&           usdPath,
     UsdMayaWriteJobContext&  jobCtx,
-    const TfToken&           usdShaderId)
+    const TfToken&           usdShaderId,
+    bool                     inNodeGraph)
     : MtlxUsd_BaseWriter(depNodeFn, usdPath, jobCtx)
 {
-    // Everything must be added in the material node graph:
-    UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
-    if (!TF_VERIFY(
-            nodegraphSchema,
-            "Could not get UsdShadeNodeGraph at path '%s'\n",
-            GetUsdPath().GetText())) {
-        return;
+    SdfPath nodePath = GetUsdPath();
+    if (inNodeGraph) {
+        // Utility nodes must be added in the material node graph:
+        UsdShadeNodeGraph nodegraphSchema(GetNodeGraph());
+        if (!TF_VERIFY(
+                nodegraphSchema,
+                "Could not get UsdShadeNodeGraph at path '%s'\n",
+                GetUsdPath().GetText())) {
+            return;
+        }
+
+        nodePath = nodegraphSchema.GetPath().AppendChild(
+            TfToken(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar())));
     }
-
-    SdfPath nodegraphPath = nodegraphSchema.GetPath();
-    SdfPath nodePath
-        = nodegraphPath.AppendChild(TfToken(UsdMayaUtil::SanitizeName(depNodeFn.name().asChar())));
-
     UsdShadeShader shaderSchema = UsdShadeShader::Define(GetUsdStage(), nodePath);
     if (!TF_VERIFY(
             shaderSchema,
@@ -163,7 +233,8 @@ MtlxUsd_SymmetricShaderWriter::MtlxUsd_SymmetricShaderWriter(
 
         // Keep our authoring sparse by ignoring attributes with no values set
         // and no connections.
-        if (!UsdMayaUtil::IsAuthored(attrPlug) && !attrPlug.isConnected()) {
+        if (!UsdMayaUtil::IsAuthored(attrPlug) && !attrPlug.isConnected()
+            && !attrPlug.numConnectedChildren()) {
             continue;
         }
 
@@ -193,7 +264,7 @@ MtlxUsd_SymmetricShaderWriter::MtlxUsd_SymmetricShaderWriter(
             // Add this input to the name/attrPlug map. We'll iterate through
             // these entries during Write() to set their values.
             _inputNameAttrMap.insert(std::make_pair(usdAttrName, attrPlug));
-        } else if (attrPlug.isConnected()) {
+        } else if (attrPlug.isConnected() || attrPlug.numConnectedChildren()) {
             // Only author outputs for non-writable attributes if they are
             // connected.
             if (usdAttrName == TrMayaTokens->outColor || usdAttrName == TrMayaTokens->outAlpha) {
@@ -228,7 +299,7 @@ void MtlxUsd_SymmetricShaderWriter::Write(const UsdTimeCode& usdTime)
         const MPlug&   attrPlug = inputAttrPair.second;
 
         UsdShadeInput input = shaderSchema.GetInput(inputName);
-        if (!input) {
+        if (!input || attrPlug.isConnected() || attrPlug.numConnectedChildren()) {
             continue;
         }
 
@@ -248,9 +319,9 @@ UsdAttribute MtlxUsd_SymmetricShaderWriter::GetShadingAttributeForMayaAttrName(
 
     // Just check whether we created an input or an attribute with this name
 
-    const UsdShadeInput input = shaderSchema.GetInput(mayaAttrName);
+    UsdShadeInput input = shaderSchema.GetInput(mayaAttrName);
     if (input) {
-        return input;
+        return PreserveNodegraphBoundaries(input);
     }
 
     // color and alpha outputs might have been combined:
@@ -272,35 +343,70 @@ UsdAttribute MtlxUsd_SymmetricShaderWriter::GetShadingAttributeForMayaAttrName(
 
                 // If types differ, then we need to handle all possible conversions and
                 // channel swizzling.
-                return AddSwizzleConversion(typeName, mainOutput);
+                return AddConversion(typeName, mainOutput);
             }
 
             // Subcomponent requests:
             if (mayaAttrName == TrMayaTokens->outColorR) {
-                return AddSwizzle("r", 4, mainOutput);
+                return ExtractChannel(0, mainOutput);
             }
 
             if (mayaAttrName == TrMayaTokens->outColorG) {
-                return AddSwizzle("g", 4, mainOutput);
+                return ExtractChannel(1, mainOutput);
             }
 
             if (mayaAttrName == TrMayaTokens->outColorB) {
-                return AddSwizzle("b", 4, mainOutput);
+                return ExtractChannel(2, mainOutput);
             }
 
             if (mayaAttrName == TrMayaTokens->outAlpha) {
-                return AddSwizzle("a", 4, mainOutput);
+                return ExtractChannel(3, mainOutput);
             }
         }
     }
 
-    // TODO: Even in this fallback case we might be hitting subcomponent requests. Need to get the
-    // right channel by finding if the attribute has a parent, getting the index in that parent, and
-    // swizzling either rgba for color types, or xyzw for vector types.
-
-    const UsdShadeOutput output = shaderSchema.GetOutput(mayaAttrName);
+    UsdShadeOutput output = shaderSchema.GetOutput(mayaAttrName);
     if (output) {
-        return output;
+        if (output.GetTypeName() == typeName) {
+            return output;
+        }
+
+        // If types differ, then we need to handle all possible conversions and
+        // channel swizzling.
+        return AddConversion(typeName, output);
+    }
+
+    // We did not find the attribute directly, but we might be dealing with a subcomponent
+    // connection on a compound attribute:
+    MStatus                 status;
+    const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
+
+    MPlug childPlug = depNodeFn.findPlug(mayaAttrName.GetText(), &status);
+    if (!status || childPlug.isNull() || !childPlug.isChild()) {
+        return {};
+    }
+
+    MPlug              parentPlug = childPlug.parent();
+    unsigned int       childIndex = 0;
+    const unsigned int numChildren = parentPlug.numChildren();
+    for (; childIndex < numChildren; ++childIndex) {
+        if (childPlug.attribute() == parentPlug.child(childIndex).attribute()) {
+            break;
+        }
+    }
+
+    // We need the long name of the attribute:
+    const TfToken parentAttrName(
+        parentPlug.partialName(false, false, false, false, false, true).asChar());
+    output = shaderSchema.GetOutput(parentAttrName);
+    if (output) {
+        return ExtractChannel(static_cast<size_t>(childIndex), output);
+    }
+
+    input = shaderSchema.GetInput(parentAttrName);
+    if (input) {
+        return AddConstructor(
+            PreserveNodegraphBoundaries(input), static_cast<size_t>(childIndex), parentPlug);
     }
 
     return {};

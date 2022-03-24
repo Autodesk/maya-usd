@@ -1,0 +1,817 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <!--
+ Copyright 2022 Autodesk
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+  -->
+
+  <!-- ======================================================================== -->
+  <!-- Maya utility nodes implementation                                        -->
+  <!-- ======================================================================== -->
+
+  <nodegraph name="MayaNG_rotateUV_vector2" nodedef="MayaND_rotateUV_vector2">
+    <sin name="rsin" type="float">
+      <input name="in" type="float" interfacename="rotation" />
+    </sin>
+    <cos name="rcos" type="float">
+      <input name="in" type="float" interfacename="rotation" />
+    </cos>
+    <subtract name="minusOffset" type="vector2">
+      <input name="in1" type="vector2" interfacename="inUV" />
+      <input name="in2" type="float" value="0.5" />
+    </subtract>
+    <swizzle name="uvInU" type="float">
+      <input name="in" type="vector2" nodename="minusOffset" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <swizzle name="uvInV" type="float">
+      <input name="in" type="vector2" nodename="minusOffset" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <multiply name="mul0" type="float">
+      <input name="in1" type="float" nodename="uvInU" />
+      <input name="in2" type="float" nodename="rcos" />
+    </multiply>
+    <multiply name="mul1" type="float">
+      <input name="in1" type="float" nodename="uvInV" />
+      <input name="in2" type="float" nodename="rsin" />
+    </multiply>
+    <multiply name="mul2" type="float">
+      <input name="in1" type="float" nodename="uvInU" />
+      <input name="in2" type="float" nodename="rsin" />
+    </multiply>
+    <multiply name="mul3" type="float">
+      <input name="in1" type="float" nodename="uvInV" />
+      <input name="in2" type="float" nodename="rcos" />
+    </multiply>
+    <subtract name="uvOutU" type="float">
+      <input name="in1" type="float" nodename="mul0" />
+      <input name="in2" type="float" nodename="mul1" />
+    </subtract>
+    <add name="uvOutV" type="float">
+      <input name="in1" type="float" nodename="mul2" />
+      <input name="in2" type="float" nodename="mul3" />
+    </add>
+    <combine2 name="uvOut" type="vector2">
+      <input name="in1" type="float" nodename="uvOutU" />
+      <input name="in2" type="float" nodename="uvOutV" />
+    </combine2>
+    <add name="plusOffset" type="vector2">
+      <input name="in1" type="vector2" nodename="uvOut" />
+      <input name="in2" type="float" value="0.5" />
+    </add>
+    <absval name="absRotateFrame" type="float">
+      <input name="in" type="float" interfacename="rotation" />
+    </absval>
+    <ifgreater name="rotateFrameResult" type="vector2">
+      <input name="value1" type="float" nodename="absRotateFrame" />
+      <input name="value2" type="float" value="1.0E-05" />
+      <input name="in1" type="vector2" nodename="plusOffset" />
+      <input name="in2" type="vector2" interfacename="inUV" />
+    </ifgreater>
+    <output name="outUV" type="vector2" nodename="rotateFrameResult" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_noiseUV_vector2" nodedef="MayaND_noiseUV_vector2">
+    <swizzle name="noiseU" type="float">
+      <input name="in" type="vector2" interfacename="noiseUV" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <multiply name="mulUV" type="vector2">
+      <input name="in1" type="vector2" interfacename="inUV" />
+      <input name="in2" type="float" value="8.0" />
+    </multiply>
+    <swizzle name="noiseV" type="float">
+      <input name="in" type="vector2" interfacename="noiseUV" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <noise2d name="noiseSampleU" type="float">
+      <input name="amplitude" type="float" value="2.0" />
+      <input name="pivot" type="float" value="0.0" />
+      <input name="texcoord" type="vector2" nodename="mulUV" />
+    </noise2d>         
+    <add name="plusOffset" type="vector2">
+      <input name="in1" type="vector2" nodename="mulUV" />
+      <input name="in2" type="float" value="0.5" />
+    </add>
+    <noise2d name="noiseSampleV" type="float">
+      <input name="amplitude" type="float" value="2.0" />
+      <input name="pivot" type="float" value="0.0" />
+      <input name="texcoord" type="vector2" nodename="plusOffset" />
+    </noise2d>         
+    <multiply name="mulU" type="float">
+      <input name="in1" type="float" nodename="noiseSampleU" />
+      <input name="in2" type="float" nodename="noiseU" />
+    </multiply>
+    <multiply name="mulV" type="float">
+      <input name="in1" type="float" nodename="noiseSampleV" />
+      <input name="in2" type="float" nodename="noiseV" />
+    </multiply>
+    <combine2 name="noiseSample" type="vector2">
+      <input name="in1" type="float" nodename="mulU" />
+      <input name="in2" type="float" nodename="mulV" />
+    </combine2>
+    <add name="noisyUV" type="vector2">
+      <input name="in1" type="vector2" interfacename="inUV" />
+      <input name="in2" type="vector2" nodename="noiseSample" />
+    </add>
+    <absval name="absNoiseU" type="float">
+      <input name="in" type="float" nodename="noiseU" />
+    </absval>
+    <absval name="absNoiseV" type="float">
+      <input name="in" type="float" nodename="noiseV" />
+    </absval>
+    <add name="absNoiseSum" type="float">
+      <input name="in1" type="float" nodename="absNoiseU" />
+      <input name="in2" type="float" nodename="absNoiseV" />
+    </add>
+    <ifgreater name="noiseResult" type="vector2">
+      <input name="value1" type="float" nodename="absNoiseSum" />
+      <input name="value2" type="float" value="1.0E-05" />
+      <input name="in1" type="vector2" nodename="noisyUV" />
+      <input name="in2" type="vector2" interfacename="inUV" />
+    </ifgreater>
+    <output name="outUV" type="vector2" nodename="noiseResult" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_linearUV_float" nodedef="MayaND_linearUV_float">
+    <add name="addOffset" type="float">
+      <input name="in1" type="float" nodename="multiplyRepeat" />
+      <input name="in2" type="float" interfacename="offset" />
+    </add>
+    <multiply name="multiplyRepeat" type="float">
+      <input name="in1" type="float" nodename="ifCoverage" />
+      <input name="in2" type="float" interfacename="repeat" />
+    </multiply>
+    <ifgreater name="ifCoverage" type="float">
+      <input name="value1" type="float" value="1" />
+      <input name="value2" type="float" interfacename="coverage" />
+      <input name="in1" type="float" nodename="ifWrap" />
+      <input name="in2" type="float" nodename="divideByCoverage" />
+    </ifgreater>
+    <divide name="divideByCoverage" type="float">
+      <input name="in1" type="float" nodename="subtractTranslateFrame" />
+      <input name="in2" type="float" interfacename="coverage" />
+    </divide>
+    <subtract name="subtractTranslateFrame" type="float">
+      <input name="in1" type="float" interfacename="in" />
+      <input name="in2" type="float" interfacename="translateFrame" />
+    </subtract>
+    <ifequal name="ifWrap" type="float">
+      <input name="value1" type="boolean" value="true" />
+      <input name="value2" type="boolean" interfacename="wrap" />
+      <input name="in1" type="float" nodename="divByCoverage2" />
+      <input name="in2" type="float" nodename="divideByCoverage" />
+    </ifequal>
+    <divide name="divByCoverage2" type="float">
+      <input name="in1" type="float" nodename="ifgreaterThanCoverage" />
+      <input name="in2" type="float" interfacename="coverage" />
+    </divide>
+    <ifgreater name="ifgreaterThanCoverage" type="float">
+      <input name="value1" type="float" nodename="subtractFractTranslateFrame" />
+      <input name="value2" type="float" interfacename="coverage" />
+      <input name="in1" type="float" nodename="subtractOne" />
+      <input name="in2" type="float" nodename="iflessZero" />
+    </ifgreater>
+    <subtract name="subtractOne" type="float">
+      <input name="in1" type="float" nodename="subtractFractTranslateFrame" />
+      <input name="in2" type="float" value="1" />
+    </subtract>
+    <subtract name="subtractFractTranslateFrame" type="float">
+      <input name="in1" type="float" nodename="ifgreaterThanOne" />
+      <input name="in2" type="float" nodename="subtractFloorTranslateFrame" />
+    </subtract>
+    <ifgreater name="iflessZero" type="float">
+      <input name="value1" type="float" value="0" />
+      <input name="value2" type="float" nodename="subtractFractTranslateFrame" />
+      <input name="in1" type="float" nodename="addOne" />
+      <input name="in2" type="float" nodename="subtractFractTranslateFrame" />
+    </ifgreater>
+    <add name="addOne" type="float">
+      <input name="in1" type="float" nodename="subtractFractTranslateFrame" />
+      <input name="in2" type="float" value="1" />
+    </add>
+    <floor name="floorTranslateFrame" type="float">
+      <input name="in" type="float" interfacename="translateFrame" />
+    </floor>
+    <subtract name="subtractFloorTranslateFrame" type="float">
+      <input name="in1" type="float" interfacename="translateFrame" />
+      <input name="in2" type="float" nodename="floorTranslateFrame" />
+    </subtract>
+    <ifgreater name="ifgreaterThanOne" type="float">
+      <input name="value1" type="float" interfacename="in" />
+      <input name="value2" type="float" value="1" />
+      <input name="in1" type="float" nodename="minusFloorUV" />
+      <input name="in2" type="float" nodename="iflessZero2" />
+    </ifgreater>
+    <floor name="floorUV" type="float">
+      <input name="in" type="float" interfacename="in" />
+    </floor>
+    <subtract name="minusFloorUV" type="float">
+      <input name="in1" type="float" interfacename="in" />
+      <input name="in2" type="float" nodename="floorUV" />
+    </subtract>
+    <ifgreater name="iflessZero2" type="float">
+      <input name="value1" type="float" value="0" />
+      <input name="value2" type="float" interfacename="in" />
+      <input name="in1" type="float" nodename="addOne2" />
+      <input name="in2" type="float" interfacename="in" />
+    </ifgreater>
+    <add name="addOne2" type="float">
+      <input name="in1" type="float" nodename="minusFloorUV" />
+      <input name="in2" type="float" value="1" />
+    </add>
+    <ifgreater name="zeroGreaterDivideByCoverage" type="float">
+      <input name="value1" type="float" value="0" />
+      <input name="value2" type="float" nodename="divideByCoverage" />
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" value="0" />
+    </ifgreater>
+    <ifgreater name="divideByCoverageGreaterOne" type="float">
+      <input name="value1" type="float" nodename="divideByCoverage" />
+      <input name="value2" type="float" value="1" />
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" value="0" />
+    </ifgreater>
+    <add name="divideByCoverageOutOfBounds" type="float">
+      <input name="in1" type="float" nodename="zeroGreaterDivideByCoverage" />
+      <input name="in2" type="float" nodename="divideByCoverageGreaterOne" />
+    </add>
+    <ifequal name="wrapIsFalse" type="float">
+      <input name="value1" type="boolean" interfacename="wrap" />
+      <input name="value2" type="boolean" value="false" />
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" value="0" />
+    </ifequal>
+    <ifgreater name="coverageLessThanOne" type="float">
+      <input name="value1" type="float" value="1" />
+      <input name="value2" type="float" interfacename="coverage" />
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" value="0" />
+    </ifgreater>
+    <ifequal name="boundsCheck" type="float">
+      <input name="value1" type="float" nodename="foundBoundsError" />
+      <input name="value2" type="float" value="0" />
+      <input name="in1" type="float" nodename="addOffset" />
+      <input name="in2" type="float" value="-1e+07" />
+    </ifequal>
+    <multiply name="divideByCoverageBoundsCheck" type="float">
+      <input name="in1" type="float" nodename="wrapIsFalse" />
+      <input name="in2" type="float" nodename="divideByCoverageOutOfBounds" />
+    </multiply>
+    <ifgreater name="zeroGreaterDivideByCoverage2" type="float">
+      <input name="value1" type="float" value="0" />
+      <input name="value2" type="float" nodename="divByCoverage2" />
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" value="0" />
+    </ifgreater>
+    <ifgreater name="divideByCoverage2GreaterOne" type="float">
+      <input name="value1" type="float" nodename="divByCoverage2" />
+      <input name="value2" type="float" value="1" />
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" value="0" />
+    </ifgreater>
+    <add name="divideByCoverage2OutOfBounds" type="float">
+      <input name="in1" type="float" nodename="zeroGreaterDivideByCoverage2" />
+      <input name="in2" type="float" nodename="divideByCoverage2GreaterOne" />
+    </add>
+    <multiply name="checkDivideByCoverage2" type="float">
+      <input name="in1" type="float" nodename="coverageLessThanOne" />
+      <input name="in2" type="float" nodename="wrapIsTrue" />
+    </multiply>
+    <subtract name="wrapIsTrue" type="float">
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" nodename="wrapIsFalse" />
+    </subtract>
+    <multiply name="divideByCoverage2BoundsCheck" type="float">
+      <input name="in1" type="float" nodename="checkDivideByCoverage2" />
+      <input name="in2" type="float" nodename="divideByCoverage2OutOfBounds" />
+    </multiply>
+    <add name="foundBoundsError" type="float">
+      <input name="in1" type="float" nodename="divideByCoverage2BoundsCheck" />
+      <input name="in2" type="float" nodename="divideByCoverageBoundsCheck" />
+    </add>
+    <output name="out" type="float" nodename="boundsCheck" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_mirrorUV_float" nodedef="MayaND_mirrorUV_float">
+    <multiply name="halfIn" type="float">
+      <input name="in1" type="float" interfacename="in" />
+      <input name="in2" type="float" value="0.5" />
+    </multiply>
+    <floor name="floorHalfIn" type="float">
+      <input name="in" type="float" nodename="halfIn" />
+    </floor>
+    <subtract name="fractHalfIn" type="float">
+      <input name="in1" type="float" nodename="halfIn" />
+      <input name="in2" type="float" nodename="floorHalfIn" />
+    </subtract>
+    <floor name="floorIn" type="float">
+      <input name="in" type="float" interfacename="in" />
+    </floor>
+    <multiply name="doubleFloorIn" type="float">
+      <input name="in1" type="float" nodename="floorIn" />
+      <input name="in2" type="float" value="2.0" />
+    </multiply>
+    <add name="addOne" type="float">
+      <input name="in1" type="float" nodename="doubleFloorIn" />
+      <input name="in2" type="float" value="1.0" />
+    </add>
+    <subtract name="mirroredIn" type="float">
+      <input name="in1" type="float" nodename="addOne" />
+      <input name="in2" type="float" interfacename="in" />
+    </subtract>
+    <ifgreatereq name="canMirror" type="float">
+      <input name="value1" type="float" nodename="fractHalfIn" />
+      <input name="value2" type="float" value="0.5" />
+      <input name="in1" type="float" nodename="mirroredIn" />
+      <input name="in2" type="float" interfacename="in" />
+    </ifgreatereq>
+    <ifequal name="ifMirror" type="float">
+      <input name="value1" type="boolean" value="true" />
+      <input name="value2" type="boolean" interfacename="mirror" />
+      <input name="in1" type="float" nodename="canMirror" />
+      <input name="in2" type="float" interfacename="in" />
+    </ifequal>
+    <output name="out" type="float" nodename="ifMirror" />
+  </nodegraph>
+
+  <!-- place2dTexture doing its best to emulate the Maya node -->
+  <nodegraph name="MayaNG_place2dTexture_vector2" nodedef="MayaND_place2dTexture_vector2">
+    <!-- rotateFrame -->
+    <rotateUV name="rotatedFrame" type="vector2">
+      <input name="inUV" type="vector2" interfacename="uvCoord" />
+      <input name="rotation" type="float" interfacename="rotateFrame" />
+    </rotateUV>
+
+    <!-- noise -->
+    <noiseUV name="addNoise" type="vector2">
+      <input name="inUV" type="vector2" nodename="rotatedFrame" />
+      <input name="noiseUV" type="vector2" interfacename="noiseUV" />
+    </noiseUV>
+
+    <!-- process U channel -->
+    <swizzle name="channelU" type="float">
+      <input name="in" type="vector2" nodename="addNoise" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <swizzle name="coverageU" type="float">
+      <input name="in" type="vector2" interfacename="coverage" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <swizzle name="translateFrameU" type="float">
+      <input name="in" type="vector2" interfacename="translateFrame" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <swizzle name="repeatU" type="float">
+      <input name="in" type="vector2" interfacename="repeatUV" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <swizzle name="offsetU" type="float">
+      <input name="in" type="vector2" interfacename="offset" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <linearUV name="processU" type="float">
+      <input name="in" type="float" nodename="channelU" />
+      <input name="coverage" type="float" nodename="coverageU" />
+      <input name="translateFrame" type="float" nodename="translateFrameU" />
+      <input name="wrap" type="boolean" interfacename="wrapU" />
+      <input name="repeat" type="float" nodename="repeatU" />
+      <input name="offset" type="float" nodename="offsetU" />
+    </linearUV>
+
+    <!-- process V channel -->
+    <swizzle name="channelV" type="float">
+      <input name="in" type="vector2" nodename="addNoise" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <swizzle name="coverageV" type="float">
+      <input name="in" type="vector2" interfacename="coverage" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <swizzle name="translateFrameV" type="float">
+      <input name="in" type="vector2" interfacename="translateFrame" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <swizzle name="repeatV" type="float">
+      <input name="in" type="vector2" interfacename="repeatUV" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <swizzle name="offsetV" type="float">
+      <input name="in" type="vector2" interfacename="offset" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <linearUV name="processV" type="float">
+      <input name="in" type="float" nodename="channelV" />
+      <input name="coverage" type="float" nodename="coverageV" />
+      <input name="translateFrame" type="float" nodename="translateFrameV" />
+      <input name="wrap" type="boolean" interfacename="wrapV" />
+      <input name="repeat" type="float" nodename="repeatV" />
+      <input name="offset" type="float" nodename="offsetV" />
+    </linearUV>
+
+    <!-- Check if we ended up out of bounds -->
+    <min name="minEmulatingOr" type="float" nodedef="ND_min_float">
+      <input name="in1" type="float" nodename="processU" />
+      <input name="in2" type="float" nodename="processV" />
+    </min>
+
+    <!-- stagger. Using floor to emulate fract -->
+    <multiply name="halfV" type="float">
+      <input name="in1" type="float" nodename="processV" />
+      <input name="in2" type="float" value="0.5" />
+    </multiply>
+    <floor name="floorHalfV" type="float">
+      <input name="in" type="float" nodename="halfV" />
+    </floor>
+    <subtract name="fractHalfV" type="float">
+      <input name="in1" type="float" nodename="halfV" />
+      <input name="in2" type="float" nodename="floorHalfV" />
+    </subtract>
+    <add name="uPlusHalf" type="float">
+      <input name="in1" type="float" nodename="processU" />
+      <input name="in2" type="float" value="0.5" />
+    </add>
+    <ifgreatereq name="staggeredU" type="float">
+      <input name="value1" type="float" nodename="fractHalfV" />
+      <input name="value2" type="float" value="0.5" />
+      <input name="in1" type="float" nodename="uPlusHalf" />
+      <input name="in2" type="float" nodename="processU" />
+    </ifgreatereq>
+    <ifequal name="ifStagger" type="float">
+      <input name="value1" type="boolean" value="true" />
+      <input name="value2" type="boolean" interfacename="stagger" />
+      <input name="in1" type="float" nodename="staggeredU" />
+      <input name="in2" type="float" nodename="processU" />
+    </ifequal>
+
+    <mirrorUV name="mirroredU" type="float">
+      <input name="in" type="float" nodename="ifStagger" />
+      <input name="mirror" type="boolean" interfacename="mirrorU" />
+    </mirrorUV>
+    <mirrorUV name="mirroredV" type="float">
+      <input name="in" type="float" nodename="processV" />
+      <input name="mirror" type="boolean" interfacename="mirrorV" />
+    </mirrorUV>
+
+    <combine2 name="mirroredUV" type="vector2">
+      <input name="in1" type="float" nodename="mirroredU" />
+      <input name="in2" type="float" nodename="mirroredV" />
+    </combine2>
+    
+    <rotateUV name="rotatedUV" type="vector2">
+      <input name="inUV" type="vector2" nodename="mirroredUV" />
+      <input name="rotation" type="float" interfacename="rotateUV" />
+    </rotateUV>
+
+    <ifequal name="ifOutOfBounds" type="vector2">
+      <input name="value1" type="float" value="-1e7" />
+      <input name="value2" type="float" nodename="minEmulatingOr" />
+      <input name="in1" type="vector2" value="-1e7, -1e7" />
+      <input name="in2" type="vector2" nodename="rotatedUV" />
+    </ifequal>
+
+    <output name="outUV" type="vector2" nodename="ifOutOfBounds" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_fileTexture_float" nodedef="MayaND_fileTexture_float">
+    <invert name="invertedColor" type="float">
+      <input name="in" type="float" interfacename="inColor" />
+    </invert>
+    <ifequal name="invertIfRequired" type="float">
+      <input name="value1" type="boolean" interfacename="invert" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="float" nodename="invertedColor" />
+      <input name="in2" type="float" interfacename="inColor" />
+    </ifequal>
+    <power name="exposureGain" type="float">
+      <input name="in1" type="float" value="2.0" />
+      <input name="in2" type="float" interfacename="exposure" />
+    </power>
+    <multiply name="adjustedGain" type="float">
+      <input name="in1" type="float" nodename="exposureGain" />
+      <input name="in2" type="float" interfacename="colorGain" />
+    </multiply>
+    <multiply name="scaledColor" type="float">
+      <input name="in1" type="float" nodename="invertIfRequired" />
+      <input name="in2" type="float" nodename="adjustedGain" />
+    </multiply>
+    <add name="offsetColor" type="float">
+      <input name="in1" type="float" nodename="scaledColor" />
+      <input name="in2" type="float" interfacename="colorOffset" />
+    </add>
+    <swizzle name="inU" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="x" />
+    </swizzle>
+    <ifgreater name="ifUInBounds" type="float">
+      <input name="value1" type="float" nodename="inU" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="float" nodename="offsetColor" />
+      <input name="in2" type="float" interfacename="defaultColor" />
+    </ifgreater>
+    <swizzle name="inV" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="y" />
+    </swizzle>
+    <ifgreater name="ifVInBounds" type="float">
+      <input name="value1" type="float" nodename="inV" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="float" nodename="ifUInBounds" />
+      <input name="in2" type="float" interfacename="defaultColor" />
+    </ifgreater>
+    <output name="outColor" type="float" nodename="ifVInBounds" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_fileTexture_color3" nodedef="MayaND_fileTexture_color3">
+    <invert name="invertedColor" type="color3">
+      <input name="in" type="color3" interfacename="inColor" />
+    </invert>
+    <ifequal name="invertIfRequired" type="color3">
+      <input name="value1" type="boolean" interfacename="invert" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="color3" nodename="invertedColor" />
+      <input name="in2" type="color3" interfacename="inColor" />
+    </ifequal>
+    <power name="exposureGain" type="float">
+      <input name="in1" type="float" value="2.0" />
+      <input name="in2" type="float" interfacename="exposure" />
+    </power>
+    <multiply name="adjustedGain" type="color3">
+      <input name="in1" type="color3" interfacename="colorGain" />
+      <input name="in2" type="float" nodename="exposureGain" />
+    </multiply>
+    <multiply name="scaledColor" type="color3">
+      <input name="in1" type="color3" nodename="invertIfRequired" />
+      <input name="in2" type="color3" nodename="adjustedGain" />
+    </multiply>
+    <add name="offsetColor" type="color3">
+      <input name="in1" type="color3" nodename="scaledColor" />
+      <input name="in2" type="color3" interfacename="colorOffset" />
+    </add>
+    <swizzle name="inU" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="x" />
+    </swizzle>
+    <ifgreater name="ifUInBounds" type="color3">
+      <input name="value1" type="float" nodename="inU" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="color3" nodename="offsetColor" />
+      <input name="in2" type="color3" interfacename="defaultColor" />
+    </ifgreater>
+    <swizzle name="inV" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="y" />
+    </swizzle>
+    <ifgreater name="ifVInBounds" type="color3">
+      <input name="value1" type="float" nodename="inV" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="color3" nodename="ifUInBounds" />
+      <input name="in2" type="color3" interfacename="defaultColor" />
+    </ifgreater>
+    <output name="outColor" type="color3" nodename="ifVInBounds" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_fileTexture_color4" nodedef="MayaND_fileTexture_color4">
+    <!-- For color3 we need to split and adjust the color separately from the alpha -->
+    <swizzle name="inRGB" type="color3">
+      <input name="in" type="color4" interfacename="inColor" />
+      <input name="channels" type="string" value="rgb" />
+    </swizzle>
+    <swizzle name="inA" type="float">
+      <input name="in" type="color4" interfacename="inColor" />
+      <input name="channels" type="string" value="a" />
+    </swizzle>
+    <swizzle name="gainRGB" type="color3">
+      <input name="in" type="color4" interfacename="colorGain" />
+      <input name="channels" type="string" value="rgb" />
+    </swizzle>
+    <swizzle name="gainA" type="float">
+      <input name="in" type="color4" interfacename="colorGain" />
+      <input name="channels" type="string" value="a" />
+    </swizzle>
+    <invert name="invertedColor" type="color3">
+      <input name="in" type="color3" nodename="inRGB" />
+    </invert>
+    <ifequal name="invertIfRequired" type="color3">
+      <input name="value1" type="boolean" interfacename="invert" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="color3" nodename="invertedColor" />
+      <input name="in2" type="color3" nodename="inRGB" />
+    </ifequal>
+    <power name="exposureGain" type="float">
+      <input name="in1" type="float" value="2.0" />
+      <input name="in2" type="float" interfacename="exposure" />
+    </power>
+    <multiply name="adjustedGain" type="color3">
+      <input name="in1" type="color3" nodename="gainRGB" />
+      <input name="in2" type="float" nodename="exposureGain" />
+    </multiply>
+    <combine2 name="inRecomposed" type="color4">
+      <input name="in1" type="color3" nodename="invertIfRequired" />
+      <input name="in2" type="float" nodename="inA" />
+    </combine2>
+    <combine2 name="gainRecomposed" type="color4">
+      <input name="in1" type="color3" nodename="adjustedGain" />
+      <input name="in2" type="float" nodename="gainA" />
+    </combine2>
+    <multiply name="scaledColor" type="color4">
+      <input name="in1" type="color4" nodename="inRecomposed" />
+      <input name="in2" type="color4" nodename="gainRecomposed" />
+    </multiply>
+    <add name="offsetColor" type="color4">
+      <input name="in1" type="color4" nodename="scaledColor" />
+      <input name="in2" type="color4" interfacename="colorOffset" />
+    </add>
+    <swizzle name="inU" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="x" />
+    </swizzle>
+    <ifgreater name="ifUInBounds" type="color4">
+      <input name="value1" type="float" nodename="inU" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="color4" nodename="offsetColor" />
+      <input name="in2" type="color4" interfacename="defaultColor" />
+    </ifgreater>
+    <swizzle name="inV" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="y" />
+    </swizzle>
+    <ifgreater name="ifVInBounds" type="color4">
+      <input name="value1" type="float" nodename="inV" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="color4" nodename="ifUInBounds" />
+      <input name="in2" type="color4" interfacename="defaultColor" />
+    </ifgreater>
+    <output name="outColor" type="color4" nodename="ifVInBounds" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_fileTexture_vector2" nodedef="MayaND_fileTexture_vector2">
+    <invert name="invertedColor" type="vector2">
+      <input name="in" type="vector2" interfacename="inColor" />
+    </invert>
+    <ifequal name="invertIfRequired" type="vector2">
+      <input name="value1" type="boolean" interfacename="invert" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="vector2" nodename="invertedColor" />
+      <input name="in2" type="vector2" interfacename="inColor" />
+    </ifequal>
+    <power name="exposureGain" type="float">
+      <input name="in1" type="float" value="2.0" />
+      <input name="in2" type="float" interfacename="exposure" />
+    </power>
+    <multiply name="adjustedGain" type="vector2">
+      <input name="in1" type="vector2" interfacename="colorGain" />
+      <input name="in2" type="float" nodename="exposureGain" />
+    </multiply>
+    <multiply name="scaledColor" type="vector2">
+      <input name="in1" type="vector2" nodename="invertIfRequired" />
+      <input name="in2" type="vector2" nodename="adjustedGain" />
+    </multiply>
+    <add name="offsetColor" type="vector2">
+      <input name="in1" type="vector2" nodename="scaledColor" />
+      <input name="in2" type="vector2" interfacename="colorOffset" />
+    </add>
+    <swizzle name="inU" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="x" />
+    </swizzle>
+    <ifgreater name="ifUInBounds" type="vector2">
+      <input name="value1" type="float" nodename="inU" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="vector2" nodename="offsetColor" />
+      <input name="in2" type="vector2" interfacename="defaultColor" />
+    </ifgreater>
+    <swizzle name="inV" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="y" />
+    </swizzle>
+    <ifgreater name="ifVInBounds" type="vector2">
+      <input name="value1" type="float" nodename="inV" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="vector2" nodename="ifUInBounds" />
+      <input name="in2" type="vector2" interfacename="defaultColor" />
+    </ifgreater>
+    <output name="outColor" type="vector2" nodename="ifVInBounds" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_fileTexture_vector3" nodedef="MayaND_fileTexture_vector3">
+    <invert name="invertedColor" type="vector3">
+      <input name="in" type="vector3" interfacename="inColor" />
+    </invert>
+    <ifequal name="invertIfRequired" type="vector3">
+      <input name="value1" type="boolean" interfacename="invert" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="vector3" nodename="invertedColor" />
+      <input name="in2" type="vector3" interfacename="inColor" />
+    </ifequal>
+    <power name="exposureGain" type="float">
+      <input name="in1" type="float" value="2.0" />
+      <input name="in2" type="float" interfacename="exposure" />
+    </power>
+    <multiply name="adjustedGain" type="vector3">
+      <input name="in1" type="vector3" interfacename="colorGain" />
+      <input name="in2" type="float" nodename="exposureGain" />
+    </multiply>
+    <multiply name="scaledColor" type="vector3">
+      <input name="in1" type="vector3" nodename="invertIfRequired" />
+      <input name="in2" type="vector3" nodename="adjustedGain" />
+    </multiply>
+    <add name="offsetColor" type="vector3">
+      <input name="in1" type="vector3" nodename="scaledColor" />
+      <input name="in2" type="vector3" interfacename="colorOffset" />
+    </add>
+    <swizzle name="inU" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="x" />
+    </swizzle>
+    <ifgreater name="ifUInBounds" type="vector3">
+      <input name="value1" type="float" nodename="inU" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="vector3" nodename="offsetColor" />
+      <input name="in2" type="vector3" interfacename="defaultColor" />
+    </ifgreater>
+    <swizzle name="inV" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="y" />
+    </swizzle>
+    <ifgreater name="ifVInBounds" type="vector3">
+      <input name="value1" type="float" nodename="inV" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="vector3" nodename="ifUInBounds" />
+      <input name="in2" type="vector3" interfacename="defaultColor" />
+    </ifgreater>
+    <output name="outColor" type="vector3" nodename="ifVInBounds" />
+  </nodegraph>
+
+  <nodegraph name="MayaNG_fileTexture_vector4" nodedef="MayaND_fileTexture_vector4">
+    <!-- Note that for vector4 we do not consider the w channel to be an alpha -->
+    <invert name="invertedColor" type="vector4">
+      <input name="in" type="vector4" interfacename="inColor" />
+    </invert>
+    <ifequal name="invertIfRequired" type="vector4">
+      <input name="value1" type="boolean" interfacename="invert" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="vector4" nodename="invertedColor" />
+      <input name="in2" type="vector4" interfacename="inColor" />
+    </ifequal>
+    <power name="exposureGain" type="float">
+      <input name="in1" type="float" value="2.0" />
+      <input name="in2" type="float" interfacename="exposure" />
+    </power>
+    <multiply name="adjustedGain" type="vector4">
+      <input name="in1" type="vector4" interfacename="colorGain" />
+      <input name="in2" type="float" nodename="exposureGain" />
+    </multiply>
+    <multiply name="scaledColor" type="vector4">
+      <input name="in1" type="vector4" nodename="invertIfRequired" />
+      <input name="in2" type="vector4" nodename="adjustedGain" />
+    </multiply>
+    <add name="offsetColor" type="vector4">
+      <input name="in1" type="vector4" nodename="scaledColor" />
+      <input name="in2" type="vector4" interfacename="colorOffset" />
+    </add>
+    <swizzle name="inU" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="x" />
+    </swizzle>
+    <ifgreater name="ifUInBounds" type="vector4">
+      <input name="value1" type="float" nodename="inU" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="vector4" nodename="offsetColor" />
+      <input name="in2" type="vector4" interfacename="defaultColor" />
+    </ifgreater>
+    <swizzle name="inV" type="float">
+      <input name="in" type="vector2" interfacename="uvCoord" />
+      <input name="channels" type="string" uniform="true" value="y" />
+    </swizzle>
+    <ifgreater name="ifVInBounds" type="vector4">
+      <input name="value1" type="float" nodename="inV" />
+      <input name="value2" type="float" value="-1e+07" />
+      <input name="in1" type="vector4" nodename="ifUInBounds" />
+      <input name="in2" type="vector4" interfacename="defaultColor" />
+    </ifgreater>
+    <output name="outColor" type="vector4" nodename="ifVInBounds" />
+  </nodegraph>
+
+  <!-- Nodegraph only wraps the difference in interface -->
+  <nodegraph name="MayaNG_clamp_vector3" nodedef="MayaND_clamp_vector3">
+    <clamp name="clamp1" type="vector3">
+      <input name="in" type="vector3" interfacename="input" />
+      <input name="low" type="vector3" interfacename="min" />
+      <input name="high" type="vector3" interfacename="max" />
+    </clamp>
+    <output name="output" type="vector3" nodename="clamp1" />
+  </nodegraph>
+</materialx>

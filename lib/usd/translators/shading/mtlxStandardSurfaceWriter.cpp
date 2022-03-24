@@ -157,7 +157,7 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
         if (!(UsdMayaUtil::IsAuthored(attrPlug) || usdAttrName == TrMtlxTokens->base
               || usdAttrName == TrMtlxTokens->base_color || usdAttrName == TrMtlxTokens->specular
               || usdAttrName == TrMtlxTokens->specular_roughness)
-            && !attrPlug.isConnected()) {
+            && !attrPlug.isConnected() && !attrPlug.numConnectedChildren()) {
             continue;
         }
 
@@ -181,7 +181,7 @@ MaterialXTranslators_StandardSurfaceWriter::MaterialXTranslators_StandardSurface
         _inputNameAttrMap.insert(std::make_pair(usdAttrName, attrPlug));
 
         // All connections go directly to the node graph:
-        if (attrPlug.isConnected()) {
+        if (attrPlug.isConnected() || attrPlug.numConnectedChildren()) {
             if (!nodegraphSchema) {
                 nodegraphSchema = UsdShadeNodeGraph(GetNodeGraph());
                 if (!TF_VERIFY(
@@ -218,7 +218,7 @@ void MaterialXTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTim
         const MPlug&   attrPlug = inputAttrPair.second;
 
         UsdShadeInput input = shaderSchema.GetInput(inputName);
-        if (!input || attrPlug.isConnected()) {
+        if (!input || attrPlug.isConnected() || attrPlug.numConnectedChildren()) {
             continue;
         }
 
@@ -260,7 +260,39 @@ UsdAttribute MaterialXTranslators_StandardSurfaceWriter::GetShadingAttributeForM
     }
 
     // And they use the camelCase Maya name directly:
-    return nodegraphSchema.GetOutput(mayaAttrName);
+    UsdShadeOutput output = nodegraphSchema.GetOutput(mayaAttrName);
+    if (output) {
+        return output;
+    }
+
+    // We did not find the attribute directly, but we might be dealing with a subcomponent
+    // connection on a compound attribute:
+    MStatus                 status;
+    const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
+
+    MPlug childPlug = depNodeFn.findPlug(mayaAttrName.GetText(), &status);
+    if (!status || childPlug.isNull() || !childPlug.isChild()) {
+        return {};
+    }
+
+    MPlug              parentPlug = childPlug.parent();
+    unsigned int       childIndex = 0;
+    const unsigned int numChildren = parentPlug.numChildren();
+    for (; childIndex < numChildren; ++childIndex) {
+        if (childPlug.attribute() == parentPlug.child(childIndex).attribute()) {
+            break;
+        }
+    }
+
+    // We need the long name of the attribute:
+    const TfToken parentAttrName(
+        parentPlug.partialName(false, false, false, false, false, true).asChar());
+    output = nodegraphSchema.GetOutput(parentAttrName);
+    if (output) {
+        return AddConstructor(output, static_cast<size_t>(childIndex), parentPlug);
+    }
+
+    return {};
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -144,6 +144,10 @@ struct UsdMayaTranslatorUtil
 
         return APISchemaType(usdPrim);
     }
+
+    /// Find out the shading node type associated with a Maya node type name.
+    MAYAUSD_CORE_PUBLIC static UsdMayaShadingNodeType
+    ComputeShadingNodeTypeForMayaTypeName(const TfToken& mayaNodeTypeName);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

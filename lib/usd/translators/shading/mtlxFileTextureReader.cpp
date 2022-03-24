@@ -62,7 +62,7 @@ public:
 
     bool Read(UsdMayaPrimReaderContext& context) override;
 
-    bool TraverseUnconnectableInput(const TfToken& usdAttrName) const override;
+    bool TraverseUnconnectableInput(const TfToken& usdAttrName) override;
 
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 };
@@ -131,6 +131,7 @@ bool MtlxUsd_FileTextureReader::Read(UsdMayaPrimReaderContext& context)
             return false;
         }
         context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
+        RegisterConstructorNodes(context, mayaObject);
         if (!imageNodePath.IsEmpty()) {
             context.RegisterNewMayaNode(imageNodePath.GetString(), mayaObject);
         }
@@ -194,7 +195,8 @@ TfToken MtlxUsd_FileTextureReader::GetMayaNameForUsdAttrName(const TfToken& usdA
     UsdShadeAttributeType attrType;
     std::tie(usdPortName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 
-    if (attrType == UsdShadeAttributeType::Output && usdPortName == TrMayaTokens->outColor) {
+    if (attrType == UsdShadeAttributeType::Output
+        && (usdPortName == TrMayaTokens->outColor || usdPortName == TrMayaTokens->outAlpha)) {
         return usdPortName;
     }
 
@@ -205,7 +207,7 @@ TfToken MtlxUsd_FileTextureReader::GetMayaNameForUsdAttrName(const TfToken& usdA
     return {};
 }
 
-bool MtlxUsd_FileTextureReader::TraverseUnconnectableInput(const TfToken& usdAttrName) const
+bool MtlxUsd_FileTextureReader::TraverseUnconnectableInput(const TfToken& usdAttrName)
 {
     TfToken               usdPortName;
     UsdShadeAttributeType attrType;

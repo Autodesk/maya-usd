@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "mtlxBaseReader.h"
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
@@ -44,20 +45,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtlxUsd_StandardSurfaceWriter : public UsdMayaShaderReader
+class MtlxUsd_StandardSurfaceReader : public MtlxUsd_BaseReader
 {
 public:
-    MtlxUsd_StandardSurfaceWriter(const UsdMayaPrimReaderArgs&);
+    MtlxUsd_StandardSurfaceReader(const UsdMayaPrimReaderArgs&);
 
     bool Read(UsdMayaPrimReaderContext& context) override;
 
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 };
 
-PXRUSDMAYA_REGISTER_SHADER_READER(ND_standard_surface_surfaceshader, MtlxUsd_StandardSurfaceWriter);
+PXRUSDMAYA_REGISTER_SHADER_READER(ND_standard_surface_surfaceshader, MtlxUsd_StandardSurfaceReader);
 
-MtlxUsd_StandardSurfaceWriter::MtlxUsd_StandardSurfaceWriter(const UsdMayaPrimReaderArgs& readArgs)
-    : UsdMayaShaderReader(readArgs)
+MtlxUsd_StandardSurfaceReader::MtlxUsd_StandardSurfaceReader(const UsdMayaPrimReaderArgs& readArgs)
+    : MtlxUsd_BaseReader(readArgs)
 {
 }
 
@@ -136,7 +137,7 @@ bool _ReadFromMaterial(const UsdShadeInput& input, VtValue& inputVal)
 
 } // namespace
 /* virtual */
-bool MtlxUsd_StandardSurfaceWriter::Read(UsdMayaPrimReaderContext& context)
+bool MtlxUsd_StandardSurfaceReader::Read(UsdMayaPrimReaderContext& context)
 {
     const UsdPrim& prim = _GetArgs().GetUsdPrim();
     UsdShadeShader shaderSchema = UsdShadeShader(prim);
@@ -162,6 +163,7 @@ bool MtlxUsd_StandardSurfaceWriter::Read(UsdMayaPrimReaderContext& context)
     }
 
     context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
+    RegisterConstructorNodes(context, mayaObject);
 
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         TfToken baseName = GetMayaNameForUsdAttrName(input.GetFullName());
@@ -190,7 +192,7 @@ bool MtlxUsd_StandardSurfaceWriter::Read(UsdMayaPrimReaderContext& context)
 }
 
 /* virtual */
-TfToken MtlxUsd_StandardSurfaceWriter::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
+TfToken MtlxUsd_StandardSurfaceReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
     TfToken               baseName;
     UsdShadeAttributeType attrType;
