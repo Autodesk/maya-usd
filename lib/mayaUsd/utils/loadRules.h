@@ -60,15 +60,20 @@ MString convertLoadRulesToText(const PXR_NS::UsdStageLoadRules& rules);
 MAYAUSD_CORE_PUBLIC
 PXR_NS::UsdStageLoadRules createLoadRulesFromText(const MString& text);
 
+/*! \brief verify if there is a dynamic attribute on the object for load rules.
+ */
+MAYAUSD_CORE_PUBLIC
+bool hasLoadRulesAttribute(const MObject& obj);
+
 /*! \brief copy the stage load rules in a dynamic attribute on the object.
  */
 MAYAUSD_CORE_PUBLIC
-void copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MObject& obj);
+MStatus copyLoadRulesToAttribute(const PXR_NS::UsdStage& stage, MObject& obj);
 
 /*! \brief set the stage load rules from data in a dynamic attribute on the object.
  */
 MAYAUSD_CORE_PUBLIC
-void copyLoadRulesFromAttribute(const MObject& obj, PXR_NS::UsdStage& stage);
+MStatus copyLoadRulesFromAttribute(const MObject& obj, PXR_NS::UsdStage& stage);
 
 } // namespace MAYAUSD_NS_DEF
 
