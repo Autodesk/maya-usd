@@ -1071,7 +1071,6 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
     , importInstances(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(_Boolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
     , importWithProxyShapes(importWithProxyShapes)
-    , pullImport(_Boolean(userArgs, UsdMayaJobImportArgsTokens->pullImport))
     , timeInterval(timeInterval)
     , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobImportArgsTokens->chaserArgs))
@@ -1123,7 +1122,6 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         d[UsdMayaJobImportArgsTokens->importInstances] = true;
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = false;
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = "";
-        d[UsdMayaJobImportArgsTokens->pullImport] = false;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
         d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
@@ -1199,7 +1197,6 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->importInstances] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = _string;
-        d[UsdMayaJobImportArgsTokens->pullImport] = _boolean;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = _boolean;
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
@@ -1285,7 +1282,6 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "importInstances: " << TfStringify(importArgs.importInstances) << std::endl
         << "importUSDZTextures: " << TfStringify(importArgs.importUSDZTextures) << std::endl
         << "importUSDZTexturesFilePath: " << TfStringify(importArgs.importUSDZTexturesFilePath)
-        << "pullImport: " << TfStringify(importArgs.pullImport) << std::endl
         << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
