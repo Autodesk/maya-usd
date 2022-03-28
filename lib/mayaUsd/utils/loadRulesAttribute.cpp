@@ -21,7 +21,7 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
-#include <maya/Mstring.h>
+#include <maya/MString.h>
 
 namespace MAYAUSD_NS_DEF {
 
