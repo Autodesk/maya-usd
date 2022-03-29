@@ -61,7 +61,7 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 roughness, int distrib
         vec3 Lw = tangentToWorld * L;
         float pdf = mx_ggx_PDF(H, LdotH, roughness);
         float lod = mx_latlong_compute_lod(Lw, pdf, float(mayaGetSpecularEnvironmentNumLOD() - 1), MX_NUM_FIS_SAMPLES);
-        vec3 sampleColor = mayaGetSpecularEnvironmentLOD(Lw, lod);
+        vec3 sampleColor = mayaSampleSpecularEnvironmentAtLOD(Lw, lod);
 
         // Compute the Fresnel term.
         vec3 F = mx_compute_fresnel(VdotH, fd);

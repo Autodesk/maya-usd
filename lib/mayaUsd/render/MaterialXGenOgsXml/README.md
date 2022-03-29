@@ -58,10 +58,10 @@ Even more recent versions of Maya provide LOD sampling APIs in a version 3 of th
 
 Added functions include:
 
-`float3 mayaGetAmbientLight()`\
+`float3 mayaGetAmbientLightColor()`\
 Returns the color of the global ambient light. Also used for flat lighting
 
-`float3 mayaGetSpecularEnvironmentLOD(float3 Ld, float lod)`\
+`float3 mayaSampleSpecularEnvironmentAtLOD(float3 Ld, float lod)`\
 Returns a specular environment sample at a specified level of detail\
 `Ld` -> light direction\
 `lod` -> the level of detail to query on the texture

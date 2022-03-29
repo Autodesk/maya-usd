@@ -60,6 +60,7 @@ void SurfaceNodeMaya::emitLightLoop(
     };
 
     ShaderInput* ncBsdfInput = const_cast<ShaderInput*>(bsdfInput);
+    ShaderNode*  emittedDiffuseNode = nullptr;
     for (ShaderGraphEdge edge : ShaderGraph::traverseUpstream(ncBsdfInput->getConnection())) {
         const std::string& implName = edge.upstream->getNode()->getImplementation().getName();
         if (implName == "IM_oren_nayar_diffuse_bsdf_genglsl"
@@ -76,10 +77,24 @@ void SurfaceNodeMaya::emitLightLoop(
             if (weightParam.empty() || colorParam.empty()) {
                 continue;
             }
+
+            // We can hit multiple diffuse nodes in layered shaders. How should that work for
+            // flat lighting is currently undefined. Just report the issue.
+            if (emittedDiffuseNode) {
+#ifdef DEBUG
+                if (emittedDiffuseNode != edge.upstream->getNode()) {
+                    throw mx::Exception(
+                        "Multiple diffuse nodes found: " + edge.upstream->getNode()->getName()
+                        + " could also contribute to ambient lighting.");
+                }
+#endif
+                continue;
+            }
+
             shadergen.emitLine(
-                outColor + " = mayaGetAmbientLight() * " + weightParam + " * " + colorParam, stage);
-            // Stop after the first diffuse node found...
-            break;
+                outColor + " = mayaGetAmbientLightColor() * " + weightParam + " * " + colorParam,
+                stage);
+            emittedDiffuseNode = edge.upstream->getNode();
         }
     }
 #endif
