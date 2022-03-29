@@ -181,13 +181,11 @@ TEST(translators_CameraTranslator, readAnimatedValues)
     endTimeCode = 1000
     startTimeCode = 999
 )
-def Xform "GEO" (
-    al_usdmaya_lock = "transform"
-)
+def Xform "GEO"
 {
     float3 xformOp:translate = (-1.0, 2.5, 6.5)
     uniform token[] xformOpOrder = ["xformOp:translate"]
-    def Xform "camera_main_srt"
+    def Xform "cameraGroup"
     {
         double3 xformOp:translate = (-0.0000015314200130234168, 1.587618925213975e-14, -1.4210854715201993e-14)
         uniform token[] xformOpOrder = ["xformOp:translate"]
@@ -196,7 +194,7 @@ def Xform "GEO" (
             999: (0.014807368, -1.003891, -0.03618303),
             1000: (0.11926156, -0.9200447, 0.12728521)
         }
-        def ALCamera "camera_M_default_render_cam_srt"
+        def Camera "renderCam"
         {
         }
     }
@@ -206,10 +204,10 @@ def Xform "GEO" (
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     stage->GetRootLayer()->ImportFromString(LAYER_CONTENTS);
 
-    SdfPath           currentPrimPath("/GEO/camera_main_srt/camera_M_default_render_cam_srt");
+    SdfPath           currentPrimPath("/GEO/cameraGroup/renderCam");
     UsdPrim           currentPrim = stage->GetPrimAtPath(currentPrimPath);
     UsdStageCache::Id stageCacheId = AL::usdmaya::StageCache::Get().Insert(stage);
-    SdfPath           cameraPrim("/GEO/camera_main_srt/camera_M_default_render_cam_srt");
+    SdfPath           cameraPrim("/GEO/cameraGroup/renderCam");
 
     // Load the stage into Maya
     EXPECT_TRUE(stageCacheId.IsValid());
@@ -217,12 +215,11 @@ def Xform "GEO" (
         = MString("AL_usdmaya_ProxyShapeImport  ") + "-stageId " + stageCacheId.ToLongInt();
 
     MGlobal::executeCommand(importCommand);
-    MGlobal::executeCommand("AL_usdmaya_ProxyShapeImportAllTransforms AL_usdmaya_Proxy;");
 
     // Fetch relevant maya nodes
     MSelectionList mSel;
-    mSel.add("|AL_usdmaya_Proxy|GEO|camera_main_srt|camera_M_default_render_cam_srt");
-    mSel.add("|AL_usdmaya_Proxy|GEO|camera_main_srt");
+    mSel.add("|AL_usdmaya_Proxy|GEO|cameraGroup|renderCam");
+    mSel.add("|AL_usdmaya_Proxy|GEO|cameraGroup");
     mSel.add("|AL_usdmaya_Proxy|GEO"); // Has transforms
 
     MDagPath dagPath1;
