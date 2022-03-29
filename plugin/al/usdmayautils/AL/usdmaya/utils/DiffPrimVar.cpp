@@ -931,7 +931,7 @@ static bool isVertexColourSet(
     std::vector<uint32_t> indicesMap;
     indicesMap.resize(numPoints, -1);
 
-    for (uint32_t i = 0, n = pointIndices.length(); i < n; ++i) {
+    for (uint32_t i = 0; i < pointIndices.length(); ++i) {
         auto index = pointIndices[i];
         auto lastIndex = indicesMap[index];
         if (lastIndex == 0xFFFFFFFF) {

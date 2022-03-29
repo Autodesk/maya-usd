@@ -1171,3 +1171,128 @@ TEST(DiffPrimVar, guessUVInterpolationTypeExtensive)
         EXPECT_TRUE(token == UsdGeomTokens->uniform);
     }
 }
+
+TEST(DiffPrimVar, guessColourSetInterpolationType)
+{
+    MColorArray rgba;
+    size_t      numElements = 24;
+    rgba.setLength(numElements);
+    for (int i = 0; i < numElements; ++i) {
+        rgba[i].r = 0.f;
+        rgba[i].g = 0.f;
+        rgba[i].b = 0.f;
+        rgba[i].a = 1.f;
+    }
+
+    // we should get a constant value back for constant data
+    {
+        TfToken token
+            = AL::usdmaya::utils::guessColourSetInterpolationType(&rgba[0].r, numElements);
+        EXPECT_TRUE(token == UsdGeomTokens->constant);
+    }
+
+    // we should get a face varying description back for per-vertex data
+    {
+        rgba[8].r = 0.2f;
+
+        TfToken token
+            = AL::usdmaya::utils::guessColourSetInterpolationType(&rgba[0].r, numElements);
+        EXPECT_TRUE(token == UsdGeomTokens->faceVarying);
+    }
+
+    // we should get a face varying description back for face varying data
+    {
+        rgba[9].r = 0.5f;
+
+        TfToken token
+            = AL::usdmaya::utils::guessColourSetInterpolationType(&rgba[0].r, numElements);
+        EXPECT_TRUE(token == UsdGeomTokens->faceVarying);
+    }
+
+    // we should get a face varying description back for uniform data
+    {
+        // Set the colours to per-face values
+        for (int i = 0, face = 0; i < numElements; ++i, (i % 4) ? 0 : ++face) {
+            rgba[i] = 0.1f * face;
+        }
+
+        TfToken token
+            = AL::usdmaya::utils::guessColourSetInterpolationType(&rgba[0].r, numElements);
+        EXPECT_TRUE(token == UsdGeomTokens->faceVarying);
+    }
+}
+
+TEST(DiffPrimVar, guessColourSetInterpolationTypeExtensive)
+{
+    MColorArray rgba;
+    size_t      numElements = 24;
+    size_t      numPoints = 8;
+    rgba.setLength(numElements);
+    for (int i = 0; i < numElements; ++i) {
+        rgba[i].r = 0.f;
+        rgba[i].g = 0.f;
+        rgba[i].b = 0.f;
+        rgba[i].a = 1.f;
+    }
+    MIntArray indices;
+    for (int i = 0; i < numElements; ++i) {
+        indices.append(i % numPoints);
+    }
+    std::vector<uint32_t> indicesToExtract;
+    MIntArray             faceCounts;
+    faceCounts.append(4);
+    faceCounts.append(4);
+    faceCounts.append(4);
+    faceCounts.append(4);
+    faceCounts.append(4);
+    faceCounts.append(4);
+
+    // we should get a constant value back for constant data
+    {
+        TfToken token = AL::usdmaya::utils::guessColourSetInterpolationTypeExtensive(
+            &rgba[0].r, numElements, numPoints, indices, faceCounts, indicesToExtract);
+        EXPECT_TRUE(token == UsdGeomTokens->constant);
+    }
+
+    // we should get a vertex description back for per-vertex data
+    {
+        rgba[0].r = 0.2f;
+        rgba[0].g = 0.7f;
+        rgba[8].r = 0.2f;
+        rgba[8].g = 0.7f;
+        rgba[16].r = 0.2f;
+        rgba[16].g = 0.7f;
+
+        TfToken token = AL::usdmaya::utils::guessColourSetInterpolationTypeExtensive(
+            &rgba[0].r, numElements, numPoints, indices, faceCounts, indicesToExtract);
+        EXPECT_TRUE(token == UsdGeomTokens->vertex);
+    }
+
+    // we should get a face varying description back for face varying data
+    {
+        rgba[9].r = 0.5f;
+
+        TfToken token = AL::usdmaya::utils::guessColourSetInterpolationTypeExtensive(
+            &rgba[0].r, numElements, numPoints, indices, faceCounts, indicesToExtract);
+        EXPECT_TRUE(token == UsdGeomTokens->faceVarying);
+    }
+
+    // we should get a uniform description back for uniform data
+    {
+        MIntArray pointindices = indices;
+        indices[0] = 4;
+        indices[1] = 5;
+        indices[2] = 6;
+        indices[3] = 7;
+        pointindices[9] = 19;
+
+        // Set the colours to per-face values
+        for (int i = 0, face = 0; i < numElements; ++i, (i % 4) ? 0 : ++face) {
+            rgba[i] = 0.1f * face;
+        }
+
+        TfToken token = AL::usdmaya::utils::guessColourSetInterpolationTypeExtensive(
+            &rgba[0].r, numElements, numPoints, pointindices, faceCounts, indicesToExtract);
+        EXPECT_TRUE(token == UsdGeomTokens->uniform);
+    }
+}
