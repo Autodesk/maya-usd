@@ -741,7 +741,7 @@ static bool isUniformUVSetBasic(const MIntArray& indices, const MIntArray& faceC
     // let's see whether we have a uniform set (based on the assumption that each face will have
     // unique indices)
     uint32_t offset = 0;
-    for (uint32_t i = 0, n = faceCounts.length(); i < n; ++i) {
+    for (uint32_t i = 0; i < faceCounts.length(); ++i) {
         const uint32_t numVerts = faceCounts[i];
         int32_t        index = indices[offset];
         for (uint32_t j = 1; j < numVerts; ++j) {
@@ -762,7 +762,7 @@ static bool isUniformUVSetExhaustive(
 {
     // An exhaustive test to see if we have per-face assignment of UVs
     uint32_t offset = 0;
-    for (uint32_t i = 0, n = faceCounts.length(); i < n; ++i) {
+    for (uint32_t i = 0; i < faceCounts.length(); ++i) {
         const uint32_t numVerts = faceCounts[i];
         const int32_t  index = indices[offset];
 
@@ -800,7 +800,7 @@ static bool isVertexUVSetExhaustive(
 
     // do an exhaustive test to see if the UV assignments are per-vertex
     indicesMap.emplace(pointIndices[0], indices[0]);
-    for (uint32_t i = 1, n = pointIndices.length(); i < n; ++i) {
+    for (uint32_t i = 1; i < pointIndices.length(); ++i) {
         auto index = pointIndices[i];
         auto uvindex = indices[i];
         auto it = indicesMap.find(index);
