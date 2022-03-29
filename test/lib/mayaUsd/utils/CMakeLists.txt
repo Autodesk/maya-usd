@@ -86,7 +86,7 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
 
     # handle run-time search paths
     if(IS_MACOSX OR IS_LINUX)
-        mayaUsd_init_rpath(rpath ${TARGET_NAME})
+        mayaUsd_init_rpath(rpath $<TARGET_FILE_DIR:${TARGET_NAME}>)
 
         mayaUsd_add_rpath(rpath "../lib")
         if(BUILD_TESTS)
@@ -99,6 +99,9 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
             mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
         elseif(DEFINED PXR_USD_LOCATION)
             mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        endif()
+        if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
         endif()
         if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
             mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
