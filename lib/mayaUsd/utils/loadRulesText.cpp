@@ -59,7 +59,7 @@ MString convertLoadRulesToText(const PXR_NS::UsdStageLoadRules& rules)
 
     const auto& perPathRules = rules.GetRules();
     for (const auto& pathAndRule : perPathRules) {
-        if (!text.isEmpty())
+        if (text.length() > 0)
             text += ";";
 
         text += convertPerPathRuleToText(pathAndRule.first, pathAndRule.second);
