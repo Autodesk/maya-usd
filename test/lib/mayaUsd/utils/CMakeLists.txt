@@ -84,31 +84,6 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
             mayaUsd
     )
 
-    # handle run-time search paths
-    if(IS_MACOSX OR IS_LINUX)
-        mayaUsd_init_rpath(rpath $<TARGET_FILE_DIR:${TARGET_NAME}>)
-
-        mayaUsd_add_rpath(rpath "../lib")
-        if(BUILD_TESTS)
-            mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib/gtest")
-        endif()
-        mayaUsd_add_rpath(rpath "${MAYA_LOCATION}/lib")
-        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-
-        if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-            mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
-        elseif(DEFINED PXR_USD_LOCATION)
-            mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
-        endif()
-        if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-            mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
-        endif()
-        if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-            mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
-        endif()
-        mayaUsd_install_rpath(rpath ${TARGET_NAME})
-    endif()
-
     # -----------------------------------------------------------------------------
     # unit tests
     # -----------------------------------------------------------------------------
@@ -120,13 +95,13 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
     )
 endfunction()
 
-if(IS_MACOSX)
-    # Create symbolic link to python framework
-    file(CREATE_LINK ${MAYA_LOCATION}/Frameworks ${CMAKE_CURRENT_BINARY_DIR}/../Frameworks SYMBOLIC)
+if(IS_WINDOWS)
+    # There are link problems on Linux and OSX with C++ test using USD + Maya,
+    # so only run the test on Windows. The code is not platform-specific anwyay,
+    # testing on Windows is sufficient.
+    add_mayaUsdLibUtils_test(
+        testLoadRules
+        testLoadRules.cpp
+    )
 endif()
-
-add_mayaUsdLibUtils_test(
-    testLoadRules
-    testLoadRules.cpp
-)
 
