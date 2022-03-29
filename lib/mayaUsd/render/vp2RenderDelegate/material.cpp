@@ -2454,7 +2454,7 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             return shaderInstance;
         }
 
-#if MAYA_LIGHTAPI_VERSION_2==3
+#if MAYA_LIGHTAPI_VERSION_2 == 3
         mx::OgsXmlGenerator::setUseLightAPI(3);
 #else
         mx::OgsXmlGenerator::setUseLightAPI(2);

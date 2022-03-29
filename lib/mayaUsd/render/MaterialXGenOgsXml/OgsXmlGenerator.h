@@ -34,7 +34,7 @@ public:
     static const string VP_TRANSPARENCY_NAME;
 
     /// Use Maya's latest external light functions
-    static int useLightAPI();
+    static int  useLightAPI();
     static void setUseLightAPI(int);
 
 private:

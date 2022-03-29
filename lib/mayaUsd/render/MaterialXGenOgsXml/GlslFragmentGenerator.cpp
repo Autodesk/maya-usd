@@ -171,14 +171,13 @@ ShaderPtr GlslFragmentGenerator::generate(
 
     if (lighting) {
         switch (OgsXmlGenerator::useLightAPI()) {
-            case 3:
+        case 3:
             emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
             break;
-            case 2:
+        case 2:
             emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
             break;
-            default:
-            emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
+        default: emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
         }
     }
 

@@ -511,7 +511,7 @@ string OgsXmlGenerator::generateLightRig(
 
 int OgsXmlGenerator::sUseLightAPI = 1;
 
-int OgsXmlGenerator::useLightAPI() { return sUseLightAPI; }
+int  OgsXmlGenerator::useLightAPI() { return sUseLightAPI; }
 void OgsXmlGenerator::setUseLightAPI(int val) { sUseLightAPI = val; }
 
 MATERIALX_NAMESPACE_END

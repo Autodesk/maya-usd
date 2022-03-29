@@ -340,7 +340,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
     // Register a UsdPreviewSurface shader graph:
     {
         const MString fragGraphName(HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText());
-#if MAYA_LIGHTAPI_VERSION_2==3
+#if MAYA_LIGHTAPI_VERSION_2 == 3
         const bool    useV1Lighting = TfGetEnvSetting(MAYAUSD_VP2_USE_V1_LIGHT_API);
         const MString fragGraphFileName(
             useV1Lighting ? _tokens->UsdPreviewSurfaceLightAPI1.GetText()
@@ -348,7 +348,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
         MString shadingInfo = (useV1Lighting ? "Using V1 Lighting API" : "Using V3 Lighting API");
         shadingInfo += " for UsdPreviewSurface shading.";
         MGlobal::displayInfo(shadingInfo);
-#elif MAYA_LIGHTAPI_VERSION_2==2
+#elif MAYA_LIGHTAPI_VERSION_2 == 2
         const bool    useV1Lighting = TfGetEnvSetting(MAYAUSD_VP2_USE_V1_LIGHT_API);
         const MString fragGraphFileName(
             useV1Lighting ? _tokens->UsdPreviewSurfaceLightAPI1.GetText()
