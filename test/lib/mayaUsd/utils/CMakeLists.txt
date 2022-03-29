@@ -80,8 +80,31 @@ function(add_mayaUsdLibUtils_test TARGET_NAME)
         PRIVATE 
             GTest::GTest
             mayaUsdUtils
+            ${MAYA_LIBRARIES}
             mayaUsd
     )
+
+    # handle run-time search paths
+    if(IS_MACOSX OR IS_LINUX)
+        mayaUsd_init_rpath(rpath ${TARGET_NAME})
+
+        mayaUsd_add_rpath(rpath "../lib")
+        if(BUILD_TESTS)
+            mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+        endif()
+        mayaUsd_add_rpath(rpath "${MAYA_LOCATION}/lib")
+        mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+
+        if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+        elseif(DEFINED PXR_USD_LOCATION)
+            mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+        endif()
+        if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+        endif()
+        mayaUsd_install_rpath(rpath ${TARGET_NAME})
+    endif()
 
     # -----------------------------------------------------------------------------
     # unit tests
