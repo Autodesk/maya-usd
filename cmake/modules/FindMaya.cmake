@@ -11,7 +11,7 @@
 # MAYA_INCLUDE_DIRS   Path to the devkit's include directories
 # MAYA_API_VERSION    Maya version (6-8 digits)
 # MAYA_APP_VERSION    Maya app version (4 digits)
-# MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2)
+# MAYA_LIGHTAPI_VERSION Maya light API version (1 or 2 or 3)
 # MAYA_HAS_DEFAULT_MATERIAL_API Presence of a default material API on MRenderItem.
 # MAYA_NEW_POINT_SNAPPING_SUPPORT Presence of point new snapping support.
 # MAYA_PREVIEW_RELEASE_VERSION Preview Release number (3 or more digits) in preview releases, 0 in official releases
@@ -346,6 +346,12 @@ if (MAYA_OGSDEVICES_LIBRARY)
     file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_2 REGEX "ConnectColorInFragments")
     if (HAS_LIGHTAPI_2)
         set(MAYA_LIGHTAPI_VERSION 2)
+    endif()
+    # In some future Maya updates, there might also be a function to get the ambient light, very
+    # useful to implement flat shading.
+    file(STRINGS ${MAYA_OGSDEVICES_LIBRARY} HAS_LIGHTAPI_3 REGEX "AddAmbientLight")
+    if (HAS_LIGHTAPI_3)
+        set(MAYA_LIGHTAPI_VERSION 3)
     endif()
 endif()
 message(STATUS "Using Maya Light API Version ${MAYA_LIGHTAPI_VERSION}")

@@ -22,7 +22,7 @@ Maya provides fragment entry points for environment lighting. The lighting graph
 
 ### Superior environmental lighting
 
-Recent versions of Maya provide a new shader lighting API. Enabling the API in MaterialX requires calling `MaterialX::OgsXmlGenerator::setUseLightAPIV2(true);` before translating your MaterialX document.
+Recent versions of Maya provide a new shader lighting API. Enabling the API in MaterialX requires calling `MaterialX::OgsXmlGenerator::setUseLightAPI(2);` before translating your MaterialX document.
 
 The version 2 API relies on Maya injecting the following 5 functions into the shader code at compile time:
 
@@ -51,3 +51,27 @@ Converts a normalized surface roughness value into a phongExponent compatible wi
 `roughness` -> \[0, 1\] Roughness of the surface
 
 The OgsXml generator will fully use these function to provide improved illumination.
+
+### FIS environment lighting
+
+Even more recent versions of Maya provide LOD sampling APIs in a version 3 of the light API. Enabling the API in MaterialX requires calling `MaterialX::OgsXmlGenerator::setUseLightAPI(3);` before translating your MaterialX document.
+
+Added functions include:
+
+`float3 mayaGetAmbientLight()`\
+Returns the color of the global ambient light. Also used for flat lighting
+
+`float3 mayaGetSpecularEnvironmentLOD(float3 Ld, float lod)`\
+Returns a specular environment sample at a specified level of detail\
+`Ld` -> light direction\
+`lod` -> the level of detail to query on the texture
+
+`int mayaGetSpecularEnvironmentNumLOD()`\
+Returns the number of level of detail available on the current specular texture
+
+For more information about FIS lighting, see the articles referenced in the MaterialX shading code:
+
+* [Real-time Shading with Filtered Importance Sampling](http://cgg.mff.cuni.cz/~jaroslav/papers/2008-egsr-fis/2008-egsr-fis-final-embedded.pdf) by J. Krivanek and M Colbert
+* [Chapter 20. GPU-Based Importance Sampling](https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch20.html) from GPU Gems 3
+* [Real Shading in Unreal Engine 4](https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf) by B Karis
+

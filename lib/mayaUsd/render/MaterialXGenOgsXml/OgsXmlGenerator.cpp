@@ -509,9 +509,9 @@ string OgsXmlGenerator::generateLightRig(
     return stream.str();
 }
 
-bool OgsXmlGenerator::sUseLightAPIV2 = false;
+int OgsXmlGenerator::sUseLightAPI = 1;
 
-bool OgsXmlGenerator::useLightAPIV2() { return sUseLightAPIV2; }
-void OgsXmlGenerator::setUseLightAPIV2(bool val) { sUseLightAPIV2 = val; }
+int OgsXmlGenerator::useLightAPI() { return sUseLightAPI; }
+void OgsXmlGenerator::setUseLightAPI(int val) { sUseLightAPI = val; }
 
 MATERIALX_NAMESPACE_END

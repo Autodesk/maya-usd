@@ -63,7 +63,7 @@ GlslFragmentGenerator::GlslFragmentGenerator()
     _tokenSubstitutions[HW::T_BITANGENT_OBJECT] = "Bm";
     _tokenSubstitutions[HW::T_VERTEX_DATA_INSTANCE]
         = "g_mxVertexData"; // name of a global non-const variable
-    if (OgsXmlGenerator::useLightAPIV2()) {
+    if (OgsXmlGenerator::useLightAPI() >= 2) {
         // Use a Maya 2022.1-aware surface node implementation.
         registerImplementation(
             "IM_surface_" + GlslShaderGenerator::TARGET, SurfaceNodeMaya::create);
@@ -89,7 +89,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
     ShaderStage& pixelStage = shader->getStage(Stage::PIXEL);
 
     // Add uniforms for environment lighting.
-    if (requiresLighting(graph) && !OgsXmlGenerator::useLightAPIV2()) {
+    if (requiresLighting(graph) && OgsXmlGenerator::useLightAPI() < 2) {
         VariableBlock& psPrivateUniforms = pixelStage.getUniformBlock(HW::PUBLIC_UNIFORMS);
         psPrivateUniforms.add(
             Type::COLOR3, LIGHT_LOOP_RESULT, Value::createValue(Color3(0.0f, 0.0f, 0.0f)));
@@ -170,9 +170,14 @@ ShaderPtr GlslFragmentGenerator::generate(
     emitLineBreak(pixelStage);
 
     if (lighting) {
-        if (OgsXmlGenerator::useLightAPIV2()) {
+        switch (OgsXmlGenerator::useLightAPI()) {
+            case 3:
+            emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
+            break;
+            case 2:
             emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
-        } else {
+            break;
+            default:
             emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
         }
     }
@@ -279,7 +284,7 @@ ShaderPtr GlslFragmentGenerator::generate(
             emitLineEnd(pixelStage, true);
         }
 
-        if (lighting && !OgsXmlGenerator::useLightAPIV2()) {
+        if (lighting && OgsXmlGenerator::useLightAPI() < 2) {
             // Store environment samples from light rig:
             emitLine(
                 "g_" + MAYA_ENV_IRRADIANCE_SAMPLE + " = " + MAYA_ENV_IRRADIANCE_SAMPLE, pixelStage);

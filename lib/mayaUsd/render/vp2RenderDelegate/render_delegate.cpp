@@ -852,7 +852,12 @@ TfToken HdVP2RenderDelegate::GetMaterialBindingPurpose() const { return HdTokens
 TfTokenVector HdVP2RenderDelegate::GetShaderSourceTypes() const
 {
 #ifdef WANT_MATERIALX_BUILD
-    return { HdVP2Tokens->mtlx, HdVP2Tokens->glslfx };
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (theRenderer && theRenderer->drawAPI() == MHWRender::kOpenGLCoreProfile ) {
+        return { HdVP2Tokens->mtlx, HdVP2Tokens->glslfx };
+    } else {
+        return { HdVP2Tokens->glslfx };
+    }
 #else
     return { HdVP2Tokens->glslfx };
 #endif
@@ -863,7 +868,12 @@ TfTokenVector HdVP2RenderDelegate::GetShaderSourceTypes() const
 TfToken HdVP2RenderDelegate::GetMaterialNetworkSelector() const
 {
 #ifdef WANT_MATERIALX_BUILD
-    return HdVP2Tokens->mtlx;
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (theRenderer && theRenderer->drawAPI() == MHWRender::kOpenGLCoreProfile ) {
+        return HdVP2Tokens->mtlx;
+    } else {
+        return HdVP2Tokens->glslfx;
+    }
 #else
     return HdVP2Tokens->glslfx;
 #endif
@@ -874,7 +884,12 @@ TfToken HdVP2RenderDelegate::GetMaterialNetworkSelector() const
 TfTokenVector HdVP2RenderDelegate::GetMaterialRenderContexts() const
 {
 #ifdef WANT_MATERIALX_BUILD
-    return { HdVP2Tokens->mtlx, HdVP2Tokens->glslfx };
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (theRenderer && theRenderer->drawAPI() == MHWRender::kOpenGLCoreProfile ) {
+        return { HdVP2Tokens->mtlx, HdVP2Tokens->glslfx };
+    } else {
+        return { HdVP2Tokens->glslfx };
+    }
 #else
     return { HdVP2Tokens->glslfx };
 #endif

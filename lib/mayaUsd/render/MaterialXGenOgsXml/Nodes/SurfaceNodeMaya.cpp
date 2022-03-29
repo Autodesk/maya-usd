@@ -43,6 +43,47 @@ void SurfaceNodeMaya::emitLightLoop(
     const ShaderNode*  bsdf = bsdfInput->getConnectedSibling();
 
     shadergen.emitComment("Light loop", stage);
+
+#if MAYA_LIGHTAPI_VERSION_2 == 3
+    // MayaUSD issue #2121: Flat lighting not used in Maya 2022.3
+    //
+    // MaterialX has no concept of flat lighting or ambient lights, so we must find something that
+    // looks like a diffuse node and see what color it has.
+    auto getParam = [](ShaderInput* in) -> std::string {
+        if (!in->getConnection() && in->getValue()) {
+            return in->getValue()->getValueString();
+        } else if (in->getConnection()) {
+            return in->getConnection()->getVariable();
+        } else {
+            return {};
+        }
+    };
+
+    ShaderInput* ncBsdfInput = const_cast<ShaderInput*>(bsdfInput);
+    for (ShaderGraphEdge edge : ShaderGraph::traverseUpstream(ncBsdfInput->getConnection())) {
+        const std::string& implName = edge.upstream->getNode()->getImplementation().getName();
+        if (implName == "IM_oren_nayar_diffuse_bsdf_genglsl"
+            || implName == "IM_burley_diffuse_bsdf_genglsl") {
+            // Found a diffuse base which could potentially support ambient lighting:
+            ShaderInput* weightInput = edge.upstream->getNode()->getInput("weight");
+            ShaderInput* colorInput = edge.upstream->getNode()->getInput("color");
+            if (!weightInput || !colorInput) {
+                continue;
+            }
+            // Are they connected to something that either provides a variable name or a value?
+            std::string weightParam = getParam(weightInput);
+            std::string colorParam = getParam(colorInput);
+            if (weightParam.empty() || colorParam.empty()) {
+                continue;
+            }
+            shadergen.emitLine(
+                outColor + " = mayaGetAmbientLight() * " + weightParam + " * " + colorParam, stage);
+            // Stop after the first diffuse node found...
+            break;
+        }
+    }
+#endif
+
     shadergen.emitLine("int numLights = mayaGetNumLights()", stage);
     shadergen.emitLine("irradiance lightShader", stage);
     shadergen.emitLine(
