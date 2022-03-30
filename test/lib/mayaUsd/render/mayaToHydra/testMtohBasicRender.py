@@ -60,9 +60,9 @@ class TestHdMayaRender(mtohUtils.MtohTestCase):
             imageVersion = 'lambertDefaultMaterial'
 
         self.makeCubeScene(camDist=6)
-        self.assertSnapshotClose("cube_unselected.png", imageVersion)
+        self.assertSnapshotClose("cube_unselected.png", imageVersion, 0.0002)
         cmds.select(self.cubeTrans)
-        self.assertSnapshotClose("cube_selected.png", imageVersion)
+        self.assertSnapshotClose("cube_selected.png", imageVersion, 0.0002)
 
 
 if __name__ == '__main__':
