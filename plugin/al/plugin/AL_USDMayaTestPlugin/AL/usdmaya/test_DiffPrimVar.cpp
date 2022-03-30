@@ -1174,10 +1174,10 @@ TEST(DiffPrimVar, guessUVInterpolationTypeExtensive)
 
 TEST(DiffPrimVar, guessColourSetInterpolationType)
 {
+    size_t      numElements = 31;
     MColorArray rgba;
-    size_t      numElements = 24;
     rgba.setLength(numElements);
-    for (int i = 0; i < numElements; ++i) {
+    for (int i = 0; i < (int)numElements; ++i) {
         rgba[i].r = 0.f;
         rgba[i].g = 0.f;
         rgba[i].b = 0.f;
@@ -1193,7 +1193,12 @@ TEST(DiffPrimVar, guessColourSetInterpolationType)
 
     // we should get a face varying description back for per-vertex data
     {
-        rgba[8].r = 0.2f;
+        rgba[0].r = 0.2f;
+        rgba[0].g = 0.7f;
+        rgba[15].r = 0.2f;
+        rgba[15].g = 0.7f;
+        rgba[21].r = 0.2f;
+        rgba[21].g = 0.7f;
 
         TfToken token
             = AL::usdmaya::utils::guessColourSetInterpolationType(&rgba[0].r, numElements);
@@ -1212,7 +1217,7 @@ TEST(DiffPrimVar, guessColourSetInterpolationType)
     // we should get a face varying description back for uniform data
     {
         // Set the colours to per-face values
-        for (int i = 0, face = 0; i < numElements; ++i, (i % 4) ? 0 : ++face) {
+        for (int i = 0, face = 0; i < (int)numElements; ++i, (i % 4) ? 0 : ++face) {
             rgba[i] = 0.1f * face;
         }
 
@@ -1224,28 +1229,58 @@ TEST(DiffPrimVar, guessColourSetInterpolationType)
 
 TEST(DiffPrimVar, guessColourSetInterpolationTypeExtensive)
 {
-    MColorArray rgba;
-    size_t      numElements = 24;
-    size_t      numPoints = 8;
+    size_t                numPoints = 10;
+    size_t                numElements = 31;
+    std::vector<uint32_t> indicesToExtract;
+    MIntArray             indices;
+    MColorArray           rgba;
+    indices.append(0);
+    indices.append(1);
+    indices.append(3);
+    indices.append(2);
+    indices.append(2);
+    indices.append(3);
+    indices.append(5);
+    indices.append(4);
+    indices.append(4);
+    indices.append(5);
+    indices.append(7);
+    indices.append(6);
+    indices.append(6);
+    indices.append(7);
+    indices.append(1);
+    indices.append(0);
+    indices.append(1);
+    indices.append(7);
+    indices.append(5);
+    indices.append(3);
+    indices.append(6);
+    indices.append(0);
+    indices.append(2);
+    indices.append(4);
+    indices.append(8);
+    indices.append(9);
+    indices.append(8);
+    indices.append(9);
+    indices.append(8);
+    indices.append(9);
+    indices.append(1);
     rgba.setLength(numElements);
-    for (int i = 0; i < numElements; ++i) {
+    for (int i = 0; i < (int)numElements; ++i) {
         rgba[i].r = 0.f;
         rgba[i].g = 0.f;
         rgba[i].b = 0.f;
         rgba[i].a = 1.f;
     }
-    MIntArray indices;
-    for (int i = 0; i < numElements; ++i) {
-        indices.append(i % numPoints);
-    }
-    std::vector<uint32_t> indicesToExtract;
-    MIntArray             faceCounts;
+    MIntArray faceCounts;
     faceCounts.append(4);
     faceCounts.append(4);
     faceCounts.append(4);
     faceCounts.append(4);
     faceCounts.append(4);
     faceCounts.append(4);
+    faceCounts.append(4);
+    faceCounts.append(3);
 
     // we should get a constant value back for constant data
     {
@@ -1258,10 +1293,10 @@ TEST(DiffPrimVar, guessColourSetInterpolationTypeExtensive)
     {
         rgba[0].r = 0.2f;
         rgba[0].g = 0.7f;
-        rgba[8].r = 0.2f;
-        rgba[8].g = 0.7f;
-        rgba[16].r = 0.2f;
-        rgba[16].g = 0.7f;
+        rgba[15].r = 0.2f;
+        rgba[15].g = 0.7f;
+        rgba[21].r = 0.2f;
+        rgba[21].g = 0.7f;
 
         TfToken token = AL::usdmaya::utils::guessColourSetInterpolationTypeExtensive(
             &rgba[0].r, numElements, numPoints, indices, faceCounts, indicesToExtract);
@@ -1287,7 +1322,7 @@ TEST(DiffPrimVar, guessColourSetInterpolationTypeExtensive)
         pointindices[9] = 19;
 
         // Set the colours to per-face values
-        for (int i = 0, face = 0; i < numElements; ++i, (i % 4) ? 0 : ++face) {
+        for (int i = 0, face = 0; i < (int)numElements; ++i, (i % 4) ? 0 : ++face) {
             rgba[i] = 0.1f * face;
         }
 
