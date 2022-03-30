@@ -43,6 +43,9 @@
 #include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
+#endif
 #include <mayaUsd/utils/editRouter.h>
 
 #include <maya/MSceneMessage.h>
@@ -192,6 +195,9 @@ MStatus initialize()
     auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(
         kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler);
+#endif
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 #endif
 
 #if !defined(NDEBUG)

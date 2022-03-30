@@ -45,6 +45,11 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testUngroupCmd.py
     )
+    if(CMAKE_WANT_MATERIALX_BUILD)
+        list(APPEND TEST_SCRIPT_FILES
+            testShaderNodeDef.py
+        )
+    endif()
 endif()
 
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
