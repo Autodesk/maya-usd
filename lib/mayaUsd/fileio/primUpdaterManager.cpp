@@ -134,6 +134,36 @@ SdfPath makeDstPath(const SdfPath& dstRootParentPath, const SdfPath& srcPath)
 
 //------------------------------------------------------------------------------
 //
+// Verify if the given prim under the given UFE path is already edited or
+// is an ancestor of an already edited prim.
+bool isAlreadyEditedAsMaya(const Ufe::Path& ufePulledPath)
+{
+    MObject pullSetObj;
+    auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    MFnSet         fnPullSet(pullSetObj);
+    MSelectionList members;
+    const bool     flatten = true;
+    fnPullSet.getMembers(members, flatten);
+
+    for (unsigned int i = 0; i < members.length(); ++i) {
+        MDagPath itemPath;
+        members.getDagPath(i, itemPath);
+        Ufe::Path itemUfePath;
+        if (!PrimUpdaterManager::readPullInformation(itemPath, itemUfePath))
+            continue;
+
+        if (ufePulledPath.startsWith(itemUfePath) || itemUfePath.startsWith(ufePulledPath))
+            return true;
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+//
 // The UFE path is to the pulled prim, and the Dag path is the corresponding
 // Maya pulled object.
 bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
@@ -943,6 +973,10 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
 bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
 {
+    // Verify if the prim is already edited or an ancestor of an edited prim.
+    if (isAlreadyEditedAsMaya(path))
+        return false;
+
     // Create a prim updater for the path, and ask it if the prim can be edited
     // as Maya.
     auto prim = MayaUsd::ufe::ufePathToPrim(path);
