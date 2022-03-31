@@ -93,6 +93,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->normalizeNurbs.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kPreserveUVSetNamesFlag,
+        UsdMayaJobExportArgsTokens->preserveUVSetNames.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kExportColorSetsFlag,
         UsdMayaJobExportArgsTokens->exportColorSets.GetText(),
         MSyntax::kBoolean);

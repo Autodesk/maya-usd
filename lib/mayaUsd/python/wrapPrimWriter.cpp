@@ -549,6 +549,7 @@ void wrapJobExportArgs()
         .def_readonly("melPostCallback", &UsdMayaJobExportArgs::melPostCallback)
         .def_readonly("mergeTransformAndShape", &UsdMayaJobExportArgs::mergeTransformAndShape)
         .def_readonly("normalizeNurbs", &UsdMayaJobExportArgs::normalizeNurbs)
+        .def_readonly("preserveUVSetNames", &UsdMayaJobExportArgs::preserveUVSetNames)
         .add_property(
             "parentScope",
             make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))

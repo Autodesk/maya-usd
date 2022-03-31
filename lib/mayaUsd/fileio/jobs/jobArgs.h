@@ -92,6 +92,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (melPostCallback) \
     (mergeTransformAndShape) \
     (normalizeNurbs) \
+    (preserveUVSetNames) \
     (parentScope) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
@@ -200,6 +201,7 @@ struct UsdMayaJobExportArgs
     /// a single node in the output USD.
     const bool mergeTransformAndShape;
     const bool normalizeNurbs;
+    const bool preserveUVSetNames;
     const bool stripNamespaces;
 
     /// This is the path of the USD prim under which *all* prims will be

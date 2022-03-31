@@ -153,6 +153,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-materialsScopeName`            | `-msn`     | string           | `Looks`             | Materials Scope Name |
 | `-mergeTransformAndShape`        | `-mt`      | bool             | true                | Combine Maya transform and shape into a single USD prim that has transform and geometry, for all "geometric primitives" (gprims). This results in smaller and faster scenes. Gprims will be "unpacked" back into transform and shape nodes when imported into Maya from USD. |
 | `-normalizeNurbs`                | `-nnu`     | bool             | false               | When setm the UV coordinates of nurbs are normalized to be between zero and one. |
+| `-preserveUVSetNames`            | `-puv`     | bool             | false               | Refrain from renaming UV sets additional to "map1" to "st1", "st2", etc; "map1" will always be renamed to "st". |
 | `-pythonPerFrameCallback`        | `-pfc`     | string           | none                | Python function called after each frame is exported |
 | `-pythonPostCallback`            | `-ppc`     | string           | none                | Python function called when the export is done |
 | `-parentScope`                   | `-psc`     | string           | none                | Name of the USD scope that is the parent of the exported data |

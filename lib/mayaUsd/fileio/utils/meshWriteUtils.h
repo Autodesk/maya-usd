@@ -149,7 +149,8 @@ bool writeUVSetsAsVec2fPrimvars(
     const MFnMesh&             meshFn,
     UsdGeomMesh&               primSchema,
     const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter);
+    UsdUtilsSparseValueWriter* valueWriter,
+    bool                       preserveSetNames);
 
 MAYAUSD_CORE_PUBLIC
 void writeSubdivInterpBound(
