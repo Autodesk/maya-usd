@@ -1722,6 +1722,20 @@ HdVP2Material::~HdVP2Material()
 {
     // Tell pending tasks or running tasks (if any) to terminate
     ClearPendingTasks();
+
+    // USD `UsdImagingDelegate::ApplyPendingUpdates()` would request to
+    // remove the material then recreate, this is causing texture disappearing
+    // when user manipulating a prim (while holding mouse buttion).
+    // We hold a copy of the texture info reference, so that the texture will not
+    // get released immediately along with material removal.
+    // If the textures would have been requested to reload in `ApplyPendingUpdates()`,
+    // we could still reuse the loaded one from cache, otherwise the idle task can
+    // safely release the texture.
+    if (!_IsDisabledAsyncTextureLoading()) {
+        MGlobal::executeTaskOnIdle(
+            [](void* data) { delete static_cast<HdVP2LocalTextureMap*>(data); },
+            new HdVP2LocalTextureMap(_localTextureMap.begin(), _localTextureMap.end()));
+    }
 }
 
 /*! \brief  Synchronize VP2 state with scene delegate state based on dirty bits
