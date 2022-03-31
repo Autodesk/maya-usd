@@ -2518,7 +2518,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                     TF_VERIFY(result == MStatus::kSuccess);
                 }
 
-                if (stateToCommit._instanceColors->length() > 0) {
+                if (stateToCommit._instanceColors && stateToCommit._instanceColors->length() > 0) {
                     TF_VERIFY(
                         newInstanceCount * kNumColorChannels
                         == stateToCommit._instanceColors->length());
