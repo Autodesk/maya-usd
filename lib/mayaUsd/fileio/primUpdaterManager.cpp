@@ -134,9 +134,8 @@ SdfPath makeDstPath(const SdfPath& dstRootParentPath, const SdfPath& srcPath)
 
 //------------------------------------------------------------------------------
 //
-// Verify if the given prim under the given UFE path is already edited or
-// is an ancestor of an already edited prim.
-bool isAlreadyEditedAsMaya(const Ufe::Path& ufePulledPath)
+// Verify if the given prim under the given UFE path is an ancestor of an already edited prim.
+bool hasEditedDescendant(const Ufe::Path& ufeQueryPath)
 {
     MObject pullSetObj;
     auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
@@ -149,13 +148,13 @@ bool isAlreadyEditedAsMaya(const Ufe::Path& ufePulledPath)
     fnPullSet.getMembers(members, flatten);
 
     for (unsigned int i = 0; i < members.length(); ++i) {
-        MDagPath itemPath;
-        members.getDagPath(i, itemPath);
-        Ufe::Path itemUfePath;
-        if (!PrimUpdaterManager::readPullInformation(itemPath, itemUfePath))
+        MDagPath pulledDagPath;
+        members.getDagPath(i, pulledDagPath);
+        Ufe::Path pulledUfePath;
+        if (!PrimUpdaterManager::readPullInformation(pulledDagPath, pulledUfePath))
             continue;
 
-        if (ufePulledPath.startsWith(itemUfePath) || itemUfePath.startsWith(ufePulledPath))
+        if (pulledUfePath.startsWith(ufeQueryPath))
             return true;
     }
 
@@ -912,6 +911,11 @@ bool PrimUpdaterManager::mergeToUsd(
 
 bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& userArgs)
 {
+    if (hasEditedDescendant(path)) {
+        TF_WARN("Cannot edit an ancestor of an already edited node.");
+        return false;
+    }
+
     MayaUsdProxyShapeBase* proxyShape = MayaUsd::ufe::getProxyShape(path);
     if (!proxyShape) {
         return false;
@@ -973,8 +977,8 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
 bool PrimUpdaterManager::canEditAsMaya(const Ufe::Path& path) const
 {
-    // Verify if the prim is already edited or an ancestor of an edited prim.
-    if (isAlreadyEditedAsMaya(path))
+    // Verify if the prim is an ancestor of an edited prim.
+    if (hasEditedDescendant(path))
         return false;
 
     // Create a prim updater for the path, and ask it if the prim can be edited
