@@ -1731,10 +1731,24 @@ HdVP2Material::~HdVP2Material()
     // If the textures would have been requested to reload in `ApplyPendingUpdates()`,
     // we could still reuse the loaded one from cache, otherwise the idle task can
     // safely release the texture.
-    if (!_IsDisabledAsyncTextureLoading()) {
-        MGlobal::executeTaskOnIdle(
-            [](void* data) { delete static_cast<HdVP2LocalTextureMap*>(data); },
-            new HdVP2LocalTextureMap(_localTextureMap.begin(), _localTextureMap.end()));
+    static std::unordered_set<HdVP2TextureInfoSharedPtr> pendingRemovalTextures;
+    static std::mutex                                    removalTaskMutex;
+
+    if (!_IsDisabledAsyncTextureLoading() && !_localTextureMap.empty()) {
+        // Locking to avoid race condition for insertion to pendingRemovalTextures
+        std::lock_guard<std::mutex> lock(removalTaskMutex);
+
+        // Avoid creating multiple idle tasks if there is already one
+        bool hasRemovalTask = !pendingRemovalTextures.empty();
+        for (const auto& info : _localTextureMap) {
+            pendingRemovalTextures.emplace(info.second);
+        }
+
+        if (!hasRemovalTask) {
+            // Note that we do not need locking inside idle task since it will
+            // only be executed serially.
+            MGlobal::executeTaskOnIdle([](void* data) { pendingRemovalTextures.clear(); });
+        }
     }
 }
 
