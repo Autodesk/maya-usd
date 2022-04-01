@@ -16,11 +16,15 @@
 #pragma once
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/Utils.h>
 
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/attribute.h>
+#include <ufe/attributeDef.h>
+#include <ufe/value.h>
 
 // Ufe::Attribute overrides (minus the type method)
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -67,11 +71,72 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+class AttrHandle
+{
+public:
+    using Ptr = std::shared_ptr<AttrHandle>;
+
+    AttrHandle(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdAttribute& usdAttr);
+
+    virtual ~AttrHandle() = default;
+
+    virtual bool hasValue() const { return fUsdAttr.HasValue(); }
+
+    virtual bool isEditAllowed(std::string& errMsg) const;
+
+    virtual std::string name() const { return fUsdAttr.GetName().GetString(); }
+    virtual std::string documentation() const { return fUsdAttr.GetDocumentation(); }
+    virtual std::string typeName() const { return fUsdAttr.GetTypeName().GetType().GetTypeName(); }
+
+    virtual bool get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const;
+    virtual bool set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
+
+    virtual Ufe::Value getMetadata(const std::string& key) const;
+    virtual bool setMetadata(const std::string& key, const Ufe::Value& value);
+    virtual bool clearMetadata(const std::string& key);
+    virtual bool hasMetadata(const std::string& key) const;
+
+    const PXR_NS::UsdPrim&      usdPrim() const { return fPrim; }
+    const PXR_NS::UsdAttribute& usdAttribute() const { return fUsdAttr; }
+
+protected:
+    AttrHandle(const PXR_NS::UsdPrim& prim);
+
+    PXR_NS::UsdPrim      fPrim;
+    PXR_NS::UsdAttribute fUsdAttr;
+};
+
+class AttrDefHandle : public AttrHandle
+{
+public:
+    AttrDefHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::Ptr& attrDef);
+
+    bool isAuthored() const { return fUsdAttr.IsValid(); }
+    bool hasValue() const final;
+
+    bool isEditAllowed(std::string& errMsg) const final { return true; }
+
+    std::string name() const final { return fAttrDef->name(); }
+    std::string documentation() const final { return ""; }
+    std::string typeName() const final { return fAttrDef->type(); }
+
+    bool get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const final;
+    bool set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) final;
+
+    Ufe::Value getMetadata(const std::string& key) const final;
+    bool setMetadata(const std::string& key, const Ufe::Value& value) final;
+    bool clearMetadata(const std::string& key) final;
+    bool hasMetadata(const std::string& key) const final;
+
+private:
+    const Ufe::AttributeDef::Ptr fAttrDef;
+};
+
 //! \brief Internal helper class to implement the pure virtual methods from Ufe::Attribute.
 class UsdAttribute
 {
 public:
-    UsdAttribute(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    UsdAttribute(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
     ~UsdAttribute();
 
     // Ufe::Attribute override methods that we've mimic'd here.
@@ -88,8 +153,8 @@ public:
 #endif
 
 protected:
-    PXR_NS::UsdPrim      fPrim;
-    PXR_NS::UsdAttribute fUsdAttr;
+    PXR_NS::UsdPrim fPrim;
+    AttrHandle::Ptr fAttrHandle;
 }; // UsdAttribute
 
 //! \brief Interface for USD attributes which don't match any defined type.
@@ -100,11 +165,11 @@ class UsdAttributeGeneric
 public:
     typedef std::shared_ptr<UsdAttributeGeneric> Ptr;
 
-    UsdAttributeGeneric(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    UsdAttributeGeneric(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 
     //! Create a UsdAttributeGeneric.
     static UsdAttributeGeneric::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
@@ -121,11 +186,11 @@ class UsdAttributeEnumString
 public:
     typedef std::shared_ptr<UsdAttributeEnumString> Ptr;
 
-    UsdAttributeEnumString(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    UsdAttributeEnumString(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 
     //! Create a UsdAttributeEnumString.
     static UsdAttributeEnumString::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
@@ -144,7 +209,7 @@ class TypedUsdAttribute
     , private UsdAttribute
 {
 public:
-    TypedUsdAttribute(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    TypedUsdAttribute(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
@@ -165,7 +230,7 @@ public:
 
     //! Create a UsdAttributeBool.
     static UsdAttributeBool::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeBool
 
 //! \brief Interface for USD int attributes.
@@ -178,7 +243,7 @@ public:
 
     //! Create a UsdAttributeInt.
     static UsdAttributeInt::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeInt
 
 //! \brief Interface for USD float attributes.
@@ -191,7 +256,7 @@ public:
 
     //! Create a UsdAttributeFloat.
     static UsdAttributeFloat::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeFloat
 
 //! \brief Interface for USD double attributes.
@@ -204,7 +269,7 @@ public:
 
     //! Create a UsdAttributeDouble.
     static UsdAttributeDouble::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeDouble
 
 //! \brief Interface for USD string/token attributes.
@@ -217,7 +282,7 @@ public:
 
     //! Create a UsdAttributeString.
     static UsdAttributeString::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeString
 
 //! \brief Interface for USD RGB color (float) attributes.
@@ -230,7 +295,7 @@ public:
 
     //! Create a UsdAttributeColorFloat3.
     static UsdAttributeColorFloat3::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeColorFloat3
 
 //! \brief Interface for USD Vector3i (int) attributes.
@@ -243,7 +308,7 @@ public:
 
     //! Create a UsdAttributeInt3.
     static UsdAttributeInt3::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeInt3
 
 //! \brief Interface for USD Vector3f (float) attributes.
@@ -256,7 +321,7 @@ public:
 
     //! Create a UsdAttributeFloat3.
     static UsdAttributeFloat3::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeFloat3
 
 //! \brief Interface for USD Vector3d (double) attributes.
@@ -269,7 +334,7 @@ public:
 
     //! Create a UsdAttributeDouble3.
     static UsdAttributeDouble3::Ptr
-    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+    create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
 }; // UsdAttributeDouble3
 
 } // namespace ufe
