@@ -705,7 +705,8 @@ void ProxyShape::removeUsdTransformChain(
                     //       the workaround here is to delete the node with MGlobal instead.
                     if (MGlobal::deleteNode(object) != MStatus::kSuccess) {
                         MString err;
-                        err.format("Failed to delete Maya node for prim path ^1s.", parentPrim.GetText());
+                        err.format(
+                            "Failed to delete Maya node for prim path ^1s.", parentPrim.GetText());
                         MGlobal::displayError(err);
                     }
                 }
