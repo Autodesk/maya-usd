@@ -641,7 +641,10 @@ bool UsdMayaMeshWriteUtils::isMeshValid(const MDagPath& dagPath)
     return true;
 }
 
-void UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
+void UsdMayaMeshWriteUtils::exportReferenceMesh(
+    UsdGeomMesh& primSchema,
+    MObject      obj,
+    bool         defaultToMesh)
 {
     MStatus status { MS::kSuccess };
 
@@ -656,12 +659,17 @@ void UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject
     }
 
     MPlugArray conns;
+    MObject    referenceObject;
     referencePlug.connectedTo(conns, true, false);
-    if (conns.length() == 0) {
+    if (conns.length() > 0) {
+        referenceObject = conns[0].node();
+    } else if (defaultToMesh) {
+        // Try use the mesh itself as reference
+        referenceObject = obj;
+    } else {
         return;
     }
 
-    MObject referenceObject = conns[0].node();
     if (!referenceObject.hasFn(MFn::kMesh)) {
         return;
     }
@@ -677,7 +685,7 @@ void UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject
     VtVec3fArray   points(mayaRawVec3, mayaRawVec3 + numVertices);
 
     UsdGeomPrimvar primVar = primSchema.CreatePrimvar(
-        UsdUtilsGetPrefName(), SdfValueTypeNames->Point3fArray, UsdGeomTokens->varying);
+        UsdUtilsGetPrefName(), SdfValueTypeNames->Point3fArray, UsdGeomTokens->vertex);
 
     if (!primVar) {
         return;

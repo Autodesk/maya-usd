@@ -45,6 +45,45 @@ from testUtils import assertVectorAlmostEqual, getTestScene
 
 import os
 
+def createMayaRefPrimSiblingCache(testCase, cacheParent, cacheParentPathStr):
+    '''Create a Maya reference prim for the sibling cache test case.'''
+    testCase.assertFalse(cacheParent.HasVariantSets())
+    mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+        cacheParentPathStr, testCase.mayaSceneStr, testCase.kDefaultNamespace)
+
+    # The sibling cache is a new child of its parent, thus the parent has no
+    # variant data.
+    return (mayaRefPrim, None, None, None)
+
+def checkSiblingCacheParent(testCase, cacheParentChildren, vs, vn):
+    '''Verify the cache parent after caching in the sibling cache test case.'''
+    # After caching the cache parent has the original child and its sibling
+    # cache.
+    testCase.assertTrue(len(cacheParentChildren), 2)
+
+def createMayaRefPrimVariantCache(testCase, cacheParent, cacheParentPathStr):
+    '''Create a Maya reference prim for the variant cache test case.'''
+    # Add a variant set to the cache parent.
+    variantSetName = 'animation'
+    variantSet = cacheParent.GetVariantSets().AddVariantSet(variantSetName)
+
+    # Add a rig variant to the variant set.
+    variantSet.AddVariant('Rig')
+
+    # Author a Maya reference prim to the rig variant.
+    with variantSet.GetVariantEditContext():
+        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            cacheParentPathStr, testCase.mayaSceneStr, testCase.kDefaultNamespace)
+
+    return (mayaRefPrim, variantSetName, variantSet, 'Cache')
+
+def checkVariantCacheParent(testCase, cacheParentChildren, variantSet, cacheVariantName):
+    '''Verify the cache parent after caching in the variant cache test case.'''
+    # The variant set in the cache parent now has the cache variant
+    # selected, and its only child is called the cache prim name.
+    testCase.assertEqual(variantSet.GetVariantSelection(), cacheVariantName)
+    testCase.assertTrue(len(cacheParentChildren), 1)
+
 class CacheToUsdTestCase(unittest.TestCase):
     '''Test cache to USD: commit edits done to a Maya reference back into USD.
     '''
@@ -69,8 +108,8 @@ class CacheToUsdTestCase(unittest.TestCase):
         self.proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
 
-    def testCacheToUsd(self):
-        '''Cache edits on a pulled Maya reference prim back to USD.'''
+    def runTestCacheToUsd(self, createMayaRefPrimFn, checkCacheParentFn):
+        '''Cache edits on a pulled Maya reference prim test engine.'''
 
         # Create a Maya reference prim using the defaults, under a
         # newly-created parent, without any variant sets.
@@ -78,8 +117,8 @@ class CacheToUsdTestCase(unittest.TestCase):
         cacheParentPathStr = self.proxyShapePathStr + ',/CacheParent'
         self.assertFalse(cacheParent.HasVariantSets())
 
-        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
-            cacheParentPathStr, self.mayaSceneStr, self.kDefaultNamespace)
+        (mayaRefPrim, variantSetName, variantSet, cacheVariantName) = \
+            createMayaRefPrimFn(self, cacheParent, cacheParentPathStr)
 
         # The Maya reference prim is a child of the cache parent.
         cacheParentItem = createItem(cacheParentPathStr)
@@ -135,15 +174,17 @@ class CacheToUsdTestCase(unittest.TestCase):
         (_, _, _, mayaMatrix) = \
             setMayaTranslation(sphereTransformItem, om.MVector(4, 5, 6))
 
-        # Cache to USD, using a sibling prim and a payload composition arc.
+        # Cache to USD, using a payload composition arc.
         defaultExportOptions = cacheToUsd.getDefaultExportOptions()
         cacheFile = 'testCacheToUsd.usda'
         cachePrimName = 'cachePrimName'
         payloadOrReference = 'Payload'
         listEditType = 'Prepend'
-        cacheOptions = cacheToUsd.getCacheCreationOptions(
+        # In the sibling cache case variantSetName and cacheVariantName will be
+        # None.
+        cacheOptions = cacheToUsd.createCacheCreationOptions(
             defaultExportOptions, cacheFile, cachePrimName,
-            payloadOrReference, listEditType)
+            payloadOrReference, listEditType, variantSetName, cacheVariantName)
 
         # Before caching, the cache file does not exist.
         self.assertFalse(os.path.exists(cacheFile))
@@ -161,7 +202,7 @@ class CacheToUsdTestCase(unittest.TestCase):
         # There is a new child under the cache parent, with the chosen cache
         # prim name.
         cacheParentChildren = cacheParentHier.children()
-        self.assertTrue(len(cacheParentChildren), 2)
+        checkCacheParentFn(self, cacheParentChildren, variantSet, cacheVariantName)
         cacheItem = next((c for c in cacheParentChildren if c.nodeName() == cachePrimName), None)
         self.assertIsNotNone(cacheItem)
 
@@ -194,6 +235,15 @@ class CacheToUsdTestCase(unittest.TestCase):
                 break
 
         self.assertTrue(foundPayload)
+
+        # Clean up
+        os.remove(cacheFile)
+
+    def testCacheToUsdSibling(self):
+        self.runTestCacheToUsd(createMayaRefPrimSiblingCache, checkSiblingCacheParent)
+
+    def testCacheToUsdVariant(self):
+        self.runTestCacheToUsd(createMayaRefPrimVariantCache, checkVariantCacheParent)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

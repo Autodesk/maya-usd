@@ -184,14 +184,48 @@ TF_DEFINE_PRIVATE_TOKENS(
     (uaddressmode)
     (vaddressmode)
     (filtertype)
+    (closest)
+    (cubic)
     (channels)
+    (out)
+    (surfaceshader)
 
     // Texcoord reader identifiers:
+    (texcoord)
     (index)
     (UV0)
     (geompropvalue)
     (ST_reader)
     (vector2)
+
+    // Tangent related identifiers:
+    (tangent)
+    (normalmap)
+    (arbitrarytangents)
+    (texcoordtangents)
+    (Tworld)
+    (Tobject)
+    (Tw_reader)
+    (vector3)
+    (transformvector)
+    (constant)
+    (Tw_to_To)
+    (in)
+    (space)
+    (fromspace)
+    (tospace)
+    (world)
+    (object)
+    (model)
+    (outTworld)
+    (outTobject)
+    (tangent_fix)
+
+    // Basic color-correction:
+    (outColor)
+    (colorSpace)
+    (color3)
+    (color4)
 );
 
 const std::set<std::string> _mtlxTopoNodeSet = {
@@ -218,6 +252,19 @@ const std::set<std::string> _mtlxTopoNodeSet = {
 
 };
 
+// Maps from a known Maya target color space name to the corresponding color correct category.
+const std::unordered_map<std::string, std::string> _mtlxColorCorrectCategoryMap = {
+    { "scene-linear Rec.709-sRGB", "MayaND_sRGBtoLinrec709_" },
+    { "scene-linear Rec 709/sRGB", "MayaND_sRGBtoLinrec709_" },
+    { "ACEScg",                    "MayaND_sRGBtoACEScg_" },
+    { "ACES2065_1",                "MayaND_sRGBtoACES2065_" },
+    { "ACES2065-1",                "MayaND_sRGBtoACES2065_" },
+    { "scene-linear DCI-P3 D65",   "MayaND_sRGBtoLinDCIP3D65_" },
+    { "scene-linear DCI-P3",       "MayaND_sRGBtoLinDCIP3D65_" },
+    { "scene-linear Rec.2020",     "MayaND_sRGBtoLinrec2020_" },
+    { "scene-linear Rec 2020",     "MayaND_sRGBtoLinrec2020_" },
+};
+
 // clang-format on
 
 struct _MaterialXData
@@ -228,9 +275,14 @@ struct _MaterialXData
         _mtlxSearchPath = HdMtlxSearchPaths();
 
         mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
+
+        _FixLibraryTangentInputs(_mtlxLibrary);
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
+
+private:
+    void _FixLibraryTangentInputs(MaterialX::DocumentPtr& mtlxLibrary);
 };
 
 _MaterialXData& _GetMaterialXData()
@@ -401,18 +453,222 @@ MStatus _SetFAParameter(
 // name for UV at index zero.
 void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
 {
-    // We expect only one node graph, but fixing them all is not an issue:
+    mx::NodeGraphPtr nodeGraph = mtlxDoc->getNodeGraph(_mtlxTokens->NG_Maya.GetString());
+    if (!nodeGraph) {
+        return;
+    }
+
+    // This will hold the emergency "ST" reader if one was necessary
+    mx::NodePtr stReader;
+    // Store nodes to delete when loop iteration is complete
+    std::vector<std::string> nodesToDelete;
+
+    for (mx::NodePtr node : nodeGraph->getNodes()) {
+        // Check the inputs of the node for UV0 default geom properties
+        mx::NodeDefPtr nodeDef = node->getNodeDef();
+        // A missing node def is a very bad sign. No need to process further.
+        if (!TF_VERIFY(
+                nodeDef,
+                "Could not find MaterialX NodeDef for Node '%s'. Please recheck library paths.",
+                node->getNamePath().c_str())) {
+            return;
+        }
+        for (mx::InputPtr input : nodeDef->getActiveInputs()) {
+            if (input->hasDefaultGeomPropString()
+                && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
+                // See if the corresponding input is connected on the node:
+                if (node->getConnectedNodeName(input->getName()).empty()) {
+                    // Create emergency ST reader if necessary
+                    if (!stReader) {
+                        stReader = nodeGraph->addNode(
+                            _mtlxTokens->geompropvalue.GetString(),
+                            _mtlxTokens->ST_reader.GetString(),
+                            _mtlxTokens->vector2.GetString());
+                        mx::ValueElementPtr prpInput
+                            = stReader->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
+                        prpInput->setValueString(_tokens->st.GetString());
+                    }
+                    node->addInputFromNodeDef(input->getName());
+                    node->setConnectedNodeName(input->getName(), stReader->getName());
+                }
+            }
+        }
+        // Check if it is an explicit texcoord reader:
+        if (nodeDef->getNodeString() == _mtlxTokens->texcoord.GetString()) {
+            // Switch it with a geompropvalue of the same name:
+            std::string nodeName = node->getName();
+            std::string oldName = nodeName + "_toDelete";
+            node->setName(oldName);
+            nodesToDelete.push_back(oldName);
+            // Find out if there is an explicit stream index:
+            int          streamIndex = 0;
+            mx::InputPtr indexInput = node->getInput(_mtlxTokens->index.GetString());
+            if (indexInput && indexInput->hasValue()) {
+                mx::ValuePtr indexValue = indexInput->getValue();
+                if (indexValue->isA<int>()) {
+                    streamIndex = indexValue->asA<int>();
+                }
+            }
+            // Add replacement geompropvalue node:
+            mx::NodePtr doppelNode = nodeGraph->addNode(
+                _mtlxTokens->geompropvalue.GetString(),
+                nodeName,
+                nodeDef->getOutput(_mtlxTokens->out.GetString())->getType());
+            mx::ValueElementPtr prpInput
+                = doppelNode->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
+            MString primvar = _tokens->st.GetText();
+            if (streamIndex) {
+                // If reading at index > 0 we add the index to the primvar name:
+                primvar += streamIndex;
+            }
+            prpInput->setValueString(primvar.asChar());
+        }
+    }
+    // Delete all obsolete texcoord reader nodes.
+    for (const std::string& deadNode : nodesToDelete) {
+        nodeGraph->removeNode(deadNode);
+    }
+}
+
+// Recursively traverse a node graph, depth first, to find target node
+mx::NodePtr _RecursiveFindNode(const mx::NodePtr& node, const TfToken& target)
+{
+    mx::NodePtr retVal;
+    for (auto const& input : node->getInputs()) {
+        if (mx::NodePtr downstreamNode = input->getConnectedNode()) {
+            if (mx::NodeDefPtr nodeDef = downstreamNode->getNodeDef()) {
+                if (nodeDef->getNodeString() == _mtlxTokens->geompropvalue.GetString()
+                    && downstreamNode->getType() == _mtlxTokens->vector2.GetString()) {
+                    retVal = downstreamNode;
+                    break;
+                }
+            }
+            retVal = _RecursiveFindNode(downstreamNode, target);
+            if (retVal) {
+                break;
+            }
+        }
+    }
+    return retVal;
+}
+
+// We have a few library surface nodes that require tangent inputs, but since the tangent input is
+// not expressed in the interface, we will miss it in the _AddMissingTangents function. This
+// function goes thru the NodeGraphs in the library and fixes the issue by adding the missing input.
+//
+// This is done only once, after the libraries have been read.
+//
+// We voluntarily did not expose a tangent input on the blinn and phong MaterialX nodes in order to
+// test this code, but the real target is UsdPreviewSurface.
+//
+// Note for future self. In some far future, we might start seeing surface shaders that are built
+// from other surface shaders. This might require percolating the tangent interface by re-running
+// the main loop once for each expected nesting level (or until the loop runs without updating any
+// NodeDef).
+void _MaterialXData::_FixLibraryTangentInputs(mx::DocumentPtr& mtlxDoc)
+{
     for (mx::NodeGraphPtr nodeGraph : mtlxDoc->getNodeGraphs()) {
-        if (nodeGraph->hasSourceUri()) {
+        mx::NodeDefPtr graphDef = nodeGraph->getNodeDef();
+        if (!graphDef) {
             continue;
         }
-        // This will hold the emergency "ST" reader if one was necessary
-        mx::NodePtr stReader;
-        // Store nodes to delete when loop iteration is complete
-        std::vector<std::string> nodesToDelete;
+        auto outputs = graphDef->getActiveOutputs();
+        if (outputs.empty()
+            || outputs.front()->getType() != _mtlxTokens->surfaceshader.GetString()) {
+            continue;
+        }
+        bool hasTangentInput = false;
+        for (mx::InputPtr nodeInput : graphDef->getActiveInputs()) {
+            if (nodeInput->hasDefaultGeomPropString()) {
+                const std::string& geom = nodeInput->getDefaultGeomPropString();
+                if (geom == _mtlxTokens->Tworld.GetString()
+                    || geom == _mtlxTokens->Tobject.GetString()) {
+                    hasTangentInput = true;
+                    break;
+                }
+            }
+        }
+        if (hasTangentInput) {
+            continue;
+        }
+
+        mx::InputPtr tangentInput;
 
         for (mx::NodePtr node : nodeGraph->getNodes()) {
-            // Check the inputs of the node for UV0 default geom properties
+            mx::NodeDefPtr nodeDef = node->getNodeDef();
+            if (!nodeDef) {
+                break;
+            }
+
+            // Check the inputs of the node for Tworld and Tobject default geom properties
+            for (mx::InputPtr input : nodeDef->getActiveInputs()) {
+                if (input->hasDefaultGeomPropString()) {
+                    const std::string& geomPropString = input->getDefaultGeomPropString();
+                    if ((geomPropString == _mtlxTokens->Tworld.GetString()
+                         || geomPropString == _mtlxTokens->Tobject.GetString())
+                        && node->getConnectedNodeName(input->getName()).empty()) {
+                        if (!tangentInput) {
+                            tangentInput = graphDef->addInput(
+                                _mtlxTokens->tangent_fix.GetString(),
+                                _mtlxTokens->vector3.GetString());
+                            tangentInput->setDefaultGeomPropString(geomPropString);
+                        }
+                        node->addInputFromNodeDef(input->getName())
+                            ->setInterfaceName(_mtlxTokens->tangent_fix.GetString());
+                    }
+                }
+            }
+        }
+    }
+}
+
+// USD does not provide tangents, so we need to build them from UV coordinates when possible:
+void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
+{
+    // We will need at least one geompropvalue reader to generate tangents:
+    mx::NodePtr stReader;
+
+    // List of all items to fix:
+    using nodeInput = std::pair<mx::NodePtr, std::string>;
+    std::vector<nodeInput>   graphTworldInputs;
+    std::vector<nodeInput>   graphTobjectInputs;
+    std::vector<nodeInput>   materialTworldInputs;
+    std::vector<nodeInput>   materialTobjectInputs;
+    std::vector<mx::NodePtr> nodesToReplace;
+
+    // The materialnode very often will have a tangent input:
+    for (mx::NodePtr material : mtlxDoc->getMaterialNodes()) {
+        if (material->getName() != _mtlxTokens->USD_Mtlx_VP2_Material.GetText()) {
+            continue;
+        }
+        mx::InputPtr surfaceInput = material->getInput(_mtlxTokens->surfaceshader.GetString());
+        if (surfaceInput) {
+            material = surfaceInput->getConnectedNode();
+        }
+        mx::NodeDefPtr nodeDef = material->getNodeDef();
+        for (mx::InputPtr input : nodeDef->getActiveInputs()) {
+            if (input->hasDefaultGeomPropString()) {
+                const std::string& geomPropString = input->getDefaultGeomPropString();
+                if (geomPropString == _mtlxTokens->Tworld.GetString()
+                    && !material->getConnectedOutput(input->getName())) {
+                    materialTworldInputs.emplace_back(material, input->getName());
+                }
+                if (geomPropString == _mtlxTokens->Tobject.GetString()
+                    && !material->getConnectedOutput(input->getName())) {
+                    materialTobjectInputs.emplace_back(material, input->getName());
+                }
+            }
+        }
+    }
+
+    // If we have no nodegraph, but need tangent input on the material node, then we create one:
+    mx::NodeGraphPtr nodeGraph = mtlxDoc->getNodeGraph(_mtlxTokens->NG_Maya.GetString());
+    if (!nodeGraph && (!materialTworldInputs.empty() || !materialTobjectInputs.empty())) {
+        nodeGraph = mtlxDoc->addNodeGraph(_mtlxTokens->NG_Maya.GetString());
+    }
+
+    if (nodeGraph) {
+        for (mx::NodePtr node : nodeGraph->getNodes()) {
             mx::NodeDefPtr nodeDef = node->getNodeDef();
             // A missing node def is a very bad sign. No need to process further.
             if (!TF_VERIFY(
@@ -421,60 +677,160 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
                     node->getNamePath().c_str())) {
                 return;
             }
-            for (mx::InputPtr input : nodeDef->getInputs()) {
-                if (input->hasDefaultGeomPropString()
-                    && input->getDefaultGeomPropString() == _mtlxTokens->UV0.GetString()) {
-                    // See if the corresponding input is connected on the node:
-                    if (node->getConnectedNodeName(input->getName()).empty()) {
-                        // Create emergency ST reader if necessary
-                        if (!stReader) {
-                            stReader = nodeGraph->addNode(
-                                _mtlxTokens->geompropvalue.GetString(),
-                                _mtlxTokens->ST_reader.GetString(),
-                                _mtlxTokens->vector2.GetString());
-                            mx::ValueElementPtr prpInput
-                                = stReader->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
-                            prpInput->setValueString(_tokens->st.GetString());
-                        }
-                        node->addInputFromNodeDef(input->getName());
-                        node->setConnectedNodeName(input->getName(), stReader->getName());
+
+            if (!stReader && nodeDef->getNodeString() == _mtlxTokens->geompropvalue.GetString()
+                && node->getType() == _mtlxTokens->vector2.GetString()) {
+                // Grab the first st reader we can find. This will be the default one used for
+                // tangents unless we find something better.
+                stReader = node;
+                continue;
+            }
+
+            if (nodeDef->getNodeString() == _mtlxTokens->normalmap.GetString()) {
+                // That one is even more important, because the texcoord reader attached to the
+                // image is definitely the one we want for our tangents since it is used for normal
+                // mapping:
+                mx::NodePtr downstreamReader = _RecursiveFindNode(node, _mtlxTokens->geompropvalue);
+                if (downstreamReader) {
+                    stReader = downstreamReader;
+                }
+            }
+
+            // Check the inputs of the node for Tworld and Tobject default geom properties
+            for (mx::InputPtr input : nodeDef->getActiveInputs()) {
+                if (input->hasDefaultGeomPropString()) {
+                    const std::string& geomPropString = input->getDefaultGeomPropString();
+                    if (geomPropString == _mtlxTokens->Tworld.GetString()
+                        && node->getConnectedNodeName(input->getName()).empty()) {
+                        graphTworldInputs.emplace_back(node, input->getName());
+                    }
+                    if (geomPropString == _mtlxTokens->Tobject.GetString()
+                        && node->getConnectedNodeName(input->getName()).empty()) {
+                        graphTobjectInputs.emplace_back(node, input->getName());
                     }
                 }
             }
-            // Check if it is an explicit texcoord reader:
-            if (nodeDef->getNodeString() == "texcoord") {
-                // Switch it with a geompropvalue of the same name:
-                std::string nodeName = node->getName();
-                std::string oldName = nodeName + "_toDelete";
-                node->setName(oldName);
-                nodesToDelete.push_back(oldName);
-                // Find out if there is an explicit stream index:
-                int          streamIndex = 0;
-                mx::InputPtr indexInput = node->getInput(_mtlxTokens->index.GetString());
-                if (indexInput && indexInput->hasValue()) {
-                    mx::ValuePtr indexValue = indexInput->getValue();
-                    if (indexValue->isA<int>()) {
-                        streamIndex = indexValue->asA<int>();
-                    }
-                }
-                // Add replacement geompropvalue node:
-                mx::NodePtr doppelNode = nodeGraph->addNode(
-                    _mtlxTokens->geompropvalue.GetString(),
-                    nodeName,
-                    nodeDef->getOutput("out")->getType());
-                mx::ValueElementPtr prpInput
-                    = doppelNode->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
-                MString primvar = _tokens->st.GetText();
-                if (streamIndex) {
-                    // If reading at index > 0 we add the index to the primvar name:
-                    primvar += streamIndex;
-                }
-                prpInput->setValueString(primvar.asChar());
+            // Check if it is an explicit tangent reader:
+            if (nodeDef->getNodeString() == _mtlxTokens->tangent.GetString()) {
+                nodesToReplace.push_back(node);
             }
         }
-        // Delete all obsolete texcoord reader nodes.
-        for (const std::string& deadNode : nodesToDelete) {
-            nodeGraph->removeNode(deadNode);
+
+        if (nodesToReplace.empty() && graphTworldInputs.empty() && graphTobjectInputs.empty()
+            && materialTworldInputs.empty() && materialTobjectInputs.empty()) {
+            // Nothing to do.
+            return;
+        }
+
+        // Create the tangent generator:
+        mx::NodePtr tangentGenerator;
+        if (stReader) {
+            tangentGenerator = nodeGraph->addNode(
+                _mtlxTokens->texcoordtangents.GetString(),
+                _mtlxTokens->Tw_reader.GetString(),
+                _mtlxTokens->vector3.GetString());
+            tangentGenerator->addInputFromNodeDef(_mtlxTokens->texcoord.GetString());
+            tangentGenerator->setConnectedNodeName(
+                _mtlxTokens->texcoord.GetString(), stReader->getName());
+        } else {
+            tangentGenerator = nodeGraph->addNode(
+                _mtlxTokens->arbitrarytangents.GetString(),
+                _mtlxTokens->Tw_reader.GetString(),
+                _mtlxTokens->vector3.GetString());
+        }
+
+        // We create a world -> object transformation on demand. Computing an object tangent from
+        // object space normal and position might be more precise though.
+        mx::NodePtr transformVectorToObject;
+        mx::NodePtr transformVectorToModel;
+        auto        _createTransformVector = [&](const TfToken& toSpace) {
+            mx::NodePtr retVal = nodeGraph->addNode(
+                _mtlxTokens->transformvector.GetString(),
+                _mtlxTokens->Tw_to_To.GetString(),
+                _mtlxTokens->vector3.GetString());
+            retVal->addInputFromNodeDef(_mtlxTokens->in.GetString());
+            retVal->setConnectedNodeName(_mtlxTokens->in.GetString(), tangentGenerator->getName());
+            retVal->addInputFromNodeDef(_mtlxTokens->fromspace.GetString())
+                ->setValueString(_mtlxTokens->world.GetString());
+            retVal->addInputFromNodeDef(_mtlxTokens->tospace.GetString())
+                ->setValueString(toSpace.GetString());
+            return retVal;
+        };
+
+        // Reconnect nodes that require Tworld to the tangent generator:
+        for (const auto& nodeInput : graphTworldInputs) {
+            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->setConnectedNodeName(nodeInput.second, tangentGenerator->getName());
+        }
+
+        // Reconnect nodes that require Tobject to the tangent generator via a space transform:
+        for (const auto& nodeInput : graphTobjectInputs) {
+            if (!transformVectorToObject) {
+                transformVectorToObject = _createTransformVector(_mtlxTokens->object);
+            }
+            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->setConnectedNodeName(
+                nodeInput.second, transformVectorToObject->getName());
+        }
+
+        // Connect Tworld inputs on the material via an output port on the nodegraph:
+        mx::OutputPtr outTworld = nodeGraph->getOutput(_mtlxTokens->outTworld.GetString());
+        for (const auto& nodeInput : materialTworldInputs) {
+            if (!outTworld) {
+                outTworld = nodeGraph->addOutput(
+                    _mtlxTokens->outTworld.GetString(), _mtlxTokens->vector3.GetString());
+                outTworld->setConnectedNode(tangentGenerator);
+            }
+            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->setConnectedOutput(nodeInput.second, outTworld);
+        }
+
+        // Connect Tobject inputs on the material via an output port on the nodegraph:
+        mx::OutputPtr outTobject = nodeGraph->getOutput(_mtlxTokens->outTobject.GetString());
+        for (const auto& nodeInput : materialTobjectInputs) {
+            if (!outTobject) {
+                outTobject = nodeGraph->addOutput(
+                    _mtlxTokens->outTworld.GetString(), _mtlxTokens->vector3.GetString());
+                if (!transformVectorToObject) {
+                    transformVectorToObject = _createTransformVector(_mtlxTokens->object);
+                }
+                outTobject->setConnectedNode(transformVectorToObject);
+            }
+            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->setConnectedOutput(nodeInput.second, outTobject);
+        }
+
+        // We will replace tangent nodes with a passthru that feeds on the tangent generator. A
+        // space transform will be used when appropriate.
+        auto replaceWithPassthru = [&](mx::NodePtr& toReplace, mx::NodePtr& newSource) {
+            std::string nodeName = toReplace->getName();
+
+            nodeGraph->removeNode(nodeName);
+
+            mx::NodePtr passthruNode = nodeGraph->addNode(
+                _mtlxTokens->constant.GetString(), nodeName, _mtlxTokens->vector3.GetString());
+            passthruNode->addInputFromNodeDef(_mtlxTokens->in.GetString());
+            passthruNode->setConnectedNodeName(_mtlxTokens->in.GetString(), newSource->getName());
+        };
+
+        for (auto& tangentNode : nodesToReplace) {
+            mx::InputPtr spaceInput = tangentNode->getInput(_mtlxTokens->space.GetString());
+            if (spaceInput) {
+                if (spaceInput->getValueString() == _mtlxTokens->object.GetString()) {
+                    if (!transformVectorToObject) {
+                        transformVectorToObject = _createTransformVector(_mtlxTokens->object);
+                    }
+                    replaceWithPassthru(tangentNode, transformVectorToObject);
+                } else if (spaceInput->getValueString() == _mtlxTokens->model.GetString()) {
+                    if (!transformVectorToModel) {
+                        transformVectorToModel = _createTransformVector(_mtlxTokens->model);
+                    }
+                    replaceWithPassthru(tangentNode, transformVectorToModel);
+                } else {
+                    // Default to world.
+                    replaceWithPassthru(tangentNode, tangentGenerator);
+                }
+            }
         }
     }
 }
@@ -691,6 +1047,28 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
         }
 #endif
     }
+
+#ifdef WANT_MATERIALX_BUILD
+    if (isMaterialXNode) {
+        it = node.parameters.find(_mtlxTokens->filtertype);
+        if (it != node.parameters.end()) {
+            const VtValue& value = it->second;
+            if (value.IsHolding<std::string>()) {
+                TfToken token(value.UncheckedGet<std::string>().c_str());
+                if (token == _mtlxTokens->closest) {
+                    desc.filter = MHWRender::MSamplerState::kMinMagMipPoint;
+                    desc.maxLOD = 0;
+                    desc.minLOD = 0;
+                } else if (token == _mtlxTokens->cubic) {
+                    desc.filter = MHWRender::MSamplerState::kAnisotropic;
+                    desc.maxAnisotropy = 16;
+                    desc.maxLOD = 1000;
+                    desc.minLOD = -1000;
+                }
+            }
+        }
+    }
+#endif
 
     it = node.parameters.find(_tokens->fallback);
     if (it != node.parameters.end()) {
@@ -1318,6 +1696,7 @@ private:
 std::mutex                            HdVP2Material::_refreshMutex;
 std::chrono::steady_clock::time_point HdVP2Material::_startTime;
 std::atomic_size_t                    HdVP2Material::_runningTasksCounter;
+HdVP2GlobalTextureMap                 HdVP2Material::_globalTextureMap;
 
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
  */
@@ -1818,6 +2197,72 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
 
 #ifdef WANT_MATERIALX_BUILD
 
+// MaterialX does offer only limited support for OCIO. We expect something more in a future release,
+// but in the meantime we can still add color management nodes to bring textures in one of the five
+// colorspaces MayaUSD already supports for UsdPreviewSurface.
+//
+// We will be extremely arbitrary on all MaterialX image and tiledimage nodes and assume that color3
+// and color4 require color management based on the file extension.
+//
+// For image nodes connected to a fileTexture post-processor, we will also check for the colorSpace
+// attribute and respect requests for Raw.
+TfToken _RequiresColorManagement(
+    const HdMaterialNode2&    node,
+    const HdMaterialNode2&    upstream,
+    const HdMaterialNetwork2& inNet)
+{
+    const mx::NodeDefPtr nodeDef = _GetMaterialXData()._mtlxLibrary->getNodeDef(node.nodeTypeId);
+    const mx::NodeDefPtr upstreamDef
+        = _GetMaterialXData()._mtlxLibrary->getNodeDef(upstream.nodeTypeId);
+    if (!nodeDef || !upstreamDef) {
+        return {};
+    }
+
+    const std::string& upstreamCategory = upstreamDef->getNodeString();
+    if (upstreamCategory != _mtlxTokens->image.GetString()
+        && upstreamCategory != _mtlxTokens->tiledimage.GetString()) {
+        // upstream is not an image
+        return {};
+    }
+    mx::OutputPtr colorOutput = upstreamDef->getActiveOutput(_mtlxTokens->out.GetString());
+    if (!colorOutput) {
+        return {};
+    }
+
+    // Only managing color3 and color4 outputs:
+    if (colorOutput->getType() != _mtlxTokens->color3.GetString()
+        && colorOutput->getType() != _mtlxTokens->color4.GetString()) {
+        return {};
+    }
+
+    auto itFileParam = upstream.parameters.find(_tokens->file);
+    if (itFileParam == upstream.parameters.end()
+        || !itFileParam->second.IsHolding<SdfAssetPath>()) {
+        // No file name to check:
+        return {};
+    }
+
+    const SdfAssetPath& val = itFileParam->second.Get<SdfAssetPath>();
+    const std::string&  resolvedPath = val.GetResolvedPath();
+    const std::string&  assetPath = val.GetAssetPath();
+    MString             colorRuleCmd;
+    colorRuleCmd.format(
+        "colorManagementFileRules -evaluate \"^1s\";",
+        (!resolvedPath.empty() ? resolvedPath : assetPath).c_str());
+    const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
+    if (colorSpaceByRule != _tokens->sRGB.GetText()) {
+        // We only know how to handle sRGB source color space.
+        return {};
+    }
+
+    // If we ended up here, then a color management node was required:
+    if (colorOutput->getType().back() == '3') {
+        return _mtlxTokens->color3;
+    } else {
+        return _mtlxTokens->color4;
+    }
+}
+
 void HdVP2Material::_ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMaterialNetwork2& inNet)
 {
 
@@ -1837,6 +2282,9 @@ void HdVP2Material::_ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMater
     // We need NG_Maya, one level up, as this will be the name assigned to the MaterialX node graph
     // when run thru HdMtlxCreateMtlxDocumentFromHdNetwork (I know, forbidden knowledge again).
     SdfPath ngBase(_mtlxTokens->NG_Maya);
+
+    // We might have to add color management nodes:
+    std::string colorManagementCategory;
 
     // We will traverse the network in a depth-first traversal starting at the
     // terminals. This will allow a stable traversal that will not be affected
@@ -1878,11 +2326,40 @@ void HdVP2Material::_ApplyMtlxVP2Fixes(HdMaterialNetwork2& outNet, const HdMater
             // These parameters affect topology:
             outNode.parameters = inNode.parameters;
         }
+
         for (const auto& cnxPair : inNode.inputConnections) {
             std::vector<HdMaterialConnection2> outCnx;
             for (const auto& c : cnxPair.second) {
-                outCnx.emplace_back(
-                    HdMaterialConnection2 { _nodePathMap[c.upstreamNode], c.upstreamOutputName });
+                TfToken colorManagementType = _RequiresColorManagement(
+                    inNode, inNet.nodes.find(c.upstreamNode)->second, inNet);
+                if (!colorManagementType.IsEmpty() && colorManagementCategory.empty()) {
+                    // Query the user pref:
+                    MString mayaWorkingColorSpace = MGlobal::executeCommandStringResult(
+                        "colorManagementPrefs -q -renderingSpaceName");
+
+                    auto categoryIt
+                        = _mtlxColorCorrectCategoryMap.find(mayaWorkingColorSpace.asChar());
+                    if (categoryIt != _mtlxColorCorrectCategoryMap.end()) {
+                        colorManagementCategory = categoryIt->second;
+                    }
+                }
+
+                if (colorManagementType.IsEmpty() || colorManagementCategory.empty()) {
+                    outCnx.emplace_back(HdMaterialConnection2 { _nodePathMap[c.upstreamNode],
+                                                                c.upstreamOutputName });
+                } else {
+                    // Insert color management node:
+                    HdMaterialNode2 ccNode;
+                    ccNode.nodeTypeId
+                        = TfToken(colorManagementCategory + colorManagementType.GetString());
+                    HdMaterialConnection2 ccCnx { _nodePathMap[c.upstreamNode],
+                                                  c.upstreamOutputName };
+                    ccNode.inputConnections.insert({ _mtlxTokens->in, { ccCnx } });
+                    SdfPath ccPath
+                        = ngBase.AppendChild(TfToken("N" + std::to_string(nodeCounter++)));
+                    outCnx.emplace_back(HdMaterialConnection2 { ccPath, _mtlxTokens->out });
+                    outNet.nodes.emplace(ccPath, std::move(ccNode));
+                }
             }
             outNode.inputConnections.emplace(cnxPair.first, std::move(outCnx));
         }
@@ -1949,6 +2426,9 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             mtlxDoc = HdMtlxCreateMtlxDocumentFromHdNetwork(
                 fixedNetwork,
                 *surfTerminal, // MaterialX HdNode
+#if PXR_VERSION > 2111
+                fixedPath,
+#endif
                 SdfPath(_mtlxTokens->USD_Mtlx_VP2_Material),
                 _GetMaterialXData()._mtlxLibrary,
                 &hdTextureNodes,
@@ -1958,8 +2438,9 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
                 return shaderInstance;
             }
 
-            // Fix any missing texcoord reader.
+            // Touchups required to fix input stream issues:
             _AddMissingTexcoordReaders(mtlxDoc);
+            _AddMissingTangents(mtlxDoc);
 
             _surfaceShaderId = terminalPath;
 
@@ -2047,8 +2528,19 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             }
         }
 
-        // Add automatic tangent generation:
-        shaderInstance->addInputFragment("materialXTw", "Tw", "Tw");
+        // Fixup inputs that were renamed because they conflicted with reserved keywords:
+        for (const auto& namePair : ogsFragment.getPathInputMap()) {
+            std::string path = namePair.first;
+            std::string input = namePair.second;
+            // Renaming adds digits at the end, so only compare the backs.
+            if (path.back() != input.back()) {
+                MString uniqueName(input.c_str());
+                while (!input.empty() && path.back() != input.back()) {
+                    input.pop_back();
+                }
+                shaderInstance->renameParameter(uniqueName, input.c_str());
+            }
+        }
 
         shaderInstance->setIsTransparent(ogsFragment.isTransparent());
 
@@ -2470,7 +2962,7 @@ void HdVP2Material::_UpdateShaderInstance(
                 if (isMaterialXNode
                     && (token == _mtlxTokens->geomprop || token == _mtlxTokens->uaddressmode
                         || token == _mtlxTokens->vaddressmode || token == _mtlxTokens->filtertype
-                        || token == _mtlxTokens->channels)) {
+                        || token == _mtlxTokens->channels || token == _mtlxTokens->colorSpace)) {
                     status = MS::kSuccess;
                 }
 #endif
@@ -2491,9 +2983,18 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
     const std::string&    path,
     const HdMaterialNode& node)
 {
-    const auto it = _textureMap.find(path);
-    if (it != _textureMap.end()) {
-        return it->second;
+    // see if we already have the texture loaded.
+    const auto it = _globalTextureMap.find(path);
+    if (it != _globalTextureMap.end()) {
+        HdVP2TextureInfoSharedPtr cacheEntry = it->second.lock();
+        if (cacheEntry) {
+            _localTextureMap[path] = cacheEntry;
+            return *cacheEntry;
+        } else {
+            // if cacheEntry is nullptr then there is a stale entry in the _globalTextureMap. Erase
+            // it now to simplify adding the new texture to the global cache later.
+            _globalTextureMap.erase(it);
+        }
     }
 
     // Get fallback color if defined
@@ -2512,18 +3013,24 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(
         MHWRender::MTexture* texture
             = _LoadTexture(path, hasFallbackColor, fallbackColor, isSRGB, uvScaleOffset);
 
-        HdVP2TextureInfo& info = _textureMap[path];
-        info._texture.reset(texture);
-        info._isColorSpaceSRGB = isSRGB;
+        HdVP2TextureInfoSharedPtr info = std::make_shared<HdVP2TextureInfo>();
+        // path should never already be in _localTextureMap because if it was
+        // we'd have found it in _globalTextureMap
+        _localTextureMap.emplace(path, info);
+        // path should never already be in _globalTextureMap because if it was present
+        // and nullptr then we erased it.
+        _globalTextureMap.emplace(path, info);
+        info->_texture.reset(texture);
+        info->_isColorSpaceSRGB = isSRGB;
         if (uvScaleOffset.length() > 0) {
             TF_VERIFY(uvScaleOffset.length() == 4);
-            info._stScale.Set(
+            info->_stScale.Set(
                 uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
-            info._stOffset.Set(
+            info->_stOffset.Set(
                 uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
         }
 
-        return info;
+        return *info;
     }
 
     auto* task = new TextureLoadingTask(this, sceneDelegate, path, hasFallbackColor, fallbackColor);
@@ -2580,20 +3087,25 @@ void HdVP2Material::_UpdateLoadedTexture(
     // function on idle to delete the task object.
     _textureLoadingTasks.erase(path);
 
-    // Check the local cache again, do not overwrite if same texture has
-    // been loaded asynchronously
-    if (_textureMap.find(path) != _textureMap.end()) {
-        return;
-    }
-
-    HdVP2TextureInfo& info = _textureMap[path];
-    info._texture.reset(texture);
-    info._isColorSpaceSRGB = isColorSpaceSRGB;
-    if (uvScaleOffset.length() > 0) {
-        TF_VERIFY(uvScaleOffset.length() == 4);
-        info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
-        info._stOffset.Set(
-            uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
+    // Check the cache again. If the texture is not in the cache
+    // the add it.
+    if (_globalTextureMap.find(path) == _globalTextureMap.end()) {
+        HdVP2TextureInfoSharedPtr info = std::make_shared<HdVP2TextureInfo>();
+        // path should never already be in _localTextureMap because if it was
+        // we'd have found it in _globalTextureMap
+        _localTextureMap.emplace(path, info);
+        // path should never already be in _globalTextureMap because if it was present
+        // and nullptr then we erased it.
+        _globalTextureMap.emplace(path, info);
+        info->_texture.reset(texture);
+        info->_isColorSpaceSRGB = isColorSpaceSRGB;
+        if (uvScaleOffset.length() > 0) {
+            TF_VERIFY(uvScaleOffset.length() == 4);
+            info->_stScale.Set(
+                uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
+            info->_stOffset.Set(
+                uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
+        }
     }
 
     // Mark sprim dirty

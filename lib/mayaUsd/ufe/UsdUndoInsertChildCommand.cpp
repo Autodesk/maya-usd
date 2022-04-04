@@ -21,6 +21,7 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/utils/editRouter.h>
+#include <mayaUsd/utils/loadRules.h>
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/token.h>
@@ -136,16 +137,22 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
         _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
     }
 
+    // we shouldn't rely on UsdSceneItem to access the UsdPrim since
+    // it could be stale. Instead we should get the USDPrim from the Ufe::Path
+    const auto& usdSrcPrim = ufePathToPrim(_ufeSrcPath);
+    auto        stage = usdSrcPrim.GetStage();
+
+    // Make sure the load state of the reparented prim will be preserved.
+    // We copy all rules that applied to it specifically and remove the rules
+    // that applied to it specifically.
+    duplicateLoadRules(*stage, _usdSrcPath, _usdDstPath);
+    removeRulesForPath(*stage, _usdSrcPath);
+
     bool status = SdfCopySpec(_childLayer, _usdSrcPath, _parentLayer, _usdDstPath);
     if (status) {
         // remove all scene description for the given path and
         // its subtree in the current UsdEditTarget
         {
-            // we shouldn't rely on UsdSceneItem to access the UsdPrim since
-            // it could be stale. Instead we should get the USDPrim from the Ufe::Path
-            const auto& usdSrcPrim = ufePathToPrim(_ufeSrcPath);
-
-            auto           stage = usdSrcPrim.GetStage();
             UsdEditContext ctx(stage, _childLayer);
             status = stage->RemovePrim(_usdSrcPath);
         }
@@ -165,16 +172,22 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
 
 bool UsdUndoInsertChildCommand::insertChildUndo()
 {
+    // we shouldn't rely on UsdSceneItem to access the UsdPrim since
+    // it could be stale. Instead we should get the USDPrim from the Ufe::Path
+    const auto& usdDstPrim = ufePathToPrim(_ufeDstPath);
+    auto        stage = usdDstPrim.GetStage();
+
+    // Make sure the load state of the reparented prim will be preserved.
+    // We copy all rules that applied to it specifically and remove the rules
+    // that applied to it specifically.
+    duplicateLoadRules(*stage, _usdDstPath, _usdSrcPath);
+    removeRulesForPath(*stage, _usdDstPath);
+
     bool status = SdfCopySpec(_parentLayer, _usdDstPath, _childLayer, _usdSrcPath);
     if (status) {
         // remove all scene description for the given path and
         // its subtree in the current UsdEditTarget
         {
-            // we shouldn't rely on UsdSceneItem to access the UsdPrim since
-            // it could be stale. Instead we should get the USDPrim from the Ufe::Path
-            const auto& usdDstPrim = ufePathToPrim(_ufeDstPath);
-
-            auto           stage = usdDstPrim.GetStage();
             UsdEditContext ctx(stage, _parentLayer);
             status = stage->RemovePrim(_usdDstPath);
         }

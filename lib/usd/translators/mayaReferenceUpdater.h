@@ -53,6 +53,13 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool canEditAsMaya() const override;
 
+    /// Customize the pulled prim after pull import.  Pull import of the Maya
+    /// reference prim produces a loaded Maya reference, and a Maya transform
+    /// node that is a transformable stand-in for the Maya reference prim in
+    /// the Dag hierarchy.
+    MAYAUSD_CORE_PUBLIC
+    bool editAsMaya() override;
+
 protected:
     MAYAUSD_CORE_PUBLIC
     PushCopySpecs pushCopySpecs(

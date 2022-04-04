@@ -1,5 +1,5 @@
 //
-// Copyright 2021 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/gprim.h>
-
-#include <iostream>
 
 namespace {
 
@@ -69,7 +67,7 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
     if (!PXR_NS::SdfPath::IsValidPathString(pulledPathStr))
         return;
 
-    PXR_NS::SdfPath pulledPath(pulledPathStr);
+    const PXR_NS::SdfPath pulledPath(pulledPathStr);
 
     // Read user args
     auto dstLayerPath
@@ -97,7 +95,7 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
 
     auto createCachePrimFn = [stage, dstLayer, dstPrimPath](
                                  const PXR_NS::SdfPath& primPath, bool asReference, bool append) {
-        auto cachePrim = stage->DefinePrim(primPath);
+        auto cachePrim = stage->DefinePrim(primPath, PXR_NS::TfToken("Xform"));
 
         auto position = append ? PXR_NS::UsdListPositionFrontOfAppendList
                                : PXR_NS::UsdListPositionBackOfPrependList;
@@ -116,13 +114,15 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
         context, "rn_payloadOrReference", PXR_NS::VtDefault = "");
     bool dstIsVariant
         = (PXR_NS::VtDictionaryGet<int>(context, "rn_defineInVariant", PXR_NS::VtDefault = 0) == 1);
+    const auto parentPath = pulledPath.GetParentPath();
+    const auto cachePrimPath = parentPath.AppendChild(PXR_NS::TfToken(dstPrimName));
+
     if (dstIsVariant) {
         auto dstVariantSet = PXR_NS::VtDictionaryGet<std::string>(
             context, "rn_variantSetName", PXR_NS::VtDefault = "");
         auto dstVariant = PXR_NS::VtDictionaryGet<std::string>(
             context, "rn_variantName", PXR_NS::VtDefault = "");
 
-        PXR_NS::SdfPath parentPath = pulledPath.GetParentPath();
         PXR_NS::UsdPrim primWithVariant = stage->GetPrimAtPath(parentPath);
 
         PXR_NS::UsdVariantSet variantSet = primWithVariant.GetVariantSet(dstVariantSet);
@@ -132,14 +132,10 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
             PXR_NS::UsdEditContext switchEditContext(
                 stage, variantSet.GetVariantEditTarget(target.GetLayer()));
 
-            PXR_NS::SdfPath cachePrimPath = parentPath.AppendChild(PXR_NS::TfToken(dstPrimName));
             createCachePrimFn(
                 cachePrimPath, (compositionArc == "Reference"), (listEditName == "Append"));
         }
     } else {
-        PXR_NS::SdfPath parentPath = pulledPath.GetParentPath();
-        PXR_NS::SdfPath cachePrimPath = parentPath.AppendChild(PXR_NS::TfToken(dstPrimName));
-
         createCachePrimFn(
             cachePrimPath, (compositionArc == "Reference"), (listEditName == "Append"));
     }

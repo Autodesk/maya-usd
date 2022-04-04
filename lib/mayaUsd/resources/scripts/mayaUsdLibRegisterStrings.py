@@ -40,20 +40,34 @@ def mayaUsdLibRegisterStrings():
 
     # mayaUsdCacheMayaReference.py
     register('kButtonNewChildPrim', 'New Child Prim')
+    register('kButtonNewChildPrimToolTip', 'If selected, your Maya reference will be defined in a new child prim. This will enable\nyou to work with your Maya reference and its USD cache side-by-side.')
     register('kCacheFileWillAppear', 'Cache file will appear\non parent prim:')
-    register('kCacheMayaRefCache', 'Cache');
-    register('kCacheMayaRefOptions', 'Cache Options');
-    register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD Hierarchy');
+    register('kCacheMayaRefCache', 'Cache')
+    register('kCacheMayaRefOptions', 'Cache File Options')
+    register('kCacheMayaRefUsdHierarchy', 'Author Cache File to USD Hierarchy')
     register('kCaptionCacheToUsd', 'Cache to USD')
     register('kErrorCacheToUsdFailed', 'Cache to USD failed for "^1s".')
     register('kMenuAppend', 'Append')
     register('kMenuPayload', 'Payload')
     register('kMenuPrepend', 'Prepend')
     register('kMenuReference', 'Reference')
-    register('kOptionAsCompositionArc', 'As Composition Arc:')
+    register('kOptionAsUSDReference', 'As USD Reference:')
+    register('kOptionAsUSDReferenceToolTip', 'Choose the type of USD Reference composition arc for your Maya Reference:\n\nPayloads are a type of reference. They are recorded, but not traversed in the scene hierarchy. Select this arc if your goal is to manually construct\na "working set" that is a subset of an entire scene, in which only parts of the scene are required/loaded. Note: payloads are\nweaker than direct references in any given LayerStack.\n\nReferences are general and can be used to compose smaller units of scene description into larger aggregates, building up a namespace that\nincludes the "encapsulated" result of composing the scene description targeted by a reference. Select this arc if your goal is not to unload your\nreferences.')
     register('kOptionListEditedAs', 'List Edited As')
     register('kTextDefineIn', 'Define in:')
     register('kTextVariant', 'Variant')
+    register('kTextVariantToolTip','If selected, your Maya reference will be defined in a variant. This will enable your prim to\nhave 2 variants you can switch between in the Outliner; the Maya reference and its USD cache.')
+
+    # mayaUsdMergeToUSDOptions.py
+    register('kMergeToUSDOptionsTitle', 'Merge Maya Edits to USD Options')
+    register('kMergeButton', 'Merge')
+    register('kApplyButton', 'Apply')
+    register('kCancelButton', 'Cancel')
+    register('kEditMenu', 'Edit')
+    register('kSaveSettingsMenuItem', 'Save Settings')
+    register('kResetSettingsMenuItem', 'Reset Settings')
+    register('kHelpMenu', 'Help')
+    register('kHelpMergeToUSDOptionsMenuItem', 'Help on Merge Maya Edits to USD Options')
 
     # mayaUsdMergeToUsd.py
     register('kErrorMergeToUsdMenuItem', 'Could not create menu item for merge to USD')

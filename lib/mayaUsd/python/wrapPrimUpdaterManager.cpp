@@ -35,6 +35,21 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
+bool isAnimated(const std::string& nodeName)
+{
+    MObject obj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(nodeName, obj);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    MDagPath dagPath;
+    status = MDagPath::getAPathTo(obj, dagPath);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    return UsdMayaPrimUpdater::isAnimated(dagPath);
+}
+
 bool mergeToUsd(const std::string& nodeName, const VtDictionary& userArgs = VtDictionary())
 {
     MObject obj;
@@ -94,14 +109,24 @@ bool duplicate(
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(duplicate_overloads, duplicate, 2, 3)
 
+std::string readPullInformation(const PXR_NS::UsdPrim& prim)
+{
+    std::string dagPathStr;
+    // Ignore boolean return value, empty string is the proper error result.
+    PrimUpdaterManager::getInstance().readPullInformation(prim, dagPathStr);
+    return dagPathStr;
+}
+
 } // namespace
 
 void wrapPrimUpdaterManager()
 {
     class_<PrimUpdaterManager, noncopyable>("PrimUpdaterManager", no_init)
+        .def("isAnimated", isAnimated)
         .def("mergeToUsd", mergeToUsd, mergeToUsd_overloads())
         .def("editAsMaya", editAsMaya)
         .def("canEditAsMaya", canEditAsMaya)
         .def("discardEdits", discardEdits)
-        .def("duplicate", duplicate, duplicate_overloads());
+        .def("duplicate", duplicate, duplicate_overloads())
+        .def("readPullInformation", readPullInformation);
 }

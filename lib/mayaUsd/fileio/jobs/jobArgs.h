@@ -53,6 +53,11 @@ TF_DECLARE_PUBLIC_TOKENS(
 // clang-format off
 #define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
+    (animation) \
+    (startTime) \
+    (endTime) \
+    (frameStride) \
+    (frameSample) \
     (apiSchema) \
     (chaser) \
     (chaserArgs) \
@@ -67,7 +72,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportDisplayColor) \
     (exportInstances) \
     (exportMaterialCollections) \
-    (exportReferenceObjects) \
+    (referenceObjectMode) \
     (exportRefsAsInstanceable) \
     (exportRoots) \
     (exportSkels) \
@@ -80,6 +85,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (filterTypes) \
     (ignoreWarnings) \
     (kind) \
+    (disableModelKindProcessor) \
     (materialCollectionsPath) \
     (materialsScopeName) \
     (melPerFrameCallback) \
@@ -99,6 +105,9 @@ TF_DECLARE_PUBLIC_TOKENS(
     (geomSidedness)   \
     /* Special "none" token */ \
     (none) \
+    /* referenceObjectMode values */ \
+    (attributeOnly) \
+    (defaultToMesh) \
     /* renderLayerMode values */ \
     (defaultLayer) \
     (currentLayer) \
@@ -169,7 +178,7 @@ struct UsdMayaJobExportArgs
     const bool        exportMaterialCollections;
     const bool        exportMeshUVs;
     const bool        exportNurbsExplicitUV;
-    const bool        exportReferenceObjects;
+    const TfToken     referenceObjectMode;
     const bool        exportRefsAsInstanceable;
     const TfToken     exportSkels;
     const TfToken     exportSkin;
@@ -199,6 +208,7 @@ struct UsdMayaJobExportArgs
     const SdfPath      parentScope;
     const TfToken      renderLayerMode;
     const TfToken      rootKind;
+    const bool         disableModelKindProcessor;
     const TfToken      shadingMode;
     TfToken            convertMaterialsTo; // Can not be const, iteration variable.
     const TfToken::Set allMaterialConversions;
@@ -255,10 +265,13 @@ struct UsdMayaJobExportArgs
     ///
     /// The text encoding is in the form: name1=value1;name2=value2;...
     MAYAUSD_CORE_PUBLIC
-    static MStatus GetDictionaryFromEncodedOptions(
-        const MString&       textEncodedOptions,
-        VtDictionary*        userArgs,
-        std::vector<double>* timeSamples);
+    static MStatus
+    GetDictionaryFromEncodedOptions(const MString& textEncodedOptions, VtDictionary* userArgs);
+
+    /// Extract the time samples corresponding to the animation options.
+    MAYAUSD_CORE_PUBLIC
+    static void
+    GetDictionaryTimeSamples(const VtDictionary& userArgs, std::vector<double>& timeSamples);
 
     /// Gets the default arguments dictionary for UsdMayaJobExportArgs.
     MAYAUSD_CORE_PUBLIC

@@ -427,6 +427,26 @@ public:
     MAYAUSD_CORE_PUBLIC
     static void select(const std::string& name, const Ufe::Selection& selection);
 
+    /// \brief create and execute a select node undo item and keep track of it.
+    /// The global selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void select(const std::string& name, const MDagPath& dagPath, OpUndoItemList& undoInfo);
+
+    /// \brief create and execute a select node undo item and keep track of it on the global list.
+    /// The global selection is replaced.
+    MAYAUSD_CORE_PUBLIC
+    static void select(const std::string& name, const MDagPath& dagPath);
+
+    /// \brief Create and execute a clear selection undo item and keep track of it.  The global
+    /// selection is cleared.
+    MAYAUSD_CORE_PUBLIC
+    static void clear(const std::string& name, OpUndoItemList& undoInfo);
+
+    /// \brief create and execute a clear selection undo item and keep track of it in the global
+    /// list. The global selection is cleared.
+    MAYAUSD_CORE_PUBLIC
+    static void clear(const std::string& name);
+
     MAYAUSD_CORE_PUBLIC
     UfeSelectionUndoItem(const std::string& name, const Ufe::Selection& selection);
 
@@ -454,6 +474,13 @@ private:
 
 /// \class LockNodesUndoItem
 /// \brief Record data needed to undo / redo the lock / unlock of Maya nodes.
+///
+/// The node at the Dag path root, and all its children, will be locked.
+/// Since referenced nodes cannot be deleted, locking such nodes is not a
+/// useful workflow for maya-usd.  Therefore, if a child of the Dag path root
+/// is a referenced node, the lock traversal is pruned at that point, for
+/// efficiency.
+
 class LockNodesUndoItem : public OpUndoItem
 {
 public:
@@ -482,8 +509,8 @@ public:
     bool redo() override;
 
 private:
-    MString _rootName;
-    bool    _lock;
+    const MDagPath _root;
+    const bool     _lock;
 };
 
 //------------------------------------------------------------------------------

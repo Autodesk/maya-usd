@@ -47,7 +47,9 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MSceneMessage.h>
+#include <ufe/globalSelection.h>
 #include <ufe/hierarchy.h>
+#include <ufe/observableSelection.h>
 #include <ufe/path.h>
 #include <ufe/pathString.h>
 #include <ufe/sceneNotification.h>
@@ -56,7 +58,7 @@
 #include <tuple>
 
 using UpdaterFactoryFn = UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn;
-using namespace MAYAUSD_NS_DEF;
+using namespace MayaUsd;
 
 // Allow for use of MObjectHandle with std::unordered_map.
 namespace std {
@@ -132,8 +134,8 @@ SdfPath makeDstPath(const SdfPath& dstRootParentPath, const SdfPath& srcPath)
 
 //------------------------------------------------------------------------------
 //
-// The UFE path and the prim refer to the same object: the prim is passed in as
-// an optimization to avoid an additional call to ufePathToPrim().
+// The UFE path is to the pulled prim, and the Dag path is the corresponding
+// Maya pulled object.
 bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
 {
     auto pulledPrim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
@@ -270,8 +272,7 @@ PullImportPaths pullImport(
         return PullImportPaths(addedDagPaths, pulledUfePaths);
     }
 
-    VtDictionary userArgs(context.GetUserArgs());
-
+    const VtDictionary& userArgs = context.GetUserArgs();
     userArgs[UsdMayaJobImportArgsTokens->pullImportStage] = PXR_NS::VtValue(context.GetUsdStage());
 
     UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
@@ -317,6 +318,12 @@ PullImportPaths pullImport(
     if (!isCopy) {
         // Quick workaround to reuse some POC code - to rewrite later
 
+        // Communication to current proxyAccessor code is through the global
+        // selection, so we must save the current selection for proper undo.
+        // This is not logically necessary, and should be re-written to avoid
+        // going through the global selection.
+        UfeSelectionUndoItem::select("Pre-proxyAccessor selection", *Ufe::GlobalSelection::get());
+
         // The "child" is the node that will receive the computed parent
         // transformation, in its offsetParentMatrix attribute.  We are using
         // the pull parent for this purpose, so pop the path of the ufeChild to
@@ -353,7 +360,7 @@ PullImportPaths pullImport(
 
         // Create the pull set if it does not exists.
         //
-        // Note: do not use the MfnSet API to create it as it clears the redo stack
+        // Note: do not use the MFnSet API to create it as it clears the redo stack
         // and thus prevents redo.
         MObject pullSetObj;
         MStatus status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
@@ -384,7 +391,7 @@ PullImportPaths pullImport(
                 return true;
             });
 
-        SelectionUndoItem::select("Pull import select DAG node", addedDagPath);
+        UfeSelectionUndoItem::select("Pull import select DAG node", addedDagPath);
     }
 
     // Invert the new node registry, for MObject to Ufe::Path lookup.
@@ -411,6 +418,23 @@ PullImportPaths pullImport(
 
 //------------------------------------------------------------------------------
 //
+UsdMayaPrimUpdaterRegistry::RegisterItem getUpdaterItem(const MFnDependencyNode& dgNodeFn)
+{
+    MPlug usdTypeNamePlug = dgNodeFn.findPlug("USD_typeName", true);
+
+    // If the Maya node holds USD type information (e.g. a dummy transform
+    // node which is a stand-in for a non-transform USD prim type), use that
+    // USD type intead of the Maya node type name.
+    if (!usdTypeNamePlug.isNull())
+        return UsdMayaPrimUpdaterRegistry::FindOrFallback(
+            TfToken(usdTypeNamePlug.asString().asChar()));
+
+    // In the absence of explicit USD type name, use the Maya type name.
+    return UsdMayaPrimUpdaterRegistry::FindOrFallback(dgNodeFn.typeName().asChar());
+}
+
+//------------------------------------------------------------------------------
+//
 // Perform the customization step of the pull (second step).
 bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdaterContext& context)
 {
@@ -426,9 +450,7 @@ bool pullCustomize(const PullImportPaths& importedPaths, const UsdMayaPrimUpdate
         const auto&       pulledUfePath = *ufePathIt;
         MFnDependencyNode dgNodeFn(dagPath.node());
 
-        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
-
-        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        auto registryItem = getUpdaterItem(dgNodeFn);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, pulledUfePath);
 
@@ -475,14 +497,8 @@ PushCustomizeSrc pushExport(
     UsdMayaUtil::MDagPathSet dagPaths;
     dagPaths.insert(dagPath);
 
-    GfInterval timeInterval = PXR_NS::UsdMayaPrimUpdater::isAnimated(dagPath)
-        ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
-        : GfInterval();
-    double           frameStride = 1.0;
-    std::set<double> frameSamples;
-
-    const std::vector<double> timeSamples
-        = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
+    std::vector<double> timeSamples;
+    UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
 
     // The pushed Dag node is the root of the export job.
     std::vector<VtValue> rootPathString(
@@ -533,31 +549,32 @@ SdfPath getDstSdfPath(const Ufe::Path& ufePulledPath, const SdfPath& srcSdfPath,
 
 //------------------------------------------------------------------------------
 //
+// Create an updater for use with both pushCustomize() traversals /
+// customization points: pushCopySpec() and pushEnd().
+//
+// pushCopySpec() and pushEnd() must use the same updater type.  An earlier
+// version of this function tried to ensure this by using the pulled prim to
+// create the updater.  However, this prim cannot be relied on, as
+// pushCopySpec() has an edit router customization point that can remove the
+// pulled prim from the USD scene (e.g. by switching a variant set to a
+// different variant, such as what occurs when caching to a variant).  It is
+// more robust to use the USD primSpec type at srcPath, which is in the
+// srcLayer in the temporary stage.  If USD type round-tripping is set up
+// properly (see UsdMayaTranslatorUtil::CreateDummyTransformNode()), this
+// primSpec will have the type of the original pulled prim.
+//
 UsdMayaPrimUpdaterSharedPtr createUpdater(
-    const Ufe::Path&                 ufePulledPath,
     const SdfLayerRefPtr&            srcLayer,
     const SdfPath&                   srcPath,
-    const SdfLayerRefPtr&            dstLayer,
     const SdfPath&                   dstPath,
     const UsdMayaPrimUpdaterContext& context)
 {
-    // The root of the pulled hierarchy is crucial for determining push
-    // behavior.  When pulling, we may have created a Maya pull hierarchy root
-    // node whose type does not map to the same prim updater as the original
-    // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
-    // node type (e.g. transform, which is the fallback Maya node type for many
-    // USD prim types).  Therefore, if we're at the root of the src hierarchy,
-    // use the prim at the pulled path to create the prim updater; this will
-    // occur on push, when the srcPath is in the temporary layer.
-    const bool usePulledPrim = (srcPath.GetPathElementCount() == 1);
-
     auto primSpec = srcLayer->GetPrimAtPath(srcPath);
     if (!TF_VERIFY(primSpec)) {
         return nullptr;
     }
 
-    TfToken typeName = usePulledPrim ? MayaUsd::ufe::ufePathToPrim(ufePulledPath).GetTypeName()
-                                     : primSpec->GetTypeName();
+    auto typeName = primSpec->GetTypeName();
     auto regItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(typeName);
     auto factory = std::get<UpdaterFactoryFn>(regItem);
 
@@ -608,8 +625,7 @@ bool pushCustomize(
     // Traverse the layer, creating a prim updater for each primSpec
     // along the way, and call PushCopySpec on the prim.
     auto pushCopySpecsFn
-        = [&context, &ufePulledPath, srcStage, srcLayer, dstLayer, dstRootParentPath](
-              const SdfPath& srcPath) {
+        = [&context, srcStage, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
               // We can be called with a primSpec path that is not a prim path
               // (e.g. a property path like "/A.xformOp:translate").  This is not an
               // error, just prune the traversal.  FIXME Is this still true?  We
@@ -619,8 +635,7 @@ bool pushCustomize(
               }
 
               auto dstPath = makeDstPath(dstRootParentPath, srcPath);
-              auto updater
-                  = createUpdater(ufePulledPath, srcLayer, srcPath, dstLayer, dstPath, context);
+              auto updater = createUpdater(srcLayer, srcPath, dstPath, context);
               // If we cannot find an updater for the srcPath, prune the traversal.
               if (!updater) {
                   TF_WARN(
@@ -655,8 +670,7 @@ bool pushCustomize(
 
     // SdfLayer::TraversalFn does not return a status, so must report
     // failure through an exception.
-    auto pushEndFn = [&context, &ufePulledPath, srcLayer, dstLayer, dstRootParentPath](
-                         const SdfPath& srcPath) {
+    auto pushEndFn = [&context, srcLayer, dstLayer, dstRootParentPath](const SdfPath& srcPath) {
         // We can be called with a primSpec path that is not a prim path
         // (e.g. a property path like "/A.xformOp:translate").  This is not an
         // error, just a no-op.
@@ -665,7 +679,7 @@ bool pushCustomize(
         }
 
         auto dstPath = makeDstPath(dstRootParentPath, srcPath);
-        auto updater = createUpdater(ufePulledPath, srcLayer, srcPath, dstLayer, dstPath, context);
+        auto updater = createUpdater(srcLayer, srcPath, dstPath, context);
         if (!updater) {
             TF_WARN(
                 "Could not create a prim updater for path %s during PushEnd() traversal, pruning "
@@ -766,9 +780,23 @@ bool PrimUpdaterManager::mergeToUsd(
         LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false);
     }
 
+    // If the user-provided argument does *not* contain an animation key, then
+    // automatically infer if we should merge animations.
+    if (!VtDictionaryIsHolding<bool>(userArgs, UsdMayaJobExportArgsTokens->animation)) {
+        const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
+        GfInterval timeInterval = isAnimated
+            ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
+            : GfInterval();
+
+        ctxArgs[UsdMayaJobExportArgsTokens->animation] = isAnimated;
+        ctxArgs[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
+        ctxArgs[UsdMayaJobExportArgsTokens->startTime] = timeInterval.GetMin();
+        ctxArgs[UsdMayaJobExportArgsTokens->endTime] = timeInterval.GetMax();
+    }
+
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Merge to USD selection reset", MSelectionList());
+    UfeSelectionUndoItem::clear("Merge to USD selection reset");
 
     UsdStageRefPtr            proxyStage = proxyShape->usdPrim().GetStage();
     UsdMayaPrimUpdaterContext context(proxyShape->getTime(), proxyStage, ctxArgs);
@@ -979,7 +1007,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Discard edits selection reset", MSelectionList());
+    UfeSelectionUndoItem::clear("Discard edits selection reset");
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
@@ -988,18 +1016,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
 
         const Ufe::Path path = MayaUsd::ufe::dagPathToPathSegment(curDagPath);
 
-        // The root of the pulled hierarchy is crucial for determining push
-        // behavior.  When pulling, we may have created a Maya pull hierarchy root
-        // node whose type does not map to the same prim updater as the original
-        // USD prim, i.e. multiple USD prim types can map to the same pulled Maya
-        // node type (e.g. transform, which is the fallback Maya node type for many
-        // USD prim types).  Therefore, if we're at the root of the src hierarchy,
-        // use the prim at the pulled path to create the prim updater.
-        bool usePulledPrim = (curDagPath == mayaDagPath);
-        auto registryItem = usePulledPrim
-            ? UsdMayaPrimUpdaterRegistry::FindOrFallback(
-                MayaUsd::ufe::ufePathToPrim(pulledPath).GetTypeName())
-            : UsdMayaPrimUpdaterRegistry::FindOrFallback(dgNodeFn.typeName().asChar());
+        auto registryItem = getUpdaterItem(dgNodeFn);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, path);
 
@@ -1047,7 +1064,7 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    SelectionUndoItem::select("Discard orphaned edits selection reset", MSelectionList());
+    UfeSelectionUndoItem::clear("Discard orphaned edits selection reset");
 
     UsdMayaPrimUpdaterContext context(UsdTimeCode(), nullptr, VtDictionary());
 
@@ -1055,9 +1072,8 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(dagPath);
     for (const MDagPath& curDagPath : toApplyOn) {
         MFnDependencyNode dgNodeFn(curDagPath.node());
-        const std::string mayaTypeName(dgNodeFn.typeName().asChar());
 
-        auto registryItem = UsdMayaPrimUpdaterRegistry::FindOrFallback(mayaTypeName);
+        auto registryItem = getUpdaterItem(dgNodeFn);
         auto factory = std::get<UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn>(registryItem);
         auto updater = factory(context, dgNodeFn, Ufe::Path());
 
@@ -1093,6 +1109,17 @@ bool PrimUpdaterManager::duplicate(
         // We will only do copy between two data models, setting this in arguments
         // to configure the updater
         ctxArgs[UsdMayaPrimUpdaterArgsTokens->copyOperation] = true;
+
+        // Set destination of duplicate. The Maya world MDagPath is not valid,
+        // so don't try to validate the path if it is the world root.
+        MDagPath pullParentPath;
+        if (!MayaUsd::ufe::isMayaWorldPath(dstPath)) {
+            pullParentPath = MayaUsd::ufe::ufeToDagPath(dstPath);
+            if (!pullParentPath.isValid()) {
+                return false;
+            }
+        }
+        ctxArgs[kPullParentPathKey] = VtValue(std::string(pullParentPath.fullPathName().asChar()));
 
         UsdMayaPrimUpdaterContext context(
             srcProxyShape->getTime(), srcProxyShape->getUsdStage(), ctxArgs);
@@ -1132,15 +1159,16 @@ bool PrimUpdaterManager::duplicate(
         const auto& editTarget = dstStage->GetEditTarget();
         const auto& dstLayer = editTarget.GetLayer();
 
-        // Make the destination root path unique.
-        SdfPath     dstRootPath = editTarget.MapToSpecPath(srcRootPath);
-        SdfPath     dstParentPath = dstRootPath.GetParentPath();
-        std::string dstChildName = dstRootPath.GetName();
-        UsdPrim     dstParentPrim = dstStage->GetPrimAtPath(dstParentPath);
-        if (dstParentPrim.IsValid()) {
-            dstChildName = ufe::uniqueChildName(dstParentPrim, dstChildName);
-            dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
+        // Validate that the destination parent prim is valid.
+        UsdPrim dstParentPrim = MayaUsd::ufe::ufePathToPrim(dstPath);
+        if (!dstParentPrim.IsValid()) {
+            return false;
         }
+
+        // Make the destination root path unique.
+        SdfPath     dstParentPath = dstParentPrim.GetPath();
+        std::string dstChildName = ufe::uniqueChildName(dstParentPrim, srcRootPath.GetName());
+        SdfPath     dstRootPath = dstParentPath.AppendChild(TfToken(dstChildName));
 
         if (!SdfCopySpec(srcLayer, srcRootPath, dstLayer, dstRootPath)) {
             return false;

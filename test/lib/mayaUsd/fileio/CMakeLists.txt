@@ -24,6 +24,7 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         testDuplicateAs.py
         testPrimUpdater.py
         testCacheToUsd.py
+        testMayaUsdOptions.py
     )
 endif()
 

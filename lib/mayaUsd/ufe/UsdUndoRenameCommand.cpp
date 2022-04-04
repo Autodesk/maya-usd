@@ -19,6 +19,7 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/loadRules.h>
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/stringUtils.h>
@@ -73,7 +74,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(
     ufe::applyCommandRestriction(prim, "rename");
 
     // handle unique name for _newName
-    _newName = TfMakeValidIdentifier(uniqueChildName(prim.GetParent(), newName.string()));
+    _newName = uniqueChildName(prim.GetParent(), TfMakeValidIdentifier(newName.string()));
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand() { }
@@ -106,6 +107,16 @@ bool UsdUndoRenameCommand::renameRedo()
             prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
+        }
+
+        // Make sure the load state of the renamed prim will be preserved.
+        // We copy all rules that applied to it specifically and remove the rules
+        // that applied to it specifically.
+        {
+            auto fromPath = SdfPath(_ufeSrcItem->path().getSegments()[1].string());
+            auto destPath = SdfPath(ufeSiblingPath.getSegments()[1].string());
+            duplicateLoadRules(*_stage, fromPath, destPath);
+            removeRulesForPath(*_stage, fromPath);
         }
 
         // set the new name
@@ -151,6 +162,16 @@ bool UsdUndoRenameCommand::renameUndo()
             prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
+        }
+
+        // Make sure the load state of the renamed prim will be preserved.
+        // We copy all rules that applied to it specifically and remove the rules
+        // that applied to it specifically.
+        {
+            auto fromPath = SdfPath(_ufeDstItem->path().getSegments()[1].string());
+            auto destPath = SdfPath(ufeSiblingPath.getSegments()[1].string());
+            duplicateLoadRules(*_stage, fromPath, destPath);
+            removeRulesForPath(*_stage, fromPath);
         }
 
         auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);

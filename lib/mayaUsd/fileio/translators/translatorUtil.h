@@ -39,6 +39,12 @@ enum class UsdMayaShadingNodeType
     Utility
 };
 
+enum class UsdMayaDummyTransformType
+{
+    UnlockedTransform,
+    LockedTransform
+};
+
 /// \brief Provides helper functions for other readers to use.
 struct UsdMayaTranslatorUtil
 {
@@ -66,13 +72,15 @@ struct UsdMayaTranslatorUtil
     /// empty string, so a typeless def will be generated on export.
     MAYAUSD_CORE_PUBLIC
     static bool CreateDummyTransformNode(
-        const UsdPrim&               usdPrim,
-        MObject&                     parentNode,
-        bool                         importTypeName,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext*    context,
-        MStatus*                     status,
-        MObject*                     mayaNodeObj);
+        const UsdPrim&                  usdPrim,
+        MObject&                        parentNode,
+        bool                            importTypeName,
+        const UsdMayaPrimReaderArgs&    args,
+        UsdMayaPrimReaderContext*       context,
+        MStatus*                        status,
+        MObject*                        mayaNodeObj,
+        const UsdMayaDummyTransformType dummyTransformType
+        = UsdMayaDummyTransformType::LockedTransform);
 
     /// \brief Helper to create a node for \p usdPrim of type \p
     /// nodeTypeName under \p parentNode. If \p context is non-NULL,
@@ -144,6 +152,11 @@ struct UsdMayaTranslatorUtil
 
         return APISchemaType(usdPrim);
     }
+
+    /// Write USD type information into the argument Maya object.  Returns true
+    /// for success.
+    MAYAUSD_CORE_PUBLIC
+    static bool SetUsdTypeName(const MObject& mayaNodeObj, const TfToken& usdTypeName);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -142,7 +142,6 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     } else {
         UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(
             mImportData.stageInitialLoadSet() == UsdStage::InitialLoadSet::LoadAll));
-
         if (mArgs.pullImportStage)
             stage = mArgs.pullImportStage;
         else

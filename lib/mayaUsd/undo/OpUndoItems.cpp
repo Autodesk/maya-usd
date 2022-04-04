@@ -16,12 +16,16 @@
 #include "OpUndoItems.h"
 
 #include <mayaUsd/utils/util.h>
+#ifdef WANT_UFE_BUILD
+#include <mayaUsd/ufe/Utils.h>
+#endif
 
 #include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MSelectionList.h>
 #ifdef WANT_UFE_BUILD
 #include <ufe/globalSelection.h>
+#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
 #endif
 
@@ -387,6 +391,31 @@ void UfeSelectionUndoItem::select(const std::string& name, const Ufe::Selection&
     select(name, selection, OpUndoItemList::instance());
 }
 
+void UfeSelectionUndoItem::select(
+    const std::string& name,
+    const MDagPath&    dagPath,
+    OpUndoItemList&    undoInfo)
+{
+    Ufe::Selection sn;
+    sn.append(Ufe::Hierarchy::createItem(MayaUsd::ufe::dagPathToUfe(dagPath)));
+    select(name, sn, undoInfo);
+}
+
+void UfeSelectionUndoItem::select(const std::string& name, const MDagPath& dagPath)
+{
+    select(name, dagPath, OpUndoItemList::instance());
+}
+
+void UfeSelectionUndoItem::clear(const std::string& name, OpUndoItemList& undoInfo)
+{
+    select(name, Ufe::Selection(), undoInfo);
+}
+
+void UfeSelectionUndoItem::clear(const std::string& name)
+{
+    clear(name, OpUndoItemList::instance());
+}
+
 bool UfeSelectionUndoItem::undo()
 {
     invert();
@@ -415,18 +444,8 @@ void UfeSelectionUndoItem::invert()
 namespace {
 
 //! Lock or unlock hierarchy starting at given root.
-MStatus lockNodes(const MString& rootName, bool state)
+void lockNodes(const MDagPath& root, bool state)
 {
-    MObject obj;
-    MStatus status = PXR_NS::UsdMayaUtil::GetMObjectByName(rootName, obj);
-    if (status != MStatus::kSuccess)
-        return status;
-
-    MDagPath root;
-    status = MDagPath::getAPathTo(obj, root);
-    if (status != MStatus::kSuccess)
-        return status;
-
     MItDag dagIt;
     dagIt.reset(root);
     for (; !dagIt.isDone(); dagIt.next()) {
@@ -437,15 +456,13 @@ MStatus lockNodes(const MString& rootName, bool state)
         }
         node.setLocked(state);
     }
-
-    return MS::kSuccess;
 }
 
 } // namespace
 
 LockNodesUndoItem::LockNodesUndoItem(const std::string name, const MDagPath& root, bool lock)
     : OpUndoItem(std::move(name))
-    , _rootName(root.fullPathName())
+    , _root(root)
     , _lock(lock)
 {
 }
@@ -470,13 +487,13 @@ void LockNodesUndoItem::lock(const std::string name, const MDagPath& root, bool 
 
 bool LockNodesUndoItem::undo()
 {
-    lockNodes(_rootName, !_lock);
+    lockNodes(_root, !_lock);
     return true;
 }
 
 bool LockNodesUndoItem::redo()
 {
-    lockNodes(_rootName, _lock);
+    lockNodes(_root, _lock);
     return true;
 }
 

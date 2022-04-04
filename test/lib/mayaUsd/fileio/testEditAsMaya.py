@@ -119,8 +119,14 @@ class EditAsMayaTestCase(unittest.TestCase):
         (ps, xlateOp, xlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
          _, _, _, _, _) = createSimpleXformScene()
 
+        aPrim = mayaUsd.ufe.ufePathToPrim(aUsdUfePathStr)
+
         # Edit aPrim as Maya data.
         self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+
+        # Make a selection before edit as Maya.
+        cmds.select('persp')
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
 
         cmds.mayaUsdEditAsMaya(aUsdUfePathStr)
 
@@ -160,6 +166,15 @@ class EditAsMayaTestCase(unittest.TestCase):
 
             assertVectorAlmostEqual(self, mayaValues, usdValues)
 
+            # Selection is on the edited Maya object.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertEqual(len(sn), 1)
+            self.assertEqual(sn[0], aMayaPathStr)
+
+            # Read the pull information from the pulled prim.
+            aMayaPullPathStr = mayaUsd.lib.PrimUpdaterManager.readPullInformation(aPrim)
+            self.assertEqual(aMayaPathStr, aMayaPullPathStr)
+
         verifyEditedScene()
 
         # Undo
@@ -169,6 +184,10 @@ class EditAsMayaTestCase(unittest.TestCase):
             # Maya node is removed.
             with self.assertRaises(RuntimeError):
                 om.MSelectionList().add(aMayaPathStr)
+            # Selection is restored.
+            self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
+            # No more pull information on the prim.
+            self.assertEqual(len(mayaUsd.lib.PrimUpdaterManager.readPullInformation(aPrim)), 0)
 
         verifyNoLongerEdited()
         

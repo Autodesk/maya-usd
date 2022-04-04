@@ -103,7 +103,7 @@ MAYAUSD_CORE_PUBLIC
 bool isMeshValid(const MDagPath& dagPath);
 
 MAYAUSD_CORE_PUBLIC
-void exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj);
+void exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj, bool defaultToMesh);
 
 MAYAUSD_CORE_PUBLIC
 void assignSubDivTagsToUSDPrim(

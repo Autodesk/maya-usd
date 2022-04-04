@@ -67,12 +67,14 @@ MStatus UsdMayaExportTranslator::writer(
         return MS::kSuccess;
     }
 
-    VtDictionary        userArgs;
-    std::vector<double> timeSamples;
-    MStatus             status = UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
-        optionsString, &userArgs, &timeSamples);
+    VtDictionary userArgs;
+    MStatus      status
+        = UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(optionsString, &userArgs);
     if (status != MS::kSuccess)
         return status;
+
+    std::vector<double> timeSamples;
+    UsdMayaJobExportArgs::GetDictionaryTimeSamples(userArgs, timeSamples);
 
     auto jobArgs = UsdMayaJobExportArgs::CreateFromDictionary(userArgs, dagPaths, timeSamples);
     bool append = false;

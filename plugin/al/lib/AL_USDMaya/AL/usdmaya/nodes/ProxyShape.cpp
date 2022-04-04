@@ -1036,7 +1036,8 @@ void ProxyShape::processChangedObjects(
             UsdPrim changedPrim = m_stage->GetPrimAtPath(path);
             if (path.IsPrimPropertyPath()) {
                 const std::string tokenString = path.GetElementString();
-                if (std::strncmp(tokenString.c_str(), ".xformOp", 8) == 0) {
+                if (std::strncmp(tokenString.c_str(), ".xformOp", 8) == 0
+                    || std::strncmp(tokenString.c_str(), ".visibility", 11) == 0) {
                     shouldCleanBBoxCache = true;
                     break;
                 }

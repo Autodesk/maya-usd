@@ -27,6 +27,7 @@ import unittest
 class shaderWriterTest(mayaUsdLib.ShaderWriter):
     CanExportCalled = False
     WriteCalledCount = 0
+    PostExportCalledCount = 0
     GetShadingAttributeNameForMayaAttrNameCalledWith = ""
     GetShadingAttributeForMayaAttrNameCalled = False
     NotCalled = False
@@ -38,6 +39,9 @@ class shaderWriterTest(mayaUsdLib.ShaderWriter):
 
     def Write(self, usdTime):
         shaderWriterTest.WriteCalledCount += 1
+
+    def PostExport(self):
+        shaderWriterTest.PostExportCalledCount += 1
 
     def GetShadingAttributeNameForMayaAttrName(self, mayaAttrName):
         shaderWriterTest.GetShadingAttributeNameForMayaAttrNameCalledWith = mayaAttrName
@@ -62,17 +66,17 @@ class testShaderWriter(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testSimpleShaderWriter(self):
-        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "lambert")
+        mayaUsdLib.ShaderWriter.Register(shaderWriterTest, "phongE")
 
         cmds.file(f=True, new=True)
 
         sphere_xform = cmds.polySphere()[0]
 
-        # Need a lambert, with something connected to exercise the
+        # Need a phongE, with something connected to exercise the
         # full API. The code will survive the test writer not even
-        # creating a UsdShade node for the lambert.
-        material_node = cmds.shadingNode("lambert", asShader=True,
-                                         name="Lanbert42")
+        # creating a UsdShade node for the phongE.
+        material_node = cmds.shadingNode("phongE", asShader=True,
+                                         name="phongE42")
 
         material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
                                 empty=True, name=material_node+"SG")
@@ -101,7 +105,7 @@ class testShaderWriter(unittest.TestCase):
         # Export to USD. We select MaterialX because all the writer
         # there are reporting "Fallback", which allows our CanExport
         # to always win with "Supported" (also helps that the current
-        # version of the MaterialX export does not support lambert).
+        # version of the MaterialX export does not support phongE).
         usdFilePath = os.path.join(self.temp_dir,'testShaderWriter.usda')
         cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
@@ -109,6 +113,7 @@ class testShaderWriter(unittest.TestCase):
 
         self.assertTrue(shaderWriterTest.CanExportCalled)
         self.assertEqual(shaderWriterTest.WriteCalledCount,1)
+        self.assertEqual(shaderWriterTest.PostExportCalledCount,1)
         self.assertTrue(shaderWriterTest.GetShadingAttributeForMayaAttrNameCalled)
         self.assertEqual(shaderWriterTest.GetShadingAttributeNameForMayaAttrNameCalledWith, 'color')
         self.assertFalse(shaderWriterTest.NotCalled)

@@ -27,6 +27,7 @@
 #include <pxr/base/tf/fileUtils.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
 #include <pxr/base/vt/dictionary.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/schema.h>
@@ -99,6 +100,25 @@ UsdStageRefPtr _UsdStageRefPtr(const VtDictionary& userArgs, const TfToken& key)
     }
     return VtDictionaryGet<UsdStageRefPtr>(userArgs, key);
 }
+  
+/// Extracts a double at \p key from \p userArgs, or defaultValue if it can't extract.
+double _Double(const VtDictionary& userArgs, const TfToken& key, double defaultValue)
+{
+    if (VtDictionaryIsHolding<double>(userArgs, key))
+        return VtDictionaryGet<double>(userArgs, key);
+
+    // Since user dictionary can be provided from Python and in Python it is easy to
+    // mix int and double, especially since value literal will take the simplest value
+    // they can, for example 0 will be an int, support receiving the value as an integer.
+    if (VtDictionaryIsHolding<int>(userArgs, key))
+        return VtDictionaryGet<int>(userArgs, key);
+
+    TF_CODING_ERROR(
+        "Dictionary is missing required key '%s' or key is "
+        "not double type",
+        key.GetText());
+    return defaultValue;
+}
 
 /// Extracts a string at \p key from \p userArgs, or "" if it can't extract.
 std::string _String(const VtDictionary& userArgs, const TfToken& key)
@@ -166,6 +186,11 @@ SdfPath _AbsolutePath(const VtDictionary& userArgs, const TfToken& key)
 template <typename T> std::vector<T> _Vector(const VtDictionary& userArgs, const TfToken& key)
 {
     // Check that vector exists.
+    if (VtDictionaryIsHolding<std::vector<T>>(userArgs, key)) {
+        std::vector<T> vals = VtDictionaryGet<std::vector<T>>(userArgs, key);
+        return vals;
+    }
+
     if (!VtDictionaryIsHolding<std::vector<VtValue>>(userArgs, key)) {
         TF_CODING_ERROR(
             "Dictionary is missing required key '%s' or key is "
@@ -554,7 +579,11 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialCollections))
     , exportMeshUVs(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
     , exportNurbsExplicitUV(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
-    , exportReferenceObjects(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportReferenceObjects))
+    , referenceObjectMode(_Token(
+          userArgs,
+          UsdMayaJobExportArgsTokens->referenceObjectMode,
+          UsdMayaJobExportArgsTokens->none,
+          { UsdMayaJobExportArgsTokens->attributeOnly, UsdMayaJobExportArgsTokens->defaultToMesh }))
     , exportRefsAsInstanceable(
           _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportRefsAsInstanceable))
     , exportSkels(_Token(
@@ -587,6 +616,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           { UsdMayaJobExportArgsTokens->currentLayer,
             UsdMayaJobExportArgsTokens->modelingVariant }))
     , rootKind(_String(userArgs, UsdMayaJobExportArgsTokens->kind))
+    , disableModelKindProcessor(
+          _Boolean(userArgs, UsdMayaJobExportArgsTokens->disableModelKindProcessor))
     , shadingMode(_Token(
           userArgs,
           UsdMayaJobExportArgsTokens->shadingMode,
@@ -640,6 +671,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << std::endl
         << "exportMeshUVs: " << TfStringify(exportArgs.exportMeshUVs) << std::endl
         << "exportNurbsExplicitUV: " << TfStringify(exportArgs.exportNurbsExplicitUV) << std::endl
+        << "referenceObjectMode: " << exportArgs.referenceObjectMode << std::endl
         << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable)
         << std::endl
         << "exportSkels: " << TfStringify(exportArgs.exportSkels) << std::endl
@@ -664,6 +696,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "parentScope: " << exportArgs.parentScope << std::endl
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
+        << "disableModelKindProcessor: " << exportArgs.disableModelKindProcessor << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
         << "allMaterialConversions: " << std::endl;
     for (const auto& conv : exportArgs.allMaterialConversions) {
@@ -733,20 +766,13 @@ UsdMayaJobExportArgs UsdMayaJobExportArgs::CreateFromDictionary(
 
 /* static */
 MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
-    const MString&       optionsString,
-    VtDictionary*        toFill,
-    std::vector<double>* timeSamples)
+    const MString& optionsString,
+    VtDictionary*  toFill)
 {
     if (!toFill)
         return MS::kFailure;
 
     VtDictionary& userArgs = *toFill;
-
-    bool       exportAnimation = false;
-    GfInterval timeInterval(1.0, 1.0);
-    double     frameStride = 1.0;
-
-    std::set<double> frameSamples;
 
     // Get the options
     if (optionsString.length() > 0) {
@@ -768,15 +794,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
             }
 
             std::string argName(theOption[0].asChar());
-            if (argName == "animation") {
-                exportAnimation = (theOption[1].asInt() != 0);
-            } else if (argName == "startTime") {
-                timeInterval.SetMin(theOption[1].asDouble());
-            } else if (argName == "endTime") {
-                timeInterval.SetMax(theOption[1].asDouble());
-            } else if (argName == "frameStride") {
-                frameStride = theOption[1].asDouble();
-            } else if (argName == "filterTypes") {
+            if (argName == "filterTypes") {
                 std::vector<VtValue> userArgVals;
                 MStringArray         filteredTypes;
                 theOption[1].split(',', filteredTypes);
@@ -787,15 +805,17 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
                 }
                 userArgs[UsdMayaJobExportArgsTokens->filterTypes] = userArgVals;
             } else if (argName == "frameSample") {
-                frameSamples.clear();
-                MStringArray samplesStrings;
+                std::vector<double> samples;
+                MStringArray        samplesStrings;
                 theOption[1].split(' ', samplesStrings);
                 unsigned int nbSams = samplesStrings.length();
                 for (unsigned int sam = 0; sam < nbSams; ++sam) {
                     if (samplesStrings[sam].isDouble()) {
-                        frameSamples.insert(samplesStrings[sam].asDouble());
+                        const double value = samplesStrings[sam].asDouble();
+                        samples.emplace_back(value);
                     }
                 }
+                userArgs[argName] = samples;
             } else if (argName == UsdMayaJobExportArgsTokens->exportRoots.GetText()) {
                 MStringArray exportRootStrings;
                 theOption[1].split(',', exportRootStrings);
@@ -840,6 +860,27 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
         }
     }
 
+    return MS::kSuccess;
+}
+
+/* static */
+void UsdMayaJobExportArgs::GetDictionaryTimeSamples(
+    const VtDictionary&  userArgs,
+    std::vector<double>& timeSamples)
+{
+    const bool   exportAnimation = _Boolean(userArgs, UsdMayaJobExportArgsTokens->animation);
+    const double startTime = _Double(userArgs, UsdMayaJobExportArgsTokens->startTime, 1.0);
+    const double endTime = _Double(userArgs, UsdMayaJobExportArgsTokens->endTime, 1.0);
+    const double frameStride = _Double(userArgs, UsdMayaJobExportArgsTokens->frameStride, 1.0);
+    const std::vector<double> samples
+        = _Vector<double>(userArgs, UsdMayaJobExportArgsTokens->frameSample);
+
+    std::set<double> frameSamples(samples.begin(), samples.end());
+
+    GfInterval timeInterval(1.0, 1.0);
+    timeInterval.SetMin(startTime);
+    timeInterval.SetMax(endTime);
+
     // Now resync start and end frame based on export time interval.
     if (exportAnimation) {
         if (timeInterval.IsEmpty()) {
@@ -852,10 +893,7 @@ MStatus UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
         timeInterval = GfInterval();
     }
 
-    if (timeSamples)
-        *timeSamples = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
-
-    return MS::kSuccess;
+    timeSamples = UsdMayaWriteUtil::GetTimeSamples(timeInterval, frameSamples, frameStride);
 }
 
 /* static */
@@ -865,6 +903,11 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
     static std::once_flag once;
     std::call_once(once, []() {
         // Base defaults.
+        d[UsdMayaJobExportArgsTokens->animation] = false;
+        d[UsdMayaJobExportArgsTokens->startTime] = 1.0;
+        d[UsdMayaJobExportArgsTokens->endTime] = 1.0;
+        d[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
+        d[UsdMayaJobExportArgsTokens->frameSample] = std::vector<double>();
         d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->compatibility] = UsdMayaJobExportArgsTokens->none.GetString();
@@ -877,7 +920,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = false;
         d[UsdMayaJobExportArgsTokens->exportInstances] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
-        d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = false;
+        d[UsdMayaJobExportArgsTokens->referenceObjectMode]
+            = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
         d[UsdMayaJobExportArgsTokens->exportRoots] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->exportSkin] = UsdMayaJobExportArgsTokens->none.GetString();
@@ -890,6 +934,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->filterTypes] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = false;
         d[UsdMayaJobExportArgsTokens->kind] = std::string();
+        d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = false;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = std::string();
         d[UsdMayaJobExportArgsTokens->materialsScopeName]
             = UsdUtilsGetMaterialsScopeName().GetString();
@@ -934,12 +979,19 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
     std::call_once(once, []() {
         // Common types:
         const auto _boolean = VtValue(false);
+        const auto _double = VtValue(0.0);
         const auto _string = VtValue(std::string());
+        const auto _doubleVector = VtValue(std::vector<double>());
         const auto _stringVector = VtValue(std::vector<VtValue>({ _string }));
         const auto _stringTriplet = VtValue(std::vector<VtValue>({ _string, _string, _string }));
         const auto _stringTripletVector = VtValue(std::vector<VtValue>({ _stringTriplet }));
 
         // Provide guide types for the parser:
+        d[UsdMayaJobExportArgsTokens->animation] = _boolean;
+        d[UsdMayaJobExportArgsTokens->startTime] = _double;
+        d[UsdMayaJobExportArgsTokens->endTime] = _double;
+        d[UsdMayaJobExportArgsTokens->frameStride] = _double;
+        d[UsdMayaJobExportArgsTokens->frameSample] = _doubleVector;
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
         d[UsdMayaJobExportArgsTokens->compatibility] = _string;
@@ -952,7 +1004,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportInstances] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = _boolean;
-        d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = _boolean;
+        d[UsdMayaJobExportArgsTokens->referenceObjectMode] = _string;
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportRoots] = _stringVector;
         d[UsdMayaJobExportArgsTokens->exportSkin] = _string;
@@ -965,6 +1017,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->filterTypes] = _stringVector;
         d[UsdMayaJobExportArgsTokens->ignoreWarnings] = _boolean;
         d[UsdMayaJobExportArgsTokens->kind] = _string;
+        d[UsdMayaJobExportArgsTokens->disableModelKindProcessor] = _boolean;
         d[UsdMayaJobExportArgsTokens->materialCollectionsPath] = _string;
         d[UsdMayaJobExportArgsTokens->materialsScopeName] = _string;
         d[UsdMayaJobExportArgsTokens->melPerFrameCallback] = _string;
