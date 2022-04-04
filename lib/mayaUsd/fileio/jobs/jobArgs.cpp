@@ -100,7 +100,7 @@ UsdStageRefPtr _UsdStageRefPtr(const VtDictionary& userArgs, const TfToken& key)
     }
     return VtDictionaryGet<UsdStageRefPtr>(userArgs, key);
 }
-  
+
 /// Extracts a double at \p key from \p userArgs, or defaultValue if it can't extract.
 double _Double(const VtDictionary& userArgs, const TfToken& key, double defaultValue)
 {

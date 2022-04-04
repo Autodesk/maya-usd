@@ -311,13 +311,13 @@ struct UsdMayaJobImportArgs
         TfToken materialConversion;
     };
     using ShadingModes = std::vector<ShadingMode>;
-    ShadingModes      shadingModes; // XXX can we make this const?
-    const TfToken     preferredMaterial;
-    const std::string importUSDZTexturesFilePath;
-    const bool        importUSDZTextures;
-    const bool        importInstances;
-    const bool        useAsAnimationCache;
-    const bool        importWithProxyShapes;
+    ShadingModes         shadingModes; // XXX can we make this const?
+    const TfToken        preferredMaterial;
+    const std::string    importUSDZTexturesFilePath;
+    const bool           importUSDZTextures;
+    const bool           importInstances;
+    const bool           useAsAnimationCache;
+    const bool           importWithProxyShapes;
     const UsdStageRefPtr pullImportStage;
     /// The interval over which to import animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
