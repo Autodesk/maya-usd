@@ -31,6 +31,7 @@
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/editcontext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primFlags.h>
 #include <pxr/usd/usd/primRange.h>
@@ -142,10 +143,8 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(
             mImportData.stageInitialLoadSet() == UsdStage::InitialLoadSet::LoadAll));
 
-        if (mArgs.pullImport)
-            // During a pullImport the sessionLayer is not used to request the proper stage.
-            // We don't want a stage with criteria on the variant selection.
-            stage = UsdStage::Open(rootLayer, mImportData.stageInitialLoadSet());
+        if (mArgs.pullImportStage)
+            stage = mArgs.pullImportStage;
         else
             stage = UsdStage::Open(rootLayer, sessionLayer, mImportData.stageInitialLoadSet());
     }
@@ -153,6 +152,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         return false;
     }
 
+    UsdEditContext editContext(stage, stage->GetSessionLayer());
     stage->SetEditTarget(stage->GetSessionLayer());
     _setTimeSampleMultiplierFrom(stage->GetTimeCodesPerSecond());
 
