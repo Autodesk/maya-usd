@@ -19,6 +19,7 @@
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 #include <algorithm>
@@ -789,6 +790,63 @@ bool mergeDiffPrims(
     return SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath, copyValue, copyChildren);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+/// Create any missing parents as "over". Parents may be missing because we are targeting a
+/// different layer than where the destination prim is authored. The SdfCopySpec function does not
+/// automatically create the missing parent, unlike other functions like UsdStage::CreatePrim.
+///
+/// Unfortunately, USD won't actually author "over" (or even "def") until we set at least one
+/// attribute on it. So we set the active attribute and once the merge is done we clear those
+/// attributes to avoid leaving behind opinions that the user ight not expect to exist. Otherwise
+/// setting these missing parents inactive in lower layer would  have no effect in the future,
+/// to the possible dismay of the user.
+
+class MissingParentsCreator
+{
+public:
+    MissingParentsCreator(
+        const UsdStageRefPtr& dstStage,
+        const SdfLayerRefPtr& dstLayer,
+        const SdfPath&        dstPath)
+        : _stage(dstStage)
+        , _layer(dstLayer)
+    {
+        createMissingParents(dstPath.GetParentPath());
+    }
+
+    ~MissingParentsCreator() { cleanupCreatedParents(); }
+
+private:
+    void createMissingParents(const SdfPath& dstPath)
+    {
+        if (_layer->HasSpec(dstPath))
+            return;
+
+        createMissingParents(dstPath.GetParentPath());
+
+        UsdEditContext editContext(_stage, _layer);
+        UsdPrim        prim = _stage->OverridePrim(dstPath);
+        prim.SetActive(true);
+
+        _createdParents.push_back(dstPath);
+    }
+
+    void cleanupCreatedParents()
+    {
+        for (const auto& path : _createdParents) {
+            UsdEditContext editContext(_stage, _layer);
+            UsdPrim        prim = _stage->OverridePrim(path);
+            prim.ClearActive();
+        }
+    }
+
+    using CreatedParentPaths = std::vector<SdfPath>;
+
+    const UsdStageRefPtr _stage;
+    const SdfLayerRefPtr _layer;
+    CreatedParentPaths   _createdParents;
+};
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -806,6 +864,8 @@ bool mergePrims(
     const SdfPath&           dstPath,
     const MergePrimsOptions& options)
 {
+    MissingParentsCreator parentCreator(dstStage, dstLayer, dstPath);
+
     if (options.ignoreUpperLayerOpinions) {
         auto           tempStage = UsdStage::CreateInMemory();
         SdfLayerHandle tempLayer = tempStage->GetSessionLayer();
