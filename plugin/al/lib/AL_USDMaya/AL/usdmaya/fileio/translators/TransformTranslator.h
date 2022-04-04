@@ -24,6 +24,8 @@
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
+#include <maya/MTypes.h> // For MAYA_APP_VERSION
+
 #include <vector>
 
 namespace AL {
@@ -100,6 +102,7 @@ public:
         MObject&           attribute,
         double&            conversionFactor);
 
+#if MAYA_APP_VERSION > 2019
     /// \brief  helper method to copy attributes from the UsdPrim to the Maya node
     /// \param  attr the maya node to copy the data from
     /// \param  usdAttr the UsdPrim to copy the data to
@@ -125,6 +128,7 @@ public:
         float              scale,
         const UsdTimeCode& timeCode,
         bool               mergeOffsetMatrix);
+#endif
 
 private:
     static MStatus processMetaData(const UsdPrim& from, MObject& to, const ImporterParams& params);

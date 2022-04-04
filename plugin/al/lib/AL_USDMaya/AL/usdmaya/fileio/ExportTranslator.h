@@ -20,6 +20,8 @@
 #include <AL/usdmaya/Api.h>
 #include <AL/usdmaya/fileio/ExportParams.h>
 
+#include <maya/MTypes.h> // For MAYA_APP_VERSION
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
@@ -60,8 +62,10 @@ static constexpr const char* const kDuplicateInstances
     = "Duplicate Instances"; ///< export instances option name
 static constexpr const char* const kMergeTransforms
     = "Merge Transforms"; ///< export by merging transforms and shapes option name
+#if MAYA_APP_VERSION > 2019
 static constexpr const char* const kMergeOffsetParentMatrix
     = "Merge Offset Parent Matrix"; ///< export by merging offset parent matrix
+#endif
 static constexpr const char* const kAnimation = "Animation"; ///< export animation data option name
 static constexpr const char* const kUseTimelineRange
     = "Use Timeline Range"; ///< export using the timeline range option name
@@ -105,8 +109,10 @@ static MStatus specifyOptions(AL::maya::utils::FileTranslatorOptions& options)
         return MS::kFailure;
     if (!options.addBool(kMergeTransforms, defaultValues.m_mergeTransforms))
         return MS::kFailure;
+#if MAYA_APP_VERSION > 2019
     if (!options.addBool(kMergeOffsetParentMatrix, defaultValues.m_mergeOffsetParentMatrix))
         return MS::kFailure;
+#endif
     if (!options.addBool(kAnimation, defaultValues.m_animation))
         return MS::kFailure;
     if (!options.addBool(kUseTimelineRange, defaultValues.m_useTimelineRange))

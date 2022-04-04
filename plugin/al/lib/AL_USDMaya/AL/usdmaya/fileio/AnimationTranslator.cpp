@@ -27,6 +27,7 @@
 #include <maya/MItDependencyGraph.h>
 #include <maya/MMatrix.h>
 #include <maya/MNodeClass.h>
+#include <maya/MTypes.h> // For MAYA_APP_VERSION
 
 namespace AL {
 namespace usdmaya {
@@ -60,20 +61,29 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
                 ///         maya::Dg
                 ///         usdmaya::Dg
                 ///         usdmaya::fileio::translator::Dg
+#if MAYA_APP_VERSION > 2019
                 translators::TransformTranslator::copyAttributeValue(
                     it->first, it->second, timeCode, params.m_mergeOffsetParentMatrix);
+#else
+                translators::DgNodeTranslator::copyAttributeValue(it->first, it->second, timeCode);
+#endif
             }
             for (auto it = startAttribScaled; it != endAttribScaled; ++it) {
                 /// \todo This feels wrong. Split the DgNodeTranslator class into 3 ...
                 ///         maya::Dg
                 ///         usdmaya::Dg
                 ///         usdmaya::fileio::translator::Dg
+#if MAYA_APP_VERSION > 2019
                 translators::TransformTranslator::copyAttributeValue(
                     it->first,
                     it->second.attr,
                     it->second.scale,
                     timeCode,
                     params.m_mergeOffsetParentMatrix);
+#else
+                translators::DgNodeTranslator::copyAttributeValue(
+                    it->first, it->second.attr, it->second.scale, timeCode);
+#endif
             }
             for (auto it = startTransformAttrib; it != endTransformAttrib; ++it) {
                 translators::TransformTranslator::copyAttributeValue(

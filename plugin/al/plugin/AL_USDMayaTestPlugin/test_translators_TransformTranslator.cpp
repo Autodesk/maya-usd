@@ -26,6 +26,7 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MObjectArray.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MTypes.h> // For MAYA_APP_VERSION
 
 using AL::maya::test::compareNodes;
 using AL::maya::test::randomAnimatedNode;
@@ -500,6 +501,7 @@ TEST(translators_TranformTranslator, worldSpaceGroupsExport)
     ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y3/cube1")));
 }
 
+#if MAYA_APP_VERSION > 2019
 TEST(translators_TranformTranslator, withOffsetParentMatrix)
 {
     MFileIO::newFile(true);
@@ -779,3 +781,5 @@ TEST(translators_TranformTranslator, withOffsetParentMatrix)
         EXPECT_NEAR(1.0, transform[3][3], 1e-6);
     }
 }
+
+#endif

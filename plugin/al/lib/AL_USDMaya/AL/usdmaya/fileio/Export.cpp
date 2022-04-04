@@ -39,6 +39,7 @@
 #include <maya/MNodeClass.h>
 #include <maya/MPlugArray.h>
 #include <maya/MSyntax.h>
+#include <maya/MTypes.h> // For MAYA_APP_VERSION
 
 namespace AL {
 namespace usdmaya {
@@ -1082,11 +1083,13 @@ MStatus ExportCommand::doIt(const MArgList& args)
             argData.getFlagArgument("mt", 0, m_params.m_mergeTransforms),
             "ALUSDExport: Unable to fetch \"merge transforms\" argument");
     }
+#if MAYA_APP_VERSION > 2019
     if (argData.isFlagSet("mom", &status)) {
         AL_MAYA_CHECK_ERROR(
             argData.getFlagArgument("mom", 0, m_params.m_mergeOffsetParentMatrix),
             "ALUSDExport: Unable to fetch \"merge offset parent matrix\" argument");
     }
+#endif
     if (argData.isFlagSet("nc", &status)) {
         bool option;
         argData.getFlagArgument("nc", 0, option);
@@ -1245,8 +1248,10 @@ MSyntax ExportCommand::createSyntax()
     AL_MAYA_CHECK_ERROR2(status, errorString);
     status = syntax.addFlag("-mt", "-mergeTransforms", MSyntax::kBoolean);
     AL_MAYA_CHECK_ERROR2(status, errorString);
+#if MAYA_APP_VERSION > 2019
     status = syntax.addFlag("-mom", "-mergeOffsetParentMatrix", MSyntax::kBoolean);
     AL_MAYA_CHECK_ERROR2(status, errorString);
+#endif
     status = syntax.addFlag("-ani", "-animation", MSyntax::kNoArg);
     AL_MAYA_CHECK_ERROR2(status, errorString);
     status = syntax.addFlag("-fr", "-frameRange", MSyntax::kDouble, MSyntax::kDouble);

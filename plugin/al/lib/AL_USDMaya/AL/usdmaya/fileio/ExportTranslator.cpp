@@ -54,7 +54,9 @@ MStatus ExportTranslator::writer(
     params.m_dynamicAttributes = options.getBool(kDynamicAttributes);
     params.m_duplicateInstances = options.getBool(kDuplicateInstances);
     params.m_mergeTransforms = options.getBool(kMergeTransforms);
+#if MAYA_APP_VERSION > 2019
     params.m_mergeOffsetParentMatrix = options.getBool(kMergeOffsetParentMatrix);
+#endif
     params.m_fileName = file.fullName();
     params.m_selected = mode == MPxFileTranslator::kExportActiveAccessMode;
     params.m_animation = options.getBool(kAnimation);
