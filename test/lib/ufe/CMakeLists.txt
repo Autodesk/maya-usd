@@ -45,6 +45,9 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testUngroupCmd.py
     )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if(CMAKE_WANT_MATERIALX_BUILD)
         list(APPEND TEST_SCRIPT_FILES
             testShaderNodeDef.py

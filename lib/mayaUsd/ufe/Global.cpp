@@ -155,6 +155,9 @@ MStatus initialize()
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
     handlers.cameraHandler = UsdCameraHandler::create();
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
+#endif
 
     // USD has a very flexible data model to support 3d transformations --- see
     // https://graphics.pixar.com/usd/docs/api/class_usd_geom_xformable.html
@@ -195,9 +198,6 @@ MStatus initialize()
     auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(
         kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler);
-#endif
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 #endif
 
 #if !defined(NDEBUG)
