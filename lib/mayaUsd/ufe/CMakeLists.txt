@@ -79,11 +79,13 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    target_sources(${PROJECT_NAME}
-        PRIVATE
-            UsdShaderNodeDef.cpp
-            UsdShaderNodeDefHandler.cpp
-    )
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdShaderNodeDef.cpp
+                UsdShaderNodeDefHandler.cpp
+        )
+    endif()
 endif()
 
 set(HEADERS
@@ -163,10 +165,12 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    list(APPEND HEADERS
-        UsdShaderNodeDef.h
-        UsdShaderNodeDefHandler.h
-    )
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
+        list(APPEND HEADERS
+            UsdShaderNodeDef.h
+            UsdShaderNodeDefHandler.h
+        )
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
