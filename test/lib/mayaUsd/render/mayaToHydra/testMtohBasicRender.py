@@ -5,6 +5,7 @@ import sys
 import unittest
 
 import maya.cmds as cmds
+import maya.mel
 
 import fixturesUtils
 import mtohUtils
@@ -47,17 +48,21 @@ class TestSnapshot(mtohUtils.MtohTestCase):
         # flat_orange_bad.png, and 163200000 is the maximum diff for an 8-bit,
         # 40x40, 4-channel image.  So this tests that assertSnapshotClose is
         # working
-        self.assertSnapshotClose("flat_orange_bad.png", 17515 / 163200000.0)
+        self.assertSnapshotClose("flat_orange_bad.png", None, 17515 / 163200000.0)
 
 
 class TestHdMayaRender(mtohUtils.MtohTestCase):
     _file = __file__
 
     def test_cube(self):
+        imageVersion = None
+        if maya.mel.eval("defaultShaderName") != "standardSurface1":
+            imageVersion = 'lambertDefaultMaterial'
+
         self.makeCubeScene(camDist=6)
-        self.assertSnapshotClose("cube_unselected.png")
+        self.assertSnapshotClose("cube_unselected.png", imageVersion, 0.0002)
         cmds.select(self.cubeTrans)
-        self.assertSnapshotClose("cube_selected.png")
+        self.assertSnapshotClose("cube_selected.png", imageVersion, 0.0002)
 
 
 if __name__ == '__main__':
