@@ -577,7 +577,6 @@ void HdMayaMaterialNetworkConverter::initialize()
                 { HdMayaAdapterTokens->clearcoatRoughness, coatRoughnessConverter },
                 { HdMayaAdapterTokens->opacity, transmissionToOpacity },
                 { HdMayaAdapterTokens->metallic, fixedZeroFloat },
-                { HdMayaAdapterTokens->useSpecularWorkflow, fixedOneInt },
             } } },
         { HdMayaAdapterTokens->file,
           { UsdImagingTokens->UsdUVTexture,
