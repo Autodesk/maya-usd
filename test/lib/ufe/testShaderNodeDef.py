@@ -24,6 +24,7 @@ from maya import standalone
 import ufe
 import mayaUsd.ufe
 
+import os
 import unittest
 
 class ShaderNodeDefTestCase(unittest.TestCase):
@@ -50,6 +51,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertIsNotNone(nodeDefHandler)
         return nodeDefHandler
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4001', 'nodeDefHandler is only available in UFE preview version 0.4.1 and greater')
     def testDefinitions(self):
         nodeDefHandler = self.getNodeDefHandler()
         nodeDefs = nodeDefHandler.definitions("Shader")
@@ -91,6 +93,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         for mtlxDef in mtlxDefs:
             self.assertTrue(mtlxDef in nodeDefTypes)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4001', 'nodeDefHandler is only available in UFE preview version 0.4.1 and greater')
     def testDefinitionByType(self):
         type = "ND_image_color3"
         nodeDefHandler = self.getNodeDefHandler()
