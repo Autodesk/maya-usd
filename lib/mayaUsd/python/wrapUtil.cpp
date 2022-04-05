@@ -37,7 +37,7 @@ VtDictionary getDictionaryFromEncodedOptions(const std::string& textOptions)
 {
     VtDictionary dictOptions;
     auto         status = UsdMayaJobExportArgs::GetDictionaryFromEncodedOptions(
-        MString(textOptions.c_str()), &dictOptions, nullptr);
+        MString(textOptions.c_str()), &dictOptions);
     if (status != MS::kSuccess)
         return VtDictionary();
     return dictOptions;

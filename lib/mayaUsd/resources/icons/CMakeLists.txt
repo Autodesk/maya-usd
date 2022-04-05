@@ -16,7 +16,7 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
         GeomSubset
         LightFilter
         LightPortal
-        mayaReference
+        MayaReference
         Mesh
         NurbsPatch
         PointInstancer

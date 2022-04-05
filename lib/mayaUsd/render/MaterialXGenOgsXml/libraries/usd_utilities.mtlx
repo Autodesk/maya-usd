@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <!--
+ Copyright 2022 Autodesk
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+  -->
+
+  <!-- ======================================================================== -->
+  <!-- Utilities specific to USD handling                                       -->
+  <!-- ======================================================================== -->
+
+  <!-- Node: texcoordtangents: Generate world tangents from derivatives of position
+             and texcoord                                                       -->
+  <nodedef name="MayaND_texcoordtangents_vector3" node="texcoordtangents" nodegroup="math">
+    <input name="position" type="vector3" defaultgeomprop="Pworld" />
+    <input name="normal" type="vector3" defaultgeomprop="Nworld" />
+    <input name="texcoord" type="vector2" defaultgeomprop="UV0" />
+    <output name="out" type="vector3" />
+  </nodedef>
+
+  <!-- Node: arbitrarytangents: Completely arbitrary tangent for when there is no
+             texcoord space available                                           -->
+  <nodedef name="MayaND_arbitrarytangents_vector3" node="arbitrarytangents" nodegroup="math">
+    <input name="position" type="vector3" defaultgeomprop="Pworld" />
+    <input name="normal" type="vector3" defaultgeomprop="Nworld" />
+    <output name="out" type="vector3" />
+  </nodedef>
+
+  <!-- Explicit color conversion while waiting for an OCIO-enabled MaterialX    -->
+  <nodedef name="MayaND_sRGBtoLinrec709_color3" node="sRGBtoLinrec709" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinrec709_color4" node="sRGBtoLinrec709" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoACEScg_color3" node="sRGBtoACEScg" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoACEScg_color4" node="sRGBtoACEScg" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoACES2065_color3" node="sRGBtoACES2065" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoACES2065_color4" node="sRGBtoACES2065" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinDCIP3D65_color3" node="sRGBtoLinDCIP3D65" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinDCIP3D65_color4" node="sRGBtoLinDCIP3D65" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinrec2020_color3" node="sRGBtoLinrec2020" nodegroup="adjustment">
+    <input name="in" type="color3" value="0, 0, 0" />
+    <output name="out" type="color3" />
+  </nodedef>
+
+  <nodedef name="MayaND_sRGBtoLinrec2020_color4" node="sRGBtoLinrec2020" nodegroup="adjustment">
+    <input name="in" type="color4" value="0, 0, 0, 1" />
+    <output name="out" type="color4" />
+  </nodedef>
+
+</materialx>

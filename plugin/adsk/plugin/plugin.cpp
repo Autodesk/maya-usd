@@ -21,6 +21,7 @@
 #include "adskStageLoadUnloadCommands.h"
 #include "base/api.h"
 #include "exportTranslator.h"
+#include "geomNode.h"
 #include "importTranslator.h"
 
 #include <mayaUsd/base/api.h>
@@ -271,6 +272,13 @@ MStatus initializePlugin(MObject obj)
         MayaUsdProxyShapePlugin::getProxyShapeClassification());
     CHECK_MSTATUS(status);
 
+    status = plugin.registerNode(
+        MayaUsd::MayaUsdGeomNode::typeName,
+        MayaUsd::MayaUsdGeomNode::typeId,
+        MayaUsd::MayaUsdGeomNode::creator,
+        MayaUsd::MayaUsdGeomNode::initialize);
+    CHECK_MSTATUS(status);
+
     registerCommandCheck<MayaUsd::ADSKMayaUSDListJobContextsCommand>(plugin);
     registerCommandCheck<MayaUsd::ADSKMayaUSDListShadingModesCommand>(plugin);
 
@@ -334,6 +342,8 @@ MStatus initializePlugin(MObject obj)
 #endif
 
     UsdMayaSceneResetNotice::InstallListener();
+    UsdMayaBeforeSceneResetNotice::InstallListener();
+    UsdMayaExitNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
@@ -405,6 +415,9 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
     CHECK_MSTATUS(status);
 
+    status = plugin.deregisterNode(MayaUsd::MayaUsdGeomNode::typeId);
+    CHECK_MSTATUS(status);
+
     status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 
@@ -440,6 +453,8 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();
+    UsdMayaBeforeSceneResetNotice::RemoveListener();
+    UsdMayaExitNotice::RemoveListener();
     UsdMayaDiagnosticDelegate::RemoveDelegate();
 
     return status;

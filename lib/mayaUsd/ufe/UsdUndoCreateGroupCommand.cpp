@@ -35,14 +35,14 @@ namespace ufe {
 
 UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(
     const UsdSceneItem::Ptr& parentItem,
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
+#ifndef UFE_V3_FEATURES_AVAILABLE
     const Ufe::Selection& selection,
 #endif
     const Ufe::PathComponent& name)
     : Ufe::InsertChildCommand()
     , _parentItem(parentItem)
     , _name(name)
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
+#ifndef UFE_V3_FEATURES_AVAILABLE
     , _selection(selection)
 #endif
     , _groupCompositeCmd(std::make_shared<Ufe::CompositeUndoableCommand>())
@@ -53,12 +53,12 @@ UsdUndoCreateGroupCommand::~UsdUndoCreateGroupCommand() { }
 
 UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
     const UsdSceneItem::Ptr& parentItem,
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
+#ifndef UFE_V3_FEATURES_AVAILABLE
     const Ufe::Selection& selection,
 #endif
     const Ufe::PathComponent& name)
 {
-#if (UFE_PREVIEW_VERSION_NUM >= 3005)
+#ifdef UFE_V3_FEATURES_AVAILABLE
     return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, name);
 #else
     return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, selection, name);
@@ -85,7 +85,7 @@ void UsdUndoCreateGroupCommand::execute()
         _groupCompositeCmd->append(setKindCmd);
         setKindCmd->execute();
     }
-#if (UFE_PREVIEW_VERSION_NUM < 3005)
+#ifndef UFE_V3_FEATURES_AVAILABLE
     // Make sure to handle the exception if the parenting operation fails.
     // This scenario happens if a user tries to group prim(s) in a layer
     // other than the one where they were defined. In this case, the group creation itself

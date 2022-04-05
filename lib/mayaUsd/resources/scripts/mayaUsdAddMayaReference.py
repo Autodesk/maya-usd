@@ -107,13 +107,14 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
             # and validate the input name.
             # Note: it is allowed to be input as empty in which case a default is used.
             if groupPrimName:
+                groupPrimName = Tf.MakeValidIdentifier(groupPrimName)
                 checkGroupPrimName = mayaUsd.ufe.uniqueChildName(parentPrim, groupPrimName)
                 if checkGroupPrimName != groupPrimName:
                     errorMsgFormat = getMayaUsdLibString('kErrorGroupPrimExists')
                     errorMsg = cmds.format(errorMsgFormat, stringArg=(groupPrimName, ufePathStr))
                     om.MGlobal.displayError(errorMsg)
                     return Usd.Prim()
-                groupPrimName = Tf.MakeValidIdentifier(checkGroupPrimName)
+                groupPrimName = checkGroupPrimName
 
         # If the group prim was either not provided or empty we use a default name.
         if not groupPrimName:
@@ -130,13 +131,14 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
     # Note: if we are given a group prim to create, then we know that the
     #       Maya Reference prim name will be unique since it will be the
     #       only child (of the newly created group prim).
+    mayaReferencePrimName = Tf.MakeValidIdentifier(mayaReferencePrimName)
     checkName = mayaUsd.ufe.uniqueChildName(parentPrim, mayaReferencePrimName) if groupPrim is None else mayaReferencePrimName
     if checkName != mayaReferencePrimName:
         errorMsgFormat = getMayaUsdLibString('kErrorMayaRefPrimExists')
         errorMsg = cmds.format(errorMsgFormat, stringArg=(mayaReferencePrimName, ufePathStr))
         om.MGlobal.displayError(errorMsg)
         return Usd.Prim()
-    validatedPrimName = Tf.MakeValidIdentifier(checkName)
+    validatedPrimName = checkName
 
     # Extract the USD path segment from the UFE path and append the Maya
     # reference prim to it.
@@ -144,52 +146,61 @@ def createMayaReferencePrim(ufePathStr, mayaReferencePath, mayaNamespace,
 
     stage = mayaUsd.ufe.getStage(ufePathStr)
 
-    # Optionally insert a Group prim as a parent of the Maya reference prim.
-    groupPrim = None
-    if groupPrimName:
-        groupPath = Sdf.AssetPath(parentPath + '/' + groupPrimName)
-        try:
-            groupPrim = stage.DefinePrim(groupPath.path, groupPrimType)
-        except (Tf.ErrorException):
-            groupPrim = Usd.Prim()
-        if not groupPrim.IsValid():
-            errorMsgFormat = getMayaUsdLibString('kErrorCreatingGroupPrim')
-            errorMsg = cmds.format(errorMsgFormat, stringArg=(ufePathStr))
-            om.MGlobal.displayError(errorMsg)
-            return Usd.Prim()
-        if groupPrimKind:
-            model = Usd.ModelAPI(groupPrim)
-            model.SetKind(groupPrimKind)
+    with mayaUsd.lib.UsdUndoBlock():
+        # Optionally insert a Group prim as a parent of the Maya reference prim.
+        groupPrim = None
+        if groupPrimName:
+            groupPath = Sdf.AssetPath(parentPath + '/' + groupPrimName)
+            try:
+                groupPrim = stage.DefinePrim(groupPath.path, groupPrimType)
+            except (Tf.ErrorException):
+                groupPrim = Usd.Prim()
+            if not groupPrim.IsValid():
+                errorMsgFormat = getMayaUsdLibString('kErrorCreatingGroupPrim')
+                errorMsg = cmds.format(errorMsgFormat, stringArg=(ufePathStr, groupPrimName))
+                om.MGlobal.displayError(errorMsg)
+                return Usd.Prim()
+            if groupPrimKind:
+                model = Usd.ModelAPI(groupPrim)
+                model.SetKind(groupPrimKind)
 
-    if groupPrim:
-        primPath = Sdf.AssetPath(groupPrim.GetPath().pathString + '/' + validatedPrimName)
-    else:
-        primPath = Sdf.AssetPath(parentPath + '/' + validatedPrimName)
+        if groupPrim:
+            primPath = Sdf.AssetPath(groupPrim.GetPath().pathString + '/' + validatedPrimName)
+        else:
+            primPath = Sdf.AssetPath(parentPath + '/' + validatedPrimName)
 
-    # Were we given a Variant Set to create?
-    variantSetName = None
-    variantName = None
-    if variantSet and (len(variantSet) == 2):
-        variantSetName, variantName = variantSet
-    if variantSetName and variantName:
-        validatedVariantSetName = Tf.MakeValidIdentifier(variantSetName)
-        validatedVariantName = Tf.MakeValidIdentifier(variantName)
+        # Were we given a Variant Set to create?
+        variantSetName = None
+        variantName = None
+        if variantSet and (len(variantSet) == 2):
+            variantSetName, variantName = variantSet
+        if variantSetName and variantName:
+            validatedVariantSetName = Tf.MakeValidIdentifier(variantSetName)
+            validatedVariantName = Tf.MakeValidIdentifier(variantName)
 
-        # If we created a group prim add the variant set there, otherwise add it
-        # to the prim that corresponds to the input ufe path.
-        variantPrim = groupPrim if groupPrim else mayaUsd.ufe.ufePathToPrim(ufePathStr)
-        vset = variantPrim.GetVariantSet(validatedVariantSetName)
-        vset.AddVariant(validatedVariantName)
-        vset.SetVariantSelection(validatedVariantName)
-        with vset.GetVariantEditContext():
-            # Now all of our subsequent edits will go "inside" the
-            # 'variantName' variant of 'variantSetName'.
-            prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)
-    else:
-        prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)
+            # If we created a group prim add the variant set there, otherwise add it
+            # to the prim that corresponds to the input ufe path.
+            variantPrim = groupPrim if groupPrim else mayaUsd.ufe.ufePathToPrim(ufePathStr)
+            try:
+                vset = variantPrim.GetVariantSet(validatedVariantSetName)
+                vset.AddVariant(validatedVariantName)
+                vset.SetVariantSelection(validatedVariantName)
+            except (Tf.ErrorException):
+                errorMsgFormat = getMayaUsdLibString('kErrorCreateVariantSet')
+                errorMsg = cmds.format(errorMsgFormat,
+                                    stringArg=(str(variantPrim.GetPrimPath()), validatedVariantName, str(variantPrim.GetName())))
+                om.MGlobal.displayError(errorMsg)
+                return Usd.Prim()
+            with vset.GetVariantEditContext():
+                # Now all of our subsequent edits will go "inside" the
+                # 'variantName' variant of 'variantSetName'.
+                prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)
+        else:
+                prim = createPrimAndAttributes(stage, primPath, mayaReferencePath, mayaNamespace, mayaAutoEdit)                
+            
     if prim is None or not prim.IsValid():
         errorMsgFormat = getMayaUsdLibString('kErrorCreatingMayaRefPrim')
-        errorMsg = cmds.format(errorMsgFormat, stringArg=(ufePathStr))
+        errorMsg = cmds.format(errorMsgFormat, stringArg=(ufePathStr, validatedPrimName))
         om.MGlobal.displayError(errorMsg)
         return Usd.Prim()
 

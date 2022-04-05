@@ -85,6 +85,10 @@ UsdShadeOutput CreateShaderOutputAndConnectMaterial(
 
 // Connects a place2dTexture to a texture node
 MAYAUSD_CORE_PUBLIC
+void ConnectPlace2dTexture(MObject textureNode, MObject uvNode);
+
+// Creates and connects a place2dTexture to a texture node
+MAYAUSD_CORE_PUBLIC
 MObject CreatePlace2dTextureAndConnectTexture(MObject textureNode);
 
 /// Computes a USD file name from a Maya file name.

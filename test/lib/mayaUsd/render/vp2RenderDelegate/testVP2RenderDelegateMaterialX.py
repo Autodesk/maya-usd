@@ -50,15 +50,13 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
 
         cls._testDir = os.path.abspath('.')
 
-    def assertSnapshotClose(self, imageName):
+    def assertSnapshotClose(self, imageName, w=960, h=540):
         baselineImage = os.path.join(self._baselineDir, imageName)
         snapshotImage = os.path.join(self._testDir, imageName)
-        imageUtils.snapshot(snapshotImage, width=960, height=540)
+        imageUtils.snapshot(snapshotImage, width=w, height=h)
         return self.assertImagesClose(baselineImage, snapshotImage)
 
     def _StartTest(self, testName):
-        cmds.file(force=True, new=True)
-        cmds.move(2, -2, 1.5, 'persp')
         mayaUtils.loadPlugin("mayaUsdPlugin")
         
         self._testName = testName
@@ -71,8 +69,41 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
     def testUVStreamManagement(self):
         """Test that a scene without primvar readers renders correctly if it
            uses indexed UV streams"""
+        cmds.file(force=True, new=True)
+        cmds.move(2, -2, 1.5, 'persp')
         self._StartTest('MtlxUVStreamTest')
 
+    def testMayaSurfaces(self):
+        cmds.file(force=True, new=True)
+        cmds.move(6, -6, 6, 'persp')
+        cmds.rotate(60, 0, 45, 'persp')
+        self._StartTest('MayaSurfaces')
+
+    def testMayaPlace2dTexture(self):
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        # Too much differences between Linux and Windows otherwise
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
+
+        testFile = testUtils.getTestScene("MaterialX", "place2dTextureShowcase.ma")
+        cmds.file(testFile, force=True, open=True)
+        cmds.move(0, 7, -1.5, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')        
+        self.assertSnapshotClose('place2dTextureShowcase_Maya_render.png', 960, 960)
+        usdFilePath = os.path.join(self._testDir, "place2dTextureShowcase.usda")
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            materialsScopeName='Materials')
+        xform, shape = mayaUtils.createProxyFromFile(usdFilePath)
+        cmds.move(0, 0, 1, xform)
+        self.assertSnapshotClose('place2dTextureShowcase_USD_render.png', 960, 960)
+
+        cmds.delete(xform)
+        xform = cmds.mayaUSDImport(file=usdFilePath, shadingMode=[["useRegistry","MaterialX"]])
+        cmds.move(0, 0, 1, xform)
+        self.assertSnapshotClose('place2dTextureShowcase_Import_render.png', 960, 960)
+
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
 
 
 if __name__ == '__main__':

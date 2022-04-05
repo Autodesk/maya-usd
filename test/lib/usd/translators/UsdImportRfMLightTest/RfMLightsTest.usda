@@ -266,5 +266,12 @@ def Xform "RfMLightsTest" (
             }
         }
     }
+
+    def Scope "NonMaterialsScope"
+    {
+        def RectLight "NonRootRectLight"
+        {
+        }
+    }
 }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2019 Autodesk
+# Copyright 2022 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -66,6 +66,18 @@ def createUfeSceneItem(dagPath, sdfPath=None):
     ufePath = ufe.PathString.path('{},{}'.format(dagPath,sdfPath) if sdfPath != None else '{}'.format(dagPath))
     ufeItem = ufe.Hierarchy.createItem(ufePath)
     return ufeItem
+
+def createItem(ufePathOrPathString):
+    '''Create a UFE scene item from a UFE path or path string.'''
+    path = ufe.PathString.path(ufePathOrPathString) \
+           if isinstance(ufePathOrPathString, str) else ufePathOrPathString
+           
+    return ufe.Hierarchy.createItem(path)
+
+def createHierarchy(ufePathOrPathStringOrItem):
+    '''Create a UFE scene item from a UFE path, path string, or scene item.'''
+    item = ufePathOrPathStringOrItem if isinstance(ufePathOrPathStringOrItem, ufe.SceneItem) else createItem(ufePathOrPathStringOrItem)
+    return ufe.Hierarchy.hierarchy(item)
 
 def selectUfeItems(selectItems):
     """

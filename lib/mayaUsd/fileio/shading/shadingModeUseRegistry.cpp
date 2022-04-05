@@ -298,6 +298,10 @@ private:
             }
         }
 
+        for (auto&& writerEntry : shaderWriterMap) {
+            writerEntry.second->PostExport();
+        }
+
         return topLevelShader;
     }
 
@@ -544,6 +548,9 @@ private:
         MPlug                        sourcePlug;
         if (iter != _shaderReaderMap.end()) {
             shaderReader = iter->second;
+            if (!shaderReader) {
+                return MPlug();
+            }
             sourceObj = shaderReader->GetCreatedObject(*_context, shaderSchema.GetPrim());
             if (sourceObj.isNull()) {
                 return MPlug();
@@ -637,7 +644,8 @@ private:
 
         for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
             MPlug mayaAttr = shaderReader.GetMayaPlugForUsdAttrName(input.GetFullName(), shaderObj);
-            if (mayaAttr.isNull()) {
+            if (mayaAttr.isNull()
+                && !shaderReader.TraverseUnconnectableInput(input.GetFullName())) {
                 continue;
             }
 
@@ -678,7 +686,9 @@ private:
                 continue;
             }
 
-            UsdMayaUtil::Connect(srcAttr, mayaAttr, false);
+            if (!mayaAttr.isNull()) {
+                UsdMayaUtil::Connect(srcAttr, mayaAttr, false);
+            }
         }
 
         shaderReader.PostConnectSubtree(_context->GetPrimReaderContext());

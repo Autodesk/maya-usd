@@ -123,9 +123,9 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->ignoreWarnings.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
-        kExportReferenceObjectsFlag,
-        UsdMayaJobExportArgsTokens->exportReferenceObjects.GetText(),
-        MSyntax::kBoolean);
+        kReferenceObjectModeFlag,
+        UsdMayaJobExportArgsTokens->referenceObjectMode.GetText(),
+        MSyntax::kString);
     syntax.addFlag(
         kExportRootsFlag, UsdMayaJobExportArgsTokens->exportRoots.GetText(), MSyntax::kString);
     syntax.makeFlagMultiUse(kExportRootsFlag);
@@ -148,6 +148,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->renderLayerMode.GetText(),
         MSyntax::kString);
     syntax.addFlag(kKindFlag, UsdMayaJobExportArgsTokens->kind.GetText(), MSyntax::kString);
+    syntax.addFlag(
+        kDisableModelKindProcessorFlag,
+        UsdMayaJobExportArgsTokens->disableModelKindProcessor.GetText(),
+        MSyntax::kBoolean);
     syntax.addFlag(
         kCompatibilityFlag, UsdMayaJobExportArgsTokens->compatibility.GetText(), MSyntax::kString);
 

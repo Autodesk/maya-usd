@@ -1007,6 +1007,10 @@ bool UsdMayaGLBatchRenderer::_TestIntersection(
         GL_VIEWPORT_BIT | GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT
         | GL_STENCIL_BUFFER_BIT | GL_TEXTURE_BIT | GL_POLYGON_BIT);
 
+    GLuint vao = 0;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
     // hydra orients all geometry during topological processing so that
     // front faces have ccw winding. We disable culling because culling
     // is handled by fragment shader discard.
@@ -1035,6 +1039,9 @@ bool UsdMayaGLBatchRenderer::_TestIntersection(
     VtValue vtPickParams(pickParams);
     _hdEngine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
     _hdEngine.Execute(_renderIndex.get(), &tasks);
+
+    glBindVertexArray(0);
+    glDeleteVertexArrays(1, &vao);
 
     glPopAttrib();
 

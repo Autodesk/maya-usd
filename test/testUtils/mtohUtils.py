@@ -37,11 +37,14 @@ class MtohTestCase(ImageDiffingTestCase):
 
         cls._testDir = os.path.abspath('.')
 
-    def assertSnapshotClose(self, refImage,
+    def assertSnapshotClose(self, refImage, imageVersion=None,
                             maxAvgChannelDiff=\
                                 ImageDiffingTestCase.AVG_CHANNEL_DIFF):
         if not os.path.isabs(refImage):
-            refImage = os.path.join(self._inputDir, refImage)
+            if imageVersion:
+                refImage = os.path.join(self._inputDir, imageVersion, refImage)
+            else:
+                refImage = os.path.join(self._inputDir, refImage)
         super(MtohTestCase, self).assertSnapshotClose(
             refImage, maxAvgChannelDiff=maxAvgChannelDiff)
 

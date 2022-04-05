@@ -4,6 +4,9 @@ set(TEST_SCRIPT_FILES
     testExportChaser.py
     testImportChaser.py
     testJobContextRegistry.py
+
+    # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
+    # will be skipped if not found (probably because BUILD_PXR_PLUGIN is off).
     testSchemaApiAdaptor.py
 )
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
@@ -20,6 +23,8 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         testDiscardEdits.py
         testDuplicateAs.py
         testPrimUpdater.py
+        testCacheToUsd.py
+        testMayaUsdOptions.py
     )
 endif()
 
@@ -36,8 +41,6 @@ foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        ENV
-            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
     )
 
     # Add a ctest label to these tests for easy filtering.
@@ -68,7 +71,6 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENV
-            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "${PXR_OVERRIDE_PLUGINPATH_NAME}=${CMAKE_CURRENT_SOURCE_DIR}/UsdCustomRigSchema/"
     )
 endif()

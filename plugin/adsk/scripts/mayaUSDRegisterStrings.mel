@@ -43,7 +43,6 @@ global proc mayaUSDRegisterStrings()
     register("kLabelStageSource", "Stage Source");
     register("kLabelStageDisplay", "Stage Display");
     register("kLoad", "Load");
-    register("kLoadAll", "Load All");
     register("kLoadPayloads", "Load Payloads:");
     register("kLoadPayloadsAnn", "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded.");
     register("kLoadPayloadsSbm", "Loads prims marked as payloads");
@@ -70,8 +69,6 @@ global proc mayaUSDRegisterStrings()
     register("kMenuSaveAs", "Save As...");
     register("kMenuSaveEdits", "Save Edits");
     register("kMenuUnmute", "Unmute");
-    register("kPayloads", "Payloads");
-    register("kPayloadsAnn", "Select to load or unload all prims marked as payloads, including their descendants, into the stage.");
     register("kPointInstances", "Point Instances");
     register("kPurposeAnn", "Toggle purpose categories on and off to change their visibility in the viewport.");
     register("kPurposeLabel", "Purpose");
@@ -118,7 +115,6 @@ global proc mayaUSDRegisterStrings()
     register("kTimeAnn", "Edits the current time value of a stage, which corresponds to the animation frame drawn in the viewport. By default, this value connects to Maya's global time node.");
     register("kTipYouCanChooseMultipleFiles", "<b>Tip:</b>  You can choose multiple files.");
     register("kUniversalSceneDescription", "Universal Scene Description");
-    register("kUnloadAll", "Unload All");
     register("kUsdFileOptions", "USD File Options");
     register("kUsdOptionsFrameLabel", "Universal Scene Description (USD) Options");
     register("kSaveOption2GBWarning", "<b>Important</b>: per layer, any data exceeding the limit of 2GB will not be saved.");
@@ -130,6 +126,8 @@ global proc mayaUSDRegisterStrings()
     register("kExportBlendShapesLbl", "Blend Shapes:");
     register("kExportColorSetsAnn", "Exports Maya Color Sets as USD primvars.");
     register("kExportColorSetsLbl", "Color Sets:");
+    register("kExportCurvesAnn", "If selected, curves get exported to USD primTypes NurbsCurves or BasisCurves.");
+    register("kExportCurvesLbl", "NURBS Curves:");
     register("kExportDefaultFormatAnn", "Select whether the .usd file is written out in binary or ASCII");
     register("kExportDefaultFormatLbl", ".usd File Format:");
     register("kExportDefaultFormatBinLbl", "Binary");
@@ -162,9 +160,9 @@ global proc mayaUSDRegisterStrings()
     register("kExportMergeShapesLbl", "Merge Transform and\nShape Nodes:");
     register("kExportNamespacesAnn", "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1");
     register("kExportNamespacesLbl", "Include Namespaces:");
-    register("kExportParentScopAnn", "Name of the USD scope that is the parent of the exported data.");
-    register("kExportParentScopLbl", "Create USD Parent Scope:");
-    register("kExportParentScopPht", "USD Prim Name");
+    register("kExportParentScopeAnn", "Name of the USD scope that is the parent of the exported data.");
+    register("kExportParentScopeLbl", "Create USD Parent Scope:");
+    register("kExportParentScopePht", "USD Prim Name");
     register("kExportSkelsAnn", "Exports Maya joints as part of a USD skeleton.");
     register("kExportSkelsLbl", "Skeletons:");
     register("kExportSkelsNoneLbl", "None");
@@ -215,10 +213,10 @@ global proc mayaUSDRegisterStrings()
     register("kImportUSDZTxtLbl", "USDZ Texture Import: ");
     register("kImportVariantsInScopeNumLbl", "Variants Switched in Scope:");
     register("kMayaRefMergeEdits", "Merge Maya Edits to USD");
-    register("kMergeToUSDOptionsTitle", "Merge Maya Edits to USD Options");
-    register("kMergeButton", "Merge");
-    register("kMayaRefDiscardEdits", "Discard Maya Edits");
+    register("kMayaDiscardEdits", "Discard Maya Edits");
+    register("kMayaRefDiscardEdits", "Cancel Editing as Maya Data");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
+    register("kMayaRefDuplicateAsUsdDataDiv", "Stages");
 
     // Register the strings from the python equivalent register function.
     // Note: the strings from both the MEL and python register can be loaded
