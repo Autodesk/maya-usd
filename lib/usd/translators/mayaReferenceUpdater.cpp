@@ -18,6 +18,8 @@
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsdUtils/MergePrims.h>
@@ -38,6 +40,8 @@
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
+
+#include <maya/MFnAttribute.h>
 
 namespace {
 std::string findValue(const PXR_NS::VtDictionary& routingData, const PXR_NS::TfToken& key)
@@ -107,6 +111,49 @@ bool PxrUsdTranslators_MayaReferenceUpdater::shouldAutoEdit() const
 
 /* virtual */
 bool PxrUsdTranslators_MayaReferenceUpdater::canEditAsMaya() const { return true; }
+
+/* virtual */
+bool PxrUsdTranslators_MayaReferenceUpdater::editAsMaya()
+{
+    // Lock the transform node that corresponds to the Maya reference prim.
+    MDagPath transformPath;
+    if (MDagPath::getAPathTo(getMayaObject(), transformPath) != MS::kSuccess) {
+        return false;
+    }
+
+    MayaUsd::LockNodesUndoItem::lock(
+        "Maya reference pulled transform locking", transformPath, true);
+
+    // Lock all attributes except the transform attributes.  Create a set of
+    // Maya attributes that are converted to USD transform attributes.
+    // Children of compounds are ignored, as their parent will be locked.
+    static std::set<std::string> xformAttrNames;
+    if (xformAttrNames.empty()) {
+        for (const auto& opClass : UsdMayaXformStack::MayaStack().GetOps()) {
+            if (!opClass.IsInvertedTwin()) {
+                xformAttrNames.insert(std::string(opClass.GetName().GetText()));
+            }
+        }
+    }
+
+    MFnDependencyNode fn(getMayaObject());
+    auto              attrCount = fn.attributeCount();
+    for (unsigned int i = 0; i < attrCount; ++i) {
+        auto attr = fn.attribute(i);
+        auto plug = fn.findPlug(attr, true);
+        if (plug.isChild()) {
+            // Skip children of compounds, as their parent will be locked.
+            continue;
+        }
+        // If the attribute is not in our set of transform attributes, lock it.
+        MFnAttribute fnAttr(attr);
+        if (xformAttrNames.count(std::string(fnAttr.name().asChar())) == 0) {
+            plug.setLocked(true);
+        }
+    }
+
+    return true;
+}
 
 /* virtual */
 UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCopySpecs(
@@ -183,8 +230,22 @@ bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
 /* virtual */
 bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
 {
-    const MObject& parentNode = getMayaObject();
-    return UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode) == MS::kSuccess;
+    // As of 25-Feb-2022 the Maya transform node pulled from the Maya reference
+    // prim ends up being unlocked by the unlock traversal in
+    // PrimUpdaterManager::mergeToUsd().  However, more robust to enforce
+    // separation of concerns and perform the inverse of editAsMaya() here.
+
+    // Unnecessary to unlock individual attributes, as the Maya transform node
+    // is removed at pushEnd().
+    MDagPath transformPath;
+    if (MDagPath::getAPathTo(getMayaObject(), transformPath) != MS::kSuccess) {
+        return false;
+    }
+
+    MayaUsd::LockNodesUndoItem::lock(
+        "Maya reference pulled transform unlocking", transformPath, false);
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

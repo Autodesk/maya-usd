@@ -5,6 +5,7 @@ list(APPEND TEST_SCRIPT_FILES
     testVP2RenderDelegateDisplayColors.py
 	testVP2RenderDelegateGeomSubset.py
     testVP2RenderDelegatePointInstanceOrientation.py
+    testVP2RenderDelegateTextureLoading.py
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)

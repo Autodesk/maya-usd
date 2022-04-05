@@ -729,19 +729,25 @@ void MeshImportContext::applyColourSetData()
                                     if (opacityValues.IsHolding<VtArray<float>>()) {
                                         const VtArray<float> rawValOpacity
                                             = opacityValues.UncheckedGet<VtArray<float>>();
-                                        colours.setLength(rawValOpacity.size());
                                         const VtArray<GfVec3f> rawValColour
                                             = vtValue.UncheckedGet<VtArray<GfVec3f>>();
-                                        assert(rawValOpacity.size() == rawValColour.size());
-
-                                        for (uint32_t i = 0, n = rawValColour.size(); i < n; ++i)
-                                            colours[i] = MColor(
-                                                rawValColour[i][0],
-                                                rawValColour[i][1],
-                                                rawValColour[i][2],
-                                                rawValOpacity[i]);
-                                        representation = MFnMesh::kRGBA;
-                                        setCombinedDisplayAndOpacityColourSet = true;
+                                        bool isConstantDisplayOpacity
+                                            = primvar.GetInterpolation() == UsdGeomTokens->constant;
+                                        if ((rawValOpacity.size() == rawValColour.size()
+                                             && interpolation == primvar.GetInterpolation())
+                                            || isConstantDisplayOpacity) {
+                                            colours.setLength(rawValColour.size());
+                                            for (uint32_t i = 0, n = rawValColour.size(); i < n;
+                                                 ++i)
+                                                colours[i] = MColor(
+                                                    rawValColour[i][0],
+                                                    rawValColour[i][1],
+                                                    rawValColour[i][2],
+                                                    isConstantDisplayOpacity ? rawValOpacity[0]
+                                                                             : rawValOpacity[i]);
+                                            representation = MFnMesh::kRGBA;
+                                            setCombinedDisplayAndOpacityColourSet = true;
+                                        }
                                     }
                                 }
                             }

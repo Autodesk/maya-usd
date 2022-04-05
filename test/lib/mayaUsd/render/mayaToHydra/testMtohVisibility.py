@@ -1,4 +1,5 @@
 import maya.cmds as cmds
+import maya.mel
 
 import fixturesUtils
 import mtohUtils
@@ -10,6 +11,9 @@ class TestCommand(mtohUtils.MtohTestCase):
         self.makeCubeScene(camDist=6)
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeShape)))
+        self.imageVersion = None
+        if maya.mel.eval("defaultShaderName") != "standardSurface1":
+            self.imageVersion = 'lambertDefaultMaterial'
 
     def test_toggleTransVis(self):
         # because snapshotting is slow, we only use it in this test - otherwise
@@ -23,7 +27,7 @@ class TestCommand(mtohUtils.MtohTestCase):
         self.assertIn(
             self.cubeRprim,
             self.getVisibleIndex())
-        self.assertSnapshotClose(cubeUnselectedImg)
+        self.assertSnapshotClose(cubeUnselectedImg, self.imageVersion)
 
         cmds.setAttr("{}.visibility".format(self.cubeTrans), False)
         self.assertFalse(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
@@ -39,7 +43,7 @@ class TestCommand(mtohUtils.MtohTestCase):
         self.assertIn(
             self.cubeRprim,
             self.getVisibleIndex())
-        self.assertSnapshotClose(cubeUnselectedImg)
+        self.assertSnapshotClose(cubeUnselectedImg, self.imageVersion)
 
     def test_toggleShapeVis(self):
         cmds.setAttr("{}.visibility".format(self.cubeShape), False)

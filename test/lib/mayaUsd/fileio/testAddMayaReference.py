@@ -28,7 +28,7 @@ from maya import standalone
 import mayaUsdAddMayaReference
 import mayaUsdMayaReferenceUtils as mayaRefUtils
 
-import unittest
+import os, unittest
 
 class AddMayaReferenceTestCase(unittest.TestCase):
     '''Test Add Maya Reference.
@@ -40,12 +40,11 @@ class AddMayaReferenceTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
-        if not cls.pluginsLoaded:
-            cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+        fixturesUtils.setUpClass(__file__)
 
         # Create a pure Maya scene to reference in.
-        cls.mayaSceneStr = cls.createSimpleMayaScene()
+        import os
+        cls.mayaSceneStr = mayaUtils.createSingleSphereMayaScene(os.getcwd())
 
     @classmethod
     def tearDownClass(cls):
@@ -57,19 +56,6 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         import mayaUsd_createStageWithNewLayer
         self.proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
-
-    @staticmethod
-    def createSimpleMayaScene():
-        import os
-        import maya.cmds as cmds
-        import tempfile
-
-        cmds.file(new=True, force=True)
-        cmds.CreatePolygonSphere()
-        tempMayaFile = os.path.join(tempfile.gettempdir(), 'simpleSphere.ma')
-        cmds.file(rename=tempMayaFile)
-        cmds.file(save=True, force=True, type='mayaAscii')
-        return tempMayaFile
 
     def testDefault(self):
         '''Test the default options for Add Maya Reference.
@@ -149,13 +135,28 @@ class AddMayaReferenceTestCase(unittest.TestCase):
         # and that it has the expected metadata.
         attr = mayaRefPrim.GetAttribute('mayaReference')
         self.assertTrue(attr.IsValid())
-        self.assertEqual(attr.Get().resolvedPath, self.mayaSceneStr)
+        self.assertTrue(os.path.samefile(attr.Get().resolvedPath, self.mayaSceneStr))
         attr = mayaRefPrim.GetAttribute('mayaNamespace')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(), self.kDefaultNamespace)
         attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
         self.assertTrue(attr.IsValid())
         self.assertEqual(attr.Get(),True)
+
+        # Test an error creating the Variant Set by disabling permission to edit on the
+        # edit target layer.
+        editTarget = self.stage.GetEditTarget()
+        editLayer = editTarget.GetLayer()
+        editLayer.SetPermissionToEdit(False)
+        badMayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            self.mayaSceneStr,
+            self.kDefaultNamespace,
+            mayaReferencePrimName='PrimVariantFail',
+            variantSet=('VariantFailSet', 'VariantNameFail'),
+            mayaAutoEdit=False)
+        self.assertFalse(badMayaRefPrim.IsValid())
+        editLayer.SetPermissionToEdit(True)
 
     def testBadNames(self):
         '''Test using bad prim and variant names.

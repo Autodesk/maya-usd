@@ -63,7 +63,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* optionVar to force a prompt on every save                    */ \
     ((SerializedUsdEditsLocationPrompt, "mayaUsd_SerializedUsdEditsLocationPrompt")) \
     /* optionVar to control if comfirmation dialog will be show when overriding file */ \
-    ((ConfirmExistingFileSave, "mayaUsd_ConfirmExistingFileSave"))
+    ((ConfirmExistingFileSave, "mayaUsd_ConfirmExistingFileSave"))     \
+    /* optionVar to turn on or off async texture loading            */ \
+    /* Notice that only newly opened USD stage would be affected.   */ \
+    ((DisableAsyncTextureLoading, "mayaUsd_DisableAsyncTextureLoading"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);

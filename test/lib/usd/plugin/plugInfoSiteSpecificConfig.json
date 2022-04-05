@@ -1,0 +1,30 @@
+{
+  "Plugins": [
+    {
+      "Info": {
+        "UsdMaya": {
+            "UsdExport": {
+                "exportDisplayColor": true,
+                "exportSkin": "auto",
+                "chaser": ["TestExportChaserFromSiteSpecific"],
+                "chaserArgs": [
+                    ["TestExportChaserFromSiteSpecific", "frob", "ishness"],
+                    ["TestExportChaserFromSiteSpecific", "baz", "illion"]
+                ]
+            },
+            "UsdImport": {
+              "useAsAnimationCache": true,
+              "preferredMaterial": "phong",
+              "chaser": ["TestImportChaserFromSiteSpecific"],
+              "chaserArgs": [
+                ["TestImportChaserFromSiteSpecific", "frob", "ishness"],
+                ["TestImportChaserFromSiteSpecific", "baz", "illion"]
+          ]
+          }
+        }
+      },
+      "Name": "SiteSpecificConfigPlugin",
+      "Type": "resource"
+    }
+  ]
+}

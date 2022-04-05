@@ -446,7 +446,8 @@ MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
 
 //! \brief  Constructor
 ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
-    : MHWRender::MPxSubSceneOverride(obj)
+    : Autodesk::Maya::OPENMAYA_MPXSUBSCENEOVERRIDE_LATEST_NAMESPACE::MHWRender::MPxSubSceneOverride(
+        obj)
 {
     MDagPath proxyDagPath;
     MDagPath::getAPathTo(obj, proxyDagPath);
@@ -524,6 +525,10 @@ void ProxyRenderDelegate::_ClearInvalidData(MSubSceneContainer& container)
     // and clear everything. If this is a performance problem we can probably store the old value
     // of excluded prims, compare it to the new value and only add back the difference.
     if (!_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()) {
+        // Tell texture loading tasks to terminate (exit) if they have not finished yet
+        if (_renderDelegate) {
+            dynamic_cast<HdVP2RenderDelegate*>(_renderDelegate.get())->CleanupMaterials();
+        }
         // delete everything so we can re-initialize with the new stage
         _ClearRenderDelegate();
         container.clear();
@@ -755,20 +760,25 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 #else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     HdReprSelector reprSelector = kPointsReprSelector;
 
-    constexpr bool inSelectionPass = false;
+    constexpr bool     inSelectionPass = false;
 #if !defined(MAYA_NEW_POINT_SNAPPING_SUPPORT)
-    constexpr bool inPointSnapping = false;
+    constexpr bool     inPointSnapping = false;
 #endif
 #endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
-    const unsigned int displayStyle = frameContext.getDisplayStyle();
+    const unsigned int currentDisplayStyle = frameContext.getDisplayStyle();
 
     // Query the wireframe color assigned to proxy shape.
-    if (displayStyle
+    if (currentDisplayStyle
         & (MHWRender::MFrameContext::kBoundingBox | MHWRender::MFrameContext::kWireFrame)) {
         _wireframeColor
             = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
     }
+#ifdef MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS
+    const unsigned int displayStyle = frameContext.getDisplayStyleOfAllViewports();
+#else
+    const unsigned int displayStyle = currentDisplayStyle;
+#endif
 
     // Work around USD issue #1516. There is a significant performance overhead caused by populating
     // selection, so only force the populate selection to occur when we detect a change which

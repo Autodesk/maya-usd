@@ -20,11 +20,13 @@ import fixturesUtils
 
 from mayaUtils import setMayaTranslation
 from usdUtils import createSimpleXformScene
+from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
 
 import mayaUtils
 import mayaUsd.ufe
+import usdUtils
 
 from pxr import UsdGeom, Gf
 
@@ -60,7 +62,17 @@ class MergeToUsdTestCase(unittest.TestCase):
     def setUp(self):
         cmds.file(new=True, force=True)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    def _GetMayaDependencyNode(self, objectName):
+        selectionList = om.MSelectionList()
+        try:
+            selectionList.add(objectName)
+        except:
+            return None
+        mObj = selectionList.getDependNode(0)
+
+        return om.MFnDependencyNode(mObj)
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testDiscardEdits(self):
         '''Discard edits on a USD transform.'''
 
@@ -106,7 +118,7 @@ class MergeToUsdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             om.MSelectionList().add(aMayaPathStr)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '3006', 'Test only available in UFE preview version 0.3.6 and greater')
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testDiscardEditsUndoRedo(self):
         '''Discard edits on a USD transform then undo and redo.'''
 
@@ -132,6 +144,10 @@ class MergeToUsdTestCase(unittest.TestCase):
 
         verifyScenesModifications()
 
+        # Make a selection before discard Maya edits.
+        cmds.select('persp')
+        previousSn = cmds.ls(sl=True, ufe=True, long=True)
+
         # Discard Maya edits.
         cmds.mayaUsdDiscardEdits(aMayaPathStr)
 
@@ -144,18 +160,64 @@ class MergeToUsdTestCase(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 om.MSelectionList().add(aMayaPathStr)
 
+            # Selection is on the USD object.
+            sn = cmds.ls(sl=True, ufe=True, long=True)
+            self.assertEqual(len(sn), 1)
+            self.assertEqual(sn[0], aUsdUfePathStr)
+
         verifyDiscard()
 
         # undo
         cmds.undo()
 
         verifyScenesModifications()
+        # Selection is restored.
+        self.assertEqual(cmds.ls(sl=True, ufe=True, long=True), previousSn)
 
         # redo
         cmds.redo()
 
         verifyDiscard()
 
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testDiscardOrphaned(self):
+        '''Discard orphaned edits due to prim inactivation'''
+        
+        # open appleBite.ma scene in testSamples
+        mayaUtils.openAppleBiteScene()
+
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+        self.assertTrue(stage)
+        
+        usdPathSegment = usdUtils.createUfePathSegment('/apple/payload/geo/skin')
+        geoPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        geoPathStr = ufe.PathString.string(geoPath)
+        
+        # pull the skin geo for editing
+        cmds.mayaUsdEditAsMaya(geoPathStr)
+        
+        pulledDagPath = '|__mayaUsd__|skinParent|skin'
+        self.assertTrue(self._GetMayaDependencyNode(pulledDagPath))
+        
+        # now we will make the pulled prim go away...which makes state in DG orphaned
+        primToDeactivate = stage.GetPrimAtPath('/apple/payload')
+        primToDeactivate.SetActive(False)
+        self.assertFalse(stage.GetPrimAtPath('/apple/payload/geo/skin'))
+        # we keep the state in Maya untouched to prevent data loss
+        self.assertTrue(self._GetMayaDependencyNode(pulledDagPath))
+        
+        # discard orphaned edits
+        cmds.mayaUsdDiscardEdits(pulledDagPath)
+        self.assertFalse(self._GetMayaDependencyNode(pulledDagPath))
+        
+        # validate undo
+        cmds.undo()
+        self.assertTrue(self._GetMayaDependencyNode(pulledDagPath))
+        
+        # validate redo
+        cmds.redo()
+        self.assertFalse(self._GetMayaDependencyNode(pulledDagPath))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

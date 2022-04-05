@@ -18,9 +18,11 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 import mayaUsd
+from mayaUsd.lib import cacheToUsd
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
 import mayaUsdMayaReferenceUtils as mayaRefUtils
+import mayaUsdOptions
 
 from pxr import Sdf, Tf
 
@@ -31,7 +33,10 @@ kDefaultCacheVariantName = 'Cache'
 kDefaultCachePrimName = 'Cache1'
 
 # Cache options in string format, for MEL mayaUsdTranslatorExport() consumption.
-_cacheOptions = None
+_cacheExportOptions = None
+
+# The options string that we pass to mayaUsdTranslatorExport.
+kTranslatorExportOptions = 'all;!output-parentscope'
 
 # Dag path corresponding to pulled prim.  This is a Maya transform node that is
 # not in the Maya reference itself, but is its parent.
@@ -40,13 +45,55 @@ _mayaRefDagPath = None
 # Pulled Maya reference prim.
 _pulledMayaRefPrim = None
 
+_compositionArcLabels = [getMayaUsdLibString('kMenuPayload'), getMayaUsdLibString('kMenuReference')]
+_compositionArcValues = [                         'Payload',                           'Reference' ]
+
+_listEditedAsLabels = [getMayaUsdLibString('kMenuAppend'), getMayaUsdLibString('kMenuPrepend')]
+_listEditedAsValues = [                         'Append',                           'Prepend' ]
+
+
+def _getMenuValue(menuName, values, defaultIndex = 0):
+    """
+    Retrieves the currently selected values from a menu.
+    """
+    # Note: option menu selection index start at 1, so we subtract 1.
+    menuIndex = cmds.optionMenuGrp('compositionArcTypeMenu', query=True, select=True) - 1
+    if 0 <= menuIndex < len(values):
+        return values[menuIndex]
+    else:
+        return values[defaultIndex]
+
+
+def _getMenuIndex(values, current, defaultIndex = 1):
+    """
+    Retrieves the menu index corresponding to the current value selected amongst values.
+    If the value is invalid, returns the defaultIndex.
+    """
+    try:
+        # Note: menu index is 1-based.
+        return values.index(current) + 1
+    except:
+        return defaultIndex
+
+
 def compositionArcChanged(selectedItem):
+    """
+    Reacts to the composition arc type being selected by the user.
+    """
     pass
+
 
 def listEditChanged(selectedItem):
+    """
+    Reacts to the list edited UI being changed by the user.
+    """
     pass
 
+
 def variantSetNameChanged(selectedItem):
+    """
+    Reacts to the variant set name being changed by the user.
+    """
     # Update the Variant Name option menu from the input Variant Set.
     mayaRefPrimParent = _pulledMayaRefPrim.GetParent()
     cmds.optionMenu('variantNameMenu', edit=True, deleteAllItems=True)
@@ -60,14 +107,22 @@ def variantSetNameChanged(selectedItem):
     cmds.optionMenu('variantNameMenu', edit=True, select=1)
     cmds.textField('variantNameText', edit=True, visible=True, text=kDefaultCacheVariantName)
 
+
 def variantNameChanged(selectedItem):
+    """
+    Reacts to the variant name being changed by the user by picking from the menu.
+    """
     # If the "Create New" item is selected, we show the text input
     # to the right of the optionMenu. For existing variant names
     # the field is hidden.
     createNew = getMayaUsdLibString('kMayaRefCreateNew')
     cmds.textField('variantNameText', edit=True, visible=(selectedItem == createNew))
 
+
 def variantNameTextChanged(variantName):
+    """
+    Reacts to the variant name being changed by the user by editing the text.
+    """
     # The text field cannot be empty. Reset to default value if it is.
     if not variantName:
         cmds.textField('variantNameText', edit=True, text=kDefaultCacheVariantName)
@@ -77,7 +132,11 @@ def variantNameTextChanged(variantName):
         if validatedName != variantName:
             cmds.textField('variantNameText', edit=True, text=validatedName)
 
+
 def primNameTextChanged(primName):
+    """
+    Reacts to the prim name being changed by the user.
+    """
     # The text field cannot be empty. Reset to default value if it is.
     mayaRefPrimParent = _pulledMayaRefPrim.GetParent()
     if not primName:
@@ -91,11 +150,19 @@ def primNameTextChanged(primName):
         if validatedName != primName:
             cmds.textFieldGrp('primNameText', edit=True, text=validatedName)
 
+def variantOrNewPrim(buttonChecked):
+    # The variant and new child prim radio buttons are part of a collection.
+    # So only one can be checked.
+    variantSelected = cmds.radioButtonGrp('variantRadioBtn', query=True, select=1)
+    cmds.rowLayout('usdCacheVariantSetRow', edit=True, enable=variantSelected)
+    cmds.rowLayout('usdCacheVariantNameRow', edit=True, enable=variantSelected)
+    cmds.textFieldGrp('primNameText', edit=True, enable=not variantSelected)
+
 def cacheFileUsdHierarchyOptions(topForm):
     '''Create controls to insert Maya reference USD cache into USD hierarchy.'''
 
     cmds.setParent(topForm)
-    cmds.frameLayout(label=getMayaUsdLibString("kCacheMayaRefUsdHierarchy"))
+    cmds.frameLayout('authorFrameLayout', label=getMayaUsdLibString("kCacheMayaRefUsdHierarchy"))
     widgetColumn = cmds.columnLayout()
 
     rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "cacheFilePreviewRow", 2)')
@@ -106,20 +173,23 @@ def cacheFileUsdHierarchyOptions(topForm):
 
     with mayaRefUtils.SetParentContext(cmds.rowLayout(numberOfColumns=2)):
         cmds.optionMenuGrp('compositionArcTypeMenu',
-                           label=getMayaUsdLibString('kOptionAsCompositionArc'),
-                           cc=compositionArcChanged)
-        cmds.menuItem(label=getMayaUsdLibString('kMenuPayload'))
-        cmds.menuItem(label=getMayaUsdLibString('kMenuReference'))
+                           label=getMayaUsdLibString('kOptionAsUSDReference'),
+                           cc=compositionArcChanged,
+                           annotation=getMayaUsdLibString('kOptionAsUSDReferenceToolTip'))
+        for label in _compositionArcLabels:
+            cmds.menuItem(label=label)
         cmds.optionMenu('listEditedAsMenu',
                         label=getMayaUsdLibString('kOptionListEditedAs'),
                         cc=listEditChanged)
-        cmds.menuItem(label=getMayaUsdLibString('kMenuAppend'))
-        cmds.menuItem(label=getMayaUsdLibString('kMenuPrepend'))
+        for label in _listEditedAsLabels:
+            cmds.menuItem(label=label)
 
     variantRb = cmds.radioButtonGrp('variantRadioBtn',
                                     nrb=1,
+                                    changeCommand1=variantOrNewPrim,
                                     label=getMayaUsdLibString('kTextDefineIn'),
-                                    l1=getMayaUsdLibString('kTextVariant'))
+                                    l1=getMayaUsdLibString('kTextVariant'),
+                                    annotation=getMayaUsdLibString('kTextVariantToolTip'))
 
     rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "usdCacheVariantSetRow", 3)')
     with mayaRefUtils.SetParentContext(rl):
@@ -136,20 +206,28 @@ def cacheFileUsdHierarchyOptions(topForm):
         cmds.textField('variantNameText',
                        cc=variantNameTextChanged)
 
+    # Note: this radio button doesn't need the change command since its part of
+    #       the same collection as the variantRb (which has the changeCommand).
     newChildRb = cmds.radioButtonGrp('newChildPrimRadioBtn',
                                      nrb=1,
                                      label='',
                                      scl=variantRb,
-                                     l1=getMayaUsdLibString('kButtonNewChildPrim'))
+                                     l1=getMayaUsdLibString('kButtonNewChildPrim'),
+                                     annotation=getMayaUsdLibString('kButtonNewChildPrimToolTip'))
 
     cmds.textFieldGrp('primNameText',
                       label=getMayaUsdLibString('kMayaRefPrimName'),
                       cc=primNameTextChanged)
 
     cmds.radioButtonGrp(variantRb, edit=True, select=1)
+    variantOrNewPrim(True)
+
 
 # Adapted from fileOptions.mel:fileOptionsTabPage().
 def fileOptionsTabPage(tabLayout):
+    """
+    Creates the UI element of the file dialog options tab.
+    """
     mayaRefUtils.pushOptionsUITemplate()
 
     cmds.setParent(tabLayout)
@@ -172,7 +250,7 @@ def fileOptionsTabPage(tabLayout):
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kMayaRefDescription"))
     cmds.columnLayout(adjustableColumn=True)
-    cmds.text(align="left", label="TBD")
+    cmds.text(align="left", label=getMayaUsdLibString("kMayaRefCacheToUSDDescription"))
 
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kCacheMayaRefOptions"))
@@ -180,33 +258,61 @@ def fileOptionsTabPage(tabLayout):
     # USD file option controls will be parented under this layout.
     # resultCallback not called on "post", is therefore an empty string.
     fileOptionsScroll = cmds.columnLayout('fileOptionsScroll')
-    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post=all;!animation-data", "' + getCacheOptions() + '", "")') 
+    optionsText = mayaUsdOptions.convertOptionsDictToText(cacheToUsd.loadCacheCreationOptions())
+    optionsText = mayaUsdOptions.setAnimateOption(_mayaRefDagPath, optionsText)
+    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "post={exportOpts}", "{cacheOpts}", "")'.format(exportOpts=kTranslatorExportOptions, cacheOpts=optionsText))
 
     cacheFileUsdHierarchyOptions(topForm)
 
     cmds.setUITemplate(popTemplate=True)
 
-def getCacheOptions():
-    global _cacheOptions
-    # Init on first use from "USD Export" translator.
-    if _cacheOptions is None:
-        _cacheOptions = cmds.translator('USD Export', query=True, do=True)
-    return _cacheOptions
+
+def getCacheExportOptions():
+    """
+    Retrieves the export options.
+    """
+    global _cacheExportOptions
+    if _cacheExportOptions is None:
+        _cacheExportOptions = cacheToUsd.getDefaultExportOptions()
+    return _cacheExportOptions
+
 
 def setCacheOptions(newCacheOptions):
-    global _cacheOptions
-    _cacheOptions = newCacheOptions
+    """
+    Sets the export options.
+    Called from mayaUsdTranslatorExport via mayaUsdCacheMayaReference_setCacheOptions in MEL.
+    """
+    global _cacheExportOptions
+    _cacheExportOptions = newCacheOptions
+
 
 def cacheCreateUi(parent):
+    """
+    Creates the cache-to-USD UI.
+    Called by the fileDialog command via the MEL mayaUsdCacheMayaReference_cacheCreateUi function.
+    """
     cmds.setParent(parent)
     fileOptionsTabPage(cmds.scrollLayout(childResizable=True))
 
+
 def cacheInitUi(parent, filterType):
+    """
+    Fills the cache-to-USD UI.
+    Called by the fileDialog command via the MEL mayaUsdCacheMayaReference_cacheInitUi function.
+    """
+    optionsDict = cacheToUsd.loadCacheCreationOptions()
+
     cmds.setParent(parent)
     
     # If the parent of the Maya reference prim has a variant set, define in
     # variant is the default, otherwise all variant options are disabled.
     mayaRefPrimParent = _pulledMayaRefPrim.GetParent()
+
+    menuIndex = _getMenuIndex(_compositionArcValues, optionsDict['rn_payloadOrReference'])
+    cmds.optionMenuGrp('compositionArcTypeMenu', edit=True, select=menuIndex)
+
+    menuIndex = _getMenuIndex(_listEditedAsValues, optionsDict['rn_listEditType'])
+    cmds.optionMenu('listEditedAsMenu', edit=True, select=menuIndex)
 
     if mayaRefPrimParent.HasVariantSets():
         # Define in variant is the default.
@@ -217,9 +323,12 @@ def cacheInitUi(parent, filterType):
             cmds.menuItem(label=vsName, parent='variantSetMenu')
         cmds.optionMenu('variantSetMenu', edit=True, select=1)
 
-        # If there is a variant set name 'Representation' then
+        # If the previous variant set name is available, select it,
+        # Otherwise if there is a variant set name 'Representation' then
         # automatically select it, otherwise select the first one.
-        if mayaRefUtils.defaultVariantSetName() in variantSetsNames:
+        if optionsDict['rn_variantSetName'] in variantSetsNames:
+            variantSetNameChanged(optionsDict['rn_variantSetName'])
+        elif mayaRefUtils.defaultVariantSetName() in variantSetsNames:
             variantSetNameChanged(mayaRefUtils.defaultVariantSetName())
         else:
             variantSetNameChanged(variantSetsNames[0])
@@ -232,41 +341,57 @@ def cacheInitUi(parent, filterType):
         cmds.radioButtonGrp('newChildPrimRadioBtn', edit=True, select=1)
 
     # Set initial (unique) name for child prim.
-    primName = mayaUsd.ufe.uniqueChildName(mayaRefPrimParent, kDefaultCachePrimName)
+    if optionsDict['rn_primName']:
+        primName = optionsDict['rn_primName']
+    else:
+        primName = mayaUsd.ufe.uniqueChildName(mayaRefPrimParent, kDefaultCachePrimName)
     cmds.textFieldGrp('primNameText', edit=True, text=primName)
 
+    # By default we want to collapse certain sections.
+    cmds.frameLayout('outputFrameLayout', edit=True, collapse=False)
+    cmds.frameLayout('geometryFrameLayout', edit=True, collapse=True)
+    cmds.frameLayout('materialsFrameLayout', edit=True, collapse=True)
+    cmds.frameLayout('animationFrameLayout', edit=True, collapse=True)
+    cmds.frameLayout('advancedFrameLayout', edit=True, collapse=True)
+    cmds.frameLayout('authorFrameLayout', edit=True, collapse=False)
+
 def cacheCommitUi(parent, selectedFile):
+    """
+    Reacts to the file dialog being accepted by the user.
+    Called by the fileDialog command via the MEL mayaUsdCacheMayaReference_cacheCommitUi function.
+    """
     # Read data to set up cache.
 
-    # The following call will set _cacheOptions.  Initial settings not accessed
-    # on "query", is therefore an empty string.
-    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "query", "", "mayaUsdCacheMayaReference_setCacheOptions")')
-
-    # Regardless of UI, animation is always on.
-    cacheOptionsText = re.sub(r'animation=.', 'animation=1', getCacheOptions())
-
-    userArgs = mayaUsd.lib.Util.getDictionaryFromEncodedOptions(cacheOptionsText)
+    # The following call will set _cacheExportOptions.  Initial settings not
+    # accessed on "query", is therefore an empty string.
+    mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "query={exportOpts}", "", "mayaUsdCacheMayaReference_setCacheOptions")'.format(exportOpts=kTranslatorExportOptions))
 
     primName = cmds.textFieldGrp('primNameText', query=True, text=True)
-    defineInVariant = cmds.radioButtonGrp('variantRadioBtn', query=True, select=True)
-    userArgs['rn_layer']           = selectedFile
-    userArgs['rn_primName']        = primName
-    userArgs['rn_defineInVariant'] = defineInVariant
-    userArgs['rn_payloadOrReference'] = cmds.optionMenuGrp('compositionArcTypeMenu', query=True, value=True)
-    userArgs['rn_listEditType'] = cmds.optionMenu('listEditedAsMenu', query=True, value=True)
+    payloadOrReference = _getMenuValue('compositionArcTypeMenu', _compositionArcValues)
+    listEditType = _getMenuValue('listEditedAsMenu', _listEditedAsValues)
     
+    defineInVariant = cmds.radioButtonGrp('variantRadioBtn', query=True, select=True)
     if defineInVariant:
-        userArgs['rn_variantSetName'] = cmds.optionMenu('variantSetMenu', query=True, value=True)
+        variantSetName = cmds.optionMenu('variantSetMenu', query=True, value=True)
         variantName = cmds.optionMenu('variantNameMenu', query=True, value=True)
         if variantName == 'Create New':
             variantName = cmds.textField('variantNameText', query=True, text=True)
-        userArgs['rn_variantName'] = variantName
+    else:
+        variantName = None
+        variantSetName = None
+
+    userArgs = cacheToUsd.createCacheCreationOptions(
+        getCacheExportOptions(), selectedFile, primName, payloadOrReference,
+        listEditType, variantSetName, variantName)
+
+    cacheToUsd.saveCacheCreationOptions(userArgs)
 
     # Call push.
     if not mayaUsd.lib.PrimUpdaterManager.mergeToUsd(_mayaRefDagPath, userArgs):
         errorMsgFormat = getMayaUsdLibString('kErrorCacheToUsdFailed')
         errorMsg = cmds.format(errorMsgFormat, stringArg=(_mayaRefDagPath))
         cmds.error(errorMsg)
+
 
 def cacheDialog(dagPath, pulledMayaRefPrim, _):
     '''Display dialog to cache the argument pulled Maya reference prim to USD.'''

@@ -48,6 +48,48 @@ private:
     static MCallbackId _beforeFileReadCallbackId;
 };
 
+/// Notice sent before the Maya scene resets.
+/// It is *very important* that you call InstallListener() during plugin
+/// initialization and removeListener() during plugin uninitialization.
+class UsdMayaBeforeSceneResetNotice : public TfNotice
+{
+public:
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaBeforeSceneResetNotice();
+
+    /// Registers the proper Maya callbacks for recognizing stage resets.
+    MAYAUSD_CORE_PUBLIC
+    static void InstallListener();
+
+    /// Removes any Maya callbacks for recognizing stage resets.
+    MAYAUSD_CORE_PUBLIC
+    static void RemoveListener();
+
+private:
+    static MCallbackId _beforeNewCallbackId;
+};
+
+/// Notice sent when the Maya is about to exit.
+/// It is *very important* that you call InstallListener() during plugin
+/// initialization and removeListener() during plugin uninitialization.
+class UsdMayaExitNotice : public TfNotice
+{
+public:
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaExitNotice();
+
+    /// Registers the proper Maya callbacks for recognizing stage resets.
+    MAYAUSD_CORE_PUBLIC
+    static void InstallListener();
+
+    /// Removes any Maya callbacks for recognizing stage resets.
+    MAYAUSD_CORE_PUBLIC
+    static void RemoveListener();
+
+private:
+    static MCallbackId _beforeExitCallbackId;
+};
+
 class UsdMaya_AssemblyInstancerNoticeBase : public TfNotice
 {
 public:

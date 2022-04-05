@@ -47,6 +47,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 {
+    MString experimental("Maya to Hydra (mtoh) is experimental.");
+    MGlobal::displayWarning(experimental);
+
     MStatus ret = MS::kSuccess;
 
     // Call one time registration of plugins compiled for same USD version as MayaUSD plugin.

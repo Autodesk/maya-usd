@@ -5,10 +5,21 @@ list(APPEND scripts_src
     mayaUsdAddMayaReference.py
     mayaUsdCacheMayaReference.mel
     mayaUsdCacheMayaReference.py
+    mayaUsdMergeToUSDOptions.mel
+    mayaUsdMergeToUSDOptions.py
     mayaUsdMergeToUsd.py
+    mayaUsdOptions.py
+    mayaUsdUtils.py
     mayaUsdMayaReferenceUtils.py
+)
+
+list(APPEND maya_lib_scripts_src
+    cacheToUsd.py
 )
 
 install(FILES ${scripts_src}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/scripts
 )
+
+set(PYTHON_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/lib)
+install(FILES ${maya_lib_scripts_src} DESTINATION ${PYTHON_INSTALL_PREFIX})

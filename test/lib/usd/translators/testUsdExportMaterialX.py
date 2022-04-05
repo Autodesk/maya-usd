@@ -187,8 +187,17 @@ class testUsdExportMaterialX(unittest.TestCase):
         self.assertEqual(ng.GetPath(), ng_path)
         self.assertEqual(cnxTuple[1], "baseColor")
 
-        # Should have an outputs connected to a file node:
+        # Should have an outputs connected to a fileTexture node:
         attr = ng.GetOutput('baseColor')
+        self.assertTrue(attr)
+        cnxTuple = attr.GetConnectedSource()
+        self.assertTrue(cnxTuple)
+
+        # Which is an image post-processor:
+        shader = UsdShade.Shader(cnxTuple[0])
+        self.assertEqual(shader.GetIdAttr().Get(), "MayaND_fileTexture_color3")
+        self.assertTrue(self.compareValue(shader, "defaultColor", (0.5, 0.5, 0.5)))
+        attr = shader.GetInput('inColor')
         self.assertTrue(attr)
         cnxTuple = attr.GetConnectedSource()
         self.assertTrue(cnxTuple)
@@ -200,7 +209,6 @@ class testUsdExportMaterialX(unittest.TestCase):
 
         # Check a few values:
         self.assertTrue(self.compareValue(shader, "uaddressmode", "periodic"))
-        self.assertTrue(self.compareValue(shader, "default", (0.5, 0.5, 0.5)))
 
         # Which is itself connected to a primvar reader:
         attr = shader.GetInput('texcoord')
@@ -221,20 +229,24 @@ class testUsdExportMaterialX(unittest.TestCase):
             (1, 2, "file1", "ND_image_color3"),
             (4, 5, "file4", "ND_image_color4"),
 
+            (7, 8, "file7_MayafileTexture", "MayaND_fileTexture_float"),
+            (6, 7, "file6_MayafileTexture", "MayaND_fileTexture_vector2"),
+            (1, 2, "file1_MayafileTexture", "MayaND_fileTexture_color3"),
+            (4, 5, "file4_MayafileTexture", "MayaND_fileTexture_color4"),
+
             (1, 2, "place2dTexture1", "ND_geompropvalue_vector2"),
 
-            (4, 5, "MayaSwizzle_file4_rgb", "ND_swizzle_color4_color3"),
-            (6, 7, "MayaSwizzle_file6_xxx", "ND_swizzle_vector2_color3"),
-            (19, 21, "MayaSwizzle_file20_x", "ND_swizzle_vector2_float"),
-            (7, 8, "MayaSwizzle_file7_rrr", "ND_swizzle_float_color3"),
-            (8, 9, "MayaSwizzle_file8_r", "ND_swizzle_color4_float"),
-            (13, 14, "MayaSwizzle_file13_g", "ND_swizzle_color3_float"),
+            (4, 5, "MayaSwizzle_file4_MayafileTexture_rgb", "ND_swizzle_color4_color3"),
+            (6, 7, "MayaSwizzle_file6_MayafileTexture_xyy", "ND_swizzle_vector2_color3"),
+            (19, 21, "MayaSwizzle_file20_MayafileTexture_x", "ND_swizzle_vector2_float"),
+            (7, 8, "MayaSwizzle_file7_MayafileTexture_xxx", "ND_swizzle_float_color3"),
+            (8, 9, "MayaSwizzle_file8_MayafileTexture_r", "ND_swizzle_color4_float"),
+            (13, 14, "MayaSwizzle_file13_MayafileTexture_g", "ND_swizzle_color3_float"),
+            (14, 15, "MayaSwizzle_file14_MayafileTexture_rgb", "ND_swizzle_color3_vector3"),
 
             (27, 20, "MayaLuminance_file27", "ND_luminance_color3"),
             (12, 13, "MayaLuminance_file12", "ND_luminance_color4"),
 
-            (14, 15, "MayaConvert_file14_color3f_float3", 
-             "ND_convert_color3_vector3"),
             (15, 16, "MayaNormalMap_standardSurface16_normalCamera",
              "ND_normalmap"),
         ]
@@ -281,11 +293,11 @@ class testUsdExportMaterialX(unittest.TestCase):
         input = shader.GetInput("bg")
         cnxTuple = input.GetConnectedSource()
         self.assertTrue(cnxTuple)
-        self.assertEqual(cnxTuple[0].GetPrim().GetName(), "file1")
+        self.assertEqual(cnxTuple[0].GetPrim().GetName(), "file1_MayafileTexture")
         input = shader.GetInput("mix")
         cnxTuple = input.GetConnectedSource()
         self.assertTrue(cnxTuple)
-        self.assertEqual(cnxTuple[0].GetPrim().GetName(), "MayaSwizzle_file2_a")
+        self.assertEqual(cnxTuple[0].GetPrim().GetName(), "MayaSwizzle_file2_MayafileTexture_a")
         self.assertTrue("MaterialX" in mxCompositeExportTest._AllMaterialConversions)
 
 

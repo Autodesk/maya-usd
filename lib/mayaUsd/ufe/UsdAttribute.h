@@ -23,16 +23,7 @@
 #include <ufe/attribute.h>
 
 // Ufe::Attribute overrides (minus the type method)
-#if (UFE_PREVIEW_VERSION_NUM < 3011)
-#define UFE_ATTRIBUTE_OVERRIDES                                                          \
-    bool        hasValue() const override { return UsdAttribute::hasValue(); }           \
-    std::string name() const override { return UsdAttribute::name(); }                   \
-    std::string documentation() const override { return UsdAttribute::documentation(); } \
-    std::string string() const override                                                  \
-    {                                                                                    \
-        return UsdAttribute::string(Ufe::Attribute::sceneItem());                        \
-    }
-#else
+#ifdef UFE_V3_FEATURES_AVAILABLE
 #define UFE_ATTRIBUTE_OVERRIDES                                                               \
     bool        hasValue() const override { return UsdAttribute::hasValue(); }                \
     std::string name() const override { return UsdAttribute::name(); }                        \
@@ -62,6 +53,15 @@
     {                                                                                         \
         return UsdAttribute::hasMetadata(key);                                                \
     }
+#else
+#define UFE_ATTRIBUTE_OVERRIDES                                                          \
+    bool        hasValue() const override { return UsdAttribute::hasValue(); }           \
+    std::string name() const override { return UsdAttribute::name(); }                   \
+    std::string documentation() const override { return UsdAttribute::documentation(); } \
+    std::string string() const override                                                  \
+    {                                                                                    \
+        return UsdAttribute::string(Ufe::Attribute::sceneItem());                        \
+    }
 #endif
 
 namespace MAYAUSD_NS_DEF {
@@ -79,7 +79,7 @@ public:
     std::string name() const;
     std::string documentation() const;
     std::string string(const Ufe::SceneItem::Ptr& item) const;
-#if (UFE_PREVIEW_VERSION_NUM >= 3011)
+#ifdef UFE_V3_FEATURES_AVAILABLE
     Ufe::Value                getMetadata(const std::string& key) const;
     bool                      setMetadata(const std::string& key, const Ufe::Value& value);
     Ufe::UndoableCommand::Ptr setMetadataCmd(const std::string& key, const Ufe::Value& value);
