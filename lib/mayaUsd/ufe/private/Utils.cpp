@@ -130,8 +130,8 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
 
     SdfPrimSpecHandle       primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
-    std::string layerDisplayName;
-    std::string message { "It is defined on another layer" };
+    std::string             layerDisplayName;
+    std::string             message { "It is defined on another layer" };
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const SdfPrimSpecHandle& spec : primStack) {
