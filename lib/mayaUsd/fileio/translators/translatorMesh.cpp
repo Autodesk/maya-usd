@@ -198,11 +198,20 @@ TranslatorMeshRead::TranslatorMeshRead(
     // set mesh name
     const auto& primName = prim.GetName().GetString();
     const auto  shapeName = TfStringPrintf("%sShape", primName.c_str());
-    meshFn.setName(MString(shapeName.c_str()), false, &stat);
 
-    if (!stat) {
-        *status = stat;
-        return;
+    const bool creatingOnlyMeshData
+        = !transformObj.isNull() && MFn::kMeshData == transformObj.apiType();
+
+    // Set the mesh name if creating a maya mesh node object and not only creating the
+    // mesh data.
+    const bool creatingMeshNode = !creatingOnlyMeshData;
+    if (creatingMeshNode) {
+        meshFn.setName(MString(shapeName.c_str()), false, &stat);
+
+        if (!stat) {
+            *status = stat;
+            return;
+        }
     }
 
     // store the path

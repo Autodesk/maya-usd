@@ -561,12 +561,17 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , exportColorSets(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportColorSets))
     , exportDefaultCameras(_Boolean(userArgs, UsdMayaJobExportArgsTokens->defaultCameras))
     , exportDisplayColor(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportDisplayColor))
+    , exportDistanceUnit(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportDistanceUnit))
     , exportInstances(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportInstances))
     , exportMaterialCollections(
           _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportMaterialCollections))
     , exportMeshUVs(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
     , exportNurbsExplicitUV(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportUVs))
-    , exportReferenceObjects(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportReferenceObjects))
+    , referenceObjectMode(_Token(
+          userArgs,
+          UsdMayaJobExportArgsTokens->referenceObjectMode,
+          UsdMayaJobExportArgsTokens->none,
+          { UsdMayaJobExportArgsTokens->attributeOnly, UsdMayaJobExportArgsTokens->defaultToMesh }))
     , exportRefsAsInstanceable(
           _Boolean(userArgs, UsdMayaJobExportArgsTokens->exportRefsAsInstanceable))
     , exportSkels(_Token(
@@ -649,11 +654,13 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "exportColorSets: " << TfStringify(exportArgs.exportColorSets) << std::endl
         << "exportDefaultCameras: " << TfStringify(exportArgs.exportDefaultCameras) << std::endl
         << "exportDisplayColor: " << TfStringify(exportArgs.exportDisplayColor) << std::endl
+        << "exportDistanceUnit: " << TfStringify(exportArgs.exportDistanceUnit) << std::endl
         << "exportInstances: " << TfStringify(exportArgs.exportInstances) << std::endl
         << "exportMaterialCollections: " << TfStringify(exportArgs.exportMaterialCollections)
         << std::endl
         << "exportMeshUVs: " << TfStringify(exportArgs.exportMeshUVs) << std::endl
         << "exportNurbsExplicitUV: " << TfStringify(exportArgs.exportNurbsExplicitUV) << std::endl
+        << "referenceObjectMode: " << exportArgs.referenceObjectMode << std::endl
         << "exportRefsAsInstanceable: " << TfStringify(exportArgs.exportRefsAsInstanceable)
         << std::endl
         << "exportSkels: " << TfStringify(exportArgs.exportSkels) << std::endl
@@ -900,9 +907,11 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = false;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = false;
+        d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = true;
         d[UsdMayaJobExportArgsTokens->exportInstances] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
-        d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = false;
+        d[UsdMayaJobExportArgsTokens->referenceObjectMode]
+            = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
         d[UsdMayaJobExportArgsTokens->exportRoots] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->exportSkin] = UsdMayaJobExportArgsTokens->none.GetString();
@@ -983,9 +992,10 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportDisplayColor] = _boolean;
+        d[UsdMayaJobExportArgsTokens->exportDistanceUnit] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportInstances] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = _boolean;
-        d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = _boolean;
+        d[UsdMayaJobExportArgsTokens->referenceObjectMode] = _string;
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = _boolean;
         d[UsdMayaJobExportArgsTokens->exportRoots] = _stringVector;
         d[UsdMayaJobExportArgsTokens->exportSkin] = _string;

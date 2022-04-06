@@ -55,6 +55,7 @@ public:
     static constexpr auto kStripNamespacesFlag = "sn";
     static constexpr auto kExportRefsAsInstanceableFlag = "eri";
     static constexpr auto kExportDisplayColorFlag = "dsp";
+    static constexpr auto kExportDistanceUnitFlag = "edu";
     static constexpr auto kShadingModeFlag = "shd";
     static constexpr auto kConvertMaterialsToFlag = "cmt";
     static constexpr auto kMaterialsScopeNameFlag = "msn";
@@ -62,7 +63,7 @@ public:
     static constexpr auto kMaterialCollectionsPathFlag = "mcp";
     static constexpr auto kExportCollectionBasedBindingsFlag = "cbb";
     static constexpr auto kNormalizeNurbsFlag = "nnu";
-    static constexpr auto kExportReferenceObjectsFlag = "ero";
+    static constexpr auto kReferenceObjectModeFlag = "rom";
     static constexpr auto kExportRootsFlag = "ert";
     static constexpr auto kExportSkelsFlag = "skl";
     static constexpr auto kExportSkinFlag = "skn";

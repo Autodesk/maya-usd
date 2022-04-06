@@ -70,13 +70,14 @@ bool UsdMayaTranslatorUtil::CreateTransformNode(
 
 /* static */
 bool UsdMayaTranslatorUtil::CreateDummyTransformNode(
-    const UsdPrim&               usdPrim,
-    MObject&                     parentNode,
-    bool                         importTypeName,
-    const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext*    context,
-    MStatus*                     status,
-    MObject*                     mayaNodeObj)
+    const UsdPrim&                  usdPrim,
+    MObject&                        parentNode,
+    bool                            importTypeName,
+    const UsdMayaPrimReaderArgs&    args,
+    UsdMayaPrimReaderContext*       context,
+    MStatus*                        status,
+    MObject*                        mayaNodeObj,
+    const UsdMayaDummyTransformType dummyTransformType)
 {
     if (!usdPrim) {
         return false;
@@ -111,6 +112,10 @@ bool UsdMayaTranslatorUtil::CreateDummyTransformNode(
             UsdMayaUtil::SetNotes(dagNode, notes);
         }
         adaptor.SetMetadata(SdfFieldKeys->TypeName, typeName);
+    }
+
+    if (dummyTransformType == UsdMayaDummyTransformType::UnlockedTransform) {
+        return true;
     }
 
     // Lock all the transform attributes.
@@ -328,6 +333,18 @@ UsdMayaTranslatorUtil::ComputeShadingNodeTypeForMayaTypeName(const TfToken& maya
     }
 
     return shadingNodeType;
+}
+
+/* static */
+bool UsdMayaTranslatorUtil::SetUsdTypeName(const MObject& mayaNodeObj, const TfToken& usdTypeName)
+{
+    if (UsdMayaAdaptor adaptor = UsdMayaAdaptor(mayaNodeObj)) {
+        VtValue typeName;
+        typeName = usdTypeName;
+        adaptor.SetMetadata(SdfFieldKeys->TypeName, typeName);
+        return true;
+    }
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

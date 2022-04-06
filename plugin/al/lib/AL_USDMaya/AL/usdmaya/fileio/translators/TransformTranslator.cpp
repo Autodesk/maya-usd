@@ -48,6 +48,146 @@ namespace usdmaya {
 namespace fileio {
 namespace translators {
 
+#if MAYA_APP_VERSION > 2019
+//----------------------------------------------------------------------------------------------------------------------
+static const GfMatrix4d g_identityMatrix(1.0);
+static constexpr double g_tolerance = 1e-9;
+
+namespace {
+//----------------------------------------------------------------------------------------------------------------------
+bool extractOffsetMatrixComponents(
+    const MObject& node,
+    GfVec3d&       translation,
+    GfVec3f&       rotation,
+    int32_t&       rotateOrder,
+    GfVec3f&       scale,
+    GfVec3f&       shear)
+{
+    // Compose local matrix and offset parent matrix, then decompose components
+    // at once.
+
+    MMatrix offsetMatrix;
+    if (translators::DgNodeTranslator::getMatrix4x4(
+            node, MPxTransform::offsetParentMatrix, offsetMatrix)
+        != MStatus::kSuccess) {
+        // Cannot find offset parent matrix
+        return false;
+    }
+    if (GfIsClose(GfMatrix4d(offsetMatrix.matrix), g_identityMatrix, g_tolerance)) {
+        // Offset parent matrix is default, not need to compute
+        return false;
+    }
+
+    MMatrix localMatrix;
+    if (translators::DgNodeTranslator::getMatrix4x4(node, MPxTransform::xformMatrix, localMatrix)
+        != MStatus::kSuccess) {
+        // Cannot find local matrix
+        return false;
+    }
+
+    MStatus               status;
+    MTransformationMatrix transformationMatrix(offsetMatrix * localMatrix);
+    // Translate
+    MVector t(transformationMatrix.getTranslation(MSpace::kTransform, &status));
+    if (status != MStatus::kSuccess) {
+        return false;
+    }
+    translation = { t[0], t[1], t[2] };
+    // Rotate
+    double                               value[3];
+    MTransformationMatrix::RotationOrder tempRotateOrder;
+    if (transformationMatrix.getRotation(value, tempRotateOrder) != MStatus::kSuccess) {
+        return false;
+    }
+    rotation = { float(value[0]), float(value[1]), float(value[2]) };
+    // MTransformationMatrix::RotationOrder starts with kInvalid (0)
+    // Minus 1 to match MEulerRotation::RotationOrder
+    rotateOrder = static_cast<int32_t>(tempRotateOrder) - 1;
+    // Scale
+    if (transformationMatrix.getScale(value, MSpace::kTransform) != MStatus::kSuccess) {
+        return false;
+    }
+    scale = { float(value[0]), float(value[1]), float(value[2]) };
+    // Shear
+    if (transformationMatrix.getShear(value, MSpace::kTransform) != MStatus::kSuccess) {
+        return false;
+    }
+    shear = { float(value[0]), float(value[1]), float(value[2]) };
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool extractOffsetMatrixComponent(const MPlug& attr, double* value)
+{
+    // Similar as above function but decompose one component at a time,
+    // this is called when writing out animation values.
+
+    // Attributes that are affected by offset parent matrix:
+    // "t" -> "translate"
+    // "r" -> "rotate"
+    // "s" -> "scale"
+    // "sh" -> "shear"
+    static const std::array<MString, 4> supportedAttrs { "t", "r", "s", "sh" };
+
+    MString shortName(attr.partialName());
+    auto    it = std::find(supportedAttrs.cbegin(), supportedAttrs.cend(), shortName);
+    if (it == supportedAttrs.cend()) {
+        // Not supported attribute name
+        return false;
+    }
+
+    MMatrix offsetMatrix;
+    if (translators::DgNodeTranslator::getMatrix4x4(
+            attr.node(), MPxTransform::offsetParentMatrix, offsetMatrix)
+        != MStatus::kSuccess) {
+        // Cannot find offset parent matrix
+        return false;
+    }
+
+    if (GfIsClose(GfMatrix4d(offsetMatrix.matrix), g_identityMatrix, g_tolerance)) {
+        // Offset parent matrix is default, not need to compute
+        return false;
+    }
+
+    MMatrix localMatrix;
+    if (translators::DgNodeTranslator::getMatrix4x4(
+            attr.node(), MPxTransform::xformMatrix, localMatrix)
+        != MStatus::kSuccess) {
+        // Cannot find local matrix
+        return false;
+    }
+
+    MStatus               status;
+    MTransformationMatrix transformationMatrix(offsetMatrix * localMatrix);
+    if (shortName == "t") {
+        MVector t(transformationMatrix.getTranslation(MSpace::kTransform, &status));
+        if (status != MStatus::kSuccess) {
+            return false;
+        }
+        value[0] = t[0];
+        value[1] = t[1];
+        value[2] = t[2];
+    } else if (shortName == "r") {
+        MTransformationMatrix::RotationOrder order;
+        if (transformationMatrix.getRotation(value, order) != MStatus::kSuccess) {
+            return false;
+        }
+    } else if (shortName == "s") {
+        if (transformationMatrix.getScale(value, MSpace::kTransform) != MStatus::kSuccess) {
+            return false;
+        }
+    } else if (shortName == "sh") {
+        if (transformationMatrix.getShear(value, MSpace::kTransform) != MStatus::kSuccess) {
+            return false;
+        }
+    }
+    return true;
+}
+
+} // namespace
+
+#endif
+
 //----------------------------------------------------------------------------------------------------------------------
 MObject TransformTranslator::m_inheritsTransform = MObject::kNullObj;
 MObject TransformTranslator::m_scale = MObject::kNullObj;
@@ -703,12 +843,7 @@ MStatus TransformTranslator::copyAttributes(
     if (!exportInWorldSpace) {
         getBool(from, m_inheritsTransform, inheritsTransform);
         getBool(from, m_visible, visible);
-        getVec3(from, m_scale, (float*)&scale);
-        getVec3(from, m_shear, (float*)&shear);
-        getVec3(from, m_rotation, (float*)&rotation);
-        getInt32(from, m_rotateOrder, rotateOrder);
         getVec3(from, m_rotateAxis, (float*)&rotateAxis);
-        getVec3(from, m_translation, (double*)&translation);
         getVec3(from, m_scalePivot, (float*)&scalePivot);
         getVec3(from, m_rotatePivot, (float*)&rotatePivot);
         getVec3(from, m_scalePivotTranslate, (float*)&scalePivotTranslate);
@@ -719,6 +854,27 @@ MStatus TransformTranslator::copyAttributes(
 
         // This adds an op to the stack so we should do it after ClearXformOpOrder():
         xformSchema.SetResetXformStack(!inheritsTransform);
+
+#if MAYA_APP_VERSION > 2019
+        if (params.m_mergeOffsetParentMatrix
+            && extractOffsetMatrixComponents(
+                from, translation, rotation, rotateOrder, scale, shear)) {
+            // Update the animated flag
+            transformAnimated
+                |= animationCheck(animTranslator, MPlug(from, MPxTransform::offsetParentMatrix));
+        } else {
+#endif
+
+            /// Retrieve the values directly from Maya
+            getVec3(from, m_scale, (float*)&scale);
+            getVec3(from, m_shear, (float*)&shear);
+            getVec3(from, m_rotation, (float*)&rotation);
+            getInt32(from, m_rotateOrder, rotateOrder);
+            getVec3(from, m_translation, (double*)&translation);
+
+#if MAYA_APP_VERSION > 2019
+        }
+#endif
 
         bool plugAnimated = animationCheck(animTranslator, MPlug(from, m_visible));
         if (plugAnimated || visible != defaultVisible) {
@@ -865,6 +1021,83 @@ void TransformTranslator::copyAttributeValue(
         usdAttr.Set(value ? UsdGeomTokens->inherited : UsdGeomTokens->invisible, timeCode);
     }
 }
+
+#if MAYA_APP_VERSION > 2019
+//----------------------------------------------------------------------------------------------------------------------
+void TransformTranslator::copyAttributeValue(
+    const MPlug&       attr,
+    UsdAttribute&      usdAttr,
+    const UsdTimeCode& timeCode,
+    bool               mergeOffsetMatrix)
+{
+    double value[3];
+    if (mergeOffsetMatrix && extractOffsetMatrixComponent(attr, value)) {
+        if (usdAttr.GetTypeName() == SdfValueTypeNames->Float3) {
+            usdAttr.Set(
+                GfVec3f(
+                    static_cast<float>(value[0]),
+                    static_cast<float>(value[1]),
+                    static_cast<float>(value[2])),
+                timeCode);
+        } else if (usdAttr.GetTypeName() == SdfValueTypeNames->Double3) {
+            usdAttr.Set(GfVec3d(value[0], value[1], value[2]), timeCode);
+        } else if (usdAttr.GetTypeName() == SdfValueTypeNames->Matrix4d) {
+            // Notice that the only case for this Matrix4d type is "shear"
+            GfMatrix4d shearMatrix(
+                1.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                value[0],
+                1.0f,
+                0.0f,
+                0.0f,
+                value[1],
+                value[2],
+                1.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                0.0f,
+                1.0f);
+            usdAttr.Set(shearMatrix, timeCode);
+        }
+        return;
+    }
+
+    usdmaya::utils::DgNodeHelper::copyAttributeValue(attr, usdAttr, timeCode);
+}
+
+void TransformTranslator::copyAttributeValue(
+    const MPlug&       attr,
+    UsdAttribute&      usdAttr,
+    const float        scale,
+    const UsdTimeCode& timeCode,
+    bool               mergeOffsetMatrix)
+{
+    // Notice that "rotate" is the only one we supported at the moment,
+    // The rotation order is ignored, due to it's been created at the
+    // first place (the USD attribute), no intention to further check rotation
+    // order for non-default time code values.
+    double value[3];
+    if (mergeOffsetMatrix && extractOffsetMatrixComponent(attr, value)) {
+        if (usdAttr.GetTypeName() == SdfValueTypeNames->Float3) {
+            usdAttr.Set(
+                GfVec3f(
+                    static_cast<float>(value[0] * scale),
+                    static_cast<float>(value[1] * scale),
+                    static_cast<float>(value[2] * scale)),
+                timeCode);
+        } else if (usdAttr.GetTypeName() == SdfValueTypeNames->Double3) {
+            usdAttr.Set(GfVec3d(value[0] * scale, value[1] * scale, value[2] * scale), timeCode);
+        }
+        return;
+    }
+
+    translators::DgNodeTranslator::copyAttributeValue(attr, usdAttr, scale, timeCode);
+}
+
+#endif
 
 //----------------------------------------------------------------------------------------------------------------------
 } // namespace translators

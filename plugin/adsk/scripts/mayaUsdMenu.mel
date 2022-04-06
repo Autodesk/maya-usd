@@ -675,12 +675,14 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
     
     string $pulledObject = getPulledUsdObject($obj);
     if ($pulledObject != "") {
-        string $pushback = python("import mayaUsdMergeToUsd; mayaUsdMergeToUsd.createMenuItem(\"" + $pulledObject + "\", \"\")");
+        string $label = getMayaUsdString("kContextMenuLayerEditor");
+        string $icon = "USD_generic.png";
+        string $layerEditor = `menuItem -label $label -insertAfter "" -image $icon -command ("mayaUsdLayerEditorWindow -proxyShape " + $pulledObject + " mayaUsdLayerEditor")`;
+
+        string $pushback = python("import mayaUsdMergeToUsd; mayaUsdMergeToUsd.createMenuItem('" + $pulledObject + "', '"+ $layerEditor +"')");
         
         int $isMayaRef = python("import mayaUsdUtils; mayaUsdUtils.isPulledMayaReference('''" + $pulledObject + "''')");
 
-        string $label;
-        string $icon;
         if ($isMayaRef) {
             $label = getMayaUsdString("kMayaRefDiscardEdits");
             $icon = "discard_edits.png";

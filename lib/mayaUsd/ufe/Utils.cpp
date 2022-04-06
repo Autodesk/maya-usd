@@ -184,9 +184,8 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
 
     const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
     auto                       stage = getStage(Ufe::Path(segments[0]));
-    if (!TF_VERIFY(stage, kIllegalUSDPath, path.string().c_str())) {
+    if (!stage)
         return UsdPrim();
-    }
 
     // If there is only a single segment in the path, it must point to the
     // proxy shape, otherwise we would not have retrieved a valid stage.

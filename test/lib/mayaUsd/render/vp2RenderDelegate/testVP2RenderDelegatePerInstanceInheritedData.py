@@ -26,6 +26,7 @@ from mayaUsd import lib as mayaUsdLib
 from mayaUsd import ufe as mayaUsdUfe
 
 from maya import cmds
+import maya.mel
 import maya.api.OpenMayaRender as omr
 
 from pxr import Usd
@@ -33,7 +34,6 @@ from pxr import Usd
 import ufe
 
 import os
-
 
 class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestCase):
     """
@@ -55,15 +55,19 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
 
         cls._testDir = os.path.abspath('.')
 
+        cls._imageVersion = None
+        if maya.mel.eval("defaultShaderName") != "standardSurface1":
+            cls._imageVersion = 'lambertDefaultMaterial'
+
     @classmethod
     def tearDownClass(cls):
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
 
-    def assertSnapshotClose(self, imageName, usdVersion=None):
+    def assertSnapshotClose(self, imageName, version=None):
         paths = []
-        if (usdVersion):
-            paths = [usdVersion, imageName]
+        if (version):
+            paths = [version, imageName]
         else:
             paths = [imageName]
         
@@ -72,7 +76,7 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         imageUtils.snapshot(snapshotImage, width=960, height=540)
         return self.assertImagesClose(baselineImage, snapshotImage)
 
-    def _StartTest(self, testName):
+    def _StartTest(self, testName, version=None):
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
         panel = mayaUtils.activeModelPanel()
@@ -82,7 +86,7 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         mayaUtils.createProxyFromFile(testFile)
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
-        self.assertSnapshotClose('%s_unselected.png' % self._testName)
+        self.assertSnapshotClose('%s_unselected.png' % self._testName, version)
 
     def testPerInstanceInheritedData(self):
         self._StartTest('perInstanceInheritedData')
@@ -138,10 +142,10 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
     def testPerInstanceInheritedDataPartialOverride(self):
         self._StartTest('inheritedDisplayColor_pxrSurface')
 
-    def testPerInstanceInheriedDataBasisCurves(self):
-        self._StartTest('basisCurveInstance')
+    def testPerInstanceInheritedDataBasisCurves(self):
+        self._StartTest('basisCurveInstance', self._imageVersion)
         cmds.select("|stage|stageShape,/instanced_2")
-        self.assertSnapshotClose('%s_selected.png' % self._testName)
+        self.assertSnapshotClose('%s_selected.png' % self._testName, self._imageVersion)
 
     @unittest.skipUnless("SkipWhenDefaultMaterialActive" in dir(omr.MRenderItem), "Requires new SDK API")
     def testInstanceDefaultMaterial(self):
@@ -151,10 +155,10 @@ class testVP2RenderDelegatePerInstanceInheritedData(imageUtils.ImageDiffingTestC
         self.assertSnapshotClose('%s_selected.png' % self._testName)
         panel = mayaUtils.activeModelPanel()
         cmds.modelEditor(panel, edit=True, useDefaultMaterial=True)
-        self.assertSnapshotClose('%s_default.png' % self._testName)
+        self.assertSnapshotClose('%s_default.png' % self._testName, self._imageVersion)
         cmds.select("|stage|stageShape,/root/group/billboard_04",
                     "|stage|stageShape,/root/group/flatquad_04")
-        self.assertSnapshotClose('%s_defaultSelected.png' % self._testName)
+        self.assertSnapshotClose('%s_defaultSelected.png' % self._testName, self._imageVersion)
         cmds.modelEditor(panel, edit=True, useDefaultMaterial=False)
         self.assertSnapshotClose('%s_notDefault.png' % self._testName)
 

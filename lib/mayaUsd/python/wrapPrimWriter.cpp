@@ -505,11 +505,12 @@ void wrapJobExportArgs()
         .def_readonly("exportComponentTags", &UsdMayaJobExportArgs::exportComponentTags)
         .def_readonly("exportDefaultCameras", &UsdMayaJobExportArgs::exportDefaultCameras)
         .def_readonly("exportDisplayColor", &UsdMayaJobExportArgs::exportDisplayColor)
+        .def_readonly("exportDistanceUnit", &UsdMayaJobExportArgs::exportDistanceUnit)
         .def_readonly("exportInstances", &UsdMayaJobExportArgs::exportInstances)
         .def_readonly("exportMaterialCollections", &UsdMayaJobExportArgs::exportMaterialCollections)
         .def_readonly("exportMeshUVs", &UsdMayaJobExportArgs::exportMeshUVs)
         .def_readonly("exportNurbsExplicitUV", &UsdMayaJobExportArgs::exportNurbsExplicitUV)
-        .def_readonly("exportReferenceObjects", &UsdMayaJobExportArgs::exportReferenceObjects)
+        .def_readonly("referenceObjectMode", &UsdMayaJobExportArgs::referenceObjectMode)
         .def_readonly("exportRefsAsInstanceable", &UsdMayaJobExportArgs::exportRefsAsInstanceable)
         .add_property(
             "exportSkels",

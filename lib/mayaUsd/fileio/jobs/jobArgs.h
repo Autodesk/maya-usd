@@ -70,9 +70,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportCollectionBasedBindings) \
     (exportColorSets) \
     (exportDisplayColor) \
+    (exportDistanceUnit) \
     (exportInstances) \
     (exportMaterialCollections) \
-    (exportReferenceObjects) \
+    (referenceObjectMode) \
     (exportRefsAsInstanceable) \
     (exportRoots) \
     (exportSkels) \
@@ -105,6 +106,9 @@ TF_DECLARE_PUBLIC_TOKENS(
     (geomSidedness)   \
     /* Special "none" token */ \
     (none) \
+    /* referenceObjectMode values */ \
+    (attributeOnly) \
+    (defaultToMesh) \
     /* renderLayerMode values */ \
     (defaultLayer) \
     (currentLayer) \
@@ -170,11 +174,12 @@ struct UsdMayaJobExportArgs
     const bool        exportColorSets;
     const bool        exportDefaultCameras;
     const bool        exportDisplayColor;
+    const bool        exportDistanceUnit;
     const bool        exportInstances;
     const bool        exportMaterialCollections;
     const bool        exportMeshUVs;
     const bool        exportNurbsExplicitUV;
-    const bool        exportReferenceObjects;
+    const TfToken     referenceObjectMode;
     const bool        exportRefsAsInstanceable;
     const TfToken     exportSkels;
     const TfToken     exportSkin;

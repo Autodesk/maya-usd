@@ -26,6 +26,7 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MObjectArray.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MTypes.h> // For MAYA_APP_VERSION
 
 using AL::maya::test::compareNodes;
 using AL::maya::test::randomAnimatedNode;
@@ -499,3 +500,286 @@ TEST(translators_TranformTranslator, worldSpaceGroupsExport)
     ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y3")));
     ASSERT_TRUE(stage->GetPrimAtPath(SdfPath("/C/X2/Y3/cube1")));
 }
+
+#if MAYA_APP_VERSION > 2019
+TEST(translators_TranformTranslator, withOffsetParentMatrix)
+{
+    MFileIO::newFile(true);
+
+    MString buildCommand = R"(
+      polyCube;
+      // Local translate
+      move 1 2 3 pCube1;
+      // Offset translate
+      setAttr "pCube1.offsetParentMatrix" -type "matrix" 1 0 0 0 0 1 0 0 0 0 1 0 1 2 3 1 ;
+      group "pCube1";
+      move 1 2 3 group1;
+      setAttr "group1.rp" -type "double3" 0 0 0;
+      setAttr "group1.sp" -type "double3" 0 0 0;
+      // Translate XYZ = (1, 2, 3)
+      // Rotate XYZ == (30.0, 45.0, 60.0)
+      setAttr "group1.offsetParentMatrix" -type "matrix" 0.353553 0.612373 -0.707107 0 -0.573223 0.739199 0.353554 0 0.739199 0.28033 0.612372 0 1 2 3 1 ;
+      group "group1";
+      move 1 2 3 group2;
+      setAttr "group2.rp" -type "double3" 0 0 0;
+      setAttr "group2.sp" -type "double3" 0 0 0;
+      // Scale XYZ = (2, 2, 2)
+      //setAttr "group2.offsetParentMatrix" -type "matrix" 2 0 0 0 0 2 0 0 0 0 2 0 0 0 0 1 ;
+      group "group2";
+      move 1 2 3 group3;
+      setAttr "group3.rp" -type "double3" 0 0 0;
+      setAttr "group3.sp" -type "double3" 0 0 0;
+      // Drive group2.offsetParentMatrix by other node
+      createNode "composeMatrix";
+      connectAttr -f composeMatrix1.outputMatrix group2.offsetParentMatrix;
+      currentTime 1;
+      setAttr "composeMatrix1.inputTranslate" 1 1 1; setKeyframe "composeMatrix1.inputTranslate";
+      setAttr "composeMatrix1.inputRotate" 10 10 10 ;   setKeyframe "composeMatrix1.inputRotate";
+      setAttr "composeMatrix1.inputScale" 1 1 1;     setKeyframe "composeMatrix1.inputScale";
+      currentTime 2;
+      setAttr "composeMatrix1.inputTranslate" 2 2 2; setKeyframe "composeMatrix1.inputTranslate";
+      setAttr "composeMatrix1.inputRotate" 20 20 20 ;   setKeyframe "composeMatrix1.inputRotate";
+      setAttr "composeMatrix1.inputScale"  2 2 2;     setKeyframe "composeMatrix1.inputScale";
+      currentTime 3;
+      setAttr "composeMatrix1.inputTranslate" 3 3 3; setKeyframe "composeMatrix1.inputTranslate";
+      setAttr "composeMatrix1.inputRotate" 30 30 30 ;   setKeyframe "composeMatrix1.inputRotate";
+      setAttr "composeMatrix1.inputScale"  3 3 3;     setKeyframe "composeMatrix1.inputScale";
+      // Animate the local matrix
+      currentTime 1;
+      setAttr "pCube1.tx" 1; setKeyframe "pCube1.tx";
+      setAttr "pCube1.ty" 2; setKeyframe "pCube1.ty";
+      setAttr "pCube1.tz" 3; setKeyframe "pCube1.tz";
+      currentTime 2;
+      setAttr "pCube1.tx" 4; setKeyframe "pCube1.tx";
+      setAttr "pCube1.ty" 5; setKeyframe "pCube1.ty";
+      setAttr "pCube1.tz" 6; setKeyframe "pCube1.tz";
+      currentTime 3;
+      setAttr "pCube1.tx" 7; setKeyframe  "pCube1.tx";
+      setAttr "pCube1.ty" 8; setKeyframe  "pCube1.ty";
+      setAttr "pCube1.tz" 9; setKeyframe  "pCube1.tz";
+      currentTime 1;
+      )";
+
+    ASSERT_TRUE(MGlobal::executeCommand(buildCommand));
+
+    auto    path = buildTempPath("AL_USDMayaTests_withOffsetParentMatrix.usda");
+    MString exportCommand = "file -force -options "
+                            "\""
+                            "Animation=1;"
+                            "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=3;"
+                            "Merge_Offset_Parent_Matrix=1;"
+                            "Export_In_World_Space=0;"
+                            "Merge_Transforms=1;"
+                            "Dynamic_Attributes=0;Mesh_Normals=0;"
+                            "Mesh_Vertex_Creases=0;Mesh_Edge_Creases=0;"
+                            "Mesh_UVs=0;Mesh_UV_Only=0;Mesh_Points_as_PRef=0;"
+                            "Mesh_Colours=0;Mesh_Holes=0;Compaction_Level=0;"
+                            "Nurbs_Curves=0;Duplicate_Instances=0;"
+                            "Sub_Samples=1;Filter_Sample=0;Export_At_Which_Time=2;"
+                            "Meshes=1;Mesh_Face_Connects=1;Mesh_Points=1;"
+                            "\" -typ \"AL usdmaya export\" -pr -ea ";
+    exportCommand += "\"";
+    exportCommand += path;
+    exportCommand += "\"";
+
+    // export cube in world space
+    ASSERT_TRUE(MGlobal::executeCommand(exportCommand));
+
+    auto stage = UsdStage::Open(path);
+
+    ASSERT_TRUE(stage);
+    bool resetsXformStack = false;
+
+    // group3 has static xform matrix, translate == (1, 2, 3)
+    {
+        auto prim = stage->GetPrimAtPath(SdfPath("/group3"));
+        ASSERT_TRUE(prim);
+        UsdGeomXform xform(prim);
+        GfMatrix4d   transform(1.0);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        // make sure the local space tm values match the world coords.
+        EXPECT_NEAR(1.0, transform[0][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][0], 1e-6);
+        EXPECT_NEAR(1.0, transform[1][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][1], 1e-6);
+        EXPECT_NEAR(1.0, transform[2][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(2.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][2], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+    }
+
+    // group2 offset parent matrix is driven by connection
+    {
+        auto prim = stage->GetPrimAtPath(SdfPath("/group3/group2"));
+        ASSERT_TRUE(prim);
+
+        UsdGeomXform xform(prim);
+        GfMatrix4d   transform(1.0);
+
+        // group2 at frame 1:
+        // translate: 2, 3, 4
+        // rotate xyz: 10, 10, 10
+        // scale: 1, 1, 1
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(1));
+        EXPECT_NEAR(0.9698463103929541, transform[0][0], 1e-6);
+        EXPECT_NEAR(0.17101007166283433, transform[0][1], 1e-6);
+        EXPECT_NEAR(-0.17364817766693033, transform[0][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
+        EXPECT_NEAR(-0.14131448435589197, transform[1][0], 1e-6);
+        EXPECT_NEAR(0.9750824436431519, transform[1][1], 1e-6);
+        EXPECT_NEAR(0.17101007166283433, transform[1][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
+        EXPECT_NEAR(0.19856573402377836, transform[2][0], 1e-6);
+        EXPECT_NEAR(-0.141314484355892, transform[2][1], 1e-6);
+        EXPECT_NEAR(0.9698463103929541, transform[2][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
+        EXPECT_NEAR(2.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(4.0, transform[3][2], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        // group2 at frame 2:
+        // translate: 3, 4, 5
+        // rotate xyz: 20, 20, 20
+        // scale: 2, 2, 2
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(2));
+        EXPECT_NEAR(1.7660444431189781, transform[0][0], 1e-6);
+        EXPECT_NEAR(0.6427876096865395, transform[0][1], 1e-6);
+        EXPECT_NEAR(-0.6840402866513375, transform[0][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
+        EXPECT_NEAR(-0.42294129929358526, transform[1][0], 1e-6);
+        EXPECT_NEAR(1.8460619562152618, transform[1][1], 1e-6);
+        EXPECT_NEAR(0.6427876096865395, transform[1][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
+        EXPECT_NEAR(0.8379783304360758, transform[2][0], 1e-6);
+        EXPECT_NEAR(-0.4229412992935852, transform[2][1], 1e-6);
+        EXPECT_NEAR(1.7660444431189781, transform[2][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
+        EXPECT_NEAR(3.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(4.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(5.0, transform[3][2], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        // group2 at frame 3:
+        // translate: 4, 5, 6
+        // rotate xyz: 30, 30, 30
+        // scale: 3, 3, 3
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(3));
+        EXPECT_NEAR(2.2500000000000004, transform[0][0], 1e-6);
+        EXPECT_NEAR(1.299038105676658, transform[0][1], 1e-6);
+        EXPECT_NEAR(-1.4999999999999998, transform[0][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
+        EXPECT_NEAR(-0.649519052838329, transform[1][0], 1e-6);
+        EXPECT_NEAR(2.6250000000000004, transform[1][1], 1e-6);
+        EXPECT_NEAR(1.299038105676658, transform[1][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
+        EXPECT_NEAR(1.875, transform[2][0], 1e-6);
+        EXPECT_NEAR(-0.649519052838329, transform[2][1], 1e-6);
+        EXPECT_NEAR(2.2500000000000004, transform[2][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
+        EXPECT_NEAR(4.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(5.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(6.0, transform[3][2], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+    }
+    // group1 local matrix and offset parent matrix are both static at
+    //  local translate: 1, 2, 3
+    // offset translate: 1, 2, 3
+    // offset    rotate: 30, 45, 60
+    {
+        auto prim = stage->GetPrimAtPath(SdfPath("/group3/group2/group1"));
+        ASSERT_TRUE(prim);
+
+        UsdGeomXform xform(prim);
+        GfMatrix4d   transform(1.0);
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
+        EXPECT_NEAR(0.3535533905932738, transform[0][0], 1e-6);
+        EXPECT_NEAR(0.6123724356957945, transform[0][1], 1e-6);
+        EXPECT_NEAR(-0.7071067811865476, transform[0][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
+        EXPECT_NEAR(-0.5732233047033631, transform[1][0], 1e-6);
+        EXPECT_NEAR(0.7391989197401168, transform[1][1], 1e-6);
+        EXPECT_NEAR(0.3535533905932737, transform[1][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
+        EXPECT_NEAR(0.7391989197401165, transform[2][0], 1e-6);
+        EXPECT_NEAR(0.2803300858899107, transform[2][1], 1e-6);
+        EXPECT_NEAR(0.6123724356957945, transform[2][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
+        EXPECT_NEAR(2.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(4.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(6.0, transform[3][2], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+    }
+    // cube1 local translate is animated, offset parent matrix is static
+    //  local translate: 1, 2, 3 -> 4, 5, 6 -> 7, 8, 9
+    // offset translate: 1, 2, 3
+    {
+        auto prim = stage->GetPrimAtPath(SdfPath("/group3/group2/group1/pCube1"));
+        ASSERT_TRUE(prim);
+
+        UsdGeomXform xform(prim);
+        GfMatrix4d   transform(1.0);
+        // frame 1: local translate: 1, 2, 3
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(1));
+        EXPECT_NEAR(1.0, transform[0][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][0], 1e-6);
+        EXPECT_NEAR(1.0, transform[1][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][1], 1e-6);
+        EXPECT_NEAR(1.0, transform[2][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
+        EXPECT_NEAR(2.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(4.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(6.0, transform[3][2], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        // frame 2: local translate: 4, 5, 6
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(2));
+        EXPECT_NEAR(1.0, transform[0][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][0], 1e-6);
+        EXPECT_NEAR(1.0, transform[1][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][1], 1e-6);
+        EXPECT_NEAR(1.0, transform[2][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
+        EXPECT_NEAR(5.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(7.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(9.0, transform[3][2], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        // frame 3: local translate: 7, 8, 9
+        xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(3));
+        EXPECT_NEAR(1.0, transform[0][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][0], 1e-6);
+        EXPECT_NEAR(1.0, transform[1][1], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][0], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][1], 1e-6);
+        EXPECT_NEAR(1.0, transform[2][2], 1e-6);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
+        EXPECT_NEAR(8.0, transform[3][0], 1e-6);
+        EXPECT_NEAR(10.0, transform[3][1], 1e-6);
+        EXPECT_NEAR(12.0, transform[3][2], 1e-6);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+    }
+}
+
+#endif

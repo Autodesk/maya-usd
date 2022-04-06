@@ -518,8 +518,11 @@ bool UsdMaya_WriteJob::_FinishWriting()
                 "All distance values will be exported in Maya's internal "
                 "distance unit.");
     }
-    UsdGeomSetStageMetersPerUnit(
-        mJobCtx.mStage, UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit));
+
+    if (mJobCtx.mArgs.exportDistanceUnit) {
+        UsdGeomSetStageMetersPerUnit(
+            mJobCtx.mStage, UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit));
+    }
 
     if (usdRootPrim) {
         // We have already decided above that 'usdRootPrim' is the important
