@@ -85,6 +85,9 @@ public:
     /// Required because OGS doesn't support matrix3 parameters.
     static std::string getMatrix4Name(const std::string& matrix3Name);
 
+    /// Get a string that is unique for each environment settings possible:
+    static std::string getSpecularEnvKey();
+
 private:
     /// The constructor implementation that public constructors delegate to.
     template <typename GLSL_GENERATOR_WRAPPER>

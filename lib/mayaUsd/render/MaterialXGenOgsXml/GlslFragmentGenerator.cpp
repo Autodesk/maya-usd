@@ -27,6 +27,12 @@ const string MAYA_ENV_RADIANCE_SAMPLE = "specularI";
 const string MAYA_ENV_ROUGHNESS = "roughness";
 } // namespace
 
+const string& HwSpecularEnvironmentSamples::name()
+{
+    static const string USER_DATA_ENV_SAMPLES = "HwSpecularEnvironmentSamples";
+    return USER_DATA_ENV_SAMPLES;
+}
+
 string GlslFragmentSyntax::getVariableName(
     const string&   name,
     const TypeDesc* type,
@@ -169,17 +175,42 @@ ShaderPtr GlslFragmentGenerator::generate(
     emitInclude("stdlib/genglsl/lib/mx_math.glsl", context, pixelStage);
     emitLineBreak(pixelStage);
 
-    if (lighting) {
-        switch (OgsXmlGenerator::useLightAPI()) {
-        case 3:
-            emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
-            break;
-        case 2:
-            emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
-            break;
-        default: emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
+    int specularMethod = context.getOptions().hwSpecularEnvironmentMethod;
+    if (specularMethod == SPECULAR_ENVIRONMENT_FIS) {
+        emitLine(
+            "#define DIRECTIONAL_ALBEDO_METHOD "
+                + std::to_string(int(context.getOptions().hwDirectionalAlbedoMethod)),
+            pixelStage,
+            false);
+        emitLineBreak(pixelStage);
+        HwSpecularEnvironmentSamplesPtr pSamples
+            = context.getUserData<HwSpecularEnvironmentSamples>(
+                HwSpecularEnvironmentSamples::name());
+        if (pSamples) {
+            emitLine(
+                "#define MX_NUM_FIS_SAMPLES "
+                    + std::to_string(pSamples->hwSpecularEnvironmentSamples),
+                pixelStage,
+                false);
+        } else {
+            emitLine("#define MX_NUM_FIS_SAMPLES 64", pixelStage, false);
         }
+        emitLineBreak(pixelStage);
+        emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
+    } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
+        if (OgsXmlGenerator::useLightAPI() < 2) {
+            emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
+        } else {
+            emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
+        }
+    } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
+        emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
+    } else {
+        throw ExceptionShaderGenError(
+            "Invalid hardware specular environment method specified: '"
+            + std::to_string(specularMethod) + "'");
     }
+    emitLineBreak(pixelStage);
 
     // Set the include file to use for uv transformations,
     // depending on the vertical flip flag.

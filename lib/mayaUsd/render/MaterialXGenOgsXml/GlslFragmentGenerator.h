@@ -11,6 +11,7 @@
 
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
 #include <MaterialXGenGlsl/GlslSyntax.h>
+#include <MaterialXGenShader/GenUserData.h>
 
 MATERIALX_NAMESPACE_BEGIN
 
@@ -20,6 +21,28 @@ namespace Stage {
 /// cross-compiler.
 extern const string UNIFORMS;
 } // namespace Stage
+
+class HwSpecularEnvironmentSamples;
+using HwSpecularEnvironmentSamplesPtr = shared_ptr<class HwSpecularEnvironmentSamples>;
+class HwSpecularEnvironmentSamples : public GenUserData
+{
+public:
+    HwSpecularEnvironmentSamples(int numSamples)
+        : hwSpecularEnvironmentSamples(numSamples)
+    {
+    }
+
+    static const std::string& name();
+
+    /// Create and return a new instance.
+    static HwSpecularEnvironmentSamplesPtr create(int numSamples)
+    {
+        return std::make_shared<HwSpecularEnvironmentSamples>(numSamples);
+    }
+
+    /// Number of environment samples to take under FIS lighting.
+    int hwSpecularEnvironmentSamples = 64;
+};
 
 /// Syntax class for GLSL fragments.
 class GlslFragmentSyntax : public GlslSyntax
