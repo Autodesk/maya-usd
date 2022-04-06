@@ -1605,6 +1605,7 @@ MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     m_requestedRedraw = true;
     MTime currentTime;
     if (plug == outTime()) {
+        MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
         return computeOutputTime(plug, dataBlock, currentTime);
     } else if (plug == outStageData()) {
         MStatus status = computeOutputTime(MPlug(plug.node(), outTime()), dataBlock, currentTime);
@@ -1734,7 +1735,7 @@ void ProxyShape::CacheEmptyBoundingBox(MBoundingBox& cachedBBox)
 //----------------------------------------------------------------------------------------------------------------------
 UsdTimeCode ProxyShape::GetOutputTime(MDataBlock dataBlock) const
 {
-    return UsdTimeCode(inputDoubleValue(dataBlock, outTime()));
+    return MayaUsdProxyShapeBase::GetOutputTime(dataBlock);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

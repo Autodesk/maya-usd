@@ -104,7 +104,7 @@ MtlxUsd_PreviewSurfaceWriter::MtlxUsd_PreviewSurfaceWriter(
         // wrong in MaterialX 1.38.
         if (!(UsdMayaUtil::IsAuthored(attrPlug)
               || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName)
-            && !attrPlug.isConnected()) {
+            && !attrPlug.isConnected() && !attrPlug.numConnectedChildren()) {
             continue;
         }
 
@@ -128,7 +128,7 @@ MtlxUsd_PreviewSurfaceWriter::MtlxUsd_PreviewSurfaceWriter(
         _inputNameAttrMap.insert(std::make_pair(mayaAttrName, attrPlug));
 
         // All connections go directly to the node graph:
-        if (attrPlug.isConnected()) {
+        if (attrPlug.isConnected() || attrPlug.numConnectedChildren()) {
             if (!nodegraphSchema) {
                 nodegraphSchema = UsdShadeNodeGraph(GetNodeGraph());
                 if (!TF_VERIFY(
@@ -165,7 +165,7 @@ void MtlxUsd_PreviewSurfaceWriter::Write(const UsdTimeCode& usdTime)
         const MPlug&   attrPlug = inputAttrPair.second;
 
         UsdShadeInput input = shaderSchema.GetInput(inputName);
-        if (!input || attrPlug.isConnected()) {
+        if (!input || attrPlug.isConnected() || attrPlug.numConnectedChildren()) {
             continue;
         }
 
@@ -201,7 +201,40 @@ UsdAttribute MtlxUsd_PreviewSurfaceWriter::GetShadingAttributeForMayaAttrName(
         return UsdAttribute();
     }
 
-    return nodegraphSchema.GetOutput(mayaAttrName);
+    // And they use the camelCase Maya name directly:
+    UsdShadeOutput output = nodegraphSchema.GetOutput(mayaAttrName);
+    if (output) {
+        return output;
+    }
+
+    // We did not find the attribute directly, but we might be dealing with a subcomponent
+    // connection on a compound attribute:
+    MStatus                 status;
+    const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
+
+    MPlug childPlug = depNodeFn.findPlug(mayaAttrName.GetText(), &status);
+    if (!status || childPlug.isNull() || !childPlug.isChild()) {
+        return {};
+    }
+
+    MPlug              parentPlug = childPlug.parent();
+    unsigned int       childIndex = 0;
+    const unsigned int numChildren = parentPlug.numChildren();
+    for (; childIndex < numChildren; ++childIndex) {
+        if (childPlug.attribute() == parentPlug.child(childIndex).attribute()) {
+            break;
+        }
+    }
+
+    // We need the long name of the attribute:
+    const TfToken parentAttrName(
+        parentPlug.partialName(false, false, false, false, false, true).asChar());
+    output = nodegraphSchema.GetOutput(parentAttrName);
+    if (output) {
+        return AddConstructor(output, static_cast<size_t>(childIndex), parentPlug);
+    }
+
+    return {};
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

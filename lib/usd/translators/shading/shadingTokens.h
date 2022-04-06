@@ -94,7 +94,8 @@ TF_DECLARE_PUBLIC_TOKENS(TrUsdTokens, , TR_USD_COMMON TR_USD_TEXTURE TR_USD_PRIM
 
 #define TR_MAYA_NODES \
     (colorCorrect) \
-    (floatCorrect)
+    (floatCorrect) \
+    (clamp)
 
 #define TR_MAYA_STANDARD_SURFACE \
     (standardSurface) \
@@ -205,7 +206,10 @@ TF_DECLARE_PUBLIC_TOKENS(
     ((contextName, "mtlx")) \
     ((niceName, "MaterialX shading")) \
     ((exportDescription, "Exports bound shaders as a MaterialX UsdShade network.")) \
-    ((importDescription, "Search for a MaterialX UsdShade network to import."))
+    ((importDescription, "Search for a MaterialX UsdShade network to import.")) \
+    ((ConstructorPrefix, "MayaCTOR")) \
+    ((CombinePrefix, "ND_combine"))
+
 
 #define TR_MTLX_NODE_DEFS \
     (MayaND_lambert_surfaceshader) \
@@ -218,6 +222,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (MayaND_fileTexture_vector2) \
     (MayaND_fileTexture_vector3) \
     (MayaND_fileTexture_vector4) \
+    (MayaND_clamp_vector3) \
     (LdkND_FloatCorrect_float) \
     (LdkND_ColorCorrect_color4) \
     (ND_standard_surface_surfaceshader) \

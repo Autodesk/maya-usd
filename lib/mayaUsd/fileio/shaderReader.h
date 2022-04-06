@@ -94,7 +94,7 @@ public:
     /// still traverse the UsdShader branch to restore connections and values
     /// found on downstream USD prims.
     MAYAUSD_CORE_PUBLIC
-    virtual bool TraverseUnconnectableInput(const TfToken& usdAttrName) const;
+    virtual bool TraverseUnconnectableInput(const TfToken& usdAttrName);
 
     /// Callback after the shading context reader is done connecting all inputs
     MAYAUSD_CORE_PUBLIC

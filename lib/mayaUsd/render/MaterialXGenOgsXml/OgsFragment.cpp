@@ -58,7 +58,7 @@ protected:
         genOptions.hwSpecularEnvironmentMethod = mx::SPECULAR_ENVIRONMENT_NONE;
 
         // Set to use no direct lighting
-        if (mx::OgsXmlGenerator::useLightAPIV2()) {
+        if (mx::OgsXmlGenerator::useLightAPI() >= 2) {
             genOptions.hwMaxActiveLightSources = 0;
         } else {
             genOptions.hwMaxActiveLightSources = _isSurface ? 16 : 0;
@@ -311,7 +311,7 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
         = graph.hasClassification(
               mx::ShaderNode::Classification::SHADER | mx::ShaderNode::Classification::SURFACE)
         || graph.hasClassification(mx::ShaderNode::Classification::BSDF);
-    if (lighting && !mx::OgsXmlGenerator::useLightAPIV2()) {
+    if (lighting && mx::OgsXmlGenerator::useLightAPI() < 2) {
         _lightRigName = generateLightRig(_lightRigSource, *_glslShader, _fragmentName);
     }
 
