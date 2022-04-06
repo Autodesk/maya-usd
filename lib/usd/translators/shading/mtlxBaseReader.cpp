@@ -169,7 +169,7 @@ bool MtlxUsd_BaseReader::TraverseUnconnectableInput(const TfToken& usdAttrName)
                 UsdShadeOutput graphOutput = source.GetOutput(sourceInputName);
                 if (!graphOutput) {
                     // Not a NodeGraph we recognize.
-                    false;
+                    return false;
                 }
                 UsdShadeConnectableAPI::GetConnectedSource(
                     graphOutput, &source, &sourceInputName, &sourceType);
