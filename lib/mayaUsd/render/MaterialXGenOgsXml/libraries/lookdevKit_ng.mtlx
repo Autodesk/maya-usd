@@ -1,0 +1,218 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <!--
+ Copyright 2022 Autodesk
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+  -->
+
+  <!-- ======================================================================== -->
+  <!-- Implementations of Maya lookdevKit plugin nodes                          -->
+  <!-- ======================================================================== -->
+
+  <nodegraph name="LdkNG_ColorCorrect_color4" nodedef="LdkND_ColorCorrect_color4" >
+    <ifequal name="ifPremult" type="color4">
+      <input name="value1" type="boolean" interfacename="premultiplyResult" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="color4" nodename="premult" />
+      <input name="in2" type="color4" nodename="premultCombiner" />
+    </ifequal>
+    <premult name="premult" type="color4">
+      <input name="in" type="color4" nodename="premultCombiner" />
+    </premult>
+    <combine2 name="combineUnpremult" type="color4">
+      <input name="in1" type="color3" interfacename="inColor" />
+      <input name="in2" type="float" interfacename="inAlpha" />
+    </combine2>
+    <unpremult name="unpremult" type="color4">
+      <input name="in" type="color4" nodename="combineUnpremult" />
+    </unpremult>
+    <swizzle name="extractUnpremult" type="color3">
+      <input name="in" type="color4" nodename="unpremult" />
+      <input name="channels" type="string" value="rgb" />
+    </swizzle>
+    <ifequal name="ifUnpremult" type="color3">
+      <input name="value1" type="boolean" interfacename="unpremultiplyInput" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="color3" nodename="extractUnpremult" />
+      <input name="in2" type="color3" interfacename="inColor" />
+    </ifequal>
+    <combine2 name="premultCombiner" type="color4">
+      <input name="in1" type="color3" nodename="ifColClamp" />
+      <input name="in2" type="float" nodename="alphaCorrect" />
+    </combine2>
+    <LdkFloatCorrect name="alphaCorrect" type="float">
+      <input name="inFloat" type="float" interfacename="inAlpha" />
+      <input name="gain" type="float" interfacename="alphaGain" />
+      <input name="offset" type="float" interfacename="alphaOffset" />
+      <input name="gammaScale" type="float" interfacename="alphaGamma" />
+      <input name="clampOutput" type="boolean" interfacename="alphaClamp" />
+      <input name="clampMin" type="float" interfacename="alphaClampMin" />
+      <input name="clampMax" type="float" interfacename="alphaClampMax" />
+    </LdkFloatCorrect>
+    <hsvadjust name="hsvadjust" type="color3">
+      <input name="in" type="color3" nodename="ifUnpremult" />
+      <input name="amount" type="vector3" nodename="combine3" />
+    </hsvadjust>
+    <combine3 name="combine3" type="vector3">
+      <input name="in1" type="float" nodename="normHueShift" />
+      <input name="in2" type="float" interfacename="satGain" />
+      <input name="in3" type="float" interfacename="valGain" />
+    </combine3>
+    <divide name="normHueShift" type="float">
+      <input name="in1" type="float" interfacename="hueShift" />
+      <input name="in2" type="float" value="360" />
+    </divide>
+    <ifequal name="hasSatGain" type="float">
+      <input name="value1" type="float" interfacename="satGain" />
+      <input name="value2" type="float" value="1" />
+      <input name="in1" type="float" value="0" />
+      <input name="in2" type="float" value="1e7" />
+    </ifequal>
+    <ifequal name="hasValGain" type="float">
+      <input name="value1" type="float" interfacename="valGain" />
+      <input name="value2" type="float" value="1" />
+      <input name="in1" type="float" value="0" />
+      <input name="in2" type="float" value="1e7" />
+    </ifequal>
+    <add name="hasGain" type="float">
+      <input name="in1" type="float" nodename="hasSatGain" />
+      <input name="in2" type="float" nodename="hasValGain" />
+    </add>
+    <add name="hasShift" type="float">
+      <input name="in1" type="float" nodename="hasGain" />
+      <input name="in2" type="float" interfacename="hueShift" />
+    </add>
+    <ifequal name="ifHSVAdjust" type="color3">
+      <input name="value1" type="float" nodename="hasShift" />
+      <input name="value2" type="float" value="0" />
+      <input name="in1" type="color3" nodename="ifUnpremult" />
+      <input name="in2" type="color3" nodename="hsvadjust" />
+    </ifequal>
+    <dotproduct name="hasColGain" type="float">
+      <input name="in1" type="vector3" nodename="invColGainToVec" />
+      <input name="in2" type="vector3" value="1, 1, 1" />
+    </dotproduct>
+    <convert name="invColGainToVec" type="vector3">
+      <input name="in" type="color3" nodename="invertColGain" />
+    </convert>
+    <invert name="invertColGain" type="color3">
+      <input name="in" type="color3" interfacename="colGain" />
+      <input name="amount" type="color3" value="1, 1, 1" />
+    </invert>
+    <ifgreater name="ifColGain" type="color3">
+      <input name="value1" type="float" nodename="hasColGain" />
+      <input name="value2" type="float" value="1e-06" />
+      <input name="in1" type="color3" nodename="mulColGain" />
+      <input name="in2" type="color3" nodename="ifHSVAdjust" />
+    </ifgreater>
+    <multiply name="mulColGain" type="color3">
+      <input name="in1" type="color3" nodename="ifHSVAdjust" />
+      <input name="in2" type="color3" interfacename="colGain" />
+    </multiply>
+    <convert name="colOffsetToVec" type="vector3">
+      <input name="in" type="color3" interfacename="colOffset" />
+    </convert>
+    <dotproduct name="hasColOffset" type="float">
+      <input name="in1" type="vector3" nodename="colOffsetToVec" />
+      <input name="in2" type="vector3" value="1, 1, 1" />
+    </dotproduct>
+    <add name="addOffset" type="color3">
+      <input name="in1" type="color3" nodename="ifColGain" />
+      <input name="in2" type="color3" interfacename="colOffset" />
+    </add>
+    <ifgreater name="ifgreater" type="color3">
+      <input name="value1" type="float" nodename="hasColOffset" />
+      <input name="value2" type="float" value="1e-06" />
+      <input name="in1" type="color3" nodename="addOffset" />
+      <input name="in2" type="color3" nodename="ifColGain" />
+    </ifgreater>
+    <max name="minGamma" type="vector3">
+      <input name="in1" type="vector3" interfacename="colGamma" />
+      <input name="in2" type="float" value="1e-06" />
+    </max>
+    <divide name="invGamma" type="vector3">
+      <input name="in1" type="vector3" value="1, 1, 1" />
+      <input name="in2" type="vector3" nodename="minGamma" />
+    </divide>
+    <convert name="invGammaToColor" type="color3">
+      <input name="in" type="vector3" nodename="invGamma" />
+    </convert>
+    <power name="gammaAdjustCol" type="color3">
+      <input name="in1" type="color3" nodename="ifgreater" />
+      <input name="in2" type="color3" nodename="invGammaToColor" />
+    </power>
+    <clamp name="clampCol" type="color3">
+      <input name="in" type="color3" nodename="gammaAdjustCol" />
+      <input name="low" type="color3" interfacename="colClampMin" />
+      <input name="high" type="color3" interfacename="colClampMax" />
+    </clamp>
+    <ifequal name="ifColClamp" type="color3">
+      <input name="value1" type="boolean" interfacename="colClamp" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="color3" nodename="clampCol" />
+      <input name="in2" type="color3" nodename="gammaAdjustCol" />
+    </ifequal>
+    <output name="outColor" type="color4" nodename="ifPremult" />
+  </nodegraph>
+
+  <nodegraph name="LdkNG_FloatCorrect_float" nodedef="LdkND_FloatCorrect_float" >
+    <ifequal name="ifGain" type="float">
+      <input name="value1" type="float" interfacename="gain" />
+      <input name="value2" type="float" value="1" />
+      <input name="in1" type="float" interfacename="inFloat" />
+      <input name="in2" type="float" nodename="mulGain" />
+    </ifequal>
+    <ifequal name="ifClamp" type="float">
+      <input name="value1" type="boolean" interfacename="clampOutput" />
+      <input name="value2" type="boolean" value="true" />
+      <input name="in1" type="float" nodename="clamp" />
+      <input name="in2" type="float" nodename="ifGamma" />
+    </ifequal>
+    <multiply name="mulGain" type="float">
+      <input name="in1" type="float" interfacename="inFloat" />
+      <input name="in2" type="float" interfacename="gain" />
+    </multiply>
+    <add name="addOffset" type="float">
+      <input name="in1" type="float" nodename="ifGain" />
+      <input name="in2" type="float" interfacename="offset" />
+    </add>
+    <ifequal name="ifOffset" type="float">
+      <input name="value1" type="float" interfacename="offset" />
+      <input name="value2" type="float" value="0" />
+      <input name="in1" type="float" nodename="ifGain" />
+      <input name="in2" type="float" nodename="addOffset" />
+    </ifequal>
+    <power name="power" type="float">
+      <input name="in1" type="float" nodename="ifOffset" />
+      <input name="in2" type="float" nodename="oneOverGamma" />
+    </power>
+    <divide name="oneOverGamma" type="float">
+      <input name="in1" type="float" value="1" />
+      <input name="in2" type="float" interfacename="gammaScale" />
+    </divide>
+    <ifequal name="ifGamma" type="float">
+      <input name="value1" type="float" interfacename="gammaScale" />
+      <input name="value2" type="float" value="1" />
+      <input name="in1" type="float" nodename="ifOffset" />
+      <input name="in2" type="float" nodename="power" />
+    </ifequal>
+    <clamp name="clamp" type="float">
+      <input name="in" type="float" nodename="ifGamma" />
+      <input name="low" type="float" interfacename="clampMin" />
+      <input name="high" type="float" interfacename="clampMax" />
+    </clamp>
+    <output name="outFloat" type="float" nodename="ifClamp" />
+  </nodegraph>
+
+  </materialx>

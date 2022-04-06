@@ -11,6 +11,8 @@ target_sources(${PROJECT_NAME}
         editability.cpp
         editRouter.cpp
         loadRules.cpp
+        loadRulesText.cpp
+        loadRulesAttribute.cpp
         query.cpp
         plugRegistryHelper.cpp
         selectability.cpp

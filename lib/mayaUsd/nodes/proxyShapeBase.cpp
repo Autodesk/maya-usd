@@ -18,8 +18,10 @@
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/nodes/proxyShapeLoadRules.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/customLayerData.h>
+#include <mayaUsd/utils/loadRules.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
@@ -758,6 +760,12 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 ? UsdStage::InitialLoadSet::LoadAll
                 : UsdStage::InitialLoadSet::LoadNone;
 
+            // If there is a dynamic attribute containing the exact load rules
+            // for payload, start by loading nothing. The correct payload will
+            // be loaded by the load rules.
+            if (hasLoadRulesAttribute(thisMObject()))
+                loadSet = UsdStage::InitialLoadSet::LoadNone;
+
             {
 #if AR_VERSION == 1
                 PXR_NS::ArGetResolver().ConfigureResolverForAsset(fileString);
@@ -814,8 +822,10 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
         }
 
-        if (usdStage)
+        if (usdStage) {
             primPath = usdStage->GetPseudoRoot().GetPath();
+            copyLoadRulesFromAttribute(thisMObject(), *usdStage);
+        }
     }
 
     // Create the output outData
@@ -1612,14 +1622,18 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection)
     , _incomingLayers()
 {
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
+
+    // Register with the load-rules handling used to transfer load rules
+    // between the USD stage and a dynamic attribute on the proxy shape.
+    MayaUsdProxyShapeLoadRules::addProxyShape(*this);
 }
 
 /* virtual */
 MayaUsdProxyShapeBase::~MayaUsdProxyShapeBase()
 {
-    //
-    // empty
-    //
+    // Deregister from the load-rules handling used to transfer load rules
+    // between the USD stage and a dynamic attribute on the proxy shape.
+    MayaUsdProxyShapeLoadRules::removeProxyShape(*this);
 }
 
 MSelectionMask MayaUsdProxyShapeBase::getShapeSelectionMask() const

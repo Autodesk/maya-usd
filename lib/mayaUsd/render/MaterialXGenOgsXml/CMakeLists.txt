@@ -28,6 +28,8 @@ list(APPEND NODE_DECLARATIONS
     libraries/maya_surfaces.mtlx
     libraries/maya_utilities.mtlx
     libraries/usd_utilities.mtlx
+    libraries/lookdevKit.mtlx
+    libraries/lookdevKit_ng.mtlx
 )
 
 list(APPEND NODE_GLSL_IMPLEMENTATIONS
