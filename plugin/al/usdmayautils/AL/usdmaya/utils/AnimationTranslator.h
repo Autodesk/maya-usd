@@ -310,7 +310,11 @@ protected:
 class AnimationCheckTransformAttributes
 {
 private:
+#if MAYA_APP_VERSION > 2019
+    constexpr static int transformAttributesCount { 14 };
+#else
     constexpr static int transformAttributesCount { 13 };
+#endif
 
 public:
     AL_USDMAYA_UTILS_PUBLIC

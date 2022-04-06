@@ -53,6 +53,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
             mtlxPreviewSurfaceWriter.cpp
             mtlxStandardSurfaceReader.cpp
             mtlxStandardSurfaceWriter.cpp
+            mtlxSymmetricShaderWriter.cpp
             mtlxFileTextureWriter.cpp
     )
     target_compile_definitions(${TARGET_NAME}

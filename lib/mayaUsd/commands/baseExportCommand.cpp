@@ -58,6 +58,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportDisplayColor.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kExportDistanceUnitFlag,
+        UsdMayaJobExportArgsTokens->exportDistanceUnit.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kShadingModeFlag, UsdMayaJobExportArgsTokens->shadingMode.GetText(), MSyntax::kString);
     syntax.addFlag(
         kConvertMaterialsToFlag,

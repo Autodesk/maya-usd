@@ -219,3 +219,70 @@ TEST(Transform, animationWithTransform)
 
     MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", optionVarValue);
 }
+
+TEST(Transform, animatedTransformOnDefaultTimecode)
+{
+    MStatus status;
+    MFileIO::newFile(true);
+    MGlobal::viewFrame(0);
+
+    int optionVarValue = MGlobal::optionVarIntValue("AL_usdmaya_readAnimatedValues");
+    // Explicitly set the value to be false to force using default timecode
+    MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", false);
+
+    MString importCommand = "AL_usdmaya_ProxyShapeImport -f \"" + MString(AL_USDMAYA_TEST_DATA)
+        + "/animated_camera.usda\"";
+
+    MStringArray cmdResults;
+    status = MGlobal::executeCommand(importCommand, cmdResults, true);
+    ASSERT_TRUE(status == MStatus::kSuccess);
+
+    MString camAName = "|AL_usdmaya_Proxy|root|cameraA";
+    MString camBName = "|AL_usdmaya_Proxy|root|cameraB";
+
+    MSelectionList sel;
+    sel.add(camAName);
+    sel.add(camBName);
+    MDagPath camADagPath;
+    MDagPath camBDagPath;
+    sel.getDagPath(0, camADagPath);
+    sel.getDagPath(1, camBDagPath);
+    MFnDagNode camAFn(camADagPath, &status);
+    ASSERT_TRUE(status == MStatus::kSuccess);
+    MFnDagNode camBFn(camBDagPath, &status);
+    ASSERT_TRUE(status == MStatus::kSuccess);
+
+    camAFn.findPlug("readAnimatedValues").setBool(false);
+    camBFn.findPlug("readAnimatedValues").setBool(false);
+    MGlobal::viewFrame(1);
+
+    // The camera A xform should be identical at frame 1
+    ASSERT_FLOAT_EQ(camAFn.findPlug("translateX").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("translateY").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("translateZ").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("rotateX").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("rotateY").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("rotateZ").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("scaleX").asDouble(), 1.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("scaleY").asDouble(), 1.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("scaleZ").asDouble(), 1.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("shearX").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("shearY").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camAFn.findPlug("shearZ").asDouble(), 0.f);
+
+    // The camera B xform should be read from default timecode at frame 1
+    ASSERT_FLOAT_EQ(camBFn.findPlug("translateX").asDouble(), 1.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("translateY").asDouble(), 2.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("translateZ").asDouble(), 3.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("rotateX").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("rotateY").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("rotateZ").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("scaleX").asDouble(), 1.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("scaleY").asDouble(), 1.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("scaleZ").asDouble(), 1.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("shearX").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("shearY").asDouble(), 0.f);
+    ASSERT_FLOAT_EQ(camBFn.findPlug("shearZ").asDouble(), 0.f);
+
+    MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", optionVarValue);
+}

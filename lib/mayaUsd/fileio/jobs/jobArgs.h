@@ -70,6 +70,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportCollectionBasedBindings) \
     (exportColorSets) \
     (exportDisplayColor) \
+    (exportDistanceUnit) \
     (exportInstances) \
     (exportMaterialCollections) \
     (referenceObjectMode) \
@@ -173,6 +174,7 @@ struct UsdMayaJobExportArgs
     const bool        exportColorSets;
     const bool        exportDefaultCameras;
     const bool        exportDisplayColor;
+    const bool        exportDistanceUnit;
     const bool        exportInstances;
     const bool        exportMaterialCollections;
     const bool        exportMeshUVs;

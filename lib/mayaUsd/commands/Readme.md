@@ -123,6 +123,7 @@ their own purposes, similar to the Alembic export chaser example.
 | `-defaultCameras`                | `-dc`      | noarg            | false               | Export the four Maya default cameras |
 | `-defaultMeshScheme`             | `-dms`     | string           | `catmullClark`      | Sets the default subdivision scheme for exported Maya meshes, if the `USD_subdivisionScheme` attribute is not present on the Mesh. Valid values are: `none`, `catmullClark`, `loop`, `bilinear` |
 | `-exportDisplayColor`            | `-dsp`     | bool             | false               | Export display color |
+| `-exportDistanceUnit`            | `-edu`     | bool             | true                | Export the Maya distance unit to USD for the stage under its `metersPerUnit` attribute |
 | `-jobContext`                    | `-jc`      | string (multi)   | none                | Specifies an additional export context to handle. These usually contains extra schemas, primitives, and materials that are to be exported for a specific task, a target renderer for example. |
 | `-defaultUSDFormat`              | `-duf`     | string           | `usdc`              | The exported USD file format, can be `usdc` for binary format or `usda` for ASCII format. |
 | `-exportBlendShapes`             | `-ebs`     | bool             | false               | Enable or disable export of blend shapes |
