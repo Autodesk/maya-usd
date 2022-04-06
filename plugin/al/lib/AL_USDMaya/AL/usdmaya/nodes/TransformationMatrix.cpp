@@ -1238,8 +1238,10 @@ void TransformationMatrix::updateToTime(const UsdTimeCode& time)
                     if (op.GetNumTimeSamples() >= 1) {
                         m_flags |= kAnimatedMatrix;
                         GfMatrix4d matrix;
+                        matrix.SetIdentity();
                         op.Get<GfMatrix4d>(&matrix, getTimeCode());
-                        double T[3], S[3];
+                        double T[3] {};
+                        double S[3] {};
                         AL::usdmaya::utils::matrixToSRT(matrix, S, m_rotationFromUsd, T);
                         m_scaleFromUsd.x = S[0];
                         m_scaleFromUsd.y = S[1];
