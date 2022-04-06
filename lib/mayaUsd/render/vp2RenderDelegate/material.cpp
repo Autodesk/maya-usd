@@ -209,11 +209,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (vector3)
     (transformvector)
     (constant)
+    (value)
     (Tw_to_To)
     (in)
     (space)
     (fromspace)
     (tospace)
+    (string)
     (world)
     (object)
     (model)
@@ -484,11 +486,11 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
                             _mtlxTokens->geompropvalue.GetString(),
                             _mtlxTokens->ST_reader.GetString(),
                             _mtlxTokens->vector2.GetString());
-                        mx::ValueElementPtr prpInput
-                            = stReader->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
+                        mx::ValueElementPtr prpInput = stReader->addInput(
+                            _mtlxTokens->geomprop.GetString(), _mtlxTokens->string.GetString());
                         prpInput->setValueString(_tokens->st.GetString());
                     }
-                    node->addInputFromNodeDef(input->getName());
+                    node->addInput(input->getName(), input->getType());
                     node->setConnectedNodeName(input->getName(), stReader->getName());
                 }
             }
@@ -514,8 +516,8 @@ void _AddMissingTexcoordReaders(mx::DocumentPtr& mtlxDoc)
                 _mtlxTokens->geompropvalue.GetString(),
                 nodeName,
                 nodeDef->getOutput(_mtlxTokens->out.GetString())->getType());
-            mx::ValueElementPtr prpInput
-                = doppelNode->addInputFromNodeDef(_mtlxTokens->geomprop.GetString());
+            mx::ValueElementPtr prpInput = doppelNode->addInput(
+                _mtlxTokens->geomprop.GetString(), _mtlxTokens->string.GetString());
             MString primvar = _tokens->st.GetText();
             if (streamIndex) {
                 // If reading at index > 0 we add the index to the primvar name:
@@ -613,7 +615,7 @@ void _MaterialXData::_FixLibraryTangentInputs(mx::DocumentPtr& mtlxDoc)
                                 _mtlxTokens->vector3.GetString());
                             tangentInput->setDefaultGeomPropString(geomPropString);
                         }
-                        node->addInputFromNodeDef(input->getName())
+                        node->addInput(input->getName(), input->getType())
                             ->setInterfaceName(_mtlxTokens->tangent_fix.GetString());
                     }
                 }
@@ -729,7 +731,8 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                 _mtlxTokens->texcoordtangents.GetString(),
                 _mtlxTokens->Tw_reader.GetString(),
                 _mtlxTokens->vector3.GetString());
-            tangentGenerator->addInputFromNodeDef(_mtlxTokens->texcoord.GetString());
+            tangentGenerator->addInput(
+                _mtlxTokens->texcoord.GetString(), _mtlxTokens->vector2.GetString());
             tangentGenerator->setConnectedNodeName(
                 _mtlxTokens->texcoord.GetString(), stReader->getName());
         } else {
@@ -748,18 +751,18 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                 _mtlxTokens->transformvector.GetString(),
                 _mtlxTokens->Tw_to_To.GetString(),
                 _mtlxTokens->vector3.GetString());
-            retVal->addInputFromNodeDef(_mtlxTokens->in.GetString());
+            retVal->addInput(_mtlxTokens->in.GetString(), _mtlxTokens->vector3.GetString());
             retVal->setConnectedNodeName(_mtlxTokens->in.GetString(), tangentGenerator->getName());
-            retVal->addInputFromNodeDef(_mtlxTokens->fromspace.GetString())
+            retVal->addInput(_mtlxTokens->fromspace.GetString(), _mtlxTokens->string.GetString())
                 ->setValueString(_mtlxTokens->world.GetString());
-            retVal->addInputFromNodeDef(_mtlxTokens->tospace.GetString())
+            retVal->addInput(_mtlxTokens->tospace.GetString(), _mtlxTokens->string.GetString())
                 ->setValueString(toSpace.GetString());
             return retVal;
         };
 
         // Reconnect nodes that require Tworld to the tangent generator:
         for (const auto& nodeInput : graphTworldInputs) {
-            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->addInput(nodeInput.second, _mtlxTokens->vector3.GetString());
             nodeInput.first->setConnectedNodeName(nodeInput.second, tangentGenerator->getName());
         }
 
@@ -768,7 +771,7 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
             if (!transformVectorToObject) {
                 transformVectorToObject = _createTransformVector(_mtlxTokens->object);
             }
-            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->addInput(nodeInput.second, _mtlxTokens->vector3.GetString());
             nodeInput.first->setConnectedNodeName(
                 nodeInput.second, transformVectorToObject->getName());
         }
@@ -781,7 +784,7 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                     _mtlxTokens->outTworld.GetString(), _mtlxTokens->vector3.GetString());
                 outTworld->setConnectedNode(tangentGenerator);
             }
-            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->addInput(nodeInput.second, _mtlxTokens->vector3.GetString());
             nodeInput.first->setConnectedOutput(nodeInput.second, outTworld);
         }
 
@@ -796,7 +799,7 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
                 }
                 outTobject->setConnectedNode(transformVectorToObject);
             }
-            nodeInput.first->addInputFromNodeDef(nodeInput.second);
+            nodeInput.first->addInput(nodeInput.second, _mtlxTokens->vector3.GetString());
             nodeInput.first->setConnectedOutput(nodeInput.second, outTobject);
         }
 
@@ -809,8 +812,10 @@ void _AddMissingTangents(mx::DocumentPtr& mtlxDoc)
 
             mx::NodePtr passthruNode = nodeGraph->addNode(
                 _mtlxTokens->constant.GetString(), nodeName, _mtlxTokens->vector3.GetString());
-            passthruNode->addInputFromNodeDef(_mtlxTokens->in.GetString());
-            passthruNode->setConnectedNodeName(_mtlxTokens->in.GetString(), newSource->getName());
+            passthruNode->addInput(
+                _mtlxTokens->value.GetString(), _mtlxTokens->vector3.GetString());
+            passthruNode->setConnectedNodeName(
+                _mtlxTokens->value.GetString(), newSource->getName());
         };
 
         for (auto& tangentNode : nodesToReplace) {
@@ -2539,11 +2544,19 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             std::string input = namePair.second;
             // Renaming adds digits at the end, so only compare the backs.
             if (path.back() != input.back()) {
-                MString uniqueName(input.c_str());
-                while (!input.empty() && path.back() != input.back()) {
-                    input.pop_back();
+                // If a digit was added, we should be able to find the last path element inside the
+                // input name:
+                size_t      lastSlash = path.rfind("/");
+                std::string originalName = path;
+                if (lastSlash != std::string::npos) {
+                    originalName = path.substr(lastSlash + 1);
                 }
-                shaderInstance->renameParameter(uniqueName, input.c_str());
+                size_t foundOriginal = input.find(originalName);
+                if (foundOriginal != std::string::npos) {
+                    MString uniqueName(input.c_str());
+                    input = input.substr(0, foundOriginal + originalName.size());
+                    shaderInstance->renameParameter(uniqueName, input.c_str());
+                }
             }
         }
 
