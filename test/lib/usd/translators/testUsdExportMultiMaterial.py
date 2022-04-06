@@ -183,14 +183,14 @@ class testUsdExportMultiMaterial(unittest.TestCase):
             # MaterialX section
 
             # Source node, input, destination node:
-            ("/MaterialX/MayaNG_MaterialX", "diffuseColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file1_MayafileTexture_rgb"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file1_MayafileTexture_rgb", "in", "/MaterialX/MayaNG_MaterialX/M_file1_MayafileTexture"),
+            ("/MaterialX/MayaNG_MaterialX", "diffuseColor", "/MaterialX/MayaNG_MaterialX/MayaConvert_M_file1_MayafileTexture"),
+            ("/MaterialX/MayaNG_MaterialX/MayaConvert_M_file1_MayafileTexture", "in", "/MaterialX/MayaNG_MaterialX/M_file1_MayafileTexture"),
             ("/MaterialX/MayaNG_MaterialX/M_file1_MayafileTexture", "inColor", "/MaterialX/MayaNG_MaterialX/M_file1"),
             ("/MaterialX/MayaNG_MaterialX/M_file1_MayafileTexture", "uvCoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"),
             ("/MaterialX/MayaNG_MaterialX/M_file1", "texcoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"),
 
-            ("/MaterialX/MayaNG_MaterialX", "emissiveColor", "/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file2_MayafileTexture_rgb"),
-            ("/MaterialX/MayaNG_MaterialX/MayaSwizzle_M_file2_MayafileTexture_rgb", "in", "/MaterialX/MayaNG_MaterialX/M_file2_MayafileTexture"),
+            ("/MaterialX/MayaNG_MaterialX", "emissiveColor", "/MaterialX/MayaNG_MaterialX/MayaConvert_M_file2_MayafileTexture"),
+            ("/MaterialX/MayaNG_MaterialX/MayaConvert_M_file2_MayafileTexture", "in", "/MaterialX/MayaNG_MaterialX/M_file2_MayafileTexture"),
             ("/MaterialX/MayaNG_MaterialX/M_file2_MayafileTexture", "inColor", "/MaterialX/MayaNG_MaterialX/M_file2"),
             ("/MaterialX/MayaNG_MaterialX/M_file2_MayafileTexture", "uvCoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"), # re-used
             ("/MaterialX/MayaNG_MaterialX/M_file2", "texcoord", "/MaterialX/MayaNG_MaterialX/M_place2dTexture1"), # re-used

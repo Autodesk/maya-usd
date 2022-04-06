@@ -236,13 +236,14 @@ class testUsdExportMaterialX(unittest.TestCase):
 
             (1, 2, "place2dTexture1", "ND_geompropvalue_vector2"),
 
-            (4, 5, "MayaSwizzle_file4_MayafileTexture_rgb", "ND_swizzle_color4_color3"),
             (6, 7, "MayaSwizzle_file6_MayafileTexture_xyy", "ND_swizzle_vector2_color3"),
             (19, 21, "MayaSwizzle_file20_MayafileTexture_x", "ND_swizzle_vector2_float"),
-            (7, 8, "MayaSwizzle_file7_MayafileTexture_xxx", "ND_swizzle_float_color3"),
             (8, 9, "MayaSwizzle_file8_MayafileTexture_r", "ND_swizzle_color4_float"),
             (13, 14, "MayaSwizzle_file13_MayafileTexture_g", "ND_swizzle_color3_float"),
-            (14, 15, "MayaSwizzle_file14_MayafileTexture_rgb", "ND_swizzle_color3_vector3"),
+
+            (4, 5, "MayaConvert_file4_MayafileTexture", "ND_convert_color4_color3"),
+            (7, 8, "MayaConvert_file7_MayafileTexture", "ND_convert_float_color3"),
+            (14, 15, "MayaConvert_file14_MayafileTexture", "ND_convert_color3_vector3"),
 
             (27, 20, "MayaLuminance_file27", "ND_luminance_color3"),
             (12, 13, "MayaLuminance_file12", "ND_luminance_color4"),
