@@ -174,7 +174,8 @@ MBoundingBox Scope::boundingBox() const
     MBoundingBox bbox = MPxTransform::boundingBox();
 
     UsdPrim prim = transform()->prim();
-    if (prim) {
+    // Calculate bbox only if there is a proxy shape connected
+    if (foundShape && prim) {
         // Get purpose draw states
         bool drawRenderPurpose = false;
         bool drawProxyPurpose = false;
