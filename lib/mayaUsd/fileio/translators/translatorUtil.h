@@ -156,7 +156,7 @@ struct UsdMayaTranslatorUtil
     /// Find out the shading node type associated with a Maya node type name.
     MAYAUSD_CORE_PUBLIC static UsdMayaShadingNodeType
     ComputeShadingNodeTypeForMayaTypeName(const TfToken& mayaNodeTypeName);
-    
+
     /// Write USD type information into the argument Maya object.  Returns true
     /// for success.
     MAYAUSD_CORE_PUBLIC
