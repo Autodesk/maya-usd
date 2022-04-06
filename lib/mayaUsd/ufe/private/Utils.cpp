@@ -128,14 +128,20 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
         return;
     }
 
-    auto        primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    auto        primStack = prim.GetPrimStack();
+    SdfPrimSpecHandle       primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    SdfPrimSpecHandleVector primStack = prim.GetPrimStack();
     std::string layerDisplayName;
     std::string message { "It is defined on another layer" };
 
     // iterate over the prim stack, starting at the highest-priority layer.
-    for (const auto& spec : primStack) {
+    for (const SdfPrimSpecHandle& spec : primStack) {
         const auto& layerName = spec->GetLayer()->GetDisplayName();
+
+        // Don't block edits if there are no authored properties (attributes, relationships, etc)
+        // in this layer.
+        if (spec->GetProperties().size() == 0) {
+            continue;
+        }
 
         // skip if there is no primSpec for the selected prim in the current stage's local layer.
         if (!primSpec) {
