@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,16 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HDVP2_BASIS_CURVES_H
-#define HDVP2_BASIS_CURVES_H
+#ifndef HDVP2_POINTS_H
+#define HDVP2_POINTS_H
 
 #include "mayaPrimCommon.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
-#include <pxr/base/vt/array.h>
-#include <pxr/imaging/hd/basisCurves.h>
 #include <pxr/imaging/hd/enums.h>
+#include <pxr/imaging/hd/points.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
@@ -40,20 +39,15 @@ class HdVP2RenderDelegate;
 using PrimvarBufferMap
     = std::unordered_map<TfToken, std::unique_ptr<MHWRender::MVertexBuffer>, TfToken::HashFunctor>;
 
-/*! \brief  HdVP2BasisCurves-specific data shared among all its draw items.
-    \class  HdVP2BasisCurvesSharedData
+/*! \brief  HdVP2Points-specific data shared among all its draw items.
+    \class  HdVP2PointsSharedData
 
     A Rprim can have multiple draw items. The shared data are extracted from
     USD scene delegate during synchronization. Then each draw item can prepare
     draw data from these shared data as needed.
 */
-struct HdVP2BasisCurvesSharedData
+struct HdVP2PointsSharedData
 {
-    //! Cached scene data. VtArrays are reference counted, so as long as we
-    //! only call const accessors keeping them around doesn't incur a buffer
-    //! copy.
-    HdBasisCurvesTopology _topology;
-
     //! A local cache of primvar scene data. "data" is a copy-on-write handle to
     //! the actual primvar buffer, and "interpolation" is the interpolation mode
     //! to be used.
@@ -87,36 +81,26 @@ struct HdVP2BasisCurvesSharedData
     TfToken _renderTag;
 };
 
-/*! \brief  VP2 representation of basis curves.
-    \class  HdVP2BasisCurves
-
-    The prim object's main function is to bridge the scene description and the
-    renderable representation. The Hydra image generation algorithm will call
-    HdRenderIndex::SyncAll() before any drawing; this, in turn, will call
-    Sync() for each Rprim with new data.
-
-    Sync() is passed a set of dirtyBits, indicating which scene buffers are
-    dirty. It uses these to pull all of the new scene data and constructs
-    updated geometry objects.  Commit of changed buffers to GPU happens
-    in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
-    all Rprims have been updated.
+/*! \brief  VP2 representation of Hydra points.
+    \class  HdVP2Points
 */
-class HdVP2BasisCurves final
-    : public HdBasisCurves
+class HdVP2Points final
+    : public HdPoints
     , public MayaUsdRPrim
 {
 public:
-    HdVP2BasisCurves(
+    HdVP2Points(
         HdVP2RenderDelegate* delegate,
+        const SdfPath&       id
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
-        const SdfPath& id);
+    );
 #else
-        const SdfPath& id,
+        ,
         const SdfPath& instancerId = SdfPath());
 #endif
 
     //! Destructor.
-    ~HdVP2BasisCurves() override = default;
+    ~HdVP2Points() override = default;
 
     void Sync(
         HdSceneDelegate* delegate,
@@ -131,22 +115,22 @@ protected:
 
     void _InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits) override;
 
-    TfToken& _RenderTag() override { return _curvesSharedData._renderTag; }
+    TfToken& _RenderTag() override { return _pointsSharedData._renderTag; }
 
 private:
     void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
 
     void _UpdateDrawItem(
-        HdSceneDelegate*             sceneDelegate,
-        HdVP2DrawItem*               drawItem,
-        HdBasisCurvesReprDesc const& desc);
+        HdSceneDelegate*        sceneDelegate,
+        HdVP2DrawItem*          drawItem,
+        HdPointsReprDesc const& desc);
 
     void _UpdatePrimvarSources(
         HdSceneDelegate*     sceneDelegate,
         HdDirtyBits          dirtyBits,
         TfTokenVector const& requiredPrimvars);
 
-    MHWRender::MRenderItem* _CreatePatchRenderItem(const MString& name) const;
+    MHWRender::MRenderItem* _CreateFatPointsRenderItem(const MString& name) const;
 
     enum DirtyBits : HdDirtyBits
     {
@@ -154,9 +138,9 @@ private:
     };
 
     //! Shared data for all draw items of the Rprim
-    HdVP2BasisCurvesSharedData _curvesSharedData;
+    HdVP2PointsSharedData _pointsSharedData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // HDVP2_BASIS_CURVES_H
+#endif // HDVP2_POINTS_H

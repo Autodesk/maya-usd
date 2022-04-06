@@ -105,7 +105,9 @@ struct HdVP2MeshSharedData
     in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
     all prims have been updated.
 */
-class HdVP2Mesh final : public HdMesh
+class HdVP2Mesh final
+    : public HdMesh
+    , public MayaUsdRPrim
 {
 public:
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
@@ -127,9 +129,6 @@ private:
     void _InitRepr(const TfToken&, HdDirtyBits*) override;
 
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
-    void _MakeOtherReprRenderItemsInvisible(HdSceneDelegate*, const TfToken&);
-
-    void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     bool _PrimvarIsRequired(const TfToken&) const;
 
@@ -140,18 +139,14 @@ private:
     void _CreateOSDTables();
 #endif
 
+    TfToken& _RenderTag() override { return _meshSharedData->_renderTag; }
+
     void _UpdateDrawItem(
         HdSceneDelegate*,
         HdVP2DrawItem*,
         HdVP2DrawItem::RenderItemData&,
         const HdMeshReprDesc& desc,
         const TfToken&        reprToken);
-
-    void _HideAllDrawItems(const TfToken& reprToken);
-
-    template <typename Func> void _ForEachRenderItemInRepr(const TfToken& reprToken, Func func);
-
-    template <typename Func> void _ForEachRenderItem(Func func);
 
     void _UpdatePrimvarSources(
         HdSceneDelegate*     sceneDelegate,
@@ -179,38 +174,26 @@ private:
         MSubSceneContainer& subSceneContainer,
         const HdGeomSubset* geomSubset) const;
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateWireframeRenderItem(const MString& name) const;
-    MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
-
-#ifndef MAYA_NEW_POINT_SNAPPING_SUPPORT
-    MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
-#endif
 
     static void _InitGPUCompute();
 
     //! Custom dirty bits used by this mesh
     enum DirtyBits : HdDirtyBits
     {
-        DirtySmoothNormals = MayaPrimCommon::DirtyBitLast,
+        DirtySmoothNormals = MayaUsdRPrim::DirtyBitLast,
         DirtyFlatNormals = (DirtySmoothNormals << 1),
-        //! "Forward" the enumerated types here so we don't have to keep writing MayaPrimCommon in
+        //! "Forward" the enumerated types here so we don't have to keep writing MayaUsdRPrim in
         //! the cpp file.
-        DirtySelectionHighlight = MayaPrimCommon::DirtySelectionHighlight,
-        DirtySelectionMode = MayaPrimCommon::DirtySelectionMode
+        DirtySelectionHighlight = MayaUsdRPrim::DirtySelectionHighlight,
+        DirtySelectionMode = MayaUsdRPrim::DirtySelectionMode
     };
 
-    HdVP2RenderDelegate* _delegate {
-        nullptr
-    }; //!< VP2 render delegate for which this mesh was created
     HdDirtyBits _customDirtyBitsInUse {
         0
-    };                      //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
-    const MString _rprimId; //!< Rprim id cached as a maya string for easier debugging and profiling
+    }; //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
+
     std::shared_ptr<HdVP2MeshSharedData>
         _meshSharedData; //!< Shared data for all draw items of the Rprim
-
-    //! Selection status of the Rprim
-    HdVP2SelectionStatus _selectionStatus { kUnselected };
 
     //! Control GPU compute behavior
     //! Having these in place even without HDVP2_ENABLE_GPU_COMPUTE or HDVP2_ENABLE_GPU_OSD
@@ -218,9 +201,6 @@ private:
     bool _gpuNormalsEnabled { true }; //!< Use GPU Compute for normal calculation, only used
                                       //!< when HDVP2_ENABLE_GPU_COMPUTE is defined
     static size_t _gpuNormalsComputeThreshold;
-
-    //! The string representation of the runtime only path to this object
-    MStringArray _PrimSegmentString;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
