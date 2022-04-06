@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdAttribute.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/base/tf/hashset.h>
@@ -151,6 +152,9 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
 
 MAYAUSD_CORE_PUBLIC
 bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& attrName);
+
+MAYAUSD_CORE_PUBLIC
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType);
 
 //! Check if the edit target in the stage is allowed to be changed.
 //! \return True, if the edit target layer in the stage is allowed to be changed

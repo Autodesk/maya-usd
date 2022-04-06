@@ -35,29 +35,8 @@ constexpr char UsdShaderNodeDef::kNodeDefCategoryShader[];
 
 Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty)
 {
-    // Map the USD type into UFE type.
-    static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe {
-        { PXR_NS::SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },        // bool
-        { PXR_NS::SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },          // int32_t
-        { PXR_NS::SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },      // float
-        { PXR_NS::SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },    // double
-        { PXR_NS::SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },    // std::string
-        { PXR_NS::SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kEnumString }, // TfToken
-        { PXR_NS::SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },        // GfVec3i
-        { PXR_NS::SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },    // GfVec3f
-        { PXR_NS::SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },  // GfVec3d
-        { PXR_NS::SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
-        { PXR_NS::SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
-    };
-
     const PXR_NS::SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
-    const auto                     iter = sUsdTypeToUfe.find(typeName.GetHash());
-
-    if (iter != sUsdTypeToUfe.end()) {
-        return iter->second;
-    }
-
-    return Ufe::Attribute::kGeneric;
+    return usdTypeToUfe(typeName);
 }
 
 template <Ufe::AttributeDef::IOType IOTYPE>
