@@ -137,12 +137,6 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     for (const SdfPrimSpecHandle& spec : primStack) {
         const auto& layerName = spec->GetLayer()->GetDisplayName();
 
-        // Don't block edits if there are no authored properties (attributes, relationships, etc)
-        // in this layer.
-        if (spec->GetProperties().size() == 0) {
-            continue;
-        }
-
         // skip if there is no primSpec for the selected prim in the current stage's local layer.
         if (!primSpec) {
             // add "," separator for multiple layers
@@ -150,6 +144,12 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
                 layerDisplayName.append(",");
             }
             layerDisplayName.append("[" + layerName + "]");
+            continue;
+        }
+
+        // Don't block edits if there are no authored properties (attributes, relationships, etc)
+        // in this layer.
+        if (spec->GetProperties().size() == 0) {
             continue;
         }
 
