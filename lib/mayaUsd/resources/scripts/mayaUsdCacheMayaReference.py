@@ -250,7 +250,7 @@ def fileOptionsTabPage(tabLayout):
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kMayaRefDescription"))
     cmds.columnLayout(adjustableColumn=True)
-    cmds.text(align="left", label=getMayaUsdLibString("kMayaRefCacheToUSDDescription"))
+    cmds.text(align="left", wordWrap=True, label=getMayaUsdLibString("kMayaRefCacheToUSDDescription"))
 
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kCacheMayaRefOptions"))
@@ -326,7 +326,7 @@ def cacheInitUi(parent, filterType):
         # If the previous variant set name is available, select it,
         # Otherwise if there is a variant set name 'Representation' then
         # automatically select it, otherwise select the first one.
-        if optionsDict['rn_variantSetName'] in variantSetsNames:
+        if 'rn_variantSetName' in optionsDict and optionsDict['rn_variantSetName'] in variantSetsNames:
             variantSetNameChanged(optionsDict['rn_variantSetName'])
         elif mayaRefUtils.defaultVariantSetName() in variantSetsNames:
             variantSetNameChanged(mayaRefUtils.defaultVariantSetName())

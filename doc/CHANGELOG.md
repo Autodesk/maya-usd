@@ -1,5 +1,73 @@
 # Changelog
 
+## [v0.17.0] - 2022-04-04
+
+**Build:**
+- Created cmake variables which tell if the API is present [#2167](https://github.com/Autodesk/maya-usd/pull/2167)
+- Change _GetLocalTransformForDagPoseMember check from maya api version to diffrence_type iterator trait support [#2136](https://github.com/Autodesk/maya-usd/pull/2136)
+- Remove/replace all UFE_PREVIEW_VERSION_NUM now that latest MayaPR has UFE v3 [#2096](https://github.com/Autodesk/maya-usd/pull/2096)
+- MayaUsd test failures with USD built with AssetResolver 2 [#2092](https://github.com/Autodesk/maya-usd/pull/2092)
+- Initial cache to USD test [#2081](https://github.com/Autodesk/maya-usd/pull/2081)
+
+**Translation Framework:**
+- Create usdGeomNode to extract usd geometry on compute [#2173](https://github.com/Autodesk/maya-usd/pull/2173)
+- Import code for place2dTexture [#2170](https://github.com/Autodesk/maya-usd/pull/2170)
+- Support duplicate to Maya and USD to non root [#2166](https://github.com/Autodesk/maya-usd/pull/2166) [#2156](https://github.com/Autodesk/maya-usd/pull/2156)
+- Export of texture and placement [#2165](https://github.com/Autodesk/maya-usd/pull/2165)
+- Add curve filtering option in UI [#2161](https://github.com/Autodesk/maya-usd/pull/2161)
+- Fixed incorrect export flag for translator in test plugin [#2148](https://github.com/Autodesk/maya-usd/pull/2148)
+- Preserve load state of prims [#2141](https://github.com/Autodesk/maya-usd/pull/2141)
+- Added mesh export options for interpolation type and reference object mode [#2128](https://github.com/Autodesk/maya-usd/pull/2128)
+- Add UV tangents directly in MaterialX [#2113](https://github.com/Autodesk/maya-usd/pull/2113)
+- Import of usd lux light prims [#2097](https://github.com/Autodesk/maya-usd/pull/2097)
+- Fixed recursive calls to bound Python translators under Python 3 [#2094](https://github.com/Autodesk/maya-usd/pull/2094)
+- Error when attempting to add a Maya reference to a variant [#2091](https://github.com/Autodesk/maya-usd/pull/2091)
+
+**Workflow:**
+- Maya Reference:
+  - Added check in context ops to avoid Add Maya Reference on Maya reference prim [#2187](https://github.com/Autodesk/maya-usd/pull/2187)
+  - Cancel edit on Maya Reference under an xform [#2186](https://github.com/Autodesk/maya-usd/pull/2186)
+  - Crash when editing as Maya [#2183](https://github.com/Autodesk/maya-usd/pull/2183)
+  - Locked attributes on Maya reference prim transform stand-in [#2175](https://github.com/Autodesk/maya-usd/pull/2175)
+  - Clean up 'Cache to USD' UI options [#2144](https://github.com/Autodesk/maya-usd/pull/2144)
+  - Change add Maya reference edit state default [#2131](https://github.com/Autodesk/maya-usd/pull/2131)
+  - Proper selection for edit as Maya, merge to USD, and discard Maya edits [#2125](https://github.com/Autodesk/maya-usd/pull/2125)
+  - No icon for Maya Reference in USD on Linux [#2090](https://github.com/Autodesk/maya-usd/pull/2090)
+  - Add undo support to add Maya reference [#2079](https://github.com/Autodesk/maya-usd/pull/2079)
+- Remove Load/Unload payload from AE [#2171](https://github.com/Autodesk/maya-usd/pull/2171)
+- Renaming 2 prims with illegal chars will crash Maya [#2151](https://github.com/Autodesk/maya-usd/pull/2151)
+- Exporting maya file using USD takes extremely long [#2158](https://github.com/Autodesk/maya-usd/pull/2158)
+- Add glBindVertexArray to UsdMayaGLBatchRenderer::_TestIntersection [#2157](https://github.com/Autodesk/maya-usd/pull/2157)
+- Automatically set the animation option [#2149](https://github.com/Autodesk/maya-usd/pull/2149)
+- Fixed problem where BBox did not recalculate if prim visibility changed [#2147](https://github.com/Autodesk/maya-usd/pull/2147)
+- Persist cache-to-USD options [#2123](https://github.com/Autodesk/maya-usd/pull/2123)
+- Cache to USD: take out 'Parent Scope' from options [#2122](https://github.com/Autodesk/maya-usd/pull/2122)
+- Improve the merge-to-USD UI [#2119](https://github.com/Autodesk/maya-usd/pull/2119)
+- Added export option to disable the model kinds processor [#2106](https://github.com/Autodesk/maya-usd/pull/2106)
+- Refresh issue with deactivation of USD Prims [#2104](https://github.com/Autodesk/maya-usd/pull/2104)
+- Ufe v1: Crash when interacting with Outliner after unloading payload [#2103](https://github.com/Autodesk/maya-usd/pull/2103)
+- Removed redundant code in proxy shape transform validation [#2100](https://github.com/Autodesk/maya-usd/pull/2100)
+- Support for orphaned objects [#2095](https://github.com/Autodesk/maya-usd/pull/2095)
+- Removed tracking selectability and lock metadata [#2075](https://github.com/Autodesk/maya-usd/pull/2075)
+- Switch delete command behavior to delete prims [#1895](https://github.com/Autodesk/maya-usd/pull/1895)
+
+**Render:**
+- When instance colors is nullptr don't get the length [#2230](https://github.com/Autodesk/maya-usd/pull/2230)
+- MaterialX image improvements [#2178](https://github.com/Autodesk/maya-usd/pull/2178)
+- Share cached HdVP2TextureInfo between all materials [#2145](https://github.com/Autodesk/maya-usd/pull/2145)
+- If USD reports that the topology is dirty compare the new topology to the old [#2143](https://github.com/Autodesk/maya-usd/pull/2143)
+- Warn the user that mtoh is experimental [#2138](https://github.com/Autodesk/maya-usd/pull/2138)
+- Get the display style of all viewports rather than just the current [#2134](https://github.com/Autodesk/maya-usd/pull/2134)
+- Use the class specific namespace so we don't have to check Maya's version [#2129](https://github.com/Autodesk/maya-usd/pull/2129)
+- USD 22.03 integration: API change for MaterialX [#2126](https://github.com/Autodesk/maya-usd/pull/2126)
+- Setting the instance colors or transforms into Maya is expensive [#2110](https://github.com/Autodesk/maya-usd/pull/2110)
+- Varying display colour bug [#2107](https://github.com/Autodesk/maya-usd/pull/2107)
+- Use the latest MPxSubSceneOverride API [#2101](https://github.com/Autodesk/maya-usd/pull/2101)
+- Improved texture loading by running file reading asynchronously and only for active render purpose [#1980](https://github.com/Autodesk/maya-usd/pull/1980)
+
+**Documentation:**
+- Updated documentation + unit test [#2105](https://github.com/Autodesk/maya-usd/pull/2105)
+
 ## [v0.16.0] - 2022-02-08
 
 **Build:**

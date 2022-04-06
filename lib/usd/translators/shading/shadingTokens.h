@@ -92,6 +92,10 @@ TF_DECLARE_PUBLIC_TOKENS(TrUsdTokens, , TR_USD_COMMON TR_USD_TEXTURE TR_USD_PRIM
     (outTransparencyG) \
     (outTransparencyB)
 
+#define TR_MAYA_NODES \
+    (colorCorrect) \
+    (floatCorrect)
+
 #define TR_MAYA_STANDARD_SURFACE \
     (standardSurface) \
     (base) \
@@ -190,7 +194,8 @@ TF_DECLARE_PUBLIC_TOKENS(TrUsdTokens, , TR_USD_COMMON TR_USD_TEXTURE TR_USD_PRIM
 TF_DECLARE_PUBLIC_TOKENS(
     TrMayaTokens,
     ,
-    TR_MAYA_MATERIALS TR_MAYA_STANDARD_SURFACE TR_MAYA_FILE TR_MAYA_UV TR_MAYA_PRIMVAR);
+    TR_MAYA_MATERIALS TR_MAYA_NODES TR_MAYA_STANDARD_SURFACE TR_MAYA_FILE TR_MAYA_UV
+        TR_MAYA_PRIMVAR);
 
 #ifdef WANT_MATERIALX_TRANSLATORS
 
@@ -213,6 +218,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (MayaND_fileTexture_vector2) \
     (MayaND_fileTexture_vector3) \
     (MayaND_fileTexture_vector4) \
+    (LdkND_FloatCorrect_float) \
+    (LdkND_ColorCorrect_color4) \
     (ND_standard_surface_surfaceshader) \
     (ND_UsdPreviewSurface_surfaceshader) \
     (ND_image_float) \
