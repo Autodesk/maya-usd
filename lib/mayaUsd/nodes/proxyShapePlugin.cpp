@@ -18,6 +18,7 @@
 #include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/proxyShapeLoadRules.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h>
@@ -158,6 +159,9 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         PxrMayaHdImagingShapeDrawOverride::creator);
     CHECK_MSTATUS(status);
 
+    status = MAYAUSD_NS::MayaUsdProxyShapeLoadRules::initialize();
+    CHECK_MSTATUS(status);
+
     return status;
 }
 
@@ -180,6 +184,9 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     }
 
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
+    CHECK_MSTATUS(status);
+
+    status = MAYAUSD_NS::MayaUsdProxyShapeLoadRules::finalize();
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
