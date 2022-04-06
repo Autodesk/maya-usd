@@ -44,6 +44,8 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdCameraHandler.cpp
             UsdContextOps.cpp
             UsdContextOpsHandler.cpp
+            UsdLight.cpp
+            UsdLightHandler.cpp
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
             UsdSetXformOpUndoableCommandBase.cpp
@@ -120,6 +122,8 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdCameraHandler.h
         UsdContextOps.h
         UsdContextOpsHandler.h
+        UsdLight.h
+        UsdLightHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
         UsdPointInstanceUndoableCommands.h

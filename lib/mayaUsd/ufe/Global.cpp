@@ -29,6 +29,7 @@
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
 #include <mayaUsd/ufe/UsdCameraHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
+#include <mayaUsd/ufe/UsdLightHandler.h>
 #include <mayaUsd/ufe/UsdObject3dHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
@@ -152,6 +153,7 @@ MStatus initialize()
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
     handlers.cameraHandler = UsdCameraHandler::create();
+    handlers.lightHandler = UsdLightHandler::create();
 
     // USD has a very flexible data model to support 3d transformations --- see
     // https://graphics.pixar.com/usd/docs/api/class_usd_geom_xformable.html
