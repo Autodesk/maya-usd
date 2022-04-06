@@ -887,6 +887,42 @@ MStatus UsdMayaMeshReadUtils::assignSubDivTagsToMesh(
 
 #if MAYA_API_VERSION >= 20220000
 
+MStatus
+UsdMayaMeshReadUtils::getComponentTags(const UsdGeomMesh& mesh, std::vector<ComponentTagData>& tags)
+{
+    MStatus status { MS::kSuccess };
+
+    // Find all the prims defining componentTags
+    TfToken                    componentTagFamilyName("componentTag");
+    std::vector<UsdGeomSubset> subsets
+        = UsdGeomSubset::GetGeomSubsets(mesh, UsdGeomTokens->face, componentTagFamilyName);
+
+    for (auto& ss : subsets) {
+        // Get the tagName out of the subset
+        MString tagName(ss.GetPrim().GetName().GetText());
+
+        // Get the indices out of the subset
+        VtIntArray   faceIndices;
+        UsdAttribute indicesAttribute = ss.GetIndicesAttr();
+        indicesAttribute.Get(&faceIndices);
+
+        MFnSingleIndexedComponent compFn;
+        MObject                   faceComp = compFn.create(MFn::kMeshPolygonComponent, &status);
+        if (!status) {
+            TF_RUNTIME_ERROR("Failed to create face component.");
+            return status;
+        }
+
+        MIntArray mFaces;
+        TF_FOR_ALL(fIdxIt, faceIndices) { mFaces.append(*fIdxIt); }
+        compFn.addElements(mFaces);
+
+        tags.emplace_back(tagName, faceComp);
+    }
+
+    return status;
+}
+
 MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const MObject& meshObj)
 {
     if (meshObj.apiType() != MFn::kMesh) {
@@ -907,30 +943,15 @@ MStatus UsdMayaMeshReadUtils::createComponentTags(const UsdGeomMesh& mesh, const
     MPlug ctName(meshObj, ctNameAttr);
     MPlug ctContent(meshObj, ctContentsAttr);
 
-    // Find all the prims defining componentTags
-    TfToken                    componentTagFamilyName("componentTag");
-    unsigned int               idx = 0;
-    std::vector<UsdGeomSubset> subsets
-        = UsdGeomSubset::GetGeomSubsets(mesh, UsdGeomTokens->face, componentTagFamilyName);
-    for (auto& ss : subsets) {
-        // Get the tagName out of the subset
-        MString tagName(ss.GetPrim().GetName().GetText());
+    std::vector<ComponentTagData> tags;
+    status = getComponentTags(mesh, tags);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
-        // Get the indices out of the subset
-        VtIntArray   faceIndices;
-        UsdAttribute indicesAttribute = ss.GetIndicesAttr();
-        indicesAttribute.Get(&faceIndices);
+    unsigned int idx = 0;
 
-        MFnSingleIndexedComponent compFn;
-        MObject                   faceComp = compFn.create(MFn::kMeshPolygonComponent, &status);
-        if (!status) {
-            TF_RUNTIME_ERROR("Failed to create face component.");
-            return status;
-        }
-
-        MIntArray mFaces;
-        TF_FOR_ALL(fIdxIt, faceIndices) { mFaces.append(*fIdxIt); }
-        compFn.addElements(mFaces);
+    for (auto& tag : tags) {
+        MString tagName(tag.first);
+        MObject faceComp(tag.second);
 
         MFnComponentListData componentListFn;
         MObject              componentList = componentListFn.create();

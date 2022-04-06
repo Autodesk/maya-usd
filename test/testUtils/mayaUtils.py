@@ -291,6 +291,13 @@ def mayaMajorVersion():
 def mayaMinorVersion():
     return int(cmds.about(minorVersion=True))
 
+def mayaMajorMinorVersions():
+    """
+    Return the Maya version as a tuple (Major, Minor).
+    Thanks to Python tuple comparison rules, (2022, 0) > (2021,3).
+    """
+    return (mayaMajorVersion(), mayaMinorVersion())
+
 def activeModelPanel():
     """Return the model panel that will be used for playblasting etc..."""
     for panel in cmds.getPanel(type="modelPanel"):

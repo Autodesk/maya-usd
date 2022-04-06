@@ -101,6 +101,7 @@ public:
 
     //! Get the surface shader instance.
     MHWRender::MShaderInstance* GetSurfaceShader() const { return _surfaceShader.get(); }
+    MHWRender::MShaderInstance* GetPointShader() const;
 
     //! Get primvar tokens required by this material.
     const TfTokenVector& GetRequiredPrimvars() const { return _requiredPrimvars; }
@@ -160,6 +161,7 @@ private:
     TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
 
     HdVP2ShaderUniquePtr         _surfaceShader;    //!< VP2 surface shader instance
+    mutable HdVP2ShaderUniquePtr _pointShader;      //!< VP2 point shader instance, if needed
     SdfPath                      _surfaceShaderId;  //!< Path of the surface shader
     static HdVP2GlobalTextureMap _globalTextureMap; //!< Texture in use by all materials in MayaUSD
     HdVP2LocalTextureMap         _localTextureMap;  //!< Textures used by this material

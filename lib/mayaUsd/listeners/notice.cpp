@@ -100,10 +100,12 @@ void UsdMayaSceneResetNotice::RemoveListener()
 
     if (_afterNewCallbackId != 0) {
         MMessage::removeCallback(_afterNewCallbackId);
+        _afterNewCallbackId = 0;
     }
 
-    if (_beforeFileReadCallbackId == 0) {
+    if (_beforeFileReadCallbackId != 0) {
         MMessage::removeCallback(_beforeFileReadCallbackId);
+        _beforeFileReadCallbackId = 0;
     }
 }
 

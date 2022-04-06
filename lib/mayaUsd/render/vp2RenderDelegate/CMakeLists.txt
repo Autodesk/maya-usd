@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME}
         mayaPrimCommon.cpp
         mesh.cpp
         meshViewportCompute.cpp
+        points.cpp
         proxyRenderDelegate.cpp
         render_delegate.cpp
         render_param.cpp

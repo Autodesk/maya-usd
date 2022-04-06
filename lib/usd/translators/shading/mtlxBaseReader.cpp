@@ -66,6 +66,14 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
         TrMtlxTokens->MayaND_place2dTexture_vector2,
         TrMayaTokens->place2dTexture,
         TrMtlxTokens->conversionName);
+    UsdMayaSymmetricShaderReader::RegisterReader(
+        TrMtlxTokens->LdkND_FloatCorrect_float,
+        TrMayaTokens->floatCorrect,
+        TrMtlxTokens->conversionName);
+    UsdMayaSymmetricShaderReader::RegisterReader(
+        TrMtlxTokens->LdkND_ColorCorrect_color4,
+        TrMayaTokens->colorCorrect,
+        TrMtlxTokens->conversionName);
 };
 
 MtlxUsd_BaseReader::MtlxUsd_BaseReader(const UsdMayaPrimReaderArgs& readArgs)
