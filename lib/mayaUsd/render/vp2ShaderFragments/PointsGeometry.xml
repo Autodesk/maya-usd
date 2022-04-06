@@ -1,0 +1,123 @@
+<!--
+===========================================================================
+Copyright 2022 Autodesk, Inc. All rights reserved.
+
+Use of this software is subject to the terms of the Autodesk license
+agreement provided at the time of installation or download, or which
+otherwise accompanies this software in either electronic or hard copy form.
+===========================================================================
+-->
+<fragment  uiName="PointsGeometry" name="PointsGeometry" type="geometryShader" class="ShadeFragment" version="1.0" feature_level="40" >
+    <description>
+        <![CDATA[Expand a point to a view-aligned quad]]>
+    </description>
+    <keyword value="geometryShader" />
+    <properties>
+        <float3  name="Pw" semantic="Pw" flags="isRequirementOnly" />
+        <float3  name="Nw" semantic="Nw" flags="isRequirementOnly" />
+        <float3  name="Vw" semantic="Vw" flags="isRequirementOnly" />
+        <float  name="spriteWidth" semantic="sprite" flags="isRequirementOnly,varyingInputParam" />
+        <undefined  name="GPUStage" semantic="GPUStage" />
+        <struct  name="inputs" size="1" struct_name="geometryInS" />
+        <float4x4  name="viewInverseTranspose" semantic="viewInverseTranspose" />
+        <float4x4  name="viewProjection" semantic="viewProjection" />
+        <float3  name="cameraPosition" semantic="worldcameraposition" />
+        <float2  name="quadPositionUV" semantic="quadPositionUVType5" size="4" />
+    </properties>
+    <values>
+    </values>
+    <outputs>
+        <triStream  name="outStream" size="4" struct_name="geometryInS" isInOutParam="true"  />
+        <undefined  name="GPUStage" semantic="geometryShader" />
+    </outputs>
+    <implementation  >
+    <implementation  render="OGSRenderer" language="HLSL" lang_version="11.000000" >
+        <function_name val="point2ViewAlignedQuad" />
+        <source>
+            <![CDATA[
+void point2ViewAlignedQuad( geometryInS inputs[1], 
+    float4x4 viewInverseTranspose, 
+    float4x4 viewProjection,
+    float3 cameraPosition, 
+    float2 quadPosition[4], 
+    inout TriangleStream<geometryInS> outStream ) 
+{ 
+    geometryInS outS = inputs[0];
+    float3 Pw = outS.Pw;
+    float4x4 viewInverse = transpose(viewInverseTranspose);
+    float3 spriteX = normalize(viewInverse[0].xyz) * outS.spriteWidth;
+    float3 spriteY = normalize(viewInverse[1].xyz) * outS.spriteWidth;
+
+    outS.Nw = outS.Vw;
+    [unroll] for( int i = 0; i < 4; ++i ) 
+    { 
+        outS.Pw = Pw + spriteX * quadPosition[i].x + spriteY * quadPosition[i].y;
+        outS.Pc = mul( float4(outS.Pw, 1.f), viewProjection );
+        outS.Vw = cameraPosition - outS.Pw;
+        outStream.Append( outS ); 
+    } 
+    outStream.RestartStrip(); 
+}            
+            ]]>
+        </source>
+    </implementation>
+    <implementation  render="OGSRenderer" language="Cg" lang_version="2.100000" >
+        <function_name val="point2ViewAlignedQuad" />
+        <source>
+            <![CDATA[
+void point2ViewAlignedQuad( AttribArray<geometryInS> inputs, 
+    float4x4 viewInverseTranspose, 
+    float4x4 viewProjection,
+    float3 cameraPosition, 
+    float2 quadPosition[4]) 
+{ 
+    geometryInS outS = inputs[0];
+    float3 Pw = outS.Pw;
+    float4x4 viewInverse = transpose(viewInverseTranspose);
+    float3 spriteX = normalize(viewInverse[0].xyz) * outS.spriteWidth;
+    float3 spriteY = normalize(viewInverse[1].xyz) * outS.spriteWidth; 
+
+    outS.Nw = outS.Vw; 
+    for( int i = 0; i < 4; ++i ) 
+    {
+        outS.Pw = Pw + spriteX * quadPosition[i].x + spriteY * quadPosition[i].y;
+        outS.Pc = mul( viewProjection, float4(outS.Pw, 1.f) );
+        outS.Vw = cameraPosition - outS.Pw; 
+        emitVertex( outS ); 
+    } 
+    restartStrip();
+}
+            ]]>
+        </source>
+    </implementation>
+    <implementation  render="OGSRenderer" language="GLSL" lang_version="3.000000" >
+        <function_name val="point2ViewAlignedQuad" />
+        <source>
+            <![CDATA[
+void point2ViewAlignedQuad(  
+    mat4x4 viewInverseTranspose, 
+    mat4x4 viewProjection,
+    vec3 cameraPosition, 
+    vec2 quadPosition[4]) 
+{ 
+    GEO_OUT_struct outS = copyFromGEO_IN(0);
+    vec3 Pw = outS.Pw;
+    mat4x4 viewInverse = transpose(viewInverseTranspose);
+    vec3 spriteX = normalize(viewInverse[0].xyz) * outS.spriteWidth;
+    vec3 spriteY = normalize(viewInverse[1].xyz) * outS.spriteWidth; 
+
+    outS.Nw = outS.Vw;
+    for( int i = 0; i < 4; ++i ) 
+    {
+        outS.Pw = Pw + spriteX * quadPosition[i].x + spriteY * quadPosition[i].y;
+        outS.Pc = mul( viewProjection, vec4(outS.Pw, 1.f) );
+        outS.Vw = cameraPosition - outS.Pw; 
+        EmitGeoStruct( outS );
+    } 
+    EndPrimitive(); 
+} 
+            ]]>
+        </source>
+    </implementation>
+    </implementation>
+</fragment>
