@@ -275,7 +275,7 @@ class SelectTestCase(unittest.TestCase):
         self.assertTrue(globalSn.contains(first.path()))
         self.assertEqual(globalSn.back(), first)
 
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2 and mayaUtils.mayaMajorVersion() > 2023, 'testMayaSelectAddFirst only available in UFE v2 or greater and Maya greter than 2023.')
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2023, 'testMayaSelectAddFirst only available in UFE v2 or greater and Maya greater than 2023.')
     def testMayaSelectAddFirst(self):
         """
         Test the -addFirst flag of the select command with UFE.
