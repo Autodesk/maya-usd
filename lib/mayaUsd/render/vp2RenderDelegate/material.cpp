@@ -2466,9 +2466,11 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             return shaderInstance;
         }
 
-        // This function is very recent and might only exist in a PR at this point in time
-        // See https://github.com/autodesk-forks/MaterialX/pull/1197 for current status.
-        mx::OgsXmlGenerator::setUseLightAPIV2(true);
+#if MAYA_LIGHTAPI_VERSION_2 == 3
+        mx::OgsXmlGenerator::setUseLightAPI(3);
+#else
+        mx::OgsXmlGenerator::setUseLightAPI(2);
+#endif
 
         mx::NodePtr materialNode;
         for (const mx::NodePtr& material : mtlxDoc->getMaterialNodes()) {

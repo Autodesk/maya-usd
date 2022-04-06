@@ -79,6 +79,13 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.rotate(60, 0, 45, 'persp')
         self._StartTest('MayaSurfaces')
 
+        # Flat shading requires V3 lighting API:
+        if int(os.getenv("MAYA_LIGHTAPI_VERSION")) >= 3:
+            panel = mayaUtils.activeModelPanel()
+            cmds.modelEditor(panel, edit=True, displayLights="flat")
+            self._StartTest('MayaSurfaces_flat')
+            cmds.modelEditor(panel, edit=True, displayLights="default")
+
     def testMayaPlace2dTexture(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")
 
