@@ -1,8 +1,8 @@
-#ifndef USDUIINFOHANDLER_H
-#define USDUIINFOHANDLER_H
+#ifndef MAYAUIINFOHANDLER_H
+#define MAYAUIINFOHANDLER_H
 
 //
-// Copyright 2020 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,32 +24,32 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief Implementation of Ufe::UIInfoHandler interface for USD objects.
-class MAYAUSD_CORE_PUBLIC UsdUIInfoHandler : public Ufe::UIInfoHandler
+//! \brief Implementation of Ufe::UIInfoHandler interface for Maya objects.
+class MAYAUSD_CORE_PUBLIC MayaUIInfoHandler : public Ufe::UIInfoHandler
 {
 public:
-    typedef std::shared_ptr<UsdUIInfoHandler> Ptr;
+    typedef std::shared_ptr<MayaUIInfoHandler> Ptr;
 
-    UsdUIInfoHandler();
-    ~UsdUIInfoHandler() override;
+    MayaUIInfoHandler();
+    ~MayaUIInfoHandler() override;
 
     // Delete the copy/move constructors assignment operators.
-    UsdUIInfoHandler(const UsdUIInfoHandler&) = delete;
-    UsdUIInfoHandler& operator=(const UsdUIInfoHandler&) = delete;
-    UsdUIInfoHandler(UsdUIInfoHandler&&) = delete;
-    UsdUIInfoHandler& operator=(UsdUIInfoHandler&&) = delete;
+    MayaUIInfoHandler(const MayaUIInfoHandler&) = delete;
+    MayaUIInfoHandler& operator=(const MayaUIInfoHandler&) = delete;
+    MayaUIInfoHandler(MayaUIInfoHandler&&) = delete;
+    MayaUIInfoHandler& operator=(MayaUIInfoHandler&&) = delete;
 
-    //! Create a UsdUIInfoHandler.
-    static UsdUIInfoHandler::Ptr create();
+    //! Create a MayaUIInfoHandler.
+    static MayaUIInfoHandler::Ptr create();
 
     // Ufe::UIInfoHandler overrides
     bool treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::CellInfo& info) const override;
     Ufe::UIInfoHandler::Icon treeViewIcon(const Ufe::SceneItem::Ptr& item) const override;
     std::string              treeViewTooltip(const Ufe::SceneItem::Ptr& item) const override;
     std::string              getLongRunTimeLabel() const override;
-}; // UsdUIInfoHandler
+}; // MayaUIInfoHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
 
-#endif // USDUIINFOHANDLER_H
+#endif // MAYAUIINFOHANDLER_H
