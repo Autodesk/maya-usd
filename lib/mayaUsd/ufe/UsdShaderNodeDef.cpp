@@ -46,8 +46,8 @@ Ufe::ConstAttributeDefs getAttrs(const PXR_NS::SdrShaderNodeConstPtr& shaderNode
 {
     Ufe::ConstAttributeDefs attrs;
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    const bool              input = (IOTYPE == Ufe::AttributeDef::INPUT_ATTR);
-    auto names = input ? shaderNodeDef->GetInputNames() : shaderNodeDef->GetOutputNames();
+    const bool input = (IOTYPE == Ufe::AttributeDef::INPUT_ATTR);
+    auto       names = input ? shaderNodeDef->GetInputNames() : shaderNodeDef->GetOutputNames();
     for (const PXR_NS::TfToken& name : names) {
         PXR_NS::SdrShaderPropertyConstPtr property
             = input ? shaderNodeDef->GetShaderInput(name) : shaderNodeDef->GetShaderOutput(name);
