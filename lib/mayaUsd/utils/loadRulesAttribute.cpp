@@ -33,7 +33,7 @@ bool hasLoadRulesAttribute(const MFnDependencyNode& depNode)
 {
     MString nodeName = depNode.absoluteName();
     MString cmd;
-    cmd.format("addAttr -query -exists \"^2s.^1s\"", loadRulesAttrName, nodeName);
+    cmd.format("attributeQuery -exists -n \"^2s\" \"^1s\"", loadRulesAttrName, nodeName);
 
     int        result = 0;
     const bool display = false;
