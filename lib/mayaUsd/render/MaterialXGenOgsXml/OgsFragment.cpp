@@ -471,7 +471,7 @@ std::string OgsFragment::getSpecularEnvKey()
     default: retVal = "N"; break;
     }
 
-    return std::move(retVal);
+    return retVal;
 }
 
 } // namespace MaterialXMaya
