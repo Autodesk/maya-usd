@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Xform "lights"
+{
+    def SphereLight "simpleLight"
+    {
+        double3 xformOp:translate = (0, 1, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+		float inputs:intensity = 20000
+		bool inputs:shadow:enable = true
+		color3f inputs:shadow:color = (1, 0, 0)
+		
+		float inputs:shaping:focus = 0.5
+		float inputs:shaping:cone:angle = 50
+		float inputs:shaping:cone:softness = 0.1
+    }
+}
+

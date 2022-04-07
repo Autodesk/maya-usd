@@ -9,6 +9,7 @@ set(TEST_SCRIPT_FILES
     testUfePythonImport.py
     testAttributeBlock.py
     testBlockedLayerEdit.py
+    testLight.py
 )
 
 set(TEST_SUPPORT_FILES

@@ -128,7 +128,8 @@ Ufe::Light::Type UsdLight::type() const
         return Ufe::Light::Area;
     } else if (usdPrim.IsA<UsdLuxSphereLight>()) {
         const UsdLuxShapingAPI shapingAPI(usdPrim);
-        return shapingAPI ? Ufe::Light::Spot : Ufe::Light::Point;
+        return shapingAPI.GetShapingConeAngleAttr().IsValid() ? 
+                    Ufe::Light::Spot : Ufe::Light::Point;
     }
     
     return Ufe::Light::Invalid;
@@ -139,9 +140,9 @@ float getLightIntensity(const UsdPrim& prim)
     const UsdLuxLightCommon lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetIntensityAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-    return val.Get<float>();
+    float val = 0.f;
+    lightAttribute.Get(&val);
+    return val;
 }
 
 void setLightIntensity(const UsdPrim& prim, float attrVal)
@@ -149,7 +150,7 @@ void setLightIntensity(const UsdPrim& prim, float attrVal)
     const UsdLuxLightCommon lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetIntensityAttr();
     
-    lightAttribute.Set(attrVal, UsdTimeCode::Default());
+    lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::IntensityUndoableCommand::Ptr UsdLight::intensityCmd(float li)
@@ -176,10 +177,9 @@ Ufe::Color3f getLightColor(const UsdPrim& prim)
     const UsdLuxLightCommon lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetColorAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-    GfVec3f clr = val.Get<GfVec3f>();
-    return Ufe::Color3f(clr[0], clr[1], clr[2]);
+    GfVec3f val(0.f, 0.f, 0.f);
+    lightAttribute.Get(&val);
+    return Ufe::Color3f(val[0], val[1], val[2]);
 }
 
 void setLightColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
@@ -187,7 +187,7 @@ void setLightColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
     const UsdLuxLightCommon lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetColorAttr();
     
-    lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()), UsdTimeCode::Default());
+    lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
 }
 
 Ufe::Light::ColorUndoableCommand::Ptr UsdLight::colorCmd(float r, float g, float b)
@@ -213,9 +213,9 @@ bool getLightShadowEnable(const UsdPrim& prim)
     const UsdLuxShadowAPI shadowAPI(prim);
     const UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-    return val.Get<bool>();  
+    bool val = false;
+    lightAttribute.Get(&val);
+    return val;
 }
 
 void setLightShadowEnable(const UsdPrim& prim, bool attrVal)
@@ -223,7 +223,7 @@ void setLightShadowEnable(const UsdPrim& prim, bool attrVal)
     const UsdLuxShadowAPI shadowAPI(prim);
     const UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
     
-    lightAttribute.Set(attrVal, UsdTimeCode::Default());
+    lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::ShadowEnableUndoableCommand::Ptr UsdLight::shadowEnableCmd(bool se)
@@ -250,10 +250,9 @@ Ufe::Color3f getLightShadowColor(const UsdPrim& prim)
     const UsdLuxShadowAPI shadowAPI(prim);
     const UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-    GfVec3f clr = val.Get<GfVec3f>();
-    return Ufe::Color3f(clr[0], clr[1], clr[2]); 
+    GfVec3f val(0.f, 0.f, 0.f);
+    lightAttribute.Get(&val);
+    return Ufe::Color3f(val[0], val[1], val[2]); 
 }
 
 void setLightShadowColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
@@ -261,7 +260,7 @@ void setLightShadowColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
     const UsdLuxShadowAPI shadowAPI(prim);
     const UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
     
-    lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()), UsdTimeCode::Default());
+    lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
 }
 
 Ufe::Light::ShadowColorUndoableCommand::Ptr UsdLight::shadowColorCmd(float r, float g, float b)
@@ -288,9 +287,9 @@ float getLightDiffuse(const UsdPrim& prim)
     const UsdLuxLightCommon lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetDiffuseAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-    return val.Get<float>();
+    float val = 0.f;
+    lightAttribute.Get(&val);
+    return val;
 }
 
 void setLightDiffuse(const UsdPrim& prim, float attrVal)
@@ -298,7 +297,7 @@ void setLightDiffuse(const UsdPrim& prim, float attrVal)
     const UsdLuxLightCommon lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetDiffuseAttr();
     
-    lightAttribute.Set(attrVal, UsdTimeCode::Default());
+    lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::DiffuseUndoableCommand::Ptr UsdLight::diffuseCmd(float ld)
@@ -325,9 +324,9 @@ float getLightSpecular(const UsdPrim& prim)
     const UsdLuxLightCommon lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetSpecularAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-    return val.Get<float>(); 
+    float val = 0.f;
+    lightAttribute.Get(&val);
+    return val;
 }
 
 void setLightSpecular(const UsdPrim& prim, float attrVal)
@@ -335,7 +334,7 @@ void setLightSpecular(const UsdPrim& prim, float attrVal)
     const UsdLuxLightCommon lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetSpecularAttr();
     
-    lightAttribute.Set(attrVal, UsdTimeCode::Default());
+    lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::SpecularUndoableCommand::Ptr UsdLight::specularCmd(float ls)
@@ -362,9 +361,9 @@ float getLightAngle(const UsdPrim& prim)
     const UsdLuxDistantLight lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetAngleAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-    return val.Get<float>(); 
+    float val = 0.f;
+    lightAttribute.Get(&val);
+    return val; 
 }
 
 void setLightAngle(const UsdPrim& prim, float attrVal)
@@ -372,7 +371,7 @@ void setLightAngle(const UsdPrim& prim, float attrVal)
     const UsdLuxDistantLight lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetAngleAttr();
     
-    lightAttribute.Set(attrVal, UsdTimeCode::Default());
+    lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::AngleUndoableCommand::Ptr UsdDirectionalInterface::angleCmd(float la)
@@ -399,11 +398,8 @@ Ufe::Light::SphereProps getLightSphereProps(const UsdPrim& prim)
     const UsdLuxSphereLight lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-
     Ufe::Light::SphereProps sp;
-    sp.radius = val.Get<float>();
+    lightAttribute.Get(&sp.radius);
     sp.asPoint = (sp.radius == 0.f);
     return sp;
 }
@@ -413,7 +409,7 @@ void setLightSphereProps(const UsdPrim& prim, const Ufe::Light::SphereProps& att
     const UsdLuxSphereLight lightSchema(prim);
     const UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
     
-    lightAttribute.Set(attrVal.radius, UsdTimeCode::Default());
+    lightAttribute.Set(attrVal.radius);
 }
 
 Ufe::Light::SpherePropsUndoableCommand::Ptr UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
@@ -442,19 +438,10 @@ Ufe::Light::ConeProps getLightConeProps(const UsdPrim& prim)
     const UsdAttribute coneAngleAttribute = lightSchema.GetShapingConeAngleAttr();
     const UsdAttribute coneSoftnessAttribute = lightSchema.GetShapingConeSoftnessAttr();
 
-    VtValue focusVal;
-    focusAttribute.Get(&focusVal, UsdTimeCode::EarliestTime());
-
-    VtValue coneAngleVal;
-    coneAngleAttribute.Get(&coneAngleVal, UsdTimeCode::EarliestTime());
-
-    VtValue coneSoftnessVal;
-    coneSoftnessAttribute.Get(&coneSoftnessVal, UsdTimeCode::EarliestTime());        
-
     Ufe::Light::ConeProps cp;
-    cp.focus = focusVal.Get<float>();
-    cp.angle = coneAngleVal.Get<float>();
-    cp.softness = coneSoftnessVal.Get<float>();
+    focusAttribute.Get(&cp.focus);
+    coneAngleAttribute.Get(&cp.angle);
+    coneSoftnessAttribute.Get(&cp.softness);
     return cp;
 }
 
@@ -465,9 +452,9 @@ void setLightConeProps(const UsdPrim& prim, const Ufe::Light::ConeProps& attrVal
     const UsdAttribute coneAngleAttribute = lightSchema.GetShapingConeAngleAttr();
     const UsdAttribute coneSoftnessAttribute = lightSchema.GetShapingConeSoftnessAttr();
     
-    focusAttribute.Set(attrVal.focus, UsdTimeCode::Default());
-    coneAngleAttribute.Set(attrVal.angle, UsdTimeCode::Default());
-    coneSoftnessAttribute.Set(attrVal.softness, UsdTimeCode::Default());
+    focusAttribute.Set(attrVal.focus);
+    coneAngleAttribute.Set(attrVal.angle);
+    coneSoftnessAttribute.Set(attrVal.softness);
 }
 
 Ufe::Light::ConePropsUndoableCommand::Ptr UsdConeInterface::conePropsCmd(float focus, float angle, float softness)
@@ -494,9 +481,9 @@ bool getLightNormalize(const UsdPrim& prim)
     const UsdLuxRectLight rectLight(prim);
     const UsdAttribute lightAttribute = rectLight.GetNormalizeAttr();
 
-    VtValue val;
-    lightAttribute.Get(&val, UsdTimeCode::EarliestTime());
-    return val.Get<bool>();
+    bool val = false;
+    lightAttribute.Get(&val);
+    return val;
 }
 
 void setLightNormalize(const UsdPrim& prim, bool attrVal)
@@ -504,7 +491,7 @@ void setLightNormalize(const UsdPrim& prim, bool attrVal)
     const UsdLuxRectLight rectLight(prim);
     const UsdAttribute lightAttribute = rectLight.GetNormalizeAttr();
     
-    lightAttribute.Set(attrVal, UsdTimeCode::Default());
+    lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl)
