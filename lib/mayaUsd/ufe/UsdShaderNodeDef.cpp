@@ -43,8 +43,8 @@ template <Ufe::AttributeDef::IOType IOTYPE>
 Ufe::ConstAttributeDefs getAttrs(const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef)
 {
     Ufe::ConstAttributeDefs attrs;
-    const bool input = (IOTYPE == Ufe::AttributeDef::INPUT_ATTR);
-    auto       names = input ? shaderNodeDef->GetInputNames() : shaderNodeDef->GetOutputNames();
+    const bool              input = (IOTYPE == Ufe::AttributeDef::INPUT_ATTR);
+    auto names = input ? shaderNodeDef->GetInputNames() : shaderNodeDef->GetOutputNames();
     for (const PXR_NS::TfToken& name : names) {
         PXR_NS::SdrShaderPropertyConstPtr property
             = input ? shaderNodeDef->GetShaderInput(name) : shaderNodeDef->GetShaderOutput(name);
