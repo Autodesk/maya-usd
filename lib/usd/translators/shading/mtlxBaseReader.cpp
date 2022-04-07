@@ -21,7 +21,6 @@
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/shading/symmetricShaderReader.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -48,33 +47,22 @@ REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION(
     TrMtlxTokens->niceName,
     TrMtlxTokens->importDescription);
 
-TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
+namespace {
+bool _IsConstructorNode(UsdPrim prim)
 {
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->MayaND_lambert_surfaceshader,
-        TrMayaTokens->lambert,
-        TrMtlxTokens->conversionName);
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->MayaND_phong_surfaceshader,
-        TrMayaTokens->phong,
-        TrMtlxTokens->conversionName);
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->MayaND_blinn_surfaceshader,
-        TrMayaTokens->blinn,
-        TrMtlxTokens->conversionName);
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->MayaND_place2dTexture_vector2,
-        TrMayaTokens->place2dTexture,
-        TrMtlxTokens->conversionName);
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->LdkND_FloatCorrect_float,
-        TrMayaTokens->floatCorrect,
-        TrMtlxTokens->conversionName);
-    UsdMayaSymmetricShaderReader::RegisterReader(
-        TrMtlxTokens->LdkND_ColorCorrect_color4,
-        TrMayaTokens->colorCorrect,
-        TrMtlxTokens->conversionName);
-};
+    UsdShadeShader ctorShader(prim);
+
+    TfToken shaderId;
+    ctorShader.GetIdAttr().Get(&shaderId);
+
+    if (shaderId.GetString().rfind(TrMtlxTokens->CombinePrefix.GetString(), 0) == 0
+        && ctorShader.GetPath().GetName().rfind(TrMtlxTokens->ConstructorPrefix.GetString(), 0)
+            == 0) {
+        return true;
+    }
+    return false;
+}
+} // namespace
 
 MtlxUsd_BaseReader::MtlxUsd_BaseReader(const UsdMayaPrimReaderArgs& readArgs)
     : UsdMayaShaderReader(readArgs)
@@ -150,6 +138,81 @@ bool MtlxUsd_BaseReader::GetColorAndAlphaFromInput(
         return true;
     }
     return false;
+}
+
+bool MtlxUsd_BaseReader::TraverseUnconnectableInput(const TfToken& usdAttrName)
+{
+    TfToken               usdPortName;
+    UsdShadeAttributeType attrType;
+    std::tie(usdPortName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
+
+    if (attrType == UsdShadeAttributeType::Output) {
+        return false;
+    }
+
+    // Check for the presence of a CTOR node indicating connection to a subcomponent of a compound
+    // input:
+    const auto&    prim = _GetArgs().GetUsdPrim();
+    UsdShadeShader shaderSchema = UsdShadeShader(prim);
+
+    UsdShadeInput usdInput = shaderSchema.GetInput(usdPortName);
+    if (usdInput) {
+        UsdShadeConnectableAPI source;
+        TfToken                sourceInputName;
+        UsdShadeAttributeType  sourceType;
+        if (UsdShadeConnectableAPI::GetConnectedSource(
+                usdInput, &source, &sourceInputName, &sourceType)) {
+
+            // Surface nodes will connect to a NodeGraph. We must dig deeper in this case:
+            UsdShadeNodeGraph nodeGraph(source.GetPrim());
+            if (nodeGraph) {
+                UsdShadeOutput graphOutput = source.GetOutput(sourceInputName);
+                if (!graphOutput) {
+                    // Not a NodeGraph we recognize.
+                    return false;
+                }
+                UsdShadeConnectableAPI::GetConnectedSource(
+                    graphOutput, &source, &sourceInputName, &sourceType);
+            }
+
+            return _IsConstructorNode(source.GetPrim());
+        }
+    }
+
+    return false;
+}
+
+void MtlxUsd_BaseReader::RegisterConstructorNodes(
+    UsdMayaPrimReaderContext& context,
+    MObject                   mayaObject)
+{
+    const auto&    prim = _GetArgs().GetUsdPrim();
+    UsdShadeShader shaderSchema = UsdShadeShader(prim);
+
+    for (auto&& usdInput : shaderSchema.GetInputs()) {
+        UsdShadeConnectableAPI source;
+        TfToken                sourceInputName;
+        UsdShadeAttributeType  sourceType;
+        if (UsdShadeConnectableAPI::GetConnectedSource(
+                usdInput, &source, &sourceInputName, &sourceType)) {
+
+            // Surface nodes will connect to a NodeGraph. We must dig deeper in this case:
+            UsdShadeNodeGraph nodeGraph(source.GetPrim());
+            if (nodeGraph) {
+                UsdShadeOutput graphOutput = source.GetOutput(sourceInputName);
+                if (!graphOutput) {
+                    // Not a NodeGraph we recognize.
+                    continue;
+                }
+                UsdShadeConnectableAPI::GetConnectedSource(
+                    graphOutput, &source, &sourceInputName, &sourceType);
+            }
+
+            if (_IsConstructorNode(source.GetPrim())) {
+                context.RegisterNewMayaNode(source.GetPath().GetString(), mayaObject);
+            }
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

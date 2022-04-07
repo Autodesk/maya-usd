@@ -17,6 +17,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     Float4ToFloatZ.xml
     UsdPreviewSurfaceLightAPI1.xml
     UsdPreviewSurfaceLightAPI2.xml
+    UsdPreviewSurfaceLightAPI3.xml
     lightingContributions.xml
     opacityToTransparency.xml
     scaledDiffusePassThrough.xml
@@ -24,6 +25,7 @@ list(APPEND SHADERFRAGMENTS_XMLS
     usdPreviewSurfaceCombiner.xml
     usdPreviewSurfaceLightingAPI1.xml
     usdPreviewSurfaceLightingAPI2.xml
+    usdPreviewSurfaceLightingAPI3.xml
     # New fragments
     BasisCurvesCubicColorDomain.xml
     BasisCurvesCubicCPVHull.xml
@@ -48,6 +50,9 @@ list(APPEND SHADERFRAGMENTS_XMLS
     Float4ToFloat3.xml
     Float4ToFloat4.xml
     NwFaceCameraIfNAN.xml
+    PointsFallbackShader.xml
+    PointsFallbackCPVShader.xml
+    PointsGeometry.xml
     UsdDrawModeCards.xml
     UsdPrimvarColor.xml
     UsdPrimvarReader_color.xml

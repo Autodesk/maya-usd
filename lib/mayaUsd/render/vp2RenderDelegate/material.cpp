@@ -1779,6 +1779,7 @@ void HdVP2Material::Sync(
                     if (!_surfaceShader || topoHash != _topoHash) {
                         _surfaceShader.reset(
                             _CreateMaterialXShaderInstance(GetId(), surfaceNetwork));
+                        _pointShader.reset(nullptr);
                         _topoHash = topoHash;
                     }
 
@@ -1838,6 +1839,7 @@ void HdVP2Material::Sync(
 
                     // The shader instance is owned by the material solely.
                     _surfaceShader.reset(shader);
+                    _pointShader.reset(nullptr);
 
                     if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                         std::cout << "BXDF material network for " << id << ":\n"
@@ -2464,9 +2466,11 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
             return shaderInstance;
         }
 
-        // This function is very recent and might only exist in a PR at this point in time
-        // See https://github.com/autodesk-forks/MaterialX/pull/1197 for current status.
-        mx::OgsXmlGenerator::setUseLightAPIV2(true);
+#if MAYA_LIGHTAPI_VERSION_2 == 3
+        mx::OgsXmlGenerator::setUseLightAPI(3);
+#else
+        mx::OgsXmlGenerator::setUseLightAPI(2);
+#endif
 
         mx::NodePtr materialNode;
         for (const mx::NodePtr& material : mtlxDoc->getMaterialNodes()) {
@@ -3153,6 +3157,16 @@ void HdVP2Material::_ScheduleRefresh()
     if (!_runningTasksCounter.load() || isTimeout()) {
         M3dView::scheduleRefreshAllViews();
     }
+}
+
+MHWRender::MShaderInstance* HdVP2Material::GetPointShader() const
+{
+    if (!_pointShader && _surfaceShader) {
+        _pointShader.reset(_surfaceShader->clone());
+        _pointShader->addInputFragment("PointsGeometry", "GPUStage", "GPUStage");
+    }
+
+    return _pointShader.get();
 }
 
 #ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
