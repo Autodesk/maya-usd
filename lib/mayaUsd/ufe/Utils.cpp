@@ -545,6 +545,7 @@ bool isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage, std::strin
     return true;
 }
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType)
 {
     // Map the USD type into UFE type.
@@ -569,6 +570,7 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType)
         return Ufe::Attribute::kGeneric;
     }
 }
+#endif
 
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
 {
