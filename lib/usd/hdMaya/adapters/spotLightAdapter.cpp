@@ -134,11 +134,23 @@ protected:
             } else if (paramName == UsdLuxTokens->treatAsPoint) {
                 const bool treatAsPoint = (light.shadowRadius() == 0.0);
                 return VtValue(treatAsPoint);
+#if PXR_VERSION >= 2105
             } else if (paramName == UsdLuxTokens->inputsShapingConeAngle) {
+#else
+            } else if (paramName == HdLightTokens->shapingConeAngle) {
+#endif
                 return VtValue(GetSpotCutoff(light));
+#if PXR_VERSION >= 2105
             } else if (paramName == UsdLuxTokens->inputsShapingConeSoftness) {
+#else
+            } else if (paramName == HdLightTokens->shapingConeSoftness) {
+#endif
                 return VtValue(GetSpotSoftness(light));
+#if PXR_VERSION >= 2105
             } else if (paramName == UsdLuxTokens->inputsShapingFocus) {
+#else
+            } else if (paramName == HdLightTokens->shapingFocus) {
+#endif
                 return VtValue(GetSpotFalloff(light));
             }
         }
