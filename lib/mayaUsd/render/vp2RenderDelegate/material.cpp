@@ -367,7 +367,7 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
     }
 
     // The specular environment settings used affect the topology of the shader:
-    MayaUsd::hash_combine(topoHash, hash_value(MaterialXMaya::OgsFragment::getSpecularEnvKey()));
+    MayaUsd::hash_combine(topoHash, MaterialXMaya::OgsFragment::getSpecularEnvKey());
 
     return topoHash;
 }
