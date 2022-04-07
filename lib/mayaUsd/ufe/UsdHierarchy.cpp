@@ -129,7 +129,8 @@ bool UsdHierarchy::hasChildren() const
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
-    return createUFEChildList(getUSDFilteredChildren(fItem), true /*filterInactive*/);
+    const bool isFilteringInactive = false;
+    return createUFEChildList(getUSDFilteredChildren(fItem), isFilteringInactive);
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
