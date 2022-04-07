@@ -124,12 +124,13 @@ bool UsdHierarchy::hasChildren() const
     //
     // I don't have data that proves we need to worry about performance in here,
     // so going after maintainability.
-    return !children().empty();
+    const bool isFilteringInactive = false;
+    return !createUFEChildList(getUSDFilteredChildren(fItem), isFilteringInactive).empty();
 }
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
-    const bool isFilteringInactive = false;
+    const bool isFilteringInactive = true;
     return createUFEChildList(getUSDFilteredChildren(fItem), isFilteringInactive);
 }
 
