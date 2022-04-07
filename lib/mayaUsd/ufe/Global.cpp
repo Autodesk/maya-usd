@@ -43,6 +43,11 @@
 #include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
+#endif
+#endif
 #include <mayaUsd/utils/editRouter.h>
 
 #include <maya/MSceneMessage.h>
@@ -152,6 +157,12 @@ MStatus initialize()
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
     handlers.cameraHandler = UsdCameraHandler::create();
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+
+    handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
+#endif
+#endif
 
     // USD has a very flexible data model to support 3d transformations --- see
     // https://graphics.pixar.com/usd/docs/api/class_usd_geom_xformable.html
