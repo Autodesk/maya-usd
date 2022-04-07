@@ -45,6 +45,9 @@
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdLightHandler.h>
+#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+#include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
+#endif
 #endif
 #include <mayaUsd/utils/editRouter.h>
 
@@ -157,6 +160,10 @@ MStatus initialize()
     handlers.cameraHandler = UsdCameraHandler::create();
 #ifdef UFE_V4_FEATURES_AVAILABLE
     handlers.lightHandler = UsdLightHandler::create();
+#if (UFE_PREVIEW_VERSION_NUM >= 4001)
+
+    handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
+#endif
 #endif
 
     // USD has a very flexible data model to support 3d transformations --- see

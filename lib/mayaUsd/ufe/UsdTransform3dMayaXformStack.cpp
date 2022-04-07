@@ -54,7 +54,7 @@ UsdGeomXformOp::Precision OpPrecision<GfVec3f>::precision = UsdGeomXformOp::Prec
 template <>
 UsdGeomXformOp::Precision OpPrecision<GfVec3d>::precision = UsdGeomXformOp::PrecisionDouble;
 
-VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
+VtValue getValue(const PXR_NS::UsdAttribute& attr, const UsdTimeCode& time)
 {
     VtValue value;
     attr.Get(&value, time);
@@ -63,9 +63,9 @@ VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
 
 // This utility function is used to avoid the TF_VERIFY message thrown up
 // when GetAttribute() is called with an empty token.
-UsdAttribute getUsdPrimAttribute(const UsdPrim& prim, const TfToken& attrName)
+PXR_NS::UsdAttribute getUsdPrimAttribute(const UsdPrim& prim, const TfToken& attrName)
 {
-    return !attrName.IsEmpty() ? prim.GetAttribute(attrName) : UsdAttribute();
+    return !attrName.IsEmpty() ? prim.GetAttribute(attrName) : PXR_NS::UsdAttribute();
 }
 
 // UsdMayaXformStack::FindOpIndex() requires an inconvenient isInvertedTwin
@@ -779,7 +779,7 @@ bool UsdTransform3dMayaXformStack::isAttributeEditAllowed(
     const PXR_NS::TfToken attrName,
     std::string&          errMsg) const
 {
-    UsdAttribute attr;
+    PXR_NS::UsdAttribute attr;
     if (!attrName.IsEmpty())
         attr = prim().GetAttribute(attrName);
     if (attr && !MayaUsd::ufe::isAttributeEditAllowed(attr, &errMsg)) {
