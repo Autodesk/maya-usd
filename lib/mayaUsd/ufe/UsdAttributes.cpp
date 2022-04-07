@@ -133,7 +133,6 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
 Ufe::Attribute::Type
 UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
 {
-#ifdef UFE_V2_FEATURES_AVAILABLE
     if (usdAttr.IsValid()) {
         const PXR_NS::SdfValueTypeName typeName = usdAttr.GetTypeName();
         Ufe::Attribute::Type           type = usdTypeToUfe(typeName);
@@ -146,7 +145,6 @@ UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
         }
         return type;
     }
-#endif
 
     UFE_ASSERT_MSG(false, kErrorMsgInvalidAttribute);
     return Ufe::Attribute::kInvalid;

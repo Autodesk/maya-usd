@@ -33,19 +33,16 @@ namespace ufe {
 
 constexpr char UsdShaderNodeDef::kNodeDefCategoryShader[];
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty)
 {
     const PXR_NS::SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
     return usdTypeToUfe(typeName);
 }
-#endif
 
 template <Ufe::AttributeDef::IOType IOTYPE>
 Ufe::ConstAttributeDefs getAttrs(const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef)
 {
     Ufe::ConstAttributeDefs attrs;
-#ifdef UFE_V2_FEATURES_AVAILABLE
     const bool input = (IOTYPE == Ufe::AttributeDef::INPUT_ATTR);
     auto       names = input ? shaderNodeDef->GetInputNames() : shaderNodeDef->GetOutputNames();
     for (const PXR_NS::TfToken& name : names) {
@@ -56,7 +53,6 @@ Ufe::ConstAttributeDefs getAttrs(const PXR_NS::SdrShaderNodeConstPtr& shaderNode
         Ufe::Attribute::Type type = getUfeTypeForAttribute(property);
         attrs.push_back(Ufe::AttributeDef::create(name, type, defaultValue.str(), IOTYPE));
     }
-#endif
     return attrs;
 }
 
