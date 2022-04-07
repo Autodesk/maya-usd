@@ -92,15 +92,22 @@ class ChildFilterTestCase(unittest.TestCase):
         ball3Prim = mayaUsd.ufe.ufePathToPrim(ball3PathStr)
         ball3Prim.SetActive(False)
 
-        # Props should now have 5 children and ball3 should not be one of them.
+        # Props should still have 6 children and ball3 should still be one of them.
         children = propsHier.children()
-        self.assertEqual(5, len(children))
-        self.assertNotIn(ball3Item, children)
+        self.assertEqual(6, len(children))
+        self.assertIn(ball3Item, children)
 
         # Get the child filter for the hierarchy handler corresponding
         # to the runtime of the Ball_3.
         usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(ball3Item.runTimeId())
         cf = usdHierHndlr.childFilter()
+
+        # Toggle "Inactive Prims" off and get the filtered children
+        # Props filtered children should have 5 children and ball3 should not be one of them.
+        cf[0].value = False
+        children = propsHier.filteredChildren(cf)
+        self.assertEqual(5, len(children))
+        self.assertNotIn(ball3Item, children)
 
         # Toggle "Inactive Prims" on and get the filtered children
         # (with inactive prims) and verify ball3 is one of them.
