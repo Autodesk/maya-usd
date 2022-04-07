@@ -78,6 +78,16 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdShaderNodeDef.cpp
+                UsdShaderNodeDefHandler.cpp
+        )
+    endif()
+endif()
+
 set(HEADERS
     Global.h
     ProxyShapeHandler.h
@@ -152,6 +162,15 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         UsdPathMappingHandler.h
         UsdUndoUngroupCommand.h
     )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
+        list(APPEND HEADERS
+            UsdShaderNodeDef.h
+            UsdShaderNodeDefHandler.h
+        )
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------

@@ -47,6 +47,14 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    if(CMAKE_WANT_MATERIALX_BUILD)
+        list(APPEND TEST_SCRIPT_FILES
+            testShaderNodeDef.py
+        )
+    endif()
+endif()
+
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
     list(APPEND TEST_SCRIPT_FILES
         testCamera.py

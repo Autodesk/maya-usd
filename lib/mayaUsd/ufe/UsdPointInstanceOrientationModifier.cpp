@@ -85,22 +85,22 @@ Ufe::Vector3d UsdPointInstanceOrientationModifier::convertValueToUfe(const GfQua
 }
 
 /* override */
-UsdAttribute UsdPointInstanceOrientationModifier::_getAttribute() const
+PXR_NS::UsdAttribute UsdPointInstanceOrientationModifier::_getAttribute() const
 {
     UsdGeomPointInstancer pointInstancer = getPointInstancer();
     if (!pointInstancer) {
-        return UsdAttribute();
+        return PXR_NS::UsdAttribute();
     }
 
     return pointInstancer.GetOrientationsAttr();
 }
 
 /* override */
-UsdAttribute UsdPointInstanceOrientationModifier::_createAttribute()
+PXR_NS::UsdAttribute UsdPointInstanceOrientationModifier::_createAttribute()
 {
     UsdGeomPointInstancer pointInstancer = getPointInstancer();
     if (!pointInstancer) {
-        return UsdAttribute();
+        return PXR_NS::UsdAttribute();
     }
 
     return pointInstancer.CreateOrientationsAttr();
