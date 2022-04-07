@@ -44,8 +44,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdCameraHandler.cpp
             UsdContextOps.cpp
             UsdContextOpsHandler.cpp
-            UsdLight.cpp
-            UsdLightHandler.cpp
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
             UsdSetXformOpUndoableCommandBase.cpp
@@ -77,6 +75,14 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
             PulledObjectHierarchyHandler.cpp
             UsdPathMappingHandler.cpp
             UsdUndoUngroupCommand.cpp
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdLight.cpp
+            UsdLightHandler.cpp
     )
 endif()
 
@@ -122,8 +128,6 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdCameraHandler.h
         UsdContextOps.h
         UsdContextOpsHandler.h
-        UsdLight.h
-        UsdLightHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
         UsdPointInstanceUndoableCommands.h
@@ -155,6 +159,13 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
         PulledObjectHierarchyHandler.h
         UsdPathMappingHandler.h
         UsdUndoUngroupCommand.h
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    list(APPEND HEADERS
+        UsdLight.h
+        UsdLightHandler.h
     )
 endif()
 

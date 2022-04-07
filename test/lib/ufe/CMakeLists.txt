@@ -9,7 +9,6 @@ set(TEST_SCRIPT_FILES
     testUfePythonImport.py
     testAttributeBlock.py
     testBlockedLayerEdit.py
-    testLight.py
 )
 
 set(TEST_SUPPORT_FILES
@@ -45,6 +44,12 @@ endif()
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testUngroupCmd.py
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    list(APPEND TEST_SCRIPT_FILES
+        testLight.py
     )
 endif()
 
