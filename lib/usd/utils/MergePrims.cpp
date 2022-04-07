@@ -797,7 +797,7 @@ bool mergeDiffPrims(
 ///
 /// Unfortunately, USD won't actually author "over" (or even "def") until we set at least one
 /// attribute on it. So we set the active attribute and once the merge is done we clear those
-/// attributes to avoid leaving behind opinions that the user ight not expect to exist. Otherwise
+/// attributes to avoid leaving behind opinions that the user might not expect to exist. Otherwise
 /// setting these missing parents inactive in lower layer would  have no effect in the future,
 /// to the possible dismay of the user.
 
