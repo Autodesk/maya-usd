@@ -16,6 +16,7 @@
 #include "UsdLight.h"
 
 #include "private/Utils.h"
+
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/util.h>
 
@@ -37,46 +38,49 @@ template <typename ValueTypeIn>
 class SetValueUndoableCommandImpl : public Ufe::SetValueUndoableCommand<ValueTypeIn>
 {
 public:
-
     using ValueTypeNonRef = typename std::remove_reference<ValueTypeIn>::type;
     using ValueTypeOut = typename std::remove_const<ValueTypeNonRef>::type;
 
-    typedef std::function<ValueTypeOut(const UsdPrim& prim)> GetterFunc;
+    typedef std::function<ValueTypeOut(const UsdPrim& prim)>      GetterFunc;
     typedef std::function<void(const UsdPrim& prim, ValueTypeIn)> SetterFunc;
 
-    SetValueUndoableCommandImpl(const Ufe::Path &path, const GetterFunc& gf, const SetterFunc& sf) 
+    SetValueUndoableCommandImpl(const Ufe::Path& path, const GetterFunc& gf, const SetterFunc& sf)
         : Ufe::SetValueUndoableCommand<ValueTypeIn>(path)
         , getterFunc(gf)
         , setterFunc(sf)
     {
     }
 
-    ~SetValueUndoableCommandImpl() override {}
+    ~SetValueUndoableCommandImpl() override { }
 
-    bool set(ValueTypeIn v) override { redoValue = v; return true; }
+    bool set(ValueTypeIn v) override
+    {
+        redoValue = v;
+        return true;
+    }
 
     void execute() override
     {
-        if (auto pItem = std::dynamic_pointer_cast<UsdSceneItem>(
-            Ufe::BaseUndoableCommand::sceneItem())) {
+        if (auto pItem
+            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
             undoValue = getterFunc(pItem->prim());
-            setterFunc(pItem->prim(), redoValue);        
+            setterFunc(pItem->prim(), redoValue);
         }
     }
 
     void undo() override
     {
-        if (auto pItem = std::dynamic_pointer_cast<UsdSceneItem>(
-            Ufe::BaseUndoableCommand::sceneItem())) {
-                setterFunc(pItem->prim(), undoValue);
-        } 
+        if (auto pItem
+            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
+            setterFunc(pItem->prim(), undoValue);
+        }
     }
 
     void redo() override
     {
-        if (auto pItem = std::dynamic_pointer_cast<UsdSceneItem>(
-            Ufe::BaseUndoableCommand::sceneItem())) {
-                setterFunc(pItem->prim(), redoValue);
+        if (auto pItem
+            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
+            setterFunc(pItem->prim(), redoValue);
         }
     }
 
@@ -105,9 +109,9 @@ UsdLight::Ptr UsdLight::create(const UsdSceneItem::Ptr& item)
 }
 
 #if PXR_VERSION < 2111
-    using UsdLuxLightCommon = UsdLuxLight;
+using UsdLuxLightCommon = UsdLuxLight;
 #else
-    using UsdLuxLightCommon = UsdLuxLightAPI;
+using UsdLuxLightCommon = UsdLuxLightAPI;
 #endif
 
 //------------------------------------------------------------------------------
@@ -128,17 +132,17 @@ Ufe::Light::Type UsdLight::type() const
         return Ufe::Light::Area;
     } else if (usdPrim.IsA<UsdLuxSphereLight>()) {
         const UsdLuxShapingAPI shapingAPI(usdPrim);
-        return shapingAPI.GetShapingConeAngleAttr().IsValid() ? 
-                    Ufe::Light::Spot : Ufe::Light::Point;
+        return shapingAPI.GetShapingConeAngleAttr().IsValid() ? Ufe::Light::Spot
+                                                              : Ufe::Light::Point;
     }
-    
+
     return Ufe::Light::Invalid;
 }
 
 float getLightIntensity(const UsdPrim& prim)
 {
     const UsdLuxLightCommon lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetIntensityAttr();
+    const UsdAttribute      lightAttribute = lightSchema.GetIntensityAttr();
 
     float val = 0.f;
     lightAttribute.Get(&val);
@@ -148,8 +152,8 @@ float getLightIntensity(const UsdPrim& prim)
 void setLightIntensity(const UsdPrim& prim, float attrVal)
 {
     const UsdLuxLightCommon lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetIntensityAttr();
-    
+    const UsdAttribute      lightAttribute = lightSchema.GetIntensityAttr();
+
     lightAttribute.Set(attrVal);
 }
 
@@ -162,20 +166,14 @@ Ufe::Light::IntensityUndoableCommand::Ptr UsdLight::intensityCmd(float li)
     return pCmd;
 }
 
-void UsdLight::intensity(float li)
-{
-    setLightIntensity(prim(), li);
-}
+void UsdLight::intensity(float li) { setLightIntensity(prim(), li); }
 
-float UsdLight::intensity() const
-{
-    return getLightIntensity(prim());
-}
+float UsdLight::intensity() const { return getLightIntensity(prim()); }
 
 Ufe::Color3f getLightColor(const UsdPrim& prim)
 {
     const UsdLuxLightCommon lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetColorAttr();
+    const UsdAttribute      lightAttribute = lightSchema.GetColorAttr();
 
     GfVec3f val(0.f, 0.f, 0.f);
     lightAttribute.Get(&val);
@@ -185,33 +183,28 @@ Ufe::Color3f getLightColor(const UsdPrim& prim)
 void setLightColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
 {
     const UsdLuxLightCommon lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetColorAttr();
-    
+    const UsdAttribute      lightAttribute = lightSchema.GetColorAttr();
+
     lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
 }
 
 Ufe::Light::ColorUndoableCommand::Ptr UsdLight::colorCmd(float r, float g, float b)
 {
-    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Color3f &>>(path(), getLightColor, setLightColor);
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Color3f&>>(
+        path(), getLightColor, setLightColor);
 
     pCmd->set(Ufe::Color3f(r, g, b));
     return pCmd;
 }
 
-void UsdLight::color(float r, float g, float b)
-{
-    setLightColor(prim(), Ufe::Color3f(r, g, b));
-}
+void UsdLight::color(float r, float g, float b) { setLightColor(prim(), Ufe::Color3f(r, g, b)); }
 
-Ufe::Color3f UsdLight::color() const
-{
-    return getLightColor(prim());
-}
+Ufe::Color3f UsdLight::color() const { return getLightColor(prim()); }
 
 bool getLightShadowEnable(const UsdPrim& prim)
 {
     const UsdLuxShadowAPI shadowAPI(prim);
-    const UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
+    const UsdAttribute    lightAttribute = shadowAPI.GetShadowEnableAttr();
 
     bool val = false;
     lightAttribute.Get(&val);
@@ -221,52 +214,46 @@ bool getLightShadowEnable(const UsdPrim& prim)
 void setLightShadowEnable(const UsdPrim& prim, bool attrVal)
 {
     const UsdLuxShadowAPI shadowAPI(prim);
-    const UsdAttribute lightAttribute = shadowAPI.GetShadowEnableAttr();
-    
+    const UsdAttribute    lightAttribute = shadowAPI.GetShadowEnableAttr();
+
     lightAttribute.Set(attrVal);
 }
 
 Ufe::Light::ShadowEnableUndoableCommand::Ptr UsdLight::shadowEnableCmd(bool se)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<bool>>(
-       path(), getLightShadowEnable, setLightShadowEnable);
+        path(), getLightShadowEnable, setLightShadowEnable);
 
     pCmd->set(se);
     return pCmd;
 }
 
-void UsdLight::shadowEnable(bool se)
-{
-    setLightShadowEnable(prim(), se);
-}
+void UsdLight::shadowEnable(bool se) { setLightShadowEnable(prim(), se); }
 
-bool UsdLight::shadowEnable() const
-{
-    return getLightShadowEnable(prim());
-}
+bool UsdLight::shadowEnable() const { return getLightShadowEnable(prim()); }
 
 Ufe::Color3f getLightShadowColor(const UsdPrim& prim)
 {
     const UsdLuxShadowAPI shadowAPI(prim);
-    const UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
+    const UsdAttribute    lightAttribute = shadowAPI.GetShadowColorAttr();
 
     GfVec3f val(0.f, 0.f, 0.f);
     lightAttribute.Get(&val);
-    return Ufe::Color3f(val[0], val[1], val[2]); 
+    return Ufe::Color3f(val[0], val[1], val[2]);
 }
 
 void setLightShadowColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
 {
     const UsdLuxShadowAPI shadowAPI(prim);
-    const UsdAttribute lightAttribute = shadowAPI.GetShadowColorAttr();
-    
+    const UsdAttribute    lightAttribute = shadowAPI.GetShadowColorAttr();
+
     lightAttribute.Set(GfVec3f(attrVal.r(), attrVal.g(), attrVal.b()));
 }
 
 Ufe::Light::ShadowColorUndoableCommand::Ptr UsdLight::shadowColorCmd(float r, float g, float b)
 {
-    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Color3f &>>(
-                        path(), getLightShadowColor, setLightShadowColor);
+    auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Color3f&>>(
+        path(), getLightShadowColor, setLightShadowColor);
 
     pCmd->set(Ufe::Color3f(r, g, b));
     return pCmd;
@@ -277,15 +264,12 @@ void UsdLight::shadowColor(float r, float g, float b)
     setLightShadowColor(prim(), Ufe::Color3f(r, g, b));
 }
 
-Ufe::Color3f UsdLight::shadowColor() const
-{
-    return getLightShadowColor(prim());
-}
+Ufe::Color3f UsdLight::shadowColor() const { return getLightShadowColor(prim()); }
 
 float getLightDiffuse(const UsdPrim& prim)
 {
     const UsdLuxLightCommon lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetDiffuseAttr();
+    const UsdAttribute      lightAttribute = lightSchema.GetDiffuseAttr();
 
     float val = 0.f;
     lightAttribute.Get(&val);
@@ -295,8 +279,8 @@ float getLightDiffuse(const UsdPrim& prim)
 void setLightDiffuse(const UsdPrim& prim, float attrVal)
 {
     const UsdLuxLightCommon lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetDiffuseAttr();
-    
+    const UsdAttribute      lightAttribute = lightSchema.GetDiffuseAttr();
+
     lightAttribute.Set(attrVal);
 }
 
@@ -309,20 +293,14 @@ Ufe::Light::DiffuseUndoableCommand::Ptr UsdLight::diffuseCmd(float ld)
     return pCmd;
 }
 
-void UsdLight::diffuse(float ld)
-{
-    setLightDiffuse(prim(), ld);
-}
+void UsdLight::diffuse(float ld) { setLightDiffuse(prim(), ld); }
 
-float UsdLight::diffuse() const
-{
-    return getLightDiffuse(prim());
-}
+float UsdLight::diffuse() const { return getLightDiffuse(prim()); }
 
 float getLightSpecular(const UsdPrim& prim)
 {
     const UsdLuxLightCommon lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetSpecularAttr();
+    const UsdAttribute      lightAttribute = lightSchema.GetSpecularAttr();
 
     float val = 0.f;
     lightAttribute.Get(&val);
@@ -332,8 +310,8 @@ float getLightSpecular(const UsdPrim& prim)
 void setLightSpecular(const UsdPrim& prim, float attrVal)
 {
     const UsdLuxLightCommon lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetSpecularAttr();
-    
+    const UsdAttribute      lightAttribute = lightSchema.GetSpecularAttr();
+
     lightAttribute.Set(attrVal);
 }
 
@@ -346,31 +324,25 @@ Ufe::Light::SpecularUndoableCommand::Ptr UsdLight::specularCmd(float ls)
     return pCmd;
 }
 
-void UsdLight::specular(float ls)
-{
-    setLightSpecular(prim(), ls);
-}
+void UsdLight::specular(float ls) { setLightSpecular(prim(), ls); }
 
-float UsdLight::specular() const
-{
-    return getLightSpecular(prim());
-}
+float UsdLight::specular() const { return getLightSpecular(prim()); }
 
 float getLightAngle(const UsdPrim& prim)
 {
     const UsdLuxDistantLight lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetAngleAttr();
+    const UsdAttribute       lightAttribute = lightSchema.GetAngleAttr();
 
     float val = 0.f;
     lightAttribute.Get(&val);
-    return val; 
+    return val;
 }
 
 void setLightAngle(const UsdPrim& prim, float attrVal)
 {
     const UsdLuxDistantLight lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetAngleAttr();
-    
+    const UsdAttribute       lightAttribute = lightSchema.GetAngleAttr();
+
     lightAttribute.Set(attrVal);
 }
 
@@ -383,20 +355,14 @@ Ufe::Light::AngleUndoableCommand::Ptr UsdDirectionalInterface::angleCmd(float la
     return pCmd;
 }
 
-void UsdDirectionalInterface::angle(float la)
-{
-    setLightAngle(fItem->prim(), la);
-}
+void UsdDirectionalInterface::angle(float la) { setLightAngle(fItem->prim(), la); }
 
-float UsdDirectionalInterface::angle() const
-{
-    return getLightAngle(fItem->prim());
-}
+float UsdDirectionalInterface::angle() const { return getLightAngle(fItem->prim()); }
 
 Ufe::Light::SphereProps getLightSphereProps(const UsdPrim& prim)
 {
     const UsdLuxSphereLight lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
+    const UsdAttribute      lightAttribute = lightSchema.GetRadiusAttr();
 
     Ufe::Light::SphereProps sp;
     lightAttribute.Get(&sp.radius);
@@ -407,23 +373,24 @@ Ufe::Light::SphereProps getLightSphereProps(const UsdPrim& prim)
 void setLightSphereProps(const UsdPrim& prim, const Ufe::Light::SphereProps& attrVal)
 {
     const UsdLuxSphereLight lightSchema(prim);
-    const UsdAttribute lightAttribute = lightSchema.GetRadiusAttr();
-    
+    const UsdAttribute      lightAttribute = lightSchema.GetRadiusAttr();
+
     lightAttribute.Set(attrVal.radius);
 }
 
-Ufe::Light::SpherePropsUndoableCommand::Ptr UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
+Ufe::Light::SpherePropsUndoableCommand::Ptr
+UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light::SphereProps&>>(
-                        fItem->path(), getLightSphereProps, setLightSphereProps);
+        fItem->path(), getLightSphereProps, setLightSphereProps);
 
-    pCmd->set(Ufe::Light::SphereProps{radius, asPoint});
+    pCmd->set(Ufe::Light::SphereProps { radius, asPoint });
     return pCmd;
 }
 
 void UsdSphereInterface::sphereProps(float radius, bool asPoint)
 {
-    setLightSphereProps(fItem->prim(), Ufe::Light::SphereProps {radius, asPoint});
+    setLightSphereProps(fItem->prim(), Ufe::Light::SphereProps { radius, asPoint });
 }
 
 Ufe::Light::SphereProps UsdSphereInterface::sphereProps() const
@@ -434,9 +401,9 @@ Ufe::Light::SphereProps UsdSphereInterface::sphereProps() const
 Ufe::Light::ConeProps getLightConeProps(const UsdPrim& prim)
 {
     const UsdLuxShapingAPI lightSchema(prim);
-    const UsdAttribute focusAttribute = lightSchema.GetShapingFocusAttr();
-    const UsdAttribute coneAngleAttribute = lightSchema.GetShapingConeAngleAttr();
-    const UsdAttribute coneSoftnessAttribute = lightSchema.GetShapingConeSoftnessAttr();
+    const UsdAttribute     focusAttribute = lightSchema.GetShapingFocusAttr();
+    const UsdAttribute     coneAngleAttribute = lightSchema.GetShapingConeAngleAttr();
+    const UsdAttribute     coneSoftnessAttribute = lightSchema.GetShapingConeSoftnessAttr();
 
     Ufe::Light::ConeProps cp;
     focusAttribute.Get(&cp.focus);
@@ -448,27 +415,28 @@ Ufe::Light::ConeProps getLightConeProps(const UsdPrim& prim)
 void setLightConeProps(const UsdPrim& prim, const Ufe::Light::ConeProps& attrVal)
 {
     const UsdLuxShapingAPI lightSchema(prim);
-    const UsdAttribute focusAttribute = lightSchema.GetShapingFocusAttr();
-    const UsdAttribute coneAngleAttribute = lightSchema.GetShapingConeAngleAttr();
-    const UsdAttribute coneSoftnessAttribute = lightSchema.GetShapingConeSoftnessAttr();
-    
+    const UsdAttribute     focusAttribute = lightSchema.GetShapingFocusAttr();
+    const UsdAttribute     coneAngleAttribute = lightSchema.GetShapingConeAngleAttr();
+    const UsdAttribute     coneSoftnessAttribute = lightSchema.GetShapingConeSoftnessAttr();
+
     focusAttribute.Set(attrVal.focus);
     coneAngleAttribute.Set(attrVal.angle);
     coneSoftnessAttribute.Set(attrVal.softness);
 }
 
-Ufe::Light::ConePropsUndoableCommand::Ptr UsdConeInterface::conePropsCmd(float focus, float angle, float softness)
+Ufe::Light::ConePropsUndoableCommand::Ptr
+UsdConeInterface::conePropsCmd(float focus, float angle, float softness)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light::ConeProps&>>(
-                        fItem->path(), getLightConeProps, setLightConeProps);
+        fItem->path(), getLightConeProps, setLightConeProps);
 
-    pCmd->set(Ufe::Light::ConeProps{focus, angle, softness});
+    pCmd->set(Ufe::Light::ConeProps { focus, angle, softness });
     return pCmd;
 }
 
 void UsdConeInterface::coneProps(float focus, float angle, float softness)
 {
-    setLightConeProps(fItem->prim(), Ufe::Light::ConeProps{focus, angle, softness});
+    setLightConeProps(fItem->prim(), Ufe::Light::ConeProps { focus, angle, softness });
 }
 
 Ufe::Light::ConeProps UsdConeInterface::coneProps() const
@@ -479,7 +447,7 @@ Ufe::Light::ConeProps UsdConeInterface::coneProps() const
 bool getLightNormalize(const UsdPrim& prim)
 {
     const UsdLuxRectLight rectLight(prim);
-    const UsdAttribute lightAttribute = rectLight.GetNormalizeAttr();
+    const UsdAttribute    lightAttribute = rectLight.GetNormalizeAttr();
 
     bool val = false;
     lightAttribute.Get(&val);
@@ -489,8 +457,8 @@ bool getLightNormalize(const UsdPrim& prim)
 void setLightNormalize(const UsdPrim& prim, bool attrVal)
 {
     const UsdLuxRectLight rectLight(prim);
-    const UsdAttribute lightAttribute = rectLight.GetNormalizeAttr();
-    
+    const UsdAttribute    lightAttribute = rectLight.GetNormalizeAttr();
+
     lightAttribute.Set(attrVal);
 }
 
@@ -503,15 +471,9 @@ Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl
     return pCmd;
 }
 
-void UsdAreaInterface::normalize(bool ln)
-{
-    setLightNormalize(fItem->prim(), ln);
-}
+void UsdAreaInterface::normalize(bool ln) { setLightNormalize(fItem->prim(), ln); }
 
-bool UsdAreaInterface::normalize() const
-{
-    return getLightNormalize(fItem->prim());
-}
+bool UsdAreaInterface::normalize() const { return getLightNormalize(fItem->prim()); }
 
 std::shared_ptr<Ufe::Light::DirectionalInterface> UsdLight::directionalInterfaceImpl()
 {

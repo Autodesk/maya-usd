@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "UsdLightHandler.h"
+
 #include "UsdLight.h"
 
 #if PXR_VERSION < 2111
@@ -28,9 +29,9 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 #if PXR_VERSION < 2111
-    using UsdLuxLightCommon = pxr::UsdLuxLight;
+using UsdLuxLightCommon = pxr::UsdLuxLight;
 #else
-    using UsdLuxLightCommon = pxr::UsdLuxLightAPI;
+using UsdLuxLightCommon = pxr::UsdLuxLightAPI;
 #endif
 
 UsdLightHandler::UsdLightHandler()

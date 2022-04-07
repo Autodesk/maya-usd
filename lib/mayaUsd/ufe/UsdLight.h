@@ -56,38 +56,37 @@ public:
     // Ufe::Light overrides
     const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
-    Type type() const override;
+    Type                type() const override;
 
     IntensityUndoableCommand::Ptr intensityCmd(float li) override;
-    void intensity(float li) override;
-    float intensity() const override;
+    void                          intensity(float li) override;
+    float                         intensity() const override;
 
     ColorUndoableCommand::Ptr colorCmd(float r, float g, float b) override;
-    void color(float r, float g, float b) override;
-    Ufe::Color3f color() const override;
+    void                      color(float r, float g, float b) override;
+    Ufe::Color3f              color() const override;
 
     ShadowEnableUndoableCommand::Ptr shadowEnableCmd(bool se) override;
-    void shadowEnable(bool se) override;
-    bool shadowEnable() const override;
+    void                             shadowEnable(bool se) override;
+    bool                             shadowEnable() const override;
 
     ShadowColorUndoableCommand::Ptr shadowColorCmd(float r, float g, float b) override;
-    void shadowColor(float r, float g, float b) override;
-    Ufe::Color3f shadowColor() const override;
+    void                            shadowColor(float r, float g, float b) override;
+    Ufe::Color3f                    shadowColor() const override;
 
     DiffuseUndoableCommand::Ptr diffuseCmd(float ld) override;
-    void diffuse(float ld) override;
-    float diffuse() const override;
+    void                        diffuse(float ld) override;
+    float                       diffuse() const override;
 
     SpecularUndoableCommand::Ptr specularCmd(float ls) override;
-    void specular(float ls) override;
-    float specular() const override;
+    void                         specular(float ls) override;
+    float                        specular() const override;
 
 protected:
-
     std::shared_ptr<DirectionalInterface> directionalInterfaceImpl();
-    std::shared_ptr<SphereInterface> sphereInterfaceImpl();
-    std::shared_ptr<ConeInterface> coneInterfaceImpl();
-    std::shared_ptr<AreaInterface> areaInterfaceImpl();
+    std::shared_ptr<SphereInterface>      sphereInterfaceImpl();
+    std::shared_ptr<ConeInterface>        coneInterfaceImpl();
+    std::shared_ptr<AreaInterface>        areaInterfaceImpl();
 
 private:
     UsdSceneItem::Ptr fItem;
@@ -96,47 +95,64 @@ private:
 class UsdDirectionalInterface : public Ufe::Light::DirectionalInterface
 {
 public:
-    UsdDirectionalInterface(const UsdSceneItem::Ptr& item) : fItem(item) {}
+    UsdDirectionalInterface(const UsdSceneItem::Ptr& item)
+        : fItem(item)
+    {
+    }
 
     Ufe::Light::AngleUndoableCommand::Ptr angleCmd(float la) override;
-    void angle(float la) override;
-    float angle() const override;
+    void                                  angle(float la) override;
+    float                                 angle() const override;
+
 private:
-    UsdSceneItem::Ptr fItem;    
+    UsdSceneItem::Ptr fItem;
 };
 
 class UsdSphereInterface : public Ufe::Light::SphereInterface
 {
 public:
-    UsdSphereInterface(const UsdSceneItem::Ptr& item) : fItem(item) {}
+    UsdSphereInterface(const UsdSceneItem::Ptr& item)
+        : fItem(item)
+    {
+    }
 
     Ufe::Light::SpherePropsUndoableCommand::Ptr spherePropsCmd(float radius, bool asPoint) override;
-    void sphereProps(float radius, bool asPoint) override;
-    Ufe::Light::SphereProps sphereProps() const override;
+    void                                        sphereProps(float radius, bool asPoint) override;
+    Ufe::Light::SphereProps                     sphereProps() const override;
+
 private:
-    UsdSceneItem::Ptr fItem;    
+    UsdSceneItem::Ptr fItem;
 };
 
 class UsdConeInterface : public Ufe::Light::ConeInterface
 {
 public:
-    UsdConeInterface(const UsdSceneItem::Ptr& item) : fItem(item) {}
+    UsdConeInterface(const UsdSceneItem::Ptr& item)
+        : fItem(item)
+    {
+    }
 
-    Ufe::Light::ConePropsUndoableCommand::Ptr conePropsCmd(float focus, float angle, float softness) override;
-    void coneProps(float focus, float angle, float softness) override;
+    Ufe::Light::ConePropsUndoableCommand::Ptr
+                          conePropsCmd(float focus, float angle, float softness) override;
+    void                  coneProps(float focus, float angle, float softness) override;
     Ufe::Light::ConeProps coneProps() const override;
+
 private:
-    UsdSceneItem::Ptr fItem;    
+    UsdSceneItem::Ptr fItem;
 };
 
 class UsdAreaInterface : public Ufe::Light::AreaInterface
 {
 public:
-    UsdAreaInterface(const UsdSceneItem::Ptr& item) : fItem(item) {}
+    UsdAreaInterface(const UsdSceneItem::Ptr& item)
+        : fItem(item)
+    {
+    }
 
     Ufe::Light::NormalizeUndoableCommand::Ptr normalizeCmd(bool nl) override;
-    void normalize(bool ln) override;
-    bool normalize() const override;
+    void                                      normalize(bool ln) override;
+    bool                                      normalize() const override;
+
 private:
     UsdSceneItem::Ptr fItem;
 };
