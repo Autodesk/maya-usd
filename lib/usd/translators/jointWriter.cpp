@@ -46,14 +46,25 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnTransform.h>
+#include <maya/MFnSkinCluster.h>
 #include <maya/MItDag.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
+#include <maya/MGlobal.h>
 
 #include <vector>
+
+#define CHECK_MSTATUS_AND_CONTINUE(_status)             \
+{                                                       \
+    MStatus _maya_status = (_status);                   \
+    if ( MStatus::kSuccess != _maya_status )            \
+    {                                                   \
+        continue;                                       \
+    }                                                   \
+}
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -106,44 +117,114 @@ static bool _IsTransformNodeAnimated(const MDagPath& dagPath)
 /// Gets the world-space rest transform for a single dag path.
 static GfMatrix4d _GetJointWorldBindTransform(const MDagPath& dagPath)
 {
+    // In the Maya skin cluster the REAL bindPose data that matters is what
+    // is stored on the skinCluster node in bindPreMatrix. The dagPose node and
+    // the bindPose attribute on the joints is not used when doing deformation.
+    // The values should match up, but someone could edit a scene so they get out of sync.
+    // Get the bindTransform from the skinCluster.
+
     MFnDagNode dagNode(dagPath);
+    MStatus status;
+    MFnDependencyNode dgNode(dagPath.node(), &status);
+
+    MPlug plugWorldMatrixParent = dagNode.findPlug("worldMatrix", true, &status);
+    if (status) {
+        unsigned int numInstance = plugWorldMatrixParent.numElements(&status);
+        TF_VERIFY(numInstance < 2 && status); // if the skeleton is instanced in Maya then what?
+        for(unsigned int instanceIndex =0; instanceIndex <numInstance; instanceIndex++) {
+            MPlug plugWorldMatrix = plugWorldMatrixParent.elementByLogicalIndex(instanceIndex);
+
+            MPlugArray plgsDest;
+            plugWorldMatrix.destinations(plgsDest);
+            GfMatrix4d result;
+            MObject resultNode;
+            bool hasResult = false;
+            
+            for (unsigned int i = 0; i < plgsDest.length(); ++i) {
+                MPlug   plgDest = plgsDest[i];
+                MObject curNode = plgDest.node();
+                if (!curNode.hasFn(MFn::kSkinClusterFilter)) {
+                    continue;
+                }
+
+                // We should be connected to a matrix[x] plug.
+                TF_VERIFY(plgDest.isElement());
+                unsigned int      membersIdx = plgDest.logicalIndex();
+                MFnDependencyNode fnNode(curNode, &status);
+                CHECK_MSTATUS_AND_CONTINUE(status);
+                MPlug plgWorldMatrices = fnNode.findPlug("bindPreMatrix", false, &status);
+                CHECK_MSTATUS_AND_CONTINUE(status);
+                MPlug         plgBindPreMatrix = plgWorldMatrices.elementByLogicalIndex(membersIdx);
+                MObject       plgBindMatrixData = plgBindPreMatrix.asMObject();
+                MFnMatrixData fnMatrixData(plgBindMatrixData, &status);
+                CHECK_MSTATUS_AND_CONTINUE(status);
+                MMatrix mayaResult = fnMatrixData.matrix().inverse();
+
+                if (!hasResult) {
+                    result = GfMatrix4d(mayaResult.matrix);
+                    resultNode = curNode;
+                    hasResult = true;
+                } else {
+                    GfMatrix4d tempResult = GfMatrix4d(mayaResult.matrix);
+                    if (!GfIsClose(tempResult, result, 1e-6)) {
+                        MFnDependencyNode fnResultNode(resultNode, &status);
+                        CHECK_MSTATUS_AND_CONTINUE(status);
+                        MString errorMsg;
+                        errorMsg += "Joint '";
+                        errorMsg += dgNode.name();
+                        errorMsg += "' has different bind poses. bindPreMatrix values on ";
+                        errorMsg += fnResultNode.name();
+                        errorMsg += " and ";
+                        errorMsg += fnNode.name();
+                        errorMsg += " differ. Using bindPreMatrix from ";
+                        errorMsg += fnResultNode.name();
+                        errorMsg += ".";
+                        MGlobal::displayWarning(errorMsg);
+                    }
+                }
+            }
+
+            if (hasResult) {
+                return result;
+            }
+        }
+    }
+
+    // Check if the joint is linked to a bindPose, and attempt to grab the bind transform matrix
+    // there.
+    MPlug   plgMsg = dagNode.findPlug(MPxNode::message, false, &status);
+    if (status && plgMsg.isSource()) {
+        MPlugArray plgsDest;
+        plgMsg.destinations(plgsDest);
+        for (unsigned int i = 0; i < plgsDest.length(); ++i) {
+            MPlug   plgDest = plgsDest[i];
+            MObject curNode = plgDest.node();
+            if (!curNode.hasFn(MFn::kDagPose)) {
+                continue;
+            }
+
+            // We should be connected to a members[x] plug.
+            TF_VERIFY(plgDest.isElement());
+            unsigned int      membersIdx = plgDest.logicalIndex();
+            MFnDependencyNode fnNode(curNode, &status);
+            CHECK_MSTATUS_AND_CONTINUE(status);
+            MPlug plgWorldMatrices = fnNode.findPlug("worldMatrix", false, &status);
+            CHECK_MSTATUS_AND_CONTINUE(status);
+            MPlug         plgWorldMatrix = plgWorldMatrices.elementByLogicalIndex(membersIdx);
+            MObject       plgWorldMatrixData = plgWorldMatrix.asMObject();
+            MFnMatrixData fnMatrixData(plgWorldMatrixData, &status);
+            CHECK_MSTATUS_AND_CONTINUE(status);
+            MMatrix result = fnMatrixData.matrix();
+
+            return GfMatrix4d(result.matrix);
+        }
+    }
+
+    // If the dagPose node doesn't have an extra for our joint there could be something useful in
+    // the bindPose attribute of the joint. Check there.
     MMatrix    restTransformWorld;
     if (UsdMayaUtil::getPlugMatrix(dagNode, "bindPose", &restTransformWorld)) {
         return GfMatrix4d(restTransformWorld.matrix);
-    }
-    // NOTE: (yliangsiew) Instead of assuming an identity matrix, we check if the joint is linked to
-    // a corresponding bindPose, and attempt to grab the bind transform matrix there. If it's
-    // _still_ empty, then we assume identity. This catches odd edge cases where a joint is bound,
-    // but its `bindPose` attribute is empty and the `bindPose` node stores the actual bind
-    // transform matrix.
-    MStatus status;
-    MPlug   plgMsg = dagNode.findPlug(MPxNode::message, false, &status);
-    if (!status || !plgMsg.isSource()) {
-        return GfMatrix4d(1);
-    }
-    MPlugArray plgsDest;
-    plgMsg.destinations(plgsDest);
-    for (unsigned int i = 0; i < plgsDest.length(); ++i) {
-        MPlug   plgDest = plgsDest[i];
-        MObject curNode = plgDest.node();
-        if (!curNode.hasFn(MFn::kDagPose)) {
-            continue;
-        }
-
-        // NOTE: (yliangsiew) We should be connected to a members[x] plug.
-        TF_VERIFY(plgDest.isElement());
-        unsigned int      membersIdx = plgDest.logicalIndex();
-        MFnDependencyNode fnNode(curNode, &status);
-        CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
-        MPlug plgWorldMatrices = fnNode.findPlug("worldMatrix", false, &status);
-        CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
-        MPlug         plgWorldMatrix = plgWorldMatrices.elementByLogicalIndex(membersIdx);
-        MObject       plgWorldMatrixData = plgWorldMatrix.asMObject();
-        MFnMatrixData fnMatrixData(plgWorldMatrixData, &status);
-        CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
-        MMatrix result = fnMatrixData.matrix();
-
-        return GfMatrix4d(result.matrix);
     }
 
     return GfMatrix4d(1);
@@ -283,52 +364,6 @@ bool _GetLocalTransformForDagPoseMember(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     *xform = GfMatrix4d(plugMatrixData.matrix().matrix);
-    return true;
-}
-
-/// Get local-space bind transforms to use as rest transforms.
-/// The dagPose is expected to hold the local transforms.
-static bool _GetJointLocalRestTransformsFromDagPose(
-    const SdfPath&               skelPath,
-    const MDagPath&              rootJoint,
-    const std::vector<MDagPath>& jointDagPaths,
-    VtMatrix4dArray*             xforms)
-{
-    // Use whatever bindPose the root joint is a member of.
-    MObject bindPose = _FindBindPose(rootJoint);
-    if (bindPose.isNull()) {
-        TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
-            .Msg(
-                "%s -- Could not find a dagPose node holding a bind pose: "
-                "The Skeleton's 'restTransforms' property will be "
-                "calculated from the 'bindTransforms'.\n",
-                skelPath.GetText());
-        return false;
-    }
-
-    MStatus           status;
-    MFnDependencyNode bindPoseDep(bindPose, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    std::vector<unsigned int> memberIndices;
-    if (!_FindDagPoseMembers(bindPoseDep, jointDagPaths, &memberIndices)) {
-        return false;
-    }
-
-    xforms->resize(jointDagPaths.size());
-    for (size_t i = 0; i < xforms->size(); ++i) {
-        if (!_GetLocalTransformForDagPoseMember(
-                bindPoseDep, memberIndices[i], xforms->data() + i)) {
-            TF_WARN(
-                "%s -- Failed retrieving the local transform of joint '%s' "
-                "from dagPose '%s': The Skeleton's 'restTransforms' "
-                "property will be calculated from the 'bindTransforms'.",
-                skelPath.GetText(),
-                jointDagPaths[i].fullPathName().asChar(),
-                bindPoseDep.name().asChar());
-            return false;
-        }
-    }
     return true;
 }
 
@@ -555,9 +590,9 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
     UsdMayaWriteUtil::SetAttribute(
         _skel.GetBindTransformsAttr(), bindXforms, UsdTimeCode::Default(), _GetSparseValueWriter());
 
+    // Create something reasonable for rest transforms
     VtMatrix4dArray restXforms;
-    if (_GetJointLocalRestTransformsFromDagPose(skelPath, GetDagPath(), _joints, &restXforms)
-        || _GetJointLocalRestTransformsFromBindTransforms(_skel, restXforms)) {
+    if (_GetJointLocalRestTransformsFromBindTransforms(_skel, restXforms, _jointHierarchyRootPath)) {
         UsdMayaWriteUtil::SetAttribute(
             _skel.GetRestTransformsAttr(),
             restXforms,
