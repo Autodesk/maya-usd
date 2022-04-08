@@ -78,7 +78,7 @@ bool stringBeginsWithDigit(const std::string& inputString)
 
 // This function calculates the position index for a given layer across all
 // the site's local LayerStacks
-uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
+uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer, bool& foundLayer)
 {
     uint32_t position { 0 };
 
@@ -96,6 +96,7 @@ uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
         // to find the layer
         for (SdfLayerRefPtr const& l : layerStack->GetLayers()) {
             if (l == layer) {
+                foundLayer = true;
                 return position;
             }
             ++position;
@@ -451,8 +452,15 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
         return false;
     }
 
+    bool foundLayer = false;
+
     // get the index to edit target layer
-    const auto targetLayerIndex = findLayerIndex(prim, editTarget.GetLayer());
+    const auto targetLayerIndex = findLayerIndex(prim, editTarget.GetLayer(), foundLayer);
+
+    // If the edit target layer not found in the prim's layer stack, we return true to allow
+    // new future edits go to the edit target layer.
+    if (!foundLayer)
+        return true;
 
     // HS March 22th,2021
     // TODO: "Value Clips" are UsdStage-level feature, unknown to Pcp.So if the attribute in
@@ -470,14 +478,15 @@ bool isAttributeEditAllowed(const PXR_NS::UsdAttribute& attr, std::string* errMs
     if (!propertyStack.empty()) {
         // get the strongest layer that has the attr.
         auto strongestLayer = attr.GetPropertyStack().front()->GetLayer();
+        foundLayer = false;
 
         // compare the calculated index between the "attr" and "edit target" layers.
-        if (findLayerIndex(prim, strongestLayer) < targetLayerIndex) {
+        if (findLayerIndex(prim, strongestLayer, foundLayer) < targetLayerIndex) {
             if (errMsg) {
                 *errMsg = TfStringPrintf(
                     "Cannot edit [%s] attribute because there is a stronger opinion in [%s].",
-                    attr.GetBaseName().GetText(),
-                    strongestLayer->GetDisplayName().c_str());
+                    attr.GetName().GetText(),
+                    strongestLayer->GetIdentifier().c_str());
             }
 
             return false;
