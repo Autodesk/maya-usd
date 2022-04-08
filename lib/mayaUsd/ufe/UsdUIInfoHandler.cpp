@@ -69,20 +69,21 @@ void addMetadataCount(
     }
 }
 
-const double* getInvisibleColor()
+std::vector<double> getInvisibleColor()
 {
-    auto colorInit = []() {
-        std::vector<double> rgb(3);
-        MDoubleArray        outlinerInvisibleColor;
+    static std::vector<double> rgb;
+    static bool                initialized = false;
+    if (!initialized) {
+        MDoubleArray outlinerInvisibleColor;
         if (MGlobal::executeCommand(
                 "displayRGBColor -q \"outlinerInvisibleColor\"", outlinerInvisibleColor)
             && (outlinerInvisibleColor.length() == 3)) {
+            rgb.resize(3);
             outlinerInvisibleColor.get(rgb.data());
+            initialized = true;
         }
-        return rgb;
-    };
-    static const std::vector<double> rgb = colorInit();
-    return rgb.data();
+    }
+    return rgb;
 }
 
 } // namespace
@@ -124,11 +125,15 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
         if (!usdItem->prim().IsActive()) {
             changed = true;
             info.fontStrikeout = true;
-            const double* rgb = getInvisibleColor();
-            info.textFgColor.set(
-                static_cast<float>(rgb[0]), static_cast<float>(rgb[1]), static_cast<float>(rgb[2]));
-        } else {
-            info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
+            const std::vector<double> rgb = getInvisibleColor();
+            if (rgb.size() == 3) {
+                info.textFgColor.set(
+                    static_cast<float>(rgb[0]),
+                    static_cast<float>(rgb[1]),
+                    static_cast<float>(rgb[2]));
+            } else {
+                info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
+            }
         }
     }
 
