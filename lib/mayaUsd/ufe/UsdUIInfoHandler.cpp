@@ -68,6 +68,23 @@ void addMetadataCount(
         addMetadataStrings(refs.size(), tooltip, needComma, singular, plural);
     }
 }
+
+const double* getInvisibleColor()
+{
+    auto colorInit = []() {
+        std::vector<double> rgb(3);
+        MDoubleArray        outlinerInvisibleColor;
+        if (MGlobal::executeCommand(
+                "displayRGBColor -q \"outlinerInvisibleColor\"", outlinerInvisibleColor)
+            && (outlinerInvisibleColor.length() == 3)) {
+            outlinerInvisibleColor.get(rgb.data());
+        }
+        return rgb;
+    };
+    static const std::vector<double> rgb = colorInit();
+    return rgb.data();
+}
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -76,6 +93,15 @@ namespace ufe {
 UsdUIInfoHandler::UsdUIInfoHandler()
     : Ufe::UIInfoHandler()
 {
+    // Retrieve the invisible color now so it gets initialized.
+    // We *cannot* intialize it in treeViewCellInfo() because
+    // that function gets called in a paint event and calling
+    // a command in a painting event can cause a recursive paint
+    // event if commands echoing is on, which can corrupt the
+    // Qt paint internal which lead to a crash. Typical symptom
+    // is that the state variable of the Qt paint engine becomes
+    // null midway through the repaint.
+    getInvisibleColor();
 }
 
 UsdUIInfoHandler::~UsdUIInfoHandler() { }
@@ -98,19 +124,11 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
         if (!usdItem->prim().IsActive()) {
             changed = true;
             info.fontStrikeout = true;
-            MDoubleArray outlinerInvisibleColor;
-            if (MGlobal::executeCommand(
-                    "displayRGBColor -q \"outlinerInvisibleColor\"", outlinerInvisibleColor)
-                && (outlinerInvisibleColor.length() == 3)) {
-                double rgb[3];
-                outlinerInvisibleColor.get(rgb);
-                info.textFgColor.set(
-                    static_cast<float>(rgb[0]),
-                    static_cast<float>(rgb[1]),
-                    static_cast<float>(rgb[2]));
-            } else {
-                info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
-            }
+            const double* rgb = getInvisibleColor();
+            info.textFgColor.set(
+                static_cast<float>(rgb[0]), static_cast<float>(rgb[1]), static_cast<float>(rgb[2]));
+        } else {
+            info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
         }
     }
 
