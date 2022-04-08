@@ -362,8 +362,13 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.pickWalk(d='down')
         cmds.delete()
 
-        # The proxy shape should now have no UFE child items (since we skip inactive).
-        self.assertFalse(proxyShapehier.hasChildren())
+        # The proxy shape should now have no UFE child items (since we skip inactive)
+        # but hasChildren still reports true for inactive to allow the caller to then
+        # do conditional inactive filtering.
+        if mayaUtils.mayaMajorVersion() >= 2023:
+            self.assertFalse(proxyShapehier.hasChildren())
+        else:
+            self.assertTrue(proxyShapehier.hasChildren())
         self.assertEqual(len(proxyShapehier.children()), 0)
 
         # Add another Xform prim (which should get a unique name taking into
