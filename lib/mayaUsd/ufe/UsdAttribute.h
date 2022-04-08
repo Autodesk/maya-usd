@@ -109,7 +109,7 @@ protected:
 class AttrDefHandle : public AttrHandle
 {
 public:
-    AttrDefHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::Ptr& attrDef);
+    AttrDefHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef);
 
     bool isAuthored() const { return fUsdAttr.IsValid(); }
     bool hasValue() const final;
@@ -129,7 +129,7 @@ public:
     bool hasMetadata(const std::string& key) const final;
 
 private:
-    const Ufe::AttributeDef::Ptr fAttrDef;
+    const Ufe::AttributeDef::ConstPtr fAttrDef;
 };
 
 //! \brief Internal helper class to implement the pure virtual methods from Ufe::Attribute.

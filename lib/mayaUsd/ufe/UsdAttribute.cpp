@@ -352,7 +352,7 @@ AttrHandle::AttrHandle(const PXR_NS::UsdPrim& prim)
 // AttrDefHandle:
 //------------------------------------------------------------------------------
 
-AttrDefHandle::AttrDefHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::Ptr& attrDef)
+AttrDefHandle::AttrDefHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef)
     : AttrHandle(prim)
     , fAttrDef(attrDef)
 {
@@ -643,15 +643,15 @@ template <> std::string TypedUsdAttribute<std::string>::get() const
 
 template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
 {
-     // We need to figure out if the USDAttribute is holding a TfToken or string.
+    // We need to figure out if the USDAttribute is holding a TfToken or string.
     const std::string typeName = fAttrHandle->typeName();
     if (typeName == Ufe::Attribute::kString) {
         setUsdAttr<std::string>(fAttrHandle, value);
-         return;
+        return;
     } else if (typeName == Ufe::Attribute::kEnumString) {
-         PXR_NS::TfToken tok(value);
+        PXR_NS::TfToken tok(value);
         setUsdAttr<PXR_NS::TfToken>(fAttrHandle, tok);
-         return;
+        return;
      }
 
     // If we get here it means the USDAttribute type wasn't TfToken or string.

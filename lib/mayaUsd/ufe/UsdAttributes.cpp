@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "UsdAttributes.h"
+#include "UsdShaderNodeDefHandler.h"
 
 #include "Utils.h"
 
@@ -37,11 +38,19 @@ static constexpr char kErrorMsgInvalidAttribute[] = "Invalid USDAttribute!";
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+const std::string INPUT_ATTR_PREFIX = "inputs:";
+const std::string OUTPUT_ATTR_PREFIX = "outputs:";
+
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
     : Ufe::Attributes()
     , fItem(item)
+    , fShaderNodeDef(nullptr)
 {
-    fPrim = item->prim();
+    if (item) {
+        fPrim = item->prim();
+    }
+    UsdShaderNodeDefHandler::Ptr shaderNodeDefHandler = UsdShaderNodeDefHandler::create();
+    fShaderNodeDef = shaderNodeDefHandler->definition(item);
 }
 
 UsdAttributes::~UsdAttributes() { }
@@ -63,7 +72,26 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
     PXR_NS::TfToken      tok(name);
     PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
-    return getUfeTypeForAttribute(usdAttr);
+    if (usdAttr.IsValid()) {
+        return getUfeTypeForAttribute(usdAttr);
+    } else {
+        if (!fShaderNodeDef || !fShaderNodeDef->isValid()) {
+            return nullptr;
+        }
+        Ufe::AttributeDefs inputs = fShaderNodeDef->inputs();
+        for (auto const& input : inputs) {
+            if (INPUT_ATTR_PREFIX + input->name() == name) {
+                return input->type();
+            }
+        }
+        Ufe::AttributeDefs outputs = fShaderNodeDef->outputs();
+        for (auto const& output : outputs) {
+            if (INPUT_ATTR_PREFIX + output->name() == name) {
+                return output->type();
+            }
+        }
+    }
+    return nullptr;
 }
 
 Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
@@ -81,31 +109,59 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     // No attribute for the input name was found -> create one.
     PXR_NS::TfToken      tok(name);
     PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
-    Ufe::Attribute::Type newAttrType = getUfeTypeForAttribute(usdAttr);
-    Ufe::Attribute::Ptr  newAttr;
+    AttrHandle::Ptr attrHandle = nullptr;
+    Ufe::Attribute::Type newAttrType;
+    if (usdAttr.IsValid()) {
+        attrHandle = std::make_shared<AttrHandle>(fPrim, usdAttr);
+        newAttrType = getUfeTypeForAttribute(usdAttr);
+    } else {
+        if (!fShaderNodeDef || !fShaderNodeDef->isValid()) {
+            return nullptr;
+        }
+        Ufe::AttributeDefs inputs = fShaderNodeDef->inputs();
+        for (auto const& input : inputs) {
+            if (INPUT_ATTR_PREFIX + input->name() == name) {
+                attrHandle = std::make_shared<AttrDefHandle>(fPrim, input);
+                newAttrType = input->type();
+            }
+        }
+        if (!attrHandle) {
+            Ufe::AttributeDefs outputs = fShaderNodeDef->outputs();
+            for (auto const& output : outputs) {
+                if (INPUT_ATTR_PREFIX + output->name() == name) {
+                    attrHandle = std::make_shared<AttrDefHandle>(fPrim, output);
+                    newAttrType = output->type();
+                }
+            }
+        }
+    }
+    if (!attrHandle) {
+        return nullptr;
+    }
 
+    Ufe::Attribute::Ptr newAttr;
     if (newAttrType == Ufe::Attribute::kBool) {
-        newAttr = UsdAttributeBool::create(fItem, usdAttr);
+        newAttr = UsdAttributeBool::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kInt) {
-        newAttr = UsdAttributeInt::create(fItem, usdAttr);
+        newAttr = UsdAttributeInt::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kFloat) {
-        newAttr = UsdAttributeFloat::create(fItem, usdAttr);
+        newAttr = UsdAttributeFloat::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kDouble) {
-        newAttr = UsdAttributeDouble::create(fItem, usdAttr);
+        newAttr = UsdAttributeDouble::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kString) {
-        newAttr = UsdAttributeString::create(fItem, usdAttr);
+        newAttr = UsdAttributeString::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kColorFloat3) {
-        newAttr = UsdAttributeColorFloat3::create(fItem, usdAttr);
+        newAttr = UsdAttributeColorFloat3::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kEnumString) {
-        newAttr = UsdAttributeEnumString::create(fItem, usdAttr);
+        newAttr = UsdAttributeEnumString::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kInt3) {
-        newAttr = UsdAttributeInt3::create(fItem, usdAttr);
+        newAttr = UsdAttributeInt3::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kFloat3) {
-        newAttr = UsdAttributeFloat3::create(fItem, usdAttr);
+        newAttr = UsdAttributeFloat3::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kDouble3) {
-        newAttr = UsdAttributeDouble3::create(fItem, usdAttr);
+        newAttr = UsdAttributeDouble3::create(fItem, attrHandle);
     } else if (newAttrType == Ufe::Attribute::kGeneric) {
-        newAttr = UsdAttributeGeneric::create(fItem, usdAttr);
+        newAttr = UsdAttributeGeneric::create(fItem, attrHandle);
     } else {
         UFE_ASSERT_MSG(false, kErrorMsgUnknown);
     }
@@ -115,11 +171,22 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 
 std::vector<std::string> UsdAttributes::attributeNames() const
 {
-    auto                     primAttrs = fPrim.GetAttributes();
     std::vector<std::string> names;
-    names.reserve(primAttrs.size());
-    for (const auto& attr : primAttrs) {
-        names.push_back(attr.GetName());
+    if (fShaderNodeDef && fShaderNodeDef->isValid()) {
+        Ufe::AttributeDefs inputs = fShaderNodeDef->inputs();
+        for (auto const& input : inputs) {
+            names.push_back(INPUT_ATTR_PREFIX + input->name());
+        }
+        Ufe::AttributeDefs outputs = fShaderNodeDef->outputs();
+        for (auto const& output : outputs) {
+            names.push_back(INPUT_ATTR_PREFIX + output->name());
+        }
+    } else if (fPrim) {
+        auto primAttrs = fPrim.GetAttributes();
+        names.reserve(primAttrs.size());
+        for (const auto& attr : primAttrs) {
+            names.push_back(attr.GetName());
+        }
     }
     return names;
 }
@@ -127,7 +194,22 @@ std::vector<std::string> UsdAttributes::attributeNames() const
 bool UsdAttributes::hasAttribute(const std::string& name) const
 {
     PXR_NS::TfToken tkName(name);
-    return fPrim.HasAttribute(tkName);
+    if (fPrim.HasAttribute(tkName)) {
+        return true;
+    }
+    Ufe::AttributeDefs inputs = fShaderNodeDef->inputs();
+    for (auto const& input : inputs) {
+        if (input->name() == tkName.GetString()) {
+            return true;
+        }
+    }
+    Ufe::AttributeDefs outputs = fShaderNodeDef->outputs();
+    for (auto const& output : outputs) {
+        if (output->name() == tkName.GetString()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 Ufe::Attribute::Type
