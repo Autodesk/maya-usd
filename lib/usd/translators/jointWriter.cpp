@@ -45,26 +45,25 @@
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMatrixData.h>
-#include <maya/MFnTransform.h>
 #include <maya/MFnSkinCluster.h>
+#include <maya/MFnTransform.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDag.h>
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
-#include <maya/MGlobal.h>
 
 #include <vector>
 
-#define CHECK_MSTATUS_AND_CONTINUE(_status)             \
-{                                                       \
-    MStatus _maya_status = (_status);                   \
-    if ( MStatus::kSuccess != _maya_status )            \
-    {                                                   \
-        continue;                                       \
-    }                                                   \
-}
+#define CHECK_MSTATUS_AND_CONTINUE(_status)      \
+    {                                            \
+        MStatus _maya_status = (_status);        \
+        if (MStatus::kSuccess != _maya_status) { \
+            continue;                            \
+        }                                        \
+    }
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -123,23 +122,23 @@ static GfMatrix4d _GetJointWorldBindTransform(const MDagPath& dagPath)
     // The values should match up, but someone could edit a scene so they get out of sync.
     // Get the bindTransform from the skinCluster.
 
-    MFnDagNode dagNode(dagPath);
-    MStatus status;
+    MFnDagNode        dagNode(dagPath);
+    MStatus           status;
     MFnDependencyNode dgNode(dagPath.node(), &status);
 
     MPlug plugWorldMatrixParent = dagNode.findPlug("worldMatrix", true, &status);
     if (status) {
         unsigned int numInstance = plugWorldMatrixParent.numElements(&status);
         TF_VERIFY(numInstance < 2 && status); // if the skeleton is instanced in Maya then what?
-        for(unsigned int instanceIndex =0; instanceIndex <numInstance; instanceIndex++) {
+        for (unsigned int instanceIndex = 0; instanceIndex < numInstance; instanceIndex++) {
             MPlug plugWorldMatrix = plugWorldMatrixParent.elementByLogicalIndex(instanceIndex);
 
             MPlugArray plgsDest;
             plugWorldMatrix.destinations(plgsDest);
             GfMatrix4d result;
-            MObject resultNode;
-            bool hasResult = false;
-            
+            MObject    resultNode;
+            bool       hasResult = false;
+
             for (unsigned int i = 0; i < plgsDest.length(); ++i) {
                 MPlug   plgDest = plgsDest[i];
                 MObject curNode = plgDest.node();
@@ -192,7 +191,7 @@ static GfMatrix4d _GetJointWorldBindTransform(const MDagPath& dagPath)
 
     // Check if the joint is linked to a bindPose, and attempt to grab the bind transform matrix
     // there.
-    MPlug   plgMsg = dagNode.findPlug(MPxNode::message, false, &status);
+    MPlug plgMsg = dagNode.findPlug(MPxNode::message, false, &status);
     if (status && plgMsg.isSource()) {
         MPlugArray plgsDest;
         plgMsg.destinations(plgsDest);
@@ -222,7 +221,7 @@ static GfMatrix4d _GetJointWorldBindTransform(const MDagPath& dagPath)
 
     // If the dagPose node doesn't have an extra for our joint there could be something useful in
     // the bindPose attribute of the joint. Check there.
-    MMatrix    restTransformWorld;
+    MMatrix restTransformWorld;
     if (UsdMayaUtil::getPlugMatrix(dagNode, "bindPose", &restTransformWorld)) {
         return GfMatrix4d(restTransformWorld.matrix);
     }
@@ -592,7 +591,8 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
 
     // Create something reasonable for rest transforms
     VtMatrix4dArray restXforms;
-    if (_GetJointLocalRestTransformsFromBindTransforms(_skel, restXforms, _jointHierarchyRootPath)) {
+    if (_GetJointLocalRestTransformsFromBindTransforms(
+            _skel, restXforms, _jointHierarchyRootPath)) {
         UsdMayaWriteUtil::SetAttribute(
             _skel.GetRestTransformsAttr(),
             restXforms,
