@@ -277,7 +277,7 @@ TEST(EventDispatcher, triggerEvent2)
 TEST(EventScheduler, registerEvent)
 {
     EventScheduler registrar(&g_eventSystem);
-    int            associated=0;
+    int            associated = 0;
     EventId id1 = registrar.registerEvent("eventName", kUserSpecifiedEventType, &associated, 0);
     EXPECT_TRUE(id1 != 0);
     auto eventInfo = registrar.event(id1);
@@ -316,7 +316,7 @@ TEST(EventScheduler, registerEvent)
 TEST(EventScheduler, registerChildEvent)
 {
     EventScheduler registrar(&g_eventSystem);
-    int            associated=0;
+    int            associated = 0;
     EventId id1 = registrar.registerEvent("EventType1", kUserSpecifiedEventType, &associated, 0);
     EXPECT_TRUE(id1 != 0);
     auto parentEventInfo = registrar.event(id1);
@@ -361,7 +361,7 @@ TEST(EventScheduler, registerChildEvent)
 TEST(EventScheduler, registerCallback)
 {
     EventScheduler registrar(&g_eventSystem);
-    int            associated=0;
+    int            associated = 0;
     EventId id1 = registrar.registerEvent("EventType1", kUserSpecifiedEventType, &associated, 0);
     EXPECT_TRUE(id1 != 0);
     auto parentEventInfo = registrar.event(id1);
