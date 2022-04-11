@@ -22,6 +22,7 @@
 #include <pxr/usd/usd/variantSets.h>
 
 #include <maya/MDoubleArray.h>
+#include <maya/MEventMessage.h>
 #include <maya/MGlobal.h>
 
 #include <map>
@@ -69,30 +70,28 @@ void addMetadataCount(
     }
 }
 
-std::vector<double> getInvisibleColor()
+std::vector<double>& getInvisibleColor()
 {
     static std::vector<double> rgb;
-    static bool                initialized = false;
-    if (!initialized) {
-        MDoubleArray outlinerInvisibleColor;
-        if (MGlobal::executeCommand(
-                "displayRGBColor -q \"outlinerInvisibleColor\"", outlinerInvisibleColor)
-            && (outlinerInvisibleColor.length() == 3)) {
-            rgb.resize(3);
-            outlinerInvisibleColor.get(rgb.data());
-            initialized = true;
-        }
-    }
     return rgb;
 }
 
-} // namespace
+void updateInvisibleColor()
+{
+    MDoubleArray color;
+    MGlobal::executeCommand("displayRGBColor -q \"outlinerInvisibleColor\"", color);
 
-namespace MAYAUSD_NS_DEF {
-namespace ufe {
+    // Note: support future possible alpha channel for invisible color.
+    if (color.length() >= 3) {
+        auto& rgb = getInvisibleColor();
+        rgb.resize(color.length());
+        color.get(rgb.data());
+    }
+}
 
-UsdUIInfoHandler::UsdUIInfoHandler()
-    : Ufe::UIInfoHandler()
+// Note: the on-color-changed callback function is declared taking a void pointer
+//       to be compatible with MMessage callback API.
+void onColorChanged(void*)
 {
     // Retrieve the invisible color now so it gets initialized.
     // We *cannot* intialize it in treeViewCellInfo() because
@@ -102,10 +101,35 @@ UsdUIInfoHandler::UsdUIInfoHandler()
     // Qt paint internal which lead to a crash. Typical symptom
     // is that the state variable of the Qt paint engine becomes
     // null midway through the repaint.
-    getInvisibleColor();
+    //
+    // In addition, calling MEl on every repaint of every item that
+    // uses the invisible color would be slow.
+    updateInvisibleColor();
 }
 
-UsdUIInfoHandler::~UsdUIInfoHandler() { }
+MCallbackId colorChangedCallbackId = 0;
+
+} // namespace
+
+namespace MAYAUSD_NS_DEF {
+namespace ufe {
+
+UsdUIInfoHandler::UsdUIInfoHandler()
+    : Ufe::UIInfoHandler()
+{
+    // Register a callback to invalidate the invisible color.
+    colorChangedCallbackId
+        = MEventMessage::addEventCallback("DisplayRGBColorChanged", onColorChanged);
+
+    // Immediately update the invisible color to get a starting current value.
+    updateInvisibleColor();
+}
+
+UsdUIInfoHandler::~UsdUIInfoHandler()
+{
+    // Unregister the callback used to invalidate the invisible color.
+    MMessage::removeCallback(colorChangedCallbackId);
+}
 
 /*static*/
 UsdUIInfoHandler::Ptr UsdUIInfoHandler::create() { return std::make_shared<UsdUIInfoHandler>(); }
@@ -126,7 +150,7 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
             changed = true;
             info.fontStrikeout = true;
             const std::vector<double> rgb = getInvisibleColor();
-            if (rgb.size() == 3) {
+            if (rgb.size() >= 3) {
                 info.textFgColor.set(
                     static_cast<float>(rgb[0]),
                     static_cast<float>(rgb[1]),
