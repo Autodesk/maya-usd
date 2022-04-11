@@ -79,9 +79,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 //   Create a SkinCluster rig:
 //
 //    set mesh's transform to inheritsTransform=0 to prevent double transforms
-//    set mesh's transform to match the USD gprim's geomBindTransform
-//      sgustafson: Seems like this should be unnecessary, but I see incorrect
-//      results without doing this.
 //    create skinClusterGroupParts node of type groupParts
 //      set groupParts.inputComponents = vtx[*]
 //    create skinClusterGroupId node of type groupId
@@ -1041,36 +1038,11 @@ bool _ConfigureSkinnedObjectTransform(
     MFnDependencyNode transformDep(transform, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    // Make sure transforms are not ineherited.
+    // Make sure transforms are not inherited.
     // Otherwise we get a double transform when a transform ancestor
     // affects both this object and the joints that drive the skinned object.
     if (!UsdMayaUtil::setPlugValue(transformDep, _MayaTokens->inheritsTransform, false)) {
         return false;
-    }
-
-    // The transform needs to be set to the geomBindTransform.
-    GfVec3d t, r, s;
-    if (UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
-            skinningQuery.GetGeomBindTransform(), &t, &r, &s)) {
-
-        for (const auto& pair : { std::make_pair(t, _MayaTokens->translates),
-                                  std::make_pair(r, _MayaTokens->rotates),
-                                  std::make_pair(s, _MayaTokens->scales) }) {
-
-            for (int c = 0; c < 3; ++c) {
-                MPlug plug = transformDep.findPlug(pair.second[c], &status);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-
-                // Before setting each plug, make sure there are no connections.
-                // Usd import may have already wired up some connections
-                // (eg., animation channels)
-                if (!_ClearIncomingConnections(plug))
-                    return false;
-
-                status = plug.setValue(pair.first[c]);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-            }
-        }
     }
 
     return true;
