@@ -591,8 +591,7 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
 
     // Create something reasonable for rest transforms
     VtMatrix4dArray restXforms;
-    if (_GetJointLocalRestTransformsFromBindTransforms(
-            _skel, restXforms)) {
+    if (_GetJointLocalRestTransformsFromBindTransforms(_skel, restXforms)) {
         UsdMayaWriteUtil::SetAttribute(
             _skel.GetRestTransformsAttr(),
             restXforms,
