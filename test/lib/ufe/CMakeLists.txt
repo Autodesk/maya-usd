@@ -48,9 +48,11 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    list(APPEND TEST_SCRIPT_FILES
-        testLight.py
-    )
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4004)
+        list(APPEND TEST_SCRIPT_FILES
+            testLight.py
+        )
+    endif()
 
     if(CMAKE_WANT_MATERIALX_BUILD)
         list(APPEND TEST_SCRIPT_FILES

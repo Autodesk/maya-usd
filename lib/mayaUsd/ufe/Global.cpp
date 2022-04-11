@@ -44,7 +44,9 @@
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4004)
 #include <mayaUsd/ufe/UsdLightHandler.h>
+#endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
@@ -159,9 +161,10 @@ MStatus initialize()
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
     handlers.cameraHandler = UsdCameraHandler::create();
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4004)
     handlers.lightHandler = UsdLightHandler::create();
+#endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
-
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 #endif
 #endif
