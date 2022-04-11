@@ -79,9 +79,10 @@ class LightTestCase(unittest.TestCase):
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
 
-    def _TestLightAttributes(self, ufeLight, usdLight):
+    def _TestSpotLight(self, ufeLight, usdLight):
         # Trust that the USD API works correctly, validate that UFE gives us
         # the same answers
+        self.assertEqual(ufeLight.type(), ufe.Light.Spot)
         self._TestIntensity(ufeLight, usdLight)
         self._TestDiffuse(ufeLight, usdLight)
         self._TestSpecular(ufeLight, usdLight)
@@ -90,6 +91,53 @@ class LightTestCase(unittest.TestCase):
         self._TestShadowColor(ufeLight, usdLight)
         self._TestSphereProps(ufeLight, usdLight)
         self._TestConeProps(ufeLight, usdLight)
+        self.assertEqual(None, ufeLight.directionalInterface())
+        self.assertEqual(None, ufeLight.areaInterface())
+
+    def _TestPointLight(self, ufeLight, usdLight):
+        # Trust that the USD API works correctly, validate that UFE gives us
+        # the same answers
+        self.assertEqual(ufeLight.type(), ufe.Light.Point)
+        self._TestIntensity(ufeLight, usdLight)
+        self._TestDiffuse(ufeLight, usdLight)
+        self._TestSpecular(ufeLight, usdLight)
+        self._TestShadowEnable(ufeLight, usdLight)
+        self._TestColor(ufeLight, usdLight)
+        self._TestShadowColor(ufeLight, usdLight)
+        self._TestSphereProps(ufeLight, usdLight)
+        self.assertEqual(None, ufeLight.coneInterface())
+        self.assertEqual(None, ufeLight.directionalInterface())
+        self.assertEqual(None, ufeLight.areaInterface())
+
+    def _TestDirectionalLight(self, ufeLight, usdLight):
+        # Trust that the USD API works correctly, validate that UFE gives us
+        # the same answers
+        self.assertEqual(ufeLight.type(), ufe.Light.Directional)
+        self._TestIntensity(ufeLight, usdLight)
+        self._TestDiffuse(ufeLight, usdLight)
+        self._TestSpecular(ufeLight, usdLight)
+        self._TestShadowEnable(ufeLight, usdLight)
+        self._TestColor(ufeLight, usdLight)
+        self._TestShadowColor(ufeLight, usdLight)
+        self._TestDirectionalProps(ufeLight, usdLight)
+        self.assertEqual(None, ufeLight.coneInterface())
+        self.assertEqual(None, ufeLight.sphereInterface())
+        self.assertEqual(None, ufeLight.areaInterface())
+
+    def _TestAreaLight(self, ufeLight, usdLight):
+        # Trust that the USD API works correctly, validate that UFE gives us
+        # the same answers
+        self.assertEqual(ufeLight.type(), ufe.Light.Area)
+        self._TestIntensity(ufeLight, usdLight)
+        self._TestDiffuse(ufeLight, usdLight)
+        self._TestSpecular(ufeLight, usdLight)
+        self._TestShadowEnable(ufeLight, usdLight)
+        self._TestColor(ufeLight, usdLight)
+        self._TestShadowColor(ufeLight, usdLight)
+        self._TestAreaProps(ufeLight, usdLight)
+        self.assertEqual(None, ufeLight.coneInterface())
+        self.assertEqual(None, ufeLight.sphereInterface())
+        self.assertEqual(None, ufeLight.directionalInterface())    
 
     def _TestIntensity(self, ufeLight, usdLight):
         usdAttr = usdLight.GetAttribute('inputs:intensity')
@@ -156,17 +204,53 @@ class LightTestCase(unittest.TestCase):
         self.assertAlmostEqual(usdAttrAngle.Get(), ufeLight.coneInterface().coneProps().angle)
         self.assertAlmostEqual(usdAttrSoftness.Get(), ufeLight.coneInterface().coneProps().softness)
 
+    def _TestDirectionalProps(self, ufeLight, usdLight):
+        usdAttr = usdLight.GetAttribute('inputs:angle')
+        self.assertAlmostEqual(usdAttr.Get(), ufeLight.directionalInterface().angle())
+
+    def _TestAreaProps(self, ufeLight, usdLight):
+        usdAttr = usdLight.GetAttribute('inputs:normalize')
+        self.assertEqual(usdAttr.Get(), ufeLight.areaInterface().normalize())        
+
     def testUsdLight(self):
         self._StartTest('SimpleLight')
         mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
-        lightUsdPathSegment = usdUtils.createUfePathSegment('/lights/simpleLight')
-        lightPath = ufe.Path([mayaPathSegment, lightUsdPathSegment])
-        lightItem = ufe.Hierarchy.createItem(lightPath)
+        
+        # test spot light
+        spotlightUsdPathSegment = usdUtils.createUfePathSegment('/lights/spotLight')
+        spotlightPath = ufe.Path([mayaPathSegment, spotlightUsdPathSegment])
+        spotlightItem = ufe.Hierarchy.createItem(spotlightPath)
 
-        ufeLight = ufe.Light.light(lightItem)
-        usdLight = usdUtils.getPrimFromSceneItem(lightItem)
-        self.assertEqual(ufeLight.type(), ufe.Light.Spot)
-        self._TestLightAttributes(ufeLight, usdLight)
+        ufeSpotLight = ufe.Light.light(spotlightItem)
+        usdSpotLight = usdUtils.getPrimFromSceneItem(spotlightItem)
+        self._TestSpotLight(ufeSpotLight, usdSpotLight)
+
+        # test point light
+        pointlightUsdPathSegment = usdUtils.createUfePathSegment('/lights/pointLight')
+        pointlightPath = ufe.Path([mayaPathSegment, pointlightUsdPathSegment])
+        pointlightItem = ufe.Hierarchy.createItem(pointlightPath)
+
+        ufePointLight = ufe.Light.light(pointlightItem)
+        usdPointLight = usdUtils.getPrimFromSceneItem(pointlightItem)
+        self._TestPointLight(ufePointLight, usdPointLight)        
+
+        # test directional light
+        directionallightUsdPathSegment = usdUtils.createUfePathSegment('/lights/directionalLight')
+        directionallightPath = ufe.Path([mayaPathSegment, directionallightUsdPathSegment])
+        directionallightItem = ufe.Hierarchy.createItem(directionallightPath)
+
+        ufeDirectionalLight = ufe.Light.light(directionallightItem)
+        usdDirectionalLight = usdUtils.getPrimFromSceneItem(directionallightItem)
+        self._TestDirectionalLight(ufeDirectionalLight, usdDirectionalLight)
+
+        # test area light
+        arealightUsdPathSegment = usdUtils.createUfePathSegment('/lights/areaLight')
+        arealightPath = ufe.Path([mayaPathSegment, arealightUsdPathSegment])
+        arealightItem = ufe.Hierarchy.createItem(arealightPath)
+
+        ufeAreaLight = ufe.Light.light(arealightItem)
+        usdAreaLight = usdUtils.getPrimFromSceneItem(arealightItem)
+        self._TestAreaLight(ufeAreaLight, usdAreaLight)
 
 
 if __name__ == '__main__':

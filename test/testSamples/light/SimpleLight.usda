@@ -6,7 +6,7 @@
 
 def Xform "lights"
 {
-    def SphereLight "simpleLight"
+    def SphereLight "spotLight"
     {
         double3 xformOp:translate = (0, 1, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
@@ -19,5 +19,34 @@ def Xform "lights"
 		float inputs:shaping:cone:angle = 50
 		float inputs:shaping:cone:softness = 0.1
     }
+	
+    def SphereLight "pointLight"
+    {
+		float inputs:intensity = 200
+		bool inputs:shadow:enable = false
+		color3f inputs:shadow:color = (1, 1, 0)
+    }
+	
+    def DistantLight "directionalLight"
+    {
+		float inputs:angle = 0.2
+	
+        color3f inputs:color = (0, 0, 1)
+
+		float inputs:intensity = 20000
+		bool inputs:shadow:enable = true
+		color3f inputs:shadow:color = (1, 0, 0)
+    }
+	
+    def RectLight "areaLight"
+    {
+		 bool inputs:normalize = true
+	
+        color3f inputs:color = (0, 1, 0)
+		
+		float inputs:intensity = 20000
+		bool inputs:shadow:enable = true
+		color3f inputs:shadow:color = (1, 0, 0)		
+    }	
 }
 
