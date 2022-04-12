@@ -22,7 +22,6 @@
 #include <pxr/usd/usd/variantSets.h>
 
 #include <maya/MDoubleArray.h>
-#include <maya/MEventMessage.h>
 #include <maya/MGlobal.h>
 
 #include <map>
@@ -70,45 +69,6 @@ void addMetadataCount(
     }
 }
 
-std::vector<double>& getInvisibleColor()
-{
-    static std::vector<double> rgb;
-    return rgb;
-}
-
-void updateInvisibleColor()
-{
-    MDoubleArray color;
-    MGlobal::executeCommand("displayRGBColor -q \"outlinerInvisibleColor\"", color);
-
-    // Note: support future possible alpha channel for invisible color.
-    if (color.length() >= 3) {
-        auto& rgb = getInvisibleColor();
-        rgb.resize(color.length());
-        color.get(rgb.data());
-    }
-}
-
-// Note: the on-color-changed callback function is declared taking a void pointer
-//       to be compatible with MMessage callback API.
-void onColorChanged(void*)
-{
-    // Retrieve the invisible color now so it gets initialized.
-    // We *cannot* intialize it in treeViewCellInfo() because
-    // that function gets called in a paint event and calling
-    // a command in a painting event can cause a recursive paint
-    // event if commands echoing is on, which can corrupt the
-    // Qt paint internal which lead to a crash. Typical symptom
-    // is that the state variable of the Qt paint engine becomes
-    // null midway through the repaint.
-    //
-    // In addition, calling MEl on every repaint of every item that
-    // uses the invisible color would be slow.
-    updateInvisibleColor();
-}
-
-MCallbackId colorChangedCallbackId = 0;
-
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -118,8 +78,8 @@ UsdUIInfoHandler::UsdUIInfoHandler()
     : Ufe::UIInfoHandler()
 {
     // Register a callback to invalidate the invisible color.
-    colorChangedCallbackId
-        = MEventMessage::addEventCallback("DisplayRGBColorChanged", onColorChanged);
+    fColorChangedCallbackId = MEventMessage::addEventCallback(
+        "DisplayRGBColorChanged", onColorChanged, reinterpret_cast<void*>(this));
 
     // Immediately update the invisible color to get a starting current value.
     updateInvisibleColor();
@@ -128,11 +88,43 @@ UsdUIInfoHandler::UsdUIInfoHandler()
 UsdUIInfoHandler::~UsdUIInfoHandler()
 {
     // Unregister the callback used to invalidate the invisible color.
-    MMessage::removeCallback(colorChangedCallbackId);
+    if (fColorChangedCallbackId)
+        MMessage::removeCallback(fColorChangedCallbackId);
 }
 
 /*static*/
 UsdUIInfoHandler::Ptr UsdUIInfoHandler::create() { return std::make_shared<UsdUIInfoHandler>(); }
+
+void UsdUIInfoHandler::updateInvisibleColor()
+{
+    // Retrieve the invisible color of the outliner.
+    //
+    // We *cannot* intialize it in treeViewCellInfo() because
+    // that function gets called in a paint event and calling
+    // a command in a painting event can cause a recursive paint
+    // event if commands echoing is on, which can corrupt the
+    // Qt paint internal which lead to a crash. Typical symptom
+    // is that the state variable of the Qt paint engine becomes
+    // null midway through the repaint.
+
+    MDoubleArray color;
+    MGlobal::executeCommand("displayRGBColor -q \"outlinerInvisibleColor\"", color);
+
+    if (color.length() >= 3) {
+        color.get(fInvisibleColor.data());
+        fInvisibleColorValid = true;
+    }
+}
+
+/*static*/
+void UsdUIInfoHandler::onColorChanged(void* data)
+{
+    UsdUIInfoHandler* infoHandler = reinterpret_cast<UsdUIInfoHandler*>(data);
+    if (!infoHandler)
+        return;
+
+    infoHandler->updateInvisibleColor();
+}
 
 //------------------------------------------------------------------------------
 // Ufe::UIInfoHandler overrides
@@ -149,12 +141,11 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
         if (!usdItem->prim().IsActive()) {
             changed = true;
             info.fontStrikeout = true;
-            const std::vector<double> rgb = getInvisibleColor();
-            if (rgb.size() >= 3) {
+            if (fInvisibleColorValid) {
                 info.textFgColor.set(
-                    static_cast<float>(rgb[0]),
-                    static_cast<float>(rgb[1]),
-                    static_cast<float>(rgb[2]));
+                    static_cast<float>(fInvisibleColor[0]),
+                    static_cast<float>(fInvisibleColor[1]),
+                    static_cast<float>(fInvisibleColor[2]));
             } else {
                 info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
             }
