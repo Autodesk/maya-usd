@@ -552,7 +552,8 @@ void MayaUsdRPrim::_SyncSharedData(
     HdDirtyBits const* dirtyBits,
     TfToken const&     reprToken,
     SdfPath const&     id,
-    ReprVector const&  reprs)
+    ReprVector const&  reprs,
+    TfToken const&     renderTag)
 {
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
         sharedData.bounds.SetRange(delegate->GetExtent(id));
@@ -577,7 +578,7 @@ void MayaUsdRPrim::_SyncSharedData(
     // Hydra now manages and caches render tags under the hood and is clearing
     // the dirty bit prior to calling sync. Unconditionally set the render tag
     // in the shared data structure based on current Hydra data
-    _RenderTag() = GetRenderTag();
+    _RenderTag() = renderTag;
 #else
     if (*dirtyBits
         & (HdChangeTracker::DirtyRenderTag
@@ -585,7 +586,7 @@ void MayaUsdRPrim::_SyncSharedData(
            | HdChangeTracker::DirtyVisibility
 #endif
            )) {
-        _RenderTag() = delegate->GetRenderTag(id);
+        _RenderTag() = renderTag;
     }
 #endif
 }
