@@ -48,6 +48,9 @@ Ufe::ConstAttributeDefs getAttrs(const PXR_NS::SdrShaderNodeConstPtr& shaderNode
     for (const PXR_NS::TfToken& name : names) {
         PXR_NS::SdrShaderPropertyConstPtr property
             = input ? shaderNodeDef->GetShaderInput(name) : shaderNodeDef->GetShaderOutput(name);
+        if (!property) {
+            continue;
+        }
         std::ostringstream defaultValue;
         defaultValue << property->GetDefaultValue();
         Ufe::Attribute::Type type = getUfeTypeForAttribute(property);
