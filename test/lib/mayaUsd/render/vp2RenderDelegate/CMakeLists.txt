@@ -67,8 +67,6 @@ if (CMAKE_WANT_MATERIALX_BUILD)
             "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
-            "PXR_MTLX_STDLIB_SEARCH_PATHS=${PXR_USD_LOCATION}/libraries"
-            "PXR_MTLX_STDLIB_SEARCH_PATHS=${CMAKE_INSTALL_PREFIX}/libraries"
 
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
@@ -95,8 +93,6 @@ foreach(script ${TEST_SCRIPT_FILES})
             "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
-            "PXR_MTLX_STDLIB_SEARCH_PATHS=${PXR_USD_LOCATION}/libraries"
-            "PXR_MTLX_STDLIB_SEARCH_PATHS=${CMAKE_INSTALL_PREFIX}/libraries"
 
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.

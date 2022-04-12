@@ -98,7 +98,6 @@ Ufe::NodeDefs UsdShaderNodeDef::definitions(const std::string& category)
         PXR_NS::SdrRegistry&        registry = PXR_NS::SdrRegistry::GetInstance();
         PXR_NS::SdrShaderNodePtrVec shaderNodeDefs = registry.GetShaderNodesByFamily();
         for (const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef : shaderNodeDefs) {
-            const std::string& type = shaderNodeDef->GetName();
             result.push_back(UsdShaderNodeDef::create(shaderNodeDef));
         }
     }
