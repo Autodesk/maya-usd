@@ -59,7 +59,6 @@ private:
     static void onColorChanged(void*);
 
     std::array<double, 3> fInvisibleColor;
-    bool                  fInvisibleColorValid = false;
     MCallbackId           fColorChangedCallbackId = 0;
 }; // UsdUIInfoHandler
 

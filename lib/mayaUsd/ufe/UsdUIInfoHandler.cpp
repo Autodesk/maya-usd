@@ -77,6 +77,11 @@ namespace ufe {
 UsdUIInfoHandler::UsdUIInfoHandler()
     : Ufe::UIInfoHandler()
 {
+    // Initialize to invalid values.
+    fInvisibleColor[0] = -1.;
+    fInvisibleColor[1] = -1.;
+    fInvisibleColor[2] = -1.;
+
     // Register a callback to invalidate the invisible color.
     fColorChangedCallbackId = MEventMessage::addEventCallback(
         "DisplayRGBColorChanged", onColorChanged, reinterpret_cast<void*>(this));
@@ -110,9 +115,8 @@ void UsdUIInfoHandler::updateInvisibleColor()
     MDoubleArray color;
     MGlobal::executeCommand("displayRGBColor -q \"outlinerInvisibleColor\"", color);
 
-    if (color.length() >= 3) {
+    if (color.length() == 3) {
         color.get(fInvisibleColor.data());
-        fInvisibleColorValid = true;
     }
 }
 
@@ -141,7 +145,7 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
         if (!usdItem->prim().IsActive()) {
             changed = true;
             info.fontStrikeout = true;
-            if (fInvisibleColorValid) {
+            if (fInvisibleColor[0] >= 0) {
                 info.textFgColor.set(
                     static_cast<float>(fInvisibleColor[0]),
                     static_cast<float>(fInvisibleColor[1]),
