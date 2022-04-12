@@ -25,6 +25,7 @@ ExternalProject_Add(googletest
                     "-DCMAKE_INSTALL_PREFIX=${GOOGLETEST_BUILD_ROOT}/googletest-install"
                     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
                     "-Dgtest_force_shared_crt=ON"
+                    "-DBUILD_GMOCK=OFF"
                     "-DBUILD_SHARED_LIBS=ON"
                     "-DCMAKE_MACOSX_RPATH=ON"
                     "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
