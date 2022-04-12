@@ -57,10 +57,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((XformTypeName, "Xform"))
     ((GeomRootName, "Geom"))
     ((ScopePrimTypeName, "Scope"))
-    ((MayaProxyShapeNodeName, "GeomProxy"))
     ((ExcludePrimPathsPlugName, "excludePrimPaths"))
 );
 // clang-format on
+
+using CollapsePointMap = std::map<SdfPath, std::vector<UsdPrim>>;
 
 /*******************************************************************************
  *                                                                              *
@@ -155,9 +156,8 @@ static bool _CreateParentTransformNodes(
 }
 
 bool UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
-    const std::vector<UsdPrim>&     proxyPrims,
-    const UsdPrim&                  pxrGeomRoot,
-    const std::vector<std::string>& collapsePointPathStrings)
+    const std::vector<UsdPrim>& proxyPrims,
+    const CollapsePointMap&     collapsePointMap)
 {
     TF_FOR_ALL(iter, proxyPrims)
     {
@@ -178,16 +178,23 @@ bool UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
 
     // Author exclude paths on the top-level proxy using the list of collapse
     // points we found.
-    if (!collapsePointPathStrings.empty()) {
+    for (const auto& entry : collapsePointMap) {
         MStatus                  status;
         UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
-        // Get the geom root proxy shape node.
-        SdfPath proxyShapePath = pxrGeomRoot.GetPath().AppendChild(_tokens->MayaProxyShapeNodeName);
-        MObject proxyShapeObj = ctx.GetMayaNode(proxyShapePath, false);
+        // Get the exclude ancestor's proxy shape node.
+        SdfPath excludeAncestorPath = entry.first;
+        SdfPath proxyShapePath = excludeAncestorPath.AppendChild(
+            TfToken(TfStringPrintf("%sProxy", excludeAncestorPath.GetName().c_str())));
+        MObject           proxyShapeObj = ctx.GetMayaNode(proxyShapePath, false);
         MFnDependencyNode depNodeFn(proxyShapeObj, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
+        // Add all nested collapse points to the ancestor's exclude list
+        std::vector<std::string> collapsePointPathStrings;
+        for (const UsdPrim& prim : entry.second) {
+            collapsePointPathStrings.push_back(prim.GetPath().GetString());
+        }
         std::string excludePathsString = TfStringJoin(collapsePointPathStrings, ",");
 
         // Set the excludePrimPaths attribute on the node.
@@ -264,6 +271,24 @@ bool UsdMaya_ReadJobWithSceneAssembly::_ProcessCameraPrims(const std::vector<Usd
     return true;
 }
 
+static void _CollectCollapsePoints(
+    const UsdPrim&    prim,
+    const UsdPrim&    ancestor,
+    CollapsePointMap* collapsePointMap)
+{
+    for (const UsdPrim& child : prim.GetAllChildren()) {
+        if (_IsCollapsePoint(child)) {
+            // Cache this collapse point. This node now becomes the exclude
+            // ancestor for all child collapse points
+            (*collapsePointMap)[ancestor.GetPath()].push_back(child);
+            _CollectCollapsePoints(child, child, collapsePointMap);
+        } else {
+            // Preserve the current exclude ancestor and recurse into children
+            _CollectCollapsePoints(child, ancestor, collapsePointMap);
+        }
+    }
+}
+
 bool UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
 {
     MStatus status;
@@ -277,8 +302,8 @@ bool UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
     std::vector<UsdPrim> subAssemblyPrims;
     std::vector<UsdPrim> proxyPrims;
 
-    UsdPrim                  pxrGeomRoot;
-    std::vector<std::string> collapsePointPathStrings;
+    UsdPrim          pxrGeomRoot;
+    CollapsePointMap collapsePointMap;
 
     for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
         const UsdPrim& prim = *primIt;
@@ -295,10 +320,17 @@ bool UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
             // exclude paths.
             pxrGeomRoot = prim;
             proxyPrims.push_back(prim);
+
+            // Find all collapse points below the geom root and the ancestors
+            // that need to exclude them
+            TF_VERIFY(collapsePointMap.empty());
+            _CollectCollapsePoints(pxrGeomRoot, pxrGeomRoot, &collapsePointMap);
+
         } else if (pxrGeomRoot) {
             if (_IsCollapsePoint(prim)) {
-                collapsePointPathStrings.push_back(prim.GetPath().GetString());
-                proxyPrims.push_back(prim);
+                // Defer adding any collapse points until the rest of the scene
+                // is traversed. Prune all children of top level collapse points
+                // so only nested collapse points are included
                 primIt.PruneChildren();
             }
         } else if (prim.IsA<UsdGeomGprim>()) {
@@ -324,8 +356,15 @@ bool UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
         }
     }
 
+    // Add all collapse points under geom root
+    for (const auto& entry : collapsePointMap) {
+        for (const UsdPrim& collapsePoint : entry.second) {
+            proxyPrims.push_back(collapsePoint);
+        }
+    }
+
     // Create the proxy nodes and author exclude paths on the geom root proxy.
-    if (!_ProcessProxyPrims(proxyPrims, pxrGeomRoot, collapsePointPathStrings)) {
+    if (!_ProcessProxyPrims(proxyPrims, collapsePointMap)) {
         return false;
     }
 

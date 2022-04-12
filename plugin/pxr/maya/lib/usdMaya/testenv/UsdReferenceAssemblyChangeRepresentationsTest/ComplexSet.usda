@@ -158,9 +158,7 @@ def Xform "ComplexSet" (
             Vec3f xformOp:translate = (0.0, 30.0, 5.0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
 
-            def Mesh "RedCube" (
-                kind = "subcomponent"
-            )
+            def Mesh "RedCube" 
             {
                 float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
                 int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
@@ -171,9 +169,7 @@ def Xform "ComplexSet" (
                 uniform token[] xformOpOrder = ["xformOp:translate"]
             }
 
-            def Mesh "GreenCube" (
-                kind = "subcomponent"
-            )
+            def Mesh "GreenCube" 
             {
                 float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
                 int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
@@ -182,9 +178,7 @@ def Xform "ComplexSet" (
                 color3f[] primvars:displayColor = [(0.1, 0.9, 0.1)]
             }
 
-            def Mesh "BlueCube" (
-                kind = "subcomponent"
-            )
+            def Mesh "BlueCube" 
             {
                 float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
                 int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
@@ -193,6 +187,73 @@ def Xform "ComplexSet" (
                 color3f[] primvars:displayColor = [(0.1, 0.1, 0.9)]
                 Vec3f xformOp:translate = (20.0, 0.0, 0.0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "NestedRef" (
+            kind = "subcomponent"
+        )
+        {
+            Vec3f xformOp:translate = (0.0, -30.0, -5.0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            def Mesh "NestedRedCube" 
+            {
+                float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+                point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+                color3f[] primvars:displayColor = [(0.9, 0.1, 0.1)]
+            }
+
+            def Xform "DirectChildRef" (
+                kind = "subcomponent"
+            )
+            {
+                Vec3f xformOp:translate = (0.0, 10.0, 10.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                def Mesh "NestedGreenCube" 
+                {
+                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+                    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+                    color3f[] primvars:displayColor = [(0.1, 0.9, 0.1)]
+                }
+            }
+
+            def Xform "ChildNonRef"
+            {
+                Vec3f xformOp:translate = (0.0, -10.0, -10.0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                def Mesh "NestedBlueCube" 
+                {
+                    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                    int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+                    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+                    color3f[] primvars:displayColor = [(0.1, 0.9, 0.1)]
+                }
+
+                def Xform "IndirectChildRef" (
+                    kind = "subcomponent"
+                )
+                {
+                    Vec3f xformOp:translate = (20.0, 20.0, 10.0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+
+                    def Mesh "NestedYellowCube" 
+                    {
+                        float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+                        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+                        int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+                        point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+                        color3f[] primvars:displayColor = [(0.1, 0.9, 0.9)]
+                    }
+                }
             }
         }
 
