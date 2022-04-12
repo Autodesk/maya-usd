@@ -53,6 +53,9 @@ set(MSVC_FLAGS
     /wd4180
     # exporting STL classes
     /wd4251
+    # Set some warnings as errors (to make it similar to Linux)
+    /we4101
+    /we4189
 )
 
 set(MSVC_DEFINITIONS
