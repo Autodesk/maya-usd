@@ -365,8 +365,8 @@ class testUsdExportUVSets(unittest.TestCase):
 
     def testExportMultipleUVSetsPreserveNames(self):
         """
-        Tests that a cube mesh with multiple UV sets renames them appropriately
-        and preserves them if requested (with the exception of "map1")
+        Tests that a cube mesh with multiple UV sets renames them appropriately,
+        preserves them if requested, and remaps them as specified
         """
         usdCubeMesh = self._GetCubeUsdMesh('MultipleUVSetsCube')
 
@@ -394,10 +394,35 @@ class testUsdExportUVSets(unittest.TestCase):
         st = usdCubeMesh.GetPrimvar('st')
         st1 = usdCubeMesh.GetPrimvar('st1')
         foo1 = usdCubeMesh.GetPrimvar('foo1')
-        self.assertFalse(map1)
-        self.assertTrue(st)
+        self.assertTrue(map1)
+        self.assertFalse(st)
         self.assertFalse(st1)
         self.assertTrue(foo1)
+
+        usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
+        cmds.usdExport(mergeTransformAndShape=True,
+            file=usdFilePath,
+            shadingMode='none',
+            exportColorSets=False,
+            exportDisplayColor=False,
+            exportUVs=True,
+            preserveUVSetNames=True,
+            remapUVSetsTo=[
+                ('map1', 'test1'),
+            ])
+        testUsdExportUVSets._stage = Usd.Stage.Open(usdFilePath)
+        usdCubeMesh = self._GetCubeUsdMesh('MultipleUVSetsCube')
+
+        map1 = usdCubeMesh.GetPrimvar('map1')
+        st = usdCubeMesh.GetPrimvar('st')
+        st1 = usdCubeMesh.GetPrimvar('st1')
+        foo1 = usdCubeMesh.GetPrimvar('foo1')
+        test1 = usdCubeMesh.GetPrimvar('test1')
+        self.assertFalse(map1)
+        self.assertFalse(st)
+        self.assertFalse(st1)
+        self.assertTrue(foo1)
+        self.assertTrue(test1)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
