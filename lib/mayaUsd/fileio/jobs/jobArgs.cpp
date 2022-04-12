@@ -240,6 +240,24 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
+std::map<std::string, std::string> _UVSetRemaps(const VtDictionary& userArgs, const TfToken& key)
+{
+    const std::vector<std::vector<VtValue>> uvRemaps = _Vector<std::vector<VtValue>>(userArgs, key);
+
+    std::map<std::string, std::string> result;
+    for (const std::vector<VtValue>& remap : uvRemaps) {
+        if (remap.size() != 2) {
+            TF_CODING_ERROR("Failed to parse remapping, all items must be pairs (from, to)");
+            return {};
+        }
+
+        const std::string& from = remap[0].Get<std::string>();
+        const std::string& to = remap[1].Get<std::string>();
+        result[from] = to;
+    }
+    return result;
+}
+
 // The shadingMode args are stored as vectors of vectors (since this is how you
 // would need to pass them in the Maya Python command API).
 UsdMayaJobImportArgs::ShadingModes
@@ -623,9 +641,8 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , jobContextNames(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->jobContext))
     , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
-    ,
-
-    melPerFrameCallback(_String(userArgs, UsdMayaJobExportArgsTokens->melPerFrameCallback))
+    , remapUVSetsTo(_UVSetRemaps(userArgs, UsdMayaJobExportArgsTokens->remapUVSetsTo))
+    , melPerFrameCallback(_String(userArgs, UsdMayaJobExportArgsTokens->melPerFrameCallback))
     , melPostCallback(_String(userArgs, UsdMayaJobExportArgsTokens->melPostCallback))
     , pythonPerFrameCallback(_String(userArgs, UsdMayaJobExportArgsTokens->pythonPerFrameCallback))
     , pythonPostCallback(_String(userArgs, UsdMayaJobExportArgsTokens->pythonPostCallback))
@@ -716,6 +733,11 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
     out << "chaserNames (" << exportArgs.chaserNames.size() << ")" << std::endl;
     for (const std::string& chaserName : exportArgs.chaserNames) {
         out << "    " << chaserName << std::endl;
+    }
+
+    out << "remapUVSetsTo (" << exportArgs.remapUVSetsTo.size() << ")" << std::endl;
+    for (const auto& remapIt : exportArgs.remapUVSetsTo) {
+        out << "    " << remapIt.first << " -> " << remapIt.second << std::endl;
     }
 
     out << "allChaserArgs (" << exportArgs.allChaserArgs.size() << ")" << std::endl;
@@ -899,6 +921,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->frameSample] = std::vector<double>();
         d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
+        d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->compatibility] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->defaultCameras] = false;
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = UsdGeomTokens->catmullClark.GetString();
@@ -973,6 +996,8 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         const auto _string = VtValue(std::string());
         const auto _doubleVector = VtValue(std::vector<double>());
         const auto _stringVector = VtValue(std::vector<VtValue>({ _string }));
+        const auto _stringPair = VtValue(std::vector<VtValue>({ _string, _string }));
+        const auto _stringPairVector = VtValue(std::vector<VtValue>({ _stringPair }));
         const auto _stringTriplet = VtValue(std::vector<VtValue>({ _string, _string, _string }));
         const auto _stringTripletVector = VtValue(std::vector<VtValue>({ _stringTriplet }));
 
@@ -984,6 +1009,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetGuideDictionary()
         d[UsdMayaJobExportArgsTokens->frameSample] = _doubleVector;
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
+        d[UsdMayaJobExportArgsTokens->remapUVSetsTo] = _stringPairVector;
         d[UsdMayaJobExportArgsTokens->compatibility] = _string;
         d[UsdMayaJobExportArgsTokens->defaultCameras] = _boolean;
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = _string;

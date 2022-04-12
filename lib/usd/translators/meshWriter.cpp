@@ -628,7 +628,12 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // == Write UVSets as Vec2f Primvars
     if (exportArgs.exportMeshUVs) {
         UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
-            finalMesh, primSchema, usdTime, _GetSparseValueWriter(), exportArgs.preserveUVSetNames);
+            finalMesh,
+            primSchema,
+            usdTime,
+            _GetSparseValueWriter(),
+            exportArgs.preserveUVSetNames,
+            exportArgs.remapUVSetsTo);
     }
 
     // == Gather ColorSets

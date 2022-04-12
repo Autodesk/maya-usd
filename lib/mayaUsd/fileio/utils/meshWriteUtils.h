@@ -146,11 +146,12 @@ bool getMeshUVSetData(
 
 MAYAUSD_CORE_PUBLIC
 bool writeUVSetsAsVec2fPrimvars(
-    const MFnMesh&             meshFn,
-    UsdGeomMesh&               primSchema,
-    const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter,
-    bool                       preserveSetNames);
+    const MFnMesh&                            meshFn,
+    UsdGeomMesh&                              primSchema,
+    const UsdTimeCode&                        usdTime,
+    UsdUtilsSparseValueWriter*                valueWriter,
+    bool                                      preserveSetNames,
+    const std::map<std::string, std::string>& uvSetRemaps);
 
 MAYAUSD_CORE_PUBLIC
 void writeSubdivInterpBound(

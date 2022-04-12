@@ -171,6 +171,13 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.makeFlagMultiUse(kChaserArgsFlag);
 
     syntax.addFlag(
+        kRemapUVSetsToFlag,
+        UsdMayaJobExportArgsTokens->remapUVSetsTo.GetText(),
+        MSyntax::kString,
+        MSyntax::kString);
+    syntax.makeFlagMultiUse(kRemapUVSetsToFlag);
+
+    syntax.addFlag(
         kMelPerFrameCallbackFlag,
         UsdMayaJobExportArgsTokens->melPerFrameCallback.GetText(),
         MSyntax::kString);

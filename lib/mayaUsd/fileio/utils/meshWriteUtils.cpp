@@ -938,11 +938,12 @@ bool UsdMayaMeshWriteUtils::getMeshUVSetData(
 }
 
 bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
-    const MFnMesh&             meshFn,
-    UsdGeomMesh&               primSchema,
-    const UsdTimeCode&         usdTime,
-    UsdUtilsSparseValueWriter* valueWriter,
-    bool                       preserveSetNames)
+    const MFnMesh&                            meshFn,
+    UsdGeomMesh&                              primSchema,
+    const UsdTimeCode&                        usdTime,
+    UsdUtilsSparseValueWriter*                valueWriter,
+    bool                                      preserveSetNames,
+    const std::map<std::string, std::string>& uvSetRemaps)
 {
     MStatus status { MS::kSuccess };
 
@@ -965,8 +966,12 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
         }
 
         MString setName(uvSetNames[i]);
-        bool    renameSet = !preserveSetNames || setName == "map1";
-        if (renameSet) {
+
+        auto it = uvSetRemaps.find(setName.asChar());
+        if (it != uvSetRemaps.end()) {
+            // Remap the UV set as specified
+            setName = it->second.c_str();
+        } else if (!preserveSetNames) {
             // UV sets get renamed st, st1, st2 in the order returned by getUVSetNames
             setName = "st";
             if (i) {
@@ -985,7 +990,7 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
             valueWriter);
 
         // Save the original name for roundtripping:
-        if (primVar && renameSet) {
+        if (primVar && !preserveSetNames) {
             UsdMayaRoundTripUtil::SetPrimVarMayaName(
                 primVar.GetAttr(), TfToken(uvSetNames[i].asChar()));
         }

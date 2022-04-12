@@ -100,6 +100,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (renderLayerMode) \
     (shadingMode) \
     (convertMaterialsTo) \
+    (remapUVSetsTo) \
     (stripNamespaces) \
     (verbose) \
     (staticSingleSample) \
@@ -222,6 +223,8 @@ struct UsdMayaJobExportArgs
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
     const std::map<std::string, ChaserArgs> allChaserArgs;
+
+    const std::map<std::string, std::string> remapUVSetsTo;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
