@@ -5,8 +5,9 @@ set(GNU_CLANG_FLAGS
     # we want to be as strict as possible
     -Wall
     $<$<BOOL:${BUILD_STRICT_MODE}>:-Werror>
+    $<$<CONFIG:DEBUG>:-fstack-check>
     # optimization
-    -msse3
+    -msse4.2
     # disable warnings
     -Wno-deprecated
     -Wno-deprecated-declarations
