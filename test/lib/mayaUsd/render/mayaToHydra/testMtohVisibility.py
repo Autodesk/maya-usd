@@ -2,7 +2,6 @@ import maya.cmds as cmds
 import maya.mel
 
 import fixturesUtils
-import imageUtils
 import mtohUtils
 
 class TestCommand(mtohUtils.MtohTestCase):
@@ -13,6 +12,8 @@ class TestCommand(mtohUtils.MtohTestCase):
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeShape)))
         self.imageVersion = None
+        if maya.mel.eval("defaultShaderName") != "standardSurface1":
+            self.imageVersion = 'lambertDefaultMaterial'
 
     def test_toggleTransVis(self):
         # because snapshotting is slow, we only use it in this test - otherwise
