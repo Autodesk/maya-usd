@@ -20,10 +20,14 @@ KNOWN_FORMATS = {
     'png': 32,
 }
 
-"""If the current Maya version supports setting the default light intensity,
-    then restore it to 1 so snapshots look equal across versions."""
-if maya.mel.eval("optionVar -exists defaultLightIntensity"):
-    maya.mel.eval("optionVar -fv defaultLightIntensity 1")
+def resetDefaultLightIntensity():
+    """If the current Maya version supports setting the default light intensity,
+        then restore it to 1 so snapshots look equal across versions."""
+    if maya.mel.eval("optionVar -exists defaultLightIntensity"):
+        maya.mel.eval("optionVar -fv defaultLightIntensity 1")
+    if cmds.attributeQuery('defaultLightIntensity', node='hardwareRenderingGlobals', exists=True):
+        cmds.setAttr('hardwareRenderingGlobals.defaultLightIntensity', 1.0)
+resetDefaultLightIntensity()
 
 def snapshot(outputPath, width=400, height=None, hud=False, grid=False, camera=None):
     if height is None:
