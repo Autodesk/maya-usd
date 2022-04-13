@@ -272,7 +272,8 @@ PullImportPaths pullImport(
         return PullImportPaths(addedDagPaths, pulledUfePaths);
     }
 
-    const VtDictionary& userArgs = context.GetUserArgs();
+    VtDictionary userArgs(context.GetUserArgs());
+    userArgs[UsdMayaJobImportArgsTokens->pullImportStage] = PXR_NS::VtValue(context.GetUsdStage());
 
     UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
         userArgs,

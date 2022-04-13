@@ -157,7 +157,7 @@ class DeleteParentNodeOnPostImport(usdmaya.TranslatorBase):
         if self.__class__.parentNode:
             cmds.delete(self.__class__.parentNode)
             # re-create the node
-            # print 'CCCCCCCCCCCCc', cmds.createNode('AL_usdmaya_Transform', name='rig', parent='|bobo|root|peter01')
+            # print('CCCCCCCCCCCCc', cmds.createNode('AL_usdmaya_Transform', name='rig', parent='|bobo|root|peter01'))
 
         return True
 
