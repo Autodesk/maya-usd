@@ -30,6 +30,8 @@ def resetDefaultLightIntensity():
 resetDefaultLightIntensity()
 
 def snapshot(outputPath, width=400, height=None, hud=False, grid=False, camera=None):
+    resetDefaultLightIntensity()
+    
     if height is None:
         height = width
 

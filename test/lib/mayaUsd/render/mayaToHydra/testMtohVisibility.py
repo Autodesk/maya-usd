@@ -13,7 +13,6 @@ class TestCommand(mtohUtils.MtohTestCase):
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeTrans)))
         self.assertTrue(cmds.getAttr("{}.visibility".format(self.cubeShape)))
         self.imageVersion = None
-        imageUtils.resetDefaultLightIntensity()
 
     def test_toggleTransVis(self):
         # because snapshotting is slow, we only use it in this test - otherwise
