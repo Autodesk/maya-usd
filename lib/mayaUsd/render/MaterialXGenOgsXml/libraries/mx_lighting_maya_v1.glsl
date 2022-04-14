@@ -22,4 +22,4 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 roughness, int distrib
     vec3 comp = mx_ggx_energy_compensation(NdotV, avgRoughness, F);
     vec3 Li = mix(g_specularI, g_diffuseI, avgRoughness);
     return Li * F * G * comp;
-};
+}
