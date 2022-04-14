@@ -366,8 +366,9 @@ PullImportPaths pullImport(
         MStatus status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
         if (status != MStatus::kSuccess) {
             MString createSetCmd;
-            createSetCmd.format("sets -em -name \"^1s\";", kPullSetName.asChar());
-            MDGModifier& dgMod = MDGModifierUndoItem::create("Pull import pull set creation");
+            createSetCmd.format("sets -em -name \"^1s\";lockNode \"^1s\";", kPullSetName.asChar());
+            MDGModifier& dgMod
+                = MDGModifierUndoItem::create("Pull import pull set creation and lock");
             dgMod.commandToExecute(createSetCmd);
             dgMod.doIt();
         }
