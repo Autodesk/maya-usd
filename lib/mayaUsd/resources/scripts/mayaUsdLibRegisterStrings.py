@@ -62,7 +62,7 @@ def mayaUsdLibRegisterStrings():
     register('kMergeToUSDOptionsTitle', 'Merge Maya Edits to USD Options')
     register('kMergeButton', 'Merge')
     register('kApplyButton', 'Apply')
-    register('kCancelButton', 'Cancel')
+    register('kCloseButton', 'Close')
     register('kEditMenu', 'Edit')
     register('kSaveSettingsMenuItem', 'Save Settings')
     register('kResetSettingsMenuItem', 'Reset Settings')
