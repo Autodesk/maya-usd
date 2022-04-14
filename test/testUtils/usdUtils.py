@@ -27,7 +27,7 @@ import mayaUsd_createStageWithNewLayer
 import ufe
 import ufeUtils
 
-from pxr import Usd, UsdGeom, Gf
+from pxr import Usd, UsdGeom, Gf, Sdf
 
 usdSeparator = '/'
 
@@ -83,17 +83,32 @@ def createAnimatedHierarchy(stage):
     UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((-5,0,0),time2)
     UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,-5),time2)
 
-def createSimpleXformScene():
-    '''Create a simple scene with a trivial hierarchy:
+def createSimpleStage():
+    '''Create a simple stage and layer:
+
+    Returns a tuple of:
+        - proxy shape UFE path string
+        - proxy shape UFE path
+        - proxy shape UFE item
+    '''
+    psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+    psPath = ufe.PathString.path(psPathStr)
+    ps = ufe.Hierarchy.createItem(psPath)
+    return (psPathStr, psPath, ps)
+
+def createSimpleXformSceneInCurrentLayer(psPathStr, ps):
+    '''Create a simple scene in the current stage and layer with a trivial hierarchy:
 
     A    translation (1, 2, 3)
     |_B  translation (7, 8, 9)
 
+    Returns a tuple of:
+        - A translation op, A translation vector
+        - A UFE path string, A UFE path, A UFE item
+        - B translation op, B translation vector
+        - B UFE path string, B UFE path, B UFE item
     '''
 
-    psPathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-    psPath = ufe.PathString.path(psPathStr)
-    ps = ufe.Hierarchy.createItem(psPath)
     stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
     aPrim = stage.DefinePrim('/A', 'Xform')
     aXformable = UsdGeom.Xformable(aPrim)
@@ -113,5 +128,54 @@ def createSimpleXformScene():
     bUsdUfePath = ufe.PathString.path(bUsdUfePathStr)
     bUsdItem = ufe.Hierarchy.createItem(bUsdUfePath)
 
-    return (ps, aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+    return (aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
             bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem)
+
+def createSimpleXformScene():
+    '''Create a simple scene with a trivial hierarchy:
+
+    A    translation (1, 2, 3)
+    |_B  translation (7, 8, 9)
+
+    Returns a tuple of:
+        - proxy shape UFE item
+        - A translation op, A translation vector
+        - A UFE path string, A UFE path, A UFE item
+        - B translation op, B translation vector
+        - B UFE path string, B UFE path, B UFE item
+
+    Note: the proxy shape path and path string are not returned for compatibility with existing tests.
+    '''
+    (psPathStr, psPath, ps) = createSimpleStage()
+    (aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+     bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createSimpleXformSceneInCurrentLayer(psPathStr, ps)
+    return (ps,
+            aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+            bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem)
+
+def createLayeredStage(layersCount = 3):
+    '''Create a stage with multiple layers, by default 3 extra layers:
+
+    Returns a tuple of:
+        - proxy shape UFE path string
+        - proxy shape UFE path
+        - proxy shape UFE item
+        - list of root layer and additional layers, from top to bottom
+    '''
+    (psPathStr, psPath, ps) = createSimpleStage()
+
+    import os
+    print(os.environ)
+    stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+    layer = stage.GetRootLayer()
+    layers = [layer]
+    for i in range(layersCount):
+        newLayerName = 'Layer_%d' % (i+1)
+        usdFormat = Sdf.FileFormat.FindByExtension('usd')
+        newLayer = Sdf.Layer.New(usdFormat, newLayerName)
+        layer.subLayerPaths.append(newLayer.identifier)
+        layer = newLayer
+        layers.append(layer)
+
+    return (psPathStr, psPath, ps, layers)
+

@@ -19,7 +19,7 @@
 import fixturesUtils
 
 from mayaUtils import setMayaTranslation, setMayaRotation
-from usdUtils import createSimpleXformScene, mayaUsd_createStageWithNewLayer
+from usdUtils import createSimpleXformScene, mayaUsd_createStageWithNewLayer, createLayeredStage, createSimpleXformSceneInCurrentLayer
 from ufeUtils import ufeFeatureSetVersion
 
 import mayaUsd.lib
@@ -247,6 +247,47 @@ class MergeToUsdTestCase(unittest.TestCase):
         with mayaUsd.lib.OpUndoItemList():
             stage = mayaUsd.ufe.getStage(bUsdUfePathStr)
             stage.SetEditTarget(stage.GetSessionLayer())
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(bMayaPathStr))
+
+        # Check that edits have been preserved in USD.
+        bUsdMatrix = bXlateOp.GetOpTransform(
+            mayaUsd.ufe.getTime(bUsdUfePathStr))
+        mayaValues = [v for v in bMayaMatrix]
+        usdValues = [v for row in bUsdMatrix for v in row]
+    
+        assertVectorAlmostEqual(self, mayaValues, usdValues)
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testMergeToUsdToParentLayer(self):
+        '''Merge edits on a USD transform back to USD targeting a parent layer.'''
+
+        # Create a multi-layered scene with prim on the lowest layer.
+        # We should receive three layers: root and two additional sub-layers.
+        (psPathStr, psPath, ps, layers) = createLayeredStage(2)
+        self.assertEqual(3, len(layers))
+
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.SetEditTarget(layers[-1])
+
+        (aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+         bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createSimpleXformSceneInCurrentLayer(psPathStr, ps)
+
+        # To merge back to USD, we must edit as Maya first.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
+        bMayaItem = ufe.GlobalSelection.get().front()
+        (bMayaPath, bMayaPathStr, _, bMayaMatrix) = \
+            setMayaTranslation(bMayaItem, om.MVector(10, 11, 12))
+
+        psHier = ufe.Hierarchy.hierarchy(ps)
+
+        # Before merging, set the edit target to the top non-root layer
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.SetEditTarget(layers[1])
+
+        # Merge edits back to USD.
+        with mayaUsd.lib.OpUndoItemList():
             self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(bMayaPathStr))
 
         # Check that edits have been preserved in USD.
