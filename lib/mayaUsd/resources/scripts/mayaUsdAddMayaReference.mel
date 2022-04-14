@@ -13,30 +13,6 @@
 // limitations under the License.
 //
 
-// Verbatim copy of fileOptions.mel:pushOptionsUITemplate(), which is not
-// a global proc.
-proc pushOptionsUITemplate()
-{
-    // Standardize the look of the options UI
-    //
-    if (!`uiTemplate -exists optionsTemplate`) 
-    {
-            uiTemplate optionsTemplate;
-
-            frameLayout -defineTemplate optionsTemplate 
-                    -collapsable true
-                    -collapse false
-                    -labelVisible true 
-                    -labelIndent 5 
-                    -marginWidth 5 
-                    -marginHeight 5;
-
-    columnLayout -defineTemplate optionsTemplate 
-        -adjustableColumn true;
-    }
-    setUITemplate -pushTemplate optionsTemplate;
-}
-
 global proc string createRowLayoutforMayaReference(string $parent, string $rowLayoutName, int $nbCols)
 {
     // See setDefaultTemplates.mel in Maya.

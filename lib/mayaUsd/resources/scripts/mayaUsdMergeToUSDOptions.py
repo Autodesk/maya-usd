@@ -41,7 +41,7 @@ def showMergeToUSDOptions(target):
         # Delete the window and recreate it.
         cmds.deleteUI(windowName)
 
-    window = cmds.window(windowName, title=getMayaUsdLibString("kMergeToUSDOptionsTitle"))
+    window = cmds.window(windowName, title=getMayaUsdLibString("kMergeToUSDOptionsTitle"), widthHeight=mayaUsdOptions.defaultOptionBoxSize())
     _createMergeToUSDOptionsDialog(window, target)
 
 
