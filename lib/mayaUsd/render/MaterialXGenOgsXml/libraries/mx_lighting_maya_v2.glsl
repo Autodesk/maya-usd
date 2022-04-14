@@ -21,4 +21,4 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 roughness, int distrib
     float phongExp = mayaRoughnessToPhongExp(sqrt(avgRoughness));
     vec3 Li = mayaGetSpecularEnvironment(N, V, phongExp);
     return Li * F * G * comp;
-};
+}
