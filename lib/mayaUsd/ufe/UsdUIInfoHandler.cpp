@@ -68,6 +68,7 @@ void addMetadataCount(
         addMetadataStrings(refs.size(), tooltip, needComma, singular, plural);
     }
 }
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -76,12 +77,58 @@ namespace ufe {
 UsdUIInfoHandler::UsdUIInfoHandler()
     : Ufe::UIInfoHandler()
 {
+    // Initialize to invalid values.
+    fInvisibleColor[0] = -1.;
+    fInvisibleColor[1] = -1.;
+    fInvisibleColor[2] = -1.;
+
+    // Register a callback to invalidate the invisible color.
+    fColorChangedCallbackId = MEventMessage::addEventCallback(
+        "DisplayRGBColorChanged", onColorChanged, reinterpret_cast<void*>(this));
+
+    // Immediately update the invisible color to get a starting current value.
+    updateInvisibleColor();
 }
 
-UsdUIInfoHandler::~UsdUIInfoHandler() { }
+UsdUIInfoHandler::~UsdUIInfoHandler()
+{
+    // Unregister the callback used to invalidate the invisible color.
+    if (fColorChangedCallbackId)
+        MMessage::removeCallback(fColorChangedCallbackId);
+}
 
 /*static*/
 UsdUIInfoHandler::Ptr UsdUIInfoHandler::create() { return std::make_shared<UsdUIInfoHandler>(); }
+
+void UsdUIInfoHandler::updateInvisibleColor()
+{
+    // Retrieve the invisible color of the outliner.
+    //
+    // We *cannot* intialize it in treeViewCellInfo() because
+    // that function gets called in a paint event and calling
+    // a command in a painting event can cause a recursive paint
+    // event if commands echoing is on, which can corrupt the
+    // Qt paint internal which lead to a crash. Typical symptom
+    // is that the state variable of the Qt paint engine becomes
+    // null midway through the repaint.
+
+    MDoubleArray color;
+    MGlobal::executeCommand("displayRGBColor -q \"outlinerInvisibleColor\"", color);
+
+    if (color.length() == 3) {
+        color.get(fInvisibleColor.data());
+    }
+}
+
+/*static*/
+void UsdUIInfoHandler::onColorChanged(void* data)
+{
+    UsdUIInfoHandler* infoHandler = reinterpret_cast<UsdUIInfoHandler*>(data);
+    if (!infoHandler)
+        return;
+
+    infoHandler->updateInvisibleColor();
+}
 
 //------------------------------------------------------------------------------
 // Ufe::UIInfoHandler overrides
@@ -98,16 +145,11 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
         if (!usdItem->prim().IsActive()) {
             changed = true;
             info.fontStrikeout = true;
-            MDoubleArray outlinerInvisibleColor;
-            if (MGlobal::executeCommand(
-                    "displayRGBColor -q \"outlinerInvisibleColor\"", outlinerInvisibleColor)
-                && (outlinerInvisibleColor.length() == 3)) {
-                double rgb[3];
-                outlinerInvisibleColor.get(rgb);
+            if (fInvisibleColor[0] >= 0) {
                 info.textFgColor.set(
-                    static_cast<float>(rgb[0]),
-                    static_cast<float>(rgb[1]),
-                    static_cast<float>(rgb[2]));
+                    static_cast<float>(fInvisibleColor[0]),
+                    static_cast<float>(fInvisibleColor[1]),
+                    static_cast<float>(fInvisibleColor[2]));
             } else {
                 info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
             }

@@ -279,6 +279,8 @@ struct _MaterialXData
         mx::loadLibraries({}, _mtlxSearchPath, _mtlxLibrary);
 
         _FixLibraryTangentInputs(_mtlxLibrary);
+
+        mx::OgsXmlGenerator::setUseLightAPI(MAYA_LIGHTAPI_VERSION_2);
     }
     MaterialX::FileSearchPath _mtlxSearchPath; //!< MaterialX library search path
     MaterialX::DocumentPtr    _mtlxLibrary;    //!< MaterialX library
@@ -363,6 +365,10 @@ size_t _GenerateNetwork2TopoHash(const HdMaterialNetwork2& materialNetwork)
             }
         }
     }
+
+    // The specular environment settings used affect the topology of the shader:
+    MayaUsd::hash_combine(topoHash, MaterialXMaya::OgsFragment::getSpecularEnvKey());
+
     return topoHash;
 }
 
@@ -2425,7 +2431,8 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
     _ApplyMtlxVP2Fixes(fixedNetwork, surfaceNetwork);
 
     SdfPath       terminalPath = terminalConnIt->second.upstreamNode;
-    const TfToken shaderCacheID(_GenerateXMLString(fixedNetwork));
+    const TfToken shaderCacheID(
+        _GenerateXMLString(fixedNetwork) + MaterialXMaya::OgsFragment::getSpecularEnvKey());
 
     // Acquire a shader instance from the shader cache. If a shader instance has been cached with
     // the same token, a clone of the shader instance will be returned. Multiple clones of a shader
@@ -2493,12 +2500,6 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateMaterialXShaderInstance(
         } else {
             return shaderInstance;
         }
-
-#if MAYA_LIGHTAPI_VERSION_2 == 3
-        mx::OgsXmlGenerator::setUseLightAPI(3);
-#else
-        mx::OgsXmlGenerator::setUseLightAPI(2);
-#endif
 
         mx::NodePtr materialNode;
         for (const mx::NodePtr& material : mtlxDoc->getMaterialNodes()) {
