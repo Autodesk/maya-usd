@@ -117,7 +117,7 @@ UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const { return fItem; }
 
 Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const { return fItem; }
 
-#ifdef UFE_V4_FEATURES_AVAILABLE
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_MINOR_VERSION > 4 || UFE_PATCH_LEVEL > 3)
 
 bool UsdHierarchy::hasChildren() const
 {
