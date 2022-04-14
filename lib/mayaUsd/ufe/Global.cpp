@@ -25,7 +25,6 @@
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <mayaUsd/ufe/MayaUIInfoHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
 #include <mayaUsd/ufe/UsdCameraHandler.h>
@@ -41,6 +40,7 @@
 #endif
 #ifdef UFE_V3_FEATURES_AVAILABLE
 #define HAVE_PATH_MAPPING
+#include <mayaUsd/ufe/MayaUIInfoHandler.h>
 #include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
