@@ -52,14 +52,23 @@ PulledObjectHierarchy::Ptr PulledObjectHierarchy::create(
 
 Ufe::SceneItem::Ptr PulledObjectHierarchy::sceneItem() const { return _mayaHierarchy->sceneItem(); }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool PulledObjectHierarchy::hasFilteredChildren(const ChildFilter& childFilter) const
+{
+    return _mayaHierarchy->hasFilteredChildren(childFilter);
+}
+#endif
+
 bool PulledObjectHierarchy::hasChildren() const { return _mayaHierarchy->hasChildren(); }
 
 Ufe::SceneItemList PulledObjectHierarchy::children() const { return _mayaHierarchy->children(); }
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SceneItemList PulledObjectHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {
     return _mayaHierarchy->filteredChildren(childFilter);
 }
+#endif
 
 Ufe::SceneItem::Ptr PulledObjectHierarchy::parent() const
 {

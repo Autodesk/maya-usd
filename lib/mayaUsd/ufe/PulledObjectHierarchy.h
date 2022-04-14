@@ -58,7 +58,8 @@ public:
     Ufe::SceneItem::Ptr sceneItem() const override;
     bool                hasChildren() const override;
     Ufe::SceneItemList  children() const override;
-    Ufe::SceneItemList  filteredChildren(const ChildFilter&) const override;
+    UFE_V4(bool hasFilteredChildren(const ChildFilter&) const override;)
+    UFE_V2(Ufe::SceneItemList filteredChildren(const ChildFilter&) const override;)
     Ufe::SceneItem::Ptr parent() const override;
 
     Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;

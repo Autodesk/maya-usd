@@ -117,6 +117,30 @@ UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const { return fItem; }
 
 Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const { return fItem; }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+
+bool UsdHierarchy::hasChildren() const
+{
+    // We have an extra logic in createUFEChildList to remap and filter
+    // prims. Going this direction is more costly, but easier to maintain.
+    //
+    // I don't have data that proves we need to worry about performance in here,
+    // so going after maintainability.
+    return !children().empty();
+}
+
+bool UsdHierarchy::hasFilteredChildren(const ChildFilter& childFilter) const
+{
+    // We have an extra logic in createUFEChildList to remap and filter
+    // prims. Going this direction is more costly, but easier to maintain.
+    //
+    // I don't have data that proves we need to worry about performance in here,
+    // so going after maintainability.
+    return !filteredChildren(childFilter).empty();
+}
+
+#else
+
 bool UsdHierarchy::hasChildren() const
 {
     // We have an extra logic in createUFEChildList to remap and filter
@@ -127,6 +151,8 @@ bool UsdHierarchy::hasChildren() const
     const bool isFilteringInactive = false;
     return !createUFEChildList(getUSDFilteredChildren(fItem), isFilteringInactive).empty();
 }
+
+#endif
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
