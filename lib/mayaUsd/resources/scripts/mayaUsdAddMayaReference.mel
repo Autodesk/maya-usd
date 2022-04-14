@@ -92,6 +92,8 @@ proc string defaultVariantName() {
 // Adapted from fileOptions.mel:fileOptionsTabPage().
 proc fileOptionsTabPage(string $tabLayout)
 {
+    global int $gOptionBoxTemplateDescriptionMarginWidth;
+
     string $action = "Reference";
     python("import mayaUsdMayaReferenceUtils; mayaUsdMayaReferenceUtils.pushOptionsUITemplate()");
 
@@ -114,12 +116,10 @@ proc fileOptionsTabPage(string $tabLayout)
     string $topForm = `columnLayout -rowSpacing 5 actionOptionsForm`;
 
     setParent $topForm;
-    frameLayout -label `getMayaUsdLibString("kMayaRefDescription")`;
-    // Note: if column is adjustable, then the label takes too much vertical space.
-    //       when set not adjustable, the text does not take the full width. This
-    //       seemed less bad than large empty vertical spacing.
-    columnLayout -adjustableColumn false;
-    text -align "left" -wordWrap true -label `getMayaUsdLibString("kMayaRefAddToUSDDescription")`;
+    frameLayout -label `getMayaUsdLibString("kMayaRefDescription")` -height 170 -mw $gOptionBoxTemplateDescriptionMarginWidth;
+    columnLayout;
+    text -align "left" -wordWrap true -height 80 -label `getMayaUsdLibString("kMayaRefAddToUSDDescription1")`;
+    text -align "left" -wordWrap true -height 50 -label `getMayaUsdLibString("kMayaRefAddToUSDDescription2")`;
 
     setParent $topForm;
     frameLayout -label `getMayaUsdLibString("kMayaRefUsdOptions")`;
