@@ -150,12 +150,23 @@ def primNameTextChanged(primName):
         if validatedName != primName:
             cmds.textFieldGrp('primNameText', edit=True, text=validatedName)
 
-def variantOrNewPrim(buttonChecked):
+def variantSelectedCallback(buttonChecked):
+    variantSelected = cmds.checkBoxGrp('variantCheckBox', query=True, value1=1)
+    variantOrNewPrim(variantSelected)
+
+def newPrimSelectedCallback(buttonChecked):
+    newPrimSelected = cmds.checkBoxGrp('newChildPrimCheckBox', query=True, value1=1)
+    variantOrNewPrim(not newPrimSelected)
+
+def variantOrNewPrim(variantSelected):
     # The variant and new child prim radio buttons are part of a collection.
     # So only one can be checked.
-    variantSelected = cmds.radioButtonGrp('variantRadioBtn', query=True, select=1)
+    cmds.checkBoxGrp('variantCheckBox', edit=True, value1=variantSelected)
+    cmds.checkBoxGrp('newChildPrimCheckBox', edit=True, value1=not variantSelected)
+    
     cmds.rowLayout('usdCacheVariantSetRow', edit=True, enable=variantSelected)
     cmds.rowLayout('usdCacheVariantNameRow', edit=True, enable=variantSelected)
+    cmds.rowLayout('usdCacheNewPrimRow', edit=True, enable=not variantSelected)
     cmds.textFieldGrp('primNameText', edit=True, enable=not variantSelected)
 
 def cacheFileUsdHierarchyOptions(topForm):
@@ -184,12 +195,13 @@ def cacheFileUsdHierarchyOptions(topForm):
         for label in _listEditedAsLabels:
             cmds.menuItem(label=label)
 
-    variantRb = cmds.radioButtonGrp('variantRadioBtn',
-                                    nrb=1,
-                                    changeCommand1=variantOrNewPrim,
-                                    label=getMayaUsdLibString('kTextDefineIn'),
-                                    l1=getMayaUsdLibString('kTextVariant'),
-                                    annotation=getMayaUsdLibString('kTextVariantToolTip'))
+    rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "usdCacheDefineInRow", 3)')
+    with mayaRefUtils.SetParentContext(rl):
+        cmds.text(label=getMayaUsdLibString('kTextDefineIn'))
+        cmds.checkBoxGrp('variantCheckBox',
+                        changeCommand1=variantSelectedCallback,
+                        l1=getMayaUsdLibString('kTextVariant'),
+                        annotation=getMayaUsdLibString('kTextVariantToolTip'))
 
     rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "usdCacheVariantSetRow", 3)')
     with mayaRefUtils.SetParentContext(rl):
@@ -206,20 +218,18 @@ def cacheFileUsdHierarchyOptions(topForm):
         cmds.textField('variantNameText',
                        cc=variantNameTextChanged)
 
-    # Note: this radio button doesn't need the change command since its part of
-    #       the same collection as the variantRb (which has the changeCommand).
-    newChildRb = cmds.radioButtonGrp('newChildPrimRadioBtn',
-                                     nrb=1,
-                                     label='',
-                                     scl=variantRb,
-                                     l1=getMayaUsdLibString('kButtonNewChildPrim'),
-                                     annotation=getMayaUsdLibString('kButtonNewChildPrimToolTip'))
+    rl = mel.eval('createRowLayoutforMayaReference("' + widgetColumn + '", "usdCacheNewPrimRow", 3)')
+    with mayaRefUtils.SetParentContext(rl):
+        cmds.text(label='')
+        newChildRb = cmds.checkBoxGrp('newChildPrimCheckBox',
+                                        changeCommand1=newPrimSelectedCallback,
+                                        l1=getMayaUsdLibString('kButtonNewChildPrim'),
+                                        annotation=getMayaUsdLibString('kButtonNewChildPrimToolTip'))
 
     cmds.textFieldGrp('primNameText',
                       label=getMayaUsdLibString('kMayaRefPrimName'),
                       cc=primNameTextChanged)
 
-    cmds.radioButtonGrp(variantRb, edit=True, select=1)
     variantOrNewPrim(True)
 
 
@@ -316,7 +326,7 @@ def cacheInitUi(parent, filterType):
 
     if mayaRefPrimParent.HasVariantSets():
         # Define in variant is the default.
-        cmds.radioButtonGrp('variantRadioBtn', edit=True, select=1)
+        cmds.checkBoxGrp('variantCheckBox', edit=True, value1=1)
         variantSets = mayaRefPrimParent.GetVariantSets()
         variantSetsNames = variantSets.GetNames()
         for vsName in variantSetsNames:
@@ -334,11 +344,11 @@ def cacheInitUi(parent, filterType):
             variantSetNameChanged(variantSetsNames[0])
     else:
         # No variant sets: disable all variant-related controls.
-        cmds.radioButtonGrp('variantRadioBtn', edit=True, enable=False)
+        cmds.checkBoxGrp('variantCheckBox', edit=True, enable=False)
         cmds.rowLayout('usdCacheVariantSetRow', edit=True, enable=False)
         cmds.rowLayout('usdCacheVariantNameRow', edit=True, enable=False)
 
-        cmds.radioButtonGrp('newChildPrimRadioBtn', edit=True, select=1)
+        cmds.checkBoxGrp('newChildPrimCheckBox', edit=True, value1=1)
 
     # Set initial (unique) name for child prim.
     if optionsDict['rn_primName']:
@@ -355,6 +365,8 @@ def cacheInitUi(parent, filterType):
     cmds.frameLayout('advancedFrameLayout', edit=True, collapse=True)
     cmds.frameLayout('authorFrameLayout', edit=True, collapse=False)
 
+    variantOrNewPrim(mayaRefPrimParent.HasVariantSets())
+
 def cacheCommitUi(parent, selectedFile):
     """
     Reacts to the file dialog being accepted by the user.
@@ -370,7 +382,7 @@ def cacheCommitUi(parent, selectedFile):
     payloadOrReference = _getMenuValue('compositionArcTypeMenu', _compositionArcValues)
     listEditType = _getMenuValue('listEditedAsMenu', _listEditedAsValues)
     
-    defineInVariant = cmds.radioButtonGrp('variantRadioBtn', query=True, select=True)
+    defineInVariant = cmds.checkBoxGrp('variantCheckBox', query=True, value1=True)
     if defineInVariant:
         variantSetName = cmds.optionMenu('variantSetMenu', query=True, value=True)
         variantName = cmds.optionMenu('variantNameMenu', query=True, value=True)
