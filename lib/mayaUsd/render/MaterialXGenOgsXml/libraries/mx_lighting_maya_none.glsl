@@ -16,4 +16,4 @@ vec3 mx_environment_irradiance(vec3 N)
 vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distribution, FresnelData fd)
 {
     return vec3(0);
-};
+}
