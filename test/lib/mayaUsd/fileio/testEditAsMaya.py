@@ -66,6 +66,23 @@ class EditAsMayaTestCase(unittest.TestCase):
     def testTransformEditAsMaya(self):
         '''Edit a USD transform as a Maya object.'''
 
+        (ps, aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+             bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createSimpleXformScene()
+
+        # Edit "B" Prim as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(bUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
+        # Verify that its ancestor "A" Prim cannot be edited as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+            self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testCannotEditAsMayaAnAncestor(self):
+        '''Test that trying to edit an ancestor is not allowed.'''
+
         (ps, xlateOp, xlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
          _, _, _, _, _) = createSimpleXformScene()
 
