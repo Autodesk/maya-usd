@@ -72,12 +72,14 @@ install(FILES ${NODE_GLSL_IMPLEMENTATIONS}
 if(MaterialX_VERSION VERSION_LESS "1.38.4")
     MESSAGE(STATUS "Using 1.38.3 libraries with MaterialX ${MaterialX_VERSION}")
     foreach(MTLX_FILE ${NODE_GLSL_IMPLEMENTATIONS_VERSIONED})
-        install(FILES "1.38.3/${MTLX_FILE}"
+        string(REPLACE "libraries/" "libraries/1.38.3/" MTLX_FILE ${MTLX_FILE})
+        install(FILES "${MTLX_FILE}"
             DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/adsk/maya/genglsl
         )
     endforeach()
     foreach(MTLX_FILE ${LIGHT_IMPLEMENTATIONS})
-        install(FILES "1.38.3/${MTLX_FILE}"
+        string(REPLACE "libraries/" "libraries/1.38.3/" MTLX_FILE ${MTLX_FILE})
+        install(FILES "${MTLX_FILE}"
             DESTINATION ${CMAKE_INSTALL_PREFIX}/libraries/pbrlib/genglsl/ogsxml
         )
     endforeach()
