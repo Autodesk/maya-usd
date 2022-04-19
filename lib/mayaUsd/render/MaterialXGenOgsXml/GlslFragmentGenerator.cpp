@@ -202,15 +202,19 @@ ShaderPtr GlslFragmentGenerator::generate(
             emitLine("#define MX_NUM_FIS_SAMPLES 64", pixelStage, false);
         }
         emitLineBreak(pixelStage);
-        emitInclude(libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
+        emitInclude(
+            libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
     } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
         if (OgsXmlGenerator::useLightAPI() < 2) {
-            emitInclude(libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
+            emitInclude(
+                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
         } else {
-            emitInclude(libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
+            emitInclude(
+                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
         }
     } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
-        emitInclude(libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
+        emitInclude(
+            libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
     } else {
         throw ExceptionShaderGenError(
             "Invalid hardware specular environment method specified: '"
