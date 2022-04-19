@@ -412,6 +412,9 @@ MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray
         }
     }
 
+    if (plugBeingDirtied == timeAttr || plugBeingDirtied.isDynamic())
+        ParentClass::setDependentsDirty(plugBeingDirtied, plugs);
+
     if (plugBeingDirtied == time() || plugBeingDirtied == m_timeOffset
         || plugBeingDirtied == m_timeScalar) {
         plugs.append(outTimePlug());
@@ -1489,6 +1492,10 @@ void ProxyShape::postConstructor()
     // Apply render defaults
     MPlug(thisMObject(), m_visibleInReflections).setValue(true);
     MPlug(thisMObject(), m_visibleInRefractions).setValue(true);
+
+#if MAYA_API_VERSION >= 20210000
+    enableProxyAccessor();
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1624,6 +1631,8 @@ MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::compute %s\n", plug.name().asChar());
     // When shape is computed Maya will request redraw by itself
     m_requestedRedraw = true;
+    if (plug == outTimeAttr || plug.isDynamic())
+        ParentClass::compute(plug, dataBlock);
     MTime currentTime;
     if (plug == outTime()) {
         MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
