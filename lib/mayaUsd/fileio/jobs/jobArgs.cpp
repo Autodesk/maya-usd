@@ -88,6 +88,19 @@ bool _Boolean(const VtDictionary& userArgs, const TfToken& key)
     return VtDictionaryGet<bool>(userArgs, key);
 }
 
+/// Extracts a pointer at \p key from \p userArgs, or nullptr if it can't extract.
+UsdStageRefPtr _UsdStageRefPtr(const VtDictionary& userArgs, const TfToken& key)
+{
+    if (!VtDictionaryIsHolding<UsdStageRefPtr>(userArgs, key)) {
+        TF_CODING_ERROR(
+            "Dictionary is missing required key '%s' or key is "
+            "not pointer type",
+            key.GetText());
+        return nullptr;
+    }
+    return VtDictionaryGet<UsdStageRefPtr>(userArgs, key);
+}
+
 /// Extracts a double at \p key from \p userArgs, or defaultValue if it can't extract.
 double _Double(const VtDictionary& userArgs, const TfToken& key, double defaultValue)
 {
@@ -1075,6 +1088,7 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
     , importInstances(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(_Boolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
     , importWithProxyShapes(importWithProxyShapes)
+    , pullImportStage(_UsdStageRefPtr(userArgs, UsdMayaJobImportArgsTokens->pullImportStage))
     , timeInterval(timeInterval)
     , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobImportArgsTokens->chaserArgs))
@@ -1126,6 +1140,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         d[UsdMayaJobImportArgsTokens->importInstances] = true;
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = false;
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = "";
+        d[UsdMayaJobImportArgsTokens->pullImportStage] = UsdStageRefPtr();
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
         d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
@@ -1183,6 +1198,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
     std::call_once(once, []() {
         // Common types:
         const auto _boolean = VtValue(false);
+        const auto _usdStageRefPtr = VtValue(nullptr);
         const auto _string = VtValue(std::string());
         const auto _stringVector = VtValue(std::vector<VtValue>({ _string }));
         const auto _stringTuplet = VtValue(std::vector<VtValue>({ _string, _string, _string }));
@@ -1201,6 +1217,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetGuideDictionary()
         d[UsdMayaJobImportArgsTokens->importInstances] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTextures] = _boolean;
         d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = _string;
+        d[UsdMayaJobImportArgsTokens->pullImportStage] = _usdStageRefPtr;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = _boolean;
         d[UsdMayaJobExportArgsTokens->chaser] = _stringVector;
         d[UsdMayaJobExportArgsTokens->chaserArgs] = _stringTripletVector;
@@ -1286,6 +1303,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
         << "importInstances: " << TfStringify(importArgs.importInstances) << std::endl
         << "importUSDZTextures: " << TfStringify(importArgs.importUSDZTextures) << std::endl
         << "importUSDZTexturesFilePath: " << TfStringify(importArgs.importUSDZTexturesFilePath)
+        << "pullImportStage: " << TfStringify(importArgs.pullImportStage) << std::endl
         << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl

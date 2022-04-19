@@ -303,6 +303,31 @@ MStatus Camera::import(const UsdPrim& prim, MObject& parent, MObject& createdObj
                 to, m_focusDistance, MDistance(focusDistance, MDistance::kCentimeters)),
             errorString);
     }
+
+    // Update animated transform attribute on the parent hierarchy
+    MDagPath mDagPath;
+    fn.getPath(mDagPath);
+
+    while (mDagPath.length() != 0) {
+
+        MFnDependencyNode mFnDep(mDagPath.node());
+        const std::string primPathAttr
+            = AL::maya::utils::convert(mFnDep.findPlug("primPath").asString());
+        if (primPathAttr.empty()) {
+            mDagPath.pop();
+            continue;
+        }
+
+        SdfPath currentPrimPath(primPathAttr);
+        UsdPrim currentPrim = prim.GetStage()->GetPrimAtPath(currentPrimPath);
+
+        if (currentPrim.IsValid()) {
+            mFnDep.findPlug("readAnimatedValues").setBool(true);
+        }
+
+        mDagPath.pop();
+    }
+
     return updateAttributes(to, prim);
 }
 

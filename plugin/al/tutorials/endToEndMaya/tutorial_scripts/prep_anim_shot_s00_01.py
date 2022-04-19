@@ -41,9 +41,9 @@ def main():
 
     stage.GetEditTarget().GetLayer().Save()
 
-    print '==='
-    print 'usdview %s' % shotFilePath
-    print 'usdcat %s' % animLayerFilePath
+    print('===')
+    print('usdview %s' % shotFilePath)
+    print('usdcat %s' % animLayerFilePath)
 
 def _AddCueRigAndCacheVariants(stage):
     from pxr import Kind, Sdf, Usd, UsdGeom

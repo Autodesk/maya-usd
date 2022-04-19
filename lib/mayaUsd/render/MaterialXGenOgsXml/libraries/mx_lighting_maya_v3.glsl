@@ -6,16 +6,6 @@
 
 #include "pbrlib/genglsl/lib/mx_microfacet_specular.glsl"
 
-// TODO: Make the number of samples either an environment variable or an optionVar.
-//       Keeping it a hard constant instead of a uniform allows loop unrolling by the compiler.
-#define MX_NUM_FIS_SAMPLES 64
-
-// TODO: We could also expose another toggle between the extremely slow:
-//          mx_ggx_dir_albedo_monte_carlo()
-//       And the faster:
-//          mx_ggx_dir_albedo_analytic()
-//       But we will currently default to the faster one.
-
 // https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch20.html
 // Section 20.4 Equation 13
 float mx_latlong_compute_lod(vec3 dir, float pdf, float maxMipLevel, int envSamples)
@@ -28,6 +18,10 @@ float mx_latlong_compute_lod(vec3 dir, float pdf, float maxMipLevel, int envSamp
 
 vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 roughness, int distribution, FresnelData fd)
 {
+    if (mayaGetSpecularEnvironmentNumLOD() == 0) {
+        return vec3(0);
+    }
+    
     // Generate tangent frame.
     vec3 Y = normalize(cross(N, X));
     X = cross(Y, N);

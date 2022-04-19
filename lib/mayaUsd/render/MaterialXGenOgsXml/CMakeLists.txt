@@ -20,6 +20,7 @@ set(HEADERS
 # install
 # -----------------------------------------------------------------------------
 list(APPEND LIGHT_IMPLEMENTATIONS
+    libraries/mx_lighting_maya_none.glsl
     libraries/mx_lighting_maya_v1.glsl
     libraries/mx_lighting_maya_v2.glsl
     libraries/mx_lighting_maya_v3.glsl
