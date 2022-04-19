@@ -1551,8 +1551,12 @@ MColor ProxyRenderDelegate::GetSelectionHighlightColor(const TfToken& className)
         queryName = "lead";
     } else if (className == HdPrimTypeTokens->mesh) {
         colorCache = &_activeMeshColorCache;
+#if MAYA_API_VERSION >= 20230000
         fromPalette = false;
         queryName = "polymeshActive";
+#else
+        queryName = "polymesh";
+#endif
     } else if (className == HdPrimTypeTokens->basisCurves) {
         colorCache = &_activeCurveColorCache;
         queryName = "curve";
