@@ -92,7 +92,7 @@ class ChildFilterTestCase(unittest.TestCase):
         ball3Prim = mayaUsd.ufe.ufePathToPrim(ball3PathStr)
         ball3Prim.SetActive(False)
 
-        # Props children should have 5 children and ball3 should not be one of them.
+        # Props should now have 5 children and ball3 should not be one of them.
         children = propsHier.children()
         self.assertEqual(5, len(children))
         self.assertNotIn(ball3Item, children)
