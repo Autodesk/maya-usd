@@ -202,7 +202,8 @@ protected:
         HdDirtyBits const* dirtyBits,
         TfToken const&     reprToken,
         SdfPath const&     id,
-        ReprVector const&  reprs);
+        ReprVector const&  reprs,
+        TfToken const&     renderTag);
 
     void _UpdatePrimvarSourcesGeneric(
         HdSceneDelegate*       sceneDelegate,
