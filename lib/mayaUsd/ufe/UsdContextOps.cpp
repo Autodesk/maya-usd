@@ -854,15 +854,37 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             // TODO: Introduce the "rendering purpose" concept
             // TODO: Introduce material binding via collections API
             //
-            auto stage = fItem->prim().GetStage();
-            for (UsdPrim currentPrim : stage->TraverseAll()) {
-                UsdShadeMaterial material(currentPrim);
-                if (material) {
+            // Find materials in the global selection. Either directly selected or a direct child of
+            // the selection. This way we limit how many items we traverse in search of something to
+            // bind.
+            bool foundMaterialItem = false;
+            if (auto globalSn = Ufe::GlobalSelection::get()) {
+                for (auto&& selItem : *globalSn) {
+                    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+                    if (!usdItem) {
+                        continue;
+                    }
+                    UsdShadeMaterial material(usdItem->prim());
+                    if (material) {
+                        foundMaterialItem = true;
+                        break;
+                    }
+                    for (auto&& usdChild : usdItem->prim().GetChildren()) {
+                        UsdShadeMaterial material(usdChild);
+                        if (material) {
+                            foundMaterialItem = true;
+                            break;
+                        }
+                    }
+                    if (foundMaterialItem) {
+                        break;
+                    }
+                }
+                if (foundMaterialItem) {
                     items.emplace_back(
                         BindMaterialUndoableCommand::commandName,
                         BindMaterialUndoableCommand::commandName,
                         Ufe::ContextItem::kHasChildren);
-                    break;
                 }
             }
         }
@@ -970,12 +992,33 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             if (fItem) {
                 auto prim = fItem->prim();
                 if (prim) {
-                    auto stage = prim.GetStage();
-                    for (UsdPrim currentPrim : stage->TraverseAll()) {
-                        UsdShadeMaterial material(currentPrim);
-                        if (material) {
-                            std::string currentPrimPath = currentPrim.GetPath().GetAsString();
-                            items.emplace_back(currentPrimPath, currentPrimPath);
+                    // Find materials in the global selection. Either directly selected or a direct
+                    // child of the selection:
+                    if (auto globalSn = Ufe::GlobalSelection::get()) {
+                        // Use a set to keep names alphabetically ordered and unique.
+                        std::set<std::string> foundMaterials;
+                        for (auto&& selItem : *globalSn) {
+                            UsdSceneItem::Ptr usdItem
+                                = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
+                            if (!usdItem) {
+                                continue;
+                            }
+                            UsdShadeMaterial material(usdItem->prim());
+                            if (material) {
+                                std::string currentPrimPath
+                                    = usdItem->prim().GetPath().GetAsString();
+                                foundMaterials.insert(currentPrimPath);
+                            }
+                            for (auto&& usdChild : usdItem->prim().GetChildren()) {
+                                UsdShadeMaterial material(usdChild);
+                                if (material) {
+                                    std::string currentPrimPath = usdChild.GetPath().GetAsString();
+                                    foundMaterials.insert(currentPrimPath);
+                                }
+                            }
+                        }
+                        for (auto&& materialPath : foundMaterials) {
+                            items.emplace_back(materialPath, materialPath);
                         }
                     }
                 }
