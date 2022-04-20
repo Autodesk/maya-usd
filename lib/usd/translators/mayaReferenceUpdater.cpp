@@ -16,12 +16,14 @@
 #include "mayaReferenceUpdater.h"
 
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUtils/MergePrims.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
@@ -42,6 +44,10 @@
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MFnAttribute.h>
+
+#include <ufe/pathString.h>
+
+#include <iostream>
 
 namespace {
 std::string findValue(const PXR_NS::VtDictionary& routingData, const PXR_NS::TfToken& key)
@@ -222,6 +228,33 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
 bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
 {
     const MObject& parentNode = getMayaObject();
+    std::cout << "PPT in discardEdits(), Maya reference parent node name is ";
+    MStatus           status;
+    MFnDependencyNode fnParent(parentNode, &status);
+    std::cout << fnParent.name().asChar() << std::endl;
+
+    MDagPath dagPath;
+    status = MDagPath::getAPathTo(parentNode, dagPath);
+    if (status == MS::kSuccess) {
+        Ufe::Path pulledPath;
+        if (PrimUpdaterManager::readPullInformation(dagPath, pulledPath)) {
+            std::cout << "PPT: pulled path is " << Ufe::PathString::string(pulledPath) << std::endl;
+            // Reset the auto-edit when discarding the edit.
+            UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
+            if (prim.IsValid()) {
+                std::cout << "PPT: prim corresponding to pulled path is valid." << std::endl;
+                UsdAttribute mayaAutoEditAttr = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
+                if (mayaAutoEditAttr.IsValid()) {
+                    std::cout << "PPT: mayaAutoEditAttr is valid, resetting it." << std::endl;
+                    mayaAutoEditAttr.Set<bool>(false);
+                }
+            }
+        }
+        else {
+            std::cout << "PPT: no pulled path found!!!" << std::endl;
+        }
+    }
+
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
 
     return UsdMayaPrimUpdater::discardEdits();

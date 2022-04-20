@@ -1063,6 +1063,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         updater->discardEdits();
     }
 
+#if 0
     // Reset the auto-edit when discarding the edit.
     UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
     if (prim.IsValid()) {
@@ -1071,6 +1072,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
             mayaAutoEditAttr.Set<bool>(false);
         }
     }
+#endif
 
     FunctionUndoItem::execute(
         "Discard edits pull info removal",
