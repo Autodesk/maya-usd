@@ -280,34 +280,7 @@ class testUsdExportSkeleton(unittest.TestCase):
         for _ in range(5):
             cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile,
                          shadingMode='none', exportSkels='auto', selection=True)
-            
-    def testSkelMissingJointFromDagPose(self):
-        """
-        Check that dagPoses that don't contain all desired joints issue an
-        appropriate warning
-        """
-        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonBindPoseMissingJoints.ma")
-        cmds.file(mayaFile, force=True, open=True)
 
-        usdFile = os.path.abspath('UsdExportBindPoseMissingJointsTest.usda')
-
-        joints = cmds.listRelatives('joint_grp', allDescendents=True, type='joint')
-        bindMembers = cmds.dagPose('dagPose1', q=1, members=1)
-        nonBindJoints = [j for j in joints if j not in bindMembers]
-        self.assertEqual(nonBindJoints, [u'joint4'])
-
-        delegate = UsdUtils.CoalescingDiagnosticDelegate()
-
-        cmds.select('joint_grp')
-        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile, shadingMode='none',
-                           exportSkels='auto', selection=True)
-
-        messages = delegate.TakeUncoalescedDiagnostics()
-        warnings = [x.commentary for x in messages if x.diagnosticCode == Tf.TF_DIAGNOSTIC_WARNING_TYPE]
-        missingJointWarnings = [x for x in warnings if 'is not a member of dagPose' in x]
-        self.assertEqual(len(missingJointWarnings), 1)
-        self.assertIn("Node 'joint4' is not a member of dagPose 'dagPose1'",
-                      missingJointWarnings[0])
 
     def testSkelBindPoseSparseIndices(self):
         """
