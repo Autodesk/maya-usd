@@ -1970,8 +1970,6 @@ void ProxyShape::registerEvents()
     registerEvent("PostStageLoaded", AL::event::kUSDMayaEventType);
     registerEvent("ConstructGLEngine", AL::event::kUSDMayaEventType);
     registerEvent("DestroyGLEngine", AL::event::kUSDMayaEventType);
-    registerEvent("PreSelectionChanged", AL::event::kUSDMayaEventType);
-    registerEvent("PostSelectionChanged", AL::event::kUSDMayaEventType);
     registerEvent("PreVariantChanged", AL::event::kUSDMayaEventType);
     registerEvent("PostVariantChanged", AL::event::kUSDMayaEventType);
     registerEvent("PreSerialiseContext", AL::event::kUSDMayaEventType, Global::postSave());
@@ -1983,8 +1981,6 @@ void ProxyShape::registerEvents()
     registerEvent("PreDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
     registerEvent("PostDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
     registerEvent("EditTargetChanged", AL::event::kUSDMayaEventType);
-    registerEvent("SelectionStarted", AL::event::kUSDMayaEventType);
-    registerEvent("SelectionEnded", AL::event::kUSDMayaEventType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
