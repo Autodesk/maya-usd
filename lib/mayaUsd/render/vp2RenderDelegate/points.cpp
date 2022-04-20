@@ -192,7 +192,13 @@ void HdVP2Points::Sync(
         }
     }
 
-    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, id, _reprs);
+#if PXR_VERSION > 2111
+    const TfToken& renderTag = GetRenderTag();
+#else
+    const TfToken& renderTag = delegate->GetRenderTag(id);
+#endif
+
+    _SyncSharedData(_sharedData, delegate, dirtyBits, reprToken, id, _reprs, renderTag);
 
     *dirtyBits = HdChangeTracker::Clean;
 
