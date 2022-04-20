@@ -382,7 +382,7 @@ bool AttrDefHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
             return true;
         } else {
             if (fPrim) {
-                const PXR_NS::TfToken attrName(fAttrDef->isOutput() ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name()) : PXR_NS::TfToken(INPUT_ATTR_PREFIX + fAttrDef->name()));
+                const PXR_NS::TfToken attrName(fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name()) : PXR_NS::TfToken(INPUT_ATTR_PREFIX + fAttrDef->name()));
                 fUsdAttr = fPrim.CreateAttribute(attrName, PXR_NS::SdfGetValueTypeNameForValue(value));
             } else {
                 return false;
@@ -408,7 +408,7 @@ bool AttrDefHandle::setMetadata(const std::string& key, const Ufe::Value& value)
         return AttrHandle::setMetadata(key, value);
     else {
         if (fPrim) {
-            const PXR_NS::TfToken attrName(fAttrDef->isOutput() ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name()) : PXR_NS::TfToken(INPUT_ATTR_PREFIX + fAttrDef->name()));
+            const PXR_NS::TfToken attrName(fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name()) : PXR_NS::TfToken(INPUT_ATTR_PREFIX + fAttrDef->name()));
             PXR_NS::VtValue v;
             PXR_NS::UsdTimeCode time;
             get(&v, time);
@@ -722,7 +722,7 @@ template <typename T> T TypedUsdAttribute<T>::get() const
 
 template <typename T> void TypedUsdAttribute<T>::set(const T& value)
 {
-    setUsdAttr<T>(fUsdAttr, value);
+    setUsdAttr<T>(fAttrHandle, value);
 }
 
 //------------------------------------------------------------------------------

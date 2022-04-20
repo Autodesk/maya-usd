@@ -44,13 +44,13 @@ const std::string OUTPUT_ATTR_PREFIX = "outputs:";
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
     : Ufe::Attributes()
     , fItem(item)
-    , fShaderNodeDef(nullptr)
+    , fNodeDef(nullptr)
 {
     if (item) {
         fPrim = item->prim();
     }
     UsdShaderNodeDefHandler::Ptr shaderNodeDefHandler = UsdShaderNodeDefHandler::create();
-    fShaderNodeDef = shaderNodeDefHandler->definition(item);
+    fNodeDef = shaderNodeDefHandler->definition(item);
 }
 
 UsdAttributes::~UsdAttributes() { }
@@ -75,16 +75,16 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
     if (usdAttr.IsValid()) {
         return getUfeTypeForAttribute(usdAttr);
     } else {
-        if (!fShaderNodeDef || !fShaderNodeDef->isValid()) {
+        if (!fNodeDef) {
             return nullptr;
         }
-        Ufe::AttributeDefs inputs = fShaderNodeDef->inputs();
+        Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
         for (auto const& input : inputs) {
             if (INPUT_ATTR_PREFIX + input->name() == name) {
                 return input->type();
             }
         }
-        Ufe::AttributeDefs outputs = fShaderNodeDef->outputs();
+        Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
         for (auto const& output : outputs) {
             if (INPUT_ATTR_PREFIX + output->name() == name) {
                 return output->type();
@@ -115,10 +115,10 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         attrHandle = std::make_shared<AttrHandle>(fPrim, usdAttr);
         newAttrType = getUfeTypeForAttribute(usdAttr);
     } else {
-        if (!fShaderNodeDef || !fShaderNodeDef->isValid()) {
+        if (!fNodeDef) {
             return nullptr;
         }
-        Ufe::AttributeDefs inputs = fShaderNodeDef->inputs();
+        Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
         for (auto const& input : inputs) {
             if (INPUT_ATTR_PREFIX + input->name() == name) {
                 attrHandle = std::make_shared<AttrDefHandle>(fPrim, input);
@@ -126,7 +126,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             }
         }
         if (!attrHandle) {
-            Ufe::AttributeDefs outputs = fShaderNodeDef->outputs();
+            Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
             for (auto const& output : outputs) {
                 if (INPUT_ATTR_PREFIX + output->name() == name) {
                     attrHandle = std::make_shared<AttrDefHandle>(fPrim, output);
@@ -172,12 +172,12 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 std::vector<std::string> UsdAttributes::attributeNames() const
 {
     std::vector<std::string> names;
-    if (fShaderNodeDef && fShaderNodeDef->isValid()) {
-        Ufe::AttributeDefs inputs = fShaderNodeDef->inputs();
+    if (fNodeDef) {
+        Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
         for (auto const& input : inputs) {
             names.push_back(INPUT_ATTR_PREFIX + input->name());
         }
-        Ufe::AttributeDefs outputs = fShaderNodeDef->outputs();
+        Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
         for (auto const& output : outputs) {
             names.push_back(INPUT_ATTR_PREFIX + output->name());
         }
@@ -197,13 +197,13 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
     if (fPrim.HasAttribute(tkName)) {
         return true;
     }
-    Ufe::AttributeDefs inputs = fShaderNodeDef->inputs();
+    Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
     for (auto const& input : inputs) {
         if (input->name() == tkName.GetString()) {
             return true;
         }
     }
-    Ufe::AttributeDefs outputs = fShaderNodeDef->outputs();
+    Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
     for (auto const& output : outputs) {
         if (output->name() == tkName.GetString()) {
             return true;
