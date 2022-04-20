@@ -363,7 +363,7 @@ class ContextOpsTestCase(unittest.TestCase):
         # deletes so deactivate instead to make the test act the same for all
         # versions.
         cmds.pickWalk(d='down')
-        if mayaUtils.mayaMajorMinorVersions() > (2023, 1):
+        if mayaUtils.mayaMajorVersion() >= 2023:
             ufeItem = ufe.GlobalSelection.get().front()
             item = usdUtils.getPrimFromSceneItem(ufeItem)
             item.SetActive(False)
