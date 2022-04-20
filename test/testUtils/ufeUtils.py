@@ -106,25 +106,13 @@ def ufeFeatureSetVersion():
     major = ufe.VersionInfo.getMajorVersion()
     return ufe.VersionInfo.getMinorVersion() if major == 0 else major
 
-def hasMinimumVersion(releaseVersions, unreleasedVersions):
+def fullVersion():
     '''
-    Verify if the minimum release or unrelease version are fulfilled.
-    Due to the fact release version are x.y.z while unrelease are 0.x.y,
-    conditionals are cmore complex to write, so this function takes the
-    burden out of checking.
-
-    The versions passed in should be a tuple of (major, minor, patch),
-    on for released and one for unreleased, so for example:
-        (4, 0, 0) and (0, 4, 4)
-    
-    Which assumes that everything in the unreleased (0, 4, 4) will be
-    in the released (4, 0, 0), which is what happens.
+    Return the full UFE version as a tuple of (major, minor, patch),
+    so for example:
+        (0, 4, 4)
     '''
     major = ufe.VersionInfo.getMajorVersion()
     minor = ufe.VersionInfo.getMinorVersion()
     patch = ufe.VersionInfo.getPatchLevel()
-    version = (major, minor, patch)
-    if major:
-        return version >= releaseVersions
-    else:
-        return version >= unreleasedVersions
+    return (major, minor, patch)

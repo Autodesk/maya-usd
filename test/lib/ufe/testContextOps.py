@@ -374,7 +374,8 @@ class ContextOpsTestCase(unittest.TestCase):
         # when returning the children list) but hasChildren still reports true in
         # UFE version before 0.4.4 for inactive to allow the caller to do conditional
         # inactive filtering, so we test that hasChildren is true for those versions.
-        if ufeUtils.hasMinimumVersion((4, 0, 0), (0, 4, 4)):
+        ufeVersion = ufeUtils.fullVersion()
+        if (0, 4, 4) <= ufeVersion < (1, 0, 0):
             self.assertFalse(proxyShapehier.hasChildren())
         else:
             self.assertTrue(proxyShapehier.hasChildren())
