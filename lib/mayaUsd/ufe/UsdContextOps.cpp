@@ -489,6 +489,7 @@ private:
 const std::string ClearAllReferencesUndoableCommand::commandName("Clear All References");
 const MString     ClearAllReferencesUndoableCommand::cancelRemoval("No");
 
+#if PXR_VERSION >= 2108
 class BindMaterialUndoableCommand : public Ufe::UndoableCommand
 {
 public:
@@ -603,6 +604,7 @@ private:
     SdfPath         _materialPath;
 };
 const std::string UnbindMaterialUndoableCommand::commandName("Unbind Material");
+#endif
 
 std::vector<std::pair<const char* const, const char* const>>
 _computeLoadAndUnloadItems(const UsdPrim& prim)
@@ -840,6 +842,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
         // Top level item - Add New Prim (for all context op types).
         items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
 
+#if PXR_VERSION >= 2108
         // Top level item - Bind/unbind existing materials
         if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(fItem->prim())) {
             // Show bind menu if there is at least one bindable material in the stage.
@@ -888,7 +891,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
         }
-
         if (fItem->prim().HasAPI<UsdShadeMaterialBindingAPI>()) {
             UsdShadeMaterialBindingAPI bindingAPI(fItem->prim());
             // Show unbind menu item if there is a direct binding relationship:
@@ -899,6 +901,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                     UnbindMaterialUndoableCommand::commandName);
             }
         }
+#endif
 
         if (!fIsAGatewayType) {
             items.emplace_back(
@@ -988,7 +991,9 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
 #endif
             } // If USD >= 20.08, submenus end here. Otherwise end of Root Setup
-        } else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
+        }
+#if PXR_VERSION >= 2108
+        else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
             if (fItem) {
                 auto prim = fItem->prim();
                 if (prim) {
@@ -1024,6 +1029,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
                 }
             }
         }
+#endif
     } // Top-level items
     return items;
 }
@@ -1128,11 +1134,13 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             script, /* display = */ false, /* undoable = */ true);
     }
 #endif
+#if PXR_VERSION >= 2108
     else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
         return std::make_shared<BindMaterialUndoableCommand>(fItem->prim(), SdfPath(itemPath[1]));
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->prim());
     }
+#endif
     return nullptr;
 }
 
