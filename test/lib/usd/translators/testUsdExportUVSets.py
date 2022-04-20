@@ -67,74 +67,72 @@ class testUsdExportUVSets(unittest.TestCase):
         return OM.MFnMesh(mObj)
 
     def setUp(self):
-        # Only do the setup once. We don't use the setUpClass method
+        # Only do this setup once. We don't use the setUpClass method
         # because we want access to self.assertEquals().
-        if testUsdExportUVSets._stage is not None:
-            return
+        if not testUsdExportUVSets._stage:
+            asFloat2 = mayaUsdLib.WriteUtil.WriteUVAsFloat2()
+            suffix = ""
+            if asFloat2:
+                suffix += "Float"
 
-        asFloat2 = mayaUsdLib.WriteUtil.WriteUVAsFloat2()
-        suffix = ""
-        if asFloat2:
-            suffix += "Float"
+            inputPath = fixturesUtils.setUpClass(__file__, suffix)
 
-        inputPath = fixturesUtils.setUpClass(__file__, suffix)
+            if asFloat2:
+                filePath = os.path.join(inputPath, 'UsdExportUVSetsFloatTest', 'UsdExportUVSetsTest_Float.ma')
+            else:
+                filePath = os.path.join(inputPath, 'UsdExportUVSetsTest', 'UsdExportUVSetsTest.ma')
 
-        if asFloat2:
-            filePath = os.path.join(inputPath, 'UsdExportUVSetsFloatTest', 'UsdExportUVSetsTest_Float.ma')
-        else:
-            filePath = os.path.join(inputPath, 'UsdExportUVSetsTest', 'UsdExportUVSetsTest.ma')
+            cmds.file(filePath, open=True, force=True)
 
-        cmds.file(filePath, open=True, force=True)
+            # Make some live edits to the box with weird UVs for the
+            # testExportUvVersusUvIndexFromIterator test.
+            cmds.select("box.map[0:299]", r=True)
+            cmds.polyEditUV(u=1.0, v=1.0)
 
-        # Make some live edits to the box with weird UVs for the
-        # testExportUvVersusUvIndexFromIterator test.
-        cmds.select("box.map[0:299]", r=True)
-        cmds.polyEditUV(u=1.0, v=1.0)
+            # *** Note ***
+            #
+            # Although the UV sets on the "SharedFacesCubeShape" are stored in
+            # the Maya scene with a minimal number of UV values and UV shells, they
+            # seem to be expanded when the file is opened such that we end up with
+            # a UV value per face vertex rather than these smaller arrays of UV
+            # values with only the indices being per face vertex. As a result, we
+            # have to reassign the UVs just before we export.
+            meshNodePath = 'SharedFacesCubeShape'
+            meshFn = testUsdExportUVSets._GetMayaMesh(meshNodePath)
 
-        # *** Note ***
-        #
-        # Although the UV sets on the "SharedFacesCubeShape" are stored in
-        # the Maya scene with a minimal number of UV values and UV shells, they
-        # seem to be expanded when the file is opened such that we end up with
-        # a UV value per face vertex rather than these smaller arrays of UV
-        # values with only the indices being per face vertex. As a result, we
-        # have to reassign the UVs just before we export.
-        meshNodePath = 'SharedFacesCubeShape'
-        meshFn = testUsdExportUVSets._GetMayaMesh(meshNodePath)
-
-        uvSetName = 'AllFacesSharedSet'
-        (uArray, vArray) = meshFn.getUVs(uvSetName)
-        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
-
-        # The size of the UV array and shells might be incorrect,
-        # in that they are not what's stored in the Maya scene,
-        # and not what we expect to export. We fix this below.
-
-        # Fix up the "all shared" UV set.
-        if len(uArray) != 4 or numUVShells != 1:
-            meshFn.clearUVs(uvSetName)
-            meshFn.setUVs(
-                [0.0, 1.0, 1.0, 0.0],
-                [0.0, 0.0, 1.0, 1.0],
-                uvSetName)
-            meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3] * 6, uvSetName)
+            uvSetName = 'AllFacesSharedSet'
+            (uArray, vArray) = meshFn.getUVs(uvSetName)
             (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
-        self.assertEqual(numUVShells, 1)
 
-        uvSetName = 'PairedFacesSet'
-        (uArray, vArray) = meshFn.getUVs(uvSetName)
-        (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+            # The size of the UV array and shells might be incorrect,
+            # in that they are not what's stored in the Maya scene,
+            # and not what we expect to export. We fix this below.
 
-        # Fix up the "paired" UV set.
-        if len(uArray) != 7 or numUVShells != 2:
-            meshFn.clearUVs(uvSetName)
-            meshFn.setUVs(
-                [0.0, 0.5, 0.5, 0.0, 1.0, 1.0, 0.5],
-                [0.0, 0.0, 0.5, 0.5, 0.5, 1.0, 1.0],
-                uvSetName)
-            meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3, 2, 4, 5, 6] * 3, uvSetName)
+            # Fix up the "all shared" UV set.
+            if len(uArray) != 4 or numUVShells != 1:
+                meshFn.clearUVs(uvSetName)
+                meshFn.setUVs(
+                    [0.0, 1.0, 1.0, 0.0],
+                    [0.0, 0.0, 1.0, 1.0],
+                    uvSetName)
+                meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3] * 6, uvSetName)
+                (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+            self.assertEqual(numUVShells, 1)
+
+            uvSetName = 'PairedFacesSet'
+            (uArray, vArray) = meshFn.getUVs(uvSetName)
             (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
-        self.assertEqual(numUVShells, 2)
+
+            # Fix up the "paired" UV set.
+            if len(uArray) != 7 or numUVShells != 2:
+                meshFn.clearUVs(uvSetName)
+                meshFn.setUVs(
+                    [0.0, 0.5, 0.5, 0.0, 1.0, 1.0, 0.5],
+                    [0.0, 0.0, 0.5, 0.5, 0.5, 1.0, 1.0],
+                    uvSetName)
+                meshFn.assignUVs([4, 4, 4, 4, 4, 4], [0, 1, 2, 3, 2, 4, 5, 6] * 3, uvSetName)
+                (numUVShells, shellIndices) = meshFn.getUvShellsIds(uvSetName)
+            self.assertEqual(numUVShells, 2)
 
         usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
         cmds.usdExport(mergeTransformAndShape=True,
@@ -368,8 +366,21 @@ class testUsdExportUVSets(unittest.TestCase):
         Tests that a cube mesh with multiple UV sets renames them appropriately,
         preserves them if requested, and remaps them as specified
         """
-        usdCubeMesh = self._GetCubeUsdMesh('MultipleUVSetsCube')
+        usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
+        def reexportUVSets(preserveUVSetNames, remapUVSetsTo):
+            cmds.usdExport(mergeTransformAndShape=True,
+                file=usdFilePath,
+                shadingMode='none',
+                exportColorSets=False,
+                exportDisplayColor=False,
+                exportUVs=True,
+                preserveUVSetNames=preserveUVSetNames,
+                remapUVSetsTo=remapUVSetsTo)
+            testUsdExportUVSets._stage = Usd.Stage.Open(usdFilePath)
+            return self._GetCubeUsdMesh('MultipleUVSetsCube')
 
+        # Sets should all be renamed to st1, st2, etc. by default
+        usdCubeMesh = self._GetCubeUsdMesh('MultipleUVSetsCube')
         map1 = usdCubeMesh.GetPrimvar('map1')
         st = usdCubeMesh.GetPrimvar('st')
         st1 = usdCubeMesh.GetPrimvar('st1')
@@ -379,17 +390,10 @@ class testUsdExportUVSets(unittest.TestCase):
         self.assertTrue(st1)
         self.assertFalse(foo1)
 
-        usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
-        cmds.usdExport(mergeTransformAndShape=True,
-            file=usdFilePath,
-            shadingMode='none',
-            exportColorSets=False,
-            exportDisplayColor=False,
-            exportUVs=True,
-            preserveUVSetNames=True)
-        testUsdExportUVSets._stage = Usd.Stage.Open(usdFilePath)
-        usdCubeMesh = self._GetCubeUsdMesh('MultipleUVSetsCube')
-
+        # Sets should not be renamed at all when preserveUVSetNames is True
+        usdCubeMesh = reexportUVSets(
+            preserveUVSetNames=True,
+            remapUVSetsTo=[])
         map1 = usdCubeMesh.GetPrimvar('map1')
         st = usdCubeMesh.GetPrimvar('st')
         st1 = usdCubeMesh.GetPrimvar('st1')
@@ -399,20 +403,11 @@ class testUsdExportUVSets(unittest.TestCase):
         self.assertFalse(st1)
         self.assertTrue(foo1)
 
-        usdFilePath = os.path.abspath('UsdExportUVSetsTest.usda')
-        cmds.usdExport(mergeTransformAndShape=True,
-            file=usdFilePath,
-            shadingMode='none',
-            exportColorSets=False,
-            exportDisplayColor=False,
-            exportUVs=True,
+        # Sets should be renamed only if specified under remapUVSetsTo
+        # when preserveUVSetNames is True
+        usdCubeMesh = reexportUVSets(
             preserveUVSetNames=True,
-            remapUVSetsTo=[
-                ('map1', 'test1'),
-            ])
-        testUsdExportUVSets._stage = Usd.Stage.Open(usdFilePath)
-        usdCubeMesh = self._GetCubeUsdMesh('MultipleUVSetsCube')
-
+            remapUVSetsTo=[('map1', 'test1')])
         map1 = usdCubeMesh.GetPrimvar('map1')
         st = usdCubeMesh.GetPrimvar('st')
         st1 = usdCubeMesh.GetPrimvar('st1')
@@ -423,6 +418,40 @@ class testUsdExportUVSets(unittest.TestCase):
         self.assertFalse(st1)
         self.assertTrue(foo1)
         self.assertTrue(test1)
+
+        # Sets should be renamed if specified under remapUVSetsTo
+        # but otherwise renamed to st1, st2, etc. by default
+        usdCubeMesh = reexportUVSets(
+            preserveUVSetNames=False,
+            remapUVSetsTo=[('map1', 'test1')])
+        map1 = usdCubeMesh.GetPrimvar('map1')
+        st = usdCubeMesh.GetPrimvar('st')
+        st1 = usdCubeMesh.GetPrimvar('st1')
+        foo1 = usdCubeMesh.GetPrimvar('foo1')
+        test1 = usdCubeMesh.GetPrimvar('test1')
+        self.assertFalse(map1)
+        self.assertFalse(st)
+        self.assertTrue(st1)
+        self.assertFalse(foo1)
+        self.assertTrue(test1)
+
+        # Sets should be renamed if specified under remapUVSetsTo
+        # but otherwise renamed to st1, st2, etc. by default
+        usdCubeMesh = reexportUVSets(
+            preserveUVSetNames=False,
+            remapUVSetsTo=[('map1', 'test1'), ('foo1', 'test2')])
+        map1 = usdCubeMesh.GetPrimvar('map1')
+        st = usdCubeMesh.GetPrimvar('st')
+        st1 = usdCubeMesh.GetPrimvar('st1')
+        foo1 = usdCubeMesh.GetPrimvar('foo1')
+        test1 = usdCubeMesh.GetPrimvar('test1')
+        test2 = usdCubeMesh.GetPrimvar('test2')
+        self.assertFalse(map1)
+        self.assertFalse(st)
+        self.assertFalse(st1)
+        self.assertFalse(foo1)
+        self.assertTrue(test1)
+        self.assertTrue(test2)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
