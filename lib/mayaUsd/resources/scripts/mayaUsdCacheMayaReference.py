@@ -246,11 +246,13 @@ def fileOptionsTabPage(tabLayout):
                     (topFrame, 'bottom', 0)])
 
     topForm = cmds.columnLayout('actionOptionsForm', rowSpacing=5)
-    
+
+    optBoxMarginWidth = mel.eval('global int $gOptionBoxTemplateDescriptionMarginWidth; $gOptionBoxTemplateDescriptionMarginWidth += 0')
     cmds.setParent(topForm)
-    cmds.frameLayout(label=getMayaUsdLibString("kMayaRefDescription"))
-    cmds.columnLayout(adjustableColumn=True)
-    cmds.text(align="left", wordWrap=True, label=getMayaUsdLibString("kMayaRefCacheToUSDDescription"))
+    cmds.frameLayout(label=getMayaUsdLibString("kMayaRefDescription"), mw=optBoxMarginWidth, height=160)
+    cmds.columnLayout()
+    cmds.text(align="left", wordWrap=True, height=70, label=getMayaUsdLibString("kMayaRefCacheToUSDDescription1"))
+    cmds.text(align="left", wordWrap=True, height=50, label=getMayaUsdLibString("kMayaRefCacheToUSDDescription2"))
 
     cmds.setParent(topForm)
     cmds.frameLayout(label=getMayaUsdLibString("kCacheMayaRefOptions"))

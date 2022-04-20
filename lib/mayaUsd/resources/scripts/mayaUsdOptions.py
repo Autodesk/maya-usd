@@ -20,6 +20,11 @@ import mayaUsd
 
 import re
 
+def defaultOptionBoxSize():
+    ''' Default size copied from getOptionBox.mel: defaultOptionBoxSize()
+        as that proc is not global.'''
+    return 546, 350
+
 def setAnimateOption(nodeName, textOptions):
     """
     Adjusts the export options to fill the animate value based on the node or subnode being animated.
