@@ -23,6 +23,7 @@ import usdUtils
 from pxr import UsdGeom
 from pxr import UsdShade
 from pxr import Sdf
+from pxr import Usd
 
 from maya import cmds
 from maya import standalone
@@ -337,6 +338,7 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(ufeObs.nbAddNotif(), 2)
         self.assertEqual(ufeObs.nbDeleteNotif(), 2)
 
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
     def testMaterialBinding(self):
         """In this test we will go as far as possible towards creating and binding a working
            material using only Ufe and Maya commands (for full undo capabilities)"""
