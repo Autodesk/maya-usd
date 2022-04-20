@@ -19,6 +19,7 @@
 import fixturesUtils
 import mayaUtils
 import usdUtils
+import ufeUtils
 
 from pxr import UsdGeom
 
@@ -371,9 +372,9 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # The proxy shape should now have no UFE child items (since we skip inactive
         # when returning the children list) but hasChildren still reports true in
-        # Maya versions before 2023 for inactive to allow the caller to do conditional
+        # UFE version before 0.4.4 for inactive to allow the caller to do conditional
         # inactive filtering, so we test that hasChildren is true for those versions.
-        if mayaUtils.mayaMajorMinorVersions() > (2023, 1):
+        if ufeUtils.hasMinimumVersion((4, 0, 0), (0, 4, 4)):
             self.assertFalse(proxyShapehier.hasChildren())
         else:
             self.assertTrue(proxyShapehier.hasChildren())
