@@ -358,20 +358,25 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(len(proxyShapehier.children()), 1)
 
         # Using UFE, delete this new prim (which doesn't actually delete it but
-        # instead makes it inactive). In Maya 2023 and vreater, delete really
-        # deletes so deactivate instead.
+        # instead makes it inactive). In Maya 2023 and greater, delete really
+        # deletes so deactivate instead to make the test act the same for all
+        # versions.
         cmds.pickWalk(d='down')
-        if mayaUtils.mayaMajorVersion() >= 2023:
+        if mayaUtils.mayaMajorMinorVersions() > (2023, 1):
             ufeItem = ufe.GlobalSelection.get().front()
             item = usdUtils.getPrimFromSceneItem(ufeItem)
             item.SetActive(False)
         else:
             cmds.delete()
 
-        # The proxy shape should now have no UFE child items (since we skip inactive)
-        # but hasChildren still reports true for inactive to allow the caller to then
-        # do conditional inactive filtering.
-        self.assertFalse(proxyShapehier.hasChildren())
+        # The proxy shape should now have no UFE child items (since we skip inactive
+        # when returning the children list) but hasChildren still reports true in
+        # Maya versions before 2023 for inactive to allow the caller to do conditional
+        # inactive filtering, so we test that hasChildren is true for those versions.
+        if mayaUtils.mayaMajorMinorVersions() > (2023, 1):
+            self.assertFalse(proxyShapehier.hasChildren())
+        else:
+            self.assertTrue(proxyShapehier.hasChildren())
         self.assertEqual(len(proxyShapehier.children()), 0)
 
         # Add another Xform prim (which should get a unique name taking into
