@@ -18,6 +18,8 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/usdLux/distantLight.h>
@@ -44,10 +46,9 @@ public:
     typedef std::function<ValueTypeOut(const UsdPrim& prim)>      GetterFunc;
     typedef std::function<void(const UsdPrim& prim, ValueTypeIn)> SetterFunc;
 
-    SetValueUndoableCommandImpl(const Ufe::Path& path, const GetterFunc& gf, const SetterFunc& sf)
+    SetValueUndoableCommandImpl(const Ufe::Path& path, const SetterFunc& sf)
         : Ufe::SetValueUndoableCommand<ValueTypeIn>(path)
-        , getterFunc(gf)
-        , setterFunc(sf)
+        , _setterFunc(sf)
     {
     }
 
@@ -55,41 +56,25 @@ public:
 
     bool set(ValueTypeIn v) override
     {
-        redoValue = v;
+        _value = v;
         return true;
     }
 
     void execute() override
     {
-        if (auto pItem
-            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
-            undoValue = getterFunc(pItem->prim());
-            setterFunc(pItem->prim(), redoValue);
+        UsdUndoBlock undoBlock(&_undoableItem);
+        if (auto pItem = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
+            _setterFunc(pItem->prim(), _value);
         }
     }
 
-    void undo() override
-    {
-        if (auto pItem
-            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
-            setterFunc(pItem->prim(), undoValue);
-        }
-    }
-
-    void redo() override
-    {
-        if (auto pItem
-            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::BaseUndoableCommand::sceneItem())) {
-            setterFunc(pItem->prim(), redoValue);
-        }
-    }
+    void undo() override { _undoableItem.undo(); }
+    void redo() override { _undoableItem.redo(); }
 
 private:
-    GetterFunc getterFunc;
-    SetterFunc setterFunc;
-
-    ValueTypeOut redoValue;
-    ValueTypeOut undoValue;
+    SetterFunc _setterFunc;
+    ValueTypeOut _value;
+    UsdUndoableItem _undoableItem;
 };
 
 UsdLight::UsdLight()
@@ -160,7 +145,7 @@ void setLightIntensity(const UsdPrim& prim, float attrVal)
 Ufe::Light::IntensityUndoableCommand::Ptr UsdLight::intensityCmd(float li)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<float>>(
-        path(), getLightIntensity, setLightIntensity);
+        path(), setLightIntensity);
 
     pCmd->set(li);
     return pCmd;
@@ -191,7 +176,7 @@ void setLightColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
 Ufe::Light::ColorUndoableCommand::Ptr UsdLight::colorCmd(float r, float g, float b)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Color3f&>>(
-        path(), getLightColor, setLightColor);
+        path(), setLightColor);
 
     pCmd->set(Ufe::Color3f(r, g, b));
     return pCmd;
@@ -222,7 +207,7 @@ void setLightShadowEnable(const UsdPrim& prim, bool attrVal)
 Ufe::Light::ShadowEnableUndoableCommand::Ptr UsdLight::shadowEnableCmd(bool se)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<bool>>(
-        path(), getLightShadowEnable, setLightShadowEnable);
+        path(), setLightShadowEnable);
 
     pCmd->set(se);
     return pCmd;
@@ -253,7 +238,7 @@ void setLightShadowColor(const UsdPrim& prim, const Ufe::Color3f& attrVal)
 Ufe::Light::ShadowColorUndoableCommand::Ptr UsdLight::shadowColorCmd(float r, float g, float b)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Color3f&>>(
-        path(), getLightShadowColor, setLightShadowColor);
+        path(), setLightShadowColor);
 
     pCmd->set(Ufe::Color3f(r, g, b));
     return pCmd;
@@ -287,7 +272,7 @@ void setLightDiffuse(const UsdPrim& prim, float attrVal)
 Ufe::Light::DiffuseUndoableCommand::Ptr UsdLight::diffuseCmd(float ld)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<float>>(
-        path(), getLightDiffuse, setLightDiffuse);
+        path(), setLightDiffuse);
 
     pCmd->set(ld);
     return pCmd;
@@ -318,7 +303,7 @@ void setLightSpecular(const UsdPrim& prim, float attrVal)
 Ufe::Light::SpecularUndoableCommand::Ptr UsdLight::specularCmd(float ls)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<float>>(
-        path(), getLightSpecular, setLightSpecular);
+        path(), setLightSpecular);
 
     pCmd->set(ls);
     return pCmd;
@@ -349,7 +334,7 @@ void setLightAngle(const UsdPrim& prim, float attrVal)
 Ufe::Light::AngleUndoableCommand::Ptr UsdDirectionalInterface::angleCmd(float la)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<float>>(
-        fItem->path(), getLightAngle, setLightAngle);
+        fItem->path(), setLightAngle);
 
     pCmd->set(la);
     return pCmd;
@@ -382,7 +367,7 @@ Ufe::Light::SpherePropsUndoableCommand::Ptr
 UsdSphereInterface::spherePropsCmd(float radius, bool asPoint)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light::SphereProps&>>(
-        fItem->path(), getLightSphereProps, setLightSphereProps);
+        fItem->path(), setLightSphereProps);
 
     pCmd->set(Ufe::Light::SphereProps { radius, asPoint });
     return pCmd;
@@ -428,7 +413,7 @@ Ufe::Light::ConePropsUndoableCommand::Ptr
 UsdConeInterface::conePropsCmd(float focus, float angle, float softness)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<const Ufe::Light::ConeProps&>>(
-        fItem->path(), getLightConeProps, setLightConeProps);
+        fItem->path(), setLightConeProps);
 
     pCmd->set(Ufe::Light::ConeProps { focus, angle, softness });
     return pCmd;
@@ -465,7 +450,7 @@ void setLightNormalize(const UsdPrim& prim, bool attrVal)
 Ufe::Light::NormalizeUndoableCommand::Ptr UsdAreaInterface::normalizeCmd(bool nl)
 {
     auto pCmd = std::make_shared<SetValueUndoableCommandImpl<bool>>(
-        fItem->path(), getLightNormalize, setLightNormalize);
+        fItem->path(), setLightNormalize);
 
     pCmd->set(nl);
     return pCmd;
