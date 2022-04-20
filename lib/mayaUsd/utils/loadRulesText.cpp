@@ -35,7 +35,7 @@ void setLoadRulesFromText(PXR_NS::UsdStage& stage, const MString& text)
 static MString convertRuleToText(const PXR_NS::UsdStageLoadRules::Rule rule)
 {
     // Note: using namespace required for the TF_WARN macro.
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     switch (rule) {
     case UsdStageLoadRules::AllRule: return "all";
@@ -71,7 +71,7 @@ MString convertLoadRulesToText(const PXR_NS::UsdStageLoadRules& rules)
 static PXR_NS::UsdStageLoadRules::Rule createRuleFromText(const MString& text)
 {
     // Note: using namespace required for the TF_WARN macro.
-    using namespace PXR_NS;
+    PXR_NAMESPACE_USING_DIRECTIVE
 
     if (text == "all")
         return UsdStageLoadRules::AllRule;
