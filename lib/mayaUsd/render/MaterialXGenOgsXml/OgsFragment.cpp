@@ -206,7 +206,20 @@ public:
             genOptions.targetDistanceUnit = "meter";
         }
 
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
         genContext.registerSourceCodeSearchPath(_librarySearchPath);
+#else
+        // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
+        mx::FileSearchPath libSearchPaths;
+        for (const mx::FilePath& path : _librarySearchPath) {
+            if (path.getBaseName() == "libraries") {
+                libSearchPaths.append(path.getParentPath());
+            } else {
+                libSearchPaths.append(path);
+            }
+        }
+        genContext.registerSourceCodeSearchPath(libSearchPaths);
+#endif
 
         setCommonOptions(genOptions, genContext, *generator);
 

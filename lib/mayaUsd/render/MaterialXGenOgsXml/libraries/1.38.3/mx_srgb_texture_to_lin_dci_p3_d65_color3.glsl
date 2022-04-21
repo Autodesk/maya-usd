@@ -1,4 +1,4 @@
-#include "libraries/stdlib/genglsl/lib/mx_transform_color.glsl"
+#include "stdlib/genglsl/lib/mx_transform_color.glsl"
 
 void mx_srgb_texture_to_lin_dci_p3_d65_color3(vec3 _in, out vec3 result)
 {

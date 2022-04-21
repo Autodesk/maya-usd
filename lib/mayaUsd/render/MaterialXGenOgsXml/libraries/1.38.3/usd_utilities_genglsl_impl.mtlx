@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <!--
+ Copyright 2022 Autodesk
+
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+  -->
+  <implementation name="MayaIM_texcoordtangents_vector3_genglsl" nodedef="MayaND_texcoordtangents_vector3" file="adsk/maya/genglsl/mx_texcoordtangents_vector3.glsl" function="mx_texcoordtangents_vector3" target="genglsl" />
+  <implementation name="MayaIM_arbitrarytangents_vector3_genglsl" nodedef="MayaND_arbitrarytangents_vector3" file="adsk/maya/genglsl/mx_arbitrarytangents_vector3.glsl" function="mx_arbitrarytangents_vector3" target="genglsl" />
+
+  <implementation name="MayaIM_sRGBtoLinrec709_color3_genglsl" nodedef="MayaND_sRGBtoLinrec709_color3" file="stdlib/genglsl/mx_srgb_texture_to_lin_rec709_color3.glsl" function="mx_srgb_texture_to_lin_rec709_color3" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoLinrec709_color4_genglsl" nodedef="MayaND_sRGBtoLinrec709_color4" file="stdlib/genglsl/mx_srgb_texture_to_lin_rec709_color4.glsl" function="mx_srgb_texture_to_lin_rec709_color4" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoACEScg_color3_genglsl" nodedef="MayaND_sRGBtoACEScg_color3" file="adsk/maya/genglsl/mx_srgb_texture_to_acescg_color3.glsl" function="mx_srgb_texture_to_acescg_color3" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoACEScg_color4_genglsl" nodedef="MayaND_sRGBtoACEScg_color4" file="adsk/maya/genglsl/mx_srgb_texture_to_acescg_color4.glsl" function="mx_srgb_texture_to_acescg_color4" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoACES2065_color3_genglsl" nodedef="MayaND_sRGBtoACES2065_color3" file="adsk/maya/genglsl/mx_srgb_texture_to_aces_2065_1_color3.glsl" function="mx_srgb_texture_to_aces_2065_1_color3" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoACES2065_color4_genglsl" nodedef="MayaND_sRGBtoACES2065_color4" file="adsk/maya/genglsl/mx_srgb_texture_to_aces_2065_1_color4.glsl" function="mx_srgb_texture_to_aces_2065_1_color4" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoLinDCIP3D65_color3_genglsl" nodedef="MayaND_sRGBtoLinDCIP3D65_color3" file="adsk/maya/genglsl/mx_srgb_texture_to_lin_dci_p3_d65_color3.glsl" function="mx_srgb_texture_to_lin_dci_p3_d65_color3" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoLinDCIP3D65_color4_genglsl" nodedef="MayaND_sRGBtoLinDCIP3D65_color4" file="adsk/maya/genglsl/mx_srgb_texture_to_lin_dci_p3_d65_color4.glsl" function="mx_srgb_texture_to_lin_dci_p3_d65_color4" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoLinrec2020_color3_genglsl" nodedef="MayaND_sRGBtoLinrec2020_color3" file="adsk/maya/genglsl/mx_srgb_texture_to_linrec2020_color3.glsl" function="mx_srgb_texture_to_linrec2020_color3" target="genglsl" />
+  <implementation name="MayaIM_sRGBtoLinrec2020_color4_genglsl" nodedef="MayaND_sRGBtoLinrec2020_color4" file="adsk/maya/genglsl/mx_srgb_texture_to_linrec2020_color4.glsl" function="mx_srgb_texture_to_linrec2020_color4" target="genglsl" />
+
+</materialx>

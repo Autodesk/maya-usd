@@ -3,7 +3,8 @@
 //
 // Since we are on a more recent versions of Maya, we have external lighting functions that can be
 // called to fetch environment samples:
-#include "libraries/pbrlib/genglsl/lib/mx_microfacet_specular.glsl"
+
+#include "pbrlib/genglsl/lib/mx_microfacet_specular.glsl"
 
 // https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch20.html
 // Section 20.4 Equation 13
@@ -15,7 +16,7 @@ float mx_latlong_compute_lod(vec3 dir, float pdf, float maxMipLevel, int envSamp
     return max(effectiveMaxMipLevel - 0.5 * log2(float(envSamples) * pdf * distortion), 0.0);
 }
 
-vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distribution, FresnelData fd)
+vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 roughness, int distribution, FresnelData fd)
 {
     if (mayaGetSpecularEnvironmentNumLOD() == 0) {
         return vec3(0);
@@ -31,7 +32,7 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
 
     // Compute derived properties.
     float NdotV = clamp(V.z, M_FLOAT_EPS, 1.0);
-    float avgAlpha = mx_average_alpha(alpha);
+    float avgRoughness = mx_average_roughness(roughness);
     
     // Integrate outgoing radiance using filtered importance sampling.
     // http://cgg.mff.cuni.cz/~jaroslav/papers/2008-egsr-fis/2008-egsr-fis-final-embedded.pdf
@@ -41,7 +42,7 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
         vec2 Xi = mx_spherical_fibonacci(i, MX_NUM_FIS_SAMPLES);
 
         // Compute the half vector and incoming light direction.
-        vec3 H = mx_ggx_importance_sample_NDF(Xi, alpha);
+        vec3 H = mx_ggx_importance_sample_NDF(Xi, roughness);
         vec3 L = -reflect(V, H);
         
         // Compute dot products for this sample.
@@ -52,7 +53,7 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
 
         // Sample the environment light from the given direction.
         vec3 Lw = tangentToWorld * L;
-        float pdf = mx_ggx_PDF(H, LdotH, alpha);
+        float pdf = mx_ggx_PDF(H, LdotH, roughness);
         float lod = mx_latlong_compute_lod(Lw, pdf, float(mayaGetSpecularEnvironmentNumLOD() - 1), MX_NUM_FIS_SAMPLES);
         vec3 sampleColor = mayaSampleSpecularEnvironmentAtLOD(Lw, lod);
 
@@ -60,7 +61,7 @@ vec3 mx_environment_radiance(vec3 N, vec3 V, vec3 X, vec2 alpha, int distributio
         vec3 F = mx_compute_fresnel(VdotH, fd);
 
         // Compute the geometric term.
-        float G = mx_ggx_smith_G2(NdotL, NdotV, avgAlpha);
+        float G = mx_ggx_smith_G2(NdotL, NdotV, avgRoughness);
 
         // Add the radiance contribution of this sample.
         // From https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf
