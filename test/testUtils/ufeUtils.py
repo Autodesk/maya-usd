@@ -105,14 +105,3 @@ def ufeFeatureSetVersion():
     #   v0.2.20 (unreleased preview version 2).
     major = ufe.VersionInfo.getMajorVersion()
     return ufe.VersionInfo.getMinorVersion() if major == 0 else major
-
-def fullVersion():
-    '''
-    Return the full UFE version as a tuple of (major, minor, patch),
-    so for example:
-        (0, 4, 4)
-    '''
-    major = ufe.VersionInfo.getMajorVersion()
-    minor = ufe.VersionInfo.getMinorVersion()
-    patch = ufe.VersionInfo.getPatchLevel()
-    return (major, minor, patch)
