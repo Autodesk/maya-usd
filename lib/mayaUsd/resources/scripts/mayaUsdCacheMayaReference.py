@@ -154,11 +154,11 @@ def variantOrNewPrim(variantSelected):
     # The variant and new child prim radio buttons are mutually exclusive.
     # So only one can be checked.
     if variantSelected:
-        cmds.radioButtonGrp('variantRadioButton', edit=True, select=True)
-        cmds.radioButtonGrp('newChildPrimInvisibleRadioButton', edit=True, select=True)
+        cmds.radioButtonGrp('variantRadioButton', edit=True, select=1)
+        cmds.radioButtonGrp('newChildPrimInvisibleRadioButton', edit=True, select=1)
     else:
-        cmds.radioButtonGrp('variantInvisibleRadioButton', edit=True, select=True)
-        cmds.radioButtonGrp('newChildPrimRadioButton', edit=True, select=True)
+        cmds.radioButtonGrp('variantInvisibleRadioButton', edit=True, select=1)
+        cmds.radioButtonGrp('newChildPrimRadioButton', edit=True, select=1)
     
     cmds.rowLayout('usdCacheVariantSetRow', edit=True, enable=variantSelected)
     cmds.rowLayout('usdCacheVariantNameRow', edit=True, enable=variantSelected)
