@@ -48,6 +48,12 @@ Ufe::ConstAttributeDefs getAttrs(const PXR_NS::SdrShaderNodeConstPtr& shaderNode
     for (const PXR_NS::TfToken& name : names) {
         PXR_NS::SdrShaderPropertyConstPtr property
             = input ? shaderNodeDef->GetShaderInput(name) : shaderNodeDef->GetShaderOutput(name);
+        if (!property) {
+            // Cannot do much if the pointer is null. This can happen if the type_info for a
+            // class derived from SdrProperty is hidden inside a plugin library since
+            // SdrNode::GetShaderInput has to downcast a NdrProperty pointer.
+            continue;
+        }
         std::ostringstream defaultValue;
         defaultValue << property->GetDefaultValue();
         Ufe::Attribute::Type type = getUfeTypeForAttribute(property);
