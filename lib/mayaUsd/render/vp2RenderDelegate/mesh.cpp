@@ -1366,8 +1366,6 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
             numFacesWithoutRenderItem = 0;
         }
     }
-
-    TF_VERIFY(numFacesWithoutRenderItem == 0);
 }
 
 /*! \brief  Update the named repr object for this Rprim.
