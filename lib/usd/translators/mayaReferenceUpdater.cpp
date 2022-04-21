@@ -15,10 +15,12 @@
 //
 #include "mayaReferenceUpdater.h"
 
+#include <mayaUsd/fileio/primUpdaterManager.h>
 #include <mayaUsd/fileio/primUpdaterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/util.h>
@@ -42,6 +44,7 @@
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MFnAttribute.h>
+#include <ufe/pathString.h>
 
 namespace {
 std::string findValue(const PXR_NS::VtDictionary& routingData, const PXR_NS::TfToken& key)
@@ -222,6 +225,24 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
 bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
 {
     const MObject& parentNode = getMayaObject();
+
+    MDagPath dagPath;
+    MStatus  status = MDagPath::getAPathTo(parentNode, dagPath);
+    if (status == MS::kSuccess) {
+        Ufe::Path pulledPath;
+        if (PrimUpdaterManager::readPullInformation(dagPath, pulledPath)) {
+            // Reset the auto-edit when discarding the edit.
+            UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
+            if (prim.IsValid()) {
+                UsdAttribute mayaAutoEditAttr
+                    = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
+                if (mayaAutoEditAttr.IsValid()) {
+                    mayaAutoEditAttr.Set<bool>(false);
+                }
+            }
+        }
+    }
+
     UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
 
     return UsdMayaPrimUpdater::discardEdits();

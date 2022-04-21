@@ -30,7 +30,6 @@
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/utils/traverseLayer.h>
 #include <mayaUsdUtils/util.h>
-#include <mayaUsd_Schemas/MayaReference.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -1021,15 +1020,6 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         auto updater = factory(context, dgNodeFn, path);
 
         updater->discardEdits();
-    }
-
-    // Reset the auto-edit when discarding the edit.
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
-    if (prim.IsValid()) {
-        UsdAttribute mayaAutoEditAttr = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
-        if (mayaAutoEditAttr.IsValid()) {
-            mayaAutoEditAttr.Set<bool>(false);
-        }
     }
 
     FunctionUndoItem::execute(

@@ -200,7 +200,6 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
         ${MAYA_LIBRARIES}
         mayaUsdUtils
-        mayaUsd_Schemas
     PRIVATE
         ghc_filesystem
         $<$<BOOL:${CMAKE_WANT_MATERIALX_BUILD}>:hdMtlx>
