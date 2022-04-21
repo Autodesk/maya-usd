@@ -1366,8 +1366,6 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(
             numFacesWithoutRenderItem = 0;
         }
     }
-
-    TF_VERIFY(numFacesWithoutRenderItem == 0);
 }
 
 /*! \brief  Update the named repr object for this Rprim.
@@ -1654,9 +1652,6 @@ void HdVP2Mesh::_UpdateDrawItem(
                 const GfVec3f& clr3f = colorArray[0];
                 const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
                 shader = _delegate->GetFallbackShader(color);
-                if (shader) {
-                    shader->setParameter("diffuse", 1.0f);
-                }
                 // The color of the fallback shader is ignored when the interpolation is
                 // instance
             } else {

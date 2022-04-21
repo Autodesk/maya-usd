@@ -389,6 +389,7 @@ public:
                     if (type == FallbackShaderType::kPoints) {
                         shader->addInputFragment("PointsGeometry", "GPUStage", "GPUStage");
                     }
+                    shader->setParameter("diffuse", 1.0f);
                 }
             }
         }
