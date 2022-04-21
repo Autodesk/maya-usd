@@ -113,7 +113,7 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
     auto compositionArc = PXR_NS::VtDictionaryGet<std::string>(
         context, "rn_payloadOrReference", PXR_NS::VtDefault = "");
     bool dstIsVariant
-        = (PXR_NS::VtDictionaryGet<int>(context, "rn_defineInVariant", PXR_NS::VtDefault = 0) == 1);
+        = (PXR_NS::VtDictionaryGet<int>(context, "rn_defineInVariant", PXR_NS::VtDefault = 1) == 1);
     const auto parentPath = pulledPath.GetParentPath();
     const auto cachePrimPath = parentPath.AppendChild(PXR_NS::TfToken(dstPrimName));
 

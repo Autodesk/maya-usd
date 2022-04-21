@@ -377,7 +377,7 @@ proc setOptionVars(int $forceFactorySettings)
         }
         string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
         if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceDefineInVariant`) {
-            optionVar -intValue usdMayaReferenceDefineInVariant false;
+            optionVar -intValue usdMayaReferenceDefineInVariant true;
         }
         if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceVariantSetNameOption`) {
             optionVar -stringValue usdMayaReferenceVariantSetNameOption $createNew;
@@ -463,7 +463,7 @@ proc setOptionVars(int $forceFactorySettings)
             -sv usdMayaReferenceGroupPrimName ""
             -sv usdMayaReferenceGroupPrimType "Xform"
             -sv usdMayaReferenceGroupPrimKind $defGroupKind
-            -iv usdMayaReferenceDefineInVariant false
+            -iv usdMayaReferenceDefineInVariant true
             -sv usdMayaReferenceVariantSetNameOption $createNew
             -sv usdMayaReferenceVariantSetNameText $defVariantSetName
             -sv usdMayaReferenceVariantNameOption $createNew
