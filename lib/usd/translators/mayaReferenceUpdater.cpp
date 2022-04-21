@@ -44,7 +44,6 @@
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MFnAttribute.h>
-#include <ufe/pathString.h>
 
 namespace {
 std::string findValue(const PXR_NS::VtDictionary& routingData, const PXR_NS::TfToken& key)
