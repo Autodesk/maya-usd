@@ -48,6 +48,7 @@ public:
 
     bool haveReadMethod() const override { return true; }
     bool haveWriteMethod() const override { return false; }
+    bool haveNamespaceSupport() const override { return true; }
 
     PXRUSDMAYA_API
     MFileKind identifyFile(const MFileObject& file, const char* buffer, short size) const override;
