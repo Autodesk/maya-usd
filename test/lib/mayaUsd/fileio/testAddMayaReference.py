@@ -25,8 +25,12 @@ from pxr import Tf, Usd, Kind
 
 from maya import cmds
 from maya import standalone
+from maya.api import OpenMaya as om
+
 import mayaUsdAddMayaReference
 import mayaUsdMayaReferenceUtils as mayaRefUtils
+
+import ufe
 
 import os, unittest
 
@@ -157,6 +161,50 @@ class AddMayaReferenceTestCase(unittest.TestCase):
             mayaAutoEdit=False)
         self.assertFalse(badMayaRefPrim.IsValid())
         editLayer.SetPermissionToEdit(True)
+
+    def testEditAndDiscardMayaRef(self):
+        '''Test editing then discarding a Maya Reference.
+
+        Add a Maya Reference using auto-edit, then discard the edits.
+        '''
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+
+        # Since this is a brand new prim, it should not have variant sets.
+        primTestDefault = self.stage.DefinePrim('/Test_Default', 'Xform')
+        primPathStr = self.proxyShapePathStr + ',/Test_Default'
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            self.mayaSceneStr,
+            self.kDefaultNamespace,
+            mayaAutoEdit=True)
+
+        # The prim should not have any variant set.
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        # Verify that a Maya Reference prim was created.
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertEqual(str(mayaRefPrim.GetName()), kDefaultPrimName)
+        self.assertEqual(mayaRefPrim, primTestDefault.GetChild(kDefaultPrimName))
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
+
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), True)
+
+        # Discard Maya edits.
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.discardEdits(aMayaPathStr))
+        
+        # Verify that the auto-edit has been turned off
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), False)
+
 
     def testBadNames(self):
         '''Test using bad prim and variant names.
