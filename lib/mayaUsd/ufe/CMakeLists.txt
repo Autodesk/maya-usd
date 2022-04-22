@@ -96,6 +96,14 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdShaderNodeDefHandler.cpp
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                ProxyShapeSceneSegmentHandler.cpp
+        )
+    endif()
+
 endif()
 
 set(HEADERS
@@ -191,6 +199,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             UsdShaderNodeDefHandler.h
         )
     endif()
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
+        list(APPEND HEADERS
+            ProxyShapeSceneSegmentHandler.h
 endif()
 
 # -----------------------------------------------------------------------------

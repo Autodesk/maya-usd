@@ -17,8 +17,12 @@
 
 #include "UsdCamera.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/Utils.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -51,6 +55,26 @@ Ufe::Camera::Ptr UsdCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
 
     return UsdCamera::create(usdItem);
 }
+
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
+Ufe::Selection UsdCameraHandler::findCamerasInSceneSegment(const Ufe::Path& path) const
+{
+    Ufe::Selection result;
+    Ufe::Path stagePath(path.getSegments()[0]); // assumes there is only ever two segments
+    PXR_NS::UsdPrim searchPrim = ufePathToPrim(path);
+    if (searchPrim.IsA<PXR_NS::UsdGeomCamera>()) {
+        result.append(Ufe::Hierarchy::createItem(path));
+    }
+    PXR_NS::UsdPrimSubtreeRange range = searchPrim.GetDescendants();
+    for (auto iter = range.begin(); iter != range.end(); ++iter) {
+        if (iter->IsA<PXR_NS::UsdGeomCamera>()) {
+            Ufe::Path cameraPath = stagePath + usdPathToUfePathSegment(iter->GetPath());
+            result.append(Ufe::Hierarchy::createItem(cameraPath));
+        }
+    }
+    return result;
+}
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

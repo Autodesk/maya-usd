@@ -43,6 +43,10 @@ public:
     // Ufe::CameraHandler overrides
     Ufe::Camera::Ptr camera(const Ufe::SceneItem::Ptr& item) const override;
 
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
+    Ufe::Selection findCamerasInSceneSegment(const Ufe::Path& path) const override;
+#endif
+
 }; // UsdCameraHandler
 
 } // namespace ufe
