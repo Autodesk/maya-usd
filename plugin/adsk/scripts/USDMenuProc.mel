@@ -76,4 +76,9 @@ global proc USDMenuProc(string $parent, string $obj)
         }
         menuItem -label "Duplicate As Maya Data" -command ("{waitCursor -state 1; mayaUsdMenu_duplicate \"" + $obj + "\"; waitCursor -state 0;}");
     }
+    // Allow the user to define a proc with additional menu items
+    if (`exists USDUserMenuProc`)
+    {
+        USDUserMenuProc($parent,$obj);
+    }
 }
