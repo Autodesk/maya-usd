@@ -19,6 +19,7 @@
 import fixturesUtils
 import mayaUtils
 import usdUtils
+import ufeUtils
 
 from pxr import UsdGeom
 from pxr import UsdShade
@@ -438,12 +439,25 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(len(proxyShapehier.children()), 1)
 
         # Using UFE, delete this new prim (which doesn't actually delete it but
-        # instead makes it inactive).
+        # instead makes it inactive). In Maya 2023 and greater, delete really
+        # deletes so deactivate instead to make the test act the same for all
+        # versions.
         cmds.pickWalk(d='down')
-        cmds.delete()
+        if mayaUtils.mayaMajorVersion() >= 2023:
+            ufeItem = ufe.GlobalSelection.get().front()
+            item = usdUtils.getPrimFromSceneItem(ufeItem)
+            item.SetActive(False)
+        else:
+            cmds.delete()
 
-        # The proxy shape should now have no UFE child items (since we skip inactive).
-        self.assertFalse(proxyShapehier.hasChildren())
+        # The proxy shape should now have no UFE child items (since we skip inactive
+        # when returning the children list) but hasChildren still reports true in
+        # UFE version before 0.4.4 for inactive to allow the caller to do conditional
+        # inactive filtering, so we test that hasChildren is true for those versions.
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4004'):
+            self.assertFalse(proxyShapehier.hasChildren())
+        else:
+            self.assertTrue(proxyShapehier.hasChildren())
         self.assertEqual(len(proxyShapehier.children()), 0)
 
         # Add another Xform prim (which should get a unique name taking into
