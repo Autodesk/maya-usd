@@ -21,6 +21,7 @@
 #include <mayaUsd/base/tokens.h>
 #endif
 #include <mayaUsd/ufe/StagesSubject.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 

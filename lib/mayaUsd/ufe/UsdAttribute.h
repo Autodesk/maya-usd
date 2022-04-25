@@ -16,7 +16,6 @@
 #pragma once
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
