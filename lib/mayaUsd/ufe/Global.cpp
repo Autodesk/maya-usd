@@ -185,7 +185,8 @@ MStatus initialize()
 #if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
     // set up the SceneSegmentHandler
     g_MayaSceneSegmentHandler = Ufe::RunTimeMgr::instance().sceneSegmentHandler(g_MayaRtid);
-    auto proxyShapeSceneSegmentHandler = ProxyShapeSceneSegmentHandler::create(g_MayaSceneSegmentHandler);
+    auto proxyShapeSceneSegmentHandler
+        = ProxyShapeSceneSegmentHandler::create(g_MayaSceneSegmentHandler);
     Ufe::RunTimeMgr::instance().setSceneSegmentHandler(g_MayaRtid, proxyShapeSceneSegmentHandler);
 #endif
 

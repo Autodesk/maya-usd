@@ -17,8 +17,8 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
-#include <ufe/runTimeMgr.h>
 #include <ufe/hierarchy.h>
+#include <ufe/runTimeMgr.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -47,20 +47,25 @@ ProxyShapeSceneSegmentHandler::create(const Ufe::SceneSegmentHandler::Ptr& mayaS
 
 Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems(const Ufe::Path& path) const
 {
-    Ufe::Selection result = fMayaSceneSegmentHandler ? fMayaSceneSegmentHandler->findGatewayItems(path) : Ufe::Selection();
-    for(const auto& stage : getAllStages()) {
+    Ufe::Selection result = fMayaSceneSegmentHandler
+        ? fMayaSceneSegmentHandler->findGatewayItems(path)
+        : Ufe::Selection();
+    for (const auto& stage : getAllStages()) {
         Ufe::Path proxyShapePath = stagePath(stage);
 
-        // This handles gateway nodes that have a mix of children in other scene segments and children in the same
-        // segment as the gateway node, as well as gateway nodes with multiple descendent scene segments.
+        // This handles gateway nodes that have a mix of children in other scene segments and
+        // children in the same segment as the gateway node, as well as gateway nodes with multiple
+        // descendent scene segments.
         if (proxyShapePath == path) {
             Ufe::SceneItem::Ptr gatewayItem = Ufe::Hierarchy::createItem(path);
             Ufe::Hierarchy::Ptr gatewayHierarchy = Ufe::Hierarchy::hierarchy(gatewayItem);
-            for (const auto& gatewayChild : gatewayHierarchy->children())
-            {
-                Ufe::SceneSegmentHandler::Ptr sceneSegmentHandler = Ufe::RunTimeMgr::instance().sceneSegmentHandler(gatewayChild->runTimeId());
-                Ufe::Selection gatewayItems = sceneSegmentHandler ? sceneSegmentHandler->findGatewayItems(gatewayChild->path()) : Ufe::Selection();
-                for(const auto& descendentGatewayItem : gatewayItems) {
+            for (const auto& gatewayChild : gatewayHierarchy->children()) {
+                Ufe::SceneSegmentHandler::Ptr sceneSegmentHandler
+                    = Ufe::RunTimeMgr::instance().sceneSegmentHandler(gatewayChild->runTimeId());
+                Ufe::Selection gatewayItems = sceneSegmentHandler
+                    ? sceneSegmentHandler->findGatewayItems(gatewayChild->path())
+                    : Ufe::Selection();
+                for (const auto& descendentGatewayItem : gatewayItems) {
                     result.append(descendentGatewayItem);
                 }
             }
