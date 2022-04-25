@@ -149,6 +149,8 @@ def _convertTextToType(valueToConvert, defaultValue, desiredType=None):
             else:
                 values = valueToConvert.split()
                 desiredType = float
+            if len(defaultValue):
+                desiredType = type(defaultValue[0])
             convertedValues = []
             for value in values:
                 value = value.strip()
