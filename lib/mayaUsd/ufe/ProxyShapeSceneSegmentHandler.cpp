@@ -47,32 +47,24 @@ ProxyShapeSceneSegmentHandler::create(const Ufe::SceneSegmentHandler::Ptr& mayaS
 
 Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems(const Ufe::Path& path) const
 {
+    // Handle other gateway node types that MayaUSD is not aware of
     Ufe::Selection result = fMayaSceneSegmentHandler
         ? fMayaSceneSegmentHandler->findGatewayItems(path)
         : Ufe::Selection();
+
+    // Find the MayaUSD proxyShapes
     for (const auto& stage : getAllStages()) {
         Ufe::Path proxyShapePath = stagePath(stage);
-
-        // This handles gateway nodes that have a mix of children in other scene segments and
-        // children in the same segment as the gateway node, as well as gateway nodes with multiple
-        // descendent scene segments.
-        if (proxyShapePath == path) {
-            Ufe::SceneItem::Ptr gatewayItem = Ufe::Hierarchy::createItem(path);
-            Ufe::Hierarchy::Ptr gatewayHierarchy = Ufe::Hierarchy::hierarchy(gatewayItem);
-            for (const auto& gatewayChild : gatewayHierarchy->children()) {
-                Ufe::SceneSegmentHandler::Ptr sceneSegmentHandler
-                    = Ufe::RunTimeMgr::instance().sceneSegmentHandler(gatewayChild->runTimeId());
-                Ufe::Selection gatewayItems = sceneSegmentHandler
-                    ? sceneSegmentHandler->findGatewayItems(gatewayChild->path())
-                    : Ufe::Selection();
-                for (const auto& descendentGatewayItem : gatewayItems) {
-                    result.append(descendentGatewayItem);
-                }
-            }
-        } else if (proxyShapePath.startsWith(path)) {
+        if (proxyShapePath.startsWith(path)) {
             result.append(Ufe::Hierarchy::createItem(proxyShapePath));
         }
     }
+
+    // If there were Usd prims that are gateway items then we'd have an implementation
+    // of UsdSceneSegmentHandler that could find the gateway items and extra code
+    // here to handle the case where isAGatewayType() for path is true. But right now
+    // there are no gateway items in Usd, so I don't have to handle that.
+
     return result;
 }
 

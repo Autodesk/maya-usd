@@ -54,6 +54,7 @@
 #endif
 #if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
 #include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
+#include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #endif
 #include <mayaUsd/utils/editRouter.h>
 
@@ -114,6 +115,10 @@ Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
 // The normal Maya scene segment handler, which we decorate for ProxyShape support.
 // Keep a reference to it to restore on finalization.
 Ufe::SceneSegmentHandler::Ptr g_MayaSceneSegmentHandler;
+
+// The normal Maya camera handler, which we decorate for ProxyShape support.
+// Keep a reference to it to restore on finalization.
+Ufe::CameraHandler::Ptr g_MayaCameraHandler;
 #endif
 
 #ifdef HAVE_PATH_MAPPING
@@ -188,6 +193,11 @@ MStatus initialize()
     auto proxyShapeSceneSegmentHandler
         = ProxyShapeSceneSegmentHandler::create(g_MayaSceneSegmentHandler);
     Ufe::RunTimeMgr::instance().setSceneSegmentHandler(g_MayaRtid, proxyShapeSceneSegmentHandler);
+
+    // set up the ProxyShapeCameraHandler
+    g_MayaCameraHandler = Ufe::RunTimeMgr::instance().cameraHandler(g_MayaRtid);
+    auto proxyShapeCameraHandler = ProxyShapeCameraHandler::create(g_MayaCameraHandler);
+    Ufe::RunTimeMgr::instance().setCameraHandler(g_MayaRtid, proxyShapeCameraHandler);
 #endif
 
     // USD has a very flexible data model to support 3d transformations --- see

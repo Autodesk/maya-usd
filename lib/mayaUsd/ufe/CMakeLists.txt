@@ -100,6 +100,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
         target_sources(${PROJECT_NAME}
             PRIVATE
+                ProxyShapeCameraHandler.cpp
                 ProxyShapeSceneSegmentHandler.cpp
         )
     endif()
@@ -204,6 +205,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
 
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
         list(APPEND HEADERS
+            ProxyShapeCameraHandler.h
             ProxyShapeSceneSegmentHandler.h
 endif()
 
