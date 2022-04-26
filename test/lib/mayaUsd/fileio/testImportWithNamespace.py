@@ -24,7 +24,7 @@ import fixturesUtils
 
 import unittest
 
-class testReadWriteUtils(unittest.TestCase):
+class ImportWithNamespaceTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.setUpClass(__file__)

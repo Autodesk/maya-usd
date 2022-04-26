@@ -54,7 +54,7 @@ class testUsdImportDisplacement(unittest.TestCase):
 
         # We should end up with a shading group that has both a lambert and a
         # displacement shader attached:
-        sgs = cmds.listConnections("pPlane16Shape", type="shadingEngine")
+        sgs = cmds.listConnections("Test:pPlane16Shape", type="shadingEngine")
         shaders = cmds.listConnections(sgs[0] + ".surfaceShader", d=False)
         node_type = cmds.nodeType(shaders[0])
         self.assertEqual(node_type, "lambert")
