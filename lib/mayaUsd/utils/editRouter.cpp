@@ -88,11 +88,8 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
         = PXR_NS::VtDictionaryGet<std::string>(context, "defaultUSDFormat", PXR_NS::VtDefault = "");
     if (fileFormatExtension.size() > 0) {
         fileFormatArgs[PXR_NS::UsdUsdFileFormatTokens->FormatArg] = fileFormatExtension;
-        auto filename = std::string("a.") + fileFormatExtension;
-        fileFormat = PXR_NS::SdfFileFormat::FindByExtension(filename, fileFormatArgs);
-        if (PXR_NS::SdfFileFormat::GetFileExtension(dstLayerPath) != fileFormatExtension) {
-            dstLayerPath += std::string(".") + fileFormatExtension;
-        }
+        auto dummyFilename = std::string("a.") + fileFormatExtension;
+        fileFormat = PXR_NS::SdfFileFormat::FindByExtension(dummyFilename, fileFormatArgs);
     }
 
     // Prepare the layer
