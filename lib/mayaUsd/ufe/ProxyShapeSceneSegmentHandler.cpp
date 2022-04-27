@@ -55,7 +55,10 @@ Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems(const Ufe::Path& 
     // Find the MayaUSD proxyShapes
     for (const auto& stage : getAllStages()) {
         Ufe::Path proxyShapePath = stagePath(stage);
-        if (proxyShapePath.startsWith(path)) {
+        // recall that findGatewayItems searches for descendents of path that are
+        // gateway nodes. If path itself is a gateway node it should not be included
+        // in the results.
+        if (proxyShapePath.startsWith(path) && proxyShapePath != path) {
             result.append(Ufe::Hierarchy::createItem(proxyShapePath));
         }
     }
