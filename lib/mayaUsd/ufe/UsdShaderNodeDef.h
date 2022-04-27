@@ -41,6 +41,7 @@ public:
     UsdShaderNodeDef(UsdShaderNodeDef&&) = delete;
     UsdShaderNodeDef& operator=(UsdShaderNodeDef&&) = delete;
 
+#if (UFE_PREVIEW_VERSION_NUM < 4008)
     //! \return The type of the shader node definition.
     const std::string& type() const override;
 
@@ -49,6 +50,80 @@ public:
 
     //! \return The outputs of the shader node definition.
     const Ufe::ConstAttributeDefs& outputs() const override;
+#else
+    //! \return The type of the shader node definition.
+    std::string type() const override;
+
+    /*!
+        Queries the number of classification levels available for this node.
+        This can vary across runtimes. A biology implementation would have
+        species as the "type" and genus, family, order, class, phylum, kingdom
+        representing the 6 available levels.
+        \return The number of classification levels.
+    */
+    std::size_t nbClassifications() const override;
+
+    /*!
+        Gets the classification label applicable to this NodeNef for the
+        requested classification level. The most precise classification level
+        corresponds to level zero.
+        \param level The classification level to query.
+        \return The classification label for this node at this level.
+    */
+    std::string classification(std::size_t level) const override;
+
+    //! \return List of all the input names for this node definition.
+    std::vector<std::string> inputNames() const override;
+
+    /*!
+        Queries whether an input exists with the given name.
+        \param name The input name to check.
+        \return True if the object contains an input matching the name.
+    */
+    bool hasInput(const std::string& name) const override;
+
+    /*!
+        Creates an AttributeDef interface for the given input name.
+        \param name Name of the input to retrieve.
+        \return AttributeDef interface for the given name. Returns a null
+        pointer if no input exists for the given name.
+    */
+    Ufe::AttributeDef::ConstPtr input(const std::string& name) const override;
+
+    //! \return The inputs of the shader node definition.
+    Ufe::ConstAttributeDefs inputs() const override;
+
+    //! \return List of all the output names for this node definition.
+    std::vector<std::string> outputNames() const override;
+
+    /*!
+        Queries whether an output exists with the given name.
+        \param name The output name to check.
+        \return True if the object contains an output matching the name.
+    */
+    bool hasOutput(const std::string& name) const override;
+
+    /*!
+        Creates an AttributeDef interface for the given output name.
+        \param name Name of the output to retrieve.
+        \return AttributeDef interface for the given name. Returns a null
+        pointer if no output exists for the given name.
+    */
+    Ufe::AttributeDef::ConstPtr output(const std::string& name) const override;
+
+    //! \return The outputs of the shader node definition.
+    Ufe::ConstAttributeDefs outputs() const override;
+
+    /*!
+        Get the value of the metadata named key.
+        \param[in] key The metadata key to query.
+        \return The value of the metadata key. If the key does not exist an empty Value is returned.
+    */
+    Ufe::Value getMetadata(const std::string& key) const override;
+
+    //! Returns true if metadata key has a non-empty value.
+    bool hasMetadata(const std::string& key) const override;
+#endif
 
     //! Create a UsdShaderNodeDef.
     static Ptr create(const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef);
@@ -57,10 +132,14 @@ public:
     static Ufe::NodeDefs definitions(const std::string& category);
 
 private:
-    const std::string                   fType;
+#if (UFE_PREVIEW_VERSION_NUM < 4008)
+    const std::string fType;
+#endif
     const PXR_NS::SdrShaderNodeConstPtr fShaderNodeDef;
-    const Ufe::ConstAttributeDefs       fInputs;
-    const Ufe::ConstAttributeDefs       fOutputs;
+#if (UFE_PREVIEW_VERSION_NUM < 4008)
+    const Ufe::ConstAttributeDefs fInputs;
+    const Ufe::ConstAttributeDefs fOutputs;
+#endif
 
 }; // UsdShaderNodeDef
 
