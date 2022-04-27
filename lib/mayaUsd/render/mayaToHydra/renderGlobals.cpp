@@ -263,7 +263,8 @@ void _CreateStringAttribute(
     MFnDependencyNode& node,
     const MString&     attrName,
     const std::string& defValue,
-    bool               useUserOptions)
+    bool               useUserOptions,
+    bool               usedasFilename = false)
 {
 
     const auto attr = node.attribute(attrName);
@@ -284,6 +285,8 @@ void _CreateStringAttribute(
         MObject       defObj = strData.create(defValue.c_str());
         tAttr.setDefault(defObj);
     }
+    tAttr.setUsedAsFilename(usedasFilename);
+
     node.addAttribute(obj);
 
     if (!existed && useUserOptions) {
@@ -461,6 +464,11 @@ template <> void _GetFromPlug<TfEnum>(const MPlug& plug, TfEnum& out)
     out = TfEnum(out.GetType(), plug.asInt());
 }
 
+template <> void _GetFromPlug<SdfAssetPath>(const MPlug& plug, SdfAssetPath& out)
+{
+    out = SdfAssetPath(std::string(plug.asString().asChar())); //  (out.GetType(), plug.asInt());
+}
+
 template <> void _GetFromPlug<TfToken>(const MPlug& plug, TfToken& out)
 {
     MObject attribute = plug.attribute();
@@ -497,6 +505,11 @@ bool _SetOptionVar(const MString& attrName, const TfToken& value)
 bool _SetOptionVar(const MString& attrName, const std::string& value)
 {
     return _SetOptionVar(attrName, MString(value.c_str()));
+}
+
+bool _SetOptionVar(const MString& attrName, const SdfAssetPath& value)
+{
+    return _SetOptionVar(attrName, MString(value.GetAssetPath().c_str()));
 }
 
 bool _SetOptionVar(const MString& attrName, const TfEnum& value)
@@ -582,7 +595,7 @@ bool _IsSupportedAttribute(const VtValue& v)
 {
     return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>()
         || v.IsHolding<GfVec3f>() || v.IsHolding<GfVec4f>() || v.IsHolding<TfToken>()
-        || v.IsHolding<std::string>() || v.IsHolding<TfEnum>();
+        || v.IsHolding<std::string>() || v.IsHolding<TfEnum>() || v.IsHolding<SdfAssetPath>();
 }
 
 TfToken _MangleString(
@@ -967,6 +980,13 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
                     filter.mayaString(),
                     attr.defaultValue.UncheckedGet<std::string>(),
                     userDefaults);
+            } else if (attr.defaultValue.IsHolding<SdfAssetPath>()) {
+                _CreateStringAttribute(
+                    node,
+                    filter.mayaString(),
+                    attr.defaultValue.UncheckedGet<SdfAssetPath>().GetAssetPath(),
+                    userDefaults,
+                    true);
             } else if (attr.defaultValue.IsHolding<TfEnum>()) {
                 _CreateEnumAttribute(
                     node,
@@ -1126,6 +1146,10 @@ MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting
                 settings[filter.attrName()] = v;
             } else if (attr.defaultValue.IsHolding<TfEnum>()) {
                 auto v = attr.defaultValue.UncheckedGet<TfEnum>();
+                _GetAttribute(node, filter.mayaString(), v, storeUserSetting);
+                settings[filter.attrName()] = v;
+            } else if (attr.defaultValue.IsHolding<SdfAssetPath>()) {
+                auto v = attr.defaultValue.UncheckedGet<SdfAssetPath>();
                 _GetAttribute(node, filter.mayaString(), v, storeUserSetting);
                 settings[filter.attrName()] = v;
             } else {
