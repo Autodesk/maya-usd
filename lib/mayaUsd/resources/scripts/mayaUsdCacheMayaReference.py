@@ -409,6 +409,16 @@ def cacheCommitUi(parent, selectedFile):
         cmds.error(errorMsg)
 
 
+def fileTypeChangedUi(parent, fileType):
+    '''
+    Callback called when the user change the file dialog file format drop-down.
+    Used to disable the binary/ASCII drop-down when the selected file format only
+    supports one type.
+    '''
+    forcedFormat = fileType in ['*.usda', '*.usdc', '*.usdz']
+    cmds.optionMenuGrp("defaultUSDFormatPopup", edit=True, enable=not forcedFormat)
+
+
 def cacheDialog(dagPath, pulledMayaRefPrim, _):
     '''Display dialog to cache the argument pulled Maya reference prim to USD.'''
 
@@ -433,5 +443,6 @@ def cacheDialog(dagPath, pulledMayaRefPrim, _):
         optionsUIInit="mayaUsdCacheMayaReference_cacheInitUi",
         optionsUITitle="",
         optionsUICommit2="mayaUsdCacheMayaReference_cacheCommitUi",
+        fileTypeChanged="mayaUsdCacheMayaReference_fileTypeChangedUi",
         startingDirectory=cmds.workspace(query=True, directory=True)
     )
