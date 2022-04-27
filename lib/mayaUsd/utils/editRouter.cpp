@@ -23,6 +23,7 @@
 #include <pxr/usd/usd/payloads.h>
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/gprim.h>
 
@@ -79,13 +80,26 @@ void cacheMayaReference(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionar
     if (dstLayerPath.empty() || dstPrimName.empty())
         return;
 
+    // Determine the file format
+    PXR_NS::SdfLayer::FileFormatArguments fileFormatArgs;
+    PXR_NS::SdfFileFormatConstPtr         fileFormat;
+
+    auto fileFormatExtension
+        = PXR_NS::VtDictionaryGet<std::string>(context, "defaultUSDFormat", PXR_NS::VtDefault = "");
+    if (fileFormatExtension.size() > 0) {
+        fileFormatArgs[PXR_NS::UsdUsdFileFormatTokens->FormatArg] = fileFormatExtension;
+        auto dummyFilename = std::string("a.") + fileFormatExtension;
+        fileFormat = PXR_NS::SdfFileFormat::FindByExtension(dummyFilename, fileFormatArgs);
+    }
+
     // Prepare the layer
     PXR_NS::SdfPath dstPrimPath
         = PXR_NS::SdfPath(dstPrimName).MakeAbsolutePath(PXR_NS::SdfPath::AbsoluteRootPath());
-    PXR_NS::SdfLayerRefPtr tmpLayer = PXR_NS::SdfLayer::CreateAnonymous();
+    PXR_NS::SdfLayerRefPtr tmpLayer
+        = PXR_NS::SdfLayer::CreateAnonymous("", fileFormat, fileFormatArgs);
     SdfJustCreatePrimInLayer(tmpLayer, dstPrimPath);
 
-    tmpLayer->Export(dstLayerPath);
+    tmpLayer->Export(dstLayerPath, "", fileFormatArgs);
     PXR_NS::SdfLayerRefPtr dstLayer = PXR_NS::SdfLayer::FindOrOpen(dstLayerPath);
     if (!dstLayer)
         return;
