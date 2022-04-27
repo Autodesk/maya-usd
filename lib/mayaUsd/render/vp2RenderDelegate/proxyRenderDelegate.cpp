@@ -943,7 +943,12 @@ SdfPath ProxyRenderDelegate::GetScenePrimPath(
 SdfPath ProxyRenderDelegate::GetScenePrimPath(const SdfPath& rprimId, int instanceIndex) const
 #endif
 {
-#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 16
+    // Can no longer pass ALL_INSTANCES as the instanceIndex
+    SdfPath usdPath = (instanceIndex == UsdImagingDelegate::ALL_INSTANCES) ?
+        rprimId.ReplacePrefix(_sceneDelegate->GetDelegateID(), SdfPath::AbsoluteRootPath()):
+        _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, instancerContext);
 #elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
     SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
