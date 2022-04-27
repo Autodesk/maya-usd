@@ -3,7 +3,7 @@ import maya.cmds as cmds
 import ufe
 import mayaUsd.ufe
 from mayaUSDRegisterStrings import getMayaUsdString
-from mayaUsdLibRegisterStrings import getMayaUsdLibString
+from mayaUsdUtils import getUSDDialogFileFilters
 
 def debugMessage(msg):
     DEBUG = False
@@ -124,7 +124,7 @@ def ProxyShapeFilePathChanged(filePathAttr, newFilePath=None):
             # Pop the file open dialog for user to load new usd file.
             title = getMayaUsdString("kLoadUSDFile")
             okCaption = getMayaUsdString("kLoad")
-            fileFilter = getMayaUsdLibString("kAllUsdFiles") + ' (*.usd *.usda *.usdc *.usdz );;*.usd;;*.usda;;*.usdc;;*.usdz';
+            fileFilter = getUSDDialogFileFilters()
             res = cmds.fileDialog2(caption=title, fileMode=1, ff=fileFilter, okc=okCaption)
             if res and len(res) == 1:
                 debugMessage('    User picked USD file, setting file path attribute')
