@@ -646,10 +646,10 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
 {
     // We need to figure out if the USDAttribute is holding a TfToken or string.
     const std::string typeName = fAttrHandle->typeName();
-    if (typeName == Ufe::Attribute::kString) {
+    if (typeName == PXR_NS::SdfValueTypeNames->String) {
         setUsdAttr<std::string>(fAttrHandle, value);
         return;
-    } else if (typeName == Ufe::Attribute::kEnumString) {
+    } else if (typeName == PXR_NS::SdfValueTypeNames->Token.GetCPPTypeName()) {
         PXR_NS::TfToken tok(value);
         setUsdAttr<PXR_NS::TfToken>(fAttrHandle, tok);
         return;
