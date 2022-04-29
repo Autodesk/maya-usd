@@ -104,10 +104,18 @@ public:
         const PXR_NS::GfMatrix4d&    mlInv,
         const PXR_NS::GfMatrix4d&    mrInv);
 
-    // Implementation for base class pure virtuals (illegal calls).
+    // Implementation for base class pure virtuals.  translation(), rotation()
+    // and scale() extract the translation, rotation and scale from the
+    // complete local transform.
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;
     Ufe::Vector3d scale() const override;
+
+    // Forward the pivot queries to the wrapped Transform3d.
+    Ufe::Vector3d rotatePivot() const override;
+    Ufe::Vector3d scalePivot() const override;
+    Ufe::Vector3d rotatePivotTranslation() const override;
+    Ufe::Vector3d scalePivotTranslation() const override;
 
     Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
     void                                 setMatrix(const Ufe::Matrix4d& m) override;
