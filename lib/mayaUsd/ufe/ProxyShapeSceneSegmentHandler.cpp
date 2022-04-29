@@ -71,5 +71,18 @@ Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems(const Ufe::Path& 
     return result;
 }
 
+bool ProxyShapeSceneSegmentHandler::isAGateway(const Ufe::Path& path) const
+{
+    // Handle other gateway node types that MayaUSD is not aware of
+    bool result = fMayaSceneSegmentHandler
+        ? fMayaSceneSegmentHandler->isAGateway(path)
+        : false;
+
+    PXR_NS::UsdStageWeakPtr stage = getStage(path);
+
+
+    return result | !(!stage); // TfRefPtr only has operator ! to allow me to test if the stage is nullptr
+}
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
