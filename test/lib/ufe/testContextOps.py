@@ -366,25 +366,36 @@ class ContextOpsTestCase(unittest.TestCase):
 
         materialItem = rootHier.children()[-1]
         contextOps = ufe.ContextOps.contextOps(materialItem)
-    
-        # TODO: We want to create that shader directly from a Ufe.ShaderNodeDef. This will take care
-        #       of the "info:id" automatically and potentially provide the authorable attributes.
-        cmd = contextOps.doOpCmd(['Add New Prim', 'Shader'])
-        ufeCmd.execute(cmd)
 
-        materialHier = ufe.Hierarchy.hierarchy(materialItem)
-        self.assertTrue(materialHier.hasChildren())
-        self.assertEqual(len(materialHier.children()), 1)
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4009'):
+            shaderName = "ND_standard_surface_surfaceshader"
+            nodeDefHandler = ufe.RunTimeMgr.instance().nodeDefHandler(materialItem.runTimeId())
+            surfDef = nodeDefHandler.definition(shaderName)
+            cmd = surfDef.createNodeCmd(materialItem, ufe.PathComponent("Red1"))
+            ufeCmd.execute(cmd)
+            shaderItem = cmd.insertedChild
+            shaderAttrs = ufe.Attributes.attributes(shaderItem)
 
-        shaderItem = materialHier.children()[0]
-        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+            self.assertTrue(shaderAttrs.hasAttribute("info:id"))
+            self.assertEqual(shaderAttrs.attribute("info:id").get(), shaderName)
+            self.assertEqual(ufe.PathString.string(shaderItem.path()), "|stage1|stageShape1,/Material1/Red11")
+        else:
+            cmd = contextOps.doOpCmd(['Add New Prim', 'Shader'])
+            ufeCmd.execute(cmd)
 
-        self.assertTrue(shaderAttrs.hasAttribute("info:id"))
-        shaderAttr = shaderAttrs.attribute("info:id")
-        shaderAttr.set("ND_standard_surface_surfaceshader")
+            materialHier = ufe.Hierarchy.hierarchy(materialItem)
+            self.assertTrue(materialHier.hasChildren())
+            self.assertEqual(len(materialHier.children()), 1)
+
+            shaderItem = materialHier.children()[0]
+            shaderAttrs = ufe.Attributes.attributes(shaderItem)
+
+            self.assertTrue(shaderAttrs.hasAttribute("info:id"))
+            shaderAttr = shaderAttrs.attribute("info:id")
+            shaderAttr.set("ND_standard_surface_surfaceshader")
 
         # TODO: Set base_color to red
-        # TODO: Connect "/Material1.outputs:mtlx:surface" to "/Material1/Shader1.outputs:surface"
+        # TODO: Connect "/Material1.outputs:mtlx:surface" to "/Material1/Red11.outputs:surface"
 
         # Now that we have a material, we can bind it on the capsule item even if incomplete
         capsuleItem = rootHier.children()[0]

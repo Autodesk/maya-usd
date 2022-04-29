@@ -101,6 +101,13 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 UsdShaderAttributeDef.cpp
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdUndoCreateFromNodeDefCommand.cpp
+        )
+    endif()
 endif()
 
 set(HEADERS
@@ -197,6 +204,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4008)
         list(APPEND HEADERS
             UsdShaderAttributeDef.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
+        list(APPEND HEADERS
+            UsdUndoCreateFromNodeDefCommand.h
         )
     endif()
 endif()

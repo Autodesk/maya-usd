@@ -125,6 +125,23 @@ public:
     bool hasMetadata(const std::string& key) const override;
 #endif
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4009)
+    //! Create a SceneItem using the current node definition as template.
+    //! \param parent Item under which the node is to be created.
+    //! \param name   Name of the new node.
+    //! \return SceneItem for the created node, at its new path.
+    Ufe::SceneItem::Ptr
+    createNode(const Ufe::SceneItem::Ptr& parent, const Ufe::PathComponent& name) override;
+
+    //! Create a command to create a SceneItem using the current node definition
+    //! as template. The command is not executed.
+    //! \param parent Item under which the node is to be created.
+    //! \param name   Name of the new node.
+    //! \return Command whose execution will create the node.
+    Ufe::InsertChildCommand::Ptr
+    createNodeCmd(const Ufe::SceneItem::Ptr& parent, const Ufe::PathComponent& name) override;
+#endif
+
     //! Create a UsdShaderNodeDef.
     static Ptr create(const PXR_NS::SdrShaderNodeConstPtr& shaderNodeDef);
 
