@@ -71,11 +71,11 @@ Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems(const Ufe::Path& 
     return result;
 }
 
-bool ProxyShapeSceneSegmentHandler::isAGateway(const Ufe::Path& path) const
+bool ProxyShapeSceneSegmentHandler::isGateway_(const Ufe::Path& path) const
 {
     // Handle other gateway node types that MayaUSD is not aware of
     bool result = fMayaSceneSegmentHandler
-        ? fMayaSceneSegmentHandler->isAGateway(path)
+        ? fMayaSceneSegmentHandler->isGateway_(path)
         : false;
 
     PXR_NS::UsdStageWeakPtr stage = getStage(path);
