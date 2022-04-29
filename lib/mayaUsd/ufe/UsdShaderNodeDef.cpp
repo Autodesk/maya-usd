@@ -19,7 +19,7 @@
 #if (UFE_PREVIEW_VERSION_NUM >= 4008)
 #include <mayaUsd/ufe/UsdShaderAttributeDef.h>
 #endif
-#if (UFE_PREVIEW_VERSION_NUM >= 4009)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
 #include <mayaUsd/ufe/UsdUndoCreateFromNodeDefCommand.h>
 #endif
 
@@ -272,9 +272,10 @@ bool UsdShaderNodeDef::hasMetadata(const std::string& key) const
 }
 #endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4009)
-Ufe::SceneItem::Ptr
-UsdShaderNodeDef::createNode(const Ufe::SceneItem::Ptr& parent, const Ufe::PathComponent& name)
+#if (UFE_PREVIEW_VERSION_NUM >= 4010)
+Ufe::SceneItem::Ptr UsdShaderNodeDef::createNode(
+    const Ufe::SceneItem::Ptr& parent,
+    const Ufe::PathComponent&  name) const
 {
     Ufe::SceneItem::Ptr createdItem = nullptr;
 
@@ -291,8 +292,9 @@ UsdShaderNodeDef::createNode(const Ufe::SceneItem::Ptr& parent, const Ufe::PathC
     return createdItem;
 }
 
-Ufe::InsertChildCommand::Ptr
-UsdShaderNodeDef::createNodeCmd(const Ufe::SceneItem::Ptr& parent, const Ufe::PathComponent& name)
+Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
+    const Ufe::SceneItem::Ptr& parent,
+    const Ufe::PathComponent&  name) const
 {
     if (fShaderNodeDef) {
         UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);

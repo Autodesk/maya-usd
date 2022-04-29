@@ -102,7 +102,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 UsdUndoCreateFromNodeDefCommand.cpp
@@ -207,7 +207,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         list(APPEND HEADERS
             UsdUndoCreateFromNodeDefCommand.h
         )

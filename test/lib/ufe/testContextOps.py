@@ -367,7 +367,8 @@ class ContextOpsTestCase(unittest.TestCase):
         materialItem = rootHier.children()[-1]
         contextOps = ufe.ContextOps.contextOps(materialItem)
 
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4009'):
+        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4010'):
+            print("USING NEW API!!!!")
             shaderName = "ND_standard_surface_surfaceshader"
             nodeDefHandler = ufe.RunTimeMgr.instance().nodeDefHandler(materialItem.runTimeId())
             surfDef = nodeDefHandler.definition(shaderName)
