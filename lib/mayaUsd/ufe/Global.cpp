@@ -53,8 +53,8 @@
 #endif
 #endif
 #if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
-#include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
+#include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
 #endif
 #include <mayaUsd/utils/editRouter.h>
 
