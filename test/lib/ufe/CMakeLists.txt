@@ -54,6 +54,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         )
     endif()
 
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
+        list(APPEND TEST_SCRIPT_FILES
+            testSceneSegment.py
+        )
+    endif()
+
     if(CMAKE_WANT_MATERIALX_BUILD)
         list(APPEND TEST_SCRIPT_FILES
             testShaderNodeDef.py
