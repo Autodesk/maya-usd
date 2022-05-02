@@ -292,6 +292,9 @@ MStatus finalize(bool exiting)
 #if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
     Ufe::RunTimeMgr::instance().setSceneSegmentHandler(g_MayaRtid, g_MayaSceneSegmentHandler);
     g_MayaSceneSegmentHandler.reset();
+
+    Ufe::RunTimeMgr::instance().setCameraHandler(g_MayaRtid, g_MayaCameraHandler);
+    g_MayaCameraHandler.reset();
 #endif
 
 #ifdef HAVE_PATH_MAPPING

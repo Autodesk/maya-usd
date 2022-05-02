@@ -48,7 +48,8 @@ public:
 #if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
     Ufe::Selection find(const Ufe::Path& path) const override;
 
-    static Ufe::Selection find(const Ufe::Path& stagePath, const Ufe::Path& searchPath, const PXR_NS::UsdPrim& prim);
+    static Ufe::Selection
+    find(const Ufe::Path& stagePath, const Ufe::Path& searchPath, const PXR_NS::UsdPrim& prim);
 #endif
 
 }; // UsdCameraHandler

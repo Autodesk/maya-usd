@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 #include "UsdCameraHandler.h"
-#include "UsdCamera.h"
-#include "Global.h"
 
+#include "Global.h"
+#include "UsdCamera.h"
 #include "pxr/usd/usdGeom/camera.h"
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -63,12 +63,15 @@ Ufe::Camera::Ptr UsdCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
 Ufe::Selection UsdCameraHandler::find(const Ufe::Path& path) const
 {
     TF_VERIFY(path.runTimeId() == getUsdRunTimeId());
-    Ufe::Path       stagePath(path.getSegments()[0]); // assumes there is only ever two segments
+    Ufe::Path stagePath(path.getSegments()[0]); // assumes there is only ever two segments
     return find(stagePath, path, ufePathToPrim(path));
 }
 
 /*static*/
-Ufe::Selection UsdCameraHandler::find(const Ufe::Path& stagePath, const Ufe::Path& searchPath, const PXR_NS::UsdPrim& prim)
+Ufe::Selection UsdCameraHandler::find(
+    const Ufe::Path&       stagePath,
+    const Ufe::Path&       searchPath,
+    const PXR_NS::UsdPrim& prim)
 {
     Ufe::Selection result;
     if (prim.IsA<PXR_NS::UsdGeomCamera>()) {

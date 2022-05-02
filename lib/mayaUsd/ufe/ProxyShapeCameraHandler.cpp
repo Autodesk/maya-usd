@@ -47,14 +47,11 @@ ProxyShapeCameraHandler::Ptr ProxyShapeCameraHandler::create(const Ufe::CameraHa
 //------------------------------------------------------------------------------
 Ufe::Camera::Ptr ProxyShapeCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
 {
-    return nullptr;
+    return fMayaCameraHandler ? fMayaCameraHandler->camera(item) : nullptr;
 }
 
 Ufe::Selection ProxyShapeCameraHandler::find(const Ufe::Path& path) const
 {
-    // Allow the gateway item to also have children in the same runtime.
-    Ufe::Selection cameras = fMayaCameraHandler ? fMayaCameraHandler->find(path) : Ufe::Selection();
-
     Ufe::SceneItem::Ptr item = Ufe::Hierarchy::createItem(path);
     if (isAGatewayType(item->nodeType()))
     {
@@ -62,12 +59,9 @@ Ufe::Selection ProxyShapeCameraHandler::find(const Ufe::Path& path) const
         // Get the UsdStage for this proxy shape node and search it for cameras
         PXR_NS::UsdStageWeakPtr stage = getStage(path);
         TF_VERIFY(stage);
-        Ufe::Selection usdCameras = UsdCameraHandler::find(path, path, stage->GetPseudoRoot());
-        for(const auto& camera : usdCameras) {
-            cameras.append(camera);
-        }
+        return UsdCameraHandler::find(path, path, stage->GetPseudoRoot());
     }
-    return cameras;
+    return fMayaCameraHandler ? fMayaCameraHandler->find(path) : Ufe::Selection();
 }
 
 } // namespace ufe
