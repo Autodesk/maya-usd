@@ -253,8 +253,8 @@ UsdMayaShadingModeExportContext::GetAssignments() const
 
     SdfPathSet seenBoundPrimPaths;
     for (unsigned int i = 0; i < dsmPlug.numConnectedElements(); i++) {
-        MPlug   dsmElemPlug(dsmPlug.connectionByPhysicalIndex(i));
-        MPlug   connectedPlug = UsdMayaUtil::GetConnected(dsmElemPlug);
+        MPlug dsmElemPlug(dsmPlug.connectionByPhysicalIndex(i));
+        MPlug connectedPlug = UsdMayaUtil::GetConnected(dsmElemPlug);
 
         // Maya connects shader bindings for instances based on element indices
         // of the instObjGroups[x] or instObjGroups[x].objectGroups[y] plugs.
