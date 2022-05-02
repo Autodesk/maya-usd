@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 #include "ProxyShapeCameraHandler.h"
-#include "UsdCameraHandler.h"
-#include "Global.h"
 
+#include "Global.h"
+#include "UsdCameraHandler.h"
 #include "pxr/usd/usdGeom/camera.h"
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -40,7 +40,11 @@ ProxyShapeCameraHandler::ProxyShapeCameraHandler(const Ufe::CameraHandler::Ptr& 
 ProxyShapeCameraHandler::~ProxyShapeCameraHandler() { }
 
 /*static*/
-ProxyShapeCameraHandler::Ptr ProxyShapeCameraHandler::create(const Ufe::CameraHandler::Ptr& mayaCameraHandler) { return std::make_shared<ProxyShapeCameraHandler>(mayaCameraHandler); }
+ProxyShapeCameraHandler::Ptr
+ProxyShapeCameraHandler::create(const Ufe::CameraHandler::Ptr& mayaCameraHandler)
+{
+    return std::make_shared<ProxyShapeCameraHandler>(mayaCameraHandler);
+}
 
 //------------------------------------------------------------------------------
 // Ufe::CameraHandler overrides
@@ -53,8 +57,7 @@ Ufe::Camera::Ptr ProxyShapeCameraHandler::camera(const Ufe::SceneItem::Ptr& item
 Ufe::Selection ProxyShapeCameraHandler::find(const Ufe::Path& path) const
 {
     Ufe::SceneItem::Ptr item = Ufe::Hierarchy::createItem(path);
-    if (isAGatewayType(item->nodeType()))
-    {
+    if (isAGatewayType(item->nodeType())) {
         // path is a path to a proxyShape node.
         // Get the UsdStage for this proxy shape node and search it for cameras
         PXR_NS::UsdStageWeakPtr stage = getStage(path);
