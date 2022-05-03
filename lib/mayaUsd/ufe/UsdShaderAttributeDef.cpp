@@ -29,12 +29,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+PXR_NAMESPACE_USING_DIRECTIVE
+
 UsdShaderAttributeDef::UsdShaderAttributeDef(
     const PXR_NS::SdrShaderPropertyConstPtr& shaderAttributeDef)
     : Ufe::AttributeDef()
     , fShaderAttributeDef(shaderAttributeDef)
 {
-    PXR_NAMESPACE_USING_DIRECTIVE
     if (!TF_VERIFY(fShaderAttributeDef)) {
         throw std::runtime_error("Invalid shader attribute definition");
     }
@@ -44,42 +45,39 @@ UsdShaderAttributeDef::~UsdShaderAttributeDef() { }
 
 std::string UsdShaderAttributeDef::name() const
 {
-    return fShaderAttributeDef ? fShaderAttributeDef->GetName().GetString() : std::string();
+    TF_AXIOM(fShaderAttributeDef);
+    return fShaderAttributeDef->GetName().GetString();
 }
 
 std::string UsdShaderAttributeDef::type() const
 {
-    Ufe::Attribute::Type ufeType = Ufe::Attribute::kInvalid;
-    if (fShaderAttributeDef) {
-        const PXR_NS::SdfValueTypeName typeName = fShaderAttributeDef->GetTypeAsSdfType().first;
-        ufeType = usdTypeToUfe(typeName);
-    }
-    return ufeType;
+    TF_AXIOM(fShaderAttributeDef);
+    const PXR_NS::SdfValueTypeName typeName = fShaderAttributeDef->GetTypeAsSdfType().first;
+    return usdTypeToUfe(typeName);
 }
 
 std::string UsdShaderAttributeDef::defaultValue() const
 {
+    TF_AXIOM(fShaderAttributeDef);
     std::ostringstream defaultValue;
-    if (fShaderAttributeDef) {
-        defaultValue << fShaderAttributeDef->GetDefaultValue();
-    }
+    defaultValue << fShaderAttributeDef->GetDefaultValue();
     return defaultValue.str();
 }
 
 Ufe::AttributeDef::IOType UsdShaderAttributeDef::ioType() const
 {
-    return (fShaderAttributeDef && fShaderAttributeDef->IsOutput()) ? Ufe::AttributeDef::OUTPUT_ATTR
-                                                                    : Ufe::AttributeDef::INPUT_ATTR;
+    TF_AXIOM(fShaderAttributeDef);
+    return fShaderAttributeDef->IsOutput() ? Ufe::AttributeDef::OUTPUT_ATTR
+                                           : Ufe::AttributeDef::INPUT_ATTR;
 }
 
 Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
-    if (fShaderAttributeDef) {
-        const PXR_NS::NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
-        auto                       it = metadata.find(PXR_NS::TfToken(key));
-        if (it != metadata.cend()) {
-            return Ufe::Value(it->second);
-        }
+    TF_AXIOM(fShaderAttributeDef);
+    const PXR_NS::NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
+    auto                       it = metadata.find(PXR_NS::TfToken(key));
+    if (it != metadata.cend()) {
+        return Ufe::Value(it->second);
     }
     // TODO: Adapt UI metadata information found in SdrShaderProperty to Ufe standards
     // TODO: Fix Mtlx parser in USD to populate UI metadata in SdrShaderProperty
@@ -88,14 +86,10 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 
 bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 {
-    if (fShaderAttributeDef) {
-        const PXR_NS::NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
-        auto                       it = metadata.find(PXR_NS::TfToken(key));
-        if (it != metadata.cend()) {
-            return true;
-        }
-    }
-    return false;
+    TF_AXIOM(fShaderAttributeDef);
+    const PXR_NS::NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
+    auto                       it = metadata.find(PXR_NS::TfToken(key));
+    return (it != metadata.cend());
 }
 
 } // namespace ufe
