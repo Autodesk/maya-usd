@@ -19,6 +19,8 @@
 #include "AL/usdmaya/utils/MeshUtils.h"
 #include "test_usdmaya.h"
 
+#include <pxr/usd/usdGeom/primvarsAPI.h>
+
 #include <maya/MFileIO.h>
 
 using namespace AL::usdmaya::fileio::translators;
@@ -228,7 +230,7 @@ TEST(translators_MeshTranslator, generateIncrementingIndices)
 
 UsdGeomPrimvar getDefaultUvSet(UsdGeomMesh mesh)
 {
-    const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
+    const std::vector<UsdGeomPrimvar> primvars = UsdGeomPrimvarsAPI(mesh).GetPrimvars();
     for (auto pvar : primvars) {
         if (pvar.GetPrimvarName() == TfToken("st")) {
             return pvar;
@@ -625,7 +627,7 @@ TEST(translators_MeshTranslator, uniformUvExport)
 
 UsdGeomPrimvar getDefaultColourSet(UsdGeomMesh mesh)
 {
-    const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
+    const std::vector<UsdGeomPrimvar> primvars = UsdGeomPrimvarsAPI(mesh).GetPrimvars();
     for (auto pvar : primvars) {
         if (pvar.GetPrimvarName() == TfToken("test")) {
             return pvar;

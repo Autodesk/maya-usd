@@ -37,6 +37,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdRi/statementsAPI.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
@@ -192,7 +193,8 @@ UsdGeomPrimvar UsdMayaWriteUtil::GetOrCreatePrimvar(
     }
 
     // See if the primvar already exists. If so, return it.
-    primvar = imageable.GetPrimvar(primvarNameToken);
+    UsdGeomPrimvarsAPI pvAPI(imageable);
+    primvar = pvAPI.GetPrimvar(primvarNameToken);
     if (primvar) {
         return primvar;
     }
@@ -200,7 +202,7 @@ UsdGeomPrimvar UsdMayaWriteUtil::GetOrCreatePrimvar(
     const SdfValueTypeName& typeName
         = Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
-        primvar = imageable.CreatePrimvar(primvarNameToken, typeName, interpolation, elementSize);
+        primvar = pvAPI.CreatePrimvar(primvarNameToken, typeName, interpolation, elementSize);
     }
 
     return primvar;
