@@ -137,7 +137,7 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertEqual(outputs[0].name(), "out")
         self.assertEqual(outputs[0].type(), "ColorFloat3")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4008', 'Improvements to nodeDef only available in UFE preview version 0.4.8 and greater')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Improvements to nodeDef only available in UFE preview version 0.4.8 and greater')
     def testClassificationsAndMetadata(self):
         type = "ND_image_color3"
         nodeDefHandler = self.getNodeDefHandler()

@@ -41,7 +41,7 @@ public:
     UsdShaderNodeDef(UsdShaderNodeDef&&) = delete;
     UsdShaderNodeDef& operator=(UsdShaderNodeDef&&) = delete;
 
-#if (UFE_PREVIEW_VERSION_NUM < 4008)
+#if (UFE_PREVIEW_VERSION_NUM < 4010)
     //! \return The type of the shader node definition.
     const std::string& type() const override;
 
@@ -123,9 +123,7 @@ public:
 
     //! Returns true if metadata key has a non-empty value.
     bool hasMetadata(const std::string& key) const override;
-#endif
 
-#if (UFE_PREVIEW_VERSION_NUM >= 4010)
     //! Create a SceneItem using the current node definition as template.
     //! \param parent Item under which the node is to be created.
     //! \param name   Name of the new node.
@@ -149,11 +147,11 @@ public:
     static Ufe::NodeDefs definitions(const std::string& category);
 
 private:
-#if (UFE_PREVIEW_VERSION_NUM < 4008)
+#if (UFE_PREVIEW_VERSION_NUM < 4010)
     const std::string fType;
 #endif
     const PXR_NS::SdrShaderNodeConstPtr fShaderNodeDef;
-#if (UFE_PREVIEW_VERSION_NUM < 4008)
+#if (UFE_PREVIEW_VERSION_NUM < 4010)
     const Ufe::ConstAttributeDefs fInputs;
     const Ufe::ConstAttributeDefs fOutputs;
 #endif

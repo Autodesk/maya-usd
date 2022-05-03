@@ -95,16 +95,10 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4008)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdShaderAttributeDef.cpp
-        )
-    endif()
-
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         target_sources(${PROJECT_NAME}
             PRIVATE
+                UsdShaderAttributeDef.cpp
                 UsdUndoCreateFromNodeDefCommand.cpp
         )
     endif()
@@ -201,14 +195,9 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4008)
-        list(APPEND HEADERS
-            UsdShaderAttributeDef.h
-        )
-    endif()
-
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
         list(APPEND HEADERS
+            UsdShaderAttributeDef.h
             UsdUndoCreateFromNodeDefCommand.h
         )
     endif()

@@ -54,17 +54,23 @@ Ufe::SceneItem::Ptr UsdUndoCreateFromNodeDefCommand::insertedChild() const
 void UsdUndoCreateFromNodeDefCommand::execute()
 {
     _addPrimCmd->execute();
-
-    UsdShadeShader shader(_addPrimCmd->newPrim());
-    shader.CreateIdAttr(VtValue(_shaderNodeDef->GetIdentifier()));
+    setIdAttr();
 }
 
-void UsdUndoCreateFromNodeDefCommand::undo() { _addPrimCmd->undo(); }
+void UsdUndoCreateFromNodeDefCommand::undo()
+{
+    _addPrimCmd->undo();
+    // Nothing to do for the node:id attribute. It will get deleted with the prim.
+}
 
 void UsdUndoCreateFromNodeDefCommand::redo()
 {
     _addPrimCmd->redo();
+    setIdAttr();
+}
 
+void UsdUndoCreateFromNodeDefCommand::setIdAttr()
+{
     UsdShadeShader shader(_addPrimCmd->newPrim());
     shader.CreateIdAttr(VtValue(_shaderNodeDef->GetIdentifier()));
 }

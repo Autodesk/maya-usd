@@ -63,6 +63,8 @@ private:
     const PXR_NS::SdrShaderNodeConstPtr _shaderNodeDef;
 
     std::shared_ptr<UsdUndoAddNewPrimCommand> _addPrimCmd;
+
+    void setIdAttr();
 }; // UsdUndoCreateFromNodeDefCommand
 
 } // namespace ufe
