@@ -84,17 +84,16 @@ def getMonoFormatFileFilterLabels(includeCompressed = True):
     to be join with ';;'. Call getUSDDialogFileFilters() instead as it does
     the joining.
     """
+    labelAndFilters = [
+        ("kUsdASCIIFiles", "*.usda"),
+        ("kUsdBinaryFiles", "*.usdc"),
+    ]
+
     if includeCompressed:
-        labelAndFilters = [
-            ("kUsdASCIIFiles", "*.usda"),
-            ("kUsdBinaryFiles", "*.usdc"),
-            ("kUsdCompressedFiles", "*.usdz"),
-        ]
-    else:
-        labelAndFilters = [
-            ("kUsdASCIIFiles", "*.usda"),
-            ("kUsdBinaryFiles", "*.usdc"),
-        ]
+        labelAndFilters.append(
+            ("kUsdCompressedFiles", "*.usdz")
+        )
+    
     localizedLabels = [getMayaUsdLibString(labelKey) + ' ' + filter for labelKey, filter in labelAndFilters]
     return localizedLabels
 
@@ -106,16 +105,14 @@ def getMultiFormatsFileFilterLabels(includeCompressed = True):
     to be join with ';;'. Call getUSDDialogFileFilters() instead as it does
     the joining.
     """
+    labelAndFilters = [
+        ("kAllUsdFiles", "(*.usd *.usda *.usdc)"),
+        ("kUsdFiles", "*.usd"),
+    ]
+
     if includeCompressed:
-        labelAndFilters = [
-            ("kAllUsdFiles", "(*.usd *.usda *.usdc *.usdz)"),
-            ("kUsdFiles", "*.usd"),
-        ]
-    else:
-        labelAndFilters = [
-            ("kAllUsdFiles", "(*.usd *.usda *.usdc)"),
-            ("kUsdFiles", "*.usd"),
-        ]
+        labelAndFilters[0] = ("kAllUsdFiles", "(*.usd *.usda *.usdc *.usdz)")
+
     localizedLabels = [getMayaUsdLibString(labelKey) + ' ' + filter for labelKey, filter in labelAndFilters]
     return localizedLabels
 
