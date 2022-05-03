@@ -990,7 +990,7 @@ bool UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
             valueWriter);
 
         // Save the original name for roundtripping:
-        if (primVar && !preserveSetNames) {
+        if (primVar && (setName != uvSetNames[i])) {
             UsdMayaRoundTripUtil::SetPrimVarMayaName(
                 primVar.GetAttr(), TfToken(uvSetNames[i].asChar()));
         }
