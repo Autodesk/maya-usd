@@ -102,8 +102,8 @@ bool MayaUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& mayaItem, Uf
 {
     if (isOrphaned(mayaItem)) {
         // If the Maya node is orphaned, dim it to 60%.
-        float d{0.6f};
-        auto& c = info.textFgColor;
+        const float d { 0.6f };
+        auto&       c = info.textFgColor;
         c.set(c.r() * d, c.g() * d, c.b() * d);
         return true;
     }
