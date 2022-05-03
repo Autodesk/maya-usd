@@ -1637,15 +1637,19 @@ TfToken guessColourSetInterpolationTypeExtensive(
 
     // check for per-vertex assignment
     std::vector<uint32_t> indicesMap;
-    indicesMap.resize(numPoints, -1);
-
+    indicesMap.resize(numPoints);
+    std::set<int> visitedIndices;
     {
         for (uint32_t i = 0, n = pointIndices.length(); i < n; ++i) {
             auto index = pointIndices[i];
-            auto lastIndex = indicesMap[index];
-            if (lastIndex == 0xFFFFFFFF) {
+            if (uint32_t(index + 1) > numPoints) {
+                indicesMap.resize(index + 1);
+            }
+            if (visitedIndices.find(index) == visitedIndices.end()) {
                 indicesMap[index] = i;
+                visitedIndices.emplace(index);
             } else {
+                auto lastIndex = indicesMap[index];
 #if defined(__SSE__)
 
                 const f128 rgba0 = loadu4f(rgba + 4 * lastIndex);
@@ -1740,13 +1744,19 @@ TfToken guessColourSetInterpolationTypeExtensive(
 
     // check for per-vertex assignment
     std::vector<uint32_t> indicesMap;
-    indicesMap.resize(numPoints, -1);
+    indicesMap.resize(numPoints);
+    std::set<int> visitedIndices;
     for (uint32_t pntInx = 0, n = pointIndices.length(); pntInx < n; ++pntInx) {
         auto index = pointIndices[pntInx];
-        auto lastIndex = indicesMap[index];
-        if (lastIndex == 0xFFFFFFFF) {
+        if (uint32_t(index + 1) > numPoints) {
+            indicesMap.resize(index + 1);
+        }
+
+        if (visitedIndices.find(index) == visitedIndices.end()) {
             indicesMap[index] = pntInx;
+            visitedIndices.emplace(index);
         } else {
+            auto lastIndex = indicesMap[index];
             // if not, check to see if the indices differ, but the values are the same
             const float x0 = rgba[4 * lastIndex + 0];
             const float y0 = rgba[4 * lastIndex + 1];

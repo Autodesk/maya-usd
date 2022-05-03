@@ -157,11 +157,11 @@ bool PluginTranslatorOptions::addFloat(
     float       value,
     int         precision,
     const char* controller,
-    bool        state)
+    bool        enableState)
 {
     if (isOption(optionName))
         return false;
-    m_options.emplace_back(optionName, value, precision, controller, state);
+    m_options.emplace_back(optionName, value, precision, controller, enableState);
     return true;
 }
 
@@ -560,14 +560,14 @@ void PluginTranslatorOptions::generateIntGlobals(
 
 //----------------------------------------------------------------------------------------------------------------------
 void PluginTranslatorOptions::generateFloatGlobals(
-    const char* const  prefix,
-    const MString&     niceName,
-    const MString&     optionName,
-    MString&           code,
-    float              value,
-    int                precision,
-    const std::string& controller,
-    bool               enableState)
+    const char* const prefix,
+    const MString&    niceName,
+    const MString&    optionName,
+    MString&          code,
+    float             value,
+    int               precision,
+    const MString&    controller,
+    bool              enableState)
 {
     MString valueStr;
     valueStr = value;
@@ -576,8 +576,8 @@ void PluginTranslatorOptions::generateFloatGlobals(
     MString onOffCmd;
     MString postUpdateCmd;
     MString deferredPostUpdateCmd;
-    if (!controller.empty()) {
-        MString prefixedCtrl(MString(prefix) + "_" + makeName(controller.c_str()));
+    if (controller.length()) {
+        MString prefixedCtrl(MString(prefix) + "_" + makeName(controller));
         if (enableState) {
             onOffCmd = "checkBox -e "
                        "-onCommand \"floatFieldGrp -e -en 1 "

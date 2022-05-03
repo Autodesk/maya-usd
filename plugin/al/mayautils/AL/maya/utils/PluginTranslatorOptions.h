@@ -322,7 +322,7 @@ public:
     /// \param  value the default value for the option
     /// \param  precision the default precision for the option
     /// \param  controller the controller UI name that triggers enabling
-    /// \param  state the state for enabling this field
+    /// \param  enableState the state for enabling this field
     /// \return true if the option was successfully added. False if the option is a duplicate
     AL_MAYA_UTILS_PUBLIC
     bool addFloat(
@@ -330,7 +330,7 @@ public:
         float       value,
         int         precision,
         const char* controller,
-        bool        state);
+        bool        enableState);
 
     /// \brief  Add a string value to the translator options
     /// \param  optionName the name of the option
@@ -411,7 +411,7 @@ public:
         std::vector<MString> enumStrings; ///< the text values for the enums
         OptionType           type;        ///< the type of the option
         int                  precision { 1 };
-        std::string          controller {};
+        MString              controller {};
         bool                 enableState { true };
 
         /// \brief  ctor
@@ -437,17 +437,20 @@ public:
         /// \brief  ctor
         /// \param  name the name of the option
         /// \param  defVal the default value
+        /// \param  precision the default precision for the option
+        /// \param  controller the controller UI name that triggers enabling
+        /// \param  enableState the state for enabling this field
         Option(
             const char* const name,
             const float&      defVal,
-            int               defPre,
-            const char*       defController,
-            bool              defState)
+            int               precision,
+            const char*       controller,
+            bool              enableState)
             : name(name)
             , type(OptionType::kFloat)
-            , precision(defPre)
-            , controller(defController ? defController : "")
-            , enableState(defState)
+            , precision(precision)
+            , controller(controller ? controller : "")
+            , enableState(enableState)
         {
             defFloat = defVal;
         }
@@ -514,10 +517,10 @@ private:
         const MString&    niceName,
         const MString&    optionName,
         MString&          code,
-        float,
-        int,
-        const std::string&,
-        bool);
+        float             value,
+        int               precision,
+        const MString&    controller,
+        bool              enableState);
     static void generateStringGlobals(
         const char* const prefix,
         const MString&    niceName,

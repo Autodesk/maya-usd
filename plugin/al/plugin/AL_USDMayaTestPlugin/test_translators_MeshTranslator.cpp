@@ -1209,7 +1209,7 @@ TEST(translators_MeshTranslator, colourThresholdExportWithBasicCompaction)
     }
 }
 
-/// \brief  Test exporting mesh with color threshold value and compaction 1 (basic level)
+/// \brief  Test exporting mesh with color threshold value and compaction 3 (extensive level)
 ///         Internally the test would call DiffPrimVar::guessColourSetInterpolationTypeExtensive()
 TEST(translators_MeshTranslator, colourThresholdExportWithFullCompaction)
 {
