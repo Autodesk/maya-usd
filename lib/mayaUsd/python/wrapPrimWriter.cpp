@@ -437,6 +437,15 @@ boost::python::object get_allChaserArgs(UsdMayaJobExportArgs& self)
     return boost::python::object(allChaserArgs);
 }
 
+boost::python::object get_remapUVSetsTo(UsdMayaJobExportArgs& self)
+{
+    boost::python::dict uvSetRemaps;
+    for (auto&& remap : self.remapUVSetsTo) {
+        uvSetRemaps[remap.first] = remap.second;
+    }
+    return boost::python::object(uvSetRemaps);
+}
+
 // This class is used to expose protected members of UsdMayaPrimWriter to Python
 class PrimWriterAllowProtected : public UsdMayaPrimWriter
 {
@@ -487,6 +496,7 @@ void wrapJobExportArgs()
             "convertMaterialsTo",
             make_getter(
                 &UsdMayaJobExportArgs::convertMaterialsTo, return_value_policy<return_by_value>()))
+        .add_property("remapUVSetsTo", ::get_remapUVSetsTo)
         //.add_property("dagPaths", requires exporting UsdMayaUtil::MDagPathSet)
         .add_property(
             "defaultMeshScheme",
@@ -550,6 +560,7 @@ void wrapJobExportArgs()
         .def_readonly("melPostCallback", &UsdMayaJobExportArgs::melPostCallback)
         .def_readonly("mergeTransformAndShape", &UsdMayaJobExportArgs::mergeTransformAndShape)
         .def_readonly("normalizeNurbs", &UsdMayaJobExportArgs::normalizeNurbs)
+        .def_readonly("preserveUVSetNames", &UsdMayaJobExportArgs::preserveUVSetNames)
         .add_property(
             "parentScope",
             make_getter(&UsdMayaJobExportArgs::parentScope, return_value_policy<return_by_value>()))

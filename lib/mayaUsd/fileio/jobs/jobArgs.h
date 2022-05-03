@@ -93,6 +93,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (melPostCallback) \
     (mergeTransformAndShape) \
     (normalizeNurbs) \
+    (preserveUVSetNames) \
     (parentScope) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
@@ -100,6 +101,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (renderLayerMode) \
     (shadingMode) \
     (convertMaterialsTo) \
+    (remapUVSetsTo) \
     (stripNamespaces) \
     (verbose) \
     (staticSingleSample) \
@@ -203,6 +205,7 @@ struct UsdMayaJobExportArgs
     /// a single node in the output USD.
     const bool mergeTransformAndShape;
     const bool normalizeNurbs;
+    const bool preserveUVSetNames;
     const bool stripNamespaces;
 
     /// This is the path of the USD prim under which *all* prims will be
@@ -223,6 +226,8 @@ struct UsdMayaJobExportArgs
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
     const std::map<std::string, ChaserArgs> allChaserArgs;
+
+    const std::map<std::string, std::string> remapUVSetsTo;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
