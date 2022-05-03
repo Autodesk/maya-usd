@@ -95,11 +95,10 @@ class CameraTestCase(unittest.TestCase):
         self.inchesToCm = 2.54
         self.mmToCm = 0.1
 
-    def _StartTest(self, testName):
+        # load the file and get ready to test!
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
-        self._testName = testName
-        testFile = testUtils.getTestScene("camera", self._testName + ".usda")
+        testFile = testUtils.getTestScene("camera", 'TranslateRotate_vs_xform.usda')
         mayaUtils.createProxyFromFile(testFile)
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
@@ -232,7 +231,6 @@ class CameraTestCase(unittest.TestCase):
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Python API only available in Maya 2023 or greater.')
     def testUsdCamera(self):
-        self._StartTest('TranslateRotate_vs_xform')
         mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
         cam2UsdPathSegment = usdUtils.createUfePathSegment('/cameras/cam2/camera2')
         camera2Path = ufe.Path([mayaPathSegment, cam2UsdPathSegment])
@@ -242,12 +240,11 @@ class CameraTestCase(unittest.TestCase):
         cameraPrim = usdUtils.getPrimFromSceneItem(cam2Item)
         self._TestCameraAttributes(cam2Camera, cameraPrim)
 
-        # Requires updates to the cameraHandler interface from Ufe v4 or greater.
-        if ufeUtils.ufeFeatureSetVersion() < 4:
-            return
-        # Requires at least preview version 0.4.9
-        if (os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4009'):
-            return
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4011', 'Requires Ufe Preview Version at least 2011.')
+    def testUsdCameraHandler(self):
+        mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
+        cam2UsdPathSegment = usdUtils.createUfePathSegment('/cameras/cam2/camera2')
+        camera2Path = ufe.Path([mayaPathSegment, cam2UsdPathSegment])
 
         # Test that the camera handlers can find USD cameras in a scene segment
         proxyShapeParentSegment = mayaUtils.createUfePathSegment('|stage')
@@ -277,7 +274,9 @@ class CameraTestCase(unittest.TestCase):
         self.assertEqual(len(result), 2)
 
         # searching the the parent of a gateway item searches the Maya scene segment
-        # for cameras and searches nested scene segments.
+        # for cameras and searches nested scene segments. This doesn't find any Maya
+        # cameras because the Maya camera handler is not implemented, and there are no
+        # Maya cameras which are children of proxyShapeParentItem.
         result = ufe.CameraHandler.findAll(proxyShapeParentItem)
         self.assertTrue(result.contains(camera1Path))
         self.assertTrue(result.contains(camera2Path))

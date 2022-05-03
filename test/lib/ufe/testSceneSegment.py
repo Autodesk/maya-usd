@@ -54,17 +54,15 @@ class SceneSegmentTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
-    def _StartTest(self, testName):
+        # load the file and get ready to test!
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
-        self._testName = testName
-        testFile = testUtils.getTestScene("camera", self._testName + ".usda")
+        testFile = testUtils.getTestScene("camera", 'TranslateRotate_vs_xform.usda')
         mayaUtils.createProxyFromFile(testFile)
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
 
     def testProxyShapeSceneSegmentHandler(self):
-        self._StartTest('TranslateRotate_vs_xform')
         mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
 
         # Test that the camera handlers can find USD cameras in a scene segment
@@ -90,8 +88,7 @@ class SceneSegmentTestCase(unittest.TestCase):
 
         # searching for the USD parent of both cameras should find no scene segment handler
         handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(camerasParentPath.runTimeId())
-        result = handler.findGatewayItems(camerasParentPath)
-        self.assertEqual(result, None)
+        self.assertEqual(handler, None)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
