@@ -42,7 +42,9 @@ namespace {
 MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr& mayaItem)
 {
     // This function requires a Maya item to compute its USD ancestor.
-    TF_AXIOM(mayaItem->runTimeId() == MayaUsd::ufe::getMayaRunTimeId());
+    if (!TF_VERIFY(mayaItem->runTimeId() == MayaUsd::ufe::getMayaRunTimeId())) {
+        return nullptr;
+    }
 
     // Find the pulled ancestor by iterating up the Maya path.
     auto      mayaPath = mayaItem->path();
@@ -51,7 +53,9 @@ MayaUsd::ufe::UsdSceneItem::Ptr pulledUsdAncestorItem(const Ufe::SceneItem::Ptr&
     while (!found) {
         // A pulled node either has the pull information itself, or has a
         // pulled ancestor that does.
-        TF_AXIOM(!mayaPath.empty());
+        if (!TF_VERIFY(!mayaPath.empty())) {
+            return nullptr;
+        }
         const auto mayaPathStr = Ufe::PathString::string(mayaPath);
         const auto dagPath = UsdMayaUtil::nameToDagPath(mayaPathStr);
         if (PrimUpdaterManager::readPullInformation(dagPath, usdItemPath)) {
@@ -97,8 +101,10 @@ bool MayaUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& mayaItem, Uf
     const
 {
     if (isOrphaned(mayaItem)) {
-        // If the Maya node is orphaned, give it the orphaned color.
-        info.textFgColor.set(0.403922f, 0.403922f, 0.403922f);
+        // If the Maya node is orphaned, dim it to 60%.
+        float d{0.6f};
+        auto& c = info.textFgColor;
+        c.set(c.r() * d, c.g() * d, c.b() * d);
         return true;
     }
 
