@@ -143,7 +143,7 @@ UsdPrim NurbsCurve::exportObject(
     }
 
     if (params.getBool(GeometryExportOptions::kMeshExtents)) {
-        AL::usdmaya::utils::copyExtent(fnCurve, nurbs.GetExtentAttr(), params.m_timeCode);
+        AL::usdmaya::utils::copyExtent(fnCurve, nurbs, params.m_timeCode);
     }
 
     return nurbs.GetPrim();
@@ -233,27 +233,6 @@ void NurbsCurve::writeEdits(
             AL::usdmaya::utils::kAllNurbsCurveComponents);
     }
 
-    if (diff_curves & AL::usdmaya::utils::kCurvePoints) {
-        AL::usdmaya::utils::copyPoints(fnCurve, nurbsCurvesPrim.GetPointsAttr());
-    }
-    if (diff_curves & AL::usdmaya::utils::kCurveExtent) {
-        AL::usdmaya::utils::copyExtent(fnCurve, nurbsCurvesPrim.GetExtentAttr());
-    }
-    if (diff_curves & AL::usdmaya::utils::kCurveVertexCounts) {
-        AL::usdmaya::utils::copyCurveVertexCounts(
-            fnCurve, nurbsCurvesPrim.GetCurveVertexCountsAttr());
-    }
-    if (diff_curves & AL::usdmaya::utils::kKnots) {
-        UsdAttribute knotsAttr = nurbsCurvesPrim.GetKnotsAttr();
-        AL::usdmaya::utils::copyKnots(fnCurve, knotsAttr);
-    }
-    if (diff_curves & AL::usdmaya::utils::kRanges) {
-        UsdAttribute rangeAttr = nurbsCurvesPrim.GetRangesAttr();
-        AL::usdmaya::utils::copyRanges(fnCurve, rangeAttr);
-    }
-    if (diff_curves & AL::usdmaya::utils::kOrder) {
-        AL::usdmaya::utils::copyOrder(fnCurve, nurbsCurvesPrim.GetOrderAttr());
-    }
     if (diff_curves & AL::usdmaya::utils::kWidths) {
         /*TODO: Move into AL internal ExtraData translator code as this Width/Widths attribute
           follows internal render conventions*/
@@ -292,6 +271,28 @@ void NurbsCurve::writeEdits(
             dataWidths.push_back(widthPlug.asFloat());
             nurbsCurvesPrim.GetWidthsAttr().Set(dataWidths);
         }
+    }
+    if (diff_curves & AL::usdmaya::utils::kCurvePoints) {
+        AL::usdmaya::utils::copyPoints(fnCurve, nurbsCurvesPrim.GetPointsAttr());
+    }
+    if (diff_curves & AL::usdmaya::utils::kCurveExtent) {
+        // Proper extent calculation requires widths, must happen after width calculation
+        AL::usdmaya::utils::copyExtent(fnCurve, nurbsCurvesPrim);
+    }
+    if (diff_curves & AL::usdmaya::utils::kCurveVertexCounts) {
+        AL::usdmaya::utils::copyCurveVertexCounts(
+            fnCurve, nurbsCurvesPrim.GetCurveVertexCountsAttr());
+    }
+    if (diff_curves & AL::usdmaya::utils::kKnots) {
+        UsdAttribute knotsAttr = nurbsCurvesPrim.GetKnotsAttr();
+        AL::usdmaya::utils::copyKnots(fnCurve, knotsAttr);
+    }
+    if (diff_curves & AL::usdmaya::utils::kRanges) {
+        UsdAttribute rangeAttr = nurbsCurvesPrim.GetRangesAttr();
+        AL::usdmaya::utils::copyRanges(fnCurve, rangeAttr);
+    }
+    if (diff_curves & AL::usdmaya::utils::kOrder) {
+        AL::usdmaya::utils::copyOrder(fnCurve, nurbsCurvesPrim.GetOrderAttr());
     }
 }
 
