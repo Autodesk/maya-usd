@@ -200,13 +200,13 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             UsdShaderNodeDefHandler.h
         )
     endif()
-        )
-    endif()
 
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4009)
         list(APPEND HEADERS
             ProxyShapeCameraHandler.h
             ProxyShapeSceneSegmentHandler.h
+        )
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
