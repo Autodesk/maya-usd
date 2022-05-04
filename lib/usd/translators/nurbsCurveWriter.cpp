@@ -177,8 +177,7 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
         || MFnNumericAttribute(widthPlug.attribute()).unitType() == MFnNumericData::kFloat) {
         // Copy the widths from the plug value
         curveWidths.push_back(widthPlug.asFloat());
-    }
-    else {
+    } else {
         // Default to a contant width of 1.0f
         curveWidths[0] = 1;
     }
@@ -201,18 +200,26 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     MDoubleArray mayaCurveKnots;
     status = curveFn.getKnots(mayaCurveKnots);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    VtDoubleArray curveKnots(mayaCurveKnots.length() + 2); // all knots batched together
-    for (unsigned int i = 0; i < mayaCurveKnots.length(); i++) {
-        curveKnots[i + 1] = mayaCurveKnots[i];
-    }
+    const uint32_t mayaKnotsCount = mayaCurveKnots.length();
+    VtDoubleArray  curveKnots;
+    auto           copyKnots = [&mayaCurveKnots, &curveKnots](size_t from, size_t to) {
+        memcpy(
+            ((double*)curveKnots.cdata()) + from,
+            (const double*)&mayaCurveKnots[0],
+            sizeof(double) * to);
+    };
     if (wrap) {
+        // Insert wrapping knots at either end of the vector
+        curveKnots.resize(mayaKnotsCount + 2);
+        copyKnots(1, mayaKnotsCount + 1);
         curveKnots[0] = curveKnots[1]
             - (curveKnots[curveKnots.size() - 2] - curveKnots[curveKnots.size() - 3]);
         curveKnots[curveKnots.size() - 1]
             = curveKnots[curveKnots.size() - 2] + (curveKnots[2] - curveKnots[1]);
     } else {
-        curveKnots[0] = curveKnots[1];
-        curveKnots[curveKnots.size() - 1] = curveKnots[curveKnots.size() - 2];
+        // Copy across the knots as-is, don't insert extra knots
+        curveKnots.resize(mayaKnotsCount);
+        copyKnots(0, mayaKnotsCount);
     }
 
     // Gprim
