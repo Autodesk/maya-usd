@@ -202,16 +202,16 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     CHECK_MSTATUS_AND_RETURN(status, false);
     const uint32_t mayaKnotsCount = mayaCurveKnots.length();
     VtDoubleArray  curveKnots;
-    auto           copyKnots = [&mayaCurveKnots, &curveKnots](size_t from, size_t to) {
+    auto copyKnotsFromIdx = [&mayaCurveKnots, &curveKnots, mayaKnotsCount](size_t fromIdx) {
         memcpy(
-            ((double*)curveKnots.cdata()) + from,
+            ((double*)curveKnots.cdata()) + fromIdx,
             (const double*)&mayaCurveKnots[0],
-            sizeof(double) * to);
+            sizeof(double) * mayaKnotsCount);
     };
     if (wrap) {
         // Insert wrapping knots at either end of the vector
         curveKnots.resize(mayaKnotsCount + 2);
-        copyKnots(1, mayaKnotsCount + 1);
+        copyKnotsFromIdx(1);
         curveKnots[0] = curveKnots[1]
             - (curveKnots[curveKnots.size() - 2] - curveKnots[curveKnots.size() - 3]);
         curveKnots[curveKnots.size() - 1]
@@ -219,7 +219,7 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     } else {
         // Copy across the knots as-is, don't insert extra knots
         curveKnots.resize(mayaKnotsCount);
-        copyKnots(0, mayaKnotsCount);
+        copyKnotsFromIdx(0);
     }
 
     // Gprim
