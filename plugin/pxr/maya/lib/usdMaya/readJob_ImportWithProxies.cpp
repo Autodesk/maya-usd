@@ -58,6 +58,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((GeomRootName, "Geom"))
     ((ScopePrimTypeName, "Scope"))
     ((ExcludePrimPathsPlugName, "excludePrimPaths"))
+    ((ProxySuffix, "Proxy"))
 );
 // clang-format on
 
@@ -183,9 +184,9 @@ bool UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
         UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         // Get the exclude ancestor's proxy shape node.
-        SdfPath excludeAncestorPath = entry.first;
-        SdfPath proxyShapePath = excludeAncestorPath.AppendChild(
-            TfToken(TfStringPrintf("%sProxy", excludeAncestorPath.GetName().c_str())));
+        SdfPath           excludeAncestorPath = entry.first;
+        SdfPath           proxyShapePath = excludeAncestorPath.AppendChild(TfToken(TfStringPrintf(
+            "%s%s", excludeAncestorPath.GetName().c_str(), _tokens->ProxySuffix.GetText())));
         MObject           proxyShapeObj = ctx.GetMayaNode(proxyShapePath, false);
         MFnDependencyNode depNodeFn(proxyShapeObj, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
