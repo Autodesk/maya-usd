@@ -1291,7 +1291,9 @@ void PrimUpdaterManager::onProxyContentChanged(
         const auto& changedPath = *it;
         if (changedPath.IsPrimPropertyPath()) {
             UsdPrim valueChangedPrim = stage->GetPrimAtPath(changedPath.GetPrimPath());
-            autoEditFn(context, valueChangedPrim);
+            if (valueChangedPrim) {
+                autoEditFn(context, valueChangedPrim);
+            }
         }
     }
 }
