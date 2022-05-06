@@ -382,8 +382,102 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(shaderAttrs.hasAttribute("info:id"))
         shaderAttr = shaderAttrs.attribute("info:id")
         shaderAttr.set("ND_standard_surface_surfaceshader")
+        
+        # TODO: Jerry will change this code to a createNode call on the shader definition
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
 
-        # TODO: Set base_color to red
+        # Set base_color to red
+        # This should generate an AttrDefHandle version of an Attribute
+        baseColorAttr = shaderAttrs.attribute("inputs:base_color")
+        self.assertTrue(baseColorAttr != None)
+        baseColor = baseColorAttr.get()
+        self.assertAlmostEqual(baseColor.r(), 0.8)
+        self.assertAlmostEqual(baseColor.g(), 0.8)
+        self.assertAlmostEqual(baseColor.b(), 0.8)
+        newBaseColorValue = ufe.Color3f(1.0, 0.0, 0.0)
+        baseColorAttr.set(newBaseColorValue)
+        baseColor2 = baseColorAttr.get()
+        self.assertAlmostEqual(baseColor2.r(), 1.0)
+        self.assertAlmostEqual(baseColor2.g(), 0.0)
+        self.assertAlmostEqual(baseColor2.b(), 0.0)
+        # This should use the previously stored AttrDefHandle
+        baseColorAttr2 = shaderAttrs.attribute("inputs:base_color")
+        self.assertTrue(baseColorAttr2 != None)
+        baseColor3 = baseColorAttr2.get()
+        self.assertAlmostEqual(baseColor3.r(), 1.0)
+        self.assertAlmostEqual(baseColor3.g(), 0.0)
+        self.assertAlmostEqual(baseColor3.b(), 0.0)
+        newBaseColorValue2 = ufe.Color3f(0.0, 1.0, 0.0)
+        baseColorAttr2.set(newBaseColorValue2)
+        baseColor4 = baseColorAttr2.get()
+        self.assertAlmostEqual(baseColor4.r(), 0.0)
+        self.assertAlmostEqual(baseColor4.g(), 1.0)
+        self.assertAlmostEqual(baseColor4.b(), 0.0)
+
+        # Set float specular_IOR to 0.5
+        iorFloatAttr = shaderAttrs.attribute("inputs:specular_IOR")
+        self.assertTrue(iorFloatAttr != None)
+        iorFloat = iorFloatAttr.get()
+        self.assertAlmostEqual(iorFloat, 1.5)
+        newIorFloat = 0.5
+        iorFloatAttr.set(newIorFloat)
+        iorFloat2 = iorFloatAttr.get()
+        self.assertAlmostEqual(iorFloat2, newIorFloat)
+
+        # Set vector3 coat_normal to (0.5, 0.5, 0.0)
+        coatNormalVec3Attr = shaderAttrs.attribute("inputs:coat_normal")
+        self.assertTrue(coatNormalVec3Attr != None)
+        coatNormalVec3 = coatNormalVec3Attr.get()
+        self.assertAlmostEqual(coatNormalVec3.x(), 0.0)
+        self.assertAlmostEqual(coatNormalVec3.y(), 0.0)
+        self.assertAlmostEqual(coatNormalVec3.z(), 0.0)
+        newCoatNormalVec3 = ufe.Vector3f(0.0, 1.0, 1.0)
+        coatNormalVec3Attr.set(newCoatNormalVec3)
+        coatNormalVec3_2 = coatNormalVec3Attr.get()
+        self.assertAlmostEqual(coatNormalVec3_2.x(), 0.0)
+        self.assertAlmostEqual(coatNormalVec3_2.y(), 1.0)
+        self.assertAlmostEqual(coatNormalVec3_2.z(), 1.0)
+
+        # Set bool thin_walled to true
+        thinWalledBoolAttr = shaderAttrs.attribute("inputs:thin_walled")
+        self.assertTrue(thinWalledBoolAttr != None)
+        thinWalledBool = thinWalledBoolAttr.get()
+        self.assertEqual(thinWalledBool, False)
+        newThinWalledBool = True
+        thinWalledBoolAttr.set(newThinWalledBool)
+        thinWalledBool2 = thinWalledBoolAttr.get()
+        self.assertAlmostEqual(thinWalledBool2, newThinWalledBool)
+
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+        self.assertTrue(shaderAttrs.hasAttribute("info:id"))
+        shaderAttr = shaderAttrs.attribute("info:id")
+        shaderAttr.set("ND_constant_integer")
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+        valueIntAttr = shaderAttrs.attribute("inputs:value")
+        self.assertTrue(valueIntAttr != None)
+        valueInt = valueIntAttr.get()
+        self.assertEqual(valueInt, 0)
+        newValueInt = 2
+        valueIntAttr.set(newValueInt)
+        valueInt_2 = valueIntAttr.get()
+        self.assertEqual(valueInt_2, newValueInt)
+
+        import pdb; pdb.set_trace()
+
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+        self.assertTrue(shaderAttrs.hasAttribute("info:id"))
+        shaderAttr = shaderAttrs.attribute("info:id")
+        shaderAttr.set("ND_constant_string")
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+        valueStringAttr = shaderAttrs.attribute("inputs:value")
+        self.assertTrue(valueStringAttr != None)
+        valueString = valueStringAttr.get()
+        self.assertEqual(valueString, "")
+        newValueString = "test"
+        valueStringAttr.set(newValueString)
+        valueString_2 = valueStringAttr.get()
+        self.assertEqual(valueString_2, newValueString)
+
         # TODO: Connect "/Material1.outputs:mtlx:surface" to "/Material1/Shader1.outputs:surface"
 
         # Now that we have a material, we can bind it on the capsule item even if incomplete

@@ -70,6 +70,11 @@ Ufe::SceneItem::Ptr UsdAttributes::sceneItem() const { return fItem; }
 
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
+    // If we've already created an attribute for this name, just return the type.
+    auto iter = fAttributes.find(name);
+    if (iter != std::end(fAttributes))
+        return iter->second->type();
+
     PXR_NS::TfToken      tok(name);
     PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
     if (usdAttr.IsValid()) {
@@ -123,6 +128,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             if (INPUT_ATTR_PREFIX + input->name() == name) {
                 attrHandle = std::make_shared<AttrDefHandle>(fPrim, input);
                 newAttrType = input->type();
+                break;
             }
         }
         if (!attrHandle) {
@@ -131,6 +137,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
                 if (INPUT_ATTR_PREFIX + output->name() == name) {
                     attrHandle = std::make_shared<AttrDefHandle>(fPrim, output);
                     newAttrType = output->type();
+                    break;
                 }
             }
         }

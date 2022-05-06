@@ -217,5 +217,7 @@ Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& fil
 //! destination using the source scene item path.
 Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
 
+std::vector<std::string> splitString(const std::string& str, const std::string& separators);
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

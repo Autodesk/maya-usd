@@ -366,12 +366,52 @@ bool AttrDefHandle::hasValue() const
 
 bool AttrDefHandle::get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const
 {
-    if (isAuthored())
+    const std::string& defaultValue = fAttrDef->defaultValue();
+    const std::string& typeName = AttrDefHandle::typeName();
+    if (isAuthored()) {
         return AttrHandle::get(value, time);
-    else {
-        *value = fAttrDef->defaultValue();
+    } else if(typeName == Ufe::Attribute::kBool) {
+        *value = "true" == defaultValue ? true : false;
         return true;
+    } else if(typeName == Ufe::Attribute::kInt) {
+        *value = std::stoi(defaultValue.c_str());
+        return true;
+    } else if (typeName == Ufe::Attribute::kFloat) {
+        *value = std::stof(defaultValue.c_str());
+        return true;
+    } else if (typeName == Ufe::Attribute::kDouble) {
+        *value = std::stod(defaultValue.c_str());
+        return true;
+    } else if (typeName == Ufe::Attribute::kString) {
+        *value = defaultValue;
+        return true;
+    } else if (typeName == Ufe::Attribute::kEnumString) {
+        *value = PXR_NS::TfToken(defaultValue.c_str());
+        return true;
+    } else if (typeName == Ufe::Attribute::kInt3) {
+        std::vector<std::string> tokens = splitString(defaultValue, "(), ");
+        if (tokens.size() == 3)
+        {
+            *value = GfVec3i(std::stoi(tokens[0].c_str()), std::stoi(tokens[1].c_str()), std::stoi(tokens[2].c_str()));
+            return true;
+        }
+    } else if (typeName == Ufe::Attribute::kFloat3 ||
+               typeName == Ufe::Attribute::kColorFloat3) {
+        std::vector<std::string> tokens = splitString(defaultValue, "(), ");
+        if (tokens.size() == 3)
+        {
+            *value = GfVec3f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str()), std::stof(tokens[2].c_str()));
+            return true;
+        }
+    } else if(typeName == Ufe::Attribute::kDouble3) {
+        std::vector<std::string> tokens = splitString(defaultValue, "(), ");
+        if (tokens.size() == 3)
+        {
+            *value = GfVec3d(std::stod(tokens[0].c_str()), std::stod(tokens[1].c_str()), std::stod(tokens[2].c_str()));
+            return true;
+        }
     }
+    return false;
 }
 
 bool AttrDefHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
