@@ -119,7 +119,37 @@ UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim)
     return primXform;
 }
 
-void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName)
+namespace {
+
+SdfLayerHandle getStrongerLayer(
+    const SdfLayerHandle& root,
+    const SdfLayerHandle& layer1,
+    const SdfLayerHandle& layer2)
+{
+    if (layer1 == layer2)
+        return layer1;
+
+    if (root == layer1)
+        return layer1;
+
+    if (root == layer2)
+        return layer2;
+
+    for (auto path : root->GetSubLayerPaths()) {
+        SdfLayerRefPtr subLayer = SdfLayer::FindOrOpen(path);
+        if (subLayer) {
+            SdfLayerHandle stronger = getStrongerLayer(subLayer, layer1, layer2);
+        }
+    }
+
+    return SdfLayerHandle();
+}
+
+} // namespace
+void applyCommandRestriction(
+    const UsdPrim&     prim,
+    const std::string& commandName,
+    bool               allowStronger)
 {
     // return early if prim is the pseudo-root.
     // this is a special case and could happen when one tries to drag a prim under the
@@ -184,6 +214,15 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     }
 
     if (!layerDisplayName.empty()) {
+        if (allowStronger) {
+            auto stage = prim.GetStage();
+            auto rootLayer = stage->GetRootLayer();
+            auto targetLayer = stage->GetEditTarget().GetLayer();
+            auto topLayer = primStack.front()->GetLayer();
+            if (getStrongerLayer(rootLayer, targetLayer, topLayer) == targetLayer) {
+                return;
+            }
+        }
         std::string err = TfStringPrintf(
             "Cannot %s [%s]. %s. Please set %s as the target layer to proceed.",
             commandName.c_str(),
@@ -194,10 +233,13 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     }
 }
 
-bool applyCommandRestrictionNoThrow(const UsdPrim& prim, const std::string& commandName)
+bool applyCommandRestrictionNoThrow(
+    const UsdPrim&     prim,
+    const std::string& commandName,
+    bool               allowStronger)
 {
     try {
-        applyCommandRestriction(prim, commandName);
+        applyCommandRestriction(prim, commandName, allowStronger);
     } catch (const std::exception& e) {
         std::string errMsg(e.what());
         TF_WARN(errMsg);

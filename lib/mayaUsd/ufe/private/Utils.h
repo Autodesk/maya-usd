@@ -36,10 +36,10 @@ namespace ufe {
 UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim);
 
 //! Apply restriction rules on the given prim
-void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName);
+void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName, bool allowStronger = false);
 
 //! Apply restriction rules on the given prim
-bool applyCommandRestrictionNoThrow(const UsdPrim& prim, const std::string& commandName);
+bool applyCommandRestrictionNoThrow(const UsdPrim& prim, const std::string& commandName, bool allowStronger = false);
 
 //------------------------------------------------------------------------------
 // Operations: translate, rotate, scale, pivot
