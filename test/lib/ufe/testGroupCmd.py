@@ -623,7 +623,10 @@ class GroupCmdTestCase(unittest.TestCase):
         #          accessible from Python but the command as exposed by Maya requires a selection
         #          so we create the command directly here to avoid that requirement.
         aHier = ufe.Hierarchy.hierarchy(aItem)
-        groupCmd = aHier.createGroupCmd(ufe.PathComponent("newGroup"))
+        if ufeUtils.ufeFeatureSetVersion() >= 3:
+            groupCmd = aHier.createGroupCmd(ufe.PathComponent("newGroup"))
+        else:
+            groupCmd = aHier.createGroupCmd(sn, ufe.PathComponent("newGroup"))
         groupCmd.execute()
         groupPath = aPath + ufe.PathComponent('newGroup1')
         groupItem = ufe.Hierarchy.createItem(groupPath)
