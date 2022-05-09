@@ -581,6 +581,59 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertEqual(loadRules.NoneRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere1'))
         self.assertEqual(loadRules.AllRule, stage.GetLoadRules().GetEffectiveRuleForPath('/group1/Sphere2'))
 
+    def testGroupLiftedRestrictions(self):
+        '''
+        Test that we can create a group in a stronger layer even though
+        the prim has been authored in a weaker layer.
+
+            1. Create a stage with a new layer.
+            2. Add a sub-layer.
+            3. Set the edit target to the new sub-layer.
+            4. Create on xform under the proxyShape node.
+            5. Set editTarget to the top layer.
+            6. Add a new prim under the xform, using the group command.
+            7. Previously this would have been denied, now we have lifted the restriction.
+        '''
+        cmds.file(new=True, force=True)
+
+        # 1. Create a stage with a new layer.
+        # 2. Add a sub-layer.
+        psPathStr, psPath, psItem, layers = usdUtils.createLayeredStage(2)
+
+        topLayer = layers[1]
+        subLayer = layers[2]
+
+        # 3. Set the edit target to the new sub-layer.
+        # 4. Create on xform under the proxyShape node.
+        stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
+        stage.SetEditTarget(subLayer)
+        stage.DefinePrim('/A', 'Xform')
+
+        psPathSegment = psPath.segments[0]
+        aPath = ufe.Path([psPathSegment, usdUtils.createUfePathSegment('/A')])
+        aItem = ufe.Hierarchy.createItem(aPath)
+
+        # 5. Set editTarget to the top layer.
+        stage.SetEditTarget(topLayer)
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+
+        # 6. Add a new prim under the xform, using the group command.
+        #    Note: we use an explicit create-group command because it is the only command
+        #          accessible from Python but the command as exposed by Maya requires a selection
+        #          so we create the command directly here to avoid that requirement.
+        aHier = ufe.Hierarchy.hierarchy(aItem)
+        groupCmd = aHier.createGroupCmd(ufe.PathComponent("newGroup"))
+        groupCmd.execute()
+        groupPath = aPath + ufe.PathComponent('newGroup1')
+        groupItem = ufe.Hierarchy.createItem(groupPath)
+
+        # 7. Verify the group creation succeeded.
+        aHier = ufe.Hierarchy.hierarchy(aItem)
+        self.assertTrue(aHier.hasChildren())
+        aChildren = aHier.children()
+        self.assertIn(groupItem, aChildren)
+
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only available in Maya 2023 or greater.')
     def testGroupHierarchy(self):
         '''Grouping a node and a descendant.'''
