@@ -35,6 +35,8 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/tf/getenv.h>
+
 #include <maya/MDGModifier.h>
 #include <maya/MFileIO.h>
 #include <maya/MFileObject.h>
@@ -114,7 +116,7 @@ MString refNameFromPath(const MFnDagNode& nodeFn)
 {
     MString name = nodeFn.fullPathName();
     name.substitute("|", "_");
-    name = MString(name.asChar() + 1);
+    name = MString(name.asChar() + 1) + "_RN";
     return name;
 }
 
@@ -164,6 +166,53 @@ MStatus UnloadMayaReferenceWithUndo(const MObject& referenceObject)
     return LoadOrUnloadMayaReferenceWithUndo(referenceObject, false);
 }
 
+// To avoid the error that USD complains about editing to same layer simultaneously from
+// different threads, we record it as custom data instead of creating an attribute.
+// The custom data uses the desired namespace as a key so that if the same Usd Maya Ref is
+// used multiple times with different namespaces, they will map to different Maya Ref Node.
+
+MStatus setMayaRefMetadata(
+    const UsdPrim&      prim,
+    const MString&      requestedNamespace,
+    const MFnReference& refDependNode)
+{
+    const TfToken maya_associatedReferenceNode(
+        MString(("maya_associatedReferenceNode:") + requestedNamespace).asChar());
+
+    const MString refDependNodeName = refDependNode.name();
+    const VtValue value(std::string(refDependNodeName.asChar(), refDependNodeName.length()));
+
+    prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
+
+    return MS::kSuccess;
+}
+
+MString getMayaRefMetadata(const UsdPrim& prim, const MString& requestedNamespace)
+{
+    const TfToken maya_associatedReferenceNode(
+        MString(("maya_associatedReferenceNode:") + requestedNamespace).asChar());
+
+    if (!prim.HasCustomDataKey(maya_associatedReferenceNode))
+        return MString();
+
+    const VtValue value = prim.GetCustomDataByKey(maya_associatedReferenceNode);
+    if (!value.IsHolding<std::string>())
+        return MString();
+
+    return MString(value.Get<std::string>().c_str());
+}
+
+bool useOldMayaRefNaming(const UsdPrim& prim)
+{
+    // Check if the user requested that we use the old behavior for AL refs.
+    if (!TfGetenvBool("MAYAUSD_ENABLE_MAYA_REFERENCE_OLD_BEHAVIOUR", false))
+        return false;
+
+    // MayaReference prims are using the new behaviour, others the old.
+    const TfToken MayaReference("MayaReference");
+    return prim.GetTypeName() != MayaReference;
+}
+
 } // namespace
 
 const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
@@ -180,28 +229,12 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
 {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
         .Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
-    const TfToken maya_associatedReferenceNode("maya_associatedReferenceNode");
     MStatus       status;
 
     MFnDagNode parentDag(parent, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Need to create new reference (initially unloaded).
-    //
-    // When we create reference nodes, we want a separate reference node to be
-    // created for each proxy, even proxies that are duplicates of each other.
-    // This is to ensure that edits to each copy of an asset are preserved
-    // separately.  To this end, we must create a unique name for each proxy's
-    // reference node.  Simply including namespace information (if any) from the
-    // proxy node is not enough to guarantee uniqueness, since duplicates of a
-    // proxy node will all have the same namespace.  So we also include a string
-    // created from the full path to the proxy in the name of the reference
-    // node.  The resulting name may be long, but it will be unique and the user
-    // shouldn't be interacting directly with these nodes anyway.
-    //
-    // Note that the 'file' command will name the new reference node after the
-    // given namespace.  However, the command doesn't seem to provide a reference
-    // node name override option, so we will rename the node later.
     //
     // (Also note that a new namespace is currently created whenever there is
     // already a reference node that uses the same one.  If, in the future, we
@@ -252,25 +285,38 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
     MFnReference refDependNode(referenceObject);
     connectReferenceAssociatedNode(parentDag, refDependNode);
 
-    // Rename the reference node.  We want a unique name so that multiple copies
-    // of a given prim can each have their own reference edits. We make a name
-    // from the full path to the prim for which the reference is being created
-    // (and append "_RN" to the end, to indicate it's a reference node, just
-    // because).
-    //
-    MString uniqueRefNodeName = refNameFromPath(parentDag) + "_RN";
-    refDependNode.setName(uniqueRefNodeName);
+    if (useOldMayaRefNaming(prim)) {
+        // Rename the reference node.  We want a unique name so that multiple copies
+        // of a given prim can each have their own reference edits. We make a name
+        // from the full path to the prim for which the reference is being created
+        // (and append "_RN" to the end, to indicate it's a reference node, just
+        // because).
+        //
+        // When we create reference nodes, we want a separate reference node to be
+        // created for each proxy, even proxies that are duplicates of each other.
+        // This is to ensure that edits to each copy of an asset are preserved
+        // separately.  To this end, we must create a unique name for each proxy's
+        // reference node.  Simply including namespace information (if any) from the
+        // proxy node is not enough to guarantee uniqueness, since duplicates of a
+        // proxy node will all have the same namespace.  So we also include a string
+        // created from the full path to the proxy in the name of the reference
+        // node.  The resulting name may be long, but it will be unique and the user
+        // shouldn't be interacting directly with these nodes anyway.
+        //
+        // Note that the 'file' command will name the new reference node after the
+        // given namespace.  However, the command doesn't seem to provide a reference
+        // node name override option, so we will rename the node here.
+        //
+        MString uniqueRefNodeName = refNameFromPath(parentDag);
+        refDependNode.setName(uniqueRefNodeName);
+    }
 
     // Now load the reference to properly trigger the kAfterReferenceLoad callback
     status = LoadMayaReferenceWithUndo(referenceObject);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    {
-        // To avoid the error that USD complains about editing to same layer simultaneously from
-        // different threads, we record it as custom data instead of creating an attribute.
-        MString refDependNodeName = refDependNode.name();
-        VtValue value(std::string(refDependNodeName.asChar(), refDependNodeName.length()));
-        prim.SetCustomDataByKey(maya_associatedReferenceNode, value);
-    }
+
+    status = setMayaRefMetadata(prim, rigNamespaceM, refDependNode);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     return MS::kSuccess;
 }
@@ -407,6 +453,8 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     // Check to see whether we have previously created a reference node for this
     // prim.  If so, we can just reuse it.
     //
+    // Notes for the old ref-naming scheme:
+    //
     // The check is based on comparing the prim's full path and the name of the
     // reference node, which we had originally created from the prim's full
     // path.  (Because of this, if the name or parentage of the prim has changed
@@ -421,20 +469,23 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     // revisit if renaming/reparenting of prims with reference nodes turns out
     // to be a common thing in the workflow.)
     //
-    if (refNode.isNull()) {
+    // Notes for the new ref-naming scheme: we keep an custom metadata that
+    // records the association between the desired namespace and the name of
+    // Maya Ref Node that was really created. This way the reference can still
+    // be found even if the prim moved or was renamed.
+    //
+    // What reference node name is the prim expecting?
+    const MString expectedRefName = useOldMayaRefNaming(prim)
+        ? refNameFromPath(parentDag)
+        : getMayaRefMetadata(prim, rigNamespaceM);
+    if (refNode.isNull() && !expectedRefName.isEmpty()) {
         for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
             MObject      tempRefNode = refIter.item();
             MFnReference tempRefFn(tempRefNode);
             if (!tempRefFn.isFromReferencedFile()) {
 
-                // Get the name of the reference node so we can check if this node
-                // matches the prim we are processing.  Strip off the "_RN" suffix.
-                //
-                MString refNodeName = tempRefFn.name();
-                MString refName(refNodeName.asChar(), refNodeName.numChars() - 3);
-
-                // What reference node name is the prim expecting?
-                MString expectedRefName = refNameFromPath(parentDag);
+                MString refName = tempRefFn.name();
+                MString nsName = tempRefFn.associatedNamespace(false);
 
                 // If found a match, reconnect the reference node's `associatedNode`
                 // attr before loading it, since the previous connection may be gone.
