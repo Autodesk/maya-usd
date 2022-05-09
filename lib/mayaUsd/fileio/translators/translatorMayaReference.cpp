@@ -229,7 +229,7 @@ MStatus UsdMayaTranslatorMayaReference::LoadMayaReference(
 {
     TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
         .Msg("MayaReferenceLogic::LoadMayaReference prim=%s\n", prim.GetPath().GetText());
-    MStatus       status;
+    MStatus status;
 
     MFnDagNode parentDag(parent, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
