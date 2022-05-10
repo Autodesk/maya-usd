@@ -21,6 +21,7 @@ import mayaUsd
 from mayaUsd.lib import cacheToUsd
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+import mayaUsdUtils
 import mayaUsdMayaReferenceUtils as mayaRefUtils
 import mayaUsdOptions
 
@@ -361,6 +362,10 @@ def cacheInitUi(parent, filterType):
         primName = mayaUsd.ufe.uniqueChildName(mayaRefPrimParent, kDefaultCachePrimName)
     cmds.textFieldGrp('primNameText', edit=True, text=primName)
 
+    # Call the file-filter changed callback as it does not get called by the dialog
+    # creation and it is used to update some UI elements.
+    fileTypeChangedUi(parent, filterType)
+
     # By default we want to collapse certain sections.
     cmds.frameLayout('outputFrameLayout', edit=True, collapse=False)
     cmds.frameLayout('geometryFrameLayout', edit=True, collapse=True)
@@ -415,8 +420,14 @@ def fileTypeChangedUi(parent, fileType):
     Used to disable the binary/ASCII drop-down when the selected file format only
     supports one type.
     '''
-    forcedFormat = fileType in ['*.usda', '*.usdc', '*.usdz']
+    # Note: initial file type is set using only its label, but the callback
+    #       give the label + file pattern, so that is why we use 'fileType in ff'
+    #       in the loop below.
+    forcedFormat = False
+    for ff in mayaUsdUtils.getMonoFormatFileFilterLabels():
+        forcedFormat = forcedFormat or fileType in ff
     cmds.optionMenuGrp("defaultUSDFormatPopup", edit=True, enable=not forcedFormat)
+    mayaUsdUtils.setLastUsedUSDDialogFileFilter(fileType)
 
 
 def cacheDialog(dagPath, pulledMayaRefPrim, _):
@@ -429,7 +440,8 @@ def cacheDialog(dagPath, pulledMayaRefPrim, _):
     _pulledMayaRefPrim = pulledMayaRefPrim
 
     ok = getMayaUsdLibString('kCacheMayaRefCache')
-    fileFilter = getMayaUsdLibString("kAllUsdFiles") + " (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz";
+    fileFilter = mayaUsdUtils.getUSDDialogFileFilters()
+    selectedFileFilter = mayaUsdUtils.getLastUsedUSDDialogFileFilter()
 
     # As per Maya projectViewer.mel code structure, the UI creation
     # (optionsUICreate) creates the main UI framework, and UI initialization
@@ -437,6 +449,7 @@ def cacheDialog(dagPath, pulledMayaRefPrim, _):
     files = cmds.fileDialog2(
         returnFilter=1, fileMode=0, caption=getMayaUsdLibString('kCaptionCacheToUsd'), 
         fileFilter=fileFilter, dialogStyle=2, okCaption=ok, 
+        selectFileFilter=selectedFileFilter,
         # The callbacks below must be MEL procedures, as per fileDialog2
         # requirements.  They call their corresponding Python functions.
         optionsUICreate="mayaUsdCacheMayaReference_cacheCreateUi",
