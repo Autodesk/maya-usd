@@ -45,11 +45,11 @@ ProxyShapeSceneSegmentHandler::create(const Ufe::SceneSegmentHandler::Ptr& mayaS
 // Ufe::SceneSegmentHandler overrides
 //------------------------------------------------------------------------------
 
-Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems(const Ufe::Path& path) const
+Ufe::Selection ProxyShapeSceneSegmentHandler::findGatewayItems_(const Ufe::Path& path) const
 {
     // Handle other gateway node types that MayaUSD is not aware of
     Ufe::Selection result = fMayaSceneSegmentHandler
-        ? fMayaSceneSegmentHandler->findGatewayItems(path)
+        ? fMayaSceneSegmentHandler->findGatewayItems_(path)
         : Ufe::Selection();
 
     // Find the MayaUSD proxyShapes

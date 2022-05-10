@@ -54,7 +54,7 @@ Ufe::Camera::Ptr ProxyShapeCameraHandler::camera(const Ufe::SceneItem::Ptr& item
     return fMayaCameraHandler ? fMayaCameraHandler->camera(item) : nullptr;
 }
 
-Ufe::Selection ProxyShapeCameraHandler::find(const Ufe::Path& path) const
+Ufe::Selection ProxyShapeCameraHandler::find_(const Ufe::Path& path) const
 {
     Ufe::SceneItem::Ptr item = Ufe::Hierarchy::createItem(path);
     if (isAGatewayType(item->nodeType())) {

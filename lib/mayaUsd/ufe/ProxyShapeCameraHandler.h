@@ -43,7 +43,7 @@ public:
     // Ufe::CameraHandler overrides
     Ufe::Camera::Ptr camera(const Ufe::SceneItem::Ptr& item) const override;
 
-    Ufe::Selection find(const Ufe::Path& path) const override;
+    Ufe::Selection find_(const Ufe::Path& path) const override;
 
 private:
     Ufe::CameraHandler::Ptr fMayaCameraHandler;

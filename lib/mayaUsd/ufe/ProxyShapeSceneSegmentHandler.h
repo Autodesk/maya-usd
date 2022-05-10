@@ -47,7 +47,7 @@ public:
     create(const Ufe::SceneSegmentHandler::Ptr& mayaSceneSegmentHandler);
 
     // Ufe::SceneSegmentHandler overrides
-    Ufe::Selection findGatewayItems(const Ufe::Path& path) const override;
+    Ufe::Selection findGatewayItems_(const Ufe::Path& path) const override;
     bool           isGateway_(const Ufe::Path& path) const override;
 
 private:

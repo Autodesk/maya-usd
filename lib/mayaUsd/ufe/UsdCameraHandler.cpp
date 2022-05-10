@@ -59,8 +59,8 @@ Ufe::Camera::Ptr UsdCameraHandler::camera(const Ufe::SceneItem::Ptr& item) const
     return UsdCamera::create(usdItem);
 }
 
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
-Ufe::Selection UsdCameraHandler::find(const Ufe::Path& path) const
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4012)
+Ufe::Selection UsdCameraHandler::find_(const Ufe::Path& path) const
 {
     TF_VERIFY(path.runTimeId() == getUsdRunTimeId());
     Ufe::Path stagePath(path.getSegments()[0]); // assumes there is only ever two segments
