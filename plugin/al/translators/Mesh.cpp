@@ -185,7 +185,11 @@ UsdPrim Mesh::exportObject(
                 context.timeCode(), params.getBool(GeometryExportOptions::kNormalsAsPrimvars));
         }
         if (params.getBool(GeometryExportOptions::kMeshColours)) {
-            context.copyColourSetData();
+            context.copyColourSetData(
+                params.getFloat(GeometryExportOptions::kMeshDefaultColourRGB),
+                params.getFloat(GeometryExportOptions::kMeshDefaultColourA),
+                params.getBool(GeometryExportOptions::kCustomColourThreshold),
+                params.getFloat(GeometryExportOptions::kColourThresholdValue));
         }
         if (params.getBool(GeometryExportOptions::kMeshVertexCreases)) {
             context.copyCreaseVertices();
