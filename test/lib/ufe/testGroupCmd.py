@@ -589,7 +589,7 @@ class GroupCmdTestCase(unittest.TestCase):
             1. Create a stage with a new layer.
             2. Add a sub-layer.
             3. Set the edit target to the new sub-layer.
-            4. Create on xform under the proxyShape node.
+            4. Create an xform under the proxyShape node.
             5. Set editTarget to the top layer.
             6. Add a new prim under the xform, using the group command.
             7. Previously this would have been denied, now we have lifted the restriction.
@@ -604,7 +604,7 @@ class GroupCmdTestCase(unittest.TestCase):
         subLayer = layers[2]
 
         # 3. Set the edit target to the new sub-layer.
-        # 4. Create on xform under the proxyShape node.
+        # 4. Create an xform under the proxyShape node.
         stage = mayaUsd.lib.GetPrim(psPathStr).GetStage()
         stage.SetEditTarget(subLayer)
         stage.DefinePrim('/A', 'Xform')
@@ -624,10 +624,9 @@ class GroupCmdTestCase(unittest.TestCase):
         #          so we create the command directly here to avoid that requirement.
         aHier = ufe.Hierarchy.hierarchy(aItem)
         if ufeUtils.ufeFeatureSetVersion() >= 3:
-            groupCmd = aHier.createGroupCmd(ufe.PathComponent("newGroup"))
+            aHier.createGroup(ufe.PathComponent("newGroup"))
         else:
-            groupCmd = aHier.createGroupCmd(sn, ufe.PathComponent("newGroup"))
-        groupCmd.execute()
+            aHier.createGroup(sn, ufe.PathComponent("newGroup"))
         groupPath = aPath + ufe.PathComponent('newGroup1')
         groupItem = ufe.Hierarchy.createItem(groupPath)
 
