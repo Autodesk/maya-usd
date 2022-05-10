@@ -127,6 +127,14 @@ if (MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT)
     )
 endif()
 
+message(STATUS "MAYA_HAS_GET_MEMBER_PATHS is ${MAYA_HAS_GET_MEMBER_PATHS}")
+if (MAYA_HAS_GET_MEMBER_PATHS)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    MAYA_HAS_GET_MEMBER_PATHS=1
+    )
+endif()
+
 if (MAYA_LIGHTAPI_VERSION GREATER_EQUAL 2)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE
