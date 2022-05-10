@@ -71,6 +71,8 @@ endif()
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            # See MayaUIInfoHandler.h comments.
+            MayaUIInfoHandler.cpp
             PulledObjectHierarchy.cpp
             PulledObjectHierarchyHandler.cpp
             UsdPathMappingHandler.cpp
@@ -165,6 +167,9 @@ endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        # Not dependent on UFE v3, but used to draw orphaned pulled Maya nodes
+        # in the Outliner, which is a UFE v3 feature.
+        MayaUIInfoHandler.h
         PulledObjectHierarchy.h
         PulledObjectHierarchyHandler.h
         UsdPathMappingHandler.h
