@@ -220,7 +220,7 @@ global proc mayaUsd_createStageFromFile() {
     setOptionVars(false);
     
     $caption = getMayaUsdString("kCreateUsdStageFromFile");
-    $fileFilter = getMayaUsdLibString("kAllUsdFiles") + " (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz";
+    $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters()");
     $okCaption = getMayaUsdString("kCreateStage");
     
     string $startFolder = getLatestLoadStageFolder();
