@@ -69,7 +69,7 @@ void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr, Us
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void copyExtent(const MFnNurbsCurve& fnCurve, const UsdAttribute& extentAttr, UsdTimeCode time)
+void copyExtent(const MFnNurbsCurve& fnCurve, const UsdGeomNurbsCurves& nurbs, UsdTimeCode time)
 {
     MPointArray controlVertices;
     fnCurve.getCVs(controlVertices);
@@ -81,9 +81,16 @@ void copyExtent(const MFnNurbsCurve& fnCurve, const UsdAttribute& extentAttr, Us
 
     convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, usdPoints, cvCount);
 
+    // Extents calculation requires widths - set default width if empty or unfound for prim
+    VtFloatArray curveWidths;
+    nurbs.GetWidthsAttr().Get<VtFloatArray>(&curveWidths);
+    if (curveWidths.empty()) {
+        curveWidths.push_back(1.0f);
+    }
+
     VtArray<GfVec3f> mayaExtent(2);
-    UsdGeomPointBased::ComputeExtent(dataPoints, &mayaExtent);
-    extentAttr.Set(mayaExtent, time);
+    UsdGeomCurves::ComputeExtent(dataPoints, curveWidths, &mayaExtent);
+    nurbs.GetExtentAttr().Set(mayaExtent, time);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
