@@ -27,6 +27,12 @@ const string MAYA_ENV_RADIANCE_SAMPLE = "specularI";
 const string MAYA_ENV_ROUGHNESS = "roughness";
 } // namespace
 
+const string& HwSpecularEnvironmentSamples::name()
+{
+    static const string USER_DATA_ENV_SAMPLES = "HwSpecularEnvironmentSamples";
+    return USER_DATA_ENV_SAMPLES;
+}
+
 string GlslFragmentSyntax::getVariableName(
     const string&   name,
     const TypeDesc* type,
@@ -63,7 +69,7 @@ GlslFragmentGenerator::GlslFragmentGenerator()
     _tokenSubstitutions[HW::T_BITANGENT_OBJECT] = "Bm";
     _tokenSubstitutions[HW::T_VERTEX_DATA_INSTANCE]
         = "g_mxVertexData"; // name of a global non-const variable
-    if (OgsXmlGenerator::useLightAPIV2()) {
+    if (OgsXmlGenerator::useLightAPI() >= 2) {
         // Use a Maya 2022.1-aware surface node implementation.
         registerImplementation(
             "IM_surface_" + GlslShaderGenerator::TARGET, SurfaceNodeMaya::create);
@@ -89,7 +95,7 @@ ShaderPtr GlslFragmentGenerator::createShader(
     ShaderStage& pixelStage = shader->getStage(Stage::PIXEL);
 
     // Add uniforms for environment lighting.
-    if (requiresLighting(graph) && !OgsXmlGenerator::useLightAPIV2()) {
+    if (requiresLighting(graph) && OgsXmlGenerator::useLightAPI() < 2) {
         VariableBlock& psPrivateUniforms = pixelStage.getUniformBlock(HW::PUBLIC_UNIFORMS);
         psPrivateUniforms.add(
             Type::COLOR3, LIGHT_LOOP_RESULT, Value::createValue(Color3(0.0f, 0.0f, 0.0f)));
@@ -165,21 +171,60 @@ ShaderPtr GlslFragmentGenerator::generate(
 
     const bool lighting = requiresLighting(graph);
 
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
+    std::string libRoot;
+#else
+    std::string libRoot = "libraries/";
+#endif
+
     // Emit common math functions
-    emitInclude("stdlib/genglsl/lib/mx_math.glsl", context, pixelStage);
+    emitInclude(libRoot + "stdlib/genglsl/lib/mx_math.glsl", context, pixelStage);
     emitLineBreak(pixelStage);
 
-    if (lighting) {
-        if (OgsXmlGenerator::useLightAPIV2()) {
-            emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
+    int specularMethod = context.getOptions().hwSpecularEnvironmentMethod;
+    if (specularMethod == SPECULAR_ENVIRONMENT_FIS) {
+        emitLine(
+            "#define DIRECTIONAL_ALBEDO_METHOD "
+                + std::to_string(int(context.getOptions().hwDirectionalAlbedoMethod)),
+            pixelStage,
+            false);
+        emitLineBreak(pixelStage);
+        HwSpecularEnvironmentSamplesPtr pSamples
+            = context.getUserData<HwSpecularEnvironmentSamples>(
+                HwSpecularEnvironmentSamples::name());
+        if (pSamples) {
+            emitLine(
+                "#define MX_NUM_FIS_SAMPLES "
+                    + std::to_string(pSamples->hwSpecularEnvironmentSamples),
+                pixelStage,
+                false);
         } else {
-            emitInclude("pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
+            emitLine("#define MX_NUM_FIS_SAMPLES 64", pixelStage, false);
         }
+        emitLineBreak(pixelStage);
+        emitInclude(
+            libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
+    } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
+        if (OgsXmlGenerator::useLightAPI() < 2) {
+            emitInclude(
+                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
+        } else {
+            emitInclude(
+                libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
+        }
+    } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
+        emitInclude(
+            libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
+    } else {
+        throw ExceptionShaderGenError(
+            "Invalid hardware specular environment method specified: '"
+            + std::to_string(specularMethod) + "'");
     }
+    emitLineBreak(pixelStage);
 
     // Set the include file to use for uv transformations,
     // depending on the vertical flip flag.
-    _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV] = string("stdlib/genglsl")
+    _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV] = string(libRoot + "stdlib/genglsl")
         + (context.getOptions().fileTextureVerticalFlip ? "/lib/mx_transform_uv_vflip.glsl"
                                                         : "/lib/mx_transform_uv.glsl");
 
@@ -279,7 +324,7 @@ ShaderPtr GlslFragmentGenerator::generate(
             emitLineEnd(pixelStage, true);
         }
 
-        if (lighting && !OgsXmlGenerator::useLightAPIV2()) {
+        if (lighting && OgsXmlGenerator::useLightAPI() < 2) {
             // Store environment samples from light rig:
             emitLine(
                 "g_" + MAYA_ENV_IRRADIANCE_SAMPLE + " = " + MAYA_ENV_IRRADIANCE_SAMPLE, pixelStage);

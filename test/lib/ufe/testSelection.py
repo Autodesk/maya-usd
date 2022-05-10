@@ -275,6 +275,43 @@ class SelectTestCase(unittest.TestCase):
         self.assertTrue(globalSn.contains(first.path()))
         self.assertEqual(globalSn.back(), first)
 
+    @unittest.skipUnless(mayaUtils.mayaMajorVersion() > 2023, 'testMayaSelectAddFirst only available in UFE v2 or greater and Maya greater than 2023.')
+    def testMayaSelectAddFirst(self):
+        """
+        Test the -addFirst flag of the select command with UFE.
+        """
+        # Clear the selection.
+        globalSn = ufe.GlobalSelection.get()
+        globalSn.clear()
+        self.assertTrue(globalSn.empty())
+
+        # Incrementally add to the selection all items in turn.
+        # Also testing undo/redo along the way.
+        cnt = 0
+        for item in self.items:
+            cnt += 1
+            cmds.select(ufe.PathString.string(item.path()), addFirst=True)
+            self.assertEqual(cnt, len(globalSn))
+            self.assertTrue(globalSn.contains(item.path()))
+
+            cmds.undo()
+            self.assertEqual(cnt-1, len(globalSn))
+            self.assertFalse(globalSn.contains(item.path()))
+
+            cmds.redo()
+            self.assertEqual(cnt, len(globalSn))
+            self.assertTrue(globalSn.contains(item.path()))
+
+        # Since we added all the items to the global selection, it
+        # should have all of them.
+        self.assertEqual(len(globalSn), len(self.items))
+
+        # Ensure the global selection order is the opposite of our item order.
+        reversedItems = list(self.items)
+        reversedItems.reverse()
+        for sel, expected in zip(globalSn, reversedItems):
+            self.assertEqual(sel, expected)
+
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Maya fixes only avaiable in Maya 2023 or greater.')
     def testMayaSelectMuteLayer(self):
         '''Stale selection items must be removed on mute layer.'''

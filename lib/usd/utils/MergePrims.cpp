@@ -19,6 +19,7 @@
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 #include <algorithm>
@@ -789,6 +790,15 @@ bool mergeDiffPrims(
     return SdfCopySpec(srcLayer, srcPath, dstLayer, dstPath, copyValue, copyChildren);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+/// Create any missing parents as "over". Parents may be missing because we are targeting a
+/// different layer than where the destination prim is authored. The SdfCopySpec function does not
+/// automatically create the missing parent, unlike other functions like UsdStage::CreatePrim.
+void createMissingParents(const SdfLayerRefPtr& dstLayer, const SdfPath& dstPath)
+{
+    SdfJustCreatePrimInLayer(dstLayer, dstPath.GetParentPath());
+}
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -806,6 +816,8 @@ bool mergePrims(
     const SdfPath&           dstPath,
     const MergePrimsOptions& options)
 {
+    createMissingParents(dstLayer, dstPath);
+
     if (options.ignoreUpperLayerOpinions) {
         auto           tempStage = UsdStage::CreateInMemory();
         SdfLayerHandle tempLayer = tempStage->GetSessionLayer();

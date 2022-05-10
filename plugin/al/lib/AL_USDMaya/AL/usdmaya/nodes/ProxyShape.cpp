@@ -82,6 +82,27 @@ const int _proxyShapeProfilerCategory = MProfiler::addCategory(
     "AL_usdmaya_ProxyShape"
 #endif
 );
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief Verify given Maya node is still valid.
+bool hasNode(const MFnDependencyNode& fn)
+{
+    // Note: Once the actual Maya node has been deleted from the scene,
+    //       accessing the DAG path (`.getPath()`) or user data (`.userNode()`)
+    //       would cause Maya to crash.
+    //       In this function, the validation is done via lookup its uuid.
+    auto nodeUuid = fn.uuid();
+    if (!nodeUuid.valid()) {
+        return false;
+    }
+    MStringArray result;
+    if (MGlobal::executeCommand(MString("ls \"") + nodeUuid.asString() + "\"", result)
+        != MStatus::kSuccess) {
+        return false;
+    }
+    return result.length();
+}
+
 } // namespace
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -390,6 +411,9 @@ MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray
             }
         }
     }
+
+    if (plugBeingDirtied == timeAttr || plugBeingDirtied.isDynamic())
+        ParentClass::setDependentsDirty(plugBeingDirtied, plugs);
 
     if (plugBeingDirtied == time() || plugBeingDirtied == m_timeOffset
         || plugBeingDirtied == m_timeScalar) {
@@ -1468,6 +1492,10 @@ void ProxyShape::postConstructor()
     // Apply render defaults
     MPlug(thisMObject(), m_visibleInReflections).setValue(true);
     MPlug(thisMObject(), m_visibleInRefractions).setValue(true);
+
+#if MAYA_API_VERSION >= 20210000
+    enableProxyAccessor();
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1603,8 +1631,11 @@ MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::compute %s\n", plug.name().asChar());
     // When shape is computed Maya will request redraw by itself
     m_requestedRedraw = true;
+    if (plug == outTimeAttr || plug.isDynamic())
+        ParentClass::compute(plug, dataBlock);
     MTime currentTime;
     if (plug == outTime()) {
+        MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
         return computeOutputTime(plug, dataBlock, currentTime);
     } else if (plug == outStageData()) {
         MStatus status = computeOutputTime(MPlug(plug.node(), outTime()), dataBlock, currentTime);
@@ -1734,7 +1765,7 @@ void ProxyShape::CacheEmptyBoundingBox(MBoundingBox& cachedBBox)
 //----------------------------------------------------------------------------------------------------------------------
 UsdTimeCode ProxyShape::GetOutputTime(MDataBlock dataBlock) const
 {
-    return UsdTimeCode(inputDoubleValue(dataBlock, outTime()));
+    return MayaUsdProxyShapeBase::GetOutputTime(dataBlock);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1789,7 +1820,7 @@ void ProxyShape::serialiseTransformRefs()
 
         if (handle.isAlive() && handle.isValid()) {
             MFnDagNode fn(handle.object(), &status);
-            if (status) {
+            if (status && hasNode(fn)) {
                 MDagPath path;
                 fn.getPath(path);
                 oss << path.fullPathName() << " " << iter.first.GetText() << " "
@@ -1887,7 +1918,7 @@ Scope* ProxyShape::TransformReference::getTransformNode() const
     if (n.isValid() && n.isAlive()) {
         MStatus           status;
         MFnDependencyNode fn(n.object(), &status);
-        if (status == MS::kSuccess) {
+        if (status == MS::kSuccess && hasNode(fn)) {
             Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
             if (transformNode) {
                 TF_DEBUG(ALUSDMAYA_EVALUATION)
@@ -1939,8 +1970,6 @@ void ProxyShape::registerEvents()
     registerEvent("PostStageLoaded", AL::event::kUSDMayaEventType);
     registerEvent("ConstructGLEngine", AL::event::kUSDMayaEventType);
     registerEvent("DestroyGLEngine", AL::event::kUSDMayaEventType);
-    registerEvent("PreSelectionChanged", AL::event::kUSDMayaEventType);
-    registerEvent("PostSelectionChanged", AL::event::kUSDMayaEventType);
     registerEvent("PreVariantChanged", AL::event::kUSDMayaEventType);
     registerEvent("PostVariantChanged", AL::event::kUSDMayaEventType);
     registerEvent("PreSerialiseContext", AL::event::kUSDMayaEventType, Global::postSave());
@@ -1952,8 +1981,6 @@ void ProxyShape::registerEvents()
     registerEvent("PreDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
     registerEvent("PostDeserialiseTransformRefs", AL::event::kUSDMayaEventType, Global::postRead());
     registerEvent("EditTargetChanged", AL::event::kUSDMayaEventType);
-    registerEvent("SelectionStarted", AL::event::kUSDMayaEventType);
-    registerEvent("SelectionEnded", AL::event::kUSDMayaEventType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

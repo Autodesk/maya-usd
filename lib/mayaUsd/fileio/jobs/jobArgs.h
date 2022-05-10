@@ -70,6 +70,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportCollectionBasedBindings) \
     (exportColorSets) \
     (exportDisplayColor) \
+    (exportDistanceUnit) \
     (exportInstances) \
     (exportMaterialCollections) \
     (referenceObjectMode) \
@@ -92,6 +93,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (melPostCallback) \
     (mergeTransformAndShape) \
     (normalizeNurbs) \
+    (preserveUVSetNames) \
     (parentScope) \
     (pythonPerFrameCallback) \
     (pythonPostCallback) \
@@ -99,6 +101,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (renderLayerMode) \
     (shadingMode) \
     (convertMaterialsTo) \
+    (remapUVSetsTo) \
     (stripNamespaces) \
     (verbose) \
     (staticSingleSample) \
@@ -142,6 +145,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (importInstances) \
     (importUSDZTextures) \
     (importUSDZTexturesFilePath) \
+    (pullImportStage) \
     /* assemblyRep values */ \
     (Collapsed) \
     (Full) \
@@ -173,6 +177,7 @@ struct UsdMayaJobExportArgs
     const bool        exportColorSets;
     const bool        exportDefaultCameras;
     const bool        exportDisplayColor;
+    const bool        exportDistanceUnit;
     const bool        exportInstances;
     const bool        exportMaterialCollections;
     const bool        exportMeshUVs;
@@ -200,6 +205,7 @@ struct UsdMayaJobExportArgs
     /// a single node in the output USD.
     const bool mergeTransformAndShape;
     const bool normalizeNurbs;
+    const bool preserveUVSetNames;
     const bool stripNamespaces;
 
     /// This is the path of the USD prim under which *all* prims will be
@@ -220,6 +226,8 @@ struct UsdMayaJobExportArgs
     using ChaserArgs = std::map<std::string, std::string>;
     const std::vector<std::string>          chaserNames;
     const std::map<std::string, ChaserArgs> allChaserArgs;
+
+    const std::map<std::string, std::string> remapUVSetsTo;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
@@ -310,13 +318,14 @@ struct UsdMayaJobImportArgs
         TfToken materialConversion;
     };
     using ShadingModes = std::vector<ShadingMode>;
-    ShadingModes      shadingModes; // XXX can we make this const?
-    const TfToken     preferredMaterial;
-    const std::string importUSDZTexturesFilePath;
-    const bool        importUSDZTextures;
-    const bool        importInstances;
-    const bool        useAsAnimationCache;
-    const bool        importWithProxyShapes;
+    ShadingModes         shadingModes; // XXX can we make this const?
+    const TfToken        preferredMaterial;
+    const std::string    importUSDZTexturesFilePath;
+    const bool           importUSDZTextures;
+    const bool           importInstances;
+    const bool           useAsAnimationCache;
+    const bool           importWithProxyShapes;
+    const UsdStageRefPtr pullImportStage;
     /// The interval over which to import animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
     /// animated (time-sampled) data should be imported.

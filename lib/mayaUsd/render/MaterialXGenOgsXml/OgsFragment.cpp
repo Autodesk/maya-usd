@@ -12,10 +12,70 @@
 #include <MaterialXCross/Cross.h>
 #endif
 
+#include <maya/MGlobal.h>
+#include <maya/MString.h>
+
 #include <iostream>
 
 namespace MaterialXMaya {
 namespace {
+
+/// String option var controlling the environment method. Valid values are "none", "prefiltered" and
+/// "fis". Default values are based on available light API:
+///
+///  API |  Default      | Options
+///   V1 |  prefiltered  | none, prefiltered
+///   V2 |  prefiltered  | none, prefiltered
+///   V3 |  fis          | none, prefiltered, fis
+const MString OPTVAR_ENVIRONMENT_METHOD = "MxMayaEnvironmentMethod";
+
+/// Int option var to control the number of FIS samples. Larger values will slow down GLSL
+/// rendering speed and can lead to TDR. Default is 64, expected range is 1 - 1024 by powers of
+/// two. Has no effect unless fis mode is available and selected.
+const MString OPTVAR_NUM_SAMPLES = "MxMayaEnvironmentSamples";
+
+/// String option var to control the GGX albedo computations. Valid values are "polynomial" and
+/// "montecarlo". The latter one has a performance impact on the rendering. Has no effect unless
+/// fis mode is available and selected.
+const MString OPTVAR_ALBEDO_METHOD = "MxMayaEnvironmentAlbedoMethod";
+
+// Find the expected environment mode depending on Maya capabilities and optionVars:
+mx::HwSpecularEnvironmentMethod _getEnvironmentOptions(int& numSamples, bool& isMonteCarlo)
+{
+    bool varExists = false;
+    switch (mx::OgsXmlGenerator::useLightAPI()) {
+    case 1:
+    case 2: {
+        // We default with prefilter but will respect "None" as a choice
+        MString envMethod = MGlobal::optionVarStringValue(OPTVAR_ENVIRONMENT_METHOD, &varExists);
+        if (varExists && envMethod == "none") {
+            return mx::SPECULAR_ENVIRONMENT_NONE;
+        } else {
+            return mx::SPECULAR_ENVIRONMENT_PREFILTER;
+        }
+    } break;
+    case 3: {
+        // We default with fis
+        MString envMethod = MGlobal::optionVarStringValue(OPTVAR_ENVIRONMENT_METHOD, &varExists);
+        if (varExists) {
+            if (envMethod == "none") {
+                return mx::SPECULAR_ENVIRONMENT_NONE;
+            } else if (envMethod == "prefiltered") {
+                return mx::SPECULAR_ENVIRONMENT_PREFILTER;
+            }
+        }
+        numSamples = MGlobal::optionVarIntValue(OPTVAR_NUM_SAMPLES, &varExists);
+        if (!varExists) {
+            numSamples = 64;
+        }
+        MString albedoMethod = MGlobal::optionVarStringValue(OPTVAR_ALBEDO_METHOD, &varExists);
+        isMonteCarlo = (varExists && albedoMethod == "montecarlo");
+        return mx::SPECULAR_ENVIRONMENT_FIS;
+    } break;
+    }
+    return mx::SPECULAR_ENVIRONMENT_NONE;
+}
+
 // The base class for classes wrapping GLSL fragment generators for use during
 // OgsFragment construction.
 class GlslGeneratorWrapperBase
@@ -50,15 +110,26 @@ protected:
     }
 
 protected:
-    void setCommonOptions(mx::GenOptions& genOptions, const mx::ShaderGenerator& generator)
+    void setCommonOptions(
+        mx::GenOptions&            genOptions,
+        mx::GenContext&            context,
+        const mx::ShaderGenerator& generator)
     {
-        // Use FIS environment lookup for surface shader generation but
-        // disable for texture nodes to avoid additional unneeded XML parameter
-        // generation.
-        genOptions.hwSpecularEnvironmentMethod = mx::SPECULAR_ENVIRONMENT_NONE;
+        int  numSamples = 64;
+        bool isMonteCarlo = false;
+        genOptions.hwSpecularEnvironmentMethod = _getEnvironmentOptions(numSamples, isMonteCarlo);
+        // FIS option has further sub-options to check:
+        if (genOptions.hwSpecularEnvironmentMethod == mx::SPECULAR_ENVIRONMENT_FIS) {
+            context.pushUserData(
+                mx::HwSpecularEnvironmentSamples::name(),
+                mx::HwSpecularEnvironmentSamples::create(numSamples));
+            if (isMonteCarlo) {
+                genOptions.hwDirectionalAlbedoMethod = mx::DIRECTIONAL_ALBEDO_MONTE_CARLO;
+            }
+        }
 
         // Set to use no direct lighting
-        if (mx::OgsXmlGenerator::useLightAPIV2()) {
+        if (mx::OgsXmlGenerator::useLightAPI() >= 2) {
             genOptions.hwMaxActiveLightSources = 0;
         } else {
             genOptions.hwMaxActiveLightSources = _isSurface ? 16 : 0;
@@ -135,9 +206,22 @@ public:
             genOptions.targetDistanceUnit = "meter";
         }
 
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
         genContext.registerSourceCodeSearchPath(_librarySearchPath);
+#else
+        // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
+        mx::FileSearchPath libSearchPaths;
+        for (const mx::FilePath& path : _librarySearchPath) {
+            if (path.getBaseName() == "libraries") {
+                libSearchPaths.append(path.getParentPath());
+            } else {
+                libSearchPaths.append(path);
+            }
+        }
+        genContext.registerSourceCodeSearchPath(libSearchPaths);
+#endif
 
-        setCommonOptions(genOptions, *generator);
+        setCommonOptions(genOptions, genContext, *generator);
 
         // Every light ends up as a directional light once processed thru Maya:
         mx::DocumentPtr document = _element->getDocument();
@@ -170,7 +254,7 @@ public:
         mx::ShaderGenerator& generator = _genContext.getShaderGenerator();
         mx::GenOptions&      genOptions = _genContext.getOptions();
 
-        setCommonOptions(genOptions, generator);
+        setCommonOptions(genOptions, _genContext, generator);
 
         return generator.generate(baseFragmentName, _element, _genContext);
     }
@@ -223,7 +307,8 @@ std::string generateFragment(
     // MaterialX fragment).
     std::ostringstream nameStream;
     const size_t       sourceHash = std::hash<std::string> {}(fragmentSource);
-    nameStream << baseFragmentName << "__" << std::hex << sourceHash;
+    nameStream << baseFragmentName << "__" << std::hex << sourceHash
+               << OgsFragment::getSpecularEnvKey();
     std::string fragmentName = nameStream.str();
 
     // Substitute the placeholder name token with the actual name.
@@ -311,7 +396,7 @@ OgsFragment::OgsFragment(mx::ElementPtr element, GLSL_GENERATOR_WRAPPER&& glslGe
         = graph.hasClassification(
               mx::ShaderNode::Classification::SHADER | mx::ShaderNode::Classification::SURFACE)
         || graph.hasClassification(mx::ShaderNode::Classification::BSDF);
-    if (lighting && !mx::OgsXmlGenerator::useLightAPIV2()) {
+    if (lighting && mx::OgsXmlGenerator::useLightAPI() < 2) {
         _lightRigName = generateLightRig(_lightRigSource, *_glslShader, _fragmentName);
     }
 
@@ -384,6 +469,22 @@ OgsFragment::getImageSamplingProperties(const std::string& fileParameterName) co
 std::string OgsFragment::getMatrix4Name(const std::string& matrix3Name)
 {
     return matrix3Name + mx::GlslFragmentGenerator::MATRIX3_TO_MATRIX4_POSTFIX;
+}
+
+std::string OgsFragment::getSpecularEnvKey()
+{
+    std::string retVal;
+    int         numSamples = 64;
+    bool        isMonteCarlo = false;
+    switch (_getEnvironmentOptions(numSamples, isMonteCarlo)) {
+    case mx::SPECULAR_ENVIRONMENT_FIS:
+        retVal += "F" + std::to_string(numSamples) + (isMonteCarlo ? "MC" : "P");
+        break;
+    case mx::SPECULAR_ENVIRONMENT_PREFILTER: retVal = "P"; break;
+    default: retVal = "N"; break;
+    }
+
+    return retVal;
 }
 
 } // namespace MaterialXMaya

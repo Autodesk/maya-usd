@@ -49,6 +49,8 @@ Sessionx.vim
 
 ## CMake Artifacts ##
 cmake-build-*/
+CMakePresets.json
+CMakeUserPresets.json
 CMakeSettings.json
 CMakeCache.txt
 CMakeLists.txt.user

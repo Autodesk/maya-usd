@@ -13,30 +13,6 @@
 // limitations under the License.
 //
 
-// Verbatim copy of fileOptions.mel:pushOptionsUITemplate(), which is not
-// a global proc.
-proc pushOptionsUITemplate()
-{
-    // Standardize the look of the options UI
-    //
-    if (!`uiTemplate -exists optionsTemplate`) 
-    {
-            uiTemplate optionsTemplate;
-
-            frameLayout -defineTemplate optionsTemplate 
-                    -collapsable true
-                    -collapse false
-                    -labelVisible true 
-                    -labelIndent 5 
-                    -marginWidth 5 
-                    -marginHeight 5;
-
-    columnLayout -defineTemplate optionsTemplate 
-        -adjustableColumn true;
-    }
-    setUITemplate -pushTemplate optionsTemplate;
-}
-
 global proc string createRowLayoutforMayaReference(string $parent, string $rowLayoutName, int $nbCols)
 {
     // See setDefaultTemplates.mel in Maya.
@@ -92,6 +68,8 @@ proc string defaultVariantName() {
 // Adapted from fileOptions.mel:fileOptionsTabPage().
 proc fileOptionsTabPage(string $tabLayout)
 {
+    global int $gOptionBoxTemplateDescriptionMarginWidth;
+
     string $action = "Reference";
     python("import mayaUsdMayaReferenceUtils; mayaUsdMayaReferenceUtils.pushOptionsUITemplate()");
 
@@ -114,9 +92,10 @@ proc fileOptionsTabPage(string $tabLayout)
     string $topForm = `columnLayout -rowSpacing 5 actionOptionsForm`;
 
     setParent $topForm;
-    frameLayout -label `getMayaUsdLibString("kMayaRefDescription")`;
-    columnLayout -adjustableColumn true;
-    text -align "left" -label `getMayaUsdLibString("kMayaRefAddToUSDDescription")`;
+    frameLayout -label `getMayaUsdLibString("kMayaRefDescription")` -height 170 -mw $gOptionBoxTemplateDescriptionMarginWidth;
+    columnLayout;
+    text -align "left" -wordWrap true -height 80 -label `getMayaUsdLibString("kMayaRefAddToUSDDescription1")`;
+    text -align "left" -wordWrap true -height 50 -label `getMayaUsdLibString("kMayaRefAddToUSDDescription2")`;
 
     setParent $topForm;
     frameLayout -label `getMayaUsdLibString("kMayaRefUsdOptions")`;
@@ -398,7 +377,7 @@ proc setOptionVars(int $forceFactorySettings)
         }
         string $createNew = getMayaUsdLibString("kMayaRefCreateNew");
         if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceDefineInVariant`) {
-            optionVar -intValue usdMayaReferenceDefineInVariant false;
+            optionVar -intValue usdMayaReferenceDefineInVariant true;
         }
         if ($forceFactorySettings || !`optionVar -exists usdMayaReferenceVariantSetNameOption`) {
             optionVar -stringValue usdMayaReferenceVariantSetNameOption $createNew;
@@ -484,7 +463,7 @@ proc setOptionVars(int $forceFactorySettings)
             -sv usdMayaReferenceGroupPrimName ""
             -sv usdMayaReferenceGroupPrimType "Xform"
             -sv usdMayaReferenceGroupPrimKind $defGroupKind
-            -iv usdMayaReferenceDefineInVariant false
+            -iv usdMayaReferenceDefineInVariant true
             -sv usdMayaReferenceVariantSetNameOption $createNew
             -sv usdMayaReferenceVariantSetNameText $defVariantSetName
             -sv usdMayaReferenceVariantNameOption $createNew

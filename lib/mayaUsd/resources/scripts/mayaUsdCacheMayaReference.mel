@@ -34,6 +34,11 @@ global proc mayaUsdCacheMayaReference_cacheCommitUi(string $parent, string $sele
         + $parent + "', '" + $selectedFile + "')");
 }
 
+global proc mayaUsdCacheMayaReference_fileTypeChangedUi(string $parent, string $fileType)
+{
+    python("from mayaUsdCacheMayaReference import fileTypeChangedUi; fileTypeChangedUi('"
+        + $parent + "', '" + $fileType + "')");
+}
 
 // mayaUsdTranslatorExport() requires a MEL procedure as a callback, to return
 // options read from the UI.

@@ -33,6 +33,9 @@ option(BUILD_TESTS "Build tests." ON)
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
 option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
+if(APPLE)
+    option(BUILD_UB2 "Build Universal Binary 2 (UB2) Intel64+arm64" OFF)
+endif()
 set(BUILD_WITH_PYTHON_3_VERSION 3.7 CACHE STRING "The version of Python 3 to build with")
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 option(CMAKE_WANT_MATERIALX_BUILD "Enable building with MaterialX (experimental)." OFF)
@@ -53,7 +56,11 @@ set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
 # Avoid noisy install messages
 set(CMAKE_INSTALL_MESSAGE "NEVER")
 
-set(CMAKE_OSX_ARCHITECTURES "x86_64")
+if (BUILD_UB2)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
+else()
+    set(CMAKE_OSX_ARCHITECTURES "x86_64")
+endif()
 
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}

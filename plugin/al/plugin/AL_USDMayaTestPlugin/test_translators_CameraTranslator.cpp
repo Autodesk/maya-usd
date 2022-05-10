@@ -173,6 +173,79 @@ TEST(translators_CameraTranslator, animated_io)
     }
 }
 
+TEST(translators_CameraTranslator, readAnimatedValues)
+{
+    constexpr auto LAYER_CONTENTS = R"ESC(#usda 1.0
+(
+    defaultPrim = "GEO"
+    endTimeCode = 1000
+    startTimeCode = 999
+)
+def Xform "GEO"
+{
+    float3 xformOp:translate = (-1.0, 2.5, 6.5)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    def Xform "cameraGroup"
+    {
+        double3 xformOp:translate = (-0.0000015314200130234168, 1.587618925213975e-14, -1.4210854715201993e-14)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+        float3 xformOp:rotateZXY:rotate = (0.014807368, 358.9961, -0.03618303)
+        float3 xformOp:rotateZXY:rotate.timeSamples = {
+            999: (0.014807368, -1.003891, -0.03618303),
+            1000: (0.11926156, -0.9200447, 0.12728521)
+        }
+        def Camera "renderCam"
+        {
+        }
+    }
+}
+)ESC";
+
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    stage->GetRootLayer()->ImportFromString(LAYER_CONTENTS);
+
+    SdfPath           currentPrimPath("/GEO/cameraGroup/renderCam");
+    UsdPrim           currentPrim = stage->GetPrimAtPath(currentPrimPath);
+    UsdStageCache::Id stageCacheId = AL::usdmaya::StageCache::Get().Insert(stage);
+    SdfPath           cameraPrim("/GEO/cameraGroup/renderCam");
+
+    // Load the stage into Maya
+    EXPECT_TRUE(stageCacheId.IsValid());
+    MString importCommand
+        = MString("AL_usdmaya_ProxyShapeImport  ") + "-stageId " + stageCacheId.ToLongInt();
+
+    MGlobal::executeCommand(importCommand);
+
+    // Fetch relevant maya nodes
+    MSelectionList mSel;
+    mSel.add("|AL_usdmaya_Proxy|GEO|cameraGroup|renderCam");
+    mSel.add("|AL_usdmaya_Proxy|GEO|cameraGroup");
+    mSel.add("|AL_usdmaya_Proxy|GEO"); // Has transforms
+
+    MDagPath dagPath1;
+    mSel.getDagPath(0, dagPath1);
+    MFnDagNode fnDagNode1(dagPath1.node());
+
+    MDagPath dagPath2;
+    mSel.getDagPath(1, dagPath2);
+    MFnDagNode fnDagNode2(dagPath2.node());
+
+    MDagPath dagPath3;
+    mSel.getDagPath(2, dagPath3);
+    MFnDagNode fnDagNode3(dagPath3.node());
+
+    // Confrim read animated values is set True
+    ASSERT_TRUE(fnDagNode1.findPlug("readAnimatedValues").asBool());
+    ASSERT_TRUE(fnDagNode2.findPlug("readAnimatedValues").asBool());
+    ASSERT_TRUE(fnDagNode3.findPlug("readAnimatedValues").asBool());
+
+    // Validate the transforms on the |AL_usdmaya_Proxy|GEO dag path
+    // matches our usd stage transforms.
+    ASSERT_TRUE(fnDagNode3.findPlug("translateX").asFloat() == -1.0);
+    ASSERT_TRUE(fnDagNode3.findPlug("translateY").asFloat() == 2.5);
+    ASSERT_TRUE(fnDagNode3.findPlug("translateZ").asFloat() == 6.5);
+}
+
 TEST(translators_CameraTranslator, cameraShapeName)
 {
     auto constructTestUSDFile = []() {

@@ -133,6 +133,8 @@ const UsdPrim& ProxyShapeHierarchy::getUsdRootPrim() const
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::sceneItem() const { return fItem; }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4004)
+
 bool ProxyShapeHierarchy::hasChildren() const
 {
     // We have an extra logic in createUFEChildList to remap and filter
@@ -142,6 +144,35 @@ bool ProxyShapeHierarchy::hasChildren() const
     // so going after maintainability.
     return !children().empty();
 }
+
+bool ProxyShapeHierarchy::hasFilteredChildren(const ChildFilter& childFilter) const
+{
+    // We have an extra logic in createUFEChildList to remap and filter
+    // prims. Going this direction is more costly, but easier to maintain.
+    //
+    // I don't have data that proves we need to worry about performance in here,
+    // so going after maintainability.
+    return !filteredChildren(childFilter).empty();
+}
+
+#else
+
+bool ProxyShapeHierarchy::hasChildren() const
+{
+    // Return children of the USD root.
+    const UsdPrim& rootPrim = getUsdRootPrim();
+    if (!rootPrim.IsValid())
+        return false;
+
+    // We have an extra logic in createUFEChildList to remap and filter
+    // prims. Going this direction is more costly, but easier to maintain.
+    //
+    // I don't have data that proves we need to worry about performance in here,
+    // so going after maintainability.
+    return !createUFEChildList(getUSDFilteredChildren(rootPrim), false /*filterInactive*/).empty();
+}
+
+#endif
 
 Ufe::SceneItemList ProxyShapeHierarchy::children() const
 {

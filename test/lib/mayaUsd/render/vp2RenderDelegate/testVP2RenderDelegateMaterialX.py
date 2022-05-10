@@ -79,6 +79,13 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         cmds.rotate(60, 0, 45, 'persp')
         self._StartTest('MayaSurfaces')
 
+        # Flat shading requires V3 lighting API:
+        if int(os.getenv("MAYA_LIGHTAPI_VERSION")) >= 3:
+            panel = mayaUtils.activeModelPanel()
+            cmds.modelEditor(panel, edit=True, displayLights="flat")
+            self._StartTest('MayaSurfaces_flat')
+            cmds.modelEditor(panel, edit=True, displayLights="default")
+
     def testMayaPlace2dTexture(self):
         mayaUtils.loadPlugin("mayaUsdPlugin")
 
@@ -102,6 +109,33 @@ class testVP2RenderDelegateMaterialX(imageUtils.ImageDiffingTestCase):
         xform = cmds.mayaUSDImport(file=usdFilePath, shadingMode=[["useRegistry","MaterialX"]])
         cmds.move(0, 0, 1, xform)
         self.assertSnapshotClose('place2dTextureShowcase_Import_render.png', 960, 960)
+
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
+
+    def testMayaNodesExport(self):
+        """Test a scene that will contain test samples for MaterialX exported nodes"""
+        mayaUtils.loadPlugin("mayaUsdPlugin")
+
+        # Too much differences between Linux and Windows otherwise
+        cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
+
+        testFile = testUtils.getTestScene("MaterialX", "mtlxNodesShowcase.ma")
+        cmds.file(testFile, force=True, open=True)
+        cmds.move(0, 7, -1.5, 'persp')
+        cmds.rotate(-90, 0, 0, 'persp')        
+        self.assertSnapshotClose('mtlxNodesShowcase_Maya_render.png', 960, 960)
+        usdFilePath = os.path.join(self._testDir, "mtlxNodesShowcase.usda")
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFilePath,
+            shadingMode='useRegistry', convertMaterialsTo=['MaterialX'],
+            materialsScopeName='Materials')
+        xform, shape = mayaUtils.createProxyFromFile(usdFilePath)
+        cmds.move(0, 0, 1, xform)
+        self.assertSnapshotClose('mtlxNodesShowcase_USD_render.png', 960, 960)
+
+        cmds.delete(xform)
+        xform = cmds.mayaUSDImport(file=usdFilePath, shadingMode=[["useRegistry","MaterialX"]])
+        cmds.move(0, 0, 1, xform)
+        self.assertSnapshotClose('mtlxNodesShowcase_Import_render.png', 960, 960)
 
         cmds.setAttr("hardwareRenderingGlobals.multiSampleEnable", True)
 

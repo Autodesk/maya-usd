@@ -26,7 +26,7 @@ import mayaUsd.lib
 import mayaUtils
 import mayaUsd.ufe
 
-from pxr import Usd, UsdGeom, Gf
+from pxr import Usd, UsdGeom, Gf, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -65,6 +65,23 @@ class EditAsMayaTestCase(unittest.TestCase):
     @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
     def testTransformEditAsMaya(self):
         '''Edit a USD transform as a Maya object.'''
+
+        (ps, aXlateOp, aXlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
+             bXlateOp, bXlation, bUsdUfePathStr, bUsdUfePath, bUsdItem) = createSimpleXformScene()
+
+        # Edit "B" Prim as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(bUsdUfePathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(bUsdUfePathStr))
+
+        # Verify that its ancestor "A" Prim cannot be edited as Maya data.
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertFalse(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(aUsdUfePathStr))
+            self.assertFalse(mayaUsd.lib.PrimUpdaterManager.editAsMaya(aUsdUfePathStr))
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testCannotEditAsMayaAnAncestor(self):
+        '''Test that trying to edit an ancestor is not allowed.'''
 
         (ps, xlateOp, xlation, aUsdUfePathStr, aUsdUfePath, aUsdItem,
          _, _, _, _, _) = createSimpleXformScene()
@@ -254,6 +271,45 @@ class EditAsMayaTestCase(unittest.TestCase):
         self.assertTrue(stage.GetSessionLayer().empty)
 
         self.assertEqual(prim.GetCustomDataByKey(kPullPrimMetadataKey), None)
+
+
+    @unittest.skipUnless(ufeFeatureSetVersion() >= 3, 'Test only available in UFE v3 or greater.')
+    def testTargetLayer(self):
+        '''Verify that the target layer is not moved after Edit As Maya.'''
+        
+        import mayaUsd_createStageWithNewLayer
+
+        proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        rootLayer = stage.GetRootLayer()
+
+        currentLayer = stage.GetEditTarget().GetLayer()
+        self.assertEqual(currentLayer, rootLayer) # Current layer should be the Anonymous Root Layer
+
+        sessionLayer = stage.GetSessionLayer()
+        prim = stage.DefinePrim('/A', 'Xform')
+
+        primPathStr = proxyShapePathStr + ',/A'
+
+        self.assertTrue(stage.GetSessionLayer().empty)
+
+        otherLayerId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="otherLayer")[0]
+        otherLayer = Sdf.Layer.Find(otherLayerId)
+
+        stage.SetEditTarget(otherLayer)
+
+        currentLayer = stage.GetEditTarget().GetLayer()
+        self.assertEqual(currentLayer, otherLayer) # Current layer should be the Other Layer
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.canEditAsMaya(primPathStr))
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.editAsMaya(primPathStr))
+
+        self.assertFalse(stage.GetSessionLayer().empty)
+
+        currentLayer = stage.GetEditTarget().GetLayer()
+        self.assertEqual(currentLayer, otherLayer) # Current layer should still be the Other Layer
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -36,6 +36,7 @@ set(TEST_SCRIPT_FILES
     ## XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdExportRfMLight.py
     testUsdExportRoots.py
+    testUsdExportRootsAndParentScope.py
     testUsdExportSelection.py
     testUsdExportSelectionHierarchy.py
     testUsdExportShadingInstanced.py
@@ -218,9 +219,6 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
         mayaUsd_add_test(${target}
             PYTHON_MODULE ${target}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            ENV
-                "PXR_MTLX_STDLIB_SEARCH_PATHS=${PXR_USD_LOCATION}/libraries"
-                "PXR_MTLX_STDLIB_SEARCH_PATHS=${CMAKE_INSTALL_PREFIX}/libraries"
         )
 
         # Add a ctest label to these tests for easy filtering.

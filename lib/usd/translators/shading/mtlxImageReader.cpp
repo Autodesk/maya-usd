@@ -157,6 +157,21 @@ bool MtlxUsd_ImageReader::Read(UsdMayaPrimReaderContext& context)
         UsdMayaReadUtil::SetMayaAttr(mayaAttr, VtValue(colorVal), /*unlinearizeColors*/ false);
     }
 
+    // Filter type:
+    mayaAttr = depFn.findPlug(TrMayaTokens->filterType.GetText(), true, &status);
+    usdInput = shaderSchema.GetInput(TrMtlxTokens->filtertype);
+    if (status == MS::kSuccess && usdInput && usdInput.Get(&val) && val.IsHolding<std::string>()) {
+        std::string filterType = val.UncheckedGet<std::string>();
+        if (filterType == TrMtlxTokens->closest.GetString()) {
+            mayaAttr.setInt(0);
+        } else if (filterType == TrMtlxTokens->linear.GetString()) {
+            mayaAttr.setInt(1);
+        } else {
+            // Maya quadratic default for TrMtlxTokens->cubic:
+            mayaAttr.setInt(3);
+        }
+    }
+
     return true;
 }
 
