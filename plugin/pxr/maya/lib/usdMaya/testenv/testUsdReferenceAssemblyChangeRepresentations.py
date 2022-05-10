@@ -506,7 +506,7 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         # The Geom transform should have six children, one proxy shape, four
         # transform nodes, and one camera.
         geomChildNodes = self._GetChildren(geomTransformNode)
-        self.assertEqual(len(geomChildNodes), 6)
+        self.assertEqual(len(geomChildNodes), 7)
 
         # Validate the proxy.
         proxyShapeNode = '%s:GeomProxy' % self.assemNamespace
@@ -544,6 +544,16 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
         refProxyNode = self._ValidateNodeWithChildren(refTransformNode,
             self.TRANSFORM_TYPE_NAME, 'RefProxy', self.PROXY_TYPE_NAME)[0]
 
+        nestedRefTransformNode = '%s:NestedRef' % self.assemNamespace
+        self.assertIn(refTransformNode, geomChildNodes)
+        nestedRefChildNodes = self._GetChildren(nestedRefTransformNode)
+        self.assertEqual(len(nestedRefChildNodes), 3)
+
+        # Verify nested collapse points work as expected
+        nestedRefAncestorNode = '%s:ChildNonRef' % self.assemNamespace
+        ancestorChildNodes = self._GetChildren(nestedRefAncestorNode)
+        self.assertEqual(len(ancestorChildNodes), 1)
+
         # Validate the ReferencedModels transform and the Cube_1 assembly.
         refModelsTransformNode = '%s:ReferencedModels' % self.assemNamespace
         self.assertIn(refModelsTransformNode, geomChildNodes)
@@ -568,7 +578,7 @@ class testUsdReferenceAssemblyChangeRepresentations(unittest.TestCase):
 
         # The Geom transform should have six transform node children.
         geomChildNodes = self._GetChildren(geomTransformNode)
-        self.assertEqual(len(geomChildNodes), 6)
+        self.assertEqual(len(geomChildNodes), 7)
 
         # Validate the camera under Geom.
         geomCameraNode = '%s:PerspCamUnderGeom' % self.assemNamespace
