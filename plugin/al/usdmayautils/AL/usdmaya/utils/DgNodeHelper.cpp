@@ -1172,6 +1172,66 @@ MStatus DgNodeHelper::setAngleAnim(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+template <typename T>
+MStatus setAttrAnim(
+    const MObject&      node,
+    const MObject&      attr,
+    const UsdAttribute& usdAttr,
+    MObjectArray*       newAnimCurves)
+{
+    if (!usdAttr.GetNumTimeSamples()) {
+        return MS::kFailure;
+    }
+
+    MStatus      status;
+    MPlug        plug(node, attr);
+    MFnAnimCurve fnCurve;
+    status = DgNodeHelper::prepareAnimCurve(plug, fnCurve, newAnimCurves);
+    if (!status)
+        return MS::kFailure;
+
+    std::vector<double> times;
+    if (!usdAttr.GetTimeSamples(&times)) {
+        return MS::kFailure;
+    }
+
+    const auto errorString = MString("DgNodeTranslator::setAttrAnim ") + plug.name();
+
+    T value;
+    for (auto const& timeValue : times) {
+        if (!usdAttr.Get(&value, timeValue))
+            continue;
+
+        MTime tm(timeValue, MTime::kFilm);
+        fnCurve.addKey(
+            tm, value, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+        AL_MAYA_CHECK_ERROR(status, errorString);
+    }
+
+    return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setBoolAttrAnim(
+    const MObject&      node,
+    const MObject&      attr,
+    const UsdAttribute& usdAttr,
+    MObjectArray*       newAnimCurves)
+{
+    return setAttrAnim<bool>(node, attr, usdAttr, newAnimCurves);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setIntAttrAnim(
+    const MObject&      node,
+    const MObject&      attr,
+    const UsdAttribute& usdAttr,
+    MObjectArray*       newAnimCurves)
+{
+    return setAttrAnim<int>(node, attr, usdAttr, newAnimCurves);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::setFloatAttrAnim(
     const MObject node,
     const MObject attr,

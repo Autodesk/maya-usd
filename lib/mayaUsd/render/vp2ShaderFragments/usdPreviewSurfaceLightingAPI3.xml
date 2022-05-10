@@ -1,0 +1,1132 @@
+<!--
+========================================================================
+Copyright 2018 Pixar
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment uiName="usdPreviewSurfaceLightingAPI3" name="usdPreviewSurfaceLightingAPI3" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        Computes usdPreviewSurface using latest maya lighting functions.
+    </description>
+    <properties>
+        <!-- Important inputs: -->
+        <float3 name="u_viewPosition" semantic="WorldCameraPosition" flags="isRequirementOnly" />
+        <int name="mayaExternalLightFunctions" flags="isRequirementOnly" />
+
+        <!-- Varying inputs: -->
+        <float3 name="Pw" semantic="Pw" flags="varyingInputParam" />
+        <float3 name="Nw" semantic="Nw" flags="varyingInputParam" />
+
+        <!-- UsdPreviewSurface Parameters -->
+        <float name="clearcoatAmount"/>
+        <float name="clearcoatRoughness"/>
+        <float3 name="diffuseColor"/>
+        <float3 name="emissiveColor"/>
+        <float name="ior"/>
+        <float name="metallic"/>
+        <float name="occlusion"/>
+        <!-- The shader computes transparency from its "opacity" attribute. -->
+        <float3 name="transparency"/>
+        <float name="opacityThreshold"/>
+        <float name="roughness"/>
+        <float3 name="specularColor"/>
+        <bool name="useSpecularWorkflow"/>
+        <float3 name="clearcoatColor"/>
+        <float name="specularAmount"/>
+    </properties>
+    <values>
+        <!-- UsdPreviewSurface Parameter Default Values -->
+        <float name="clearcoatAmount" value="0.0"/>
+        <float name="clearcoatRoughness" value="0.01"/>
+        <float3 name="diffuseColor" value="0.18,0.18,0.18"/>
+        <float3 name="emissiveColor" value="0.0,0.0,0.0"/>
+        <float name="ior" value="1.5"/>
+        <float name="metallic" value="0.0"/>
+        <float name="occlusion" value="1.0"/>
+        <float3 name="transparency" value="0.0,0.0,0.0"/>
+        <float name="opacityThreshold" value="0.0"/>
+        <float name="roughness" value="0.5"/>
+        <float3 name="specularColor" value="0.0,0.0,0.0"/>
+        <bool name="useSpecularWorkflow" value="false"/>
+        <float3 name="clearcoatColor" value="1.0,1.0,1.0"/>
+        <float name="specularAmount" value="1.0"/>
+    </values>
+    <outputs>
+        <struct name="surfaceShader" struct_name="mayaSurfaceShaderOutput"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="surfaceShader"/>
+            <source>
+                <![CDATA[
+
+
+//-- glsl Preview.LightStructures
+
+struct LightingContributions
+{
+    vec3 diffuse;
+    vec3 specular;
+};
+
+
+//-- glsl Preview.Lighting
+
+float
+SchlickFresnel(float EdotH)
+{
+    return pow(max(0.0, 1.0 - EdotH), 5.0);
+}
+
+float
+NormalDistribution(float specularRoughness, float NdotH)
+{
+    const float PI = 3.141593;
+    const float EPSILON = 0.001;
+    float alpha = specularRoughness * specularRoughness;
+    float alpha2 = alpha * alpha;
+    float NdotH2 = NdotH * NdotH;
+    float DDenom = (NdotH2 * (alpha2 - 1.0)) + 1.0;
+    DDenom *= DDenom;
+    DDenom *= PI;
+    float D = (alpha2 + EPSILON) / DDenom;
+    return D;
+}
+
+float
+Geometric(
+        float specularRoughness,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH)
+{
+    float alpha = specularRoughness * specularRoughness;
+    float k = alpha * 0.5;
+    float G = NdotE / (NdotE * (1.0 - k) + k);
+    G *= NdotL / (NdotL * (1.0 - k) + k);
+    return G;
+}
+
+vec3
+evaluateDirectDiffuse()
+{
+    const float INV_PI = 0.3183099;
+    return vec3(INV_PI);
+}
+
+vec3
+evaluateDirectSpecular(
+        vec3 specularColorF0,
+        vec3 specularColorF90,
+        float specularRoughness,
+        float fresnel,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH)
+{
+    const float EPSILON = 0.001;
+    vec3 F = mix(specularColorF0, specularColorF90, fresnel);
+    float D = NormalDistribution(specularRoughness, NdotH);
+    float G = Geometric(specularRoughness, NdotL, NdotE, NdotH, EdotH);
+    vec3 RNum = F * G * D;
+    float RDenom = 4.0f * NdotL * NdotE + EPSILON;
+    return RNum / RDenom;
+}
+
+LightingContributions
+evaluateLight(
+        vec3 diffuseColor,
+        bool useSpecularWorkflow,
+        float ior,
+        float metallic,
+        float specularAmount,
+        vec3 specularColor,
+        float specularRoughness,
+        float clearcoatAmount,
+        vec3 clearcoatColor,
+        float clearcoatRoughness,
+        float occlusion,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH,
+        vec3 lightDiffuseIrradiance,
+        vec3 lightSpecularIrradiance)
+{
+    specularRoughness = max(0.001, specularRoughness);
+    clearcoatRoughness = max(0.001, clearcoatRoughness);
+
+    float fresnel = SchlickFresnel(EdotH);
+
+    // Evaluate diffuse
+    vec3 d = diffuseColor * evaluateDirectDiffuse();
+
+    // Evaluate specular first lobe
+    vec3 s1 = vec3(0.0);
+    float R = (1.0 - ior) / (1.0 + ior);
+    if (specularAmount > 0.0) {
+        vec3 F0 = specularColor;
+        vec3 F90 = vec3(1.0);
+
+        if (!useSpecularWorkflow) {
+            vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
+            F0 = mix(R * R * specColor, specColor, metallic);
+            F90 = specColor;
+
+            // For metallic workflows, pure metals have no diffuse
+            d *= 1.0 - metallic;
+        }
+
+        s1 = specularAmount * evaluateDirectSpecular(
+             F0,                          // Specular color 0
+             F90,                         // Specular color 90
+             specularRoughness,           // Roughness
+             fresnel,                     // Fresnel
+             NdotL, NdotE, NdotH, EdotH); // Dot products needed for lights
+
+        // Adjust the diffuse so glazing angles have less diffuse
+        d *= (1.0 - mix(F0, F90, fresnel));
+    }
+
+    // Evaluate clearcoat
+    vec3 s2 = vec3(0.0);
+    if (clearcoatAmount > 0.0) {
+        s2 = clearcoatAmount * evaluateDirectSpecular(
+             R * R * clearcoatColor,      // Clearcoat color 0
+             clearcoatColor,              // Clearcoat color 90
+             clearcoatRoughness,          // Roughness
+             fresnel,                     // Fresnel
+             NdotL, NdotE, NdotH, EdotH); // Dot products needed for lights
+    }
+
+    LightingContributions lightingContrib;
+
+    lightingContrib.diffuse =
+        occlusion * NdotL * d * lightDiffuseIrradiance;
+
+    lightingContrib.specular =
+        occlusion * NdotL * (s1 + s2) * lightSpecularIrradiance;
+
+    return lightingContrib;
+}
+
+
+//-- glsl Preview.LightIntegration
+
+vec3
+evaluateIndirectLighting(
+        vec3 diffuseColor,
+        vec3 specularColor,
+        vec3 Neye,
+        vec3 E,
+        float EdotH,
+        float ior,
+        float metallic,
+        float occlusion,
+        float roughness,
+        bool useSpecularWorkflow,
+        float clearcoatAmount, 
+        vec3 clearcoatColor, 
+        float clearcoatRoughness)
+{
+    vec3 indirect = vec3(0.0);
+
+    vec3 F0 = specularColor;
+    vec3 F90 = vec3(1.0);
+    vec3 d = diffuseColor;
+    float R = (1.0 - ior) / (1.0 + ior);
+    if (!useSpecularWorkflow) {
+        vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
+        F0 = mix(R * R * specColor, specColor, metallic);
+        F90 = specColor;
+
+        // For metallic workflows, pure metals have no diffuse
+        d *= 1.0 - metallic;
+    }
+    // Adjust the diffuse so glazing angles have less diffuse
+    float fresnel = SchlickFresnel(EdotH);
+    vec3 F = mix(F0, F90, fresnel);
+    d *= (1.0 - F);
+
+    vec3 diffuse = mayaGetIrradianceEnvironment(Neye);
+
+    // Specular Component 
+    float phongExp = mayaRoughnessToPhongExp(roughness);
+    vec3 Li = mayaGetSpecularEnvironment(Neye, E, phongExp);
+    vec3 specular = Li * F;
+
+    // Clearcoat Component
+    vec3 clearcoat = vec3(0.0);
+    if (clearcoatAmount > 0.0) {
+        vec3 clearcoatF = clearcoatAmount * mix(
+            R * R * clearcoatColor, // Clearcoat F0
+            clearcoatColor,         // Clearcoat F90
+            fresnel);
+        phongExp = mayaRoughnessToPhongExp(clearcoatRoughness);
+        Li = mayaGetSpecularEnvironment(Neye, E, phongExp);
+        clearcoat = Li * clearcoatF;
+    }
+
+    // Indirect Lighting
+    indirect = (d * diffuse + specular + clearcoat) * occlusion;
+
+    return indirect;
+}
+
+vec3
+evaluateLights(
+        vec3 emissiveColor,
+        vec3 diffuseColor,
+        bool useSpecularWorkflow,
+        float ior,
+        float metallic,
+        float specularAmount,
+        vec3 specularColor,
+        float specularRoughness,
+        float clearcoatAmount,
+        vec3 clearcoatColor,
+        float clearcoatRoughness,
+        float occlusion,
+        vec3 Peye,
+        vec3 Neye)
+{
+    vec3 n = Neye;
+    vec3 e = normalize(u_viewPosition - Peye);
+    float NdotE = max(0.0, dot(n, e));
+
+    vec3 directLight = diffuseColor * mayaGetAmbientLightColor();
+    vec3 indirectLight = vec3(0.0);
+
+    int numLights = mayaGetNumLights();
+    for (int i = 0; i < numLights; ++i) {
+
+        irradiance lightShader = mayaGetLightIrradiance(i, Peye, Neye, e);
+
+        vec3 l = lightShader.Ld;
+        vec3 h = normalize(e + l);
+        float NdotL = max(0.0, dot(n, l));
+        float NdotH = max(0.0, dot(n, h));
+        float EdotH = max(0.0, dot(e, h));
+
+        vec3 lightDiffuseIrradiance = lightShader.diffuseI;
+        vec3 lightSpecularIrradiance = lightShader.specularI;
+
+        LightingContributions lightingContrib = evaluateLight(
+            diffuseColor,
+            useSpecularWorkflow,
+            ior,
+            metallic,
+            specularAmount,
+            specularColor,
+            specularRoughness,
+            clearcoatAmount,
+            clearcoatColor,
+            clearcoatRoughness,
+            occlusion,
+            NdotL,
+            NdotE,
+            NdotH,
+            EdotH,
+            lightDiffuseIrradiance,
+            lightSpecularIrradiance);
+
+        // calculate the indirect light (DomeLight)
+        directLight += (lightingContrib.diffuse + lightingContrib.specular);
+    }
+
+    {
+        indirectLight = evaluateIndirectLighting(diffuseColor,
+                        specularColor, Neye, e,
+                        NdotE, ior, metallic, occlusion,
+                        specularRoughness, useSpecularWorkflow,
+                        clearcoatAmount, clearcoatColor, 
+                        clearcoatRoughness);
+    }
+
+    return (emissiveColor + directLight + indirectLight);
+}
+
+
+//-- glsl Preview.Surface
+
+mayaSurfaceShaderOutput
+surfaceShader(vec3 Peye, vec3 Neye,
+    float clearcoatAmount,
+    float clearcoatRoughness,
+    vec3 diffuseColor,
+    vec3 emissiveColor,
+    float ior,
+    float metallic,
+    float occlusion,
+    vec3 transparency,
+    float opacityThreshold,
+    float roughness,
+    vec3 specularColor,
+    bool useSpecularWorkflow,
+    vec3 clearcoatColor,
+    float specularAmount
+)
+{
+    float opacity = 1.0 - transparency.r;
+    if (opacity < opacityThreshold) {
+        discard;
+    } 
+
+    mayaSurfaceShaderOutput result;
+
+    // Pre-multiply diffuse color by opacity if not done so already
+    diffuseColor *= opacity;
+
+    // Evaluate all lights.
+    result.outColor = evaluateLights(
+        emissiveColor,
+        diffuseColor,
+        useSpecularWorkflow,
+        ior,
+        metallic,
+        specularAmount,
+        specularColor,
+        roughness,
+        clearcoatAmount,
+        clearcoatColor,
+        clearcoatRoughness,
+        occlusion,
+        Peye,
+        Neye);
+
+    // Transparency
+    result.outTransparency = transparency;
+
+    result.outGlowColor = vec3(0.0, 0.0, 0.0);
+    result.outMatteOpacity = vec3(opacity);
+
+    return result;
+}
+
+
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="surfaceShader"/>
+            <source>
+                <![CDATA[
+
+
+//-- glsl Preview.LightStructures
+
+struct LightingContributions
+{
+    vec3 diffuse;
+    vec3 specular;
+};
+
+
+//-- glsl Preview.Lighting
+
+float
+SchlickFresnel(float EdotH)
+{
+    return pow(max(0.0, 1.0 - EdotH), 5.0);
+}
+
+float
+NormalDistribution(float specularRoughness, float NdotH)
+{
+    const float PI = 3.141593;
+    const float EPSILON = 0.001;
+    float alpha = specularRoughness * specularRoughness;
+    float alpha2 = alpha * alpha;
+    float NdotH2 = NdotH * NdotH;
+    float DDenom = (NdotH2 * (alpha2 - 1.0)) + 1.0;
+    DDenom *= DDenom;
+    DDenom *= PI;
+    float D = (alpha2 + EPSILON) / DDenom;
+    return D;
+}
+
+float
+Geometric(
+        float specularRoughness,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH)
+{
+    float alpha = specularRoughness * specularRoughness;
+    float k = alpha * 0.5;
+    float G = NdotE / (NdotE * (1.0 - k) + k);
+    G *= NdotL / (NdotL * (1.0 - k) + k);
+    return G;
+}
+
+vec3
+evaluateDirectDiffuse()
+{
+    const float INV_PI = 0.3183099;
+    return vec3(INV_PI);
+}
+
+vec3
+evaluateDirectSpecular(
+        vec3 specularColorF0,
+        vec3 specularColorF90,
+        float specularRoughness,
+        float fresnel,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH)
+{
+    const float EPSILON = 0.001;
+    vec3 F = mix(specularColorF0, specularColorF90, fresnel);
+    float D = NormalDistribution(specularRoughness, NdotH);
+    float G = Geometric(specularRoughness, NdotL, NdotE, NdotH, EdotH);
+    vec3 RNum = F * G * D;
+    float RDenom = 4.0f * NdotL * NdotE + EPSILON;
+    return RNum / RDenom;
+}
+
+LightingContributions
+evaluateLight(
+        vec3 diffuseColor,
+        bool useSpecularWorkflow,
+        float ior,
+        float metallic,
+        float specularAmount,
+        vec3 specularColor,
+        float specularRoughness,
+        float clearcoatAmount,
+        vec3 clearcoatColor,
+        float clearcoatRoughness,
+        float occlusion,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH,
+        vec3 lightDiffuseIrradiance,
+        vec3 lightSpecularIrradiance)
+{
+    specularRoughness = max(0.001, specularRoughness);
+    clearcoatRoughness = max(0.001, clearcoatRoughness);
+
+    float fresnel = SchlickFresnel(EdotH);
+
+    // Evaluate diffuse
+    vec3 d = diffuseColor * evaluateDirectDiffuse();
+
+    // Evaluate specular first lobe
+    vec3 s1 = vec3(0.0);
+    float R = (1.0 - ior) / (1.0 + ior);
+    if (specularAmount > 0.0) {
+        vec3 F0 = specularColor;
+        vec3 F90 = vec3(1.0);
+
+        if (!useSpecularWorkflow) {
+            vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
+            F0 = mix(R * R * specColor, specColor, metallic);
+            F90 = specColor;
+
+            // For metallic workflows, pure metals have no diffuse
+            d *= 1.0 - metallic;
+        }
+
+        s1 = specularAmount * evaluateDirectSpecular(
+             F0,                          // Specular color 0
+             F90,                         // Specular color 90
+             specularRoughness,           // Roughness
+             fresnel,                     // Fresnel
+             NdotL, NdotE, NdotH, EdotH); // Dot products needed for lights
+
+        // Adjust the diffuse so glazing angles have less diffuse
+        d *= (1.0 - mix(F0, F90, fresnel));
+    }
+
+    // Evaluate clearcoat
+    vec3 s2 = vec3(0.0);
+    if (clearcoatAmount > 0.0) {
+        s2 = clearcoatAmount * evaluateDirectSpecular(
+             R * R * clearcoatColor,      // Clearcoat color 0
+             clearcoatColor,              // Clearcoat color 90
+             clearcoatRoughness,          // Roughness
+             fresnel,                     // Fresnel
+             NdotL, NdotE, NdotH, EdotH); // Dot products needed for lights
+    }
+
+    LightingContributions lightingContrib;
+
+    lightingContrib.diffuse =
+        occlusion * NdotL * d * lightDiffuseIrradiance;
+
+    lightingContrib.specular =
+        occlusion * NdotL * (s1 + s2) * lightSpecularIrradiance;
+
+    return lightingContrib;
+}
+
+
+//-- glsl Preview.LightIntegration
+
+vec3
+evaluateIndirectLighting(
+        vec3 diffuseColor,
+        vec3 specularColor,
+        vec3 Neye,
+        vec3 E,
+        float EdotH,
+        float ior,
+        float metallic,
+        float occlusion,
+        float roughness,
+        bool useSpecularWorkflow,
+        float clearcoatAmount, 
+        vec3 clearcoatColor, 
+        float clearcoatRoughness)
+{
+    vec3 indirect = vec3(0.0);
+
+    vec3 F0 = specularColor;
+    vec3 F90 = vec3(1.0);
+    vec3 d = diffuseColor;
+    float R = (1.0 - ior) / (1.0 + ior);
+    if (!useSpecularWorkflow) {
+        vec3 specColor = mix(vec3(1.0), diffuseColor, metallic);
+        F0 = mix(R * R * specColor, specColor, metallic);
+        F90 = specColor;
+
+        // For metallic workflows, pure metals have no diffuse
+        d *= 1.0 - metallic;
+    }
+    // Adjust the diffuse so glazing angles have less diffuse
+    float fresnel = SchlickFresnel(EdotH);
+    vec3 F = mix(F0, F90, fresnel);
+    d *= (1.0 - F);
+
+    vec3 diffuse = mayaGetIrradianceEnvironment(Neye);
+
+    // Specular Component 
+    float phongExp = mayaRoughnessToPhongExp(roughness);
+    vec3 Li = mayaGetSpecularEnvironment(Neye, E, phongExp);
+    vec3 specular = Li * F;
+
+    // Clearcoat Component
+    vec3 clearcoat = vec3(0.0);
+    if (clearcoatAmount > 0.0) {
+        vec3 clearcoatF = clearcoatAmount * mix(
+            R * R * clearcoatColor, // Clearcoat F0
+            clearcoatColor,         // Clearcoat F90
+            fresnel);
+        phongExp = mayaRoughnessToPhongExp(clearcoatRoughness);
+        Li = mayaGetSpecularEnvironment(Neye, E, phongExp);
+        clearcoat = Li * clearcoatF;
+    }
+
+    // Indirect Lighting
+    indirect = (d * diffuse + specular + clearcoat) * occlusion;
+
+    return indirect;
+}
+
+vec3
+evaluateLights(
+        vec3 emissiveColor,
+        vec3 diffuseColor,
+        bool useSpecularWorkflow,
+        float ior,
+        float metallic,
+        float specularAmount,
+        vec3 specularColor,
+        float specularRoughness,
+        float clearcoatAmount,
+        vec3 clearcoatColor,
+        float clearcoatRoughness,
+        float occlusion,
+        vec3 Peye,
+        vec3 Neye)
+{
+    vec3 n = Neye;
+    vec3 e = normalize(u_viewPosition - Peye);
+    float NdotE = max(0.0, dot(n, e));
+
+    vec3 directLight = diffuseColor * mayaGetAmbientLightColor();
+    vec3 indirectLight = vec3(0.0);
+
+    int numLights = mayaGetNumLights();
+    for (int i = 0; i < numLights; ++i) {
+
+        irradiance lightShader = mayaGetLightIrradiance(i, Peye, Neye, e);
+
+        vec3 l = lightShader.Ld;
+        vec3 h = normalize(e + l);
+        float NdotL = max(0.0, dot(n, l));
+        float NdotH = max(0.0, dot(n, h));
+        float EdotH = max(0.0, dot(e, h));
+
+        vec3 lightDiffuseIrradiance = lightShader.diffuseI;
+        vec3 lightSpecularIrradiance = lightShader.specularI;
+
+        LightingContributions lightingContrib = evaluateLight(
+            diffuseColor,
+            useSpecularWorkflow,
+            ior,
+            metallic,
+            specularAmount,
+            specularColor,
+            specularRoughness,
+            clearcoatAmount,
+            clearcoatColor,
+            clearcoatRoughness,
+            occlusion,
+            NdotL,
+            NdotE,
+            NdotH,
+            EdotH,
+            lightDiffuseIrradiance,
+            lightSpecularIrradiance);
+
+        // calculate the indirect light (DomeLight)
+        directLight += (lightingContrib.diffuse + lightingContrib.specular);
+    }
+
+    {
+        indirectLight = evaluateIndirectLighting(diffuseColor,
+                        specularColor, Neye, e,
+                        NdotE, ior, metallic, occlusion,
+                        specularRoughness, useSpecularWorkflow,
+                        clearcoatAmount, clearcoatColor, 
+                        clearcoatRoughness);
+    }
+
+    return (emissiveColor + directLight + indirectLight);
+}
+
+
+//-- glsl Preview.Surface
+
+mayaSurfaceShaderOutput
+surfaceShader(vec3 Peye, vec3 Neye,
+    float clearcoatAmount,
+    float clearcoatRoughness,
+    vec3 diffuseColor,
+    vec3 emissiveColor,
+    float ior,
+    float metallic,
+    float occlusion,
+    vec3 transparency,
+    float opacityThreshold,
+    float roughness,
+    vec3 specularColor,
+    bool useSpecularWorkflow,
+    vec3 clearcoatColor,
+    float specularAmount
+)
+{
+    float opacity = 1.0 - transparency.r;
+    if (opacity < opacityThreshold) {
+        discard;
+    } 
+
+    mayaSurfaceShaderOutput result;
+
+    // Pre-multiply diffuse color by opacity if not done so already
+    diffuseColor *= opacity;
+
+    // Evaluate all lights.
+    result.outColor = evaluateLights(
+        emissiveColor,
+        diffuseColor,
+        useSpecularWorkflow,
+        ior,
+        metallic,
+        specularAmount,
+        specularColor,
+        roughness,
+        clearcoatAmount,
+        clearcoatColor,
+        clearcoatRoughness,
+        occlusion,
+        Peye,
+        Neye);
+
+    // Transparency
+    result.outTransparency = transparency;
+
+    result.outGlowColor = vec3(0.0, 0.0, 0.0);
+    result.outMatteOpacity = vec3(opacity);
+
+    return result;
+}
+
+
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="10.0">
+            <function_name val="surfaceShader"/>
+            <source>
+                <![CDATA[
+
+
+//-- glsl Preview.LightStructures
+
+struct LightingContributions
+{
+    float3 diffuse;
+    float3 specular;
+};
+
+
+//-- glsl Preview.Lighting
+
+float
+SchlickFresnel(float EdotH)
+{
+    return pow(max(0.0, 1.0 - EdotH), 5.0);
+}
+
+float
+NormalDistribution(float specularRoughness, float NdotH)
+{
+    const float PI = 3.141593;
+    const float EPSILON = 0.001;
+    float alpha = specularRoughness * specularRoughness;
+    float alpha2 = alpha * alpha;
+    float NdotH2 = NdotH * NdotH;
+    float DDenom = (NdotH2 * (alpha2 - 1.0)) + 1.0;
+    DDenom *= DDenom;
+    DDenom *= PI;
+    float D = (alpha2 + EPSILON) / DDenom;
+    return D;
+}
+
+float
+Geometric(
+        float specularRoughness,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH)
+{
+    float alpha = specularRoughness * specularRoughness;
+    float k = alpha * 0.5;
+    float G = NdotE / (NdotE * (1.0 - k) + k);
+    G *= NdotL / (NdotL * (1.0 - k) + k);
+    return G;
+}
+
+float3
+evaluateDirectDiffuse()
+{
+    const float INV_PI = 0.3183099;
+    return float3(INV_PI, INV_PI, INV_PI);
+}
+
+float3
+evaluateDirectSpecular(
+        float3 specularColorF0,
+        float3 specularColorF90,
+        float specularRoughness,
+        float fresnel,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH)
+{
+    const float EPSILON = 0.001;
+    float3 F = lerp(specularColorF0, specularColorF90, fresnel);
+    float D = NormalDistribution(specularRoughness, NdotH);
+    float G = Geometric(specularRoughness, NdotL, NdotE, NdotH, EdotH);
+    float3 RNum = F * G * D;
+    float RDenom = 4.0f * NdotL * NdotE + EPSILON;
+    return RNum / RDenom;
+}
+
+LightingContributions
+evaluateLight(
+        float3 diffuseColor,
+        bool useSpecularWorkflow,
+        float ior,
+        float metallic,
+        float specularAmount,
+        float3 specularColor,
+        float specularRoughness,
+        float clearcoatAmount,
+        float3 clearcoatColor,
+        float clearcoatRoughness,
+        float occlusion,
+        float NdotL,
+        float NdotE,
+        float NdotH,
+        float EdotH,
+        float3 lightDiffuseIrradiance,
+        float3 lightSpecularIrradiance)
+{
+    specularRoughness = max(0.001, specularRoughness);
+    clearcoatRoughness = max(0.001, clearcoatRoughness);
+
+    float fresnel = SchlickFresnel(EdotH);
+
+    // Evaluate diffuse
+    float3 d = diffuseColor * evaluateDirectDiffuse();
+
+    // Evaluate specular first lobe
+    float3 s1 = float3(0.0, 0.0, 0.0);
+    float R = (1.0 - ior) / (1.0 + ior);
+    if (specularAmount > 0.0) {
+        float3 F0 = specularColor;
+        float3 F90 = float3(1.0, 1.0, 1.0);
+
+        if (!useSpecularWorkflow) {
+            float3 specColor = lerp(float3(1.0, 1.0, 1.0), diffuseColor, metallic);
+            F0 = lerp(R * R * specColor, specColor, metallic);
+            F90 = specColor;
+
+            // For metallic workflows, pure metals have no diffuse
+            d *= 1.0 - metallic;
+        }
+
+        s1 = specularAmount * evaluateDirectSpecular(
+             F0,                          // Specular color 0
+             F90,                         // Specular color 90
+             specularRoughness,           // Roughness
+             fresnel,                     // Fresnel
+             NdotL, NdotE, NdotH, EdotH); // Dot products needed for lights
+
+        // Adjust the diffuse so glazing angles have less diffuse
+        d *= (1.0 - lerp(F0, F90, fresnel));
+    }
+
+    // Evaluate clearcoat
+    float3 s2 = float3(0.0, 0.0, 0.0);
+    if (clearcoatAmount > 0.0) {
+        s2 = clearcoatAmount * evaluateDirectSpecular(
+             R * R * clearcoatColor,      // Clearcoat color 0
+             clearcoatColor,              // Clearcoat color 90
+             clearcoatRoughness,          // Roughness
+             fresnel,                     // Fresnel
+             NdotL, NdotE, NdotH, EdotH); // Dot products needed for lights
+    }
+
+    LightingContributions lightingContrib;
+
+    lightingContrib.diffuse =
+        occlusion * NdotL * d * lightDiffuseIrradiance;
+
+    lightingContrib.specular =
+        occlusion * NdotL * (s1 + s2) * lightSpecularIrradiance;
+
+    return lightingContrib;
+}
+
+
+//-- glsl Preview.LightIntegration
+
+float3
+evaluateIndirectLighting(
+        float3 diffuseColor,
+        float3 specularColor,
+        float3 Neye,
+        float3 E,
+        float EdotH,
+        float ior,
+        float metallic,
+        float occlusion,
+        float roughness,
+        bool useSpecularWorkflow,
+        float clearcoatAmount, 
+        float3 clearcoatColor, 
+        float clearcoatRoughness)
+{
+    float3 indirect = float3(0.0, 0.0, 0.0);
+
+    float3 F0 = specularColor;
+    float3 F90 = float3(1.0, 1.0, 1.0);
+    float3 d = diffuseColor;
+    float R = (1.0 - ior) / (1.0 + ior);
+    if (!useSpecularWorkflow) {
+        float3 specColor = lerp(float3(1.0, 1.0, 1.0), diffuseColor, metallic);
+        F0 = lerp(R * R * specColor, specColor, metallic);
+        F90 = specColor;
+
+        // For metallic workflows, pure metals have no diffuse
+        d *= 1.0 - metallic;
+    }
+    // Adjust the diffuse so glazing angles have less diffuse
+    float fresnel = SchlickFresnel(EdotH);
+    float3 F = lerp(F0, F90, fresnel);
+    d *= (1.0 - F);
+
+    float3 diffuse = mayaGetIrradianceEnvironment(Neye);
+
+    // Specular Component 
+    float phongExp = mayaRoughnessToPhongExp(roughness);
+    float3 Li = mayaGetSpecularEnvironment(Neye, E, phongExp);
+    float3 specular = Li * F;
+
+    // Clearcoat Component
+    float3 clearcoat = float3(0.0, 0.0, 0.0);
+    if (clearcoatAmount > 0.0) {
+        float3 clearcoatF = clearcoatAmount * lerp(
+            R * R * clearcoatColor, // Clearcoat F0
+            clearcoatColor,         // Clearcoat F90
+            fresnel);
+        phongExp = mayaRoughnessToPhongExp(clearcoatRoughness);
+        Li = mayaGetSpecularEnvironment(Neye, E, phongExp);
+        clearcoat = Li * clearcoatF;
+    }
+
+    // Indirect Lighting
+    indirect = (d * diffuse + specular + clearcoat) * occlusion;
+
+    return indirect;
+}
+
+float3
+evaluateLights(
+        float3 emissiveColor,
+        float3 diffuseColor,
+        bool useSpecularWorkflow,
+        float ior,
+        float metallic,
+        float specularAmount,
+        float3 specularColor,
+        float specularRoughness,
+        float clearcoatAmount,
+        float3 clearcoatColor,
+        float clearcoatRoughness,
+        float occlusion,
+        float3 Peye,
+        float3 Neye)
+{
+    float3 n = Neye;
+    float3 e = normalize(u_viewPosition - Peye);
+    float NdotE = max(0.0, dot(n, e));
+
+    float3 directLight = diffuseColor * mayaGetAmbientLightColor();
+    float3 indirectLight = float3(0.0, 0.0, 0.0);
+
+    int numLights = mayaGetNumLights();
+    for (int i = 0; i < numLights; ++i) {
+
+        irradiance lightShader = mayaGetLightIrradiance(i, Peye, Neye, e);
+
+        float3 l = lightShader.Ld;
+        float3 h = normalize(e + l);
+        float NdotL = max(0.0, dot(n, l));
+        float NdotH = max(0.0, dot(n, h));
+        float EdotH = max(0.0, dot(e, h));
+
+        float3 lightDiffuseIrradiance = lightShader.diffuseI;
+        float3 lightSpecularIrradiance = lightShader.specularI;
+
+        LightingContributions lightingContrib = evaluateLight(
+            diffuseColor,
+            useSpecularWorkflow,
+            ior,
+            metallic,
+            specularAmount,
+            specularColor,
+            specularRoughness,
+            clearcoatAmount,
+            clearcoatColor,
+            clearcoatRoughness,
+            occlusion,
+            NdotL,
+            NdotE,
+            NdotH,
+            EdotH,
+            lightDiffuseIrradiance,
+            lightSpecularIrradiance);
+
+        // calculate the indirect light (DomeLight)
+        directLight += (lightingContrib.diffuse + lightingContrib.specular);
+    }
+
+    {
+        indirectLight = evaluateIndirectLighting(diffuseColor,
+                        specularColor, Neye, e,
+                        NdotE, ior, metallic, occlusion,
+                        specularRoughness, useSpecularWorkflow,
+                        clearcoatAmount, clearcoatColor, 
+                        clearcoatRoughness);
+    }
+
+    return (emissiveColor + directLight + indirectLight);
+}
+
+
+//-- glsl Preview.Surface
+
+mayaSurfaceShaderOutput
+surfaceShader(float3 Peye, float3 Neye,
+    float clearcoatAmount,
+    float clearcoatRoughness,
+    float3 diffuseColor,
+    float3 emissiveColor,
+    float ior,
+    float metallic,
+    float occlusion,
+    float3 transparency,
+    float opacityThreshold,
+    float roughness,
+    float3 specularColor,
+    bool useSpecularWorkflow,
+    float3 clearcoatColor,
+    float specularAmount
+)
+{
+    float opacity = 1.0 - transparency.r;
+    if (opacity < opacityThreshold) {
+        discard;
+    } 
+
+    mayaSurfaceShaderOutput result;
+
+    // Pre-multiply diffuse color by opacity if not done so already
+    diffuseColor *= opacity;
+
+    // Evaluate all lights.
+    result.outColor = evaluateLights(
+        emissiveColor,
+        diffuseColor,
+        useSpecularWorkflow,
+        ior,
+        metallic,
+        specularAmount,
+        specularColor,
+        roughness,
+        clearcoatAmount,
+        clearcoatColor,
+        clearcoatRoughness,
+        occlusion,
+        Peye,
+        Neye);
+
+    // Transparency
+    result.outTransparency = transparency;
+
+    result.outGlowColor = float3(0.0, 0.0, 0.0);
+    result.outMatteOpacity = float3(opacity, opacity, opacity);
+
+    return result;
+}
+
+
+
+]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

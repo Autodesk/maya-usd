@@ -31,6 +31,7 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2022)
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePerInstanceInheritedData.py
         testVP2RenderDelegateBasisCurves.py
+		testVP2RenderDelegatePoints.py
     )
 
     if (PXR_VERSION GREATER_EQUAL 2105)
@@ -56,9 +57,24 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
 endif()
 
 if (CMAKE_WANT_MATERIALX_BUILD)
-    list(APPEND TEST_SCRIPT_FILES
-        testVP2RenderDelegateMaterialX.py
+    # We want modern OCIO for the MaterialX test:
+    mayaUsd_get_unittest_target(target testVP2RenderDelegateMaterialX.py)
+    mayaUsd_add_test(${target}
+        INTERACTIVE
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        PYTHON_SCRIPT testVP2RenderDelegateMaterialX.py
+        ENV
+            "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
+
+            # Maya uses a very old version of GLEW, so we need support for
+            # pre-loading a newer version from elsewhere.
+            "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"
     )
+
+    # Assign a CTest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS vp2RenderDelegate)
 endif()
 
 if(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
@@ -77,9 +93,6 @@ foreach(script ${TEST_SCRIPT_FILES})
             "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
             "MAYA_LIGHTAPI_VERSION=${MAYA_LIGHTAPI_VERSION}"
-            "MAYAUSD_VP2_ENABLE_V2_LIGHTING_SHADER=1"
-            "PXR_MTLX_STDLIB_SEARCH_PATHS=${PXR_USD_LOCATION}/libraries"
-            "PXR_MTLX_STDLIB_SEARCH_PATHS=${CMAKE_INSTALL_PREFIX}/libraries"
 
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.

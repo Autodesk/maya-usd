@@ -47,6 +47,8 @@ static const std::unordered_map<string, const pugi::char_t*> OGS_SEMANTICS_MAP =
     { "Bw", "Bw" },
     { "Bm", "Bm" },
 
+    { "GPUStage", "GPUStage" },
+
     { "u_worldMatrix", "World" },
     { "u_worldInverseMatrix", "WorldInverse" },
     { "u_worldTransposeMatrix", "WorldTranspose" },
@@ -89,6 +91,9 @@ const pugi::char_t* CONNECT("connect");
 const pugi::char_t* CONNECTIONS("connections");
 const pugi::char_t* DESCRIPTION("description");
 const pugi::char_t* DIFFUSEI("diffuseI");
+const pugi::char_t* ENVMATRIX("u_envMatrix");
+const pugi::char_t* ENVRADIANCEMIPS("u_envRadianceMips");
+const pugi::char_t* ENVRADIANCESAMPLES("u_envRadianceSamples");
 const pugi::char_t* FEATURE_LEVEL("feature_level");
 const pugi::char_t* FLAGS("flags");
 const pugi::char_t* FRAGMENT("fragment");
@@ -131,6 +136,13 @@ const pugi::char_t* UI_NAME("uiName");
 const pugi::char_t* VALUE("value");
 const pugi::char_t* VALUES("values");
 const pugi::char_t* VERSION("version");
+
+// The shadergen will insert some uniforms that are not actually used in the code. The full list is
+// here:
+bool isUnusedUniform(const std::string& name)
+{
+    return name == ENVMATRIX || name == ENVRADIANCEMIPS || name == ENVRADIANCESAMPLES;
+}
 
 std::string DOT_COMBINE(const pugi::char_t* frag, const pugi::char_t* attr)
 {
@@ -200,6 +212,10 @@ void xmlAddProperties(
             continue;
         }
 
+        if (isUnusedUniform(shaderPort->getVariable())) {
+            continue;
+        }
+
         if (shaderPort->getType() == Type::FILENAME) {
             const string& samplerName = shaderPort->getVariable();
             const string  textureName = OgsXmlGenerator::samplerToTextureName(samplerName);
@@ -238,6 +254,9 @@ void xmlAddValues(pugi::xml_node& parent, const VariableBlock& block, bool skipL
         const ShaderPort* p = block[i];
         if (skipLightRig && (p->getVariable() == DIFFUSEI || p->getVariable() == SPECULARI)) {
             // Skip diffuseI and specularI when generating light rig graph.
+            continue;
+        }
+        if (isUnusedUniform(p->getVariable())) {
             continue;
         }
         if (p->getValue()) {
@@ -344,6 +363,10 @@ string OgsXmlGenerator::generate(
         xmlProperties,
         glslPixelStage.getInputBlock(HW::VERTEX_DATA),
         OgsParameterFlags::VARYING_INPUT_PARAM);
+
+    // Add dummy property GPUStage to allow insertion of custom geometry fragments later on
+    pugi::xml_node gpuStageProp = xmlProperties.append_child("undefined");
+    xmlSetProperty(gpuStageProp, "GPUStage", "GPUStage");
 
     const bool hwTransparency = glslShader.hasAttribute(HW::ATTR_TRANSPARENT);
     if (hwTransparency) {
@@ -509,9 +532,9 @@ string OgsXmlGenerator::generateLightRig(
     return stream.str();
 }
 
-bool OgsXmlGenerator::sUseLightAPIV2 = false;
+int OgsXmlGenerator::sUseLightAPI = 1;
 
-bool OgsXmlGenerator::useLightAPIV2() { return sUseLightAPIV2; }
-void OgsXmlGenerator::setUseLightAPIV2(bool val) { sUseLightAPIV2 = val; }
+int  OgsXmlGenerator::useLightAPI() { return sUseLightAPI; }
+void OgsXmlGenerator::setUseLightAPI(int val) { sUseLightAPI = val; }
 
 MATERIALX_NAMESPACE_END

@@ -534,6 +534,17 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
                 EXPECT_NEAR(t[0], v.x, 1e-5f);
                 EXPECT_NEAR(t[1], v.y, 1e-5f);
                 EXPECT_NEAR(t[2], v.z, 1e-5f);
+
+                // Make tiny changes within tolerance (1e-07)
+                fnx.setTranslation({ v.x + 1e-8, v.y + 1e-8, v.z + 1e-8 }, MSpace::kTransform);
+                // The new values will not be update on the prim
+                GfVec3d m(0, 0, 0);
+                translate.Get(&m);
+                // Expect the values still be the same as previous by checking a even smaller
+                // tolerance (1e-9)
+                EXPECT_NEAR(t[0], m[0], 1e-9f);
+                EXPECT_NEAR(t[1], m[1], 1e-9f);
+                EXPECT_NEAR(t[2], m[2], 1e-9f);
             }
 
             // rotatePivotTranslate
@@ -548,6 +559,18 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
                 EXPECT_NEAR(t[0], v.x, 1e-5f);
                 EXPECT_NEAR(t[1], v.y, 1e-5f);
                 EXPECT_NEAR(t[2], v.z, 1e-5f);
+
+                // Make tiny changes within tolerance (1e-07)
+                fnx.setRotatePivotTranslation(
+                    { v.x + 1e-8, v.y + 1e-8, v.z + 1e-8 }, MSpace::kTransform);
+                // The new values will not be update on the prim
+                GfVec3f m(0, 0, 0);
+                rotatePivotTranslate.Get(&m);
+                // Expect the values still be the same as previous by checking a even smaller
+                // tolerance (1e-9)
+                EXPECT_NEAR(t[0], m[0], 1e-9f);
+                EXPECT_NEAR(t[1], m[1], 1e-9f);
+                EXPECT_NEAR(t[2], m[2], 1e-9f);
             }
 
             // rotatePivot
@@ -561,6 +584,18 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
                 EXPECT_NEAR(t[0], v.x, 1e-5f);
                 EXPECT_NEAR(t[1], v.y, 1e-5f);
                 EXPECT_NEAR(t[2], v.z, 1e-5f);
+
+                // Make tiny changes within tolerance (1e-07)
+                fnx.setRotatePivot(
+                    { v.x + 1e-8, v.y + 1e-8, v.z + 1e-8 }, MSpace::kTransform, false);
+                // The new values will not be update on the prim
+                GfVec3f m(0, 0, 0);
+                rotatePivot.Get(&m);
+                // Expect the values still be the same as previous by checking a even smaller
+                // tolerance (1e-9)
+                EXPECT_NEAR(t[0], m[0], 1e-9f);
+                EXPECT_NEAR(t[1], m[1], 1e-9f);
+                EXPECT_NEAR(t[2], m[2], 1e-9f);
 
                 rotatePivotINV.Get(&t);
                 EXPECT_NEAR(t[0], v.x, 1e-5f);
@@ -581,6 +616,16 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
                 EXPECT_NEAR(t[0], r.x * radToDeg, 1e-2f);
                 EXPECT_NEAR(t[1], r.y * radToDeg, 1e-2f);
                 EXPECT_NEAR(t[2], r.z * radToDeg, 1e-2f);
+
+                // Make tiny changes within tolerance (1e-07)
+                fnx.setRotation({ r.x + 1e-8, r.y + 1e-8, r.z + 1e-8 });
+                // The new values will not be update on the prim
+                GfVec3f m(0, 0, 0);
+                rotate.Get(&m);
+                // Notice that the values here are in degree, pick 1e-3 as abs error instead
+                EXPECT_NEAR(t[0], m[0], 1e-3f);
+                EXPECT_NEAR(t[1], m[1], 1e-3f);
+                EXPECT_NEAR(t[2], m[2], 1e-3f);
             }
 
             // rotateAxis
@@ -623,6 +668,18 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
                 EXPECT_NEAR(t[0], v.x, 1e-5f);
                 EXPECT_NEAR(t[1], v.y, 1e-5f);
                 EXPECT_NEAR(t[2], v.z, 1e-5f);
+
+                // Make tiny changes within tolerance (1e-07)
+                fnx.setScalePivotTranslation(
+                    { v.x + 1e-8, v.y + 1e-8, v.z + 1e-8 }, MSpace::kTransform);
+                // The new values will not be update on the prim
+                GfVec3f m(0, 0, 0);
+                scalePivotTranslate.Get(&m);
+                // Expect the values still be the same as previous by checking a even smaller
+                // tolerance (1e-9)
+                EXPECT_NEAR(t[0], m[0], 1e-9f);
+                EXPECT_NEAR(t[1], m[1], 1e-9f);
+                EXPECT_NEAR(t[2], m[2], 1e-9f);
             }
 
             // scalePivot
@@ -637,6 +694,18 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
                 EXPECT_NEAR(t[0], v.x, 1e-5f);
                 EXPECT_NEAR(t[1], v.y, 1e-5f);
                 EXPECT_NEAR(t[2], v.z, 1e-5f);
+
+                // Make tiny changes within tolerance (1e-07)
+                fnx.setScalePivot(
+                    { v.x + 1e-8, v.y + 1e-8, v.z + 1e-8 }, MSpace::kTransform, false);
+                // The new values will not be update on the prim
+                GfVec3f m(0, 0, 0);
+                scalePivot.Get(&m);
+                // Expect the values still be the same as previous by checking a even smaller
+                // tolerance (1e-9)
+                EXPECT_NEAR(t[0], m[0], 1e-9f);
+                EXPECT_NEAR(t[1], m[1], 1e-9f);
+                EXPECT_NEAR(t[2], m[2], 1e-9f);
 
                 scalePivotINV.Get(&t);
 
@@ -657,6 +726,20 @@ TEST(Transform, primValuesPushedToUsdMatchMaya)
                 EXPECT_NEAR(t[0], v[0], 1e-5f);
                 EXPECT_NEAR(t[1], v[1], 1e-5f);
                 EXPECT_NEAR(t[2], v[2], 1e-5f);
+
+                // Make tiny changes within tolerance (1e-07)
+                v[0] += 1e-8;
+                v[1] += 1e-8;
+                v[2] += 1e-8;
+                fnx.setScale(v);
+                // The new values will not be update on the prim
+                GfVec3f m(0, 0, 0);
+                scale.Get(&m);
+                // Expect the values still be the same as previous by checking a even smaller
+                // tolerance (1e-9)
+                EXPECT_NEAR(t[0], m[0], 1e-9f);
+                EXPECT_NEAR(t[1], m[1], 1e-9f);
+                EXPECT_NEAR(t[2], m[2], 1e-9f);
             }
 
             // Just sanity check that the matrices in maya and usd evaluate the same result

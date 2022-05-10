@@ -2,6 +2,7 @@ import os
 import unittest
 
 import maya.cmds as cmds
+import maya.mel
 
 import testUtils
 import mayaUtils
@@ -19,8 +20,18 @@ KNOWN_FORMATS = {
     'png': 32,
 }
 
+def resetDefaultLightIntensity():
+    """If the current Maya version supports setting the default light intensity,
+        then restore it to 1 so snapshots look equal across versions."""
+    if maya.mel.eval("optionVar -exists defaultLightIntensity"):
+        maya.mel.eval("optionVar -fv defaultLightIntensity 1")
+    if cmds.attributeQuery('defaultLightIntensity', node='hardwareRenderingGlobals', exists=True):
+        cmds.setAttr('hardwareRenderingGlobals.defaultLightIntensity', 1.0)
+resetDefaultLightIntensity()
 
 def snapshot(outputPath, width=400, height=None, hud=False, grid=False, camera=None):
+    resetDefaultLightIntensity()
+    
     if height is None:
         height = width
 

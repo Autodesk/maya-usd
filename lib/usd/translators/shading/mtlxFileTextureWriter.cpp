@@ -506,7 +506,7 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
 
         // If types differ, then we need to handle all possible conversions and
         // channel swizzling.
-        return AddSwizzleConversion(typeName, mainOutput);
+        return AddConversion(typeName, mainOutput);
     }
 
     // Starting here, we handle subcomponent requests:
@@ -515,23 +515,23 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
         // This will be ND_image_vector2, so requires xyz swizzles:
         if (mayaAttrName == TrMayaTokens->outColorR || mayaAttrName == TrMayaTokens->outColorG
             || mayaAttrName == TrMayaTokens->outColorB) {
-            return AddSwizzle("x", _numChannels, nodeSchema.GetOutput(outName));
+            return ExtractChannel(0, nodeSchema.GetOutput(outName));
         }
         if (mayaAttrName == TrMayaTokens->outAlpha) {
-            return AddSwizzle("y", _numChannels, nodeSchema.GetOutput(outName));
+            return ExtractChannel(1, nodeSchema.GetOutput(outName));
         }
     }
 
     if (mayaAttrName == TrMayaTokens->outColorR) {
-        return AddSwizzle("r", _numChannels, nodeSchema.GetOutput(outName));
+        return ExtractChannel(0, nodeSchema.GetOutput(outName));
     }
 
     if (mayaAttrName == TrMayaTokens->outColorG) {
-        return AddSwizzle("g", _numChannels, nodeSchema.GetOutput(outName));
+        return ExtractChannel(1, nodeSchema.GetOutput(outName));
     }
 
     if (mayaAttrName == TrMayaTokens->outColorB) {
-        return AddSwizzle("b", _numChannels, nodeSchema.GetOutput(outName));
+        return ExtractChannel(2, nodeSchema.GetOutput(outName));
     }
 
     if (mayaAttrName == TrMayaTokens->outAlpha) {
@@ -546,7 +546,7 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
         if (alphaIsLuminance || _numChannels == 3) {
             return AddLuminance(_numChannels, nodeSchema.GetOutput(outName));
         } else {
-            return AddSwizzle("a", _numChannels, nodeSchema.GetOutput(outName));
+            return ExtractChannel(3, nodeSchema.GetOutput(outName));
         }
     }
 
@@ -568,7 +568,47 @@ UsdAttribute MtlxUsd_FileWriter::GetShadingAttributeForMayaAttrName(
             .CreateInput(TrMayaTokens->colorOffset, _outputDataType);
     }
 
-    return UsdAttribute();
+    // We did not find the attribute directly, but we might be dealing with a subcomponent
+    // connection on a compound attribute:
+    MStatus                 status;
+    const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
+
+    MPlug childPlug = depNodeFn.findPlug(mayaAttrName.GetText(), &status);
+    if (!status || childPlug.isNull() || !childPlug.isChild()) {
+        return {};
+    }
+
+    MPlug parentPlug = childPlug.parent();
+
+    // We need the long name of the attribute:
+    const TfToken parentAttrName(
+        parentPlug.partialName(false, false, false, false, false, true).asChar());
+
+    if (parentAttrName != TrMayaTokens->uvCoord && parentAttrName != TrMayaTokens->defaultColor
+        && parentAttrName != TrMayaTokens->colorGain
+        && parentAttrName != TrMayaTokens->colorOffset) {
+        return {};
+    }
+
+    unsigned int       childIndex = 0;
+    const unsigned int numChildren = parentPlug.numChildren();
+    for (; childIndex < numChildren; ++childIndex) {
+        if (childPlug.attribute() == parentPlug.child(childIndex).attribute()) {
+            break;
+        }
+    }
+
+    UsdShadeInput input
+        = UsdShadeShader(_fileTexturePrim)
+              .CreateInput(
+                  parentAttrName,
+                  (parentAttrName == TrMayaTokens->uvCoord ? SdfValueTypeNames->Float2
+                                                           : _outputDataType));
+    if (input) {
+        return AddConstructor(input, static_cast<size_t>(childIndex), parentPlug);
+    }
+
+    return {};
 }
 
 void MtlxUsd_FileWriter::PostExport()

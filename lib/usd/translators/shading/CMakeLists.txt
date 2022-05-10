@@ -45,6 +45,7 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
         PRIVATE
             mtlxBaseReader.cpp
             mtlxBaseWriter.cpp
+            mtlxConstructorReader.cpp
             mtlxConverterReader.cpp
             mtlxFileTextureReader.cpp
             mtlxImageReader.cpp
@@ -53,6 +54,8 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022 AND PXR_VERSION VERSION_GREATER 2102)
             mtlxPreviewSurfaceWriter.cpp
             mtlxStandardSurfaceReader.cpp
             mtlxStandardSurfaceWriter.cpp
+            mtlxSymmetricShaderReader.cpp
+            mtlxSymmetricShaderWriter.cpp
             mtlxFileTextureWriter.cpp
     )
     target_compile_definitions(${TARGET_NAME}

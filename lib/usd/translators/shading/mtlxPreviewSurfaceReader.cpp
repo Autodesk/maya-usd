@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "mtlxBaseReader.h"
 #include "shadingTokens.h"
 
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
@@ -44,7 +45,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtlxUsd_PreviewSurfaceReader : public UsdMayaShaderReader
+class MtlxUsd_PreviewSurfaceReader : public MtlxUsd_BaseReader
 {
 public:
     MtlxUsd_PreviewSurfaceReader(const UsdMayaPrimReaderArgs&);
@@ -57,7 +58,7 @@ public:
 PXRUSDMAYA_REGISTER_SHADER_READER(ND_UsdPreviewSurface_surfaceshader, MtlxUsd_PreviewSurfaceReader);
 
 MtlxUsd_PreviewSurfaceReader::MtlxUsd_PreviewSurfaceReader(const UsdMayaPrimReaderArgs& readArgs)
-    : UsdMayaShaderReader(readArgs)
+    : MtlxUsd_BaseReader(readArgs)
 {
 }
 
@@ -88,6 +89,7 @@ bool MtlxUsd_PreviewSurfaceReader::Read(UsdMayaPrimReaderContext& context)
     }
 
     context.RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
+    RegisterConstructorNodes(context, mayaObject);
 
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         TfToken baseName = GetMayaNameForUsdAttrName(input.GetFullName());

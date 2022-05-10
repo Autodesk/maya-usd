@@ -41,7 +41,7 @@ def showMergeToUSDOptions(target):
         # Delete the window and recreate it.
         cmds.deleteUI(windowName)
 
-    window = cmds.window(windowName, title=getMayaUsdLibString("kMergeToUSDOptionsTitle"))
+    window = cmds.window(windowName, title=getMayaUsdLibString("kMergeToUSDOptionsTitle"), widthHeight=mayaUsdOptions.defaultOptionBoxSize())
     _createMergeToUSDOptionsDialog(window, target)
 
 
@@ -90,19 +90,19 @@ def _createMergeToUSDOptionsDialog(window, target):
 
     mergeText  = getMayaUsdLibString("kMergeButton")
     applyText  = getMayaUsdLibString("kApplyButton")
-    cancelText = getMayaUsdLibString("kCancelButton")
+    closeText = getMayaUsdLibString("kCloseButton")
     bMerge     = cmds.button(label=mergeText,  width=100, command=partial(_acceptMergeToUSDOptionsDialog, window))
     bApply     = cmds.button(label=applyText,  width=100, command=_applyMergeToUSDOptionsDialog)
-    bCancel    = cmds.button(label=cancelText, width=100, command=partial(_cancelMergeToUSDOptionsDialog, window))
+    bClose     = cmds.button(label=closeText, width=100, command=partial(_closeMergeToUSDOptionsDialog, window))
 
     spacer = 10
     edge   = 20
 
     cmds.formLayout(buttonsLayout, edit=True,
         attachForm=[
-            (bCancel,   "top",    edge),
-            (bCancel,   "bottom", edge),
-            (bCancel,   "right",  edge),
+            (bClose,    "top",    edge),
+            (bClose,    "bottom", edge),
+            (bClose,    "right",  edge),
 
             (bApply,    "top",    edge),
             (bApply,    "bottom", edge),
@@ -112,7 +112,7 @@ def _createMergeToUSDOptionsDialog(window, target):
             (bMerge,    "left",   edge),
         ],
         attachPosition=[
-            (bCancel,   "left",   spacer/2, 67),
+            (bClose,    "left",   spacer/2, 67),
             (bApply,    "right",  spacer/2, 67),
             (bApply,    "left",   spacer/2, 33),
             (bMerge,    "right",  spacer/2, 33),
@@ -164,9 +164,9 @@ def _applyMergeToUSDOptionsDialog(data=None):
         _setMergeToUSDTarget(None)
 
 
-def _cancelMergeToUSDOptionsDialog(window, data=None):
+def _closeMergeToUSDOptionsDialog(window, data=None):
     """
-    Reacts to the merge-to-USD options dialog being canceled by the user.
+    Reacts to the merge-to-USD options dialog being closed by the user.
     """
     cmds.deleteUI(window)
 

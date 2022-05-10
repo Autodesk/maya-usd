@@ -31,6 +31,9 @@ class MtlxUsd_BaseReader : public UsdMayaShaderReader
 public:
     MtlxUsd_BaseReader(const UsdMayaPrimReaderArgs& readArgs);
 
+    // Will return true for attributes attached to a constructor node:
+    bool TraverseUnconnectableInput(const TfToken& usdAttrName) override;
+
 protected:
     /// Read back attribute \p attributeName from schema \p shaderSchema and set the value when
     /// valid on \p depNodeFn
@@ -46,6 +49,9 @@ protected:
         const TfToken&        inputName,
         GfVec3f&              color,
         float&                alpha);
+
+    // Derived classes should call this to properly register constructor nodes:
+    void RegisterConstructorNodes(UsdMayaPrimReaderContext& context, MObject mayaObject);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

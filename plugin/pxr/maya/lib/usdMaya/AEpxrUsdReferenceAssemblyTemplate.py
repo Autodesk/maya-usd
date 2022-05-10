@@ -91,6 +91,12 @@ def variantSets_changeCommmand(unused, omg, node, variantSetName):
             resolvedVariant = variantSet.GetVariantSelection()
     cmds.optionMenuGrp(omg, edit=True, extraLabel=resolvedVariant)
 
+# For maya 2022 and above
+def variantSets_Replace_new(nodeAttr, new=True):
+    variantSets_Replace(nodeAttr, new=True)
+
+def variantSets_Replace_replace(nodeAttr, new=True):
+    variantSets_Replace(nodeAttr, new=False)
 
 def variantSets_Replace(nodeAttr, new):
     # Store the original parent and restore it below
@@ -170,6 +176,12 @@ def variantSets_Replace(nodeAttr, new):
 
 # ====================================================================
 
+# For maya 2022 and above
+def filePath_Replace_new(nodeAttr):
+    filePath_Replace(nodeAttr, new=True)
+
+def filePath_Replace_replace(nodeAttr):
+    filePath_Replace(nodeAttr, new=False)
 
 def filePath_Replace(nodeAttr, new):
     frameLayoutName = 'AEpxrUsdReferenceAssemblyTemplate_filePath_Layout'
@@ -199,11 +211,17 @@ def editorTemplate(nodeName):
         mel.eval('AEtransformMain "%s"'%nodeName)
         
         with EditorTemplateBeginLayout('Usd', collapse=False):
-            cmds.editorTemplate(
-                'AEpxrUsdReferenceAssemblyTemplate_filePath_New', 
-                'AEpxrUsdReferenceAssemblyTemplate_filePath_Replace', 
-                'filePath', 
-                callCustom=True)
+            # Maya 2022 changed the syntax of the callCustom attribute
+            if int(cmds.about(version=True)) < 2022:
+                cmds.editorTemplate(
+                    'AEpxrUsdReferenceAssemblyTemplate_filePath_New',
+                    'AEpxrUsdReferenceAssemblyTemplate_filePath_Replace',
+                    'filePath',
+                    callCustom=True)
+            else:
+                cmds.editorTemplate(
+                    'filePath',
+                    callCustom=[filePath_Replace_new, filePath_Replace_replace])
             #cmds.editorTemplate('filePath', addControl=True)
 
             cmds.editorTemplate('primPath', addControl=True)
@@ -212,11 +230,17 @@ def editorTemplate(nodeName):
             cmds.editorTemplate('complexity', addControl=True)
             # Note: Specifying python functions directly here does not seem to work.  
             # It looks like callCustom expects MEL functions.
-            cmds.editorTemplate(
-                'AEpxrUsdReferenceAssemblyTemplate_variantSets_New', 
-                'AEpxrUsdReferenceAssemblyTemplate_variantSets_Replace', 
-                '', 
-                callCustom=True)
+            # Maya 2022 changed the syntax of the callCustom attribute
+            if int(cmds.about(version=True)) < 2022:
+                cmds.editorTemplate(
+                    'AEpxrUsdReferenceAssemblyTemplate_variantSets_New',
+                    'AEpxrUsdReferenceAssemblyTemplate_variantSets_Replace',
+                    '',
+                    callCustom=True)
+            else:
+                cmds.editorTemplate(
+                    '',
+                    callCustom=[variantSets_Replace_new, variantSets_Replace_replace])
             #cmds.editorTemplate('variantSets', addControl=True)
 
         mel.eval('AEtransformNoScroll "%s"'%nodeName)

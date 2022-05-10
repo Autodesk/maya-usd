@@ -102,6 +102,13 @@ class ChildFilterTestCase(unittest.TestCase):
         usdHierHndlr = ufe.RunTimeMgr.instance().hierarchyHandler(ball3Item.runTimeId())
         cf = usdHierHndlr.childFilter()
 
+        # Toggle "Inactive Prims" off and get the filtered children
+        # Props filtered children should have 5 children and ball3 should not be one of them.
+        cf[0].value = False
+        children = propsHier.filteredChildren(cf)
+        self.assertEqual(5, len(children))
+        self.assertNotIn(ball3Item, children)
+
         # Toggle "Inactive Prims" on and get the filtered children
         # (with inactive prims) and verify ball3 is one of them.
         cf[0].value = True

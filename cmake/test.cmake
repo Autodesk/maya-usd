@@ -190,6 +190,7 @@ finally:
         MAYA_PLUG_IN_PATH
         MAYA_SCRIPT_PATH
         ${PXR_OVERRIDE_PLUGINPATH_NAME}
+        PXR_MTLX_STDLIB_SEARCH_PATHS
     )
 
     if(IS_WINDOWS)
@@ -235,6 +236,10 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
     list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
+    list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
+         "${PXR_USD_LOCATION}/libraries")
+    list(APPEND MAYAUSD_VARNAME_PXR_MTLX_STDLIB_SEARCH_PATHS
+         "${CMAKE_INSTALL_PREFIX}/libraries")
 
     # pxr
     list(APPEND MAYAUSD_VARNAME_PYTHONPATH
