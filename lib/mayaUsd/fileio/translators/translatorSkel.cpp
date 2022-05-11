@@ -170,9 +170,6 @@ struct _MayaTokensData
     const MString translates[3] { "translateX", "translateY", "translateZ" };
     const MString rotates[3] { "rotateX", "rotateY", "rotateZ" };
     const MString scales[3] { "scaleX", "scaleY", "scaleZ" };
-
-    // Pivots
-    const MString rotatePivots[3] { "rotatePivotX", "rotatePivotY", "rotatePivotZ" };
 };
 
 TfStaticData<_MayaTokensData> _MayaTokens;
