@@ -39,6 +39,7 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
+#include <maya/MFnTransform.h>
 #include <maya/MMatrix.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
@@ -80,8 +81,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 //
 //    set mesh's transform to inheritsTransform=0 to prevent double transforms
 //    set mesh's transform to match the USD gprim's geomBindTransform
-//      sgustafson: Seems like this should be unnecessary, but I see incorrect
-//      results without doing this.
 //    create skinClusterGroupParts node of type groupParts
 //      set groupParts.inputComponents = vtx[*]
 //    create skinClusterGroupId node of type groupId
@@ -171,6 +170,9 @@ struct _MayaTokensData
     const MString translates[3] { "translateX", "translateY", "translateZ" };
     const MString rotates[3] { "rotateX", "rotateY", "rotateZ" };
     const MString scales[3] { "scaleX", "scaleY", "scaleZ" };
+
+    // Pivots
+    const MString rotatePivots[3] { "rotatePivotX", "rotatePivotY", "rotatePivotZ" };
 };
 
 TfStaticData<_MayaTokensData> _MayaTokens;
@@ -1041,37 +1043,42 @@ bool _ConfigureSkinnedObjectTransform(
     MFnDependencyNode transformDep(transform, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    // Make sure transforms are not ineherited.
+    // Make sure transforms are not inherited.
     // Otherwise we get a double transform when a transform ancestor
     // affects both this object and the joints that drive the skinned object.
     if (!UsdMayaUtil::setPlugValue(transformDep, _MayaTokens->inheritsTransform, false)) {
         return false;
     }
 
-    // The transform needs to be set to the geomBindTransform.
-    GfVec3d t, r, s;
-    if (UsdMayaTranslatorXformable::ConvertUsdMatrixToComponents(
-            skinningQuery.GetGeomBindTransform(), &t, &r, &s)) {
+    // break any connections on the TRS attributes of the transform. We're going
+    // to set a new value.
+    for (const auto& attrName :
+         { _MayaTokens->translates, _MayaTokens->rotates, _MayaTokens->scales }) {
 
-        for (const auto& pair : { std::make_pair(t, _MayaTokens->translates),
-                                  std::make_pair(r, _MayaTokens->rotates),
-                                  std::make_pair(s, _MayaTokens->scales) }) {
+        for (int c = 0; c < 3; ++c) {
+            MPlug plug = transformDep.findPlug(attrName[c], &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
 
-            for (int c = 0; c < 3; ++c) {
-                MPlug plug = transformDep.findPlug(pair.second[c], &status);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-
-                // Before setting each plug, make sure there are no connections.
-                // Usd import may have already wired up some connections
-                // (eg., animation channels)
-                if (!_ClearIncomingConnections(plug))
-                    return false;
-
-                status = plug.setValue(pair.first[c]);
-                CHECK_MSTATUS_AND_RETURN(status, false);
-            }
+            // Before setting each plug, make sure there are no connections.
+            // Usd import may have already wired up some connections
+            // (eg., animation channels)
+            if (!_ClearIncomingConnections(plug))
+                return false;
         }
     }
+
+    // primvars:skel:geomBindTransform is the final world space transform that
+    // the deformed mesh should have. Set that transform onto the maya transform
+    // node in a way that correctly handles pivots.
+    MFnDagNode dagFn(transform, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    MDagPath path;
+    status = dagFn.getPath(path);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+    MFnTransform transformFn(path, &status);
+    GfMatrix4d   geomBindTransform = skinningQuery.GetGeomBindTransform();
+    MMatrix      gbt = UsdMayaUtil::GfMatrixToMMatrix(geomBindTransform);
+    transformFn.resetTransformation(gbt);
 
     return true;
 }
