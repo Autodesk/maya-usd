@@ -22,6 +22,8 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
+#include <mayaUsd/utils/utilSerialization.h>
+
 #include <pxr/usd/sdf/listOp.h>
 #include <pxr/usd/usd/stage.h>
 
@@ -737,12 +739,12 @@ MStatus LayerSave::doIt(const MArgList& argList)
                         MString temp;
                         args.getFlagArgument("-f", 0, temp);
                         const std::string filename = AL::maya::utils::convert(temp);
-                        bool              result = handle->Export(filename);
+                        bool result = MayaUsd::utils::saveLayerWithFormat(handle, filename);
                         setResult(result);
                         if (!result)
                             MGlobal::displayError("LayerSave: could not export layer");
                     } else {
-                        bool result = handle->Save();
+                        bool result = MayaUsd::utils::saveLayerWithFormat(handle);
                         setResult(result);
                         if (!result)
                             MGlobal::displayError("LayerSave: could not save layer");

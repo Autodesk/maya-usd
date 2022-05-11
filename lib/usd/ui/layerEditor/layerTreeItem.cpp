@@ -351,9 +351,7 @@ void LayerTreeItem::saveEditsNoPrompt()
         if (!isSessionLayer())
             saveAnonymousLayer();
     } else {
-        PXR_NS::SdfFileFormat::FileFormatArguments args;
-        args["format"] = MayaUsd::utils::usdFormatArgOption();
-        layer()->Export(layer()->GetRealPath(), "", args);
+        MayaUsd::utils::saveLayerWithFormat(layer());
     }
 }
 

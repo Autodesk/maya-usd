@@ -24,6 +24,7 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilSerialization.h>
 #include <mayaUsdUtils/MergePrims.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
@@ -211,7 +212,7 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
 
         auto dstLayerStr = findValue(routingData, TfToken("save_layer"));
         if (dstLayerStr == "yes")
-            dstLayer->Save();
+            MayaUsd::utils::saveLayerWithFormat(dstLayer);
 
         // No further traversal should take place.
         return PushCopySpecs::Prune;

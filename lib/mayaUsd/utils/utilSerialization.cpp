@@ -184,6 +184,20 @@ void setNewProxyPath(const MString& proxyNodeName, const MString& newValue)
         /*undo*/ false);
 }
 
+bool saveLayerWithFormat(
+    SdfLayerRefPtr     layer,
+    const std::string& potentialFilePath,
+    std::string        formatArg)
+{
+    const std::string& filePath
+        = potentialFilePath.empty() ? layer->GetRealPath() : potentialFilePath;
+
+    PXR_NS::SdfFileFormat::FileFormatArguments args;
+    args["format"] = formatArg.empty() ? usdFormatArgOption() : formatArg;
+
+    return layer->Export(filePath, "", args);
+}
+
 SdfLayerRefPtr saveAnonymousLayer(
     SdfLayerRefPtr     anonLayer,
     LayerParent        parent,
@@ -204,14 +218,7 @@ SdfLayerRefPtr saveAnonymousLayer(
         return nullptr;
     }
 
-    PXR_NS::SdfFileFormat::FileFormatArguments args;
-    if (!formatArg.empty()) {
-        args["format"] = formatArg;
-    } else {
-        args["format"] = usdFormatArgOption();
-    }
-
-    anonLayer->Export(path, "", args);
+    saveLayerWithFormat(anonLayer, path, formatArg);
 
     SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(path);
     if (newLayer) {
