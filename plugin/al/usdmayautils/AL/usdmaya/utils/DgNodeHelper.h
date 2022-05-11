@@ -1278,6 +1278,32 @@ public:
     /// \param  node the node instance the animated attribute belongs to
     /// \param  attr the attribute handle
     /// \param  usdAttr the USD attribute that contains the keyframe data
+    /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
+    /// \return MS::kSuccess on success, error code otherwise
+    AL_USDMAYA_UTILS_PUBLIC
+    static MStatus setBoolAttrAnim(
+        const MObject&      node,
+        const MObject&      attr,
+        const UsdAttribute& usdAttr,
+        MObjectArray*       newAnimCurves = nullptr);
+
+    /// \brief  creates animation curves in maya for the specified attribute
+    /// \param  node the node instance the animated attribute belongs to
+    /// \param  attr the attribute handle
+    /// \param  usdAttr the USD attribute that contains the keyframe data
+    /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
+    /// \return MS::kSuccess on success, error code otherwise
+    AL_USDMAYA_UTILS_PUBLIC
+    static MStatus setIntAttrAnim(
+        const MObject&      node,
+        const MObject&      attr,
+        const UsdAttribute& usdAttr,
+        MObjectArray*       newAnimCurves = nullptr);
+
+    /// \brief  creates animation curves in maya for the specified attribute
+    /// \param  node the node instance the animated attribute belongs to
+    /// \param  attr the attribute handle
+    /// \param  usdAttr the USD attribute that contains the keyframe data
     /// \param  conversionFactor a scaling to apply to the key frames on import
     /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
     /// \return MS::kSuccess on success, error code otherwise

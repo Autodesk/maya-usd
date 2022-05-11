@@ -56,9 +56,8 @@ private:
 
     // These are helper methods for the proxy import method.
     bool _ProcessProxyPrims(
-        const std::vector<UsdPrim>&     proxyPrims,
-        const UsdPrim&                  pxrGeomRoot,
-        const std::vector<std::string>& collapsePointPathStrings);
+        const std::vector<UsdPrim>&                    proxyPrims,
+        const std::map<SdfPath, std::vector<UsdPrim>>& collapsePointMap);
     bool _ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrims);
     bool _ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims);
 };

@@ -16,13 +16,17 @@
 # limitations under the License.
 #
 
+import mayaUsd.lib
+
 import fixturesUtils
 import mayaUtils
-import usdUtils
+import ufeUtils
 
 from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as om
+
+from pxr import UsdGeom, Vt, Gf
 
 import ufe
 
@@ -228,6 +232,37 @@ class RotatePivotTestCase(unittest.TestCase):
             sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
             self.checkPos(sphereMatrix, [20, 10, 0])
 
+    def testRotatePivotMatrixOp(self):
+        '''Setting the rotate pivot on a prim with a matrix op.'''
+
+        # Create a scene with an xform that has a matrix op.
+        import mayaUsd_createStageWithNewLayer
+
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathStr = '|stage1|stageShape1'
+        stage = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        xform = stage.DefinePrim('/Xform1', 'Xform')
+        xformable = UsdGeom.Xformable(xform)
+        
+        transformOp = xformable.AddTransformOp()
+        transformOp.Set(Gf.Matrix4d(1.0))
+    
+        self.assertEqual(xformable.GetXformOpOrderAttr().Get(), Vt.TokenArray([
+            "xformOp:transform"]))
+
+        xformItem = ufeUtils.createItem(proxyShapePathStr + ',/Xform1')
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(xformItem)
+
+        # Set the rotate and scale pivot.  Since the matrix op does not support
+        # these, this will create a Maya fallback transform stack after the
+        # matrix op.
+        cmds.move(3, 2, 1, r=True, urp=True, usp=True)
+
+        # Read back the rotate pivot using the Transform3d interface.
+        t3d = ufe.Transform3d.transform3d(xformItem)
+        self.assertEqual(t3d.rotatePivot().vector, [3, 2, 1])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

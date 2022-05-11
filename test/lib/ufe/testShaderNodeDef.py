@@ -136,3 +136,37 @@ class ShaderNodeDefTestCase(unittest.TestCase):
         self.assertEqual(len(outputs), 1)
         self.assertEqual(outputs[0].name(), "out")
         self.assertEqual(outputs[0].type(), "ColorFloat3")
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Improvements to nodeDef only available in UFE preview version 0.4.8 and greater')
+    def testClassificationsAndMetadata(self):
+        type = "ND_image_color3"
+        nodeDefHandler = self.getNodeDefHandler()
+        nodeDef = nodeDefHandler.definition(type)
+        self.assertIsNotNone(nodeDef)
+
+        # Full input API:
+        inputNames = nodeDef.inputNames()
+        self.assertEqual(len(inputNames), 10)
+        self.assertIn("file", inputNames)
+        self.assertTrue(nodeDef.hasInput("file"))
+        self.assertFalse(nodeDef.hasInput("DefinitelyNotAnInput"))
+
+        # Metadata API:
+        self.assertTrue(nodeDef.hasMetadata("role"))
+        self.assertEqual(nodeDef.getMetadata("role"), ufe.Value("texture"))
+        self.assertFalse(nodeDef.hasMetadata("DefinitelyNotAKnownMetadata"))
+
+        # Classifications API:
+        self.assertGreater(nodeDef.nbClassifications(), 0)
+        self.assertEqual(nodeDef.classification(0), "image")
+
+        # AttributeDef Metadata API:
+        fileInput = nodeDef.input("file")
+        self.assertTrue(fileInput.hasMetadata("__SDR__isAssetIdentifier"))
+        self.assertFalse(fileInput.hasMetadata("DefinitelyNotAKnownMetadata"))
+        nodeDef = nodeDefHandler.definition("ND_add_float")
+        output = nodeDef.output("out")
+        self.assertEqual(output.getMetadata("__SDR__defaultinput"), ufe.Value("in1"))
+
+
+

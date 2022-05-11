@@ -1066,6 +1066,220 @@ TEST(translators_MeshTranslator, faceVaryingColourExport)
     }
 };
 
+/// \brief  Test exporting mesh with color threshold value and compaction 0 (none)
+///         Internally the test does not do any compaction at all
+TEST(translators_MeshTranslator, colourThresholdExportWithNoCompaction)
+{
+    MFileIO::newFile(true);
+
+    // create a cube, and assign a colour set of the same value
+    MString command = "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 1;";
+    MGlobal::executeCommand(command);
+
+    MSelectionList sl;
+    sl.add("pCubeShape1");
+    MObject obj;
+    sl.getDependNode(0, obj);
+
+    MFnMesh fn(obj);
+    MString name = fn.createColorSetWithName("test");
+
+    // Add a tiny difference on the R channel for all face vertices
+    {
+        MIntArray counts, indices;
+        fn.getVertices(counts, indices);
+
+        MColorArray colours;
+        colours.setLength(24);
+        indices.setLength(24);
+        for (int i = 0; i < 24; i++) {
+            colours[i] = MColor(0.001 + 0.00001f * i, 0.4f, 0.5f, 1.0f);
+            indices[i] = i;
+        }
+        fn.setColors(colours, &name);
+        fn.assignColors(indices, &name);
+    }
+
+    const MString temp_path = buildTempPath("AL_USDMayaTests_colourThresholdExport.usda");
+
+    // export with threshold value 0.001
+    MGlobal::executeCommand(
+        MString(
+            "select -r pCube1;"
+            "file -force -options "
+            "\"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;"
+            "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_"
+            "Sample=0;"
+            "Compaction_Level=0;Custom_Colour_Threshold=1;Colour_Threshold_Value=0.001;"
+            "\" -typ \"AL usdmaya export\" -pr -es \"")
+        + temp_path + "\";");
+
+    {
+        UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
+        ASSERT_TRUE(stage);
+
+        UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+        ASSERT_TRUE(prim);
+
+        UsdGeomMesh mesh(prim);
+        auto        pvar = getDefaultColourSet(mesh);
+        ASSERT_TRUE(pvar);
+        EXPECT_EQ(UsdGeomTokens->faceVarying, pvar.GetInterpolation());
+
+        VtArray<GfVec4f> received;
+        pvar.Get(&received);
+        ASSERT_EQ(24u, received.size());
+        for (int i = 0; i < 24; ++i) {
+            EXPECT_NEAR(0.001 + 0.00001f * i, received[i][0], 1e-5f);
+            EXPECT_NEAR(0.4f, received[i][1], 1e-5f);
+            EXPECT_NEAR(0.5f, received[i][2], 1e-5f);
+            EXPECT_NEAR(1.0f, received[i][3], 1e-5f);
+        }
+    }
+}
+
+/// \brief  Test exporting mesh with color threshold value and compaction 1 (basic level)
+///         Internally the test would call DiffPrimVar::guessColourSetInterpolationType()
+TEST(translators_MeshTranslator, colourThresholdExportWithBasicCompaction)
+{
+    MFileIO::newFile(true);
+
+    // create a cube, and assign a colour set of the same value
+    MString command = "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 1;";
+    MGlobal::executeCommand(command);
+
+    MSelectionList sl;
+    sl.add("pCubeShape1");
+    MObject obj;
+    sl.getDependNode(0, obj);
+
+    MFnMesh fn(obj);
+    MString name = fn.createColorSetWithName("test");
+
+    // Add a tiny difference on the R channel for all face vertices
+    {
+        MIntArray counts, indices;
+        fn.getVertices(counts, indices);
+
+        MColorArray colours;
+        colours.setLength(24);
+        indices.setLength(24);
+        for (int i = 0; i < 24; i++) {
+            colours[i] = MColor(0.001 + 0.00001f * i, 0.4f, 0.5f, 1.0f);
+            indices[i] = i;
+        }
+        fn.setColors(colours, &name);
+        fn.assignColors(indices, &name);
+    }
+
+    const MString temp_path = buildTempPath("AL_USDMayaTests_colourThresholdExport.usda");
+
+    // export with threshold value 0.001
+    MGlobal::executeCommand(
+        MString(
+            "select -r pCube1;"
+            "file -force -options "
+            "\"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;"
+            "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_"
+            "Sample=0;"
+            "Compaction_Level=1;Custom_Colour_Threshold=1;Colour_Threshold_Value=0.001;"
+            "\" -typ \"AL usdmaya export\" -pr -es \"")
+        + temp_path + "\";");
+
+    {
+        UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
+        ASSERT_TRUE(stage);
+
+        UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+        ASSERT_TRUE(prim);
+
+        UsdGeomMesh mesh(prim);
+        auto        pvar = getDefaultColourSet(mesh);
+        ASSERT_TRUE(pvar);
+        EXPECT_EQ(UsdGeomTokens->constant, pvar.GetInterpolation());
+
+        VtArray<GfVec4f> received;
+        pvar.Get(&received);
+        ASSERT_EQ(1u, received.size());
+
+        EXPECT_NEAR(0.001f, received[0][0], 1e-5f);
+        EXPECT_NEAR(0.4f, received[0][1], 1e-5f);
+        EXPECT_NEAR(0.5f, received[0][2], 1e-5f);
+        EXPECT_NEAR(1.0f, received[0][3], 1e-5f);
+    }
+}
+
+/// \brief  Test exporting mesh with color threshold value and compaction 3 (extensive level)
+///         Internally the test would call DiffPrimVar::guessColourSetInterpolationTypeExtensive()
+TEST(translators_MeshTranslator, colourThresholdExportWithFullCompaction)
+{
+    MFileIO::newFile(true);
+
+    // create a cube, and assign a colour set of the same value
+    MString command = "polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 1;";
+    MGlobal::executeCommand(command);
+
+    MSelectionList sl;
+    sl.add("pCubeShape1");
+    MObject obj;
+    sl.getDependNode(0, obj);
+
+    MFnMesh fn(obj);
+    MString name = fn.createColorSetWithName("test");
+
+    // Add a tiny difference on the R channel for all face vertices
+    {
+        MIntArray counts, indices;
+        fn.getVertices(counts, indices);
+
+        MColorArray colours;
+        colours.setLength(24);
+        indices.setLength(24);
+        for (int i = 0; i < 24; i++) {
+            colours[i] = MColor(0.001 + 0.00001f * i, 0.4f, 0.5f, 1.0f);
+            indices[i] = i;
+        }
+        fn.setColors(colours, &name);
+        fn.assignColors(indices, &name);
+    }
+
+    const MString temp_path = buildTempPath("AL_USDMayaTests_colourThresholdExport.usda");
+
+    // export with threshold value 0.001
+    MGlobal::executeCommand(
+        MString(
+            "select -r pCube1;"
+            "file -force -options "
+            "\"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Nurbs_Curves=1;Duplicate_Instances=1;"
+            "Merge_Transforms=1;Animation=0;Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_"
+            "Sample=0;"
+            "Compaction_Level=3;Custom_Colour_Threshold=1;Colour_Threshold_Value=0.001;"
+            "\" -typ \"AL usdmaya export\" -pr -es \"")
+        + temp_path + "\";");
+
+    {
+        UsdStageRefPtr stage = UsdStage::Open(temp_path.asChar());
+        ASSERT_TRUE(stage);
+
+        UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
+        ASSERT_TRUE(prim);
+
+        UsdGeomMesh mesh(prim);
+        auto        pvar = getDefaultColourSet(mesh);
+        ASSERT_TRUE(pvar);
+        EXPECT_EQ(UsdGeomTokens->constant, pvar.GetInterpolation());
+
+        VtArray<GfVec4f> received;
+        pvar.Get(&received);
+        ASSERT_EQ(1u, received.size());
+
+        EXPECT_NEAR(0.001f, received[0][0], 1e-5f);
+        EXPECT_NEAR(0.4f, received[0][1], 1e-5f);
+        EXPECT_NEAR(0.5f, received[0][2], 1e-5f);
+        EXPECT_NEAR(1.0f, received[0][3], 1e-5f);
+    }
+}
+
 TEST(translators_MeshTranslator, reverseNormalsFlag)
 {
     MFileIO::newFile(true);

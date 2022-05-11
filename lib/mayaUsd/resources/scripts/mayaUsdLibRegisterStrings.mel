@@ -51,4 +51,8 @@ global proc mayaUsdLibRegisterStrings()
 
     // Used in multiple places.
     register("kAllUsdFiles", "All USD Files");
+    register("kUsdFiles", "USD Files");
+    register("kUsdASCIIFiles", "USD ASCII Files");
+    register("kUsdBinaryFiles", "USD Binary Files");
+    register("kUsdCompressedFiles", "USD Compressed Files");
 }

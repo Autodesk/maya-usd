@@ -911,6 +911,47 @@ TfToken guessColourSetInterpolationType(const float* rgba, const size_t numEleme
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+inline bool isNearlyEqual(const float& a, const float& b, const float& threshold)
+{
+    return std::abs(std::abs(a) - std::abs(b)) <= threshold;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+static bool isWithinThreshold(const float* array, const size_t count, float threshold)
+{
+    // TODO: This function is extracted from MayaUsdUtils::vec4AreAllTheSame(),
+    //       it is generally slower then the SSE/AVX version.
+    //       Improve it with SSE/AVX at some point when needed, for now the optimization is left for
+    //       the compiler.
+    float absThreshold = std::abs(threshold);
+    // Iterate the values and check if they are within the threshold
+    const float x = array[0];
+    const float y = array[1];
+    const float z = array[2];
+    const float w = array[3];
+    for (size_t i = 4, n = count * 4; i < n; i += 4) {
+        if (!isNearlyEqual(x, array[i], absThreshold)
+            || !isNearlyEqual(y, array[i + 1], absThreshold)
+            || !isNearlyEqual(z, array[i + 2], absThreshold)
+            || !isNearlyEqual(w, array[i + 3], absThreshold)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken
+guessColourSetInterpolationType(const float* rgba, const size_t numElements, float threshold)
+{
+    // Specialized test if there is threshold provided.
+    if (numElements <= 1 || isWithinThreshold(rgba, numElements, threshold)) {
+        return UsdGeomTokens->constant;
+    }
+    return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 TfToken guessColourSetInterpolationTypeExtensive(
     const float*           rgba,
     const size_t           numElements,
@@ -1002,6 +1043,78 @@ uniform_test:
 
 faceVarying:
     return UsdGeomTokens->faceVarying;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TfToken guessColourSetInterpolationTypeExtensive(
+    const float*           rgba,
+    const size_t           numElements,
+    float                  threshold,
+    const size_t           numPoints,
+    MIntArray&             pointIndices,
+    MIntArray&             faceCounts,
+    std::vector<uint32_t>& indicesToExtract)
+{
+    // Specialized test if there is threshold provided.
+    // TODO: This function is extracted from guessColourSetInterpolationTypeExtensive() but without
+    // SSE/AVX optimization.
+    //       It is generally slower then the SSE/AVX version.
+    //       Improve it with SSE/AVX at some point when needed, for now the optimization is left for
+    //       the compiler.
+
+    if (numElements <= 1 || isWithinThreshold(rgba, numElements, threshold)) {
+        return UsdGeomTokens->constant;
+    }
+
+    float absThreshold = std::abs(threshold);
+
+    // check for per-vertex assignment
+    std::vector<uint32_t> indicesMap;
+    indicesMap.resize(numPoints, -1);
+    for (uint32_t pntInx = 0, n = pointIndices.length(); pntInx < n; ++pntInx) {
+        auto index = pointIndices[pntInx];
+        auto lastIndex = indicesMap[index];
+        if (lastIndex == 0xFFFFFFFF) {
+            indicesMap[index] = pntInx;
+        } else {
+            // if not, check to see if the indices differ, but the values are the same
+            const float x0 = rgba[4 * lastIndex + 0];
+            const float y0 = rgba[4 * lastIndex + 1];
+            const float z0 = rgba[4 * lastIndex + 2];
+            const float w0 = rgba[4 * lastIndex + 3];
+            const float x1 = rgba[4 * pntInx + 0];
+            const float y1 = rgba[4 * pntInx + 1];
+            const float z1 = rgba[4 * pntInx + 2];
+            const float w1 = rgba[4 * pntInx + 3];
+            if (!isNearlyEqual(x0, x1, absThreshold) || !isNearlyEqual(y0, y1, absThreshold)
+                || !isNearlyEqual(z0, z1, absThreshold) || !isNearlyEqual(w0, w1, absThreshold)) {
+                const uint32_t numFaces = faceCounts.length();
+                indicesMap.resize(numFaces);
+                uint32_t offset = 0;
+                for (uint32_t faceIdx = 0; faceIdx < numFaces; ++faceIdx) {
+                    indicesMap[faceIdx] = offset;
+
+                    int numPointsInFace = faceCounts[faceIdx];
+
+                    const float* rgba0 = rgba + 4 * offset;
+                    for (int32_t j = 1; j < numPointsInFace; ++j) {
+                        const float* rgba1 = rgba + 4 * (offset + j);
+                        if (!isNearlyEqual(rgba0[0], rgba1[0], absThreshold)
+                            || !isNearlyEqual(rgba0[1], rgba1[1], absThreshold)
+                            || !isNearlyEqual(rgba0[2], rgba1[2], absThreshold)
+                            || !isNearlyEqual(rgba0[3], rgba1[3], absThreshold)) {
+                            return UsdGeomTokens->faceVarying;
+                        }
+                    }
+                    offset += numPointsInFace;
+                }
+                std::swap(indicesToExtract, indicesMap);
+                return UsdGeomTokens->uniform;
+            }
+        }
+    }
+    std::swap(indicesToExtract, indicesMap);
+    return UsdGeomTokens->vertex;
 }
 
 //----------------------------------------------------------------------------------------------------------------------

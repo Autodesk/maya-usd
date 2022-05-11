@@ -1477,11 +1477,34 @@ void interleaveIndexedUvData(
 
 //----------------------------------------------------------------------------------------------------------------------
 // Loops through each Colour Set in the mesh writing out a set of non-indexed Colour Values in RGBA
+// format, Writes out faceVarying values only Default RGB is 0.18 and alpha is 1.0 if there is no
+// RGBA assigned to the mesh. Have a special case for "displayColor" which write as RGB
+// @todo: needs refactoring to handle face/vert/faceVarying correctly, allow separate RGB/A to be
+// written etc.
+void MeshExportContext::copyColourSetData() { copyColourSetData(0.18f, 1.0f, true, 1e-5); }
+
+//----------------------------------------------------------------------------------------------------------------------
+// Loops through each Colour Set in the mesh writing out a set of non-indexed Colour Values in RGBA
 // format, Writes out faceVarying values only Have a special case for "displayColor" which write as
 // RGB
 // @todo: needs refactoring to handle face/vert/faceVarying correctly, allow separate RGB/A to be
 // written etc.
-void MeshExportContext::copyColourSetData()
+void MeshExportContext::copyColourSetData(float defaultColour, float defaultAlpha)
+{
+    copyColourSetData(defaultColour, defaultAlpha, true, 1e-5);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Loops through each Colour Set in the mesh writing out a set of non-indexed Colour Values in RGBA
+// format, Writes out faceVarying values only Have a special case for "displayColor" which write as
+// RGB
+// @todo: needs refactoring to handle face/vert/faceVarying correctly, allow separate RGB/A to be
+// written etc.
+void MeshExportContext::copyColourSetData(
+    float defaultColour,
+    float defaultAlpha,
+    bool  hasThreshold,
+    float threshold)
 {
     UsdPrim                           prim = mesh.GetPrim();
     MStringArray                      colourSetNames;
@@ -1508,12 +1531,18 @@ void MeshExportContext::copyColourSetData()
         while (!it.isDone()) {
             MColorArray faceColours;
             it.getColors(faceColours, &colourSetNames[i]);
-            it.next();
             // Append face colours
             uint32_t offset = colours.length();
             colours.setLength(offset + faceColours.length());
-            for (uint32_t j = 0, n = faceColours.length(); j < n; ++j)
-                colours[offset + j] = faceColours[j];
+            for (uint32_t j = 0, n = faceColours.length(); j < n; ++j) {
+                if (it.hasColor()) {
+                    colours[offset + j] = faceColours[j];
+                } else {
+                    colours[offset + j]
+                        = MColor(defaultColour, defaultColour, defaultColour, defaultAlpha);
+                }
+            }
+            it.next();
         }
         TfToken interpolation = UsdGeomTokens->faceVarying;
         coloursLength = colours.length();
@@ -1521,18 +1550,28 @@ void MeshExportContext::copyColourSetData()
         switch (compaction) {
         case kNone: break;
         case kBasic:
-            interpolation = guessColourSetInterpolationType(&colours[0].r, coloursLength);
+            interpolation = hasThreshold
+                ? guessColourSetInterpolationType(&colours[0].r, coloursLength, threshold)
+                : guessColourSetInterpolationType(&colours[0].r, coloursLength);
             break;
 
         case kMedium:
         case kFull:
-            interpolation = guessColourSetInterpolationTypeExtensive(
-                &colours[0].r,
-                coloursLength,
-                fnMesh.numVertices(),
-                faceConnects,
-                faceCounts,
-                indicesToExtract);
+            interpolation = hasThreshold ? guessColourSetInterpolationTypeExtensive(
+                                &colours[0].r,
+                                coloursLength,
+                                threshold,
+                                fnMesh.numVertices(),
+                                faceConnects,
+                                faceCounts,
+                                indicesToExtract)
+                                         : guessColourSetInterpolationTypeExtensive(
+                                             &colours[0].r,
+                                             coloursLength,
+                                             fnMesh.numVertices(),
+                                             faceConnects,
+                                             faceCounts,
+                                             indicesToExtract);
             break;
         }
 

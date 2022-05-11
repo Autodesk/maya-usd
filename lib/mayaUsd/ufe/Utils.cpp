@@ -571,7 +571,10 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType)
     }
 }
 
-bool vtValueFromString(const std::string& typeName, const std::string& strValue, PXR_NS::VtValue* value)
+bool vtValueFromString(
+    const std::string& typeName,
+    const std::string& strValue,
+    PXR_NS::VtValue*   value)
 {
     if (typeName == Ufe::Attribute::kBool) {
         *value = "true" == strValue ? true : false;
@@ -622,7 +625,10 @@ bool vtValueFromString(const std::string& typeName, const std::string& strValue,
     return false;
 }
 
-bool stringFromVtValue(const std::string& typeName, const PXR_NS::VtValue& value, std::string* strValue)
+bool stringFromVtValue(
+    const std::string&     typeName,
+    const PXR_NS::VtValue& value,
+    std::string*           strValue)
 {
     if (typeName == Ufe::Attribute::kBool) {
         const bool& bValue = value.Get<bool>();
@@ -649,15 +655,18 @@ bool stringFromVtValue(const std::string& typeName, const PXR_NS::VtValue& value
         return true;
     } else if (typeName == Ufe::Attribute::kInt3) {
         GfVec3i vValue = value.Get<GfVec3i>();
-        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", " + std::to_string(vValue[2]) + ")";
+        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", "
+            + std::to_string(vValue[2]) + ")";
         return true;
     } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
         GfVec3f vValue = value.Get<GfVec3f>();
-        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", " + std::to_string(vValue[2]) + ")";
+        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", "
+            + std::to_string(vValue[2]) + ")";
         return true;
     } else if (typeName == Ufe::Attribute::kDouble3) {
         GfVec3d vValue = value.Get<GfVec3d>();
-        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", " + std::to_string(vValue[2]) + ")";
+        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", "
+            + std::to_string(vValue[2]) + ")";
         return true;
     }
     return false;

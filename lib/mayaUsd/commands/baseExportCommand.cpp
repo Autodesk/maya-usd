@@ -97,6 +97,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->normalizeNurbs.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kPreserveUVSetNamesFlag,
+        UsdMayaJobExportArgsTokens->preserveUVSetNames.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kExportColorSetsFlag,
         UsdMayaJobExportArgsTokens->exportColorSets.GetText(),
         MSyntax::kBoolean);
@@ -169,6 +173,13 @@ MSyntax MayaUSDExportCommand::createSyntax()
         MSyntax::kString,
         MSyntax::kString);
     syntax.makeFlagMultiUse(kChaserArgsFlag);
+
+    syntax.addFlag(
+        kRemapUVSetsToFlag,
+        UsdMayaJobExportArgsTokens->remapUVSetsTo.GetText(),
+        MSyntax::kString,
+        MSyntax::kString);
+    syntax.makeFlagMultiUse(kRemapUVSetsToFlag);
 
     syntax.addFlag(
         kMelPerFrameCallbackFlag,

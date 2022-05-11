@@ -362,7 +362,7 @@ bool AttrHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
 
     if (fAttrDef) {
         std::string strValue;
-        bool success = stringFromVtValue(fAttrDef->type(), value, &strValue);
+        bool        success = stringFromVtValue(fAttrDef->type(), value, &strValue);
         if (success && fAttrDef->defaultValue() == strValue) {
             fUsdAttr.ClearAtTime(time);
             if (!fUsdAttr.HasValue()) {
@@ -371,7 +371,7 @@ bool AttrHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
             }
             return true;
         }
-    } 
+    }
     return fUsdAttr.Set(value, time);
 }
 

@@ -318,6 +318,16 @@ AL_USDMAYA_UTILS_PUBLIC
 TfToken guessColourSetInterpolationType(const float* rgba, const size_t numElements);
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  performs a basic set of tests to determine the interpolation mode of the rgba prim var
+/// data. \param  rgba the face varying colour array \param  numElements the number of RGBA colours
+/// in the rgba array \param  threshold the threshold value for RGBA colours \return
+/// UsdGeomTokens->constant, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken
+guessColourSetInterpolationType(const float* rgba, const size_t numElements, float threshold);
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  performs a more comprehensive set of tests to determine the interpolation mode for the
 /// rgba prim var data. \param  rgba the face varying colour array \param  numElements the number of
 /// RGBA colours in the rgba array \param  numPoints the number of points \param  pointIndices the
@@ -330,6 +340,25 @@ AL_USDMAYA_UTILS_PUBLIC
 TfToken guessColourSetInterpolationTypeExtensive(
     const float*           rgba,
     const size_t           numElements,
+    const size_t           numPoints,
+    MIntArray&             pointIndices,
+    MIntArray&             faceCounts,
+    std::vector<uint32_t>& indicesToExtract);
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  performs a more comprehensive set of tests to determine the interpolation mode for the
+/// rgba prim var data. \param  rgba the face varying colour array \param  numElements the number of
+/// RGBA colours in the rgba array \param  threshold the threshold value for RGBA colours \param
+/// numPoints the number of points \param  pointIndices the point indices in the mesh \param
+/// faceCounts the face counts for the mesh \param  indicesToExtract the resulting set of indices
+/// which will be later used to extract the correct data \return UsdGeomTokens->constant,
+/// UsdGeomTokens->vertex, UsdGeomTokens->uniform, or UsdGeomTokens->faceVarying
+//----------------------------------------------------------------------------------------------------------------------
+AL_USDMAYA_UTILS_PUBLIC
+TfToken guessColourSetInterpolationTypeExtensive(
+    const float*           rgba,
+    const size_t           numElements,
+    float                  threshold,
     const size_t           numPoints,
     MIntArray&             pointIndices,
     MIntArray&             faceCounts,

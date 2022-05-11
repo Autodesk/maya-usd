@@ -58,11 +58,13 @@ public:
     static constexpr auto kExportDistanceUnitFlag = "edu";
     static constexpr auto kShadingModeFlag = "shd";
     static constexpr auto kConvertMaterialsToFlag = "cmt";
+    static constexpr auto kRemapUVSetsToFlag = "ruv";
     static constexpr auto kMaterialsScopeNameFlag = "msn";
     static constexpr auto kExportMaterialCollectionsFlag = "mcs";
     static constexpr auto kMaterialCollectionsPathFlag = "mcp";
     static constexpr auto kExportCollectionBasedBindingsFlag = "cbb";
     static constexpr auto kNormalizeNurbsFlag = "nnu";
+    static constexpr auto kPreserveUVSetNamesFlag = "puv";
     static constexpr auto kReferenceObjectModeFlag = "rom";
     static constexpr auto kExportRootsFlag = "ert";
     static constexpr auto kExportSkelsFlag = "skl";

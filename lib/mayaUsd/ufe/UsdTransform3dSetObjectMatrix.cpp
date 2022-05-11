@@ -64,6 +64,20 @@ Ufe::Vector3d UsdTransform3dSetObjectMatrix::scale() const
     return getScale(UsdTransform3dBase::matrix());
 }
 
+Ufe::Vector3d UsdTransform3dSetObjectMatrix::rotatePivot() const { return _wrapped->rotatePivot(); }
+
+Ufe::Vector3d UsdTransform3dSetObjectMatrix::scalePivot() const { return _wrapped->scalePivot(); }
+
+Ufe::Vector3d UsdTransform3dSetObjectMatrix::rotatePivotTranslation() const
+{
+    return _wrapped->rotatePivotTranslation();
+}
+
+Ufe::Vector3d UsdTransform3dSetObjectMatrix::scalePivotTranslation() const
+{
+    return _wrapped->scalePivotTranslation();
+}
+
 Ufe::SetMatrix4dUndoableCommand::Ptr
 UsdTransform3dSetObjectMatrix::setMatrixCmd(const Ufe::Matrix4d& m)
 {
