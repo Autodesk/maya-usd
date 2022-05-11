@@ -102,6 +102,10 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj)
             gsRenderOverrides[i] = nullptr;
         }
     }
+
+    // Note: when Maya is doing its default "quick exit" that does not uninitialize plugins,
+    //       these overrides crash on destruction because Hydra ha already destroyed things
+    //       these rely on. There is not much we can do about it...
     gsRenderOverrides.clear();
 
     // Clear any registered callbacks
