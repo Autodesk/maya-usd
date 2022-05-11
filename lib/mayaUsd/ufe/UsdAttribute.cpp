@@ -54,7 +54,8 @@ static constexpr char kErrorMsgInvalidValueType[] = "Unexpected Ufe::Value type"
 
 namespace {
 
-template <typename T> bool setUsdAttr(const MayaUsd::ufe::AttrHandle::Ptr& attrHandle, const T& value)
+template <typename T>
+bool setUsdAttr(const MayaUsd::ufe::AttrHandle::Ptr& attrHandle, const T& value)
 {
     // USD Attribute Notification doubling problem:
     // As of 24-Nov-2019, calling Set() on a UsdAttribute causes two "info only"
@@ -146,8 +147,9 @@ PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
     return MayaUsd::ufe::getTime(item->path());
 }
 
-std::string
-getUsdAttributeValueAsString(const MayaUsd::ufe::AttrHandle::Ptr& attrHandle, const PXR_NS::UsdTimeCode& time)
+std::string getUsdAttributeValueAsString(
+    const MayaUsd::ufe::AttrHandle::Ptr& attrHandle,
+    const PXR_NS::UsdTimeCode&           time)
 {
     PXR_NS::VtValue v;
     if (attrHandle->get(&v, time)) {
@@ -166,7 +168,9 @@ getUsdAttributeValueAsString(const MayaUsd::ufe::AttrHandle::Ptr& attrHandle, co
 }
 
 template <typename T, typename U>
-U getUsdAttributeVectorAsUfe(const MayaUsd::ufe::AttrHandle::Ptr& attrHandle, const PXR_NS::UsdTimeCode& time)
+U getUsdAttributeVectorAsUfe(
+    const MayaUsd::ufe::AttrHandle::Ptr& attrHandle,
+    const PXR_NS::UsdTimeCode&           time)
 {
     PXR_NS::VtValue vt;
     if (attrHandle->get(&vt, time) && vt.IsHolding<T>()) {
@@ -263,158 +267,79 @@ const std::string OUTPUT_ATTR_PREFIX = "outputs:";
 // AttrHandle:
 //------------------------------------------------------------------------------
 
+AttrHandle::AttrHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef)
+    : fPrim(prim)
+    , fAttrDef(attrDef)
+{
+}
+
 AttrHandle::AttrHandle(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdAttribute& usdAttr)
     : fPrim(prim)
     , fUsdAttr(usdAttr)
 {
 }
 
+AttrHandle::AttrHandle(
+    const PXR_NS::UsdPrim&             prim,
+    const Ufe::AttributeDef::ConstPtr& attrDef,
+    const PXR_NS::UsdAttribute&        usdAttr)
+    : fPrim(prim)
+    , fAttrDef(attrDef)
+    , fUsdAttr(usdAttr)
+{
+}
+
+bool AttrHandle::hasValue() const
+{
+    return isAuthored() ? fUsdAttr.HasValue() : !fAttrDef->defaultValue().empty();
+}
 bool AttrHandle::isEditAllowed(std::string& errMsg) const
 {
-    return MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg);
+    if (isAuthored()) {
+        return isAttributeEditAllowed(fUsdAttr, &errMsg);
+    } else {
+        return true;
+    }
+}
+
+std::string AttrHandle::name() const
+{
+    if (isAuthored()) {
+        return fUsdAttr.GetName().GetString();
+    } else {
+        return fAttrDef->name();
+    }
+}
+
+std::string AttrHandle::documentation() const
+{
+    if (isAuthored()) {
+        return fUsdAttr.GetDocumentation();
+    } else {
+        return std::string();
+    }
+}
+
+std::string AttrHandle::typeName() const
+{
+    if (isAuthored()) {
+        return fUsdAttr.GetTypeName().GetType().GetTypeName();
+    } else {
+        return fAttrDef->type();
+    }
 }
 
 bool AttrHandle::get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const
 {
-    if (!fUsdAttr.IsValid() || !fUsdAttr.HasValue())
-        return false;
-    return fUsdAttr.Get(value, time);
+    const std::string& defaultValue = fAttrDef->defaultValue();
+    const std::string& typeName = AttrHandle::typeName();
+    if (isAuthored()) {
+        return fUsdAttr.Get(value, time);
+    }
+    return vtValueFromString(typeName, defaultValue, value);
 }
 
 bool AttrHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
-{
-    if (!fUsdAttr.IsValid())
-        return false;
-
-    return fUsdAttr.Set(value, time);
-}
-
-Ufe::Value AttrHandle::getMetadata(const std::string& key) const
-{
-    // Special cases for known Ufe metadata keys.
-    if (key == Ufe::Attribute::kLocked) {
-        PXR_NS::TfToken lock;
-        bool            ret = fUsdAttr.GetMetadata(MayaUsdMetadata->Lock, &lock);
-        if (ret)
-            return Ufe::Value((lock == MayaUsdTokens->On) ? true : false);
-        return Ufe::Value();
-    }
-
-    PXR_NS::TfToken tok(key);
-    PXR_NS::VtValue v;
-    if (fUsdAttr.GetMetadata(tok, &v)) {
-        if (v.IsHolding<bool>())
-            return Ufe::Value(v.Get<bool>());
-        else if (v.IsHolding<int>())
-            return Ufe::Value(v.Get<int>());
-        else if (v.IsHolding<float>())
-            return Ufe::Value(v.Get<float>());
-        else if (v.IsHolding<double>())
-            return Ufe::Value(v.Get<double>());
-        else if (v.IsHolding<std::string>())
-            return Ufe::Value(v.Get<std::string>());
-        else if (v.IsHolding<PXR_NS::TfToken>())
-            return Ufe::Value(v.Get<PXR_NS::TfToken>().GetString());
-    }
-    return Ufe::Value();
-}
-
-bool AttrHandle::setMetadata(const std::string& key, const Ufe::Value& value)
-{
-    return setUsdAttrMetadata(fUsdAttr, key, value);
-}
-
-bool AttrHandle::clearMetadata(const std::string& key)
-{
-    // Special cases for known Ufe metadata keys.
-    if (key == Ufe::Attribute::kLocked) {
-        return fUsdAttr.ClearMetadata(MayaUsdMetadata->Lock);
-    }
-    PXR_NS::TfToken tok(key);
-   return fUsdAttr.ClearMetadata(tok);
-}
-
-bool AttrHandle::hasMetadata(const std::string& key) const
-{
-    // Special cases for known Ufe metadata keys.
-    if (key == Ufe::Attribute::kLocked) {
-        return fUsdAttr.HasMetadata(MayaUsdMetadata->Lock);
-    }
-    PXR_NS::TfToken tok(key);
-    return fUsdAttr.HasMetadata(tok);
-}
-
-AttrHandle::AttrHandle(const PXR_NS::UsdPrim& prim)
-    : fPrim(prim)
-{
-}
-
-//------------------------------------------------------------------------------
-// AttrDefHandle:
-//------------------------------------------------------------------------------
-
-AttrDefHandle::AttrDefHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef)
-    : AttrHandle(prim)
-    , fAttrDef(attrDef)
-{
-}
-
-bool AttrDefHandle::hasValue() const
-{
-    return isAuthored() ? fUsdAttr.HasValue() : !fAttrDef->defaultValue().empty();
-}
-
-bool AttrDefHandle::get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const
-{
-    const std::string& defaultValue = fAttrDef->defaultValue();
-    const std::string& typeName = AttrDefHandle::typeName();
-    if (isAuthored()) {
-        return AttrHandle::get(value, time);
-    } else if(typeName == Ufe::Attribute::kBool) {
-        *value = "true" == defaultValue ? true : false;
-        return true;
-    } else if(typeName == Ufe::Attribute::kInt) {
-        *value = std::stoi(defaultValue.c_str());
-        return true;
-    } else if (typeName == Ufe::Attribute::kFloat) {
-        *value = std::stof(defaultValue.c_str());
-        return true;
-    } else if (typeName == Ufe::Attribute::kDouble) {
-        *value = std::stod(defaultValue.c_str());
-        return true;
-    } else if (typeName == Ufe::Attribute::kString) {
-        *value = defaultValue;
-        return true;
-    } else if (typeName == Ufe::Attribute::kEnumString) {
-        *value = PXR_NS::TfToken(defaultValue.c_str());
-        return true;
-    } else if (typeName == Ufe::Attribute::kInt3) {
-        std::vector<std::string> tokens = splitString(defaultValue, "(), ");
-        if (tokens.size() == 3)
-        {
-            *value = GfVec3i(std::stoi(tokens[0].c_str()), std::stoi(tokens[1].c_str()), std::stoi(tokens[2].c_str()));
-            return true;
-        }
-    } else if (typeName == Ufe::Attribute::kFloat3 ||
-               typeName == Ufe::Attribute::kColorFloat3) {
-        std::vector<std::string> tokens = splitString(defaultValue, "(), ");
-        if (tokens.size() == 3)
-        {
-            *value = GfVec3f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str()), std::stof(tokens[2].c_str()));
-            return true;
-        }
-    } else if(typeName == Ufe::Attribute::kDouble3) {
-        std::vector<std::string> tokens = splitString(defaultValue, "(), ");
-        if (tokens.size() == 3)
-        {
-            *value = GfVec3d(std::stod(tokens[0].c_str()), std::stod(tokens[1].c_str()), std::stod(tokens[2].c_str()));
-            return true;
-        }
-    }
-    return false;
-}
-
-bool AttrDefHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
 {
     if (!isAuthored()) {
         PXR_NS::VtValue currentValue;
@@ -423,58 +348,113 @@ bool AttrDefHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
             return true;
         } else {
             if (fPrim) {
-                const PXR_NS::TfToken attrName(fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name()) : PXR_NS::TfToken(INPUT_ATTR_PREFIX + fAttrDef->name()));
-                fUsdAttr = fPrim.CreateAttribute(attrName, PXR_NS::SdfGetValueTypeNameForValue(value));
+                const PXR_NS::TfToken attrName(
+                    fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR
+                        ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name())
+                        : PXR_NS::TfToken(INPUT_ATTR_PREFIX + fAttrDef->name()));
+                fUsdAttr
+                    = fPrim.CreateAttribute(attrName, PXR_NS::SdfGetValueTypeNameForValue(value));
             } else {
                 return false;
             }
         }
     }
 
+    if (fAttrDef) {
+        std::string strValue;
+        bool success = stringFromVtValue(fAttrDef->type(), value, &strValue);
+        if (success && fAttrDef->defaultValue() == strValue) {
+            fUsdAttr.ClearAtTime(time);
+            if (!fUsdAttr.HasValue()) {
+                fPrim.RemoveProperty(fUsdAttr.GetName());
+                fUsdAttr = PXR_NS::UsdAttribute();
+            }
+            return true;
+        }
+    } 
     return fUsdAttr.Set(value, time);
 }
 
-Ufe::Value AttrDefHandle::getMetadata(const std::string& key) const
+Ufe::Value AttrHandle::getMetadata(const std::string& key) const
 {
     if (isAuthored()) {
-        return AttrHandle::getMetadata(key);
+        // Special cases for known Ufe metadata keys.
+        if (key == Ufe::Attribute::kLocked) {
+            PXR_NS::TfToken lock;
+            bool            ret = fUsdAttr.GetMetadata(MayaUsdMetadata->Lock, &lock);
+            if (ret)
+                return Ufe::Value((lock == MayaUsdTokens->On) ? true : false);
+            return Ufe::Value();
+        }
+        PXR_NS::TfToken tok(key);
+        PXR_NS::VtValue v;
+        if (fUsdAttr.GetMetadata(tok, &v)) {
+            if (v.IsHolding<bool>())
+                return Ufe::Value(v.Get<bool>());
+            else if (v.IsHolding<int>())
+                return Ufe::Value(v.Get<int>());
+            else if (v.IsHolding<float>())
+                return Ufe::Value(v.Get<float>());
+            else if (v.IsHolding<double>())
+                return Ufe::Value(v.Get<double>());
+            else if (v.IsHolding<std::string>())
+                return Ufe::Value(v.Get<std::string>());
+            else if (v.IsHolding<PXR_NS::TfToken>())
+                return Ufe::Value(v.Get<PXR_NS::TfToken>().GetString());
+        }
+        return Ufe::Value();
     } else {
         return Ufe::Value();
     }
 }
 
-bool AttrDefHandle::setMetadata(const std::string& key, const Ufe::Value& value)
+bool AttrHandle::setMetadata(const std::string& key, const Ufe::Value& value)
 {
     if (isAuthored())
-        return AttrHandle::setMetadata(key, value);
+        return setUsdAttrMetadata(fUsdAttr, key, value);
     else {
         if (fPrim) {
-            const PXR_NS::TfToken attrName(fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name()) : PXR_NS::TfToken(INPUT_ATTR_PREFIX + fAttrDef->name()));
-            PXR_NS::VtValue v;
+            const PXR_NS::TfToken attrName(
+                fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR
+                    ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name())
+                    : PXR_NS::TfToken(INPUT_ATTR_PREFIX + fAttrDef->name()));
+            PXR_NS::VtValue     v;
             PXR_NS::UsdTimeCode time;
             get(&v, time);
             fUsdAttr = fPrim.CreateAttribute(attrName, PXR_NS::SdfGetValueTypeNameForValue(v));
-            return AttrHandle::setMetadata(key, value);
+            return setUsdAttrMetadata(fUsdAttr, key, value);
         } else {
             return false;
         }
     }
 }
 
-bool AttrDefHandle::clearMetadata(const std::string& key)
+bool AttrHandle::clearMetadata(const std::string& key)
 {
-    if (isAuthored())
-        return AttrHandle::clearMetadata(key);
-    else
+    if (isAuthored()) {
+        // Special cases for known Ufe metadata keys.
+        if (key == Ufe::Attribute::kLocked) {
+            return fUsdAttr.ClearMetadata(MayaUsdMetadata->Lock);
+        }
+        PXR_NS::TfToken tok(key);
+        return fUsdAttr.ClearMetadata(tok);
+    } else {
         return true;
+    }
 }
 
-bool AttrDefHandle::hasMetadata(const std::string& key) const
+bool AttrHandle::hasMetadata(const std::string& key) const
 {
-    if (isAuthored())
-        return AttrHandle::hasMetadata(key);
-    else
+    if (isAuthored()) {
+        // Special cases for known Ufe metadata keys.
+        if (key == Ufe::Attribute::kLocked) {
+            return fUsdAttr.HasMetadata(MayaUsdMetadata->Lock);
+        }
+        PXR_NS::TfToken tok(key);
+        return fUsdAttr.HasMetadata(tok);
+    } else {
         return false;
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -521,10 +501,7 @@ UsdAttribute::setMetadataCmd(const std::string& key, const Ufe::Value& value)
     return std::make_shared<SetUndoableMetadataCommand>(fAttrHandle, key, value);
 }
 
-bool UsdAttribute::clearMetadata(const std::string& key)
-{
-    return fAttrHandle->clearMetadata(key);
-}
+bool UsdAttribute::clearMetadata(const std::string& key) { return fAttrHandle->clearMetadata(key); }
 
 bool UsdAttribute::hasMetadata(const std::string& key) const
 {
@@ -538,7 +515,7 @@ bool UsdAttribute::hasMetadata(const std::string& key) const
 
 UsdAttributeGeneric::UsdAttributeGeneric(
     const UsdSceneItem::Ptr& item,
-    const AttrHandle::Ptr& attrHandle)
+    const AttrHandle::Ptr&   attrHandle)
     : Ufe::AttributeGeneric(item)
     , UsdAttribute(item, attrHandle)
 {
@@ -556,10 +533,7 @@ UsdAttributeGeneric::create(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr
 // UsdAttributeGeneric - Ufe::AttributeGeneric overrides
 //------------------------------------------------------------------------------
 
-std::string UsdAttributeGeneric::nativeType() const
-{
-    return fAttrHandle->typeName();
-}
+std::string UsdAttributeGeneric::nativeType() const { return fAttrHandle->typeName(); }
 
 //------------------------------------------------------------------------------
 // UsdAttributeEnumString:
@@ -567,7 +541,7 @@ std::string UsdAttributeGeneric::nativeType() const
 
 UsdAttributeEnumString::UsdAttributeEnumString(
     const UsdSceneItem::Ptr& item,
-    const AttrHandle::Ptr& attrHandle)
+    const AttrHandle::Ptr&   attrHandle)
     : Ufe::AttributeEnumString(item)
     , UsdAttribute(item, attrHandle)
 {
@@ -620,7 +594,7 @@ Ufe::UndoableCommand::Ptr UsdAttributeEnumString::setCmd(const std::string& valu
 Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() const
 {
     PXR_NS::TfToken tk(name());
-    auto            attrDefn = fAttrHandle->usdPrim().GetPrimDefinition().GetSchemaAttributeSpec(tk);
+    auto attrDefn = fAttrHandle->usdPrim().GetPrimDefinition().GetSchemaAttributeSpec(tk);
     if (attrDefn && attrDefn->HasAllowedTokens()) {
         auto                         tokenArray = attrDefn->GetAllowedTokens();
         std::vector<PXR_NS::TfToken> tokenVec(tokenArray.begin(), tokenArray.end());
@@ -637,8 +611,8 @@ Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() con
 
 template <typename T>
 TypedUsdAttribute<T>::TypedUsdAttribute(
-    const UsdSceneItem::Ptr&    item,
-    const AttrHandle::Ptr& attrHandle)
+    const UsdSceneItem::Ptr& item,
+    const AttrHandle::Ptr&   attrHandle)
     : Ufe::TypedAttribute<T>(item)
     , UsdAttribute(item, attrHandle)
 {
@@ -693,7 +667,7 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
         PXR_NS::TfToken tok(value);
         setUsdAttr<PXR_NS::TfToken>(fAttrHandle, tok);
         return;
-     }
+    }
 
     // If we get here it means the USDAttribute type wasn't TfToken or string.
     TF_CODING_ERROR(kErrorMsgInvalidType);
@@ -701,7 +675,8 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
 
 template <> Ufe::Color3f TypedUsdAttribute<Ufe::Color3f>::get() const
 {
-    return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Color3f>(fAttrHandle, getCurrentTime(sceneItem()));
+    return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Color3f>(
+        fAttrHandle, getCurrentTime(sceneItem()));
 }
 
 // Note: cannot use setUsdAttributeVectorFromUfe since it relies on x/y/z

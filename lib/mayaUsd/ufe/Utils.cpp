@@ -570,6 +570,99 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType)
         return Ufe::Attribute::kGeneric;
     }
 }
+
+bool vtValueFromString(const std::string& typeName, const std::string& strValue, PXR_NS::VtValue* value)
+{
+    if (typeName == Ufe::Attribute::kBool) {
+        *value = "true" == strValue ? true : false;
+        return true;
+    } else if (typeName == Ufe::Attribute::kInt) {
+        *value = std::stoi(strValue.c_str());
+        return true;
+    } else if (typeName == Ufe::Attribute::kFloat) {
+        *value = std::stof(strValue.c_str());
+        return true;
+    } else if (typeName == Ufe::Attribute::kDouble) {
+        *value = std::stod(strValue.c_str());
+        return true;
+    } else if (typeName == Ufe::Attribute::kString) {
+        *value = strValue;
+        return true;
+    } else if (typeName == Ufe::Attribute::kEnumString) {
+        *value = PXR_NS::TfToken(strValue.c_str());
+        return true;
+    } else if (typeName == Ufe::Attribute::kInt3) {
+        std::vector<std::string> tokens = splitString(strValue, "(), ");
+        if (tokens.size() == 3) {
+            *value = GfVec3i(
+                std::stoi(tokens[0].c_str()),
+                std::stoi(tokens[1].c_str()),
+                std::stoi(tokens[2].c_str()));
+            return true;
+        }
+    } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
+        std::vector<std::string> tokens = splitString(strValue, "(), ");
+        if (tokens.size() == 3) {
+            *value = GfVec3f(
+                std::stof(tokens[0].c_str()),
+                std::stof(tokens[1].c_str()),
+                std::stof(tokens[2].c_str()));
+            return true;
+        }
+    } else if (typeName == Ufe::Attribute::kDouble3) {
+        std::vector<std::string> tokens = splitString(strValue, "(), ");
+        if (tokens.size() == 3) {
+            *value = GfVec3d(
+                std::stod(tokens[0].c_str()),
+                std::stod(tokens[1].c_str()),
+                std::stod(tokens[2].c_str()));
+            return true;
+        }
+    }
+    return false;
+}
+
+bool stringFromVtValue(const std::string& typeName, const PXR_NS::VtValue& value, std::string* strValue)
+{
+    if (typeName == Ufe::Attribute::kBool) {
+        const bool& bValue = value.Get<bool>();
+        *strValue = bValue ? "true" : "false";
+        return true;
+    } else if (typeName == Ufe::Attribute::kInt) {
+        const int& iValue = value.Get<int>();
+        *strValue = std::to_string(iValue);
+        return true;
+    } else if (typeName == Ufe::Attribute::kFloat) {
+        const float& fValue = value.Get<float>();
+        *strValue = std::to_string(fValue);
+        return true;
+    } else if (typeName == Ufe::Attribute::kDouble) {
+        const double& dValue = value.Get<double>();
+        *strValue = std::to_string(dValue);
+        return true;
+    } else if (typeName == Ufe::Attribute::kString) {
+        *strValue = value.Get<std::string>();
+        return true;
+    } else if (typeName == Ufe::Attribute::kEnumString) {
+        PXR_NS::TfToken tValue = value.Get<PXR_NS::TfToken>();
+        *strValue = tValue.GetString();
+        return true;
+    } else if (typeName == Ufe::Attribute::kInt3) {
+        GfVec3i vValue = value.Get<GfVec3i>();
+        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", " + std::to_string(vValue[2]) + ")";
+        return true;
+    } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
+        GfVec3f vValue = value.Get<GfVec3f>();
+        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", " + std::to_string(vValue[2]) + ")";
+        return true;
+    } else if (typeName == Ufe::Attribute::kDouble3) {
+        GfVec3d vValue = value.Get<GfVec3d>();
+        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", " + std::to_string(vValue[2]) + ")";
+        return true;
+    }
+    return false;
+}
+
 #endif
 
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
@@ -611,8 +704,7 @@ std::vector<std::string> splitString(const std::string& str, const std::string& 
     std::string::size_type lastPos = str.find_first_not_of(separators, 0);
     std::string::size_type pos = str.find_first_of(separators, lastPos);
 
-    while (pos != std::string::npos || lastPos != std::string::npos)
-    {
+    while (pos != std::string::npos || lastPos != std::string::npos) {
         split.push_back(str.substr(lastPos, pos - lastPos));
         lastPos = str.find_first_not_of(separators, pos);
         pos = str.find_first_of(separators, lastPos);

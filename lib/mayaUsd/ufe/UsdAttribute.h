@@ -75,60 +75,38 @@ class AttrHandle
 public:
     using Ptr = std::shared_ptr<AttrHandle>;
 
+    AttrHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef);
     AttrHandle(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdAttribute& usdAttr);
-
+    AttrHandle(
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef,
+        const PXR_NS::UsdAttribute&        usdAttr);
     virtual ~AttrHandle() = default;
 
-    virtual bool hasValue() const { return fUsdAttr.HasValue(); }
+    inline bool isAuthored() const { return fUsdAttr.IsValid(); }
+    bool        hasValue() const;
 
-    virtual bool isEditAllowed(std::string& errMsg) const;
+    inline bool isEditAllowed(std::string& errMsg) const;
 
-    virtual std::string name() const { return fUsdAttr.GetName().GetString(); }
-    virtual std::string documentation() const { return fUsdAttr.GetDocumentation(); }
-    virtual std::string typeName() const { return fUsdAttr.GetTypeName().GetType().GetTypeName(); }
+    std::string name() const;
+    std::string documentation() const;
+    std::string typeName() const;
 
-    virtual bool get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const;
-    virtual bool set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
+    bool get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const;
+    bool set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
 
-    virtual Ufe::Value getMetadata(const std::string& key) const;
-    virtual bool setMetadata(const std::string& key, const Ufe::Value& value);
-    virtual bool clearMetadata(const std::string& key);
-    virtual bool hasMetadata(const std::string& key) const;
+    Ufe::Value getMetadata(const std::string& key) const;
+    bool       setMetadata(const std::string& key, const Ufe::Value& value);
+    bool       clearMetadata(const std::string& key);
+    bool       hasMetadata(const std::string& key) const;
 
-    const PXR_NS::UsdPrim&      usdPrim() const { return fPrim; }
-    const PXR_NS::UsdAttribute& usdAttribute() const { return fUsdAttr; }
-
-protected:
-    AttrHandle(const PXR_NS::UsdPrim& prim);
-
-    PXR_NS::UsdPrim      fPrim;
-    PXR_NS::UsdAttribute fUsdAttr;
-};
-
-class AttrDefHandle : public AttrHandle
-{
-public:
-    AttrDefHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef);
-
-    bool isAuthored() const { return fUsdAttr.IsValid(); }
-    bool hasValue() const final;
-
-    bool isEditAllowed(std::string& errMsg) const final { return true; }
-
-    std::string name() const final { return fAttrDef->name(); }
-    std::string documentation() const final { return ""; }
-    std::string typeName() const final { return fAttrDef->type(); }
-
-    bool get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const final;
-    bool set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) final;
-
-    Ufe::Value getMetadata(const std::string& key) const final;
-    bool setMetadata(const std::string& key, const Ufe::Value& value) final;
-    bool clearMetadata(const std::string& key) final;
-    bool hasMetadata(const std::string& key) const final;
+    inline const PXR_NS::UsdPrim&      usdPrim() const { return fPrim; }
+    inline const PXR_NS::UsdAttribute& usdAttribute() const { return fUsdAttr; }
 
 private:
+    PXR_NS::UsdPrim                   fPrim;
     const Ufe::AttributeDef::ConstPtr fAttrDef;
+    PXR_NS::UsdAttribute              fUsdAttr;
 };
 
 //! \brief Internal helper class to implement the pure virtual methods from Ufe::Attribute.

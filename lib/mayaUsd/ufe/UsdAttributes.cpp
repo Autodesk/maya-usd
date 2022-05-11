@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "UsdAttributes.h"
-#include "UsdShaderNodeDefHandler.h"
 
+#include "UsdShaderNodeDefHandler.h"
 #include "Utils.h"
 
 #include <pxr/base/tf/token.h>
@@ -112,21 +112,16 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         return iter->second;
 
     // No attribute for the input name was found -> create one.
-    PXR_NS::TfToken      tok(name);
-    PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
-    AttrHandle::Ptr attrHandle = nullptr;
-    Ufe::Attribute::Type newAttrType;
-    if (usdAttr.IsValid()) {
-        attrHandle = std::make_shared<AttrHandle>(fPrim, usdAttr);
-        newAttrType = getUfeTypeForAttribute(usdAttr);
-    } else {
-        if (!fNodeDef) {
-            return nullptr;
-        }
+    PXR_NS::TfToken             tok(name);
+    PXR_NS::UsdAttribute        usdAttr = fPrim.GetAttribute(tok);
+    AttrHandle::Ptr             attrHandle = nullptr;
+    Ufe::Attribute::Type        newAttrType;
+    Ufe::AttributeDef::ConstPtr attributeDef = nullptr;
+    if (fNodeDef) {
         Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
         for (auto const& input : inputs) {
             if (INPUT_ATTR_PREFIX + input->name() == name) {
-                attrHandle = std::make_shared<AttrDefHandle>(fPrim, input);
+                attributeDef = input;
                 newAttrType = input->type();
                 break;
             }
@@ -135,12 +130,24 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
             for (auto const& output : outputs) {
                 if (INPUT_ATTR_PREFIX + output->name() == name) {
-                    attrHandle = std::make_shared<AttrDefHandle>(fPrim, output);
+                    attributeDef = output;
                     newAttrType = output->type();
                     break;
                 }
             }
         }
+    }
+    if (usdAttr.IsValid()) {
+        if (attributeDef) {
+            attrHandle = std::make_shared<AttrHandle>(fPrim, attributeDef, usdAttr);
+        } else {
+            attrHandle = std::make_shared<AttrHandle>(fPrim, usdAttr);
+        }
+        newAttrType = getUfeTypeForAttribute(usdAttr);
+    } else if (!fNodeDef) {
+        return nullptr;
+    } else {
+        attrHandle = std::make_shared<AttrHandle>(fPrim, attributeDef);
     }
     if (!attrHandle) {
         return nullptr;
