@@ -183,7 +183,7 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
 
     const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
-    auto                       stage = getStage(Ufe::Path(segments[0]));
+    UsdStageWeakPtr stage = segments.empty() ? UsdStageWeakPtr() : getStage(Ufe::Path(segments[0]));
     if (!stage)
         return UsdPrim();
 
