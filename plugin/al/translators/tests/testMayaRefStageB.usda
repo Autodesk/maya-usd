@@ -8,6 +8,10 @@ def Xform "world"
         {
             string mayaNamespace = "cube"
             asset mayaReference = @./cube.ma@
+
+            # Simulate that the custom attribute was kept went the prim was reparented under newGroup
+            # See: testMayaRefStageA.usda and testMayaReference_SurvivesHierarchyChanges in testTranslators.py
+            custom string MayaReferenceNodeName = "cubeRN"
         }
     }
 }
