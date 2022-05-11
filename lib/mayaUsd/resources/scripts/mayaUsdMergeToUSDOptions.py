@@ -99,11 +99,12 @@ def _createMergeToUSDOptionsDialog(window, target):
     mergeText  = getMayaUsdLibString("kMergeButton")
     applyText  = getMayaUsdLibString("kApplyButton")
     closeText = getMayaUsdLibString("kCloseButton")
+    # Use same height for buttons as in Maya option boxes.
     bMerge     = cmds.button(label=mergeText,  width=100, height=26, command=partial(_acceptMergeToUSDOptionsDialog, window))
     bApply     = cmds.button(label=applyText,  width=100, height=26, command=_applyMergeToUSDOptionsDialog)
     bClose     = cmds.button(label=closeText, width=100, height=26, command=partial(_closeMergeToUSDOptionsDialog, window))
 
-    spacer = 8
+    spacer = 8      # Same spacing as Maya option boxes.
     edge   = 6
 
     cmds.formLayout(buttonsLayout, edit=True,
