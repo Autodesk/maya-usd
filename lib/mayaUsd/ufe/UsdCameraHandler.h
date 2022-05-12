@@ -45,7 +45,7 @@ public:
     // Ufe::CameraHandler overrides
     Ufe::Camera::Ptr camera(const Ufe::SceneItem::Ptr& item) const override;
 
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4012)
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
     Ufe::Selection find_(const Ufe::Path& path) const override;
 
     static Ufe::Selection

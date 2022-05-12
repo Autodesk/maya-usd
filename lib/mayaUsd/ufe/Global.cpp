@@ -52,7 +52,7 @@
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
 #endif
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
 #include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
 #include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
 #endif
@@ -111,7 +111,7 @@ Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
 #endif
 
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
 // The normal Maya scene segment handler, which we decorate for ProxyShape support.
 // Keep a reference to it to restore on finalization.
 Ufe::SceneSegmentHandler::Ptr g_MayaSceneSegmentHandler;
@@ -187,7 +187,7 @@ MStatus initialize()
 #endif
 #endif
 
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
     // set up the SceneSegmentHandler
     g_MayaSceneSegmentHandler = Ufe::RunTimeMgr::instance().sceneSegmentHandler(g_MayaRtid);
     auto proxyShapeSceneSegmentHandler
@@ -289,7 +289,7 @@ MStatus finalize(bool exiting)
     runTimeMgr.unregister(g_USDRtid);
     g_MayaHierarchyHandler.reset();
 
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4008)
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
     Ufe::RunTimeMgr::instance().setSceneSegmentHandler(g_MayaRtid, g_MayaSceneSegmentHandler);
     g_MayaSceneSegmentHandler.reset();
 

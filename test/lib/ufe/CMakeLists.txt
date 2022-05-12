@@ -54,7 +54,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4011)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
         list(APPEND TEST_SCRIPT_FILES
             testSceneSegment.py
         )

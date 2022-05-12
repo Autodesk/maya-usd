@@ -19,7 +19,6 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
-import usdUtils
 
 from maya import cmds
 from maya import standalone
@@ -63,15 +62,9 @@ class SceneSegmentTestCase(unittest.TestCase):
         globalSelection.clear()
 
     def testProxyShapeSceneSegmentHandler(self):
-        mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
-
-        # Test that the camera handlers can find USD cameras in a scene segment
-        proxyShapeParentSegment = mayaUtils.createUfePathSegment('|stage')
-        camerasParentPathSegment = usdUtils.createUfePathSegment('/cameras')
-        
-        proxyShapePath = ufe.Path([mayaPathSegment])
-        proxyShapeParentPath = ufe.Path([proxyShapeParentSegment])
-        camerasParentPath = ufe.Path([mayaPathSegment, camerasParentPathSegment])
+        proxyShapePath = ufe.PathString.path('|stage|stageShape')
+        proxyShapeParentPath = ufe.PathString.path('|stage')
+        camerasParentPath = ufe.PathString.path('|stage|stageShape,/cameras')
 
         # searching on a gateway item should give all gateway nodes in the child segment.
         # USD doesn't have any gateway nodes, so the result should be empty
