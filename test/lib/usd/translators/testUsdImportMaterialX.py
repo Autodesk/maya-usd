@@ -57,19 +57,19 @@ class testUsdImportMaterialX(unittest.TestCase):
         """
 
         # pPlatonic1Shape has a fully textured standardSurface:
-        sgs = cmds.listConnections("pPlatonic1Shape", type="shadingEngine")
+        sgs = cmds.listConnections("Test:pPlatonic1Shape", type="shadingEngine")
         shaders = cmds.listConnections(sgs[0] + ".surfaceShader", d=False)
         node_type = cmds.nodeType(shaders[0])
-        self.assertEqual(shaders[0], "standardSurface2")
+        self.assertEqual(shaders[0], "Test:standardSurface2")
         self.assertEqual(node_type, "standardSurface")
 
         # Check texture connections:
         expected = set([
-            ('standardSurface2.baseColor', 'file1.outColor'),
-            ('standardSurface2.emission', 'file2.outColorB'),
-            ('standardSurface2.metalness', 'file2.outColorG'),
-            ('standardSurface2.specularRoughness', 'file2.outColorR'),
-            ('standardSurface2.normalCamera', 'file3.outColor'),
+            ('Test:standardSurface2.baseColor', 'Test:file1.outColor'),
+            ('Test:standardSurface2.emission', 'Test:file2.outColorB'),
+            ('Test:standardSurface2.metalness', 'Test:file2.outColorG'),
+            ('Test:standardSurface2.specularRoughness', 'Test:file2.outColorR'),
+            ('Test:standardSurface2.normalCamera', 'Test:file3.outColor'),
         ])
         cnx = cmds.listConnections(shaders[0], destination=False,
                                    plugs=True, connections=True)
@@ -78,9 +78,9 @@ class testUsdImportMaterialX(unittest.TestCase):
 
         # Check texture file names:
         expected = [
-            ["file1", "Brazilian_rosewood_pxr128.png"],
-            ["file2", "RGB.png"],
-            ["file3", "normalSpiral.png"],
+            ["Test:file1", "Brazilian_rosewood_pxr128.png"],
+            ["Test:file2", "RGB.png"],
+            ["Test:file3", "normalSpiral.png"],
         ]
         for file_node, tx_name in expected:
             attr = file_node + ".fileTextureName"
@@ -91,7 +91,7 @@ class testUsdImportMaterialX(unittest.TestCase):
         #
         # It has an interesting way of setting the parameters on the
         # standardSurface node by linking all parameters back to the material.
-        sgs = cmds.listConnections("pPlatonic2Shape", type="shadingEngine")
+        sgs = cmds.listConnections("Test:pPlatonic2Shape", type="shadingEngine")
         shaders = cmds.listConnections(sgs[0] + ".surfaceShader", d=False)
         node_type = cmds.nodeType(shaders[0])
         # Can't check the name. It can change depending on whether USD has Mtlx
@@ -105,7 +105,7 @@ class testUsdImportMaterialX(unittest.TestCase):
     def testImportMaterialXSidecar(self):
         # pPlatonic3Shape has a Gold material coming from a .mtlx subLayer. It
         # requires a USD compiled with MaterialX to import correctly.
-        sgs = cmds.listConnections("pPlatonic3Shape", type="shadingEngine")
+        sgs = cmds.listConnections("Test:pPlatonic3Shape", type="shadingEngine")
         shaders = cmds.listConnections(sgs[0] + ".surfaceShader", d=False)
         node_type = cmds.nodeType(shaders[0])
         # Can't check the name. It can change depending on whether USD has Mtlx

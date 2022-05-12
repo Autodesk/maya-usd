@@ -68,11 +68,19 @@ def _createMergeToUSDOptionsDialog(window, target):
 
     windowLayout = cmds.setParent(query=True)
 
-    menuLayout = cmds.columnLayout("MergeToUSDOptionsDialogMenuLayout", adjustableColumn=True, parent=windowLayout)
+    menuBarLayout = cmds.menuBarLayout(parent=windowLayout)
 
-    menuBarLayout = cmds.menuBarLayout()
+    windowFormLayout = cmds.formLayout(parent=windowLayout)
 
-    subLayout = cmds.columnLayout("MergeToUSDOptionsDialogSubLayout", adjustableColumn=True, parent=windowLayout)
+    subFormLayout = cmds.formLayout(parent=windowFormLayout)
+    subScrollLayout = cmds.scrollLayout('MergeToUSDOptionsDialogSubScrollLayout', cr=True, bv=True)
+    cmds.formLayout(subFormLayout, edit=True,
+        attachForm=[
+            (subScrollLayout,       "top",      0),
+            (subScrollLayout,       "bottom",   0),
+            (subScrollLayout,       "left",     0),
+            (subScrollLayout,       "right",    0)]);
+    subLayout = cmds.columnLayout("MergeToUSDOptionsDialogSubLayout", adjustableColumn=True)
 
     optionsText = getMergeToUSDOptionsText()
     _fillMergeToUSDOptionsDialog(target, subLayout, optionsText, "post")
@@ -86,28 +94,26 @@ def _createMergeToUSDOptionsDialog(window, target):
         menu = cmds.menu(label=getMayaUsdLibString("kHelpMenu"), parent=menuBarLayout)
         cmds.menuItem(label=getMayaUsdLibString("kHelpMergeToUSDOptionsMenuItem"), command=_helpMergeToUSDOptions)
 
-    buttonsLayout = cmds.formLayout(parent=windowLayout)
+    buttonsLayout = cmds.formLayout(parent=windowFormLayout)
 
     mergeText  = getMayaUsdLibString("kMergeButton")
     applyText  = getMayaUsdLibString("kApplyButton")
     closeText = getMayaUsdLibString("kCloseButton")
-    bMerge     = cmds.button(label=mergeText,  width=100, command=partial(_acceptMergeToUSDOptionsDialog, window))
-    bApply     = cmds.button(label=applyText,  width=100, command=_applyMergeToUSDOptionsDialog)
-    bClose     = cmds.button(label=closeText, width=100, command=partial(_closeMergeToUSDOptionsDialog, window))
+    # Use same height for buttons as in Maya option boxes.
+    bMerge     = cmds.button(label=mergeText,  width=100, height=26, command=partial(_acceptMergeToUSDOptionsDialog, window))
+    bApply     = cmds.button(label=applyText,  width=100, height=26, command=_applyMergeToUSDOptionsDialog)
+    bClose     = cmds.button(label=closeText, width=100, height=26, command=partial(_closeMergeToUSDOptionsDialog, window))
 
-    spacer = 10
-    edge   = 20
+    spacer = 8      # Same spacing as Maya option boxes.
+    edge   = 6
 
     cmds.formLayout(buttonsLayout, edit=True,
         attachForm=[
-            (bClose,    "top",    edge),
             (bClose,    "bottom", edge),
             (bClose,    "right",  edge),
 
-            (bApply,    "top",    edge),
             (bApply,    "bottom", edge),
 
-            (bMerge,    "top",    edge),
             (bMerge,    "bottom", edge),
             (bMerge,    "left",   edge),
         ],
@@ -116,6 +122,20 @@ def _createMergeToUSDOptionsDialog(window, target):
             (bApply,    "right",  spacer/2, 67),
             (bApply,    "left",   spacer/2, 33),
             (bMerge,    "right",  spacer/2, 33),
+        ])
+
+    cmds.formLayout(windowFormLayout, edit=True,
+        attachForm=[
+            (subFormLayout,         'top',      0),
+            (subFormLayout,         'left',     0),
+            (subFormLayout,         'right',    0),
+            
+            (buttonsLayout,         'left',     0),
+            (buttonsLayout,         'right',    0),
+            (buttonsLayout,         'bottom',   0),
+        ],
+        attachControl=[
+            (subFormLayout,         'bottom',   edge, buttonsLayout)
         ])
 
     cmds.scriptJob(parent=window, event=("SelectionChanged", partial(_updateMergeToUSDOptionsDialogOnSelectionChanged, [bMerge, bApply])))

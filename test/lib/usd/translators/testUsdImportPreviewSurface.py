@@ -71,7 +71,7 @@ class testUsdImportPreviewSurface(unittest.TestCase):
             ("unresolvableFile", unresolvable),
         )
         for node_name, rebased_name in rebased:
-            filename = cmds.getAttr("%s.fileTextureName" % node_name)
+            filename = cmds.getAttr("Test:%s.fileTextureName" % node_name)
             self.assertEqual(filename.lower().replace("\\", "/"),
                              rebased_name.lower().replace("\\", "/"))
 
@@ -106,7 +106,7 @@ class testUsdImportPreviewSurface(unittest.TestCase):
                   options=";".join(options))
 
         # Check that the texture path stayed relative:
-        filename = cmds.getAttr("file1.fileTextureName")
+        filename = cmds.getAttr("Test:file1.fileTextureName")
         self.assertEqual(filename.replace("\\", "/"), "0/Tiny.png")
 
 
