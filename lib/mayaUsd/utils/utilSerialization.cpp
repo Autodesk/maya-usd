@@ -184,18 +184,53 @@ void setNewProxyPath(const MString& proxyNodeName, const MString& newValue)
         /*undo*/ false);
 }
 
+static bool isCompatibleWithSave(
+    SdfLayerRefPtr     layer,
+    const std::string& filePath,
+    const std::string& formatArg)
+{
+    if (!layer)
+        return false;
+
+    // Save cannot specify the filename, so the file name must match to use save.
+    if (layer->GetRealPath() != filePath)
+        return false;
+
+    const TfToken underlyingFormat = UsdUsdFileFormat::GetUnderlyingFormatForLayer(*layer);
+    if (underlyingFormat.size()) {
+        return underlyingFormat == formatArg;
+    } else {
+        const SdfFileFormat::FileFormatArguments currentFormatArgs
+            = layer->GetFileFormatArguments();
+
+        // If we cannot find the format argument then we cannot validate that the file format match
+        // so we err to the side of safety and claim they don't match.
+        const auto keyAndValue = currentFormatArgs.find("format");
+        if (keyAndValue == currentFormatArgs.end())
+            return false;
+
+        return keyAndValue->second == formatArg;
+    }
+}
+
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
-    const std::string& potentialFilePath,
-    std::string        formatArg)
+    const std::string& requestedFilePath,
+    const std::string& requestedFormatArg)
 {
     const std::string& filePath
-        = potentialFilePath.empty() ? layer->GetRealPath() : potentialFilePath;
+        = requestedFilePath.empty() ? layer->GetRealPath() : requestedFilePath;
 
-    PXR_NS::SdfFileFormat::FileFormatArguments args;
-    args["format"] = formatArg.empty() ? usdFormatArgOption() : formatArg;
+    const std::string& formatArg
+        = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
-    return layer->Export(filePath, "", args);
+    if (isCompatibleWithSave(layer, filePath, formatArg)) {
+        return layer->Save();
+    } else {
+        PXR_NS::SdfFileFormat::FileFormatArguments args;
+        args["format"] = formatArg;
+        return layer->Export(filePath, "", args);
+    }
 }
 
 SdfLayerRefPtr saveAnonymousLayer(

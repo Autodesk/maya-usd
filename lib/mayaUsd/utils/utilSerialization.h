@@ -90,8 +90,8 @@ struct stageLayersToSave
 MAYAUSD_CORE_PUBLIC
 bool saveLayerWithFormat(
     SdfLayerRefPtr     layer,
-    const std::string& potentialFilePath = "",
-    std::string        formatArg = "");
+    const std::string& requestedFilePath = "",
+    const std::string& requestedFormatArg = "");
 
 /*! \brief Save an anonymous layer to disk and update the sublayer path array
     in the parent layer.

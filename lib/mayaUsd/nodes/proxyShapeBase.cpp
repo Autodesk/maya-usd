@@ -26,6 +26,7 @@
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+#include <mayaUsd/utils/utilSerialization.h>
 
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
@@ -817,7 +818,10 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     }
                 } else {
                     // Create a new stage in memory with an anonymous root layer.
-                    usdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
+                    SdfLayer::FileFormatArguments args;
+                    args["format"] = MayaUsd::utils::usdFormatArgOption();
+                    auto anonLayer = SdfLayer::CreateAnonymous(kAnonymousLayerName + ".usd", args);
+                    usdStage = UsdStage::Open(anonLayer, loadSet);
                 }
             }
         }
