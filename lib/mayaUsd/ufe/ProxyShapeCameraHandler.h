@@ -17,42 +17,38 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <pxr/usd/usd/prim.h>
-
 #include <ufe/cameraHandler.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief Interface to create a UsdCameraHandler interface object.
-class MAYAUSD_CORE_PUBLIC UsdCameraHandler : public Ufe::CameraHandler
+//! \brief Interface to create a ProxyShapeCameraHandler interface object.
+class MAYAUSD_CORE_PUBLIC ProxyShapeCameraHandler : public Ufe::CameraHandler
 {
 public:
-    typedef std::shared_ptr<UsdCameraHandler> Ptr;
+    typedef std::shared_ptr<ProxyShapeCameraHandler> Ptr;
 
-    UsdCameraHandler();
-    ~UsdCameraHandler();
+    ProxyShapeCameraHandler(const Ufe::CameraHandler::Ptr&);
+    ~ProxyShapeCameraHandler();
 
     // Delete the copy/move constructors assignment operators.
-    UsdCameraHandler(const UsdCameraHandler&) = delete;
-    UsdCameraHandler& operator=(const UsdCameraHandler&) = delete;
-    UsdCameraHandler(UsdCameraHandler&&) = delete;
-    UsdCameraHandler& operator=(UsdCameraHandler&&) = delete;
+    ProxyShapeCameraHandler(const ProxyShapeCameraHandler&) = delete;
+    ProxyShapeCameraHandler& operator=(const ProxyShapeCameraHandler&) = delete;
+    ProxyShapeCameraHandler(ProxyShapeCameraHandler&&) = delete;
+    ProxyShapeCameraHandler& operator=(ProxyShapeCameraHandler&&) = delete;
 
-    //! Create a UsdCameraHandler.
-    static UsdCameraHandler::Ptr create();
+    //! Create a ProxyShapeCameraHandler from a UFE camera handler.
+    static ProxyShapeCameraHandler::Ptr create(const Ufe::CameraHandler::Ptr&);
 
     // Ufe::CameraHandler overrides
     Ufe::Camera::Ptr camera(const Ufe::SceneItem::Ptr& item) const override;
 
-#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
     Ufe::Selection find_(const Ufe::Path& path) const override;
 
-    static Ufe::Selection
-    find(const Ufe::Path& stagePath, const Ufe::Path& searchPath, const PXR_NS::UsdPrim& prim);
-#endif
+private:
+    Ufe::CameraHandler::Ptr fMayaCameraHandler;
 
-}; // UsdCameraHandler
+}; // ProxyShapeCameraHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

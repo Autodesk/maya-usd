@@ -180,6 +180,11 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
         iter = fPathToObject.find(singleSegmentPath);
     } else {
         auto object = iter->second;
+        // If the cached object itself is invalid then remove it from the map.
+        if (!object.isValid()) {
+            fPathToObject.erase(singleSegmentPath);
+            return MObject();
+        }
         auto objectPath = firstPath(object);
         if (objectPath != iter->first) {
             // When we hit the cache and the key path doesn't match the current object path
