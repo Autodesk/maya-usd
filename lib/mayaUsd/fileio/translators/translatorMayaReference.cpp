@@ -140,17 +140,17 @@ const MObject getMessageAttr()
     return messageAttr;
 }
 
-// Verify if the Maya reference node should use the new naming scheme.
-const bool useNewMayaRefNaming(const UsdPrim& prim)
+// Verify if the Maya reference node should use the legacy naming scheme.
+const bool useLegacyMayaRefNaming(const UsdPrim& prim)
 {
-    // Check if the user requested that we use the old behavior for AL refs.
+    // Check if the user requested that we use the legacy behavior for AL refs.
     // If not, we treat all references with the new scheme.
-    if (!TfGetenvBool("MAYAUSD_ENABLE_MAYA_REFERENCE_OLD_BEHAVIOUR", false))
-        return true;
+    if (!TfGetenvBool("MAYA_USD_ENABLE_MAYA_REFERENCE_LEGACY_BEHAVIOUR", false))
+        return false;
 
-    // MayaReference prims are using the new behaviour, others the old.
+    // MayaReference prims are using the new behaviour, others use the legacy behaviour.
     const TfToken MayaReference("MayaReference");
-    return prim.GetTypeName() == MayaReference;
+    return prim.GetTypeName() != MayaReference;
 }
 
 const TfToken MayaReferenceNodeName("MayaReferenceNodeName");
@@ -253,7 +253,14 @@ MString UsdMayaTranslatorMayaReference::getUniqueRefNodeName(
     const MFnReference& refDependNode)
 {
     MString uniqueRefNodeName;
-    if (useNewMayaRefNaming(prim)) {
+    if (useLegacyMayaRefNaming(prim)) {
+        // Legacy behaviour for ALMayaReference
+        //
+        // We want a unique reference node name so that multiple copies
+        // of a given prim can each have their own reference edits. We base the name
+        // from the full path to the prim for which the reference is being created.
+        uniqueRefNodeName = refNameFromPath(parentDag);
+    } else {
         // New behaviour for MayaReference
         //
         // Name the reference node based on either the namespace of the referenced file name.
@@ -268,13 +275,6 @@ MString UsdMayaTranslatorMayaReference::getUniqueRefNodeName(
             uniqueRefNodeName += fsFilePath.filename().wstring().c_str();
         }
         uniqueRefNodeName += L"RN";
-    } else {
-        // Old behaviour for ALMayaReference
-        //
-        // We want a unique reference node name so that multiple copies
-        // of a given prim can each have their own reference edits. We base the name
-        // from the full path to the prim for which the reference is being created.
-        uniqueRefNodeName = refNameFromPath(parentDag);
     }
     return uniqueRefNodeName;
 }
@@ -487,7 +487,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     // Check to see whether we have previously created a reference node for this
     // prim.  If so, we can just reuse it.
     //
-    // Notes for the old ref-naming scheme:
+    // Notes for the legacy ref-naming scheme:
     //
     // The check is based on comparing the prim's full path and the name of the
     // reference node, which we had originally created from the prim's full
@@ -503,14 +503,15 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     // revisit if renaming/reparenting of prims with reference nodes turns out
     // to be a common thing in the workflow.)
     //
-    // Notes for the new ref-naming scheme: we keep a custom attribute in the
-    // session layer that records the name of Maya Ref Node that was created.
-    // This way the reference can still be found even if the prim moved or was
-    // renamed.
+    // Notes for the new ref-naming scheme:
+    //
+    // We keep a custom attribute in the session layer that records the name
+    // of Maya Ref Node that was created. This way the reference can still
+    // be found even if the prim moved or was renamed.
 
-    const bool    useNewScheme = useNewMayaRefNaming(prim);
+    const bool    useLegacyScheme = useLegacyMayaRefNaming(prim);
     const MString expectedRefName
-        = useNewScheme ? GetMayaRefCustomAttribute(prim) : refNameFromPath(parentDag);
+        = useLegacyScheme ? refNameFromPath(parentDag) : GetMayaRefCustomAttribute(prim);
     if (refNode.isNull() && !expectedRefName.isEmpty()) {
         for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
             MObject      tempRefNode = refIter.item();
@@ -522,7 +523,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                     connectReferenceAssociatedNode(parentDag, tempRefFn);
                     refNode = tempRefNode;
 
-                    if (useNewScheme) {
+                    if (!useLegacyScheme) {
                         // On reconnect, the  Maya reference node is renamed to match
                         // the prim.
                         MString uniqueRefNodeName
@@ -532,6 +533,8 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
                         status = setMayaRefCustomAttribute(prim, tempRefFn);
                         CHECK_MSTATUS_AND_RETURN_IT(status);
                     }
+
+                    // Found a matching Maya reference node, stop searching.
                     break;
                 }
             }
