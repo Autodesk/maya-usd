@@ -14,7 +14,7 @@
 //
 
 global proc string UsdLayerEditor_SaveLayerFileDialog() {
-    string $fileFilter =  getMayaUsdLibString("kAllUsdFiles") + " (*.usd *.usda *.usdc );;*.usd;;*.usda;;*.usdc";
+    string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
 
     string $result[] = `fileDialog2 
             -fileMode 0
@@ -41,7 +41,7 @@ global proc string UsdLayerEditor_LoadLayersFileDialogOptions_Create(string $par
 
 
 global proc string[] UsdLayerEditor_LoadLayersFileDialog(string $title, string $folder) {
-    string $fileFilter =  getMayaUsdLibString("kAllUsdFiles") + " (*.usd *.usda *.usdc );;*.usd;;*.usda;;*.usdc";
+    string $fileFilter = python("from mayaUsdUtils import getUSDDialogFileFilters; getUSDDialogFileFilters(False)");
     $okCaption = getMayaUsdString("kLoad");
     
     string $result[] = `fileDialog2 

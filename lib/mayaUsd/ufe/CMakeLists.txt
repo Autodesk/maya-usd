@@ -71,6 +71,8 @@ endif()
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
+            # See MayaUIInfoHandler.h comments.
+            MayaUIInfoHandler.cpp
             PulledObjectHierarchy.cpp
             PulledObjectHierarchyHandler.cpp
             UsdPathMappingHandler.cpp
@@ -92,6 +94,14 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             PRIVATE
                 UsdShaderNodeDef.cpp
                 UsdShaderNodeDefHandler.cpp
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdShaderAttributeDef.cpp
+                UsdUndoCreateFromNodeDefCommand.cpp
         )
     endif()
 endif()
@@ -165,6 +175,9 @@ endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     list(APPEND HEADERS
+        # Not dependent on UFE v3, but used to draw orphaned pulled Maya nodes
+        # in the Outliner, which is a UFE v3 feature.
+        MayaUIInfoHandler.h
         PulledObjectHierarchy.h
         PulledObjectHierarchyHandler.h
         UsdPathMappingHandler.h
@@ -184,6 +197,13 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         list(APPEND HEADERS
             UsdShaderNodeDef.h
             UsdShaderNodeDefHandler.h
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4010)
+        list(APPEND HEADERS
+            UsdShaderAttributeDef.h
+            UsdUndoCreateFromNodeDefCommand.h
         )
     endif()
 endif()

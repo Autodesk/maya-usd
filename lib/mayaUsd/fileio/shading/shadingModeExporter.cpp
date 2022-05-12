@@ -84,8 +84,6 @@ void UsdMayaShadingModeExporter::DoExport(
     const UsdMayaJobExportArgs& exportArgs = writeJobContext.GetArgs();
     const UsdStageRefPtr&       stage = writeJobContext.GetUsdStage();
 
-    MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
-
     const SdfPath& materialCollectionsPath = exportArgs.exportMaterialCollections
         ? exportArgs.materialCollectionsPath
         : SdfPath::EmptyPath();
@@ -110,6 +108,8 @@ void UsdMayaShadingModeExporter::DoExport(
     MaterialAssignments matAssignments;
 
     std::vector<UsdShadeMaterial> exportedMaterials;
+
+    MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
     for (; !shadingEngineIter.isDone(); shadingEngineIter.next()) {
         MObject shadingEngine(shadingEngineIter.thisNode());
         context.SetShadingEngine(shadingEngine);

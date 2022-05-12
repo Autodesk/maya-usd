@@ -21,6 +21,7 @@
 # MAYA_ENABLE_NEW_PRIM_DELETE Enable new delete behaviour for delete command
 # MAYA_HAS_DISPLAY_STYLE_ALL_VIEWPORTS Presence of MFrameContext::getDisplayStyleOfAllViewports.
 # MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT Presence of maya array iterator difference_type trait
+# MAYA_HAS_GET_MEMBER_PATHS Presence of MFnSet::getMemberPaths
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -430,6 +431,15 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MArrayIteratorTemplate
     if(MAYA_HAS_API)
         set(MAYA_ARRAY_ITERATOR_DIFFERENCE_TYPE_SUPPORT TRUE CACHE INTERNAL "hasArrayIteratorDifferenceType")
         message(STATUS "Maya array iterator has difference_type trait")
+    endif()
+endif()
+
+set(MAYA_HAS_GET_MEMBER_PATHS FALSE CACHE INTERNAL "hasGetMemberPaths")
+if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MfnSet.h")
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MfnSet.h MAYA_HAS_API REGEX "getMemberPaths")
+    if(MAYA_HAS_API)
+        set(MAYA_HAS_GET_MEMBER_PATHS TRUE CACHE INTERNAL "hasGetMemberPaths")
+        message(STATUS "MFnSet has getMemberPaths function")
     endif()
 endif()
 

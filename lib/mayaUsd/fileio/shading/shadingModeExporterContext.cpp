@@ -45,6 +45,7 @@
 #include <maya/MDagPathArray.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MItMeshPolygon.h>
 #include <maya/MNamespace.h>
@@ -230,6 +231,21 @@ UsdMayaShadingModeExportContext::GetAssignments() const
         return ret;
     }
 
+#if MAYA_HAS_GET_MEMBER_PATHS
+    MFnSet fnSet(_shadingEngine, &status);
+    if (!status) {
+        return ret;
+    }
+
+    // Get all the dagPaths using this shadingEngine...
+    MDagPathArray dagPaths;
+    fnSet.getMemberPaths(dagPaths, true); // get all the dagPath related to shading
+    SdfPathSet seenBoundPrimPaths;
+
+    for (auto& dagPath : dagPaths) {
+        unsigned int instanceNumber = dagPath.instanceNumber();
+#else
+    // Maya 2022 and older use this version
     MPlug dsmPlug = seDepNode.findPlug("dagSetMembers", true, &status);
     if (!status) {
         return ret;
@@ -237,9 +253,8 @@ UsdMayaShadingModeExportContext::GetAssignments() const
 
     SdfPathSet seenBoundPrimPaths;
     for (unsigned int i = 0; i < dsmPlug.numConnectedElements(); i++) {
-        MPlug   dsmElemPlug(dsmPlug.connectionByPhysicalIndex(i));
-        MStatus status = MS::kFailure;
-        MPlug   connectedPlug = UsdMayaUtil::GetConnected(dsmElemPlug);
+        MPlug dsmElemPlug(dsmPlug.connectionByPhysicalIndex(i));
+        MPlug connectedPlug = UsdMayaUtil::GetConnected(dsmElemPlug);
 
         // Maya connects shader bindings for instances based on element indices
         // of the instObjGroups[x] or instObjGroups[x].objectGroups[y] plugs.
@@ -270,6 +285,8 @@ UsdMayaShadingModeExportContext::GetAssignments() const
 
         MDagPath dagPath = allDagPaths[instanceNumber];
         TF_VERIFY(dagPath.instanceNumber() == instanceNumber);
+#endif
+
         MFnDagNode dagNode(dagPath, &status);
         if (!status) {
             continue;

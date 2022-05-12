@@ -32,6 +32,9 @@
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
+#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MPointArray.h>
 
@@ -139,7 +142,45 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     if (!TF_VERIFY(curveOrder[0] <= curveVertexCounts[0])) {
         return false;
     }
-    curveWidths[0] = 1.0; // TODO: Retrieve from custom attr
+
+    // Find the curve width attribute
+    MObject widthObj;
+    MPlug   widthPlug = curveFn.findPlug("widths", true, &status);
+    if (!status) {
+        TF_WARN(
+            "No NURBS curves width(s) attribute found for path: %s",
+            GetDagPath().fullPathName().asChar());
+    } else {
+        widthPlug.getValue(widthObj);
+    }
+    if (!widthObj.isNull() && widthObj.apiType() != MFn::kInvalid) {
+        // Copy the widths from the found data
+        if (widthObj.apiType() == MFn::kDoubleArrayData) {
+            MFnDoubleArrayData widthArray;
+            widthArray.setObject(widthObj);
+            const uint32_t numElements = widthArray.length();
+            curveWidths.resize(numElements);
+            for (uint32_t i = 0; i < numElements; ++i) {
+                curveWidths[i] = widthArray[i];
+            }
+        } else if (widthObj.apiType() == MFn::kFloatArrayData) {
+            MFnFloatArrayData widthArray;
+            widthArray.setObject(widthObj);
+            const uint32_t numElements = widthArray.length();
+            curveWidths.resize(numElements);
+            for (uint32_t i = 0; i < numElements; ++i) {
+                curveWidths[i] = widthArray[i];
+            }
+        }
+    } else if (
+        MFnNumericAttribute(widthPlug.attribute()).unitType() == MFnNumericData::kDouble
+        || MFnNumericAttribute(widthPlug.attribute()).unitType() == MFnNumericData::kFloat) {
+        // Copy the widths from the plug value
+        curveWidths.push_back(widthPlug.asFloat());
+    } else {
+        // Default to a contant width of 1.0f
+        curveWidths[0] = 1;
+    }
 
     double mayaKnotDomainMin;
     double mayaKnotDomainMax;
@@ -159,18 +200,26 @@ bool PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     MDoubleArray mayaCurveKnots;
     status = curveFn.getKnots(mayaCurveKnots);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    VtDoubleArray curveKnots(mayaCurveKnots.length() + 2); // all knots batched together
-    for (unsigned int i = 0; i < mayaCurveKnots.length(); i++) {
-        curveKnots[i + 1] = mayaCurveKnots[i];
-    }
+    const uint32_t mayaKnotsCount = mayaCurveKnots.length();
+    VtDoubleArray  curveKnots;
+    auto copyKnotsFromIdx = [&mayaCurveKnots, &curveKnots, mayaKnotsCount](size_t fromIdx) {
+        memcpy(
+            ((double*)curveKnots.cdata()) + fromIdx,
+            (const double*)&mayaCurveKnots[0],
+            sizeof(double) * mayaKnotsCount);
+    };
     if (wrap) {
+        // Insert wrapping knots at either end of the vector
+        curveKnots.resize(mayaKnotsCount + 2);
+        copyKnotsFromIdx(1);
         curveKnots[0] = curveKnots[1]
             - (curveKnots[curveKnots.size() - 2] - curveKnots[curveKnots.size() - 3]);
         curveKnots[curveKnots.size() - 1]
             = curveKnots[curveKnots.size() - 2] + (curveKnots[2] - curveKnots[1]);
     } else {
-        curveKnots[0] = curveKnots[1];
-        curveKnots[curveKnots.size() - 1] = curveKnots[curveKnots.size() - 2];
+        // Copy across the knots as-is, don't insert extra knots
+        curveKnots.resize(mayaKnotsCount);
+        copyKnotsFromIdx(0);
     }
 
     // Gprim

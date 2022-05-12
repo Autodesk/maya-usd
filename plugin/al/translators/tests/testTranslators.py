@@ -438,6 +438,66 @@ class TestTranslator(unittest.TestCase):
 
         os.remove(tempFile.name)
 
+    def testNurbsCurve_curve_width_none_export(self):
+        mc.CreateNURBSCircle()
+        with self.assertRaises(ValueError):
+            mc.getAttr("nurbsCircleShape1.width")
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        tempFile.close()
+
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+        self.assertTrue(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertIsNone(actualWidths)
+
+        os.remove(tempFile.name)
+
+    def testNurbsCurve_curve_width_floatarrayempty_export(self):
+        expectedWidths = []
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", dt="floatArray")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths ,type="floatArray")
+        self.assertIsNone(mc.getAttr("nurbsCircleShape1.width"))
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        tempFile.close()
+
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+        self.assertTrue(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertEqual(len(actualWidths), 0)
+
+        os.remove(tempFile.name)
+
+    def testNurbsCurve_curve_width_doublearrayempty_export(self):
+        expectedWidths = []
+        mc.CreateNURBSCircle()
+        mc.select("nurbsCircleShape1")
+        mc.addAttr(longName="width", dt="doubleArray")
+        mc.setAttr("nurbsCircleShape1.width", expectedWidths ,type="doubleArray")
+        self.assertIsNone(mc.getAttr("nurbsCircleShape1.width"))
+
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="testNurbsCurve_curve_width_export", delete=False)
+        tempFile.close()
+
+        mc.AL_usdmaya_ExportCommand(file=tempFile.name)
+        stage = Usd.Stage.Open(tempFile.name)
+        prim = stage.GetPrimAtPath("/nurbsCircle1")
+        nurbPrim = UsdGeom.NurbsCurves(prim)
+        self.assertTrue(nurbPrim.GetWidthsAttr())
+        actualWidths = nurbPrim.GetWidthsAttr().Get()
+        self.assertEqual(len(actualWidths), 0)
+
+        os.remove(tempFile.name)
+
     def testNurbsCurve_curve_width_double_export(self):
         expectedWidths = 1.
         mc.CreateNURBSCircle()

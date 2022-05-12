@@ -14,7 +14,11 @@
 # limitations under the License.
 #
 
+from re import L
+from mayaUsdLibRegisterStrings import getMayaUsdLibString
+
 from maya.api import OpenMaya as om
+import maya.cmds as cmds
 
 import mayaUsd
 
@@ -71,3 +75,77 @@ def isPulledMayaReference(dagPath):
 
     _, _, _, prim = getPulledInfo(dagPath)
     return prim and prim.GetTypeName() == 'MayaReference'
+
+
+def getMonoFormatFileFilterLabels(includeCompressed = True):
+    """
+    Returns a list of file-format labels for individual USD file formats.
+    This list is not directly usable in the dialog command, they would need
+    to be join with ';;'. Call getUSDDialogFileFilters() instead as it does
+    the joining.
+    """
+    labelAndFilters = [
+        ("kUsdASCIIFiles", "*.usda"),
+        ("kUsdBinaryFiles", "*.usdc"),
+    ]
+
+    if includeCompressed:
+        labelAndFilters.append(
+            ("kUsdCompressedFiles", "*.usdz")
+        )
+    
+    localizedLabels = [getMayaUsdLibString(labelKey) + ' ' + filter for labelKey, filter in labelAndFilters]
+    return localizedLabels
+
+
+def getMultiFormatsFileFilterLabels(includeCompressed = True):
+    """
+    Returns a list of file-format labels for multi-formats USD file formats.
+    This list is not directly usable in the dialog command, they would need
+    to be join with ';;'. Call getUSDDialogFileFilters() instead as it does
+    the joining.
+    """
+    labelAndFilters = [
+        ("kAllUsdFiles", "(*.usd *.usda *.usdc)"),
+        ("kUsdFiles", "*.usd"),
+    ]
+
+    if includeCompressed:
+        labelAndFilters[0] = ("kAllUsdFiles", "(*.usd *.usda *.usdc *.usdz)")
+
+    localizedLabels = [getMayaUsdLibString(labelKey) + ' ' + filter for labelKey, filter in labelAndFilters]
+    return localizedLabels
+
+
+def getUSDDialogFileFilters(includeCompressed = True):
+    """
+    Returns a text string of all USD file formats, ';;'-separated.
+    Directly usable in the Maya SDK dialog commands.
+    """
+    localizedLabels = getMultiFormatsFileFilterLabels(includeCompressed) + getMonoFormatFileFilterLabels(includeCompressed)
+    fileFilters = ';;'.join(localizedLabels)
+    return fileFilters
+
+
+def _getLastUsedUSDDialogFileFilterOptionVarName():
+    return "mayaUsd_LastUsedUSDDialogFileFilter"
+
+
+def getLastUsedUSDDialogFileFilter():
+    """
+    Retrieves the last-used USD file filter.
+    If the option variable doesn't exist, return the default file filter.
+    """
+    varName = _getLastUsedUSDDialogFileFilterOptionVarName()
+    if cmds.optionVar(exists=varName):
+        return cmds.optionVar(query=varName)
+    else:
+        return getMayaUsdLibString("kAllUsdFiles")
+    
+
+def setLastUsedUSDDialogFileFilter(fileFilter):
+    """
+    Sets the last-used USD file filter.
+    """
+    varName = _getLastUsedUSDDialogFileFilterOptionVarName()
+    return cmds.optionVar(stringValue=(varName, fileFilter))
