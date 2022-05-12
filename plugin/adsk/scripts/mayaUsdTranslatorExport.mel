@@ -15,7 +15,18 @@
 // limitations under the License.
 //
 
-global string $mayaUsdTranslatorExport_SectionNames[];
+global string $gMayaUsdTranslatorExport_SectionNames[];
+
+proc string stringRemoveSuffix(string $object, string $suffix)
+{
+    if (endsWith($object, $suffix)) {
+        int $objectLen = size($object);
+        int $suffixLen = size($suffix);
+        string $newObject = substring($object, 1, ($objectLen - $suffixLen));
+        return $newObject;
+    }
+    return $object;
+}
 
 proc mayaUsdTranslatorExport_SetCheckbox(string $arg, int $enable, string $widget) {
     if (`checkBoxGrp -exists $widget` == 0)
@@ -299,8 +310,8 @@ proc string mayaUsdTranslatorExport_AppendConvertMaterialsTo(string $currentOpti
 }
 
 global proc mayaUsdTranslatorExport_EnableAllControls() {
-    global string $mayaUsdTranslatorExport_SectionNames[];
-    string $sectionNames[] = $mayaUsdTranslatorExport_SectionNames;
+    global string $gMayaUsdTranslatorExport_SectionNames[];
+    string $sectionNames[] = $gMayaUsdTranslatorExport_SectionNames;
     
     // Restore all controls to fully interactive:
     if (stringArrayContains("geometry", $sectionNames)) {
@@ -449,9 +460,9 @@ global proc mayaUsdTranslatorExport_JobContextCB() {
     }
 }
 
-proc string[] parseActionSectionNames(string $sections)
+proc string[] parseActionSectionNames(string $sections, string $out_expandedSections[], string $out_collapsedSections[])
 {
-    global string $mayaUsdTranslatorExport_SectionNames[];
+    global string $gMayaUsdTranslatorExport_SectionNames[];
 
     string $allSections[] = { "context", "output", "output-parentscope", "geometry", "materials", "animation", "animation-data", "advanced" };
 
@@ -459,13 +470,13 @@ proc string[] parseActionSectionNames(string $sections)
     tokenize($sections, ";", $sectionList);
 
     // Build the section names array, supporting the "all" and "!" special tokens.
+    // By default we start with all sections.
     string $sectionNames[] = $allSections;
 
-    int $index;
-    for ($index = 0; $index < size($sectionList); $index++) {
-        string $name = $sectionList[$index];
+    string $name;
+    for ($name in $sectionList) {
         if ($name == "all") {
-            $sectionNames = stringArrayCatenate($sectionNames, $allSections);
+            $sectionNames = $allSections;
         } else if ($name == "none") {
             $sectionNames = {};
         } else if (startsWith($name, "!")) {
@@ -473,11 +484,19 @@ proc string[] parseActionSectionNames(string $sections)
             string $removed[] = { $name };
             $sectionNames = stringArrayRemove($removed, $sectionNames);
         } else {
+            if (endsWith($name, ":expanded")) {
+                $name = stringRemoveSuffix($name, ":expanded");
+                stringArrayInsertAtIndex(255, $out_expandedSections, $name);
+            }
+            else if (endsWith($name, ":collapsed")) {
+                $name = stringRemoveSuffix($name, ":collapsed");
+                stringArrayInsertAtIndex(255, $out_collapsedSections, $name);
+            }
             stringArrayInsertAtIndex(255, $sectionNames, $name);
         }
     }
 
-    $mayaUsdTranslatorExport_SectionNames = $sectionNames;
+    $gMayaUsdTranslatorExport_SectionNames = $sectionNames;
     return $sectionNames;
 }
 
@@ -503,6 +522,11 @@ global proc int mayaUsdTranslatorExport (string $parent,
 //        In addition to the action, the list of UI sections that are desired can be added
 //        with the syntax "action=section1;section2;..." where the section names can be:
 //            context, output, output-parentscope, geometry, materials, animation, animation-data, advanced
+//
+//            An optional tag (":expanded" or ":collapsed") can be added to each of these sections to
+/             specify the default state (expanded or collapsed) of the frameLayout (if one exists for
+//            that section). Example:
+//                "action=section1:expanded;section2:collapsed"
 //
 //        The section name can also be "all", "none" or prefixed with "!":
 //            - When "all" is used, all sections are included.
@@ -536,7 +560,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
     }
 
     if ($action == "post") {
-        string $sectionNames[] = parseActionSectionNames($sections);
+        string $expandedSections[];
+        string $collapsedSections[];
+        string $sectionNames[] = parseActionSectionNames($sections, $expandedSections, $collapsedSections);
             
         setParent $parent;
 
@@ -557,7 +583,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("output", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameOutputLbl")` -collapsable true -collapse false outputFrameLayout;
+            // The default state for this frame is expanded, unless the caller explictly wants it collapsed.
+            int $collapse = stringArrayContains("output", $collapsedSections) ? true : false;
+            frameLayout -label `getMayaUsdString("kExportFrameOutputLbl")` -collapsable true -collapse $collapse outputFrameLayout;
                 separator -style "none";
 
                 optionMenuGrp -l `getMayaUsdString("kExportDefaultFormatLbl")` -annotation `getMayaUsdString("kExportDefaultFormatAnn")` -statusBarMessage `getMayaUsdString("kExportDefaultFormatStatus")` defaultUSDFormatPopup;
@@ -576,7 +604,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("geometry", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameGeometryLbl")` -collapsable true -collapse false geometryFrameLayout;
+            // The default state for this frame is expanded, unless the caller explictly wants it collapsed.
+            int $collapse = stringArrayContains("geometry", $collapsedSections) ? true : false;
+            frameLayout -label `getMayaUsdString("kExportFrameGeometryLbl")` -collapsable true -collapse $collapse geometryFrameLayout;
                 separator -style "none";
                 optionMenuGrp -l `getMayaUsdString("kExportSubdMethodLbl")` -annotation `getMayaUsdString("kExportSubdMethodAnn")` defaultMeshSchemePopup;
                     menuItem -l `getMayaUsdString("kExportSubdMethodCCLbl")` -ann "catmullClark";
@@ -609,7 +639,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("materials", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameMaterialsLbl")` -collapsable true -collapse false -ann `getMayaUsdString("kExportMaterialsAnn")` materialsFrameLayout;
+            // The default state for this frame is expanded, unless the caller explictly wants it collapsed.
+            int $collapse = stringArrayContains("materials", $collapsedSections) ? true : false;
+            frameLayout -label `getMayaUsdString("kExportFrameMaterialsLbl")` -collapsable true -collapse $collapse -ann `getMayaUsdString("kExportMaterialsAnn")` materialsFrameLayout;
                 separator -style "none";
 
                 string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
@@ -628,7 +660,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("animation", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameAnimationLbl")` -collapsable true -collapse false 
+            // The default state for this frame is expanded, unless the caller explictly wants it collapsed.
+            int $collapse = stringArrayContains("animation", $collapsedSections) ? true : false;
+            frameLayout -label `getMayaUsdString("kExportFrameAnimationLbl")` -collapsable true -collapse $collapse 
                         -expandCommand("mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB") animationFrameLayout;
                 separator -style "none";
 
@@ -659,7 +693,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         }
 
         if (stringArrayContains("advanced", $sectionNames)) {
-            frameLayout -label `getMayaUsdString("kExportFrameAdvancedLbl")` -collapsable true -collapse true advancedFrameLayout;
+            // The default state for this frame is collapsed, unless the caller explictly wants it expanded.
+            int $collapse = stringArrayContains("advanced", $expandedSections) ? false : true;
+            frameLayout -label `getMayaUsdString("kExportFrameAdvancedLbl")` -collapsable true -collapse $collapse advancedFrameLayout;
                 separator -style "none";
 
                 checkBoxGrp -l `getMayaUsdString("kExportVisibilityLbl")` -annotation `getMayaUsdString("kExportVisibilityAnn")` exportVisibilityCheckBox;
@@ -680,7 +716,9 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $bResult = 1;
 
     } else if ($action == "query") {
-        string $sectionNames[] = parseActionSectionNames($sections);
+        string $expandedSections[];
+        string $collapsedSections[];
+        string $sectionNames[] = parseActionSectionNames($sections, $expandedSections, $collapsedSections);
             
         if (stringArrayContains("geometry", $sectionNames)) {
             $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
