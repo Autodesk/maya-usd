@@ -830,6 +830,15 @@ void MtohRenderOverride::ClearHydraResources()
     _delegates.clear();
     _defaultLightDelegate.reset();
 
+    // Cleanup internal context data that keep references to data that is now
+    // invalid.
+#if PXR_VERSION >= 2108
+    _engine.ClearTaskContextData();
+#else
+    for (const auto& token : HdxTokens->allTokens)
+        _engine.RemoveTaskContextData(token);
+#endif
+
     if (_taskController != nullptr) {
         delete _taskController;
         _taskController = nullptr;
