@@ -102,7 +102,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
             mayaMesh = OM.MFnMesh(dagPath.node())
             expected_uvs.append(("pPlane%iShape" % i, mayaMesh.getUVSetNames()))
 
-        expected_sg = set(cmds.ls(type="shadingEngine"))
+        expected_sg = set([sg if sg.startswith('initial') else "Test:"+sg for sg in cmds.ls(type="shadingEngine")])
 
         expected_links = []
         for file_name in cmds.ls(type="file"):
@@ -115,7 +115,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
                 selectionList.add(link)
                 mayaMesh = OM.MFnMesh(selectionList.getDependNode(0))
                 meshName = mayaMesh.name()
-                plugPath[0] = "pPlane" + meshName[-1] + "Shape"
+                plugPath[0] = "Test:pPlane" + meshName[-1] + "Shape"
                 links.append(".".join(plugPath))
             expected_links.append((file_name, set(links)))
 
@@ -133,7 +133,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
         # Names should have been restored:
         for mesh_name, mesh_uvs in expected_uvs:
             selectionList = OM.MSelectionList()
-            selectionList.add(mesh_name)
+            selectionList.add("Test:"+mesh_name)
             mayaMesh = OM.MFnMesh(selectionList.getDependNode(0))
             self.assertEqual(mayaMesh.getUVSetNames(), mesh_uvs)
 
@@ -142,7 +142,7 @@ class testUsdExportUVSetMappings(unittest.TestCase):
 
         # All links correctly restored:
         for file_name, links in expected_links:
-            self.assertEqual(set(cmds.uvLink(texture=file_name)), links)
+            self.assertEqual(set(cmds.uvLink(texture='Test:'+file_name)), links)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

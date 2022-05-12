@@ -3,6 +3,7 @@ set(TEST_SCRIPT_FILES
     testPrimWriter.py
     testExportChaser.py
     testImportChaser.py
+    testImportWithNamespace.py
     testJobContextRegistry.py
 
     # Once of the tests in this file requires UsdMaya (from the Pixar plugin). That test
