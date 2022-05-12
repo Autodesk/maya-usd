@@ -512,7 +512,7 @@ MStatus UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject pare
     const bool    useLegacyScheme = useLegacyMayaRefNaming(prim);
     const MString expectedRefName
         = useLegacyScheme ? refNameFromPath(parentDag) : GetMayaRefCustomAttribute(prim);
-    if (refNode.isNull() && !expectedRefName.isEmpty()) {
+    if (refNode.isNull() && expectedRefName.length() > 0) {
         for (MItDependencyNodes refIter(MFn::kReference); !refIter.isDone(); refIter.next()) {
             MObject      tempRefNode = refIter.item();
             MFnReference tempRefFn(tempRefNode);
