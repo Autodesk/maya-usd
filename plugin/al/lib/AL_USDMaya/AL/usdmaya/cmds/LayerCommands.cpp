@@ -739,12 +739,12 @@ MStatus LayerSave::doIt(const MArgList& argList)
                         MString temp;
                         args.getFlagArgument("-f", 0, temp);
                         const std::string filename = AL::maya::utils::convert(temp);
-                        bool result = MayaUsd::utils::saveLayerWithFormat(handle, filename);
+                        bool              result = handle->Export(filename);
                         setResult(result);
                         if (!result)
                             MGlobal::displayError("LayerSave: could not export layer");
                     } else {
-                        bool result = MayaUsd::utils::saveLayerWithFormat(handle);
+                        bool result = handle->Save();
                         setResult(result);
                         if (!result)
                             MGlobal::displayError("LayerSave: could not save layer");

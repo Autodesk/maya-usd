@@ -212,7 +212,7 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
 
         auto dstLayerStr = findValue(routingData, TfToken("save_layer"));
         if (dstLayerStr == "yes")
-            MayaUsd::utils::saveLayerWithFormat(dstLayer);
+            dstLayer->Save();
 
         // No further traversal should take place.
         return PushCopySpecs::Prune;
