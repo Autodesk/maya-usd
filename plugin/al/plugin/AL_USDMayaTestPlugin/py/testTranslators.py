@@ -24,7 +24,7 @@ from maya import cmds
 
 from AL import usdmaya
 
-from pxr import Usd, UsdUtils, Tf
+from pxr import Usd, UsdUtils, Tf, Sdf
 
 import fixturesUtils
 
@@ -499,6 +499,102 @@ class TestPythonTranslators(unittest.TestCase):
         # "update()" should have been called
         self.assertTrue("update /root/peter01/rig" in updateableTranslator.actions)
 
+    def test_resync_prims(self):
+        '''
+        test resync deleted USD prims that are types for translator
+        '''
+        updateableTranslator = UpdateableTranslator()
+        usdmaya.TranslatorBase.registerTranslator(updateableTranslator, 'test')
+
+        stage = Usd.Stage.Open(self._testDataDir + "resync_root.usda")
+        stageCache = UsdUtils.StageCache.Get()
+        stageCache.Insert(stage)
+        stageId = stageCache.GetId(stage)
+        shapeName = 'updateProxyShape'
+        cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name=shapeName)
+
+        # Touch and make the session layer dirty
+        rig = stage.GetPrimAtPath("/root/group1/rig1")
+        rig.SetMetadata("customData", {"tag": "test"})
+        rig = stage.GetPrimAtPath("/root/group2/rig2")
+        rig.SetMetadata("customData", {"tag": "test"})
+
+        # Verify all three nodes exist in Maya
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group1|rig1|test1"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group2|rig2|test2"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group3|rig3|test3"))
+
+        # Remove children prims from all layers
+        for layer in stage.GetLayerStack(includeSessionLayers=False):
+            group1 = layer.GetPrimAtPath("/root/group1")
+            del group1.nameChildren["rig1"]
+            group2 = layer.GetPrimAtPath("/root/group2")
+            del group2.nameChildren["rig2"]
+
+        # Get translator context
+        ctx = updateableTranslator.getPythonTranslators()[0].context()
+        self.assertTrue(ctx)
+
+        # Verify translator mapping indirectly via calling "getTransformPath()"
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group1/rig1/test1")),
+            "|updateProxyShape|root|group1|rig1|test1")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group2/rig2/test2")),
+            "|updateProxyShape|root|group2|rig2|test2")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group3/rig3/test3")),
+            "|updateProxyShape|root|group3|rig3|test3")
+
+        # Maya nodes should all exist
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group1|rig1|test1"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group2|rig2|test2"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group3|rig3|test3"))
+
+        # Resync group3, group1 and group2 should be untouched
+        cmds.AL_usdmaya_ProxyShapeResync(proxy='updateProxyShape', primPath="/root/group3")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group1/rig1/test1")),
+            "|updateProxyShape|root|group1|rig1|test1")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group2/rig2/test2")),
+            "|updateProxyShape|root|group2|rig2|test2")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group3/rig3/test3")),
+            "|updateProxyShape|root|group3|rig3|test3")
+        # Maya nodes should all exist
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group1|rig1|test1"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group2|rig2|test2"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group3|rig3|test3"))
+
+        # Resync group1, group2 and group3 should still exist
+        cmds.AL_usdmaya_ProxyShapeResync(proxy='updateProxyShape', primPath="/root/group1")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group1/rig1/test1")), "")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group2/rig2/test2")),
+            "|updateProxyShape|root|group2|rig2|test2")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group3/rig3/test3")),
+            "|updateProxyShape|root|group3|rig3|test3")
+        # rig1 should have been removed while rig2 and rig3 still exist
+        self.assertFalse(cmds.ls("|updateProxyShape|root|group1|rig1|test1"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group2|rig2|test2"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group3|rig3|test3"))
+
+        # Resync group2, now only group3 exists
+        cmds.AL_usdmaya_ProxyShapeResync(proxy='updateProxyShape', primPath="/root/group2")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group1/rig1/test1")), "")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group2/rig2/test2")), "")
+        self.assertEqual(
+            ctx.getTransformPath(Sdf.Path("/root/group3/rig3/test3")),
+            "|updateProxyShape|root|group3|rig3|test3")
+        # rig1 and rig2 should have been removed while rig3 still exist
+        self.assertFalse(cmds.ls("|updateProxyShape|root|group1|rig1|test1"))
+        self.assertFalse(cmds.ls("|updateProxyShape|root|group2|rig2|test2"))
+        self.assertTrue(cmds.ls("|updateProxyShape|root|group3|rig3|test3"))
 
 class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
     """

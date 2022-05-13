@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+)
+
+over "root" (
+)
+{
+    def "group1"
+    {
+        over "rig1"
+        {
+            def "test1" (
+                assettype = "test"
+            )
+            {
+            }
+        }
+    }
+    def "group2"
+    {
+        over "rig2"
+        {
+            def "test2" (
+                assettype = "test"
+            )
+            {
+            }
+        }
+    }
+    def "group3"
+    {
+        over "rig3"
+        {
+            def "test3" (
+                assettype = "test"
+            )
+            {
+            }
+        }
+    }
+}

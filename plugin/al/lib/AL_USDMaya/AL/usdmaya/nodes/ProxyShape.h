@@ -766,12 +766,14 @@ public:
     /// \param importPrims array of prims you wish to import
     /// \param teardownPaths paths you wish to teardown
     /// \param param are flags which direct the translation of the prims
+    /// \param affectedPaths paths that being affected during translation
     AL_USDMAYA_PUBLIC
     void translatePrimsIntoMaya(
         const MayaUsdUtils::UsdPrimVector&               importPrims,
         const SdfPathVector&                             teardownPaths,
         const fileio::translators::TranslatorParameters& param
-        = fileio::translators::TranslatorParameters());
+        = fileio::translators::TranslatorParameters(),
+        const SdfPathSet& affectedPaths = SdfPathSet());
 
     /// \brief  Breaks a comma separated string up into a SdfPath Vector
     /// \param  paths the comma separated list of paths
