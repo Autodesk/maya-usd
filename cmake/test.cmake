@@ -46,6 +46,7 @@ endfunction()
 #                            MAYA_PLUG_IN_PATH
 #                            MAYA_SCRIPT_PATH
 #                            PXR_PLUGINPATH_NAME
+#                            XBMLANGPATH
 #                            LD_LIBRARY_PATH
 #                        Note that the format of these name/value pairs should
 #                        be the same as that used with
@@ -189,6 +190,7 @@ finally:
         PYTHONPATH
         MAYA_PLUG_IN_PATH
         MAYA_SCRIPT_PATH
+        XBMLANGPATH
         ${PXR_OVERRIDE_PLUGINPATH_NAME}
         PXR_MTLX_STDLIB_SEARCH_PATHS
     )
@@ -226,6 +228,8 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/lib/scripts")
     list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
          "${CMAKE_INSTALL_PREFIX}/lib/scripts")
+    list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
+         "${CMAKE_INSTALL_PREFIX}/lib/icons")
     list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/lib/python")
     list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
