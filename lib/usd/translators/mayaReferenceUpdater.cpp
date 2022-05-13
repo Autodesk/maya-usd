@@ -24,6 +24,7 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilSerialization.h>
 #include <mayaUsdUtils/MergePrims.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>

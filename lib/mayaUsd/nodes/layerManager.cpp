@@ -697,7 +697,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
                 SdfLayerHandleVector allLayers = stage->GetLayerStack(false);
                 for (auto layer : allLayers) {
                     if (layer->PermissionToSave()) {
-                        layer->Save();
+                        MayaUsd::utils::saveLayerWithFormat(layer);
                     }
                 }
             }
@@ -719,9 +719,8 @@ void LayerDatabase::convertAnonymousLayers(MayaUsdProxyShapeBase* pShape, UsdSta
 
     if (root->IsAnonymous()) {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
-        args["format"] = MayaUsd::utils::usdFormatArgOption();
         std::string newFileName = MayaUsd::utils::generateUniqueFileName(proxyName);
-        root->Export(newFileName, "", args);
+        MayaUsd::utils::saveLayerWithFormat(root, newFileName);
 
         MayaUsd::utils::setNewProxyPath(pShape->name(), UsdMayaUtil::convert(newFileName));
     }
