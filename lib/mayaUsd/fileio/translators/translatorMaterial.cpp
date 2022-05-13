@@ -36,6 +36,7 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/subset.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/materialBindingAPI.h>
@@ -226,7 +227,7 @@ static void _BindUVs(
     // We need the UV set names as they were in the USD scene, not the roundtripped original names:
     UsdGeomMesh mesh(primSchema.GetPrim());
     if (mesh) {
-        const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
+        const std::vector<UsdGeomPrimvar> primvars = UsdGeomPrimvarsAPI(mesh).GetPrimvars();
         for (const UsdGeomPrimvar& primvar : primvars) {
             const SdfValueTypeName typeName = primvar.GetTypeName();
             if (typeName == SdfValueTypeNames->TexCoord2fArray

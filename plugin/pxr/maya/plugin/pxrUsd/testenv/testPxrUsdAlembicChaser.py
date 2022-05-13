@@ -111,32 +111,34 @@ class testUserExportedAttributes(unittest.TestCase):
         imageable = UsdGeom.Imageable(prim)
         self.assertTrue(imageable)
 
-        primvar = imageable.GetPrimvar('awe:some_ConstantIntPrimvar')
+        pvAPI = UsdGeom.PrimvarsAPI(imageable)
+
+        primvar = pvAPI.GetPrimvar('awe:some_ConstantIntPrimvar')
         self.assertTrue(primvar)
         self.assertEqual(primvar.Get(), 123)
         self.assertEqual(primvar.GetTypeName(), Sdf.ValueTypeNames.Int)
         self.assertEqual(primvar.GetInterpolation(), UsdGeom.Tokens.constant)
 
-        primvar2 = imageable.GetPrimvar('awe:some_UniformDoublePrimvar')
+        primvar2 = pvAPI.GetPrimvar('awe:some_UniformDoublePrimvar')
         self.assertTrue(primvar2)
         self.assertEqual(primvar2.Get(), 3.140)
         self.assertEqual(primvar2.GetTypeName(), Sdf.ValueTypeNames.Double)
         self.assertEqual(primvar2.GetInterpolation(), UsdGeom.Tokens.uniform)
 
-        primvar3 = imageable.GetPrimvar('awe:some_FaceVaryingIntPrimvar')
+        primvar3 = pvAPI.GetPrimvar('awe:some_FaceVaryingIntPrimvar')
         self.assertTrue(primvar3)
         self.assertEqual(primvar3.Get(), 999)
         self.assertEqual(primvar3.GetTypeName(), Sdf.ValueTypeNames.Int)
         self.assertEqual(primvar3.GetInterpolation(), UsdGeom.Tokens.faceVarying)
 
-        primvar4 = imageable.GetPrimvar('awe:some_FloatArrayPrimvar')
+        primvar4 = pvAPI.GetPrimvar('awe:some_FloatArrayPrimvar')
         self.assertTrue(primvar4)
         self.assertEqual(primvar4.Get(),
             Vt.FloatArray([1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8]))
         self.assertEqual(primvar4.GetTypeName(), Sdf.ValueTypeNames.FloatArray)
         self.assertEqual(primvar4.GetInterpolation(), UsdGeom.Tokens.vertex)
 
-        primvar5 = imageable.GetPrimvar('awe:some_PrimvarWithoutAbcGeomScope')
+        primvar5 = pvAPI.GetPrimvar('awe:some_PrimvarWithoutAbcGeomScope')
         self.assertTrue(primvar5)
         self.assertEqual(primvar5.Get(), 360.0)
         self.assertEqual(primvar5.GetTypeName(), Sdf.ValueTypeNames.Double)
@@ -144,7 +146,7 @@ class testUserExportedAttributes(unittest.TestCase):
 
         # Note, this is the same as userProperties:IntArrayAttr because
         # the prefix was specified for both attr and primvarprefix.
-        primvar6 = imageable.GetPrimvar('IntArrayAttr')
+        primvar6 = pvAPI.GetPrimvar('IntArrayAttr')
         self.assertTrue(primvar6)
         self.assertEqual(primvar6.Get(),
                 Vt.IntArray([99, 98, 97, 96, 95, 94, 93, 92, 91, 90]))

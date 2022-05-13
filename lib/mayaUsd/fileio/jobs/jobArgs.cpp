@@ -641,8 +641,12 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
     , shadingMode(_Token(
           userArgs,
           UsdMayaJobExportArgsTokens->shadingMode,
-          UsdMayaShadingModeTokens->none,
-          UsdMayaShadingModeRegistry::ListExporters()))
+          UsdMayaShadingModeTokens->useRegistry,
+          []() {
+              auto exporters = UsdMayaShadingModeRegistry::ListExporters();
+              exporters.emplace_back(UsdMayaShadingModeTokens->none);
+              return exporters;
+          }()))
     , allMaterialConversions(_TokenSet(userArgs, UsdMayaJobExportArgsTokens->convertMaterialsTo))
     , verbose(_Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
     , staticSingleSample(_Boolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))

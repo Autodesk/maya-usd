@@ -18,6 +18,8 @@
 #include <mayaUsdUtils/DiffCore.h>
 #include <mayaUsdUtils/SIMD.h>
 
+#include <pxr/usd/usdGeom/primvarsAPI.h>
+
 #include <maya/MDoubleArray.h>
 #include <maya/MFloatArray.h>
 #include <maya/MIntArray.h>
@@ -526,7 +528,7 @@ void ColourSetBuilder::performDiffTest(PrimVarDiffReport& report)
 //----------------------------------------------------------------------------------------------------------------------
 MStringArray hasNewColourSet(UsdGeomMesh& geom, MFnMesh& mesh, PrimVarDiffReport& report)
 {
-    const std::vector<UsdGeomPrimvar> primvars = geom.GetPrimvars();
+    const std::vector<UsdGeomPrimvar> primvars = UsdGeomPrimvarsAPI(geom).GetPrimvars();
     MStringArray                      setNames;
     mesh.getColorSetNames(setNames);
 
@@ -738,7 +740,7 @@ void UvSetBuilder::performDiffTest(PrimVarDiffReport& report)
 //----------------------------------------------------------------------------------------------------------------------
 MStringArray hasNewUvSet(UsdGeomMesh& geom, const MFnMesh& mesh, PrimVarDiffReport& report)
 {
-    const std::vector<UsdGeomPrimvar> primvars = geom.GetPrimvars();
+    const std::vector<UsdGeomPrimvar> primvars = UsdGeomPrimvarsAPI(geom).GetPrimvars();
     MStringArray                      setNames;
     mesh.getUVSetNames(setNames);
 
