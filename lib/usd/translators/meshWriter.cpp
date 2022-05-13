@@ -39,6 +39,7 @@
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdSkel/root.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
@@ -840,8 +841,8 @@ void PxrUsdTranslators_MeshWriter::cleanupPrimvars()
     // If the indexed primvar doesn't need the unassigned value (because all
     // of the indices are assigned), then we can remove the unassigned value
     // and shift all the indices down.
-    const UsdGeomMesh primSchema(GetUsdPrim());
-    for (const UsdGeomPrimvar& primvar : primSchema.GetPrimvars()) {
+    const UsdGeomPrimvarsAPI pvAPI(GetUsdPrim());
+    for (const UsdGeomPrimvar& primvar : pvAPI.GetPrimvars()) {
         if (!primvar) {
             continue;
         }

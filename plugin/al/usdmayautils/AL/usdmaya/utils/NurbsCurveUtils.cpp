@@ -22,6 +22,7 @@
 
 #include <mayaUsdUtils/DiffCore.h>
 
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MDoubleArray.h>
@@ -319,7 +320,7 @@ void copyNurbsCurveBindPoseData(
     UsdGeomNurbsCurves& usdCurves,
     UsdTimeCode         time)
 {
-    UsdGeomPrimvar pRefPrimVarAttr = usdCurves.CreatePrimvar(
+    UsdGeomPrimvar pRefPrimVarAttr = UsdGeomPrimvarsAPI(usdCurves).CreatePrimvar(
         UsdUtilsGetPrefName(), SdfValueTypeNames->Point3fArray, UsdGeomTokens->vertex);
 
     if (pRefPrimVarAttr) {

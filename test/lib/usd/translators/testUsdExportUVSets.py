@@ -168,7 +168,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         usdCubeMesh = self._GetCubeUsdMesh('EmptyDefaultUVSetCube')
 
-        self.assertFalse(usdCubeMesh.GetPrimvar('map1'))
+        self.assertFalse(UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar('map1'))
 
     def testExportDefaultUVSet(self):
         """
@@ -207,7 +207,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
@@ -250,7 +250,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
@@ -284,7 +284,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar('st')
 
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
@@ -297,7 +297,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         Uses roundtripping utils to get a renamed primvar.
         """
-        for primVar in mesh.GetPrimvars():
+        for primVar in UsdGeom.PrimvarsAPI(mesh).GetPrimvars():
             if mayaUsdLib.RoundTripUtil.GetPrimVarMayaName(primVar) == name:
                 return primVar
 
@@ -357,7 +357,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         brokenBoxMesh = UsdGeom.Mesh(self._stage.GetPrimAtPath(
                 "/UsdExportUVSetsTest/Geom/BrokenUVs/box"))
-        stPrimvar = brokenBoxMesh.GetPrimvar("st").ComputeFlattened()
+        stPrimvar = UsdGeom.PrimvarsAPI(brokenBoxMesh).GetPrimvar("st").ComputeFlattened()
 
         self.assertEqual(stPrimvar[0], Gf.Vec2f(1.0, 2.0))
 

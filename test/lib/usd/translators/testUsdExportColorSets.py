@@ -478,7 +478,7 @@ class testUsdExportColorSets(unittest.TestCase):
 
             expectedUnauthoredValuesIndex = self._GetExpectedColorSetUnassignedIndex(colorSetName)
 
-            primvar = usdCubeMesh.GetPrimvar(colorSetName)
+            primvar = UsdGeom.PrimvarsAPI(usdCubeMesh).GetPrimvar(colorSetName)
 
             self._AssertPrimvar(primvar, expectedTypeName=expectedTypeName,
                 expectedValues=expectedValues,
