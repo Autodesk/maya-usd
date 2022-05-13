@@ -19,6 +19,8 @@
 #include "stringResources.h"
 #include "warningDialogs.h"
 
+#include <mayaUsd/utils/utilSerialization.h>
+
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layerUtils.h>
@@ -181,10 +183,7 @@ bool saveSubLayer(
     }
 
     if (!fileError) {
-        PXR_NS::SdfFileFormat::FileFormatArguments formatArgs;
-        formatArgs["format"] = in_formatTag;
-
-        if (!in_layer->Export(in_absolutePath, "", formatArgs)) {
+        if (!MayaUsd::utils::saveLayerWithFormat(in_layer, in_absolutePath, in_formatTag)) {
             fileError = true;
         } else {
             // parent item is null if we're saving the root later
