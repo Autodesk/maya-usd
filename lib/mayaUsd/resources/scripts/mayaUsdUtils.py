@@ -85,13 +85,13 @@ def getMonoFormatFileFilterLabels(includeCompressed = True):
     the joining.
     """
     labelAndFilters = [
-        ("kUsdASCIIFiles", "*.usda"),
-        ("kUsdBinaryFiles", "*.usdc"),
+        ("kUsdASCIIFiles", "(*.usda)"),
+        ("kUsdBinaryFiles", "(*.usdc)"),
     ]
 
     if includeCompressed:
         labelAndFilters.append(
-            ("kUsdCompressedFiles", "*.usdz")
+            ("kUsdCompressedFiles", "(*.usdz)")
         )
     
     localizedLabels = [getMayaUsdLibString(labelKey) + ' ' + filter for labelKey, filter in labelAndFilters]
@@ -107,7 +107,7 @@ def getMultiFormatsFileFilterLabels(includeCompressed = True):
     """
     labelAndFilters = [
         ("kAllUsdFiles", "(*.usd *.usda *.usdc)"),
-        ("kUsdFiles", "*.usd"),
+        ("kUsdFiles", "(*.usd)"),
     ]
 
     if includeCompressed:

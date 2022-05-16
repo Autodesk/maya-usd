@@ -524,7 +524,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
 //            context, output, output-parentscope, geometry, materials, animation, animation-data, advanced
 //
 //            An optional tag (":expanded" or ":collapsed") can be added to each of these sections to
-/             specify the default state (expanded or collapsed) of the frameLayout (if one exists for
+//            specify the default state (expanded or collapsed) of the frameLayout (if one exists for
 //            that section). Example:
 //                "action=section1:expanded;section2:collapsed"
 //
