@@ -38,6 +38,7 @@ import ufe
 from functools import partial
 from math import degrees
 from math import radians
+from math import cos
 import os
 import unittest
 
@@ -889,6 +890,56 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         assertVectorAlmostEqual(self, usdT3d.rotatePivot().vector, [0.0, 0.0, 0.0])
         assertVectorAlmostEqual(self, usdT3d.scalePivot().vector, [0.0, 0.0, 0.0])
+
+    @unittest.skipIf(int(cmds.about(apiVersion=True)) <= 20220000, 'Center pivot command is only available in Maya 2022 or later.')
+    def testCenterPivotUpdatePivotCompensations(self):
+        '''Center pivot must correctly update rotate, scale pivot compensations.'''
+
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapeItem = ufeUtils.createItem('|stage1|stageShape1')
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        capsuleItem = ufeUtils.createItem('|stage1|stageShape1,/Capsule1')
+        t3d = ufe.Transform3d.transform3d(capsuleItem)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(capsuleItem)
+
+        # Pivots and pivot compensations initially [0.0, 0.0, 0.0].
+        def checkNullPivotsAndCompensations():
+            for v in [t3d.rotatePivot(), t3d.scalePivot(), 
+                      t3d.rotatePivotTranslation(), 
+                      t3d.scalePivotTranslation()]:
+                assertVectorAlmostEqual(self, v.vector, [0.0, 0.0, 0.0])
+
+        checkNullPivotsAndCompensations()
+
+        # Rotate around x axis so that moving the pivot will create a rotate
+        # pivot translation as compensation, which keeps the total object
+        # transformation constant.
+        cmds.rotate(45, 0, 0, r=True, os=True, fo=True)
+
+        # Move the pivot.
+        cmds.move(0, 5, 0, r=True, urp=True, usp=True)
+
+        d = cos(radians(45)) * 5
+        assertVectorAlmostEqual(self, t3d.rotatePivot().vector, [0.0, d, -d])
+        assertVectorAlmostEqual(self, t3d.scalePivot().vector, [0, d, -d])
+        assertVectorAlmostEqual(self, t3d.rotatePivotTranslation().vector,
+                                [0.0, 1.464466095, d])
+        assertVectorAlmostEqual(self, t3d.scalePivotTranslation().vector,
+                                [0.0, 0.0, 0.0])
+
+        # call center pivot command
+        cmds.xform(cp=True)
+
+        # Pivots and pivot compensations expected to be at [0.0, 0.0, 0.0]
+        checkNullPivotsAndCompensations()
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testPrimPropertyPathNotifs only available in UFE v2 or greater.')
     def testPrimPropertyPathNotifs(self):
