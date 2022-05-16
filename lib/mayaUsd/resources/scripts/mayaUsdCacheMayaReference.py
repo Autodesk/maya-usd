@@ -417,7 +417,7 @@ def fileTypeChangedUi(parent, fileType):
     #       give the label + file pattern, so that is why we use 'fileType in ff'
     #       in the loop below.
     forcedFormat = False
-    for ff in mayaUsdUtils.getMonoFormatFileFilterLabels():
+    for ff in mayaUsdUtils.getMonoFormatFileFilterLabels(False):
         forcedFormat = forcedFormat or fileType in ff
     cmds.optionMenuGrp("defaultUSDFormatPopup", edit=True, enable=not forcedFormat)
     mayaUsdUtils.setLastUsedUSDDialogFileFilter(fileType)
@@ -433,7 +433,7 @@ def cacheDialog(dagPath, pulledMayaRefPrim, _):
     _pulledMayaRefPrim = pulledMayaRefPrim
 
     ok = getMayaUsdLibString('kCacheMayaRefCache')
-    fileFilter = mayaUsdUtils.getUSDDialogFileFilters()
+    fileFilter = mayaUsdUtils.getUSDDialogFileFilters(False)
     selectedFileFilter = mayaUsdUtils.getLastUsedUSDDialogFileFilter()
 
     # As per Maya projectViewer.mel code structure, the UI creation
