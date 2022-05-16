@@ -228,8 +228,14 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/lib/scripts")
     list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
          "${CMAKE_INSTALL_PREFIX}/lib/scripts")
-    list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
-         "${CMAKE_INSTALL_PREFIX}/lib/icons")
+    if (IS_LINUX)
+        # On Linux the paths in XBMLANGPATH need a /%B at the end.
+        list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
+             "${CMAKE_INSTALL_PREFIX}/lib/icons/%B")
+    else()
+        list(APPEND MAYAUSD_VARNAME_XBMLANGPATH
+             "${CMAKE_INSTALL_PREFIX}/lib/icons")
+    endif()
     list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/lib/python")
     list(APPEND MAYAUSD_VARNAME_${PXR_OVERRIDE_PLUGINPATH_NAME}
