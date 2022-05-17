@@ -594,26 +594,26 @@ TEST(translators_TranformTranslator, withOffsetParentMatrix)
     {
         auto prim = stage->GetPrimAtPath(SdfPath("/group3"));
         ASSERT_TRUE(prim);
-        UsdGeomXform xform(prim);
-        GfMatrix4d   transform(1.0);
+        UsdGeomXformable xform(prim);
+        GfMatrix4d       transform(1.0);
         xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
         // make sure the local space tm values match the world coords.
-        EXPECT_NEAR(1.0, transform[0][0], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][1], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][0], 1e-6);
-        EXPECT_NEAR(1.0, transform[1][1], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][0], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][1], 1e-6);
-        EXPECT_NEAR(1.0, transform[2][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][0], 1e-6);
-        EXPECT_NEAR(2.0, transform[3][1], 1e-6);
-        EXPECT_NEAR(3.0, transform[3][2], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        EXPECT_NEAR(1.0, transform[0][0], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][1], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][0], 1e-5);
+        EXPECT_NEAR(1.0, transform[1][1], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][0], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][1], 1e-5);
+        EXPECT_NEAR(1.0, transform[2][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][0], 1e-5);
+        EXPECT_NEAR(2.0, transform[3][1], 1e-5);
+        EXPECT_NEAR(3.0, transform[3][2], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-5);
     }
 
     // group2 offset parent matrix is driven by connection
@@ -621,72 +621,75 @@ TEST(translators_TranformTranslator, withOffsetParentMatrix)
         auto prim = stage->GetPrimAtPath(SdfPath("/group3/group2"));
         ASSERT_TRUE(prim);
 
-        UsdGeomXform xform(prim);
-        GfMatrix4d   transform(1.0);
+        UsdGeomXformable xform(prim);
+        GfMatrix4d       transform(1.0);
 
         // group2 at frame 1:
-        // translate: 2, 3, 4
+        // translate without offsetParentMatrix: 1, 2, 3
+        // translate with offsetParentMatrix : 2.283, 2.697, 4.078
         // rotate xyz: 10, 10, 10
         // scale: 1, 1, 1
         xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(1));
-        EXPECT_NEAR(0.9698463103929541, transform[0][0], 1e-6);
-        EXPECT_NEAR(0.17101007166283433, transform[0][1], 1e-6);
-        EXPECT_NEAR(-0.17364817766693033, transform[0][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
-        EXPECT_NEAR(-0.14131448435589197, transform[1][0], 1e-6);
-        EXPECT_NEAR(0.9750824436431519, transform[1][1], 1e-6);
-        EXPECT_NEAR(0.17101007166283433, transform[1][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
-        EXPECT_NEAR(0.19856573402377836, transform[2][0], 1e-6);
-        EXPECT_NEAR(-0.141314484355892, transform[2][1], 1e-6);
-        EXPECT_NEAR(0.9698463103929541, transform[2][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
-        EXPECT_NEAR(2.0, transform[3][0], 1e-6);
-        EXPECT_NEAR(3.0, transform[3][1], 1e-6);
-        EXPECT_NEAR(4.0, transform[3][2], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        EXPECT_NEAR(0.9698463, transform[0][0], 1e-5);
+        EXPECT_NEAR(0.1710101, transform[0][1], 1e-5);
+        EXPECT_NEAR(-0.1736482, transform[0][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-5);
+        EXPECT_NEAR(-0.1413145, transform[1][0], 1e-5);
+        EXPECT_NEAR(0.9750824, transform[1][1], 1e-5);
+        EXPECT_NEAR(0.1710101, transform[1][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-5);
+        EXPECT_NEAR(0.1985657, transform[2][0], 1e-5);
+        EXPECT_NEAR(-0.1413145, transform[2][1], 1e-5);
+        EXPECT_NEAR(0.9698463, transform[2][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-5);
+        EXPECT_NEAR(2.2829145, transform[3][0], 1e-5);
+        EXPECT_NEAR(2.6972315, transform[3][1], 1e-5);
+        EXPECT_NEAR(4.0779109, transform[3][2], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-5);
         // group2 at frame 2:
-        // translate: 3, 4, 5
+        // translate without offsetParentMatrix: 1, 2, 3
+        // translate with offsetParentMatrix: 5.434, 5.066, 7.9
         // rotate xyz: 20, 20, 20
         // scale: 2, 2, 2
         xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(2));
-        EXPECT_NEAR(1.7660444431189781, transform[0][0], 1e-6);
-        EXPECT_NEAR(0.6427876096865395, transform[0][1], 1e-6);
-        EXPECT_NEAR(-0.6840402866513375, transform[0][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
-        EXPECT_NEAR(-0.42294129929358526, transform[1][0], 1e-6);
-        EXPECT_NEAR(1.8460619562152618, transform[1][1], 1e-6);
-        EXPECT_NEAR(0.6427876096865395, transform[1][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
-        EXPECT_NEAR(0.8379783304360758, transform[2][0], 1e-6);
-        EXPECT_NEAR(-0.4229412992935852, transform[2][1], 1e-6);
-        EXPECT_NEAR(1.7660444431189781, transform[2][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
-        EXPECT_NEAR(3.0, transform[3][0], 1e-6);
-        EXPECT_NEAR(4.0, transform[3][1], 1e-6);
-        EXPECT_NEAR(5.0, transform[3][2], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        EXPECT_NEAR(1.7660444, transform[0][0], 1e-5);
+        EXPECT_NEAR(0.6427876, transform[0][1], 1e-5);
+        EXPECT_NEAR(-0.6840403, transform[0][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-5);
+        EXPECT_NEAR(-0.4229413, transform[1][0], 1e-5);
+        EXPECT_NEAR(1.8460620, transform[1][1], 1e-5);
+        EXPECT_NEAR(0.6427876, transform[1][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-5);
+        EXPECT_NEAR(0.8379783, transform[2][0], 1e-5);
+        EXPECT_NEAR(-0.4229413, transform[2][1], 1e-5);
+        EXPECT_NEAR(1.7660444, transform[2][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-5);
+        EXPECT_NEAR(5.4340968, transform[3][0], 1e-5);
+        EXPECT_NEAR(5.0660876, transform[3][1], 1e-5);
+        EXPECT_NEAR(7.8996683, transform[3][2], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-5);
         // group2 at frame 3:
-        // translate: 4, 5, 6
+        // translate without offsetParentMatrix: 1, 2, 3
+        // translate with offsetParentMatrix: 9.576, 7.6, 10.848
         // rotate xyz: 30, 30, 30
         // scale: 3, 3, 3
         xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(3));
-        EXPECT_NEAR(2.2500000000000004, transform[0][0], 1e-6);
-        EXPECT_NEAR(1.299038105676658, transform[0][1], 1e-6);
-        EXPECT_NEAR(-1.4999999999999998, transform[0][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
-        EXPECT_NEAR(-0.649519052838329, transform[1][0], 1e-6);
-        EXPECT_NEAR(2.6250000000000004, transform[1][1], 1e-6);
-        EXPECT_NEAR(1.299038105676658, transform[1][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
-        EXPECT_NEAR(1.875, transform[2][0], 1e-6);
-        EXPECT_NEAR(-0.649519052838329, transform[2][1], 1e-6);
-        EXPECT_NEAR(2.2500000000000004, transform[2][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
-        EXPECT_NEAR(4.0, transform[3][0], 1e-6);
-        EXPECT_NEAR(5.0, transform[3][1], 1e-6);
-        EXPECT_NEAR(6.0, transform[3][2], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        EXPECT_NEAR(2.25, transform[0][0], 1e-5);
+        EXPECT_NEAR(1.2990381, transform[0][1], 1e-5);
+        EXPECT_NEAR(-1.5, transform[0][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-5);
+        EXPECT_NEAR(-0.6495191, transform[1][0], 1e-5);
+        EXPECT_NEAR(2.625, transform[1][1], 1e-5);
+        EXPECT_NEAR(1.2990381, transform[1][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-5);
+        EXPECT_NEAR(1.875, transform[2][0], 1e-5);
+        EXPECT_NEAR(-0.6495191, transform[2][1], 1e-5);
+        EXPECT_NEAR(2.25, transform[2][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-5);
+        EXPECT_NEAR(9.5759619, transform[3][0], 1e-5);
+        EXPECT_NEAR(7.6004809, transform[3][1], 1e-5);
+        EXPECT_NEAR(10.8480762, transform[3][2], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-5);
     }
     // group1 local matrix and offset parent matrix are both static at
     //  local translate: 1, 2, 3
@@ -696,25 +699,35 @@ TEST(translators_TranformTranslator, withOffsetParentMatrix)
         auto prim = stage->GetPrimAtPath(SdfPath("/group3/group2/group1"));
         ASSERT_TRUE(prim);
 
-        UsdGeomXform xform(prim);
-        GfMatrix4d   transform(1.0);
+        UsdGeomXformable xform(prim);
+        GfMatrix4d       transform(1.0);
         xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode::EarliestTime());
-        EXPECT_NEAR(0.3535533905932738, transform[0][0], 1e-6);
-        EXPECT_NEAR(0.6123724356957945, transform[0][1], 1e-6);
-        EXPECT_NEAR(-0.7071067811865476, transform[0][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
-        EXPECT_NEAR(-0.5732233047033631, transform[1][0], 1e-6);
-        EXPECT_NEAR(0.7391989197401168, transform[1][1], 1e-6);
-        EXPECT_NEAR(0.3535533905932737, transform[1][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
-        EXPECT_NEAR(0.7391989197401165, transform[2][0], 1e-6);
-        EXPECT_NEAR(0.2803300858899107, transform[2][1], 1e-6);
-        EXPECT_NEAR(0.6123724356957945, transform[2][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
-        EXPECT_NEAR(2.0, transform[3][0], 1e-6);
-        EXPECT_NEAR(4.0, transform[3][1], 1e-6);
-        EXPECT_NEAR(6.0, transform[3][2], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        EXPECT_NEAR(0.3535534, transform[0][0], 1e-5);
+        EXPECT_NEAR(0.6123724, transform[0][1], 1e-5);
+        EXPECT_NEAR(-0.7071068, transform[0][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-5);
+        EXPECT_NEAR(-0.5732233, transform[1][0], 1e-5);
+        EXPECT_NEAR(0.7391989, transform[1][1], 1e-5);
+        EXPECT_NEAR(0.3535534, transform[1][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-5);
+        EXPECT_NEAR(0.7391989, transform[2][0], 1e-5);
+        EXPECT_NEAR(0.2803301, transform[2][1], 1e-5);
+        EXPECT_NEAR(0.6123724, transform[2][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-5);
+        EXPECT_NEAR(2.424704, transform[3][0], 1e-5);
+        EXPECT_NEAR(4.931761, transform[3][1], 1e-5);
+        EXPECT_NEAR(4.837117, transform[3][2], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-5);
+
+        // Matrix on frame 2 should be the same as frame 1
+        GfMatrix4d transform2(1.0);
+        xform.GetLocalTransformation(&transform2, &resetsXformStack, UsdTimeCode(2));
+        EXPECT_TRUE(GfIsClose(transform, transform2, 1e-5));
+
+        // Matrix on frame 3 should also be the same as frame 1
+        GfMatrix4d transform3(1.0);
+        xform.GetLocalTransformation(&transform3, &resetsXformStack, UsdTimeCode(3));
+        EXPECT_TRUE(GfIsClose(transform, transform3, 1e-5));
     }
     // cube1 local translate is animated, offset parent matrix is static
     //  local translate: 1, 2, 3 -> 4, 5, 6 -> 7, 8, 9
@@ -723,62 +736,119 @@ TEST(translators_TranformTranslator, withOffsetParentMatrix)
         auto prim = stage->GetPrimAtPath(SdfPath("/group3/group2/group1/pCube1"));
         ASSERT_TRUE(prim);
 
-        UsdGeomXform xform(prim);
-        GfMatrix4d   transform(1.0);
+        UsdGeomXformable xform(prim);
+        GfMatrix4d       transform(1.0);
         // frame 1: local translate: 1, 2, 3
         xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(1));
-        EXPECT_NEAR(1.0, transform[0][0], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][1], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][0], 1e-6);
-        EXPECT_NEAR(1.0, transform[1][1], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][0], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][1], 1e-6);
-        EXPECT_NEAR(1.0, transform[2][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
-        EXPECT_NEAR(2.0, transform[3][0], 1e-6);
-        EXPECT_NEAR(4.0, transform[3][1], 1e-6);
-        EXPECT_NEAR(6.0, transform[3][2], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        EXPECT_NEAR(1.0, transform[0][0], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][1], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][0], 1e-5);
+        EXPECT_NEAR(1.0, transform[1][1], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][0], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][1], 1e-5);
+        EXPECT_NEAR(1.0, transform[2][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-5);
+        EXPECT_NEAR(2.0, transform[3][0], 1e-5);
+        EXPECT_NEAR(4.0, transform[3][1], 1e-5);
+        EXPECT_NEAR(6.0, transform[3][2], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-5);
         // frame 2: local translate: 4, 5, 6
         xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(2));
-        EXPECT_NEAR(1.0, transform[0][0], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][1], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][0], 1e-6);
-        EXPECT_NEAR(1.0, transform[1][1], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][0], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][1], 1e-6);
-        EXPECT_NEAR(1.0, transform[2][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
-        EXPECT_NEAR(5.0, transform[3][0], 1e-6);
-        EXPECT_NEAR(7.0, transform[3][1], 1e-6);
-        EXPECT_NEAR(9.0, transform[3][2], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        EXPECT_NEAR(1.0, transform[0][0], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][1], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][0], 1e-5);
+        EXPECT_NEAR(1.0, transform[1][1], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][0], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][1], 1e-5);
+        EXPECT_NEAR(1.0, transform[2][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-5);
+        EXPECT_NEAR(5.0, transform[3][0], 1e-5);
+        EXPECT_NEAR(7.0, transform[3][1], 1e-5);
+        EXPECT_NEAR(9.0, transform[3][2], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-5);
         // frame 3: local translate: 7, 8, 9
         xform.GetLocalTransformation(&transform, &resetsXformStack, UsdTimeCode(3));
-        EXPECT_NEAR(1.0, transform[0][0], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][1], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[0][3], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][0], 1e-6);
-        EXPECT_NEAR(1.0, transform[1][1], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[1][3], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][0], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][1], 1e-6);
-        EXPECT_NEAR(1.0, transform[2][2], 1e-6);
-        EXPECT_NEAR(0.0, transform[2][3], 1e-6);
-        EXPECT_NEAR(8.0, transform[3][0], 1e-6);
-        EXPECT_NEAR(10.0, transform[3][1], 1e-6);
-        EXPECT_NEAR(12.0, transform[3][2], 1e-6);
-        EXPECT_NEAR(1.0, transform[3][3], 1e-6);
+        EXPECT_NEAR(1.0, transform[0][0], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][1], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[0][3], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][0], 1e-5);
+        EXPECT_NEAR(1.0, transform[1][1], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[1][3], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][0], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][1], 1e-5);
+        EXPECT_NEAR(1.0, transform[2][2], 1e-5);
+        EXPECT_NEAR(0.0, transform[2][3], 1e-5);
+        EXPECT_NEAR(8.0, transform[3][0], 1e-5);
+        EXPECT_NEAR(10.0, transform[3][1], 1e-5);
+        EXPECT_NEAR(12.0, transform[3][2], 1e-5);
+        EXPECT_NEAR(1.0, transform[3][3], 1e-5);
+
+        // Validate if the cube's world matrix matches with Maya
+        // This is the leaf prim so all parents' matrix should have been counted in
+        GfMatrix4d worldMatrix
+            = UsdGeomImageable(prim).ComputeLocalToWorldTransform(UsdTimeCode(1));
+        EXPECT_NEAR(0.1159477, worldMatrix[0][0], 1e-5);
+        EXPECT_NEAR(0.7574997, worldMatrix[0][1], 1e-5);
+        EXPECT_NEAR(-0.642457, worldMatrix[0][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[0][3], 1e-5);
+        EXPECT_NEAR(-0.5901941, worldMatrix[1][0], 1e-5);
+        EXPECT_NEAR(0.5727906, worldMatrix[1][1], 1e-5);
+        EXPECT_NEAR(0.5688428, worldMatrix[1][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[1][3], 1e-5);
+        EXPECT_NEAR(0.798891, worldMatrix[2][0], 1e-5);
+        EXPECT_NEAR(0.3132181, worldMatrix[2][1], 1e-5);
+        EXPECT_NEAR(0.5134852, worldMatrix[2][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[2][3], 1e-5);
+        EXPECT_NEAR(8.5625265, worldMatrix[3][0], 1e-5);
+        EXPECT_NEAR(14.9226693, worldMatrix[3][1], 1e-5);
+        EXPECT_NEAR(16.2628751, worldMatrix[3][2], 1e-5);
+        EXPECT_NEAR(1.0, worldMatrix[3][3], 1e-5);
+
+        worldMatrix = UsdGeomImageable(prim).ComputeLocalToWorldTransform(UsdTimeCode(2));
+        EXPECT_NEAR(-0.2271478, worldMatrix[0][0], 1e-5);
+        EXPECT_NEAR(1.6568027, worldMatrix[0][1], 1e-5);
+        EXPECT_NEAR(-1.0970011, worldMatrix[0][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[0][3], 1e-5);
+        EXPECT_NEAR(-1.0287044, worldMatrix[1][0], 1e-5);
+        EXPECT_NEAR(0.8466135, worldMatrix[1][1], 1e-5);
+        EXPECT_NEAR(1.491648, worldMatrix[1][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[1][3], 1e-5);
+        EXPECT_NEAR(1.70005, worldMatrix[2][0], 1e-5);
+        EXPECT_NEAR(0.7336567, worldMatrix[2][1], 1e-5);
+        EXPECT_NEAR(0.7560264, worldMatrix[2][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[2][3], 1e-5);
+        EXPECT_NEAR(19.6475652, worldMatrix[3][0], 1e-5);
+        EXPECT_NEAR(36.4963956, worldMatrix[3][1], 1e-5);
+        EXPECT_NEAR(32.7144799, worldMatrix[3][2], 1e-5);
+        EXPECT_NEAR(1.0, worldMatrix[3][3], 1e-5);
+
+        worldMatrix = UsdGeomImageable(prim).ComputeLocalToWorldTransform(UsdTimeCode(3));
+        EXPECT_NEAR(-0.9280793, worldMatrix[0][0], 1e-5);
+        EXPECT_NEAR(2.5260374, worldMatrix[0][1], 1e-5);
+        EXPECT_NEAR(-1.3258244, worldMatrix[0][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[0][3], 1e-5);
+        EXPECT_NEAR(-1.1069616, worldMatrix[1][0], 1e-5);
+        EXPECT_NEAR(0.9661181, worldMatrix[1][1], 1e-5);
+        EXPECT_NEAR(2.6155791, worldMatrix[1][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[1][3], 1e-5);
+        EXPECT_NEAR(2.629316, worldMatrix[2][0], 1e-5);
+        EXPECT_NEAR(1.2983662, worldMatrix[2][1], 1e-5);
+        EXPECT_NEAR(0.633197, worldMatrix[2][2], 1e-5);
+        EXPECT_NEAR(0.0, worldMatrix[2][3], 1e-5);
+        EXPECT_NEAR(34.9554094, worldMatrix[3][0], 1e-5);
+        EXPECT_NEAR(68.00422, worldMatrix[3][1], 1e-5);
+        EXPECT_NEAR(50.6486385, worldMatrix[3][2], 1e-5);
+        EXPECT_NEAR(1.0, worldMatrix[3][3], 1e-5);
     }
 }
 
