@@ -18,6 +18,7 @@
 
 import fixturesUtils
 import mayaUtils
+import testUtils
 import usdUtils
 import ufeUtils
 
@@ -147,7 +148,6 @@ class ContextOpsTestCase(unittest.TestCase):
                 self.assertEqual(c.item, 'Ball_8')
 
     def testDoOp(self):
-
         # Change visibility, undo / redo.
         cmd = self.contextOps.doOpCmd(['Toggle Visibility'])
         self.assertIsNotNone(cmd)
@@ -379,103 +379,6 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertTrue(shaderAttrs.hasAttribute("info:id"))
         shaderAttr = shaderAttrs.attribute("info:id")
         shaderAttr.set("ND_standard_surface_surfaceshader")
-        
-        # TODO: Jerry will change this code to a createNode call on the shader definition
-        shaderAttrs = ufe.Attributes.attributes(shaderItem)
-
-        # Set base_color to red
-        # This should generate an AttrDefHandle version of an Attribute
-        baseColorAttr = shaderAttrs.attribute("inputs:base_color")
-        self.assertTrue(baseColorAttr != None)
-        baseColor = baseColorAttr.get()
-        self.assertAlmostEqual(baseColor.r(), 0.8)
-        self.assertAlmostEqual(baseColor.g(), 0.8)
-        self.assertAlmostEqual(baseColor.b(), 0.8)
-        newBaseColorValue = ufe.Color3f(1.0, 0.0, 0.0)
-        baseColorAttr.set(newBaseColorValue)
-        baseColor2 = baseColorAttr.get()
-        self.assertAlmostEqual(baseColor2.r(), 1.0)
-        self.assertAlmostEqual(baseColor2.g(), 0.0)
-        self.assertAlmostEqual(baseColor2.b(), 0.0)
-        # This should use the previously stored AttrDefHandle
-        baseColorAttr2 = shaderAttrs.attribute("inputs:base_color")
-        self.assertTrue(baseColorAttr2 != None)
-        baseColor3 = baseColorAttr2.get()
-        self.assertAlmostEqual(baseColor3.r(), 1.0)
-        self.assertAlmostEqual(baseColor3.g(), 0.0)
-        self.assertAlmostEqual(baseColor3.b(), 0.0)
-        newBaseColorValue2 = ufe.Color3f(0.0, 1.0, 0.0)
-        baseColorAttr2.set(newBaseColorValue2)
-        baseColor4 = baseColorAttr2.get()
-        self.assertAlmostEqual(baseColor4.r(), 0.0)
-        self.assertAlmostEqual(baseColor4.g(), 1.0)
-        self.assertAlmostEqual(baseColor4.b(), 0.0)
-
-        # Set float specular_IOR to 0.5
-        iorFloatAttr = shaderAttrs.attribute("inputs:specular_IOR")
-        self.assertTrue(iorFloatAttr != None)
-        iorFloat = iorFloatAttr.get()
-        self.assertAlmostEqual(iorFloat, 1.5)
-        newIorFloat = 0.5
-        iorFloatAttr.set(newIorFloat)
-        iorFloat2 = iorFloatAttr.get()
-        self.assertAlmostEqual(iorFloat2, newIorFloat)
-
-        # Set vector3 coat_normal to (0.5, 0.5, 0.0)
-        coatNormalVec3Attr = shaderAttrs.attribute("inputs:coat_normal")
-        self.assertTrue(coatNormalVec3Attr != None)
-        coatNormalVec3 = coatNormalVec3Attr.get()
-        self.assertAlmostEqual(coatNormalVec3.x(), 0.0)
-        self.assertAlmostEqual(coatNormalVec3.y(), 0.0)
-        self.assertAlmostEqual(coatNormalVec3.z(), 0.0)
-        newCoatNormalVec3 = ufe.Vector3f(0.0, 1.0, 1.0)
-        coatNormalVec3Attr.set(newCoatNormalVec3)
-        coatNormalVec3_2 = coatNormalVec3Attr.get()
-        self.assertAlmostEqual(coatNormalVec3_2.x(), 0.0)
-        self.assertAlmostEqual(coatNormalVec3_2.y(), 1.0)
-        self.assertAlmostEqual(coatNormalVec3_2.z(), 1.0)
-
-        # Set bool thin_walled to true
-        thinWalledBoolAttr = shaderAttrs.attribute("inputs:thin_walled")
-        self.assertTrue(thinWalledBoolAttr != None)
-        thinWalledBool = thinWalledBoolAttr.get()
-        self.assertEqual(thinWalledBool, False)
-        newThinWalledBool = True
-        thinWalledBoolAttr.set(newThinWalledBool)
-        thinWalledBool2 = thinWalledBoolAttr.get()
-        self.assertAlmostEqual(thinWalledBool2, newThinWalledBool)
-
-        shaderAttrs = ufe.Attributes.attributes(shaderItem)
-        self.assertTrue(shaderAttrs.hasAttribute("info:id"))
-        shaderAttr = shaderAttrs.attribute("info:id")
-        shaderAttr.set("ND_constant_integer")
-        shaderAttrs = ufe.Attributes.attributes(shaderItem)
-        valueIntAttr = shaderAttrs.attribute("inputs:value")
-        self.assertTrue(valueIntAttr != None)
-        valueInt = valueIntAttr.get()
-        self.assertEqual(valueInt, 0)
-        newValueInt = 2
-        valueIntAttr.set(newValueInt)
-        valueInt_2 = valueIntAttr.get()
-        self.assertEqual(valueInt_2, newValueInt)
-
-        import pdb; pdb.set_trace()
-
-        shaderAttrs = ufe.Attributes.attributes(shaderItem)
-        self.assertTrue(shaderAttrs.hasAttribute("info:id"))
-        shaderAttr = shaderAttrs.attribute("info:id")
-        shaderAttr.set("ND_constant_string")
-        shaderAttrs = ufe.Attributes.attributes(shaderItem)
-        valueStringAttr = shaderAttrs.attribute("inputs:value")
-        self.assertTrue(valueStringAttr != None)
-        valueString = valueStringAttr.get()
-        self.assertEqual(valueString, "")
-        newValueString = "test"
-        valueStringAttr.set(newValueString)
-        valueString_2 = valueStringAttr.get()
-        self.assertEqual(valueString_2, newValueString)
-
-        # TODO: Connect "/Material1.outputs:mtlx:surface" to "/Material1/Shader1.outputs:surface"
 
         # Now that we have a material, we can bind it on the capsule item even if incomplete
         capsuleItem = rootHier.children()[0]
@@ -505,6 +408,98 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(capsuleBindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path("/Material1"))
         cmds.redo()
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
+
+    def createAndTestAttribute(self, materialItem, shaderDefName, shaderName, origValue, newValue, validation):
+        surfDef = ufe.NodeDef.definition(materialItem.runTimeId(), shaderDefName)
+        cmd = surfDef.createNodeCmd(materialItem, ufe.PathComponent(shaderName))
+        ufeCmd.execute(cmd)
+        shaderItem = cmd.insertedChild
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+
+        self.assertTrue(shaderAttrs.hasAttribute("info:id"))
+        self.assertEqual(shaderAttrs.attribute("info:id").get(), shaderDefName)
+        self.assertEqual(ufe.PathString.string(shaderItem.path()), "|stage1|stageShape1,/Material1/" + shaderName + "1")
+        materialHier = ufe.Hierarchy.hierarchy(materialItem)
+        self.assertTrue(materialHier.hasChildren())
+
+        self.assertTrue(shaderAttrs.hasAttribute("inputs:value"))
+        shaderAttr = shaderAttrs.attribute("inputs:value")
+        validation(self, shaderAttr.get(), origValue)
+        shaderAttr.set(newValue)
+        validation(self, shaderAttr.get(), newValue)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testMaterialBindingWithAttributeTypes(self):
+        """Tests all shader attribute types"""
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Material'])
+        ufeCmd.execute(cmd)
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(rootHier.hasChildren())
+        self.assertEqual(len(rootHier.children()), 2)
+
+        materialItem = rootHier.children()[-1]
+        contextOps = ufe.ContextOps.contextOps(materialItem)
+
+        floatAssert = lambda self, x, y : self.assertAlmostEqual(x, y)
+        color3Assert = lambda self, x, y : (self.assertAlmostEqual(x.r(), y.r()), self.assertAlmostEqual(x.g(), y.g()), self.assertAlmostEqual(x.b(), y.b()))
+        vector3Assert = lambda self, x, y : (self.assertAlmostEqual(x.x(), y.x()), self.assertAlmostEqual(x.y(), y.y()), self.assertAlmostEqual(x.z(), y.z()))
+        normalAssert = lambda self, x, y : self.assertEqual(x, y)
+
+        origFloat = 0.0
+        newFloat = 0.6
+        origColor3 = ufe.Color3f(0.0, 0.0, 0.0)
+        newColor3 = ufe.Color3f(0.2, 0.4, 0.6)
+        origVector3 = ufe.Vector3f(0.0, 0.0, 0.0)
+        newVector3 = ufe.Vector3f(0.2, 0.4, 0.6)
+        origBoolean = False
+        newBoolean = True
+        origInteger = 0
+        newInteger = 2
+        origString = ""
+        newString = "test"
+
+        # TODO: implement color4, vector2, vector4, matrix33, matrix44, filename
+
+        self.createAndTestAttribute(materialItem, "ND_constant_float", "ConstantFloat", origFloat, newFloat, floatAssert)
+        self.createAndTestAttribute(materialItem, "ND_constant_color3", "ConstantColor3_", origColor3, newColor3, color3Assert)
+        self.createAndTestAttribute(materialItem, "ND_constant_vector3", "ConstantVector3_", origVector3, newVector3, vector3Assert)
+        self.createAndTestAttribute(materialItem, "ND_constant_boolean", "ConstantBoolean", origBoolean, newBoolean, normalAssert)
+        self.createAndTestAttribute(materialItem, "ND_constant_integer", "ConstantInteger", origInteger, newInteger, normalAssert)
+        self.createAndTestAttribute(materialItem, "ND_constant_string", "ConstantString", origString, newString, normalAssert)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testMaterialBindingWithCreateUsdPreviewSurfaceAttribute(self):
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")
+        testDagPath, testStage = mayaUtils.createProxyFromFile(testFile)
+        mayaPathSegment = mayaUtils.createUfePathSegment(testDagPath)
+        usdPathSegment = usdUtils.createUfePathSegment("/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1")
+        shaderPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        shaderItem = ufe.Hierarchy.createItem(shaderPath)
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+
+        self.assertTrue(shaderAttrs.hasAttribute("inputs:roughness"))
+        shaderAttr = shaderAttrs.attribute("inputs:roughness")
+        self.assertAlmostEqual(shaderAttr.get(), 0.5)
+        shaderAttr.set(0.8)
+        self.assertAlmostEqual(shaderAttr.get(), 0.8)
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
     @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')

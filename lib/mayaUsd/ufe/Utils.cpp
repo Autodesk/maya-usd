@@ -30,6 +30,7 @@
 #include <pxr/usd/pcp/site.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/sdr/shaderProperty.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
@@ -61,6 +62,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
+
+typedef std::unordered_map<PXR_NS::TfToken, PXR_NS::SdfValueTypeName, PXR_NS::TfToken::HashFunctor>
+    TokenToSdfTypeMap;
 
 bool stringBeginsWithDigit(const std::string& inputString)
 {
@@ -568,6 +572,37 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType)
         return iter->second;
     } else {
         return Ufe::Attribute::kGeneric;
+    }
+}
+
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty)
+{
+    const PXR_NS::SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
+    if (typeName.GetHash() == PXR_NS::SdfValueTypeNames->Token.GetHash()) {
+        static const TokenToSdfTypeMap tokenTypeToSdfType
+            = { { PXR_NS::SdrPropertyTypes->Int, PXR_NS::SdfValueTypeNames->Int },
+                { PXR_NS::SdrPropertyTypes->String, PXR_NS::SdfValueTypeNames->String },
+                { PXR_NS::SdrPropertyTypes->Float, PXR_NS::SdfValueTypeNames->Float },
+                { PXR_NS::SdrPropertyTypes->Color, PXR_NS::SdfValueTypeNames->Color3f },
+                { PXR_NS::SdrPropertyTypes->Point, PXR_NS::SdfValueTypeNames->Point3f },
+                { PXR_NS::SdrPropertyTypes->Normal, PXR_NS::SdfValueTypeNames->Normal3f },
+                { PXR_NS::SdrPropertyTypes->Vector, PXR_NS::SdfValueTypeNames->Vector3f },
+                { PXR_NS::SdrPropertyTypes->Matrix, PXR_NS::SdfValueTypeNames->Matrix4d } };
+        TokenToSdfTypeMap::const_iterator it
+            = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
+        if (it != tokenTypeToSdfType.end()) {
+            return usdTypeToUfe(it->second);
+        } else {
+#if PXR_VERSION < 2205
+            // Pre-22.05 boolean inputs are special:
+            if (shaderProperty->GetType() == SdfValueTypeNames->Bool.GetAsToken()) {
+                return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Bool);
+            }
+#endif
+            return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Token);
+        }
+    } else {
+        return usdTypeToUfe(typeName);
     }
 }
 

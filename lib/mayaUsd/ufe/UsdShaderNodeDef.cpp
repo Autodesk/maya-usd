@@ -42,37 +42,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 constexpr char UsdShaderNodeDef::kNodeDefCategoryShader[];
 
-<<<<<<< HEAD
-typedef std::unordered_map<PXR_NS::TfToken, PXR_NS::SdfValueTypeName, PXR_NS::TfToken::HashFunctor>
-    TokenToSdfTypeMap;
-
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
-Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty)
-{
-    const PXR_NS::SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
-    if (typeName.GetHash() == PXR_NS::SdfValueTypeNames->Token.GetHash()) {
-        static const TokenToSdfTypeMap tokenTypeToSdfType
-            = { { PXR_NS::SdrPropertyTypes->Int, PXR_NS::SdfValueTypeNames->Int },
-                { PXR_NS::SdrPropertyTypes->String, PXR_NS::SdfValueTypeNames->String },
-                { PXR_NS::SdrPropertyTypes->Float, PXR_NS::SdfValueTypeNames->Float },
-                { PXR_NS::SdrPropertyTypes->Color, PXR_NS::SdfValueTypeNames->Color3f },
-                { PXR_NS::SdrPropertyTypes->Point, PXR_NS::SdfValueTypeNames->Point3f },
-                { PXR_NS::SdrPropertyTypes->Normal, PXR_NS::SdfValueTypeNames->Normal3f },
-                { PXR_NS::SdrPropertyTypes->Vector, PXR_NS::SdfValueTypeNames->Vector3f },
-                { PXR_NS::SdrPropertyTypes->Matrix, PXR_NS::SdfValueTypeNames->Matrix4d } };
-        TokenToSdfTypeMap::const_iterator it
-            = tokenTypeToSdfType.find(shaderProperty->GetTypeAsSdfType().second);
-        if (it != tokenTypeToSdfType.end()) {
-            return usdTypeToUfe(it->second);
-        } else {
-            return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Token);
-        }
-    } else {
-        return usdTypeToUfe(typeName);
-    }
-}
-#endif
-
 template <Ufe::AttributeDef::IOType IOTYPE>
 Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 {
@@ -92,7 +61,7 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 #if (UFE_PREVIEW_VERSION_NUM < 4010)
         std::ostringstream defaultValue;
         defaultValue << property->GetDefaultValue();
-        Ufe::Attribute::Type type = getUfeTypeForAttribute(property);
+        Ufe::Attribute::Type type = usdTypeToUfe(property);
         attrs.emplace_back(Ufe::AttributeDef::create(name, type, defaultValue.str(), IOTYPE));
 #else
         attrs.emplace_back(Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property)));

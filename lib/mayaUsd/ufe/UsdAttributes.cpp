@@ -126,7 +126,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
                 break;
             }
         }
-        if (!attrHandle) {
+        if (!attributeDef) {
             Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
             for (auto const& output : outputs) {
                 if (INPUT_ATTR_PREFIX + output->name() == name) {
@@ -213,13 +213,13 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
     }
     Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
     for (auto const& input : inputs) {
-        if (input->name() == tkName.GetString()) {
+        if (INPUT_ATTR_PREFIX + input->name() == tkName.GetString()) {
             return true;
         }
     }
     Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
     for (auto const& output : outputs) {
-        if (output->name() == tkName.GetString()) {
+        if (OUTPUT_ATTR_PREFIX + output->name() == tkName.GetString()) {
             return true;
         }
     }

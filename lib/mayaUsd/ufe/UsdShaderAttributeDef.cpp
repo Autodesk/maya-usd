@@ -52,8 +52,7 @@ std::string UsdShaderAttributeDef::name() const
 std::string UsdShaderAttributeDef::type() const
 {
     TF_AXIOM(fShaderAttributeDef);
-    const PXR_NS::SdfValueTypeName typeName = fShaderAttributeDef->GetTypeAsSdfType().first;
-    return usdTypeToUfe(typeName);
+    return usdTypeToUfe(fShaderAttributeDef);
 }
 
 std::string UsdShaderAttributeDef::defaultValue() const

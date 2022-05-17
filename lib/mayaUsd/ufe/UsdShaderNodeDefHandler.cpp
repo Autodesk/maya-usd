@@ -1,4 +1,4 @@
-/
+//
 // Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,72 +23,70 @@
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/usdShade/shader.h>
 
-    namespace MAYAUSD_NS_DEF
+namespace MAYAUSD_NS_DEF {
+namespace ufe {
+
+UsdShaderNodeDefHandler::UsdShaderNodeDefHandler()
+    : Ufe::NodeDefHandler()
 {
-    namespace ufe {
+}
 
-    UsdShaderNodeDefHandler::UsdShaderNodeDefHandler()
-        : Ufe::NodeDefHandler()
-    {
+UsdShaderNodeDefHandler::~UsdShaderNodeDefHandler() { }
+
+UsdShaderNodeDefHandler::Ptr UsdShaderNodeDefHandler::create()
+{
+    return std::make_shared<UsdShaderNodeDefHandler>();
+}
+
+//------------------------------------------------------------------------------
+// Ufe::ShaderNodeDefHandler overrides
+//------------------------------------------------------------------------------
+
+Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const Ufe::SceneItem::Ptr& item) const
+{
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    PXR_NAMESPACE_USING_DIRECTIVE
+    if (!TF_VERIFY(usdItem)) {
+        return nullptr;
     }
-
-    UsdShaderNodeDefHandler::~UsdShaderNodeDefHandler() { }
-
-    UsdShaderNodeDefHandler::Ptr UsdShaderNodeDefHandler::create()
-    {
-        return std::make_shared<UsdShaderNodeDefHandler>();
+    PXR_NS::UsdPrim        prim = usdItem->prim();
+    PXR_NS::UsdShadeShader shader(prim);
+    if (!shader) {
+        return nullptr;
     }
+    PXR_NS::TfToken mxNodeType;
+    shader.GetIdAttr().Get(&mxNodeType);
 
-    //------------------------------------------------------------------------------
-    // Ufe::ShaderNodeDefHandler overrides
-    //------------------------------------------------------------------------------
-
-    Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const Ufe::SceneItem::Ptr& item) const
-    {
-        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-        PXR_NAMESPACE_USING_DIRECTIVE
-        if (!TF_VERIFY(usdItem)) {
-            return nullptr;
-        }
-        PXR_NS::UsdPrim        prim = usdItem->prim();
-        PXR_NS::UsdShadeShader shader(prim);
-        if (!shader) {
-            return nullptr;
-        }
-        PXR_NS::TfToken mxNodeType;
-        shader.GetIdAttr().Get(&mxNodeType);
-
-        // Careful around name and identifier. They are not the same concept.
-        //
-        // Here is one example from MaterialX to illustrate:
-        //
-        //  ND_standard_surface_surfaceshader exists in 2 versions with identifiers:
-        //     ND_standard_surface_surfaceshader     (latest version)
-        //     ND_standard_surface_surfaceshader_100 (version 1.0.0)
-        // Same name, 2 different identifiers.
-        PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
-        PXR_NS::SdrShaderNodeConstPtr shaderNodeDef
-            = registry.GetShaderNodeByIdentifier(mxNodeType);
-        if (!shaderNodeDef) {
-            return nullptr;
-        }
-        return UsdShaderNodeDef::create(shaderNodeDef);
+    // Careful around name and identifier. They are not the same concept.
+    //
+    // Here is one example from MaterialX to illustrate:
+    //
+    //  ND_standard_surface_surfaceshader exists in 2 versions with identifiers:
+    //     ND_standard_surface_surfaceshader     (latest version)
+    //     ND_standard_surface_surfaceshader_100 (version 1.0.0)
+    // Same name, 2 different identifiers.
+    PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
+    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(mxNodeType);
+    if (!shaderNodeDef) {
+        return nullptr;
     }
+    return UsdShaderNodeDef::create(shaderNodeDef);
+}
 
-    Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const std::string& type) const
-    {
-        PXR_NS::SdrRegistry& registry = PXR_NS::SdrRegistry::GetInstance();
-        if (shaderNodeDef) {
-            return UsdShaderNodeDef::create(shaderNodeDef);
-        } else {
-            return nullptr;
-        }
+Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const std::string& type) const
+{
+    PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
+    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByName(type);
+    if (!shaderNodeDef) {
+        return nullptr;
     }
+    return UsdShaderNodeDef::create(shaderNodeDef);
+}
 
-    Ufe::NodeDefs UsdShaderNodeDefHandler::definitions(const std::string& category) const
-    {
-        return UsdShaderNodeDef::definitions(category);
-    }
+Ufe::NodeDefs UsdShaderNodeDefHandler::definitions(const std::string& category) const
+{
+    return UsdShaderNodeDef::definitions(category);
+}
 
-    } // namespace ufe
+} // namespace ufe
 } // namespace MAYAUSD_NS_DEF

@@ -291,11 +291,11 @@ AttrHandle::AttrHandle(
 
 bool AttrHandle::hasValue() const
 {
-    return isAuthored() ? fUsdAttr.HasValue() : !fAttrDef->defaultValue().empty();
+    return isValid() ? fUsdAttr.HasValue() : !fAttrDef->defaultValue().empty();
 }
 bool AttrHandle::isEditAllowed(std::string& errMsg) const
 {
-    if (isAuthored()) {
+    if (isValid()) {
         return isAttributeEditAllowed(fUsdAttr, &errMsg);
     } else {
         return true;
@@ -304,7 +304,7 @@ bool AttrHandle::isEditAllowed(std::string& errMsg) const
 
 std::string AttrHandle::name() const
 {
-    if (isAuthored()) {
+    if (isValid()) {
         return fUsdAttr.GetName().GetString();
     } else {
         return fAttrDef->name();
@@ -313,7 +313,7 @@ std::string AttrHandle::name() const
 
 std::string AttrHandle::documentation() const
 {
-    if (isAuthored()) {
+    if (isValid()) {
         return fUsdAttr.GetDocumentation();
     } else {
         return std::string();
@@ -322,8 +322,8 @@ std::string AttrHandle::documentation() const
 
 std::string AttrHandle::typeName() const
 {
-    if (isAuthored()) {
-        return fUsdAttr.GetTypeName().GetType().GetTypeName();
+    if (isValid()) {
+        return usdTypeToUfe(fUsdAttr.GetTypeName());
     } else {
         return fAttrDef->type();
     }
@@ -331,12 +331,17 @@ std::string AttrHandle::typeName() const
 
 bool AttrHandle::get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const
 {
-    const std::string& defaultValue = fAttrDef->defaultValue();
-    const std::string& typeName = AttrHandle::typeName();
     if (isAuthored()) {
         return fUsdAttr.Get(value, time);
+    } else {
+        if (fAttrDef) {
+            const std::string& defaultValue = fAttrDef->defaultValue();
+            const std::string& typeName = AttrHandle::typeName();
+            return vtValueFromString(typeName, defaultValue, value);
+        } else {
+            return false;
+        }
     }
-    return vtValueFromString(typeName, defaultValue, value);
 }
 
 bool AttrHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
@@ -347,7 +352,7 @@ bool AttrHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
         if (currentValue == value) {
             return true;
         } else {
-            if (fPrim) {
+            if (fAttrDef && fPrim) {
                 const PXR_NS::TfToken attrName(
                     fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR
                         ? PXR_NS::TfToken(OUTPUT_ATTR_PREFIX + fAttrDef->name())
@@ -360,18 +365,6 @@ bool AttrHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
         }
     }
 
-    if (fAttrDef) {
-        std::string strValue;
-        bool        success = stringFromVtValue(fAttrDef->type(), value, &strValue);
-        if (success && fAttrDef->defaultValue() == strValue) {
-            fUsdAttr.ClearAtTime(time);
-            if (!fUsdAttr.HasValue()) {
-                fPrim.RemoveProperty(fUsdAttr.GetName());
-                fUsdAttr = PXR_NS::UsdAttribute();
-            }
-            return true;
-        }
-    }
     return fUsdAttr.Set(value, time);
 }
 
@@ -403,6 +396,8 @@ Ufe::Value AttrHandle::getMetadata(const std::string& key) const
                 return Ufe::Value(v.Get<PXR_NS::TfToken>().GetString());
         }
         return Ufe::Value();
+    } else if (fAttrDef && fAttrDef->hasMetadata(key)) {
+        return fAttrDef->getMetadata(key);
     } else {
         return Ufe::Value();
     }
@@ -452,6 +447,8 @@ bool AttrHandle::hasMetadata(const std::string& key) const
         }
         PXR_NS::TfToken tok(key);
         return fUsdAttr.HasMetadata(tok);
+    } else if (fAttrDef && fAttrDef->hasMetadata(key)) {
+        return true;
     } else {
         return false;
     }
@@ -660,10 +657,10 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
 {
     // We need to figure out if the USDAttribute is holding a TfToken or string.
     const std::string typeName = fAttrHandle->typeName();
-    if (typeName == PXR_NS::SdfValueTypeNames->String) {
+    if (typeName == Ufe::Attribute::kString) {
         setUsdAttr<std::string>(fAttrHandle, value);
         return;
-    } else if (typeName == PXR_NS::SdfValueTypeNames->Token.GetCPPTypeName()) {
+    } else if (typeName == Ufe::Attribute::kEnumString) {
         PXR_NS::TfToken tok(value);
         setUsdAttr<PXR_NS::TfToken>(fAttrHandle, tok);
         return;
@@ -725,9 +722,6 @@ template <> void TypedUsdAttribute<Ufe::Vector3d>::set(const Ufe::Vector3d& valu
 
 template <typename T> T TypedUsdAttribute<T>::get() const
 {
-    if (!hasValue())
-        return T();
-
     PXR_NS::VtValue vt;
     if (fAttrHandle->get(&vt, getCurrentTime(Ufe::Attribute::sceneItem())) && vt.IsHolding<T>()) {
         return vt.UncheckedGet<T>();

@@ -160,6 +160,7 @@ bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 MAYAUSD_CORE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType);
+Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty);
 
 bool vtValueFromString(
     const std::string& typeName,

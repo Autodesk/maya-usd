@@ -83,7 +83,8 @@ public:
         const PXR_NS::UsdAttribute&        usdAttr);
     virtual ~AttrHandle() = default;
 
-    inline bool isAuthored() const { return fUsdAttr.IsValid(); }
+    inline bool isAuthored() const { return isValid() && hasValue(); }
+    inline bool isValid() const { return fUsdAttr.IsValid(); }
     bool        hasValue() const;
 
     inline bool isEditAllowed(std::string& errMsg) const;
