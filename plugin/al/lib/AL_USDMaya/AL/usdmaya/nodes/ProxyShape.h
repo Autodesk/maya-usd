@@ -766,7 +766,7 @@ public:
     /// \param importPrims array of prims you wish to import
     /// \param teardownPaths paths you wish to teardown
     /// \param param are flags which direct the translation of the prims
-    /// \param affectedPaths paths that being affected during translation
+    /// \param affectedPaths affected paths during translation
     AL_USDMAYA_PUBLIC
     void translatePrimsIntoMaya(
         const MayaUsdUtils::UsdPrimVector&               importPrims,

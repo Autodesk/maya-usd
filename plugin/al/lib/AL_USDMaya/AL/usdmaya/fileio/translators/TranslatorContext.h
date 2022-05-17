@@ -261,7 +261,7 @@ public:
     /// \brief  this method is used after a variant switch to check to see if the prim types have
     /// changed in the
     ///         stage, and will update the internal state accordingly.
-    /// \param affectedPaths paths that being affected during translation
+    /// \param affectedPaths affected paths during translation
     AL_USDMAYA_PUBLIC
     void updatePrimTypes(const SdfPathSet& affectedPaths = SdfPathSet());
 

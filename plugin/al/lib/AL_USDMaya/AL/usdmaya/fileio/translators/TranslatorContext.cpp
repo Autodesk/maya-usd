@@ -117,7 +117,7 @@ void TranslatorContext::updatePrimTypes(const SdfPathSet& affectedPaths)
         UsdPrim prim = stage->GetPrimAtPath(path);
         bool    modifiedIt = false;
         if (!prim) {
-            // Check if the registered prim path is being affected
+            // Check if the registered prim path is affected
             if (isDescendantPath(affectedPaths, path)) {
                 it = m_primMapping.erase(it);
                 modifiedIt = true;
