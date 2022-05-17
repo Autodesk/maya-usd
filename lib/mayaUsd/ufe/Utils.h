@@ -166,11 +166,6 @@ bool vtValueFromString(
     const std::string& typeName,
     const std::string& strValue,
     PXR_NS::VtValue*   value);
-
-bool stringFromVtValue(
-    const std::string&     typeName,
-    const PXR_NS::VtValue& value,
-    std::string*           strValue);
 #endif
 
 //! Check if the edit target in the stage is allowed to be changed.

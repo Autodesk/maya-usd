@@ -75,12 +75,11 @@ class AttrHandle
 public:
     using Ptr = std::shared_ptr<AttrHandle>;
 
-    AttrHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef);
     AttrHandle(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdAttribute& usdAttr);
     AttrHandle(
         const PXR_NS::UsdPrim&             prim,
         const Ufe::AttributeDef::ConstPtr& attrDef,
-        const PXR_NS::UsdAttribute&        usdAttr);
+        const PXR_NS::UsdAttribute&        usdAttr = PXR_NS::UsdAttribute());
     virtual ~AttrHandle() = default;
 
     inline bool isAuthored() const { return isValid() && hasValue(); }

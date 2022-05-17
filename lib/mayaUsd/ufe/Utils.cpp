@@ -660,53 +660,6 @@ bool vtValueFromString(
     return false;
 }
 
-bool stringFromVtValue(
-    const std::string&     typeName,
-    const PXR_NS::VtValue& value,
-    std::string*           strValue)
-{
-    if (typeName == Ufe::Attribute::kBool) {
-        const bool& bValue = value.Get<bool>();
-        *strValue = bValue ? "true" : "false";
-        return true;
-    } else if (typeName == Ufe::Attribute::kInt) {
-        const int& iValue = value.Get<int>();
-        *strValue = std::to_string(iValue);
-        return true;
-    } else if (typeName == Ufe::Attribute::kFloat) {
-        const float& fValue = value.Get<float>();
-        *strValue = std::to_string(fValue);
-        return true;
-    } else if (typeName == Ufe::Attribute::kDouble) {
-        const double& dValue = value.Get<double>();
-        *strValue = std::to_string(dValue);
-        return true;
-    } else if (typeName == Ufe::Attribute::kString) {
-        *strValue = value.Get<std::string>();
-        return true;
-    } else if (typeName == Ufe::Attribute::kEnumString) {
-        PXR_NS::TfToken tValue = value.Get<PXR_NS::TfToken>();
-        *strValue = tValue.GetString();
-        return true;
-    } else if (typeName == Ufe::Attribute::kInt3) {
-        GfVec3i vValue = value.Get<GfVec3i>();
-        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", "
-            + std::to_string(vValue[2]) + ")";
-        return true;
-    } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
-        GfVec3f vValue = value.Get<GfVec3f>();
-        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", "
-            + std::to_string(vValue[2]) + ")";
-        return true;
-    } else if (typeName == Ufe::Attribute::kDouble3) {
-        GfVec3d vValue = value.Get<GfVec3d>();
-        *strValue = "(" + std::to_string(vValue[0]) + ", " + std::to_string(vValue[1]) + ", "
-            + std::to_string(vValue[2]) + ")";
-        return true;
-    }
-    return false;
-}
-
 #endif
 
 Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)

@@ -267,12 +267,6 @@ const std::string OUTPUT_ATTR_PREFIX = "outputs:";
 // AttrHandle:
 //------------------------------------------------------------------------------
 
-AttrHandle::AttrHandle(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef)
-    : fPrim(prim)
-    , fAttrDef(attrDef)
-{
-}
-
 AttrHandle::AttrHandle(const PXR_NS::UsdPrim& prim, const PXR_NS::UsdAttribute& usdAttr)
     : fPrim(prim)
     , fUsdAttr(usdAttr)
