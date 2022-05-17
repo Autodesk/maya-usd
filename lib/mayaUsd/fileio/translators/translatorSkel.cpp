@@ -1075,7 +1075,7 @@ bool _ConfigureSkinnedObjectTransform(
     MFnTransform transformFn(path, &status);
     GfMatrix4d   geomBindTransform = skinningQuery.GetGeomBindTransform();
     MMatrix      gbt = UsdMayaUtil::GfMatrixToMMatrix(geomBindTransform);
-    transformFn.resetTransformation(gbt);
+    transformFn.set(MTransformationMatrix(gbt));
 
     return true;
 }
