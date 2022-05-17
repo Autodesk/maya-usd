@@ -33,6 +33,23 @@ const int _translatorContextProfilerCategory = MProfiler::addCategory(
     "TranslatorContext"
 #endif
 );
+
+bool isDescendantPath(const SdfPathSet& affectedPaths, const SdfPath& path)
+{
+    if (affectedPaths.empty()) {
+        // Preserve the behaviour for translate prim command that would not
+        // have any path
+        return true;
+    }
+
+    for (const auto& affectedPath : affectedPaths) {
+        if (path.HasPrefix(affectedPath)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 } // namespace
 
 namespace AL {
@@ -89,7 +106,7 @@ bool TranslatorContext::getTransform(const SdfPath& path, MObjectHandle& object)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void TranslatorContext::updatePrimTypes()
+void TranslatorContext::updatePrimTypes(const SdfPathSet& affectedPaths)
 {
     MProfilingScope profilerScope(
         _translatorContextProfilerCategory, MProfiler::kColorE_L3, "Update prim types");
@@ -100,8 +117,11 @@ void TranslatorContext::updatePrimTypes()
         UsdPrim prim = stage->GetPrimAtPath(path);
         bool    modifiedIt = false;
         if (!prim) {
-            it = m_primMapping.erase(it);
-            modifiedIt = true;
+            // Check if the registered prim path is affected
+            if (isDescendantPath(affectedPaths, path)) {
+                it = m_primMapping.erase(it);
+                modifiedIt = true;
+            }
         } else {
             std::string translatorId
                 = m_proxyShape->translatorManufacture().generateTranslatorId(prim);
