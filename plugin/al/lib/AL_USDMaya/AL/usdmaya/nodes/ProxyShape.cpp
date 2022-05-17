@@ -232,7 +232,8 @@ void ProxyShape::translatePrimPathsIntoMaya(
 void ProxyShape::translatePrimsIntoMaya(
     const UsdPrimVector&                             importPrims,
     const SdfPathVector&                             teardownPrims,
-    const fileio::translators::TranslatorParameters& param)
+    const fileio::translators::TranslatorParameters& param,
+    const SdfPathSet&                                affectedPaths)
 {
     MProfilingScope profilerScope(
         _proxyShapeProfilerCategory, MProfiler::kColorE_L3, "Translate prims into Maya");
@@ -293,7 +294,7 @@ void ProxyShape::translatePrimsIntoMaya(
 
     cleanupTransformRefs();
 
-    context()->updatePrimTypes();
+    context()->updatePrimTypes(affectedPaths);
 
     // now perform any post-creation fix up
     if (!filter.newPrimSet().empty()) {
@@ -791,8 +792,13 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
     UsdPrimVector newPrimSet
         = huntForNativeNodesUnderPrim(proxyTransformPath, primPath, translatorManufacture());
 
+    SdfPathSet affectedPaths;
+    affectedPaths.emplace(primPath);
+    affectedPaths.insert(previousPrims.begin(), previousPrims.end());
+
     // Remove prims that have disappeared and translate in new prims
-    translatePrimsIntoMaya(newPrimSet, previousPrims);
+    translatePrimsIntoMaya(
+        newPrimSet, previousPrims, fileio::translators::TranslatorParameters(), affectedPaths);
 
     previousPrims.clear();
 
