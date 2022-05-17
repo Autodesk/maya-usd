@@ -70,17 +70,15 @@ bool isTransformChange(const TfToken& nameToken)
 
 // Prevent exception from the notifications from escaping and breaking USD/Maya.
 // USD does not wrap its notification in try/catch, so we need to do it ourselves.
-template <class RECEIVER> struct SafeNotification
+template <class RECEIVER, class NOTIFICATION>
+void notifyWithoutExceptions(const NOTIFICATION& notif)
 {
-    template <class NOTIFICATION> static void notify(const NOTIFICATION& notif)
-    {
-        try {
-            RECEIVER::notify(notif);
-        } catch (const std::exception& ex) {
-            TF_WARN("Caught error during notification: %s", ex.what());
-        }
+    try {
+        RECEIVER::notify(notif);
+    } catch (const std::exception& ex) {
+        TF_WARN("Caught error during notification: %s", ex.what());
     }
-};
+}
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // The attribute change notification guard is not meant to be nested, but
@@ -101,11 +99,11 @@ bool inAttributeChangedNotificationGuard()
 
 void sendValueChanged(const Ufe::Path& ufePath, const TfToken& changedToken)
 {
-    SafeNotification<Ufe::Attributes>::notify(
+    notifyWithoutExceptions<Ufe::Attributes>(
         Ufe::AttributeValueChanged(ufePath, changedToken.GetString()));
 
     if (MayaUsd::ufe::UsdCamera::isCameraToken(changedToken)) {
-        SafeNotification<Ufe::Camera>::notify(ufePath);
+        notifyWithoutExceptions<Ufe::Camera>(ufePath);
     }
 }
 
@@ -340,7 +338,7 @@ void StagesSubject::stageChanged(
             auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
             if (isTransformChange(nameToken)) {
                 if (!InTransform3dChange::inTransform3dChange()) {
-                    SafeNotification<Ufe::Transform3d>::notify(ufePath);
+                    notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 }
             }
             UFE_V2(valueChanged(ufePath, changedPath.GetNameToken());)
@@ -459,7 +457,7 @@ void StagesSubject::stageChanged(
         // Send a special message when visibility has changed.
         if (changedPath.GetNameToken() == UsdGeomTokens->visibility) {
             Ufe::VisibilityChanged vis(ufePath);
-            SafeNotification<Ufe::Object3d>::notify(vis);
+            notifyWithoutExceptions<Ufe::Object3d>(vis);
             sendValueChangedFallback = false;
         }
 #endif
@@ -469,7 +467,7 @@ void StagesSubject::stageChanged(
             const UsdPrim prim = stage->GetPrimAtPath(changedPath.GetPrimPath());
             const TfToken nameToken = changedPath.GetNameToken();
             if (isTransformChange(nameToken)) {
-                SafeNotification<Ufe::Transform3d>::notify(ufePath);
+                notifyWithoutExceptions<Ufe::Transform3d>(ufePath);
                 UFE_V2(sendValueChangedFallback = false;)
             } else if (prim && prim.IsA<UsdGeomPointInstancer>()) {
                 // If the prim at the changed path is a PointInstancer, check
@@ -515,7 +513,7 @@ void StagesSubject::stageChanged(
                     for (int instanceIndex = 0; instanceIndex < numIndices; ++instanceIndex) {
                         const Ufe::Path instanceUfePath = stagePath(sender)
                             + usdPathToUfePathSegment(changedPath.GetPrimPath(), instanceIndex);
-                        SafeNotification<Ufe::Transform3d>::notify(instanceUfePath);
+                        notifyWithoutExceptions<Ufe::Transform3d>(instanceUfePath);
                     }
                     UFE_V2(sendValueChangedFallback = false;)
                 }
@@ -546,7 +544,7 @@ void StagesSubject::stageChanged(
     if (notice.GetResyncedPaths().empty() && notice.GetChangedInfoOnlyPaths().empty()) {
         auto                       ufePath = stagePath(sender);
         Ufe::AttributeValueChanged vc(ufePath, "/");
-        SafeNotification<Ufe::Attributes>::notify(vc);
+        notifyWithoutExceptions<Ufe::Attributes>(vc);
     }
 #endif
 }
