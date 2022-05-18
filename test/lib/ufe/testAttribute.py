@@ -33,6 +33,7 @@ from mayaUsd import ufe as mayaUsdUfe
 
 import ufe
 
+import ast
 import os
 import random
 import unittest
@@ -174,17 +175,11 @@ class AttributeTestCase(unittest.TestCase):
         assert oldVal != newVal, "Undo / redo testing requires setting a value different from the current value"
 
         setAttrPath = self.getMayaAttrStr(attr)
-        if isinstance(newVal, (ufe.Vector3i, ufe.Vector3f, ufe.Vector3d)):
-            cmds.setAttr(setAttrPath, newVal.x(), newVal.y(), newVal.z())
-        elif isinstance(newVal, ufe.Vector2f):
-            cmds.setAttr(setAttrPath, newVal.x(), newVal.y())
-        elif isinstance(newVal, ufe.Vector4f):
-            cmds.setAttr(setAttrPath, newVal.x(), newVal.y(), newVal.z(), newVal.w())
-        elif isinstance(newVal, ufe.Color3f):
-            cmds.setAttr(setAttrPath, newVal.r(), newVal.g(), newVal.b())
-        elif isinstance(newVal, ufe.Color4f):
-            cmds.setAttr(setAttrPath, newVal.r(), newVal.g(), newVal.b(), newVal.a())
-        elif isinstance(newVal, ufe.Matrix3d) or isinstance(newVal, ufe.Matrix4d):
+        if hasattr(newVal, "vector"):
+            cmds.setAttr(setAttrPath, *newVal.vector)
+        elif hasattr(newVal, "color"):
+            cmds.setAttr(setAttrPath, *newVal.color)
+        elif hasattr(newVal, "matrix"):
             # Flatten the matrix for Maya:
             cmds.setAttr(setAttrPath, *[i for row in newVal.matrix for i in row])
         else:
@@ -215,15 +210,19 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ufeAttrType, cmds.getAttr(getAttrPath, type=True))
 
         ufeVectorTypes = {ufe.Attribute.kColorFloat3 : ufe.Color3f,
-                          ufe.Attribute.kColorFloat4 : ufe.Color4f,
                           ufe.Attribute.kInt3 : ufe.Vector3i,
-                          ufe.Attribute.kFloat2 : ufe.Vector2f,
                           ufe.Attribute.kFloat3 : ufe.Vector3f,
-                          ufe.Attribute.kFloat4 : ufe.Vector4f,
-                          ufe.Attribute.kDouble3 : ufe.Vector3d,
-                          ufe.Attribute.kMatrix3d : ufe.Matrix3d,
-                          ufe.Attribute.kMatrix4d : ufe.Matrix4d
+                          ufe.Attribute.kDouble3 : ufe.Vector3d
                           }
+
+        if hasattr(ufe.Attribute, "kColorFloat4"):
+            ufeVectorTypes.update({
+                ufe.Attribute.kColorFloat4 : ufe.Color4f,
+                ufe.Attribute.kFloat2 : ufe.Vector2f,
+                ufe.Attribute.kFloat4 : ufe.Vector4f,
+                ufe.Attribute.kMatrix3d : ufe.Matrix3d,
+                ufe.Attribute.kMatrix4d : ufe.Matrix4d
+            })
 
         if ufeAttrType == ufe.Attribute.kGeneric:
             self.assertEqual(cmds.getAttr(getAttrPath), str(ufeAttr))
@@ -232,7 +231,7 @@ class AttributeTestCase(unittest.TestCase):
             # Pre Ufe 0.4.15: Maya might return the result as a string for colors. Fixed to always
             # return a vector post 0.4.15.
             if isinstance(getAttrValue, str):
-                getAttrValue = eval(getAttrValue)
+                getAttrValue = ast.literal_eval(getAttrValue)
             self.assertEqual(ufeVectorTypes[ufeAttrType](getAttrValue), ufeAttr.get())
         else:
             if decimalPlaces is not None:
