@@ -70,6 +70,13 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+//! \brief AttrHandle class keeps track of an attribute's data.
+/*!
+        A MayaUsd UsdAttribute is either authored which means it's associated
+        prim has a PXR_NS::UsdAttribute on it or it can be unauthored in
+        which case it may have an associated definition that defines the
+        default attribute information.
+ */
 class AttrHandle
 {
 public:
@@ -95,10 +102,12 @@ public:
     bool get(PXR_NS::VtValue* value, PXR_NS::UsdTimeCode time) const;
     bool set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
     Ufe::Value getMetadata(const std::string& key) const;
     bool       setMetadata(const std::string& key, const Ufe::Value& value);
     bool       clearMetadata(const std::string& key);
     bool       hasMetadata(const std::string& key) const;
+#endif
 
     inline const PXR_NS::UsdPrim&      usdPrim() const { return fPrim; }
     inline const PXR_NS::UsdAttribute& usdAttribute() const { return fUsdAttr; }
@@ -107,13 +116,13 @@ private:
     PXR_NS::UsdPrim                   fPrim;
     const Ufe::AttributeDef::ConstPtr fAttrDef;
     PXR_NS::UsdAttribute              fUsdAttr;
-};
+}; // AttrHandle
 
 //! \brief Internal helper class to implement the pure virtual methods from Ufe::Attribute.
 class UsdAttribute
 {
 public:
-    UsdAttribute(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle);
+    UsdAttribute(const AttrHandle::Ptr& attrHandle);
     ~UsdAttribute();
 
     // Ufe::Attribute override methods that we've mimic'd here.
@@ -130,7 +139,6 @@ public:
 #endif
 
 protected:
-    PXR_NS::UsdPrim fPrim;
     AttrHandle::Ptr fAttrHandle;
 }; // UsdAttribute
 

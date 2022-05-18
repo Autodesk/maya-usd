@@ -362,6 +362,7 @@ bool AttrHandle::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
     return fUsdAttr.Set(value, time);
 }
 
+#ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::Value AttrHandle::getMetadata(const std::string& key) const
 {
     if (isAuthored()) {
@@ -447,15 +448,15 @@ bool AttrHandle::hasMetadata(const std::string& key) const
         return false;
     }
 }
+#endif
 
 //------------------------------------------------------------------------------
 // UsdAttribute:
 //------------------------------------------------------------------------------
 
-UsdAttribute::UsdAttribute(const UsdSceneItem::Ptr& item, const AttrHandle::Ptr& attrHandle)
+UsdAttribute::UsdAttribute(const AttrHandle::Ptr& attrHandle)
     : fAttrHandle(attrHandle)
 {
-    fPrim = item->prim();
 }
 
 UsdAttribute::~UsdAttribute() { }
@@ -508,7 +509,7 @@ UsdAttributeGeneric::UsdAttributeGeneric(
     const UsdSceneItem::Ptr& item,
     const AttrHandle::Ptr&   attrHandle)
     : Ufe::AttributeGeneric(item)
-    , UsdAttribute(item, attrHandle)
+    , UsdAttribute(attrHandle)
 {
 }
 
@@ -534,7 +535,7 @@ UsdAttributeEnumString::UsdAttributeEnumString(
     const UsdSceneItem::Ptr& item,
     const AttrHandle::Ptr&   attrHandle)
     : Ufe::AttributeEnumString(item)
-    , UsdAttribute(item, attrHandle)
+    , UsdAttribute(attrHandle)
 {
 }
 
@@ -605,7 +606,7 @@ TypedUsdAttribute<T>::TypedUsdAttribute(
     const UsdSceneItem::Ptr& item,
     const AttrHandle::Ptr&   attrHandle)
     : Ufe::TypedAttribute<T>(item)
-    , UsdAttribute(item, attrHandle)
+    , UsdAttribute(attrHandle)
 {
 }
 
