@@ -17,7 +17,7 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <pxr/usd/sdr/shaderproperty.h>
+#include <pxr/usd/sdr/shaderProperty.h>
 
 #include <ufe/attributeDef.h>
 
