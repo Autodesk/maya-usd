@@ -282,6 +282,25 @@ bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
 
 //------------------------------------------------------------------------------
 //
+// Turn on the mesh flag to allow topological modifications.
+bool allowTopologyModifications(MDagPath& root)
+{
+    MDGModifier& dgMod = MDGModifierUndoItem::create("Allow topology modifications");
+
+    MItDag dagIt;
+    dagIt.reset(root, MItDag::kDepthFirst, MFn::kMesh);
+    for (; !dagIt.isDone(); dagIt.next()) {
+        MString cmd;
+        if (!cmd.format("setAttr \"^1s.allowTopologyMod\" 1;", dagIt.fullPathName()))
+            return false;
+        if (!dgMod.commandToExecute(cmd))
+            return false;
+    }
+    return dgMod.doIt();
+}
+
+//------------------------------------------------------------------------------
+//
 // Perform the import step of the pull (first step), with the argument
 // prim as the root of the USD hierarchy to be pulled.  The UFE path and
 // the prim refer to the same object: the prim is passed in as an
@@ -712,7 +731,8 @@ bool pushCustomize(
         auto updater = createUpdater(srcLayer, srcPath, dstPath, context);
         if (!updater) {
             TF_WARN(
-                "Could not create a prim updater for path %s during PushEnd() traversal, pruning "
+                "Could not create a prim updater for path %s during PushEnd() traversal, "
+                "pruning "
                 "at that point.",
                 srcPath.GetText());
             return;
@@ -967,6 +987,10 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
     if (!updaterArgs._copyOperation) {
         // Lock pulled nodes starting at the pull parent.
         LockNodesUndoItem::lock("Edit as Maya node locking", pullParentPath, true);
+
+        // Allow editing topology, which gets turned of by locking.
+        if (!allowTopologyModifications(pullParentPath))
+            return false;
     }
 
     // We must recreate the UFE item because it has changed data models (USD -> Maya).
