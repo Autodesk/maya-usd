@@ -47,6 +47,17 @@
 #include <maya/MFnAttribute.h>
 
 namespace {
+
+void clearAutoEdit(const UsdPrim& prim)
+{
+    if (prim.IsValid()) {
+        UsdAttribute mayaAutoEditAttr = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
+        if (mayaAutoEditAttr.IsValid()) {
+            mayaAutoEditAttr.Set<bool>(false);
+        }
+    }
+}
+
 std::string findValue(const PXR_NS::VtDictionary& routingData, const PXR_NS::TfToken& key)
 {
     auto found = routingData.find(key);
@@ -233,13 +244,7 @@ bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
         if (PrimUpdaterManager::readPullInformation(dagPath, pulledPath)) {
             // Reset the auto-edit when discarding the edit.
             UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
-            if (prim.IsValid()) {
-                UsdAttribute mayaAutoEditAttr
-                    = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
-                if (mayaAutoEditAttr.IsValid()) {
-                    mayaAutoEditAttr.Set<bool>(false);
-                }
-            }
+            clearAutoEdit(prim);
         }
     }
 
@@ -265,6 +270,9 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
 
     MayaUsd::LockNodesUndoItem::lock(
         "Maya reference pulled transform unlocking", transformPath, false);
+
+    // Clear the auto-edit flag.
+    clearAutoEdit(getUsdPrim());
 
     return true;
 }
