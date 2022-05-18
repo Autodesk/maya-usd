@@ -82,33 +82,48 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     PXR_NS::TfToken      tok(name);
     PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
     Ufe::Attribute::Type newAttrType = getUfeTypeForAttribute(usdAttr);
-    Ufe::Attribute::Ptr  newAttr;
 
-    if (newAttrType == Ufe::Attribute::kBool) {
-        newAttr = UsdAttributeBool::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kInt) {
-        newAttr = UsdAttributeInt::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kFloat) {
-        newAttr = UsdAttributeFloat::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kDouble) {
-        newAttr = UsdAttributeDouble::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kString) {
-        newAttr = UsdAttributeString::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kColorFloat3) {
-        newAttr = UsdAttributeColorFloat3::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kEnumString) {
-        newAttr = UsdAttributeEnumString::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kInt3) {
-        newAttr = UsdAttributeInt3::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kFloat3) {
-        newAttr = UsdAttributeFloat3::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kDouble3) {
-        newAttr = UsdAttributeDouble3::create(fItem, usdAttr);
-    } else if (newAttrType == Ufe::Attribute::kGeneric) {
-        newAttr = UsdAttributeGeneric::create(fItem, usdAttr);
-    } else {
-        UFE_ASSERT_MSG(false, kErrorMsgUnknown);
+    // Use a map of constructors to reduce the number of string comparisons. Since the naming
+    // convention is extremely uniform, let's use a macro to simplify definition (and prevent
+    // mismatch errors).
+#define ADD_UFE_USD_CTOR(TYPE)                                                         \
+    {                                                                                  \
+        Ufe::Attribute::k##TYPE, [](UsdSceneItem::Ptr si, PXR_NS::UsdAttribute attr) { \
+            return UsdAttribute##TYPE::create(si, attr);                               \
+        }                                                                              \
     }
+
+    static const std::unordered_map<
+        std::string,
+        std::function<Ufe::Attribute::Ptr(UsdSceneItem::Ptr, PXR_NS::UsdAttribute)>>
+        ctorMap
+        = { ADD_UFE_USD_CTOR(Bool),
+            ADD_UFE_USD_CTOR(Int),
+            ADD_UFE_USD_CTOR(Float),
+            ADD_UFE_USD_CTOR(Double),
+            ADD_UFE_USD_CTOR(String),
+            ADD_UFE_USD_CTOR(ColorFloat3),
+            ADD_UFE_USD_CTOR(EnumString),
+            ADD_UFE_USD_CTOR(Int3),
+            ADD_UFE_USD_CTOR(Float3),
+            ADD_UFE_USD_CTOR(Double3),
+            ADD_UFE_USD_CTOR(Generic),
+            ADD_UFE_USD_CTOR(Bool),
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+            ADD_UFE_USD_CTOR(ColorFloat4),
+            ADD_UFE_USD_CTOR(Filename),
+            ADD_UFE_USD_CTOR(Float2),
+            ADD_UFE_USD_CTOR(Float4),
+            ADD_UFE_USD_CTOR(Matrix3d),
+            ADD_UFE_USD_CTOR(Matrix4d),
+#endif
+          };
+
+#undef ADD_UFE_USD_CTOR
+    auto ctorIt = ctorMap.find(newAttrType);
+    UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
+    Ufe::Attribute::Ptr newAttr = ctorIt->second(fItem, usdAttr);
+
     fAttributes[name] = newAttr;
     return newAttr;
 }

@@ -1,0 +1,184 @@
+#usda 1.0
+(
+    defaultPrim = "TypeSampler"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Material "TypeSampler"
+{
+	def NodeGraph "UsdPreviewSurface"
+	{
+		def Shader "PS"
+		{
+			uniform token info:id = "UsdPreviewSurface"
+			color3f inputs:diffuseColor = (0.1, 0.2, 0.3)
+			float inputs:ior = 1.5
+			int inputs:useSpecularWorkflow = 1
+			normal3f inputs:normal = (0.4, 0.5, 0.6)
+			token outputs:displacement
+			token outputs:surface
+		}
+
+		def Shader "TXT"
+		{
+			uniform token info:id = "UsdUVTexture"
+			float4 inputs:fallback = (0.7, 0.8, 0.9, 0.1)
+			asset inputs:file = @grid16.png@
+			float2 inputs:st = (0.2, 0.3)
+			token inputs:wrapS = "repeat"
+			float3 outputs:rgb
+		}
+
+		def Shader "R_string"
+		{
+			uniform token info:id = "UsdPrimvarReader_string"
+			string inputs:fallback = "testString"
+			string outputs:result
+		}
+
+		def Shader "R_float3"
+		{
+			uniform token info:id = "UsdPrimvarReader_float3"
+			float3 inputs:fallback = (0.3, 0.4, 0.5)
+			float3 outputs:result
+		}
+
+		def Shader "R_normal"
+		{
+			uniform token info:id = "UsdPrimvarReader_normal"
+			normal3f inputs:fallback = (0.4, 0.5, 0.6)
+			normal3f outputs:result
+		}
+
+		def Shader "R_point"
+		{
+			uniform token info:id = "UsdPrimvarReader_point"
+			point3f inputs:fallback = (0.5, 0.6, 0.7)
+			point3f outputs:result
+		}
+
+		def Shader "R_vector"
+		{
+			uniform token info:id = "UsdPrimvarReader_vector"
+			vector3f inputs:fallback = (0.6, 0.7, 0.8)
+			vector3f outputs:result
+		}
+
+		def Shader "R_matrix"
+		{
+			uniform token info:id = "UsdPrimvarReader_matrix"
+			matrix4d inputs:fallback = ( (0.1, 0.3, 0.5, 0.7), (0.9, 0.8, 0.4, 0.2), (0.1, 0.2, 0.3, 0.4), (0.5, 0.4, 0.6, 0.3) )
+			matrix4d outputs:result
+		}
+	}
+
+	def NodeGraph "MaterialX"
+	{
+		def Shader "SS"
+		{
+			uniform token info:id = "ND_standard_surface_surfaceshader"
+			color3f inputs:base_color = (0.2, 0.4, 0.6)
+			float inputs:specular_roughness = 0.4
+			float3 inputs:normal = (0.1, 0.2, 0.3)
+			token outputs:surface
+		}
+
+		def Shader "TXT"
+		{
+			uniform token info:id = "ND_image_color4"
+			
+			asset inputs:file = @grid16.png@
+			string inputs:filtertype = "cubic"
+			float2 inputs:texcoord = (0.5, 0.6)
+			color4f inputs:default = (0.7, 0.6, 0.5, 0.4)
+			int inputs:frameoffset = 12
+			color4f outputs:out
+		}
+
+		def Shader "D_float"
+		{
+			uniform token info:id = "ND_dot_float"
+			float inputs:in = 12.0
+			float outputs:out
+		}
+
+		def Shader "D_color3"
+		{
+			uniform token info:id = "ND_dot_color3"
+			color3f inputs:in = (0.1, 0.2, 0.3)
+			color3f outputs:out
+		}
+
+		def Shader "D_color4"
+		{
+			uniform token info:id = "ND_dot_color4"
+			color4f inputs:in = (0.2, 0.3, 0.4, 0.5)
+			color4f outputs:out
+		}
+
+		def Shader "D_vector2"
+		{
+			uniform token info:id = "ND_dot_vector2"
+			float2 inputs:in = (0.3, 0.4)
+			float2 outputs:out
+		}
+
+		def Shader "D_vector3"
+		{
+			uniform token info:id = "ND_dot_vector3"
+			float3 inputs:in = (0.4, 0.5, 0.6)
+			float3 outputs:out
+		}
+
+		def Shader "D_vector4"
+		{
+			uniform token info:id = "ND_dot_vector4"
+			float4 inputs:in = (0.5, 0.6, 0.7, 0.8)
+			float4 outputs:out
+		}
+
+		def Shader "D_boolean"
+		{
+			uniform token info:id = "ND_dot_boolean"
+			bool inputs:in = true
+			bool outputs:out
+		}
+
+		def Shader "D_integer"
+		{
+			uniform token info:id = "ND_dot_integer"
+			int inputs:in = 42
+			int outputs:out
+		}
+
+		def Shader "D_matrix33"
+		{
+			uniform token info:id = "ND_dot_matrix33"
+			matrix3d inputs:in = ( (0.3, 0.5, 0.7), (0.1, 0.2, 0.4), (0.5, 0.4, 0.6) )
+			matrix3d outputs:out
+		}
+
+		def Shader "D_matrix44"
+		{
+			uniform token info:id = "ND_dot_matrix44"
+			matrix4d inputs:in = ( (0.1, 0.3, 0.5, 0.7), (0.9, 0.8, 0.4, 0.2), (0.1, 0.2, 0.3, 0.4), (0.5, 0.4, 0.6, 0.3) )
+			matrix4d outputs:out
+		}
+
+		def Shader "D_string"
+		{
+			uniform token info:id = "ND_dot_string"
+			string inputs:in = "testString"
+			string outputs:out
+		}
+
+		def Shader "D_filename"
+		{
+			uniform token info:id = "ND_dot_filename"
+			asset inputs:in = @grid16.png@
+			asset outputs:out
+		}
+	}
+}
+

@@ -31,8 +31,7 @@ namespace ufe {
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-UsdShaderAttributeDef::UsdShaderAttributeDef(
-    const PXR_NS::SdrShaderPropertyConstPtr& shaderAttributeDef)
+UsdShaderAttributeDef::UsdShaderAttributeDef(const SdrShaderPropertyConstPtr& shaderAttributeDef)
     : Ufe::AttributeDef()
     , fShaderAttributeDef(shaderAttributeDef)
 {
@@ -52,7 +51,7 @@ std::string UsdShaderAttributeDef::name() const
 std::string UsdShaderAttributeDef::type() const
 {
     TF_AXIOM(fShaderAttributeDef);
-    const PXR_NS::SdfValueTypeName typeName = fShaderAttributeDef->GetTypeAsSdfType().first;
+    const SdfValueTypeName typeName = fShaderAttributeDef->GetTypeAsSdfType().first;
     return usdTypeToUfe(typeName);
 }
 
@@ -74,8 +73,8 @@ Ufe::AttributeDef::IOType UsdShaderAttributeDef::ioType() const
 Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
     TF_AXIOM(fShaderAttributeDef);
-    const PXR_NS::NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
-    auto                       it = metadata.find(PXR_NS::TfToken(key));
+    const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
+    auto               it = metadata.find(TfToken(key));
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
     }
@@ -87,8 +86,8 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
 {
     TF_AXIOM(fShaderAttributeDef);
-    const PXR_NS::NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
-    auto                       it = metadata.find(PXR_NS::TfToken(key));
+    const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
+    auto               it = metadata.find(TfToken(key));
     return (it != metadata.cend());
 }
 

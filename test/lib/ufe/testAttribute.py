@@ -110,6 +110,22 @@ class AttributeTestCase(unittest.TestCase):
         '''Called initially to set up the maya test environment'''
         self.assertTrue(self.pluginsLoaded)
 
+    @classmethod
+    def openMaterialXSamplerStage(cls):
+        '''Open MtlxValueTypes stage in testSamples. This stage can be freely loaded even if
+           the underlying USD does not support MaterialX since we are not rendering that scene.
+           We also rename the stage to match the hierarchy of the top_layer scene which is
+           hardcoded in some tests.'''
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("MaterialX", "MtlxValueTypes.usda")
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        cmds.rename(shapeNode, "proxyShape1")
+        cmds.rename("|"+shapeNode.split("|")[1], "transform1")
+
+    def assertMatrixAlmostEqual(self, ufeMatrix, usdMatrix):
+        testUtils.assertMatrixAlmostEqual(
+            self, ufeMatrix.matrix, usdMatrix)
+
     def assertVectorAlmostEqual(self, ufeVector, usdVector):
         testUtils.assertVectorAlmostEqual(
             self, ufeVector.vector, usdVector)
@@ -160,8 +176,17 @@ class AttributeTestCase(unittest.TestCase):
         setAttrPath = self.getMayaAttrStr(attr)
         if isinstance(newVal, (ufe.Vector3i, ufe.Vector3f, ufe.Vector3d)):
             cmds.setAttr(setAttrPath, newVal.x(), newVal.y(), newVal.z())
+        elif isinstance(newVal, ufe.Vector2f):
+            cmds.setAttr(setAttrPath, newVal.x(), newVal.y())
+        elif isinstance(newVal, ufe.Vector4f):
+            cmds.setAttr(setAttrPath, newVal.x(), newVal.y(), newVal.z(), newVal.w())
         elif isinstance(newVal, ufe.Color3f):
             cmds.setAttr(setAttrPath, newVal.r(), newVal.g(), newVal.b())
+        elif isinstance(newVal, ufe.Color4f):
+            cmds.setAttr(setAttrPath, newVal.r(), newVal.g(), newVal.b(), newVal.a())
+        elif isinstance(newVal, ufe.Matrix3d) or isinstance(newVal, ufe.Matrix4d):
+            # Flatten the matrix for Maya:
+            cmds.setAttr(setAttrPath, *[i for row in newVal.matrix for i in row])
         else:
             cmds.setAttr(setAttrPath, newVal)
 
@@ -190,15 +215,25 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ufeAttrType, cmds.getAttr(getAttrPath, type=True))
 
         ufeVectorTypes = {ufe.Attribute.kColorFloat3 : ufe.Color3f,
+                          ufe.Attribute.kColorFloat4 : ufe.Color4f,
                           ufe.Attribute.kInt3 : ufe.Vector3i,
+                          ufe.Attribute.kFloat2 : ufe.Vector2f,
                           ufe.Attribute.kFloat3 : ufe.Vector3f,
-                          ufe.Attribute.kDouble3 : ufe.Vector3d}
+                          ufe.Attribute.kFloat4 : ufe.Vector4f,
+                          ufe.Attribute.kDouble3 : ufe.Vector3d,
+                          ufe.Attribute.kMatrix3d : ufe.Matrix3d,
+                          ufe.Attribute.kMatrix4d : ufe.Matrix4d
+                          }
 
         if ufeAttrType == ufe.Attribute.kGeneric:
             self.assertEqual(cmds.getAttr(getAttrPath), str(ufeAttr))
         elif ufeAttrType in ufeVectorTypes:
             getAttrValue = cmds.getAttr(getAttrPath)
-            self.assertEqual(ufeVectorTypes[ufeAttrType](*getAttrValue), ufeAttr.get())
+            # Pre Ufe 0.4.15: Maya might return the result as a string for colors. Fixed to always
+            # return a vector post 0.4.15.
+            if isinstance(getAttrValue, str):
+                getAttrValue = eval(getAttrValue)
+            self.assertEqual(ufeVectorTypes[ufeAttrType](getAttrValue), ufeAttr.get())
         else:
             if decimalPlaces is not None:
                 self.assertAlmostEqual(cmds.getAttr(getAttrPath), ufeAttr.get(), decimalPlaces)
@@ -270,6 +305,42 @@ class AttributeTestCase(unittest.TestCase):
 
         # Now we test the Generic specific methods.
         self.assertEqual(ufeAttr.nativeType(), usdAttr.GetTypeName().type.typeName)
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    def testAttributeFilename(self):
+        '''Test the Filename attribute type.'''
+
+        AttributeTestCase.openMaterialXSamplerStage()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use the emitColor attribute which is
+        # an ColorFloat3 type.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/TypeSampler/MaterialX/D_filename',
+            attrName='inputs:in',
+            ufeAttrClass=ufe.AttributeFilename,
+            ufeAttrType=ufe.Attribute.kFilename)
+
+        # Now we test the Filename specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Change to 'blue.png' and verify the return in UFE.
+        ufeAttr.set("blue.png")
+        self.assertEqual(ufeAttr.get(), "blue.png")
+
+        # Verify that the new UFE value matches what is directly in USD.
+        self.assertEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Change back to 'red.png' using a command.
+        self.runUndoRedo(ufeAttr, "red.png")
+
+        # Run test using Maya's setAttr command.
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, "green.png")
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
@@ -495,6 +566,7 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4015', 'Test not available in UFE preview version 0.4.15 and greater')
     def testAttributeColorFloat3(self):
         '''Test the ColorFloat3 attribute type.'''
 
@@ -534,11 +606,123 @@ class AttributeTestCase(unittest.TestCase):
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    def testAttributeColorFloat3(self):
+        '''Test the ColorFloat3 attribute type.'''
+
+        # Open top_layer.ma scene in testSamples
+        mayaUtils.openTopLayerScene()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use the emitColor attribute which is
+        # an ColorFloat3 type.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/Room_set/Props/Ball_35/Looks/BallLook/Base',
+            attrName='emitColor',
+            ufeAttrClass=ufe.AttributeColorFloat3,
+            ufeAttrType=ufe.Attribute.kColorFloat3)
+
+        # Now we test the ColorFloat3 specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Set the attribute in UFE with some random color values.
+        vec = ufe.Color3f(random.random(), random.random(), random.random())
+        ufeAttr.set(vec)
+
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+        self.runUndoRedo(ufeAttr,
+                         ufe.Color3f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0))
+
+        # Run test using Maya's setAttr command.
+        vec = ufeAttr.get()
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
+                         ufe.Color3f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0))
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    def testAttributeColorFloat4(self):
+        '''Test the ColorFloat4 attribute type.'''
+
+        AttributeTestCase.openMaterialXSamplerStage()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use the emitColor attribute which is
+        # an ColorFloat3 type.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/TypeSampler/MaterialX/TXT',
+            attrName='inputs:default',
+            ufeAttrClass=ufe.AttributeColorFloat4,
+            ufeAttrType=ufe.Attribute.kColorFloat4)
+
+        # Now we test the ColorFloat4 specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Set the attribute in UFE with some random color values.
+        vec = ufe.Color4f(random.random(), random.random(), random.random(), random.random())
+        ufeAttr.set(vec)
+
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertColorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+        self.runUndoRedo(ufeAttr,
+                         ufe.Color4f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0, vec.a()+4.0))
+
+        # Run test using Maya's setAttr command.
+        vec = ufeAttr.get()
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
+                         ufe.Color4f(vec.r()+1.0, vec.g()+2.0, vec.b()+3.0, vec.a()+4.0))
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
     def _testAttributeInt3(self):
         '''Test the Int3 attribute type.'''
 
         # I could not find an int3 attribute to test with.
         pass
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    def testAttributeFloat2(self):
+        '''Test the Float2 attribute type.'''
+
+        AttributeTestCase.openMaterialXSamplerStage()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use the bumpNormal attribute which is
+        # an Float2 type.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/TypeSampler/MaterialX/D_vector2',
+            attrName='inputs:in',
+            ufeAttrClass=ufe.AttributeFloat2,
+            ufeAttrType=ufe.Attribute.kFloat2)
+
+        # Now we test the Float2 specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Set the attribute in UFE with some random values.
+        vec = ufe.Vector2f(random.random(), random.random())
+        ufeAttr.set(vec)
+
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+        self.runUndoRedo(ufeAttr,
+                         ufe.Vector2f(vec.x()+1.0, vec.y()+2.0))
+
+        # Run test using Maya's setAttr command.
+        vec = ufeAttr.get()
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
+                         ufe.Vector2f(vec.x()+1.0, vec.y()+2.0))
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
 
     def testAttributeFloat3(self):
         '''Test the Float3 attribute type.'''
@@ -566,7 +750,6 @@ class AttributeTestCase(unittest.TestCase):
 
         # Then make sure that new UFE value matches what it in USD.
         self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
-
         self.runUndoRedo(ufeAttr,
                          ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
 
@@ -574,6 +757,46 @@ class AttributeTestCase(unittest.TestCase):
         vec = ufeAttr.get()
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
                          ufe.Vector3f(vec.x()+1.0, vec.y()+2.0, vec.z()+3.0))
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    def testAttributeFloat4(self):
+        '''Test the Float4 attribute type.'''
+
+        AttributeTestCase.openMaterialXSamplerStage()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use the bumpNormal attribute which is
+        # an Float4 type.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/TypeSampler/MaterialX/D_vector4',
+            attrName='inputs:in',
+            ufeAttrClass=ufe.AttributeFloat4,
+            ufeAttrType=ufe.Attribute.kFloat4)
+
+        # Now we test the Float4 specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Set the attribute in UFE with some random values.
+        vec = ufe.Vector4f(random.random(), random.random(),
+                           random.random(), random.random())
+        ufeAttr.set(vec)
+
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
+        self.runUndoRedo(ufeAttr,
+                         ufe.Vector4f(vec.x()+1.0, vec.y()+2.0,
+                                      vec.z()+3.0, vec.w()+4.0))
+
+        # Run test using Maya's setAttr command.
+        vec = ufeAttr.get()
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
+                         ufe.Vector4f(vec.x()+1.0, vec.y()+2.0,
+                                      vec.z()+3.0, vec.w()+4.0))
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)
@@ -610,6 +833,80 @@ class AttributeTestCase(unittest.TestCase):
 
         # Run test using Maya's setAttr command.
         self.runUndoRedoUsingMayaSetAttr(ufeAttr, ufe.Vector3d(5.5, 6.6, 7.7))
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    def testAttributeMatrix3d(self):
+        '''Test the Matrix3d attribute type.'''
+
+        AttributeTestCase.openMaterialXSamplerStage()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use the bumpNormal attribute which is
+        # an Matrix3d type.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/TypeSampler/MaterialX/D_matrix33',
+            attrName='inputs:in',
+            ufeAttrClass=ufe.AttributeMatrix3d,
+            ufeAttrType=ufe.Attribute.kMatrix3d)
+
+        # Now we test the Matrix3d specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertMatrixAlmostEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Set the attribute in UFE with some random values.
+        mat = [[random.random() for i in range(3)] for j in range(3)]
+        ufeAttr.set(ufe.Matrix3d(mat))
+
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertMatrixAlmostEqual(ufeAttr.get(), usdAttr.Get())
+        self.runUndoRedo(ufeAttr,
+            ufe.Matrix3d([[mat[i][j] + mat[i][j] for j in range(3)] for i in range(3)]))
+
+        # Run test using Maya's setAttr command.
+        mat = ufeAttr.get().matrix
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
+            ufe.Matrix3d([[mat[i][j] + mat[i][j] for j in range(3)] for i in range(3)]))
+
+        # Run test using Maya's getAttr command.
+        self.runMayaGetAttrTest(ufeAttr)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4015', 'Test only available in UFE preview version 0.4.15 and greater')
+    def testAttributeMatrix4d(self):
+        '''Test the Matrix4d attribute type.'''
+
+        AttributeTestCase.openMaterialXSamplerStage()
+
+        # Use our engine method to run the bulk of the test (all the stuff from
+        # the Attribute base class). We use the bumpNormal attribute which is
+        # an Matrix4d type.
+        ufeAttr, usdAttr = self.runTestAttribute(
+            path='/TypeSampler/MaterialX/D_matrix44',
+            attrName='inputs:in',
+            ufeAttrClass=ufe.AttributeMatrix4d,
+            ufeAttrType=ufe.Attribute.kMatrix4d)
+
+        # Now we test the Matrix4d specific methods.
+
+        # Compare the initial UFE value to that directly from USD.
+        self.assertMatrixAlmostEqual(ufeAttr.get(), usdAttr.Get())
+
+        # Set the attribute in UFE with some random values.
+        mat = [[random.random() for i in range(4)] for j in range(4)]
+        ufeAttr.set(ufe.Matrix4d(mat))
+
+        # Then make sure that new UFE value matches what it in USD.
+        self.assertMatrixAlmostEqual(ufeAttr.get(), usdAttr.Get())
+        self.runUndoRedo(ufeAttr,
+            ufe.Matrix4d([[mat[i][j] + mat[i][j] for j in range(4)] for i in range(4)]))
+
+        # Run test using Maya's setAttr command.
+        mat = ufeAttr.get().matrix
+        self.runUndoRedoUsingMayaSetAttr(ufeAttr, 
+            ufe.Matrix4d([[mat[i][j] + mat[i][j] for j in range(4)] for i in range(4)]))
 
         # Run test using Maya's getAttr command.
         self.runMayaGetAttrTest(ufeAttr)

@@ -113,6 +113,31 @@ public:
     std::string nativeType() const override;
 }; // UsdAttributeGeneric
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//! \brief Interface for USD token attributes.
+class UsdAttributeFilename
+    : public Ufe::AttributeFilename
+    , private UsdAttribute
+{
+public:
+    typedef std::shared_ptr<UsdAttributeFilename> Ptr;
+
+    UsdAttributeFilename(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeFilename.
+    static UsdAttributeFilename::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+
+    // Ufe::Attribute overrides
+    UFE_ATTRIBUTE_OVERRIDES
+
+    // Ufe::AttributeFilename overrides
+    std::string               get() const override;
+    void                      set(const std::string& value) override;
+    Ufe::UndoableCommand::Ptr setCmd(const std::string& value) override;
+}; // UsdAttributeFilename
+#endif
+
 //! \brief Interface for USD token attributes.
 class UsdAttributeEnumString
     : public Ufe::AttributeEnumString
@@ -233,6 +258,21 @@ public:
     create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeColorFloat3
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//! \brief Interface for USD RGB color (float) attributes.
+class UsdAttributeColorFloat4 : public TypedUsdAttribute<Ufe::Color4f>
+{
+public:
+    typedef std::shared_ptr<UsdAttributeColorFloat4> Ptr;
+
+    using TypedUsdAttribute<Ufe::Color4f>::TypedUsdAttribute;
+
+    //! Create a UsdAttributeColorFloat4.
+    static UsdAttributeColorFloat4::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+}; // UsdAttributeColorFloat4
+#endif
+
 //! \brief Interface for USD Vector3i (int) attributes.
 class UsdAttributeInt3 : public TypedUsdAttribute<Ufe::Vector3i>
 {
@@ -245,6 +285,21 @@ public:
     static UsdAttributeInt3::Ptr
     create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeInt3
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//! \brief Interface for USD Vector2f (float) attributes.
+class UsdAttributeFloat2 : public TypedUsdAttribute<Ufe::Vector2f>
+{
+public:
+    typedef std::shared_ptr<UsdAttributeFloat2> Ptr;
+
+    using TypedUsdAttribute<Ufe::Vector2f>::TypedUsdAttribute;
+
+    //! Create a UsdAttributeFloat2.
+    static UsdAttributeFloat2::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+}; // UsdAttributeFloat2
+#endif
 
 //! \brief Interface for USD Vector3f (float) attributes.
 class UsdAttributeFloat3 : public TypedUsdAttribute<Ufe::Vector3f>
@@ -259,6 +314,21 @@ public:
     create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeFloat3
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//! \brief Interface for USD Vector4f (float) attributes.
+class UsdAttributeFloat4 : public TypedUsdAttribute<Ufe::Vector4f>
+{
+public:
+    typedef std::shared_ptr<UsdAttributeFloat4> Ptr;
+
+    using TypedUsdAttribute<Ufe::Vector4f>::TypedUsdAttribute;
+
+    //! Create a UsdAttributeFloat4.
+    static UsdAttributeFloat4::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+}; // UsdAttributeFloat4
+#endif
+
 //! \brief Interface for USD Vector3d (double) attributes.
 class UsdAttributeDouble3 : public TypedUsdAttribute<Ufe::Vector3d>
 {
@@ -272,5 +342,32 @@ public:
     create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeDouble3
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//! \brief Interface for USD Matrix3d (double) attributes.
+class UsdAttributeMatrix3d : public TypedUsdAttribute<Ufe::Matrix3d>
+{
+public:
+    typedef std::shared_ptr<UsdAttributeMatrix3d> Ptr;
+
+    using TypedUsdAttribute<Ufe::Matrix3d>::TypedUsdAttribute;
+
+    //! Create a UsdAttributeDouble3.
+    static UsdAttributeMatrix3d::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+}; // UsdAttributeMatrix3d
+
+//! \brief Interface for USD Matrix4d (double) attributes.
+class UsdAttributeMatrix4d : public TypedUsdAttribute<Ufe::Matrix4d>
+{
+public:
+    typedef std::shared_ptr<UsdAttributeMatrix4d> Ptr;
+
+    using TypedUsdAttribute<Ufe::Matrix4d>::TypedUsdAttribute;
+
+    //! Create a UsdAttributeDouble4.
+    static UsdAttributeMatrix4d::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+}; // UsdAttributeMatrix4d
+#endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
