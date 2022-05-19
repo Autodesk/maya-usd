@@ -232,7 +232,12 @@ class AttributeTestCase(unittest.TestCase):
             # return a vector post 0.4.15.
             if isinstance(getAttrValue, str):
                 getAttrValue = ast.literal_eval(getAttrValue)
-            self.assertEqual(ufeVectorTypes[ufeAttrType](getAttrValue), ufeAttr.get())
+            if hasattr(ufe.Attribute, "kColorFloat4"):
+                # Ufe post 0.4.15 can init vector/matrix types with sequences directly:
+                self.assertEqual(ufeVectorTypes[ufeAttrType](getAttrValue), ufeAttr.get())
+            else:
+                # Before 0.4.15 we need to splat the value:
+                self.assertEqual(ufeVectorTypes[ufeAttrType](*getAttrValue), ufeAttr.get())
         else:
             if decimalPlaces is not None:
                 self.assertAlmostEqual(cmds.getAttr(getAttrPath), ufeAttr.get(), decimalPlaces)
