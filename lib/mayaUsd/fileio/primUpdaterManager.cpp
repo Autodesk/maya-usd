@@ -290,12 +290,13 @@ bool allowTopologyModifications(MDagPath& root)
     MItDag dagIt;
     dagIt.reset(root, MItDag::kDepthFirst, MFn::kMesh);
     for (; !dagIt.isDone(); dagIt.next()) {
-        MString cmd;
-        if (!cmd.format("setAttr \"^1s.allowTopologyMod\" 1;", dagIt.fullPathName()))
-            return false;
-        if (!dgMod.commandToExecute(cmd))
-            return false;
+        MFnDependencyNode depNode(dagIt.item());
+        MPlug             topoPlug = depNode.findPlug("allowTopologyMod");
+        if (topoPlug.isNull())
+            continue;
+        dgMod.newPlugValueBool(topoPlug, true);
     }
+
     return dgMod.doIt();
 }
 
