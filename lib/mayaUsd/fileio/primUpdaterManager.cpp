@@ -731,8 +731,7 @@ bool pushCustomize(
         auto updater = createUpdater(srcLayer, srcPath, dstPath, context);
         if (!updater) {
             TF_WARN(
-                "Could not create a prim updater for path %s during PushEnd() traversal, "
-                "pruning "
+                "Could not create a prim updater for path %s during PushEnd() traversal, pruning "
                 "at that point.",
                 srcPath.GetText());
             return;
