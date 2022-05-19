@@ -55,6 +55,12 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4014)
+        list(APPEND TEST_SCRIPT_FILES
+            testConnections.py
+        )
+    endif()
+
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
         list(APPEND TEST_SCRIPT_FILES
             testLight.py

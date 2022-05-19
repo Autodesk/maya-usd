@@ -88,6 +88,16 @@ if (UFE_LIGHTS_SUPPORT)
             UsdLightHandler.cpp
     )
 
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdConnection.cpp
+                UsdConnections.cpp
+                UsdConnectionsHandler.cpp
+        )
+    endif()
+
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         UFE_LIGHTS_SUPPORT=1
@@ -204,6 +214,16 @@ if (UFE_LIGHTS_SUPPORT)
         UsdLight.h
         UsdLightHandler.h
     )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        list(APPEND HEADERS
+            UsdConnection.h
+            UsdConnections.h
+            UsdConnectionsHandler.h
+        )
+    endif()
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)

@@ -26,6 +26,10 @@
 
 #include <ufe/runTimeMgr.h>
 #include <ufe/ufeAssert.h>
+#include <ufe/nodeDefHandler.h>
+#include <ufe/runTimeMgr.h>
+
+#include <iostream>
 
 // Note: normally we would use this using directive, but here we cannot because
 //		 one of our classes is called UsdAttribute which is exactly the same as
@@ -63,9 +67,57 @@ Ufe::NodeDefHandler::Ptr getUsdNodeDefHandler()
     }
     return nodeDefHandler;
 }
-#endif
 
-} // namespace
+std::string usdPrimAttributeName(const UsdAttributes& attr, const std::string& attrName)
+{
+    static constexpr char inputs[] = "inputs:";
+    static constexpr char outputs[] = "outputs:";
+
+    if (attrName.empty()) {
+        return attrName;
+    }
+
+    const bool isUsdPrimName = 
+        (std::string::npos != attrName.find(inputs))
+        || (std::string::npos != attrName.find(outputs));
+
+    std::string usdPrimName = attrName;
+
+    if (!isUsdPrimName) {
+
+        Ufe::NodeDefHandler::Ptr nodeDefHandler
+            = Ufe::RunTimeMgr::instance().nodeDefHandler(attr.sceneItem()->runTimeId());
+        if (!nodeDefHandler) {
+            return attrName;
+        }
+
+        Ufe::NodeDef::Ptr nodeDef = nodeDefHandler->definition(attr.sceneItem());
+        if (!nodeDef) {
+            return attrName;
+        }
+
+        bool isInput = false;
+        Ufe::ConstAttributeDefs attrDefs = nodeDef->inputs();
+        for(const auto& attr : attrDefs) {
+            if (attr->name() == attrName) {
+                isInput = true;
+                break;
+            }
+        }
+
+        const std::string prependStr = isInput ? inputs : outputs;
+        const bool prepend = std::string::npos == attrName.find(prependStr);
+
+        usdPrimName = std::string(prepend ? prependStr : "") + attrName;
+    }
+
+    std::cout << "attrName -> " << attrName << " : " << usdPrimName << "\n";
+
+    return usdPrimName;
+}
+
+}
+#endif
 
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
     : Ufe::Attributes()
@@ -137,13 +189,19 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 
 Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 {
-    // early return if name is empty.
+    // Early return if name is empty.
     if (name.empty()) {
         return nullptr;
     }
 
+    // Find the Usd Prim attribute name.
+    const std::string usdPrimName = usdPrimAttributeName(*this, name);
+    if (usdPrimName.empty()) {
+        return nullptr;
+    }
+
     // If we've already created an attribute for this name, just return it.
-    auto iter = fAttributes.find(name);
+    auto iter = fAttributes.find(usdPrimName);
     if (iter != std::end(fAttributes))
         return iter->second;
 
