@@ -695,6 +695,14 @@ MAYAUSD_CORE_PUBLIC
 std::set<std::string>
 getAllSublayers(const std::vector<std::string>& parentLayerPaths, bool includeParents = false);
 
+/// Takes the supplied bounding box and adds to it Maya-specific extents
+/// that come from the nodes originating from the supplied root node
+MAYAUSD_CORE_PUBLIC
+void AddMayaExtents(
+    PXR_NS::GfBBox3d&         bbox,
+    const PXR_NS::UsdPrim&    root,
+    const PXR_NS::UsdTimeCode time);
+
 } // namespace UsdMayaUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE

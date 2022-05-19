@@ -1241,8 +1241,10 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     const TfToken purpose3 = drawProxyPurpose ? UsdGeomTokens->proxy : TfToken();
     const TfToken purpose4 = drawGuidePurpose ? UsdGeomTokens->guide : TfToken();
 
-    const GfBBox3d allBox
+    GfBBox3d allBox
         = imageablePrim.ComputeUntransformedBound(currTime, purpose1, purpose2, purpose3, purpose4);
+
+    UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 
     MBoundingBox& retval = nonConstThis->_boundingBoxCache[currTime];
 
