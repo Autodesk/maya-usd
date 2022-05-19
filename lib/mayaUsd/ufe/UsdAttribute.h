@@ -351,10 +351,9 @@ public:
 
     using TypedUsdAttribute<Ufe::Matrix3d>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeDouble3.
     static UsdAttributeMatrix3d::Ptr
     create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-}; // UsdAttributeMatrix3d
+};
 
 //! \brief Interface for USD Matrix4d (double) attributes.
 class UsdAttributeMatrix4d : public TypedUsdAttribute<Ufe::Matrix4d>
@@ -364,10 +363,9 @@ public:
 
     using TypedUsdAttribute<Ufe::Matrix4d>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeDouble4.
     static UsdAttributeMatrix4d::Ptr
     create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
-}; // UsdAttributeMatrix4d
+};
 #endif
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
