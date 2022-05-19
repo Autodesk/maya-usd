@@ -83,10 +83,10 @@ public:
     float                        specular() const override;
 
 protected:
-    std::shared_ptr<DirectionalInterface> directionalInterfaceImpl();
-    std::shared_ptr<SphereInterface>      sphereInterfaceImpl();
-    std::shared_ptr<ConeInterface>        coneInterfaceImpl();
-    std::shared_ptr<AreaInterface>        areaInterfaceImpl();
+    std::shared_ptr<DirectionalInterface> directionalInterfaceImpl() override;
+    std::shared_ptr<SphereInterface>      sphereInterfaceImpl() override;
+    std::shared_ptr<ConeInterface>        coneInterfaceImpl() override;
+    std::shared_ptr<AreaInterface>        areaInterfaceImpl() override;
 
 private:
     UsdSceneItem::Ptr fItem;
