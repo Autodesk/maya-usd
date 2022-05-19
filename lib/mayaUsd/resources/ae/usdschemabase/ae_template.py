@@ -559,7 +559,8 @@ class AETemplate(object):
     def createAppliedSchemasSection(self):
         # USD version 0.21.2 is required because of
         # Usd.SchemaRegistry().GetPropertyNamespacePrefix()
-        if Usd.GetVersion() < (0, 21, 2):
+        usdVer = Usd.GetVersion()
+        if usdVer < (0, 21, 2):
             return
 
         showAppliedSchemasSection = False
@@ -577,7 +578,7 @@ class AETemplate(object):
         schemaAttrsDict = {}
         appliedSchemas = self.prim.GetAppliedSchemas()
         for schema in appliedSchemas:
-            if Usd.GetVersion() > (0, 21, 5):
+            if usdVer > (0, 21, 5):
                 typeAndInstance = Usd.SchemaRegistry().GetTypeNameAndInstance(schema)
             else:
                 typeAndInstance = Usd.SchemaRegistry().GetTypeAndInstance(schema)
@@ -592,9 +593,12 @@ class AETemplate(object):
                     attrList = schemaType.pythonClass.GetSchemaAttributeNames(False, instanceName)
                     # build the real attr name
                     # By example, collection:lightLink:includeRoot
-                    namespace = Usd.SchemaRegistry().GetPropertyNamespacePrefix(typeName)
-                    prefix = namespace + ":" + instanceName + ":"
-                    attrList = [prefix + i for i in attrList]
+                    # In 0.22.3 USD will now use the fully namespaced name in the schema definition,
+                    # so it does not need to be assembled.
+                    if usdVer < (0, 22, 3):
+                        namespace = Usd.SchemaRegistry().GetPropertyNamespacePrefix(typeName)
+                        prefix = namespace + ":" + instanceName + ":"
+                        attrList = [prefix + i for i in attrList]
 
                     if typeName in schemaAttrsDict:
                         schemaAttrsDict[typeName] += attrList
