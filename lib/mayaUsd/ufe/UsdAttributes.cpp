@@ -91,7 +91,7 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
         }
         Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
         for (auto const& output : outputs) {
-            if (INPUT_ATTR_PREFIX + output->name() == name) {
+            if (OUTPUT_ATTR_PREFIX + output->name() == name) {
                 return output->type();
             }
         }
@@ -114,7 +114,6 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     // No attribute for the input name was found -> create one.
     PXR_NS::TfToken             tok(name);
     PXR_NS::UsdAttribute        usdAttr = fPrim.GetAttribute(tok);
-    AttrHandle::Ptr             attrHandle = nullptr;
     Ufe::Attribute::Type        newAttrType;
     Ufe::AttributeDef::ConstPtr attributeDef = nullptr;
     if (fNodeDef) {
@@ -129,7 +128,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         if (!attributeDef) {
             Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
             for (auto const& output : outputs) {
-                if (INPUT_ATTR_PREFIX + output->name() == name) {
+                if (OUTPUT_ATTR_PREFIX + output->name() == name) {
                     attributeDef = output;
                     newAttrType = output->type();
                     break;
@@ -138,44 +137,34 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         }
     }
     if (usdAttr.IsValid()) {
-        if (attributeDef) {
-            attrHandle = std::make_shared<AttrHandle>(fPrim, attributeDef, usdAttr);
-        } else {
-            attrHandle = std::make_shared<AttrHandle>(fPrim, usdAttr);
-        }
         newAttrType = getUfeTypeForAttribute(usdAttr);
     } else if (!fNodeDef) {
         return nullptr;
-    } else {
-        attrHandle = std::make_shared<AttrHandle>(fPrim, attributeDef);
-    }
-    if (!attrHandle) {
-        return nullptr;
     }
 
-    Ufe::Attribute::Ptr newAttr;
+    Ufe::Attribute::Ptr newAttr = nullptr;
     if (newAttrType == Ufe::Attribute::kBool) {
-        newAttr = UsdAttributeBool::create(fItem, attrHandle);
+        newAttr = UsdAttributeBool::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kInt) {
-        newAttr = UsdAttributeInt::create(fItem, attrHandle);
+        newAttr = UsdAttributeInt::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kFloat) {
-        newAttr = UsdAttributeFloat::create(fItem, attrHandle);
+        newAttr = UsdAttributeFloat::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kDouble) {
-        newAttr = UsdAttributeDouble::create(fItem, attrHandle);
+        newAttr = UsdAttributeDouble::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kString) {
-        newAttr = UsdAttributeString::create(fItem, attrHandle);
+        newAttr = UsdAttributeString::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kColorFloat3) {
-        newAttr = UsdAttributeColorFloat3::create(fItem, attrHandle);
+        newAttr = UsdAttributeColorFloat3::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kEnumString) {
-        newAttr = UsdAttributeEnumString::create(fItem, attrHandle);
+        newAttr = UsdAttributeEnumString::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kInt3) {
-        newAttr = UsdAttributeInt3::create(fItem, attrHandle);
+        newAttr = UsdAttributeInt3::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kFloat3) {
-        newAttr = UsdAttributeFloat3::create(fItem, attrHandle);
+        newAttr = UsdAttributeFloat3::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kDouble3) {
-        newAttr = UsdAttributeDouble3::create(fItem, attrHandle);
+        newAttr = UsdAttributeDouble3::create(fItem, fPrim, attributeDef, usdAttr);
     } else if (newAttrType == Ufe::Attribute::kGeneric) {
-        newAttr = UsdAttributeGeneric::create(fItem, attrHandle);
+        newAttr = UsdAttributeGeneric::create(fItem, fPrim, attributeDef, usdAttr);
     } else {
         UFE_ASSERT_MSG(false, kErrorMsgUnknown);
     }
@@ -193,7 +182,7 @@ std::vector<std::string> UsdAttributes::attributeNames() const
         }
         Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
         for (auto const& output : outputs) {
-            names.push_back(INPUT_ATTR_PREFIX + output->name());
+            names.push_back(OUTPUT_ATTR_PREFIX + output->name());
         }
     } else if (fPrim) {
         auto primAttrs = fPrim.GetAttributes();
