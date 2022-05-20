@@ -25,6 +25,7 @@
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MFileIO.h>
+#include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 
 #include <map>
@@ -57,6 +58,18 @@ struct _OnSceneResetListener : public TfWeakBase
     }
 };
 
+void clearMayaOutliner()
+{
+    // When a stage is deleted, the outliner could still refer to prims that were on that stage.
+    // If the outliner is collapsed, then it won't refresh itself and could later on try to access
+    // the prim. This happens when it receives a UFE notification that it thinks is about the prim
+    // it is showing. This only happens if one re-stage the same file, as the UFE notification will
+    // contain the same stage name and the same prim path.
+    //
+    // To avoid crashes, we reset the outliner templates when the stages get cleared.
+    MGlobal::executeCommand("refreshEditorTemplates");
+}
+
 } // anonymous namespace
 
 /* static */
@@ -74,6 +87,7 @@ UsdStageCache& UsdMayaStageCache::Get(const bool loadAll)
 /* static */
 void UsdMayaStageCache::Clear()
 {
+    clearMayaOutliner();
     Get(true).Clear();
     Get(false).Clear();
 }
@@ -87,6 +101,8 @@ size_t UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& lay
     if (!rootLayer) {
         return erasedStages;
     }
+
+    clearMayaOutliner();
 
     erasedStages += Get(true).EraseAll(rootLayer);
     erasedStages += Get(false).EraseAll(rootLayer);
