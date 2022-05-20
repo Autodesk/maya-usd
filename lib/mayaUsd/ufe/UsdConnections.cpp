@@ -39,8 +39,7 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::sourceConnections() const
     std::vector<Ufe::Connection::Ptr> result;
 
     UsdSceneItem::Ptr usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(sceneItem());
-    if (!usdSceneItem)
-    {
+    if (!usdSceneItem) {
         TF_CODING_ERROR("Invalid scene item.");
         return result;
     }
@@ -59,12 +58,9 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::sourceConnections() const
 
     // Look for all the connected input attributes which are a destination of a connection.
 
-    for (PXR_NS::UsdShadeInput input : connectableAttrs.GetInputs())
-    {
-        if (input.HasConnectedSource())
-        {
-            for (PXR_NS::UsdShadeConnectionSourceInfo sourceInfo : input.GetConnectedSources())
-            {
+    for (PXR_NS::UsdShadeInput input : connectableAttrs.GetInputs()) {
+        if (input.HasConnectedSource()) {
+            for (PXR_NS::UsdShadeConnectionSourceInfo sourceInfo : input.GetConnectedSources()) {
                 PXR_NS::UsdPrim connectedPrim = sourceInfo.source.GetPrim();
                 Ufe::Path connectedPrimPath = Ufe::PathString::path(connectedPrim.GetPrimPath().GetAsString());
                 connectedPrimPath = connectedPrimPath.reparent(Ufe::PathString::path(""), materialMayaPath);
@@ -79,12 +75,9 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::sourceConnections() const
 
     // Look for all the connected output attributes which are a destination of a connection.
 
-    for (PXR_NS::UsdShadeOutput output : connectableAttrs.GetOutputs())
-    {
-        if (output.HasConnectedSource())
-        {
-            for (PXR_NS::UsdShadeConnectionSourceInfo sourceInfo : output.GetConnectedSources())
-            {
+    for (PXR_NS::UsdShadeOutput output : connectableAttrs.GetOutputs()) {
+        if (output.HasConnectedSource()) {
+            for (PXR_NS::UsdShadeConnectionSourceInfo sourceInfo : output.GetConnectedSources()) {
                 PXR_NS::UsdPrim connectedPrim = sourceInfo.source.GetPrim();
                 Ufe::Path connectedPrimPath = Ufe::PathString::path(connectedPrim.GetPrimPath().GetAsString());
                 connectedPrimPath = connectedPrimPath.reparent(Ufe::PathString::path(""), materialMayaPath);

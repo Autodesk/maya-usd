@@ -128,6 +128,8 @@ UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
         throw std::runtime_error("Invalid attributes object");
     }
     fPrim = item->prim();
+    UsdShaderNodeDefHandler::Ptr shaderNodeDefHandler = UsdShaderNodeDefHandler::create();
+    fNodeDef = shaderNodeDefHandler->definition(item);
 }
 
 UsdAttributes::~UsdAttributes() { }
@@ -194,16 +196,15 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         return nullptr;
     }
 
-    // Find the Usd Prim attribute name.
-    const std::string usdPrimName = usdPrimAttributeName(*this, name);
-    if (usdPrimName.empty()) {
-        return nullptr;
+    // If we've already created an attribute for this name, just return it.
+    auto iter = fAttributes.find(name);
+    if (iter != std::end(fAttributes)) {
+        return iter->second;
     }
 
-    // If we've already created an attribute for this name, just return it.
-    auto iter = fAttributes.find(usdPrimName);
-    if (iter != std::end(fAttributes))
-        return iter->second;
+    const bool isUsdPrimName = 
+        (std::string::npos != name.find(INPUT_ATTR_PREFIX))
+        || (std::string::npos != name.find(OUTPUT_ATTR_PREFIX));
 
     // No attribute for the input name was found -> create one.
     PXR_NS::TfToken      tok(name);

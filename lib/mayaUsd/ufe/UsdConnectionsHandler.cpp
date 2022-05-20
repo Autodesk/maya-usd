@@ -33,22 +33,19 @@ namespace {
 
 PXR_NS::UsdAttribute usdAttrFromUfeAttr(const UsdHierarchyHandler::Ptr& hierarchyHandler, const Ufe::Attribute::Ptr& attr)
 {
-    if (!hierarchyHandler)
-    {
+    if (!hierarchyHandler) {
         TF_RUNTIME_ERROR("Invalid hierarchy handler.");
         return PXR_NS::UsdAttribute();
     }
 
-    if (!attr)
-    {
+    if (!attr) {
         TF_RUNTIME_ERROR("Invalid attribute.");
         return PXR_NS::UsdAttribute();
     }
 
     MayaUsd::ufe::UsdHierarchy::Ptr hierarchy
         = std::dynamic_pointer_cast<MayaUsd::ufe::UsdHierarchy>(hierarchyHandler->hierarchy(attr->sceneItem()));
-    if (!hierarchy)
-    {
+    if (!hierarchy) {
         TF_CODING_ERROR("Invalid hierarchy handler.");
         return PXR_NS::UsdAttribute();
     }
@@ -63,10 +60,8 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
     dstUsdAttr.GetConnections(&connectedAttrs);
 
     bool connected = false;
-    for (PXR_NS::SdfPath path : connectedAttrs)
-    {
-        if (path == srcUsdAttr.GetPath())
-        {
+    for (PXR_NS::SdfPath path : connectedAttrs) {
+        if (path == srcUsdAttr.GetPath()) {
             connected = true;
         }
     }
@@ -78,10 +73,12 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
 
 UsdConnectionsHandler::UsdConnectionsHandler()
     : Ufe::ConnectionsHandler()
-{}
+{
+}
 
 UsdConnectionsHandler::~UsdConnectionsHandler()
-{}
+{
+}
 
 UsdConnectionsHandler::Ptr UsdConnectionsHandler::create()
 {
@@ -99,8 +96,7 @@ bool UsdConnectionsHandler::connect(const Ufe::Attribute::Ptr& srcAttr, const Uf
     PXR_NS::UsdAttribute srcUsdAttr = usdAttrFromUfeAttr(hierarchyHandler, srcAttr);
     PXR_NS::UsdAttribute dstUsdAttr = usdAttrFromUfeAttr(hierarchyHandler, dstAttr);
 
-    if (!isConnected(srcUsdAttr, dstUsdAttr))
-    {
+    if (!isConnected(srcUsdAttr, dstUsdAttr)) {
         return dstUsdAttr.AddConnection(srcUsdAttr.GetPath());
     }
 
@@ -113,8 +109,7 @@ bool UsdConnectionsHandler::disconnect(const Ufe::Attribute::Ptr& srcAttr, const
     PXR_NS::UsdAttribute srcUsdAttr = usdAttrFromUfeAttr(hierarchyHandler, srcAttr);
     PXR_NS::UsdAttribute dstUsdAttr = usdAttrFromUfeAttr(hierarchyHandler, dstAttr);
 
-    if (isConnected(srcUsdAttr, dstUsdAttr))
-    {
+    if (isConnected(srcUsdAttr, dstUsdAttr)) {
         return dstUsdAttr.RemoveConnection(srcUsdAttr.GetPath());
     }
 

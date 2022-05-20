@@ -34,8 +34,7 @@ UsdConnection::~UsdConnection()
 
 UsdConnection::Ptr UsdConnection::create(const Ufe::AttributeInfo& srcAttr, const Ufe::AttributeInfo& dstAttr)
 {
-    if (srcAttr.runTimeId()!=dstAttr.runTimeId())
-    {
+    if (srcAttr.runTimeId()!=dstAttr.runTimeId()) {
         TF_RUNTIME_ERROR("Cannot create a connection between two different data models.");
         return UsdConnection::Ptr();
     }
