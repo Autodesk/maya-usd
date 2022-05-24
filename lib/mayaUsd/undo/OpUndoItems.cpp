@@ -194,7 +194,7 @@ PythonUndoItem::PythonUndoItem(const std::string name, MString pythonDo, MString
 
 PythonUndoItem::~PythonUndoItem() { }
 
-void PythonUndoItem::execute(
+bool PythonUndoItem::execute(
     const std::string name,
     MString           pythonDo,
     MString           pythonUndo,
@@ -202,11 +202,13 @@ void PythonUndoItem::execute(
 {
     auto item = std::make_unique<PythonUndoItem>(
         std::move(name), std::move(pythonDo), std::move(pythonUndo));
-    item->redo();
+    if (!item->redo())
+        return false;
     undoInfo.addItem(std::move(item));
+    return true;
 }
 
-void PythonUndoItem::execute(const std::string name, MString pythonDo, MString pythonUndo)
+bool PythonUndoItem::execute(const std::string name, MString pythonDo, MString pythonUndo)
 {
     return execute(name, pythonDo, pythonUndo, OpUndoItemList::instance());
 }
@@ -260,7 +262,7 @@ void FunctionUndoItem::create(
     create(name, redo, undo, OpUndoItemList::instance());
 }
 
-void FunctionUndoItem::execute(
+bool FunctionUndoItem::execute(
     const std::string     name,
     std::function<bool()> redo,
     std::function<bool()> undo,
@@ -268,16 +270,18 @@ void FunctionUndoItem::execute(
 {
     auto item
         = std::make_unique<FunctionUndoItem>(std::move(name), std::move(redo), std::move(undo));
-    item->redo();
+    if (!item->redo())
+        return false;
     undoInfo.addItem(std::move(item));
+    return true;
 }
 
-void FunctionUndoItem::execute(
+bool FunctionUndoItem::execute(
     const std::string     name,
     std::function<bool()> redo,
     std::function<bool()> undo)
 {
-    execute(name, redo, undo, OpUndoItemList::instance());
+    return execute(name, redo, undo, OpUndoItemList::instance());
 }
 
 bool FunctionUndoItem::undo()

@@ -225,13 +225,13 @@ class PythonUndoItem : public OpUndoItem
 public:
     /// \brief create and execute python and and how to undo it and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void
+    static bool
     execute(const std::string name, MString pythonDo, MString pythonUndo, OpUndoItemList& undoInfo);
 
     /// \brief create and execute python and and how to undo it and keep track of it in the global
     /// list.
     MAYAUSD_CORE_PUBLIC
-    static void execute(const std::string name, MString pythonDo, MString pythonUndo);
+    static bool execute(const std::string name, MString pythonDo, MString pythonUndo);
 
     /// \brief create a python undo item.
     MAYAUSD_CORE_PUBLIC
@@ -280,7 +280,7 @@ public:
     /// \brief create and execute functions and how to undo it and keep track of it.
     ///        Useful if the item execution has *not* already been done but must done now.
     MAYAUSD_CORE_PUBLIC
-    static void execute(
+    static bool execute(
         const std::string     name,
         std::function<bool()> redo,
         std::function<bool()> undo,
@@ -291,7 +291,7 @@ public:
     ///
     /// Useful if the item execution has *not* already been done but must done now.
     MAYAUSD_CORE_PUBLIC
-    static void
+    static bool
     execute(const std::string name, std::function<bool()> redo, std::function<bool()> undo);
 
     /// \brief create a function undo item.
