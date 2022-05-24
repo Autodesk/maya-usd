@@ -328,7 +328,7 @@ class SelectionUndoItem : public OpUndoItem
 public:
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void select(
+    static bool select(
         const std::string       name,
         const MSelectionList&   selection,
         MGlobal::ListAdjustment selMode,
@@ -336,14 +336,14 @@ public:
 
     /// \brief create and execute a select node undo item and keep track of it in the global list.
     MAYAUSD_CORE_PUBLIC
-    static void select(
+    static bool select(
         const std::string       name,
         const MSelectionList&   selection,
         MGlobal::ListAdjustment selMode);
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void select(
+    static bool select(
         const std::string       name,
         const MDagPath&         dagPath,
         MGlobal::ListAdjustment selMode,
@@ -351,36 +351,36 @@ public:
 
     /// \brief create and execute a select node undo item and keep track of it in the global list.
     MAYAUSD_CORE_PUBLIC
-    static void
+    static bool
     select(const std::string name, const MDagPath& dagPath, MGlobal::ListAdjustment selMode);
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void
+    static bool
     select(const std::string name, const MSelectionList& selection, OpUndoItemList& undoInfo)
     {
-        SelectionUndoItem::select(name, selection, MGlobal::kReplaceList, undoInfo);
+        return SelectionUndoItem::select(name, selection, MGlobal::kReplaceList, undoInfo);
     }
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void select(const std::string name, const MSelectionList& selection)
+    static bool select(const std::string name, const MSelectionList& selection)
     {
-        SelectionUndoItem::select(name, selection, MGlobal::kReplaceList);
+        return SelectionUndoItem::select(name, selection, MGlobal::kReplaceList);
     }
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void select(const std::string name, const MDagPath& dagPath, OpUndoItemList& undoInfo)
+    static bool select(const std::string name, const MDagPath& dagPath, OpUndoItemList& undoInfo)
     {
-        SelectionUndoItem::select(name, dagPath, MGlobal::kReplaceList, undoInfo);
+        return SelectionUndoItem::select(name, dagPath, MGlobal::kReplaceList, undoInfo);
     }
 
     /// \brief create and execute a select node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void select(const std::string name, const MDagPath& dagPath)
+    static bool select(const std::string name, const MDagPath& dagPath)
     {
-        SelectionUndoItem::select(name, dagPath, MGlobal::kReplaceList);
+        return SelectionUndoItem::select(name, dagPath, MGlobal::kReplaceList);
     }
 
     MAYAUSD_CORE_PUBLIC
@@ -419,33 +419,33 @@ public:
     /// \brief Create and execute a select node undo item and keep track of it.  The global
     /// selection is replaced.
     MAYAUSD_CORE_PUBLIC
-    static void
+    static bool
     select(const std::string& name, const Ufe::Selection& selection, OpUndoItemList& undoInfo);
 
     /// \brief create and execute a select node undo item and keep track of it in the global list.
     /// The global selection is replaced.
     MAYAUSD_CORE_PUBLIC
-    static void select(const std::string& name, const Ufe::Selection& selection);
+    static bool select(const std::string& name, const Ufe::Selection& selection);
 
     /// \brief create and execute a select node undo item and keep track of it.
     /// The global selection is replaced.
     MAYAUSD_CORE_PUBLIC
-    static void select(const std::string& name, const MDagPath& dagPath, OpUndoItemList& undoInfo);
+    static bool select(const std::string& name, const MDagPath& dagPath, OpUndoItemList& undoInfo);
 
     /// \brief create and execute a select node undo item and keep track of it on the global list.
     /// The global selection is replaced.
     MAYAUSD_CORE_PUBLIC
-    static void select(const std::string& name, const MDagPath& dagPath);
+    static bool select(const std::string& name, const MDagPath& dagPath);
 
     /// \brief Create and execute a clear selection undo item and keep track of it.  The global
     /// selection is cleared.
     MAYAUSD_CORE_PUBLIC
-    static void clear(const std::string& name, OpUndoItemList& undoInfo);
+    static bool clear(const std::string& name, OpUndoItemList& undoInfo);
 
     /// \brief create and execute a clear selection undo item and keep track of it in the global
     /// list. The global selection is cleared.
     MAYAUSD_CORE_PUBLIC
-    static void clear(const std::string& name);
+    static bool clear(const std::string& name);
 
     MAYAUSD_CORE_PUBLIC
     UfeSelectionUndoItem(const std::string& name, const Ufe::Selection& selection);
@@ -486,13 +486,13 @@ class LockNodesUndoItem : public OpUndoItem
 public:
     /// \brief create and execute a lock node undo item and keep track of it.
     MAYAUSD_CORE_PUBLIC
-    static void
+    static bool
     lock(const std::string name, const MDagPath& root, bool lock, OpUndoItemList& undoInfo);
 
     /// \brief create and execute a lock node undo item and keep track of it in the global undo
     /// list.
     MAYAUSD_CORE_PUBLIC
-    static void lock(const std::string name, const MDagPath& root, bool lock);
+    static bool lock(const std::string name, const MDagPath& root, bool lock);
 
     MAYAUSD_CORE_PUBLIC
     LockNodesUndoItem(const std::string name, const MDagPath& root, bool lock);

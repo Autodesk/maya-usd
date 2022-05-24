@@ -378,7 +378,11 @@ PullImportPaths pullImport(
         // selection, so we must save the current selection for proper undo.
         // This is not logically necessary, and should be re-written to avoid
         // going through the global selection.
-        UfeSelectionUndoItem::select("Pre-proxyAccessor selection", *Ufe::GlobalSelection::get());
+        if (!UfeSelectionUndoItem::select(
+                "Pre-proxyAccessor selection", *Ufe::GlobalSelection::get())) {
+            TF_WARN("Cannot save the selection.");
+            return PullImportPaths();
+        }
 
         // The "child" is the node that will receive the computed parent
         // transformation, in its offsetParentMatrix attribute.  We are using
@@ -457,7 +461,10 @@ PullImportPaths pullImport(
             return PullImportPaths();
         }
 
-        UfeSelectionUndoItem::select("Pull import select DAG node", addedDagPath);
+        if (!UfeSelectionUndoItem::select("Pull import select DAG node", addedDagPath)) {
+            TF_WARN("Cannot select the pulled nodes.");
+            return PullImportPaths();
+        }
     }
 
     // Invert the new node registry, for MObject to Ufe::Path lookup.
@@ -843,7 +850,9 @@ bool PrimUpdaterManager::mergeToUsd(
         if (!TF_VERIFY(pullParentPath.isValid())) {
             return false;
         }
-        LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false);
+        if (!LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false)) {
+            return false;
+        }
     }
 
     // If the user-provided argument does *not* contain an animation key, then
@@ -862,7 +871,10 @@ bool PrimUpdaterManager::mergeToUsd(
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    UfeSelectionUndoItem::clear("Merge to USD selection reset");
+    if (!UfeSelectionUndoItem::clear("Merge to USD selection reset")) {
+        TF_WARN("Cannot reset the selection.");
+        return false;
+    }
 
     UsdStageRefPtr            proxyStage = proxyShape->usdPrim().GetStage();
     UsdMayaPrimUpdaterContext context(proxyShape->getTime(), proxyStage, ctxArgs);
@@ -1010,7 +1022,8 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
     if (!updaterArgs._copyOperation) {
         // Lock pulled nodes starting at the pull parent.
-        LockNodesUndoItem::lock("Edit as Maya node locking", pullParentPath, true);
+        if (!LockNodesUndoItem::lock("Edit as Maya node locking", pullParentPath, true))
+            return false;
 
         // Allow editing topology, which gets turned of by locking.
         if (!allowTopologyModifications(pullParentPath))
@@ -1090,11 +1103,16 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     if (!TF_VERIFY(pullParent.isValid())) {
         return false;
     }
-    LockNodesUndoItem::lock("Discard edits node unlocking", pullParent, false);
+    if (!LockNodesUndoItem::lock("Discard edits node unlocking", pullParent, false)) {
+        return false;
+    }
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    UfeSelectionUndoItem::clear("Discard edits selection reset");
+    if (!UfeSelectionUndoItem::clear("Discard edits selection reset")) {
+        TF_WARN("Cannot reset the selection.");
+        return false;
+    }
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
@@ -1155,11 +1173,16 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
     auto pullParent = dagPath;
     pullParent.pop();
 
-    LockNodesUndoItem::lock("Discard orphaned edits node unlocking", pullParent, false);
+    if (!LockNodesUndoItem::lock("Discard orphaned edits node unlocking", pullParent, false)) {
+        return false;
+    }
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    UfeSelectionUndoItem::clear("Discard orphaned edits selection reset");
+    if (!UfeSelectionUndoItem::clear("Discard orphaned edits selection reset")) {
+        TF_WARN("Cannot reset the selection.");
+        return false;
+    }
 
     UsdMayaPrimUpdaterContext context(UsdTimeCode(), nullptr, VtDictionary());
 
