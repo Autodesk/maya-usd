@@ -562,8 +562,8 @@ class TestTranslator(unittest.TestCase):
         self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::DirectionalLight'))
         self.assertEqual(len(mc.ls('directionalLightShape1')), 1)
         # Latest (2022-05-24) Maya preview release creates proxy light nodes in the scene for USD lights, 
-		# so the query below returns 2 now. Comment out the check. 
-		#self.assertEqual(len(mc.ls(type='directionalLight')), 1)
+        # so the query below returns 2 now. Comment out the check. 
+        #self.assertEqual(len(mc.ls(type='directionalLight')), 1)
         self.assertEqual('alight',mc.listRelatives(mc.listRelatives(mc.ls('directionalLightShape1')[0], parent=1)[0],parent=1)[0])
 
     def testDirectionalLight_TranslateRoundTrip(self):
