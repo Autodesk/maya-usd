@@ -116,11 +116,13 @@ void UsdStageMap::addItem(const Ufe::Path& path)
         return;
     }
 
-    // Non-const MObject& requires an lvalue.  We've just done a name-based
-    // lookup of the proxy shape, so the stage cannot be null.
+    // If a proxy shape doesn't yet have a stage, don't add it.
+    // We will add it later, when the stage is initialized
     auto obj = proxyShape.object();
     auto stage = objToStage(obj);
-    TF_AXIOM(stage);
+    if (!stage) {
+        return;
+    }
 
     fPathToObject[path] = proxyShape;
     fStageToObject[stage] = proxyShape;

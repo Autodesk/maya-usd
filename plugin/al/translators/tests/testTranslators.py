@@ -561,7 +561,11 @@ class TestTranslator(unittest.TestCase):
         mc.AL_usdmaya_ProxyShapeImport(file='./testDirectionalLight.usda')
         self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::DirectionalLight'))
         self.assertEqual(len(mc.ls('directionalLightShape1')), 1)
-        self.assertEqual(len(mc.ls(type='directionalLight')), 1)
+        # Latest (2022-05-24) Maya preview release creates proxy light nodes in the scene for USD lights, 
+        # so account for that as we verify the number of directional lights in the scene. 
+        numProxyLights = len(mc.ls('ufeLightProxyShape*'))
+        self.assertTrue((numProxyLights == 0) or (numProxyLights == 1))
+        self.assertEqual(len(mc.ls(type='directionalLight')), 1 + numProxyLights)
         self.assertEqual('alight',mc.listRelatives(mc.listRelatives(mc.ls('directionalLightShape1')[0], parent=1)[0],parent=1)[0])
 
     def testDirectionalLight_TranslateRoundTrip(self):
