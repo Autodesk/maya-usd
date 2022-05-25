@@ -56,6 +56,14 @@ if (MAYA_APP_VERSION VERSION_GREATER 2022)
     )
 endif()
 
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
+        list(APPEND TEST_SCRIPT_FILES
+            testVP2RenderDelegateLights.py
+        )
+    endif()
+endif()
+
 if (CMAKE_WANT_MATERIALX_BUILD)
     # We want modern OCIO for the MaterialX test:
     mayaUsd_get_unittest_target(target testVP2RenderDelegateMaterialX.py)
