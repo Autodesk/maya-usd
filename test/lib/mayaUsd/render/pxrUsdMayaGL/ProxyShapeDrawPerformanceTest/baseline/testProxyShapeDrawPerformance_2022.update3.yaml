@@ -1,0 +1,39 @@
+test: testProxyShapeDrawPerformance
+spec: ext/mayapkg_2022.update3/maya_open_source/maya-usd/test/lib/mayaUsd/render/pxrUsdMayaGL
+configs:
+- name: fedora-gcc64-opt
+  epoch: 1653432052
+  digest: a0dde00d0068a9d129af0d70e8b98aa5
+  profiles:
+  - name: CombinedMesh Proxy Time to First Draw
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.588651673
+  - name: CombinedMesh Proxy Orbit Playback Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.907799965
+  - name: ModelRefs Proxy Time to First Draw
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 7.588360313
+  - name: ModelRefs Proxy Orbit Playback Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 1.104307127

@@ -1,0 +1,119 @@
+test: testProxyShapeSelectionPerformance
+spec: ext/mayapkg_2022.update3/maya_open_source/maya-usd/test/lib/mayaUsd/render/pxrUsdMayaGL
+configs:
+- name: fedora-gcc64-opt
+  epoch: 1653428236
+  digest: a0dde00d0068a9d129af0d70e8b98aa5
+  profiles:
+  - name: CombinedMesh Proxy Select Center Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.013935157
+  - name: CombinedMesh Proxy Select Center Area Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.007696016
+  - name: CombinedMesh Proxy Unselect Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.002963099
+  - name: CombinedMesh Proxy Selection Append 1 Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.00428789
+  - name: CombinedMesh Proxy Selection Append 2 Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.00429592
+  - name: CombinedMesh Proxy Selection Append 3 Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.004367611
+  - name: CombinedMesh Proxy Selection Append 4 Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.004543604
+  - name: ModelRefs Proxy Select Center Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.100974978
+  - name: ModelRefs Proxy Select Center Area Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.096655308
+  - name: ModelRefs Proxy Unselect Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.002815676
+  - name: ModelRefs Proxy Selection Append 1 Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.006427185
+  - name: ModelRefs Proxy Selection Append 2 Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.006091739
+  - name: ModelRefs Proxy Selection Append 3 Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.007763587
+  - name: ModelRefs Proxy Selection Append 4 Time
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.006373654

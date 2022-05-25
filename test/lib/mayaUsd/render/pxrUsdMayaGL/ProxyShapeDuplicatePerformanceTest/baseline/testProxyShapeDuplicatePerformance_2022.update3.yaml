@@ -1,0 +1,15 @@
+test: testProxyShapeDuplicatePerformance
+spec: ext/mayapkg_2022.update3/maya_open_source/maya-usd/test/lib/mayaUsd/render/pxrUsdMayaGL
+configs:
+- name: fedora-gcc64-opt
+  epoch: 1653428236
+  digest: a0dde00d0068a9d129af0d70e8b98aa5
+  profiles:
+  - name: ModelRefs Proxy Duplicate
+    digest: 96bc3d0bb7ce3570cb2d6bd32e101a76
+    inputs:
+    - metric: samples
+      value: 1
+    outputs:
+    - metric: time
+      value: 0.526048209
