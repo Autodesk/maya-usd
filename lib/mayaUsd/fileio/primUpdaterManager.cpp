@@ -173,26 +173,29 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
     }
 
     // Add to a set, the set should already been created.
-    FunctionUndoItem::execute(
-        "Add edited item to pull set.",
-        [path]() {
-            MObject pullSetObj;
-            auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
-            if (status != MStatus::kSuccess)
-                return false;
-            MFnSet fnPullSet(pullSetObj);
-            fnPullSet.addMember(path);
-            return true;
-        },
-        [path]() {
-            MObject pullSetObj;
-            auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
-            if (status != MStatus::kSuccess)
-                return false;
-            MFnSet fnPullSet(pullSetObj);
-            fnPullSet.removeMember(path, MObject::kNullObj);
-            return true;
-        });
+    if (!FunctionUndoItem::execute(
+            "Add edited item to pull set.",
+            [path]() {
+                MObject pullSetObj;
+                auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+                if (status != MStatus::kSuccess)
+                    return false;
+                MFnSet fnPullSet(pullSetObj);
+                fnPullSet.addMember(path);
+                return true;
+            },
+            [path]() {
+                MObject pullSetObj;
+                auto    status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+                if (status != MStatus::kSuccess)
+                    return false;
+                MFnSet fnPullSet(pullSetObj);
+                fnPullSet.removeMember(path, MObject::kNullObj);
+                return true;
+            })) {
+        TF_WARN("Cannot edited object to pulled set.");
+        return false;
+    }
 
     // Store metadata on the prim in the Session Layer.
     auto stage = pulledPrim.GetStage();
@@ -200,7 +203,8 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
         return false;
     UsdEditContext editContext(stage, stage->GetSessionLayer());
     VtValue        value(path.fullPathName().asChar());
-    pulledPrim.SetCustomDataByKey(kPullPrimMetadataKey, value);
+    if (!pulledPrim.SetMetadataByDictKey(SdfFieldKeys->CustomData, kPullPrimMetadataKey, value))
+        return false;
 
     // Store medata on DG node
     auto              ufePathString = Ufe::PathString::string(ufePulledPath);
@@ -253,7 +257,8 @@ bool addExcludeFromRendering(const Ufe::Path& ufePulledPath)
         return false;
 
     UsdEditContext editContext(stage, stage->GetSessionLayer());
-    prim.SetActive(false);
+    if (!prim.SetActive(false))
+        return false;
 
     return true;
 }
@@ -272,7 +277,9 @@ bool removeExcludeFromRendering(const Ufe::Path& ufePulledPath)
     UsdEditContext editContext(stage, sessionLayer);
 
     // Cleanup the field and potentially empty over
-    prim.ClearActive();
+    if (!prim.ClearActive())
+        return false;
+
     SdfPrimSpecHandle primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     if (sessionLayer && primSpec)
         sessionLayer->ScheduleRemoveIfInert(primSpec.GetSpec());
@@ -312,13 +319,10 @@ PullImportPaths pullImport(
     const UsdPrim&                   pulledPrim,
     const UsdMayaPrimUpdaterContext& context)
 {
-    std::vector<MDagPath>  addedDagPaths;
-    std::vector<Ufe::Path> pulledUfePaths;
-
     std::string mFileName = context.GetUsdStage()->GetRootLayer()->GetIdentifier();
     if (mFileName.empty()) {
         TF_WARN("Nothing to edit: invalid layer.");
-        return PullImportPaths(addedDagPaths, pulledUfePaths);
+        return PullImportPaths();
     }
 
     VtDictionary userArgs(context.GetUserArgs());
@@ -346,6 +350,9 @@ PullImportPaths pullImport(
         }
     }
 
+    std::vector<MDagPath>  addedDagPaths;
+    std::vector<Ufe::Path> pulledUfePaths;
+
     // Execute the command, which can succeed but import nothing.
     bool success = readJob->Read(&addedDagPaths);
     if (!success || addedDagPaths.size() == 0) {
@@ -371,7 +378,11 @@ PullImportPaths pullImport(
         // selection, so we must save the current selection for proper undo.
         // This is not logically necessary, and should be re-written to avoid
         // going through the global selection.
-        UfeSelectionUndoItem::select("Pre-proxyAccessor selection", *Ufe::GlobalSelection::get());
+        if (!UfeSelectionUndoItem::select(
+                "Pre-proxyAccessor selection", *Ufe::GlobalSelection::get())) {
+            TF_WARN("Cannot save the selection.");
+            return PullImportPaths();
+        }
 
         // The "child" is the node that will receive the computed parent
         // transformation, in its offsetParentMatrix attribute.  We are using
@@ -404,8 +415,11 @@ PullImportPaths pullImport(
             Ufe::PathString::string(ufeChild).c_str(),
             Ufe::PathString::string(ufeParent).c_str());
 
-        PythonUndoItem::execute("Pull import proxy accessor parenting", pyCommand, pyUndoCommand);
-        // -- end --
+        if (!PythonUndoItem::execute(
+                "Pull import proxy accessor parenting", pyCommand, pyUndoCommand)) {
+            TF_WARN("Cannot parent pulled object.");
+            return PullImportPaths();
+        }
 
         // Create the pull set if it does not exists.
         //
@@ -423,25 +437,34 @@ PullImportPaths pullImport(
         }
 
         // Finalize the pull.
-        FunctionUndoItem::execute(
-            "Pull import pull info writing",
-            [ufePulledPath, addedDagPath]() {
-                return writePullInformation(ufePulledPath, addedDagPath);
-            },
-            [ufePulledPath]() {
-                removePullInformation(ufePulledPath);
-                return true;
-            });
+        if (!FunctionUndoItem::execute(
+                "Pull import pull info writing",
+                [ufePulledPath, addedDagPath]() {
+                    return writePullInformation(ufePulledPath, addedDagPath);
+                },
+                [ufePulledPath]() {
+                    removePullInformation(ufePulledPath);
+                    return true;
+                })) {
+            TF_WARN("Cannot write pull information metadata.");
+            return PullImportPaths();
+        }
 
-        FunctionUndoItem::execute(
-            "Pull import rendering exclusion",
-            [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); },
-            [ufePulledPath]() {
-                removeExcludeFromRendering(ufePulledPath);
-                return true;
-            });
+        if (!FunctionUndoItem::execute(
+                "Pull import rendering exclusion",
+                [ufePulledPath]() { return addExcludeFromRendering(ufePulledPath); },
+                [ufePulledPath]() {
+                    removeExcludeFromRendering(ufePulledPath);
+                    return true;
+                })) {
+            TF_WARN("Cannot exclude original USD data from viewport rendering.");
+            return PullImportPaths();
+        }
 
-        UfeSelectionUndoItem::select("Pull import select DAG node", addedDagPath);
+        if (!UfeSelectionUndoItem::select("Pull import select DAG node", addedDagPath)) {
+            TF_WARN("Cannot select the pulled nodes.");
+            return PullImportPaths();
+        }
     }
 
     // Invert the new node registry, for MObject to Ufe::Path lookup.
@@ -827,7 +850,9 @@ bool PrimUpdaterManager::mergeToUsd(
         if (!TF_VERIFY(pullParentPath.isValid())) {
             return false;
         }
-        LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false);
+        if (!LockNodesUndoItem::lock("Merge to USD node unlocking", pullParentPath, false)) {
+            return false;
+        }
     }
 
     // If the user-provided argument does *not* contain an animation key, then
@@ -846,7 +871,10 @@ bool PrimUpdaterManager::mergeToUsd(
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    UfeSelectionUndoItem::clear("Merge to USD selection reset");
+    if (!UfeSelectionUndoItem::clear("Merge to USD selection reset")) {
+        TF_WARN("Cannot reset the selection.");
+        return false;
+    }
 
     UsdStageRefPtr            proxyStage = proxyShape->usdPrim().GetStage();
     UsdMayaPrimUpdaterContext context(proxyShape->getTime(), proxyStage, ctxArgs);
@@ -878,13 +906,16 @@ bool PrimUpdaterManager::mergeToUsd(
         std::get<UsdPathToDagPathMapPtr>(pushCustomizeSrc));
 
     if (!isCopy) {
-        FunctionUndoItem::execute(
-            "Merge to Maya rendering inclusion",
-            [pulledPath]() {
-                removeExcludeFromRendering(pulledPath);
-                return true;
-            },
-            [pulledPath]() { return addExcludeFromRendering(pulledPath); });
+        if (!FunctionUndoItem::execute(
+                "Merge to Maya rendering inclusion",
+                [pulledPath]() {
+                    removeExcludeFromRendering(pulledPath);
+                    return true;
+                },
+                [pulledPath]() { return addExcludeFromRendering(pulledPath); })) {
+            TF_WARN("Cannot re-enable original USD data in viewport rendering.");
+            return false;
+        }
     }
 
     if (!pushCustomize(pulledPath, pushCustomizeSrc, customizeContext)) {
@@ -892,13 +923,18 @@ bool PrimUpdaterManager::mergeToUsd(
     }
 
     if (!isCopy) {
-        FunctionUndoItem::execute(
-            "Merge to Maya pull info removal",
-            [pulledPath]() {
-                removePullInformation(pulledPath);
-                return true;
-            },
-            [pulledPath, mayaDagPath]() { return writePullInformation(pulledPath, mayaDagPath); });
+        if (!FunctionUndoItem::execute(
+                "Merge to Maya pull info removal",
+                [pulledPath]() {
+                    removePullInformation(pulledPath);
+                    return true;
+                },
+                [pulledPath, mayaDagPath]() {
+                    return writePullInformation(pulledPath, mayaDagPath);
+                })) {
+            TF_WARN("Cannot remove pull information metadata.");
+            return false;
+        }
     }
 
     // Discard all pulled Maya nodes.
@@ -986,7 +1022,8 @@ bool PrimUpdaterManager::editAsMaya(const Ufe::Path& path, const VtDictionary& u
 
     if (!updaterArgs._copyOperation) {
         // Lock pulled nodes starting at the pull parent.
-        LockNodesUndoItem::lock("Edit as Maya node locking", pullParentPath, true);
+        if (!LockNodesUndoItem::lock("Edit as Maya node locking", pullParentPath, true))
+            return false;
 
         // Allow editing topology, which gets turned of by locking.
         if (!allowTopologyModifications(pullParentPath))
@@ -1066,11 +1103,16 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     if (!TF_VERIFY(pullParent.isValid())) {
         return false;
     }
-    LockNodesUndoItem::lock("Discard edits node unlocking", pullParent, false);
+    if (!LockNodesUndoItem::lock("Discard edits node unlocking", pullParent, false)) {
+        return false;
+    }
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    UfeSelectionUndoItem::clear("Discard edits selection reset");
+    if (!UfeSelectionUndoItem::clear("Discard edits selection reset")) {
+        TF_WARN("Cannot reset the selection.");
+        return false;
+    }
 
     // Discard all pulled Maya nodes.
     std::vector<MDagPath> toApplyOn = UsdMayaUtil::getDescendantsStartingWithChildren(mayaDagPath);
@@ -1086,21 +1128,29 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         updater->discardEdits();
     }
 
-    FunctionUndoItem::execute(
-        "Discard edits pull info removal",
-        [pulledPath]() {
-            removePullInformation(pulledPath);
-            return true;
-        },
-        [pulledPath, mayaDagPath]() { return writePullInformation(pulledPath, mayaDagPath); });
+    if (!FunctionUndoItem::execute(
+            "Discard edits pull info removal",
+            [pulledPath]() {
+                removePullInformation(pulledPath);
+                return true;
+            },
+            [pulledPath, mayaDagPath]() {
+                return writePullInformation(pulledPath, mayaDagPath);
+            })) {
+        TF_WARN("Cannot remove pull information metadata.");
+        return false;
+    }
 
-    FunctionUndoItem::execute(
-        "Discard edits rendering inclusion",
-        [pulledPath]() {
-            removeExcludeFromRendering(pulledPath);
-            return true;
-        },
-        [pulledPath]() { return addExcludeFromRendering(pulledPath); });
+    if (!FunctionUndoItem::execute(
+            "Discard edits rendering inclusion",
+            [pulledPath]() {
+                removeExcludeFromRendering(pulledPath);
+                return true;
+            },
+            [pulledPath]() { return addExcludeFromRendering(pulledPath); })) {
+        TF_WARN("Cannot re-enable original USD data in viewport rendering.");
+        return false;
+    }
 
     if (!TF_VERIFY(removePullParent(pullParent))) {
         return false;
@@ -1123,11 +1173,16 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
     auto pullParent = dagPath;
     pullParent.pop();
 
-    LockNodesUndoItem::lock("Discard orphaned edits node unlocking", pullParent, false);
+    if (!LockNodesUndoItem::lock("Discard orphaned edits node unlocking", pullParent, false)) {
+        return false;
+    }
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
     // and crash later on.
-    UfeSelectionUndoItem::clear("Discard orphaned edits selection reset");
+    if (!UfeSelectionUndoItem::clear("Discard orphaned edits selection reset")) {
+        TF_WARN("Cannot reset the selection.");
+        return false;
+    }
 
     UsdMayaPrimUpdaterContext context(UsdTimeCode(), nullptr, VtDictionary());
 
@@ -1358,16 +1413,19 @@ MObject PrimUpdaterManager::findOrCreatePullRoot()
     MFnDependencyNode pullRootFn(pullRootObj);
     UsdMayaUtil::SetHiddenInOutliner(pullRootFn, true);
 
-    FunctionUndoItem::execute(
-        "Create pull root cache has pulled prims",
-        [self = this]() {
-            self->_hasPulledPrims = true;
-            return true;
-        },
-        [self = this]() {
-            self->_hasPulledPrims = false;
-            return true;
-        });
+    if (!FunctionUndoItem::execute(
+            "Create pull root cache has pulled prims",
+            [self = this]() {
+                self->_hasPulledPrims = true;
+                return true;
+            },
+            [self = this]() {
+                self->_hasPulledPrims = false;
+                return true;
+            })) {
+        TF_WARN("Cannot create pulled prim cache.");
+        return MObject();
+    }
 
     return pullRootObj;
 }
@@ -1411,16 +1469,19 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
             if (status != MStatus::kSuccess) {
                 return false;
             }
-            FunctionUndoItem::execute(
-                "Delete pull root cache no pulled prims",
-                [self = this]() {
-                    self->_hasPulledPrims = false;
-                    return true;
-                },
-                [self = this]() {
-                    self->_hasPulledPrims = true;
-                    return true;
-                });
+            if (!FunctionUndoItem::execute(
+                    "Delete pull root cache no pulled prims",
+                    [self = this]() {
+                        self->_hasPulledPrims = false;
+                        return true;
+                    },
+                    [self = this]() {
+                        self->_hasPulledPrims = true;
+                        return true;
+                    })) {
+                TF_WARN("Cannot removed pulled prim from the pulled prim cache.");
+                return false;
+            }
         }
     }
 
