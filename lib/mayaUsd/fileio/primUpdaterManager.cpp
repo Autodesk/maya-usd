@@ -1156,6 +1156,28 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         return false;
     }
 
+    // Discard of the pull set if it is empty.
+    //
+    // Note: do not use the MFnSet API to discard it as it clears the redo stack
+    // and thus prevents redo.
+    MObject pullSetObj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+    if (status == MStatus::kSuccess) {
+        MFnSet         fnPullSet(pullSetObj);
+        MSelectionList members;
+        const bool     flatten = true;
+        fnPullSet.getMembers(members, flatten);
+
+        if(members.length() == 0) {
+            MString deleteSetCmd;
+            deleteSetCmd.format("lockNode -lock off \"^1s\";delete \"^1s\";", kPullSetName.asChar());
+            MDGModifier& dgMod
+                = MDGModifierUndoItem::create("Discard edits pull set removal");
+            dgMod.commandToExecute(deleteSetCmd);
+            dgMod.doIt();
+        }
+    }
+
     auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath);
     auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
     if (TF_VERIFY(hier)) {
