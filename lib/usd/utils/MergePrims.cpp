@@ -247,6 +247,44 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// Special normal attributes handling.
+//
+// The goal is to detect that a prim transform has *not* changed even though its representation
+// might have changed. This is becasue normals can be kept in the 'normals' attribute or in the
+// 'primvars:normals' attribute.
+//----------------------------------------------------------------------------------------------------------------------
+
+const char normalsTokenName[] = "normals";
+const char pvNormalsTokenName[] = "primvars:normals";
+const char pvNormalsIndicesTokenName[] = "primvars:normals:indices";
+
+bool isNormalsProperty(const TfToken& name)
+{
+    // Note: tokens are interned to be unique and thus we don't want
+    //       their constructor to be global in order to avoid the
+    //       unspecified order of global construction.
+    //
+    //       That is why we declare them as static inside the functions.
+    static const TfToken normalsToken(normalsTokenName);
+    static const TfToken pvNormalsToken(pvNormalsTokenName);
+
+    return (name == normalsToken || name == pvNormalsToken);
+}
+
+bool isUndesiredNormalsProperty(const TfToken& name)
+{
+    // Note: tokens are interned to be unique and thus we don't want
+    //       their constructor to be global in order to avoid the
+    //       unspecified order of global construction.
+    //
+    //       That is why we declare them as static inside the functions.
+    static const TfToken pvNormalsToken(pvNormalsTokenName);
+    static const TfToken pvNormalsIndicesToken(pvNormalsIndicesTokenName);
+
+    return (name == pvNormalsIndicesToken || name == pvNormalsToken);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // Special metadata handling.
 //
 // There are some metadata that we know the merge-to-USD temporary export-to-USD
@@ -456,6 +494,103 @@ bool shouldMergeValue(
     return isDataAtPathsModified(ctx, src, dst);
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+/// Allow to do some custom filtering processing of children based on
+/// the type of children being filtered. By default there is no custom
+/// processing.
+///
+/// Because this is called by a templated function, it has to be templated
+/// and the overrides is template-based with template specialization.
+
+template <class ChildPolicy> class CustomChildrenFiltering
+{
+public:
+    using FieldType = typename ChildPolicy::FieldType;
+    using ChildrenVector = std::vector<FieldType>;
+
+    /// Map some special fields to corresponding fields.
+    const FieldType getCorrespondingChild(
+        const MergeContext&,
+        const MergeLocation&,
+        const FieldType&,
+        const FieldType& dstChild)
+    {
+        return dstChild;
+    }
+
+    /// Final post-filtering customizations.
+    void postFiltering(
+        const MergeContext&  ctx,
+        const MergeMissing   missingHandling,
+        const MergeLocation& src,
+        const MergeLocation& dst,
+        ChildrenVector&      srcFilteredChildren,
+        ChildrenVector&      dstFilteredChildren)
+    {
+    }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// Custom processing of properties.
+///
+/// Currently, only normals require special processing, but we wrote this
+/// with the view that more will come and this call will become more sophisticated
+/// as new cases are found.
+///
+/// we only map normals to primvars:normals since the latter has precedence.
+/// We also remove some destination attributes for normals so that there is no
+/// contradictory data left behind.
+template <> class CustomChildrenFiltering<Sdf_PropertyChildPolicy>
+{
+public:
+    using FieldType = TfToken;
+    using ChildrenVector = std::vector<FieldType>;
+
+    const TfToken getCorrespondingChild(
+        const MergeContext&  ctx,
+        const MergeLocation& dst,
+        const TfToken&       srcChild,
+        const TfToken&       dstChild)
+    {
+        if (isNormalsProperty(srcChild))
+            srcHasNormals = true;
+
+        return dstChild;
+    }
+
+    void postFiltering(
+        const MergeContext&  ctx,
+        const MergeMissing   missingHandling,
+        const MergeLocation& src,
+        const MergeLocation& dst,
+        ChildrenVector&      srcChildren,
+        ChildrenVector&      dstChildren)
+    {
+        if (!srcHasNormals)
+            return;
+
+        // Note: iterate from the end because we are going to remove items.
+        for (size_t i = dstChildren.size() - 1; i < dstChildren.size(); --i) {
+            if (!isUndesiredNormalsProperty(dstChildren[i]))
+                continue;
+
+            if (contains(ctx.options.verbosity, MergeVerbosity::Children)) {
+                const MergeLocation childLoc = { dst.layer, dst.path, dstChildren[i], true };
+                const char*         msg = "drop child to ensure correct normals transfer. ";
+                printAboutField(ctx, childLoc, MergeVerbosity::Child, msg);
+            }
+
+            srcChildren.erase(srcChildren.begin() + i);
+            dstChildren.erase(dstChildren.begin() + i);
+        }
+    }
+
+private:
+    bool srcHasNormals = false;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// Filters the children based on their type.
 template <class ChildPolicy>
 bool filterTypedChildren(
     const MergeContext&  ctx,
@@ -474,6 +609,8 @@ bool filterTypedChildren(
         return true;
     }
 
+    CustomChildrenFiltering<ChildPolicy> customFiltering;
+
     const ChildrenVector  emptyChildren;
     const ChildrenVector& srcChildren = srcChildrenValue.IsEmpty()
         ? emptyChildren
@@ -491,14 +628,15 @@ bool filterTypedChildren(
 
     for (size_t i = 0; i < srcChildren.size(); ++i) {
         const auto& srcChild = srcChildren[i];
-        const auto& dstChild = dstChildren[i];
+        const auto  dstChild
+            = customFiltering.getCorrespondingChild(ctx, dst, srcChild, dstChildren[i]);
 
         // Special handling when the source or destination are empty.
         if (srcChild.IsEmpty() || dstChild.IsEmpty()) {
 
             // Both empty: should not happen, but let's be safe.
             if (srcChild.IsEmpty() && dstChild.IsEmpty()) {
-                printAboutFailure(ctx, srcChild.IsEmpty() ? dst : src, "empty child. ");
+                printAboutFailure(ctx, src, "missing from both source and destination. ");
                 continue;
             }
 
@@ -520,7 +658,9 @@ bool filterTypedChildren(
 
             const MergeLocation childLoc
                 = { srcChild.IsEmpty() ? dst.layer : src.layer, childPath, TfToken(), true };
-            printAboutField(ctx, childLoc, MergeVerbosity::Child, "empty child. ");
+            const char* msg
+                = srcChild.IsEmpty() ? "preserving destination. " : "creating from source. ";
+            printAboutField(ctx, childLoc, MergeVerbosity::Child, msg);
 
             if (contains(ctx.options.verbosity, MergeVerbosity::Children))
                 childrenNames.emplace_back(childPath.GetName());
@@ -570,16 +710,22 @@ bool filterTypedChildren(
         printAboutField(ctx, childSrcLoc, MergeVerbosity::Child, childMessage);
     }
 
+    customFiltering.postFiltering(
+        ctx, missingHandling, src, dst, srcFilteredChildren, dstFilteredChildren);
+
     const bool  shouldCopy = (srcFilteredChildren.size() > 0);
     const char* childrenMsg = nullptr;
     if (shouldCopy) {
         if (srcFilteredChildren.size() != srcChildren.size()) {
             childrenMsg = "subset of children: ";
-            srcChildrenValue = srcFilteredChildren;
-            dstChildrenValue = dstFilteredChildren;
         } else {
             childrenMsg = "keep all children: ";
         }
+
+        // We copy the list even when the list size has not changed because
+        // we sometimes edit the destination, see getCorrespondingChild().
+        srcChildrenValue = srcFilteredChildren;
+        dstChildrenValue = dstFilteredChildren;
     } else {
         childrenMsg = "no children: ";
     }
@@ -588,6 +734,8 @@ bool filterTypedChildren(
     return shouldCopy;
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+/// Marge all children from both the source and destination.
 template <class ChildPolicy>
 void unionChildren(
     MergeMissing missingHandling,

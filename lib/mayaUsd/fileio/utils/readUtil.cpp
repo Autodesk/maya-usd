@@ -356,6 +356,12 @@ MObject UsdMayaReadUtil::FindOrCreateMayaAttr(
     } else if (type.IsA<int>()) {
         return _FindOrCreateMayaNumericAttr(
             attrName, attrNiceName, MFnNumericData::kInt, keyable, usedAsColor, depNode, modifier);
+    } else if (type.IsA<unsigned int>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName, attrNiceName, MFnNumericData::kInt, keyable, usedAsColor, depNode, modifier);
+    } else if (type.IsA<unsigned char>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName, attrNiceName, MFnNumericData::kByte, keyable, usedAsColor, depNode, modifier);
     } else if (type.IsA<GfVec2i>()) {
         return _FindOrCreateMayaNumericAttr(
             attrName, attrNiceName, MFnNumericData::k2Int, keyable, usedAsColor, depNode, modifier);
@@ -663,10 +669,19 @@ bool UsdMayaReadUtil::SetMayaAttr(
             modifier.newPlugValueBool(attrPlug, b);
             ok = true;
         }
+    } else if (newValue.IsHolding<unsigned char>()) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::kByte)) {
+            unsigned char b = newValue.Get<unsigned char>();
+            modifier.newPlugValueBool(attrPlug, b);
+            ok = true;
+        }
     } else if (
-        newValue.IsHolding<int>() || newValue.IsHolding<float>() || newValue.IsHolding<double>()) {
+        newValue.IsHolding<int>() || newValue.IsHolding<unsigned int>()
+        || newValue.IsHolding<float>() || newValue.IsHolding<double>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::kInt)) {
-            int i = VtValue::Cast<int>(newValue).Get<int>();
+            int i = newValue.IsHolding<unsigned int>()
+                ? int(VtValue::Cast<unsigned int>(newValue).Get<unsigned int>())
+                : VtValue::Cast<int>(newValue).Get<int>();
             modifier.newPlugValueInt(attrPlug, i);
             ok = true;
         } else if (Converter::hasNumericType(attrPlug, MFnNumericData::kFloat)) {
@@ -677,8 +692,12 @@ bool UsdMayaReadUtil::SetMayaAttr(
             double d = VtValue::Cast<double>(newValue).Get<double>();
             modifier.newPlugValueDouble(attrPlug, d);
             ok = true;
-        } else if (newValue.IsHolding<int>() && Converter::hasEnumType(attrPlug)) {
-            int i = VtValue::Cast<int>(newValue).Get<int>();
+        } else if (
+            (newValue.IsHolding<int>() || newValue.IsHolding<unsigned int>())
+            && Converter::hasEnumType(attrPlug)) {
+            int i = newValue.IsHolding<unsigned int>()
+                ? int(VtValue::Cast<unsigned int>(newValue).Get<unsigned int>())
+                : VtValue::Cast<int>(newValue).Get<int>();
             modifier.newPlugValueInt(attrPlug, i);
             ok = true;
         }
