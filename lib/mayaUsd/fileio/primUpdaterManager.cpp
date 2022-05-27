@@ -1168,11 +1168,11 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         const bool     flatten = true;
         fnPullSet.getMembers(members, flatten);
 
-        if(members.length() == 0) {
+        if (members.length() == 0) {
             MString deleteSetCmd;
-            deleteSetCmd.format("lockNode -lock off \"^1s\";delete \"^1s\";", kPullSetName.asChar());
-            MDGModifier& dgMod
-                = MDGModifierUndoItem::create("Discard edits pull set removal");
+            deleteSetCmd.format(
+                "lockNode -lock off \"^1s\";delete \"^1s\";", kPullSetName.asChar());
+            MDGModifier& dgMod = MDGModifierUndoItem::create("Discard edits pull set removal");
             dgMod.commandToExecute(deleteSetCmd);
             dgMod.doIt();
         }
