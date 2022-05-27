@@ -62,6 +62,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
+constexpr auto kInvalidValue = "Invalid value for data type";
 
 typedef std::unordered_map<PXR_NS::TfToken, PXR_NS::SdfValueTypeName, PXR_NS::TfToken::HashFunctor>
     TokenToSdfTypeMap;
@@ -606,57 +607,89 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shade
     }
 }
 
+PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType)
+{
+    // Map the USD type into UFE type.
+    static const std::unordered_map<Ufe::Attribute::Type, PXR_NS::SdfValueTypeName> sUfeTypeToUsd {
+        { Ufe::Attribute::kBool, PXR_NS::SdfValueTypeNames->Bool },           // bool
+        { Ufe::Attribute::kInt, PXR_NS::SdfValueTypeNames->Int },             // int32_t
+        { Ufe::Attribute::kFloat, PXR_NS::SdfValueTypeNames->Float },         // float
+        { Ufe::Attribute::kDouble, PXR_NS::SdfValueTypeNames->Double },       // double
+        { Ufe::Attribute::kString, PXR_NS::SdfValueTypeNames->String },       // std::string
+        { Ufe::Attribute::kEnumString, PXR_NS::SdfValueTypeNames->Token },    // TfToken
+        { Ufe::Attribute::kInt3, PXR_NS::SdfValueTypeNames->Int3 },           // GfVec3i
+        { Ufe::Attribute::kFloat3, PXR_NS::SdfValueTypeNames->Float3 },       // GfVec3f
+        { Ufe::Attribute::kDouble3, PXR_NS::SdfValueTypeNames->Double3 },     // GfVec3d
+        { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3f }, // GfVec3f
+        { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3d }, // GfVec3d
+    };
+
+    const auto iter = sUfeTypeToUsd.find(ufeType);
+    if (iter != sUfeTypeToUsd.end()) {
+        return iter->second;
+    } else {
+        return SdfValueTypeName();
+    }
+}
+
 bool vtValueFromString(
     const std::string& typeName,
     const std::string& strValue,
-    PXR_NS::VtValue*   value)
+    PXR_NS::VtValue&   value)
 {
     if (typeName == Ufe::Attribute::kBool) {
-        *value = "true" == strValue ? true : false;
+        value = "true" == strValue ? true : false;
         return true;
     } else if (typeName == Ufe::Attribute::kInt) {
-        *value = std::stoi(strValue.c_str());
+        value = std::stoi(strValue.c_str());
         return true;
     } else if (typeName == Ufe::Attribute::kFloat) {
-        *value = std::stof(strValue.c_str());
+        value = std::stof(strValue.c_str());
         return true;
     } else if (typeName == Ufe::Attribute::kDouble) {
-        *value = std::stod(strValue.c_str());
+        value = std::stod(strValue.c_str());
         return true;
     } else if (typeName == Ufe::Attribute::kString) {
-        *value = strValue;
+        value = strValue;
         return true;
     } else if (typeName == Ufe::Attribute::kEnumString) {
-        *value = PXR_NS::TfToken(strValue.c_str());
+        value = PXR_NS::TfToken(strValue.c_str());
         return true;
     } else if (typeName == Ufe::Attribute::kInt3) {
-        std::vector<std::string> tokens = splitString(strValue, "(), ");
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (tokens.size() == 3) {
-            *value = GfVec3i(
+            value = GfVec3i(
                 std::stoi(tokens[0].c_str()),
                 std::stoi(tokens[1].c_str()),
                 std::stoi(tokens[2].c_str()));
             return true;
+        } else {
+            throw std::runtime_error(kInvalidValue);
         }
     } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
-        std::vector<std::string> tokens = splitString(strValue, "(), ");
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (tokens.size() == 3) {
-            *value = GfVec3f(
+            value = GfVec3f(
                 std::stof(tokens[0].c_str()),
                 std::stof(tokens[1].c_str()),
                 std::stof(tokens[2].c_str()));
             return true;
+        } else {
+            throw std::runtime_error(kInvalidValue);
         }
     } else if (typeName == Ufe::Attribute::kDouble3) {
-        std::vector<std::string> tokens = splitString(strValue, "(), ");
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (tokens.size() == 3) {
-            *value = GfVec3d(
+            value = GfVec3d(
                 std::stod(tokens[0].c_str()),
                 std::stod(tokens[1].c_str()),
                 std::stod(tokens[2].c_str()));
             return true;
+        } else {
+            throw std::runtime_error(kInvalidValue);
         }
     }
+    // Returns false if the type is unknown
     return false;
 }
 

@@ -60,7 +60,9 @@ private:
 private:
     UsdSceneItem::Ptr fItem;
     PXR_NS::UsdPrim   fPrim;
+#ifdef UFE_V4_FEATURES_AVAILABLE
     Ufe::NodeDef::Ptr fNodeDef;
+#endif
 
     typedef std::unordered_map<std::string, Ufe::Attribute::Ptr> AttributeMap;
     AttributeMap                                                 fAttributes;

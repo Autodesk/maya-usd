@@ -22,7 +22,9 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/schemaRegistry.h>
+#include <pxr/usd/usdShade/utils.h>
 
+#include <ufe/runTimeMgr.h>
 #include <ufe/ufeAssert.h>
 
 // Note: normally we would use this using directive, but here we cannot because
@@ -38,19 +40,23 @@ static constexpr char kErrorMsgInvalidAttribute[] = "Invalid USDAttribute!";
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-const std::string INPUT_ATTR_PREFIX = "inputs:";
-const std::string OUTPUT_ATTR_PREFIX = "outputs:";
-
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)
     : Ufe::Attributes()
     , fItem(item)
+#ifdef UFE_V4_FEATURES_AVAILABLE
     , fNodeDef(nullptr)
+#endif
 {
-    if (item) {
-        fPrim = item->prim();
+    PXR_NAMESPACE_USING_DIRECTIVE
+    if (!TF_VERIFY(item)) {
+        throw std::runtime_error("Invalid attributes object");
     }
-    UsdShaderNodeDefHandler::Ptr shaderNodeDefHandler = UsdShaderNodeDefHandler::create();
-    fNodeDef = shaderNodeDefHandler->definition(item);
+    fPrim = item->prim();
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    Ufe::RunTimeMgr&         runTimeMgr = Ufe::RunTimeMgr::instance();
+    Ufe::NodeDefHandler::Ptr nodeDefHandler = runTimeMgr.nodeDefHandler(item->runTimeId());
+    fNodeDef = nodeDefHandler->definition(item);
+#endif
 }
 
 UsdAttributes::~UsdAttributes() { }
@@ -79,24 +85,23 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
     PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
     if (usdAttr.IsValid()) {
         return getUfeTypeForAttribute(usdAttr);
-    } else {
+    }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    else {
         if (!fNodeDef) {
-            return nullptr;
+            return Ufe::Attribute::kInvalid;
         }
-        Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
-        for (auto const& input : inputs) {
-            if (INPUT_ATTR_PREFIX + input->name() == name) {
-                return input->type();
-            }
-        }
-        Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
-        for (auto const& output : outputs) {
-            if (OUTPUT_ATTR_PREFIX + output->name() == name) {
-                return output->type();
-            }
+        auto baseNameAndType = PXR_NS::UsdShadeUtils::GetBaseNameAndType(tok);
+        Ufe::AttributeDef::ConstPtr port
+            = baseNameAndType.second == PXR_NS::UsdShadeAttributeType::Input
+            ? fNodeDef->input(baseNameAndType.first)
+            : fNodeDef->output(baseNameAndType.first);
+        if (port) {
+            return port->type();
         }
     }
-    return nullptr;
+#endif
+    return Ufe::Attribute::kInvalid;
 }
 
 Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
@@ -112,14 +117,17 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         return iter->second;
 
     // No attribute for the input name was found -> create one.
-    PXR_NS::TfToken             tok(name);
-    PXR_NS::UsdAttribute        usdAttr = fPrim.GetAttribute(tok);
-    Ufe::Attribute::Type        newAttrType;
+    PXR_NS::TfToken      tok(name);
+    PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
+    Ufe::Attribute::Type newAttrType;
+#ifdef UFE_V4_FEATURES_AVAILABLE
     Ufe::AttributeDef::ConstPtr attributeDef = nullptr;
     if (fNodeDef) {
         Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
         for (auto const& input : inputs) {
-            if (INPUT_ATTR_PREFIX + input->name() == name) {
+            if (PXR_NS::UsdShadeUtils::GetFullName(
+                    PXR_NS::TfToken(input->name()), PXR_NS::UsdShadeAttributeType::Input)
+                == name) {
                 attributeDef = input;
                 newAttrType = input->type();
                 break;
@@ -128,7 +136,9 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         if (!attributeDef) {
             Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
             for (auto const& output : outputs) {
-                if (OUTPUT_ATTR_PREFIX + output->name() == name) {
+                if (PXR_NS::UsdShadeUtils::GetFullName(
+                        PXR_NS::TfToken(output->name()), PXR_NS::UsdShadeAttributeType::Output)
+                    == name) {
                     attributeDef = output;
                     newAttrType = output->type();
                     break;
@@ -136,35 +146,105 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             }
         }
     }
+#endif
     if (usdAttr.IsValid()) {
         newAttrType = getUfeTypeForAttribute(usdAttr);
-    } else if (!fNodeDef) {
+    }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    else if (!fNodeDef) {
         return nullptr;
     }
+#endif
 
     Ufe::Attribute::Ptr newAttr = nullptr;
     if (newAttrType == Ufe::Attribute::kBool) {
-        newAttr = UsdAttributeBool::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeBool::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kInt) {
-        newAttr = UsdAttributeInt::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeInt::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kFloat) {
-        newAttr = UsdAttributeFloat::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeFloat::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kDouble) {
-        newAttr = UsdAttributeDouble::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeDouble::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kString) {
-        newAttr = UsdAttributeString::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeString::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kColorFloat3) {
-        newAttr = UsdAttributeColorFloat3::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeColorFloat3::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kEnumString) {
-        newAttr = UsdAttributeEnumString::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeEnumString::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kInt3) {
-        newAttr = UsdAttributeInt3::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeInt3::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kFloat3) {
-        newAttr = UsdAttributeFloat3::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeFloat3::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kDouble3) {
-        newAttr = UsdAttributeDouble3::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeDouble3::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else if (newAttrType == Ufe::Attribute::kGeneric) {
-        newAttr = UsdAttributeGeneric::create(fItem, fPrim, attributeDef, usdAttr);
+        newAttr = UsdAttributeGeneric::create(
+            fItem,
+            fPrim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+            attributeDef,
+#endif
+            usdAttr);
     } else {
         UFE_ASSERT_MSG(false, kErrorMsgUnknown);
     }
@@ -175,20 +255,33 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 std::vector<std::string> UsdAttributes::attributeNames() const
 {
     std::vector<std::string> names;
+    std::set<std::string>    nameSet;
+    std::string              name;
+#ifdef UFE_V4_FEATURES_AVAILABLE
     if (fNodeDef) {
         Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
         for (auto const& input : inputs) {
-            names.push_back(INPUT_ATTR_PREFIX + input->name());
+            name = PXR_NS::UsdShadeUtils::GetFullName(
+                PXR_NS::TfToken(input->name()), PXR_NS::UsdShadeAttributeType::Input);
+            names.push_back(name);
+            nameSet.insert(name);
         }
         Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
         for (auto const& output : outputs) {
-            names.push_back(OUTPUT_ATTR_PREFIX + output->name());
+            name = PXR_NS::UsdShadeUtils::GetFullName(
+                PXR_NS::TfToken(output->name()), PXR_NS::UsdShadeAttributeType::Output);
+            names.push_back(name);
+            nameSet.insert(name);
         }
-    } else if (fPrim) {
+    }
+#endif
+    if (fPrim) {
         auto primAttrs = fPrim.GetAttributes();
-        names.reserve(primAttrs.size());
         for (const auto& attr : primAttrs) {
-            names.push_back(attr.GetName());
+            name = attr.GetName();
+            if (nameSet.find(name) == nameSet.end()) {
+                names.push_back(name);
+            }
         }
     }
     return names;
@@ -200,18 +293,24 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
     if (fPrim.HasAttribute(tkName)) {
         return true;
     }
+#ifdef UFE_V4_FEATURES_AVAILABLE
     Ufe::ConstAttributeDefs inputs = fNodeDef->inputs();
     for (auto const& input : inputs) {
-        if (INPUT_ATTR_PREFIX + input->name() == tkName.GetString()) {
+        if (PXR_NS::UsdShadeUtils::GetFullName(
+                PXR_NS::TfToken(input->name()), PXR_NS::UsdShadeAttributeType::Input)
+            == tkName.GetString()) {
             return true;
         }
     }
     Ufe::ConstAttributeDefs outputs = fNodeDef->outputs();
     for (auto const& output : outputs) {
-        if (OUTPUT_ATTR_PREFIX + output->name() == tkName.GetString()) {
+        if (PXR_NS::UsdShadeUtils::GetFullName(
+                PXR_NS::TfToken(output->name()), PXR_NS::UsdShadeAttributeType::Output)
+            == tkName.GetString()) {
             return true;
         }
     }
+#endif
     return false;
 }
 

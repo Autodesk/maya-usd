@@ -160,12 +160,17 @@ bool isAttributeEditAllowed(const PXR_NS::UsdPrim& prim, const PXR_NS::TfToken& 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 MAYAUSD_CORE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType);
+
+MAYAUSD_CORE_PUBLIC
 Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shaderProperty);
+
+MAYAUSD_CORE_PUBLIC
+PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType);
 
 bool vtValueFromString(
     const std::string& typeName,
     const std::string& strValue,
-    PXR_NS::VtValue*   value);
+    PXR_NS::VtValue&   value);
 #endif
 
 //! Check if the edit target in the stage is allowed to be changed.
@@ -223,6 +228,8 @@ Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& fil
 //! destination using the source scene item path.
 Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
 
+//! Splits a string by each specified separator.
+MAYAUSD_CORE_PUBLIC
 std::vector<std::string> splitString(const std::string& str, const std::string& separators);
 
 } // namespace ufe
