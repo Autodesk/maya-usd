@@ -247,6 +247,9 @@ private:
             if (shaderPrim && !topLevelShader) {
                 topLevelShader = UsdShadeShader(shaderPrim);
             }
+            if (srcShaderInfo->ShouldPruneChildren()) {
+                iterDepGraph.prune();
+            }
 
             for (unsigned int i = 0u; i < dstPlugs.length(); ++i) {
                 const MPlug dstPlug = dstPlugs[i];
