@@ -1616,7 +1616,9 @@ MDagPath MayaUsdProxyShapeBase::parentTransform()
     return proxyTransformPath;
 }
 
-MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection)
+MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
+    const bool enableUfeSelection,
+    const bool useLoadRulesHandling)
     : MPxSurfaceShape()
     , _isUfeSelectionEnabled(enableUfeSelection)
     , _unsharedStageRootLayer(nullptr)
@@ -1625,9 +1627,11 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection)
 {
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
 
-    // Register with the load-rules handling used to transfer load rules
-    // between the USD stage and a dynamic attribute on the proxy shape.
-    MayaUsdProxyShapeLoadRules::addProxyShape(*this);
+    if (useLoadRulesHandling) {
+        // Register with the load-rules handling used to transfer load rules
+        // between the USD stage and a dynamic attribute on the proxy shape.
+        MayaUsdProxyShapeLoadRules::addProxyShape(*this);
+    }
 }
 
 /* virtual */

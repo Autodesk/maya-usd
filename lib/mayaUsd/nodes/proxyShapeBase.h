@@ -283,7 +283,9 @@ public:
 
 protected:
     MAYAUSD_CORE_PUBLIC
-    MayaUsdProxyShapeBase(const bool enableUfeSelection = true);
+    MayaUsdProxyShapeBase(
+        const bool enableUfeSelection = true,
+        const bool useLoadRulesHandling = true);
 
     MAYAUSD_CORE_PUBLIC
     ~MayaUsdProxyShapeBase() override;
