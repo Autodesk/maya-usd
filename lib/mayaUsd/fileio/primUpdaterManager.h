@@ -85,6 +85,7 @@ private:
 
     bool discardPrimEdits(const Ufe::Path& path);
     bool discardOrphanedEdits(const MDagPath& dagPath);
+    void discardPullSetIfEmpty();
 
     void onProxyContentChanged(const MayaUsdProxyStageObjectsChangedNotice& notice);
 
