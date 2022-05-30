@@ -250,9 +250,11 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
 //----------------------------------------------------------------------------------------------------------------------
 // Special normal attributes handling.
 //
-// The goal is to detect that a prim transform has *not* changed even though its representation
-// might have changed. This is becasue normals can be kept in the 'normals' attribute or in the
-// 'primvars:normals' attribute.
+// The goal is to detect that a prim normals has *not* changed even though its representation
+// might have changed. The reason is that normals can be kept in the 'normals' attribute or in
+// the 'primvars:normals' attribute, with the latter having priority. Maya export to USD always
+// generates the 'normals' attribute, which would get hidden when merged. We now detect and correct
+// that situation.
 //----------------------------------------------------------------------------------------------------------------------
 
 const char normalsTokenName[] = "normals";
