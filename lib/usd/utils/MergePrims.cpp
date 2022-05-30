@@ -173,7 +173,8 @@ template <class T> auto makeFuncWithContext(const MergeContext& ctx, T&& func)
 bool isTransformProperty(const UsdProperty& prop)
 {
     static const TfToken xformOpOrderToken("xformOpOrder");
-    return UsdGeomXformOp::IsXformOp(prop.GetName()) || prop.GetBaseName() == xformOpOrderToken;
+    return prop.IsValid()
+        && (UsdGeomXformOp::IsXformOp(prop.GetName()) || prop.GetBaseName() == xformOpOrderToken);
 }
 
 std::vector<UsdAttribute> getTransformAttributes(const UsdPrim& prim)
