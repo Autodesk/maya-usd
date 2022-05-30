@@ -25,6 +25,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usdShade/types.h>
 
 #include <ufe/hierarchy.h>
 #include <ufe/pathString.h>
@@ -34,7 +35,21 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-std::vector<Ufe::Connection::Ptr> UsdConnections::sourceConnections() const
+UsdConnections::UsdConnections(const Ufe::SceneItem::Ptr& item)
+    : Ufe::Connections(item)
+{
+}
+
+UsdConnections::~UsdConnections()
+{
+}
+
+UsdConnections::Ptr UsdConnections::create(const Ufe::SceneItem::Ptr& item)
+{
+    return std::make_shared<UsdConnections>(item);
+}
+
+std::vector<Ufe::Connection::Ptr> UsdConnections::allSourceConnections() const
 {
     std::vector<Ufe::Connection::Ptr> result;
 
@@ -65,9 +80,13 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::sourceConnections() const
                 Ufe::Path connectedPrimPath = Ufe::PathString::path(connectedPrim.GetPrimPath().GetAsString());
                 connectedPrimPath = connectedPrimPath.reparent(Ufe::PathString::path(""), materialMayaPath);
 
+                PXR_NS::TfToken tkSourceName
+                    = PXR_NS::UsdShadeUtils::GetFullName(sourceInfo.sourceName,
+                                                         sourceInfo.sourceType);
+
                 UsdConnection::Ptr connection =
-                    UsdConnection::create(Ufe::AttributeInfo(connectedPrimPath, sourceInfo.sourceName.GetString()),
-                                          Ufe::AttributeInfo(primPath, input.GetBaseName()));
+                    UsdConnection::create(Ufe::AttributeInfo(connectedPrimPath, tkSourceName.GetString()),
+                                          Ufe::AttributeInfo(primPath, input.GetFullName()));
                 result.push_back(connection);
             }
         }
@@ -82,30 +101,19 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::sourceConnections() const
                 Ufe::Path connectedPrimPath = Ufe::PathString::path(connectedPrim.GetPrimPath().GetAsString());
                 connectedPrimPath = connectedPrimPath.reparent(Ufe::PathString::path(""), materialMayaPath);
 
+                PXR_NS::TfToken tkSourceName
+                    = PXR_NS::UsdShadeUtils::GetFullName(sourceInfo.sourceName,
+                                                         sourceInfo.sourceType);
+
                 UsdConnection::Ptr connection =
-                    UsdConnection::create(Ufe::AttributeInfo(connectedPrimPath, sourceInfo.sourceName.GetString()),
-                                          Ufe::AttributeInfo(primPath, output.GetBaseName()));
+                    UsdConnection::create(Ufe::AttributeInfo(connectedPrimPath, tkSourceName.GetString()),
+                                          Ufe::AttributeInfo(primPath, output.GetFullName()));
                 result.push_back(connection);
             }
         }
     }
 
     return result;
-}
-
-UsdConnections::Ptr UsdConnections::create(const Ufe::SceneItem::Ptr& item)
-{
-    return std::make_shared<UsdConnections>(item);
-}
-
-
-UsdConnections::UsdConnections(const Ufe::SceneItem::Ptr& item)
-    : Ufe::Connections(item)
-{
-}
-
-UsdConnections::~UsdConnections()
-{
 }
 
 } // namespace ufe

@@ -40,7 +40,7 @@ public:
 
     static UsdConnections::Ptr create(const Ufe::SceneItem::Ptr& item);
 
-    std::vector<Ufe::Connection::Ptr> sourceConnections() const override;
+    std::vector<Ufe::Connection::Ptr> allSourceConnections() const override;
 
 }; // UsdConnections
 

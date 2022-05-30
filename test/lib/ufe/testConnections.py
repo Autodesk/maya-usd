@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-# Copyright 2019 Autodesk
+# Copyright 2022 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,9 +28,8 @@ import ufe
 import unittest
 
 
-class AttributeTestCase(unittest.TestCase):
-    '''Verify the Attribute UFE interface, for multiple runtimes.
-    '''
+class ConnectionTestCase(unittest.TestCase):
+    '''Test(s) dedicated to validate the connections (i.e. list, create and delete).'''
 
     pluginsLoaded = False
 
@@ -44,8 +43,10 @@ class AttributeTestCase(unittest.TestCase):
 
         cmds.file(new=True, force=True)
 
-    def testConnections(self):
-        '''Test list/create/delete connections.'''
+    def testConnection(self):
+        '''Test a connection.'''
+
+        # Load a scene.
 
         testFile = testUtils.getTestScene('UsdPreviewSurface', 'DisplayColorCube.usda')
         shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
@@ -59,36 +60,112 @@ class AttributeTestCase(unittest.TestCase):
         self.assertIsNotNone(connectionsHandler)
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 1)
+
+        # Test a connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        conn = ufe.Connection(srcAttr, dstAttr)
+
+        self.assertEqual(conn.src.path, srcAttr.path)
+        self.assertEqual(conn.dst.path, dstAttr.path)
+
+    def testConnections(self):
+        '''Test a list of connections.'''
+
+        # Load a scene.
+
+        testFile = testUtils.getTestScene('UsdPreviewSurface', 'UsdTransform2dTest.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d')
+        self.assertIsNotNone(ufeItem)
+
+        # Find all the existing connections.
+
+        connectionsHandler = ufe.RunTimeMgr.instance().connectionsHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionsHandler)
+        connections = connectionsHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionsHandler)
+        conns = connections.allSourceConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(str(srcAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader')
+        self.assertEqual(srcAttr.name, 'outputs:result')
+
+        self.assertEqual(str(dstAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d')
+        self.assertEqual(dstAttr.name, 'inputs:in')
+
+        # Test the list of connections.
+
+        self.assertTrue(connections.hasSourceConnection(dstAttr.attribute()))
+        self.assertFalse(connections.hasSourceConnection(srcAttr.attribute()))
+
+        conns = connections.sourceConnections(dstAttr.attribute())
+        self.assertEqual(len(conns), 1)
+
+        conns = connections.sourceConnections(srcAttr.attribute())
+        self.assertEqual(len(conns), 0)
+
+    def testConnectionsHandler(self):
+        '''Test list/create/delete connections.'''
+
+        # Load a scene.
+
+        testFile = testUtils.getTestScene('UsdPreviewSurface', 'DisplayColorCube.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertIsNotNone(ufeItem)
+
+        # Find all the existing connections.
+
+        connectionsHandler = ufe.RunTimeMgr.instance().connectionsHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionsHandler)
+        connections = connectionsHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionsHandler)
+        conns = connections.allSourceConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
 
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
         self.assertEqual(str(srcAttr.path), 
             '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/ColorPrimvar')
-        self.assertEqual(srcAttr.name, 'result')
+        self.assertEqual(srcAttr.name, 'outputs:result')
 
         self.assertEqual(str(dstAttr.path), 
             '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
-        self.assertEqual(dstAttr.name, 'diffuseColor')
+        self.assertEqual(dstAttr.name, 'inputs:diffuseColor')
 
-        # Delete the connection.
+        # Delete a connection using the ConnectionsHandler.
 
         connectionsHandler.disconnect(srcAttr, dstAttr)
 
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 0)
 
-        # Create a connection.
+        # Create a connection using the ConnectionsHandler.
 
         connectionsHandler.connect(srcAttr, dstAttr)
 
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 1)
 
         # Delete the connection with the command.
@@ -101,21 +178,21 @@ class AttributeTestCase(unittest.TestCase):
 
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 0)
 
         cmd.undo()
 
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 1)
 
         cmd.redo()
 
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 0)
 
         # Create a connection with the command.
@@ -125,21 +202,21 @@ class AttributeTestCase(unittest.TestCase):
 
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 1)
 
         cmd.undo()
 
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 0)
 
         cmd.redo()
 
         connections = connectionsHandler.sourceConnections(ufeItem)
         self.assertIsNotNone(connectionsHandler)
-        conns = connections.sourceConnections()
+        conns = connections.allSourceConnections()
         self.assertEqual(len(conns), 1)
 
 if __name__ == '__main__':

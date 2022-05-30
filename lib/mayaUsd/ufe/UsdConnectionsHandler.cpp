@@ -59,14 +59,13 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
     PXR_NS::SdfPathVector connectedAttrs;
     dstUsdAttr.GetConnections(&connectedAttrs);
 
-    bool connected = false;
     for (PXR_NS::SdfPath path : connectedAttrs) {
         if (path == srcUsdAttr.GetPath()) {
-            connected = true;
+            return true;
         }
     }
 
-    return connected;
+    return false;
 }
 
 }
