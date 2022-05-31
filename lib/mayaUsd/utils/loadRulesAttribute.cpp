@@ -85,10 +85,9 @@ MStatus setLoadRulesAttribute(const MFnDependencyNode& depNode, const MString& v
     MString cmd;
     cmd.format("setAttr \"^2s.^1s\" -type \"string\" \"^3s\";", loadRulesAttrName, nodeName, value);
 
-    MString    result;
     const bool display = false;
     const bool undoable = false;
-    status = MGlobal::executeCommand(cmd, result, display, undoable);
+    status = MGlobal::executeCommand(cmd, display, undoable);
 
     return status;
 }

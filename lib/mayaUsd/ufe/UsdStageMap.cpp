@@ -116,11 +116,13 @@ void UsdStageMap::addItem(const Ufe::Path& path)
         return;
     }
 
-    // Non-const MObject& requires an lvalue.  We've just done a name-based
-    // lookup of the proxy shape, so the stage cannot be null.
+    // If a proxy shape doesn't yet have a stage, don't add it.
+    // We will add it later, when the stage is initialized
     auto obj = proxyShape.object();
     auto stage = objToStage(obj);
-    TF_AXIOM(stage);
+    if (!stage) {
+        return;
+    }
 
     fPathToObject[path] = proxyShape;
     fStageToObject[stage] = proxyShape;
@@ -180,6 +182,11 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
         iter = fPathToObject.find(singleSegmentPath);
     } else {
         auto object = iter->second;
+        // If the cached object itself is invalid then remove it from the map.
+        if (!object.isValid()) {
+            fPathToObject.erase(singleSegmentPath);
+            return MObject();
+        }
         auto objectPath = firstPath(object);
         if (objectPath != iter->first) {
             // When we hit the cache and the key path doesn't match the current object path

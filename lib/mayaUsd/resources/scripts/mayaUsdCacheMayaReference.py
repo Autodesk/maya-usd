@@ -37,7 +37,8 @@ kDefaultCachePrimName = 'Cache1'
 _cacheExportOptions = None
 
 # The options string that we pass to mayaUsdTranslatorExport.
-kTranslatorExportOptions = 'all;!output-parentscope'
+# By default we want to expand/collapse certain sections.
+kTranslatorExportOptions = 'all;!output-parentscope;output:expanded;geometry:collapsed;materials:collapsed;animation:collapsed;advanced:collapsed'
 
 # Dag path corresponding to pulled prim.  This is a Maya transform node that is
 # not in the Maya reference itself, but is its parent.
@@ -262,7 +263,7 @@ def fileOptionsTabPage(tabLayout):
 
     optBoxMarginWidth = mel.eval('global int $gOptionBoxTemplateDescriptionMarginWidth; $gOptionBoxTemplateDescriptionMarginWidth += 0')
     cmds.setParent(topForm)
-    cmds.frameLayout(label=getMayaUsdLibString("kMayaRefDescription"), mw=optBoxMarginWidth, height=160)
+    cmds.frameLayout(label=getMayaUsdLibString("kMayaRefDescription"), mw=optBoxMarginWidth, height=160, collapsable=False)
     cmds.columnLayout()
     cmds.text(align="left", wordWrap=True, height=70, label=getMayaUsdLibString("kMayaRefCacheToUSDDescription1"))
     cmds.text(align="left", wordWrap=True, height=50, label=getMayaUsdLibString("kMayaRefCacheToUSDDescription2"))
@@ -366,14 +367,6 @@ def cacheInitUi(parent, filterType):
     # creation and it is used to update some UI elements.
     fileTypeChangedUi(parent, filterType)
 
-    # By default we want to collapse certain sections.
-    cmds.frameLayout('outputFrameLayout', edit=True, collapse=False)
-    cmds.frameLayout('geometryFrameLayout', edit=True, collapse=True)
-    cmds.frameLayout('materialsFrameLayout', edit=True, collapse=True)
-    cmds.frameLayout('animationFrameLayout', edit=True, collapse=True)
-    cmds.frameLayout('advancedFrameLayout', edit=True, collapse=True)
-    cmds.frameLayout('authorFrameLayout', edit=True, collapse=False)
-
     variantOrNewPrim(mayaRefPrimParent.HasVariantSets())
 
 def cacheCommitUi(parent, selectedFile):
@@ -424,7 +417,7 @@ def fileTypeChangedUi(parent, fileType):
     #       give the label + file pattern, so that is why we use 'fileType in ff'
     #       in the loop below.
     forcedFormat = False
-    for ff in mayaUsdUtils.getMonoFormatFileFilterLabels():
+    for ff in mayaUsdUtils.getMonoFormatFileFilterLabels(False):
         forcedFormat = forcedFormat or fileType in ff
     cmds.optionMenuGrp("defaultUSDFormatPopup", edit=True, enable=not forcedFormat)
     mayaUsdUtils.setLastUsedUSDDialogFileFilter(fileType)
@@ -440,7 +433,7 @@ def cacheDialog(dagPath, pulledMayaRefPrim, _):
     _pulledMayaRefPrim = pulledMayaRefPrim
 
     ok = getMayaUsdLibString('kCacheMayaRefCache')
-    fileFilter = mayaUsdUtils.getUSDDialogFileFilters()
+    fileFilter = mayaUsdUtils.getUSDDialogFileFilters(False)
     selectedFileFilter = mayaUsdUtils.getLastUsedUSDDialogFileFilter()
 
     # As per Maya projectViewer.mel code structure, the UI creation

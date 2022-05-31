@@ -351,7 +351,7 @@ void LayerTreeItem::saveEditsNoPrompt()
         if (!isSessionLayer())
             saveAnonymousLayer();
     } else {
-        layer()->Save();
+        MayaUsd::utils::saveLayerWithFormat(layer());
     }
 }
 

@@ -28,6 +28,7 @@ from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as om
 
+import os
 import ufe
 
 from functools import partial
@@ -94,14 +95,16 @@ class CameraTestCase(unittest.TestCase):
         self.inchesToCm = 2.54
         self.mmToCm = 0.1
 
-    def _StartTest(self, testName):
+        # load the file and get ready to test!
         cmds.file(force=True, new=True)
         mayaUtils.loadPlugin("mayaUsdPlugin")
-        self._testName = testName
-        testFile = testUtils.getTestScene("camera", self._testName + ".usda")
+        testFile = testUtils.getTestScene("camera", 'TranslateRotate_vs_xform.usda')
         mayaUtils.createProxyFromFile(testFile)
         globalSelection = ufe.GlobalSelection.get()
         globalSelection.clear()
+
+        # create some strings
+        self.camera2PathString = '|stage|stageShape,/cameras/cam2/camera2'
 
     def _TestCameraAttributes(self, ufeCamera, usdCamera):
         # Trust that the USD API works correctly, validate that UFE gives us
@@ -231,16 +234,55 @@ class CameraTestCase(unittest.TestCase):
 
     @unittest.skipUnless(mayaUtils.mayaMajorVersion() >= 2023, 'Requires Python API only available in Maya 2023 or greater.')
     def testUsdCamera(self):
-        self._StartTest('TranslateRotate_vs_xform')
-        mayaPathSegment = mayaUtils.createUfePathSegment('|stage|stageShape')
-        cam2UsdPathSegment = usdUtils.createUfePathSegment('/cameras/cam2/camera2')
-        cam2Path = ufe.Path([mayaPathSegment, cam2UsdPathSegment])
-        cam2Item = ufe.Hierarchy.createItem(cam2Path)
-
+        cam2Item = ufeUtils.createItem(self.camera2PathString)
         cam2Camera = ufe.Camera.camera(cam2Item)
         cameraPrim = usdUtils.getPrimFromSceneItem(cam2Item)
         self._TestCameraAttributes(cam2Camera, cameraPrim)
 
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '4012', 'Requires Ufe Preview Version at least 4013.')
+    def testUsdCameraHandler(self):
+        # Test that the camera handlers can find USD cameras in a scene segment
+        camera2Path = ufe.PathString.path(self.camera2PathString)
+        camera1Path = ufe.PathString.path('|stage|stageShape,/cameras/cam1/camera1')
+
+        proxyShapePath = ufe.PathString.path('|stage|stageShape')
+        proxyShapeParentPath = ufe.PathString.path('|stage')
+        camerasParentPath = ufe.PathString.path('|stage|stageShape,/cameras')
+        camera2ParentPath = ufe.PathString.path('|stage|stageShape,/cameras/cam2')
+        geoPath = ufe.PathString.path('|stage|stageShape,/GEO')
+
+        # searching on a gateway item should give all cameras in the scene segment
+        # this will test ProxyShapeCameraHandler
+        result = ufe.CameraHandler.findAll(proxyShapePath)
+        self.assertTrue(result.contains(camera1Path))
+        self.assertTrue(result.contains(camera2Path))
+        self.assertEqual(len(result), 2)
+
+        # searching the the parent of a gateway item searches the Maya scene segment
+        # for cameras and searches nested scene segments. This doesn't find any Maya
+        # cameras because the Maya camera handler is not implemented, and there are no
+        # Maya cameras which are children of proxyShapeParentPath.
+        result = ufe.CameraHandler.findAll(proxyShapeParentPath)
+        self.assertTrue(result.contains(camera1Path))
+        self.assertTrue(result.contains(camera2Path))
+        self.assertEqual(len(result), 2)
+
+        # searching for the USD parent of both cameras should find both cameras.
+        # this will test UsdCameraHandler
+        result = ufe.CameraHandler.findAll(camerasParentPath)
+        self.assertTrue(result.contains(camera1Path))
+        self.assertTrue(result.contains(camera2Path))
+        self.assertEqual(len(result), 2)
+        
+        # searching for the parent of only camera2 should find just camera2
+        result = ufe.CameraHandler.findAll(camera2ParentPath)
+        self.assertFalse(result.contains(camera1Path))
+        self.assertTrue(result.contains(camera2Path))
+        self.assertEqual(len(result), 1)
+
+        # search for the parent of neither camera should find no cameras
+        result = ufe.CameraHandler.findAll(geoPath)
+        self.assertTrue(result.empty())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

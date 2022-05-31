@@ -55,17 +55,8 @@ static constexpr double g_tolerance = 1e-9;
 
 namespace {
 //----------------------------------------------------------------------------------------------------------------------
-bool extractOffsetMatrixComponents(
-    const MObject& node,
-    GfVec3d&       translation,
-    GfVec3f&       rotation,
-    int32_t&       rotateOrder,
-    GfVec3f&       scale,
-    GfVec3f&       shear)
+bool getLocalTransformationMatrix(const MObject& node, MTransformationMatrix& transformationMatrix)
 {
-    // Compose local matrix and offset parent matrix, then decompose components
-    // at once.
-
     MMatrix offsetMatrix;
     if (translators::DgNodeTranslator::getMatrix4x4(
             node, MPxTransform::offsetParentMatrix, offsetMatrix)
@@ -73,8 +64,9 @@ bool extractOffsetMatrixComponents(
         // Cannot find offset parent matrix
         return false;
     }
+
     if (GfIsClose(GfMatrix4d(offsetMatrix.matrix), g_identityMatrix, g_tolerance)) {
-        // Offset parent matrix is default, not need to compute
+        // Offset parent matrix is default, no need to compute
         return false;
     }
 
@@ -85,8 +77,41 @@ bool extractOffsetMatrixComponents(
         return false;
     }
 
-    MStatus               status;
-    MTransformationMatrix transformationMatrix(offsetMatrix * localMatrix);
+    if (GfIsClose(GfMatrix4d(localMatrix.matrix), g_identityMatrix, g_tolerance)) {
+        // Local matrix is default, return the offset parent matrix directly
+        transformationMatrix = offsetMatrix;
+    } else {
+        // Note: Maya API doc for MTransformationMatrix class says:
+        //       ```
+        //       The matrices are post-multiplied in Maya.
+        //       For example, to transform a point P
+        //       from object-space to world-space (P')
+        //       you would need to post-multiply by the worldMatrix. (P' = P x WM)
+        //       ```
+        // Thus the final local matrix (offset parent matrix inclusive) should be:
+        //    L' = local * offsetParentMatrix
+        transformationMatrix = localMatrix * offsetMatrix;
+    }
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool extractOffsetMatrixComponents(
+    const MObject& node,
+    GfVec3d&       translation,
+    GfVec3f&       rotation,
+    int32_t&       rotateOrder,
+    GfVec3f&       scale,
+    GfVec3f&       shear)
+{
+    // Compose local matrix and offset parent matrix, then decompose components
+    // at once.
+    MTransformationMatrix transformationMatrix;
+    if (!getLocalTransformationMatrix(node, transformationMatrix)) {
+        return false;
+    }
+
+    MStatus status;
     // Translate
     MVector t(transformationMatrix.getTranslation(MSpace::kTransform, &status));
     if (status != MStatus::kSuccess) {
@@ -136,29 +161,12 @@ bool extractOffsetMatrixComponent(const MPlug& attr, double* value)
         return false;
     }
 
-    MMatrix offsetMatrix;
-    if (translators::DgNodeTranslator::getMatrix4x4(
-            attr.node(), MPxTransform::offsetParentMatrix, offsetMatrix)
-        != MStatus::kSuccess) {
-        // Cannot find offset parent matrix
+    MTransformationMatrix transformationMatrix;
+    if (!getLocalTransformationMatrix(attr.node(), transformationMatrix)) {
         return false;
     }
 
-    if (GfIsClose(GfMatrix4d(offsetMatrix.matrix), g_identityMatrix, g_tolerance)) {
-        // Offset parent matrix is default, not need to compute
-        return false;
-    }
-
-    MMatrix localMatrix;
-    if (translators::DgNodeTranslator::getMatrix4x4(
-            attr.node(), MPxTransform::xformMatrix, localMatrix)
-        != MStatus::kSuccess) {
-        // Cannot find local matrix
-        return false;
-    }
-
-    MStatus               status;
-    MTransformationMatrix transformationMatrix(offsetMatrix * localMatrix);
+    MStatus status;
     if (shortName == "t") {
         MVector t(transformationMatrix.getTranslation(MSpace::kTransform, &status));
         if (status != MStatus::kSuccess) {

@@ -101,12 +101,26 @@ class CacheToUsdTestCase(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
+    def getCacheFileName(self):
+        return 'testCacheToUsd.usda'
+
+    def removeCacheFile(self):
+        '''
+        Remove the cache file if it exists. Ignore error if it does not exists.
+        '''
+        try:
+            os.remove(self.getCacheFileName())
+        except:
+            pass
+
     def setUp(self):
         # Start each test with a new scene with empty stage.
         cmds.file(new=True, force=True)
         import mayaUsd_createStageWithNewLayer
         self.proxyShapePathStr = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
         self.stage = mayaUsd.lib.GetPrim(self.proxyShapePathStr).GetStage()
+        # Make sure the cache file is removed in case a previous test failed mid-way.
+        self.removeCacheFile()
 
     def runTestCacheToUsd(self, createMayaRefPrimFn, checkCacheParentFn):
         '''Cache edits on a pulled Maya reference prim test engine.'''
@@ -176,7 +190,7 @@ class CacheToUsdTestCase(unittest.TestCase):
 
         # Cache to USD, using a payload composition arc.
         defaultExportOptions = cacheToUsd.getDefaultExportOptions()
-        cacheFile = 'testCacheToUsd.usda'
+        cacheFile = self.getCacheFileName()
         cachePrimName = 'cachePrimName'
         payloadOrReference = 'Payload'
         listEditType = 'Prepend'
@@ -237,13 +251,77 @@ class CacheToUsdTestCase(unittest.TestCase):
         self.assertTrue(foundPayload)
 
         # Clean up
-        os.remove(cacheFile)
+        self.removeCacheFile()
+
 
     def testCacheToUsdSibling(self):
         self.runTestCacheToUsd(createMayaRefPrimSiblingCache, checkSiblingCacheParent)
 
     def testCacheToUsdVariant(self):
         self.runTestCacheToUsd(createMayaRefPrimVariantCache, checkVariantCacheParent)
+
+
+    def testAutoEditAndCache(self):
+        '''Test editing then caching a Maya Reference.
+
+        Add a Maya Reference using auto-edit, then cache the edits.
+        '''
+        kDefaultPrimName = mayaRefUtils.defaultMayaReferencePrimName()
+
+        # Since this is a brand new prim, it should not have variant sets.
+        primTestDefault = self.stage.DefinePrim('/Test_Default', 'Xform')
+        primPathStr = self.proxyShapePathStr + ',/Test_Default'
+        self.assertFalse(primTestDefault.HasVariantSets())
+
+        variantSetName = 'new_variant_set'
+        variantName =  'new_variant'
+
+        mayaRefPrim = mayaUsdAddMayaReference.createMayaReferencePrim(
+            primPathStr,
+            self.mayaSceneStr,
+            self.kDefaultNamespace,
+            variantSet=(variantSetName, variantName),
+            mayaAutoEdit=True)
+
+        # The prim should have variant set.
+        self.assertTrue(primTestDefault.HasVariantSets())
+
+        # Verify that a Maya Reference prim was created.
+        self.assertTrue(mayaRefPrim.IsValid())
+        self.assertEqual(str(mayaRefPrim.GetName()), kDefaultPrimName)
+        self.assertEqual(mayaRefPrim, primTestDefault.GetChild(kDefaultPrimName))
+        self.assertTrue(mayaRefPrim.GetPrimTypeInfo().GetTypeName(), 'MayaReference')
+
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), True)
+
+        # Cache to USD, using a payload composition arc.
+        defaultExportOptions = cacheToUsd.getDefaultExportOptions()
+        cacheFile = self.getCacheFileName()
+        cachePrimName = 'cachePrimName'
+        payloadOrReference = 'Payload'
+        listEditType = 'Prepend'
+
+        userArgs = cacheToUsd.createCacheCreationOptions(
+            defaultExportOptions, cacheFile, cachePrimName, payloadOrReference,
+            listEditType, variantSetName, variantName)
+
+        # Merge Maya edits.
+        aMayaItem = ufe.GlobalSelection.get().front()
+        aMayaPath = aMayaItem.path()
+        aMayaPathStr = ufe.PathString.string(aMayaPath)
+
+        with mayaUsd.lib.OpUndoItemList():
+            self.assertTrue(mayaUsd.lib.PrimUpdaterManager.mergeToUsd(aMayaPathStr, userArgs))
+        
+        # Verify that the auto-edit has been turned off
+        attr = mayaRefPrim.GetAttribute('mayaAutoEdit')
+        self.assertTrue(attr.IsValid())
+        self.assertEqual(attr.Get(), False)
+
+        self.removeCacheFile()
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

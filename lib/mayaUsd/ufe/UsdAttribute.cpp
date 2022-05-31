@@ -151,6 +151,9 @@ std::string getUsdAttributeValueAsString(
     const MayaUsd::ufe::UsdAttribute& attr,
     const PXR_NS::UsdTimeCode&        time)
 {
+    if (!attr.isAuthored() || !attr.hasValue())
+        return std::string();
+
     PXR_NS::VtValue v;
     if (attr.get(v, time)) {
         if (v.CanCast<std::string>()) {
@@ -172,10 +175,15 @@ U getUsdAttributeVectorAsUfe(
     const MayaUsd::ufe::UsdAttribute& attr,
     const PXR_NS::UsdTimeCode&        time)
 {
+    if (!attr.isAuthored() || !attr.hasValue())
+        return U();
+
     PXR_NS::VtValue vt;
     if (attr.get(vt, time) && vt.IsHolding<T>()) {
-        T gfVec = vt.UncheckedGet<T>();
-        U ret(gfVec[0], gfVec[1], gfVec[2]);
+        T                gfVec = vt.UncheckedGet<T>();
+        U                ret;
+        constexpr size_t num = ret.vector.size();
+        std::copy(gfVec.data(), gfVec.data() + num, ret.vector.data());
         return ret;
     }
 
@@ -189,9 +197,75 @@ void setUsdAttributeVectorFromUfe(
     const PXR_NS::UsdTimeCode&  time)
 {
     T vec;
-    vec.Set(value.x(), value.y(), value.z());
+    std::copy(value.vector.data(), value.vector.data() + value.vector.size(), vec.data());
     setUsdAttr<T>(attr, vec);
 }
+
+template <typename T, typename U>
+U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
+{
+    if (!attr.isAuthored() || !attr.hasValue())
+        return U();
+
+    PXR_NS::VtValue vt;
+    if (attr.get(vt, time) && vt.IsHolding<T>()) {
+        T gfVec = vt.UncheckedGet<T>();
+        U ret;
+        std::copy(gfVec.data(), gfVec.data() + ret.color.size(), ret.color.data());
+        return ret;
+    }
+
+    return U();
+}
+
+template <typename T, typename U>
+void setUsdAttributeColorFromUfe(
+    MayaUsd::ufe::UsdAttribute& attr,
+    const U&                    value,
+    const PXR_NS::UsdTimeCode&  time)
+{
+    T vec;
+    std::copy(value.color.data(), value.color.data() + value.color.size(), vec.data());
+    setUsdAttr<T>(attr, vec);
+}
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+template <typename T, typename U>
+U getUsdAttributeMatrixAsUfe(
+    const MayaUsd::ufe::UsdAttribute& attr,
+    const PXR_NS::UsdTimeCode&        time)
+{
+    if (!attr.isAuthored() || !attr.hasValue())
+        return U();
+
+    PXR_NS::VtValue vt;
+    if (attr.get(vt, time) && vt.IsHolding<T>()) {
+        T gfMat = vt.UncheckedGet<T>();
+        U ret;
+        std::copy(
+            gfMat.data(),
+            gfMat.data() + ret.matrix.size() * ret.matrix.size(),
+            ret.matrix[0].data());
+        return ret;
+    }
+
+    return U();
+}
+
+template <typename T, typename U>
+void setUsdAttributeMatrixFromUfe(
+    MayaUsd::ufe::UsdAttribute& attr,
+    const U&                    value,
+    const PXR_NS::UsdTimeCode&  time)
+{
+    T mat;
+    std::copy(
+        value.matrix[0].data(),
+        value.matrix[0].data() + value.matrix.size() * value.matrix.size(),
+        mat.data());
+    setUsdAttr<T>(attr, mat);
+}
+#endif
 
 class UsdUndoableCommand : public Ufe::UndoableCommand
 {
@@ -558,6 +632,84 @@ UsdAttributeGeneric::Ptr UsdAttributeGeneric::create(
 
 std::string UsdAttributeGeneric::nativeType() const { return typeName(); }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//------------------------------------------------------------------------------
+// UsdAttributeFilename:
+//------------------------------------------------------------------------------
+
+UsdAttributeFilename::UsdAttributeFilename(
+    const UsdSceneItem::Ptr& item,
+    const PXR_NS::UsdPrim&   prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    const Ufe::AttributeDef::ConstPtr& attrDef,
+#endif
+    const PXR_NS::UsdAttribute& usdAttr)
+    : Ufe::AttributeFilename(item)
+    , UsdAttribute(
+          prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+          attrDef,
+#endif
+          usdAttr)
+{
+}
+
+/*static*/
+UsdAttributeFilename::Ptr UsdAttributeFilename::create(
+    const UsdSceneItem::Ptr& item,
+    const PXR_NS::UsdPrim&   prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    const Ufe::AttributeDef::ConstPtr& attrDef,
+#endif
+    const PXR_NS::UsdAttribute& usdAttr)
+{
+    auto attr = std::make_shared<UsdAttributeFilename>(
+        item,
+        prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        attrDef,
+#endif
+        usdAttr);
+    return attr;
+}
+
+//------------------------------------------------------------------------------
+// UsdAttributeFilename - Ufe::AttributeFilename overrides
+//------------------------------------------------------------------------------
+
+std::string UsdAttributeFilename::get() const
+{
+    PXR_NS::VtValue vt;
+    if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem())) && vt.IsHolding<SdfAssetPath>()) {
+        SdfAssetPath path = vt.UncheckedGet<SdfAssetPath>();
+        return path.GetAssetPath();
+    }
+
+    return std::string();
+}
+
+void UsdAttributeFilename::set(const std::string& value)
+{
+    SdfAssetPath path(value);
+    setUsdAttr<PXR_NS::SdfAssetPath>(*this, path);
+}
+
+Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
+{
+    auto self = std::dynamic_pointer_cast<UsdAttributeFilename>(shared_from_this());
+    if (!TF_VERIFY(self, kErrorMsgInvalidType))
+        return nullptr;
+
+    std::string errMsg;
+    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+        MGlobal::displayError(errMsg.c_str());
+        return nullptr;
+    }
+
+    return std::make_shared<SetUndoableCommand<std::string, UsdAttributeFilename>>(self, value);
+}
+#endif
+
 //------------------------------------------------------------------------------
 // UsdAttributeEnumString:
 //------------------------------------------------------------------------------
@@ -727,16 +879,25 @@ template <> void TypedUsdAttribute<std::string>::set(const std::string& value)
 
 template <> Ufe::Color3f TypedUsdAttribute<Ufe::Color3f>::get() const
 {
-    return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Color3f>(*this, getCurrentTime(sceneItem()));
+    return getUsdAttributeColorAsUfe<GfVec3f, Ufe::Color3f>(*this, getCurrentTime(sceneItem()));
 }
 
-// Note: cannot use setUsdAttributeVectorFromUfe since it relies on x/y/z
 template <> void TypedUsdAttribute<Ufe::Color3f>::set(const Ufe::Color3f& value)
 {
-    GfVec3f vec;
-    vec.Set(value.r(), value.g(), value.b());
-    setUsdAttr<GfVec3f>(*this, vec);
+    setUsdAttributeColorFromUfe<GfVec3f, Ufe::Color3f>(*this, value, getCurrentTime(sceneItem()));
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+template <> Ufe::Color4f TypedUsdAttribute<Ufe::Color4f>::get() const
+{
+    return getUsdAttributeColorAsUfe<GfVec4f, Ufe::Color4f>(*this, getCurrentTime(sceneItem()));
+}
+
+template <> void TypedUsdAttribute<Ufe::Color4f>::set(const Ufe::Color4f& value)
+{
+    setUsdAttributeColorFromUfe<GfVec4f, Ufe::Color4f>(*this, value, getCurrentTime(sceneItem()));
+}
+#endif
 
 template <> Ufe::Vector3i TypedUsdAttribute<Ufe::Vector3i>::get() const
 {
@@ -748,6 +909,18 @@ template <> void TypedUsdAttribute<Ufe::Vector3i>::set(const Ufe::Vector3i& valu
     setUsdAttributeVectorFromUfe<GfVec3i, Ufe::Vector3i>(*this, value, getCurrentTime(sceneItem()));
 }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+template <> Ufe::Vector2f TypedUsdAttribute<Ufe::Vector2f>::get() const
+{
+    return getUsdAttributeVectorAsUfe<GfVec2f, Ufe::Vector2f>(*this, getCurrentTime(sceneItem()));
+}
+
+template <> void TypedUsdAttribute<Ufe::Vector2f>::set(const Ufe::Vector2f& value)
+{
+    setUsdAttributeVectorFromUfe<GfVec2f, Ufe::Vector2f>(*this, value, getCurrentTime(sceneItem()));
+}
+#endif
+
 template <> Ufe::Vector3f TypedUsdAttribute<Ufe::Vector3f>::get() const
 {
     return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Vector3f>(*this, getCurrentTime(sceneItem()));
@@ -758,6 +931,18 @@ template <> void TypedUsdAttribute<Ufe::Vector3f>::set(const Ufe::Vector3f& valu
     setUsdAttributeVectorFromUfe<GfVec3f, Ufe::Vector3f>(*this, value, getCurrentTime(sceneItem()));
 }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+template <> Ufe::Vector4f TypedUsdAttribute<Ufe::Vector4f>::get() const
+{
+    return getUsdAttributeVectorAsUfe<GfVec4f, Ufe::Vector4f>(*this, getCurrentTime(sceneItem()));
+}
+
+template <> void TypedUsdAttribute<Ufe::Vector4f>::set(const Ufe::Vector4f& value)
+{
+    setUsdAttributeVectorFromUfe<GfVec4f, Ufe::Vector4f>(*this, value, getCurrentTime(sceneItem()));
+}
+#endif
+
 template <> Ufe::Vector3d TypedUsdAttribute<Ufe::Vector3d>::get() const
 {
     return getUsdAttributeVectorAsUfe<GfVec3d, Ufe::Vector3d>(*this, getCurrentTime(sceneItem()));
@@ -767,6 +952,32 @@ template <> void TypedUsdAttribute<Ufe::Vector3d>::set(const Ufe::Vector3d& valu
 {
     setUsdAttributeVectorFromUfe<GfVec3d, Ufe::Vector3d>(*this, value, getCurrentTime(sceneItem()));
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+template <> Ufe::Matrix3d TypedUsdAttribute<Ufe::Matrix3d>::get() const
+{
+    return getUsdAttributeMatrixAsUfe<GfMatrix3d, Ufe::Matrix3d>(
+        *this, getCurrentTime(sceneItem()));
+}
+
+template <> void TypedUsdAttribute<Ufe::Matrix3d>::set(const Ufe::Matrix3d& value)
+{
+    setUsdAttributeMatrixFromUfe<GfMatrix3d, Ufe::Matrix3d>(
+        *this, value, getCurrentTime(sceneItem()));
+}
+
+template <> Ufe::Matrix4d TypedUsdAttribute<Ufe::Matrix4d>::get() const
+{
+    return getUsdAttributeMatrixAsUfe<GfMatrix4d, Ufe::Matrix4d>(
+        *this, getCurrentTime(sceneItem()));
+}
+
+template <> void TypedUsdAttribute<Ufe::Matrix4d>::set(const Ufe::Matrix4d& value)
+{
+    setUsdAttributeMatrixFromUfe<GfMatrix4d, Ufe::Matrix4d>(
+        *this, value, getCurrentTime(sceneItem()));
+}
+#endif
 
 template <typename T> T TypedUsdAttribute<T>::get() const
 {
@@ -921,6 +1132,31 @@ UsdAttributeColorFloat3::Ptr UsdAttributeColorFloat3::create(
     return attr;
 }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//------------------------------------------------------------------------------
+// UsdAttributeColorFloat4:
+//------------------------------------------------------------------------------
+
+/*static*/
+UsdAttributeColorFloat4::Ptr UsdAttributeColorFloat4::create(
+    const UsdSceneItem::Ptr& item,
+    const PXR_NS::UsdPrim&   prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    const Ufe::AttributeDef::ConstPtr& attrDef,
+#endif
+    const PXR_NS::UsdAttribute& usdAttr)
+{
+    auto attr = std::make_shared<UsdAttributeColorFloat4>(
+        item,
+        prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        attrDef,
+#endif
+        usdAttr);
+    return attr;
+}
+#endif
+
 //------------------------------------------------------------------------------
 // UsdAttributeInt3:
 //------------------------------------------------------------------------------
@@ -943,6 +1179,31 @@ UsdAttributeInt3::Ptr UsdAttributeInt3::create(
         usdAttr);
     return attr;
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//------------------------------------------------------------------------------
+// UsdAttributeFloat2:
+//------------------------------------------------------------------------------
+
+/*static*/
+UsdAttributeFloat2::Ptr UsdAttributeFloat2::create(
+    const UsdSceneItem::Ptr& item,
+    const PXR_NS::UsdPrim&   prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    const Ufe::AttributeDef::ConstPtr& attrDef,
+#endif
+    const PXR_NS::UsdAttribute& usdAttr)
+{
+    auto attr = std::make_shared<UsdAttributeFloat2>(
+        item,
+        prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        attrDef,
+#endif
+        usdAttr);
+    return attr;
+}
+#endif
 
 //------------------------------------------------------------------------------
 // UsdAttributeFloat3:
@@ -967,6 +1228,31 @@ UsdAttributeFloat3::Ptr UsdAttributeFloat3::create(
     return attr;
 }
 
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//------------------------------------------------------------------------------
+// UsdAttributeFloat4:
+//------------------------------------------------------------------------------
+
+/*static*/
+UsdAttributeFloat4::Ptr UsdAttributeFloat4::create(
+    const UsdSceneItem::Ptr& item,
+    const PXR_NS::UsdPrim&   prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    const Ufe::AttributeDef::ConstPtr& attrDef,
+#endif
+    const PXR_NS::UsdAttribute& usdAttr)
+{
+    auto attr = std::make_shared<UsdAttributeFloat4>(
+        item,
+        prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        attrDef,
+#endif
+        usdAttr);
+    return attr;
+}
+#endif
+
 //------------------------------------------------------------------------------
 // UsdAttributeDouble3:
 //------------------------------------------------------------------------------
@@ -989,6 +1275,54 @@ UsdAttributeDouble3::Ptr UsdAttributeDouble3::create(
         usdAttr);
     return attr;
 }
+
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+//------------------------------------------------------------------------------
+// UsdAttributeMatrix3d:
+//------------------------------------------------------------------------------
+
+/*static*/
+UsdAttributeMatrix3d::Ptr UsdAttributeMatrix3d::create(
+    const UsdSceneItem::Ptr& item,
+    const PXR_NS::UsdPrim&   prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    const Ufe::AttributeDef::ConstPtr& attrDef,
+#endif
+    const PXR_NS::UsdAttribute& usdAttr)
+{
+    auto attr = std::make_shared<UsdAttributeMatrix3d>(
+        item,
+        prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        attrDef,
+#endif
+        usdAttr);
+    return attr;
+}
+
+//------------------------------------------------------------------------------
+// UsdAttributeMatrix4d:
+//------------------------------------------------------------------------------
+
+/*static*/
+UsdAttributeMatrix4d::Ptr UsdAttributeMatrix4d::create(
+    const UsdSceneItem::Ptr& item,
+    const PXR_NS::UsdPrim&   prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    const Ufe::AttributeDef::ConstPtr& attrDef,
+#endif
+    const PXR_NS::UsdAttribute& usdAttr)
+{
+    auto attr = std::make_shared<UsdAttributeMatrix4d>(
+        item,
+        prim,
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        attrDef,
+#endif
+        usdAttr);
+    return attr;
+}
+#endif
 
 #if 0
 // Note: if we were to implement generic attribute setting (via string) this

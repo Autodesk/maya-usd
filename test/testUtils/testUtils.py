@@ -26,6 +26,11 @@ def stripPrefix(input_str, prefix):
         return input_str[len(prefix):]
     return input_str
 
+def assertMatrixAlmostEqual(testCase, ma, mb, places=7):
+    for ra, rb in zip(ma, mb):
+        for a, b in zip(ra, rb):
+            testCase.assertAlmostEqual(a, b, places)
+
 def assertVectorAlmostEqual(testCase, a, b, places=7):
     for va, vb in zip(a, b):
         testCase.assertAlmostEqual(va, vb, places)

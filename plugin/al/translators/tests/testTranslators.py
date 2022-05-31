@@ -1,6 +1,8 @@
 import unittest
 import tempfile
 import os
+import shutil
+
 import maya.cmds as mc
 import maya.mel as mel
 
@@ -131,6 +133,60 @@ class TestTranslator(unittest.TestCase):
         assertUsingMayaReferenceVariant()
         # ...and then make sure that our ref edit was preserved
         self.assertEqual(mc.getAttr('cubeNS:pCube1.translate')[0], (4.0, 5.0, 6.0))
+
+    @unittest.skipIf(os.getenv('MAYAUSD_ENABLE_MAYA_REFERENCE_OLD_BEHAVIOUR'),
+        'Not applicable with old Maya Reference behaviour')
+    def testMayaReference_SurvivesHierarchyChanges(self):
+        """
+        Tests that connection between MayaReference prim and maya reference does not
+        break on hierarchy changes if mayaNamespace UsdAttribute is used.
+        """
+        import AL.usdmaya
+
+        mc.file(new=1, f=1)
+
+        # copy usd file A to temporary location that can be referenced and changed.
+        tempFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="tempTestStage", delete=True)
+        tempPath = tempFile.name
+        # windows requires tempFile to be closed before it can be opened again.
+        tempFile.close()
+        try:
+            shutil.copy('./testMayaRefStageA.usda', tempPath)
+
+            # bring in stage as proxy shape
+            mc.AL_usdmaya_ProxyShapeImport(file=tempPath, name='root')
+            stage = AL.usdmaya.StageCache.Get().GetAllStages()[0]
+
+            # confirm ref is created with ns and ref node name
+            def checkOneRef():
+                self.assertEqual(1, len(mc.ls('cube:pCube1')))
+                # Note filter out "sharedRefenceNode" which is created when ref is unloaded.
+                self.assertEqual(1, len(mc.ls('*RN', type='reference')))
+
+            checkOneRef()
+
+            # unload ref manually, and resync
+            mc.file(unloadReference='cubeRN')
+            # confirm ref is unloaded.
+            self.assertEqual(0, len(mc.ls('cube:pCube1')))
+            self.assertEqual(1, len(mc.ls('*RN', type='reference')))
+
+            # save over with file B (prim at new location)
+            # this simulates pipe level updates to the shot stage.
+            shutil.copy('./testMayaRefStageB.usda', tempPath)
+
+            # resync
+            stage.Reload()
+            shapeObj = AL.usdmaya.ProxyShape.getByName('root')
+            shapeObj.resync('/')
+
+            # confirm only one ref, and is still connected
+            checkOneRef()
+
+            # check that rename happened to keep everything clean:
+            self.assertEqual(1, len(mc.ls('cubeRN', type='reference')))
+        finally:
+            os.remove(tempPath)
 
     def testMesh_TranslatorExists(self):
         """
@@ -561,7 +617,11 @@ class TestTranslator(unittest.TestCase):
         mc.AL_usdmaya_ProxyShapeImport(file='./testDirectionalLight.usda')
         self.assertTrue(Tf.Type.Unknown != Tf.Type.FindByName('AL::usdmaya::fileio::translators::DirectionalLight'))
         self.assertEqual(len(mc.ls('directionalLightShape1')), 1)
-        self.assertEqual(len(mc.ls(type='directionalLight')), 1)
+        # Latest (2022-05-24) Maya preview release creates proxy light nodes in the scene for USD lights, 
+        # so account for that as we verify the number of directional lights in the scene. 
+        numProxyLights = len(mc.ls('ufeLightProxyShape*'))
+        self.assertTrue((numProxyLights == 0) or (numProxyLights == 1))
+        self.assertEqual(len(mc.ls(type='directionalLight')), 1 + numProxyLights)
         self.assertEqual('alight',mc.listRelatives(mc.listRelatives(mc.ls('directionalLightShape1')[0], parent=1)[0],parent=1)[0])
 
     def testDirectionalLight_TranslateRoundTrip(self):

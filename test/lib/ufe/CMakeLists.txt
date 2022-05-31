@@ -15,6 +15,8 @@ set(TEST_SUPPORT_FILES
     testTRSBase.py
 )
 
+set(INTERACTIVE_TEST_SCRIPT_FILES "")
+
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testAttribute.py
@@ -39,6 +41,10 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testUIInfoHandler.py
         testObservableScene.py
     )
+
+    list(APPEND INTERACTIVE_TEST_SCRIPT_FILES
+        testUIIcons.py
+    )
 endif()
 
 if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
@@ -51,6 +57,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
         list(APPEND TEST_SCRIPT_FILES
             testLight.py
+        )
+    endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
+        list(APPEND TEST_SCRIPT_FILES
+            testSceneSegment.py
         )
     endif()
 
@@ -92,6 +104,18 @@ foreach(script ${TEST_SCRIPT_FILES})
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/ufeTestPlugins"
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+    )
+
+    # Add a ctest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS ufe)
+endforeach()
+
+foreach(script ${INTERACTIVE_TEST_SCRIPT_FILES})
+    mayaUsd_get_unittest_target(target ${script})
+    mayaUsd_add_test(${target}
+        INTERACTIVE
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        PYTHON_SCRIPT ${script}
     )
 
     # Add a ctest label to these tests for easy filtering.

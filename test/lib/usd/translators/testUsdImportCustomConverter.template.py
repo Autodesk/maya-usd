@@ -130,9 +130,9 @@ class testUsdImportCustomConverter(unittest.TestCase):
                   pr=True, importTimeRange="combine",
                   options=";".join(import_options))
 
-        expected = [["pCube1Shape", "phong"],
-                    ["pCube2Shape", "standardSurface"],
-                    ["pCube3Shape", "phong"]]
+        expected = [["Test:pCube1Shape", "phong"],
+                    ["Test:pCube2Shape", "standardSurface"],
+                    ["Test:pCube3Shape", "phong"]]
         self.checkMaterials(expected)
 
     def testAsMayaDoesItNoConversion(self):
@@ -154,9 +154,9 @@ class testUsdImportCustomConverter(unittest.TestCase):
                   pr=True, importTimeRange="combine",
                   options=";".join(import_options))
 
-        expected = [["pCube1Shape", "lambert"],
-                    ["pCube2Shape", "standardSurface"],
-                    ["pCube3Shape", "usdPreviewSurface"]]
+        expected = [["Test:pCube1Shape", "lambert"],
+                    ["Test:pCube2Shape", "standardSurface"],
+                    ["Test:pCube3Shape", "usdPreviewSurface"]]
         self.checkMaterials(expected)
 
     def testAsMayaDoesItWithConversion(self):
@@ -179,9 +179,9 @@ class testUsdImportCustomConverter(unittest.TestCase):
                   pr=True, importTimeRange="combine",
                   options=";".join(import_options))
 
-        expected = [["pCube1Shape", "phong"],
-                    ["pCube2Shape", "standardSurface"],
-                    ["pCube3Shape", "phong"]]
+        expected = [["Test:pCube1Shape", "phong"],
+                    ["Test:pCube2Shape", "standardSurface"],
+                    ["Test:pCube3Shape", "phong"]]
         self.checkMaterials(expected)
 
 

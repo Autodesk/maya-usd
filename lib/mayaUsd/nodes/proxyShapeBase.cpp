@@ -1241,8 +1241,10 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     const TfToken purpose3 = drawProxyPurpose ? UsdGeomTokens->proxy : TfToken();
     const TfToken purpose4 = drawGuidePurpose ? UsdGeomTokens->guide : TfToken();
 
-    const GfBBox3d allBox
+    GfBBox3d allBox
         = imageablePrim.ComputeUntransformedBound(currTime, purpose1, purpose2, purpose3, purpose4);
+
+    UsdMayaUtil::AddMayaExtents(allBox, prim, currTime);
 
     MBoundingBox& retval = nonConstThis->_boundingBoxCache[currTime];
 
@@ -1614,7 +1616,9 @@ MDagPath MayaUsdProxyShapeBase::parentTransform()
     return proxyTransformPath;
 }
 
-MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection)
+MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
+    const bool enableUfeSelection,
+    const bool useLoadRulesHandling)
     : MPxSurfaceShape()
     , _isUfeSelectionEnabled(enableUfeSelection)
     , _unsharedStageRootLayer(nullptr)
@@ -1623,9 +1627,11 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection)
 {
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
 
-    // Register with the load-rules handling used to transfer load rules
-    // between the USD stage and a dynamic attribute on the proxy shape.
-    MayaUsdProxyShapeLoadRules::addProxyShape(*this);
+    if (useLoadRulesHandling) {
+        // Register with the load-rules handling used to transfer load rules
+        // between the USD stage and a dynamic attribute on the proxy shape.
+        MayaUsdProxyShapeLoadRules::addProxyShape(*this);
+    }
 }
 
 /* virtual */

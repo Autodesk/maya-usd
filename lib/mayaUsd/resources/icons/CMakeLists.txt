@@ -28,10 +28,27 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
         Sphere
         UsdGeomCurves
         UsdGeomXformable
-        UsdLuxLight
         UsdTyped
         Volume
     )
+    if (PXR_VERSION GREATER_EQUAL 2111)
+        list(APPEND OUTLINER_ICONS
+            UsdLuxBoundableLightBase
+            UsdLuxNonboundableLightBase
+        )
+    else()
+        # In 21.11 UsdLuxLight was removed and replaced with UsdLuxBoundableLightBase.
+        # So for the older versions we install the icon with the old name instead.
+        install(FILES "out_USD_UsdLuxBoundableLightBase_100.png"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/icons"
+            RENAME "out_USD_UsdLuxLight.png")
+        install(FILES "out_USD_UsdLuxBoundableLightBase_150.png"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/icons"
+            RENAME "out_USD_UsdLuxLight_150.png")
+        install(FILES "out_USD_UsdLuxBoundableLightBase_200.png"
+            DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/icons"
+            RENAME "out_USD_UsdLuxLight_200.png")
+    endif()
     foreach(ICON_BASE ${OUTLINER_ICONS})
         # The _100.png files need to be installed without the _100. This is the
         # base icon name that is used. Maya will automatically choose the _150/_200

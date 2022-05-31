@@ -24,6 +24,8 @@
 #include <mayaUsd/undo/OpUndoItems.h>
 #include <mayaUsd/utils/editRouter.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilSerialization.h>
+#include <mayaUsd/utils/variants.h>
 #include <mayaUsdUtils/MergePrims.h>
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
@@ -46,6 +48,24 @@
 #include <maya/MFnAttribute.h>
 
 namespace {
+
+// Clear the auto-edit flag on a USD Maya Reference so that it does not
+// get edited immediately again. Clear in all variants, since each
+// variant has its own copy of the flag.
+void clearAutoEdit(const UsdPrim& prim)
+{
+    UsdPrim parentPrim = prim.GetParent();
+    MAYAUSD_NS::applyToAllVariants(parentPrim, true, [prim]() {
+        // Note: the prim might not exist in all variants, so check its validity.
+        if (!prim.IsValid())
+            return;
+
+        UsdAttribute mayaAutoEditAttr = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
+        if (mayaAutoEditAttr.IsValid())
+            mayaAutoEditAttr.Set<bool>(false);
+    });
+}
+
 std::string findValue(const PXR_NS::VtDictionary& routingData, const PXR_NS::TfToken& key)
 {
     auto found = routingData.find(key);
@@ -202,9 +222,6 @@ UsdMayaPrimUpdater::PushCopySpecs PxrUsdTranslators_MayaReferenceUpdater::pushCo
 
     // The Maya reference is meant as a cache, and therefore fully
     // overwritten, so we don't call MayaUsdUtils::mergePrims().
-    // As of 13-Dec-2021 pushEnd() will not be called on the
-    // MayaReferenceUpdater, because the prim updater type information
-    // is not correctly preserved.  Unload the reference here.  PPT.
     if (SdfCopySpec(srcLayer, srcSdfPath, dstLayer, dstPath)) {
         const MObject& parentNode = getMayaObject();
         UsdMayaTranslatorMayaReference::UnloadMayaReference(parentNode);
@@ -232,13 +249,7 @@ bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
         if (PrimUpdaterManager::readPullInformation(dagPath, pulledPath)) {
             // Reset the auto-edit when discarding the edit.
             UsdPrim prim = MayaUsd::ufe::ufePathToPrim(pulledPath);
-            if (prim.IsValid()) {
-                UsdAttribute mayaAutoEditAttr
-                    = prim.GetAttribute(MayaUsd_SchemasTokens->mayaAutoEdit);
-                if (mayaAutoEditAttr.IsValid()) {
-                    mayaAutoEditAttr.Set<bool>(false);
-                }
-            }
+            clearAutoEdit(prim);
         }
     }
 
@@ -250,11 +261,6 @@ bool PxrUsdTranslators_MayaReferenceUpdater::discardEdits()
 /* virtual */
 bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
 {
-    // As of 25-Feb-2022 the Maya transform node pulled from the Maya reference
-    // prim ends up being unlocked by the unlock traversal in
-    // PrimUpdaterManager::mergeToUsd().  However, more robust to enforce
-    // separation of concerns and perform the inverse of editAsMaya() here.
-
     // Unnecessary to unlock individual attributes, as the Maya transform node
     // is removed at pushEnd().
     MDagPath transformPath;
@@ -264,6 +270,9 @@ bool PxrUsdTranslators_MayaReferenceUpdater::pushEnd()
 
     MayaUsd::LockNodesUndoItem::lock(
         "Maya reference pulled transform unlocking", transformPath, false);
+
+    // Clear the auto-edit flag.
+    clearAutoEdit(getUsdPrim());
 
     return true;
 }

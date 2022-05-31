@@ -52,6 +52,10 @@
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
 #endif
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
+#include <mayaUsd/ufe/ProxyShapeCameraHandler.h>
+#include <mayaUsd/ufe/ProxyShapeSceneSegmentHandler.h>
+#endif
 #include <mayaUsd/utils/editRouter.h>
 
 #include <maya/MSceneMessage.h>
@@ -105,6 +109,16 @@ Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 // The normal Maya context ops handler, which we decorate for ProxyShape support.
 // Keep a reference to it to restore on finalization.
 Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
+#endif
+
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
+// The normal Maya scene segment handler, which we decorate for ProxyShape support.
+// Keep a reference to it to restore on finalization.
+Ufe::SceneSegmentHandler::Ptr g_MayaSceneSegmentHandler;
+
+// The normal Maya camera handler, which we decorate for ProxyShape support.
+// Keep a reference to it to restore on finalization.
+Ufe::CameraHandler::Ptr g_MayaCameraHandler;
 #endif
 
 #ifdef HAVE_PATH_MAPPING
@@ -171,6 +185,19 @@ MStatus initialize()
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();
 #endif
+#endif
+
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
+    // set up the SceneSegmentHandler
+    g_MayaSceneSegmentHandler = Ufe::RunTimeMgr::instance().sceneSegmentHandler(g_MayaRtid);
+    auto proxyShapeSceneSegmentHandler
+        = ProxyShapeSceneSegmentHandler::create(g_MayaSceneSegmentHandler);
+    Ufe::RunTimeMgr::instance().setSceneSegmentHandler(g_MayaRtid, proxyShapeSceneSegmentHandler);
+
+    // set up the ProxyShapeCameraHandler
+    g_MayaCameraHandler = Ufe::RunTimeMgr::instance().cameraHandler(g_MayaRtid);
+    auto proxyShapeCameraHandler = ProxyShapeCameraHandler::create(g_MayaCameraHandler);
+    Ufe::RunTimeMgr::instance().setCameraHandler(g_MayaRtid, proxyShapeCameraHandler);
 #endif
 
     // USD has a very flexible data model to support 3d transformations --- see
@@ -261,6 +288,14 @@ MStatus finalize(bool exiting)
 #endif
     runTimeMgr.unregister(g_USDRtid);
     g_MayaHierarchyHandler.reset();
+
+#if defined(UFE_V4_FEATURES_AVAILABLE) && (UFE_PREVIEW_VERSION_NUM >= 4013)
+    Ufe::RunTimeMgr::instance().setSceneSegmentHandler(g_MayaRtid, g_MayaSceneSegmentHandler);
+    g_MayaSceneSegmentHandler.reset();
+
+    Ufe::RunTimeMgr::instance().setCameraHandler(g_MayaRtid, g_MayaCameraHandler);
+    g_MayaCameraHandler.reset();
+#endif
 
 #ifdef HAVE_PATH_MAPPING
     // Remove the Maya path mapping handler that we added above.

@@ -33,24 +33,18 @@ class primReaderTest(mayaUsdLib.PrimReader):
         sphere = UsdGeom.Sphere(usdPrim)
         cmds.polySphere(r=sphere.GetRadiusAttr().Get(), name=usdPrim.GetName())
         MayaNode = context.GetMayaNode(usdPrim.GetPath().GetParentPath(), True)
-        print("primReaderTest.Read Ok")
         return True
-
-#    def HasPostReadSubtree(self):
-#         print("primReaderTest.HasPostReadSubtree called")
-#         return False
 
 class testPrimReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        fixturesUtils.setUpClass(__file__)
+        cls.inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
     def setUp(self):
-        self.inputPath = fixturesUtils.readOnlySetUpClass(__file__)
         cmds.file(new=True, force=True)
 
     def testSimplePrimReader(self):
