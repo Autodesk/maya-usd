@@ -257,34 +257,24 @@ bool isLocalTransformModified(const UsdPrim& srcPrim, const UsdPrim& dstPrim)
 // that situation.
 //----------------------------------------------------------------------------------------------------------------------
 
-const char normalsTokenName[] = "normals";
-const char pvNormalsTokenName[] = "primvars:normals";
-const char pvNormalsIndicesTokenName[] = "primvars:normals:indices";
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    normalsTokens,
+
+    (normals)
+    ((pvNormals, "primvars:normals"))
+    ((pvNormalsIndices, "primvars:normals:indices"))
+);
+// clang-format on
 
 bool isNormalsProperty(const TfToken& name)
 {
-    // Note: tokens are interned to be unique and thus we don't want
-    //       their constructor to be global in order to avoid the
-    //       unspecified order of global construction.
-    //
-    //       That is why we declare them as static inside the functions.
-    static const TfToken normalsToken(normalsTokenName);
-    static const TfToken pvNormalsToken(pvNormalsTokenName);
-
-    return (name == normalsToken || name == pvNormalsToken);
+    return (name == normalsTokens->normals || name == normalsTokens->pvNormals);
 }
 
 bool isUndesiredNormalsProperty(const TfToken& name)
 {
-    // Note: tokens are interned to be unique and thus we don't want
-    //       their constructor to be global in order to avoid the
-    //       unspecified order of global construction.
-    //
-    //       That is why we declare them as static inside the functions.
-    static const TfToken pvNormalsToken(pvNormalsTokenName);
-    static const TfToken pvNormalsIndicesToken(pvNormalsIndicesTokenName);
-
-    return (name == pvNormalsIndicesToken || name == pvNormalsToken);
+    return (name == normalsTokens->pvNormalsIndices || name == normalsTokens->pvNormals);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
