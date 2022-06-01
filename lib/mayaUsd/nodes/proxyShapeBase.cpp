@@ -828,6 +828,10 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         }
     }
 
+    if (!usdStage) {
+        return MS::kFailure;
+    }
+
     // Create the output outData
     MFnPluginData pluginDataFn;
     pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
