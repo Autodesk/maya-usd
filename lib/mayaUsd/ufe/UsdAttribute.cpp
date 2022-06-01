@@ -449,7 +449,11 @@ std::string UsdAttribute::name() const
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
     else if (fAttrDef) {
-        return fAttrDef->name();
+        return PXR_NS::UsdShadeUtils::GetFullName(
+            PXR_NS::TfToken(fAttrDef->name()),
+            fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR
+                ? PXR_NS::UsdShadeAttributeType::Output
+                : PXR_NS::UsdShadeAttributeType::Input);
     }
 #endif
     else {
@@ -630,7 +634,14 @@ UsdAttributeGeneric::Ptr UsdAttributeGeneric::create(
 // UsdAttributeGeneric - Ufe::AttributeGeneric overrides
 //------------------------------------------------------------------------------
 
-std::string UsdAttributeGeneric::nativeType() const { return typeName(); }
+std::string UsdAttributeGeneric::nativeType() const
+{
+    if (isAuthored()) {
+        return fUsdAttr.GetTypeName().GetType().GetTypeName();
+    } else {
+        return ufeTypeToUsd(fAttrDef->type()).GetType().GetTypeName();
+    }
+}
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
 //------------------------------------------------------------------------------

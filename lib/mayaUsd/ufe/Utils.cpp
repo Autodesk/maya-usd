@@ -636,7 +636,6 @@ PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType)
         { Ufe::Attribute::kFloat3, PXR_NS::SdfValueTypeNames->Float3 },       // GfVec3f
         { Ufe::Attribute::kDouble3, PXR_NS::SdfValueTypeNames->Double3 },     // GfVec3d
         { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3f }, // GfVec3f
-        { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3d }, // GfVec3d
     };
 
     const auto iter = sUfeTypeToUsd.find(ufeType);
