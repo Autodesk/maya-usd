@@ -230,9 +230,21 @@ UsdStageMap::StageSet UsdStageMap::allStages()
 {
     rebuildIfDirty();
 
-    StageSet stages;
+    // Note: stage() calls proxyShape() which can modify fPathToObject,
+    //       so we cannot call stage within a loop on fPathToObject.
+    //
+    //       So, we first cache all UFE paths and then loop over them
+    //       calling stage().
+
+    std::vector<Ufe::Path> paths;
+    paths.reserve(fPathToObject.size());
     for (const auto& pair : fPathToObject) {
-        stages.insert(stage(pair.first));
+        paths.emplace_back(pair.first);
+    }
+
+    StageSet stages;
+    for (const auto& path : paths) {
+        stages.insert(stage(path));
     }
     return stages;
 }

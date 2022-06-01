@@ -116,6 +116,35 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(proxyShapeItem).children()))
 
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '4012', 'testDeleteStage requires Ufe Preview Version at least 4013.')
+    def testDeleteStage(self):
+        '''
+        Verify that we can delete the stage.
+        
+        Only testable in recent UFE API because it requires findGatewayItems
+        to trigger the original crash that led to this test being created.
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples twice, so that deleting one instance
+        # will still leave another and have something to iterate over in th estage cache.
+        mayaUtils.openCylinderScene()
+        mayaUtils.openCylinderScene()
+
+        # get the proxy shape path
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+
+        # Get the USD handler.
+        proxyShapePath = ufe.PathString.path(proxyShapes[0])
+        handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(proxyShapePath.runTimeId())
+
+        # Delete the proxy shape.
+        cmds.delete(proxyShapes[0])
+
+        # Request the now dead proxy shape. This should not crash.
+        result = handler.findGatewayItems(proxyShapePath)
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDuplicateProxyStageFileBacked only available in UFE v2 or greater.')
     def testDuplicateProxyStageFileBacked(self):
         '''
