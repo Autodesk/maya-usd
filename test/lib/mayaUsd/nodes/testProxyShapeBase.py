@@ -116,9 +116,13 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(proxyShapeItem).children()))
 
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '4012', 'testDeleteStage requires Ufe Preview Version at least 4013.')
     def testDeleteStage(self):
         '''
         Verify that we can delete the stage.
+        
+        Only testable in recent UFE API because it requires findGatewayItems
+        to trigger the original crash that led to this test being created.
         '''
         # create new stage
         cmds.file(new=True, force=True)
