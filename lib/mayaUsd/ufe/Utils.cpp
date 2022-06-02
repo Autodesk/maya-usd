@@ -60,7 +60,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
+constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
 
 bool stringBeginsWithDigit(const std::string& inputString)
 {
@@ -78,11 +78,11 @@ bool stringBeginsWithDigit(const std::string& inputString)
 
 // This function calculates the position index for a given layer across all
 // the site's local LayerStacks
-uint32_t findLayerIndex(const UsdPrim& prim, const PXR_NS::SdfLayerHandle& layer)
+uint32_t findLayerIndex(const UsdPrim& prim, const SdfLayerHandle& layer)
 {
     uint32_t position { 0 };
 
-    const PXR_NS::PcpPrimIndex& primIndex = prim.GetPrimIndex();
+    const PcpPrimIndex& primIndex = prim.GetPrimIndex();
 
     // iterate through the expanded primIndex
     for (PcpNodeRef node : primIndex.GetNodeRange()) {
@@ -183,9 +183,13 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     const Ufe::Path ufePrimPath = stripInstanceIndexFromUfePath(path);
 
     const Ufe::Path::Segments& segments = ufePrimPath.getSegments();
-    UsdStageWeakPtr stage = segments.empty() ? UsdStageWeakPtr() : getStage(Ufe::Path(segments[0]));
-    if (!stage)
+    if (!TF_VERIFY(!segments.empty(), kIllegalUFEPath, path.string().c_str())) {
         return UsdPrim();
+    }
+    auto stage = getStage(Ufe::Path(segments[0]));
+    if (!TF_VERIFY(stage, kIllegalUFEPath, path.string().c_str())) {
+        return UsdPrim();
+    }
 
     // If there is only a single segment in the path, it must point to the
     // proxy shape, otherwise we would not have retrieved a valid stage.
@@ -195,7 +199,7 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         : stage->GetPrimAtPath(SdfPath(segments[1].string()).GetPrimPath());
 }
 
-int ufePathToInstanceIndex(const Ufe::Path& path, PXR_NS::UsdPrim* prim)
+int ufePathToInstanceIndex(const Ufe::Path& path, UsdPrim* prim)
 {
     int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
 
@@ -224,7 +228,7 @@ bool isRootChild(const Ufe::Path& path)
     // path and we are only testing whether or not we are a root child.
     auto segments = path.getSegments();
     if (segments.size() != 2) {
-        TF_RUNTIME_ERROR(kIllegalUSDPath, path.string().c_str());
+        TF_RUNTIME_ERROR(kIllegalUFEPath, path.string().c_str());
     }
     return (segments[1].size() == 1);
 }
@@ -376,7 +380,7 @@ bool isMayaWorldPath(const Ufe::Path& ufePath)
     return (ufePath.runTimeId() == g_MayaRtid && ufePath.size() == 1);
 }
 
-PXR_NS::MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
+MayaUsdProxyShapeBase* getProxyShape(const Ufe::Path& path)
 {
     // Path should not be empty.
     if (!TF_VERIFY(!path.empty())) {
@@ -513,7 +517,7 @@ bool isAttributeEditAllowed(const UsdPrim& prim, const TfToken& attrName)
     return true;
 }
 
-bool isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage, std::string* errMsg)
+bool isEditTargetLayerModifiable(const UsdStageWeakPtr stage, std::string* errMsg)
 {
     const auto editTarget = stage->GetEditTarget();
     const auto editLayer = editTarget.GetLayer();
@@ -546,21 +550,31 @@ bool isEditTargetLayerModifiable(const PXR_NS::UsdStageWeakPtr stage, std::strin
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdfValueTypeName& usdType)
+Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
 {
     // Map the USD type into UFE type.
-    static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe {
-        { PXR_NS::SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },        // bool
-        { PXR_NS::SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },          // int32_t
-        { PXR_NS::SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },      // float
-        { PXR_NS::SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },    // double
-        { PXR_NS::SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },    // std::string
-        { PXR_NS::SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kEnumString }, // TfToken
-        { PXR_NS::SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },        // GfVec3i
-        { PXR_NS::SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },    // GfVec3f
-        { PXR_NS::SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },  // GfVec3d
-        { PXR_NS::SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
-        { PXR_NS::SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
+    static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe
+    {
+        { SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },               // bool
+            { SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },             // int32_t
+            { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },         // float
+            { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },       // double
+            { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },       // std::string
+            { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kEnumString },    // TfToken
+            { SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },           // GfVec3i
+            { SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },       // GfVec3f
+            { SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },     // GfVec3d
+            { SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
+            { SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+            { SdfValueTypeNames->Asset.GetHash(), Ufe::Attribute::kFilename },      // SdfAssetPath
+            { SdfValueTypeNames->Float2.GetHash(), Ufe::Attribute::kFloat2 },       // GfVec2f
+            { SdfValueTypeNames->Float4.GetHash(), Ufe::Attribute::kFloat4 },       // GfVec4f
+            { SdfValueTypeNames->Color4f.GetHash(), Ufe::Attribute::kColorFloat4 }, // GfVec4f
+            { SdfValueTypeNames->Color4d.GetHash(), Ufe::Attribute::kColorFloat4 }, // GfVec4d
+            { SdfValueTypeNames->Matrix3d.GetHash(), Ufe::Attribute::kMatrix3d },   // GfMatrix3d
+            { SdfValueTypeNames->Matrix4d.GetHash(), Ufe::Attribute::kMatrix4d },   // GfMatrix4d
+#endif
     };
 
     const auto iter = sUsdTypeToUfe.find(usdType.GetHash());

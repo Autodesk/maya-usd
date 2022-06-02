@@ -60,6 +60,7 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
         list(APPEND TEST_SCRIPT_FILES
             testVP2RenderDelegateLights.py
+            testVP2RenderDelegateCameras.py
         )
     endif()
 endif()

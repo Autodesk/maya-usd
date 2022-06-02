@@ -116,11 +116,13 @@ void UsdStageMap::addItem(const Ufe::Path& path)
         return;
     }
 
-    // Non-const MObject& requires an lvalue.  We've just done a name-based
-    // lookup of the proxy shape, so the stage cannot be null.
+    // If a proxy shape doesn't yet have a stage, don't add it.
+    // We will add it later, when the stage is initialized
     auto obj = proxyShape.object();
     auto stage = objToStage(obj);
-    TF_AXIOM(stage);
+    if (!stage) {
+        return;
+    }
 
     fPathToObject[path] = proxyShape;
     fStageToObject[stage] = proxyShape;
@@ -228,9 +230,21 @@ UsdStageMap::StageSet UsdStageMap::allStages()
 {
     rebuildIfDirty();
 
-    StageSet stages;
+    // Note: stage() calls proxyShape() which can modify fPathToObject,
+    //       so we cannot call stage within a loop on fPathToObject.
+    //
+    //       So, we first cache all UFE paths and then loop over them
+    //       calling stage().
+
+    std::vector<Ufe::Path> paths;
+    paths.reserve(fPathToObject.size());
     for (const auto& pair : fPathToObject) {
-        stages.insert(stage(pair.first));
+        paths.emplace_back(pair.first);
+    }
+
+    StageSet stages;
+    for (const auto& path : paths) {
+        stages.insert(stage(path));
     }
     return stages;
 }

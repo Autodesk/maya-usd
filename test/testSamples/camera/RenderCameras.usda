@@ -1,0 +1,33 @@
+#usda 1.0
+(
+)
+
+def Xform "cameras"
+{
+    def Camera "cam1"
+    {
+        float2 clippingRange = (0.1, 10000)
+        float focalLength = 35
+        float focusDistance = 5
+        float fStop = 5.6
+        float horizontalAperture = 35.999928
+        float verticalAperture = 23.999952
+
+        double3 xformOp:translate = (3, 3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+	
+    def Camera "cam2"
+    {
+        float2 clippingRange = (0.1, 10000)
+        float focalLength = 35
+        float focusDistance = 5
+        float fStop = 5.6
+        float horizontalAperture = 35.999928
+        float verticalAperture = 23.999952
+    }	
+}
+
+def Xform "cameras2"
+{
+}

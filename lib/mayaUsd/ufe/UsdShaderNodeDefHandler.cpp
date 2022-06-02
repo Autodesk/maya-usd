@@ -76,7 +76,8 @@ Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const Ufe::SceneItem::Ptr&
 Ufe::NodeDef::Ptr UsdShaderNodeDefHandler::definition(const std::string& type) const
 {
     PXR_NS::SdrRegistry&          registry = PXR_NS::SdrRegistry::GetInstance();
-    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByName(type);
+    PXR_NS::TfToken               mxNodeType(type);
+    PXR_NS::SdrShaderNodeConstPtr shaderNodeDef = registry.GetShaderNodeByIdentifier(mxNodeType);
     if (!shaderNodeDef) {
         return nullptr;
     }

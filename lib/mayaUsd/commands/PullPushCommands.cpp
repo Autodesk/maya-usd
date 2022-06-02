@@ -286,7 +286,9 @@ MStatus MergeToUsdCommand::doIt(const MArgList& argList)
             // Select the merged prim.  See DuplicateCommand::doIt() comments.
             Ufe::Selection sn;
             sn.append(Ufe::Hierarchy::createItem(pulledPath));
-            UfeSelectionUndoItem::select("mergeToUsd: select merged prim", sn);
+            if (!UfeSelectionUndoItem::select("mergeToUsd: select merged prim", sn)) {
+                return MS::kFailure;
+            }
         }
     }
 
@@ -355,7 +357,9 @@ MStatus DiscardEditsCommand::doIt(const MArgList& argList)
             if (pulledItem) {
                 sn.append(pulledItem);
             }
-            UfeSelectionUndoItem::select("discardEdits: select original prim", sn);
+            if (!UfeSelectionUndoItem::select("discardEdits: select original prim", sn)) {
+                return MS::kFailure;
+            }
         }
     }
 
@@ -453,7 +457,9 @@ MStatus DuplicateCommand::doIt(const MArgList& argList)
             // It is appropriate to use the overload that uses the global list,
             // as the undo recorder will transfer the items on the global list
             // to fUndoItemList.
-            UfeSelectionUndoItem::select("duplicate: select duplicate", sn);
+            if (!UfeSelectionUndoItem::select("duplicate: select duplicate", sn)) {
+                return MS::kFailure;
+            }
         }
     }
 
