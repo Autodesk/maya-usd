@@ -223,7 +223,7 @@ public:
     }
 
 private:
-    const UsdLoadPolicy   _policy;
+    const UsdLoadPolicy _policy;
 };
 
 //! \brief Undoable command for unloading a USD prim.
