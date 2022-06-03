@@ -56,11 +56,11 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Find all the existing connections.
 
-        connectionsHandler = ufe.RunTimeMgr.instance().connectionsHandler(ufeItem.runTimeId())
-        self.assertIsNotNone(connectionsHandler)
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
         # Test a connection.
@@ -86,11 +86,11 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Find all the existing connections.
 
-        connectionsHandler = ufe.RunTimeMgr.instance().connectionsHandler(ufeItem.runTimeId())
-        self.assertIsNotNone(connectionsHandler)
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
         # Test the connection.
@@ -108,13 +108,13 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Test the list of connections.
 
-        self.assertTrue(connections.hasSourceConnection(dstAttr.attribute()))
-        self.assertFalse(connections.hasSourceConnection(srcAttr.attribute()))
+        self.assertTrue(connections.hasConnection(dstAttr.attribute(), ufe.Connections.ATTRIBUTE_IS_THE_DESTINATION))
+        self.assertFalse(connections.hasConnection(srcAttr.attribute(), ufe.Connections.ATTRIBUTE_IS_THE_DESTINATION))
 
-        conns = connections.sourceConnections(dstAttr.attribute())
+        conns = connections.connections(dstAttr.attribute(), ufe.Connections.ATTRIBUTE_IS_THE_DESTINATION)
         self.assertEqual(len(conns), 1)
 
-        conns = connections.sourceConnections(srcAttr.attribute())
+        conns = connections.connections(srcAttr.attribute(), ufe.Connections.ATTRIBUTE_IS_THE_DESTINATION)
         self.assertEqual(len(conns), 0)
 
     def testConnectionsHandler(self):
@@ -130,11 +130,11 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Find all the existing connections.
 
-        connectionsHandler = ufe.RunTimeMgr.instance().connectionsHandler(ufeItem.runTimeId())
-        self.assertIsNotNone(connectionsHandler)
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
         # Test the connection.
@@ -152,20 +152,20 @@ class ConnectionTestCase(unittest.TestCase):
 
         # Delete a connection using the ConnectionsHandler.
 
-        connectionsHandler.disconnect(srcAttr, dstAttr)
+        connectionHandler.disconnect(srcAttr, dstAttr)
 
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
         # Create a connection using the ConnectionsHandler.
 
-        connectionsHandler.connect(srcAttr, dstAttr)
+        connectionHandler.connect(srcAttr, dstAttr)
 
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
         # Delete the connection with the command.
@@ -176,23 +176,23 @@ class ConnectionTestCase(unittest.TestCase):
         cmd = ufe.DisconnectCommand(src, dst)
         cmd.execute()
 
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
         cmd.undo()
 
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
         cmd.redo()
 
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
         # Create a connection with the command.
@@ -200,23 +200,23 @@ class ConnectionTestCase(unittest.TestCase):
         cmd = ufe.ConnectCommand(src, dst)
         cmd.execute()
 
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
         cmd.undo()
 
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 0)
 
         cmd.redo()
 
-        connections = connectionsHandler.sourceConnections(ufeItem)
-        self.assertIsNotNone(connectionsHandler)
-        conns = connections.allSourceConnections()
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connections)
+        conns = connections.allConnections()
         self.assertEqual(len(conns), 1)
 
 if __name__ == '__main__':

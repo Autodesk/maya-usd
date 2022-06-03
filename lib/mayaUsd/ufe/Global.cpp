@@ -44,7 +44,6 @@
 #include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
-<<<<<<< HEAD
 #if UFE_LIGHTS_SUPPORT
 #include <mayaUsd/ufe/UsdLightHandler.h>
 #endif

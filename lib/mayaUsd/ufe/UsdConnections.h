@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <ufe/connections.h>
 
@@ -40,10 +41,12 @@ public:
 
     static UsdConnections::Ptr create(const Ufe::SceneItem::Ptr& item);
 
-    std::vector<Ufe::Connection::Ptr> allSourceConnections() const override;
+    std::vector<Ufe::Connection::Ptr> allConnections() const override;
+
+private:
+    const UsdSceneItem::Ptr fSceneItem;
 
 }; // UsdConnections
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
-

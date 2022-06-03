@@ -17,37 +17,38 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <ufe/connectionsHandler.h>
+#include <ufe/connectionHandler.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-class MAYAUSD_CORE_PUBLIC UsdConnectionsHandler : public Ufe::ConnectionsHandler
+class MAYAUSD_CORE_PUBLIC UsdConnectionHandler : public Ufe::ConnectionHandler
 {
 public:
-    typedef std::shared_ptr<UsdConnectionsHandler> Ptr;
+    typedef std::shared_ptr<UsdConnectionHandler> Ptr;
 
     //! Constructor.
-    UsdConnectionsHandler();
+    UsdConnectionHandler();
     //! Destructor.
-    ~UsdConnectionsHandler() override;
+    ~UsdConnectionHandler() override;
 
     //@{
     // Delete the copy/move constructors assignment operators.
-    UsdConnectionsHandler(const UsdConnectionsHandler&) = delete;
-    UsdConnectionsHandler& operator=(const UsdConnectionsHandler&) = delete;
-    UsdConnectionsHandler(UsdConnectionsHandler&&) = delete;
-    UsdConnectionsHandler& operator=(UsdConnectionsHandler&&) = delete;
+    UsdConnectionHandler(const UsdConnectionHandler&) = delete;
+    UsdConnectionHandler& operator=(const UsdConnectionHandler&) = delete;
+    UsdConnectionHandler(UsdConnectionHandler&&) = delete;
+    UsdConnectionHandler& operator=(UsdConnectionHandler&&) = delete;
     //@}
 
-    static UsdConnectionsHandler::Ptr create();
+    static UsdConnectionHandler::Ptr create();
 
     Ufe::Connections::Ptr sourceConnections(const Ufe::SceneItem::Ptr& item) const override;
 
-    bool connect(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr) const override;
-    bool disconnect(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr) const override;
+protected:
+    bool createConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr) const override;
+    bool deleteConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr) const override;
 
-}; // UsdConnectionsHandler
+}; // UsdConnectionHandler
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
