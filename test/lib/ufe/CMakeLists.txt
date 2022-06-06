@@ -57,6 +57,7 @@ endif()
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4017)
         list(APPEND TEST_SCRIPT_FILES
+            testAttributeInfo.py
             testConnections.py
         )
     endif()

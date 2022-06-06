@@ -45,16 +45,16 @@ namespace {
  *   2. '/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1' represents the USD prim
  * path.
  *
- *  \param prim is the prim of the selected scene item i.e. a shader node, in the USD data model.
- *  \param materialMayaPath is the Ufe material path i.e. a shader graph, in the Maya data model.
+ *  \param prim is the prim of the selected scene item in the USD data model.
+ *  \param baseMayaPath is the Ufe base path in the Maya data model.
  */
 Ufe::Path
-buildMayaUfePathFromPrimPath(const PXR_NS::UsdPrim& prim, const Ufe::Path& materialMayaPath)
+buildMayaUfePathFromPrimPath(const PXR_NS::UsdPrim& prim, const Ufe::Path& baseMayaPath)
 {
     // Get the prim path i.e. the path in the USD world.
     Ufe::Path primPath = Ufe::PathString::path(prim.GetPrimPath().GetAsString());
     // Create the Maya Ufe::Path which is composed of the Maya path prefix and the USD prim path.
-    return primPath.reparent(Ufe::PathString::path(""), materialMayaPath);
+    return primPath.reparent(Ufe::PathString::path(""), baseMayaPath);
 }
 
 } // namespace
@@ -83,12 +83,12 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
 
     // The scene item is a shader node.
     const Ufe::Path sceneItemPath = fSceneItem->path();
-    // Find the material node path (i.e. the shader graph) owing all the shader nodes.
-    const Ufe::Path materialMayaPath = sceneItemPath.popSegment();
+    // Find the base maya path i.e. the base path to use for all the prim paths.
+    const Ufe::Path baseMayaPath = sceneItemPath.popSegment();
 
     // Find the Maya Ufe::Path of the selected shader node.
     const PXR_NS::UsdPrim prim = fSceneItem->prim();
-    const Ufe::Path       primPath = buildMayaUfePathFromPrimPath(prim, materialMayaPath);
+    const Ufe::Path       primPath = buildMayaUfePathFromPrimPath(prim, baseMayaPath);
 
     // The method looks for all the connections in which one of the attribute of this scene item is
     // the destination.
@@ -104,7 +104,7 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
                 // Find the Maya Ufe::Path of the connected shader node.
                 const PXR_NS::UsdPrim connectedPrim = sourceInfo.source.GetPrim();
                 const Ufe::Path       connectedPrimPath
-                    = buildMayaUfePathFromPrimPath(connectedPrim, materialMayaPath);
+                    = buildMayaUfePathFromPrimPath(connectedPrim, baseMayaPath);
 
                 // Find the name of the connected source attribute name.
                 PXR_NS::TfToken tkSourceName = PXR_NS::UsdShadeUtils::GetFullName(
@@ -129,7 +129,7 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
                 // Find the Maya Ufe::Path of the connected shader node.
                 const PXR_NS::UsdPrim connectedPrim = sourceInfo.source.GetPrim();
                 const Ufe::Path       connectedPrimPath
-                    = buildMayaUfePathFromPrimPath(connectedPrim, materialMayaPath);
+                    = buildMayaUfePathFromPrimPath(connectedPrim, baseMayaPath);
 
                 // Find the name of the connected source attribute name.
                 PXR_NS::TfToken tkSourceName = PXR_NS::UsdShadeUtils::GetFullName(

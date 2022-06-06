@@ -16,11 +16,9 @@
 # limitations under the License.
 #
 
-import fixturesUtils
 import mayaUtils
 import ufeUtils
 import testUtils
-import usdUtils
 
 from maya import cmds
 
@@ -29,7 +27,7 @@ import unittest
 
 
 class ConnectionTestCase(unittest.TestCase):
-    '''Test(s) dedicated to validate the connections (i.e. list, create and delete).'''
+    '''Test(s) validating the connections (i.e. list, create and delete).'''
 
     pluginsLoaded = False
 
@@ -73,18 +71,19 @@ class ConnectionTestCase(unittest.TestCase):
         self.assertEqual(conn.src.path, srcAttr.path)
         self.assertEqual(conn.dst.path, dstAttr.path)
 
-    def testConnections(self):
-        '''Test a list of connections.'''
+    def testConnections_1(self):
+        '''Test a list of connections using 'UsdTransform2dTest.usda'.'''
 
         # Load a scene.
 
         testFile = testUtils.getTestScene('UsdPreviewSurface', 'UsdTransform2dTest.usda')
         shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        # Step 1 - Find all the existing connections for the Shader 'UsdTransform2d'
+
         ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
             '/pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d')
         self.assertIsNotNone(ufeItem)
-
-        # Find all the existing connections.
 
         connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
         self.assertIsNotNone(connectionHandler)
@@ -117,8 +116,211 @@ class ConnectionTestCase(unittest.TestCase):
         conns = connections.connections(srcAttr.attribute(), ufe.Connections.ATTRIBUTE_IS_THE_DESTINATION)
         self.assertEqual(len(conns), 0)
 
+        # Step 2 - Find all the existing connections for for the Shader 'TexCoordReader'
+
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader')
+        self.assertIsNotNone(ufeItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(str(srcAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG')
+        self.assertEqual(srcAttr.name, 'inputs:file1:varname')
+
+        self.assertEqual(str(dstAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader')
+        self.assertEqual(dstAttr.name, 'inputs:varname')
+
+        # Step 3 - Find all the existing connections for for the Shader 'file1'
+
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pPlane1/Looks/usdPreviewSurface1SG/file1')
+        self.assertIsNotNone(ufeItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(str(srcAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d')
+        self.assertEqual(srcAttr.name, 'outputs:result')
+
+        self.assertEqual(str(dstAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1')
+        self.assertEqual(dstAttr.name, 'inputs:st')
+
+        # Step 4 - Find all the existing connections for for the Shader 'usdPreviewSurface1'
+
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertIsNotNone(ufeItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(str(srcAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1')
+        self.assertEqual(srcAttr.name, 'outputs:rgb')
+
+        self.assertEqual(str(dstAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(dstAttr.name, 'inputs:diffuseColor')
+
+        # Step 5 - Find all the existing connections for for the Material 'usdPreviewSurface1SG'
+
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/pPlane1/Looks/usdPreviewSurface1SG')
+        self.assertIsNotNone(ufeItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(str(srcAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(srcAttr.name, 'outputs:surface')
+
+        self.assertEqual(str(dstAttr.path),
+            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG')
+        self.assertEqual(dstAttr.name, 'outputs:surface')
+
+    def testConnections_2(self):
+        '''Test a list of connections using 'DisplayColorCube.usda'.'''
+
+        # Load a scene.
+
+        testFile = testUtils.getTestScene('UsdPreviewSurface', 'DisplayColorCube.usda')
+        shapeNode,shapeStage = mayaUtils.createProxyFromFile(testFile)
+
+        # Step 1 - Find all the existing connections for the Shader 'usdPreviewSurface1'
+
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertIsNotNone(ufeItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test a connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(str(srcAttr.path),
+            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/ColorPrimvar')
+        self.assertEqual(srcAttr.name, 'outputs:result')
+
+        self.assertEqual(str(dstAttr.path),
+            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(dstAttr.name, 'inputs:diffuseColor')
+
+        # Step 2 - Find all the existing connections for the Shader 'Primvar'
+
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/DisplayColorCube/Looks/usdPreviewSurface1SG/Primvar')
+        self.assertIsNotNone(ufeItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(str(srcAttr.path),
+            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG')
+        self.assertEqual(srcAttr.name, 'inputs:coords')
+
+        self.assertEqual(str(dstAttr.path),
+            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/Primvar')
+        self.assertEqual(dstAttr.name, 'inputs:varname')
+
+        # Step 3 - Find all the existing connections for 'ColorPrimvar'
+
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/DisplayColorCube/Looks/usdPreviewSurface1SG/ColorPrimvar')
+        self.assertIsNotNone(ufeItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 0)
+
+        # Step 4 - Find all the existing connections for the Material 'usdPreviewSurface1SG'
+
+        ufeItem = ufeUtils.createUfeSceneItem(shapeNode,
+            '/DisplayColorCube/Looks/usdPreviewSurface1SG')
+        self.assertIsNotNone(ufeItem)
+
+        connectionHandler = ufe.RunTimeMgr.instance().connectionHandler(ufeItem.runTimeId())
+        self.assertIsNotNone(connectionHandler)
+        connections = connectionHandler.sourceConnections(ufeItem)
+        self.assertIsNotNone(connectionHandler)
+        conns = connections.allConnections()
+        self.assertEqual(len(conns), 1)
+
+        # Test the connection.
+
+        srcAttr = conns[0].src
+        dstAttr = conns[0].dst
+
+        self.assertEqual(str(srcAttr.path),
+            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(srcAttr.name, 'outputs:surface')
+
+        self.assertEqual(str(dstAttr.path),
+            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG')
+        self.assertEqual(dstAttr.name, 'outputs:surface')
+
     def testConnectionsHandler(self):
-        '''Test list/create/delete connections.'''
+        '''Test create & delete a connection.'''
 
         # Load a scene.
 
