@@ -61,9 +61,9 @@ buildMayaUfePathFromPrimPath(const PXR_NS::UsdPrim& prim, const Ufe::Path& baseM
 
 UsdConnections::UsdConnections(const Ufe::SceneItem::Ptr& item)
     : Ufe::Connections()
-    , fSceneItem(std::dynamic_pointer_cast<UsdSceneItem>(item))
+    , _sceneItem(std::dynamic_pointer_cast<UsdSceneItem>(item))
 {
-    if (!TF_VERIFY(fSceneItem)) {
+    if (!TF_VERIFY(_sceneItem)) {
         TF_RUNTIME_ERROR("Invalid scene item.");
     }
 }
@@ -77,17 +77,17 @@ UsdConnections::Ptr UsdConnections::create(const Ufe::SceneItem::Ptr& item)
 
 std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
 {
-    TF_AXIOM(fSceneItem);
+    TF_AXIOM(_sceneItem);
 
     std::vector<Ufe::Connection::Ptr> result;
 
     // The scene item is a shader node.
-    const Ufe::Path sceneItemPath = fSceneItem->path();
+    const Ufe::Path sceneItemPath = _sceneItem->path();
     // Find the base maya path i.e. the base path to use for all the prim paths.
     const Ufe::Path baseMayaPath = sceneItemPath.popSegment();
 
     // Find the Maya Ufe::Path of the selected shader node.
-    const PXR_NS::UsdPrim prim = fSceneItem->prim();
+    const PXR_NS::UsdPrim prim = _sceneItem->prim();
     const Ufe::Path       primPath = buildMayaUfePathFromPrimPath(prim, baseMayaPath);
 
     // The method looks for all the connections in which one of the attribute of this scene item is
