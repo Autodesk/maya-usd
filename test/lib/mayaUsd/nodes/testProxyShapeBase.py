@@ -220,6 +220,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
         self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testShareStageLoadRules only available in UFE v2 or greater.')
     def testShareStageLoadRules(self):
         '''
         Verify that share/unshare stage preserve the load rules of the stage.
