@@ -693,6 +693,20 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     bool isIncomingStage = false;
 
+    // Compute the load set for the stage.
+    MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    UsdStage::InitialLoadSet loadSet = loadPayloadsHandle.asBool()
+        ? UsdStage::InitialLoadSet::LoadAll
+        : UsdStage::InitialLoadSet::LoadNone;
+
+    // If there is a dynamic attribute containing the exact load rules
+    // for payload, start by loading nothing. The correct payload will
+    // be loaded by the load rules.
+    if (hasLoadRulesAttribute(thisMObject()))
+        loadSet = UsdStage::InitialLoadSet::LoadNone;
+
     // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
     if (!inDataHandle.data().isNull()) {
         MayaUsdStageData* inStageData
@@ -753,18 +767,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 .Msg("ProxyShapeBase::loadStage called for the usd file: %s\n", fileString.c_str());
 
             // == Load the Stage
-            MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
-            CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-            UsdStage::InitialLoadSet loadSet = loadPayloadsHandle.asBool()
-                ? UsdStage::InitialLoadSet::LoadAll
-                : UsdStage::InitialLoadSet::LoadNone;
-
-            // If there is a dynamic attribute containing the exact load rules
-            // for payload, start by loading nothing. The correct payload will
-            // be loaded by the load rules.
-            if (hasLoadRulesAttribute(thisMObject()))
-                loadSet = UsdStage::InitialLoadSet::LoadNone;
 
             {
 #if AR_VERSION == 1
@@ -821,11 +823,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 }
             }
         }
-
-        if (usdStage) {
-            primPath = usdStage->GetPseudoRoot().GetPath();
-            copyLoadRulesFromAttribute(thisMObject(), *usdStage);
-        }
     }
 
     if (!usdStage) {
@@ -862,19 +859,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 }
             }
         }
-
-        // Set the outUsdStageData
-        stageData->stage = usdStage;
-        stageData->primPath = primPath;
-
-        // Set the data on the output plug
-        MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-        inDataCachedHandle.set(stageData);
-        inDataCachedHandle.setClean();
-
-        return MS::kSuccess;
     }
     // Own the stage
     else {
@@ -919,17 +903,26 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 newReferencedLayers, _unsharedStageRootLayer, MayaUsdMetadata->ReferencedLayers);
         }
 
-        stageData->stage = UsdStage::UsdStage::Open(_unsharedStageRootLayer);
-        stageData->primPath = stageData->stage->GetPseudoRoot().GetPath();
-
-        MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-        inDataCachedHandle.set(stageData);
-        inDataCachedHandle.setClean();
-
-        return MS::kSuccess;
+        usdStage = UsdStage::UsdStage::Open(_unsharedStageRootLayer, loadSet);
     }
+
+    if (usdStage) {
+        primPath = usdStage->GetPseudoRoot().GetPath();
+        copyLoadRulesFromAttribute(thisMObject(), *usdStage);
+    }
+
+    // Set the outUsdStageData
+    stageData->stage = usdStage;
+    stageData->primPath = primPath;
+
+    // Set the data on the output plug
+    MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    inDataCachedHandle.set(stageData);
+    inDataCachedHandle.setClean();
+
+    return MS::kSuccess;
 }
 
 MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)

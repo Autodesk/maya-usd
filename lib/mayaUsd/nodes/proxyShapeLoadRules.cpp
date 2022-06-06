@@ -37,6 +37,12 @@ ProxyShapeSet& getTrackedProxyShapes()
 
 void onMayaAboutToSave(void* /* unused */)
 {
+    // Note: passing nullptr means save all stages.
+    MayaUsdProxyShapeLoadRules::saveLoadRules(nullptr);
+}
+
+void saveTrackedLoadRules(const UsdStageRefPtr& stage)
+{
     ProxyShapeSet& tracked = getTrackedProxyShapes();
     for (MayaUsdProxyShapeBase* proxyShape : tracked) {
         if (!proxyShape)
@@ -44,6 +50,9 @@ void onMayaAboutToSave(void* /* unused */)
 
         auto stagePtr = proxyShape->getUsdStage();
         if (!stagePtr)
+            continue;
+
+        if (stage && stage != stagePtr)
             continue;
 
         MObject proxyObj = proxyShape->thisMObject();
@@ -90,6 +99,19 @@ void MayaUsdProxyShapeLoadRules::addProxyShape(MayaUsdProxyShapeBase& proxyShape
 void MayaUsdProxyShapeLoadRules::removeProxyShape(MayaUsdProxyShapeBase& proxyShape)
 {
     getTrackedProxyShapes().erase(&proxyShape);
+}
+
+/* static */
+void MayaUsdProxyShapeLoadRules::saveAllLoadRules()
+{
+    // Note: passing nullptr means save all stages.
+    saveTrackedLoadRules(nullptr);
+}
+
+/* static */
+void MayaUsdProxyShapeLoadRules::saveLoadRules(const UsdStageRefPtr& stage)
+{
+    saveTrackedLoadRules(stage);
 }
 
 } // namespace MAYAUSD_NS_DEF
