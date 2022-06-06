@@ -59,11 +59,26 @@ UsdAttributes::Ptr UsdAttributes::create(const UsdSceneItem::Ptr& item)
 
 Ufe::SceneItem::Ptr UsdAttributes::sceneItem() const { return fItem; }
 
+// Returns whether the given op is an inverse operation. i.e, it starts with "!invert!".
+static constexpr char   invertPrefix[] = "!invert!";
+static constexpr size_t invertPrefixLen(sizeof(invertPrefix) / sizeof(invertPrefix[0]));
+static bool             _IsInverseOp(const std::string& name)
+{
+    return PXR_NS::TfStringStartsWith(name, invertPrefix);
+}
+
+static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const std::string& name)
+{
+    PXR_NS::TfToken tok(name);
+    bool            isInverseOp = _IsInverseOp(tok);
+    // If it is an inverse operation, strip off the "!invert!" at the beginning
+    // of name to get the associated attribute's name.
+    return prim.GetAttribute(isInverseOp ? PXR_NS::TfToken(name.substr(invertPrefixLen)) : tok);
+}
+
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
-    PXR_NS::TfToken      tok(name);
-    PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
-    return getUfeTypeForAttribute(usdAttr);
+    return getUfeTypeForAttribute(_GetAttributeType(fPrim, name));
 }
 
 Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
@@ -79,9 +94,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         return iter->second;
 
     // No attribute for the input name was found -> create one.
-    PXR_NS::TfToken      tok(name);
-    PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
-    Ufe::Attribute::Type newAttrType = getUfeTypeForAttribute(usdAttr);
+    Ufe::Attribute::Type newAttrType = attributeType(name);
 
     // Use a map of constructors to reduce the number of string comparisons. Since the naming
     // convention is extremely uniform, let's use a macro to simplify definition (and prevent
@@ -108,7 +121,6 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             ADD_UFE_USD_CTOR(Float3),
             ADD_UFE_USD_CTOR(Double3),
             ADD_UFE_USD_CTOR(Generic),
-            ADD_UFE_USD_CTOR(Bool),
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
             ADD_UFE_USD_CTOR(ColorFloat4),
             ADD_UFE_USD_CTOR(Filename),
@@ -120,9 +132,11 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
           };
 
 #undef ADD_UFE_USD_CTOR
-    auto ctorIt = ctorMap.find(newAttrType);
+    auto                ctorIt = ctorMap.find(newAttrType);
+    Ufe::Attribute::Ptr newAttr;
     UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
-    Ufe::Attribute::Ptr newAttr = ctorIt->second(fItem, usdAttr);
+    if (ctorIt != ctorMap.end())
+        newAttr = ctorIt->second(fItem, _GetAttributeType(fPrim, name));
 
     fAttributes[name] = newAttr;
     return newAttr;
