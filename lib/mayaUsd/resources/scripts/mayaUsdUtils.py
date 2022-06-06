@@ -131,9 +131,9 @@ def _getLastUsedUSDDialogFileFilterOptionVarName():
     return "mayaUsd_LastUsedUSDDialogFileFilter"
 
 
-def getLastUsedUSDDialogFileFilter():
+def loadLastUsedUSDDialogFileFilter():
     """
-    Retrieves the last-used USD file filter.
+    Loads the last-used USD file filter.
     If the option variable doesn't exist, return the default file filter.
     """
     varName = _getLastUsedUSDDialogFileFilterOptionVarName()
@@ -143,9 +143,30 @@ def getLastUsedUSDDialogFileFilter():
         return getMayaUsdLibString("kAllUsdFiles")
     
 
-def setLastUsedUSDDialogFileFilter(fileFilter):
+def saveLastUsedUSDDialogFileFilter(fileFilter):
     """
-    Sets the last-used USD file filter.
+    Saves the last-used USD file filter.
     """
     varName = _getLastUsedUSDDialogFileFilterOptionVarName()
     return cmds.optionVar(stringValue=(varName, fileFilter))
+
+
+_userSelectedUSDDialogFileFilter = None
+
+def getUserSelectedUSDDialogFileFilter():
+    """
+    Gets the USD file filter last selected by the user, but not yet saved in optionvar.
+    """
+    global _userSelectedUSDDialogFileFilter
+    return _userSelectedUSDDialogFileFilter
+    
+
+def setUserSelectedUSDDialogFileFilter(fileFilter):
+    """
+    Sets the USD file filter last selected by the user, but not yet saved in optionvar.
+    """
+    global _userSelectedUSDDialogFileFilter
+    _userSelectedUSDDialogFileFilter = fileFilter
+    
+    
+    

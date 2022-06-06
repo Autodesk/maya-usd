@@ -399,6 +399,8 @@ def cacheCommitUi(parent, selectedFile):
         listEditType, variantSetName, variantName)
 
     cacheToUsd.saveCacheCreationOptions(userArgs)
+    mayaUsdUtils.saveLastUsedUSDDialogFileFilter(mayaUsdUtils.getUserSelectedUSDDialogFileFilter())
+
 
     # Call push.
     if not mayaUsd.lib.PrimUpdaterManager.mergeToUsd(_mayaRefDagPath, userArgs):
@@ -420,7 +422,7 @@ def fileTypeChangedUi(parent, fileType):
     for ff in mayaUsdUtils.getMonoFormatFileFilterLabels(False):
         forcedFormat = forcedFormat or fileType in ff
     cmds.optionMenuGrp("defaultUSDFormatPopup", edit=True, enable=not forcedFormat)
-    mayaUsdUtils.setLastUsedUSDDialogFileFilter(fileType)
+    mayaUsdUtils.setUserSelectedUSDDialogFileFilter(fileType)
 
 
 def cacheDialog(dagPath, pulledMayaRefPrim, _):
@@ -434,7 +436,7 @@ def cacheDialog(dagPath, pulledMayaRefPrim, _):
 
     ok = getMayaUsdLibString('kCacheMayaRefCache')
     fileFilter = mayaUsdUtils.getUSDDialogFileFilters(False)
-    selectedFileFilter = mayaUsdUtils.getLastUsedUSDDialogFileFilter()
+    selectedFileFilter = mayaUsdUtils.loadLastUsedUSDDialogFileFilter()
 
     # As per Maya projectViewer.mel code structure, the UI creation
     # (optionsUICreate) creates the main UI framework, and UI initialization
