@@ -693,7 +693,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
     bool isIncomingStage = false;
 
-    // Compute the laod set for the stage.
+    // Compute the load set for the stage.
     MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
