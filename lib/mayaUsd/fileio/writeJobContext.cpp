@@ -61,14 +61,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-inline SdfPath _GetRootOverridePath(const UsdMayaJobExportArgs& args, const SdfPath& path)
+inline SdfPath _GetRootOverridePath(
+    const UsdMayaJobExportArgs& args,
+    const SdfPath&              path,
+    bool                        modelRootOverride = true,
+    bool                        rootMap = true)
 {
     if (!path.IsEmpty()) {
-        if (!args.usdModelRootOverridePath.IsEmpty()) {
+        if (modelRootOverride && !args.usdModelRootOverridePath.IsEmpty()) {
             return path.ReplacePrefix(path.GetPrefixes()[0], args.usdModelRootOverridePath);
         }
 
-        if (!args.rootMapFunction.IsNull()) {
+        if (rootMap && !args.rootMapFunction.IsNull()) {
             return args.rootMapFunction.MapSourceToTarget(path);
         }
     }
@@ -176,14 +180,14 @@ SdfPath UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) con
         path = path.GetParentPath();
     }
 
-    path = _GetRootOverridePath(mArgs, path);
+    path = _GetRootOverridePath(mArgs, path, false, true);
 
     if (!mParentScopePath.IsEmpty()) {
         // Since path is from MDagPathToUsdPath, it will always be
         // an absolute path...
         path = path.ReplacePrefix(SdfPath::AbsoluteRootPath(), mParentScopePath);
     }
-    return path;
+    return _GetRootOverridePath(mArgs, path, true, false);
 }
 
 UsdMayaWriteJobContext::_ExportAndRefPaths
@@ -410,7 +414,7 @@ bool UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
         // Note that we only need to create the parentScope prim if we're not
         // using a usdModelRootOverridePath - if we ARE using
         // usdModelRootOverridePath, then IT will take the name of our parent
-        // scope, and will be created when we writ out the model variants
+        // scope, and will be created when we write out the model variants
         if (mArgs.usdModelRootOverridePath.IsEmpty()) {
             mParentScopePath
                 = UsdGeomScope::Define(mStage, mParentScopePath).GetPrim().GetPrimPath();
