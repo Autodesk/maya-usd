@@ -60,8 +60,9 @@ UsdAttributes::Ptr UsdAttributes::create(const UsdSceneItem::Ptr& item)
 Ufe::SceneItem::Ptr UsdAttributes::sceneItem() const { return fItem; }
 
 // Returns whether the given op is an inverse operation. i.e, it starts with "!invert!".
-static constexpr char invertPrefix[] = "!invert!";
-static bool           _IsInverseOp(const std::string& name)
+static constexpr char   invertPrefix[] = "!invert!";
+static constexpr size_t invertPrefixLen(sizeof(invertPrefix) / sizeof(invertPrefix[0]));
+static bool             _IsInverseOp(const std::string& name)
 {
     return PXR_NS::TfStringStartsWith(name, invertPrefix);
 }
@@ -70,7 +71,6 @@ static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const
 {
     PXR_NS::TfToken tok(name);
     bool            isInverseOp = _IsInverseOp(tok);
-    static size_t   invertPrefixLen = strlen(invertPrefix);
     // If it is an inverse operation, strip off the "!invert!" at the beginning
     // of name to get the associated attribute's name.
     return prim.GetAttribute(isInverseOp ? PXR_NS::TfToken(name.substr(invertPrefixLen)) : tok);
