@@ -225,6 +225,12 @@ static DiffResult comparePrims(
         }
     }
 
+    // TODO: should we compare metadata? We currently don't as it contains stuf we
+    //       would need to consider equivalent like types (for example we consider
+    //       float3f and nromal3f to be equivalent), declarations (def vs over), etc
+    //
+    //       OTOH, there are other metadata we could consider.
+
     if (compareChildren) {
         const auto childrenDiffs = comparePrimsChildren(modified, baseline, quickDiff);
         USD_MAYA_RETURN_QUICK_RESULT(*quickDiff, *quickDiff);
