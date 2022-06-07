@@ -108,7 +108,8 @@ bool UsdConnectionHandler::createConnection(
         return dstUsdAttr.AddConnection(srcUsdAttr.GetPath());
     }
 
-    return true;
+    // Return a failure because there is already a connection.
+    return false;
 }
 
 bool UsdConnectionHandler::deleteConnection(
@@ -122,7 +123,8 @@ bool UsdConnectionHandler::deleteConnection(
         return dstUsdAttr.RemoveConnection(srcUsdAttr.GetPath());
     }
 
-    return true;
+    // Return a failure because there is no connection.
+    return false;
 }
 
 } // namespace ufe
