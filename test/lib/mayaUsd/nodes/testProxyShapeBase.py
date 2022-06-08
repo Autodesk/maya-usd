@@ -249,6 +249,48 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
         self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
 
+    def testShareStagePreserveSession(self):
+        '''
+        Verify share/unshare stage preserve the data in the session layer
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples
+        mayaUtils.openCylinderScene()
+
+        # get the stage
+        def getStage():
+            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+            self.assertGreater(len(proxyShapes), 0)
+            proxyShapePath = proxyShapes[0]
+            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
+
+        # check that the stage is shared and the root is the right one
+        stage, proxyShapePath = getStage()
+        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+
+        # create a prim in the session layer.
+        stage.SetEditTarget(stage.GetSessionLayer())
+        stage.DefinePrim("/dummy", "xform")
+
+        # verify that the prim exists.
+        def verifyPrim():
+            stage, _ = getStage()
+            self.assertTrue(stage.GetPrimAtPath("/dummy"))
+
+        verifyPrim()
+
+        # unshare the stage and verify the prim in the session laye still exists.
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+
+        verifyPrim()
+
+        # re-share the stage and verify the prim in the session laye still exists.
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+
+        verifyPrim()
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testShareStageLoadRules only available in UFE v2 or greater.')
     def testShareStageLoadRules(self):
         '''
