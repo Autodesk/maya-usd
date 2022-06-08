@@ -77,23 +77,29 @@ void clearMayaAttributeEditor()
 } // anonymous namespace
 
 /* static */
-UsdStageCache& UsdMayaStageCache::Get(const bool loadAll)
+UsdStageCache& UsdMayaStageCache::Get(UsdStage::InitialLoadSet loadSet, ShareMode shared)
 {
-    static UsdStageCache theCacheLoadAll; // used when UsdStage::Open() will be called with
-                                          // UsdStage::InitialLoadSet::LoadAll
-    static UsdStageCache theCache;        // used when UsdStage::Open() will be called with
-                                          // UsdStage::InitialLoadSet::LoadNode
+    // The different caches are separated by:
+    //
+    //    - load all payload / load nothing
+    //    - shared stages / unshared stages
+    //
+    // The load all / load nothing correspond to the UsdStage::InitialLoadSet::LoadAll /
+    // UsdStage::InitialLoadSet::LoadNode mode of UsdStage::Open
+    static UsdStageCache caches[2][2];
+
     static _OnSceneResetListener onSceneResetListener;
 
-    return loadAll ? theCacheLoadAll : theCache;
+    return caches[loadSet == UsdStage::InitialLoadSet::LoadAll][shared == ShareMode::Shared];
 }
 
 /* static */
 void UsdMayaStageCache::Clear()
 {
     clearMayaAttributeEditor();
-    Get(true).Clear();
-    Get(false).Clear();
+    for (auto load : { UsdStage::InitialLoadSet::LoadAll, UsdStage::InitialLoadSet::LoadNone })
+        for (auto share : { ShareMode::Shared, ShareMode::Unshared })
+            Get(load, share).Clear();
 }
 
 /* static */
@@ -108,8 +114,9 @@ size_t UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& lay
 
     clearMayaAttributeEditor();
 
-    erasedStages += Get(true).EraseAll(rootLayer);
-    erasedStages += Get(false).EraseAll(rootLayer);
+    for (auto load : { UsdStage::InitialLoadSet::LoadAll, UsdStage::InitialLoadSet::LoadNone })
+        for (auto share : { ShareMode::Shared, ShareMode::Unshared })
+            erasedStages += Get(load, share).EraseAll(rootLayer);
 
     return erasedStages;
 }
