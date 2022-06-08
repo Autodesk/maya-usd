@@ -24,7 +24,7 @@ import unittest
 
 import ufe
 import mayaUsd
-from pxr import Usd
+from pxr import Usd, Tf
 
 from shiboken2 import wrapInstance
 from PySide2.QtGui import QIcon
@@ -85,9 +85,7 @@ class UIIconsTestCase(unittest.TestCase):
         # All the prim types to test
         usdVer = Usd.GetVersion()
         primTypes = [
-                # Prim Type                # Icon file name
-            ('ALExamplePolyCubeNode',   'out_USD_UsdTyped.png'),
-            ('ALFrameRange',            'out_USD_UsdTyped.png'),
+            # Prim Type                 # Icon file name
             ('ALMayaReference',         'out_USD_MayaReference.png'),
             ('Backdrop',                'out_USD_UsdTyped.png'),
             ('BasisCurves',             'out_USD_UsdGeomCurves.png'),
@@ -114,7 +112,7 @@ class UIIconsTestCase(unittest.TestCase):
             ('NurbsPatch',              'out_USD_NurbsPatch.png'),
             ('OpenVDBAsset',            'out_USD_UsdGeomXformable.png'),
             ('PackedJointAnimation',    'out_USD_SkelAnimation.png'),
-            ('PluginLight',             'out_USD_UsdGeomXformable.png' if usdVer >= (0, 21, 11) else 'out_USD_UsdLuxLight.png'),
+            ('PluginLight',             'out_USD_PluginLight.png' if usdVer >= (0, 21, 11) else 'out_USD_UsdLuxLight.png'),
             ('PluginLightFilter',       'out_USD_LightFilter.png'),
             ('PointInstancer',          'out_USD_PointInstancer.png'),
             ('Points',                  'out_USD_Points.png'),
@@ -145,6 +143,14 @@ class UIIconsTestCase(unittest.TestCase):
                 ('PhysicsScene',            'out_USD_UsdTyped.png'),
                 ('PhysicsSphericalJoint',   'out_USD_UsdTyped.png')
             ])
+
+        # Special case for node types which are in an AL schema.
+        # They aren't available when compiling without the AL plugin.
+        if Usd.SchemaRegistry.IsConcrete(Tf.Type.FindByName('AL_usd_FrameRange')):
+            primTypes.extend([
+                ('ALExamplePolyCubeNode',   'out_USD_UsdTyped.png'),
+                ('ALFrameRange',            'out_USD_UsdTyped.png')
+        ])
 
         for ty,iname in primTypes:
             prim = self.stage.DefinePrim('/%s' % ty, ty)

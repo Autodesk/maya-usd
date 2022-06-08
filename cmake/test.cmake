@@ -343,6 +343,10 @@ finally:
         endif()
     endforeach()
 
+    # Unset any MAYA_MODULE_PATH as we set all the individual variables
+    # so we don't want to conflict with a MayaUsd module.
+    set_property(TEST ${test_name} APPEND PROPERTY ENVIRONMENT "MAYA_MODULE_PATH=")
+
     # set all env vars
     foreach(pathvar ${ALL_PATH_VARS})
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
