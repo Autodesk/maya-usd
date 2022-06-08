@@ -360,11 +360,11 @@ private:
         UsdStageRefPtr           sharedUsdStage,
         UsdStageRefPtr           unsharedUsdStage,
         UsdStage::InitialLoadSet loadSet);
-        
+
     void transferSessionLayer(
-        ShareMode      currentMode,
-        UsdStageRefPtr sharedUsdStage,
-        UsdStageRefPtr unsharedUsdStage,
+        ShareMode                currentMode,
+        UsdStageRefPtr           sharedUsdStage,
+        UsdStageRefPtr           unsharedUsdStage,
         UsdStage::InitialLoadSet loadSet);
 
     UsdStageRefPtr getUnsharedStage(UsdStage::InitialLoadSet loadSet);
