@@ -339,6 +339,15 @@ protected:
     void copyInternalData(MPxNode* srcNode) override;
 
 private:
+    // The possible the shared mode of the stage.
+    // The 'Unknown' mode is when the orxy shape is created and has not yet been computed.
+    enum class ShareMode
+    {
+        Unknown,
+        Shared,
+        Unshared
+    };
+
     MayaUsdProxyShapeBase(const MayaUsdProxyShapeBase&);
     MayaUsdProxyShapeBase& operator=(const MayaUsdProxyShapeBase&);
 
@@ -346,6 +355,19 @@ private:
     MStatus computeInStageDataCached(MDataBlock& dataBlock);
     MStatus computeOutStageData(MDataBlock& dataBlock);
     MStatus computeOutStageCacheId(MDataBlock& dataBlock);
+
+    void updateShareMode(
+        UsdStageRefPtr           sharedUsdStage,
+        UsdStageRefPtr           unsharedUsdStage,
+        UsdStage::InitialLoadSet loadSet);
+
+    void transferSessionLayer(
+        ShareMode                currentMode,
+        UsdStageRefPtr           sharedUsdStage,
+        UsdStageRefPtr           unsharedUsdStage,
+        UsdStage::InitialLoadSet loadSet);
+
+    UsdStageRefPtr getUnsharedStage(UsdStage::InitialLoadSet loadSet);
 
     SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
     int           _GetComplexity(MDataBlock dataBlock) const;
@@ -373,7 +395,12 @@ private:
     // Whether or not the proxy shape has enabled UFE/subpath selection
     const bool _isUfeSelectionEnabled;
 
+    // Track the shared mode of the stage as seen in the last compute.
+    // Starts off as Unknown when the proxy shape is first created.
+    ShareMode _previousShareMode;
+
     // For unshared composition
+    SdfLayerRefPtr _unsharedStageSessionLayer;
     SdfLayerRefPtr _unsharedStageRootLayer;
 
     // We need to keep track of unshared sublayers (otherwise they get removed)
