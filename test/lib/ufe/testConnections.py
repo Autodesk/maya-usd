@@ -97,12 +97,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader')
         self.assertEqual(srcAttr.name, 'outputs:result')
 
-        self.assertEqual(str(dstAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d')
         self.assertEqual(dstAttr.name, 'inputs:in')
 
         # Test the list of connections.
@@ -134,12 +134,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG')
         self.assertEqual(srcAttr.name, 'inputs:file1:varname')
 
-        self.assertEqual(str(dstAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG/file1/TexCoordReader')
         self.assertEqual(dstAttr.name, 'inputs:varname')
 
         # Step 3 - Find all the existing connections for for the Shader 'file1'
@@ -160,12 +160,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG/file1/UsdTransform2d')
         self.assertEqual(srcAttr.name, 'outputs:result')
 
-        self.assertEqual(str(dstAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG/file1')
         self.assertEqual(dstAttr.name, 'inputs:st')
 
         # Step 4 - Find all the existing connections for for the Shader 'usdPreviewSurface1'
@@ -186,12 +186,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/file1')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG/file1')
         self.assertEqual(srcAttr.name, 'outputs:rgb')
 
-        self.assertEqual(str(dstAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
         self.assertEqual(dstAttr.name, 'inputs:diffuseColor')
 
         # Step 5 - Find all the existing connections for for the Material 'usdPreviewSurface1SG'
@@ -212,12 +212,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
         self.assertEqual(srcAttr.name, 'outputs:surface')
 
-        self.assertEqual(str(dstAttr.path),
-            '|world|stage|stageShape/pPlane1/Looks/usdPreviewSurface1SG')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/pPlane1/Looks/usdPreviewSurface1SG')
         self.assertEqual(dstAttr.name, 'outputs:surface')
 
     def testConnections_2(self):
@@ -246,12 +246,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path),
-            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/ColorPrimvar')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG/ColorPrimvar')
         self.assertEqual(srcAttr.name, 'outputs:result')
 
-        self.assertEqual(str(dstAttr.path),
-            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
         self.assertEqual(dstAttr.name, 'inputs:diffuseColor')
 
         # Step 2 - Find all the existing connections for the Shader 'Primvar'
@@ -272,12 +272,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path),
-            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG')
         self.assertEqual(srcAttr.name, 'inputs:coords')
 
-        self.assertEqual(str(dstAttr.path),
-            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/Primvar')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG/Primvar')
         self.assertEqual(dstAttr.name, 'inputs:varname')
 
         # Step 3 - Find all the existing connections for 'ColorPrimvar'
@@ -311,12 +311,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path),
-            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
         self.assertEqual(srcAttr.name, 'outputs:surface')
 
-        self.assertEqual(str(dstAttr.path),
-            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG')
         self.assertEqual(dstAttr.name, 'outputs:surface')
 
     def testConnectionsHandler(self):
@@ -344,12 +344,12 @@ class ConnectionTestCase(unittest.TestCase):
         srcAttr = conns[0].src
         dstAttr = conns[0].dst
 
-        self.assertEqual(str(srcAttr.path), 
-            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/ColorPrimvar')
+        self.assertEqual(ufe.PathString.string(srcAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG/ColorPrimvar')
         self.assertEqual(srcAttr.name, 'outputs:result')
 
-        self.assertEqual(str(dstAttr.path), 
-            '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
+        self.assertEqual(ufe.PathString.string(dstAttr.path),
+            '|stage|stageShape,/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1')
         self.assertEqual(dstAttr.name, 'inputs:diffuseColor')
 
         # Delete a connection using the ConnectionsHandler.

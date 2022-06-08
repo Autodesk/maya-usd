@@ -15,7 +15,9 @@
 //
 
 #include <mayaUsd/ufe/UsdConnections.h>
+
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/path.h>
@@ -32,39 +34,16 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-namespace {
-
-/**
- *  \brief Build the Ufe::Path (i.e. Maya USD path) from a Prim::Path (i.e. USD path)
- *
- *   The method builds a Maya Ufe path from a USD prim path. For example, the method converts
- *   from '/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1' to
- *   '|world|stage|stageShape/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1'
- *   where:
- *   1. '|world|stage|stageShape' represents the Maya path in Ufe
- *   2. '/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1' represents the USD prim
- * path.
- *
- *  \param prim is the prim of the selected scene item in the USD data model.
- *  \param baseMayaPath is the Ufe base path in the Maya data model.
- */
-Ufe::Path
-buildMayaUfePathFromPrimPath(const PXR_NS::UsdPrim& prim, const Ufe::Path& baseMayaPath)
-{
-    // Get the prim path i.e. the path in the USD world.
-    Ufe::Path primPath = Ufe::PathString::path(prim.GetPrimPath().GetAsString());
-    // Create the Maya Ufe::Path which is composed of the Maya path prefix and the USD prim path.
-    return primPath.reparent(Ufe::PathString::path(""), baseMayaPath);
-}
-
-} // namespace
-
 UsdConnections::UsdConnections(const Ufe::SceneItem::Ptr& item)
     : Ufe::Connections()
+#if !defined(NDEBUG)
+    , _sceneItem(std::static_pointer_cast<UsdSceneItem>(item))
+#else
     , _sceneItem(std::dynamic_pointer_cast<UsdSceneItem>(item))
+#endif
 {
     if (!TF_VERIFY(_sceneItem)) {
-        TF_RUNTIME_ERROR("Invalid scene item.");
+        TF_FATAL_ERROR("Invalid scene item.");
     }
 }
 
@@ -81,30 +60,27 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
 
     std::vector<Ufe::Connection::Ptr> result;
 
-    // The scene item is a shader node.
-    const Ufe::Path sceneItemPath = _sceneItem->path();
-    // Find the base maya path i.e. the base path to use for all the prim paths.
-    const Ufe::Path baseMayaPath = sceneItemPath.popSegment();
+    // Get some information of the prim.
 
-    // Find the Maya Ufe::Path of the selected shader node.
     const PXR_NS::UsdPrim prim = _sceneItem->prim();
-    const Ufe::Path       primPath = buildMayaUfePathFromPrimPath(prim, baseMayaPath);
+    const Ufe::Path       primPath = _sceneItem->path();
+    const Ufe::Path       stagePath = primPath.getSegments()[0];
 
     // The method looks for all the connections in which one of the attribute of this scene item is
     // the destination.
 
     PXR_NS::UsdShadeConnectableAPI connectableAttrs(prim);
 
-    // Look for all the connected input attributes which are a destination of a connection.
-
-    for (PXR_NS::UsdShadeInput input : connectableAttrs.GetInputs()) {
-        if (input.HasConnectedSource()) {
-            for (PXR_NS::UsdShadeConnectionSourceInfo sourceInfo : input.GetConnectedSources()) {
+    // Helper method to create the in-memory connection if any.
+    auto createConnections = [&](const auto& attr) -> void
+    {
+        if (attr.HasConnectedSource()) {
+            for (PXR_NS::UsdShadeConnectionSourceInfo sourceInfo : attr.GetConnectedSources()) {
 
                 // Find the Maya Ufe::Path of the connected shader node.
                 const PXR_NS::UsdPrim connectedPrim = sourceInfo.source.GetPrim();
                 const Ufe::Path       connectedPrimPath
-                    = buildMayaUfePathFromPrimPath(connectedPrim, baseMayaPath);
+                    = stagePath + usdPathToUfePathSegment(connectedPrim.GetPrimPath());
 
                 // Find the name of the connected source attribute name.
                 PXR_NS::TfToken tkSourceName = PXR_NS::UsdShadeUtils::GetFullName(
@@ -113,36 +89,23 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
                 // Create the in-memory representation of the connection.
                 Ufe::Connection::Ptr connection = std::make_shared<Ufe::Connection>(
                     Ufe::AttributeInfo(connectedPrimPath, tkSourceName.GetString()),
-                    Ufe::AttributeInfo(primPath, input.GetFullName()));
+                    Ufe::AttributeInfo(primPath, attr.GetFullName()));
 
                 result.push_back(connection);
             }
         }
+    };
+
+    // Look for all the connected input attributes which are a destination of a connection.
+
+    for (PXR_NS::UsdShadeInput input : connectableAttrs.GetInputs(false)) {
+        createConnections(input);
     }
 
     // Look for all the connected output attributes which are a destination of a connection.
 
-    for (PXR_NS::UsdShadeOutput output : connectableAttrs.GetOutputs()) {
-        if (output.HasConnectedSource()) {
-            for (PXR_NS::UsdShadeConnectionSourceInfo sourceInfo : output.GetConnectedSources()) {
-
-                // Find the Maya Ufe::Path of the connected shader node.
-                const PXR_NS::UsdPrim connectedPrim = sourceInfo.source.GetPrim();
-                const Ufe::Path       connectedPrimPath
-                    = buildMayaUfePathFromPrimPath(connectedPrim, baseMayaPath);
-
-                // Find the name of the connected source attribute name.
-                PXR_NS::TfToken tkSourceName = PXR_NS::UsdShadeUtils::GetFullName(
-                    sourceInfo.sourceName, sourceInfo.sourceType);
-
-                // Create the in-memory representation of the connection.
-                Ufe::Connection::Ptr connection = std::make_shared<Ufe::Connection>(
-                    Ufe::AttributeInfo(connectedPrimPath, tkSourceName.GetString()),
-                    Ufe::AttributeInfo(primPath, output.GetFullName()));
-
-                result.push_back(connection);
-            }
-        }
+    for (PXR_NS::UsdShadeOutput output : connectableAttrs.GetOutputs(false)) {
+        createConnections(output);
     }
 
     return result;

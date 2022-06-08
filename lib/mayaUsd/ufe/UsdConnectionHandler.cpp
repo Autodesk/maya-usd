@@ -23,6 +23,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 
+#include <ufe/pathString.h>
 #include <ufe/scene.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -31,6 +32,12 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 namespace {
+
+// TODO: The method looks for the PXR_NS::UsdAttribute from the Ufe::Attribute. However,
+// the attr instance is a data member of the MayaUsd::Ufe::UsdAttribute. The challenge is that
+// all the USD typed attribute classes privately inherites from MayaUsd::Ufe::UsdAttribute, and
+// there is no common publicly inherited class so, the cast technic cannot be used.
+// How to easily access the data member?
 
 PXR_NS::UsdAttribute usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
 {
@@ -41,7 +48,10 @@ PXR_NS::UsdAttribute usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
 
     if (attr->sceneItem()->runTimeId() != getUsdRunTimeId()) {
         TF_RUNTIME_ERROR(
-            "Invalid runtime identifier for the attribute '" + attr->sceneItem()->path().string()
+            "Invalid runtime identifier for the attribute '"
+            + attr->name()
+            + "' in the node '"
+            + Ufe::PathString::string(attr->sceneItem()->path())
             + "'.");
         return PXR_NS::UsdAttribute();
     }
@@ -49,7 +59,11 @@ PXR_NS::UsdAttribute usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
     Ufe::Hierarchy::Ptr ufeHierarchy = Ufe::Hierarchy::hierarchy(attr->sceneItem());
     if (!ufeHierarchy) {
         TF_RUNTIME_ERROR(
-            "Invalid hierarchy for attribute '" + attr->sceneItem()->path().string() + "'.");
+            "Invalid hierarchy for the attribute '"
+            + attr->name()
+            + "' in the node '"
+            + Ufe::PathString::string(attr->sceneItem()->path())
+            + "'.");
         return PXR_NS::UsdAttribute();
     }
 
