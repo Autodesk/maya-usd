@@ -832,10 +832,14 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
                     bool targetSession
                         = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
-                    if (targetSession)
-                        throw std::runtime_error("targeting session enabled through option var!!!");
-                    if (!rootLayer->PermissionToEdit())
-                        throw std::runtime_error("root layer edit permissions are off!!!");
+                    if (targetSession) {
+                        std::cerr << "targeting session enabled through option var!!!" << std::endl;
+                        TF_WARN("targeting session enabled through option var!!!");
+                    }
+                    if (!rootLayer->PermissionToEdit()) {
+                        std::cerr << "root layer edit permissions are off!!!" << std::endl;
+                        TF_WARN("root layer edit permissions are off!!!");
+                    }
                     targetSession = targetSession || !rootLayer->PermissionToEdit();
                     sessionLayer = sharedUsdStage->GetSessionLayer();
                     if (sessionLayer && targetSession) {
