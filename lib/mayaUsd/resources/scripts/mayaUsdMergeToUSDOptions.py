@@ -263,7 +263,7 @@ def setMergeToUSDOptionsText(optionsText):
 
 def _getDefaultMergeToUSDOptionsDict():
     """
-    Retrieves the current merge-to-USD options.
+    Retrieves the default merge-to-USD options.
     """
     return {
         "exportColorSets":          "1",
