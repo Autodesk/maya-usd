@@ -63,7 +63,7 @@ namespace {
 
 constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
 constexpr auto kIllegalUFEPath = "Illegal UFE run-time path %s.";
-constexpr auto kInvalidValue = "Invalid value for data type";
+constexpr auto kInvalidValue = "Invalid value '%s' for data type '%s'";
 
 typedef std::unordered_map<PXR_NS::TfToken, PXR_NS::SdfValueTypeName, PXR_NS::TfToken::HashFunctor>
     TokenToSdfTypeMap;
@@ -646,65 +646,82 @@ PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType)
     }
 }
 
-bool vtValueFromString(
-    const std::string& typeName,
-    const std::string& strValue,
-    PXR_NS::VtValue&   value)
+PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string& strValue)
 {
+    PXR_NS::VtValue result;
     if (typeName == Ufe::Attribute::kBool) {
-        value = "true" == strValue ? true : false;
-        return true;
+        result = "true" == strValue ? true : false;
     } else if (typeName == Ufe::Attribute::kInt) {
-        value = std::stoi(strValue.c_str());
-        return true;
+        result = std::stoi(strValue.c_str());
     } else if (typeName == Ufe::Attribute::kFloat) {
-        value = std::stof(strValue.c_str());
-        return true;
+        result = std::stof(strValue.c_str());
     } else if (typeName == Ufe::Attribute::kDouble) {
-        value = std::stod(strValue.c_str());
-        return true;
+        result = std::stod(strValue.c_str());
     } else if (typeName == Ufe::Attribute::kString) {
-        value = strValue;
-        return true;
+        result = strValue;
     } else if (typeName == Ufe::Attribute::kEnumString) {
-        value = PXR_NS::TfToken(strValue.c_str());
-        return true;
+        result = PXR_NS::TfToken(strValue.c_str());
     } else if (typeName == Ufe::Attribute::kInt3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (tokens.size() == 3) {
-            value = GfVec3i(
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue, typeName)) {
+            result = GfVec3i(
                 std::stoi(tokens[0].c_str()),
                 std::stoi(tokens[1].c_str()),
                 std::stoi(tokens[2].c_str()));
-            return true;
-        } else {
-            throw std::runtime_error(kInvalidValue);
         }
     } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (tokens.size() == 3) {
-            value = GfVec3f(
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue, typeName)) {
+            result = GfVec3f(
                 std::stof(tokens[0].c_str()),
                 std::stof(tokens[1].c_str()),
                 std::stof(tokens[2].c_str()));
-            return true;
-        } else {
-            throw std::runtime_error(kInvalidValue);
         }
     } else if (typeName == Ufe::Attribute::kDouble3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (tokens.size() == 3) {
-            value = GfVec3d(
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue, typeName)) {
+            result = GfVec3d(
                 std::stod(tokens[0].c_str()),
                 std::stod(tokens[1].c_str()),
                 std::stod(tokens[2].c_str()));
-            return true;
-        } else {
-            throw std::runtime_error(kInvalidValue);
+        }
+    } else if (typeName == Ufe::Attribute::kMatrix3d) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 9, kInvalidValue, strValue, typeName)) {
+            result = GfMatrix3d(
+                std::stod(tokens[0].c_str()),
+                std::stod(tokens[1].c_str()),
+                std::stod(tokens[2].c_str()),
+                std::stod(tokens[3].c_str()),
+                std::stod(tokens[4].c_str()),
+                std::stod(tokens[5].c_str()),
+                std::stod(tokens[6].c_str()),
+                std::stod(tokens[7].c_str()),
+                std::stod(tokens[8].c_str()));
+        }
+    } else if (typeName == Ufe::Attribute::kMatrix4d) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 16, kInvalidValue, strValue, typeName)) {
+            result = GfMatrix4d(
+                std::stod(tokens[0].c_str()),
+                std::stod(tokens[1].c_str()),
+                std::stod(tokens[2].c_str()),
+                std::stod(tokens[3].c_str()),
+                std::stod(tokens[4].c_str()),
+                std::stod(tokens[5].c_str()),
+                std::stod(tokens[6].c_str()),
+                std::stod(tokens[7].c_str()),
+                std::stod(tokens[8].c_str()),
+                std::stod(tokens[9].c_str()),
+                std::stod(tokens[10].c_str()),
+                std::stod(tokens[11].c_str()),
+                std::stod(tokens[12].c_str()),
+                std::stod(tokens[13].c_str()),
+                std::stod(tokens[14].c_str()),
+                std::stod(tokens[15].c_str()));
         }
     }
-    // Returns false if the type is unknown
-    return false;
+    return result;
 }
 
 #endif

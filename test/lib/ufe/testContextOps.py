@@ -18,7 +18,6 @@
 
 import fixturesUtils
 import mayaUtils
-import testUtils
 import usdUtils
 import ufeUtils
 

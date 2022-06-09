@@ -167,10 +167,7 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shade
 MAYAUSD_CORE_PUBLIC
 PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType);
 
-bool vtValueFromString(
-    const std::string& typeName,
-    const std::string& strValue,
-    PXR_NS::VtValue&   value);
+PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string& strValue);
 #endif
 
 //! Check if the edit target in the stage is allowed to be changed.

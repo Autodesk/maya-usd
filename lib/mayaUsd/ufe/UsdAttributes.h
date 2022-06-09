@@ -54,15 +54,14 @@ public:
     std::vector<std::string> attributeNames() const override;
     bool                     hasAttribute(const std::string& name) const override;
 
+    inline Ufe::NodeDef::Ptr nodeDef() const;
+
 private:
     Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const;
 
 private:
     UsdSceneItem::Ptr fItem;
     PXR_NS::UsdPrim   fPrim;
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    Ufe::NodeDef::Ptr fNodeDef;
-#endif
 
     typedef std::unordered_map<std::string, Ufe::Attribute::Ptr> AttributeMap;
     AttributeMap                                                 fAttributes;

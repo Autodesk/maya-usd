@@ -76,18 +76,18 @@ namespace ufe {
 class UsdAttribute
 {
 public:
-    UsdAttribute(
-        const PXR_NS::UsdPrim& prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef = nullptr,
+    UsdAttribute(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr = PXR_NS::UsdAttribute());
+    UsdAttribute(const PXR_NS::UsdAttribute& usdAttr);
     ~UsdAttribute() = default;
 
-    inline bool isAuthoredAndSet() const { return isAuthored() && hasValue(); }
-    inline bool isAuthored() const { return fUsdAttr.IsValid(); }
-    bool        isEditAllowed(std::string& errMsg) const;
+    inline bool isAuthored() const { return isValid() && fUsdAttr.IsAuthored(); }
+    inline bool isValid() const { return fUsdAttr.IsValid(); }
+    std::string isEditAllowedMsg() const;
+    inline bool isEditAllowed() const { return isEditAllowedMsg().empty(); }
     std::string typeName() const;
+    std::string defaultValue() const;
     bool        get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
     bool        set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
 
@@ -120,22 +120,26 @@ class UsdAttributeGeneric
 public:
     typedef std::shared_ptr<UsdAttributeGeneric> Ptr;
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
     UsdAttributeGeneric(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
-#ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
 
-    //! Create a UsdAttributeGeneric.
-    static UsdAttributeGeneric::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
+    UsdAttributeGeneric(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeGeneric with a scene item, prim and attribute definition.
+    static UsdAttributeGeneric::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeGeneric with a scene item and USD attribute
+    static UsdAttributeGeneric::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
@@ -153,22 +157,26 @@ class UsdAttributeFilename
 public:
     typedef std::shared_ptr<UsdAttributeFilename> Ptr;
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
     UsdAttributeFilename(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
-#ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
 
-    //! Create a UsdAttributeFilename.
-    static UsdAttributeFilename::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
+    UsdAttributeFilename(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeFilename with a scene item, prim and attribute definition.
+    static UsdAttributeFilename::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeFilename with a scene item and USD attribute
+    static UsdAttributeFilename::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
@@ -188,22 +196,26 @@ class UsdAttributeEnumString
 public:
     typedef std::shared_ptr<UsdAttributeEnumString> Ptr;
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
     UsdAttributeEnumString(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
-#ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
 
-    //! Create a UsdAttributeEnumString.
-    static UsdAttributeEnumString::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
+    UsdAttributeEnumString(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeEnumString with a scene item, prim and attribute definition.
+    static UsdAttributeEnumString::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeEnumString with a scene item and USD attribute
+    static UsdAttributeEnumString::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
@@ -222,13 +234,16 @@ class TypedUsdAttribute
     , private UsdAttribute
 {
 public:
-    TypedUsdAttribute(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a TypedUsdAttribute with a scene item, prim and attribute definition.
+    TypedUsdAttribute(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a TypedUsdAttribute with a scene item and USD attribute
+    TypedUsdAttribute(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 
     // Ufe::Attribute overrides
     UFE_ATTRIBUTE_OVERRIDES
@@ -247,14 +262,17 @@ public:
 
     using TypedUsdAttribute<bool>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeBool.
-    static UsdAttributeBool::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeBool with a scene item, prim and attribute definition.
+    static UsdAttributeBool::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeBool with a scene item and USD attribute
+    static UsdAttributeBool::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeBool
 
 //! \brief Interface for USD int attributes.
@@ -265,14 +283,17 @@ public:
 
     using TypedUsdAttribute<int>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeInt.
-    static UsdAttributeInt::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeInt with a scene item, prim and attribute definition.
+    static UsdAttributeInt::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeInt with a scene item and USD attribute
+    static UsdAttributeInt::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeInt
 
 //! \brief Interface for USD float attributes.
@@ -283,14 +304,17 @@ public:
 
     using TypedUsdAttribute<float>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeFloat.
-    static UsdAttributeFloat::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeFloat with a scene item, prim and attribute definition.
+    static UsdAttributeFloat::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeFloat with a scene item and USD attribute
+    static UsdAttributeFloat::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeFloat
 
 //! \brief Interface for USD double attributes.
@@ -301,14 +325,18 @@ public:
 
     using TypedUsdAttribute<double>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeDouble.
-    static UsdAttributeDouble::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeDouble with a scene item, prim and attribute definition.
+    static UsdAttributeDouble::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeDouble with a scene item and USD attribute
+    static UsdAttributeDouble::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
+
 }; // UsdAttributeDouble
 
 //! \brief Interface for USD string/token attributes.
@@ -319,14 +347,17 @@ public:
 
     using TypedUsdAttribute<std::string>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeString.
-    static UsdAttributeString::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeString with a scene item, prim and attribute definition.
+    static UsdAttributeString::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeString with a scene item and USD attribute
+    static UsdAttributeString::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeString
 
 //! \brief Interface for USD RGB color (float) attributes.
@@ -337,14 +368,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Color3f>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeColorFloat3.
-    static UsdAttributeColorFloat3::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeColorFloat3 with a scene item, prim and attribute definition.
+    static UsdAttributeColorFloat3::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeColorFloat3 with a scene item and USD attribute
+    static UsdAttributeColorFloat3::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeColorFloat3
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
@@ -356,14 +390,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Color4f>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeColorFloat4.
-    static UsdAttributeColorFloat4::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeColorFloat4 with a scene item, prim and attribute definition.
+    static UsdAttributeColorFloat4::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeColorFloat4 with a scene item and USD attribute
+    static UsdAttributeColorFloat4::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeColorFloat4
 #endif
 
@@ -375,14 +412,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Vector3i>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeInt3.
-    static UsdAttributeInt3::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeInt3 with a scene item, prim and attribute definition.
+    static UsdAttributeInt3::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeInt3 with a scene item and USD attribute
+    static UsdAttributeInt3::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeInt3
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
@@ -394,14 +434,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Vector2f>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeFloat2.
-    static UsdAttributeFloat2::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeFloat2 with a scene item, prim and attribute definition.
+    static UsdAttributeFloat2::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeFloat2 with a scene item and USD attribute
+    static UsdAttributeFloat2::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeFloat2
 #endif
 
@@ -413,14 +456,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Vector3f>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeFloat3.
-    static UsdAttributeFloat3::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeFloat3 with a scene item, prim and attribute definition.
+    static UsdAttributeFloat3::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeFloat3 with a scene item and USD attribute
+    static UsdAttributeFloat3::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeFloat3
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
@@ -432,14 +478,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Vector4f>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeFloat4.
-    static UsdAttributeFloat4::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeFloat4 with a scene item, prim and attribute definition.
+    static UsdAttributeFloat4::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeFloat4 with a scene item and USD attribute
+    static UsdAttributeFloat4::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeFloat4
 #endif
 
@@ -451,14 +500,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Vector3d>::TypedUsdAttribute;
 
-    //! Create a UsdAttributeDouble3.
-    static UsdAttributeDouble3::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeDouble3 with a scene item, prim and attribute definition.
+    static UsdAttributeDouble3::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeDouble3 with a scene item and USD attribute
+    static UsdAttributeDouble3::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 }; // UsdAttributeDouble3
 
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
@@ -470,13 +522,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Matrix3d>::TypedUsdAttribute;
 
-    static UsdAttributeMatrix3d::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeMatrix3d with a scene item, prim and attribute definition.
+    static UsdAttributeMatrix3d::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeMatrix3d with a scene item and USD attribute
+    static UsdAttributeMatrix3d::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 };
 
 //! \brief Interface for USD Matrix4d (double) attributes.
@@ -487,13 +543,17 @@ public:
 
     using TypedUsdAttribute<Ufe::Matrix4d>::TypedUsdAttribute;
 
-    static UsdAttributeMatrix4d::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const PXR_NS::UsdPrim&   prim,
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        const Ufe::AttributeDef::ConstPtr& attrDef,
+    //! Create a UsdAttributeMatrix4d with a scene item, prim and attribute definition.
+    static UsdAttributeMatrix4d::Ptr create(
+        const UsdSceneItem::Ptr&           item,
+        const PXR_NS::UsdPrim&             prim,
+        const Ufe::AttributeDef::ConstPtr& attrDef);
 #endif
-        const PXR_NS::UsdAttribute& usdAttr);
+
+    //! Create a UsdAttributeMatrix4d with a scene item and USD attribute
+    static UsdAttributeMatrix4d::Ptr
+    create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAttribute& usdAttr);
 };
 #endif
 } // namespace ufe
