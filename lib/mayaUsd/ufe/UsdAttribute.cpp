@@ -456,7 +456,7 @@ bool UsdAttribute::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
     return fUsdAttr.Set(value, time);
 }
 
-bool UsdAttribute::hasValue() const
+bool UsdAttribute::_hasValue() const
 {
     return isValid() ? fUsdAttr.HasValue() :
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -466,7 +466,7 @@ bool UsdAttribute::hasValue() const
 #endif
 }
 
-std::string UsdAttribute::name() const
+std::string UsdAttribute::_name() const
 {
     if (isValid()) {
         return fUsdAttr.GetName().GetString();
@@ -485,7 +485,7 @@ std::string UsdAttribute::name() const
     }
 }
 
-std::string UsdAttribute::documentation() const
+std::string UsdAttribute::_documentation() const
 {
     if (isValid()) {
         return fUsdAttr.GetDocumentation();
@@ -494,13 +494,13 @@ std::string UsdAttribute::documentation() const
     }
 }
 
-std::string UsdAttribute::string(const Ufe::SceneItem::Ptr& item) const
+std::string UsdAttribute::_string(const Ufe::SceneItem::Ptr& item) const
 {
     return getUsdAttributeValueAsString(*this, getCurrentTime(item));
 }
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
-Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
+Ufe::Value UsdAttribute::_getMetadata(const std::string& key) const
 {
     if (isValid()) {
         // Special cases for known Ufe metadata keys.
@@ -542,7 +542,7 @@ Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
     }
 }
 
-bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
+bool UsdAttribute::_setMetadata(const std::string& key, const Ufe::Value& value)
 {
     if (isValid())
         return setUsdAttrMetadata(fUsdAttr, key, value);
@@ -579,12 +579,12 @@ bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
 }
 
 Ufe::UndoableCommand::Ptr
-UsdAttribute::setMetadataCmd(const std::string& key, const Ufe::Value& value)
+UsdAttribute::_setMetadataCmd(const std::string& key, const Ufe::Value& value)
 {
     return std::make_shared<SetUndoableMetadataCommand>(*this, key, value);
 }
 
-bool UsdAttribute::clearMetadata(const std::string& key)
+bool UsdAttribute::_clearMetadata(const std::string& key)
 {
     if (isValid()) {
         // Special cases for known Ufe metadata keys.
@@ -598,7 +598,7 @@ bool UsdAttribute::clearMetadata(const std::string& key)
     }
 }
 
-bool UsdAttribute::hasMetadata(const std::string& key) const
+bool UsdAttribute::_hasMetadata(const std::string& key) const
 {
     bool result = false;
     if (isValid()) {

@@ -27,7 +27,37 @@
 #endif
 
 // Ufe::Attribute overrides (minus the type method)
-#ifdef UFE_V3_FEATURES_AVAILABLE
+#ifdef UFE_V4_FEATURES_AVAILABLE
+#define UFE_ATTRIBUTE_OVERRIDES                                                               \
+    bool        hasValue() const override { return UsdAttribute::_hasValue(); }               \
+    std::string name() const override { return UsdAttribute::_name(); }                       \
+    std::string documentation() const override { return UsdAttribute::_documentation(); }     \
+    std::string string() const override                                                       \
+    {                                                                                         \
+        return UsdAttribute::_string(Ufe::Attribute::sceneItem());                            \
+    }                                                                                         \
+    Ufe::Value getMetadata(const std::string& key) const override                             \
+    {                                                                                         \
+        return UsdAttribute::_getMetadata(key);                                               \
+    }                                                                                         \
+    bool setMetadata(const std::string& key, const Ufe::Value& value) override                \
+    {                                                                                         \
+        return UsdAttribute::_setMetadata(key, value);                                        \
+    }                                                                                         \
+    Ufe::UndoableCommand::Ptr setMetadataCmd(const std::string& key, const Ufe::Value& value) \
+        override                                                                              \
+    {                                                                                         \
+        return UsdAttribute::_setMetadataCmd(key, value);                                     \
+    }                                                                                         \
+    bool clearMetadata(const std::string& key) override                                       \
+    {                                                                                         \
+        return UsdAttribute::_clearMetadata(key);                                             \
+    }                                                                                         \
+    bool hasMetadata(const std::string& key) const override                                   \
+    {                                                                                         \
+        return UsdAttribute::_hasMetadata(key);                                               \
+    }
+#elif UFE_V3_FEATURES_AVAILABLE
 #define UFE_ATTRIBUTE_OVERRIDES                                                               \
     bool        hasValue() const override { return UsdAttribute::hasValue(); }                \
     std::string name() const override { return UsdAttribute::name(); }                        \
@@ -58,13 +88,13 @@
         return UsdAttribute::hasMetadata(key);                                                \
     }
 #else
-#define UFE_ATTRIBUTE_OVERRIDES                                                          \
-    bool        hasValue() const override { return UsdAttribute::hasValue(); }           \
-    std::string name() const override { return UsdAttribute::name(); }                   \
-    std::string documentation() const override { return UsdAttribute::documentation(); } \
-    std::string string() const override                                                  \
-    {                                                                                    \
-        return UsdAttribute::string(Ufe::Attribute::sceneItem());                        \
+#define UFE_ATTRIBUTE_OVERRIDES                                                               \
+    bool        hasValue() const override { return UsdAttribute::hasValue(); }                \
+    std::string name() const override { return UsdAttribute::name(); }                        \
+    std::string documentation() const override { return UsdAttribute::documentation(); }      \
+    std::string string() const override                                                       \
+    {                                                                                         \
+        return UsdAttribute::string(Ufe::Attribute::sceneItem());                             \
     }
 #endif
 
@@ -90,6 +120,21 @@ public:
     bool        get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const;
     bool        set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time);
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    bool        _hasValue() const;
+    std::string _name() const;
+    std::string _documentation() const;
+    std::string _string(const Ufe::SceneItem::Ptr& item) const;
+
+    Ufe::Value                _getMetadata(const std::string& key) const;
+    bool                      _setMetadata(const std::string& key, const Ufe::Value& value);
+    Ufe::UndoableCommand::Ptr _setMetadataCmd(const std::string& key, const Ufe::Value& value);
+    bool                      _clearMetadata(const std::string& key);
+    bool                      _hasMetadata(const std::string& key) const;
+
+    PXR_NS::UsdPrim usdPrim() const { return fPrim; }
+    PXR_NS::UsdAttribute usdAttribute() const { return fUsdAttr; }
+#else
     // Ufe::Attribute override methods that we've mimic'd here.
     bool        hasValue() const;
     std::string name() const;
@@ -101,6 +146,7 @@ public:
     Ufe::UndoableCommand::Ptr setMetadataCmd(const std::string& key, const Ufe::Value& value);
     bool                      clearMetadata(const std::string& key);
     bool                      hasMetadata(const std::string& key) const;
+#endif
 #endif
 
 protected:
@@ -114,7 +160,11 @@ protected:
 //! \brief Interface for USD attributes which don't match any defined type.
 class UsdAttributeGeneric
     : public Ufe::AttributeGeneric
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    , public UsdAttribute
+#else
     , private UsdAttribute
+#endif
 {
 public:
     typedef std::shared_ptr<UsdAttributeGeneric> Ptr;
@@ -190,7 +240,11 @@ public:
 //! \brief Interface for USD token attributes.
 class UsdAttributeEnumString
     : public Ufe::AttributeEnumString
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    , public UsdAttribute
+#else
     , private UsdAttribute
+#endif
 {
 public:
     typedef std::shared_ptr<UsdAttributeEnumString> Ptr;
@@ -230,7 +284,11 @@ public:
 template <typename T>
 class TypedUsdAttribute
     : public Ufe::TypedAttribute<T>
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    , public UsdAttribute
+#else
     , private UsdAttribute
+#endif
 {
 public:
 #ifdef UFE_V4_FEATURES_AVAILABLE

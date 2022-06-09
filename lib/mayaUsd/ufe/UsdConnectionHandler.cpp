@@ -17,6 +17,7 @@
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
 
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdAttribute.h>
 #include <mayaUsd/ufe/UsdConnections.h>
 #include <mayaUsd/ufe/UsdHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -32,12 +33,6 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 namespace {
-
-// TODO: The method looks for the PXR_NS::UsdAttribute from the Ufe::Attribute. However,
-// the attr instance is a data member of the MayaUsd::Ufe::UsdAttribute. The challenge is that
-// all the USD typed attribute classes privately inherites from MayaUsd::Ufe::UsdAttribute, and
-// there is no common publicly inherited class so, the cast technic cannot be used.
-// How to easily access the data member?
 
 PXR_NS::UsdAttribute usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
 {
@@ -56,26 +51,8 @@ PXR_NS::UsdAttribute usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
         return PXR_NS::UsdAttribute();
     }
 
-    Ufe::Hierarchy::Ptr ufeHierarchy = Ufe::Hierarchy::hierarchy(attr->sceneItem());
-    if (!ufeHierarchy) {
-        TF_RUNTIME_ERROR(
-            "Invalid hierarchy for the attribute '"
-            + attr->name()
-            + "' in the node '"
-            + Ufe::PathString::string(attr->sceneItem()->path())
-            + "'.");
-        return PXR_NS::UsdAttribute();
-    }
-
-    UsdHierarchy::Ptr hierarchy
-        = std::dynamic_pointer_cast<MayaUsd::ufe::UsdHierarchy>(ufeHierarchy);
-    if (!hierarchy) {
-        TF_CODING_ERROR("Invalid hierarchy instance.");
-        return PXR_NS::UsdAttribute();
-    }
-
-    PXR_NS::UsdPrim prim = hierarchy->prim();
-    return prim.GetAttribute(PXR_NS::TfToken(attr->name()));
+    UsdAttribute* usd = dynamic_cast<UsdAttribute*>(attr.get());
+    return usd->usdAttribute();
 }
 
 bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttribute& dstUsdAttr)
@@ -92,7 +69,7 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
     return false;
 }
 
-} // namespace
+} // anon. namespace
 
 UsdConnectionHandler::UsdConnectionHandler()
     : Ufe::ConnectionHandler()
