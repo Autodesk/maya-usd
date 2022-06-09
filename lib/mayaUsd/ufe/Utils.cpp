@@ -688,37 +688,24 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
     } else if (typeName == Ufe::Attribute::kMatrix3d) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 9, kInvalidValue, strValue, typeName)) {
-            result = GfMatrix3d(
-                std::stod(tokens[0].c_str()),
-                std::stod(tokens[1].c_str()),
-                std::stod(tokens[2].c_str()),
-                std::stod(tokens[3].c_str()),
-                std::stod(tokens[4].c_str()),
-                std::stod(tokens[5].c_str()),
-                std::stod(tokens[6].c_str()),
-                std::stod(tokens[7].c_str()),
-                std::stod(tokens[8].c_str()));
+            double m[3][3];
+            for (int i=0, k=0; i<3; ++i) {
+                for (int j=0; j<3; ++j, ++k) {
+                    m[i][j] = std::stod(tokens[k].c_str());
+                }
+            }
+            result = GfMatrix3d(m);
         }
     } else if (typeName == Ufe::Attribute::kMatrix4d) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 16, kInvalidValue, strValue, typeName)) {
-            result = GfMatrix4d(
-                std::stod(tokens[0].c_str()),
-                std::stod(tokens[1].c_str()),
-                std::stod(tokens[2].c_str()),
-                std::stod(tokens[3].c_str()),
-                std::stod(tokens[4].c_str()),
-                std::stod(tokens[5].c_str()),
-                std::stod(tokens[6].c_str()),
-                std::stod(tokens[7].c_str()),
-                std::stod(tokens[8].c_str()),
-                std::stod(tokens[9].c_str()),
-                std::stod(tokens[10].c_str()),
-                std::stod(tokens[11].c_str()),
-                std::stod(tokens[12].c_str()),
-                std::stod(tokens[13].c_str()),
-                std::stod(tokens[14].c_str()),
-                std::stod(tokens[15].c_str()));
+            double m[4][4];
+            for (int i=0, k=0; i<4; ++i) {
+                for (int j=0; j<4; ++j, ++k) {
+                    m[i][j] = std::stod(tokens[k].c_str());
+                }
+            }
+            result = GfMatrix4d(m);
         }
     }
     return result;
