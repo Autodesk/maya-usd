@@ -19,6 +19,7 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
         MayaReference
         Mesh
         NurbsPatch
+        PluginLight
         PointInstancer
         Points
         Scope

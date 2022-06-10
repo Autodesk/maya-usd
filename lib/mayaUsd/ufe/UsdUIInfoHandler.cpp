@@ -182,6 +182,7 @@ Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Pt
         { "ALMayaReference", "out_USD_MayaReference.png" }, // Same as mayaRef
         { "Mesh", "out_USD_Mesh.png" },
         { "NurbsPatch", "out_USD_NurbsPatch.png" },
+        { "PluginLight", "out_USD_PluginLight.png" },
         { "PointInstancer", "out_USD_PointInstancer.png" },
         { "Points", "out_USD_Points.png" },
         { "Scope", "out_USD_Scope.png" },
