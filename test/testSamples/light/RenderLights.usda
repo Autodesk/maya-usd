@@ -1,0 +1,50 @@
+#usda 1.0
+(
+)
+
+def Xform "lights"
+{
+    def SphereLight "spotLight"
+    {
+        double3 xformOp:translate = (3, 3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        color3f inputs:color = (1, 1, 1)
+		
+		float inputs:shaping:focus = 0.5
+		float inputs:shaping:cone:angle = 50
+		float inputs:shaping:cone:softness = 0.1
+    }
+	
+    def SphereLight "pointLight"
+    {
+        double3 xformOp:translate = (0, 3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        color3f inputs:color = (1, 0, 0)
+    }
+	
+    def DistantLight "directionalLight"
+    {	
+        color3f inputs:color = (0, 0, 1)
+		float inputs:intensity = 1
+    }
+	
+    def RectLight "areaLight"
+    {
+        double3 xformOp:translate = (3, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+	
+        color3f inputs:color = (0, 1, 0)
+    }	
+}
+
+def Xform "lights2"
+{
+}
+
+def Sphere "sphere1"
+{
+	float3 xformOp:translate = (2.78, 0, -2.56)
+	uniform token[] xformOpOrder = ["xformOp:translate"]
+}
