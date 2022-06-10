@@ -1,4 +1,4 @@
-// Copyright 2020 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -663,9 +663,17 @@ global proc mayaUsdMenu_duplicateToUSD( string $proxy, string $obj )
     string $objLong[] = `ls -l $obj`;
     string $proxyLong[] = `ls -l $proxy`;
     if (size($objLong) && size($proxyLong)) {
-        // TODO: show options.
-        mayaUsdDuplicate -exportOptions "shadingMode=none" $objLong[0] $proxyLong[0];
+        string $exportOptions = `python("import mayaUsdDuplicateAsMayaDataOptions; import mayaUsdOptions; mayaUsdOptions.setAnimateOption('''" + $obj + "''', mayaUsdDuplicateAsMayaDataOptions.getDuplicateAsMayaDataOptionsText())")`;
+        mayaUsdDuplicate -exportOptions $exportOptions $objLong[0] $proxyLong[0];
     }
+}
+
+global proc mayaUsdMenu_duplicateAsUsdDataOptions(string $obj)
+{
+    if (!hasPrimUpdater())
+        return;
+
+    python("import mayaUsdDuplicateAsMayaDataOptions; mayaUsdDuplicateAsMayaDataOptions.showDuplicateAsMayaDataOptions()");
 }
 
 global proc mayaUsdMenu_markingMenuCallback( string $obj )
@@ -703,6 +711,8 @@ global proc mayaUsdMenu_markingMenuCallback( string $obj )
             for ($proxy in $proxyShapes) {
                 menuItem -label $proxy -command ("mayaUsdMenu_duplicateToUSD " + $proxy + " " + $obj);
             }
+            menuItem -divider true;
+            menuItem -label `getMayaUsdString("kMayaRefDuplicateAsUsdDataOptions")` -command ("mayaUsdMenu_duplicateAsUsdDataOptions " + $obj);
         }
     }
 }
