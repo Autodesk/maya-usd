@@ -112,7 +112,7 @@ class UIIconsTestCase(unittest.TestCase):
             ('NurbsPatch',              'out_USD_NurbsPatch.png'),
             ('OpenVDBAsset',            'out_USD_UsdGeomXformable.png'),
             ('PackedJointAnimation',    'out_USD_SkelAnimation.png'),
-            ('PluginLight',             'out_USD_PluginLight.png' if usdVer >= (0, 21, 11) else 'out_USD_UsdLuxLight.png'),
+            ('PluginLight',             'out_USD_PluginLight.png'),
             ('PluginLightFilter',       'out_USD_LightFilter.png'),
             ('PointInstancer',          'out_USD_PointInstancer.png'),
             ('Points',                  'out_USD_Points.png'),
