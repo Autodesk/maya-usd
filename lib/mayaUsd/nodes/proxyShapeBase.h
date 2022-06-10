@@ -399,6 +399,9 @@ private:
     // Starts off as Unknown when the proxy shape is first created.
     ShareMode _previousShareMode;
 
+    // Anonymous layer that was created when a new proxy shape is created without a named layer.
+    SdfLayerRefPtr _anonymousRootLayer;
+
     // For unshared composition
     SdfLayerRefPtr _unsharedStageSessionLayer;
     SdfLayerRefPtr _unsharedStageRootLayer;
