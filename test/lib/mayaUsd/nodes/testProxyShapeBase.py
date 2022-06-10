@@ -291,6 +291,40 @@ class testProxyShapeBase(unittest.TestCase):
 
         verifyPrim()
 
+    def testUnsavedStagePreserveRootLayerWhenUpdated(self):
+        '''
+        Verify that a freshly-created stage preserve its data when an attribute is set.
+        '''
+        # Create an empty stage.
+        cmds.file(new=True, force=True)
+        mayaUtils.createProxyAndStage()
+
+        # Helper to get the stage,
+        def getStage():
+            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+            self.assertGreater(len(proxyShapes), 0)
+            proxyShapePath = proxyShapes[0]
+            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
+
+        # create a prim in the root layer.
+        stage, proxyShapePath = getStage()
+        stage.SetEditTarget(stage.GetRootLayer())
+        stage.DefinePrim("/dummy", "xform")
+
+        # verify that the prim exists.
+        def verifyPrim():
+            stage, _ = getStage()
+            self.assertTrue(stage.GetPrimAtPath("/dummy"))
+
+        verifyPrim()
+
+        # Set an attribute on the proxy shape. Here we set the loadPayloads.
+        # It was already set, this only triggers a Maya node recompute.
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"loadPayloads"), True)
+
+        # Verify that we did not loose the data on the root layer.
+        verifyPrim()
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testShareStageLoadRules only available in UFE v2 or greater.')
     def testShareStageLoadRules(self):
         '''
