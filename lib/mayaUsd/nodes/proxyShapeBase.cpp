@@ -834,7 +834,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                             loadSet);
                     }
 
-                    if (sessionLayer && targetSession) {
+                    if (targetSession) {
+                        sessionLayer = sharedUsdStage->GetSessionLayer();
                         sharedUsdStage->SetEditTarget(sessionLayer);
                     } else {
                         sharedUsdStage->SetEditTarget(sharedUsdStage->GetRootLayer());
