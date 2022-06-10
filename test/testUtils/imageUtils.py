@@ -31,6 +31,7 @@ resetDefaultLightIntensity()
 
 def snapshot(outputPath, width=400, height=None, hud=False, grid=False, camera=None):
     resetDefaultLightIntensity()
+    cmds.displayRGBColor('background', 0.36, 0.36, 0.36)
     
     if height is None:
         height = width

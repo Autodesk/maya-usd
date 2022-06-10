@@ -1,4 +1,4 @@
-// Copyright 2020 Autodesk
+// Copyright 2022 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -217,6 +217,7 @@ global proc mayaUSDRegisterStrings()
     register("kMayaRefDiscardEdits", "Cancel Editing as Maya Data");
     register("kMayaRefDuplicateAsUsdData", "Duplicate As USD Data");
     register("kMayaRefDuplicateAsUsdDataDiv", "Stages");
+    register("kMayaRefDuplicateAsUsdDataOptions", "Options...");
 
     // Register the strings from the python equivalent register function.
     // Note: the strings from both the MEL and python register can be loaded
