@@ -801,6 +801,18 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     static const MString kSessionLayerOptionVarName(
                         MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen.GetText());
 
+                    bool targetSession
+                        = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
+                    if (targetSession) {
+                        std::cerr << "targeting session enabled through option var!!!" << std::endl;
+                        TF_WARN("targeting session enabled through option var!!!");
+                    }
+                    if (!rootLayer->PermissionToEdit()) {
+                        std::cerr << "root layer edit permissions are off!!!" << std::endl;
+                        TF_WARN("root layer edit permissions are off!!!");
+                    }
+                    targetSession = targetSession || !rootLayer->PermissionToEdit();
+
                     // Note: UsdStage::Open has the peculiar design that it will return
                     //       any previously open stage that happen to match its arguments,
                     //       all its arguments, but only those arguments.
@@ -817,7 +829,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     //       If the stage is not in the cache and no session layer is passed
                     //       then UsdStage::Open will create the in-memory session layer for us,
                     //       just as we want.
-                    if (sessionLayer) {
+                    if (sessionLayer || targetSession) {
+                        if (!sessionLayer)
+                            sessionLayer = SdfLayer::CreateAnonymous();
                         sharedUsdStage = UsdStage::Open(
                             rootLayer,
                             sessionLayer,
@@ -830,18 +844,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                             loadSet);
                     }
 
-                    bool targetSession
-                        = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
-                    if (targetSession) {
-                        std::cerr << "targeting session enabled through option var!!!" << std::endl;
-                        TF_WARN("targeting session enabled through option var!!!");
-                    }
-                    if (!rootLayer->PermissionToEdit()) {
-                        std::cerr << "root layer edit permissions are off!!!" << std::endl;
-                        TF_WARN("root layer edit permissions are off!!!");
-                    }
-                    targetSession = targetSession || !rootLayer->PermissionToEdit();
-                    sessionLayer = sharedUsdStage->GetSessionLayer();
                     if (sessionLayer && targetSession) {
                         sharedUsdStage->SetEditTarget(sessionLayer);
                     } else {
