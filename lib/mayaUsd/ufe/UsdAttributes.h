@@ -56,7 +56,9 @@ public:
     std::vector<std::string> attributeNames() const override;
     bool                     hasAttribute(const std::string& name) const override;
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
     inline Ufe::NodeDef::Ptr nodeDef() const;
+#endif
 
 private:
     Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const;
