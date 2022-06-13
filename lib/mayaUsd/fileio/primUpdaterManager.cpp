@@ -855,10 +855,10 @@ bool PrimUpdaterManager::mergeToUsd(
         }
     }
 
-    const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
     // If the user-provided argument does *not* contain an animation key, then
     // automatically infer if we should merge animations.
     if (!VtDictionaryIsHolding<bool>(userArgs, UsdMayaJobExportArgsTokens->animation)) {
+        const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
         GfInterval timeInterval = isAnimated
             ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
             : GfInterval();
@@ -867,8 +867,9 @@ bool PrimUpdaterManager::mergeToUsd(
         ctxArgs[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
         ctxArgs[UsdMayaJobExportArgsTokens->startTime] = timeInterval.GetMin();
         ctxArgs[UsdMayaJobExportArgsTokens->endTime] = timeInterval.GetMax();
-    } else {
+    } else if (ctxArgs[UsdMayaJobExportArgsTokens->animation] == true) {
         // If user asked for animation but there is no animation, skip the exportation of animation.
+        const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
         if (!isAnimated)
             ctxArgs[UsdMayaJobExportArgsTokens->animation] = false;
     }
