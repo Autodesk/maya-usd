@@ -855,10 +855,10 @@ bool PrimUpdaterManager::mergeToUsd(
         }
     }
 
+    const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
     // If the user-provided argument does *not* contain an animation key, then
     // automatically infer if we should merge animations.
     if (!VtDictionaryIsHolding<bool>(userArgs, UsdMayaJobExportArgsTokens->animation)) {
-        const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
         GfInterval timeInterval = isAnimated
             ? GfInterval(MAnimControl::minTime().value(), MAnimControl::maxTime().value())
             : GfInterval();
@@ -867,6 +867,10 @@ bool PrimUpdaterManager::mergeToUsd(
         ctxArgs[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
         ctxArgs[UsdMayaJobExportArgsTokens->startTime] = timeInterval.GetMin();
         ctxArgs[UsdMayaJobExportArgsTokens->endTime] = timeInterval.GetMax();
+    } else {
+        // If user asked for animation but there is no animation, skip the exportation of animation.
+        if (!isAnimated)
+            ctxArgs[UsdMayaJobExportArgsTokens->animation] = false;
     }
 
     // Reset the selection, otherwise it will keep a reference to a deleted node
