@@ -22,7 +22,9 @@
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/attributes.h>
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #include <ufe/nodeDef.h>
+#endif
 
 #include <unordered_map>
 

@@ -25,7 +25,6 @@
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #include <ufe/attributeDef.h>
 #endif
-#include <ufe/value.h>
 
 // Ufe::Attribute overrides (minus the type method)
 #ifdef UFE_V3_FEATURES_AVAILABLE
