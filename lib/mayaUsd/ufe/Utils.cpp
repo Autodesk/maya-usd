@@ -582,7 +582,6 @@ Ufe::Attribute::Type usdTypeToUfe(const SdfValueTypeName& usdType)
             { SdfValueTypeNames->Matrix4d.GetHash(), Ufe::Attribute::kMatrix4d },   // GfMatrix4d
 #endif
     };
-
     const auto iter = sUsdTypeToUfe.find(usdType.GetHash());
     if (iter != sUsdTypeToUfe.end()) {
         return iter->second;
@@ -689,8 +688,8 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 9, kInvalidValue, strValue, typeName)) {
             double m[3][3];
-            for (int i=0, k=0; i<3; ++i) {
-                for (int j=0; j<3; ++j, ++k) {
+            for (int i = 0, k = 0; i < 3; ++i) {
+                for (int j = 0; j < 3; ++j, ++k) {
                     m[i][j] = std::stod(tokens[k].c_str());
                 }
             }
@@ -700,8 +699,8 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 16, kInvalidValue, strValue, typeName)) {
             double m[4][4];
-            for (int i=0, k=0; i<4; ++i) {
-                for (int j=0; j<4; ++j, ++k) {
+            for (int i = 0, k = 0; i < 4; ++i) {
+                for (int j = 0; j < 4; ++j, ++k) {
                     m[i][j] = std::stod(tokens[k].c_str());
                 }
             }

@@ -956,6 +956,8 @@ bool PrimUpdaterManager::mergeToUsd(
         }
     }
 
+    discardPullSetIfEmpty();
+
     // Some updaters (like MayaReference) may be writing and changing the variant during merge.
     // This will change the hierarchy around pulled prim. Grab hierarchy from the parent.
     auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath.pop());
@@ -1156,6 +1158,8 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
         return false;
     }
 
+    discardPullSetIfEmpty();
+
     auto ufeUsdItem = Ufe::Hierarchy::createItem(pulledPath);
     auto hier = Ufe::Hierarchy::hierarchy(ufeUsdItem);
     if (TF_VERIFY(hier)) {
@@ -1203,6 +1207,31 @@ bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
     }
 
     return true;
+}
+
+void PrimUpdaterManager::discardPullSetIfEmpty()
+{
+    // Discard of the pull set if it is empty.
+    //
+    // Note: do not use the MFnSet API to discard it as it clears the redo stack
+    // and thus prevents redo.
+    MObject pullSetObj;
+    MStatus status = UsdMayaUtil::GetMObjectByName(kPullSetName, pullSetObj);
+    if (status == MStatus::kSuccess) {
+        MFnSet         fnPullSet(pullSetObj);
+        MSelectionList members;
+        const bool     flatten = true;
+        fnPullSet.getMembers(members, flatten);
+
+        if (members.length() == 0) {
+            MString deleteSetCmd;
+            deleteSetCmd.format(
+                "lockNode -lock off \"^1s\";delete \"^1s\";", kPullSetName.asChar());
+            MDGModifier& dgMod = MDGModifierUndoItem::create("Discard edits pull set removal");
+            dgMod.commandToExecute(deleteSetCmd);
+            dgMod.doIt();
+        }
+    }
 }
 
 bool PrimUpdaterManager::duplicate(

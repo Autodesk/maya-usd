@@ -394,7 +394,11 @@ std::string UsdAttribute::defaultValue() const
 
 bool UsdAttribute::get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const
 {
-    if (isAuthored() || !fAttrDef) {
+    if (isAuthored()
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        || !fAttrDef
+#endif
+    ) {
         return fUsdAttr.Get(&value, time);
     } else {
 #ifdef UFE_V4_FEATURES_AVAILABLE

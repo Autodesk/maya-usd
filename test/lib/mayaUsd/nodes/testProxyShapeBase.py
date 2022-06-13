@@ -116,6 +116,35 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(proxyShapeItem).children()))
 
+    @unittest.skipUnless(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') > '4012', 'testDeleteStage requires Ufe Preview Version at least 4013.')
+    def testDeleteStage(self):
+        '''
+        Verify that we can delete the stage.
+        
+        Only testable in recent UFE API because it requires findGatewayItems
+        to trigger the original crash that led to this test being created.
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # Open usdCylinder.ma scene in testSamples twice, so that deleting one instance
+        # will still leave another and have something to iterate over in th estage cache.
+        mayaUtils.openCylinderScene()
+        mayaUtils.openCylinderScene()
+
+        # get the proxy shape path
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+
+        # Get the USD handler.
+        proxyShapePath = ufe.PathString.path(proxyShapes[0])
+        handler = ufe.RunTimeMgr.instance().sceneSegmentHandler(proxyShapePath.runTimeId())
+
+        # Delete the proxy shape.
+        cmds.delete(proxyShapes[0])
+
+        # Request the now dead proxy shape. This should not crash.
+        result = handler.findGatewayItems(proxyShapePath)
+
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDuplicateProxyStageFileBacked only available in UFE v2 or greater.')
     def testDuplicateProxyStageFileBacked(self):
         '''
@@ -219,6 +248,63 @@ class testProxyShapeBase(unittest.TestCase):
         # check that the stage is now shared again and the layer is the same
         self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
         self.assertEqual(stage.GetRootLayer().GetDisplayName(), "cylinder.usda")
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testShareStageLoadRules only available in UFE v2 or greater.')
+    def testShareStageLoadRules(self):
+        '''
+        Verify that share/unshare stage preserve the load rules of the stage.
+        '''
+        # create new stage
+        cmds.file(new=True, force=True)
+
+        # open a scene with payload
+        mayaUtils.openTopLayerScene()
+        
+        # select the room and get its context menu.
+        roomPath = ufe.Path([
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set")])
+        roomItem = ufe.Hierarchy.createItem(roomPath)
+        ufe.GlobalSelection.get().clear()
+        ufe.GlobalSelection.get().append(roomItem)
+        contextOps = ufe.ContextOps.contextOps(roomItem)
+
+        # get the stage
+        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+        proxyShapePath = proxyShapes[0]
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # check that the stage has no load rules
+        loadRules = stage.GetLoadRules()
+        self.assertEqual(len(loadRules.GetRules()), 0)
+
+        # add a new rule to unload the room
+        cmd = contextOps.doOpCmd(['Unload'])
+        self.assertIsNotNone(cmd)
+        cmd.execute()
+
+        # check that the expected load rules are on the stage.
+        def check_load_rules(stage):
+            loadRules = stage.GetLoadRules()
+            self.assertEqual(len(loadRules.GetRules()), 1)
+            self.assertEqual(loadRules.GetRules()[0][0], "/Room_set")
+            self.assertEqual(loadRules.GetRules()[0][1], loadRules.NoneRule)
+
+        check_load_rules(stage)
+
+        # unshare the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # check that the expected load rules are still on the stage.
+        check_load_rules(stage)
+
+        # re-share the stage
+        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+
+        # check that the expected load rules are still on the stage.
+        check_load_rules(stage)
 
     def testSerializationShareStage(self):
         '''

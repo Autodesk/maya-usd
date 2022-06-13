@@ -94,6 +94,23 @@ UsdAttributes::Ptr UsdAttributes::create(const UsdSceneItem::Ptr& item)
 
 Ufe::SceneItem::Ptr UsdAttributes::sceneItem() const { return fItem; }
 
+// Returns whether the given op is an inverse operation. i.e, it starts with "!invert!".
+static constexpr char   invertPrefix[] = "!invert!";
+static constexpr size_t invertPrefixLen(sizeof(invertPrefix) / sizeof(invertPrefix[0]));
+static bool             _IsInverseOp(const std::string& name)
+{
+    return PXR_NS::TfStringStartsWith(name, invertPrefix);
+}
+
+static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const std::string& name)
+{
+    PXR_NS::TfToken tok(name);
+    bool            isInverseOp = _IsInverseOp(tok);
+    // If it is an inverse operation, strip off the "!invert!" at the beginning
+    // of name to get the associated attribute's name.
+    return prim.GetAttribute(isInverseOp ? PXR_NS::TfToken(name.substr(invertPrefixLen)) : tok);
+}
+
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
     // If we've already created an attribute for this name, just return the type.
@@ -102,20 +119,18 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
         return iter->second->type();
 
     PXR_NS::TfToken      tok(name);
-    PXR_NS::UsdAttribute usdAttr = fPrim.GetAttribute(tok);
+    PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
     if (usdAttr.IsValid()) {
         return getUfeTypeForAttribute(usdAttr);
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    else {
-        Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
-        if (!nodeDef) {
-            return Ufe::Attribute::kInvalid;
-        }
-        Ufe::AttributeDef::ConstPtr port = nameToAttrDef(tok, nodeDef);
-        if (port) {
-            return port->type();
-        }
+    Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
+    if (!nodeDef) {
+        return Ufe::Attribute::kInvalid;
+    }
+    Ufe::AttributeDef::ConstPtr attrDef = nameToAttrDef(tok, nodeDef);
+    if (attrDef) {
+        return attrDef->type();
     }
 #endif
     return Ufe::Attribute::kInvalid;
@@ -135,7 +150,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 
     // No attribute for the input name was found -> create one.
     PXR_NS::TfToken             tok(name);
-    PXR_NS::UsdAttribute        usdAttr = fPrim.GetAttribute(tok);
+    PXR_NS::UsdAttribute        usdAttr = _GetAttributeType(fPrim, name);
     Ufe::Attribute::Type        newAttrType;
     Ufe::AttributeDef::ConstPtr attributeDef = nullptr;
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -148,7 +163,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     }
 #endif
     if (usdAttr.IsValid()) {
-        newAttrType = getUfeTypeForAttribute(usdAttr);
+        newAttrType = attributeType(name);
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
     else if (!nodeDef) {
@@ -218,12 +233,15 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
           };
 
 #undef ADD_UFE_USD_CTOR
-    auto ctorIt = ctorMap.find(newAttrType);
+    auto                ctorIt = ctorMap.find(newAttrType);
+    Ufe::Attribute::Ptr newAttr;
     UFE_ASSERT_MSG(ctorIt != ctorMap.end(), kErrorMsgUnknown);
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    Ufe::Attribute::Ptr newAttr = ctorIt->second(fItem, fPrim, attributeDef, usdAttr);
+    if (ctorIt != ctorMap.end())
+        newAttr = ctorIt->second(fItem, fPrim, attributeDef, usdAttr);
 #else
-    Ufe::Attribute::Ptr newAttr = ctorIt->second(fItem, usdAttr);
+    if (ctorIt != ctorMap.end())
+        newAttr = ctorIt->second(fItem, usdAttr);
 #endif
 
     fAttributes[name] = newAttr;
