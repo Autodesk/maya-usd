@@ -232,7 +232,7 @@ void wrapUtils()
     // Because mayaUsd and UFE have incompatible Python bindings that do not
     // know about each other (provided by Boost Python and pybind11,
     // respectively), we cannot pass in or return UFE objects such as Ufe::Path
-    // here, and are forced to use strings.  Use the tentative string
+    // here, and are forced to use strings.  Use the path string
     // representation of Ufe::Path as comma-separated segments.  We know that
     // the USD path separator is '/'.  PPT, 8-Dec-2019.
     def("getStage", getStage);
