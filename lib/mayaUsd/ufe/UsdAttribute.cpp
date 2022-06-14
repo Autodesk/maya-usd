@@ -655,7 +655,7 @@ std::string UsdAttributeGeneric::nativeType() const
 #ifdef UFE_V4_FEATURES_AVAILABLE
         return ufeTypeToUsd(fAttrDef->type()).GetType().GetTypeName();
 #else
-        return ufeTypeToUsd(SdfValueTypeName()).GetType().GetTypeName();
+        return ufeTypeToUsd(SdfValueTypeName().GetAsToken().GetString()).GetType().GetTypeName();
 #endif
     }
 }

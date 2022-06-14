@@ -16,7 +16,6 @@
 #include "UsdAttributes.h"
 
 #include "Global.h"
-#include "UsdShaderNodeDefHandler.h"
 #include "Utils.h"
 
 #include <pxr/base/tf/token.h>
@@ -149,12 +148,12 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
         return iter->second;
 
     // No attribute for the input name was found -> create one.
-    PXR_NS::TfToken             tok(name);
-    PXR_NS::UsdAttribute        usdAttr = _GetAttributeType(fPrim, name);
-    Ufe::Attribute::Type        newAttrType;
-    Ufe::AttributeDef::ConstPtr attributeDef = nullptr;
+    PXR_NS::TfToken      tok(name);
+    PXR_NS::UsdAttribute usdAttr = _GetAttributeType(fPrim, name);
+    Ufe::Attribute::Type newAttrType;
 #ifdef UFE_V4_FEATURES_AVAILABLE
-    Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
+    Ufe::AttributeDef::ConstPtr attributeDef = nullptr;
+    Ufe::NodeDef::Ptr           nodeDef = UsdAttributes::nodeDef();
     if (nodeDef) {
         attributeDef = nameToAttrDef(tok, nodeDef);
         if (attributeDef) {
@@ -207,8 +206,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
             const Ufe::AttributeDef::ConstPtr&,
             const PXR_NS::UsdAttribute&)>>
 #else
-        std::function<Ufe::Attribute::Ptr(
-            const UsdSceneItem::Ptr&, const PXR_NS::UsdPrim&, const PXR_NS::UsdAttribute&)>>
+        std::function<Ufe::Attribute::Ptr(const UsdSceneItem::Ptr&, const PXR_NS::UsdAttribute&)>>
 #endif
         ctorMap
         = { ADD_UFE_USD_CTOR(Bool),
@@ -298,11 +296,13 @@ bool UsdAttributes::hasAttribute(const std::string& name) const
     return false;
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
 Ufe::NodeDef::Ptr UsdAttributes::nodeDef() const
 {
     static auto nodeDefHandler = getUsdNodeDefHandler();
     return nodeDefHandler->definition(fItem);
 }
+#endif
 
 Ufe::Attribute::Type
 UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
