@@ -663,7 +663,7 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
         result = PXR_NS::TfToken(strValue.c_str());
     } else if (typeName == Ufe::Attribute::kInt3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue, typeName)) {
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
             result = GfVec3i(
                 std::stoi(tokens[0].c_str()),
                 std::stoi(tokens[1].c_str()),
@@ -671,7 +671,7 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
         }
     } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue, typeName)) {
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
             result = GfVec3f(
                 std::stof(tokens[0].c_str()),
                 std::stof(tokens[1].c_str()),
@@ -679,15 +679,17 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
         }
     } else if (typeName == Ufe::Attribute::kDouble3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue, typeName)) {
+        if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
             result = GfVec3d(
                 std::stod(tokens[0].c_str()),
                 std::stod(tokens[1].c_str()),
                 std::stod(tokens[2].c_str()));
         }
-    } else if (typeName == Ufe::Attribute::kMatrix3d) {
+    }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    else if (typeName == Ufe::Attribute::kMatrix3d) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 9, kInvalidValue, strValue, typeName)) {
+        if (TF_VERIFY(tokens.size() == 9, kInvalidValue, strValue.c_str(), typeName.c_str())) {
             double m[3][3];
             for (int i = 0, k = 0; i < 3; ++i) {
                 for (int j = 0; j < 3; ++j, ++k) {
@@ -698,7 +700,7 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
         }
     } else if (typeName == Ufe::Attribute::kMatrix4d) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
-        if (TF_VERIFY(tokens.size() == 16, kInvalidValue, strValue, typeName)) {
+        if (TF_VERIFY(tokens.size() == 16, kInvalidValue, strValue.c_str(), typeName.c_str())) {
             double m[4][4];
             for (int i = 0, k = 0; i < 4; ++i) {
                 for (int j = 0; j < 4; ++j, ++k) {
@@ -708,6 +710,7 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
             result = GfMatrix4d(m);
         }
     }
+#endif
     return result;
 }
 

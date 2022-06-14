@@ -166,7 +166,7 @@ std::string getUsdAttributeValueAsString(
         return os.str();
     }
 
-    TF_CODING_ERROR(kErrorMsgFailedConvertToString, attr.name());
+    TF_CODING_ERROR(kErrorMsgFailedConvertToString, attr.name().c_str());
     return std::string();
 }
 
@@ -652,7 +652,11 @@ std::string UsdAttributeGeneric::nativeType() const
     if (isValid()) {
         return fUsdAttr.GetTypeName().GetType().GetTypeName();
     } else {
+#ifdef UFE_V4_FEATURES_AVAILABLE
         return ufeTypeToUsd(fAttrDef->type()).GetType().GetTypeName();
+#else
+        return ufeTypeToUsd(SdfValueTypeName()).GetType().GetTypeName();
+#endif
     }
 }
 
