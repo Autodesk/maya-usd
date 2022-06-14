@@ -31,6 +31,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/basisCurves.h>
+#include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/primGather.h>
@@ -48,12 +49,21 @@
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MColorPickerUtilities.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <maya/MDisplayLayerMessage.h>
+#endif
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionContext.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <maya/M3dView.h>
+#include <maya/MFnDisplayLayerManager.h>
+#include <maya/MFnDisplayLayer.h>
+#include <maya/MNodeMessage.h>
+#endif
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -65,6 +75,9 @@
 #endif
 #include <ufe/observableSelection.h>
 #include <ufe/path.h>
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+#include <ufe/pathString.h>
+#endif
 #include <ufe/pathSegment.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/scene.h>
@@ -332,6 +345,25 @@ void SelectionChangedCB(void* data)
 }
 #endif
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+void DisplayLayerMembershipChangedCB(void* data)
+{
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
+    if (prd) {
+        prd->DisplayLayerMembershipChanged();
+    }
+}
+
+void DisplayLayerDirtyCB(MObject& node, void* clientData)
+{
+    // TODO: only mark the things in the dirty layer dirty. Use MFnDisplayLayer to find all the things...
+    ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
+    if (prd) {
+        prd->DisplayLayerDirty(node);
+    }
+}
+#endif
+
 // Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the
 // rprimIds, I don't want to go all the way to draw items.
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 42
@@ -466,6 +498,10 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
     if (_mayaSelectionCallbackId != 0) {
         MMessage::removeCallback(_mayaSelectionCallbackId);
     }
+#endif
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    if (_mayaDisplayLayerMembersCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerMembersCallbackId);
 #endif
 }
 
@@ -615,6 +651,15 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         }
 #endif
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+        // Monitor display layers for membership changes:
+        if (!_mayaDisplayLayerMembersCallbackId) {
+            _mayaDisplayLayerMembersCallbackId
+                = MDisplayLayerMessage::addDisplayLayerMembersChangedCallback(
+                    DisplayLayerMembershipChangedCB, this);
+        }
+#endif
+
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
         // engine for data preparation only, but we have to add a dummy render
         // task to bootstrap data preparation.
@@ -724,6 +769,47 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
     }
 }
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+void ProxyRenderDelegate::_UpdateDisplayLayers()
+{
+    // make sure we're listening to every display layer for attribute changes
+    MObject displayLayerManagerHandle = MFnDisplayLayerManager::currentDisplayLayerManager();
+    MFnDisplayLayerManager displayLayerManagerFn(displayLayerManagerHandle);
+    MObjectArray newDisplayLayers(displayLayerManagerFn.getAllDisplayLayers());
+    bool sameLayers = newDisplayLayers.length() == _mayaDisplayLayers.length();
+    for(unsigned int i=0; i<_mayaDisplayLayers.length() && sameLayers; ++i) {
+        sameLayers = _mayaDisplayLayers[i] == newDisplayLayers[i];
+    }
+
+    if (!sameLayers) {
+        // remove all the callbacks from _mayaDisplayLayers
+        TF_VERIFY(_mayaDisplayLayers.length() == _mayaDisplayLayerCallbacks.size());
+        for(const auto& callbackId : _mayaDisplayLayerCallbacks)
+            MMessage::removeCallback(callbackId);
+
+        _mayaDisplayLayers = newDisplayLayers;
+        _mayaDisplayLayerCallbacks.clear();
+
+        // add all the callbacks to _mayaDisplayLayers;
+        for(unsigned int i=0; i<_mayaDisplayLayers.length(); ++i) {
+            _mayaDisplayLayerCallbacks.push_back(MNodeMessage::addNodeDirtyCallback(_mayaDisplayLayers[i], DisplayLayerDirtyCB, this, nullptr));
+        }
+    }
+
+    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+    if (_displayLayerMembershipChanged) {
+        auto&            rprims = _renderIndex->GetRprimIds();
+        for (auto path : rprims) {
+            fprintf(stderr, "dirtied %s\n", path.GetText());
+            HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility | MayaUsdRPrim::DirtyDisplayMode
+                | MayaUsdRPrim::DirtySelectionHighlight;
+            changeTracker.MarkRprimDirty(path, dirtyBits);
+        }
+    }
+    _displayLayerMembershipChanged = false;
+}
+#endif
+
 //! \brief  Execute Hydra engine to perform minimal VP2 draw data update based on change tracker.
 void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 {
@@ -732,6 +818,9 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
     ++_frameCounter;
     _UpdateRenderTags();
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    _UpdateDisplayLayers();
+#endif
 
     // If update for selection is enabled, the draw data for the "points" repr
     // won't be prepared until point snapping is activated; otherwise the draw
@@ -909,6 +998,8 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     }
     param->EndUpdate();
 }
+
+MDagPath ProxyRenderDelegate::GetProxyShapeDagPath() const { return _proxyShapeData->ProxyDagPath(); }
 
 //! \brief  Update selection granularity for point snapping.
 void ProxyRenderDelegate::updateSelectionGranularity(
@@ -1208,6 +1299,25 @@ bool ProxyRenderDelegate::updateUfeIdentifiers(
 
 //! \brief  Notify of selection change.
 void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+//! \brief  Notify of display layer membership change.
+void ProxyRenderDelegate::DisplayLayerMembershipChanged() {
+    _RequestRefresh();
+    _displayLayerMembershipChanged = true;
+}
+
+void ProxyRenderDelegate::DisplayLayerDirty(MObject& node) {
+    // TODO: record which layers are dirty and only dirty layers that changed.
+    DisplayLayerMembershipChanged();
+}
+
+void ProxyRenderDelegate::_RequestRefresh() {
+    if (!_refreshRequested)
+        M3dView::scheduleRefreshAllViews();
+    _refreshRequested = true;
+}
+#endif
 
 //! \brief  Populate lead and active selection for Rprims under the proxy shape.
 void ProxyRenderDelegate::_PopulateSelection()
