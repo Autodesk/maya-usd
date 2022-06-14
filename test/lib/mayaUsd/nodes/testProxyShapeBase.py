@@ -251,7 +251,7 @@ class testProxyShapeBase(unittest.TestCase):
 
     def testShareStagePreserveSession(self):
         '''
-        Verify share/unshare stage preserve the data in the session layer
+        Verify share/unshare stage preserves the data in the session layer
         '''
         # create new stage
         cmds.file(new=True, force=True)
@@ -281,12 +281,12 @@ class testProxyShapeBase(unittest.TestCase):
 
         verifyPrim()
 
-        # unshare the stage and verify the prim in the session laye still exists.
+        # unshare the stage and verify the prim in the session layer still exists.
         cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
 
         verifyPrim()
 
-        # re-share the stage and verify the prim in the session laye still exists.
+        # re-share the stage and verify the prim in the session layer still exists.
         cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
 
         verifyPrim()

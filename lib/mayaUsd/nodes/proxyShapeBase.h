@@ -340,7 +340,7 @@ protected:
 
 private:
     // The possible the shared mode of the stage.
-    // The 'Unknown' mode is when the orxy shape is created and has not yet been computed.
+    // The 'Unknown' mode is when the proxy shape is created and has not yet been computed.
     enum class ShareMode
     {
         Unknown,
@@ -357,14 +357,14 @@ private:
     MStatus computeOutStageCacheId(MDataBlock& dataBlock);
 
     void updateShareMode(
-        UsdStageRefPtr           sharedUsdStage,
-        UsdStageRefPtr           unsharedUsdStage,
+        const UsdStageRefPtr&    sharedUsdStage,
+        const UsdStageRefPtr&    unsharedUsdStage,
         UsdStage::InitialLoadSet loadSet);
 
     void transferSessionLayer(
         ShareMode                currentMode,
-        UsdStageRefPtr           sharedUsdStage,
-        UsdStageRefPtr           unsharedUsdStage,
+        const UsdStageRefPtr&    sharedUsdStage,
+        const UsdStageRefPtr&    unsharedUsdStage,
         UsdStage::InitialLoadSet loadSet);
 
     UsdStageRefPtr getUnsharedStage(UsdStage::InitialLoadSet loadSet);
@@ -397,7 +397,7 @@ private:
 
     // Track the shared mode of the stage as seen in the last compute.
     // Starts off as Unknown when the proxy shape is first created.
-    ShareMode _previousShareMode;
+    ShareMode _previousShareMode { ShareMode::Unknown };
 
     // For unshared composition
     SdfLayerRefPtr _unsharedStageSessionLayer;

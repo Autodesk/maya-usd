@@ -41,7 +41,7 @@ public:
     ///
     ///    stages that have been opened with UsdStage::InitialLoadSet::LoadAll
     ///                                  vs
-    ///    stages that have been opened with UsdStage::InitialLoadSet::LoadNode.
+    ///    stages that have been opened with UsdStage::InitialLoadSet::LoadNone.
     ///
     ///    stages that are shared
     ///            vs

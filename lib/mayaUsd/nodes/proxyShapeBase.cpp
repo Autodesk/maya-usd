@@ -790,7 +790,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 if (rootLayer) {
                     // Note: computeSessionLayer will find a session layer *only* if the
                     //       Maya scene had been saved and thus serialized the session
-                    //       layer. Othersise it returns null which will mean to use
+                    //       layer. Otherwise it returns null which will mean to use
                     //       whatever session layer happens to be associated with the
                     //       stage we potentially find in the stage cache.
                     SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
@@ -834,12 +834,9 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                             loadSet);
                     }
 
-                    if (targetSession) {
-                        sessionLayer = sharedUsdStage->GetSessionLayer();
-                        sharedUsdStage->SetEditTarget(sessionLayer);
-                    } else {
-                        sharedUsdStage->SetEditTarget(sharedUsdStage->GetRootLayer());
-                    }
+                    sharedUsdStage->SetEditTarget(
+                        targetSession ? sharedUsdStage->GetSessionLayer()
+                                      : sharedUsdStage->GetRootLayer());
                 } else {
                     // Create a new stage in memory with an anonymous root layer.
                     sharedUsdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
@@ -958,7 +955,7 @@ UsdStageRefPtr MayaUsdProxyShapeBase::getUnsharedStage(UsdStage::InitialLoadSet 
     // attribute change, we want to find the same unshared stage, we don't want to lose
     // edits, in particular in its session layer.
     //
-    // We also need to be ble to find them when switching a stage between non-shared
+    // We also need to be able to find them when switching a stage between non-shared
     // and shared, so that we can transfer the content of the session layer.
     //
     // Fortunately, the USD stage cache matches stages using *all* arguments provided.
@@ -974,8 +971,8 @@ UsdStageRefPtr MayaUsdProxyShapeBase::getUnsharedStage(UsdStage::InitialLoadSet 
 }
 
 void MayaUsdProxyShapeBase::updateShareMode(
-    UsdStageRefPtr           sharedUsdStage,
-    UsdStageRefPtr           unsharedUsdStage,
+    const UsdStageRefPtr&    sharedUsdStage,
+    const UsdStageRefPtr&    unsharedUsdStage,
     UsdStage::InitialLoadSet loadSet)
 {
     // Based on the previous shared mode and current shared mode of the stage,
@@ -1006,17 +1003,17 @@ void MayaUsdProxyShapeBase::updateShareMode(
 
 void MayaUsdProxyShapeBase::transferSessionLayer(
     ShareMode                currentMode,
-    UsdStageRefPtr           sharedUsdStage,
-    UsdStageRefPtr           unsharedUsdStage,
+    const UsdStageRefPtr&    sharedUsdStage,
+    const UsdStageRefPtr&    unsharedUsdStage,
     UsdStage::InitialLoadSet loadSet)
 {
     // When flipping to shared from unshared, the unshared set was not loaded.
     // Load it now to be able to transfer the session layer content.
-    if (!unsharedUsdStage)
-        unsharedUsdStage = getUnsharedStage(loadSet);
+    UsdStageRefPtr validUnsharedUsdStage
+        = unsharedUsdStage ? unsharedUsdStage : getUnsharedStage(loadSet);
 
     SdfLayerHandle sharedSession = sharedUsdStage->GetSessionLayer();
-    SdfLayerHandle unsharedSession = unsharedUsdStage->GetSessionLayer();
+    SdfLayerHandle unsharedSession = validUnsharedUsdStage->GetSessionLayer();
 
     if (!sharedSession || !unsharedSession)
         return;
