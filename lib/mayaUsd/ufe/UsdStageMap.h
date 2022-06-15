@@ -93,6 +93,7 @@ public:
 
 private:
     void addItem(const Ufe::Path& path);
+    void rebuildCache();
     void rebuildIfDirty();
 
 private:

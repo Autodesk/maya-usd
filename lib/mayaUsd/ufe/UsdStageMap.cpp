@@ -142,7 +142,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
     // In additional to the explicit dirty system it is possible that
     // the cache is in an invalid state and needs to be refreshed. See
     // the class comment in UsdStageMap.h for details.
-    // There are two scenerios which signal a cache refresh is required:
+    // There are multiple scenarios which signal a cache refresh is required:
     // 1. A path is searched for which cannot be found. This indicates that
     //    the stage has been reparented and the new path has been used to search
     //    for the stage and the stage is not present in the cache.
@@ -150,6 +150,18 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
     //    find that MObject. This indicates that the stage has been reparented
     //    and the old path has been used to search for the stage. In this case
     //    there is a cache hit when there should not be.
+    // 3. Any case where the cached data might be indirectly invalidated.
+    //    For example undoing or redoing a proxy shape deletion.
+    //
+    // All these scenarios happen during transient periods when notifications
+    // following a change (node renaming, deletion undo or redo, etc) are
+    // processed in some arbitrary order (the order depends on the  order
+    // observer were registered and how their hash values). Once the dust
+    // settles after the scene change, the cache will be in steady-state
+    // again. In my testing, the cache gets rebuilt once, sometimes twice.
+    // Since we would mark the cache dirty anyway during these event if we
+    // registered callback on node deletion or undo, the performance is
+    // about the same.
 
     const auto& singleSegmentPath
         = nbPathSegments(path) == 1 ? path : Ufe::Path(path.getSegments()[0]);
@@ -158,24 +170,7 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
 
     if (iter == std::end(fPathToObject)) {
         // When we don't find an entry in the cache then we are in scenerio 1.
-        // MObjects stay valid even when re-parented or re-named, so we can
-        // scan through all the entries in the cache and validate that the current
-        // DAG path to the MObject matches the key Ufe::Path for the MObject in
-        // the cache. When the don't match, update fPathToObject so that the key and
-        // the MObject are in sync again.
-        auto pathToObject = fPathToObject;
-        for (const auto& entry : pathToObject) {
-            const auto& cachedPath = entry.first;
-            const auto& cachedObject = entry.second;
-            // Get the UFE path from the map value.
-            auto newPath = firstPath(cachedObject);
-            if (newPath != cachedPath) {
-                // Key is stale.  Remove it from our cache, and add the new entry.
-                auto count = fPathToObject.erase(cachedPath);
-                TF_AXIOM(count);
-                fPathToObject[newPath] = cachedObject;
-            }
-        }
+        rebuildCache();
 
         // Now that the cache is in a good state, attempt to find the searched for
         // proxyShape again.
@@ -183,19 +178,19 @@ MObject UsdStageMap::proxyShape(const Ufe::Path& path)
     } else {
         auto object = iter->second;
         // If the cached object itself is invalid then remove it from the map.
+        // Rebuild the cache and try to find it again.
         if (!object.isValid()) {
             fPathToObject.erase(singleSegmentPath);
-            return MObject();
-        }
-        auto objectPath = firstPath(object);
-        if (objectPath != iter->first) {
-            // When we hit the cache and the key path doesn't match the current object path
-            // we are in scenerio 2. Update the entry in fPathToObject so that the key path
-            // is the current object path.
-            fPathToObject.erase(singleSegmentPath);
-            fPathToObject[objectPath] = object;
-            TF_VERIFY(std::end(fPathToObject) == fPathToObject.find(singleSegmentPath));
-            return MObject();
+            rebuildCache();
+            iter = fPathToObject.find(singleSegmentPath);
+        } else {
+            auto objectPath = firstPath(object);
+            if (objectPath != iter->first) {
+                // When we hit the cache and the key path doesn't match the current object path
+                // we are in scenerio 2.
+                rebuildCache();
+                iter = fPathToObject.find(singleSegmentPath);
+            }
         }
     }
 
@@ -254,6 +249,12 @@ void UsdStageMap::setDirty()
     fPathToObject.clear();
     fStageToObject.clear();
     fDirty = true;
+}
+
+void UsdStageMap::rebuildCache()
+{
+    setDirty();
+    rebuildIfDirty();
 }
 
 void UsdStageMap::rebuildIfDirty()
