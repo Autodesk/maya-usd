@@ -307,14 +307,6 @@ void StagesSubject::afterOpen()
             }
         });
     fStageListeners.clear();
-
-    // Set up our stage to proxy shape UFE path (and reverse)
-    // mapping.  We do this with the following steps:
-    // - get all proxyShape nodes in the scene.
-    // - get their Dag paths.
-    // - convert the Dag paths to UFE paths.
-    // - get their stage.
-    g_StageMap.setDirty();
 }
 
 void StagesSubject::stageChanged(
@@ -578,8 +570,7 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
     // Handle re-entrant onStageSet
     bool expectedState = false;
     if (stageSetGuardCount.compare_exchange_strong(expectedState, true)) {
-        // We should have no listeners and stage map is dirty.
-        TF_VERIFY(g_StageMap.isDirty());
+        // We should have no listeners.
         TF_VERIFY(fStageListeners.empty());
 
         StagesSubject::Ptr me(this);
