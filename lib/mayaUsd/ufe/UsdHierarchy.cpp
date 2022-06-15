@@ -319,11 +319,10 @@ UsdHierarchy::insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneI
 Ufe::SceneItem::Ptr
 UsdHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
 {
-    // Changing the hierarchy of inactive items is not allowed.
-    if (!fItem->prim().IsValid())
+    auto insertChildCommand = insertChildCmd(child, pos);
+    if (!insertChildCommand)
         return nullptr;
 
-    auto insertChildCommand = insertChildCmd(child, pos);
     return insertChildCommand->insertedChild();
 }
 
@@ -331,10 +330,6 @@ UsdHierarchy::insertChild(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
-    // Changing the hierarchy of invalid items is not allowed.
-    if (!fItem->prim().IsActive())
-        return nullptr;
-
     Ufe::SceneItem::Ptr createdItem = nullptr;
 
     UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(fItem, name.string());
@@ -349,10 +344,6 @@ Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) co
 Ufe::SceneItem::Ptr
 UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
-    // Changing the hierarchy of inactive items is not allowed.
-    if (!fItem->prim().IsActive())
-        return nullptr;
-
     Ufe::SceneItem::Ptr createdItem = nullptr;
 
     UsdUndoCreateGroupCommand::Ptr cmd
@@ -369,20 +360,12 @@ UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathCompon
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::InsertChildCommand::Ptr UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 {
-    // Changing the hierarchy of inactive items is not allowed.
-    if (!fItem->prim().IsActive())
-        return nullptr;
-
     return UsdUndoCreateGroupCommand::create(fItem, name.string());
 }
 #else
 Ufe::UndoableCommand::Ptr
 UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
-    // Changing the hierarchy of inactive items is not allowed.
-    if (!fItem->prim().IsActive())
-        return nullptr;
-
     return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
 }
 #endif
@@ -401,10 +384,6 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
 
 Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 {
-    // Changing the hierarchy of inactive items is not allowed.
-    if (!fItem->prim().IsActive())
-        return nullptr;
-
     std::vector<TfToken> orderedTokens;
 
     for (const auto& item : orderedList) {
@@ -419,10 +398,6 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& ord
 #ifdef UFE_V3_FEATURES_AVAILABLE
 Ufe::UndoableCommand::Ptr UsdHierarchy::ungroupCmd() const
 {
-    // Changing the hierarchy of inactive items is not allowed.
-    if (!fItem->prim().IsActive())
-        return nullptr;
-
     return UsdUndoUngroupCommand::create(fItem);
 }
 #endif // UFE_V3_FEATURES_AVAILABLE
