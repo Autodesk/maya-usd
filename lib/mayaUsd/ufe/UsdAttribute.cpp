@@ -337,7 +337,10 @@ UsdAttribute::UsdAttribute(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef:
     , fAttrDef(attrDef)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    TF_VERIFY(fPrim.IsValid(), "Invalid prim '%s' passed to UsdAttribute object", fPrim.GetName().GetText());
+    TF_VERIFY(
+        fPrim.IsValid(),
+        "Invalid prim '%s' passed to UsdAttribute object",
+        fPrim.GetName().GetText());
 }
 #endif
 
@@ -346,7 +349,10 @@ UsdAttribute::UsdAttribute(const PXR_NS::UsdAttribute& usdAttr)
     , fUsdAttr(usdAttr)
 {
     PXR_NAMESPACE_USING_DIRECTIVE
-    TF_VERIFY(fPrim.IsValid(), "Invalid prim '%s' passed to UsdAttribute object", fPrim.GetName().GetText());
+    TF_VERIFY(
+        fPrim.IsValid(),
+        "Invalid prim '%s' passed to UsdAttribute object",
+        fPrim.GetName().GetText());
 }
 
 std::string UsdAttribute::isEditAllowedMsg() const
