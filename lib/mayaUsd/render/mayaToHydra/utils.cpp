@@ -68,9 +68,6 @@ MtohInitializeRenderPlugins()
 				pluginDesc.id == MtohTokens->HdMayaRenderItemRendererPlugin
 				)
 			{
-#if PXR_VERSION < 2102
-                GlfGlewInit();
-#endif
                 GlfContextCaps::InitInstance();
             }
 

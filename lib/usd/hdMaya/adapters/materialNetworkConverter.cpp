@@ -895,7 +895,7 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetShaderParams(const 
 	if(shaderNodeIdentifier == UsdImagingTokens->UsdPreviewSurface)
         return GetPreviewShaderParams();
 
-	auto& it = _defaultShaderParams.find(shaderNodeIdentifier);
+	auto it = _defaultShaderParams.find(shaderNodeIdentifier);
 	if (it == _defaultShaderParams.end()) 
 	{
 		HdMayaShaderParams params;

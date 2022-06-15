@@ -635,7 +635,7 @@ AdapterPtr HdMayaSceneDelegate::Create(
 
 namespace
 {
-	static constexpr char* kOutColorString = "outColor";
+	static constexpr char kOutColorString[] = "outColor";
 
 	bool GetShadingEngineNode(const MObject& shaderNode, MObject& shadingEngineNode)
 	{

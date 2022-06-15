@@ -52,7 +52,7 @@ SdfPath _GetPrimPath(const SdfPath& base, const MDagPath& dg)
 
 SdfPath _GetRenderItemPrimPath(const SdfPath& base, const MRenderItem& ri)
 {
-	if (ri.InternalObjectID() == -1) return {};
+	if (ri.InternalObjectId() == 0) return {};
 	const auto mayaPath = UsdMayaUtil::RenderItemToUsdPath(ri, false, false);
 	if (mayaPath.IsEmpty()) return {};
 		

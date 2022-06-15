@@ -112,7 +112,7 @@ bool HdMayaRenderItemShaderConverter::ExtractShapeUIShaderData(
 	HdMayaShaderInstanceData& shaderData)
 {
 	MString shaderName;
-	auto& end = sHdMayaSupportedShaders.end();
+	auto end = sHdMayaSupportedShaders.end();
 	auto entry = end;
 	if (
 		renderItem.getShaderName(shaderName) != MS::kSuccess ||
@@ -277,7 +277,7 @@ void HdMayaRenderItemAdapter::UpdateTransform(MRenderItem& ri)
 	if (ri.getMatrix(matrix) == MStatus::kSuccess)
 	{
 		_transform[0] = GetGfMatrixFromMaya(matrix);
-		if (GetDelegate()->GetParams().enableMotionSamples) 
+		if (GetDelegate()->GetParams().motionSamplesEnabled())
 		{
 			MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
 			_transform[1] = GetGfMatrixFromMaya(matrix);
@@ -494,7 +494,7 @@ VtValue HdMayaRenderItemAdapter::GetMaterialResource()
 
 		for (const auto& it : HdMayaMaterialNetworkConverter::GetShaderParams(_shaderInstance.ShapeUIShader->Name))
 		{
-			auto& param = _shaderInstance.Params.find(it.name);
+			auto param = _shaderInstance.Params.find(it.name);
 			node.parameters.emplace(it.name, param == _shaderInstance.Params.end() ?
 				it.fallbackValue :
 				param->second.value);

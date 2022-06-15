@@ -1368,7 +1368,7 @@ SdfPath UsdMayaUtil::RenderItemToUsdPath(
 {	
 	//auto path = ri.sourceDagPath().fullPathName();
 	return UsdMayaUtil::MayaNodeNameToSdfPath(		
-		(ri.name() + std::to_string(ri.InternalObjectID()).c_str()).asChar(),
+		(ri.name() + std::to_string(ri.InternalObjectId()).c_str()).asChar(),
 		stripNamespaces);
 }
 
