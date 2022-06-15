@@ -137,8 +137,6 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path)
 
 MObject UsdStageMap::proxyShape(const Ufe::Path& path)
 {
-    rebuildIfDirty();
-
     // In additional to the explicit dirty system it is possible that
     // the cache is in an invalid state and needs to be refreshed. See
     // the class comment in UsdStageMap.h for details.
