@@ -400,11 +400,11 @@ std::string UsdAttribute::defaultValue() const
 
 bool UsdAttribute::get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const
 {
-    if (isAuthored()
 #ifdef UFE_V4_FEATURES_AVAILABLE
-        || !fAttrDef
+    if (isAuthored() || !fAttrDef) {
+#else
+    if (isValid()) {
 #endif
-    ) {
         return fUsdAttr.Get(&value, time);
     } else {
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -432,15 +432,17 @@ bool UsdAttribute::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
             if (fAttrDef && fPrim) {
                 UsdShadeShader shader(fPrim);
                 if (fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR) {
-                    fUsdAttr = shader
-                                   .CreateOutput(PXR_NS::TfToken(
-                                       fAttrDef->name(), ufeTypeToUsd(fAttrDef->type())))
-                                   .GetAttr();
+                    fUsdAttr
+                        = shader
+                              .CreateOutput(
+                                  PXR_NS::TfToken(fAttrDef->name()), ufeTypeToUsd(fAttrDef->type()))
+                              .GetAttr();
                 } else {
-                    fUsdAttr = shader
-                                   .CreateInput(PXR_NS::TfToken(
-                                       fAttrDef->name(), ufeTypeToUsd(fAttrDef->type())))
-                                   .GetAttr();
+                    fUsdAttr
+                        = shader
+                              .CreateInput(
+                                  PXR_NS::TfToken(fAttrDef->name()), ufeTypeToUsd(fAttrDef->type()))
+                              .GetAttr();
                 }
             } else {
 #endif
@@ -549,15 +551,17 @@ bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
         if (fAttrDef && fPrim) {
             UsdShadeShader shader(fPrim);
             if (fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR) {
-                fUsdAttr = shader
-                               .CreateOutput(PXR_NS::TfToken(
-                                   fAttrDef->name(), ufeTypeToUsd(fAttrDef->type())))
-                               .GetAttr();
+                fUsdAttr
+                    = shader
+                          .CreateOutput(
+                              PXR_NS::TfToken(fAttrDef->name()), ufeTypeToUsd(fAttrDef->type()))
+                          .GetAttr();
             } else {
-                fUsdAttr = shader
-                               .CreateInput(PXR_NS::TfToken(
-                                   fAttrDef->name(), ufeTypeToUsd(fAttrDef->type())))
-                               .GetAttr();
+                fUsdAttr
+                    = shader
+                          .CreateInput(
+                              PXR_NS::TfToken(fAttrDef->name()), ufeTypeToUsd(fAttrDef->type()))
+                          .GetAttr();
             }
             const PXR_NS::TfToken attrName(PXR_NS::UsdShadeUtils::GetFullName(
                 PXR_NS::TfToken(fAttrDef->name()),
