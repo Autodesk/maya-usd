@@ -403,7 +403,7 @@ bool UsdAttribute::get(PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time) const
 #ifdef UFE_V4_FEATURES_AVAILABLE
     if (isAuthored() || !fAttrDef) {
 #else
-    if (isValid()) {
+    if (hasValue()) {
 #endif
         return fUsdAttr.Get(&value, time);
     } else {

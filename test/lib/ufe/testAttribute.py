@@ -358,7 +358,6 @@ class AttributeTestCase(unittest.TestCase):
         # Use our engine method to run the bulk of the test (all the stuff from
         # the Attribute base class). We use the visibility attribute which is
         # an EnumString type.
-        import pdb ; pdb.set_trace()
         ufeAttr, usdAttr = self.runTestAttribute(
             path='/Room_set/Props/Ball_35',
             attrName=UsdGeom.Tokens.visibility,
