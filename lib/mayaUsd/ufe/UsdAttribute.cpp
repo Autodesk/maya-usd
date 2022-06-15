@@ -424,12 +424,18 @@ bool UsdAttribute::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
         } else {
 #ifdef UFE_V4_FEATURES_AVAILABLE
             if (fAttrDef && fPrim) {
-                const PXR_NS::TfToken attrName(PXR_NS::UsdShadeUtils::GetFullName(
-                    PXR_NS::TfToken(fAttrDef->name()),
-                    fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR
-                        ? PXR_NS::UsdShadeAttributeType::Output
-                        : PXR_NS::UsdShadeAttributeType::Input));
-                fUsdAttr = fPrim.CreateAttribute(attrName, ufeTypeToUsd(fAttrDef->type()));
+                UsdShadeShader shader(fPrim);
+                if (fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR) {
+                    fUsdAttr = shader
+                                   .CreateOutput(PXR_NS::TfToken(
+                                       fAttrDef->name(), ufeTypeToUsd(fAttrDef->type())))
+                                   .GetAttr();
+                } else {
+                    fUsdAttr = shader
+                                   .CreateInput(PXR_NS::TfToken(
+                                       fAttrDef->name(), ufeTypeToUsd(fAttrDef->type())))
+                                   .GetAttr();
+                }
             } else {
 #endif
                 return false;
@@ -535,15 +541,23 @@ bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
     else {
 #ifdef UFE_V4_FEATURES_AVAILABLE
         if (fAttrDef && fPrim) {
+            UsdShadeShader shader(fPrim);
+            if (fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR) {
+                fUsdAttr = shader
+                               .CreateOutput(PXR_NS::TfToken(
+                                   fAttrDef->name(), ufeTypeToUsd(fAttrDef->type())))
+                               .GetAttr();
+            } else {
+                fUsdAttr = shader
+                               .CreateInput(PXR_NS::TfToken(
+                                   fAttrDef->name(), ufeTypeToUsd(fAttrDef->type())))
+                               .GetAttr();
+            }
             const PXR_NS::TfToken attrName(PXR_NS::UsdShadeUtils::GetFullName(
                 PXR_NS::TfToken(fAttrDef->name()),
                 fAttrDef->ioType() == Ufe::AttributeDef::OUTPUT_ATTR
                     ? PXR_NS::UsdShadeAttributeType::Output
                     : PXR_NS::UsdShadeAttributeType::Input));
-            PXR_NS::VtValue       v;
-            PXR_NS::UsdTimeCode   time;
-            get(v, time);
-            fUsdAttr = fPrim.CreateAttribute(attrName, ufeTypeToUsd(fAttrDef->type()));
             return setUsdAttrMetadata(fUsdAttr, key, value);
         } else {
 #endif
