@@ -180,14 +180,14 @@ SdfPath UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) con
         path = path.GetParentPath();
     }
 
-    path = _GetRootOverridePath(mArgs, path, false, true);
+    path = _GetRootOverridePath(mArgs, path, /* modelRootOverride = */ false, /* rootMap = */ true);
 
     if (!mParentScopePath.IsEmpty()) {
         // Since path is from MDagPathToUsdPath, it will always be
         // an absolute path...
         path = path.ReplacePrefix(SdfPath::AbsoluteRootPath(), mParentScopePath);
     }
-    return _GetRootOverridePath(mArgs, path, true, false);
+    return _GetRootOverridePath(mArgs, path, /* modelRootOverride = */ true, /* rootMap = */ false);
 }
 
 UsdMayaWriteJobContext::_ExportAndRefPaths
