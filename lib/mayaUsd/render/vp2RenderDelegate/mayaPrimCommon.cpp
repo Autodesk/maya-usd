@@ -24,9 +24,11 @@
 
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <maya/MFnDisplayLayer.h>
 #include <maya/MFnDisplayLayerManager.h>
 #include <maya/MObjectArray.h>
+#endif
 #include <maya/MProfiler.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <ufe/pathString.h>
@@ -581,7 +583,7 @@ void MayaUsdRPrim::_SyncSharedData(
         if (!usdVisibility)
             _MakeOtherReprRenderItemsInvisible(reprToken, reprs);
 
-        bool displayLayerVisibility = true; //objects in the default display layer are visible
+        bool displayLayerVisibility = true; // objects in the default display layer are visible
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
         // Maya Display Layers do not have a representation in USD, so a prim can be
         // visible from USD's point of view, but hidden from Maya's point of view.
@@ -591,20 +593,21 @@ void MayaUsdRPrim::_SyncSharedData(
 
         // Get all the display layers the object is affected by. If any of those layers
         // are invisible, the object is invisible.
-        MFnDisplayLayerManager displayLayerManager(MFnDisplayLayerManager::currentDisplayLayerManager());
-        MStatus                status;
-        auto* const            param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-        ProxyRenderDelegate&   drawScene = param->GetDrawScene();
-        MDagPath               proxyDagPath = drawScene.GetProxyShapeDagPath();
-        MString pathString = Ufe::PathString::string(MayaUsd::ufe::dagPathToUfe(proxyDagPath)).c_str();
-        pathString += Ufe::PathString::pathSegmentSeparator().c_str();
-        pathString += _PrimSegmentString[0];
+        MFnDisplayLayerManager displayLayerManager(
+            MFnDisplayLayerManager::currentDisplayLayerManager());
+        MStatus              status;
+        auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        ProxyRenderDelegate& drawScene = param->GetDrawScene();
+        MDagPath             proxyDagPath = drawScene.GetProxyShapeDagPath();
+        MString              pathString = proxyDagPath.fullPathName()
+            + Ufe::PathString::pathSegmentSeparator().c_str() + _PrimSegmentString[0];
         MObjectArray ancestorDisplayLayers
             = displayLayerManager.getAncestorLayersInclusive(pathString, &status);
-        for(unsigned int i=0; i<ancestorDisplayLayers.length() && displayLayerVisibility; i++) {
+        for (unsigned int i = 0; i < ancestorDisplayLayers.length() && displayLayerVisibility;
+             i++) {
             MFnDependencyNode displayLayerNodeFn(ancestorDisplayLayers[i]);
-            MPlug layerEnabled = displayLayerNodeFn.findPlug("enabled");
-            MPlug layerVisible = displayLayerNodeFn.findPlug("visibility");
+            MPlug             layerEnabled = displayLayerNodeFn.findPlug("enabled");
+            MPlug             layerVisible = displayLayerNodeFn.findPlug("visibility");
             displayLayerVisibility &= layerEnabled.asBool() ? layerVisible.asBool() : true;
         }
 #endif

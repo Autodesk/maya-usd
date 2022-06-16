@@ -60,8 +60,8 @@
 #include <maya/MSelectionContext.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <maya/M3dView.h>
-#include <maya/MFnDisplayLayerManager.h>
 #include <maya/MFnDisplayLayer.h>
+#include <maya/MFnDisplayLayerManager.h>
 #include <maya/MNodeMessage.h>
 #endif
 
@@ -346,7 +346,7 @@ void SelectionChangedCB(void* data)
 #endif
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-void DisplayLayerMembershipChangedCB(void* data)
+void displayLayerMembershipChangedCB(void* data)
 {
     ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
     if (prd) {
@@ -354,9 +354,10 @@ void DisplayLayerMembershipChangedCB(void* data)
     }
 }
 
-void DisplayLayerDirtyCB(MObject& node, void* clientData)
+void displayLayerDirtyCB(MObject& node, void* clientData)
 {
-    // TODO: only mark the things in the dirty layer dirty. Use MFnDisplayLayer to find all the things...
+    // TODO: only mark the things in the dirty layer dirty. Use MFnDisplayLayer to find all the
+    // things...
     ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
     if (prd) {
         prd->DisplayLayerDirty(node);
@@ -656,7 +657,7 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         if (!_mayaDisplayLayerMembersCallbackId) {
             _mayaDisplayLayerMembersCallbackId
                 = MDisplayLayerMessage::addDisplayLayerMembersChangedCallback(
-                    DisplayLayerMembershipChangedCB, this);
+                    displayLayerMembershipChangedCB, this);
         }
 #endif
 
@@ -775,34 +776,35 @@ void ProxyRenderDelegate::_UpdateDisplayLayers()
     // make sure we're listening to every display layer for attribute changes
     MObject displayLayerManagerHandle = MFnDisplayLayerManager::currentDisplayLayerManager();
     MFnDisplayLayerManager displayLayerManagerFn(displayLayerManagerHandle);
-    MObjectArray newDisplayLayers(displayLayerManagerFn.getAllDisplayLayers());
-    bool sameLayers = newDisplayLayers.length() == _mayaDisplayLayers.length();
-    for(unsigned int i=0; i<_mayaDisplayLayers.length() && sameLayers; ++i) {
+    MObjectArray           newDisplayLayers(displayLayerManagerFn.getAllDisplayLayers());
+    bool                   sameLayers = newDisplayLayers.length() == _mayaDisplayLayers.length();
+    for (unsigned int i = 0; i < _mayaDisplayLayers.length() && sameLayers; ++i) {
         sameLayers = _mayaDisplayLayers[i] == newDisplayLayers[i];
     }
 
     if (!sameLayers) {
         // remove all the callbacks from _mayaDisplayLayers
         TF_VERIFY(_mayaDisplayLayers.length() == _mayaDisplayLayerCallbacks.size());
-        for(const auto& callbackId : _mayaDisplayLayerCallbacks)
+        for (const auto& callbackId : _mayaDisplayLayerCallbacks)
             MMessage::removeCallback(callbackId);
 
         _mayaDisplayLayers = newDisplayLayers;
         _mayaDisplayLayerCallbacks.clear();
 
         // add all the callbacks to _mayaDisplayLayers;
-        for(unsigned int i=0; i<_mayaDisplayLayers.length(); ++i) {
-            _mayaDisplayLayerCallbacks.push_back(MNodeMessage::addNodeDirtyCallback(_mayaDisplayLayers[i], DisplayLayerDirtyCB, this, nullptr));
+        for (unsigned int i = 0; i < _mayaDisplayLayers.length(); ++i) {
+            _mayaDisplayLayerCallbacks.push_back(MNodeMessage::addNodeDirtyCallback(
+                _mayaDisplayLayers[i], displayLayerDirtyCB, this, nullptr));
         }
     }
 
     HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
     if (_displayLayerMembershipChanged) {
-        auto&            rprims = _renderIndex->GetRprimIds();
+        auto& rprims = _renderIndex->GetRprimIds();
         for (auto path : rprims) {
             fprintf(stderr, "dirtied %s\n", path.GetText());
-            HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility | MayaUsdRPrim::DirtyDisplayMode
-                | MayaUsdRPrim::DirtySelectionHighlight;
+            HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
+                | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
             changeTracker.MarkRprimDirty(path, dirtyBits);
         }
     }
@@ -999,7 +1001,10 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     param->EndUpdate();
 }
 
-MDagPath ProxyRenderDelegate::GetProxyShapeDagPath() const { return _proxyShapeData->ProxyDagPath(); }
+MDagPath ProxyRenderDelegate::GetProxyShapeDagPath() const
+{
+    return _proxyShapeData->ProxyDagPath();
+}
 
 //! \brief  Update selection granularity for point snapping.
 void ProxyRenderDelegate::updateSelectionGranularity(
@@ -1302,17 +1307,20 @@ void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 //! \brief  Notify of display layer membership change.
-void ProxyRenderDelegate::DisplayLayerMembershipChanged() {
+void ProxyRenderDelegate::DisplayLayerMembershipChanged()
+{
     _RequestRefresh();
     _displayLayerMembershipChanged = true;
 }
 
-void ProxyRenderDelegate::DisplayLayerDirty(MObject& node) {
+void ProxyRenderDelegate::DisplayLayerDirty(MObject& node)
+{
     // TODO: record which layers are dirty and only dirty layers that changed.
     DisplayLayerMembershipChanged();
 }
 
-void ProxyRenderDelegate::_RequestRefresh() {
+void ProxyRenderDelegate::_RequestRefresh()
+{
     if (!_refreshRequested)
         M3dView::scheduleRefreshAllViews();
     _refreshRequested = true;

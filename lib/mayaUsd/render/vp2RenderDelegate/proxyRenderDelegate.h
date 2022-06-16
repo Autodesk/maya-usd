@@ -308,10 +308,12 @@ private:
     bool _selectionChanged { true }; //!< Whether there is any selection change or not
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-    bool _refreshRequested { false }; //!< True if the render delegate has already requested a refresh.
+    bool _refreshRequested {
+        false
+    }; //!< True if the render delegate has already requested a refresh.
     bool _displayLayerMembershipChanged {
         false
-    }; //~< Whether or not ther is any display layer membership changes.
+    }; //~< Whether or not there is any display layer membership changes.
     MCallbackId              _mayaDisplayLayerMembersCallbackId { 0 };
     MObjectArray             _mayaDisplayLayers;
     std::vector<MCallbackId> _mayaDisplayLayerCallbacks;
