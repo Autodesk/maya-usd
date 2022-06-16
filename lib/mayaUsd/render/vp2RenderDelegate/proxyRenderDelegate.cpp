@@ -802,7 +802,6 @@ void ProxyRenderDelegate::_UpdateDisplayLayers()
     if (_displayLayerMembershipChanged) {
         auto& rprims = _renderIndex->GetRprimIds();
         for (auto path : rprims) {
-            fprintf(stderr, "dirtied %s\n", path.GetText());
             HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
                 | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
             changeTracker.MarkRprimDirty(path, dirtyBits);

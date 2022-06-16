@@ -181,12 +181,6 @@ Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)
 
     return path;
 }
-#if 0
-// return the RenderIndex ID ("index path") for the given Ufe::Path
-SdfPath ufePathToIndexPath(const Ufe::Path& path) {
-    // pretty sure I want HdRprim::GetId()
-}
-#endif
 
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {
