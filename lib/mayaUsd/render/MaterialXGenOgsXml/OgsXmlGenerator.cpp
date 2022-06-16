@@ -94,6 +94,7 @@ const pugi::char_t* DIFFUSEI("diffuseI");
 const pugi::char_t* ENVMATRIX("u_envMatrix");
 const pugi::char_t* ENVRADIANCEMIPS("u_envRadianceMips");
 const pugi::char_t* ENVRADIANCESAMPLES("u_envRadianceSamples");
+const pugi::char_t* ENVREFRACTION(MX_REFRACTION_SUBSTITUTION);
 const pugi::char_t* FEATURE_LEVEL("feature_level");
 const pugi::char_t* FLAGS("flags");
 const pugi::char_t* FRAGMENT("fragment");
@@ -141,7 +142,8 @@ const pugi::char_t* VERSION("version");
 // here:
 bool isUnusedUniform(const std::string& name)
 {
-    return name == ENVMATRIX || name == ENVRADIANCEMIPS || name == ENVRADIANCESAMPLES;
+    return name == ENVMATRIX || name == ENVRADIANCEMIPS || name == ENVRADIANCESAMPLES
+        || name == ENVREFRACTION;
 }
 
 std::string DOT_COMBINE(const pugi::char_t* frag, const pugi::char_t* attr)

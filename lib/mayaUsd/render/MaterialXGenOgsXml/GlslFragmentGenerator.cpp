@@ -171,14 +171,31 @@ ShaderPtr GlslFragmentGenerator::generate(
 
     const bool lighting = requiresLighting(graph);
 
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
-    std::string libRoot;
+#if !defined(MATERIALX_NAMESPACE_BEGIN)
+// Consider all older builds (that do not have version info) as being 1.38.3
+#define MX_COMBINED_VERSION 13803
 #else
+#define MX_COMBINED_VERSION                                                  \
+    ((MATERIALX_MAJOR_VERSION * 100 * 100) + (MATERIALX_MINOR_VERSION * 100) \
+     + MATERIALX_BUILD_VERSION)
+#endif
+
+#if MX_COMBINED_VERSION == 13804
+    // 1.38.4 is the only version requiring "libraries" in the path
     std::string libRoot = "libraries/";
+#else
+    // No libRoot for other versions:
+    std::string libRoot;
+#endif
+
+#if MX_COMBINED_VERSION <= 13804
+#define MX_EMIT_INCLUDE emitInclude
+#else
+#define MX_EMIT_INCLUDE emitLibraryInclude
 #endif
 
     // Emit common math functions
-    emitInclude(libRoot + "stdlib/genglsl/lib/mx_math.glsl", context, pixelStage);
+    MX_EMIT_INCLUDE(libRoot + "stdlib/genglsl/lib/mx_math.glsl", context, pixelStage);
     emitLineBreak(pixelStage);
 
     int specularMethod = context.getOptions().hwSpecularEnvironmentMethod;
@@ -202,18 +219,18 @@ ShaderPtr GlslFragmentGenerator::generate(
             emitLine("#define MX_NUM_FIS_SAMPLES 64", pixelStage, false);
         }
         emitLineBreak(pixelStage);
-        emitInclude(
+        MX_EMIT_INCLUDE(
             libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v3.glsl", context, pixelStage);
     } else if (specularMethod == SPECULAR_ENVIRONMENT_PREFILTER) {
         if (OgsXmlGenerator::useLightAPI() < 2) {
-            emitInclude(
+            MX_EMIT_INCLUDE(
                 libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v1.glsl", context, pixelStage);
         } else {
-            emitInclude(
+            MX_EMIT_INCLUDE(
                 libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_v2.glsl", context, pixelStage);
         }
     } else if (specularMethod == SPECULAR_ENVIRONMENT_NONE) {
-        emitInclude(
+        MX_EMIT_INCLUDE(
             libRoot + "pbrlib/genglsl/ogsxml/mx_lighting_maya_none.glsl", context, pixelStage);
     } else {
         throw ExceptionShaderGenError(
@@ -224,9 +241,16 @@ ShaderPtr GlslFragmentGenerator::generate(
 
     // Set the include file to use for uv transformations,
     // depending on the vertical flip flag.
+#if MX_COMBINED_VERSION <= 13804
     _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV] = string(libRoot + "stdlib/genglsl")
         + (context.getOptions().fileTextureVerticalFlip ? "/lib/mx_transform_uv_vflip.glsl"
                                                         : "/lib/mx_transform_uv.glsl");
+#else
+    _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV]
+        = (context.getOptions().fileTextureVerticalFlip ? "mx_transform_uv_vflip.glsl"
+                                                        : "mx_transform_uv.glsl");
+    _tokenSubstitutions[HW::T_REFRACTION_ENV] = MX_REFRACTION_SUBSTITUTION;
+#endif
 
     // Add all functions for node implementations
     emitFunctionDefinitions(graph, context, pixelStage);
