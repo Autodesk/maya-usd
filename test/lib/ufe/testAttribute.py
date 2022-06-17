@@ -22,7 +22,7 @@ import ufeUtils
 import testUtils
 import usdUtils
 
-from pxr import UsdGeom, Vt, Gf
+from pxr import Usd, UsdGeom, Vt, Gf
 
 from maya import cmds
 from maya import standalone
@@ -1515,6 +1515,98 @@ class AttributeTestCase(unittest.TestCase):
                                'Cannot evaluate more than one attribute\.$',
                                cmds.getAttr,
                                'proxyShape1.shareStage',pathStr+'.xformOp:translate')
+
+    def createAndTestAttribute(self, materialItem, shaderDefName, shaderName, origValue, newValue, validation):
+        surfDef = ufe.NodeDef.definition(materialItem.runTimeId(), shaderDefName)
+        cmd = surfDef.createNodeCmd(materialItem, ufe.PathComponent(shaderName))
+        ufeCmd.execute(cmd)
+        shaderItem = cmd.insertedChild
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+
+        self.assertTrue(shaderAttrs.hasAttribute("info:id"))
+        self.assertEqual(shaderAttrs.attribute("info:id").get(), shaderDefName)
+        self.assertEqual(ufe.PathString.string(shaderItem.path()), "|stage1|stageShape1,/Material1/" + shaderName + "1")
+        materialHier = ufe.Hierarchy.hierarchy(materialItem)
+        self.assertTrue(materialHier.hasChildren())
+
+        self.assertTrue(shaderAttrs.hasAttribute("inputs:value"))
+        shaderAttr = shaderAttrs.attribute("inputs:value")
+        validation(self, shaderAttr.get(), origValue)
+        shaderAttr.set(newValue)
+        validation(self, shaderAttr.get(), newValue)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testCreateAttributeTypes(self):
+        """Tests all shader attribute types"""
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
+        proxyShapePath = ufe.Path([proxyPathSegment])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Material'])
+        ufeCmd.execute(cmd)
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(rootHier.hasChildren())
+        self.assertEqual(len(rootHier.children()), 2)
+
+        materialItem = rootHier.children()[-1]
+        contextOps = ufe.ContextOps.contextOps(materialItem)
+
+        floatAssert = lambda self, x, y : self.assertAlmostEqual(x, y)
+        color3Assert = lambda self, x, y : testUtils.assertVectorAlmostEqual(self, x.color, y.color)
+        vector3Assert = lambda self, x, y : testUtils.assertVectorAlmostEqual(self, x.vector, y.vector)
+        normalAssert = lambda self, x, y : self.assertEqual(x, y)
+
+        origFloat = 0.0
+        newFloat = 0.6
+        origColor3 = ufe.Color3f(0.0, 0.0, 0.0)
+        newColor3 = ufe.Color3f(0.2, 0.4, 0.6)
+        origVector3 = ufe.Vector3f(0.0, 0.0, 0.0)
+        newVector3 = ufe.Vector3f(0.2, 0.4, 0.6)
+        origBoolean = False
+        newBoolean = True
+        origInteger = 0
+        newInteger = 2
+        origString = ""
+        newString = "test"
+
+        # TODO: implement color4, vector2, vector4, matrix33, matrix44, filename
+
+        self.createAndTestAttribute(materialItem, "ND_constant_float", "ConstantFloat", origFloat, newFloat, floatAssert)
+        self.createAndTestAttribute(materialItem, "ND_constant_color3", "ConstantColor3_", origColor3, newColor3, color3Assert)
+        self.createAndTestAttribute(materialItem, "ND_constant_vector3", "ConstantVector3_", origVector3, newVector3, vector3Assert)
+        self.createAndTestAttribute(materialItem, "ND_constant_boolean", "ConstantBoolean", origBoolean, newBoolean, normalAssert)
+        self.createAndTestAttribute(materialItem, "ND_constant_integer", "ConstantInteger", origInteger, newInteger, normalAssert)
+        self.createAndTestAttribute(materialItem, "ND_constant_string", "ConstantString", origString, newString, normalAssert)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testCreateUsdPreviewSurfaceAttribute(self):
+        cmds.file(new=True, force=True)
+        testFile = testUtils.getTestScene("UsdPreviewSurface", "DisplayColorCube.usda")
+        testDagPath, testStage = mayaUtils.createProxyFromFile(testFile)
+        mayaPathSegment = mayaUtils.createUfePathSegment(testDagPath)
+        usdPathSegment = usdUtils.createUfePathSegment("/DisplayColorCube/Looks/usdPreviewSurface1SG/usdPreviewSurface1")
+        shaderPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        shaderItem = ufe.Hierarchy.createItem(shaderPath)
+        shaderAttrs = ufe.Attributes.attributes(shaderItem)
+
+        self.assertTrue(shaderAttrs.hasAttribute("inputs:roughness"))
+        shaderAttr = shaderAttrs.attribute("inputs:roughness")
+        self.assertAlmostEqual(shaderAttr.get(), 0.5)
+        shaderAttr.set(0.8)
+        self.assertAlmostEqual(shaderAttr.get(), 0.8)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
