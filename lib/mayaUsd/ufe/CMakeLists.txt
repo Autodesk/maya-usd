@@ -80,15 +80,21 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-                UsdLight.cpp
-                UsdLightHandler.cpp
-        )
-    endif()
+message(STATUS "UFE_LIGHTS_SUPPORT is ${UFE_LIGHTS_SUPPORT}")
+if (UFE_LIGHTS_SUPPORT)
+    target_sources(${PROJECT_NAME}
+        PRIVATE
+            UsdLight.cpp
+            UsdLightHandler.cpp
+    )
 
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        UFE_LIGHTS_SUPPORT=1
+    )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         target_sources(${PROJECT_NAME}
             PRIVATE
@@ -193,14 +199,14 @@ if(CMAKE_UFE_V3_FEATURES_AVAILABLE)
     )
 endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        list(APPEND HEADERS
-            UsdLight.h
-            UsdLightHandler.h
-        )
-    endif()
+if (UFE_LIGHTS_SUPPORT)
+    list(APPEND HEADERS
+        UsdLight.h
+        UsdLightHandler.h
+    )
+endif()
 
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4001)
         list(APPEND HEADERS
             UsdShaderNodeDef.h

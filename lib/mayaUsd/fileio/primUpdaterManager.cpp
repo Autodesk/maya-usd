@@ -867,6 +867,11 @@ bool PrimUpdaterManager::mergeToUsd(
         ctxArgs[UsdMayaJobExportArgsTokens->frameStride] = 1.0;
         ctxArgs[UsdMayaJobExportArgsTokens->startTime] = timeInterval.GetMin();
         ctxArgs[UsdMayaJobExportArgsTokens->endTime] = timeInterval.GetMax();
+    } else if (ctxArgs[UsdMayaJobExportArgsTokens->animation] == true) {
+        // If user asked for animation but there is no animation, skip the exportation of animation.
+        const bool isAnimated = PXR_NS::UsdMayaPrimUpdater::isAnimated(mayaDagPath);
+        if (!isAnimated)
+            ctxArgs[UsdMayaJobExportArgsTokens->animation] = false;
     }
 
     // Reset the selection, otherwise it will keep a reference to a deleted node

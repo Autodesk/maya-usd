@@ -43,6 +43,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     )
 
     list(APPEND INTERACTIVE_TEST_SCRIPT_FILES
+        testPixelMoveCmd.py
         testUIIcons.py
     )
 endif()

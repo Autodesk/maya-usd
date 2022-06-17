@@ -44,10 +44,10 @@
 #include <mayaUsd/ufe/PulledObjectHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdPathMappingHandler.h>
 #endif
-#ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4007)
+#if UFE_LIGHTS_SUPPORT
 #include <mayaUsd/ufe/UsdLightHandler.h>
 #endif
+#ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
@@ -179,7 +179,7 @@ MStatus initialize()
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
     handlers.cameraHandler = UsdCameraHandler::create();
 #ifdef UFE_V4_FEATURES_AVAILABLE
-#if (UFE_PREVIEW_VERSION_NUM >= 4007)
+#if UFE_LIGHTS_SUPPORT
     handlers.lightHandler = UsdLightHandler::create();
 #endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
@@ -226,6 +226,12 @@ MStatus initialize()
 
     g_USDRtid = runTimeMgr.register_(kUSDRunTimeName, handlers);
     MayaUsd::ufe::UsdUIUfeObserver::create();
+
+#ifndef UFE_V4_FEATURES_AVAILABLE
+#if UFE_LIGHTS_SUPPORT
+    runTimeMgr.setLightHandler(g_USDRtid, UsdLightHandler::create());
+#endif
+#endif
 
 #ifdef HAVE_PATH_MAPPING
     g_MayaPathMappingHandler = runTimeMgr.pathMappingHandler(g_MayaRtid);
