@@ -42,14 +42,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 constexpr char UsdShaderNodeDef::kNodeDefCategoryShader[];
 
-#if (UFE_PREVIEW_VERSION_NUM < 4010)
-Ufe::Attribute::Type getUfeTypeForAttribute(const SdrShaderPropertyConstPtr& shaderProperty)
-{
-    const SdfValueTypeName typeName = shaderProperty->GetTypeAsSdfType().first;
-    return usdTypeToUfe(typeName);
-}
-#endif
-
 template <Ufe::AttributeDef::IOType IOTYPE>
 Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 {
@@ -69,7 +61,7 @@ Ufe::ConstAttributeDefs getAttrs(const SdrShaderNodeConstPtr& shaderNodeDef)
 #if (UFE_PREVIEW_VERSION_NUM < 4010)
         std::ostringstream defaultValue;
         defaultValue << property->GetDefaultValue();
-        Ufe::Attribute::Type type = getUfeTypeForAttribute(property);
+        Ufe::Attribute::Type type = usdTypeToUfe(property);
         attrs.emplace_back(Ufe::AttributeDef::create(name, type, defaultValue.str(), IOTYPE));
 #else
         attrs.emplace_back(Ufe::AttributeDef::ConstPtr(new UsdShaderAttributeDef(property)));

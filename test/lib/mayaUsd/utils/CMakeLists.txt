@@ -103,5 +103,9 @@ if(IS_WINDOWS)
         testLoadRules
         testLoadRules.cpp
     )
+    add_mayaUsdLibUtils_test(
+	    testSplitString
+	    testSplitString.cpp
+    )
 endif()
 

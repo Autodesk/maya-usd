@@ -147,7 +147,6 @@ class ContextOpsTestCase(unittest.TestCase):
                 self.assertEqual(c.item, 'Ball_8')
 
     def testDoOp(self):
-
         # Change visibility, undo / redo.
         cmd = self.contextOps.doOpCmd(['Toggle Visibility'])
         self.assertIsNotNone(cmd)
