@@ -506,6 +506,24 @@ class BindMaterialUndoableCommand : public Ufe::UndoableCommand
 public:
     static const std::string commandName;
 
+    static UsdPrim CompatiblePrim(const Ufe::SceneItem::Ptr& item)
+    {
+        auto usdItem = std::dynamic_pointer_cast<const MAYAUSD_NS::ufe::UsdSceneItem>(item);
+        if (!usdItem) {
+            return {};
+        }
+        UsdPrim usdPrim = usdItem->prim();
+        if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
+            // The binding schema can be applied anywhere, but it makes no sense on a
+            // material or a shader.
+            return {};
+        }
+        if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
+            return usdPrim;
+        }
+        return {};
+    }
+
     BindMaterialUndoableCommand(const UsdPrim& prim, const SdfPath& materialPath)
         : _stage(prim.GetStage())
         , _primPath(prim.GetPath())
@@ -803,17 +821,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             bool enable = false;
             if (auto globalSn = Ufe::GlobalSelection::get()) {
                 for (auto&& selItem : *globalSn) {
-                    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
-                    if (!usdItem) {
-                        continue;
-                    }
-                    UsdPrim usdPrim = usdItem->prim();
-                    if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
-                        // The binding schema can be applied anywhere, but it makes no sense on a
-                        // material or a shader.
-                        continue;
-                    }
-                    if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
+                    if (BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
                         enable = true;
                         break;
                     }
@@ -1184,22 +1192,13 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
         if (auto globalSn = Ufe::GlobalSelection::get()) {
             for (auto&& selItem : *globalSn) {
-                UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(selItem);
-                if (!usdItem) {
-                    continue;
-                }
-                UsdPrim usdPrim = usdItem->prim();
-                if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
-                    // The binding schema can be applied anywhere, but it makes no sense on a
-                    // material or a shader.
-                    continue;
-                }
-                if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
+                UsdPrim compatiblePrim = BindMaterialUndoableCommand::CompatiblePrim(selItem);
+                if (compatiblePrim) {
                     if (!compositeCmd) {
                         compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
                     }
                     compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
-                        usdPrim, fItem->prim().GetPath()));
+                        compatiblePrim, fItem->prim().GetPath()));
                 }
             }
         }
