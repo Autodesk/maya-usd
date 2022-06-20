@@ -120,7 +120,7 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     const bool showProgress = !timeSamples.empty();
 
     // Animated export shows frame-by-frame progress.
-    int nbSteps = 1 + timeSamples.size();
+    int                       nbSteps = 1 + timeSamples.size();
     MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
     // Default-time export.
@@ -352,7 +352,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     // Now do a depth-first traversal of the Maya DAG from the world root.
     // We keep a reference to arg dagPaths as we encounter them.
     MayaUsd::ProgressBarLoopScope dagObjLoop(numberDagObjects);
-    MDagPath curLeafDagPath;
+    MDagPath                      curLeafDagPath;
     for (MItDag itDag(MItDag::kDepthFirst, MFn::kInvalid); !itDag.isDone(); itDag.next()) {
         MDagPath curDagPath;
         itDag.getPath(curDagPath);
@@ -554,7 +554,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
     progressBar.advance();
 
     // Running post export function on all the prim writers.
-    const int loopSize = mJobCtx.mMayaPrimWriterList.size();
+    const int                     loopSize = mJobCtx.mMayaPrimWriterList.size();
     MayaUsd::ProgressBarLoopScope primWriterLoop(loopSize);
     for (auto& primWriter : mJobCtx.mMayaPrimWriterList) {
         primWriter->PostExport();

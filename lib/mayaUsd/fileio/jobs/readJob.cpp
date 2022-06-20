@@ -22,8 +22,8 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/undo/OpUndoItemMuting.h>
-#include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/progressBarScope.h>
+#include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
@@ -535,7 +535,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
             : UsdPrimRange::PreAndPostVisit(
                 rootPrim, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
 
-        const int loopSize = std::distance(range.begin(), range.end());
+        const int                     loopSize = std::distance(range.begin(), range.end());
         MayaUsd::ProgressBarLoopScope instanceLoop(loopSize);
         for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
             const UsdPrim&           prim = *primIt;
@@ -563,7 +563,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
 #else
         auto prototypes = usdRootPrim.GetStage()->GetPrototypes();
 #endif
-        const int loopSize = prototypes.size();
+        const int                     loopSize = prototypes.size();
         MayaUsd::ProgressBarLoopScope prototypesLoop(loopSize);
         for (const auto& prototype : prototypes) {
 

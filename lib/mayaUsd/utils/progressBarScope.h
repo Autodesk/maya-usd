@@ -116,7 +116,7 @@ private:
     // The current loop iteration counter.
     int _currLoopCounter { 0 };
 
-     // Number of loop iterations to perform before advancing progress bar.
+    // Number of loop iterations to perform before advancing progress bar.
     int _minProgressStep { 0 };
 
     // Just like Maya don't add to many steps as the progress bar update

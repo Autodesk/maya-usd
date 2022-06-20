@@ -28,9 +28,7 @@ std::unique_ptr<MComputation> ProgressBarScope::progBar;
 int                           ProgressBarScope::totalStepsAdded = 0;
 
 // Create a scope with default values for showProgress and interruptible.
-ProgressBarScope::ProgressBarScope(
-    const int      nbSteps,
-    const MString& progressStr)
+ProgressBarScope::ProgressBarScope(const int nbSteps, const MString& progressStr)
     : ProgressBarScope(true, false, nbSteps, progressStr)
 {
 }

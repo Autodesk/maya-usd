@@ -240,8 +240,8 @@ bool writePullInformation(const Ufe::Path& ufePulledPath, const MDagPath& path)
 void removePullInformation(const Ufe::Path& ufePulledPath)
 {
     MayaUsd::ProgressBarScope progressBar(1);
-    UsdPrim prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
-    auto    stage = prim.GetStage();
+    UsdPrim                   prim = MayaUsd::ufe::ufePathToPrim(ufePulledPath);
+    auto                      stage = prim.GetStage();
     if (!stage)
         return;
     UsdEditContext editContext(stage, stage->GetSessionLayer());
@@ -249,7 +249,7 @@ void removePullInformation(const Ufe::Path& ufePulledPath)
     progressBar.advance();
 
     // Session layer cleanup
-    auto rootPrims = stage->GetSessionLayer()->GetRootPrims();
+    auto                          rootPrims = stage->GetSessionLayer()->GetRootPrims();
     MayaUsd::ProgressBarLoopScope rootPrimsLoop(rootPrims.size());
     for (const SdfPrimSpecHandle& rootPrimSpec : rootPrims) {
         stage->GetSessionLayer()->RemovePrimIfInert(rootPrimSpec);
@@ -883,7 +883,7 @@ bool PrimUpdaterManager::mergeToUsd(
         VtDictionaryIsHolding<std::string>(userArgs, "rn_primName") ? "Caching to USD"
                                                                     : "Merging to USD");
     MayaUsd::ProgressBarScope progressBar(9, progStr);
-    PushPullScope scopeIt(_inPushPull);
+    PushPullScope             scopeIt(_inPushPull);
 
     auto ctxArgs = VtDictionaryOver(userArgs, UsdMayaJobExportArgs::GetDefaultDictionary());
 
@@ -1154,7 +1154,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
     }
 
     MayaUsd::ProgressBarScope progressBar(5);
-    PushPullScope scopeIt(_inPushPull);
+    PushPullScope             scopeIt(_inPushPull);
 
     // Record all USD modifications in an undo block and item.
     UsdUndoBlock undoBlock(
@@ -1251,7 +1251,7 @@ bool PrimUpdaterManager::discardPrimEdits(const Ufe::Path& pulledPath)
 bool PrimUpdaterManager::discardOrphanedEdits(const MDagPath& dagPath)
 {
     MayaUsd::ProgressBarScope progressBar(2);
-    PushPullScope scopeIt(_inPushPull);
+    PushPullScope             scopeIt(_inPushPull);
 
     // Unlock the pulled hierarchy, clear the pull information, and remove the
     // pull parent, which is simply the parent of the pulled path.
@@ -1591,7 +1591,7 @@ bool PrimUpdaterManager::removePullParent(const MDagPath& parentDagPath)
     }
 
     MayaUsd::ProgressBarScope progressBar(2);
-    MStatus status = NodeDeletionUndoItem::deleteNode(
+    MStatus                   status = NodeDeletionUndoItem::deleteNode(
         "Delete pull parent node", parentDagPath.fullPathName(), parentDagPath.node());
     if (status != MStatus::kSuccess)
         return false;

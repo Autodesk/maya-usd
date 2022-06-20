@@ -115,14 +115,13 @@ void UsdMayaShadingModeExporter::DoExport(
     std::vector<UsdShadeMaterial> exportedMaterials;
 
     std::vector<MObject> shadingEngines;
-    MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
+    MItDependencyNodes   shadingEngineIter(MFn::kShadingEngine);
     for (; !shadingEngineIter.isDone(); shadingEngineIter.next()) {
         MObject shadingEngine(shadingEngineIter.thisNode());
         shadingEngines.emplace_back(shadingEngine);
     }
     MayaUsd::ProgressBarLoopScope shadingEngineLoop(shadingEngines.size());
-    for (const auto& shadingEngine : shadingEngines)
-    {
+    for (const auto& shadingEngine : shadingEngines) {
         context.SetShadingEngine(shadingEngine);
 
         UsdShadeMaterial mat;
