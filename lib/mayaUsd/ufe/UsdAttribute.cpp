@@ -151,7 +151,7 @@ std::string getUsdAttributeValueAsString(
     const MayaUsd::ufe::UsdAttribute& attr,
     const PXR_NS::UsdTimeCode&        time)
 {
-    if (!attr.isValid() || !attr.hasValue())
+    if (!attr.isValid() || !attr._hasValue())
         return attr.defaultValue();
 
     PXR_NS::VtValue v;
@@ -166,7 +166,7 @@ std::string getUsdAttributeValueAsString(
         return os.str();
     }
 
-    TF_CODING_ERROR(kErrorMsgFailedConvertToString, attr.name().c_str());
+    TF_CODING_ERROR(kErrorMsgFailedConvertToString, attr._name().c_str());
     return std::string();
 }
 
@@ -176,7 +176,7 @@ U getUsdAttributeVectorAsUfe(
     const PXR_NS::UsdTimeCode&        time)
 {
     VtValue vt;
-    if (!attr.isValid() || !attr.hasValue()) {
+    if (!attr.isValid() || !attr._hasValue()) {
         vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
@@ -203,7 +203,7 @@ template <typename T, typename U>
 U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
     VtValue vt;
-    if (!attr.isValid() || !attr.hasValue()) {
+    if (!attr.isValid() || !attr._hasValue()) {
         vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
@@ -232,7 +232,7 @@ U getUsdAttributeMatrixAsUfe(
     const PXR_NS::UsdTimeCode&        time)
 {
     VtValue vt;
-    if (!attr.isValid() || !attr.hasValue()) {
+    if (!attr.isValid() || !attr._hasValue()) {
         vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
@@ -313,7 +313,7 @@ public:
     {
     }
 
-    void executeUndoBlock() override { _attr.setMetadata(_key, _newValue); }
+    void executeUndoBlock() override { _attr._setMetadata(_key, _newValue); }
 
 private:
     MayaUsd::ufe::UsdAttribute& _attr;
