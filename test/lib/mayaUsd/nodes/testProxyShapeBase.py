@@ -23,9 +23,8 @@ import fixturesUtils
 
 import os
 import unittest
-import tempfile
 
-import usdUtils, mayaUtils, ufeUtils
+import usdUtils, mayaUtils, ufeUtils, testUtils
 
 import ufe
 import mayaUsd.ufe
@@ -291,6 +290,97 @@ class testProxyShapeBase(unittest.TestCase):
 
         verifyPrim()
 
+    def _saveStagePreserveLayerHelper(self, targetRoot, saveInMaya):
+        '''
+        Verify that a freshly-created stage preserve its session or root layer data
+        when saved to Maya or USD files.
+
+        (What happens internally is that the root layer changes name when saved,
+        so the stage cache needs to be updated by the save code in order to end-up
+        with the same session layer.)
+        '''
+        # Create an empty stage.
+        cmds.file(new=True, force=True)
+        mayaUtils.createProxyAndStage()
+
+        # Helper to get the stage, Needed since the stage instance will change
+        # after saving.
+        def getStage():
+            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+            self.assertGreater(len(proxyShapes), 0)
+            proxyShapePath = proxyShapes[0]
+            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
+
+        stage, proxyShapePath = getStage()
+
+        # Create a prim in the root layer.
+        stage.SetEditTarget(stage.GetRootLayer())
+        stage.DefinePrim("/dummy", "xform")
+
+        # Make the prim inactive in the desired target layer.
+        target = stage.GetRootLayer() if targetRoot else stage.GetSessionLayer()
+        stage.SetEditTarget(target)
+        prim = stage.GetPrimAtPath("/dummy")
+        prim.SetActive(False)
+
+        # verify that the prim exists but is inactive.
+        def verifyPrim():
+            stage, _ = getStage()
+            prim = stage.GetPrimAtPath("/dummy")
+            self.assertIsNotNone(prim)
+            self.assertFalse(prim.IsActive())
+
+        verifyPrim()
+
+        # Temp file names for Maya scene and USD file.
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase', ignore_errors=True) as testDir:
+            targetName = 'Root' if targetRoot else 'Session'
+            inMayaName = 'InMaya' if saveInMaya else 'InUSD'
+            tempMayaFile = os.path.join(testDir, 'SaveStagePreserve%s%s.ma' % (targetName, inMayaName))
+
+            # Make sure layers are saved to the desired location (Maya or USD)
+            # when the Maya scene is saved.
+            location = 2 if saveInMaya else 1
+            cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', location))
+
+            # Save the stage.
+            cmds.file(rename=tempMayaFile)
+            cmds.file(save=True, force=True, type='mayaAscii')
+
+            # Verify that the prim is still inactive in the target layer.
+
+            verifyPrim()
+
+            cmds.file(new=True, force=True)
+
+    def testSaveStageToUSDPreserveSessionLayer(self):
+        '''
+        Verify that a freshly-created stage preserve its session layer data when saved
+        to USD files.
+        '''
+        self._saveStagePreserveLayerHelper(False, False)
+
+    def testSaveStageToMayaPreserveSessionLayer(self):
+        '''
+        Verify that a freshly-created stage preserve its session layer data when saved
+        to Maya.
+        '''
+        self._saveStagePreserveLayerHelper(False, True)
+
+    def testSaveStageToUSDPreserveRootLayer(self):
+        '''
+        Verify that a freshly-created stage preserve its root layer data when saved
+        to USD files.
+        '''
+        self._saveStagePreserveLayerHelper(True, False)
+
+    def testSaveStageToMayaPreserveRootLayer(self):
+        '''
+        Verify that a freshly-created stage preserve its root layer data when saved
+        to Maya.
+        '''
+        self._saveStagePreserveLayerHelper(True, True)
+
     def testUnsavedStagePreserveRootLayerWhenUpdated(self):
         '''
         Verify that a freshly-created stage preserve its data when an attribute is set.
@@ -418,37 +508,39 @@ class testProxyShapeBase(unittest.TestCase):
         rootLayer.subLayerPaths  = [middleLayer.identifier]
 
         # Save and re-open
-        testDir = tempfile.mkdtemp(prefix='ProxyShapeBase')
-        tempMayaFile = os.path.join(testDir, 'ShareStageSerializationTest.ma')
-        cmds.file(rename=tempMayaFile)
-        # make the USD layer absolute otherwise it won't be found
-        cmds.setAttr('{}.{}'.format(proxyShapePath,"filePath"), originalRootIdentifier, type='string')
-        cmds.file(save=True, force=True)
-        cmds.file(new=True, force=True)
-        cmds.file(tempMayaFile, open=True)
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
+            tempMayaFile = os.path.join(testDir, 'ShareStageSerializationTest.ma')
+            cmds.file(rename=tempMayaFile)
+            # make the USD layer absolute otherwise it won't be found
+            cmds.setAttr('{}.{}'.format(proxyShapePath,"filePath"), originalRootIdentifier, type='string')
+            cmds.file(save=True, force=True)
+            cmds.file(new=True, force=True)
+            cmds.file(tempMayaFile, open=True)
 
-        # get the stage again (since we opened a new file)
-        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
-        proxyShapePath = proxyShapes[0]
-        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
-        rootLayer = stage.GetRootLayer()
+            # get the stage again (since we opened a new file)
+            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+            proxyShapePath = proxyShapes[0]
+            stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+            rootLayer = stage.GetRootLayer()
 
-        # make sure the middle layer is back (only one)
-        self.assertEqual(len(rootLayer.subLayerPaths), 1)
-        middleLayer = Sdf.Layer.Find(rootLayer.subLayerPaths[0])
-        self.assertEqual(middleLayer.GetDisplayName(), "middleLayer")
+            # make sure the middle layer is back (only one)
+            self.assertEqual(len(rootLayer.subLayerPaths), 1)
+            middleLayer = Sdf.Layer.Find(rootLayer.subLayerPaths[0])
+            self.assertEqual(middleLayer.GetDisplayName(), "middleLayer")
 
-        # make sure the middle layer still contains the original root only
-        self.assertEqual(len(middleLayer.subLayerPaths), 1)
-        self.assertEqual(middleLayer.subLayerPaths[0], originalRootIdentifier)
+            # make sure the middle layer still contains the original root only
+            self.assertEqual(len(middleLayer.subLayerPaths), 1)
+            self.assertEqual(middleLayer.subLayerPaths[0], originalRootIdentifier)
 
-        # re-share the stage
-        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
-        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+            # re-share the stage
+            cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+            stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
 
-        # check that the stage is now shared again and the identifier is correct
-        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
-        self.assertEqual(stage.GetRootLayer().identifier, originalRootIdentifier)
+            # check that the stage is now shared again and the identifier is correct
+            self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+            self.assertEqual(stage.GetRootLayer().identifier, originalRootIdentifier)
+
+            cmds.file(new=True, force=True)
 
     def testShareStageComplexHierarchyToggle(self):
         '''
@@ -486,44 +578,46 @@ class testProxyShapeBase(unittest.TestCase):
         rootLayer.subLayerPaths  = [middleLayer.identifier]
 
          # Save and re-open
-        testDir = tempfile.mkdtemp(prefix='ProxyShapeBase')
-        tempMayaFile = os.path.join(testDir, 'ShareStageComplexHierarchyToggle.ma')
-        cmds.file(rename=tempMayaFile)
-        # make the USD layer absolute otherwise it won't be found
-        cmds.setAttr('{}.{}'.format(proxyShapePath,"filePath"), originalRootIdentifier, type='string')
-        cmds.file(save=True, force=True)
-        cmds.file(new=True, force=True)
-        cmds.file(tempMayaFile, open=True)
+        with testUtils.TemporaryDirectory(prefix='ProxyShapeBase') as testDir:
+            tempMayaFile = os.path.join(testDir, 'ShareStageComplexHierarchyToggle.ma')
+            cmds.file(rename=tempMayaFile)
+            # make the USD layer absolute otherwise it won't be found
+            cmds.setAttr('{}.{}'.format(proxyShapePath,"filePath"), originalRootIdentifier, type='string')
+            cmds.file(save=True, force=True)
+            cmds.file(new=True, force=True)
+            cmds.file(tempMayaFile, open=True)
 
-        # get the stage again (since we opened a new file)
-        proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
-        proxyShapePath = proxyShapes[0]
-        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
-        rootLayer = stage.GetRootLayer()
+            # get the stage again (since we opened a new file)
+            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+            proxyShapePath = proxyShapes[0]
+            stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+            rootLayer = stage.GetRootLayer()
 
-        # make sure the middle layer is back (only one)
-        self.assertEqual(len(rootLayer.subLayerPaths), 1)
-        middleLayer = Sdf.Layer.Find(rootLayer.subLayerPaths[0])
-        self.assertEqual(middleLayer.GetDisplayName(), "middleLayer")
+            # make sure the middle layer is back (only one)
+            self.assertEqual(len(rootLayer.subLayerPaths), 1)
+            middleLayer = Sdf.Layer.Find(rootLayer.subLayerPaths[0])
+            self.assertEqual(middleLayer.GetDisplayName(), "middleLayer")
 
-        # re-share the stage
-        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
-        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+            # re-share the stage
+            cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), True)
+            stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
 
-        # check that the stage is now shared again and the identifier is correct
-        self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
-        self.assertEqual(stage.GetRootLayer().identifier, originalRootIdentifier)
+            # check that the stage is now shared again and the identifier is correct
+            self.assertTrue(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+            self.assertEqual(stage.GetRootLayer().identifier, originalRootIdentifier)
 
-        # unshare the stage
-        cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
-        stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
-        rootLayer = stage.GetRootLayer()
+            # unshare the stage
+            cmds.setAttr('{}.{}'.format(proxyShapePath,"shareStage"), False)
+            stage = mayaUsd.lib.GetPrim(proxyShapePath).GetStage()
+            rootLayer = stage.GetRootLayer()
 
-        # check that the stage is now shared and the root is the anon layer
-        # and the old root is now sublayered under that
-        self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
-        self.assertEqual(rootLayer.GetDisplayName(), "unshareableLayer")
-        self.assertEqual(rootLayer.subLayerPaths, [middleLayer.identifier])
+            # check that the stage is now shared and the root is the anon layer
+            # and the old root is now sublayered under that
+            self.assertFalse(cmds.getAttr('{}.{}'.format(proxyShapePath,"shareStage")))
+            self.assertEqual(rootLayer.GetDisplayName(), "unshareableLayer")
+            self.assertEqual(rootLayer.subLayerPaths, [middleLayer.identifier])
+
+            cmds.file(new=True, force=True)
 
     def testShareStageSourceChange(self):
         '''
