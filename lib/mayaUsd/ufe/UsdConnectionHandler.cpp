@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
+#include <mayaUsd/ufe/UsdConnectionHandler.h>
 #include <mayaUsd/ufe/UsdConnections.h>
 #include <mayaUsd/ufe/UsdHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
