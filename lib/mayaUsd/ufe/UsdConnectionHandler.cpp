@@ -15,7 +15,6 @@
 //
 
 #include <mayaUsd/ufe/UsdConnectionHandler.h>
-
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdAttribute.h>
 #include <mayaUsd/ufe/UsdConnections.h>
@@ -43,11 +42,8 @@ PXR_NS::UsdAttribute usdAttrFromUfeAttr(const Ufe::Attribute::Ptr& attr)
 
     if (attr->sceneItem()->runTimeId() != getUsdRunTimeId()) {
         TF_RUNTIME_ERROR(
-            "Invalid runtime identifier for the attribute '"
-            + attr->name()
-            + "' in the node '"
-            + Ufe::PathString::string(attr->sceneItem()->path())
-            + "'.");
+            "Invalid runtime identifier for the attribute '" + attr->name() + "' in the node '"
+            + Ufe::PathString::string(attr->sceneItem()->path()) + "'.");
         return PXR_NS::UsdAttribute();
     }
 
@@ -69,7 +65,7 @@ bool isConnected(const PXR_NS::UsdAttribute& srcUsdAttr, const PXR_NS::UsdAttrib
     return false;
 }
 
-} // anon. namespace
+} // namespace
 
 UsdConnectionHandler::UsdConnectionHandler()
     : Ufe::ConnectionHandler()

@@ -45,8 +45,10 @@ public:
     Ufe::Connections::Ptr sourceConnections(const Ufe::SceneItem::Ptr& item) const override;
 
 protected:
-    bool createConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr) const override;
-    bool deleteConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr) const override;
+    bool createConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr)
+        const override;
+    bool deleteConnection(const Ufe::Attribute::Ptr& srcAttr, const Ufe::Attribute::Ptr& dstAttr)
+        const override;
 
 }; // UsdConnectionHandler
 

@@ -15,7 +15,6 @@
 //
 
 #include <mayaUsd/ufe/UsdConnections.h>
-
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
@@ -72,8 +71,7 @@ std::vector<Ufe::Connection::Ptr> UsdConnections::allConnections() const
     PXR_NS::UsdShadeConnectableAPI connectableAttrs(prim);
 
     // Helper method to create the in-memory connection if any.
-    auto createConnections = [&](const auto& attr) -> void
-    {
+    auto createConnections = [&](const auto& attr) -> void {
         if (attr.HasConnectedSource()) {
             for (PXR_NS::UsdShadeConnectionSourceInfo sourceInfo : attr.GetConnectedSources()) {
 
