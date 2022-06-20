@@ -502,9 +502,7 @@ class ContextOpsTestCase(unittest.TestCase):
         proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
-        proxyPathSegment = mayaUtils.createUfePathSegment(proxyShape)
-        proxyShapePath = ufe.Path([proxyPathSegment])
-        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeItem = ufeUtils.createItem(proxyShape)
         contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
 
         for primName in ['Capsule', 'Sphere', 'Material', 'Material']:
