@@ -534,8 +534,10 @@ Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
         }
         return Ufe::Value();
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4008)
     } else if (fAttrDef && fAttrDef->hasMetadata(key)) {
         return fAttrDef->getMetadata(key);
+#endif
 #endif
     } else {
         return Ufe::Value();
@@ -616,9 +618,11 @@ bool UsdAttribute::hasMetadata(const std::string& key) const
         }
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4008)
     if (fAttrDef && fAttrDef->hasMetadata(key)) {
         return true;
     }
+#endif
 #endif
     return false;
 }
