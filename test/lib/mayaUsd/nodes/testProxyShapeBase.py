@@ -291,6 +291,96 @@ class testProxyShapeBase(unittest.TestCase):
 
         verifyPrim()
 
+    def _saveStagePreserveLayerHelper(self, targetRoot, saveInMaya):
+        '''
+        Verify that a freshly-created stage preserve its session or root layer data
+        when saved to Maya or USD files.
+
+        (What happens internally is that the root layer changes name when saved,
+        so the stage cache needs to be updated by the save code in order to end-up
+        with the same session layer.)
+        '''
+        # Create an empty stage.
+        cmds.file(new=True, force=True)
+        mayaUtils.createProxyAndStage()
+
+        # Helper to get the stage, Needed since the stage instance will change
+        # after saving.
+        def getStage():
+            proxyShapes = cmds.ls(type="mayaUsdProxyShapeBase", long=True)
+            self.assertGreater(len(proxyShapes), 0)
+            proxyShapePath = proxyShapes[0]
+            return mayaUsd.lib.GetPrim(proxyShapePath).GetStage(), proxyShapePath
+
+        stage, proxyShapePath = getStage()
+
+        # Create a prim in the root layer.
+        stage.SetEditTarget(stage.GetRootLayer())
+        stage.DefinePrim("/dummy", "xform")
+
+        # Make the prim inactive in the desired target layer.
+        target = stage.GetRootLayer() if targetRoot else stage.GetSessionLayer()
+        stage.SetEditTarget(target)
+        prim = stage.GetPrimAtPath("/dummy")
+        prim.SetActive(False)
+
+        # verify that the prim exists but is inactive.
+        def verifyPrim():
+            stage, _ = getStage()
+            prim = stage.GetPrimAtPath("/dummy")
+            self.assertIsNotNone(prim)
+            self.assertFalse(prim.IsActive())
+
+        verifyPrim()
+
+        # Temp file names for Maya scene and USD file.
+        testDir = tempfile.mkdtemp(prefix='ProxyShapeBase')
+        tempMayaFile = os.path.join(testDir, 'SaveStagePreserveSessionLayerTest.ma')
+        tempUSDFile = os.path.join(testDir, 'SaveStagePreserveSessionLayer.usd')
+
+        # Make sure layers are saved to the desired location (Maya or USD)
+        # when the Maya scene is saved.
+        location = 2 if saveInMaya else 1
+        cmds.optionVar(intValue=('mayaUsd_SerializedUsdEditsLocation', location))
+        if not saveInMaya:
+            cmds.setAttr('{}.{}'.format(proxyShapePath,"filePath"), tempUSDFile, type='string')
+
+        # Save the stage.
+        cmds.file(rename=tempMayaFile)
+        cmds.file(save=True, force=True)
+
+        # Verify that the prim is still inactive in the target layer.
+
+        verifyPrim()
+
+    def testSaveStageToUSDPreserveSessionLayer(self):
+        '''
+        Verify that a freshly-created stage preserve its session layer data when saved
+        to USD files.
+        '''
+        self._saveStagePreserveLayerHelper(False, False)
+
+    def testSaveStageToMayaPreserveSessionLayer(self):
+        '''
+        Verify that a freshly-created stage preserve its session layer data when saved
+        to Maya.
+        '''
+        self._saveStagePreserveLayerHelper(False, True)
+
+    def testSaveStageToUSDPreserveRootLayer(self):
+        '''
+        Verify that a freshly-created stage preserve its root layer data when saved
+        to USD files.
+        '''
+        self._saveStagePreserveLayerHelper(True, False)
+
+    def testSaveStageToMayaPreserveRootLayer(self):
+        '''
+        Verify that a freshly-created stage preserve its root layer data when saved
+        to Maya.
+        '''
+        self._saveStagePreserveLayerHelper(True, True)
+
     def testUnsavedStagePreserveRootLayerWhenUpdated(self):
         '''
         Verify that a freshly-created stage preserve its data when an attribute is set.

@@ -35,7 +35,8 @@ MAYAUSD_UI_PUBLIC
 void initialize();
 
 MAYAUSD_UI_PUBLIC
-MayaUsd::BatchSaveResult batchSaveLayersUIDelegate(const MDagPathArray&);
+MayaUsd::BatchSaveResult
+batchSaveLayersUIDelegate(const std::vector<MayaUsd::BatchSaveInfo>& infos);
 
 } // namespace UsdLayerEditor
 
