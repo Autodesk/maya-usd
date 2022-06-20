@@ -16,11 +16,13 @@
 #include "utilSerialization.h"
 
 #include <mayaUsd/base/tokens.h>
+#include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/sdf/layerUtils.h>
+#include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/usdFileFormat.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
@@ -98,6 +100,21 @@ bool saveRootLayer(SdfLayerRefPtr layer, const std::string& proxy)
     MayaUsd::utils::setNewProxyPath(MString(proxy.c_str()), MString(fp.c_str()));
 
     return true;
+}
+
+void updateAllCachedStageWithLayer(SdfLayerRefPtr originalLayer, const std::string& newFilePath)
+{
+    SdfLayerRefPtr newLayer = SdfLayer::FindOrOpen(newFilePath);
+    for (UsdStageCache& cache : UsdMayaStageCache::GetAllCaches()) {
+        UsdStageCacheContext        ctx(cache);
+        std::vector<UsdStageRefPtr> stages = cache.FindAllMatching(originalLayer);
+        for (const auto& stage : stages) {
+            auto sessionLayer = stage->GetSessionLayer();
+            auto newStage = UsdStage::UsdStage::Open(
+                newLayer, sessionLayer, UsdStage::InitialLoadSet::LoadNone);
+            newStage->SetLoadRules(stage->GetLoadRules());
+        }
+    }
 }
 
 } // namespace
@@ -225,12 +242,20 @@ bool saveLayerWithFormat(
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
-        return layer->Save();
+            if (!layer->Save()) {
+                return false;
+            }
     } else {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         args["format"] = formatArg;
-        return layer->Export(filePath, "", args);
+        if (!layer->Export(filePath, "", args)) {
+            return false;
+        }
     }
+
+    updateAllCachedStageWithLayer(layer, filePath);
+
+    return true;
 }
 
 SdfLayerRefPtr saveAnonymousLayer(

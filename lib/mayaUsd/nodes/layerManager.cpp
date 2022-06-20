@@ -239,12 +239,14 @@ private:
     BatchSaveResult saveUsdToUsdFiles();
     void            convertAnonymousLayers(MayaUsdProxyShapeBase* pShape, UsdStageRefPtr stage);
     void            saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous);
+    void            clearProxies();
+    bool            hasDirtyLayer() const;
 
     std::map<std::string, SdfLayerRefPtr> _idToLayer;
     TfNotice::Key                         _onStageSetKey;
     std::set<unsigned int>                _supportedTypes;
-    MDagPathArray                         _proxiesToSave;
-    MDagPathArray                         _internalProxiesToSave;
+    std::vector<BatchSaveInfo>            _proxiesToSave;
+    std::vector<BatchSaveInfo>            _internalProxiesToSave;
     static MCallbackId                    preSaveCallbackId;
     static MCallbackId                    preExportCallbackId;
     static MCallbackId                    postNewCallbackId;
@@ -376,13 +378,39 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
     }
 }
 
+void LayerDatabase::clearProxies()
+{
+    _proxiesToSave.clear();
+    _internalProxiesToSave.clear();
+}
+
+bool LayerDatabase::hasDirtyLayer() const
+{
+    for (const auto& info : _proxiesToSave) {
+        SdfLayerHandleVector allLayers = info.stage->GetLayerStack(true);
+        for (auto layer : allLayers) {
+            if (layer->IsDirty()) {
+                return true;
+            }
+        }
+    }
+    for (const auto& info : _internalProxiesToSave) {
+        SdfLayerHandleVector allLayers = info.stage->GetLayerStack(true);
+        for (auto layer : allLayers) {
+            if (layer->IsDirty()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool LayerDatabase::getProxiesToSave(bool isExport)
 {
     bool checkSelection = isExport && (MFileIO::kExportTypeSelected == MFileIO::exportType());
     const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
 
-    _proxiesToSave.clear();
-    _internalProxiesToSave.clear();
+    clearProxies();
 
     MFnDependencyNode  fn;
     MItDependencyNodes iter(MFn::kPluginDependNode);
@@ -414,20 +442,24 @@ bool LayerDatabase::getProxiesToSave(bool isExport)
                     SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
                     for (auto layer : allLayers) {
                         if (layer->IsDirty()) {
-                            MDagPath proxyDagPath;
-                            MDagPath::getAPathTo(mobj, proxyDagPath);
+                            BatchSaveInfo info;
+                            MDagPath::getAPathTo(mobj, info.dagPath);
+                            info.stage = stage;
+                            info.shareable = pShape->isShareableStage();
+                            info.isIncoming = pShape->isStageIncoming();
+
                             // Where should we save the stage?
                             // We handle unshared composition internally in Maya USD file
                             // The reason we have this distinction now is that some Layers are
                             // special case layers that should be saved to the maya file only.
                             // There are two examples currently of this, the session layer and
-                            // unshared root layer. So since we have batchSave and a delegate which
-                            // handles saving externally, we need to manage some proxies ourselves
-                            // and control where they save
+                            // unshared root layer. So since we have batchSave and a delegate
+                            // which handles saving externally, we need to manage some proxies
+                            // ourselves and control where they save
                             if (pShape->isShareableStage()) {
-                                _proxiesToSave.append(proxyDagPath);
+                                _proxiesToSave.emplace_back(std::move(info));
                             } else {
-                                _internalProxiesToSave.append(proxyDagPath);
+                                _internalProxiesToSave.emplace_back(std::move(info));
                             }
                             break;
                         }
@@ -437,10 +469,10 @@ bool LayerDatabase::getProxiesToSave(bool isExport)
         }
     }
 
-    return ((_proxiesToSave.length() + _internalProxiesToSave.length()) > 0);
+    return ((_proxiesToSave.size() + _internalProxiesToSave.size()) > 0);
 }
 
-bool LayerDatabase::saveInteractionRequired() { return _proxiesToSave.length() > 0; }
+bool LayerDatabase::saveInteractionRequired() { return _proxiesToSave.size() > 0; }
 
 bool LayerDatabase::saveUsd(bool isExport)
 {
@@ -455,7 +487,7 @@ bool LayerDatabase::saveUsd(bool isExport)
         if (isCrashing()) {
             result = kPartiallyCompleted;
             opt = MayaUsd::utils::kSaveToMayaSceneFile;
-        } else if (_batchSaveDelegate && _proxiesToSave.length() > 0) {
+        } else if (_batchSaveDelegate && _proxiesToSave.size() > 0) {
             result = _batchSaveDelegate(_proxiesToSave);
         }
 
@@ -471,9 +503,9 @@ bool LayerDatabase::saveUsd(bool isExport)
 
         if (result == kAbort) {
             return false;
-        } else if (result == kCompleted && _internalProxiesToSave.length() == 0) {
+        } else if (result == kCompleted && _internalProxiesToSave.size() == 0) {
             return true;
-        } else if (result == kPartiallyCompleted && !getProxiesToSave(isExport)) {
+        } else if (result == kPartiallyCompleted && !hasDirtyLayer()) {
             return true;
         }
 
@@ -486,8 +518,7 @@ bool LayerDatabase::saveUsd(bool isExport)
         result = MayaUsd::kCompleted;
     }
 
-    _proxiesToSave.clear();
-    _internalProxiesToSave.clear();
+    clearProxies();
     return (MayaUsd::kCompleted == result);
 }
 
@@ -623,26 +654,18 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
     bool atLeastOneDirty = false;
 
     MFnDependencyNode fn;
-    for (size_t i = 0; i < _proxiesToSave.length() + _internalProxiesToSave.length(); i++) {
-        MDagPath dagPath;
-        if (i < _proxiesToSave.length()) {
-            dagPath = _proxiesToSave[i];
-        } else {
-            dagPath = _internalProxiesToSave[i - _proxiesToSave.length()];
-        }
-        MObject mobj = dagPath.node();
+    for (size_t i = 0; i < _proxiesToSave.size() + _internalProxiesToSave.size(); i++) {
+        const BatchSaveInfo& info = i < _proxiesToSave.size()
+            ? _proxiesToSave[i]
+            : _internalProxiesToSave[i - _proxiesToSave.size()];
+        MObject mobj = info.dagPath.node();
         fn.setObject(mobj);
         if (!fn.isFromReferencedFile()
             && LayerDatabase::instance().supportedNodeType(fn.typeId())) {
-            MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
-            UsdStageRefPtr         stage = pShape ? pShape->getUsdStage() : nullptr;
-            if (!stage) {
-                continue;
-            }
 
             // Here if its unshared or not an incoming connection we save otherwise skip
-            if (!pShape->isShareableStage() || !pShape->isStageIncoming()) {
-                auto result = saveStageToMayaFile(lm, builder, mobj, stage);
+            if (!info.shareable || !info.isIncoming) {
+                auto result = saveStageToMayaFile(lm, builder, mobj, info.stage);
                 if (result._stageHasDirtyLayers) {
                     atLeastOneDirty = true;
                 }
@@ -650,8 +673,8 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
             }
         }
     }
-    _proxiesToSave.clear();
-    _internalProxiesToSave.clear();
+
+    clearProxies();
     layersHandle.setAllClean();
     dataBlock.setClean(lm->layers);
 
@@ -667,34 +690,27 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
 BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
 {
     MFnDependencyNode fn;
-    for (size_t i = 0; i < _proxiesToSave.length() + _internalProxiesToSave.length(); i++) {
-        MDagPath dagPath;
-        if (i < _proxiesToSave.length()) {
-            dagPath = _proxiesToSave[i];
-        } else {
-            dagPath = _internalProxiesToSave[i - _proxiesToSave.length()];
-        }
+    for (size_t i = 0; i < _proxiesToSave.size() + _internalProxiesToSave.size(); i++) {
+        const BatchSaveInfo& info = i < _proxiesToSave.size()
+            ? _proxiesToSave[i]
+            : _internalProxiesToSave[i - _proxiesToSave.size()];
 
-        MObject mobj = dagPath.node();
+        MObject mobj = info.dagPath.node();
         fn.setObject(mobj);
         if (!fn.isFromReferencedFile()
             && LayerDatabase::instance().supportedNodeType(fn.typeId())) {
             MayaUsdProxyShapeBase* pShape = static_cast<MayaUsdProxyShapeBase*>(fn.userNode());
-            UsdStageRefPtr         stage = pShape ? pShape->getUsdStage() : nullptr;
-            if (!stage) {
-                continue;
-            }
 
             // Unshared Composition Saves to MayaFile Always
-            if (!pShape->isShareableStage()) {
-                saveStageToMayaFile(mobj, stage);
+            if (!info.shareable) {
+                saveStageToMayaFile(mobj, info.stage);
             } else {
                 // No need to save stages from external sources
-                if (pShape->isStageIncoming()) {
+                if (info.isIncoming) {
                     continue;
                 }
-                convertAnonymousLayers(pShape, stage);
-                SdfLayerHandleVector allLayers = stage->GetLayerStack(false);
+                convertAnonymousLayers(pShape, info.stage);
+                SdfLayerHandleVector allLayers = info.stage->GetLayerStack(false);
                 for (auto layer : allLayers) {
                     if (layer->PermissionToSave()) {
                         MayaUsd::utils::saveLayerWithFormat(layer);
@@ -704,8 +720,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
         }
     }
 
-    _proxiesToSave.clear();
-    _internalProxiesToSave.clear();
+    clearProxies();
 
     return MayaUsd::kCompleted;
 }
