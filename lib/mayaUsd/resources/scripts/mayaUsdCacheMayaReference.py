@@ -59,7 +59,7 @@ def _getMenuValue(menuName, values, defaultIndex = 0):
     Retrieves the currently selected values from a menu.
     """
     # Note: option menu selection index start at 1, so we subtract 1.
-    menuIndex = cmds.optionMenuGrp('compositionArcTypeMenu', query=True, select=True) - 1
+    menuIndex = cmds.optionMenu(menuName, query=True, select=True) - 1
     if 0 <= menuIndex < len(values):
         return values[menuIndex]
     else:
@@ -181,7 +181,7 @@ def cacheFileUsdHierarchyOptions(topForm):
         cmds.textField(text=str(_pulledMayaRefPrim.GetParent().GetPath()), editable=False)
 
     with mayaRefUtils.SetParentContext(cmds.rowLayout(numberOfColumns=2)):
-        cmds.optionMenuGrp('compositionArcTypeMenu',
+        cmds.optionMenu('compositionArcTypeMenu',
                            label=getMayaUsdLibString('kOptionAsUSDReference'),
                            cc=compositionArcChanged,
                            annotation=getMayaUsdLibString('kOptionAsUSDReferenceToolTip'))
@@ -325,7 +325,7 @@ def cacheInitUi(parent, filterType):
     mayaRefPrimParent = _pulledMayaRefPrim.GetParent()
 
     menuIndex = _getMenuIndex(_compositionArcValues, optionsDict['rn_payloadOrReference'])
-    cmds.optionMenuGrp('compositionArcTypeMenu', edit=True, select=menuIndex)
+    cmds.optionMenu('compositionArcTypeMenu', edit=True, select=menuIndex)
 
     menuIndex = _getMenuIndex(_listEditedAsValues, optionsDict['rn_listEditType'])
     cmds.optionMenu('listEditedAsMenu', edit=True, select=menuIndex)
