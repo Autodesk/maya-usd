@@ -54,6 +54,7 @@
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/utils/progressBarScope.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/sdf/variantSetSpec.h>
@@ -115,19 +116,15 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
 {
     const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
 
-    MComputation computation;
-    if (timeSamples.empty()) {
-        // Non-animated export doesn't show progress.
-        computation.beginComputation(/*showProgressBar*/ false);
-    } else {
-        // Animated export shows frame-by-frame progress.
-        computation.beginComputation(/*showProgressBar*/ true);
-        computation.setProgressRange(0, timeSamples.size());
-    }
+    // Non-animated export doesn't show progress.
+    const bool showProgress = !timeSamples.empty();
+
+    // Animated export shows frame-by-frame progress.
+    int                       nbSteps = 1 + timeSamples.size();
+    MayaUsd::ProgressBarScope progressBar(showProgress, true /*interruptible */, nbSteps, "");
 
     // Default-time export.
     if (!_BeginWriting(fileName, append)) {
-        computation.endComputation();
         return false;
     }
 
@@ -135,24 +132,21 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     if (!timeSamples.empty()) {
         const MTime oldCurTime = MAnimControl::currentTime();
 
-        int progress = 0;
         for (double t : timeSamples) {
             if (mJobCtx.mArgs.verbose) {
                 TF_STATUS("%f", t);
             }
             MGlobal::viewFrame(t);
-            computation.setProgress(progress);
-            progress++;
+            progressBar.advance();
 
             // Process per frame data.
             if (!_WriteFrame(t)) {
                 MGlobal::viewFrame(oldCurTime);
-                computation.endComputation();
                 return false;
             }
 
             // Allow user cancellation.
-            if (computation.isInterruptRequested()) {
+            if (progressBar.isInterruptRequested()) {
                 break;
             }
         }
@@ -163,16 +157,16 @@ bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
 
     // Finalize the export, close the stage.
     if (!_FinishWriting()) {
-        computation.endComputation();
         return false;
     }
-
-    computation.endComputation();
+    progressBar.advance();
     return true;
 }
 
 bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 {
+    MayaUsd::ProgressBarScope progressBar(8);
+
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
     UsdMayaUtil::MDagPathSet::const_iterator m, n;
@@ -193,6 +187,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             }
         } // for n
     }     // for m
+    progressBar.advance();
 
     // Make sure the file name is a valid one with a proper USD extension.
     TfToken     fileExt(TfGetExtension(fileName));
@@ -209,6 +204,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         // Has correct extension; use as-is.
         fileNameWithExt = fileName;
     }
+    progressBar.advance();
 
     // Setup file structure for export based on whether we are doing a
     // "standard" flat file export or a "packaged" export to usdz.
@@ -234,6 +230,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         _fileName = fileNameWithExt;
         _packageName = std::string();
     }
+    progressBar.advance();
 
     TF_STATUS("Opening layer '%s' for writing", _fileName.c_str());
     if (mJobCtx.mArgs.renderLayerMode == UsdMayaJobExportArgsTokens->modelingVariant) {
@@ -253,6 +250,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     if (!mJobCtx._OpenFile(_fileName, append)) {
         return false;
     }
+    progressBar.advance();
 
     // Set time range for the USD file if we're exporting animation.
     if (!mJobCtx.mArgs.timeSamples.empty()) {
@@ -288,6 +286,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             false,
             false);
     }
+    progressBar.advance();
 
     // Pre-process the argument dagPath path names into two sets. One set
     // contains just the arg dagPaths, and the other contains all parents of
@@ -338,10 +337,22 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             curDagPathIsValid = curDagPath.isValid(&status);
         }
     }
+    progressBar.advance();
+
+    // We are entering a loop here, so count the number of dag objects
+    // so we can have a better progress bar status.
+    // Note: Maya does the same thing during its write.
+    uint32_t numberDagObjects { 0 };
+    {
+        for (MItDag itDag(MItDag::kDepthFirst, MFn::kInvalid); !itDag.isDone(); itDag.next()) {
+            ++numberDagObjects;
+        }
+    }
 
     // Now do a depth-first traversal of the Maya DAG from the world root.
     // We keep a reference to arg dagPaths as we encounter them.
-    MDagPath curLeafDagPath;
+    MayaUsd::ProgressBarLoopScope dagObjLoop(numberDagObjects);
+    MDagPath                      curLeafDagPath;
     for (MItDag itDag(MItDag::kDepthFirst, MFn::kInvalid); !itDag.isDone(); itDag.next()) {
         MDagPath curDagPath;
         itDag.getPath(curDagPath);
@@ -392,6 +403,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
                 }
             }
         }
+        dagObjLoop.loopAdvance();
     }
 
     if (!mJobCtx.mArgs.rootMapFunction.IsNull()) {
@@ -407,6 +419,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
     // Writing Materials/Shading
     UsdMayaTranslatorMaterial::ExportShadingEngines(mJobCtx, mDagPathToUsdPathMap);
+    progressBar.advance();
 
     // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
@@ -414,6 +427,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     if (!mJobCtx._PostProcess()) {
         return false;
     }
+    progressBar.advance();
 
     if (!_modelKindProcessor->MakeModelHierarchy(mJobCtx.mStage)) {
         return false;
@@ -423,6 +437,7 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     mChasers.clear();
     UsdMayaExportChaserRegistry::FactoryContext ctx(
         mJobCtx.mStage, mDagPathToUsdPathMap, mJobCtx.mArgs);
+    MayaUsd::ProgressBarLoopScope chaserNamesLoop(mJobCtx.mArgs.chaserNames.size());
     for (const std::string& chaserName : mJobCtx.mArgs.chaserNames) {
         if (UsdMayaExportChaserRefPtr fn
             = UsdMayaExportChaserRegistry::GetInstance().Create(chaserName, ctx)) {
@@ -430,12 +445,15 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         } else {
             TF_RUNTIME_ERROR("Failed to create chaser: %s", chaserName.c_str());
         }
+        chaserNamesLoop.loopAdvance();
     }
 
+    MayaUsd::ProgressBarLoopScope chasersLoop(mChasers.size());
     for (const UsdMayaExportChaserRefPtr& chaser : mChasers) {
         if (!chaser->ExportDefault()) {
             return false;
         }
+        chasersLoop.loopAdvance();
     }
 
     return true;
@@ -465,6 +483,8 @@ bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
 
 bool UsdMaya_WriteJob::_FinishWriting()
 {
+    MayaUsd::ProgressBarScope progressBar(6);
+
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
     // Write Variants (to first root prim path)
@@ -488,6 +508,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
         //     to take precedence.
         defaultPrim = _WriteVariants(usdRootPrim);
     }
+    progressBar.advance();
 
     // Restoring the currentRenderLayer
     MFnRenderLayer currentLayer(MFnRenderLayer::currentLayer());
@@ -497,6 +518,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
             false,
             false);
     }
+    progressBar.advance();
 
     // Unfortunately, MGlobal::isZAxisUp() is merely session state that does
     // not get recorded in Maya files, so we cannot rely on it being set
@@ -529,20 +551,27 @@ bool UsdMaya_WriteJob::_FinishWriting()
         // prim for the export... usdVariantRootPrimPath
         mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
     }
+    progressBar.advance();
 
     // Running post export function on all the prim writers.
+    const int                     loopSize = mJobCtx.mMayaPrimWriterList.size();
+    MayaUsd::ProgressBarLoopScope primWriterLoop(loopSize);
     for (auto& primWriter : mJobCtx.mMayaPrimWriterList) {
         primWriter->PostExport();
+        primWriterLoop.loopAdvance();
     }
 
     // Run post export function on the chasers.
+    MayaUsd::ProgressBarLoopScope chasersLoop(mChasers.size());
     for (const UsdMayaExportChaserRefPtr& chaser : mChasers) {
         if (!chaser->PostExport()) {
             return false;
         }
+        chasersLoop.loopAdvance();
     }
 
     _PostCallback();
+    progressBar.advance();
 
     TF_STATUS("Saving stage");
     if (mJobCtx.mStage->GetRootLayer()->PermissionToSave()) {
@@ -555,6 +584,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
         TF_STATUS("Packaging USDZ file");
         _CreatePackage();
     }
+    progressBar.advance();
 
     mJobCtx.mStage = UsdStageRefPtr();
     mJobCtx.mMayaPrimWriterList.clear(); // clear this so that no stage references are left around
@@ -566,6 +596,7 @@ bool UsdMaya_WriteJob::_FinishWriting()
     if (!_packageName.empty()) {
         TfDeleteFile(_fileName);
     }
+    progressBar.advance();
 
     return true;
 }
