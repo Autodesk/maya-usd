@@ -219,9 +219,9 @@ U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS
     VtValue vt;
     if (!attr.isValid() ||
 #ifdef UFE_V4_FEATURES_AVAILABLE
-         !attr._hasValue()) {
+        !attr._hasValue()) {
 #else
-         !attr.hasValue()) {
+        !attr.hasValue()) {
 #endif
         vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
