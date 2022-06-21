@@ -490,6 +490,68 @@ class ContextOpsTestCase(unittest.TestCase):
         cmds.redo()
         self.assertTrue(capsuleBindAPI.GetDirectBinding().GetMaterialPath().isEmpty)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '4010', 'Test only available in UFE preview version 0.4.10 and greater')
+    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    def testMaterialBindingToSelection(self):
+        """Exercising the bind to selection context menu option."""
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapeItem = ufeUtils.createItem(proxyShape)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        for primName in ['Capsule', 'Sphere', 'Material', 'Material']:
+            cmd = contextOps.doOpCmd(['Add New Prim', primName])
+            ufeCmd.execute(cmd)
+
+        rootHier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(rootHier.hasChildren())
+        self.assertEqual(len(rootHier.children()), 4)
+
+        # Add the capsule and sphere to the global selection:
+        ufe.GlobalSelection.get().clear()
+        capsuleItem = rootHier.children()[0]
+        ufe.GlobalSelection.get().append(capsuleItem)
+        sphereItem = rootHier.children()[1]
+        ufe.GlobalSelection.get().append(sphereItem)
+
+        def allHaveMaterial(self, items, materialName):
+            for item in items:
+                prim = usdUtils.getPrimFromSceneItem(item)
+                self.assertTrue(prim.HasAPI(UsdShade.MaterialBindingAPI))
+                bindAPI = UsdShade.MaterialBindingAPI(prim)
+                self.assertEqual(bindAPI.GetDirectBinding().GetMaterialPath(), Sdf.Path(materialName))
+
+        def noneHaveMaterial(self, items):
+            for item in items:
+                prim = usdUtils.getPrimFromSceneItem(item)
+                self.assertFalse(prim.HasAPI(UsdShade.MaterialBindingAPI))
+
+        contextOps = ufe.ContextOps.contextOps(rootHier.children()[2])
+        cmd = contextOps.doOpCmd(['Assign Material to Selection',])
+        self.assertTrue(cmd)
+        ufeCmd.execute(cmd)
+        allHaveMaterial(self, [capsuleItem, sphereItem], "/Material1")
+        cmds.undo()
+        noneHaveMaterial(self, [capsuleItem, sphereItem])
+        cmds.redo()
+        allHaveMaterial(self, [capsuleItem, sphereItem], "/Material1")
+
+        # Test that undo restores previous material:
+        contextOps = ufe.ContextOps.contextOps(rootHier.children()[3])
+        cmd = contextOps.doOpCmd(['Assign Material to Selection',])
+        self.assertTrue(cmd)
+        ufeCmd.execute(cmd)
+        allHaveMaterial(self, [capsuleItem, sphereItem], "/Material2")
+        cmds.undo()
+        allHaveMaterial(self, [capsuleItem, sphereItem], "/Material1")
+        cmds.redo()
+        allHaveMaterial(self, [capsuleItem, sphereItem], "/Material2")
+
     def testAddNewPrimWithDelete(self):
         cmds.file(new=True, force=True)
 

@@ -41,6 +41,7 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdShade/material.h>
 
 #include <maya/MGlobal.h>
 #include <ufe/attribute.h>
@@ -122,6 +123,10 @@ static constexpr char    kDuplicateAsMayaItem[] = "Duplicate As Maya Data";
 static constexpr char    kDuplicateAsMayaLabel[] = "Duplicate As Maya Data";
 static constexpr char    kAddMayaReferenceItem[] = "Add Maya Reference";
 static constexpr char    kAddMayaReferenceLabel[] = "Add Maya Reference...";
+#endif
+#if PXR_VERSION >= 2108
+static constexpr char kBindMaterialToSelectionItem[] = "Assign Material to Selection";
+static constexpr char kBindMaterialToSelectionLabel[] = "Assign Material to Selection";
 #endif
 
 #if PXR_VERSION >= 2008
@@ -501,6 +506,24 @@ class BindMaterialUndoableCommand : public Ufe::UndoableCommand
 public:
     static const std::string commandName;
 
+    static UsdPrim CompatiblePrim(const Ufe::SceneItem::Ptr& item)
+    {
+        auto usdItem = std::dynamic_pointer_cast<const MAYAUSD_NS::ufe::UsdSceneItem>(item);
+        if (!usdItem) {
+            return {};
+        }
+        UsdPrim usdPrim = usdItem->prim();
+        if (UsdShadeNodeGraph(usdPrim) || UsdShadeShader(usdPrim)) {
+            // The binding schema can be applied anywhere, but it makes no sense on a
+            // material or a shader.
+            return {};
+        }
+        if (PXR_NS::UsdShadeMaterialBindingAPI::CanApply(usdPrim)) {
+            return usdPrim;
+        }
+        return {};
+    }
+
     BindMaterialUndoableCommand(const UsdPrim& prim, const SdfPath& materialPath)
         : _stage(prim.GetStage())
         , _primPath(prim.GetPath())
@@ -518,7 +541,12 @@ public:
         if (prim.IsValid()) {
             auto bindingAPI = UsdShadeMaterialBindingAPI(prim);
             if (bindingAPI) {
-                bindingAPI.UnbindDirectBinding();
+                if (_previousMaterialPath.IsEmpty()) {
+                    bindingAPI.UnbindDirectBinding();
+                } else {
+                    UsdShadeMaterial material(_stage->GetPrimAtPath(_previousMaterialPath));
+                    bindingAPI.Bind(material);
+                }
             }
             if (_appliedBindingAPI) {
                 prim.RemoveAPI<UsdShadeMaterialBindingAPI>();
@@ -538,6 +566,7 @@ public:
             UsdShadeMaterialBindingAPI bindingAPI;
             if (prim.HasAPI<UsdShadeMaterialBindingAPI>()) {
                 bindingAPI = UsdShadeMaterialBindingAPI(prim);
+                _previousMaterialPath = bindingAPI.GetDirectBinding().GetMaterialPath();
             } else {
                 bindingAPI = UsdShadeMaterialBindingAPI::Apply(prim);
                 _appliedBindingAPI = true;
@@ -550,6 +579,7 @@ private:
     UsdStageWeakPtr _stage;
     SdfPath         _primPath;
     SdfPath         _materialPath;
+    SdfPath         _previousMaterialPath;
     bool            _appliedBindingAPI = false;
 };
 const std::string BindMaterialUndoableCommand::commandName("Bind Material");
@@ -785,6 +815,25 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 {
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
+#if PXR_VERSION >= 2108
+        if (fItem->prim().IsA<UsdShadeMaterial>()) {
+            items.emplace_back(kBindMaterialToSelectionItem, kBindMaterialToSelectionLabel);
+            bool enable = false;
+            if (auto globalSn = Ufe::GlobalSelection::get()) {
+                for (auto&& selItem : *globalSn) {
+                    if (BindMaterialUndoableCommand::CompatiblePrim(selItem)) {
+                        enable = true;
+                        break;
+                    }
+                }
+            }
+            // I did not see any support for disabling items in Maya Ufe outliner code, but let's
+            // still mark it as disabled if nothing is selected or if the selection does not contain
+            // imageable primitives.
+            items.back().enabled = enable;
+            items.emplace_back(Ufe::ContextItem::kSeparator);
+        }
+#endif
 #ifdef WANT_QT_BUILD
         // Top-level item - USD Layer editor (for all context op types).
         // Only available when building with Qt enabled.
@@ -1139,6 +1188,21 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 #if PXR_VERSION >= 2108
     else if (itemPath[0] == BindMaterialUndoableCommand::commandName) {
         return std::make_shared<BindMaterialUndoableCommand>(fItem->prim(), SdfPath(itemPath[1]));
+    } else if (itemPath[0] == kBindMaterialToSelectionItem) {
+        std::shared_ptr<Ufe::CompositeUndoableCommand> compositeCmd;
+        if (auto globalSn = Ufe::GlobalSelection::get()) {
+            for (auto&& selItem : *globalSn) {
+                UsdPrim compatiblePrim = BindMaterialUndoableCommand::CompatiblePrim(selItem);
+                if (compatiblePrim) {
+                    if (!compositeCmd) {
+                        compositeCmd = std::make_shared<Ufe::CompositeUndoableCommand>();
+                    }
+                    compositeCmd->append(std::make_shared<BindMaterialUndoableCommand>(
+                        compatiblePrim, fItem->prim().GetPath()));
+                }
+            }
+        }
+        return compositeCmd;
     } else if (itemPath[0] == UnbindMaterialUndoableCommand::commandName) {
         return std::make_shared<UnbindMaterialUndoableCommand>(fItem->prim());
     }
