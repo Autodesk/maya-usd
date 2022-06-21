@@ -236,6 +236,31 @@ HdMayaSceneDelegate::~HdMayaSceneDelegate()
 //void HdMayaSceneDelegate::_TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
 void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scene)
 {
+#if 1
+    //My version, does minimal update
+    // This loop could, in theory, pe parallelized.  Unclear how large the gains would be, but maybe
+    // nothing to lose unless there is some internal contention in USD.
+    for (int i = 0; i < scene.mCount; i++) {
+        auto flags = scene.mFlags[i];
+        if (flags == 0)
+            continue;
+
+        // We have a flag to know the render item is new.  Is that useful to CreateOrGetRenderItem?
+        HdMayaRenderItemAdapterPtr adapter;
+        CreateOrGetRenderItem(*scene.mItems[i], adapter);
+        // if (flags & (MViewPortScene::MVS_geometry | MViewPortScene::MVS_topo) {
+        // notify transform changed also in UpdateGeometry, so always call if anything changed
+        // TODO:  refactor to separate notifications from geometry
+        adapter->UpdateFromDelta(*scene.mItems[i], flags);
+        //}
+        if (flags & MViewportScene::MVS_matrix) {
+            adapter->UpdateTransform(*scene.mItems[i]);
+        }
+    }
+
+#else
+
+
 	for (auto it : _renderItemsAdapters)
 	// Mark all render items as stale
 	{
@@ -268,7 +293,7 @@ void HdMayaSceneDelegate::HandleCompleteViewportScene(const MViewportScene& scen
 			RemoveAdapter(ria->GetID());
 		}
 	}
-
+#endif
 }
 
 void HdMayaSceneDelegate::Populate()
@@ -705,28 +730,43 @@ bool HdMayaSceneDelegate::InsertRenderItemMaterial(
 }
 
 // Analogous to HdMayaSceneDelegate::InsertDag
-bool HdMayaSceneDelegate::InsertRenderItem(
+bool HdMayaSceneDelegate::CreateOrGetRenderItem(
 	const MRenderItem& ri,
-	const HdMayaShaderInstanceData& sd,
+	//const HdMayaShaderInstanceData& sd,
 	HdMayaRenderItemAdapterPtr& ria
 	)
 {
     TF_DEBUG(HDMAYA_DELEGATE_INSERTDAG)
         .Msg(
-            "HdMayaSceneDelegate::InsertRenderItem::"
+            "HdMayaSceneDelegate::CreateOrGetRenderItem"
             "found shape: %s\n",
             ri.name().asChar());
 
-	const SdfPath id = GetRenderItemPrimPath(ri);
-	HdMayaRenderItemAdapterPtr* result = TfMapLookupPtr(_renderItemsAdapters, id);
+    // Using SdfPath as the hash table key is extremely slow.  The cost appears to be GetPrimPath, which would depend
+    // on MdagPath, which is a wrapper on TdagPath.  TdagPath is a very slow class and best to avoid in any performance-
+    // critical area.
+    // Simply workaround for the prototype is an additional lookup index based on InternalObjectID.  Long term goal would
+    // be that the plugin rarely, if ever, deals with TdagPath.
+    const int fastId = ri.InternalObjectId();
+    HdMayaRenderItemAdapterPtr* result = TfMapLookupPtr(_renderItemsAdaptersFast, fastId);
+
+	//HdMayaRenderItemAdapterPtr* result = TfMapLookupPtr(_renderItemsAdapters, id);
     if (result != nullptr) 
 	{
+        // adapter already exists, return it
 		ria = *result;
         return false;
     }
 
-    ria = HdMayaRenderItemAdapterPtr(new HdMayaRenderItemAdapter(id, this, ri, sd));        
-    _renderItemsAdapters.insert({ id, ria });
+    HdMayaShaderInstanceData sd;
+    InsertRenderItemMaterial(ri, sd);
+
+    const SdfPath slowId = GetRenderItemPrimPath(ri);
+
+    ria = std::make_shared<HdMayaRenderItemAdapter>(slowId, this, ri, sd);
+    _renderItemsAdaptersFast.insert({ fastId, ria });
+    _renderItemsAdapters.insert({ slowId, ria });
+
 	return true;
 }
 

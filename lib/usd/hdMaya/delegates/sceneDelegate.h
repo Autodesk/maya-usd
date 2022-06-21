@@ -106,9 +106,9 @@ public:
     void InsertDag(const MDagPath& dag);
 
 	HDMAYA_API
-	bool InsertRenderItem(
+    bool CreateOrGetRenderItem(
 		const MRenderItem& ri, 
-		const HdMayaShaderInstanceData& sa,
+		//const HdMayaShaderInstanceData& sa,
 		HdMayaRenderItemAdapterPtr& adapter);
 
 	HDMAYA_API
@@ -281,7 +281,9 @@ private:
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
 	/// \brief Unordered Map storing the shape adapters.
-	AdapterMap<HdMayaRenderItemAdapterPtr> _renderItemsAdapters;
+    AdapterMap<HdMayaRenderItemAdapterPtr>              _renderItemsAdapters;
+    std::unordered_map<int, HdMayaRenderItemAdapterPtr> _renderItemsAdaptersFast;
+
 	/// \brief Unordered Map storing the shape adapters.
 	AdapterMap<HdMayaShaderAdapterPtr> _renderItemShaderAdapters;
     /// \brief Unordered Map storing the light adapters.

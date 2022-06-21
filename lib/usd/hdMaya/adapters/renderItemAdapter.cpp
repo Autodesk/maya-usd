@@ -418,6 +418,142 @@ void HdMayaRenderItemAdapter::UpdateTopology(MRenderItem& ri)
 	}	
 }
 
+void HdMayaRenderItemAdapter::UpdateFromDelta(MRenderItem& ri, unsigned int flags)
+{ 
+    if (_primitive != MHWRender::MGeometry::Primitive::kTriangles)
+        return;
+
+    const bool isNew = flags & 1;         // MViewPortScene::MVS_new;  //not used yet
+    const bool matrixChanged = flags & 2; // MViewPortScene::MVS_matrix;
+    const bool geomChanged = flags & 4;   // MViewPortScene::MVS_geometry;
+    const bool topoChanged = flags & 8;   // MViewPortScene::MVS_topo;
+
+    HdDirtyBits dirtyBits = 0;
+    if (isNew) {
+        dirtyBits |= HdChangeTracker::DirtyMaterialId;
+    }
+    if (matrixChanged) {
+        dirtyBits |= HdChangeTracker::DirtyTransform;
+    }
+    if (geomChanged) {
+        dirtyBits |= HdChangeTracker::DirtyPoints;
+    }
+    if (topoChanged) {
+        dirtyBits |= (HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyPrimvar);
+    }
+
+    MGeometry* geom = nullptr;
+    if (geomChanged | topoChanged) {
+        geom = ri.geometry();
+    }
+    VtIntArray faceVertexIndices;
+    VtIntArray faceVertexCounts;
+    // TODO : Multiple streams
+    // for now assume first is position
+
+ 	// Vertices
+    MVertexBuffer* verts = nullptr;
+    if (geomChanged && geom && geom->vertexBufferCount() > 0) {
+        if (verts = geom->vertexBuffer(0)) {
+            int vertCount = 0;
+            if (topoChanged) {
+                vertCount = verts->vertexCount();
+            } else {
+                // Keep the previously-determined vertex count in case it was truncated.
+                vertCount = _positions.size();
+            }
+            _positions.clear();
+            //_positions.resize(vertCount);
+            // map() is usually just reading from the software copy of the vp2 buffers.  It was also
+            // showing up in vtune that it was sometimes mapping OpenGL buffers to read from, which
+            // is slow.  Disabling processing of non-triangle render made that disappear.  Maybe
+            // something like joint render items point to hardware only buffers?
+            const auto* vertexPositions = reinterpret_cast<const GfVec3f*>(verts->map());
+            // NOTE: Looking at HdMayaMeshAdapter::GetPoints notice assign(vertexPositions,
+            // vertexPositions + vertCount) Why are we not multiplying with sizeof(GfVec3f) to
+            // calculate the offset ? The following happens when I try to do it : Invalid Hydra prim
+            // - Vertex primvar points has 288 elements, while its topology references only upto
+            // element index 24.
+            _positions.assign(vertexPositions, vertexPositions + vertCount);
+            verts->unmap();
+        }
+    }
+
+    // Indices
+    MIndexBuffer* indices = nullptr;
+    if (topoChanged && geom && geom->vertexBufferCount() > 0) {
+        if (indices = geom->indexBuffer(0)) {
+            int indexCount = indices->size();
+            faceVertexIndices.resize(indexCount);
+            int* indicesData = (int*)indices->map();
+            // USD spamming the "topology references only upto element" message is super
+            // slow.  Scanning the index array to look for an incompletely used vertex
+            // buffer is innefficient, but it's better than the spammy warning. Cause of
+            // the incompletely used vertex buffer is unclear.  Maya scene data just is
+            // that way sometimes.
+            int maxIndex = 0;
+            for (int i = 0; i < indexCount; i++) {
+                if (indicesData[i] > maxIndex) {
+                    maxIndex = indicesData[i];
+                }
+            }
+
+            // VtArray operator[] is oddly expensive, ~10ms per frame here. Replace with assign().
+            // for (int i = 0; i < indexCount; i++) faceVertexIndices[i] = indicesData[i];
+            faceVertexIndices.assign(indicesData, indicesData + indexCount);
+
+            if (maxIndex < _positions.size() - 1) {
+                _positions.resize(maxIndex + 1);
+            }
+
+            switch (_primitive) {
+            case MHWRender::MGeometry::Primitive::kTriangles:
+                faceVertexCounts.resize(indexCount / 3);
+                // for (int i = 0; i < indexCount / 3; i++) faceVertexCounts[i] = 3;
+                faceVertexCounts.assign(indexCount / 3, 3);
+                break;
+            case MHWRender::MGeometry::Primitive::kLines:
+                faceVertexCounts.resize(indexCount);
+                // for (int i = 0; i < indexCount; i++) faceVertexCounts[i] = 1;
+                faceVertexCounts.assign(indexCount / 2, 2);
+                break;
+            }
+            indices->unmap();
+        }
+    }
+    // UVs
+    // if(indices)
+    //{
+    //	_uvs.clear();
+    //	int indexCount = indices->size();
+    //	_uvs.resize(indexCount);
+    //	// TODO : Fix this. these are bogus UVs but need to be there
+    //	// to display anything at all
+    //	for (int i = 0; i < indexCount; i++) _uvs[i] = (GfVec2f(0, 0));
+    //}
+
+    if (indices && verts) {
+        if (topoChanged) {
+            // TODO: Maybe we could use the flat shading of the display style?
+            _topology.reset(new HdMeshTopology(
+#if MAYA_APP_VERSION >= 2019
+                (GetDelegate()->GetParams().displaySmoothMeshes
+                 || GetDisplayStyle().refineLevel > 0)
+                    ? PxOsdOpenSubdivTokens->catmullClark
+                    : PxOsdOpenSubdivTokens->none,
+#else
+                GetDelegate()->GetParams().displaySmoothMeshes ? PxOsdOpenSubdivTokens->catmullClark
+                                                               : PxOsdOpenSubdivTokens->none,
+#endif
+                UsdGeomTokens->rightHanded,
+                faceVertexCounts,
+                faceVertexIndices));
+        }
+    }
+
+    MarkDirty(dirtyBits);
+}
+
 std::shared_ptr<HdTopology> HdMayaRenderItemAdapter::GetTopology()
 {
 	return _topology;

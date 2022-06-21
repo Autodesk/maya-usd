@@ -209,6 +209,9 @@ public:
 	void UpdateTopology(MRenderItem& ri);
 
 	HDMAYA_API
+    void UpdateFromDelta(MRenderItem& ri, unsigned int flags);
+
+	HDMAYA_API
 	virtual std::shared_ptr<HdTopology> GetTopology();
 
 	// TODO : Different smooth levels
