@@ -57,7 +57,8 @@
     {                                                                                         \
         return UsdAttribute::_hasMetadata(key);                                               \
     }
-#elif UFE_V3_FEATURES_AVAILABLE
+#else
+#ifdef UFE_V3_FEATURES_AVAILABLE
 #define UFE_ATTRIBUTE_OVERRIDES                                                               \
     bool        hasValue() const override { return UsdAttribute::hasValue(); }                \
     std::string name() const override { return UsdAttribute::name(); }                        \
@@ -96,6 +97,7 @@
     {                                                                                    \
         return UsdAttribute::string(Ufe::Attribute::sceneItem());                        \
     }
+#endif
 #endif
 
 namespace MAYAUSD_NS_DEF {
