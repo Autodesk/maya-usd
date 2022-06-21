@@ -87,9 +87,7 @@ if (UFE_LIGHTS_SUPPORT)
             UsdLight.cpp
             UsdLightHandler.cpp
     )
-endif()
 
-if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
     target_compile_definitions(${PROJECT_NAME}
     PRIVATE
         UFE_LIGHTS_SUPPORT=1
