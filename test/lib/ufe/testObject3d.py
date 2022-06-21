@@ -19,14 +19,12 @@
 import fixturesUtils
 import mayaUtils
 import ufeUtils
-from testUtils import assertVectorAlmostEqual
-from testUtils import assertVectorEqual
+from testUtils import assertVectorAlmostEqual, assertVectorEqual, filterUsdStr
 import usdUtils
 
 import mayaUsd
 
-from pxr import Usd
-from pxr import UsdGeom
+from pxr import Usd, UsdGeom, Sdf
 
 from maya import cmds
 from maya import standalone
@@ -578,6 +576,75 @@ class Object3dTestCase(unittest.TestCase):
         # The next test will only work if the cache was cleared when translating
         # the spheres:
         self.assertTrue(almostEqualBBox(shapeNode.boundingBox, expectedBBox))
+
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testEditRouterUndoVisibleCmd only available in UFE v2 or greater.')
+    def testEditRouterUndoVisibleCmd(self):
+
+        ''' Verify the token / attribute values for visibility after performing undo/redo '''
+
+        cmds.file(new=True, force=True)
+
+        def sessionLayerRouter(context, routingData):
+            # Write edits to the session layer.
+            prim = context.get('prim')
+            self.assertIsNot(prim, None)
+            layerId = prim.GetStage().GetSessionLayer().identifier
+            routingData['layer'] = layerId
+
+        # Register our edit router which directs the visibility edit to
+        # the session layer, which is not the edit target.
+        mayaUsd.lib.registerEditRouter('visibility', sessionLayerRouter)
+
+        # create a Capsule via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        proxyShape = mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapeItem = ufeUtils.createItem(proxyShape)
+        cOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        cOps.doOp(['Add New Prim', 'Capsule'])
+
+        # Check that the session layer is empty.
+        prim = mayaUsd.ufe.ufePathToPrim('%s,/Capsule1' % proxyShape)
+        sessionLayer = prim.GetStage().GetSessionLayer()
+        self.assertEqual(filterUsdStr(sessionLayer.ExportToString()), '')
+
+        # Create an Object3d interface.
+        capsuleItem = ufeUtils.createItem('%s,/Capsule1' % proxyShape)
+        object3d = ufe.Object3d.object3d(capsuleItem)
+
+        # Initially capsuleItem should be visible.
+        self.assertTrue(object3d.visibility())
+
+        # Make it invisible.
+        visibleCmd = object3d.setVisibleCmd(False)
+        visibleCmd.execute()
+
+        self.assertFalse(object3d.visibility())
+
+        # Session layer will now have a visibility edit.
+        sessionLayerEdit = 'over "Capsule1"\n{\n    token visibility = "invisible"\n}'
+        self.assertEqual(filterUsdStr(sessionLayer.ExportToString()), 
+                         sessionLayerEdit)
+
+        # Edit target (root) layer only has the prim def.
+        rootLayer = prim.GetStage().GetRootLayer()
+        self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
+                         'def Capsule "Capsule1"\n{\n}')
+
+        # Non-visibility edits go to the edit target layer, session layer is
+        # unchanged.
+        prim.SetActive(False)
+        self.assertFalse(prim.IsActive())
+
+        self.assertEqual(filterUsdStr(sessionLayer.ExportToString()), 
+                         sessionLayerEdit)
+        self.assertEqual(filterUsdStr(rootLayer.ExportToString()),
+                         'def Capsule "Capsule1" (\n    active = false\n)\n{\n}')
+
+        # Restore default edit router.
+        mayaUsd.lib.restoreDefaultEditRouter('visibility')
+
+        # Avoid on exit crash.  See testPythonWrappers.py for more details.
+        cmds.file(new=True, force=True)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

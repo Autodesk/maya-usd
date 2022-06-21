@@ -45,3 +45,9 @@ def assertVectorEqual(testCase, a, b):
 
 def getTestScene(*args):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)
+
+def filterUsdStr(usdSceneStr):
+    '''Remove empty lines and lines starting with pound character.'''
+    nonBlankLines = filter(None, [l.rstrip() for l in usdSceneStr.splitlines()])
+    finalLines = [l for l in nonBlankLines if not l.startswith('#')]
+    return '\n'.join(finalLines)

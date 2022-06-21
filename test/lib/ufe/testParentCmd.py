@@ -19,7 +19,7 @@
 import fixturesUtils
 import mayaUtils
 import testUtils
-from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorAlmostEqual, filterUsdStr
 import usdUtils
 
 import mayaUsd.ufe
@@ -33,12 +33,6 @@ import ufe
 
 import os
 import unittest
-
-def filterUsdStr(usdSceneStr):
-    '''Remove empty lines and lines starting with pound character.'''
-    nonBlankLines = filter(None, [l.rstrip() for l in usdSceneStr.splitlines()])
-    finalLines = [l for l in nonBlankLines if not l.startswith('#')]
-    return '\n'.join(finalLines)
 
 def childrenNames(children):
     return [str(child.path().back()) for child in children]

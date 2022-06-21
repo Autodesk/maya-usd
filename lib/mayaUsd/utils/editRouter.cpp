@@ -180,7 +180,7 @@ EditRouters defaultEditRouters()
     PXR_NAMESPACE_USING_DIRECTIVE
 
     EditRouters   defaultRouters;
-    TfTokenVector defaultOperations = { TfToken("parent"), TfToken("duplicate") };
+    TfTokenVector defaultOperations = { TfToken("parent"), TfToken("duplicate"), TfToken("visibility") };
     for (const auto& o : defaultOperations) {
         defaultRouters[o] = std::make_shared<CxxEditRouter>(editTargetLayer);
     }

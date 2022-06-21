@@ -64,6 +64,42 @@ private:
     EditRouterCb _cb;
 };
 
+// Guard class to set the edit target to the argument editTarget, then 
+// restore it to the stage's previous edit target.
+class MAYAUSD_CORE_PUBLIC EditTargetGuard
+{
+public:
+
+    EditTargetGuard(
+        const PXR_NS::UsdPrim&       prim,
+        const PXR_NS::UsdEditTarget& editTarget
+    )
+        : _prim(prim), _prevEditTarget(_prim.GetStage()->GetEditTarget())
+    {
+        setEditTarget(_prim, editTarget);
+    }
+
+    ~EditTargetGuard() {
+        setEditTarget(_prim, _prevEditTarget);
+    }
+
+private:
+
+    void setEditTarget(
+        const PXR_NS::UsdPrim&       prim,
+        const PXR_NS::UsdEditTarget& editTarget
+    ) {
+        prim.GetStage()->SetEditTarget(editTarget);
+    }
+
+    const PXR_NS::UsdPrim&       _prim;
+    // Need a by-value copy of the previous edit target.  Keeping only a
+    // reference leaves the edit target unchanged on EditTargetGuard
+    // destruction, most likely because the contents of the reference is
+    // changed to the new edit target by the EditTargetGuard constructor.
+    const PXR_NS::UsdEditTarget _prevEditTarget;
+};
+
 using EditRouters
     = PXR_NS::TfHashMap<PXR_NS::TfToken, EditRouter::Ptr, PXR_NS::TfToken::HashFunctor>;
 

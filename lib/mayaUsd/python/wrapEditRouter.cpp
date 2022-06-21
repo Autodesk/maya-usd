@@ -32,9 +32,13 @@ public:
     PyEditRouter(PyObject* pyCallable)
         : _pyCb(pyCallable)
     {
+        Py_INCREF(_pyCb);
     }
 
-    ~PyEditRouter() override { }
+    ~PyEditRouter() override
+    {
+        Py_DECREF(_pyCb);
+    }
 
     void operator()(const PXR_NS::VtDictionary& context, PXR_NS::VtDictionary& routingData) override
     {
