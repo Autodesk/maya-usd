@@ -788,7 +788,10 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     rootLayer = SdfLayer::FindOrOpen(fileString);
 
                 if (nullptr == rootLayer) {
-                    // Create a new stage in memory with an anonymous root layer.
+                    // Create an empty in-memory root layer so that a new stage in memory
+                    // will be created below by the UsdStage::Open call. This happens when
+                    // a brand new stage with a new anonymous layer is requested to be
+                    // created by the user.
                     if (!_anonymousRootLayer)
                         _anonymousRootLayer = SdfLayer::CreateAnonymous(kAnonymousLayerName);
                     rootLayer = _anonymousRootLayer;
