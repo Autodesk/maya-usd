@@ -203,7 +203,7 @@ def _resetMergeToUSDOptions(target, subLayout, data=None):
     """
     Resets the merge-to-USD options in the dialog.
     """
-    optionsText = mayaUsdOptions.convertOptionsDictToText(_getDefaultMergeToUSDOptionsDict())
+    optionsText = mayaUsdOptions.convertOptionsDictToText(getDefaultMergeToUSDOptionsDict())
     _fillMergeToUSDOptionsDialog(target, subLayout, optionsText, "fill")
 
 
@@ -249,7 +249,7 @@ def getMergeToUSDOptionsText():
     """
     return mayaUsdOptions.getOptionsText(
         _getMergeToUSDOptionsVarName(),
-        _getDefaultMergeToUSDOptionsDict())
+        getDefaultMergeToUSDOptionsDict())
     
 
 def setMergeToUSDOptionsText(optionsText):
@@ -261,7 +261,7 @@ def setMergeToUSDOptionsText(optionsText):
     mayaUsdOptions.setOptionsText(_getMergeToUSDOptionsVarName(), optionsText)
 
 
-def _getDefaultMergeToUSDOptionsDict():
+def getDefaultMergeToUSDOptionsDict():
     """
     Retrieves the default merge-to-USD options.
     """
