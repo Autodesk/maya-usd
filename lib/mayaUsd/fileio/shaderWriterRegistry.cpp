@@ -59,9 +59,9 @@ _Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobExport
 {
     using ContextSupport = UsdMayaShaderWriter::ContextSupport;
 
-    TfToken conversion = exportArgs.convertMaterialsTo;
-    const bool noFallback =
-        UsdMayaShadingModeRegistry::GetMaterialConversionInfo(conversion).noFallbackExport;
+    TfToken    conversion = exportArgs.convertMaterialsTo;
+    const bool noFallback
+        = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(conversion).noFallbackExport;
 
     _Registry::const_iterator ret = _reg.cend();
     _Registry::const_iterator first, last;

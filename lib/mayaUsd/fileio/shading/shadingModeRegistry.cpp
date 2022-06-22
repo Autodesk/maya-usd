@@ -180,20 +180,11 @@ void UsdMayaShadingModeRegistry::RegisterExportConversion(
     // especially if exporters for a conversion are split across multiple libraries.
     // We will keep the first niceName registered.
     UsdMayaShadingModeRegistry::ConversionInfo conversionInfo(
-        renderContext,
-        niceName,
-        description,
-        TfToken(),
-        true,
-        false,
-        noFallback,
-        false);
+        renderContext, niceName, description, TfToken(), true, false, noFallback, false);
     _MaterialConversionRegistry::iterator insertionPoint;
     bool                                  hasInserted;
-    std::tie(insertionPoint, hasInserted)
-        = _conversionReg.insert(_MaterialConversionRegistry::value_type(
-            materialConversion,
-            conversionInfo));
+    std::tie(insertionPoint, hasInserted) = _conversionReg.insert(
+        _MaterialConversionRegistry::value_type(materialConversion, conversionInfo));
     if (!hasInserted) {
         // Update the info:
         if (insertionPoint->second.exportDescription.IsEmpty()) {
@@ -216,20 +207,11 @@ void UsdMayaShadingModeRegistry::RegisterImportConversion(
     // especially if importers for a conversion are split across multiple libraries.
     // We will keep the first niceName registered.
     UsdMayaShadingModeRegistry::ConversionInfo conversionInfo(
-        renderContext,
-        niceName,
-        TfToken(),
-        description,
-        false,
-        true,
-        false,
-        noFallback);
+        renderContext, niceName, TfToken(), description, false, true, false, noFallback);
     _MaterialConversionRegistry::iterator insertionPoint;
     bool                                  hasInserted;
-    std::tie(insertionPoint, hasInserted)
-        = _conversionReg.insert(_MaterialConversionRegistry::value_type(
-            materialConversion,
-            conversionInfo));
+    std::tie(insertionPoint, hasInserted) = _conversionReg.insert(
+        _MaterialConversionRegistry::value_type(materialConversion, conversionInfo));
     if (!hasInserted) {
         // Update the info:
         if (insertionPoint->second.importDescription.IsEmpty()) {

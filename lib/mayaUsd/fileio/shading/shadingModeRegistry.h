@@ -191,8 +191,7 @@ public:
             bool    he,
             bool    hi,
             bool    nfe,
-            bool    nfi
-        )
+            bool    nfi)
             : renderContext(rc)
             , niceName(nn)
             , exportDescription(ed)
