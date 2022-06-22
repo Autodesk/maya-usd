@@ -18,6 +18,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+from mayaUsdMergeToUSDOptions import _getDefaultMergeToUSDOptionsDict
 import mayaUsdOptions
 
 from functools import partial
@@ -195,17 +196,5 @@ def _getDefaultDuplicateAsMayaDataOptionsDict():
     """
     Retrieves the default duplicate-as-Maya-data options.
     """
-    return {
-        "exportColorSets":          "1",
-        "exportUVs":                "1",
-        "exportSkels":              "none",
-        "exportSkin":               "none",
-        "exportBlendShapes":        "0",
-        "exportDisplayColor":       "1",
-        "shadingMode":              "none",
-        "animation":                "1",
-        "exportVisibility":         "1",
-        "exportInstances":          "1",
-        "mergeTransformAndShape":   "1",
-        "stripNamespaces":          "0",
-    }
+    # For now, the duplicate and merge options defaults are the same.
+    return _getDefaultMergeToUSDOptionsDict()

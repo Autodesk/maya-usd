@@ -266,16 +266,23 @@ def _getDefaultMergeToUSDOptionsDict():
     Retrieves the default merge-to-USD options.
     """
     return {
-        "exportColorSets":          "1",
         "exportUVs":                "1",
         "exportSkels":              "none",
         "exportSkin":               "none",
         "exportBlendShapes":        "0",
         "exportDisplayColor":       "1",
-        "shadingMode":              "none",
+        "exportColorSets":          "1",
+        "defaultMeshScheme":        "catmullClark",
         "animation":                "1",
-        "exportVisibility":         "1",
+        "eulerFilter":              "0",
+        "staticSingleSample":       "0",
+        "startTime":                "0",
+        "endTime":                  "200",
+        "frameStride":              "1",
+        "frameSample":              "",
+        "shadingMode":              "none",
         "exportInstances":          "1",
+        "exportVisibility":         "1",
         "mergeTransformAndShape":   "1",
         "stripNamespaces":          "0",
     }
