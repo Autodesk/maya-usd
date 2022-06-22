@@ -322,7 +322,7 @@ class testProxyShapeBase(unittest.TestCase):
         # It was already set, this only triggers a Maya node recompute.
         cmds.setAttr('{}.{}'.format(proxyShapePath,"loadPayloads"), True)
 
-        # Verify that we did not loose the data on the root layer.
+        # Verify that we did not lose the data on the root layer.
         verifyPrim()
 
     @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testShareStageLoadRules only available in UFE v2 or greater.')
