@@ -230,7 +230,7 @@ UsdStageMap::StageSet UsdStageMap::allStages()
 {
     rebuildIfDirty();
 
-    // Note: stage() calls proxyShape() which can modify fPathToObject,
+    StageSet stages;
     for (auto it = fPathToObject.begin(); it != fPathToObject.end();
          /* no ++it here, we manually move it in the loop */) {
         const auto&      pair = *it;
@@ -245,7 +245,6 @@ UsdStageMap::StageSet UsdStageMap::allStages()
         // Don't add nullptr to the returned StageSet.
         if (matchingStage)
             stages.insert(matchingStage);
-        stages.insert(stage(path));
     }
     return stages;
 }
