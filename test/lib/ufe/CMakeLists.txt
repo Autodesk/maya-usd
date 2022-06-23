@@ -105,6 +105,8 @@ foreach(script ${TEST_SCRIPT_FILES})
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_SOURCE_DIR}/ufeTestPlugins"
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "USD_HAS_COLOR4_SDR_SUPPORT=${USD_HAS_COLOR4_SDR_SUPPORT}"
+            "USD_HAS_MX_METADATA_SUPPORT=${USD_HAS_MX_METADATA_SUPPORT}"
     )
 
     # Add a ctest label to these tests for easy filtering.

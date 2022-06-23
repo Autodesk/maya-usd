@@ -86,6 +86,8 @@
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 
+#include <cctype>
+
 using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -720,6 +722,32 @@ std::string UsdMayaUtil::stripNamespaces(const std::string& nodeName, const int 
 std::string UsdMayaUtil::SanitizeName(const std::string& name)
 {
     return TfStringReplace(name, ":", "_");
+}
+
+std::string UsdMayaUtil::prettifyName(const std::string& name)
+{
+    std::string prettyName(1, std::toupper(name[0]));
+    size_t      nbChars = name.size();
+    bool        capitalizeNext = false;
+    for (size_t i = 1; i < nbChars; ++i) {
+        unsigned char nextLetter = name[i];
+        if (capitalizeNext) {
+            nextLetter = std::toupper(nextLetter);
+            capitalizeNext = false;
+        }
+        if (std::isupper(name[i]) && !std::isdigit(name[i - 1])) {
+            if ((i < (nbChars - 1)) && !std::isupper(name[i + 1])) {
+                prettyName += ' ';
+            }
+            prettyName += nextLetter;
+        } else if (name[i] == '_') {
+            prettyName += " ";
+            capitalizeNext = true;
+        } else {
+            prettyName += nextLetter;
+        }
+    }
+    return prettyName;
 }
 
 // This to allow various pipeline to sanitize the colorset name for output

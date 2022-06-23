@@ -600,6 +600,9 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shade
                 { PXR_NS::SdrPropertyTypes->String, PXR_NS::SdfValueTypeNames->String },
                 { PXR_NS::SdrPropertyTypes->Float, PXR_NS::SdfValueTypeNames->Float },
                 { PXR_NS::SdrPropertyTypes->Color, PXR_NS::SdfValueTypeNames->Color3f },
+#if defined(USD_HAS_COLOR4_SDR_SUPPORT)
+                { PXR_NS::SdrPropertyTypes->Color4, PXR_NS::SdfValueTypeNames->Color4f },
+#endif
                 { PXR_NS::SdrPropertyTypes->Point, PXR_NS::SdfValueTypeNames->Point3f },
                 { PXR_NS::SdrPropertyTypes->Normal, PXR_NS::SdfValueTypeNames->Normal3f },
                 { PXR_NS::SdrPropertyTypes->Vector, PXR_NS::SdfValueTypeNames->Vector3f },
@@ -615,6 +618,12 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shade
                 return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Bool);
             }
 #endif
+            // There is no Matrix3d type in Sdr, so we need to infer it from Sdf until a fix similar
+            // to what was done to booleans is submitted to USD. This also means that there will be
+            // no default value for that type.
+            if (shaderProperty->GetType() == SdfValueTypeNames->Matrix3d.GetAsToken()) {
+                return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Matrix3d);
+            }
             return usdTypeToUfe(PXR_NS::SdfValueTypeNames->Token);
         }
     } else {
@@ -625,17 +634,26 @@ Ufe::Attribute::Type usdTypeToUfe(const PXR_NS::SdrShaderPropertyConstPtr& shade
 PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType)
 {
     // Map the USD type into UFE type.
-    static const std::unordered_map<Ufe::Attribute::Type, PXR_NS::SdfValueTypeName> sUfeTypeToUsd {
-        { Ufe::Attribute::kBool, PXR_NS::SdfValueTypeNames->Bool },           // bool
-        { Ufe::Attribute::kInt, PXR_NS::SdfValueTypeNames->Int },             // int32_t
-        { Ufe::Attribute::kFloat, PXR_NS::SdfValueTypeNames->Float },         // float
-        { Ufe::Attribute::kDouble, PXR_NS::SdfValueTypeNames->Double },       // double
-        { Ufe::Attribute::kString, PXR_NS::SdfValueTypeNames->String },       // std::string
-        { Ufe::Attribute::kEnumString, PXR_NS::SdfValueTypeNames->Token },    // TfToken
-        { Ufe::Attribute::kInt3, PXR_NS::SdfValueTypeNames->Int3 },           // GfVec3i
-        { Ufe::Attribute::kFloat3, PXR_NS::SdfValueTypeNames->Float3 },       // GfVec3f
-        { Ufe::Attribute::kDouble3, PXR_NS::SdfValueTypeNames->Double3 },     // GfVec3d
-        { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3f }, // GfVec3f
+    static const std::unordered_map<Ufe::Attribute::Type, PXR_NS::SdfValueTypeName> sUfeTypeToUsd
+    {
+        { Ufe::Attribute::kBool, PXR_NS::SdfValueTypeNames->Bool },               // bool
+            { Ufe::Attribute::kInt, PXR_NS::SdfValueTypeNames->Int },             // int32_t
+            { Ufe::Attribute::kFloat, PXR_NS::SdfValueTypeNames->Float },         // float
+            { Ufe::Attribute::kDouble, PXR_NS::SdfValueTypeNames->Double },       // double
+            { Ufe::Attribute::kString, PXR_NS::SdfValueTypeNames->String },       // std::string
+            { Ufe::Attribute::kEnumString, PXR_NS::SdfValueTypeNames->Token },    // TfToken
+            { Ufe::Attribute::kInt3, PXR_NS::SdfValueTypeNames->Int3 },           // GfVec3i
+            { Ufe::Attribute::kFloat3, PXR_NS::SdfValueTypeNames->Float3 },       // GfVec3f
+            { Ufe::Attribute::kDouble3, PXR_NS::SdfValueTypeNames->Double3 },     // GfVec3d
+            { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3f }, // GfVec3f
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
+            { Ufe::Attribute::kFilename, PXR_NS::SdfValueTypeNames->Asset },
+            { Ufe::Attribute::kFloat2, PXR_NS::SdfValueTypeNames->Float2 },
+            { Ufe::Attribute::kFloat4, PXR_NS::SdfValueTypeNames->Float4 },
+            { Ufe::Attribute::kColorFloat4, PXR_NS::SdfValueTypeNames->Color4f },
+            { Ufe::Attribute::kMatrix3d, PXR_NS::SdfValueTypeNames->Matrix3d },
+            { Ufe::Attribute::kMatrix4d, PXR_NS::SdfValueTypeNames->Matrix4d },
+#endif
     };
 
     const auto iter = sUfeTypeToUsd.find(ufeType);
@@ -669,6 +687,13 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
                 std::stoi(tokens[1].c_str()),
                 std::stoi(tokens[2].c_str()));
         }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    } else if (typeName == Ufe::Attribute::kFloat2) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 2, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            result = GfVec2f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str()));
+        }
+#endif
     } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
@@ -677,6 +702,17 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
                 std::stof(tokens[1].c_str()),
                 std::stof(tokens[2].c_str()));
         }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    } else if (typeName == Ufe::Attribute::kFloat4 || typeName == Ufe::Attribute::kColorFloat4) {
+        std::vector<std::string> tokens = splitString(strValue, "()[], ");
+        if (TF_VERIFY(tokens.size() == 4, kInvalidValue, strValue.c_str(), typeName.c_str())) {
+            result = GfVec4f(
+                std::stof(tokens[0].c_str()),
+                std::stof(tokens[1].c_str()),
+                std::stof(tokens[2].c_str()),
+                std::stof(tokens[3].c_str()));
+        }
+#endif
     } else if (typeName == Ufe::Attribute::kDouble3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 3, kInvalidValue, strValue.c_str(), typeName.c_str())) {
@@ -709,6 +745,8 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
             }
             result = GfMatrix4d(m);
         }
+    } else if (typeName == Ufe::Attribute::kFilename) {
+        result = strValue;
     }
 #endif
     return result;

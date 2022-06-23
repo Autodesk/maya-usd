@@ -19,6 +19,8 @@
 #include "Global.h"
 #include "Utils.h"
 
+#include <mayaUsd/utils/util.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/ndr/declare.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -69,6 +71,53 @@ Ufe::AttributeDef::IOType UsdShaderAttributeDef::ioType() const
                                            : Ufe::AttributeDef::INPUT_ATTR;
 }
 
+namespace {
+typedef std::unordered_map<std::string, std::function<Ufe::Value(const PXR_NS::SdrShaderProperty&)>>
+                         MetadataMap;
+static const MetadataMap _metaMap = {
+    // Conversion map between known USD metadata and its MaterialX equivalent:
+    { "uiname",
+      [](const PXR_NS::SdrShaderProperty& p) {
+          return !p.GetLabel().IsEmpty() ? p.GetLabel().GetString()
+                                         : UsdMayaUtil::prettifyName(p.GetName().GetString());
+      } },
+    { "doc",
+      [](const PXR_NS::SdrShaderProperty& p) {
+          return !p.GetHelp().empty() ? p.GetHelp() : Ufe::Value();
+      } },
+    { "uifolder",
+      [](const PXR_NS::SdrShaderProperty& p) {
+          return !p.GetPage().IsEmpty() ? p.GetPage().GetString() : Ufe::Value();
+      } },
+    { "enum",
+      [](const PXR_NS::SdrShaderProperty& p) {
+          std::string r;
+          for (auto&& opt : p.GetOptions()) {
+              if (!r.empty()) {
+                  r += ", ";
+              }
+              r += opt.first.GetString();
+          }
+          return !r.empty() ? r : Ufe::Value();
+      } },
+    { "enumvalues",
+      [](const PXR_NS::SdrShaderProperty& p) {
+          std::string r;
+          for (auto&& opt : p.GetOptions()) {
+              if (opt.second.IsEmpty()) {
+                  continue;
+              }
+              if (!r.empty()) {
+                  r += ", ";
+              }
+              r += opt.second.GetString();
+          }
+          return !r.empty() ? r : Ufe::Value();
+      } },
+    // If Ufe decides to use another completely different convention, it can be added here:
+};
+} // namespace
+
 Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
 {
     TF_AXIOM(fShaderAttributeDef);
@@ -77,8 +126,12 @@ Ufe::Value UsdShaderAttributeDef::getMetadata(const std::string& key) const
     if (it != metadata.cend()) {
         return Ufe::Value(it->second);
     }
-    // TODO: Adapt UI metadata information found in SdrShaderProperty to Ufe standards
-    // TODO: Fix Mtlx parser in USD to populate UI metadata in SdrShaderProperty
+
+    MetadataMap::const_iterator itMapper = _metaMap.find(key);
+    if (itMapper != _metaMap.end()) {
+        return itMapper->second(*fShaderAttributeDef);
+    }
+
     return {};
 }
 
@@ -87,7 +140,16 @@ bool UsdShaderAttributeDef::hasMetadata(const std::string& key) const
     TF_AXIOM(fShaderAttributeDef);
     const NdrTokenMap& metadata = fShaderAttributeDef->GetMetadata();
     auto               it = metadata.find(TfToken(key));
-    return (it != metadata.cend());
+    if (it != metadata.cend()) {
+        return true;
+    }
+
+    MetadataMap::const_iterator itMapper = _metaMap.find(key);
+    if (itMapper != _metaMap.end() && !itMapper->second(*fShaderAttributeDef).empty()) {
+        return true;
+    }
+
+    return false;
 }
 
 } // namespace ufe

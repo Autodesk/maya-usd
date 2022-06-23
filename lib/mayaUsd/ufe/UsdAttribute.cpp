@@ -177,7 +177,11 @@ U getUsdAttributeVectorAsUfe(
 {
     VtValue vt;
     if (!attr.isValid() || !attr.hasValue()) {
-        vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
+        if (!attr.defaultValue().empty()) {
+            vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
+        } else {
+            return U();
+        }
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
     }
@@ -204,7 +208,11 @@ U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS
 {
     VtValue vt;
     if (!attr.isValid() || !attr.hasValue()) {
-        vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
+        if (!attr.defaultValue().empty()) {
+            vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
+        } else {
+            return U();
+        }
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
     }
@@ -233,7 +241,11 @@ U getUsdAttributeMatrixAsUfe(
 {
     VtValue vt;
     if (!attr.isValid() || !attr.hasValue()) {
-        vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
+        if (!attr.defaultValue().empty()) {
+            vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
+        } else {
+            return U();
+        }
     } else if (!attr.get(vt, time) || !vt.IsHolding<T>()) {
         return U();
     }
@@ -335,6 +347,12 @@ namespace ufe {
 UsdAttribute::UsdAttribute(const PXR_NS::UsdPrim& prim, const Ufe::AttributeDef::ConstPtr& attrDef)
     : fPrim(prim)
     , fAttrDef(attrDef)
+    , fUsdAttr(prim.GetAttribute(PXR_NS::UsdShadeUtils::GetFullName(
+          TfToken(attrDef->name()),
+          attrDef->ioType() == Ufe::AttributeDef::INPUT_ATTR ? PXR_NS::UsdShadeAttributeType::Input
+                                                             : PXR_NS::UsdShadeAttributeType::Output
+
+          )))
 {
     PXR_NAMESPACE_USING_DIRECTIVE
     TF_VERIFY(
@@ -532,14 +550,13 @@ Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
                 return Ufe::Value(ss.str());
             }
         }
-        return Ufe::Value();
-#ifdef UFE_V4_FEATURES_AVAILABLE
-    } else if (fAttrDef && fAttrDef->hasMetadata(key)) {
-        return fAttrDef->getMetadata(key);
-#endif
-    } else {
-        return Ufe::Value();
     }
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    if (fAttrDef && fAttrDef->hasMetadata(key)) {
+        return fAttrDef->getMetadata(key);
+    }
+#endif
+    return Ufe::Value();
 }
 
 bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
@@ -734,8 +751,11 @@ UsdAttributeFilename::create(const UsdSceneItem::Ptr& item, const PXR_NS::UsdAtt
 
 std::string UsdAttributeFilename::get() const
 {
+    if (!hasValue())
+        return std::string();
+
     PXR_NS::VtValue vt;
-    if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem())) && vt.IsHolding<SdfAssetPath>()) {
+    if (UsdAttribute::get(vt, getCurrentTime(sceneItem())) && vt.IsHolding<SdfAssetPath>()) {
         SdfAssetPath path = vt.UncheckedGet<SdfAssetPath>();
         return path.GetAssetPath();
     }
@@ -755,8 +775,8 @@ Ufe::UndoableCommand::Ptr UsdAttributeFilename::setCmd(const std::string& value)
     if (!TF_VERIFY(self, kErrorMsgInvalidType))
         return nullptr;
 
-    std::string errMsg;
-    if (!MayaUsd::ufe::isAttributeEditAllowed(fUsdAttr, &errMsg)) {
+    const std::string errMsg = isEditAllowedMsg();
+    if (!errMsg.empty()) {
         MGlobal::displayError(errMsg.c_str());
         return nullptr;
     }

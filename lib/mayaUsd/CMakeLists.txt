@@ -135,6 +135,14 @@ if (MAYA_HAS_GET_MEMBER_PATHS)
     )
 endif()
 
+message(STATUS "USD_HAS_COLOR4_SDR_SUPPORT is ${USD_HAS_COLOR4_SDR_SUPPORT}")
+if (USD_HAS_COLOR4_SDR_SUPPORT)
+    target_compile_definitions(${PROJECT_NAME}
+        PRIVATE
+        USD_HAS_COLOR4_SDR_SUPPORT=1
+    )
+endif()
+
 if (MAYA_LIGHTAPI_VERSION GREATER_EQUAL 2)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE

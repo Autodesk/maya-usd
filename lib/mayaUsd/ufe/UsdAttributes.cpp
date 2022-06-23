@@ -112,6 +112,11 @@ static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const
 
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
+    // early return if name is empty.
+    if (name.empty()) {
+        throw std::invalid_argument("Empty name.");
+    }
+
     // If we've already created an attribute for this name, just return the type.
     auto iter = fAttributes.find(name);
     if (iter != std::end(fAttributes))
@@ -124,22 +129,23 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
     Ufe::NodeDef::Ptr nodeDef = UsdAttributes::nodeDef();
-    if (!nodeDef) {
-        return Ufe::Attribute::kInvalid;
-    }
-    Ufe::AttributeDef::ConstPtr attrDef = nameToAttrDef(tok, nodeDef);
-    if (attrDef) {
-        return attrDef->type();
+    if (nodeDef) {
+        Ufe::AttributeDef::ConstPtr attrDef = nameToAttrDef(tok, nodeDef);
+        if (attrDef) {
+            return attrDef->type();
+        }
     }
 #endif
-    return Ufe::Attribute::kInvalid;
+    std::string msg = "Can not find attribute \"" + name + "\" on scene item \""
+        + fItem->path().string() + "\".";
+    throw std::invalid_argument(msg);
 }
 
 Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 {
     // early return if name is empty.
     if (name.empty()) {
-        return nullptr;
+        throw std::invalid_argument("Empty name.");
     }
 
     // If we've already created an attribute for this name, just return it.
@@ -166,7 +172,15 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
     else if (!nodeDef) {
-        return nullptr;
+        std::string msg = "Can not find attribute \"" + name + "\" on scene item \""
+            + fItem->path().string() + "\".";
+        throw std::invalid_argument(msg);
+    }
+#else
+    else {
+        std::string msg = "Can not find attribute \"" + name + "\" on scene item \""
+            + fItem->path().string() + "\".";
+        throw std::invalid_argument(msg);
     }
 #endif
 
@@ -181,10 +195,10 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
                const PXR_NS::UsdPrim&             prim,                   \
                const Ufe::AttributeDef::ConstPtr& attrDef,                \
                const PXR_NS::UsdAttribute&        usdAttr) {                     \
-                if (usdAttr) {                                            \
-                    return UsdAttribute##TYPE::create(si, usdAttr);       \
-                } else {                                                  \
+                if (attrDef) {                                            \
                     return UsdAttribute##TYPE::create(si, prim, attrDef); \
+                } else {                                                  \
+                    return UsdAttribute##TYPE::create(si, usdAttr);       \
                 }                                                         \
             }                                                             \
     }
