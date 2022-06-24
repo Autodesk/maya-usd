@@ -723,6 +723,7 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
         }
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
     else if (typeName == Ufe::Attribute::kMatrix3d) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 9, kInvalidValue, strValue.c_str(), typeName.c_str())) {
@@ -748,6 +749,7 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
     } else if (typeName == Ufe::Attribute::kFilename) {
         result = strValue;
     }
+#endif
 #endif
     return result;
 }

@@ -20,6 +20,7 @@
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/utils/progressBarScope.h>
 
 #include <pxr/base/gf/interval.h>
 #include <pxr/base/vt/dictionary.h>
@@ -53,6 +54,10 @@ MStatus UsdMayaImportTranslator::reader(
 {
     std::string fileName(file.fullName().asChar(), file.fullName().length());
 
+    MString progStatus, mStrFileName(fileName.c_str());
+    progStatus.format("Reading ^1s", mStrFileName);
+    MayaUsd::ProgressBarScope progressBar(5, progStatus);
+
     // If the input filename doesn't match the one in the importData we clear out
     // the import data. This would happen if the user performed an import with
     // the dialog and then manually with a different file name.
@@ -61,6 +66,7 @@ MStatus UsdMayaImportTranslator::reader(
         importData.clearData();
         importData.setFilename(fileName);
     }
+    progressBar.advance();
 
     bool       readAnimData = true;
     bool       useCustomFrameRange = false;
@@ -96,6 +102,7 @@ MStatus UsdMayaImportTranslator::reader(
             }
         }
     }
+    progressBar.advance();
 
     if (readAnimData) {
         if (!useCustomFrameRange) {
@@ -109,15 +116,18 @@ MStatus UsdMayaImportTranslator::reader(
         userArgs,
         /* importWithProxyShapes = */ false,
         timeInterval);
+    progressBar.advance();
 
     UsdMaya_ReadJob       mUsdReadJob(importData, jobArgs);
     std::vector<MDagPath> addedDagPaths;
     bool                  success = mUsdReadJob.Read(&addedDagPaths);
+    progressBar.advance();
 
     // After a successful import we clear the import data as we don't want to
     // re-use it on a subsequent import.
     if (success)
         importData.clearData();
+    progressBar.advance();
 
     return (success) ? MS::kSuccess : MS::kFailure;
 }
