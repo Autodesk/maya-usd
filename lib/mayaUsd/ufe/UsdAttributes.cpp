@@ -173,24 +173,22 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
     }
 #endif
 #endif
+    bool canCreateAttribute = usdAttr.IsValid();
     if (usdAttr.IsValid()) {
         newAttrType = attributeType(name);
     }
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if (UFE_PREVIEW_VERSION_NUM >= 4008)
-    else if (!nodeDef) {
+    if (nodeDef) {
+        canCreateAttribute = true;
+    }
+#endif
+#endif
+    if (!canCreateAttribute) {
         std::string msg = "Can not find attribute \"" + name + "\" on scene item \""
             + fItem->path().string() + "\".";
         throw std::invalid_argument(msg);
     }
-#else
-    else {
-        std::string msg = "Can not find attribute \"" + name + "\" on scene item \""
-            + fItem->path().string() + "\".";
-        throw std::invalid_argument(msg);
-    }
-#endif
-#endif
 
     // Use a map of constructors to reduce the number of string comparisons. Since the naming
     // convention is extremely uniform, let's use a macro to simplify definition (and prevent
