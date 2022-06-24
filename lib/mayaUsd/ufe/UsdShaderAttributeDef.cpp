@@ -79,7 +79,7 @@ static const MetadataMap _metaMap = {
     { "uiname",
       [](const PXR_NS::SdrShaderProperty& p) {
           return !p.GetLabel().IsEmpty() ? p.GetLabel().GetString()
-                                         : UsdMayaUtil::prettifyName(p.GetName().GetString());
+                                         : UsdMayaUtil::PrettifyName(p.GetName().GetString());
       } },
     { "doc",
       [](const PXR_NS::SdrShaderProperty& p) {
@@ -113,6 +113,10 @@ static const MetadataMap _metaMap = {
               r += opt.second.GetString();
           }
           return !r.empty() ? r : Ufe::Value();
+      } },
+    { "uisoftmax", // Maya has 0-100 sliders. In rendering, sliders are 0-1.
+      [](const PXR_NS::SdrShaderProperty&) {
+          return std::string { "1.0" }; // Will only be returned if the metadata does not exist.
       } },
     // If Ufe decides to use another completely different convention, it can be added here:
 };

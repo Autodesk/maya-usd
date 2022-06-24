@@ -50,6 +50,6 @@ void wrapUtil()
     scope s(class_<UsdMayaUtilScope>("Util"));
 
     def("IsAuthored", UsdMayaUtil::IsAuthored);
-    def("prettifyName", UsdMayaUtil::prettifyName);
+    def("PrettifyName", UsdMayaUtil::PrettifyName);
     def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions);
 }

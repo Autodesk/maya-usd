@@ -234,7 +234,7 @@ static const MetadataMap _metaMap = {
     { "uiname",
       [](const PXR_NS::SdrShaderNode& n) {
           return !n.GetLabel().IsEmpty() ? n.GetLabel().GetString()
-                                         : UsdMayaUtil::prettifyName(n.GetFamily().GetString());
+                                         : UsdMayaUtil::PrettifyName(n.GetFamily().GetString());
       } },
     { "doc",
       [](const PXR_NS::SdrShaderNode& n) {

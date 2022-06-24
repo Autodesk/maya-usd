@@ -724,7 +724,7 @@ std::string UsdMayaUtil::SanitizeName(const std::string& name)
     return TfStringReplace(name, ":", "_");
 }
 
-std::string UsdMayaUtil::prettifyName(const std::string& name)
+std::string UsdMayaUtil::PrettifyName(const std::string& name)
 {
     std::string prettyName(1, std::toupper(name[0]));
     size_t      nbChars = name.size();
