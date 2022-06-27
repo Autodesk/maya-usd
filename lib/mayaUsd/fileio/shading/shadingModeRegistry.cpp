@@ -173,23 +173,26 @@ void UsdMayaShadingModeRegistry::RegisterExportConversion(
     const TfToken& materialConversion,
     const TfToken& renderContext,
     const TfToken& niceName,
-    const TfToken& description)
+    const TfToken& description,
+    bool           noFallback)
 {
     // It is perfectly valid to register the same material conversion more than once,
     // especially if exporters for a conversion are split across multiple libraries.
     // We will keep the first niceName registered.
+    UsdMayaShadingModeRegistry::ConversionInfo conversionInfo(
+        renderContext, niceName, description, TfToken(), true, false, noFallback, false);
     _MaterialConversionRegistry::iterator insertionPoint;
     bool                                  hasInserted;
-    std::tie(insertionPoint, hasInserted)
-        = _conversionReg.insert(_MaterialConversionRegistry::value_type(
-            materialConversion,
-            ConversionInfo { renderContext, niceName, description, TfToken(), true, false }));
+    std::tie(insertionPoint, hasInserted) = _conversionReg.insert(
+        _MaterialConversionRegistry::value_type(materialConversion, conversionInfo));
     if (!hasInserted) {
         // Update the info:
         if (insertionPoint->second.exportDescription.IsEmpty()) {
             insertionPoint->second.exportDescription = description;
         }
         insertionPoint->second.hasExporter = true;
+        // Prefer no fallback export if a single registry operation requested it.
+        insertionPoint->second.noFallbackExport |= noFallback;
     }
 }
 
@@ -197,23 +200,26 @@ void UsdMayaShadingModeRegistry::RegisterImportConversion(
     const TfToken& materialConversion,
     const TfToken& renderContext,
     const TfToken& niceName,
-    const TfToken& description)
+    const TfToken& description,
+    bool           noFallback)
 {
     // It is perfectly valid to register the same material conversion more than once,
     // especially if importers for a conversion are split across multiple libraries.
     // We will keep the first niceName registered.
+    UsdMayaShadingModeRegistry::ConversionInfo conversionInfo(
+        renderContext, niceName, TfToken(), description, false, true, false, noFallback);
     _MaterialConversionRegistry::iterator insertionPoint;
     bool                                  hasInserted;
-    std::tie(insertionPoint, hasInserted)
-        = _conversionReg.insert(_MaterialConversionRegistry::value_type(
-            materialConversion,
-            ConversionInfo { renderContext, niceName, TfToken(), description, false, true }));
+    std::tie(insertionPoint, hasInserted) = _conversionReg.insert(
+        _MaterialConversionRegistry::value_type(materialConversion, conversionInfo));
     if (!hasInserted) {
         // Update the info:
         if (insertionPoint->second.importDescription.IsEmpty()) {
             insertionPoint->second.importDescription = description;
         }
         insertionPoint->second.hasImporter = true;
+        // Prefer no fallback import if a single registry operation requested it.
+        insertionPoint->second.noFallbackImport |= noFallback;
     }
 }
 
