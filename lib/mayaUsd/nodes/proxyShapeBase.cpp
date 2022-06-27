@@ -787,7 +787,17 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 if (nullptr == rootLayer)
                     rootLayer = SdfLayer::FindOrOpen(fileString);
 
-                if (rootLayer) {
+                if (nullptr == rootLayer) {
+                    // Create an empty in-memory root layer so that a new stage in memory
+                    // will be created below by the UsdStage::Open call. This happens when
+                    // a brand new stage with a new anonymous layer is requested to be
+                    // created by the user.
+                    if (!_anonymousRootLayer)
+                        _anonymousRootLayer = SdfLayer::CreateAnonymous(kAnonymousLayerName);
+                    rootLayer = _anonymousRootLayer;
+                }
+
+                {
                     // Note: computeSessionLayer will find a session layer *only* if the
                     //       Maya scene had been saved and thus serialized the session
                     //       layer. Otherwise it returns null which will mean to use
@@ -837,9 +847,6 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     sharedUsdStage->SetEditTarget(
                         targetSession ? sharedUsdStage->GetSessionLayer()
                                       : sharedUsdStage->GetRootLayer());
-                } else {
-                    // Create a new stage in memory with an anonymous root layer.
-                    sharedUsdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
                 }
             }
         }
@@ -1719,6 +1726,7 @@ MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(
     : MPxSurfaceShape()
     , _isUfeSelectionEnabled(enableUfeSelection)
     , _previousShareMode(ShareMode::Unknown)
+    , _anonymousRootLayer(nullptr)
     , _unsharedStageSessionLayer(nullptr)
     , _unsharedStageRootLayer(nullptr)
     , _unsharedStageRootSublayers()

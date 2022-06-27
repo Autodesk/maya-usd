@@ -54,12 +54,23 @@ _listEditedAsLabels = [getMayaUsdLibString('kMenuAppend'), getMayaUsdLibString('
 _listEditedAsValues = [                         'Append',                           'Prepend' ]
 
 
+def _getMenuGrpValue(menuName, values, defaultIndex = 0):
+    """
+    Retrieves the currently selected values from a menu.
+    """
+    # Note: option menu selection index start at 1, so we subtract 1.
+    menuIndex = cmds.optionMenuGrp(menuName, query=True, select=True) - 1
+    if 0 <= menuIndex < len(values):
+        return values[menuIndex]
+    else:
+        return values[defaultIndex]
+
 def _getMenuValue(menuName, values, defaultIndex = 0):
     """
     Retrieves the currently selected values from a menu.
     """
     # Note: option menu selection index start at 1, so we subtract 1.
-    menuIndex = cmds.optionMenuGrp('compositionArcTypeMenu', query=True, select=True) - 1
+    menuIndex = cmds.optionMenu(menuName, query=True, select=True) - 1
     if 0 <= menuIndex < len(values):
         return values[menuIndex]
     else:
@@ -381,7 +392,7 @@ def cacheCommitUi(parent, selectedFile):
     mel.eval('mayaUsdTranslatorExport("fileOptionsScroll", "query={exportOpts}", "", "mayaUsdCacheMayaReference_setCacheOptions")'.format(exportOpts=kTranslatorExportOptions))
 
     primName = cmds.textFieldGrp('primNameText', query=True, text=True)
-    payloadOrReference = _getMenuValue('compositionArcTypeMenu', _compositionArcValues)
+    payloadOrReference = _getMenuGrpValue('compositionArcTypeMenu', _compositionArcValues)
     listEditType = _getMenuValue('listEditedAsMenu', _listEditedAsValues)
     
     defineInVariant = cmds.radioButtonGrp('variantRadioButton', query=True, select=True)

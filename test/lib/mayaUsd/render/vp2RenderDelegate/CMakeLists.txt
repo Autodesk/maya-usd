@@ -92,6 +92,12 @@ if(MAYA_MRENDERITEM_UFE_IDENTIFIER_SUPPORT)
     )
 endif()
 
+if (MAYA_HAS_DISPLAY_LAYER_API)
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegateDisplayLayers.py
+        )
+endif()
+
 foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}

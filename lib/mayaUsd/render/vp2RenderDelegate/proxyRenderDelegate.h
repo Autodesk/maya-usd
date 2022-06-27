@@ -33,6 +33,7 @@
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
+#include <maya/MObjectArray.h>
 #include <maya/MPxSubSceneOverride.h>
 
 #include <memory>
@@ -174,6 +175,14 @@ public:
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    MAYAUSD_CORE_PUBLIC
+    void DisplayLayerMembershipChanged();
+
+    MAYAUSD_CORE_PUBLIC
+    void DisplayLayerDirty(MObject& node);
+#endif
+
     MAYAUSD_CORE_PUBLIC
     const MColor& GetWireframeColor() const;
 
@@ -200,6 +209,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     UsdImagingDelegate* GetUsdImagingDelegate() const;
 
+    MAYAUSD_CORE_PUBLIC
+    MDagPath GetProxyShapeDagPath() const;
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     MAYAUSD_CORE_PUBLIC
     bool SnapToSelectedObjects() const;
@@ -224,6 +236,10 @@ private:
     void _UpdateSelectionStates();
     void _UpdateRenderTags();
     void _ClearRenderDelegate();
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    void _UpdateDisplayLayers();
+    void _RequestRefresh();
+#endif
     SdfPathVector
     _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
 
@@ -290,6 +306,19 @@ private:
         false
     }; //!< If false, scene delegate wasn't populated yet within render index
     bool _selectionChanged { true }; //!< Whether there is any selection change or not
+
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
+    bool _refreshRequested {
+        false
+    }; //!< True if the render delegate has already requested a refresh.
+    bool _displayLayerMembershipChanged {
+        false
+    }; //~< Whether or not there is any display layer membership changes.
+    MCallbackId              _mayaDisplayLayerMembersCallbackId { 0 };
+    MObjectArray             _mayaDisplayLayers;
+    std::vector<MCallbackId> _mayaDisplayLayerCallbacks;
+#endif
+
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT
     bool _selectionModeChanged { true }; //!< Whether the global selection mode has changed
     bool _snapToPoints { false };        //!< Whether point snapping is enabled or not
