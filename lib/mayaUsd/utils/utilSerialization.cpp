@@ -242,9 +242,9 @@ bool saveLayerWithFormat(
         = requestedFormatArg.empty() ? usdFormatArgOption() : requestedFormatArg;
 
     if (isCompatibleWithSave(layer, filePath, formatArg)) {
-            if (!layer->Save()) {
-                return false;
-            }
+        if (!layer->Save()) {
+            return false;
+        }
     } else {
         PXR_NS::SdfFileFormat::FileFormatArguments args;
         args["format"] = formatArg;
