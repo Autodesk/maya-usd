@@ -180,7 +180,7 @@ public:
     void DisplayLayerMembershipChanged();
 
     MAYAUSD_CORE_PUBLIC
-    void DisplayLayerDirty(MObject& node);
+    void DisplayLayerDirty(MFnDisplayLayer& displayLayer);
 #endif
 
     MAYAUSD_CORE_PUBLIC
@@ -237,6 +237,8 @@ private:
     void _UpdateRenderTags();
     void _ClearRenderDelegate();
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+    void _DirtyUfeSubtree(const MString& root);
+    void _DirtyUsdSubtree(const UsdPrim& prim);
     void _UpdateDisplayLayers();
     void _RequestRefresh();
 #endif

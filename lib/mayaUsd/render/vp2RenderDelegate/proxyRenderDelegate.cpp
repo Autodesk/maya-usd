@@ -23,6 +23,8 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/selectability.h>
 #include <mayaUsd/utils/util.h>
 
@@ -46,6 +48,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MColorPickerUtilities.h>
@@ -356,11 +359,10 @@ void displayLayerMembershipChangedCB(void* data)
 
 void displayLayerDirtyCB(MObject& node, void* clientData)
 {
-    // TODO: only mark the things in the dirty layer dirty. Use MFnDisplayLayer to find all the
-    // things...
     ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(clientData);
-    if (prd) {
-        prd->DisplayLayerDirty(node);
+    if (prd && node.hasFn(MFn::kDisplayLayer)) {
+        MFnDisplayLayer displayLayer(node);
+        prd->DisplayLayerDirty(displayLayer);
     }
 }
 #endif
@@ -771,6 +773,41 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
 }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
+{
+    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+    constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
+            | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
+
+    if (prim.IsA<UsdGeomGprim>()) {
+        auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
+        changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+    }
+
+    UsdPrimSubtreeRange range = prim.GetDescendants();
+    for (auto iter = range.begin(); iter != range.end(); ++iter) {
+        if (iter->IsA<UsdGeomGprim>()) {
+            auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(iter->GetPath());
+            changeTracker.MarkRprimDirty(indexPath, dirtyBits);
+        }
+    }
+}
+
+void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& root)
+{
+    Ufe::Path rootPath = Ufe::PathString::path(root.asChar());
+    if (rootPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId()) {
+        _DirtyUsdSubtree(MayaUsd::ufe::ufePathToPrim(rootPath));
+    } else {
+        for (const auto& stage : MayaUsd::ufe::getAllStages()) {
+            Ufe::Path proxyShapePath = MayaUsd::ufe::stagePath(stage);
+            if (proxyShapePath.startsWith(rootPath)) {
+                _DirtyUsdSubtree(stage->GetPseudoRoot());
+            }
+        }
+    }
+}
+
 void ProxyRenderDelegate::_UpdateDisplayLayers()
 {
     // make sure we're listening to every display layer for attribute changes
@@ -1312,10 +1349,17 @@ void ProxyRenderDelegate::DisplayLayerMembershipChanged()
     _displayLayerMembershipChanged = true;
 }
 
-void ProxyRenderDelegate::DisplayLayerDirty(MObject& node)
+void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
 {
-    // TODO: record which layers are dirty and only dirty layers that changed.
-    DisplayLayerMembershipChanged();
+    MSelectionList members;
+    displayLayer.getMembers(members);
+
+    MStringArray roots;
+    members.getSelectionStrings(roots);
+
+    for (auto it = roots.begin(); it != roots.end(); ++it) {
+        _DirtyUfeSubtree(*it);
+    }
 }
 
 void ProxyRenderDelegate::_RequestRefresh()
