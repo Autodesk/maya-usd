@@ -19,7 +19,8 @@
 """
 
 import os
-
+import shutil
+import tempfile
 
 def stripPrefix(input_str, prefix):
     if input_str.startswith(prefix):
@@ -45,3 +46,25 @@ def assertVectorEqual(testCase, a, b):
 
 def getTestScene(*args):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)
+
+class TemporaryDirectory:
+    '''
+    Context manager that creates a temporary directory and deletes it on exit,
+    so it's usable with "with" statement.
+    '''
+    def __init__(self, suffix=None, prefix=None, ignore_errors=True, keep_files=False):
+        self.name = tempfile.mkdtemp(suffix=suffix, prefix=prefix)
+        self.ignore_errors = ignore_errors
+        self.keep_files = keep_files
+
+    def __enter__(self):
+        return self.name
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self.keep_files:
+            return
+        try:
+            shutil.rmtree(self.name)
+        except:
+            if not self.ignore_errors:
+                raise
