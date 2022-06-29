@@ -209,8 +209,11 @@ public:
     static LayerDatabase& instance();
     static void           setBatchSaveDelegate(BatchSaveDelegate delegate);
     static void           prepareForSaveCheck(bool*, void*);
+    static void           cleanupForSave(void*);
     static void           prepareForExportCheck(bool*, void*);
+    static void           cleanupForExport(void*);
     static void           prepareForWriteCheck(bool*, bool);
+    static void           cleanupForWrite();
     static void           loadLayersPostRead(void*);
     static void           cleanUpNewScene(void*);
     static void           removeManagerNode(MayaUsd::LayerManager* lm = nullptr);
@@ -237,10 +240,13 @@ private:
     bool            saveUsd(bool isExport);
     BatchSaveResult saveUsdToMayaFile();
     BatchSaveResult saveUsdToUsdFiles();
-    void            convertAnonymousLayers(MayaUsdProxyShapeBase* pShape, UsdStageRefPtr stage);
-    void            saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous);
-    void            clearProxies();
-    bool            hasDirtyLayer() const;
+    void            convertAnonymousLayers(
+                   MayaUsdProxyShapeBase* pShape,
+                   const MObject&         proxyNode,
+                   UsdStageRefPtr         stage);
+    void saveUsdLayerToMayaFile(SdfLayerRefPtr layer, bool asAnonymous);
+    void clearProxies();
+    bool hasDirtyLayer() const;
 
     std::map<std::string, SdfLayerRefPtr> _idToLayer;
     TfNotice::Key                         _onStageSetKey;
@@ -248,19 +254,27 @@ private:
     std::vector<BatchSaveInfo>            _proxiesToSave;
     std::vector<BatchSaveInfo>            _internalProxiesToSave;
     static MCallbackId                    preSaveCallbackId;
+    static MCallbackId                    postSaveCallbackId;
     static MCallbackId                    preExportCallbackId;
+    static MCallbackId                    postExportCallbackId;
     static MCallbackId                    postNewCallbackId;
     static MCallbackId                    preOpenCallbackId;
 
     static MayaUsd::BatchSaveDelegate _batchSaveDelegate;
+
+    static bool _isSavingMayaFile;
 };
 
 MCallbackId LayerDatabase::preSaveCallbackId = 0;
+MCallbackId LayerDatabase::postSaveCallbackId = 0;
 MCallbackId LayerDatabase::preExportCallbackId = 0;
+MCallbackId LayerDatabase::postExportCallbackId = 0;
 MCallbackId LayerDatabase::postNewCallbackId = 0;
 MCallbackId LayerDatabase::preOpenCallbackId = 0;
 
 MayaUsd::BatchSaveDelegate LayerDatabase::_batchSaveDelegate = nullptr;
+
+bool LayerDatabase::_isSavingMayaFile = false;
 
 /*static*/
 LayerDatabase& LayerDatabase::instance()
@@ -290,8 +304,12 @@ void LayerDatabase::registerCallbacks()
     if (0 == preSaveCallbackId) {
         preSaveCallbackId = MSceneMessage::addCallback(
             MSceneMessage::kBeforeSaveCheck, LayerDatabase::prepareForSaveCheck);
+        postSaveCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kAfterSave, LayerDatabase::cleanupForSave);
         preExportCallbackId = MSceneMessage::addCallback(
             MSceneMessage::kBeforeExportCheck, LayerDatabase::prepareForExportCheck);
+        postExportCallbackId = MSceneMessage::addCallback(
+            MSceneMessage::kAfterExport, LayerDatabase::cleanupForExport);
         postNewCallbackId
             = MSceneMessage::addCallback(MSceneMessage::kAfterNew, LayerDatabase::cleanUpNewScene);
         preOpenCallbackId = MSceneMessage::addCallback(
@@ -303,11 +321,17 @@ void LayerDatabase::unregisterCallbacks()
 {
     if (0 != preSaveCallbackId) {
         MSceneMessage::removeCallback(preSaveCallbackId);
+        MSceneMessage::removeCallback(postSaveCallbackId);
         MSceneMessage::removeCallback(preExportCallbackId);
+        MSceneMessage::removeCallback(postExportCallbackId);
+        MSceneMessage::removeCallback(postNewCallbackId);
         MSceneMessage::removeCallback(preOpenCallbackId);
 
         preSaveCallbackId = 0;
+        postSaveCallbackId = 0;
         preExportCallbackId = 0;
+        postExportCallbackId = 0;
+        postNewCallbackId = 0;
         preOpenCallbackId = 0;
     }
 }
@@ -348,6 +372,12 @@ void LayerDatabase::prepareForSaveCheck(bool* retCode, void*)
     prepareForWriteCheck(retCode, false);
 }
 
+void LayerDatabase::cleanupForSave(void*)
+{
+    // This is call by Maya when the Maya save has finished.
+    cleanupForWrite();
+}
+
 void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
 {
     // This is called during a Maya notification callback, so no undo supported.
@@ -355,8 +385,15 @@ void LayerDatabase::prepareForExportCheck(bool* retCode, void*)
     prepareForWriteCheck(retCode, true);
 }
 
+void LayerDatabase::cleanupForExport(void*)
+{
+    // This is call by Maya when the Maya save has finished.
+    cleanupForWrite();
+}
+
 void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
 {
+    _isSavingMayaFile = true;
     cleanUpNewScene(nullptr);
 
     if (LayerDatabase::instance().getProxiesToSave(isExport)) {
@@ -376,6 +413,14 @@ void LayerDatabase::prepareForWriteCheck(bool* retCode, bool isExport)
     } else {
         *retCode = true;
     }
+}
+
+void LayerDatabase::cleanupForWrite()
+{
+    // Reset the flag that records a Maya scene save is in progress.
+    // Used to avoid deleteing the layer manager node mid-save if some
+    // other code happens to access the layers.
+    _isSavingMayaFile = false;
 }
 
 void LayerDatabase::clearProxies()
@@ -709,7 +754,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
                 if (info.isIncoming) {
                     continue;
                 }
-                convertAnonymousLayers(pShape, info.stage);
+                convertAnonymousLayers(pShape, mobj, info.stage);
                 SdfLayerHandleVector allLayers = info.stage->GetLayerStack(false);
                 for (auto layer : allLayers) {
                     if (layer->PermissionToSave()) {
@@ -725,7 +770,10 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
     return MayaUsd::kCompleted;
 }
 
-void LayerDatabase::convertAnonymousLayers(MayaUsdProxyShapeBase* pShape, UsdStageRefPtr stage)
+void LayerDatabase::convertAnonymousLayers(
+    MayaUsdProxyShapeBase* pShape,
+    const MObject&         proxyNode,
+    UsdStageRefPtr         stage)
 {
     SdfLayerHandle root = stage->GetRootLayer();
     std::string    proxyName(pShape->name().asChar());
@@ -745,6 +793,11 @@ void LayerDatabase::convertAnonymousLayers(MayaUsdProxyShapeBase* pShape, UsdSta
         convertAnonymousLayersRecursive(session, proxyName, stage);
 
         saveUsdLayerToMayaFile(session, true);
+
+        setValueForAttr(
+            proxyNode,
+            MayaUsdProxyShapeBase::sessionLayerNameAttr,
+            stage->GetSessionLayer()->GetIdentifier());
     }
 }
 
@@ -882,7 +935,8 @@ void LayerDatabase::loadLayersPostRead(void*)
         }
     }
 
-    removeManagerNode(lm);
+    if (!_isSavingMayaFile)
+        removeManagerNode(lm);
 
     for (auto it = createdLayers.begin(); it != createdLayers.end(); ++it) {
         SdfLayerHandle lh = (*it);
