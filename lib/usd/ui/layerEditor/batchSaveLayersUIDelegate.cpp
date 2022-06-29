@@ -33,7 +33,7 @@ void UsdLayerEditor::initialize()
 }
 
 MayaUsd::BatchSaveResult
-UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<MayaUsd::BatchSaveInfo>& infos)
+UsdLayerEditor::batchSaveLayersUIDelegate(const std::vector<MayaUsd::LayerSavingInfo>& infos)
 {
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
         auto opt = MayaUsd::utils::serializeUsdEditsLocationOption();

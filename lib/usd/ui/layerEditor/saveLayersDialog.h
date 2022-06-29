@@ -35,7 +35,7 @@ public:
 
 #if defined(WANT_UFE_BUILD)
     // Create dialog for bulk save using all provided proxy shapes and their owned stages.
-    SaveLayersDialog(QWidget* in_parent, const std::vector<MayaUsd::BatchSaveInfo>& infos);
+    SaveLayersDialog(QWidget* in_parent, const std::vector<MayaUsd::LayerSavingInfo>& infos);
 #endif
 
     ~SaveLayersDialog();

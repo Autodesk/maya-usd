@@ -53,7 +53,7 @@ enum BatchSaveResult
 
 /*! \brief Information about the stages that need to be saved.
  */
-struct BatchSaveInfo
+struct LayerSavingInfo
 {
     MDagPath    dagPath;
     UsdStagePtr stage;
@@ -65,7 +65,7 @@ struct BatchSaveInfo
     plugin a delegate will be installed that posts a UI dialog that provides an opportunity
     to choose file names and locations of all anonymous layers that need to be saved to disk.
  */
-using BatchSaveDelegate = std::function<BatchSaveResult(const std::vector<BatchSaveInfo>&)>;
+using BatchSaveDelegate = std::function<BatchSaveResult(const std::vector<LayerSavingInfo>&)>;
 
 /*! \brief Maya dependency node responsible for serializing unsaved Usd edits.
 

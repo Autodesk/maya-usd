@@ -251,8 +251,8 @@ private:
     std::map<std::string, SdfLayerRefPtr> _idToLayer;
     TfNotice::Key                         _onStageSetKey;
     std::set<unsigned int>                _supportedTypes;
-    std::vector<BatchSaveInfo>            _proxiesToSave;
-    std::vector<BatchSaveInfo>            _internalProxiesToSave;
+    std::vector<LayerSavingInfo>          _proxiesToSave;
+    std::vector<LayerSavingInfo>          _internalProxiesToSave;
     static MCallbackId                    preSaveCallbackId;
     static MCallbackId                    postSaveCallbackId;
     static MCallbackId                    preExportCallbackId;
@@ -487,7 +487,7 @@ bool LayerDatabase::getProxiesToSave(bool isExport)
                     SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
                     for (auto layer : allLayers) {
                         if (layer->IsDirty()) {
-                            BatchSaveInfo info;
+                            LayerSavingInfo info;
                             MDagPath::getAPathTo(mobj, info.dagPath);
                             info.stage = stage;
                             info.shareable = pShape->isShareableStage();
@@ -700,7 +700,7 @@ BatchSaveResult LayerDatabase::saveUsdToMayaFile()
 
     MFnDependencyNode fn;
     for (size_t i = 0; i < _proxiesToSave.size() + _internalProxiesToSave.size(); i++) {
-        const BatchSaveInfo& info = i < _proxiesToSave.size()
+        const LayerSavingInfo& info = i < _proxiesToSave.size()
             ? _proxiesToSave[i]
             : _internalProxiesToSave[i - _proxiesToSave.size()];
         MObject mobj = info.dagPath.node();
@@ -736,7 +736,7 @@ BatchSaveResult LayerDatabase::saveUsdToUsdFiles()
 {
     MFnDependencyNode fn;
     for (size_t i = 0; i < _proxiesToSave.size() + _internalProxiesToSave.size(); i++) {
-        const BatchSaveInfo& info = i < _proxiesToSave.size()
+        const LayerSavingInfo& info = i < _proxiesToSave.size()
             ? _proxiesToSave[i]
             : _internalProxiesToSave[i - _proxiesToSave.size()];
 

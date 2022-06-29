@@ -228,8 +228,8 @@ namespace UsdLayerEditor {
 
 #if defined(WANT_UFE_BUILD)
 SaveLayersDialog::SaveLayersDialog(
-    QWidget*                                   in_parent,
-    const std::vector<MayaUsd::BatchSaveInfo>& infos)
+    QWidget*                                     in_parent,
+    const std::vector<MayaUsd::LayerSavingInfo>& infos)
     : QDialog(in_parent)
     , _sessionState(nullptr)
 {
