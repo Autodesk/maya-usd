@@ -936,9 +936,7 @@ void LayerDatabase::loadLayersPostRead(void*)
         }
     }
 
-    if (_isSavingMayaFile)
-        clearManagerNode(lm);
-    else
+    if (!_isSavingMayaFile)
         removeManagerNode(lm);
 
     for (auto it = createdLayers.begin(); it != createdLayers.end(); ++it) {
