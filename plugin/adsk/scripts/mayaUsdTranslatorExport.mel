@@ -303,10 +303,7 @@ proc string mayaUsdTranslatorExport_AppendConvertMaterialsTo(string $currentOpti
             stringArrayInsertAtIndex(255, $enabledConversions, $opt);
         }
     }
-    if (size($enabledConversions) > 0) {
-        return $currentOptions + ";shadingMode=useRegistry;" + $arg + "=[" + stringArrayToString($enabledConversions, ",") + "]";
-    }
-    return $currentOptions + ";shadingMode=none";
+    return $currentOptions + ";shadingMode=useRegistry;" + $arg + "=[" + stringArrayToString($enabledConversions, ",") + "]";
 }
 
 global proc mayaUsdTranslatorExport_EnableAllControls() {
@@ -371,6 +368,11 @@ global proc mayaUsdTranslatorExport_SetFromOptions(string $currentOptions, int $
     int $index;
 
     if (size($currentOptions) > 0) {
+        // No job context means we don't process job context.
+        if (gmatch($currentOptions, "*jobContext=*") == 0) {
+            $processJobContext = 0;
+        }
+
         tokenize($currentOptions, ";", $optionList);
         int $supportsMultiExport = 1;
         int $exportNurbsCurves = 1;
