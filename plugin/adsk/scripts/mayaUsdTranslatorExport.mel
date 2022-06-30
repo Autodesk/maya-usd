@@ -294,16 +294,23 @@ proc mayaUsdTranslatorExport_DisableConvertMaterialsToCheckboxes() {
 proc string mayaUsdTranslatorExport_AppendConvertMaterialsTo(string $currentOptions, string $arg) {
     string $conversions[] = `mayaUSDListShadingModes -export -useRegistryOnly`;
     string $enabledConversions[];
+    int $allDisabled = 1;
     for ($conversion in $conversions) {
         string $opt = `mayaUSDListShadingModes -eo $conversion -useRegistryOnly`;
         string $widget = $opt + "_ConvertMaterialsToCheckBox";
         if (`checkBoxGrp -exists $widget` == 0)
             continue;
+        if (`checkBoxGrp -q -en $widget` == 1) {
+            $allDisabled = 0;
+        }
         if (`checkBoxGrp -q -v1 $widget` == 1) {
             stringArrayInsertAtIndex(255, $enabledConversions, $opt);
         }
     }
-    return $currentOptions + ";shadingMode=useRegistry;" + $arg + "=[" + stringArrayToString($enabledConversions, ",") + "]";
+    if ($allDisabled == 0) {
+        return $currentOptions + ";shadingMode=useRegistry;" + $arg + "=[" + stringArrayToString($enabledConversions, ",") + "]";
+    }
+    return $currentOptions + ";shadingMode=none";    
 }
 
 global proc mayaUsdTranslatorExport_EnableAllControls() {
