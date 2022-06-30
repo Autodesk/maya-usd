@@ -349,11 +349,11 @@ void SelectionChangedCB(void* data)
 #endif
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-void displayLayerMembershipChangedCB(void* data)
+void displayLayerMembershipChangedCB(void* data, const MString& memberPath)
 {
     ProxyRenderDelegate* prd = static_cast<ProxyRenderDelegate*>(data);
     if (prd) {
-        prd->DisplayLayerMembershipChanged();
+        prd->DisplayLayerMembershipChanged(memberPath);
     }
 }
 
@@ -658,7 +658,7 @@ void ProxyRenderDelegate::_InitRenderDelegate()
         // Monitor display layers for membership changes:
         if (!_mayaDisplayLayerMembersCallbackId) {
             _mayaDisplayLayerMembersCallbackId
-                = MDisplayLayerMessage::addDisplayLayerMembersChangedCallback(
+                = MDisplayLayerMessage::addDisplayLayerMemberChangedCallback(
                     displayLayerMembershipChangedCB, this);
         }
 #endif
@@ -844,17 +844,6 @@ void ProxyRenderDelegate::_UpdateDisplayLayers()
                 _mayaDisplayLayers[i], displayLayerDirtyCB, this, nullptr));
         }
     }
-
-    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-    if (_displayLayerMembershipChanged) {
-        auto& rprims = _renderIndex->GetRprimIds();
-        for (auto path : rprims) {
-            HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
-                | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
-            changeTracker.MarkRprimDirty(path, dirtyBits);
-        }
-    }
-    _displayLayerMembershipChanged = false;
 }
 #endif
 
@@ -866,7 +855,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 
     ++_frameCounter;
     _refreshRequested = false;
-    
+
     _UpdateRenderTags();
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     _UpdateDisplayLayers();
@@ -1355,10 +1344,10 @@ void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 //! \brief  Notify of display layer membership change.
-void ProxyRenderDelegate::DisplayLayerMembershipChanged()
+void ProxyRenderDelegate::DisplayLayerMembershipChanged(const MString& memberPath)
 {
+    _DirtyUfeSubtree(memberPath);
     _RequestRefresh();
-    _displayLayerMembershipChanged = true;
 }
 
 void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)

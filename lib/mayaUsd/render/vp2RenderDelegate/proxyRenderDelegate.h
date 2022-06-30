@@ -178,7 +178,7 @@ public:
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     MAYAUSD_CORE_PUBLIC
-    void DisplayLayerMembershipChanged();
+    void DisplayLayerMembershipChanged(const MString& memberPath);
 
     MAYAUSD_CORE_PUBLIC
     void DisplayLayerDirty(MFnDisplayLayer& displayLayer);
@@ -315,9 +315,6 @@ private:
     bool _refreshRequested {
         false
     }; //!< True if the render delegate has already requested a refresh.
-    bool _displayLayerMembershipChanged {
-        false
-    }; //~< Whether or not there is any display layer membership changes.
     MCallbackId              _mayaDisplayLayerMembersCallbackId { 0 };
     MObjectArray             _mayaDisplayLayers;
     std::vector<MCallbackId> _mayaDisplayLayerCallbacks;
