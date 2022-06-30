@@ -258,7 +258,7 @@ sudo yum-config-manager --disable vault.centos.org_7.6.1810_sclo_x86_64_rh_
 
 # How to Load Plug-ins in Maya 
 
-The provided module file (*.mod) facilitates setting various environment variables for plugins and libraries. After the project is successfully built, ```mayaUsd.mod/alUSD.mod/pxrUSD.mod``` is installed inside the install directory. In order for Maya to discover this mod file, ```MAYA_MODULE_PATH``` environment variable needs to be set to point to the location where the mod file is installed.
+The provided module files (*.mod) facilitates setting various environment variables for plugins and libraries. After the project is successfully built, ```mayaUsd.mod/alUSD.mod/pxrUSD.mod``` are installed inside the install directory. In order for Maya to discover these mod files, ```MAYA_MODULE_PATH``` environment variable needs to be set to point to the location where the mod files are installed.
 Examples:
 ```
 set MAYA_MODULE_PATH=C:\workspace\install\RelWithDebInfo
