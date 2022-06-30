@@ -77,9 +77,9 @@
 #include <ufe/namedSelection.h>
 #endif
 #include <ufe/observableSelection.h>
-#include <ufe/path.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <ufe/pathString.h>
+#include <ufe/pathStringExcept.h>
 #endif
 #include <ufe/pathSegment.h>
 #include <ufe/runTimeMgr.h>
@@ -793,9 +793,8 @@ void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
     }
 }
 
-void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& root)
+void ProxyRenderDelegate::_DirtyUfeSubtree(const Ufe::Path& rootPath)
 {
-    Ufe::Path rootPath = Ufe::PathString::path(root.asChar());
     if (rootPath.runTimeId() == MayaUsd::ufe::getUsdRunTimeId()) {
         _DirtyUsdSubtree(MayaUsd::ufe::ufePathToPrim(rootPath));
     } else {
@@ -806,6 +805,17 @@ void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& root)
             }
         }
     }
+}
+
+void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& rootStr)
+{
+    Ufe::Path rootPath;
+    try { rootPath = Ufe::PathString::path(rootStr.asChar()); }
+    catch (const Ufe::InvalidPath&) { return; }
+    catch (const Ufe::InvalidPathComponentSeparator&) { return; }
+    catch (const Ufe::EmptyPathSegment&) { return; }
+    
+    _DirtyUfeSubtree(rootPath);
 }
 
 void ProxyRenderDelegate::_UpdateDisplayLayers()
@@ -855,6 +865,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "Execute");
 
     ++_frameCounter;
+    _refreshRequested = false;
+    
     _UpdateRenderTags();
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     _UpdateDisplayLayers();
@@ -1354,11 +1366,18 @@ void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
     MSelectionList members;
     displayLayer.getMembers(members);
 
-    MStringArray roots;
-    members.getSelectionStrings(roots);
-
-    for (auto it = roots.begin(); it != roots.end(); ++it) {
-        _DirtyUfeSubtree(*it);
+    auto membersCount = members.length();
+    for (unsigned int j = 0; j < membersCount; ++j) {
+        MDagPath dagPath;
+        if (members.getDagPath(j, dagPath) == MS::kSuccess) {
+            _DirtyUfeSubtree(MayaUsd::ufe::dagPathToUfe(dagPath));
+        } else {
+            MStringArray selectionStrings;
+            members.getSelectionStrings(j, selectionStrings);
+            for (auto it = selectionStrings.begin(); it != selectionStrings.end(); ++it) {
+                _DirtyUfeSubtree(*it);
+            }
+        }
     }
 }
 

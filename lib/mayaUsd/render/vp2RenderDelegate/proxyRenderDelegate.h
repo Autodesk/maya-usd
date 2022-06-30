@@ -38,6 +38,7 @@
 
 #include <memory>
 
+#include <ufe/path.h>
 #if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>
 #endif
@@ -237,7 +238,8 @@ private:
     void _UpdateRenderTags();
     void _ClearRenderDelegate();
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-    void _DirtyUfeSubtree(const MString& root);
+    void _DirtyUfeSubtree(const Ufe::Path& rootPath);
+    void _DirtyUfeSubtree(const MString& rootStr);
     void _DirtyUsdSubtree(const UsdPrim& prim);
     void _UpdateDisplayLayers();
     void _RequestRefresh();
