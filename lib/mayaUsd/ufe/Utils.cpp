@@ -688,11 +688,13 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
                 std::stoi(tokens[2].c_str()));
         }
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
     } else if (typeName == Ufe::Attribute::kFloat2) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 2, kInvalidValue, strValue.c_str(), typeName.c_str())) {
             result = GfVec2f(std::stof(tokens[0].c_str()), std::stof(tokens[1].c_str()));
         }
+#endif
 #endif
     } else if (typeName == Ufe::Attribute::kFloat3 || typeName == Ufe::Attribute::kColorFloat3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
@@ -703,6 +705,7 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
                 std::stof(tokens[2].c_str()));
         }
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4015)
     } else if (typeName == Ufe::Attribute::kFloat4 || typeName == Ufe::Attribute::kColorFloat4) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");
         if (TF_VERIFY(tokens.size() == 4, kInvalidValue, strValue.c_str(), typeName.c_str())) {
@@ -712,6 +715,7 @@ PXR_NS::VtValue vtValueFromString(const std::string& typeName, const std::string
                 std::stof(tokens[2].c_str()),
                 std::stof(tokens[3].c_str()));
         }
+#endif
 #endif
     } else if (typeName == Ufe::Attribute::kDouble3) {
         std::vector<std::string> tokens = splitString(strValue, "()[], ");

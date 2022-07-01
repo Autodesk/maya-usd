@@ -1598,7 +1598,7 @@ class AttributeTestCase(unittest.TestCase):
 
         self.createAndTestAttribute(materialItem, "ND_constant_float", "ConstantFloat", origFloat, newFloat, floatAssert)
         self.createAndTestAttribute(materialItem, "ND_constant_color3", "ConstantColor3_", origColor3, newColor3, colorAssert)
-        if os.getenv("USD_HAS_COLOR4_SDR_SUPPORT"):
+        if os.getenv('USD_HAS_COLOR4_SDR_SUPPORT', 'NOT-FOUND') in ('1', "TRUE"):
             self.createAndTestAttribute(materialItem, "ND_constant_color4", "ConstantColor4_", origColor4, newColor4, colorAssert)
         self.createAndTestAttribute(materialItem, "ND_constant_vector2", "ConstantVector2_", origVector2, newVector2, vectorAssert)
         self.createAndTestAttribute(materialItem, "ND_constant_vector3", "ConstantVector3_", origVector3, newVector3, vectorAssert)
@@ -1610,8 +1610,7 @@ class AttributeTestCase(unittest.TestCase):
         self.createAndTestAttribute(materialItem, "ND_constant_string", "ConstantString", origString, newString, normalAssert)
         self.createAndTestAttribute(materialItem, "ND_constant_filename", "ConstantFilename", origString, newString, normalAssert)
 
-    @unittest.skipIf(os.getenv('USD_HAS_MX_METADATA_SUPPORT', 'NOT-FOUND') == 'NOT-FOUND', 'Test only available if USD can read MaterialX metadata')
-    @unittest.skipUnless(Usd.GetVersion() >= (0, 21, 8), 'Requires CanApplySchema from USD')
+    @unittest.skipIf(os.getenv('USD_HAS_MX_METADATA_SUPPORT', 'NOT-FOUND') not in ('1', "TRUE"), 'Test only available if USD can read MaterialX metadata')
     def testMaterialXMetadata(self):
         """Tests all known metadata"""
         cmds.file(new=True, force=True)
