@@ -140,7 +140,9 @@ class testUsdExportUVSets(unittest.TestCase):
             shadingMode='none',
             exportColorSets=False,
             exportDisplayColor=False,
-            exportUVs=True)
+            exportUVs=True,
+            preserveUVSetNames=False,
+            remapUVSetsTo=[['','']])
 
         testUsdExportUVSets._stage = Usd.Stage.Open(usdFilePath)
 
@@ -394,7 +396,7 @@ class testUsdExportUVSets(unittest.TestCase):
         # Sets should not be renamed at all when preserveUVSetNames is True
         usdCubeMesh = reexportUVSets(
             preserveUVSetNames=True,
-            remapUVSetsTo=[])
+            remapUVSetsTo=[['','']])
         pvAPI = UsdGeom.PrimvarsAPI(usdCubeMesh)
         map1 = pvAPI.GetPrimvar('map1')
         st = pvAPI.GetPrimvar('st')

@@ -118,6 +118,14 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
                 ProxyShapeSceneSegmentHandler.cpp
         )
     endif()
+
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdConnections.cpp
+                UsdConnectionHandler.cpp
+        )
+    endif()
 endif()
 
 set(HEADERS
@@ -204,6 +212,15 @@ if (UFE_LIGHTS_SUPPORT)
         UsdLight.h
         UsdLightHandler.h
     )
+endif()
+
+if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
+    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4020)
+        list(APPEND HEADERS
+            UsdConnections.h
+            UsdConnectionHandler.h
+        )
+    endif()
 endif()
 
 if(CMAKE_UFE_V4_FEATURES_AVAILABLE)

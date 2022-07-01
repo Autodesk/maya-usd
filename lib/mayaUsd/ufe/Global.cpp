@@ -48,6 +48,9 @@
 #include <mayaUsd/ufe/UsdLightHandler.h>
 #endif
 #ifdef UFE_V4_FEATURES_AVAILABLE
+#if (UFE_PREVIEW_VERSION_NUM >= 4020)
+#include <mayaUsd/ufe/UsdConnectionHandler.h>
+#endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
 #include <mayaUsd/ufe/UsdShaderNodeDefHandler.h>
 #endif
@@ -181,6 +184,9 @@ MStatus initialize()
 #ifdef UFE_V4_FEATURES_AVAILABLE
 #if UFE_LIGHTS_SUPPORT
     handlers.lightHandler = UsdLightHandler::create();
+#endif
+#if (UFE_PREVIEW_VERSION_NUM >= 4020)
+    handlers.connectionHandler = UsdConnectionHandler::create();
 #endif
 #if (UFE_PREVIEW_VERSION_NUM >= 4001)
     handlers.nodeDefHandler = UsdShaderNodeDefHandler::create();

@@ -28,8 +28,8 @@
 #include <ufe/ufeAssert.h>
 
 // Note: normally we would use this using directive, but here we cannot because
-//		 one of our classes is called UsdAttribute which is exactly the same as
-//		the one in USD.
+//       one of our classes is called UsdAttribute which is exactly the same as
+//      the one in USD.
 // PXR_NAMESPACE_USING_DIRECTIVE
 
 #ifdef UFE_ENABLE_ASSERTS

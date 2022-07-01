@@ -143,6 +143,14 @@ if (USD_HAS_COLOR4_SDR_SUPPORT)
     )
 endif()
 
+message(STATUS "MAYA_HAS_DISPLAY_LAYER_API is ${MAYA_HAS_DISPLAY_LAYER_API}")
+if (MAYA_HAS_DISPLAY_LAYER_API)
+    target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+    MAYA_HAS_DISPLAY_LAYER_API=1
+    )
+endif()
+
 if (MAYA_LIGHTAPI_VERSION GREATER_EQUAL 2)
     target_compile_definitions(${PROJECT_NAME}
         PRIVATE

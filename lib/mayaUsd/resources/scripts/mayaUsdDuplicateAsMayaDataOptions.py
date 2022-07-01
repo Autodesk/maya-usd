@@ -18,6 +18,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 
 from mayaUsdLibRegisterStrings import getMayaUsdLibString
+from mayaUsdMergeToUSDOptions import getDefaultMergeToUSDOptionsDict
 import mayaUsdOptions
 
 from functools import partial
@@ -135,7 +136,7 @@ def _resetDuplicateAsMayaDataOptions(subLayout, data=None):
     """
     Resets the duplicate-as-Maya-data options in the dialog.
     """
-    optionsText = mayaUsdOptions.convertOptionsDictToText(_getDefaultDuplicateAsMayaDataOptionsDict())
+    optionsText = mayaUsdOptions.convertOptionsDictToText(getDefaultDuplicateAsMayaDataOptionsDict())
     _fillDuplicateAsMayaDataOptionsDialog(subLayout, optionsText, "fill")
 
 
@@ -179,7 +180,7 @@ def getDuplicateAsMayaDataOptionsText():
     """
     return mayaUsdOptions.getOptionsText(
         _getDuplicateAsMayaDataOptionsVarName(),
-        _getDefaultDuplicateAsMayaDataOptionsDict())
+        getDefaultDuplicateAsMayaDataOptionsDict())
     
 
 def setDuplicateAsMayaDataOptionsText(optionsText):
@@ -191,21 +192,9 @@ def setDuplicateAsMayaDataOptionsText(optionsText):
     mayaUsdOptions.setOptionsText(_getDuplicateAsMayaDataOptionsVarName(), optionsText)
 
 
-def _getDefaultDuplicateAsMayaDataOptionsDict():
+def getDefaultDuplicateAsMayaDataOptionsDict():
     """
     Retrieves the default duplicate-as-Maya-data options.
     """
-    return {
-        "exportColorSets":          "1",
-        "exportUVs":                "1",
-        "exportSkels":              "none",
-        "exportSkin":               "none",
-        "exportBlendShapes":        "0",
-        "exportDisplayColor":       "1",
-        "shadingMode":              "none",
-        "animation":                "1",
-        "exportVisibility":         "1",
-        "exportInstances":          "1",
-        "mergeTransformAndShape":   "1",
-        "stripNamespaces":          "0",
-    }
+    # For now, the duplicate and merge options defaults are the same.
+    return getDefaultMergeToUSDOptionsDict()

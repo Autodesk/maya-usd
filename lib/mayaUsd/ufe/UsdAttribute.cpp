@@ -151,7 +151,12 @@ std::string getUsdAttributeValueAsString(
     const MayaUsd::ufe::UsdAttribute& attr,
     const PXR_NS::UsdTimeCode&        time)
 {
-    if (!attr.isValid() || !attr.hasValue())
+    if (!attr.isValid() ||
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        !attr._hasValue())
+#else
+        !attr.hasValue())
+#endif
         return attr.defaultValue();
 
     PXR_NS::VtValue v;
@@ -166,7 +171,11 @@ std::string getUsdAttributeValueAsString(
         return os.str();
     }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+    TF_CODING_ERROR(kErrorMsgFailedConvertToString, attr._name().c_str());
+#else
     TF_CODING_ERROR(kErrorMsgFailedConvertToString, attr.name().c_str());
+#endif
     return std::string();
 }
 
@@ -176,7 +185,12 @@ U getUsdAttributeVectorAsUfe(
     const PXR_NS::UsdTimeCode&        time)
 {
     VtValue vt;
-    if (!attr.isValid() || !attr.hasValue()) {
+    if (!attr.isValid() ||
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        !attr._hasValue()) {
+#else
+        !attr.hasValue()) {
+#endif
         if (!attr.defaultValue().empty()) {
             vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
         } else {
@@ -207,7 +221,12 @@ template <typename T, typename U>
 U getUsdAttributeColorAsUfe(const MayaUsd::ufe::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
     VtValue vt;
-    if (!attr.isValid() || !attr.hasValue()) {
+    if (!attr.isValid() ||
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        !attr._hasValue()) {
+#else
+        !attr.hasValue()) {
+#endif
         if (!attr.defaultValue().empty()) {
             vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
         } else {
@@ -240,7 +259,12 @@ U getUsdAttributeMatrixAsUfe(
     const PXR_NS::UsdTimeCode&        time)
 {
     VtValue vt;
-    if (!attr.isValid() || !attr.hasValue()) {
+    if (!attr.isValid() ||
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        !attr._hasValue()) {
+#else
+        !attr.hasValue()) {
+#endif
         if (!attr.defaultValue().empty()) {
             vt = MayaUsd::ufe::vtValueFromString(attr.typeName(), attr.defaultValue());
         } else {
@@ -325,7 +349,14 @@ public:
     {
     }
 
-    void executeUndoBlock() override { _attr.setMetadata(_key, _newValue); }
+    void executeUndoBlock() override
+    {
+#ifdef UFE_V4_FEATURES_AVAILABLE
+        _attr._setMetadata(_key, _newValue);
+#else
+        _attr.setMetadata(_key, _newValue);
+#endif
+    }
 
 private:
     MayaUsd::ufe::UsdAttribute& _attr;
@@ -474,7 +505,11 @@ bool UsdAttribute::set(const PXR_NS::VtValue& value, PXR_NS::UsdTimeCode time)
     return fUsdAttr.Set(value, time);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool UsdAttribute::_hasValue() const
+#else
 bool UsdAttribute::hasValue() const
+#endif
 {
     return isValid() ? fUsdAttr.HasValue() :
 #ifdef UFE_V4_FEATURES_AVAILABLE
@@ -484,7 +519,11 @@ bool UsdAttribute::hasValue() const
 #endif
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+std::string UsdAttribute::_name() const
+#else
 std::string UsdAttribute::name() const
+#endif
 {
     if (isValid()) {
         return fUsdAttr.GetName().GetString();
@@ -503,7 +542,11 @@ std::string UsdAttribute::name() const
     }
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+std::string UsdAttribute::_documentation() const
+#else
 std::string UsdAttribute::documentation() const
+#endif
 {
     if (isValid()) {
         return fUsdAttr.GetDocumentation();
@@ -512,13 +555,21 @@ std::string UsdAttribute::documentation() const
     }
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+std::string UsdAttribute::_string(const Ufe::SceneItem::Ptr& item) const
+#else
 std::string UsdAttribute::string(const Ufe::SceneItem::Ptr& item) const
+#endif
 {
     return getUsdAttributeValueAsString(*this, getCurrentTime(item));
 }
 
 #ifdef UFE_V3_FEATURES_AVAILABLE
+#ifdef UFE_V4_FEATURES_AVAILABLE
+Ufe::Value UsdAttribute::_getMetadata(const std::string& key) const
+#else
 Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
+#endif
 {
     if (isValid()) {
         // Special cases for known Ufe metadata keys.
@@ -561,7 +612,11 @@ Ufe::Value UsdAttribute::getMetadata(const std::string& key) const
     return Ufe::Value();
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool UsdAttribute::_setMetadata(const std::string& key, const Ufe::Value& value)
+#else
 bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
+#endif
 {
     if (isValid())
         return setUsdAttrMetadata(fUsdAttr, key, value);
@@ -598,12 +653,20 @@ bool UsdAttribute::setMetadata(const std::string& key, const Ufe::Value& value)
 }
 
 Ufe::UndoableCommand::Ptr
+#ifdef UFE_V4_FEATURES_AVAILABLE
+UsdAttribute::_setMetadataCmd(const std::string& key, const Ufe::Value& value)
+#else
 UsdAttribute::setMetadataCmd(const std::string& key, const Ufe::Value& value)
+#endif
 {
     return std::make_shared<SetUndoableMetadataCommand>(*this, key, value);
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool UsdAttribute::_clearMetadata(const std::string& key)
+#else
 bool UsdAttribute::clearMetadata(const std::string& key)
+#endif
 {
     if (isValid()) {
         // Special cases for known Ufe metadata keys.
@@ -617,7 +680,11 @@ bool UsdAttribute::clearMetadata(const std::string& key)
     }
 }
 
+#ifdef UFE_V4_FEATURES_AVAILABLE
+bool UsdAttribute::_hasMetadata(const std::string& key) const
+#else
 bool UsdAttribute::hasMetadata(const std::string& key) const
+#endif
 {
     bool result = false;
     if (isValid()) {
