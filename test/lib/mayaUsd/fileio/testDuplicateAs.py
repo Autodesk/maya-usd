@@ -402,7 +402,6 @@ class DuplicateAsTestCase(unittest.TestCase):
 
         # Verify that the copied sphere does not have a look (material) prim.
         looksPrim = stage.GetPrimAtPath("/pSphere1/Looks")
-        print(stage.GetRootLayer().ExportToString())
         self.assertFalse(looksPrim.IsValid())
 
         # Undo duplicate to USD.
