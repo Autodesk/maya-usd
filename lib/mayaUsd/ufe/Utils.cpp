@@ -636,16 +636,16 @@ PXR_NS::SdfValueTypeName ufeTypeToUsd(const std::string& ufeType)
     // Map the USD type into UFE type.
     static const std::unordered_map<Ufe::Attribute::Type, PXR_NS::SdfValueTypeName> sUfeTypeToUsd
     {
-        { Ufe::Attribute::kBool, PXR_NS::SdfValueTypeNames->Bool },               // bool
-            { Ufe::Attribute::kInt, PXR_NS::SdfValueTypeNames->Int },             // int32_t
-            { Ufe::Attribute::kFloat, PXR_NS::SdfValueTypeNames->Float },         // float
-            { Ufe::Attribute::kDouble, PXR_NS::SdfValueTypeNames->Double },       // double
-            { Ufe::Attribute::kString, PXR_NS::SdfValueTypeNames->String },       // std::string
-            { Ufe::Attribute::kEnumString, PXR_NS::SdfValueTypeNames->Token },    // TfToken
-            { Ufe::Attribute::kInt3, PXR_NS::SdfValueTypeNames->Int3 },           // GfVec3i
-            { Ufe::Attribute::kFloat3, PXR_NS::SdfValueTypeNames->Float3 },       // GfVec3f
-            { Ufe::Attribute::kDouble3, PXR_NS::SdfValueTypeNames->Double3 },     // GfVec3d
-            { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3f }, // GfVec3f
+        { Ufe::Attribute::kBool, PXR_NS::SdfValueTypeNames->Bool },
+            { Ufe::Attribute::kInt, PXR_NS::SdfValueTypeNames->Int },
+            { Ufe::Attribute::kFloat, PXR_NS::SdfValueTypeNames->Float },
+            { Ufe::Attribute::kDouble, PXR_NS::SdfValueTypeNames->Double },
+            { Ufe::Attribute::kString, PXR_NS::SdfValueTypeNames->String },
+            { Ufe::Attribute::kEnumString, PXR_NS::SdfValueTypeNames->Token },
+            { Ufe::Attribute::kInt3, PXR_NS::SdfValueTypeNames->Int3 },
+            { Ufe::Attribute::kFloat3, PXR_NS::SdfValueTypeNames->Float3 },
+            { Ufe::Attribute::kDouble3, PXR_NS::SdfValueTypeNames->Double3 },
+            { Ufe::Attribute::kColorFloat3, PXR_NS::SdfValueTypeNames->Color3f },
 #if (UFE_PREVIEW_VERSION_NUM >= 4015)
             { Ufe::Attribute::kFilename, PXR_NS::SdfValueTypeNames->Asset },
             { Ufe::Attribute::kFloat2, PXR_NS::SdfValueTypeNames->Float2 },
