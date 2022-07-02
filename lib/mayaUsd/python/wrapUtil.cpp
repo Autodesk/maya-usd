@@ -47,9 +47,8 @@ VtDictionary getDictionaryFromEncodedOptions(const std::string& textOptions)
 
 void wrapUtil()
 {
-    scope s(class_<UsdMayaUtilScope>("Util"));
-
-    def("IsAuthored", UsdMayaUtil::IsAuthored);
-    def("PrettifyName", UsdMayaUtil::PrettifyName);
-    def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions);
+    scope s = class_<UsdMayaUtilScope>("Util", no_init)
+                  .def("IsAuthored", UsdMayaUtil::IsAuthored)
+                  .def("PrettifyName", UsdMayaUtil::PrettifyName)
+                  .def("getDictionaryFromEncodedOptions", getDictionaryFromEncodedOptions);
 }
