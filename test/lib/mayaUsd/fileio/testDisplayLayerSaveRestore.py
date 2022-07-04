@@ -80,7 +80,7 @@ class DisplayLayerSaveNonMaya(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.file(tempMayaFile, open=True)
 
-        # Verify the two objecst (Maya and non-Maya are in layer).
+        # Verify the two objects (Maya and non-Maya are in layer).
         layerObjs = cmds.editDisplayLayerMembers('layer1', query=True, fn=True)
         self.assertTrue('|pSphere1' in layerObjs)
         self.assertTrue('|stage1|stageShape1,/Sphere1' in layerObjs)
