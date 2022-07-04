@@ -62,12 +62,6 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
         )
     endif()
 
-    if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4007)
-        list(APPEND TEST_SCRIPT_FILES
-            testLight.py
-        )
-    endif()
-
     if (${UFE_PREVIEW_VERSION_NUM} GREATER_EQUAL 4013)
         list(APPEND TEST_SCRIPT_FILES
             testSceneSegment.py
@@ -79,6 +73,12 @@ if(CMAKE_UFE_V4_FEATURES_AVAILABLE)
             testShaderNodeDef.py
         )
     endif()
+endif()
+
+if (UFE_LIGHTS_SUPPORT)
+    list(APPEND TEST_SCRIPT_FILES
+        testLight.py
+    )
 endif()
 
 if (MAYA_API_VERSION VERSION_GREATER_EQUAL 20220100)
