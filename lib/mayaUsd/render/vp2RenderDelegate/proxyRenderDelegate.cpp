@@ -1372,6 +1372,10 @@ void ProxyRenderDelegate::DisplayLayerDirty(MFnDisplayLayer& displayLayer)
             }
         }
     }
+
+    if (membersCount) {
+        _RequestRefresh();
+    }
 }
 
 void ProxyRenderDelegate::_RequestRefresh()
