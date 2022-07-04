@@ -17,6 +17,7 @@
 #define PROXY_RENDER_DELEGATE
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/selection.h>
@@ -178,6 +179,12 @@ public:
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     MAYAUSD_CORE_PUBLIC
+    static void DisplayLayerAdded(MObject& node, void* clientData);
+    
+    MAYAUSD_CORE_PUBLIC
+    static void DisplayLayerRemoved(MObject& node, void* clientData);
+    
+    MAYAUSD_CORE_PUBLIC
     void DisplayLayerMembershipChanged(const MString& memberPath);
 
     MAYAUSD_CORE_PUBLIC
@@ -241,7 +248,6 @@ private:
     void _DirtyUfeSubtree(const Ufe::Path& rootPath);
     void _DirtyUfeSubtree(const MString& rootStr);
     void _DirtyUsdSubtree(const UsdPrim& prim);
-    void _UpdateDisplayLayers();
     void _RequestRefresh();
 #endif
     SdfPathVector
@@ -312,12 +318,16 @@ private:
     bool _selectionChanged { true }; //!< Whether there is any selection change or not
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+    using NodeHandleToCallbackIdMap
+            = UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>;
+
     bool _refreshRequested {
         false
     }; //!< True if the render delegate has already requested a refresh.
-    MCallbackId              _mayaDisplayLayerMembersCallbackId { 0 };
-    MObjectArray             _mayaDisplayLayers;
-    std::vector<MCallbackId> _mayaDisplayLayerCallbacks;
+    MCallbackId               _mayaDisplayLayerAddedCallbackId { 0 };
+    MCallbackId               _mayaDisplayLayerRemovedCallbackId { 0 };
+    MCallbackId               _mayaDisplayLayerMembersCallbackId { 0 };
+    NodeHandleToCallbackIdMap _mayaDisplayLayerDirtyCallbackIds;
 #endif
 
 #ifdef MAYA_NEW_POINT_SNAPPING_SUPPORT

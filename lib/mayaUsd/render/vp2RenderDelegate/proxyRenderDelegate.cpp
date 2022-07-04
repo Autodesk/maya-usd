@@ -26,7 +26,6 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/utils/selectability.h>
-#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -54,6 +53,7 @@
 #include <maya/MColorPickerUtilities.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 #include <maya/MDisplayLayerMessage.h>
+#include <maya/MDGMessage.h>
 #endif
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
@@ -503,6 +503,10 @@ ProxyRenderDelegate::~ProxyRenderDelegate()
     }
 #endif
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+    if (_mayaDisplayLayerAddedCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerAddedCallbackId);
+    if (_mayaDisplayLayerRemovedCallbackId != 0)
+        MMessage::removeCallback(_mayaDisplayLayerRemovedCallbackId);
     if (_mayaDisplayLayerMembersCallbackId != 0)
         MMessage::removeCallback(_mayaDisplayLayerMembersCallbackId);
 #endif
@@ -655,7 +659,15 @@ void ProxyRenderDelegate::_InitRenderDelegate()
 #endif
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-        // Monitor display layers for membership changes:
+        // Monitor display layers
+        if (!_mayaDisplayLayerAddedCallbackId) {
+            _mayaDisplayLayerAddedCallbackId
+                = MDGMessage::addNodeAddedCallback(DisplayLayerAdded, "displayLayer", this);
+        }
+        if (!_mayaDisplayLayerRemovedCallbackId) {
+            _mayaDisplayLayerRemovedCallbackId
+                = MDGMessage::addNodeRemovedCallback(DisplayLayerRemoved, "displayLayer", this);
+        }
         if (!_mayaDisplayLayerMembersCallbackId) {
             _mayaDisplayLayerMembersCallbackId
                 = MDisplayLayerMessage::addDisplayLayerMemberChangedCallback(
@@ -817,34 +829,6 @@ void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& rootStr)
     
     _DirtyUfeSubtree(rootPath);
 }
-
-void ProxyRenderDelegate::_UpdateDisplayLayers()
-{
-    // make sure we're listening to every display layer for attribute changes
-    MObject displayLayerManagerHandle = MFnDisplayLayerManager::currentDisplayLayerManager();
-    MFnDisplayLayerManager displayLayerManagerFn(displayLayerManagerHandle);
-    MObjectArray           newDisplayLayers(displayLayerManagerFn.getAllDisplayLayers());
-    bool                   sameLayers = newDisplayLayers.length() == _mayaDisplayLayers.length();
-    for (unsigned int i = 0; i < _mayaDisplayLayers.length() && sameLayers; ++i) {
-        sameLayers = _mayaDisplayLayers[i] == newDisplayLayers[i];
-    }
-
-    if (!sameLayers) {
-        // remove all the callbacks from _mayaDisplayLayers
-        TF_VERIFY(_mayaDisplayLayers.length() == _mayaDisplayLayerCallbacks.size());
-        for (const auto& callbackId : _mayaDisplayLayerCallbacks)
-            MMessage::removeCallback(callbackId);
-
-        _mayaDisplayLayers = newDisplayLayers;
-        _mayaDisplayLayerCallbacks.clear();
-
-        // add all the callbacks to _mayaDisplayLayers;
-        for (unsigned int i = 0; i < _mayaDisplayLayers.length(); ++i) {
-            _mayaDisplayLayerCallbacks.push_back(MNodeMessage::addNodeDirtyCallback(
-                _mayaDisplayLayers[i], displayLayerDirtyCB, this, nullptr));
-        }
-    }
-}
 #endif
 
 //! \brief  Execute Hydra engine to perform minimal VP2 draw data update based on change tracker.
@@ -854,12 +838,11 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorC_L1, "Execute");
 
     ++_frameCounter;
+#ifdef MAYA_HAS_DISPLAY_LAYER_API
     _refreshRequested = false;
+#endif    
 
     _UpdateRenderTags();
-#ifdef MAYA_HAS_DISPLAY_LAYER_API
-    _UpdateDisplayLayers();
-#endif
 
     // If update for selection is enabled, the draw data for the "points" repr
     // won't be prepared until point snapping is activated; otherwise the draw
@@ -1343,6 +1326,27 @@ bool ProxyRenderDelegate::updateUfeIdentifiers(
 void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
+void ProxyRenderDelegate::DisplayLayerAdded(MObject& node, void* clientData)
+{
+    ProxyRenderDelegate* me = static_cast<ProxyRenderDelegate*>(clientData);
+    MObjectHandle        handle(node);
+    if (me->_mayaDisplayLayerDirtyCallbackIds.count(handle) == 0) {
+        me->_mayaDisplayLayerDirtyCallbackIds[handle]
+            = MNodeMessage::addNodeDirtyCallback(node, displayLayerDirtyCB, me, nullptr);
+    }
+}
+
+void ProxyRenderDelegate::DisplayLayerRemoved(MObject& node, void* clientData)
+{
+    ProxyRenderDelegate* me = static_cast<ProxyRenderDelegate*>(clientData);
+    MObjectHandle        handle(node);
+    auto                 iter = me->_mayaDisplayLayerDirtyCallbackIds.find(handle);
+    if (iter != me->_mayaDisplayLayerDirtyCallbackIds.end()) {
+        MMessage::removeCallback(iter->second);
+        me->_mayaDisplayLayerDirtyCallbackIds.erase(iter);
+    }
+}
+
 //! \brief  Notify of display layer membership change.
 void ProxyRenderDelegate::DisplayLayerMembershipChanged(const MString& memberPath)
 {
