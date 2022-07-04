@@ -24,6 +24,8 @@
 #include "Global.h"
 #include "Utils.h"
 
+#include <mayaUsd/utils/util.h>
+
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/ndr/declare.h>
 #include <pxr/usd/sdf/types.h>
@@ -104,7 +106,7 @@ const Ufe::ConstAttributeDefs& UsdShaderNodeDef::outputs() const { return fOutpu
 std::string UsdShaderNodeDef::type() const
 {
     TF_AXIOM(fShaderNodeDef);
-    return fShaderNodeDef->GetName();
+    return fShaderNodeDef->GetIdentifier();
 }
 
 std::size_t UsdShaderNodeDef::nbClassifications() const
@@ -269,7 +271,8 @@ Ufe::InsertChildCommand::Ptr UsdShaderNodeDef::createNodeCmd(
     TF_AXIOM(fShaderNodeDef);
     UsdSceneItem::Ptr parentItem = std::dynamic_pointer_cast<UsdSceneItem>(parent);
     if (parentItem) {
-        return UsdUndoCreateFromNodeDefCommand::create(fShaderNodeDef, parentItem, name.string());
+        return UsdUndoCreateFromNodeDefCommand::create(
+            fShaderNodeDef, parentItem, UsdMayaUtil::SanitizeName(name.string()));
     }
     return {};
 }
