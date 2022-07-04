@@ -114,11 +114,6 @@ static PXR_NS::UsdAttribute _GetAttributeType(const PXR_NS::UsdPrim& prim, const
 
 Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
 {
-    // early return if name is empty.
-    if (name.empty()) {
-        throw std::invalid_argument("Empty name.");
-    }
-
     // If we've already created an attribute for this name, just return the type.
     auto iter = fAttributes.find(name);
     if (iter != std::end(fAttributes))
@@ -140,16 +135,14 @@ Ufe::Attribute::Type UsdAttributes::attributeType(const std::string& name)
     }
 #endif
 #endif
-    std::string msg = "Can not find attribute \"" + name + "\" on scene item \""
-        + fItem->path().string() + "\".";
-    throw std::invalid_argument(msg);
+    return Ufe::Attribute::kInvalid;
 }
 
 Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 {
     // early return if name is empty.
     if (name.empty()) {
-        throw std::invalid_argument("Empty name.");
+        return nullptr;
     }
 
     // If we've already created an attribute for this name, just return it.
@@ -185,9 +178,7 @@ Ufe::Attribute::Ptr UsdAttributes::attribute(const std::string& name)
 #endif
 #endif
     if (!canCreateAttribute) {
-        std::string msg = "Can not find attribute \"" + name + "\" on scene item \""
-            + fItem->path().string() + "\".";
-        throw std::invalid_argument(msg);
+        return nullptr;
     }
 
     // Use a map of constructors to reduce the number of string comparisons. Since the naming

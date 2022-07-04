@@ -1675,12 +1675,6 @@ class AttributeTestCase(unittest.TestCase):
         shaderAttr.set(0.8)
         self.assertAlmostEqual(shaderAttr.get(), 0.8)
 
-        with self.assertRaises(ValueError):
-            shaderAttr = shaderAttrs.attribute("")
-
-        with self.assertRaises(ValueError):
-            shaderAttr = shaderAttrs.attribute("CompletelyUnknownAttribute")
-
     def testNamePrettification(self):
         '''Test the name prettification routine.'''
         self.assertEqual(mayaUsdLib.Util.PrettifyName("standard_surface"), "Standard Surface")
