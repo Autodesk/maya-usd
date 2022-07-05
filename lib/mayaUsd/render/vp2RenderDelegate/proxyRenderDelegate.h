@@ -36,10 +36,9 @@
 #include <maya/MObject.h>
 #include <maya/MObjectArray.h>
 #include <maya/MPxSubSceneOverride.h>
+#include <ufe/path.h>
 
 #include <memory>
-
-#include <ufe/path.h>
 #if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>
 #endif
@@ -180,10 +179,10 @@ public:
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     MAYAUSD_CORE_PUBLIC
     static void DisplayLayerAdded(MObject& node, void* clientData);
-    
+
     MAYAUSD_CORE_PUBLIC
     static void DisplayLayerRemoved(MObject& node, void* clientData);
-    
+
     MAYAUSD_CORE_PUBLIC
     void DisplayLayerMembershipChanged(const MString& memberPath);
 
@@ -318,8 +317,7 @@ private:
     bool _selectionChanged { true }; //!< Whether there is any selection change or not
 
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-    using NodeHandleToCallbackIdMap
-            = UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>;
+    using NodeHandleToCallbackIdMap = UsdMayaUtil::MObjectHandleUnorderedMap<MCallbackId>;
 
     bool _refreshRequested {
         false

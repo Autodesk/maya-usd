@@ -52,8 +52,8 @@
 
 #include <maya/MColorPickerUtilities.h>
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
-#include <maya/MDisplayLayerMessage.h>
 #include <maya/MDGMessage.h>
+#include <maya/MDisplayLayerMessage.h>
 #endif
 #include <maya/MEventMessage.h>
 #include <maya/MFileIO.h>
@@ -787,9 +787,9 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
 void ProxyRenderDelegate::_DirtyUsdSubtree(const UsdPrim& prim)
 {
-    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+    HdChangeTracker&      changeTracker = _renderIndex->GetChangeTracker();
     constexpr HdDirtyBits dirtyBits = HdChangeTracker::DirtyVisibility
-            | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
+        | MayaUsdRPrim::DirtyDisplayMode | MayaUsdRPrim::DirtySelectionHighlight;
 
     if (prim.IsA<UsdGeomGprim>()) {
         auto indexPath = _sceneDelegate->ConvertCachePathToIndexPath(prim.GetPath());
@@ -822,11 +822,16 @@ void ProxyRenderDelegate::_DirtyUfeSubtree(const Ufe::Path& rootPath)
 void ProxyRenderDelegate::_DirtyUfeSubtree(const MString& rootStr)
 {
     Ufe::Path rootPath;
-    try { rootPath = Ufe::PathString::path(rootStr.asChar()); }
-    catch (const Ufe::InvalidPath&) { return; }
-    catch (const Ufe::InvalidPathComponentSeparator&) { return; }
-    catch (const Ufe::EmptyPathSegment&) { return; }
-    
+    try {
+        rootPath = Ufe::PathString::path(rootStr.asChar());
+    } catch (const Ufe::InvalidPath&) {
+        return;
+    } catch (const Ufe::InvalidPathComponentSeparator&) {
+        return;
+    } catch (const Ufe::EmptyPathSegment&) {
+        return;
+    }
+
     _DirtyUfeSubtree(rootPath);
 }
 #endif
@@ -840,7 +845,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     ++_frameCounter;
 #ifdef MAYA_HAS_DISPLAY_LAYER_API
     _refreshRequested = false;
-#endif    
+#endif
 
     _UpdateRenderTags();
 
